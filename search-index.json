@@ -63,7 +63,7 @@
     "url": "https://serzhyale.github.io/FastMediaSorter_Lite/",
     "lang": "en",
     "title": "Photo & video sorting | Fast Media Sorter & Sharing",
-    "description": "Sort large photo and video folders with one-key actions, play video offline and share folders over SFTP to the Android app."
+    "description": "Sort photo and video folders with one-key actions, play video offline. Optional extras, off by default: folder sharing to Android over SFTP and FileDO disks."
   },
   {
     "url": "https://serzhyale.github.io/FastMediaSorter_Lite/publish-folders-android.html",
@@ -75,7 +75,7 @@
     "url": "https://serzhyale.github.io/FastMediaSorter_Lite/server.html",
     "lang": "en",
     "title": "Always-on Folder Share Server | Fast Media Sorter & Sharing",
-    "description": "The Server edition of Fast Media Sorter & Sharing: a Windows service that publishes selected folders to Android over SFTP from boot, with nobody signed in."
+    "description": "Share this PC's folders to Android over SFTP: signed in with the full package, or always on with the Server edition - a Windows service that serves from boot."
   },
   {
     "url": "https://serzhyale.github.io/FastMediaSorter_Lite/topics.html",
@@ -88,6 +88,12 @@
     "lang": "en",
     "title": "Why Windows warns about this download",
     "description": "What the SmartScreen warning on Fast Media Sorter & Sharing means, why it appears, exactly what to click, and what the program never does."
+  },
+  {
+    "url": "https://serzhyale.github.io/FastMediaSorter_Lite/docs/privacy.html",
+    "lang": "en",
+    "title": "Privacy Policy | Fast Media Sorter & Sharing",
+    "description": "Privacy policy of Fast Media Sorter & Sharing for Windows: runs on your device, no personal data, no telemetry; network only for features you switch on."
   },
   {
     "url": "https://serzhyale.github.io/FastMediaSorter_Lite/lang/ru/",

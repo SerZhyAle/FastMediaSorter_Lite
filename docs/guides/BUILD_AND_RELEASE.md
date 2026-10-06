@@ -50,6 +50,37 @@ GitHub Actions, а **релиз** не должен ничего забыть.
 
 **Нужно локально и на CI-раннере:** .NET 10 SDK (он уже стоял ради Companion) + MSBuild (VS 2022).
 
+**Нужно локально для сервера обмена** (`exchange-server\`, Go-модуль этого репозитория, спецификация 133):
+**64-битный** Go той версии, что записана в `exchange-server\go.mod` (`go 1.26`, `toolchain go1.26.8`).
+Первым в `PATH` может стоять 32-битный `go` - скрипты сборки и тестов сами ищут 64-битный
+(`%ProgramFiles%\Go\bin\go.exe`, затем `PATH`) и проверяют `GOHOSTARCH`. Без Go всё остальное
+собирается как раньше, а сервер обмена честно помечается `SKIPPED` - никогда не "собран".
+
+**Шлюз поставки сервера обмена (тикет 141; правило владельца, 133 §8: до рунга 2, пока не заморожен
+протокол, ничто из этого модуля не попадает в РЕЛИЗНЫЙ пакет).** Вся упаковка есть, но включается одним
+явным ключом и **по умолчанию выключена**:
+- `-IncludeExchange` у `tools\Build-Installer.ps1`, `tools\Build-ServerInstaller.ps1`,
+  `tools\Build-OfflineRelease.ps1` и у корневого `build.ps1` (он пробрасывает ключ в обе сборки
+  установщиков; вместе с `-SkipExchange` не работает, а без Go **падает**, а не пропускает);
+- `INCLUDE_EXCHANGE: 'false'` в самом верху [release.yml](../../.github/workflows/release.yml) - переворот
+  в одну строку; он же включает шаги `actions/setup-go` (закреплён на SHA коммита v6.5.0,
+  `go-version-file: exchange-server/go.mod`, кэш модулей), `go test ./...` и
+  `exchange-server\build.ps1` перед стейджингом.
+
+Шлюз закрыт: в стейдже **нет** папки `exchange\` (стейдж, где она есть, останавливает сборку), а ISCC
+зовётся с `/DNoExchange` - компонент `exchange`, задача `exchangeservice`, их `[Files]`, тексты и код
+удаления вырезаются из обоих `.iss` (`#ifndef NoExchange`). Шлюз открыт: сборка **падает**, если нет
+`fms-exchange-server.exe` или `.sha256` (пакет, обещающий компонент без бинарника, хуже упавшей сборки),
+а дерево `exchange\` из пяти файлов (exe, `.sha256`, `enable-exchange-server.ps1`,
+`install-exchange-service.ps1`, `README.txt`) кладёт один скрипт -
+[tools/Stage-ExchangePayload.ps1](../../tools/Stage-ExchangePayload.ps1). Два исключения действуют **всегда**,
+независимо от шлюза: `exchange\*` в `Excludes` подстановочного (wildcard) копирования `core` в `FastMediaSorter.iss`
+(иначе "неотмеченный" компонент ставился бы самим `core`) и пропуск `exchange\*` в общих циклах копирования
+`bin\Release` (дерево попадает в стейдж только через скрипт). MSIX дерево не получает **никогда**
+(`build-msix.ps1` исключает его и проверяет стейдж после копирования). Пре-флайт `Build-OfflineRelease.ps1`
+падает до сборки, если в `release.yml` шлюз открыт, а `-IncludeExchange` не передан: иначе он проверял бы не
+тот пакет, который соберёт релиз.
+
 **Инсталлятор** ([publishing/installer/FastMediaSorter.iss](../../publishing/installer/FastMediaSorter.iss)) ставит **оба** exe,
 а ярлык, запуск после установки и файловые ассоциации наводит на тот, который **реально пойдёт**
 на этой машине (`UseModernExe`: Windows 10 build >= 14393 -> мейнлайн, иначе x86-собрат).
@@ -92,8 +123,15 @@ Go-воркер и два повышающих helper-скрипта (~43 МБ �
    Затем [tools/Test-ArtifactVersion.ps1](../../tools/Test-ArtifactVersion.ps1) читает ресурс версии
    каждого exe, собранного **в этом прогоне**, и сверяет с единым штампом сборки; если хоть один
    несёт другую версию (или `1.0.0.0` - publish без версии), сборка останавливается **до** раскладки.
-4. Копирует **оба** вьюера + Companion + воркер (`companion\`) в рабочие папки
-   (`C:\GD\i\`, `C:\GD\tc\SZA\_APP\`).
+   Между ними (после Companion) [exchange-server/build.ps1](../../exchange-server/build.ps1) собирает
+   сервер обмена -> `bin\ExchangePublish\fms-exchange-server.exe` (windows/amd64, без cgo, тот же штамп
+   версии в ресурсе PE, рядом `.sha256`; проверяется PE machine `0x8664`). Нет 64-битного Go - строка
+   `exchange server: SKIPPED` и сборка идёт дальше.
+4. Копирует **оба** вьюера + Companion + воркер (`companion\`) и - если он собран в этом прогоне -
+   сервер обмена (`exchange\`: exe, `.sha256`, содержимое `exchange-server\package\` и два helper-скрипта
+   из `publishing\installer\`, если они уже есть) в рабочие папки (`C:\GD\i\`, `C:\GD\tc\SZA\_APP\`).
+   Установщики дерево `exchange\` берут **только с ключом `-IncludeExchange`** (шлюз поставки, см. выше):
+   из `core` оно исключено всегда, а неотмеченный компонент `exchange` приходит лишь вместе со шлюзом.
 5. Пакует оффлайновый инсталлятор: зовёт [tools/Build-Installer.ps1](../../tools/Build-Installer.ps1)
    с `-SkipBuild` (пересборки нет - берётся уже собранный `bin\Release`) и с версией,
    которую только что проставил билд, -> `dist\FastMediaSorter-<версия>-windows-x64-setup.exe` + `.sha256`.
@@ -105,6 +143,9 @@ Go-воркер и два повышающих helper-скрипта (~43 МБ �
 7. **Тег НЕ создаётся, на GitHub ничего не уходит.**
 
 Флаги: `-SkipModern` (без x64-мейнлайна), `-SkipCompanion` (без Share Manager),
+`-SkipExchange` (без сервера обмена - Go-модуля `exchange-server\`, даже без сборки),
+`-IncludeExchange` (шлюз поставки: положить сервер обмена в оба установщика как неотмеченный
+компонент; по умолчанию выключен, с `-SkipExchange` несовместим),
 `-SkipInstaller` (без упаковки setup.exe - самая долгая часть),
 `-SkipServerInstaller` (без серверного пакета),
 `-InstallerIncludeBest` / `-InstallerSkipOcr` (что класть в пакет из OCR-моделей:
@@ -114,7 +155,8 @@ Go-воркер и два повышающих helper-скрипта (~43 МБ �
 - `bin\Release\` - **это и есть форма дистрибутива**: оба exe + общие библиотеки рядом.
 - `bin\SingleFile\` - "тонкий" standalone x86-вьюер (exe сам по себе, нативы тянет
   в `%LOCALAPPDATA%` при первом запуске).
-- `bin\ModernPublish\`, `bin\CompanionPublish\` - сырые выхлопы `dotnet publish`.
+- `bin\ModernPublish\`, `bin\CompanionPublish\` - сырые выхлопы `dotnet publish`;
+  `bin\ExchangePublish\` - выхлоп сборки сервера обмена.
 - `dist\` - готовый `setup.exe` под эту сборку (свой `dist\`-прунинг делает сам
   упаковщик, оставляя текущую версию).
 
@@ -204,6 +246,8 @@ Go-воркер и два повышающих helper-скрипта (~43 МБ �
 - [ ] Workflow сам ставит .NET 10 SDK (`setup-dotnet`), собирает msbuild-ом x86-вьюер и делает
       **свои** `dotnet publish` мейнлайна и Companion, после чего стейджит в пакет **оба** exe.
       Версия из тега пробрасывается в publish через `-p:ReleaseVersion=`.
+- [ ] Шлюз сервера обмена: `INCLUDE_EXCHANGE` в `release.yml` по-прежнему `'false'` (до рунга 2). Новых ассетов
+      компонент не добавляет - он едет внутри существующих установщиков и ZIP (Q141-1).
 - [ ] GitHub Actions собрал Release и приложил **6 ассетов**: `setup.exe`, `.zip`,
       `server-setup.exe` и три `.sha256`.
       Следить: https://github.com/SerZhyAle/FastMediaSorter_Lite/actions

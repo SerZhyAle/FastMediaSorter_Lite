@@ -6,14 +6,15 @@
     Two judgements, both over the current files on disk (never Git history):
 
       1. FORBIDDEN forms - "FastMediaSorter LITE", "Fast Media Sorter LITE", "Fast Media Sorter Lite",
-         the previous full name "Fast Media Sorter for Windows", and a bare LITE / Lite word. A hit is
+         the previous full name "Fast Media Sorter for Windows", a bare LITE / Lite word, and the exchange
+         server's name cut short to a bare "Exchange Server" (owner rule 133 section 4). A hit is
          accepted only when a record of tools/product-naming-allow.jsonl covers it: a path glob, a
          regular expression the offending line must match, and a one-sentence reason. A record
          without a reason, a glob or a pattern is itself a failure, and so is a record that covers
          nothing (a stale allowance hides the next regression).
       2. REQUIRED forms - the places where the current name must be spelled out: the main window's
-         title bar, both assembly metadata sets, the installer's AppName, the MSIX DisplayName and the
-         names module.
+         title bar, both assembly metadata sets, the installer's AppName, the MSIX DisplayName, the
+         names module (including the exchange server's constant) and the naming table's exchange anchors.
 
     Ends in the shared one-line verdict (CHECK-VERDICT): exit 0 PASS / 1 FAIL / 2 COULD NOT VERIFY.
 #>
@@ -84,7 +85,11 @@ $forbidden = @(
     @{ Name = 'FastMediaSorter LITE'; Rx = [regex]::new('FastMediaSorter LITE', 'IgnoreCase') },
     @{ Name = 'Fast Media Sorter LITE/Lite'; Rx = [regex]::new('Fast Media Sorter Lite', 'IgnoreCase') },
     @{ Name = 'previous full name'; Rx = [regex]::new('Fast Media Sorter for Windows') },
-    @{ Name = 'bare LITE/Lite word'; Rx = [regex]::new('\bLITE\b|\bLite\b') }
+    @{ Name = 'bare LITE/Lite word'; Rx = [regex]::new('\bLITE\b|\bLite\b') },
+    # Owner rule, specification 133 section 4: the exchange server is never named by its last two words
+    # alone, which reads as Microsoft's product. Only a sentence that genuinely means Microsoft's product
+    # may carry it, through an allow-list record that says so.
+    @{ Name = 'bare Exchange Server (not preceded by Media)'; Rx = [regex]::new('(?<!Media )Exchange Server') }
 )
 
 $hits = 0; $allowedHits = 0
@@ -120,6 +125,9 @@ foreach ($a in $allow) {
 $required = @(
     @{ Path = 'src/ProductNames.vb';                         Text = 'Full As String = "Fast Media Sorter & Sharing for Windows"' },
     @{ Path = 'src/ProductNames.vb';                         Text = 'Compact As String = "Fast Media Sorter & Sharing"' },
+    @{ Path = 'src/ProductNames.vb';                         Text = 'ExchangeServer As String = "Media Exchange Server"' },
+    @{ Path = 'docs/guides/PRODUCT_NAMING.md';               Text = '`Media Exchange Server`' },
+    @{ Path = 'docs/guides/PRODUCT_NAMING.md';               Text = 'FastMediaSorterExchangeServer' },
     @{ Path = 'src/Main_Form.Designer.vb';                   Text = '"Fast Media Sorter & Sharing for Windows by SZA"' },
     @{ Path = 'src/My Project/AssemblyInfo.vb';              Text = 'AssemblyTitle("Fast Media Sorter & Sharing for Windows")' },
     @{ Path = 'src/My Project/AssemblyInfo.vb';              Text = 'AssemblyProduct("Fast Media Sorter & Sharing for Windows")' },

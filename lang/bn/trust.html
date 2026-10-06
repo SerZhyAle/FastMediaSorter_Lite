@@ -3,6 +3,17 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<script>
+(function(){try{
+  var t=localStorage.getItem('sza-theme');
+  if(t!=='dark'&&t!=='light')t=matchMedia('(prefers-color-scheme: light)').matches?'light':'dark';
+  document.documentElement.setAttribute('data-theme',t);
+  var l=localStorage.getItem('sza-lang');
+  if(l==='uk')l='ua';
+  if(l!=='ru'&&l!=='en'&&l!=='ua'){var n=(navigator.language||'en').toLowerCase();l=n.indexOf('ru')==0?'ru':n.indexOf('uk')==0?'ua':'en';}
+  document.documentElement.setAttribute('data-lang',l);
+}catch(e){}})();
+</script>
 <title>Windows কেন এই ডাউনলোড নিয়ে সতর্ক করে</title>
 <meta name="description" content="Fast Media Sorter &amp; Sharing-এ আসা SmartScreen সতর্কবার্তার অর্থ কী, কেন তা দেখা যায়, ঠিক কোথায় ক্লিক করতে হবে, আর প্রোগ্রামটি কখনও কী করে না।">
 <link rel="canonical" href="https://serzhyale.github.io/FastMediaSorter_Lite/lang/bn/trust.html">
@@ -39,17 +50,19 @@
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://serzhyale.github.io/FastMediaSorter_Lite/assets/sza-kit.css">
 <link rel="stylesheet" href="https://serzhyale.github.io/FastMediaSorter_Lite/assets/fms-site.css">
-<script>(function(){try{var t=localStorage.getItem('sza-theme');if(t==='light'||t==='dark'){document.documentElement.setAttribute('data-theme',t);}}catch(e){}})();</script>
 <script type="application/ld+json">{"@context":"https://schema.org","@type":"WebPage","headline":"Windows কেন এই ডাউনলোড নিয়ে সতর্ক করে","description":"Fast Media Sorter & Sharing-এ আসা SmartScreen সতর্কবার্তার অর্থ কী, কেন তা দেখা যায়, ঠিক কোথায় ক্লিক করতে হবে, আর প্রোগ্রামটি কখনও কী করে না।","url":"https://serzhyale.github.io/FastMediaSorter_Lite/lang/bn/trust.html","inLanguage":"bn","image":"https://serzhyale.github.io/FastMediaSorter_Lite/assets/social-preview-1280x640.png","isPartOf":{"@type":"WebSite","name":"Fast Media Sorter & Sharing for Windows","url":"https://serzhyale.github.io/FastMediaSorter_Lite/"},"author":{"@type":"Person","name":"SerZhyAle"}}</script>
 </head>
 <body>
+<a class="skip-link" href="#main">মূল বিষয়বস্তুতে যান</a>
 <header class="site-header">
+  <nav class="site-nav" aria-label="প্রধান নেভিগেশন">
   <a class="brand" href="https://serzhyale.github.io/FastMediaSorter_Lite/lang/bn/" aria-label="Fast Media Sorter &amp; Sharing for Windows"><span class="brand-mark"><img src="https://serzhyale.github.io/FastMediaSorter_Lite/assets/icons/Fast_Media_Sorter.ico" alt="" width="24" height="24"></span>Fast Media Sorter &amp; Sharing for Windows</a>
   <button class="theme-btn" id="themeBtn" aria-label="Switch theme">◐</button>
   <a class="btn btn-ghost btn-sm" href="https://serzhyale.github.io/FastMediaSorter_Lite/lang/bn/">মূল পাতায় ফিরুন</a>
+  </nav>
 </header>
 
-<main class="container">
+<main class="container" id="main" tabindex="-1">
   <section class="hero">
     <h1>Windows কেন এই ডাউনলোড নিয়ে সতর্ক করে</h1>
     <p class="lead">Fast Media Sorter &amp; Sharing for Windows একজন স্বাধীন ডেভেলপারের লেখা একটি বিনামূল্যের প্রোগ্রাম। GitHub-এ প্রকাশিত বিল্ডগুলি, যেগুলি winget-ও ইনস্টল করে, কোড-সাইন করা নয়, তাই Windows সেগুলিকে বাড়তি সতর্কতায় দেখে এবং আপনি এক-দুটি সতর্কবার্তা পেতে পারেন। নিচে: প্রতিটি সতর্কবার্তা কী, কেন আসে, ঠিক কোথায় ক্লিক করতে হবে, আর প্রোগ্রামটি কখনও কী করে না।</p>
@@ -108,8 +121,9 @@
   </section>
 
   <p class="note">একটিমাত্র বাইরের পরিষেবার সঙ্গে যোগাযোগ হতে পারে, আর তা কেবল তখনই যখন আপনি শেয়ারিংয়ের জন্য ইন্টারনেট প্রবেশ চালু করেন: check-host.net-কে জিজ্ঞাসা করা হয় আপনার ফরওয়ার্ড করা পোর্ট বাইরে থেকে সাড়া দেয় কি না, তাতে সেই পরিষেবা আপনার সর্বজনীন ঠিকানা ও পোর্ট দেখে। এর বাইরে তাকে কিছু পাঠানো হয় না। আরও দুটি জিনিস আপনার নিজের নেটওয়ার্কের ভিতরেই থাকে: ইন্টারনেট প্রবেশ চালু থাকলে প্রোগ্রামটি আপনার রাউটারকে শেয়ারিং পোর্ট ফরওয়ার্ড করতে বলে (UPnP বা NAT-PMP), আর শেয়ারিং চলার সময় PC স্থানীয় নেটওয়ার্কে নিজের উপস্থিতি জানায় (mDNS), যাতে যুক্ত ফোন তাকে আবার খুঁজে পায়।</p>
+  <p class="note" id="site-origins">এই ওয়েবসাইটের কোনো পাতা খুললে (প্রোগ্রাম চালালে নয়) সর্বোচ্চ তিনটি বাইরের ঠিকানার সঙ্গে যোগাযোগ হয়: fonts.googleapis.com ও fonts.gstatic.com (Google Fonts, পাতার অক্ষরের জন্য) এবং প্রধান পাতা ও তার ভাষা-সংস্করণে api.github.com (GitHub, ডাউনলোড লিংকের জন্য সর্বশেষ রিলিজ দেখতে)। প্রতিটি আপনার IP ঠিকানা ও ব্রাউজারের user agent পায়, আর কিছু নয়। বিশ্লেষণ, ট্যাগ-ম্যানেজার বা বিজ্ঞাপনের কোনো ঠিকানার সঙ্গে যোগাযোগ করা হয় না। গোপনীয়তার পাতাতেও একই কথা বলা আছে।</p>
 
-  <div class="button-group" style="margin:2rem 0">
+  <div class="button-group button-group-spaced">
     <a class="btn btn-primary" href="https://github.com/SerZhyAle/FastMediaSorter_Lite/releases/latest">ডাউনলোড</a>
     <a class="btn btn-ghost" href="https://serzhyale.github.io/FastMediaSorter_Lite/docs/privacy.html">গোপনীয়তা</a>
     <a class="btn btn-ghost" href="https://serzhyale.github.io/FastMediaSorter_Lite/lang/bn/">মূল পাতায় ফিরুন</a>
@@ -118,7 +132,7 @@
 </main>
 
 <footer class="site-footer"><div class="container">
-  <h2 class="sec-head" style="margin-bottom:1rem;font-size:1.1rem">More tools by SZA</h2>
+  <h2 class="sec-head sec-head-family">More tools by SZA</h2>
   <div class="tools-grid">
     <a href="https://serzhyale.github.io/FastMediaSorter_mob_v2/"><b>FastMediaSorter v2</b><span>Android media sorter</span></a>
     <a href="https://serzhyale.github.io/CyrFlip/"><b>CyrFlip</b><span>Windows layout fixer</span></a>

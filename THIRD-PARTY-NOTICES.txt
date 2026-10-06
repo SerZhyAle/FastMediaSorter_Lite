@@ -232,6 +232,31 @@ github.com/skip2/go-qrcode
   Copyright (c) 2014 Tom Harwood
 
 ================================================================================
+5a. Media Exchange Server (fms-exchange-server.exe)
+================================================================================
+
+The Media Exchange Server is an optional component of the Windows installers and
+the portable package (it is not part of the Microsoft Store package). It is
+written in Go, built from the exchange-server module of the FastMediaSorter_Lite
+repository (https://github.com/SerZhyAle/FastMediaSorter_Lite) and statically
+links the packages below. It uses no third-party code other than these.
+
+Go standard library
+  https://go.dev
+  License: BSD-3-Clause
+  Copyright (c) 2009 The Go Authors
+
+golang.org/x/crypto (the argon2 and blake2b packages)
+  License: BSD-3-Clause
+  Copyright (c) 2009 The Go Authors
+
+golang.org/x/sys (the windows and cpu packages)
+  License: BSD-3-Clause
+  Copyright (c) 2009 The Go Authors
+
+The license text is the BSD 3-Clause License reproduced in section 6.
+
+================================================================================
 6. License texts
 ================================================================================
 

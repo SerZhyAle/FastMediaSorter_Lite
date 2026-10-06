@@ -5,6 +5,19 @@
     # Skip building the .NET 10 Companion (the Share Manager). By
     # default this script now builds BOTH exes so you can build everything locally.
     [switch]$SkipCompanion,
+    # Skip building the exchange server (exchange-server\, a Go module - specification 133).
+    # A clone without a 64-bit Go skips it by itself and says so; it is never reported as
+    # built. The installers do not carry it unless -IncludeExchange is also given (below), so
+    # this switch only decides whether bin\Release\exchange\ and the work folders get a
+    # development copy. -SkipExchange means "do not even build it" and cannot be combined
+    # with -IncludeExchange.
+    [switch]$SkipExchange,
+    # THE SHIPPING GATE (specification 133 section 8, ticket 141): forwarded to both installer
+    # builds (tools\Build-Installer.ps1, tools\Build-ServerInstaller.ps1). Off by default - the
+    # setups then carry no exchange\ folder and compile without the `exchange` component. On,
+    # the build fails unless the exchange server was built by THIS run (no Go = failure, not a
+    # quiet skip) and both setups carry the unchecked component. Flip only after rung 2.
+    [switch]$IncludeExchange,
     # Skip publishing the .NET 10 modern viewer (SPECIFICATION_DOTNET10_MODERN_BUILD).
     # By default it is published to bin\ModernPublish and mirrored into a "modern\"
     # subfolder of each deploy target for side-by-side testing with the net48 exe.
@@ -23,8 +36,9 @@
     # directory and winget package. Built by default so the two setup.exe files in
     # dist\ are always from the same sources - a Server package left behind by an
     # earlier build is exactly how a stale worker gets handed to a server.
-    # Cheap: it reuses the Companion published above and carries no viewer, no VLC
-    # codecs and no OCR models.
+    # Cheap: it reuses the Companion published above and carries no VLC codecs and no
+    # OCR models; the viewer rides along as an optional, unticked component staged
+    # from the User installer step above (tools\Stage-ServerViewerPayload.ps1).
     [switch]$SkipServerInstaller,
     # Installer payload, forwarded to tools\Build-Installer.ps1. Default: the lighter
     # fast OCR models (offline OCR out of the box). -InstallerIncludeBest also bundles
@@ -35,6 +49,10 @@
 )
 
 $SolutionDir = $PSScriptRoot
+if ($IncludeExchange -and $SkipExchange) {
+    Write-Error "-IncludeExchange and -SkipExchange contradict each other: one packages the exchange server, the other does not even build it."
+    exit 1
+}
 $SolutionFile = Join-Path $SolutionDir "FastMediaSorter.sln"
 $OutputDir    = Join-Path $SolutionDir "bin\Release"
 $SingleFileDir = Join-Path $SolutionDir "bin\SingleFile"
@@ -57,6 +75,15 @@ $CompanionProj       = Join-Path $SolutionDir "src\FastMediaSorterCompanion\Fast
 $CompanionExeName    = "FastMediaSorterCompanion.exe"
 $CompanionPublishDir = Join-Path $SolutionDir "bin\CompanionPublish"
 $CompanionExe        = Join-Path $CompanionPublishDir $CompanionExeName
+# The exchange server (specification 133): a Go program compiled from the exchange-server\
+# module of THIS repository (nothing is vendored), windows/amd64 only. It lands in an
+# "exchange\" tree beside the viewer exes - the same shape as companion\ - and never
+# installs, starts or opens a port by itself.
+$ExchangeBuildScript = Join-Path $SolutionDir "exchange-server\build.ps1"
+$ExchangeExeName     = "fms-exchange-server.exe"
+$ExchangePublishDir  = Join-Path $SolutionDir "bin\ExchangePublish"
+$ExchangeExe         = Join-Path $ExchangePublishDir $ExchangeExeName
+$ExchangeBuilt       = $false   # set only when THIS run built it
 # The .NET 10 modern viewer. Its publish is a full standalone tree (exe + the
 # libvlc plugin tree + tesseract natives + flags); bin\Release already carries
 # those support trees from the net48 build, so only the publish output itself is
@@ -199,6 +226,50 @@ function Deploy-CompanionExe([string]$TargetDir) {
     Write-Host "Deployed Companion exe -> $dest"
 }
 
+# A running exchange server locks its own exe, so Copy-Item over it fails. Same scope as the
+# viewers, the worker and the Share Manager: only a copy running from a directory this build
+# writes. An installed copy under Program Files - and the Server edition's Windows service,
+# which runs from its own install directory - is not ours to stop.
+function Stop-Exchange {
+    $procs = @(Get-Process -Name "fms-exchange-server" -ErrorAction SilentlyContinue)
+    if ($procs.Count -eq 0) { return }
+    foreach ($p in $procs) {
+        if (-not (Test-RunsFromOwnedDir $p)) {
+            $where = $null; try { $where = $p.Path } catch { }
+            Write-Host "Leaving fms-exchange-server alone - it runs from $where, which this build does not write."
+            continue
+        }
+        Write-Host "Stopping running fms-exchange-server so its exe can be replaced.."
+        try { $p.Kill(); $p.WaitForExit(3000) } catch { }
+    }
+    Start-Sleep -Milliseconds 300
+}
+
+# Copy the exchange server this run built into <targetDir>\exchange\: the exe and its .sha256,
+# plus the package tree of ticket 141 - everything under exchange-server\package\ (README.txt)
+# and the two helpers from publishing\installer\ (enable-exchange-server.ps1,
+# install-exchange-service.ps1). The package files are written by other tickets and may not
+# exist yet: a missing one is skipped, never an error - the packagers (Stage-ExchangePayload.ps1)
+# are the ones that insist on them, and only when the shipping gate is open.
+# Nothing to do - and nothing claimed - when it was skipped or there is no Go: an old copy left in
+# a deploy target by an earlier build is never refreshed by pretending.
+function Deploy-Exchange([string]$TargetDir) {
+    if (-not $ExchangeBuilt) { return }
+    $dest = Join-Path $TargetDir "exchange"
+    New-Item -ItemType Directory -Path $dest -Force | Out-Null
+    Copy-Item -Path $ExchangeExe -Destination $dest -Force
+    Copy-Item -Path "$ExchangeExe.sha256" -Destination $dest -Force
+    $packageDir = Join-Path $SolutionDir "exchange-server\package"
+    if (Test-Path -LiteralPath $packageDir) {
+        Copy-Item -Path (Join-Path $packageDir "*") -Destination $dest -Recurse -Force
+    }
+    foreach ($helper in @("enable-exchange-server.ps1", "install-exchange-service.ps1")) {
+        $helperPath = Join-Path $SolutionDir ("publishing\installer\" + $helper)
+        if (Test-Path -LiteralPath $helperPath) { Copy-Item -Path $helperPath -Destination $dest -Force }
+    }
+    Write-Host "Deployed exchange server -> $dest"
+}
+
 # Find MSBuild
 $msbuild = & "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe" `
     -latest -requires Microsoft.Component.MSBuild -find MSBuild\**\Bin\MSBuild.exe 2>$null |
@@ -286,6 +357,33 @@ if (-not $SkipCompanion) {
     Write-Host "Skipping Companion build (-SkipCompanion)."
 }
 
+# Build the exchange server (specification 133). The module's own script resolves a 64-bit
+# Go, stamps the exe with the ONE version of this run and checks it; exit 2 means "no Go" and
+# is a skip, never a build failure - and never a claim that it was built.
+if (-not $SkipExchange) {
+    Write-Host "Building the exchange server (Go, windows/amd64).."
+    Stop-Exchange   # release a lock on the previous exe under bin\ExchangePublish
+    Remove-Item $ExchangePublishDir -Recurse -Force -ErrorAction SilentlyContinue
+    & $ExchangeBuildScript -Version $BuildVersion -OutDir $ExchangePublishDir
+    switch ($LASTEXITCODE) {
+        0 { $ExchangeBuilt = $true }
+        2 {
+            if ($IncludeExchange) {
+                # The gate is open: a package must not claim a component it lacks.
+                Write-Error "exchange server: no 64-bit Go - -IncludeExchange cannot package it. Install Go, or drop -IncludeExchange."
+                exit 2
+            }
+            Write-Warning "exchange server: SKIPPED (no Go) - the rest of the package is built without it."
+        }
+        default {
+            Write-Error "Exchange server build failed (exit code $LASTEXITCODE)."
+            exit $LASTEXITCODE
+        }
+    }
+} else {
+    Write-Host "Skipping exchange server build (-SkipExchange)."
+}
+
 # Publish the .NET 10 modern viewer (self-contained single-file + loose libvlc
 # tree). Same publish pattern as the Companion; the win-x64 publish props live in
 # src\Modern\FastMediaSorter.Modern.vbproj.
@@ -328,6 +426,7 @@ if (-not $SkipModern) {
 $builtExes = @($SingleFileExe)
 if (-not $SkipModern)    { $builtExes += $ModernExe }
 if (-not $SkipCompanion) { $builtExes += $CompanionExe }
+if ($ExchangeBuilt)      { $builtExes += $ExchangeExe }   # judged by its PE version resource
 & (Join-Path $SolutionDir "tools\Test-ArtifactVersion.ps1") -Expect $BuildVersion -Path $builtExes
 if ($LASTEXITCODE -ne 0) {
     Write-Host "The built exes do not all carry $BuildVersion - nothing was deployed." -ForegroundColor Red
@@ -387,6 +486,8 @@ Deploy-Companion $OutputDir
 Deploy-Companion $SingleFileDir
 Deploy-CompanionExe $OutputDir
 Deploy-CompanionExe $SingleFileDir
+Deploy-Exchange $OutputDir
+Deploy-Exchange $SingleFileDir
 
 foreach ($Destination in $Destinations) {
     if (-not (Test-Path $Destination)) {
@@ -402,6 +503,7 @@ foreach ($Destination in $Destinations) {
     Deploy-ModernExe $Destination      # FastMediaSorter_LITE.exe (x64) -> <dest>\
     Deploy-Companion $Destination      # worker payload -> <dest>\companion\
     Deploy-CompanionExe $Destination   # FastMediaSorterCompanion.exe -> <dest>\
+    Deploy-Exchange $Destination       # fms-exchange-server.exe -> <dest>\exchange\
 }
 
 # The x64 mainline now owns the frozen FastMediaSorter_LITE.exe name, so a deploy
@@ -439,6 +541,7 @@ if (-not $SkipInstaller) {
     if ($NoClean)              { $installerArgs.NoClean     = $true }
     if ($InstallerIncludeBest) { $installerArgs.IncludeBest = $true }
     if ($InstallerSkipOcr)     { $installerArgs.SkipOcr     = $true }
+    if ($IncludeExchange)      { $installerArgs.IncludeExchange = $true }   # the shipping gate, forwarded as-is
 
     Write-Host ""
     Write-Host "Packaging the offline installer (version $installerVersion).."
@@ -484,6 +587,7 @@ if (-not $SkipServerInstaller) {
         # bound positionally, not a splat, so it would land in -Version.
         $serverArgs = @{ Version = $serverVersion }
         if (-not ($SkipCompanion -and $SkipInstaller)) { $serverArgs.SkipBuild = $true }
+        if ($IncludeExchange) { $serverArgs.IncludeExchange = $true }   # the shipping gate, forwarded as-is
         & (Join-Path $SolutionDir "tools\Build-ServerInstaller.ps1") @serverArgs
         if ($LASTEXITCODE -ne 0) { throw "tools\Build-ServerInstaller.ps1 exited with code $LASTEXITCODE." }
     } catch {

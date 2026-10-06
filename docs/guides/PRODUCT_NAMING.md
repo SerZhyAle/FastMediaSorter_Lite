@@ -5,7 +5,7 @@ never restates the table. The previous rename left 33 files saying the old name 
 into each of them; the cure is one table, one code module ([src/ProductNames.vb](../../src/ProductNames.vb))
 and one check ([tools/Test-ProductNaming.ps1](../../tools/Test-ProductNaming.ps1)).
 
-Decided by the owner on 2026-10-03; carried out by ticket 111 (`docs/specifications/111_SPECIFICATION_PRODUCT_NAME_AND_TEXT_REVISION.md`).
+Decided by the owner on 2026-10-03; carried out by ticket 111 (`docs/specifications/done/111_SPECIFICATION_PRODUCT_NAME_AND_TEXT_REVISION.md`).
 This supersedes, for the **visible name only**, the light rebrand recorded in
 `docs/specifications/done/SPECIFICATION_RENAME_FAST_MEDIA_SORTER_FOR_WINDOWS.md`. What that archive froze as
 technical anchors stays frozen (section 2).
@@ -22,6 +22,7 @@ technical anchors stays frozen (section 2).
 | **Alias FMS** | `FMS` | only where the platform is obvious from context; a bare `FMS` is ambiguous between W and A, so it is never the only name on a page |
 | **Share Manager** | `Share Manager - Fast Media Sorter & Sharing` | the separate sharing program's window, tray, shortcuts and message captions (component first, product as suffix) |
 | **Server edition** | `Fast Media Sorter & Sharing: Folder Share Server` | the Server installer's wizard and shortcut text |
+| **Exchange server** | `Media Exchange Server` | the connect service between share servers and clients (tickets 132 door 3, 133): described as the "Fast Media Sorter exchange relay server". Never shortened to "Exchange Server", which reads as Microsoft's product (`tools/Test-ProductNaming.ps1` rejects a bare "Exchange Server" not preceded by "Media"); not translated and Latin in all 13 languages, only the role description translates ("сервер обмена"). Surfaces: the site's third door (text), the Share Manager entry (the settings group and the tray item, ticket 142), the installer component, the deployment guide. In code it is `ProductNames.ExchangeServer`, cited as a constant or a `TF` placeholder |
 
 The word **"Lite" is not part of the name any more.** The product does far more than the name promised.
 "Lite" survives only as a frozen identifier (section 2), and every survivor is on the allow-list of
@@ -42,6 +43,7 @@ string, the string is an anchor and no naming change touches it.
 | Mutexes, pipe, mDNS, IPC | `FastMediaSorterSingleInstanceMutex`, `FastMediaSorterCompanionSingleInstanceMutex`, `\\.\pipe\fms-companion`, `_sftp-fms._tcp`, the `WM_COPYDATA` tags, the Share Manager's message-window title | wire and process contracts (`WORKER-IPC`, `SHARE-SESSION`) |
 | Registry | `SZA\FastMediaSorter`, ProgIDs `FastMediaSorter.*` | user settings and "default app" choices |
 | Data folders | `%LOCALAPPDATA%\SZA\FastMediaSorter`, `%LOCALAPPDATA%\FastMediaSorterCompanion`, `%ProgramData%\FastMediaSorterCompanion` | caches and the TOFU-pinned host key |
+| Exchange server | `fms-exchange-server.exe` (in `exchange\` beside the Share Manager), the data folders `%LOCALAPPDATA%\FastMediaSorterExchange` and `%ProgramData%\FastMediaSorterExchange`, the service `FastMediaSorterExchangeServer` (display name `Media Exchange Server`), the firewall rule `FastMediaSorter Media Exchange Server`, the stop event `Local\FastMediaSorterExchange-Stop-*` | process, service and rule correlation by name (tickets 141, 143, 144); a producer's saved pin names none of these, but an installed service and a data folder do |
 | Installer identity | Inno `AppId`, `DefaultDirName` `FastMediaSorter_LITE`, `OutputBaseFilename`, the Server edition's own `AppId` and directory, `UninstallDisplayName` | upgrade in place of an installed copy |
 | Microsoft Store | the listing title, the MSIX `Properties/DisplayName` and the main application's `VisualElements DisplayName`, all `FastMediaSorter LITE` | owner decision 2026-10-03: the Store name does not change, only the inscriptions inside the program, the installer, the site and the documents. The name is reserved in Partner Center and a manifest `DisplayName` must equal it character for character |
 | MSIX identity | `Identity Name` `SZA.FastMediaSorterLITE` and `Publisher` | the Store's update anchor |

@@ -24,6 +24,16 @@
 ; carry the colon the Server edition's wizard name has (see FastMediaSorterServer.iss);
 ; an ampersand is a legal file-name character and the Start menu shows it as it is.
 #define ShareManagerName "Share Manager - Fast Media Sorter & Sharing"
+; The exchange server's name (docs/guides/PRODUCT_NAMING.md section 1; src/ProductNames.vb
+; ExchangeServer). Never shortened (the short form reads as Microsoft's product), not translated,
+; Latin in every setup language. A wizard label needs a doubled ampersand only for a name that
+; carries one - this name has none, so the plain define serves.
+#define ExchangeServerName "Media Exchange Server"
+; THE SHIPPING GATE of the exchange component (specification 133 section 8, ticket 141): the
+; packagers pass /DNoExchange unless -IncludeExchange / INCLUDE_EXCHANGE opened the gate, and the
+; component, its [Files], messages and uninstall code then compile out (#ifndef NoExchange).
+; The "exchange\*" Exclude of the `core` wildcard below stays ALWAYS - it is not governed by the
+; gate (R3 trap 1: without it the unchecked component would be written by the wildcard).
 ; FROZEN identity name for the "Add/Remove Programs" (ARP) entry. winget and the
 ; Store correlate the installed app to their manifests by this ARP DisplayName,
 ; so it must stay "FastMediaSorter LITE" even though the wizard now shows the new
@@ -109,48 +119,53 @@ Name: "ukrainian"; MessagesFile: "compiler:Languages\Ukrainian.isl"
 ; component's on-disk size after the text automatically, so the package weight is
 ; shown per part - the "what & why" is the description itself.
 [CustomMessages]
-english.CompFileDO=FileDO virtual disk support (optional; sharing stays off until enabled)
-russian.CompFileDO=Поддержка виртуальных дисков FileDO (необязательно; общий доступ включается отдельно)
-ukrainian.CompFileDO=Підтримка віртуальних дисків FileDO (необов’язково; спільний доступ вмикається окремо)
+english.CompFileDO=FileDO virtual disk host - optional extra (disk sharing stays off until you enable it)
+russian.CompFileDO=Хост виртуальных дисков FileDO - необязательное дополнение (общий доступ к дискам включается отдельно)
+ukrainian.CompFileDO=Хост віртуальних дисків FileDO - необов’язкове доповнення (спільний доступ до дисків вмикається окремо)
+#ifndef NoExchange
+english.CompExchange={#ExchangeServerName} - optional extra; a relay that lets share servers and clients reach each other (not installed unless ticked; nothing runs and no firewall rule exists until you ask for it in the Share Manager)
+russian.CompExchange={#ExchangeServerName} - необязательное дополнение: сервер обмена, через который серверы раздачи и клиенты находят друг друга (не ставится, пока вы его не отметите; ничего не запускается и правило брандмауэра не добавляется, пока вы сами не попросите об этом в Менеджере общего доступа)
+ukrainian.CompExchange={#ExchangeServerName} - необов’язкове доповнення: сервер обміну, через який сервери роздачі та клієнти знаходять одне одного (не ставиться, доки ви його не позначите; нічого не запускається, а правило брандмауера не додається, доки ви самі не попросите про це в Менеджері спільного доступу)
+#endif
 english.TypeFull=Full - everything offline-ready (recommended)
-english.TypeCompact=Compact - viewer only (codecs & models download on demand)
+english.TypeCompact=Compact - the viewer without the server (codecs & models download on demand)
 english.TypeCustom=Custom
 english.CompCore=Core - image & video viewer and sorter (required)
 english.CompCodecs=Video codecs (VLC) - offline playback of AVI, MKV, VP9 and other formats
 english.CompPdf=PDF preview (PDFium, 5 MB) - pages and OCR inside the sorter
 english.CompOcr=OCR & translation models - offline on-image text recognition
-english.CompShare=Android Folder Share companion - share folders to your phone (bundles its own .NET runtime)
+english.CompShare=Folder share server (Share Manager + SFTP worker) - optional; gives folders to your phone, off until you enable it (bundles its own .NET runtime)
 english.ShareManagerComment=Share folders from this PC to an Android phone over Wi-Fi
 english.ShareDesktopIcon=Create a desktop shortcut for the Share Manager
 
 russian.TypeFull=Полная - всё для работы без интернета (рекомендуется)
-russian.TypeCompact=Компактная - только просмотрщик (кодеки и модели скачаются по мере надобности)
+russian.TypeCompact=Компактная - просмотрщик без сервера (кодеки и модели скачаются по мере надобности)
 russian.TypeCustom=Выборочная
 russian.CompCore=Ядро - просмотр и сортировка изображений и видео (обязательно)
 russian.CompCodecs=Видео-кодеки (VLC) - оффлайн-воспроизведение AVI, MKV, VP9 и других форматов
 russian.CompPdf=Просмотр PDF (PDFium, 5 МБ) - страницы и OCR в сортировщике
 russian.CompOcr=Модели OCR и перевода - распознавание текста на изображении без интернета
-russian.CompShare=Компаньон Android Folder Share - раздача папок на телефон (включает свой рантайм .NET)
+russian.CompShare=Сервер раздачи папок (Менеджер общего доступа + SFTP-воркер) - необязательно; отдаёт папки на телефон, выключен, пока вы его не включите (включает свой рантайм .NET)
 russian.ShareManagerComment=Раздача папок этого ПК на телефон Android по Wi-Fi
 russian.ShareDesktopIcon=Создать ярлык Менеджера общего доступа на рабочем столе
 
 ukrainian.TypeFull=Повна - усе для роботи без інтернету (рекомендовано)
-ukrainian.TypeCompact=Компактна - лише переглядач (кодеки та моделі завантажаться за потреби)
+ukrainian.TypeCompact=Компактна - переглядач без сервера (кодеки та моделі завантажаться за потреби)
 ukrainian.TypeCustom=Вибіркова
 ukrainian.CompCore=Ядро - перегляд і сортування зображень та відео (обов'язково)
 ukrainian.CompCodecs=Відео-кодеки (VLC) - офлайн-відтворення AVI, MKV, VP9 та інших форматів
 ukrainian.CompPdf=Перегляд PDF (PDFium, 5 МБ) - сторінки та OCR у сортувальнику
 ukrainian.CompOcr=Моделі OCR та перекладу - розпізнавання тексту на зображенні без інтернету
-ukrainian.CompShare=Компаньйон Android Folder Share - роздача тек на телефон (містить власний рантайм .NET)
+ukrainian.CompShare=Сервер роздачі тек (Менеджер спільного доступу + SFTP-воркер) - необов’язково; віддає теки на телефон, вимкнений, доки ви його не ввімкнете (містить власний рантайм .NET)
 ukrainian.ShareManagerComment=Роздача тек цього ПК на телефон Android через Wi-Fi
 ukrainian.ShareDesktopIcon=Створити ярлик Менеджера спільного доступу на робочому столі
 
 ; Prepend an honest one-liner to the component-selection page: the viewer is light,
 ; the weight is optional offline payload the user can trim.
 [Messages]
-english.SelectComponentsLabel2=The viewer itself is small - most of the size is optional, offline-ready payload. Keep everything for full offline use, or clear what you don't need (it can download later on demand). Click Next when you are ready to continue.
-russian.SelectComponentsLabel2=Сам просмотрщик весит мало - основной объём это опциональная оффлайн-начинка. Оставьте всё для полной работы без интернета или снимите ненужное (при необходимости оно скачается позже). Нажмите "Далее", когда будете готовы продолжить.
-ukrainian.SelectComponentsLabel2=Сам переглядач важить мало - основний обсяг це опційна офлайн-начинка. Залиште все для повної роботи без інтернету або зніміть непотрібне (за потреби воно завантажиться пізніше). Натисніть "Далі", коли будете готові продовжити.
+english.SelectComponentsLabel2=This is one program with a few roles. The viewer and sorter is the core. The folder share server, FileDO disks, video codecs and OCR models are optional, and sharing stays off until you enable it - keep everything for full offline use, or clear what you don't need (codecs and models can download later on demand). Click Next when you are ready to continue.
+russian.SelectComponentsLabel2=Это одна программа с несколькими ролями. Основа - просмотрщик и сортировщик. Сервер раздачи папок, диски FileDO, видео-кодеки и модели OCR необязательны, а общий доступ остаётся выключенным, пока вы его не включите: оставьте всё для полной работы без интернета или снимите ненужное (кодеки и модели при необходимости скачаются позже). Нажмите "Далее", когда будете готовы продолжить.
+ukrainian.SelectComponentsLabel2=Це одна програма з кількома ролями. Основа - переглядач і сортувальник. Сервер роздачі тек, диски FileDO, відео-кодеки та моделі OCR необов’язкові, а спільний доступ лишається вимкненим, доки ви його не ввімкнете: залиште все для повної роботи без інтернету або зніміть непотрібне (кодеки та моделі за потреби завантажаться пізніше). Натисніть "Далі", коли будете готові продовжити.
 
 ; Explain the admin choice at the exact spot it is made (the built-in "Select Setup
 ; Install Mode" screen shown by PrivilegesRequiredOverridesAllowed=dialog), so the user
@@ -201,17 +216,28 @@ Name: "ocr";    Description: "{cm:CompOcr}";    Types: full
 Name: "share";  Description: "{cm:CompShare}";  Types: full; MinVersion: 10.0.14393
 
 Name: "share\filedo"; Description: "{cm:CompFileDO}"; Flags: dontinheritcheck; MinVersion: 10.0.14393
+#ifndef NoExchange
+; The Media Exchange Server (specification 133, ticket 141): NO Types on purpose - a component with
+; no Types starts unticked, even in `full`, which is the type a silent winget install takes. So the
+; exchange tree reaches a machine only when someone ticks the box (or passes /COMPONENTS=..exchange).
+; dontinheritcheck: it is not a child of `share`. MinVersion 10.0.14393: the binary is windows/amd64
+; and the Share Manager that starts it is .NET 10 x64, the same floor as `share`.
+Name: "exchange"; Description: "{cm:CompExchange}"; Flags: dontinheritcheck; MinVersion: 10.0.14393
+#endif
 
 [Files]
 ; Core (always installed): BOTH viewer exes - the .NET 10 x64 mainline
 ; (FastMediaSorter_LITE.exe) and its lean net48 sibling (FastMediaSorter_x86.exe)
 ; for machines the mainline cannot run on - plus the native Tesseract/OCR engine.
 ; They are picked up by this one wildcard; the big optional subtrees below are
-; excluded so an unchecked component is genuinely not written to disk. "*.log" is
+; excluded so an unchecked component is genuinely not written to disk. "exchange\*" is
+; the exchange server's tree (specification 133): a local build deploys it into bin\Release
+; for development, and nothing may install it from this wildcard - the optional `exchange`
+; component (ticket 141, behind the shipping gate above) is its only way in. "*.log" is
 ; excluded too: the staging scripts already drop it, but a hand compile against a
 ; tree the app has been RUN from would otherwise install our own current.log into
 ; {app} and the user's log would start with our sessions and our paths.
-Source: "{#SourceDir}\*"; DestDir: "{app}"; Excludes: "libvlc\*,tessdata\*,tessdata-best\*,companion\*,filedo\*,FastMediaSorterCompanion.exe,pdfium.dll,*.log"; Flags: recursesubdirs createallsubdirs ignoreversion; Components: core
+Source: "{#SourceDir}\*"; DestDir: "{app}"; Excludes: "libvlc\*,tessdata\*,tessdata-best\*,companion\*,filedo\*,exchange\*,FastMediaSorterCompanion.exe,pdfium.dll,*.log"; Flags: recursesubdirs createallsubdirs ignoreversion; Components: core
 Source: "{#SourceDir}\pdfium.dll"; DestDir: "{app}"; Flags: ignoreversion; Components: pdf; Check: UseModernExe
 ; The optional components below are NOT gated on an elevated install, and
 ; must not be gated on one again. They were (Check: OptionalPayloadAllowed =
@@ -244,6 +270,16 @@ Source: "{#SourceDir}\tessdata-best\*"; DestDir: "{app}\tessdata-best"; Flags: r
 Source: "{#SourceDir}\FastMediaSorterCompanion.exe"; DestDir: "{app}"; Flags: ignoreversion skipifsourcedoesntexist; Components: share
 Source: "{#SourceDir}\companion\*"; DestDir: "{app}\companion"; Flags: recursesubdirs createallsubdirs ignoreversion skipifsourcedoesntexist; Components: share
 Source: "{#SourceDir}\filedo\*"; DestDir: "{app}\filedo"; Flags: recursesubdirs createallsubdirs ignoreversion; Components: share\filedo
+#ifndef NoExchange
+; The Media Exchange Server tree: fms-exchange-server.exe, its .sha256, the firewall opt-in helper
+; (enable-exchange-server.ps1) and README.txt. install-exchange-service.ps1 is the Server edition's
+; service helper and is EXCLUDED here: a service is never created by a User install (133 6.1), and
+; the Share Manager tells the editions apart by that file being present next to the exe.
+; Deliberately WITHOUT skipifsourcedoesntexist: the packagers fail when the binary is missing, and
+; a setup that claims the component must carry it. Nothing here runs by itself - no service, no
+; rule, no port.
+Source: "{#SourceDir}\exchange\*"; DestDir: "{app}\exchange"; Excludes: "install-exchange-service.ps1"; Flags: recursesubdirs createallsubdirs ignoreversion; Components: exchange
+#endif
 ; Helper Setup/Uninstall use to stop the running Companion app and its worker (see
 ; StopCompanionWorker in [Code]). Kept both as a dontcopy temp extract (Setup runs
 ; this before any app files exist yet, so it cannot read one from {app}) and as a
@@ -374,6 +410,14 @@ Type: files; Name: "{app}\companion.log.old"
 ; [Files]), so remove it explicitly. The firewall rule itself is deleted in
 ; CurUninstallStepChanged below.
 Type: files; Name: "{app}\companion\server-features.enabled"
+#ifndef NoExchange
+; The exchange tree is wholly ours (the five package files), so the folder goes with it even when
+; something stray was written beside them. The server's DATA (certificate identity, settings, log)
+; lives under %LOCALAPPDATA%\FastMediaSorterExchange and is never listed here: it holds the identity
+; paired producers pinned, the same rule as the Share Manager's state. The firewall rule is removed
+; in CurUninstallStepChanged below.
+Type: filesandordirs; Name: "{app}\exchange"
+#endif
 
 [Code]
 const
@@ -960,12 +1004,12 @@ end;
   administrator rights (deleting them does), so a per-user uninstall asks for approval
   only when there is something to remove. A check that cannot run answers True: one
   prompt too many is cheaper than an inbound allow left behind without a word. }
-function ServerFirewallRuleExists: Boolean;
+function FirewallRuleExistsForProgram(const ProgramPath: String): Boolean;
 var
   ResultCode: Integer;
   Exe: String;
 begin
-  Exe := InstalledWorkerExe;
+  Exe := ProgramPath;
   { Single-quoted inside the PowerShell command: an apostrophe in the path is doubled. }
   StringChangeEx(Exe, '''', '''''', True);
   if not Exec('powershell.exe',
@@ -977,6 +1021,11 @@ begin
     exit;
   end;
   Result := (ResultCode <> 3);
+end;
+
+function ServerFirewallRuleExists: Boolean;
+begin
+  Result := FirewallRuleExistsForProgram(InstalledWorkerExe);
 end;
 
 { The per-user uninstall's one elevated step (ticket 037 Ф-3.1): the same helper the
@@ -1040,6 +1089,82 @@ begin
   if not RemoveServerFirewallRuleElevated then
     Log('Folder-sharing firewall rule left in place: administrator approval was not given or the helper failed.');
 end;
+
+#ifndef NoExchange
+{ --- the Media Exchange Server's firewall rule (ticket 143 T-4, ticket 141) ---------------
+  The rule is added only by an explicit act in the Share Manager (one UAC prompt, one
+  program-scoped inbound allow - never at install), so nothing here adds one. Uninstall takes
+  it away, by PROGRAM path (never by name), exactly as the sharing rule is removed above. }
+function InstalledExchangeExe: String;
+begin
+  Result := ExpandConstant('{app}\exchange\fms-exchange-server.exe');
+end;
+
+function ExchangeFirewallRemovalPromptText: String;
+begin
+  if IsLanguage('russian') then
+    Result := 'Для компонента {#ExchangeServerName} этой программы в брандмауэр Windows было добавлено правило. Удалить его можно только с правами администратора, поэтому Windows один раз спросит подтверждение.' + #13#10#13#10 +
+              'Удалить правило брандмауэра? Если ответить «Нет», оно останется в брандмауэре Защитника Windows под именем «FastMediaSorter Media Exchange Server», и его можно будет удалить там позже.'
+  else if IsLanguage('ukrainian') then
+    Result := 'Для компонента {#ExchangeServerName} цієї програми у брандмауер Windows було додано правило. Видалити його можна лише з правами адміністратора, тому Windows один раз попросить підтвердження.' + #13#10#13#10 +
+              'Видалити правило брандмауера? Якщо відповісти «Ні», воно залишиться в брандмауері Захисника Windows під назвою «FastMediaSorter Media Exchange Server», і його можна буде видалити там пізніше.'
+  else
+    Result := 'Allowing access to the {#ExchangeServerName} added a Windows Firewall rule for this program''s exchange component. Only administrator rights can remove it, so Windows will ask for approval once.' + #13#10#13#10 +
+              'Remove the firewall rule? If you answer No, it stays in Windows Defender Firewall as "FastMediaSorter Media Exchange Server" and can be deleted there later.';
+end;
+
+{ The one elevated step of a per-user uninstall: the same helper the Share Manager's "Remove the
+  rule.." runs, through one ShellExecute "runas". Falls back to an elevated netsh when the helper
+  is absent. }
+function RemoveExchangeFirewallRuleElevated: Boolean;
+var
+  ResultCode: Integer;
+  ScriptPath: String;
+begin
+  ScriptPath := ExpandConstant('{app}\exchange\enable-exchange-server.ps1');
+  if FileExists(ScriptPath) then
+    Result := ShellExec('runas', 'powershell.exe',
+      '-NoProfile -ExecutionPolicy Bypass -File "' + ScriptPath + '" -ExePath "' + InstalledExchangeExe + '" -Disable',
+      '', SW_HIDE, ewWaitUntilTerminated, ResultCode) and (ResultCode = 0)
+  else
+    Result := ShellExec('runas', 'netsh.exe',
+      'advfirewall firewall delete rule name=all program="' + InstalledExchangeExe + '"',
+      '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
+end;
+
+procedure RemoveExchangeFirewallRule;
+var
+  ResultCode: Integer;
+begin
+  { Component never installed: no rule was ever scoped to a program that is not here. }
+  if not FileExists(InstalledExchangeExe) then
+    exit;
+  if IsAdminInstallMode then
+  begin
+    { Already elevated: nothing to ask. A delete that matches no rule is a harmless no-op. }
+    Exec('netsh', 'advfirewall firewall delete rule name=all program="' + InstalledExchangeExe + '"',
+      '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
+    exit;
+  end;
+  { Per-user: netsh cannot delete without administrator rights. Ask only when a rule exists, and
+    say so before the UAC prompt, which never says what for. }
+  if not FirewallRuleExistsForProgram(InstalledExchangeExe) then
+    exit;
+  if UninstallSilent then
+  begin
+    { A silent uninstall (winget) must never raise a UAC prompt nobody is there to answer. }
+    Log('Media Exchange Server firewall rule left in place: a silent per-user uninstall cannot ask for administrator approval.');
+    exit;
+  end;
+  if SuppressibleMsgBox(ExchangeFirewallRemovalPromptText, mbConfirmation, MB_YESNO, IDYES) <> IDYES then
+  begin
+    Log('Media Exchange Server firewall rule left in place: the user chose to keep it.');
+    exit;
+  end;
+  if not RemoveExchangeFirewallRuleElevated then
+    Log('Media Exchange Server firewall rule left in place: administrator approval was not given or the helper failed.');
+end;
+#endif
 
 { Opt-in "run the SFTP server right after installation": launch the Share Manager
   (Companion) so the user can pick a folder and start serving. On a fresh install
@@ -1481,6 +1606,10 @@ begin
   { Remove the SFTP firewall rule this app may have added (no-op if absent). The
     consent marker is removed by the [UninstallDelete] entry. }
   RemoveServerFirewallRule;
+#ifndef NoExchange
+  { Likewise the Media Exchange Server's rule, when that component was installed. }
+  RemoveExchangeFirewallRule;
+#endif
 
   RemoveImageAssociation('.jpg', 'FastMediaSorter.jpg');
   RemoveImageAssociation('.jpeg', 'FastMediaSorter.jpeg');

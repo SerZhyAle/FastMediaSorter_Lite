@@ -1,4 +1,4 @@
-﻿<#
+<#
 .SYNOPSIS
     Builds the SERVER edition installer (setup.exe) - the always-on Folder Share
     Server, hosted by a Windows service. LOCAL flow ("сборка", not "релиз"): it never
@@ -14,9 +14,10 @@
 
     The staged payload is deliberately LEAN and unlike the User installer's: the Share
     Manager (self-contained .NET 10), the Go SFTP worker and the two elevated helper
-    scripts - no viewer, no VLC codecs, no OCR models. A machine whose job is to keep
-    folders reachable does not need an image sorter, and the difference is hundreds of
-    megabytes.
+    scripts - no VLC codecs, no OCR models. The viewer is an OPTIONAL, unticked component
+    (ticket 132; tools\Stage-ServerViewerPayload.ps1 stages it from the User stage of the
+    same version), so a machine whose job is to keep folders reachable installs no image
+    sorter unless asked, and the default package stays hundreds of megabytes smaller.
 
     The Server edition is a packaging and host-mode variant, NOT a fork: it ships the
     same worker binary, the same IPC schema and the same .fmscfg format as the User
@@ -35,6 +36,13 @@
     Use the published-release compression (lzma2/ultra, solid) - smallest file but
     several minutes slower. Off by default, like Build-Installer.ps1.
 
+.PARAMETER IncludeExchange
+    THE SHIPPING GATE of the exchange server (specification 133 section 8, ticket 141): off by
+    default. Off, the stage has no exchange\ folder and ISCC is called with /DNoExchange - the
+    optional `exchange` component and the `exchangeservice` task compile out. On, exchange\ is
+    staged (tools\Stage-ExchangePayload.ps1) from the User stage of the SAME version, else from
+    bin\Release\exchange, and the build throws when the binary or its sidecar is missing.
+
 .PARAMETER Open
     Reveal the finished installer in Explorer when done.
 
@@ -46,6 +54,7 @@ param(
     [string]$Version = (Get-Date -Format "yy.M.d.HHmm"),
     [switch]$SkipBuild,
     [switch]$MaxCompress,
+    [switch]$IncludeExchange,
     [switch]$Open
 )
 
@@ -146,10 +155,46 @@ if (-not (Test-Path (Join-Path $companionDest "fms-share-worker.exe"))) {
 }
 Write-Host "Bundled the SFTP worker -> companion\"
 
+# The OPTIONAL viewer component (ticket 132): staged from the User stage of THIS version, so the
+# viewer in the Server package is the one the same build produced. Absent stage = no component
+# (a warning, never a half-viewer); build.ps1 stages the User installer first, so a full local
+# build always has it. The shipping packagers pass -Require.
+& (Join-Path $PSScriptRoot "Stage-ServerViewerPayload.ps1") `
+    -UserStage (Join-Path $solutionDir ("stage\FastMediaSorter-" + $Version + "-windows-x64")) `
+    -Destination $stageDir
+
+# The exchange server (specification 133, ticket 141) - behind the shipping gate. The two
+# editions of one build carry the SAME binary, so it is taken from the User stage of this
+# version when that stage holds it, else from bin\Release\exchange (build.ps1 deploys it).
+# Stage-ExchangePayload.ps1 throws when the exe or its sidecar is missing: a Server setup that
+# claims the component without the binary is worse than a failed build.
+if ($IncludeExchange) {
+    $userExchange = Join-Path $solutionDir ("stage\FastMediaSorter-" + $Version + "-windows-x64\exchange")
+    $binExchange  = Join-Path $solutionDir "bin\Release\exchange"
+    if (Test-Path (Join-Path $userExchange "fms-exchange-server.exe")) {
+        $exchangeSource = $userExchange
+    } else {
+        $exchangeSource = $binExchange
+    }
+    Write-Host "Exchange server source: $exchangeSource"
+    & (Join-Path $PSScriptRoot "Stage-ExchangePayload.ps1") -Source $exchangeSource -Destination $stageDir -Server
+} else {
+    Write-Host "Exchange server: not included (shipping gate shut - pass -IncludeExchange once rung 2 has frozen the wire)."
+}
+
 # --- compile installer -------------------------------------------------------
 $stageAbs = (Resolve-Path $stageDir).Path
 $distAbs  = (Resolve-Path $distDir).Path
 $isccArgs = @("/DVersion=$Version", "/DSourceDir=$stageAbs", "/O$distAbs")
+# The gate, proven on the stage: the component compiles in exactly when the stage carries it.
+if ($IncludeExchange) {
+    if (-not (Test-Path (Join-Path $stageDir "exchange\fms-exchange-server.exe"))) {
+        throw "-IncludeExchange was given but the stage has no exchange\fms-exchange-server.exe."
+    }
+} else {
+    if (Test-Path (Join-Path $stageDir "exchange")) { throw "The stage carries an exchange\ folder but the shipping gate is shut (-IncludeExchange not given)." }
+    $isccArgs += "/DNoExchange"
+}
 if (-not $MaxCompress) {
     $isccArgs += "/DFastCompression"
     Write-Host "Compression: lzma2/fast (local build - pass -MaxCompress for the smaller ultra build)"

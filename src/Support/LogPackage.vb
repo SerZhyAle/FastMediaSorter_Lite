@@ -194,17 +194,35 @@ Public Module LogPackage
     End Function
 
     ''' <summary>Where each program writes its log: next to the exe, or the per-user fallback.</summary>
-    Private Function SiblingLogCandidates() As List(Of KeyValuePair(Of String, String()))
+    Friend Function SiblingLogCandidates() As List(Of KeyValuePair(Of String, String()))
         Dim exeDir As String = If(AppContext.BaseDirectory, "")
         Dim localAppData As String = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData)
+        Dim commonAppData As String = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData)
         Return New List(Of KeyValuePair(Of String, String())) From {
             New KeyValuePair(Of String, String())("current.log", {
                 Path.Combine(exeDir, "current.log"),
                 Path.Combine(localAppData, App_name, Second_App_Name, "logs", "current.log")}),
             New KeyValuePair(Of String, String())("companion.log", {
                 Path.Combine(exeDir, "companion.log"),
-                Path.Combine(localAppData, "FastMediaSorterCompanion", "companion.log")})
+                Path.Combine(localAppData, "FastMediaSorterCompanion", "companion.log")}),
+            New KeyValuePair(Of String, String())("exchange.log", ExchangeLogCandidates(commonAppData, localAppData))
         }
+    End Function
+
+    ''' <summary>
+    ''' Where the exchange server writes exchange.log (ticket 141 T-8): the machine store the service uses
+    ''' first - it wins whenever it exists, exactly as the server resolves its own data directory - then
+    ''' the per-user store of a console run. The server's log names sessions by hash only, so it is
+    ''' redacted by construction; the tail cap and the user-profile replacement apply on top, like for
+    ''' every other log. A data-directory override (the server's own FMS_EXCHANGE_DATA_DIR) comes first.
+    ''' </summary>
+    Friend Function ExchangeLogCandidates(commonAppData As String, localAppData As String) As String()
+        Dim list As New List(Of String)()
+        Dim overrideDir As String = Environment.GetEnvironmentVariable("FMS_EXCHANGE_DATA_DIR")
+        If Not String.IsNullOrWhiteSpace(overrideDir) Then list.Add(Path.Combine(overrideDir, "exchange.log"))
+        If Not String.IsNullOrEmpty(commonAppData) Then list.Add(Path.Combine(commonAppData, "FastMediaSorterExchange", "exchange.log"))
+        If Not String.IsNullOrEmpty(localAppData) Then list.Add(Path.Combine(localAppData, "FastMediaSorterExchange", "exchange.log"))
+        Return list.ToArray()
     End Function
 
     ''' <summary>What a bounded read of a live log produced: the bytes themselves, so every
@@ -484,13 +502,14 @@ Public Module LogPackage
         End Try
     End Function
 
-    Private Function ComponentPaths() As List(Of KeyValuePair(Of String, String))
+    Friend Function ComponentPaths() As List(Of KeyValuePair(Of String, String))
         Dim baseDir As String = AppContext.BaseDirectory
         Return New List(Of KeyValuePair(Of String, String))(New KeyValuePair(Of String, String)() {
             New KeyValuePair(Of String, String)("libvlc x64", Path.Combine(baseDir, "libvlc", "win-x64", "libvlc.dll")),
             New KeyValuePair(Of String, String)("libvlc x86", Path.Combine(baseDir, "libvlc", "win-x86", "libvlc.dll")),
             New KeyValuePair(Of String, String)("tesseract x64", Path.Combine(baseDir, "x64", "tesseract50.dll")),
-            New KeyValuePair(Of String, String)("share worker", Path.Combine(baseDir, "companion", "fms-share-worker.exe"))
+            New KeyValuePair(Of String, String)("share worker", Path.Combine(baseDir, "companion", "fms-share-worker.exe")),
+            New KeyValuePair(Of String, String)("exchange server", Path.Combine(baseDir, "exchange", "fms-exchange-server.exe"))
         })
     End Function
 
@@ -516,7 +535,7 @@ Public Module LogPackage
     ''' A setting added to the product later is therefore counted, not sent, until it
     ''' is added here on purpose.
     ''' </summary>
-    Private ReadOnly SafeSettingNames As New HashSet(Of String)(StringComparer.OrdinalIgnoreCase) From {
+    Friend ReadOnly SafeSettingNames As New HashSet(Of String)(StringComparer.OrdinalIgnoreCase) From {
         "AllowNewWindows", "AnimatedPerspective", "AnimatedPerspectiveSpeed", "AppHeight", "AppLeft", "AppTop",
         "AppWidth", "CopyMode", "DynamicPerspective", "ExifAutoRotate", "FirstRun", "HighQualityScaling",
         "IsVideoLoop", "LastCounter", "NoRequestBeforeFileOperation", "PicturePanelHeight", "PicturePanelLeft",
@@ -545,7 +564,9 @@ Public Module LogPackage
         "Share_AutostartEnabled", "Share_AutostartOffered", "Share_ExpandedSections", "Share_ExternalAccessIntent",
         "Share_LanOnlyExport", "Share_ListenPort", "Share_MaxConnections", "Share_OpenWindowOnStartup",
         "Share_ServerFeaturesEnabled", "Share_WindowHeight", "Share_WindowMaximized", "Share_WindowWidth",
-        "Share_WindowX", "Share_WindowY", "Share_WorkerEverStarted", "AppWindowState"
+        "Share_WindowX", "Share_WindowY", "Share_WorkerEverStarted", "AppWindowState",
+        "Exchange_ListenPort", "Exchange_KeepRunningOnExit", "Exchange_EverStarted",
+        "Share_ExchangeMode"
     }
 
     ''' <summary>"|"-joined path lists: the author learns how many, never which.</summary>

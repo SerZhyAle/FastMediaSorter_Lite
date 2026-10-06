@@ -1,0 +1,30 @@
+{
+  "_comment": "The third-party origins the published pages contact (SITE-EXPERIENCE rule 14, ticket 153). One record per host: what loads it, what it receives and which pages contact it - 'pages' and 'except' are -like patterns over the page paths relative to the site root. tools/Test-SiteOrigins.ps1 lists the origins of every published page and compares them with this file in both directions (a contacted origin that is not declared, a declared one nothing contacts, a page set that differs), then checks that docs/privacy.html (en, ru, ua blocks) and every locale of tools/trust-copy.json ('origins') name each host. A navigation link (<a href>) is not a contact: only a stylesheet, preconnect, script, image, frame, media element, fetch or XHR call, @import and url() are.",
+  "origins": [
+    {
+      "host": "fonts.googleapis.com",
+      "via": "stylesheet and preconnect link",
+      "purpose": "the Google Fonts stylesheet of the site's lettering",
+      "receives": "the visitor's IP address and the browser's user agent",
+      "pages": ["*"],
+      "except": ["docs/privacy.html", "docs/publish-folders-android.html", "assets/help/port-forward.html"]
+    },
+    {
+      "host": "fonts.gstatic.com",
+      "via": "preconnect link and the font files the stylesheet names",
+      "purpose": "the two font files (woff2) of the same lettering",
+      "receives": "the visitor's IP address and the browser's user agent",
+      "pages": ["*"],
+      "except": ["docs/privacy.html", "docs/publish-folders-android.html", "assets/help/port-forward.html"]
+    },
+    {
+      "host": "api.github.com",
+      "via": "one fetch of releases/latest",
+      "purpose": "the latest release, so the download link points at it",
+      "receives": "the visitor's IP address and the browser's user agent",
+      "pages": ["index.html", "lang/*/index.html"],
+      "except": []
+    }
+  ],
+  "forbidden": ["googlesyndication.com", "doubleclick.net", "google-analytics.com", "googletagmanager.com", "gtag", "plausible.io", "matomo", "hotjar.com", "clarity.ms", "facebook.net", "yandex.ru/metrika", "mc.yandex.ru"]
+}

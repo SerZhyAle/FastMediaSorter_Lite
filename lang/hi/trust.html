@@ -3,6 +3,17 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<script>
+(function(){try{
+  var t=localStorage.getItem('sza-theme');
+  if(t!=='dark'&&t!=='light')t=matchMedia('(prefers-color-scheme: light)').matches?'light':'dark';
+  document.documentElement.setAttribute('data-theme',t);
+  var l=localStorage.getItem('sza-lang');
+  if(l==='uk')l='ua';
+  if(l!=='ru'&&l!=='en'&&l!=='ua'){var n=(navigator.language||'en').toLowerCase();l=n.indexOf('ru')==0?'ru':n.indexOf('uk')==0?'ua':'en';}
+  document.documentElement.setAttribute('data-lang',l);
+}catch(e){}})();
+</script>
 <title>Windows इस डाउनलोड पर चेतावनी क्यों देता है</title>
 <meta name="description" content="Fast Media Sorter &amp; Sharing पर आने वाली SmartScreen चेतावनी का क्या मतलब है, वह क्यों दिखती है, ठीक किस पर क्लिक करना है, और प्रोग्राम कभी क्या नहीं करता।">
 <link rel="canonical" href="https://serzhyale.github.io/FastMediaSorter_Lite/lang/hi/trust.html">
@@ -39,17 +50,19 @@
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://serzhyale.github.io/FastMediaSorter_Lite/assets/sza-kit.css">
 <link rel="stylesheet" href="https://serzhyale.github.io/FastMediaSorter_Lite/assets/fms-site.css">
-<script>(function(){try{var t=localStorage.getItem('sza-theme');if(t==='light'||t==='dark'){document.documentElement.setAttribute('data-theme',t);}}catch(e){}})();</script>
 <script type="application/ld+json">{"@context":"https://schema.org","@type":"WebPage","headline":"Windows इस डाउनलोड पर चेतावनी क्यों देता है","description":"Fast Media Sorter & Sharing पर आने वाली SmartScreen चेतावनी का क्या मतलब है, वह क्यों दिखती है, ठीक किस पर क्लिक करना है, और प्रोग्राम कभी क्या नहीं करता।","url":"https://serzhyale.github.io/FastMediaSorter_Lite/lang/hi/trust.html","inLanguage":"hi","image":"https://serzhyale.github.io/FastMediaSorter_Lite/assets/social-preview-1280x640.png","isPartOf":{"@type":"WebSite","name":"Fast Media Sorter & Sharing for Windows","url":"https://serzhyale.github.io/FastMediaSorter_Lite/"},"author":{"@type":"Person","name":"SerZhyAle"}}</script>
 </head>
 <body>
+<a class="skip-link" href="#main">मुख्य सामग्री पर जाएँ</a>
 <header class="site-header">
+  <nav class="site-nav" aria-label="मुख्य नेविगेशन">
   <a class="brand" href="https://serzhyale.github.io/FastMediaSorter_Lite/lang/hi/" aria-label="Fast Media Sorter &amp; Sharing for Windows"><span class="brand-mark"><img src="https://serzhyale.github.io/FastMediaSorter_Lite/assets/icons/Fast_Media_Sorter.ico" alt="" width="24" height="24"></span>Fast Media Sorter &amp; Sharing for Windows</a>
   <button class="theme-btn" id="themeBtn" aria-label="Switch theme">◐</button>
   <a class="btn btn-ghost btn-sm" href="https://serzhyale.github.io/FastMediaSorter_Lite/lang/hi/">मुख्य पृष्ठ पर लौटें</a>
+  </nav>
 </header>
 
-<main class="container">
+<main class="container" id="main" tabindex="-1">
   <section class="hero">
     <h1>Windows इस डाउनलोड पर चेतावनी क्यों देता है</h1>
     <p class="lead">Fast Media Sorter &amp; Sharing for Windows एक मुफ़्त प्रोग्राम है, जिसे एक स्वतंत्र डेवलपर ने लिखा है। GitHub पर प्रकाशित बिल्ड, जिन्हें winget भी इंस्टॉल करता है, कोड-साइन नहीं हैं, इसलिए Windows उन्हें अतिरिक्त सावधानी से देखता है और आपको एक-दो चेतावनियाँ मिल सकती हैं। नीचे बताया गया है कि हर चेतावनी क्या है, क्यों दिखती है, ठीक किस पर क्लिक करना है, और प्रोग्राम कभी क्या नहीं करता।</p>
@@ -108,8 +121,9 @@
   </section>
 
   <p class="note">एक ही बाहरी सेवा से संपर्क हो सकता है, और वह भी केवल तब जब आप साझाकरण के लिए इंटरनेट पहुँच चालू करें: check-host.net से पूछा जाता है कि आपका फ़ॉरवर्ड किया पोर्ट बाहर से जवाब देता है या नहीं, जिससे उस सेवा को आपका सार्वजनिक पता और पोर्ट दिखता है। इसके अलावा उसे कुछ नहीं भेजा जाता। दो और चीज़ें आपके अपने नेटवर्क के भीतर ही रहती हैं: इंटरनेट पहुँच चालू होने पर प्रोग्राम आपके राउटर से साझाकरण पोर्ट फ़ॉरवर्ड करने को कहता है (UPnP या NAT-PMP), और साझाकरण चलते समय PC स्थानीय नेटवर्क में अपनी घोषणा करता है (mDNS), ताकि जोड़ा गया फ़ोन उसे फिर ढूँढ सके।</p>
+  <p class="note" id="site-origins">इस वेबसाइट का कोई पृष्ठ खोलने पर (प्रोग्राम चलाने पर नहीं) अधिकतम तीन बाहरी पतों से संपर्क होता है: fonts.googleapis.com और fonts.gstatic.com (Google Fonts, पृष्ठों के अक्षरों के लिए) और मुख्य पृष्ठ व उसके भाषा-संस्करणों पर api.github.com (GitHub, डाउनलोड लिंक के लिए नवीनतम रिलीज़ देखने हेतु)। हर एक को आपका IP पता और आपके ब्राउज़र का user agent मिलता है, और कुछ नहीं। विश्लेषण, टैग-मैनेजर या विज्ञापन के किसी पते से संपर्क नहीं किया जाता। गोपनीयता पृष्ठ भी यही कहता है।</p>
 
-  <div class="button-group" style="margin:2rem 0">
+  <div class="button-group button-group-spaced">
     <a class="btn btn-primary" href="https://github.com/SerZhyAle/FastMediaSorter_Lite/releases/latest">डाउनलोड</a>
     <a class="btn btn-ghost" href="https://serzhyale.github.io/FastMediaSorter_Lite/docs/privacy.html">गोपनीयता</a>
     <a class="btn btn-ghost" href="https://serzhyale.github.io/FastMediaSorter_Lite/lang/hi/">मुख्य पृष्ठ पर लौटें</a>
@@ -118,7 +132,7 @@
 </main>
 
 <footer class="site-footer"><div class="container">
-  <h2 class="sec-head" style="margin-bottom:1rem;font-size:1.1rem">More tools by SZA</h2>
+  <h2 class="sec-head sec-head-family">More tools by SZA</h2>
   <div class="tools-grid">
     <a href="https://serzhyale.github.io/FastMediaSorter_mob_v2/"><b>FastMediaSorter v2</b><span>Android media sorter</span></a>
     <a href="https://serzhyale.github.io/CyrFlip/"><b>CyrFlip</b><span>Windows layout fixer</span></a>

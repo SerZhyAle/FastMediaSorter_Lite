@@ -3,6 +3,17 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<script>
+(function(){try{
+  var t=localStorage.getItem('sza-theme');
+  if(t!=='dark'&&t!=='light')t=matchMedia('(prefers-color-scheme: light)').matches?'light':'dark';
+  document.documentElement.setAttribute('data-theme',t);
+  var l=localStorage.getItem('sza-lang');
+  if(l==='uk')l='ua';
+  if(l!=='ru'&&l!=='en'&&l!=='ua'){var n=(navigator.language||'en').toLowerCase();l=n.indexOf('ru')==0?'ru':n.indexOf('uk')==0?'ua':'en';}
+  document.documentElement.setAttribute('data-lang',l);
+}catch(e){}})();
+</script>
 <title>Publish folders for Android - Fast Media Sorter &amp; Sharing</title>
 <meta name="description" content="Share your PC folders with the Android app over your local network - or the internet. Step-by-step guide using the Share Manager companion app.">
 <link rel="canonical" href="https://serzhyale.github.io/FastMediaSorter_Lite/publish-folders-android.html">
@@ -41,28 +52,20 @@
   .warn{background:var(--card);border-left:3px solid var(--gold);padding:14px 18px;border-radius:0 var(--radius-sm) var(--radius-sm) 0}
   .contract-icon{width:1.1em;height:1.1em;vertical-align:-.18em;margin-right:.28em;fill:currentColor}
 </style>
-<script>
-(function(){try{
-  var t=localStorage.getItem('sza-theme')||(matchMedia('(prefers-color-scheme: light)').matches?'light':'dark');
-  document.documentElement.setAttribute('data-theme',t);
-  var l=localStorage.getItem('sza-lang'); if(l==='uk'){l='ua';}
-  if(!l || ['ru','en','ua'].indexOf(l)<0){var n=(navigator.language||'en').toLowerCase();l=n.indexOf('ru')==0?'ru':n.indexOf('uk')==0?'ua':'en';}
-  document.documentElement.setAttribute('data-lang',l);
-}catch(e){}})();
-</script>
 </head>
 <body>
+<a class="skip-link" href="#main"><span data-l="en">Skip to main content</span><span data-l="ru">Перейти к основному содержимому</span><span data-l="ua">Перейти до основного вмісту</span></a>
 <div class="bg-blobs" aria-hidden="true"><div class="blob blob-1"></div><div class="blob blob-2"></div><div class="blob blob-3"></div></div>
-<header class="site-header">
+<header class="site-header"><span id="site-nav-label" class="sr-only"><span data-l="en">Main navigation</span><span data-l="ru">Основная навигация</span><span data-l="ua">Основна навігація</span></span><nav class="site-nav" aria-labelledby="site-nav-label">
   <a class="brand" href="./" aria-label="Fast Media Sorter &amp; Sharing for Windows"><span class="brand-mark"><img src="assets/icons/Fast_Media_Sorter.ico" alt="" width="24" height="24"></span>Fast Media Sorter &amp; Sharing for Windows</a>
   <div class="seg" role="group" aria-label="Language">
     <button data-setlang="ru">RU</button><button data-setlang="en" aria-pressed="true">EN</button><button data-setlang="ua">UA</button>
   </div>
   <button class="theme-btn" id="themeBtn" aria-label="Switch theme">◐</button>
   <a class="btn btn-primary btn-sm" href="./#get"><span data-l="en">Download</span><span data-l="ru">Скачать</span><span data-l="ua">Завантажити</span></a>
-</header>
+</nav></header>
 
-<main class="container">
+<main class="container" id="main" tabindex="-1">
   <section class="hero">
     <span class="eyebrow"><span data-l="en">HOW TO · Android</span><span data-l="ru">HOW TO · Android</span><span data-l="ua">HOW TO · Android</span></span>
     <h1>
@@ -77,17 +80,17 @@
     </p>
   </section>
 
-  <div style="margin-bottom:1rem">
+  <div class="pill-row">
     <span class="pill" data-l="en">Windows PC + Android phone</span><span class="pill" data-l="ru">ПК Windows + телефон Android</span><span class="pill" data-l="ua">ПК Windows + телефон Android</span>
     <span class="pill" data-l="en">Same Wi-Fi = instant</span><span class="pill" data-l="ru">Одна Wi-Fi = сразу</span><span class="pill" data-l="ua">Одна Wi-Fi = одразу</span>
     <span class="pill" data-l="en">Read-only, private</span><span class="pill" data-l="ru">Только чтение, приватно</span><span class="pill" data-l="ua">Лише читання, приватно</span>
   </div>
 
   <!-- Android app CTA -->
-  <div class="card" style="display:flex;flex-wrap:wrap;gap:10px 18px;align-items:center;justify-content:space-between;margin-bottom:1.5rem">
+  <div class="card card-bar">
     <div>
       <b><img class="contract-icon" src="assets/glyphs/device.phone.svg" alt=""> <span data-l="en">Need the phone app?</span><span data-l="ru">Нужно приложение для телефона?</span><span data-l="ua">Потрібен застосунок для телефона?</span></b>
-      <span class="muted" style="display:block;margin-top:.2rem">
+      <span class="muted muted-block">
         <span data-l="en">The Android app is a free viewer/sorter that imports these shares.</span>
         <span data-l="ru">Приложение для Android - бесплатный просмотрщик/сортировщик, который импортирует эти папки.</span>
         <span data-l="ua">Застосунок для Android - безкоштовний переглядач/сортувальник, що імпортує ці папки.</span>
@@ -149,27 +152,27 @@
     </div>
     <div class="grid">
       <div class="card">
-        <h3 style="margin-top:0"><img class="contract-icon" src="assets/glyphs/system.wifi.svg" alt=""> <span data-l="en">Local network</span><span data-l="ru">Локальная сеть</span><span data-l="ua">Локальна мережа</span></h3>
+        <h3 class="flush-top"><img class="contract-icon" src="assets/glyphs/system.wifi.svg" alt=""> <span data-l="en">Local network</span><span data-l="ru">Локальная сеть</span><span data-l="ua">Локальна мережа</span></h3>
         <p><span data-l="en">When the phone is on the same Wi-Fi as the PC, it just works - nothing to configure. This is the default and the most private option.</span>
            <span data-l="ru">Когда телефон в той же Wi-Fi, что и ПК, всё работает сразу - настраивать нечего. Это вариант по умолчанию и самый приватный.</span>
            <span data-l="ua">Коли телефон у тій самій Wi-Fi, що й ПК, усе працює одразу - налаштовувати нічого. Це варіант за замовчуванням і найприватніший.</span></p>
       </div>
       <div class="card">
-        <h3 style="margin-top:0"><img class="contract-icon" src="assets/glyphs/system.internet.svg" alt=""> <span data-l="en">Internet</span><span data-l="ru">Интернет</span><span data-l="ua">Інтернет</span></h3>
+        <h3 class="flush-top"><img class="contract-icon" src="assets/glyphs/system.internet.svg" alt=""> <span data-l="en">Internet</span><span data-l="ru">Интернет</span><span data-l="ua">Інтернет</span></h3>
         <p><span data-l="en">When sharing starts, Share Manager tries to open the port automatically (UPnP) and then <b>checks from the outside whether it really answers</b>. The <b>Via internet</b> line shows the address honestly - or tells you it's behind CGNAT. If the port isn't open, use <b>How to set up internet access</b> for a per-router port-forward guide and <b>Test internet access</b> to verify. If your PC has <b>IPv6</b>, that address is added too and works even behind CGNAT.</span>
            <span data-l="ru">Когда раздача запускается, Share Manager пробует открыть порт автоматически (UPnP), а затем <b>проверяет снаружи, действительно ли он отвечает</b>. Строка <b>Через интернет</b> честно показывает адрес - или сообщает, что вы за CGNAT. Если порт не открыт, откройте <b>Как настроить доступ через интернет</b> - инструкцию проброса порта под ваш роутер, и <b>Проверить доступ из интернета</b> для проверки. Если у ПК есть <b>IPv6</b>, его адрес добавляется тоже и работает даже за CGNAT.</span>
            <span data-l="ua">Коли роздача запускається, Share Manager пробує відкрити порт автоматично (UPnP), а потім <b>перевіряє ззовні, чи він справді відповідає</b>. Рядок <b>Через інтернет</b> чесно показує адресу - або повідомляє, що ви за CGNAT. Якщо порт не відкрито, відкрийте <b>Як налаштувати доступ через інтернет</b> - інструкцію проброса порту під ваш роутер, і <b>Перевірити доступ з інтернету</b> для перевірки. Якщо ПК має <b>IPv6</b>, його адресу додано теж, і вона працює навіть за CGNAT.</span></p>
-        <p style="margin-bottom:0"><span data-l="en">Per-model, step-by-step port-forwarding guides: </span><span data-l="ru">Пошаговые инструкции проброса портов по моделям: </span><span data-l="ua">Покрокові інструкції проброса портів за моделями: </span>
+        <p class="flush-bottom"><span data-l="en">Per-model, step-by-step port-forwarding guides: </span><span data-l="ru">Пошаговые инструкции проброса портов по моделям: </span><span data-l="ua">Покрокові інструкції проброса портів за моделями: </span>
           <a href="https://portforward.com/router.htm" target="_blank" rel="noopener">portforward.com</a>.</p>
       </div>
       <div class="card">
-        <h3 style="margin-top:0"><img class="contract-icon" src="assets/glyphs/action.search.svg" alt=""> <span data-l="en">Finds your PC automatically</span><span data-l="ru">Находит ваш ПК сам</span><span data-l="ua">Знаходить ваш ПК сам</span></h3>
-        <p style="margin-bottom:0"><span data-l="en">On the same Wi-Fi the phone also discovers the PC by its host-key fingerprint. So even if the PC's local address changed since you scanned the code (a new lease, a reconnect), the phone reconnects on its own - no need to re-scan.</span>
+        <h3 class="flush-top"><img class="contract-icon" src="assets/glyphs/action.search.svg" alt=""> <span data-l="en">Finds your PC automatically</span><span data-l="ru">Находит ваш ПК сам</span><span data-l="ua">Знаходить ваш ПК сам</span></h3>
+        <p class="flush-bottom"><span data-l="en">On the same Wi-Fi the phone also discovers the PC by its host-key fingerprint. So even if the PC's local address changed since you scanned the code (a new lease, a reconnect), the phone reconnects on its own - no need to re-scan.</span>
            <span data-l="ru">В той же Wi-Fi телефон дополнительно находит ПК по отпечатку его ключа. Поэтому даже если локальный адрес ПК изменился после сканирования кода (новая аренда, переподключение), телефон переподключится сам - пересканировать не нужно.</span>
            <span data-l="ua">У тій самій Wi-Fi телефон додатково знаходить ПК за відбитком його ключа. Тож навіть якщо локальна адреса ПК змінилася після сканування коду (нова оренда, перепідключення), телефон перепідключиться сам - пересканувати не потрібно.</span></p>
       </div>
     </div>
-    <p class="lead-narrow" style="font-size:15px;margin-top:1rem">
+    <p class="lead-narrow lead-small">
       <span data-l="en">Manufacturer support:</span><span data-l="ru">Поддержка производителей:</span><span data-l="ua">Підтримка виробників:</span>
       <a href="https://www.tp-link.com/support/" target="_blank" rel="noopener">TP-Link</a> ·
       <a href="https://www.asus.com/support/" target="_blank" rel="noopener">ASUS</a> ·
@@ -188,7 +191,7 @@
       <h2 class="section-title"><span class="hash">#</span><span data-l="en">Keep it safe</span><span data-l="ru">Безопасность</span><span data-l="ua">Безпека</span></h2>
     </div>
     <div class="warn">
-      <ul style="margin:0">
+      <ul class="flush-list">
         <li><span data-l="en">The QR code and the <code>.fmscfg</code> file contain the auto-generated password. Treat them as secrets - do not post them publicly. (You can tick <b>Do not include the password in the file/QR</b> and pass it separately; whether the phone accepts a code without a password depends on the Android app version.) <b>Send by email..</b> warns the recipient in the message and leaves no copy of the file on the PC; a saved <code>.fmscfg</code> is readable by your Windows account only.</span>
             <span data-l="ru">QR-код и файл <code>.fmscfg</code> содержат автоматически созданный пароль. Считайте их секретом - не публикуйте. (Можно поставить галочку <b>Не включать пароль в файл/QR</b> и передать его отдельно; примет ли телефон код без пароля, зависит от версии Android-приложения.) <b>Отправить по почте..</b> предупреждает получателя в письме и не оставляет копию файла на компьютере; сохранённый <code>.fmscfg</code> доступен только вашей учётной записи Windows.</span>
             <span data-l="ua">QR-код і файл <code>.fmscfg</code> містять автоматично створений пароль. Вважайте їх секретом - не публікуйте. (Можна поставити галочку <b>Не включати пароль у файл/QR</b> і передати його окремо; чи прийме телефон код без пароля, залежить від версії Android-застосунку.) <b>Надіслати поштою..</b> попереджає одержувача в листі й не залишає копії файлу на комп'ютері; збережений <code>.fmscfg</code> доступний лише вашому обліковому запису Windows.</span></li>
@@ -208,7 +211,7 @@
       <h2 class="section-title"><span class="hash">#</span><span data-l="en">If the phone can't connect</span><span data-l="ru">Если телефон не подключается</span><span data-l="ua">Якщо телефон не підключається</span></h2>
     </div>
     <div class="card">
-      <ul style="margin:0">
+      <ul class="flush-list">
         <li><span data-l="en"><b>Same network?</b> The LAN path only works when the phone is on the same Wi-Fi as the PC.</span>
             <span data-l="ru"><b>Одна сеть?</b> Локальный путь работает только когда телефон в той же Wi-Fi, что и ПК.</span>
             <span data-l="ua"><b>Одна мережа?</b> Локальний шлях працює лише коли телефон у тій самій Wi-Fi, що й ПК.</span></li>

@@ -2,6 +2,17 @@
 <html lang="en" data-theme="dark" data-lang="en">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<script>
+(function(){try{
+  var t=localStorage.getItem('sza-theme');
+  if(t!=='dark'&&t!=='light')t=matchMedia('(prefers-color-scheme: light)').matches?'light':'dark';
+  document.documentElement.setAttribute('data-theme',t);
+  var l=localStorage.getItem('sza-lang');
+  if(l==='uk')l='ua';
+  if(l!=='ru'&&l!=='en'&&l!=='ua'){var n=(navigator.language||'en').toLowerCase();l=n.indexOf('ru')==0?'ru':n.indexOf('uk')==0?'ua':'en';}
+  document.documentElement.setAttribute('data-lang',l);
+}catch(e){}})();
+</script>
 <title>Share FileDO .fdd Disks | Fast Media Sorter &amp; Sharing</title>
 <meta name="description" content="How to share FileDO .fdd virtual disks to paired phones over SFTP with Fast Media Sorter &amp; Sharing for Windows, setup, autostart and troubleshooting.">
 <link rel="canonical" href="https://serzhyale.github.io/FastMediaSorter_Lite/how-to-filedo-disks.html">
@@ -30,8 +41,8 @@ html[data-lang="en"] [data-l]:not([data-l="en"]){display:none}
 html[data-lang="ua"] [data-l]:not([data-l="ua"]){display:none}
 .site-header>.brand{margin-right:auto}
 .hero{text-align:left;padding:1.5rem 0 .8rem}
-.hero h1{max-width:880px}
-.hero .lead{margin:0;max-width:800px}
+
+.hero .lead{margin:0}
 .steps{counter-reset:step;display:grid;gap:1rem}
 .step{position:relative;padding:1.2rem 1.3rem 1.2rem 4rem;background:var(--card);border:1px solid var(--border);border-radius:var(--radius)}
 .step:before{counter-increment:step;content:counter(step);position:absolute;left:1.15rem;top:1.15rem;width:2rem;height:2rem;display:grid;place-items:center;border-radius:50%;background:var(--acc);color:var(--acc-ink);font-family:var(--font-heading);font-weight:800}
@@ -46,19 +57,19 @@ html[data-lang="ua"] [data-l]:not([data-l="ua"]){display:none}
 .card-box{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:1.2rem}
 .card-box h3{font-size:1.08rem;margin:0 0 .4rem}
 .card-box p{color:var(--text-2);margin:0;font-size:.94rem}
-.site-footer .container{max-width:min(1760px,94vw)}
+
 </style>
-<script>(function(){try{var t=localStorage.getItem('sza-theme')||(matchMedia('(prefers-color-scheme: light)').matches?'light':'dark');document.documentElement.setAttribute('data-theme',t);var l=localStorage.getItem('sza-lang');if(l==='uk'){l='ua';}if(!l||['ru','en','ua'].indexOf(l)<0){var n=(navigator.language||'en').toLowerCase();l=n.indexOf('ru')==0?'ru':n.indexOf('uk')==0?'ua':'en';}document.documentElement.setAttribute('data-lang',l);}catch(e){}})();</script>
 </head>
-<body><div class="bg-blobs" aria-hidden="true"><div class="blob blob-1"></div><div class="blob blob-2"></div><div class="blob blob-3"></div></div>
-<header class="site-header">
+<body>
+<a class="skip-link" href="#main"><span data-l="en">Skip to main content</span><span data-l="ru">Перейти к основному содержимому</span><span data-l="ua">Перейти до основного вмісту</span></a><div class="bg-blobs" aria-hidden="true"><div class="blob blob-1"></div><div class="blob blob-2"></div><div class="blob blob-3"></div></div>
+<header class="site-header"><span id="site-nav-label" class="sr-only"><span data-l="en">Main navigation</span><span data-l="ru">Основная навигация</span><span data-l="ua">Основна навігація</span></span><nav class="site-nav" aria-labelledby="site-nav-label">
 <a class="brand" href="./" aria-label="Fast Media Sorter &amp; Sharing for Windows">Fast Media Sorter &amp; Sharing for Windows<span class="dot">.</span></a>
 <div class="seg" role="group" aria-label="Language"><button data-setlang="ru">RU</button><button data-setlang="en">EN</button><button data-setlang="ua">UA</button></div>
 <button class="theme-btn" id="themeBtn" aria-label="Switch theme">◐</button>
 <a class="btn btn-primary btn-sm" href="./#get"><span data-l="en">Download</span><span data-l="ru">Скачать</span><span data-l="ua">Завантажити</span></a>
-</header>
+</nav></header>
 
-<main class="container">
+<main class="container" id="main" tabindex="-1">
 <section class="hero">
 <span class="kicker"><span data-l="en">HOW TO · FILEDO DISK SHARING</span><span data-l="ru">ИНСТРУКЦИЯ · ДИСКИ FILEDO</span><span data-l="ua">ПОСІБНИК · ДИСКИ FILEDO</span></span>
 <h1>
@@ -198,5 +209,5 @@ html[data-lang="ua"] [data-l]:not([data-l="ua"]){display:none}
 <span><a href="./">Fast Media Sorter &amp; Sharing for Windows</a> · <a href="how-to-sftp.html">SFTP HOW TO</a> · <a href="publish-folders-android.html"><span data-l="en">Detailed Android guide</span><span data-l="ru">Подробная инструкция для Android</span><span data-l="ua">Детальний посібник для Android</span></a></span>
 <span>© 2026 Serhii Zhyhunenko · <a href="mailto:sza@ukr.net">sza@ukr.net</a></span>
 </div></div></footer>
-<script>(function(){var d=document.documentElement;function lang(v){d.dataset.lang=v;document.querySelectorAll('[data-setlang]').forEach(function(b){b.setAttribute('aria-pressed',String(b.dataset.setlang===v))});try{localStorage.setItem('sza-lang',v)}catch(e){}}document.querySelectorAll('[data-setlang]').forEach(function(b){b.onclick=function(){lang(b.dataset.setlang)}});lang(d.dataset.lang==='ru'?'ru':d.dataset.lang==='ua'?'ua':'en');document.getElementById('themeBtn').onclick=function(){var v=d.dataset.theme==='light'?'dark':'light';d.dataset.theme=v;try{localStorage.setItem('sza-theme',v)}catch(e){}}})();</script>
+<script>(function(){var d=document.documentElement;function lang(v){d.dataset.lang=v;d.lang=v==='ua'?'uk':v;document.querySelectorAll('[data-setlang]').forEach(function(b){b.setAttribute('aria-pressed',String(b.dataset.setlang===v))});try{localStorage.setItem('sza-lang',v)}catch(e){}}document.querySelectorAll('[data-setlang]').forEach(function(b){b.onclick=function(){lang(b.dataset.setlang)}});lang(d.dataset.lang==='ru'?'ru':d.dataset.lang==='ua'?'ua':'en');document.getElementById('themeBtn').onclick=function(){var v=d.dataset.theme==='light'?'dark':'light';d.dataset.theme=v;try{localStorage.setItem('sza-theme',v)}catch(e){}}})();</script>
 </body></html>

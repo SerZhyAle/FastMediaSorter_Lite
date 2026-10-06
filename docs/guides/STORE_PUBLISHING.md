@@ -235,7 +235,7 @@ email (1-3 business days).
 ```
 Sort thousands of photos and videos in minutes - and share them with your phone. Fast Media Sorter &
 Sharing for Windows is a fast, keyboard-driven viewer and sorter for images and video, with a bundled
-Share Manager that shares the folders you pick.
+Share Manager that can also share the folders you pick - optional, off until you switch it on.
 
 Open a folder and fly through it: full-screen slideshow, quick panel navigation, and one-key Move /
 Copy / Rename / Delete. Assign folders to hotkeys and file each item with a single press - or turn on
@@ -269,8 +269,9 @@ Share folders with your phone: the bundled Share Manager turns this PC
 into a private SFTP server for folders you pick, so the Android app can browse them -
 on your home Wi-Fi or over the internet - after a one-time QR pairing. Sharing is strictly opt-in and
 stays between your own devices; nothing is uploaded to any third party. Sharing runs while you are
-signed in. A separate always-on Server edition, which hosts the same sharing as a Windows service, is
-not part of the Store version - it is available from the project website and winget.
+signed in. The same program family also has an always-on Server edition, which hosts the same sharing
+as a Windows service, and FileDO virtual-disk hosting; neither is part of the Store version - both
+are available from the project website and winget.
 
 Optional on-image OCR translation recognizes text in a picture (fully offline, Tesseract) and overlays
 a translation using a provider you configure yourself - a local Ollama model or a LibreTranslate
@@ -285,7 +286,8 @@ On the Microsoft Store this app is published as "FastMediaSorter LITE".
 ```
 Разберите тысячи фото и видео за минуты - и делитесь ими с телефоном. Fast Media Sorter & Sharing for
 Windows - быстрый просмотрщик и сортировщик изображений и видео, управляемый с клавиатуры, со
-встроенным Share Manager, который раздаёт выбранные вами папки.
+встроенным Share Manager, который может ещё и раздавать выбранные вами папки - по желанию,
+выключено, пока вы не включите.
 
 Откройте папку и листайте её мгновенно: полноэкранное слайд-шоу, быстрая навигация по панели и
 перемещение / копирование / переименование / удаление одной клавишей. Назначьте папки на горячие
@@ -322,9 +324,10 @@ Internet Explorer больше нет, и теперь с полноценной
 ПК в частный SFTP-сервер для выбранных вами папок, чтобы Android-приложение
 открывало их - в домашней сети Wi-Fi или через интернет - после однократного подключения по QR-коду.
 Раздача включается только по вашему желанию и остаётся между вашими устройствами; никуда на сторону
-ничего не выгружается. Раздача работает, пока вы вошли в систему. Отдельная серверная редакция,
-которая поднимает ту же раздачу как службу Windows, в версию из Store не входит - она доступна на
-сайте проекта и через winget.
+ничего не выгружается. Раздача работает, пока вы вошли в систему. У того же семейства программ есть
+ещё серверная редакция, которая поднимает ту же раздачу как службу Windows, и хостинг виртуальных
+дисков FileDO; ни то ни другое в версию из Store не входит - всё это доступно на сайте проекта и
+через winget.
 
 Необязательный перевод текста прямо на картинке: распознавание полностью офлайн (Tesseract) и
 наложение перевода через выбранного вами провайдера - локальную модель Ollama или сервер

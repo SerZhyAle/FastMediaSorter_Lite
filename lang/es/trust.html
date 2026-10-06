@@ -3,6 +3,17 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<script>
+(function(){try{
+  var t=localStorage.getItem('sza-theme');
+  if(t!=='dark'&&t!=='light')t=matchMedia('(prefers-color-scheme: light)').matches?'light':'dark';
+  document.documentElement.setAttribute('data-theme',t);
+  var l=localStorage.getItem('sza-lang');
+  if(l==='uk')l='ua';
+  if(l!=='ru'&&l!=='en'&&l!=='ua'){var n=(navigator.language||'en').toLowerCase();l=n.indexOf('ru')==0?'ru':n.indexOf('uk')==0?'ua':'en';}
+  document.documentElement.setAttribute('data-lang',l);
+}catch(e){}})();
+</script>
 <title>Por qué Windows advierte sobre esta descarga</title>
 <meta name="description" content="Qué significa el aviso de SmartScreen en Fast Media Sorter &amp; Sharing, por qué aparece, en qué hay que hacer clic exactamente y qué no hace nunca el programa.">
 <link rel="canonical" href="https://serzhyale.github.io/FastMediaSorter_Lite/lang/es/trust.html">
@@ -39,17 +50,19 @@
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://serzhyale.github.io/FastMediaSorter_Lite/assets/sza-kit.css">
 <link rel="stylesheet" href="https://serzhyale.github.io/FastMediaSorter_Lite/assets/fms-site.css">
-<script>(function(){try{var t=localStorage.getItem('sza-theme');if(t==='light'||t==='dark'){document.documentElement.setAttribute('data-theme',t);}}catch(e){}})();</script>
 <script type="application/ld+json">{"@context":"https://schema.org","@type":"WebPage","headline":"Por qué Windows advierte sobre esta descarga","description":"Qué significa el aviso de SmartScreen en Fast Media Sorter & Sharing, por qué aparece, en qué hay que hacer clic exactamente y qué no hace nunca el programa.","url":"https://serzhyale.github.io/FastMediaSorter_Lite/lang/es/trust.html","inLanguage":"es","image":"https://serzhyale.github.io/FastMediaSorter_Lite/assets/social-preview-1280x640.png","isPartOf":{"@type":"WebSite","name":"Fast Media Sorter & Sharing for Windows","url":"https://serzhyale.github.io/FastMediaSorter_Lite/"},"author":{"@type":"Person","name":"SerZhyAle"}}</script>
 </head>
 <body>
+<a class="skip-link" href="#main">Saltar al contenido principal</a>
 <header class="site-header">
+  <nav class="site-nav" aria-label="Navegación principal">
   <a class="brand" href="https://serzhyale.github.io/FastMediaSorter_Lite/lang/es/" aria-label="Fast Media Sorter &amp; Sharing for Windows"><span class="brand-mark"><img src="https://serzhyale.github.io/FastMediaSorter_Lite/assets/icons/Fast_Media_Sorter.ico" alt="" width="24" height="24"></span>Fast Media Sorter &amp; Sharing for Windows</a>
   <button class="theme-btn" id="themeBtn" aria-label="Switch theme">◐</button>
   <a class="btn btn-ghost btn-sm" href="https://serzhyale.github.io/FastMediaSorter_Lite/lang/es/">Volver a la página principal</a>
+  </nav>
 </header>
 
-<main class="container">
+<main class="container" id="main" tabindex="-1">
   <section class="hero">
     <h1>Por qué Windows advierte sobre esta descarga</h1>
     <p class="lead">Fast Media Sorter &amp; Sharing for Windows es un programa gratuito escrito por un único desarrollador independiente. Las compilaciones publicadas en GitHub, las mismas que instala winget, no están firmadas, así que Windows las trata con especial cautela y es posible que veas uno o dos avisos. A continuación: qué es cada uno, por qué aparece, en qué hacer clic exactamente y qué no hace nunca el programa.</p>
@@ -108,8 +121,9 @@
   </section>
 
   <p class="note">Se puede contactar con un único servicio de terceros, y solo si activas el acceso desde internet para la compartición: se pide a check-host.net que confirme que tu puerto reenviado responde desde fuera, lo que muestra a ese servicio tu dirección pública y el puerto. No se le envía nada más. Otras dos cosas no salen de tu propia red: con el acceso desde internet activado, el programa pide a tu router que reenvíe el puerto de compartición (UPnP o NAT-PMP), y mientras la compartición funciona, el PC se anuncia en la red local (mDNS) para que un teléfono emparejado pueda volver a encontrarlo.</p>
+  <p class="note" id="site-origins">Abrir una página de este sitio web (a diferencia de usar el programa) contacta con un máximo de tres direcciones externas: fonts.googleapis.com y fonts.gstatic.com (Google Fonts, para la tipografía de las páginas) y, en la página de inicio y sus versiones en otros idiomas, api.github.com (GitHub, para consultar la última versión del enlace de descarga). Cada una recibe tu dirección IP y el user agent de tu navegador, y nada más. No se contacta con ninguna dirección de analítica, gestor de etiquetas o publicidad. La página de privacidad dice lo mismo.</p>
 
-  <div class="button-group" style="margin:2rem 0">
+  <div class="button-group button-group-spaced">
     <a class="btn btn-primary" href="https://github.com/SerZhyAle/FastMediaSorter_Lite/releases/latest">Descargas</a>
     <a class="btn btn-ghost" href="https://serzhyale.github.io/FastMediaSorter_Lite/docs/privacy.html">Privacidad</a>
     <a class="btn btn-ghost" href="https://serzhyale.github.io/FastMediaSorter_Lite/lang/es/">Volver a la página principal</a>
@@ -118,7 +132,7 @@
 </main>
 
 <footer class="site-footer"><div class="container">
-  <h2 class="sec-head" style="margin-bottom:1rem;font-size:1.1rem">More tools by SZA</h2>
+  <h2 class="sec-head sec-head-family">More tools by SZA</h2>
   <div class="tools-grid">
     <a href="https://serzhyale.github.io/FastMediaSorter_mob_v2/"><b>FastMediaSorter v2</b><span>Android media sorter</span></a>
     <a href="https://serzhyale.github.io/CyrFlip/"><b>CyrFlip</b><span>Windows layout fixer</span></a>

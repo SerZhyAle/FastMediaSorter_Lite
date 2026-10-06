@@ -58,4 +58,12 @@ Friend Module ProductNames
     ''' Programs entry and winget PackageName are frozen once published and are not read from here.</summary>
     Public Const ServerEdition As String = Compact & ": Folder Share Server"
 
+    ''' <summary>The exchange server's visible name (tickets 133, 142; PRODUCT_NAMING.md section 1). Never
+    ''' shortened by dropping its first word, which would read as Microsoft's product; not translated and Latin
+    ''' in every language - only the role description around it (Russian: "сервер обмена") translates. A
+    ''' caption cites this constant or a placeholder (<c>TF("... {0} ...", ProductNames.ExchangeServer)</c>),
+    ''' never a literal. Its frozen anchors (exe, data folder, service name) are listed in section 2 of
+    ''' the naming table and are not read from here.</summary>
+    Public Const ExchangeServer As String = "Media Exchange Server"
+
 End Module

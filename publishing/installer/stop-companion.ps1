@@ -25,6 +25,14 @@
 # install does not need it down. Sending it StopServer over the pipe used to switch the
 # always-on share off until the next reboot, while the service itself kept "running".
 #
+# The optional Media Exchange Server (fms-exchange-server.exe, specification 133, ticket 141) is
+# stopped too, under two rules that make it safe to share this one mechanism (never an
+# AppMutex): only a copy that RUNS FROM <AppDir>\exchange\ - with no installation known it is
+# left alone, because killing by name could take down another installation's server - and never
+# the process of a Windows service. The Server edition's service (FastMediaSorterExchangeServer)
+# is stopped by its own helper verb or by the next repair, not killed here: the configured
+# recovery action would restart it at once and the abrupt exit skips its clean shutdown.
+#
 # Never throws and always exits 0 - a hiccup here must not fail the whole install.
 param(
     # The installation whose files are about to be replaced or removed. When it is known
@@ -128,5 +136,21 @@ Stop-Quiet "FastMediaSorterCompanion" $false
 #    service's own, which holds nothing of the folder being replaced.
 Stop-Quiet "fms-share-worker" $serviceStillUp
 Start-Sleep -Milliseconds 300
+
+# 4. The exchange server, when one of THIS installation's own is running (a console instance the
+#    Share Manager started). Never a service instance - see the header.
+$exchangeServiceName = "FastMediaSorterExchangeServer"
+$exchangeServicePid = 0
+$exchangeSvc = Get-CimInstance -ClassName Win32_Service -Filter "Name='$exchangeServiceName'" -ErrorAction SilentlyContinue
+if ($exchangeSvc -and $exchangeSvc.ProcessId) { $exchangeServicePid = [int]$exchangeSvc.ProcessId }
+if ($appRoot) {
+    $exchangeRoot = $appRoot + 'exchange\'
+    Get-Process -Name "fms-exchange-server" -ErrorAction SilentlyContinue | ForEach-Object {
+        if ($exchangeServicePid -ne 0 -and $_.Id -eq $exchangeServicePid) { return }
+        $path = Get-ProcessPath $_
+        if (-not $path -or -not $path.StartsWith($exchangeRoot, [StringComparison]::OrdinalIgnoreCase)) { return }
+        try { $_.Kill(); [void]$_.WaitForExit(3000) } catch { }
+    }
+}
 
 exit 0

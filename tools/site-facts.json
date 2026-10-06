@@ -1,0 +1,194 @@
+{
+  "_about": "The machine form of docs/guides/POSITIONING.md, the one positioning source of this repository (SITE-REPRESENTATION rules 1 to 4, ticket 155). Read by tools/Test-SitePositioning.ps1; nothing at run time reads it. 'positioning' holds the family sentence and the pillars in order; 'surfaces' names, per file, the region that lists the pillars ('scopes': regular expressions, the region is the named group 'region' when there is one, else the whole match) and per pillar a regular expression that finds its words in that file's language - the gate fails when a region is not found, when a pillar the surface must name (the first 'names' pillars) is absent, or when one pillar's words come after the next pillar's. 'editions' declares what a visitor can obtain, with the one display name each (owned by docs/guides/PRODUCT_NAMING.md); 'reservations' declares the one non-public variant the pages may name and where. 'facts' types the language count and the platform floor once; the gate reads their real sources and compares every typed claim in the scanned files with them. A change of the order or of a value is a change of POSITIONING.md and of this file first, then of every surface.",
+  "positioning": {
+    "source": "docs/guides/POSITIONING.md",
+    "lead": "View and sort your media; when you need it, the same program is also a folder-share server and a host for FileDO virtual disks - each of those ships optional, off until you ask for it.",
+    "pillars": [
+      { "id": "viewer", "title": "View and sort",          "says": "The viewer and sorter: fast paging through huge folders, one key per file, slideshow, playback." },
+      { "id": "share",  "title": "Share folders",          "says": "The folder-share server (Share Manager and SFTP worker): the folders you pick open on an Android phone or any SFTP client. Optional, off until switched on." },
+      { "id": "disks",  "title": "FileDO virtual disks",   "says": "Hosting FileDO .fdd virtual disks through the same worker. Optional, off until a disk is registered." }
+    ],
+    "storePolicyExceptions": []
+  },
+  "editions": [
+    {
+      "id": "full", "public": true,
+      "name": "Fast Media Sorter & Sharing for Windows",
+      "obtainedAs": ["User installer", "portable ZIP", "winget", "Microsoft Store"],
+      "leads": "viewer"
+    },
+    {
+      "id": "server", "public": true,
+      "name": "Fast Media Sorter & Sharing: Folder Share Server",
+      "nameSuffix": "Folder Share Server",
+      "obtainedAs": ["Server installer", "winget (SerZhyAle.FastMediaSorter.Server)"],
+      "leads": "share"
+    }
+  ],
+  "focusedEditions": [
+    {
+      "id": "server",
+      "reason": "The Server edition is a focused package: the server leads and the viewer rides along as an unticked component (specification 132 section 3.3). Its page repeats the family sentence, which is judged; its own lead and its winget manifest are not a list of what the product does.",
+      "notJudged": ["publishing/winget/server/SerZhyAle.FastMediaSorter.Server.locale.en-US.yaml"]
+    }
+  ],
+  "reservations": [
+    {
+      "id": "exchange",
+      "name": "Media Exchange Server",
+      "public": false,
+      "decided": "2026-10-06",
+      "decision": "Q155-2: kept as the family-map reservation (door 3), one future-tense sentence marked planned; no download, no date, no capability list.",
+      "ground": "specification 132 section 3.2",
+      "mentionPattern": "Media Exchange",
+      "surfaces": [
+        { "file": "index.html", "scope": "(?s)<article class=\"card scenario-card\" id=\"door-3\">.*?</article>", "marker": "pill gold" },
+        { "files": ["lang/ar/index.html", "lang/bn/index.html", "lang/de/index.html", "lang/es/index.html", "lang/fr/index.html", "lang/hi/index.html", "lang/it/index.html", "lang/pt/index.html", "lang/ru/index.html", "lang/uk/index.html", "lang/ur/index.html", "lang/zh/index.html"],
+          "scope": "(?s)<article class=\"card scenario-card\" id=\"door-3\">.*?</article>", "marker": "pill gold" },
+        { "file": "README.md",    "scope": "(?m)^\\| \\*\\*Media Exchange Server\\*\\*.*$" },
+        { "file": "README_RU.md", "scope": "(?m)^\\| \\*\\*Media Exchange Server\\*\\*.*$" },
+        { "file": "README_UK.md", "scope": "(?m)^\\| \\*\\*Media Exchange Server\\*\\*.*$" }
+      ],
+      "scan": ["*.html", "lang/*/*.html", "docs/*.html", "assets/help/*.html", "README.md", "README_RU.md", "README_UK.md", "publishing/store/listingData.csv", "publishing/store/LOCALES.md", "publishing/winget/*.yaml", "publishing/winget/server/*.yaml"]
+    }
+  ],
+  "facts": {
+    "sources": {
+      "localization": "src/Localization/Localization.vb",
+      "siteCopy": "tools/site-copy.json",
+      "installer": "publishing/installer/FastMediaSorter.iss",
+      "serverInstaller": "publishing/installer/FastMediaSorterServer.iss",
+      "serverWinget": "publishing/winget/server/SerZhyAle.FastMediaSorter.Server.installer.yaml",
+      "msix": "publishing/msix/AppxManifest.xml",
+      "naming": "docs/guides/PRODUCT_NAMING.md"
+    },
+    "windows10Releases": { "1607": 14393, "1809": 17763 },
+    "languages": {
+      "count": 13,
+      "codes": ["ru", "en", "uk", "de", "it", "es", "fr", "pt", "ar", "hi", "bn", "ur", "zh"],
+      "fallbackCount": 2,
+      "translatedPages": 12,
+      "translatedPagesNote": "Pages in the languages other than the English root: count - 1, counted from lang/<code>/index.html. A page may say twelve language pages or the other twelve languages; it may not say twelve languages about the interface.",
+      "fallbackNote": "The x86/net48 fallback viewer ships Russian and English only (Localization.Codes under NETFRAMEWORK); a page may say 2 languages only about it."
+    },
+    "platform": {
+      "program": { "os": "Windows 10", "version": "1607", "build": 14393, "note": "UseModernExe and the Share/FileDO/PDF/exchange component MinVersion of the User installer, MinVersion of the Server installer, MinimumOSVersion of the Server winget manifest." },
+      "store": { "os": "Windows 10", "version": "1809", "build": 17763, "note": "TargetDeviceFamily MinVersion of the MSIX manifest - a Store-package floor, the one other version a page may name." },
+      "fallback": "Windows 7/8.1 and 32-bit Windows run the x86 fallback viewer only.",
+      "schemaOperatingSystem": "Windows 7, Windows 8.1, Windows 10, Windows 11"
+    },
+    "scan": ["*.html", "lang/*/*.html", "docs/*.html", "assets/help/*.html", "README.md", "README_RU.md", "README_UK.md", "publishing/store/listingData.csv", "publishing/store/LOCALES.md", "publishing/winget/*.yaml", "publishing/winget/server/*.yaml", "publishing/msix/README.md", "docs/guides/STORE_PUBLISHING.md", "exchange-server/package/README.txt", "tools/site-copy.json", "tools/trust-copy.json"]
+  },
+  "surfaces": [
+    {
+      "file": "index.html", "names": 3, "why": "landing, meta description",
+      "scopes": ["name=\"description\" content=\"(?<region>[^\"]*)\""],
+      "anchors": { "viewer": "Sort photo and video folders", "share": "folder sharing to Android", "disks": "FileDO disks" }
+    },
+    {
+      "file": "index.html", "names": 3, "why": "landing, the family sentence (en)",
+      "scopes": ["(?s)<p class=\"lead lead-narrow family\">\\s*<span data-l=\"en\">(?<region>.*?)</span>"],
+      "anchors": { "viewer": "View and sort", "share": "folder-share server", "disks": "FileDO virtual disks" }
+    },
+    {
+      "file": "index.html", "names": 3, "why": "landing, the family sentence (ru)",
+      "scopes": ["(?s)<p class=\"lead lead-narrow family\">.*?<span data-l=\"ru\">(?<region>.*?)</span>"],
+      "anchors": { "viewer": "Просматривайте", "share": "сервер раздачи", "disks": "дисков FileDO" }
+    },
+    {
+      "file": "index.html", "names": 3, "why": "landing, the family sentence (uk)",
+      "scopes": ["(?s)<p class=\"lead lead-narrow family\">.*?<span data-l=\"ua\">(?<region>.*?)</span>"],
+      "anchors": { "viewer": "Переглядайте", "share": "сервер роздачі", "disks": "дисків FileDO" }
+    },
+    {
+      "files": ["index.html", "lang/ar/index.html", "lang/bn/index.html", "lang/de/index.html", "lang/es/index.html", "lang/fr/index.html", "lang/hi/index.html", "lang/it/index.html", "lang/pt/index.html", "lang/ru/index.html", "lang/uk/index.html", "lang/ur/index.html", "lang/zh/index.html"],
+      "names": 2, "why": "landing and its locale pages, the doors: viewer first, share second (door 3 is the reservation)",
+      "scopes": ["(?s)id=\"doors\".*?</section>"],
+      "anchors": { "viewer": "id=\"door-1\"", "share": "id=\"door-2\"" }
+    },
+    { "file": "lang/de/index.html", "names": 3, "why": "locale page, the family sentence", "scopes": ["(?s)<p class=\"lead lead-narrow\">(?<region>.*?)</p>"],
+      "anchors": { "viewer": "ansehen und sortieren", "share": "Ordner-Freigabeserver", "disks": "virtuelle FileDO-Laufwerke" } },
+    { "file": "lang/it/index.html", "names": 3, "why": "locale page, the family sentence", "scopes": ["(?s)<p class=\"lead lead-narrow\">(?<region>.*?)</p>"],
+      "anchors": { "viewer": "Visualizza e ordina", "share": "server di condivisione cartelle", "disks": "dischi virtuali FileDO" } },
+    { "file": "lang/es/index.html", "names": 3, "why": "locale page, the family sentence", "scopes": ["(?s)<p class=\"lead lead-narrow\">(?<region>.*?)</p>"],
+      "anchors": { "viewer": "Mira y ordena", "share": "servidor para compartir carpetas", "disks": "discos virtuales FileDO" } },
+    { "file": "lang/fr/index.html", "names": 3, "why": "locale page, the family sentence", "scopes": ["(?s)<p class=\"lead lead-narrow\">(?<region>.*?)</p>"],
+      "anchors": { "viewer": "Affichez et triez", "share": "serveur de partage de dossiers", "disks": "disques virtuels FileDO" } },
+    { "file": "lang/pt/index.html", "names": 3, "why": "locale page, the family sentence", "scopes": ["(?s)<p class=\"lead lead-narrow\">(?<region>.*?)</p>"],
+      "anchors": { "viewer": "Veja e organize", "share": "servidor de partilha de pastas", "disks": "discos virtuais FileDO" } },
+    { "file": "lang/ru/index.html", "names": 3, "why": "locale page, the family sentence", "scopes": ["(?s)<p class=\"lead lead-narrow\">(?<region>.*?)</p>"],
+      "anchors": { "viewer": "Просматривайте и сортируйте", "share": "сервер раздачи папок", "disks": "виртуальных дисков FileDO" } },
+    { "file": "lang/uk/index.html", "names": 3, "why": "locale page, the family sentence", "scopes": ["(?s)<p class=\"lead lead-narrow\">(?<region>.*?)</p>"],
+      "anchors": { "viewer": "Переглядайте й сортуйте", "share": "сервер роздачі тек", "disks": "віртуальних дисків FileDO" } },
+    { "file": "lang/ar/index.html", "names": 3, "why": "locale page, the family sentence", "scopes": ["(?s)<p class=\"lead lead-narrow\">(?<region>.*?)</p>"],
+      "anchors": { "viewer": "اعرض وسائطك", "share": "خادمًا لمشاركة المجلدات", "disks": "للأقراص الافتراضية FileDO" } },
+    { "file": "lang/hi/index.html", "names": 3, "why": "locale page, the family sentence", "scopes": ["(?s)<p class=\"lead lead-narrow\">(?<region>.*?)</p>"],
+      "anchors": { "viewer": "देखें और छाँटें", "share": "फ़ोल्डर-साझाकरण सर्वर", "disks": "FileDO वर्चुअल डिस्क" } },
+    { "file": "lang/bn/index.html", "names": 3, "why": "locale page, the family sentence", "scopes": ["(?s)<p class=\"lead lead-narrow\">(?<region>.*?)</p>"],
+      "anchors": { "viewer": "দেখুন ও সাজান", "share": "ফোল্ডার-শেয়ারিং সার্ভার", "disks": "FileDO ভার্চুয়াল ডিস্কের" } },
+    { "file": "lang/ur/index.html", "names": 3, "why": "locale page, the family sentence", "scopes": ["(?s)<p class=\"lead lead-narrow\">(?<region>.*?)</p>"],
+      "anchors": { "viewer": "دیکھیں اور ترتیب", "share": "فولڈر شیئرنگ سرور", "disks": "FileDO ورچوئل ڈسکس" } },
+    { "file": "lang/zh/index.html", "names": 3, "why": "locale page, the family sentence", "scopes": ["(?s)<p class=\"lead lead-narrow\">(?<region>.*?)</p>"],
+      "anchors": { "viewer": "查看并整理", "share": "文件夹共享服务器", "disks": "FileDO 虚拟磁盘" } },
+    {
+      "file": "server.html", "names": 3, "why": "server page, the family sentence (en)",
+      "scopes": ["(?s)<p><span data-l=\"en\">(?<region>View and sort your media.*?)</span>"],
+      "anchors": { "viewer": "View and sort", "share": "folder-share server", "disks": "FileDO virtual disks" }
+    },
+    {
+      "file": "server.html", "names": 3, "why": "server page, the family sentence (ru)",
+      "scopes": ["(?s)<span data-l=\"ru\">(?<region>Просматривайте и сортируйте медиа.*?)</span>"],
+      "anchors": { "viewer": "Просматривайте", "share": "сервер раздачи", "disks": "дисков FileDO" }
+    },
+    {
+      "file": "server.html", "names": 3, "why": "server page, the family sentence (uk)",
+      "scopes": ["(?s)<span data-l=\"ua\">(?<region>Переглядайте й сортуйте медіа.*?)</span>"],
+      "anchors": { "viewer": "Переглядайте", "share": "сервер роздачі", "disks": "дисків FileDO" }
+    },
+    {
+      "file": "README.md", "names": 3, "why": "README, the family sentence",
+      "scopes": ["(?m)^\\*\\*One program, a few roles\\.\\*\\*(?<region>.*)$"],
+      "anchors": { "viewer": "View and sort", "share": "folder-share server", "disks": "FileDO virtual disks" }
+    },
+    {
+      "file": "README.md", "names": 2, "why": "README, the door table: viewer first, share second",
+      "scopes": ["(?s)\\| Door \\|(?<region>.*?)\\r?\\n\\r?\\n"],
+      "anchors": { "viewer": "\\*\\*Viewer\\*\\*", "share": "\\*\\*Share to Android\\*\\*" }
+    },
+    {
+      "file": "README_RU.md", "names": 3, "why": "README (ru), the family sentence",
+      "scopes": ["(?m)^\\*\\*Одна программа - несколько ролей\\.\\*\\*(?<region>.*)$"],
+      "anchors": { "viewer": "Просматривайте", "share": "сервер раздачи", "disks": "дисков FileDO" }
+    },
+    {
+      "file": "README_RU.md", "names": 2, "why": "README (ru), the door table",
+      "scopes": ["(?s)\\| Дверь \\|(?<region>.*?)\\r?\\n\\r?\\n"],
+      "anchors": { "viewer": "\\*\\*Просмотрщик\\*\\*", "share": "\\*\\*Раздача на Android\\*\\*" }
+    },
+    {
+      "file": "README_UK.md", "names": 3, "why": "README (uk), the family sentence",
+      "scopes": ["(?m)^\\*\\*Одна програма - кілька ролей\\.\\*\\*(?<region>.*)$"],
+      "anchors": { "viewer": "Переглядайте", "share": "сервер роздачі", "disks": "дисків FileDO" }
+    },
+    {
+      "file": "README_UK.md", "names": 2, "why": "README (uk), the door table",
+      "scopes": ["(?s)\\| Двері \\|(?<region>.*?)\\r?\\n\\r?\\n"],
+      "anchors": { "viewer": "\\*\\*Переглядач\\*\\*", "share": "\\*\\*Роздача на Android\\*\\*" }
+    },
+    {
+      "file": "publishing/store/listingData.csv", "names": 2, "why": "Store listing Description (en-us): too short for the third pillar, names the first two",
+      "scopes": ["(?ms)^Description,2,Text,,\"(?<region>(?:[^\"]|\"\")*)\""],
+      "anchors": { "viewer": "Sort thousands of photos", "share": "share them with your phone|share the folders you pick" }
+    },
+    {
+      "file": "publishing/store/listingData.csv", "names": 2, "why": "Store listing Description (ru)",
+      "scopes": ["(?ms)^Description,2,Text,,\"(?:[^\"]|\"\")*\",\"(?<region>(?:[^\"]|\"\")*)\""],
+      "anchors": { "viewer": "Разберите тысячи фото и видео", "share": "делитесь ими с телефоном|раздавать выбранные вами папки" }
+    },
+    {
+      "file": "publishing/winget/SerZhyAle.FastMediaSorter.locale.en-US.yaml", "names": 3, "why": "winget Description (full package)",
+      "scopes": ["(?ms)^Description: \\|-\\r?\\n(?<region>.*?)\\r?\\n(?=[A-Za-z]+:)"],
+      "anchors": { "viewer": "View and sort your media", "share": "folder-share server", "disks": "FileDO virtual disks" }
+    }
+  ]
+}

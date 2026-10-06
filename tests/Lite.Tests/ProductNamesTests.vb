@@ -35,6 +35,7 @@ Public Class ProductNamesTests
         Assert.Equal("Fast Media Sorter & Sharing for Windows by SZA", ProductNames.WindowTitle)
         Assert.Equal("Share Manager - Fast Media Sorter & Sharing", ProductNames.ShareManager)
         Assert.Equal("Fast Media Sorter & Sharing: Folder Share Server", ProductNames.ServerEdition)
+        Assert.Equal("Media Exchange Server", ProductNames.ExchangeServer)
     End Sub
 
     <Fact>
@@ -47,7 +48,7 @@ Public Class ProductNamesTests
     <Fact>
     Public Sub The_names_are_one_Latin_run_with_no_retired_adjective_and_no_and_word()
         Dim all As String() = {ProductNames.Full, ProductNames.Compact, ProductNames.WindowTitle,
-                               ProductNames.ShareManager, ProductNames.ServerEdition}
+                               ProductNames.ShareManager, ProductNames.ServerEdition, ProductNames.ExchangeServer}
         For Each name In all
             Assert.True(name.IndexOf(RetiredAdjective, StringComparison.OrdinalIgnoreCase) < 0, "The name must not carry the retired adjective: " & name)
             Assert.True(name.IndexOf(" and Sharing", StringComparison.Ordinal) < 0, "The ampersand is part of the name: " & name)

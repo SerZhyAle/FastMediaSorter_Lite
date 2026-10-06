@@ -1,4 +1,5 @@
 {"path": ".github/agents/vb-net-profy.agent.md", "topic": "vb-net-profy.agent", "area": "engineering", "triggers": ["Changes to engineering behavior, structure or workflow"], "role": "source"}
+{"path": "404.html", "topic": "404", "area": "website", "triggers": ["Changes to website behavior, structure or workflow"], "role": "render", "generator": "tools/Build-SitePages.ps1 -Check"}
 {"path": "AGENTS.md", "topic": "AGENTS", "area": "engineering", "triggers": ["Changes to build commands, source structure, runtime policy or agent workflow"], "role": "source"}
 {"path": "CHANGELOG.md", "topic": "CHANGELOG", "area": "engineering", "triggers": ["User-visible behavior changes and releases"], "role": "source"}
 {"path": "CLAUDE.md", "topic": "CLAUDE", "area": "engineering", "triggers": ["Changes to build commands, source structure, runtime policy or agent workflow"], "role": "source"}
@@ -37,6 +38,9 @@
 {"path": "docs/contracts/STREAM-BANK.md", "topic": "STREAM-BANK", "area": "contracts", "triggers": ["Adoption, version, conformance gate or exception changes for STREAM-BANK"], "role": "source"}
 {"path": "docs/contracts/WINDOWS-STORE.md", "topic": "WINDOWS-STORE", "area": "contracts", "triggers": ["Adoption, version, conformance gate or exception changes for WINDOWS-STORE"], "role": "source"}
 {"path": "docs/contracts/WAVE-PARTICLES.md", "topic": "WAVE-PARTICLES", "area": "contracts", "triggers": ["Adoption, version, conformance gate or exception changes for WAVE-PARTICLES"], "role": "source"}
+{"path": "docs/contracts/SITE-STRUCTURE.md", "topic": "SITE-STRUCTURE", "area": "contracts", "triggers": ["Adoption, version, conformance gate or exception changes for SITE-STRUCTURE"], "role": "source"}
+{"path": "docs/contracts/SITE-EXPERIENCE.md", "topic": "SITE-EXPERIENCE", "area": "contracts", "triggers": ["Adoption, version, conformance gate or exception changes for SITE-EXPERIENCE"], "role": "source"}
+{"path": "docs/contracts/SITE-REPRESENTATION.md", "topic": "SITE-REPRESENTATION", "area": "contracts", "triggers": ["Adoption, version, conformance gate or exception changes for SITE-REPRESENTATION"], "role": "source"}
 {"path": "docs/contracts/WORKER-IPC.md", "topic": "WORKER-IPC", "area": "contracts", "triggers": ["Adoption, version, conformance gate or exception changes for WORKER-IPC"], "role": "source"}
 {"path": "docs/guides/BUILD_AND_RELEASE.md", "topic": "BUILD AND RELEASE", "area": "engineering", "triggers": ["Changes to engineering behavior, structure or workflow"], "role": "source"}
 {"path": "docs/guides/COMPANION_TEST_PLAN.md", "topic": "COMPANION TEST PLAN", "area": "engineering", "triggers": ["Changes to engineering behavior, structure or workflow"], "role": "source"}
@@ -47,11 +51,15 @@
 {"path": "docs/guides/RESEARCH_COMPETITOR_FEATURES.md", "topic": "RESEARCH COMPETITOR FEATURES", "area": "engineering", "triggers": ["Changes to engineering behavior, structure or workflow"], "role": "source"}
 {"path": "docs/guides/SERVER_EDITION_BUILD_AND_TEST.md", "topic": "SERVER EDITION BUILD AND TEST", "area": "engineering", "triggers": ["Changes to engineering behavior, structure or workflow"], "role": "source"}
 {"path": "docs/guides/SETTINGS_WINDOW_INVENTORY_DOTNET10.md", "topic": "SETTINGS WINDOW INVENTORY DOTNET10", "area": "engineering", "triggers": ["Changes to engineering behavior, structure or workflow"], "role": "source"}
+{"path": "docs/guides/SITE_ADDRESSES.md", "topic": "SITE_ADDRESSES", "area": "website", "triggers": ["Changes to website behavior, structure or workflow"], "role": "source"}
+{"path": "docs/guides/POSITIONING.md", "topic": "POSITIONING", "area": "website", "triggers": ["Changes to what the product says it is: the family sentence, the pillars and their order, the public editions, the reserved door, the language count or the platform floor"], "role": "source"}
 {"path": "docs/guides/STORE_PUBLISHING.md", "topic": "STORE PUBLISHING", "area": "engineering", "triggers": ["Changes to engineering behavior, structure or workflow"], "role": "source"}
 {"path": "docs/guides/TESTING.md", "topic": "TESTING", "area": "engineering", "triggers": ["Changes to engineering behavior, structure or workflow"], "role": "source"}
 {"path": "docs/index.html", "topic": "index", "area": "website", "triggers": ["Changes to website behavior, structure or workflow"], "role": "source"}
 {"path": "docs/privacy.html", "topic": "privacy", "area": "website", "triggers": ["Changes to website behavior, structure or workflow"], "role": "source"}
 {"path": "docs/publish-folders-android.html", "topic": "publish-folders-android", "area": "website", "triggers": ["Changes to website behavior, structure or workflow"], "role": "source"}
+{"path": "exchange-server/README.md", "topic": "exchange-server README", "area": "engineering", "triggers": ["Changes to the exchange server's layout, build, tests or settled behaviour"], "role": "source"}
+{"path": "exchange-server/testdata/manual-winscp.md", "topic": "exchange-server manual WinSCP proof", "area": "engineering", "triggers": ["Changes to the exchange server's per-session port or the fake-producer proof tool"], "role": "source"}
 {"path": "glossary.html", "topic": "glossary", "area": "website", "triggers": ["Changes to website behavior, structure or workflow"], "role": "source"}
 {"path": "how-to-archives.html", "topic": "how-to-archives", "area": "website", "triggers": ["Changes to website behavior, structure or workflow"], "role": "source"}
 {"path": "how-to-resources.html", "topic": "how-to-resources", "area": "website", "triggers": ["Changes to website behavior, structure or workflow"], "role": "source"}

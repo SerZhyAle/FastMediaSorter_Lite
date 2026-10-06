@@ -3,6 +3,17 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<script>
+(function(){try{
+  var t=localStorage.getItem('sza-theme');
+  if(t!=='dark'&&t!=='light')t=matchMedia('(prefers-color-scheme: light)').matches?'light':'dark';
+  document.documentElement.setAttribute('data-theme',t);
+  var l=localStorage.getItem('sza-lang');
+  if(l==='uk')l='ua';
+  if(l!=='ru'&&l!=='en'&&l!=='ua'){var n=(navigator.language||'en').toLowerCase();l=n.indexOf('ru')==0?'ru':n.indexOf('uk')==0?'ua':'en';}
+  document.documentElement.setAttribute('data-lang',l);
+}catch(e){}})();
+</script>
 <title>为什么 Windows 会对这个下载发出警告</title>
 <meta name="description" content="Fast Media Sorter &amp; Sharing 的 SmartScreen 警告是什么意思、为什么出现、到底该点哪里，以及这个程序从不做什么。">
 <link rel="canonical" href="https://serzhyale.github.io/FastMediaSorter_Lite/lang/zh/trust.html">
@@ -39,17 +50,19 @@
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://serzhyale.github.io/FastMediaSorter_Lite/assets/sza-kit.css">
 <link rel="stylesheet" href="https://serzhyale.github.io/FastMediaSorter_Lite/assets/fms-site.css">
-<script>(function(){try{var t=localStorage.getItem('sza-theme');if(t==='light'||t==='dark'){document.documentElement.setAttribute('data-theme',t);}}catch(e){}})();</script>
 <script type="application/ld+json">{"@context":"https://schema.org","@type":"WebPage","headline":"为什么 Windows 会对这个下载发出警告","description":"Fast Media Sorter & Sharing 的 SmartScreen 警告是什么意思、为什么出现、到底该点哪里，以及这个程序从不做什么。","url":"https://serzhyale.github.io/FastMediaSorter_Lite/lang/zh/trust.html","inLanguage":"zh","image":"https://serzhyale.github.io/FastMediaSorter_Lite/assets/social-preview-1280x640.png","isPartOf":{"@type":"WebSite","name":"Fast Media Sorter & Sharing for Windows","url":"https://serzhyale.github.io/FastMediaSorter_Lite/"},"author":{"@type":"Person","name":"SerZhyAle"}}</script>
 </head>
 <body>
+<a class="skip-link" href="#main">跳到主要内容</a>
 <header class="site-header">
+  <nav class="site-nav" aria-label="主导航">
   <a class="brand" href="https://serzhyale.github.io/FastMediaSorter_Lite/lang/zh/" aria-label="Fast Media Sorter &amp; Sharing for Windows"><span class="brand-mark"><img src="https://serzhyale.github.io/FastMediaSorter_Lite/assets/icons/Fast_Media_Sorter.ico" alt="" width="24" height="24"></span>Fast Media Sorter &amp; Sharing for Windows</a>
   <button class="theme-btn" id="themeBtn" aria-label="Switch theme">◐</button>
   <a class="btn btn-ghost btn-sm" href="https://serzhyale.github.io/FastMediaSorter_Lite/lang/zh/">返回主页</a>
+  </nav>
 </header>
 
-<main class="container">
+<main class="container" id="main" tabindex="-1">
   <section class="hero">
     <h1>为什么 Windows 会对这个下载发出警告</h1>
     <p class="lead">Fast Media Sorter &amp; Sharing for Windows 是一位独立开发者写的免费程序。发布在 GitHub 上的版本（winget 安装的也是它们）没有代码签名，所以 Windows 会格外谨慎地对待它们，您可能会遇到一两条警告。下面说明每条警告是什么、为什么出现、到底该点哪里，以及这个程序从不做什么。</p>
@@ -108,8 +121,9 @@
   </section>
 
   <p class="note">只有一项第三方服务可能被访问，而且只在您为共享打开互联网访问时：程序会请 check-host.net 确认您转发的端口能否从外部响应，这会让该服务看到您的公网地址和端口。除此之外不会向它发送任何内容。另外两件事只在您自己的网络内进行：打开互联网访问后，程序会请您的路由器转发共享端口（UPnP 或 NAT-PMP）；共享运行期间，电脑会在局域网中广播自己（mDNS），以便已配对的手机重新找到它。</p>
+  <p class="note" id="site-origins">打开本网站的页面（而不是使用程序）最多会访问三个外部地址：fonts.googleapis.com 和 fonts.gstatic.com（Google Fonts，用于页面字体），以及在主页及其各语言版本上访问 api.github.com（GitHub，用于查询最新发行版以生成下载链接）。每个地址只会收到您的 IP 地址和浏览器的 user agent，别无其他。不会访问任何分析、标签管理或广告地址。隐私页面说的是同一件事。</p>
 
-  <div class="button-group" style="margin:2rem 0">
+  <div class="button-group button-group-spaced">
     <a class="btn btn-primary" href="https://github.com/SerZhyAle/FastMediaSorter_Lite/releases/latest">下载</a>
     <a class="btn btn-ghost" href="https://serzhyale.github.io/FastMediaSorter_Lite/docs/privacy.html">隐私</a>
     <a class="btn btn-ghost" href="https://serzhyale.github.io/FastMediaSorter_Lite/lang/zh/">返回主页</a>
@@ -118,7 +132,7 @@
 </main>
 
 <footer class="site-footer"><div class="container">
-  <h2 class="sec-head" style="margin-bottom:1rem;font-size:1.1rem">More tools by SZA</h2>
+  <h2 class="sec-head sec-head-family">More tools by SZA</h2>
   <div class="tools-grid">
     <a href="https://serzhyale.github.io/FastMediaSorter_mob_v2/"><b>FastMediaSorter v2</b><span>Android media sorter</span></a>
     <a href="https://serzhyale.github.io/CyrFlip/"><b>CyrFlip</b><span>Windows layout fixer</span></a>

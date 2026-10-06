@@ -154,6 +154,18 @@ Public Class ResourceFollowupTests
         Assert.Equal(New Byte() {1, 2, 3}, File.ReadAllBytes(remote.BackingPath("/MOV/photo.jpg")))
     End Sub
 
+    <Fact>
+    Public Sub Case_only_rename_without_server_side_rename_is_refused_and_keeps_the_only_copy()
+        ' The staged download/upload pair deletes the destination and then the source; on a
+        ' case-insensitive server those are one file, so the pair would leave nothing (057.S07-7).
+        Dim remote As New ResourceTestProvider(Path.Combine(root, "remote-norename"), New ProviderCapabilities())
+        remote.PutFile("/MOV/photo.jpg", New Byte() {1, 2, 3})
+        Assert.Throws(Of IOException)(Sub() ResourceTransfer.MoveWithin(remote, "/MOV/photo.jpg", "/MOV/Photo.jpg", False, root))
+        Assert.Throws(Of IOException)(Sub() ResourceTransfer.MoveWithin(remote, "/MOV/photo.jpg", "/MOV/Photo.jpg", True, root))
+        Assert.Equal(0, remote.DeleteCalls)
+        Assert.Equal(New Byte() {1, 2, 3}, File.ReadAllBytes(remote.BackingPath("/MOV/photo.jpg")))
+    End Sub
+
     <Theory>
     <InlineData("{damaged")>
     <InlineData("[{""Id"":""future"",""Kind"":""CloudDrive"",""Host"":""h""}]")>

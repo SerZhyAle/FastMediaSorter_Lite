@@ -33,6 +33,10 @@
       rule 7  every relative link, same-site absolute link, image, stylesheet and
               script resolves to a file GitHub Pages would serve, anchors resolve to
               id/name targets, and no http:// or protocol-relative reference exists.
+      rule 9  keyboard and landmarks (SITE-EXPERIENCE rules 15, 16): a skip link first in the body leading to the one main, a
+              labelled nav, lang equal to the page language and updated by the in-page switcher, dir=rtl for ar and ur;
+      rule 8  full width: no page, header, footer, heading or paragraph carries a fixed width cap and
+              `--wide` is 100% (owner decision 2026-10-06, PAGE-CONTENT layout contract);
 
     The link walker mirrors tools/Test-DocRegistry.ps1 (ticket 058) for the HTML half
     of the corpus: that script walks the Markdown sources, this one walks the pages.
@@ -129,10 +133,14 @@ function Expected-Canonical([string]$file) {
 }
 
 $pages = @()
-Get-ChildItem -LiteralPath $Root -Filter '*.html' -File | Sort-Object Name | ForEach-Object {
+# 404.html is the host's not-found page (SITE-STRUCTURE rule 15): noindex, never in the sitemap, so not a page of this set
+# - its links are walked on their own below.
+Get-ChildItem -LiteralPath $Root -Filter '*.html' -File | Where-Object { $_.Name -ne '404.html' } | Sort-Object Name | ForEach-Object {
     $kind = if ($_.Name -eq 'index.html') { 'landing' } elseif ($_.Name -eq 'trust.html') { 'trust' } else { 'root' }
     $pages += @{ File = $_.Name; Lang = 'en'; Kind = $kind }
 }
+# The privacy policy is a required page type that lives under docs/ and is listed in the sitemap (specification 151, T-3).
+if (Test-Path (Join-Path $Root 'docs/privacy.html')) { $pages += @{ File = 'docs/privacy.html'; Lang = 'en'; Kind = 'privacy' } }
 foreach ($c in ($codes | Where-Object { $_ -ne 'en' })) {
     foreach ($kind in 'index', 'trust') {
         $rel = "$LangDir/$c/$kind.html"
@@ -198,7 +206,8 @@ function Resolve-SiteLink([string]$page, [string]$url, [string]$what) {
     $frag = ''
     if ($u -match '^([^#]*)#(.*)$') { $u = $Matches[1]; $frag = $Matches[2] }
     $path = [Uri]::UnescapeDataString(($u -split '\?', 2)[0])
-    $full = if (-not $path -or $path -eq '/') { Join-Path $Root 'index.html' }
+    $full = if (-not $path -and $frag) { Join-Path $Root $page }   # "#anchor" alone is an anchor of the page itself
+            elseif (-not $path -or $path -eq '/') { Join-Path $Root 'index.html' }
             elseif ($path.StartsWith('/')) { Join-Path $Root $path.TrimStart('/') }
             else { Join-Path (Split-Path (Join-Path $Root $page) -Parent) $path }
     $full = [IO.Path]::GetFullPath($full)
@@ -342,6 +351,14 @@ foreach ($p in $pages) {
     }
 }
 
+# --- the not-found page: rule 7 over its links, and rule 5's noindex ------------
+if (Test-Path (Join-Path $Root '404.html')) {
+    $nfHtml = Page-Html '404.html'
+    if ($nfHtml -notmatch '<meta name="robots" content="noindex">') { Problem '404.html: the not-found page is not marked noindex' }
+    foreach ($m in [regex]::Matches($nfHtml, '(?i)<(?:a|link)\b[^>]*?\bhref="([^"]+)"')) { $linkCount++; $null = Resolve-SiteLink '404.html' $m.Groups[1].Value 'link' }
+    foreach ($m in [regex]::Matches($nfHtml, '(?i)<img\b[^>]*?\bsrc="([^"]+)"')) { $imgCount++; $null = Resolve-SiteLink '404.html' $m.Groups[1].Value 'image' }
+} else { Problem '404.html (the not-found page) does not exist' }
+
 # --- sitemap and search index: rule 2 ------------------------------------------
 if (-not (Test-Path $Sitemap)) { Exit-Verdict 'Test-SiteQuality' 2 'sitemap.xml not found - run tools\Build-SitePages.ps1' }
 $smText = Get-Content $Sitemap -Raw -Encoding UTF8
@@ -433,7 +450,7 @@ else {
             }
             if ($t.scope -eq 'lang' -or $t.scope -eq 'guides') {
                 $stemLocales = @($t.stems.PSObject.Properties.Name)
-                $wantLocales = if ($t.scope -eq 'lang') { $codes } else { @('en', 'ru') }
+                $wantLocales = if ($t.scope -eq 'lang') { $codes } else { @('en', 'ru', 'uk') }
                 foreach ($c in $wantLocales) { if ($c -notin $stemLocales) { Problem "termbase term '$($t.id)' has no approved form for '$c'" } }
                 foreach ($c in $stemLocales) { if ($c -notin $wantLocales) { Problem "termbase term '$($t.id)' declares form for '$c' outside its scope" } }
                 foreach ($prop in $t.stems.PSObject.Properties) {
@@ -471,10 +488,95 @@ else {
     } catch { Exit-Verdict 'Test-SiteQuality' 2 "site-termbase.json is unreadable: $($_.Exception.Message)" }
 }
 
+# --- rule 8: full width (owner decision 2026-10-06, restating PAGE-CONTENT "Layout contract") --
+# Every page uses the whole width of the screen. A page, its header, its footer, its headings and its
+# text carry no fixed measure (px/ch/rem cap) and no `--wide` other than 100%: narrow measures belong
+# inside a card or a callout, never to the page. This is the check that stops the centred column
+# from coming back through a new page, a new template or a copied rule.
+$widthCorpus = [System.Collections.Generic.List[string]]::new()
+foreach ($p in $pages) { $widthCorpus.Add($p.File) }
+$widthCorpus.Add('404.html')
+Get-ChildItem -LiteralPath (Join-Path $Root 'docs') -Filter '*.html' -File -ErrorAction SilentlyContinue |
+    ForEach-Object { $widthCorpus.Add("docs/$($_.Name)") }
+$widthCorpus.Add('assets/fms-site.css')
+$pageLevelSelector = '(?i)(^|[\s>+~,])(html|body|main|header|footer|h1|h2|\.container|\.wrap|\.site-header|\.site-footer|\.hero|\.hero-copy|\.lead|\.lead-narrow|\.sec-head|\.section|\.section-desc|\.get|\.gloss|\.tech-links|\.download-section)(?![\w-])'
+foreach ($rel in $widthCorpus) {
+    $fullPath = Join-Path $Root $rel
+    if (-not (Test-Path -LiteralPath $fullPath)) { continue }
+    $raw = Get-Content -LiteralPath $fullPath -Raw -Encoding UTF8
+    $css = if ($rel -like '*.css') { $raw } else {
+        (@([regex]::Matches($raw, '(?is)<style\b[^>]*>(.*?)</style>') | ForEach-Object { $_.Groups[1].Value })) -join "`n"
+    }
+    $css = [regex]::Replace($css, '(?s)/\*.*?\*/', ' ')
+    foreach ($m in [regex]::Matches($css, '(?i)(?<![\w-])--wide\s*:\s*([^;}]+)')) {
+        if ($m.Groups[1].Value.Trim() -notmatch '^(100%|none)$') {
+            Problem "${rel}: --wide is '$($m.Groups[1].Value.Trim())' - the page uses the full screen width (rule 8)"
+        }
+    }
+    foreach ($rule in [regex]::Matches($css, '([^{}]+)\{([^{}]*)\}')) {
+        $sel = $rule.Groups[1].Value.Trim()
+        if ($sel -notmatch $pageLevelSelector) { continue }
+        foreach ($d in [regex]::Matches($rule.Groups[2].Value, '(?i)(?<![\w-])max-width\s*:\s*([^;]+)')) {
+            $v = $d.Groups[1].Value.Trim()
+            if ($v -notmatch '^(none|100%|100vw|var\(--wide\)|calc\(\s*100%.*)$') {
+                Problem "${rel}: '$sel' caps its width at '$v' - page-level text, header and footer use the full screen width (rule 8)"
+            }
+        }
+    }
+    foreach ($m in [regex]::Matches($raw, '(?i)\bstyle\s*=\s*"[^"]*max-width\s*:\s*([^";]+)')) {
+        $v = $m.Groups[1].Value.Trim()
+        if ($v -notmatch '^(none|100%|100vw|var\(--wide\)|calc\(\s*100%.*)$') { Problem "${rel}: an inline style caps a width at '$v' (rule 8)" }
+    }
+}
+
+# --- rule 10 / rule 9: the in-page locale floor (specification 151) ---------------
+# A page that switches language in-page (data-l spans or blocks) carries the core three, in the same number, and its
+# language control offers exactly the languages the page has. The landing and the trust page are generated per
+# locale and are held by Build-SitePages -Check, so only the root guides, the reference pages, the edition page and
+# the privacy page are read here.
+foreach ($p in ($pages | Where-Object { $_.Lang -eq 'en' -and $_.Kind -in 'root', 'privacy' })) {
+    $h = Page-Html $p.File
+    $n = @{}
+    foreach ($code in 'en', 'ru', 'ua') { $n[$code] = ([regex]::Matches($h, "\sdata-l=`"$code`"")).Count }
+    if (($n['en'] + $n['ru'] + $n['ua']) -eq 0) { continue }
+    foreach ($code in 'ru', 'ua') {
+        if ($n[$code] -ne $n['en']) { Problem "$($p.File): $($n[$code]) '$code' in-page blocks against $($n['en']) in English - the core three (en, ru, uk) must all be complete (rule 10)" }
+    }
+    $buttons = @([regex]::Matches($h, 'data-setlang="([a-z]+)"') | ForEach-Object { $_.Groups[1].Value } | Sort-Object -Unique)
+    $have = @('en', 'ru', 'ua' | Where-Object { $n[$_] -gt 0 })
+    if (($buttons -join ',') -ne (($have | Sort-Object) -join ',')) { Problem "$($p.File): the language control offers [$($buttons -join ', ')] but the page carries [$($have -join ', ')] (rule 9)" }
+}
+
+# --- rule 9: keyboard and landmarks (SITE-EXPERIENCE rules 15 and 16, specification 152) ---------
+# Every page: a skip link as the first link of the body that leads to the one main; a labelled nav; a lang attribute equal
+# to the page's language (a page that switches language in-page must set it when it switches); dir=rtl for ar and ur.
+foreach ($p in $pages) {
+    $h = Page-Html $p.File
+    $b = $h.IndexOf('<body')
+    if ($b -lt 0) { Problem "$($p.File): no <body> (rule 9)"; continue }
+    $body = $h.Substring($b)
+    $first = [regex]::Match($body, '<a\b[^>]*>')
+    if (-not $first.Success -or $first.Value -notmatch 'class="skip-link"') { Problem "$($p.File): the skip link is not the first link of the page (rule 9)" }
+    else {
+        $target = [regex]::Match($first.Value, 'href="#([^"]+)"').Groups[1].Value
+        $mains = [regex]::Matches($h, '<main\b[^>]*>')
+        if ($mains.Count -ne 1) { Problem "$($p.File): $($mains.Count) <main> elements, expected exactly one (rule 9)" }
+        elseif ($mains[0].Value -notmatch "\sid=`"$([regex]::Escape($target))`"") { Problem "$($p.File): the skip link leads to #$target but <main> does not carry that id (rule 9)" }
+    }
+    if ($h -notmatch '<nav\b[^>]*\saria-label(ledby)?="[^"]+"') { Problem "$($p.File): no labelled <nav> (rule 9)" }
+    $htmlTag = [regex]::Match($h, '<html\b[^>]*>').Value
+    $want = $p.Lang
+    $have = [regex]::Match($htmlTag, '\slang="([^"]*)"').Groups[1].Value
+    if ($have -ne $want) { Problem "$($p.File): <html lang=`"$have`"> but the page is in '$want' (rule 9)" }
+    if (($h -match '\sdata-setlang=') -and ($h -notmatch "\.lang\s*=\s*v\s*===\s*'ua'|setAttribute\('lang'")) { Problem "$($p.File): the language control does not update <html lang> when it switches (rule 9)" }
+    $rtl = $p.Lang -in 'ar', 'ur'
+    if ($rtl -and $htmlTag -notmatch '\sdir="rtl"') { Problem "$($p.File): a right-to-left page without dir=`"rtl`" (rule 9)" }
+}
+
 # --- verdict ---------------------------------------------------------------------
 if ($stray.Count -gt 0) { $problems.Add("undeclared folders under ${LangDir}/: $($stray -join ', ')") }
 if ($problems.Count -gt 0) {
     $problems | ForEach-Object { Write-Host "  - $_" }
     Exit-Verdict 'Test-SiteQuality' 1 "$($problems.Count) defect(s): $($pages.Count) pages, $linkCount links, $imgCount images"
 }
-Exit-Verdict 'Test-SiteQuality' 0 "$($pages.Count) pages, $linkCount links, $imgCount images, $($codes.Count) locales, rules 1-7 held"
+Exit-Verdict 'Test-SiteQuality' 0 "$($pages.Count) pages, $linkCount links, $imgCount images, $($codes.Count) locales, rules 1-7, the full-width rule and the keyboard-and-landmarks rule held"

@@ -1,0 +1,4 @@
+# build output of build.ps1
+bin/
+# the PE version resource build.ps1 generates for one build and removes again
+*.syso

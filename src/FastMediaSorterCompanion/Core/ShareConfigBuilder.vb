@@ -41,6 +41,9 @@ Public NotInheritable Class ShareConfigResult
     ''' <summary>The exported config carries an IPv6 access path - a direct,
     ''' NAT/CGNAT-bypassing route the phone can dial from other networks.</summary>
     Public Property HasIpv6 As Boolean
+    ''' <summary>The exported config carries the exchange server's relay paths (ticket 148). Always False
+    ''' while the export is dormant.</summary>
+    Public Property HasRelay As Boolean
     Public Property LanDisplay As String = ""   ' "host:port" for copy/display
     ''' <summary>Localized short reachability line, also embedded in the .fmscfg as
     ''' the optional "accessNote" (Android S1014 shows it on connection failure)
@@ -120,7 +123,8 @@ Public Module ShareConfigBuilder
                           Optional exportOverrides As ShareExportOverrides = Nothing,
                           Optional perRootOverrides As Dictionary(Of String, ShareExportOverrides) = Nothing,
                           Optional perRootParams As Dictionary(Of String, ShareRootParams) = Nothing,
-                          Optional stamp As ShareConfigStamp = Nothing) As ShareConfigResult
+                          Optional stamp As ShareConfigStamp = Nothing,
+                          Optional exchange As ExchangeExport = Nothing) As ShareConfigResult
         If status Is Nothing OrElse Not status.Running Then Return Nothing
         Dim reach As WorkerReachability = status.Reachability
         Dim port As Integer = status.ListenPort
@@ -166,6 +170,10 @@ Public Module ShareConfigBuilder
             AppendAccessPath(paths, "portforward", reach.ExternalHost, extPort)
             hasExt = True
         End If
+
+        ' Ticket 148 T-5, DORMANT: nothing on a product path passes `exchange` before contract rung 2, so
+        ' with Nothing this block does not run and the bytes are exactly what they were (ANYWHERE-ACCESS 8.5).
+        Dim hasRelay As Boolean = AppendExchangePaths(paths, exchange, includeExternal)
         If paths.Length = 0 Then Return Nothing
 
         Dim anyV2 As Boolean = False
@@ -240,6 +248,7 @@ Public Module ShareConfigBuilder
             .ConfigJson = json,
             .HasExternal = hasExt,
             .HasIpv6 = hasIpv6,
+            .HasRelay = hasRelay,
             .AccessNote = note,
             .LanDisplay = If(lan.Length > 0, lan & ":" & port.ToString(), "")
         }
@@ -352,6 +361,39 @@ Public Module ShareConfigBuilder
         Return sb.ToString()
     End Function
 
+    ''' <summary>
+    ''' Appends the relay's two paths AFTER every direct one - the client races them all and the relay is the
+    ''' fallback, never the first path (ANYWHERE-ACCESS section 1): the third-party relay port (one more plain
+    ''' TCP SSH endpoint, same fingerprint) and then the tunnel (endpoint + share id). Both are externally
+    ''' reachable addresses, so the "LAN only" export never carries them, exactly like the IPv6 and
+    ''' port-forward paths above. A loopback or unparsable client host, or a malformed share id, appends
+    ''' nothing: a phone cannot use them and a bad id must not be advertised. Returns True when anything was added.
+    ''' </summary>
+    Private Function AppendExchangePaths(paths As StringBuilder, exchange As ExchangeExport, includeExternal As Boolean) As Boolean
+        If exchange Is Nothing OrElse Not includeExternal Then Return False
+        If exchange.ClientPort < 1 OrElse exchange.ClientPort > 65535 Then Return False
+        Dim ep As ExchangeEndpoint = Nothing
+        ' ToString brackets an IPv6 literal, so the round trip through TryParse is the one syntax check.
+        If Not ExchangeEndpointRules.TryParse(New ExchangeEndpoint(If(exchange.ClientHost, ""), exchange.ClientPort).ToString(), ep) Then Return False
+        If ExchangeEndpointRules.IsLoopbackOrUnspecified(ep.Host) Then Return False
+
+        Dim added As Boolean = False
+        If exchange.RelayPort >= 1 AndAlso exchange.RelayPort <= 65535 Then
+            AppendAccessPath(paths, ExchangeWireNames.RelayPortKind, ep.Host, exchange.RelayPort)
+            added = True
+        End If
+        If ExchangeShareIds.IsWellFormed(exchange.ShareId) Then
+            If paths.Length > 0 Then paths.Append(","c)
+            paths.Append("{""kind"":").Append(J(ExchangeWireNames.TunnelKind)).
+                  Append(",""host"":").Append(J(ep.Host)).
+                  Append(",""port"":").Append(ep.Port.ToString(CultureInfo.InvariantCulture)).
+                  Append(",").Append(J(ExchangeWireNames.TunnelShareIdMember)).Append(":").Append(J(exchange.ShareId)).
+                  Append("}"c)
+            added = True
+        End If
+        Return added
+    End Function
+
     Private Sub AppendAccessPath(sb As StringBuilder, kind As String, host As String, port As Integer)
         If sb.Length > 0 Then sb.Append(","c)
         sb.Append("{""kind"":").Append(J(kind)).
@@ -366,8 +408,9 @@ Public Module ShareConfigBuilder
     End Function
 
     ''' <summary>The payload fields FMSCFG treats as secrets: the SFTP password and every
-    ''' root's accessPin (the v2 table gives the PIN the password's sensitivity).</summary>
-    Private ReadOnly SecretField As New Regex("(""(?:password|accessPin)"":"")(?:[^""\\]|\\.)*("")", RegexOptions.CultureInvariant)
+    ''' root's accessPin (the v2 table gives the PIN the password's sensitivity), and - since
+    ''' ticket 148 - a tunnel path's share id, which is a bearer secret link (133 R-6).</summary>
+    Private ReadOnly SecretField As New Regex("(""(?:password|accessPin|sid)"":"")(?:[^""\\]|\\.)*("")", RegexOptions.CultureInvariant)
 
     ''' <summary>Blanks out the value of every secret field for diagnostic logging - the
     ''' export JSON carries a live SFTP credential and per-root PINs by design (FMSCFG rule 6),

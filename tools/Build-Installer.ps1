@@ -50,6 +50,15 @@
     first prunes superseded stage\ trees, old dist\ artifacts and temp files so
     they do not pile up; this keeps them.
 
+.PARAMETER IncludeExchange
+    THE SHIPPING GATE of the exchange server (specification 133 section 8, ticket 141): off by
+    default. Off, the staged tree has no exchange\ folder and ISCC is called with /DNoExchange,
+    so the unchecked `exchange` component and everything that belongs to it compile out of the
+    setup. On, the build asserts bin\Release\exchange\fms-exchange-server.exe + .sha256 exist
+    (with -SkipBuild they must already be there - build.ps1 deploys them; without it the module
+    is built there first), stages the exchange\ tree (tools\Stage-ExchangePayload.ps1) and
+    compiles the component in. Flip it only once rung 2 has frozen the wire.
+
 .PARAMETER Open
     Reveal the finished installer in Explorer when done.
 
@@ -72,6 +81,7 @@ param(
     [switch]$SkipBuild,
     [switch]$MaxCompress,
     [switch]$NoClean,
+    [switch]$IncludeExchange,
     [switch]$Open
 )
 
@@ -167,6 +177,28 @@ if (-not (Test-Path (Join-Path $releaseDir $legacyExeName))) {
     throw "Release executable not found in $releaseDir. Run without -SkipBuild first."
 }
 
+# --- the exchange server (specification 133, ticket 141) ---------------------
+# Behind the shipping gate: nothing below happens, and the installer compiles WITHOUT the
+# component (/DNoExchange), unless -IncludeExchange was given. When it was, a package that
+# claims the component but lacks the binary is worse than a failed build, so the exe and its
+# sidecar must exist before anything is staged.
+$exchangeBin = Join-Path $releaseDir "exchange"
+if ($IncludeExchange) {
+    if (-not $SkipBuild) {
+        # msbuild does not build the Go module; build it straight into the tree the stage reads.
+        Write-Host "Building the exchange server (Go, windows/amd64).."
+        & (Join-Path $solutionDir "exchange-server\build.ps1") -Version $Version -OutDir $exchangeBin
+        if ($LASTEXITCODE -ne 0) { throw "exchange-server\build.ps1 exited with code $LASTEXITCODE (2 = no 64-bit Go). -IncludeExchange cannot ship without the binary." }
+    }
+    foreach ($f in @("fms-exchange-server.exe", "fms-exchange-server.exe.sha256")) {
+        if (-not (Test-Path (Join-Path $exchangeBin $f))) {
+            throw "-IncludeExchange: $exchangeBin\$f is missing. Run .\build.ps1 (it builds and deploys the exchange server) or drop -SkipBuild."
+        }
+    }
+} else {
+    Write-Host "Exchange server: not included (shipping gate shut - pass -IncludeExchange once rung 2 has frozen the wire)."
+}
+
 # --- stage (bin\Release minus pdb/xml/log) ----------------------------------
 Remove-Item -LiteralPath $stageDir -Recurse -Force -ErrorAction SilentlyContinue
 New-Item -ItemType Directory -Path $stageDir -Force | Out-Null
@@ -178,6 +210,11 @@ Get-ChildItem $releaseDir -Recurse -File |
     Where-Object { $_.Extension -notin ".pdb", ".xml", ".log" } |
     ForEach-Object {
         $relative = Get-RelativePath -BasePath $releaseDir -TargetPath $_.FullName
+        # The exchange server (specification 133) is never taken from this wildcard copy: a
+        # development copy that build.ps1 deployed into bin\Release must not ride into a setup.exe
+        # by luck. With the gate open the tree is staged below by tools\Stage-ExchangePayload.ps1
+        # (exactly five files, checked); with it shut there is no exchange\ in the stage at all.
+        if ($relative -like 'exchange\*') { return }
         $destination = Join-Path $stageDir $relative
         New-Item -ItemType Directory -Path (Split-Path $destination -Parent) -Force | Out-Null
         Copy-Item $_.FullName $destination -Force
@@ -186,6 +223,10 @@ Get-ChildItem $releaseDir -Recurse -File |
 foreach ($extra in @("README.md", "LICENSE", "THIRD-PARTY-NOTICES.txt")) {
     $source = Join-Path $solutionDir $extra
     if (Test-Path $source) { Copy-Item $source $stageDir -Force }
+}
+
+if ($IncludeExchange) {
+    & (Join-Path $PSScriptRoot "Stage-ExchangePayload.ps1") -Source $exchangeBin -Destination $stageDir
 }
 
 # The Android-share worker must ship in companion\ next to the exe or the Share
@@ -259,6 +300,17 @@ if ($SkipOcr) {
 $stageAbs = (Resolve-Path $stageDir).Path
 $distAbs  = (Resolve-Path $distDir).Path
 $isccArgs = @("/DVersion=$Version", "/DSourceDir=$stageAbs", "/O$distAbs")
+# The shipping gate, proven on the stage rather than assumed: the component is compiled in
+# exactly when the stage carries the tree, and a stage with an exchange\ that the gate did not
+# ask for (or none when it did) stops the build.
+$stageHasExchange = Test-Path (Join-Path $stageDir "exchange")
+if ($IncludeExchange -and -not (Test-Path (Join-Path $stageDir "exchange\fms-exchange-server.exe"))) {
+    throw "-IncludeExchange was given but the stage has no exchange\fms-exchange-server.exe."
+}
+if (-not $IncludeExchange) {
+    if ($stageHasExchange) { throw "The stage carries an exchange\ folder but the shipping gate is shut (-IncludeExchange not given)." }
+    $isccArgs += "/DNoExchange"
+}
 if (-not $MaxCompress) {
     $isccArgs += "/DFastCompression"
     Write-Host "Compression: lzma2/fast (local build - pass -MaxCompress for the smaller ultra build)"

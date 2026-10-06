@@ -25,6 +25,8 @@ Partial Public NotInheritable Class Localization
         AddThemeStrings()       ' spec 060: the theme setting (table linked from the viewer)
         AddBroadcastStrings()   ' spec 016: streamsplayer broadcast resource management
         AddDiskStrings()        ' DISK-SHARE: file-backed containers and local drive aliases
+        AddExchangeStrings()    ' tickets 142-144: the Media Exchange Server group and tray item
+        AddExchangeProducerStrings()   ' ticket 148: the share service registering on an exchange server
     End Sub
 
     ''' <summary>

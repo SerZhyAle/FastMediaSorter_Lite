@@ -13,7 +13,7 @@ Partial Public NotInheritable Class Share_Settings_Form
     Private settingsWasPresented As Boolean
 
     Private Function SettingsSections() As CollapsibleSection()
-        Return {_secStartup, _secNetwork, _secHosting, _secHelp}
+        Return AllSections()
     End Function
 
     Private Sub RestoreSettingsUiContext()
@@ -59,6 +59,9 @@ Partial Public NotInheritable Class Share_Settings_Form
             _root.AutoScrollPosition = New Point(0, target)
         End If
         If _secHosting.Expanded Then EnsureHostingLoaded()
+        ' Not only when unfolded: the folded summary ("Running on port N") must be true too, and the
+        ' live read is one short run of the binary's inspect, off the UI thread.
+        EnsureExchangeLoaded()
     End Sub
 
     Protected Overrides Sub OnFormClosing(e As FormClosingEventArgs)

@@ -609,10 +609,15 @@ Public NotInheritable Class PackageWizardForm
             .Running = _status.Running, .ListenPort = _status.ListenPort,
             .Username = _status.Username, .Password = _status.Password,
             .Fingerprint = _status.Fingerprint, .Reachability = _status.Reachability,
+            .ExchangeSupported = _status.ExchangeSupported, .Exchange = _status.Exchange,
             .Roots = selected}
 
+        ' Ticket 148 T-5: the relay port and the tunnel path of the first selected share that is registered on an
+        ' exchange server. Nothing with the producer off (or a worker that reports nothing): the export is then
+        ' byte-identical to what it was (ANYWHERE-ACCESS section 8.5).
         _config = ShareConfigBuilder.Build(snapshot, includeExternal:=Not chkLanOnly.Checked,
-                                           includePassword:=Not chkNoPassword.Checked, perRootParams:=perRoot)
+                                           includePassword:=Not chkNoPassword.Checked, perRootParams:=perRoot,
+                                           exchange:=ProducerExport(snapshot))
 
         If _config Is Nothing Then
             ShowQr(Nothing)
@@ -730,6 +735,19 @@ Public NotInheritable Class PackageWizardForm
 
     ''' <summary>Applies the verdict to every surface at once: QR, save, e-mail, the retry button and
     ''' the explaining line. Nothing else may enable a handout.</summary>
+    ''' <summary>The exchange part of an export (ticket 148 T-5), or Nothing: producer off, no publishable client
+    ''' endpoint, a worker that reports no registration. Never throws - an export must not fail on this.</summary>
+    Private Shared Function ProducerExport(status As WorkerStatus) As ExchangeExport
+        Try
+            Dim settings As New ExchangeProducerSettings()
+            settings.Load()
+            Return ExchangeProducerRules.ExportFor(status, settings)
+        Catch ex As Exception
+            AppFileLogger.LogException("Package wizard: the exchange part of the export", ex)
+            Return Nothing
+        End Try
+    End Function
+
     Private Sub RefreshOfferState()
         Dim can As Boolean = MayOfferQr()
         SetQrAvailable(can)

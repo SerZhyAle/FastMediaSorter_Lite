@@ -21,7 +21,7 @@ It is a packaging and host-mode variant, never a fork.
 | winget package | `SerZhyAle.FastMediaSorter` | `SerZhyAle.FastMediaSorter.Server` (`publishing/winget/server/`) |
 | Elevation | `lowest`, dialog override | `admin`, no override |
 | OS floor | `MinVersion=6.1` (the x86 viewer) | `MinVersion=10.0.14393` |
-| Payload | viewer x64 + x86, VLC, OCR, Share Manager, worker | Share Manager + worker + helper scripts **only** |
+| Payload | viewer x64 + x86, VLC, OCR, Share Manager, worker | Share Manager + worker + helper scripts; the viewer only as an **optional, unticked** component (below) |
 | Store / MSIX | yes | **never** |
 
 Everything in that table except the wizard-name row is an *identity* anchor (the visible names follow `docs/guides/PRODUCT_NAMING.md`;
@@ -45,6 +45,33 @@ Needs Inno Setup 6 (`winget install JRSoftware.InnoSetup`) and a vendored worker
 The release workflow builds the same asset from its own lean stage
 (`.github/workflows/release.yml`, step *Build Server edition installer*) and attaches it
 plus its `.sha256` to the GitHub Release.
+
+## The optional viewer component (ticket 132)
+
+The Server edition leads with the server role and carries the media viewer as a **secondary
+role**: an **unchecked** `viewer` component on the components page, described in one line as
+optional. Everything about it follows from "optional and de-emphasised, never hidden":
+
+- **Default payload unchanged.** The component has no `Types:` entry, so it starts unticked; a
+  silent install (winget) never gets it. `/COMPONENTS="server,filedo,viewer"` adds it (name every
+  component you want: a `/COMPONENTS` list replaces the defaults, and `server` is the fixed one).
+- **Focus.** The wizard's welcome text and the components page lead with the server; the viewer row
+  comes last. Its shortcut exists only when the component was ticked, only in the Start menu, and
+  is named `Viewer - Fast Media Sorter & Sharing` - never the User edition's own shortcut name in
+  the shared Start-menu group.
+- **Payload.** The files of the User installer's *Compact* type taken from the User stage of the
+  **same version**, laid next to the Share Manager: both viewer exes with their libraries, no VLC
+  codecs, no OCR models, no PDFium (those download on first use). Staged by
+  `tools\Stage-ServerViewerPayload.ps1` into `<server stage>\viewer\`; the Inno script defines
+  the component only when `viewer\FastMediaSorter_LITE.exe` is there (`#if FileExists`), so a
+  hand compile or a local build with no User stage gets a Server installer **without** the
+  component and a warning - never a component with nothing behind it. The shipping packagers
+  (`release.yml`, `Build-OfflineRelease.ps1`) pass `-Require`.
+- **Next to a User edition.** The row stays on the page but is ticked off, disabled and says why:
+  that edition already carries a viewer, and a second copy would race it for the single-instance
+  mutex and the "default app" choice.
+- **No identity moves.** `AppId`, ARP name, install directory, winget package, release asset name
+  and the service name are untouched.
 
 ## Worker-side requirements
 
@@ -108,7 +135,13 @@ observed on a machine you are willing to reboot without logging in.
 7. **Network readiness.** Boot with the network unavailable, then restore it - status and
    the LAN announce come good without an interactive restart.
 8. **Update over a real prior install** (not only a fresh one) - canon invariant 6.
-9. **Uninstall.** The service is stopped and deleted before file removal; only app-owned
+9. **Optional viewer (ticket 132).** (a) An interactive install leaves the viewer row unticked and
+   installs no viewer file; (b) ticking it installs the mainline exe beside the Share Manager and
+   a `Viewer - ..` Start-menu entry, and the Share Manager's "open the viewer" link then works;
+   (c) a silent `/VERYSILENT` install adds no viewer, `/COMPONENTS="server,filedo,viewer"` does;
+   (d) beside an installed User edition the row is disabled; (e) uninstall removes the viewer
+   files and the shortcut with the rest.
+10. **Uninstall.** The service is stopped and deleted before file removal; only app-owned
    firewall/ACL state is removed; no listening port and no orphaned SCM registration
    remain; the identity is kept unless deleted explicitly.
 

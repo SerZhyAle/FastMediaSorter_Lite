@@ -150,12 +150,17 @@ $net48OnlyFiles = @(
     'System.Numerics.Vectors.dll', 'System.Runtime.CompilerServices.Unsafe.dll'
 )
 $x86OnlyTrees = @('x86\', 'libvlc\win-x86\', 'runtimes\win-x86\')
+# The exchange server (specification 133) is not part of the Store package in v1: the Store channel
+# is the viewer edition's and stays lean. A local build deploys its tree into bin\Release for
+# development, so it is excluded here by name rather than by luck.
+$notInThisPackageTrees = @('exchange\')
 Get-ChildItem $ReleaseDir -Recurse -File |
     Where-Object { $_.Extension -notin '.pdb', '.xml', '.log' } |
     ForEach-Object {
         $rel  = Get-RelativePath $ReleaseDir $_.FullName
         if ($net48OnlyFiles -contains $rel) { return }
         foreach ($tree in $x86OnlyTrees) { if ($rel.StartsWith($tree, [StringComparison]::OrdinalIgnoreCase)) { return } }
+        foreach ($tree in $notInThisPackageTrees) { if ($rel.StartsWith($tree, [StringComparison]::OrdinalIgnoreCase)) { return } }
         $dest = Join-Path $Stage $rel
         New-Item -ItemType Directory -Path (Split-Path $dest -Parent) -Force | Out-Null
         Copy-Item $_.FullName $dest -Force
@@ -202,6 +207,19 @@ if (-not $SkipOcrPayload) {
     if (-not (Test-Path $OcrPayload)) { throw "OCR payload tool not found: $OcrPayload" }
     if ($IncludeBestOcr) { & $OcrPayload -StageDir $Stage -IncludeBest }
     else                 { & $OcrPayload -StageDir $Stage }
+}
+
+# The Store package never carries the exchange server (specification 133 section 6, ticket 141):
+# the exclusion above keeps bin\Release's development copy out, and this proves it on the stage -
+# no exchange\ folder and no copy of the binary anywhere - so a future staging change that
+# bypasses the list cannot ship it unnoticed. It holds with the shipping gate open too: the gate
+# governs the GitHub and winget setups, never the MSIX.
+if (Test-Path -LiteralPath (Join-Path $Stage 'exchange')) {
+    throw "The MSIX stage carries an exchange\ folder - the exchange server is not part of the Store package."
+}
+$strayExchange = @(Get-ChildItem -LiteralPath $Stage -Recurse -File -Filter 'fms-exchange-server*' -ErrorAction SilentlyContinue)
+if ($strayExchange.Count -gt 0) {
+    throw "The MSIX stage carries the exchange server binary ($($strayExchange[0].FullName)) - it is not part of the Store package."
 }
 
 # Generate the logo PNGs from the 256px master.

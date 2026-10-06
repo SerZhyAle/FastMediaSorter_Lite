@@ -99,7 +99,7 @@ Partial Public NotInheritable Class Share_Settings_Form
     ''' stale all the same and has to be re-read.</summary>
     Public ReadOnly Property WorkerStateChanged As Boolean
         Get
-            Return _portPushed OrElse _policyPushed
+            Return _portPushed OrElse _policyPushed OrElse _pxPushed
         End Get
     End Property
 
@@ -129,6 +129,8 @@ Partial Public NotInheritable Class Share_Settings_Form
                 Try : toolTip.Dispose() : Catch : End Try
                 Try : _lblHost?.Font?.Dispose() : Catch : End Try
                 Try : _lblLive?.Font?.Dispose() : Catch : End Try
+                DisposeExchangeResources()
+                DisposeProducerResources()
                 ShareIcons.FreeIcon(Me.Icon, _iconHandle)
             End Sub
         ' Sizable rather than the usual FixedDialog: an accordion changes height by design,
@@ -154,8 +156,11 @@ Partial Public NotInheritable Class Share_Settings_Form
         BuildStartupSection(_secStartup)
         BuildNetworkSection(_secNetwork)
         BuildHostingSection(_secHosting)
+        ' Between Hosting and Help, and ONLY when the exchange server component is installed: without
+        ' it there is no group at all (ticket 142), so the window is exactly what it was.
+        _secExchange = CreateExchangeSection()
         BuildHelpSection(_secHelp)
-        For Each sec As CollapsibleSection In {_secStartup, _secNetwork, _secHosting, _secHelp}
+        For Each sec As CollapsibleSection In AllSections()
             sec.Dock = DockStyle.Fill
             AddHandler sec.ExpandedChanged, AddressOf OnSectionExpandedChanged
             AddRow(_root, sec)
@@ -408,6 +413,10 @@ Partial Public NotInheritable Class Share_Settings_Form
             .ForeColor = ThemeService.Palette.TextMuted, .Margin = New Padding(0, 10, 0, 0),
             .Text = ShareText.NetworkReachNote()})
 
+        ' Ticket 148: where the share service is told about an exchange server. Built only where the feature
+        ' can exist (the shipping gate of 133 section 8), so a window without it is exactly what it was.
+        BuildExchangeProducerRows(sec)
+
         ' The way back from the opt-in (ticket 028 Ф-6, APP-BEHAVIOUR rule 4): a standing
         ' consent is revocable in one action, from where the network settings live. Hidden
         ' where this user cannot withdraw it from here - a Store build, the Server edition.
@@ -485,7 +494,7 @@ Partial Public NotInheritable Class Share_Settings_Form
         ' ancestor-aware property). Reading it there measured the page as empty and the
         ' dialog opened at its 220 px minimum with a scrollbar over content that fits.
         Dim content As Integer = 0
-        For Each sec As CollapsibleSection In {_secStartup, _secNetwork, _secHosting, _secHelp}
+        For Each sec As CollapsibleSection In AllSections()
             content += sec.PreferredSize.Height + sec.Margin.Vertical
         Next
         Dim needed As Integer = content + _root.Padding.Vertical + _strip.Height +
@@ -501,6 +510,7 @@ Partial Public NotInheritable Class Share_Settings_Form
     Private Sub OnSectionExpandedChanged(sender As Object, e As EventArgs)
         If Not _built Then Return
         If _secHosting IsNot Nothing AndAlso _secHosting.Expanded Then EnsureHostingLoaded()
+        If _secExchange IsNot Nothing AndAlso _secExchange.Expanded Then EnsureExchangeLoaded()
         ' WINDOWS-UI section 5: preserve user geometry; the content pane scrolls.
         _root.PerformLayout()
     End Sub
@@ -561,6 +571,7 @@ Partial Public NotInheritable Class Share_Settings_Form
         ' so the folded and unfolded states cannot drift apart.
         _secHosting.Summary = HostingText.HostModeLine(ServerFeatures.HostMode())
         _secHosting.SummaryColor = ThemeService.Palette.TextMuted
+        UpdateExchangeSummary()
     End Sub
 
     ' --- the pinned listen port -------------------------------------------------

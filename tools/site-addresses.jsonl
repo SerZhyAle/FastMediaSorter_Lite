@@ -1,0 +1,55 @@
+{"group":"landing","locale":"lang/<code>/index.html","sitemap":true,"note":"the landing: root index.html for English, one generated render per other language"}
+{"group":"trust","locale":"lang/<code>/trust.html","sitemap":true,"note":"the install-trust page: root trust.html for English, one generated render per other language (INSTALL-TRUST rule 7)"}
+{"group":"privacy","locale":null,"sitemap":true,"note":"one page under docs/ that switches en/ru/uk in-page (the address the Store listing names does not change); listed in the sitemap since specification 151"}
+{"group":"edition","locale":null,"sitemap":true,"note":"the Server edition page, English only"}
+{"group":"guide","locale":null,"sitemap":true,"note":"a task guide or reference page at the root; en/ru/uk switched in-page (data-l spans), never a lang/<code>/ sibling"}
+{"address":"https://serzhyale.github.io/FastMediaSorter_Lite/","holder":"src/Support/SitePages.vb","kind":"landing"}
+{"address":"https://serzhyale.github.io/FastMediaSorter_Lite/docs/privacy.html","holder":"src/Support/SitePages.vb","kind":"privacy","carried":"built","fragment":"SiteRoot & \"docs/privacy.html\""}
+{"address":"https://serzhyale.github.io/FastMediaSorter_Lite/trust.html","holder":"src/Support/SitePages.vb","kind":"trust","carried":"built","fragment":"SiteRoot & \"trust.html\"","note":"TrustPageUrl(code) builds the locale sibling too: SiteRoot & \"lang/\" & code & \"/trust.html\""}
+{"address":"https://serzhyale.github.io/FastMediaSorter_Lite/","holder":"src/Table_Form.ModernLayout.vb","kind":"landing"}
+{"address":"https://serzhyale.github.io/FastMediaSorter_Lite/publish-folders-android.html","holder":"src/Table_Form.ModernLayout.vb","kind":"guide"}
+{"address":"https://serzhyale.github.io/FastMediaSorter_Lite/","holder":"src/FastMediaSorterCompanion/Core/ShareLinks.vb","kind":"landing"}
+{"address":"https://serzhyale.github.io/FastMediaSorter_Lite/publish-folders-android.html","holder":"src/FastMediaSorterCompanion/Core/ShareLinks.vb","kind":"guide"}
+{"address":"https://serzhyale.github.io/FastMediaSorter_Lite/server.html","holder":"src/FastMediaSorterCompanion/Core/ShareLinks.vb","kind":"edition"}
+{"address":"https://serzhyale.github.io/FastMediaSorter_Lite/server.html","holder":"src/FastMediaSorterCompanion/Core/HostingText.vb","kind":"edition"}
+{"address":"https://serzhyale.github.io/FastMediaSorter_Lite/","holder":"publishing/installer/FastMediaSorter.iss","kind":"landing"}
+{"address":"https://serzhyale.github.io/FastMediaSorter_Lite/publish-folders-android.html","holder":"publishing/installer/FastMediaSorter.iss","kind":"guide","note":"ShareGuideUrl appends ?lang=ru or ?lang=uk; the guide page reads it"}
+{"address":"https://serzhyale.github.io/FastMediaSorter_Lite/trust.html","holder":"publishing/installer/FastMediaSorter.iss","kind":"trust","carried":"built","fragment":"SiteBaseUrl + 'trust.html'"}
+{"address":"https://serzhyale.github.io/FastMediaSorter_Lite/lang/ru/trust.html","holder":"publishing/installer/FastMediaSorter.iss","kind":"trust","carried":"built","fragment":"SiteBaseUrl + 'lang/ru/trust.html'"}
+{"address":"https://serzhyale.github.io/FastMediaSorter_Lite/lang/uk/trust.html","holder":"publishing/installer/FastMediaSorter.iss","kind":"trust","carried":"built","fragment":"SiteBaseUrl + 'lang/uk/trust.html'"}
+{"address":"https://serzhyale.github.io/FastMediaSorter_Lite/trust.html","holder":"publishing/winget/SerZhyAle.FastMediaSorter.locale.en-US.yaml","kind":"trust"}
+{"address":"https://serzhyale.github.io/FastMediaSorter_Lite/server.html","holder":"publishing/winget/server/SerZhyAle.FastMediaSorter.Server.locale.en-US.yaml","kind":"edition"}
+{"address":"https://serzhyale.github.io/FastMediaSorter_Lite/trust.html","holder":"publishing/winget/server/SerZhyAle.FastMediaSorter.Server.locale.en-US.yaml","kind":"trust"}
+{"address":"https://serzhyale.github.io/FastMediaSorter_Lite/trust.html","holder":".github/workflows/release.yml","kind":"trust"}
+{"address":"https://serzhyale.github.io/FastMediaSorter_Lite/docs/privacy.html","holder":"Partner Center: the Store listing privacy policy URL","kind":"privacy","carried":"external","note":"set by hand in the listing, documented in docs/guides/STORE_PUBLISHING.md; the gate resolves the address but cannot read the field"}
+{"address":"https://serzhyale.github.io/FastMediaSorter_Lite/how-to-sftp.html","holder":"README.md","kind":"guide"}
+{"address":"https://serzhyale.github.io/FastMediaSorter_Lite/publish-folders-android.html","holder":"README.md","kind":"guide"}
+{"address":"https://serzhyale.github.io/FastMediaSorter_Lite/server.html","holder":"README.md","kind":"edition"}
+{"address":"https://serzhyale.github.io/FastMediaSorter_Lite/how-to-viewer.html","holder":"README.md","kind":"guide"}
+{"address":"https://serzhyale.github.io/FastMediaSorter_Lite/how-to-keys.html","holder":"README.md","kind":"guide"}
+{"address":"https://serzhyale.github.io/FastMediaSorter_Lite/how-to-setup.html","holder":"README.md","kind":"guide"}
+{"address":"https://serzhyale.github.io/FastMediaSorter_Lite/how-to-ocr.html","holder":"README.md","kind":"guide"}
+{"address":"https://serzhyale.github.io/FastMediaSorter_Lite/how-to-editor.html","holder":"README.md","kind":"guide"}
+{"address":"https://serzhyale.github.io/FastMediaSorter_Lite/how-to-archives.html","holder":"README.md","kind":"guide"}
+{"address":"https://serzhyale.github.io/FastMediaSorter_Lite/how-to-resources.html","holder":"README.md","kind":"guide"}
+{"address":"https://serzhyale.github.io/FastMediaSorter_Lite/trust.html","holder":"README.md","kind":"trust"}
+{"address":"https://serzhyale.github.io/FastMediaSorter_Lite/how-to-sftp.html","holder":"README_RU.md","kind":"guide"}
+{"address":"https://serzhyale.github.io/FastMediaSorter_Lite/publish-folders-android.html","holder":"README_RU.md","kind":"guide"}
+{"address":"https://serzhyale.github.io/FastMediaSorter_Lite/server.html","holder":"README_RU.md","kind":"edition"}
+{"address":"https://serzhyale.github.io/FastMediaSorter_Lite/how-to-viewer.html","holder":"README_RU.md","kind":"guide"}
+{"address":"https://serzhyale.github.io/FastMediaSorter_Lite/how-to-keys.html","holder":"README_RU.md","kind":"guide"}
+{"address":"https://serzhyale.github.io/FastMediaSorter_Lite/how-to-setup.html","holder":"README_RU.md","kind":"guide"}
+{"address":"https://serzhyale.github.io/FastMediaSorter_Lite/how-to-ocr.html","holder":"README_RU.md","kind":"guide"}
+{"address":"https://serzhyale.github.io/FastMediaSorter_Lite/how-to-editor.html","holder":"README_RU.md","kind":"guide"}
+{"address":"https://serzhyale.github.io/FastMediaSorter_Lite/how-to-archives.html","holder":"README_RU.md","kind":"guide"}
+{"address":"https://serzhyale.github.io/FastMediaSorter_Lite/lang/ru/trust.html","holder":"README_RU.md","kind":"trust"}
+{"address":"https://serzhyale.github.io/FastMediaSorter_Lite/how-to-sftp.html","holder":"README_UK.md","kind":"guide"}
+{"address":"https://serzhyale.github.io/FastMediaSorter_Lite/publish-folders-android.html","holder":"README_UK.md","kind":"guide"}
+{"address":"https://serzhyale.github.io/FastMediaSorter_Lite/server.html","holder":"README_UK.md","kind":"edition"}
+{"address":"https://serzhyale.github.io/FastMediaSorter_Lite/how-to-viewer.html","holder":"README_UK.md","kind":"guide"}
+{"address":"https://serzhyale.github.io/FastMediaSorter_Lite/how-to-keys.html","holder":"README_UK.md","kind":"guide"}
+{"address":"https://serzhyale.github.io/FastMediaSorter_Lite/how-to-setup.html","holder":"README_UK.md","kind":"guide"}
+{"address":"https://serzhyale.github.io/FastMediaSorter_Lite/how-to-ocr.html","holder":"README_UK.md","kind":"guide"}
+{"address":"https://serzhyale.github.io/FastMediaSorter_Lite/how-to-editor.html","holder":"README_UK.md","kind":"guide"}
+{"address":"https://serzhyale.github.io/FastMediaSorter_Lite/how-to-archives.html","holder":"README_UK.md","kind":"guide"}
+{"address":"https://serzhyale.github.io/FastMediaSorter_Lite/lang/uk/trust.html","holder":"README_UK.md","kind":"trust"}

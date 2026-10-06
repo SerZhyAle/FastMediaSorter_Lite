@@ -58,6 +58,7 @@
       }
     ],
     "note": "One third-party service can be contacted, and only if you turn on internet access for sharing: check-host.net is asked to confirm that your forwarded port answers from outside, which shows that service your public address and port. Nothing else is sent to it. Two more things stay inside your own network: with internet access on, the program asks your router to forward the sharing port (UPnP or NAT-PMP), and while sharing runs, the PC announces itself on the local network (mDNS) so a paired phone can find it again.",
+    "origins": "Opening a page of this website, as opposed to using the program, contacts up to three outside addresses: fonts.googleapis.com and fonts.gstatic.com (Google Fonts, for the lettering of the pages) and, on the home page and its language versions, api.github.com (GitHub, to look up the latest release for the download link). Each receives your IP address and your browser's user agent and nothing else. No analytics, tag-manager or advertising address is contacted. The privacy page says the same.",
     "backLabel": "Back to the main page",
     "dlLabel": "Downloads",
     "privacyLabel": "Privacy policy"
@@ -120,6 +121,7 @@
       }
     ],
     "note": "Один сторонний сервис всё же может быть вызван, и только если вы включите доступ из интернета для общего доступа к папкам: у check-host.net спрашивают, отвечает ли проброшенный порт снаружи, и этот сервис видит ваш публичный адрес и порт. Больше ему ничего не отправляется. Ещё две вещи не выходят за пределы вашей сети: при включённом доступе из интернета программа просит ваш роутер пробросить порт раздачи (UPnP или NAT-PMP), а пока раздача работает, компьютер объявляет о себе в локальной сети (mDNS), чтобы привязанный телефон снова его нашёл.",
+    "origins": "Открытие страниц этого сайта (а не работа программы) обращается не более чем к трём внешним адресам: fonts.googleapis.com и fonts.gstatic.com (Google Fonts, начертание страниц) и - на главной странице и её языковых версиях - api.github.com (GitHub, чтобы узнать последний выпуск для ссылки на скачивание). Каждый получает ваш IP-адрес и user agent вашего браузера и ничего больше. Адреса аналитики, менеджера тегов или рекламы не используются. То же сказано на странице приватности.",
     "backLabel": "На главную страницу",
     "dlLabel": "Загрузки",
     "privacyLabel": "Конфиденциальность"
@@ -182,6 +184,7 @@
       }
     ],
     "note": "Один сторонній сервіс усе ж може бути викликаний, і лише якщо ви ввімкнете доступ з інтернету для спільного доступу до папок: у check-host.net запитують, чи відповідає переспрямований порт ззовні, і цей сервіс бачить вашу публічну адресу та порт. Більше йому нічого не надсилається. Ще дві речі не виходять за межі вашої мережі: коли доступ з інтернету ввімкнено, програма просить ваш роутер переспрямувати порт роздачі (UPnP або NAT-PMP), а поки роздача працює, комп'ютер оголошує про себе в локальній мережі (mDNS), щоб прив'язаний телефон знову його знайшов.",
+    "origins": "Відкриття сторінок цього сайту (а не робота програми) звертається щонайбільше до трьох зовнішніх адрес: fonts.googleapis.com і fonts.gstatic.com (Google Fonts, накреслення сторінок) та - на головній сторінці й її мовних версіях - api.github.com (GitHub, щоб дізнатися про останній випуск для посилання на завантаження). Кожна з них отримує вашу IP-адресу та user agent вашого браузера і більше нічого. Адреси аналітики, менеджера тегів чи реклами не використовуються. Те саме сказано на сторінці конфіденційності.",
     "backLabel": "На головну сторінку",
     "dlLabel": "Завантаження",
     "privacyLabel": "Конфіденційність"
@@ -244,6 +247,7 @@
       }
     ],
     "note": "Ein einziger Drittanbieterdienst kann kontaktiert werden, und nur, wenn Sie den Internetzugang für die Freigabe einschalten: check-host.net wird gebeten zu bestätigen, dass Ihr weitergeleiteter Port von außen antwortet, wodurch dieser Dienst Ihre öffentliche Adresse und den Port sieht. Sonst wird ihm nichts gesendet. Zwei weitere Dinge bleiben in Ihrem eigenen Netzwerk: Bei eingeschaltetem Internetzugang bittet das Programm Ihren Router, den Freigabeport weiterzuleiten (UPnP oder NAT-PMP), und solange die Freigabe läuft, meldet sich der PC im lokalen Netzwerk (mDNS), damit ein gekoppeltes Telefon ihn wiederfindet.",
+    "origins": "Wer eine Seite dieser Website öffnet (nicht das Programm benutzt), löst Anfragen an höchstens drei fremde Adressen aus: fonts.googleapis.com und fonts.gstatic.com (Google Fonts, für die Schrift der Seiten) und - auf der Startseite und ihren Sprachversionen - api.github.com (GitHub, um die neueste Version für den Download-Link nachzuschlagen). Jede erhält Ihre IP-Adresse und den User-Agent Ihres Browsers, sonst nichts. Adressen für Analyse, Tag-Manager oder Werbung werden nicht kontaktiert. Die Datenschutzseite sagt dasselbe.",
     "backLabel": "Zurück zur Hauptseite",
     "dlLabel": "Downloads",
     "privacyLabel": "Datenschutz"
@@ -306,6 +310,7 @@
       }
     ],
     "note": "Può essere contattato un solo servizio di terze parti, e solo se attivate l'accesso da internet per la condivisione: a check-host.net si chiede di confermare che la porta inoltrata risponde dall'esterno, e così quel servizio vede il vostro indirizzo pubblico e la porta. Non gli viene inviato nient'altro. Altre due cose restano dentro la vostra rete: con l'accesso da internet attivo, il programma chiede al router di inoltrare la porta di condivisione (UPnP o NAT-PMP), e mentre la condivisione è attiva il PC si annuncia sulla rete locale (mDNS), così un telefono associato può ritrovarlo.",
+    "origins": "Aprire una pagina di questo sito web (a differenza di usare il programma) contatta al massimo tre indirizzi esterni: fonts.googleapis.com e fonts.gstatic.com (Google Fonts, per i caratteri delle pagine) e, nella pagina iniziale e nelle sue versioni linguistiche, api.github.com (GitHub, per cercare l'ultima versione per il link di download). Ciascuno riceve il tuo indirizzo IP e lo user agent del browser, nient'altro. Non viene contattato alcun indirizzo di analisi, tag manager o pubblicità. La pagina sulla privacy dice lo stesso.",
     "backLabel": "Torna alla pagina principale",
     "dlLabel": "Download",
     "privacyLabel": "Privacy"
@@ -368,6 +373,7 @@
       }
     ],
     "note": "Se puede contactar con un único servicio de terceros, y solo si activas el acceso desde internet para la compartición: se pide a check-host.net que confirme que tu puerto reenviado responde desde fuera, lo que muestra a ese servicio tu dirección pública y el puerto. No se le envía nada más. Otras dos cosas no salen de tu propia red: con el acceso desde internet activado, el programa pide a tu router que reenvíe el puerto de compartición (UPnP o NAT-PMP), y mientras la compartición funciona, el PC se anuncia en la red local (mDNS) para que un teléfono emparejado pueda volver a encontrarlo.",
+    "origins": "Abrir una página de este sitio web (a diferencia de usar el programa) contacta con un máximo de tres direcciones externas: fonts.googleapis.com y fonts.gstatic.com (Google Fonts, para la tipografía de las páginas) y, en la página de inicio y sus versiones en otros idiomas, api.github.com (GitHub, para consultar la última versión del enlace de descarga). Cada una recibe tu dirección IP y el user agent de tu navegador, y nada más. No se contacta con ninguna dirección de analítica, gestor de etiquetas o publicidad. La página de privacidad dice lo mismo.",
     "backLabel": "Volver a la página principal",
     "dlLabel": "Descargas",
     "privacyLabel": "Privacidad"
@@ -430,6 +436,7 @@
       }
     ],
     "note": "Un seul service tiers peut être contacté, et seulement si vous activez l'accès depuis internet pour le partage : check-host.net est interrogé pour confirmer que votre port redirigé répond depuis l'extérieur, ce qui montre à ce service votre adresse publique et le port. Rien d'autre ne lui est envoyé. Deux autres choses restent dans votre propre réseau : avec l'accès depuis internet activé, le programme demande à votre routeur de rediriger le port de partage (UPnP ou NAT-PMP), et tant que le partage fonctionne, le PC s'annonce sur le réseau local (mDNS) pour qu'un téléphone associé puisse le retrouver.",
+    "origins": "Ouvrir une page de ce site web (et non utiliser le programme) contacte au plus trois adresses extérieures : fonts.googleapis.com et fonts.gstatic.com (Google Fonts, pour la typographie des pages) et, sur la page d'accueil et ses versions linguistiques, api.github.com (GitHub, pour chercher la dernière version du lien de téléchargement). Chacune reçoit votre adresse IP et le user agent de votre navigateur, rien d'autre. Aucune adresse d'analyse, de gestionnaire de balises ou de publicité n'est contactée. La page de confidentialité dit la même chose.",
     "backLabel": "Retour à la page principale",
     "dlLabel": "Téléchargements",
     "privacyLabel": "Confidentialité"
@@ -492,6 +499,7 @@
       }
     ],
     "note": "Pode ser contactado um único serviço de terceiros, e só se ligar o acesso pela internet para a partilha: pede-se a check-host.net que confirme que a porta reencaminhada responde do exterior, o que mostra a esse serviço o seu endereço público e a porta. Nada mais lhe é enviado. Outras duas coisas ficam dentro da sua própria rede: com o acesso pela internet ligado, o programa pede ao seu router que reencaminhe a porta de partilha (UPnP ou NAT-PMP), e enquanto a partilha funciona, o PC anuncia-se na rede local (mDNS) para que um telemóvel emparelhado o volte a encontrar.",
+    "origins": "Abrir uma página deste site (em vez de usar o programa) contacta no máximo três endereços externos: fonts.googleapis.com e fonts.gstatic.com (Google Fonts, para o tipo de letra das páginas) e, na página inicial e nas suas versões noutros idiomas, api.github.com (GitHub, para consultar a versão mais recente da ligação de transferência). Cada um recebe o seu endereço IP e o user agent do seu navegador, e mais nada. Nenhum endereço de análise, gestor de etiquetas ou publicidade é contactado. A página de privacidade diz o mesmo.",
     "backLabel": "Voltar à página principal",
     "dlLabel": "Transferências",
     "privacyLabel": "Privacidade"
@@ -554,6 +562,7 @@
       }
     ],
     "note": "قد يُتصل بخدمة خارجية واحدة، وفقط إذا فعّلت الوصول من الإنترنت للمشاركة: يُسأل check-host.net ما إذا كان المنفذ المعاد توجيهه يستجيب من الخارج، وبذلك ترى تلك الخدمة عنوانك العام والمنفذ. ولا يُرسل إليها شيء آخر. وأمران آخران يبقيان داخل شبكتك: عند تفعيل الوصول من الإنترنت يطلب البرنامج من الموجّه إعادة توجيه منفذ المشاركة (UPnP أو NAT-PMP)، وما دامت المشاركة تعمل يعلن الكمبيوتر عن نفسه في الشبكة المحلية (mDNS) كي يعثر عليه هاتف مقترن من جديد.",
+    "origins": "فتح صفحة من هذا الموقع (وليس استخدام البرنامج) يتصل بثلاثة عناوين خارجية على الأكثر: fonts.googleapis.com وfonts.gstatic.com (خطوط Google لعرض الصفحات)، وفي الصفحة الرئيسية ونسخها اللغوية يتصل أيضاً بـ api.github.com (GitHub، للاستعلام عن أحدث إصدار لرابط التنزيل). يتلقى كل منها عنوان IP الخاص بك ووكيل المستخدم (user agent) في متصفحك ولا شيء غير ذلك. لا يتم الاتصال بأي عنوان للتحليلات أو لإدارة الوسوم أو للإعلانات. وتذكر صفحة الخصوصية الأمر نفسه.",
     "backLabel": "العودة إلى الصفحة الرئيسية",
     "dlLabel": "التنزيلات",
     "privacyLabel": "الخصوصية"
@@ -616,6 +625,7 @@
       }
     ],
     "note": "एक ही बाहरी सेवा से संपर्क हो सकता है, और वह भी केवल तब जब आप साझाकरण के लिए इंटरनेट पहुँच चालू करें: check-host.net से पूछा जाता है कि आपका फ़ॉरवर्ड किया पोर्ट बाहर से जवाब देता है या नहीं, जिससे उस सेवा को आपका सार्वजनिक पता और पोर्ट दिखता है। इसके अलावा उसे कुछ नहीं भेजा जाता। दो और चीज़ें आपके अपने नेटवर्क के भीतर ही रहती हैं: इंटरनेट पहुँच चालू होने पर प्रोग्राम आपके राउटर से साझाकरण पोर्ट फ़ॉरवर्ड करने को कहता है (UPnP या NAT-PMP), और साझाकरण चलते समय PC स्थानीय नेटवर्क में अपनी घोषणा करता है (mDNS), ताकि जोड़ा गया फ़ोन उसे फिर ढूँढ सके।",
+    "origins": "इस वेबसाइट का कोई पृष्ठ खोलने पर (प्रोग्राम चलाने पर नहीं) अधिकतम तीन बाहरी पतों से संपर्क होता है: fonts.googleapis.com और fonts.gstatic.com (Google Fonts, पृष्ठों के अक्षरों के लिए) और मुख्य पृष्ठ व उसके भाषा-संस्करणों पर api.github.com (GitHub, डाउनलोड लिंक के लिए नवीनतम रिलीज़ देखने हेतु)। हर एक को आपका IP पता और आपके ब्राउज़र का user agent मिलता है, और कुछ नहीं। विश्लेषण, टैग-मैनेजर या विज्ञापन के किसी पते से संपर्क नहीं किया जाता। गोपनीयता पृष्ठ भी यही कहता है।",
     "backLabel": "मुख्य पृष्ठ पर लौटें",
     "dlLabel": "डाउनलोड",
     "privacyLabel": "गोपनीयता"
@@ -678,6 +688,7 @@
       }
     ],
     "note": "একটিমাত্র বাইরের পরিষেবার সঙ্গে যোগাযোগ হতে পারে, আর তা কেবল তখনই যখন আপনি শেয়ারিংয়ের জন্য ইন্টারনেট প্রবেশ চালু করেন: check-host.net-কে জিজ্ঞাসা করা হয় আপনার ফরওয়ার্ড করা পোর্ট বাইরে থেকে সাড়া দেয় কি না, তাতে সেই পরিষেবা আপনার সর্বজনীন ঠিকানা ও পোর্ট দেখে। এর বাইরে তাকে কিছু পাঠানো হয় না। আরও দুটি জিনিস আপনার নিজের নেটওয়ার্কের ভিতরেই থাকে: ইন্টারনেট প্রবেশ চালু থাকলে প্রোগ্রামটি আপনার রাউটারকে শেয়ারিং পোর্ট ফরওয়ার্ড করতে বলে (UPnP বা NAT-PMP), আর শেয়ারিং চলার সময় PC স্থানীয় নেটওয়ার্কে নিজের উপস্থিতি জানায় (mDNS), যাতে যুক্ত ফোন তাকে আবার খুঁজে পায়।",
+    "origins": "এই ওয়েবসাইটের কোনো পাতা খুললে (প্রোগ্রাম চালালে নয়) সর্বোচ্চ তিনটি বাইরের ঠিকানার সঙ্গে যোগাযোগ হয়: fonts.googleapis.com ও fonts.gstatic.com (Google Fonts, পাতার অক্ষরের জন্য) এবং প্রধান পাতা ও তার ভাষা-সংস্করণে api.github.com (GitHub, ডাউনলোড লিংকের জন্য সর্বশেষ রিলিজ দেখতে)। প্রতিটি আপনার IP ঠিকানা ও ব্রাউজারের user agent পায়, আর কিছু নয়। বিশ্লেষণ, ট্যাগ-ম্যানেজার বা বিজ্ঞাপনের কোনো ঠিকানার সঙ্গে যোগাযোগ করা হয় না। গোপনীয়তার পাতাতেও একই কথা বলা আছে।",
     "backLabel": "মূল পাতায় ফিরুন",
     "dlLabel": "ডাউনলোড",
     "privacyLabel": "গোপনীয়তা"
@@ -740,6 +751,7 @@
       }
     ],
     "note": "صرف ایک بیرونی سروس سے رابطہ ہو سکتا ہے، اور وہ بھی تبھی جب آپ شیئرنگ کے لیے انٹرنیٹ رسائی آن کریں: ‏check-host.net سے پوچھا جاتا ہے کہ آپ کا فارورڈ کردہ پورٹ باہر سے جواب دیتا ہے یا نہیں، جس سے اس سروس کو آپ کا عوامی پتہ اور پورٹ نظر آتا ہے۔ اس کے علاوہ اسے کچھ نہیں بھیجا جاتا۔ مزید دو چیزیں آپ کے اپنے نیٹ ورک کے اندر ہی رہتی ہیں: انٹرنیٹ رسائی آن ہونے پر پروگرام آپ کے راؤٹر سے شیئرنگ پورٹ فارورڈ کرنے کو کہتا ہے (UPnP یا NAT-PMP)، اور شیئرنگ چلتے وقت PC مقامی نیٹ ورک میں اپنا اعلان کرتا ہے (mDNS)، تاکہ جوڑا گیا فون اسے دوبارہ ڈھونڈ سکے۔",
+    "origins": "اس ویب سائٹ کا کوئی صفحہ کھولنے پر (پروگرام استعمال کرنے پر نہیں) زیادہ سے زیادہ تین بیرونی پتوں سے رابطہ ہوتا ہے: fonts.googleapis.com اور fonts.gstatic.com (Google Fonts، صفحات کے حروف کے لیے) اور مرکزی صفحے اور اس کے زبانی نسخوں پر api.github.com (GitHub، ڈاؤن لوڈ لنک کے لیے تازہ ترین ریلیز دیکھنے کو)۔ ہر ایک کو آپ کا IP ایڈریس اور آپ کے براؤزر کا user agent ملتا ہے، اس کے سوا کچھ نہیں۔ تجزیات، ٹیگ مینیجر یا اشتہار کے کسی پتے سے رابطہ نہیں کیا جاتا۔ رازداری کا صفحہ بھی یہی کہتا ہے۔",
     "backLabel": "مرکزی صفحے پر واپس",
     "dlLabel": "ڈاؤن لوڈ",
     "privacyLabel": "پرائیویسی"
@@ -802,6 +814,7 @@
       }
     ],
     "note": "只有一项第三方服务可能被访问，而且只在您为共享打开互联网访问时：程序会请 check-host.net 确认您转发的端口能否从外部响应，这会让该服务看到您的公网地址和端口。除此之外不会向它发送任何内容。另外两件事只在您自己的网络内进行：打开互联网访问后，程序会请您的路由器转发共享端口（UPnP 或 NAT-PMP）；共享运行期间，电脑会在局域网中广播自己（mDNS），以便已配对的手机重新找到它。",
+    "origins": "打开本网站的页面（而不是使用程序）最多会访问三个外部地址：fonts.googleapis.com 和 fonts.gstatic.com（Google Fonts，用于页面字体），以及在主页及其各语言版本上访问 api.github.com（GitHub，用于查询最新发行版以生成下载链接）。每个地址只会收到您的 IP 地址和浏览器的 user agent，别无其他。不会访问任何分析、标签管理或广告地址。隐私页面说的是同一件事。",
     "backLabel": "返回主页",
     "dlLabel": "下载",
     "privacyLabel": "隐私"

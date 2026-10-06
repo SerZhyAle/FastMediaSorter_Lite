@@ -35,7 +35,7 @@
 
 .PARAMETER Check
     Render into memory and fail if any page or marked region on disk differs, or if any
-    of the 11 contract conformance checks fail. For a pre-flight sweep:
+    of the 14 contract conformance checks fail. For a pre-flight sweep:
     it proves the committed HTML still matches its source and contracts.
 
 .NOTES
@@ -58,7 +58,7 @@ trap {
     Exit-Verdict 'Build-SitePages' 2 'the check could not run'
 }
 if ($Check) {
-    Write-Subject 'Build-SitePages' ('the trust pages, the per-language index pages, robots.txt, sitemap.xml, ' +
+    Write-Subject 'Build-SitePages' ('the trust pages, the per-language index pages, the not-found page, robots.txt, sitemap.xml, ' +
         'search-index.json and index.html marked regions against tools/site-copy.json + tools/trust-copy.json')
 }
 $Root     = Split-Path $PSScriptRoot -Parent
@@ -74,6 +74,23 @@ $Favicon  = 'assets/icons/Fast_Media_Sorter.ico'
 # $ProductCompact is the compact name: the short title-length form only, NOT a Microsoft Store name.
 $ProductFull  = 'Fast Media Sorter & Sharing for Windows'
 $ProductCompact = 'Fast Media Sorter & Sharing'
+
+# The pre-paint resolver: PAGE-STYLE section 7, the one text every page carries (SITE-EXPERIENCE rule 7, specification 154).
+# It runs BEFORE the first stylesheet link so the theme and the language never flash; the hand-authored pages carry the
+# same text and -Check compares them whitespace-folded. sza-theme holds exactly dark|light, sza-lang exactly ru|en|ua.
+$ThemeResolver = @'
+<script>
+(function(){try{
+  var t=localStorage.getItem('sza-theme');
+  if(t!=='dark'&&t!=='light')t=matchMedia('(prefers-color-scheme: light)').matches?'light':'dark';
+  document.documentElement.setAttribute('data-theme',t);
+  var l=localStorage.getItem('sza-lang');
+  if(l==='uk')l='ua';
+  if(l!=='ru'&&l!=='en'&&l!=='ua'){var n=(navigator.language||'en').toLowerCase();l=n.indexOf('ru')==0?'ru':n.indexOf('uk')==0?'ua':'en';}
+  document.documentElement.setAttribute('data-lang',l);
+}catch(e){}})();
+</script>
+'@
 
 $TrustFile = Join-Path $PSScriptRoot 'trust-copy.json'
 
@@ -93,7 +110,7 @@ function Esc([string]$s) {
 $script:RtlPage = $false
 function Body([string]$s) {
     $h = Esc $s
-    if ($script:RtlPage) { $h = [regex]::Replace($h, 'Fast Media Sorter &amp; Sharing(?: for Windows)?|«Sharing»', '<bdi>$0</bdi>') }
+    if ($script:RtlPage) { $h = [regex]::Replace($h, 'Fast Media Sorter &amp; Sharing(?: for Windows)?|«Sharing»|Media Exchange Server', '<bdi>$0</bdi>') }
     $h
 }
 
@@ -152,7 +169,7 @@ function RenderFamilyGridForLocale([string]$code) {
     }) -join "`n"
 
     @"
-  <h2 class="sec-head" style="margin-bottom:1rem;font-size:1.1rem">$(Esc $familyTitle)</h2>
+  <h2 class="sec-head sec-head-family">$(Esc $familyTitle)</h2>
   <div class="tools-grid">
 $cards
   </div>
@@ -204,7 +221,7 @@ function RenderIndexFamily {
 
     @"
   <!-- gen:family -->
-  <h2 class="sec-head" style="margin-bottom:1rem;font-size:1.1rem">
+  <h2 class="sec-head sec-head-family">
     <span data-l="en">$($copy._family.title)</span><span data-l="ru">$($copy._familyTranslations.ru.title)</span><span data-l="ua">$($copy._familyTranslations.uk.title)</span>
   </h2>
   <div class="tools-grid">
@@ -253,6 +270,20 @@ function Render([string]$code) {
         '      <li><a href="{0}/{1}">{2}</a></li>' -f $BaseUrl, $_[0], (Esc $_[1])
     }) -join "`n"
 
+    # The three doors (ticket 132 section 3.2): viewer, share to Android, and the reserved exchange-server slot.
+    # Door 3 is future-tense text only - no link, no download, no capability claim.
+    $doorHrefs = @('#get', "$BaseUrl/server.html", '')
+    $doorCards = (0..2 | ForEach-Object {
+        $d = $e.doors[$_]
+        $pillClass = if ($_ -eq 2) { 'pill gold' } else { 'pill' }
+        $cta = ''
+        if ($d[3]) {
+            $btnClass = if ($_ -eq 0) { 'btn btn-primary btn-sm' } else { 'btn btn-ghost btn-sm' }
+            $cta = "`n      <div class=`"scenario-foot`"><a class=`"$btnClass`" href=`"$($doorHrefs[$_])`">$(Esc $d[3])</a></div>"
+        }
+        "    <article class=`"card scenario-card`" id=`"door-$($_ + 1)`">`n      <span class=`"$pillClass`">$(Body $d[0])</span>`n      <h3>$(Body $d[1])</h3>`n      <p>$(Body $d[2])</p>$cta`n    </article>"
+    }) -join "`n"
+
     $familyGrid = RenderFamilyGridForLocale $code
 
 @"
@@ -261,6 +292,7 @@ function Render([string]$code) {
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+$ThemeResolver
 <title>$(Esc $e.title)</title>
 <meta name="description" content="$(Esc $e.tagline)">
 <link rel="canonical" href="$(PageUrl $code)">
@@ -284,28 +316,50 @@ $alts
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="$BaseUrl/assets/sza-kit.css">
 <link rel="stylesheet" href="$BaseUrl/assets/fms-site.css">
-<script>(function(){try{var t=localStorage.getItem('sza-theme');if(t==='light'||t==='dark'){document.documentElement.setAttribute('data-theme',t);}}catch(e){}})();</script>
 <script type="application/ld+json">$(JsonLd $code $e)</script>
 </head>
 <body>
+<a class="skip-link" href="#main">$(Esc $e.skipLabel)</a>
 <header class="site-header">
-  <a class="brand" href="$(PageUrl $code)" aria-label="$(Esc $ProductFull)"><span class="brand-mark"><img src="$BaseUrl/$Favicon" alt="" width="24" height="24"></span>$(Body $ProductFull)</a>
+  <nav class="site-nav" aria-label="$(Esc $e.navLabel)">
+  <a class="brand" href="$(PageUrl $code)" aria-label="$(Esc $ProductFull)">$(Body $ProductFull)</a>
+  <details class="lang-menu">
+    <summary>$(Esc $e.name)</summary>
+    <div class="lang-pop">
+    $switcher
+    </div>
+  </details>
   <button class="theme-btn" id="themeBtn" aria-label="Switch theme">◐</button>
   <a class="btn btn-primary btn-sm" href="#get">$(Esc $e.dlSetup)</a>
+  </nav>
 </header>
 
-<main class="container">
+<main class="container" id="main" tabindex="-1">
   <section class="hero">
-    <div class="hero-copy">
-      <span class="eyebrow">Windows desktop app</span>
-      <h1>$(Body $e.title)</h1>
-      <span class="kicker">Free &amp; open-source</span>
+    <div class="hero-id">
+      <img class="app-icon" src="$BaseUrl/assets/icons/store-icon-256.png" alt="" width="168" height="168">
+      <div class="hero-copy">
+        <span class="eyebrow">Windows desktop app</span>
+        <h1>$(Body $e.title)</h1>
+        <span class="kicker">Free &amp; open-source</span>
+      </div>
     </div>
+    <p class="lead lead-narrow">$(Body $e.family)</p>
     <p class="lead lead-narrow">$(Body $e.tagline)</p>
     <p class="lead lead-narrow">$(Body $e.sharing) <a href="$BaseUrl/how-to-sftp.html" lang="en" dir="ltr">$(Esc $howtoSftp)</a> &middot; <a href="$BaseUrl/publish-folders-android.html" lang="en" dir="ltr">$(Esc $howtoAndroid)</a></p>
     <div class="button-group">
       <a class="btn btn-primary" href="#get">$(Esc $e.dlSetup)</a>
       <a class="btn btn-ghost" href="#features">$(Esc $e.knowTitle)</a>
+    </div>
+  </section>
+
+  <section class="section doors" id="doors" aria-labelledby="doors-title">
+    <div class="sec-head">
+      <h2 class="section-title" id="doors-title"><span class="hash">#</span>$(Esc $e.doorsTitle)</h2>
+      <p class="section-desc">$(Body $e.doorsLead)</p>
+    </div>
+    <div class="grid">
+$doorCards
     </div>
   </section>
 
@@ -338,6 +392,7 @@ $scenarioCards
         <a class="btn btn-ghost btn-sm" href="$($copy._channels.store.url)" target="_blank" rel="noopener"><span>Microsoft Store</span></a>
         <span class="dl-meta" id="dlMeta">Offline-ready bundles - VLC runtimes and OCR packs included. Windows 10 1607+ / 11; a 32-bit build for Windows 7/8.1 is in the same download.</span>
       </div>
+      <p class="dl-meta">$(Body $e.insideNote)</p>
       <p class="dl-meta">
         <a href="$(TrustUrl $code)">$(Esc $trust.$code.title)</a>
       </p>
@@ -352,9 +407,9 @@ $note      <p><a href="$BaseUrl/server.html">$(Esc $e.serverLink)</a></p>
     <div class="grid">
 $featureGroupCards
     </div>
-    <details class="sec" id="all-features" style="margin-top:1.5rem">
+    <details class="sec sec-spaced" id="all-features">
       <summary><span class="secnum">01</span>$(Body $e.title) - Features</summary>
-      <div class="grid" style="margin-top:1rem">
+      <div class="grid grid-spaced">
 $allFeatureCards
       </div>
     </details>
@@ -376,14 +431,29 @@ $howto
 </main>
 
 <footer class="site-footer"><div class="container">
+  <h2 class="footer-title" lang="en" dir="ltr">Documentation</h2>
+  <div class="link-row" lang="en" dir="ltr">
+    <a href="#howto">$(Esc $copy._howto.title)</a>
+    <a href="$BaseUrl/topics.html">Topics</a>
+    <a href="$BaseUrl/glossary.html">Glossary</a>
+    <a href="$(TrustUrl $code)">$(Esc $trust.$code.title)</a>
+    <a href="$BaseUrl/docs/privacy.html">Privacy</a>
+    <a href="$Repo#readme">README</a>
+    <a href="$Repo/blob/main/CHANGELOG.md">Changelog</a>
+    <a href="$Repo/issues">Issues</a>
+  </div>
 $familyGrid
   <div class="footer-langs">
     <span class="footer-langs-label">$(Esc $e.langLabel):</span>
     $switcher
   </div>
-  <div class="footer-bottom">
-    <span>&copy; $(Get-Date -Format 'yyyy') <a href="https://$($copy._contact.website)">$($copy._contact.github)</a></span>
-    <span><a href="https://$($copy._contact.website)">$($copy._contact.website)</a> &middot; <a href="$Repo">GitHub</a> &middot; <a href="mailto:$($copy._contact.email)">$($copy._contact.email)</a></span>
+  <div class="author-card" lang="en" dir="ltr">
+    <b>Serhii Zhyhunenko (SerZhyAle)</b>
+    <span>&copy; $(Get-Date -Format 'yyyy')</span>
+    <a href="https://$($copy._contact.website)">$($copy._contact.website)</a>
+    <a href="https://github.com/$($copy._contact.github)">GitHub</a>
+    <a href="$Repo">FastMediaSorter_Lite</a>
+    <a href="mailto:$($copy._contact.email)">$($copy._contact.email)</a>
   </div>
 </div></footer>
 
@@ -428,7 +498,7 @@ $familyGrid
         if(zip&&z) z.href=zip.browser_download_url;
         if(tag){
           var meta=document.getElementById('dlMeta');
-          if(meta){var b=document.createElement('span');b.style.color='var(--acc)';b.style.fontWeight='600';
+          if(meta){var b=document.createElement('span');b.className='meta-strong';
             b.textContent=' '+tag;meta.appendChild(b);}
         }
       })
@@ -474,6 +544,7 @@ function RenderTrust([string]$code) {
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+$ThemeResolver
 <title>$(Esc $t.title)</title>
 <meta name="description" content="$(Esc $t.desc)">
 <link rel="canonical" href="$(TrustUrl $code)">
@@ -497,17 +568,19 @@ $alts
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="$BaseUrl/assets/sza-kit.css">
 <link rel="stylesheet" href="$BaseUrl/assets/fms-site.css">
-<script>(function(){try{var t=localStorage.getItem('sza-theme');if(t==='light'||t==='dark'){document.documentElement.setAttribute('data-theme',t);}}catch(e){}})();</script>
 <script type="application/ld+json">$(TrustJsonLd $code $t)</script>
 </head>
 <body>
+<a class="skip-link" href="#main">$(Esc $e.skipLabel)</a>
 <header class="site-header">
+  <nav class="site-nav" aria-label="$(Esc $e.navLabel)">
   <a class="brand" href="$(PageUrl $code)" aria-label="$(Esc $ProductFull)"><span class="brand-mark"><img src="$BaseUrl/$Favicon" alt="" width="24" height="24"></span>$(Body $ProductFull)</a>
   <button class="theme-btn" id="themeBtn" aria-label="Switch theme">◐</button>
   <a class="btn btn-ghost btn-sm" href="$(PageUrl $code)">$(Esc $t.backLabel)</a>
+  </nav>
 </header>
 
-<main class="container">
+<main class="container" id="main" tabindex="-1">
   <section class="hero">
     <h1>$(Body $t.title)</h1>
     <p class="lead">$(Body $t.intro)</p>
@@ -516,8 +589,9 @@ $alts
 $sections
 
   <p class="note">$(Body $t.note)</p>
+  <p class="note" id="site-origins">$(Body $t.origins)</p>
 
-  <div class="button-group" style="margin:2rem 0">
+  <div class="button-group button-group-spaced">
     <a class="btn btn-primary" href="$($copy._channels.github.url)">$(Esc $t.dlLabel)</a>
     <a class="btn btn-ghost" href="$BaseUrl/docs/privacy.html">$(Esc $t.privacyLabel)</a>
     <a class="btn btn-ghost" href="$(PageUrl $code)">$(Esc $t.backLabel)</a>
@@ -548,6 +622,120 @@ $familyGrid
   var tb=document.getElementById('themeBtn');
   if(tb) tb.addEventListener('click',function(){setTheme(doc.getAttribute('data-theme')==='light'?'dark':'light');});
   setTheme(doc.getAttribute('data-theme')||'dark');
+})();
+</script>
+</body>
+</html>
+"@
+}
+
+# The not-found page (SITE-STRUCTURE rule 15, ticket 149). GitHub Pages serves a root 404.html for ANY unknown address under
+# the site, at whatever depth - so every reference is absolute from $BaseUrl, never relative. It is noindex, it is not in
+# the sitemap or the search index, and it carries the core three (en, ru, ua) in-page like the root pages do. The site has
+# no search at the guide tier, so the subject index (topics.html) is the way to find a page; the guides come from _howto.
+function RenderNotFound {
+    $nf = $copy._notFound
+    $script:RtlPage = $false
+    $guides = ($copy._howto.items | ForEach-Object {
+        '      <a href="{0}/{1}" lang="en" dir="ltr"><b>{2}</b></a>' -f $BaseUrl, $_[0], (Esc $_[1])
+    }) -join "`n"
+    $langs = 'en', 'ru', 'ua'
+    function Spans([string]$key) { ($langs | ForEach-Object { '<span data-l="{0}">{1}</span>' -f $_, (Esc $nf.$_.$key) }) -join '' }
+    # Inside <script> the text is not entity-decoded, so the "&" of the name goes in raw.
+    $metaTitles = ($langs | ForEach-Object { '{0}:"{1}"' -f $_, ('{0} | {1}' -f $nf.$_.short, $ProductCompact) }) -join ','
+@"
+<!DOCTYPE html>
+<html lang="en" data-theme="dark" data-lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+$ThemeResolver
+<title>$(Esc ('{0} | {1}' -f $nf.en.short, $ProductCompact))</title>
+<meta name="description" content="$(Esc $nf.metaDesc)">
+<meta name="robots" content="noindex">
+<meta name="theme-color" content="#0a0f0a">
+<link rel="icon" href="$BaseUrl/$Favicon" sizes="any">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="$BaseUrl/assets/sza-kit.css">
+<link rel="stylesheet" href="$BaseUrl/assets/fms-site.css">
+<style>
+html[data-lang="ru"] [data-l]:not([data-l="ru"]),html[data-lang="en"] [data-l]:not([data-l="en"]),html[data-lang="ua"] [data-l]:not([data-l="ua"]){display:none}
+.site-header>.brand{margin-right:auto}.hero{text-align:left;padding:1.5rem 0 .8rem}.hero .lead{margin:0}
+.nf-group{margin-top:1.4rem}.nf-group h2{font-size:1.15rem;margin:0 0 .7rem}.nf-group>p{margin:0 0 .7rem;color:var(--text-2)}
+.cards{display:grid;gap:.8rem}@media(min-width:860px){.cards{grid-template-columns:1fr 1fr}}
+.cards a{display:block;background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:.9rem 1.1rem;text-decoration:none}
+.cards a b{display:block;color:var(--text);font-family:var(--font-heading);margin-bottom:.2rem}.cards a span{color:var(--text-2);font-size:.95rem}
+</style>
+</head>
+<body>
+<a class="skip-link" href="#main">$(Spans 'skip')</a>
+<div class="bg-blobs" aria-hidden="true"><div class="blob blob-1"></div><div class="blob blob-2"></div><div class="blob blob-3"></div></div>
+<header class="site-header">
+  <span id="site-nav-label" class="sr-only">$(Spans 'nav')</span>
+  <nav class="site-nav" aria-labelledby="site-nav-label">
+  <a class="brand" href="$BaseUrl/" aria-label="$(Esc $ProductFull)"><span class="brand-mark"><img src="$BaseUrl/$Favicon" alt="" width="24" height="24"></span>$(Esc $ProductFull)</a>
+  <div class="seg" role="group" aria-label="Language">
+    <button data-setlang="ru">RU</button><button data-setlang="en" aria-pressed="true">EN</button><button data-setlang="ua">UA</button>
+  </div>
+  <button class="theme-btn" id="themeBtn" aria-label="Switch theme">◐</button>
+  <a class="btn btn-primary btn-sm" href="$BaseUrl/#get">$(Spans 'download')</a>
+  </nav>
+</header>
+
+<main class="container" id="main" tabindex="-1">
+  <section class="hero">
+    <span class="kicker">404</span>
+    <h1>$(Spans 'h1')</h1>
+    <p class="lead">$(Spans 'lead')</p>
+  </section>
+
+  <section class="nf-group">
+    <div class="cards">
+      <a href="$BaseUrl/"><b>$(Spans 'landingTitle')</b>$(Spans 'landingText')</a>
+      <a href="$BaseUrl/topics.html"><b>$(Spans 'topicsTitle')</b>$(Spans 'topicsText')</a>
+    </div>
+  </section>
+
+  <section class="nf-group">
+    <h2>$(Spans 'guidesTitle')</h2>
+    <p>$(Spans 'guidesNote')</p>
+    <div class="cards">
+$guides
+    </div>
+  </section>
+</main>
+
+<footer class="site-footer"><div class="container"><div class="footer-bottom">
+  <span><a href="$BaseUrl/">$(Esc $ProductFull)</a> &middot; <a href="$BaseUrl/topics.html">$(Spans 'topicsTitle')</a> &middot; <a href="$BaseUrl/docs/privacy.html">Privacy</a></span>
+  <span>&copy; $(Get-Date -Format 'yyyy') <a href="https://$($copy._contact.website)">$($copy._contact.github)</a></span>
+</div></div></footer>
+
+<script>
+(function(){
+  var doc=document.documentElement;
+  var TITLES={$metaTitles};
+  function setLang(l){
+    if(!TITLES[l]) l='en';
+    doc.setAttribute('data-lang',l);
+    doc.setAttribute('lang', l==='ua'?'uk':l);
+    try{localStorage.setItem('sza-lang',l);}catch(e){}
+    document.querySelectorAll('.seg [data-setlang]').forEach(function(b){
+      b.setAttribute('aria-pressed', b.getAttribute('data-setlang')===l ? 'true':'false');
+    });
+    document.title=TITLES[l];
+  }
+  document.querySelectorAll('.seg [data-setlang]').forEach(function(b){
+    b.addEventListener('click',function(){setLang(b.getAttribute('data-setlang'));});
+  });
+  setLang(doc.getAttribute('data-lang')||'en');
+  var tb=document.getElementById('themeBtn');
+  if(tb) tb.addEventListener('click',function(){
+    var v=doc.getAttribute('data-theme')==='light'?'dark':'light';
+    doc.setAttribute('data-theme',v);
+    try{localStorage.setItem('sza-theme',v);}catch(e){}
+  });
 })();
 </script>
 </body>
@@ -631,9 +819,23 @@ foreach ($code in $codes) {
     $written += "$LangDir/$code/index.html"
 }
 
+# 4. Render/check the not-found page (404.html, SITE-STRUCTURE rule 15)
+$notFoundPath = Join-Path $Root '404.html'
+$notFoundHtml = (RenderNotFound) -replace "`r`n", "`n"
+if ($Check) {
+    $compared++
+    if (-not (Test-Path $notFoundPath)) { $stale += '404.html (missing)' }
+    elseif ((Get-Content $notFoundPath -Raw -Encoding UTF8) -replace "`r`n", "`n" -ne $notFoundHtml) { $stale += '404.html' }
+} else {
+    [IO.File]::WriteAllText($notFoundPath, $notFoundHtml, (New-Object Text.UTF8Encoding $false))
+    $written += '404.html'
+}
+
 # --- robots.txt + sitemap.xml -------------------------------------------------
 function RootPages {
+    # 404.html is served by the host for unknown addresses; it is noindex and never a page of the set.
     Get-ChildItem -LiteralPath $Root -Filter '*.html' -File |
+        Where-Object { $_.Name -ne '404.html' } |
         Sort-Object Name | ForEach-Object { $_.Name }
 }
 
@@ -680,6 +882,13 @@ function SiteEntries {
         if (-not $title -or -not $desc) { throw "root page $f carries no title or description for the search index" }
         $entries += [pscustomobject]@{ url = $url; lang = 'en'; title = $title; description = $desc }
     }
+    # The privacy policy is a required page type (SITE-STRUCTURE section 2) and lives under docs/, so it is not a root page;
+    # it carries the same title/description SEO block and is listed explicitly (specification 151, T-3).
+    $pv = Get-Content (Join-Path $Root 'docs/privacy.html') -Raw -Encoding UTF8
+    $pvTitle = if ($pv -match '(?s)<title>(.*?)</title>') { [Net.WebUtility]::HtmlDecode($Matches[1]) } else { '' }
+    $pvDesc  = if ($pv -match '(?s)<meta\s+name="description"\s+content="(.*?)"') { [Net.WebUtility]::HtmlDecode($Matches[1]) } else { '' }
+    if (-not $pvTitle -or -not $pvDesc) { throw 'docs/privacy.html carries no title or description for the search index' }
+    $entries += [pscustomobject]@{ url = "$BaseUrl/docs/privacy.html"; lang = 'en'; title = $pvTitle; description = $pvDesc }
     foreach ($code in ($codes | Where-Object { $_ -ne 'en' })) {
         $entries += [pscustomobject]@{ url = (PageUrl $code); lang = $code; title = $copy.$code.title; description = $copy.$code.tagline }
         $entries += [pscustomobject]@{ url = (TrustUrl $code); lang = $code; title = $trust.$code.title; description = $trust.$code.desc }
@@ -723,7 +932,7 @@ if ($Check) {
         $problems += "$($orphans.Count) legacy folder(s)"
     }
 
-    # --- 11 Contract Conformance Checks (ticket 030 section 5, DOC-EXTERNAL-QUALITY) ---
+    # --- 12 Contract Conformance Checks (ticket 030 section 5, DOC-EXTERNAL-QUALITY), then 13-14 (specification 154) ---
     # 1. Kit identity - the catalog's reference/sza-kit.css as re-vendored 2026-10-02 (kit 1.2).
     # Hashed with CRLF folded to LF: the catalog file is LF, and a text=auto checkout with
     # core.autocrlf turns the working copy CRLF without changing a single character of the kit.
@@ -856,13 +1065,62 @@ if ($Check) {
         }
     }
 
+    # 12. The not-found page (SITE-STRUCTURE rule 15): it exists, is noindex and outside the sitemap, offers the landing,
+    # the subject index and every guide, carries the core three (en, ru, ua), and builds EVERY address from the base URL -
+    # the host serves it at any depth, so one relative reference would break on a nested unknown address.
+    if (-not (Test-Path $notFoundPath)) {
+        $problems += '404.html: the not-found page does not exist'
+    } else {
+        $nfDisk = Get-Content $notFoundPath -Raw -Encoding UTF8
+        if ($nfDisk -notmatch '<meta name="robots" content="noindex">') { $problems += '404.html: not marked noindex' }
+        $nfWant = @("$BaseUrl/", "$BaseUrl/topics.html") + @($copy._howto.items | ForEach-Object { "$BaseUrl/$($_[0])" })
+        foreach ($u in $nfWant) { if ($nfDisk -notmatch ('href="' + [regex]::Escape($u) + '"')) { $problems += "404.html: does not offer $u" } }
+        foreach ($l in 'en', 'ru', 'ua') { if ($nfDisk -notmatch ('data-l="' + $l + '"')) { $problems += "404.html: no '$l' block of the core three" } }
+        # A fragment-only address ("#main", the skip link) resolves against the page itself at any depth, so it is exempt.
+        $nfRelative = @([regex]::Matches($nfDisk, '(?i)\b(?:href|src)="(?!https://|mailto:|#)([^"]*)"') | ForEach-Object { $_.Groups[1].Value })
+        if ($nfRelative.Count -gt 0) { $problems += "404.html: address(es) not built from the base URL: $($nfRelative -join ', ')" }
+        foreach ($listing in 'sitemap.xml', 'search-index.json') {
+            $lp = Join-Path $Root $listing
+            if ((Test-Path $lp) -and ((Get-Content $lp -Raw -Encoding UTF8) -match '404\.html')) { $problems += "404.html: listed in $listing" }
+        }
+    }
+
+    # 13-14. The served pages' presentation (SITE-EXPERIENCE rules 4 and 7, specification 154). The set is the root pages and
+    # lang/ - the product site; docs/ is the older redesign copy and is not part of it.
+    $sitePages = @(Get-ChildItem -LiteralPath $Root -Filter '*.html' -File | ForEach-Object { $_.FullName })
+    if (Test-Path (Join-Path $Root 'lang')) {
+        $sitePages += @(Get-ChildItem -LiteralPath (Join-Path $Root 'lang') -Filter '*.html' -Recurse -File | ForEach-Object { $_.FullName })
+    }
+    $fold = { param([string]$s) ($s -replace '\s+', ' ').Trim() }
+    $canon = & $fold $ThemeResolver
+    $layoutProps = '(?i)(^|;)\s*(color|background[a-z-]*|margin[a-z-]*|padding[a-z-]*|display|flex[a-z-]*|gap|grid[a-z-]*|width|height|min-[a-z]+|max-[a-z]+|font[a-z-]*|border[a-z-]*|position|top|left|right|bottom|align[a-z-]*|justify[a-z-]*|text-[a-z]+|float|overflow[a-z-]*|opacity|line-height|letter-spacing|z-index|transform|visibility)\s*:'
+    foreach ($f in $sitePages) {
+        $rel = $f.Substring($Root.Length).TrimStart('\', '/')
+        $fc = Get-Content $f -Raw -Encoding UTF8
+        # 13. A layout or colour value is the stylesheet's, never a style attribute. Scripts and comments are not markup:
+        # a string a script builds at run time is the one allowed inline presentation.
+        $markup = [regex]::Replace([regex]::Replace($fc, '(?s)<script\b.*?</script>', ''), '(?s)<!--.*?-->', '')
+        $inline = @([regex]::Matches($markup, '(?i)\sstyle\s*=\s*("([^"]*)"|''([^'']*)'')') | Where-Object {
+            $v = if ($_.Groups[2].Success) { $_.Groups[2].Value } else { $_.Groups[3].Value }
+            $v -match $layoutProps })
+        if ($inline.Count -gt 0) { $problems += "Inline style: $rel carries $($inline.Count) style attribute(s) with layout or colour (move them to assets/fms-site.css)" }
+        # 14. The pre-paint resolver is the one text and sits before the first stylesheet link.
+        $css = [regex]::Match($fc, '(?i)<link\b[^>]*\brel\s*=\s*["'']stylesheet["''][^>]*>')
+        $res = [regex]::Match($fc, '(?s)<script>\s*\(function\(\)\{try\{\s*var t=localStorage\.getItem\(''sza-theme''\).*?</script>')
+        if (-not $res.Success) {
+            $problems += "Theme resolver: $rel has no pre-paint resolver"
+        } else {
+            if ((& $fold $res.Value) -ne $canon) { $problems += "Theme resolver: $rel carries a resolver that is not the PAGE-STYLE section 7 text" }
+            if ($css.Success -and $res.Index -gt $css.Index) { $problems += "Theme resolver: $rel places it after the first stylesheet link" }
+        }
+    }
     if ($problems.Count -gt 0) {
         Write-Host "Conformance check problems found:"
         $problems | ForEach-Object { Write-Host "  - $_" }
         Exit-Verdict 'Build-SitePages' 1 ($problems -join '; ')
     }
 
-    Exit-Verdict 'Build-SitePages' 0 "$compared render targets and 11 conformance checks passed"
+    Exit-Verdict 'Build-SitePages' 0 "$compared render targets and 14 conformance checks passed"
 }
 
 Write-Host "Wrote $($written.Count) pages:"

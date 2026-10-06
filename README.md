@@ -4,6 +4,16 @@ Fast Media Sorter & Sharing for Windows is a Windows Forms application for quick
 
 The name changed from "Fast Media Sorter for Windows" (earlier still, "FastMediaSorter LITE"). The Microsoft Store, Add/Remove Programs and winget still list the package as "FastMediaSorter LITE" - that name is frozen on purpose, so upgrades keep correlating with installed copies.
 
+**One program, a few roles.** View and sort your media; when you need it, the same program is also a folder-share server and a host for FileDO virtual disks - each of those ships optional, off until you ask for it.
+
+| Door | You want to .. | Download | What else is inside |
+| --- | --- | --- | --- |
+| **Viewer** | sort and look at photos and videos | the **full package** (one installer); pick the **Compact** type in Setup for a viewer with no server | the folder share server and FileDO, as optional extras |
+| **Share to Android** | give this PC's folders to your phone | the full package with the folder share server ticked - or the **Server edition** for a machine that must serve with nobody signed in ([server page](https://serzhyale.github.io/FastMediaSorter_Lite/server.html)) | the viewer: the core of the full package, an optional unticked component of the Server edition |
+| **Media Exchange Server** | *planned, not available yet* | nothing to download | a connect service for the day a share server has neither a reachable address nor a port forward |
+
+The full package is the one download that carries everything. The Server edition is a focused package in which the server leads and the media viewer and FileDO ride along as optional components.
+
 It supports a wide range of media formats and provides features such as:
 
 - Settings keep your last page, expanded groups and approximate scroll position. Language and theme are in General; use Search settings or `Ctrl+F` to find a caption, explanation or choice, and Expand all / Collapse all for the current page (64-bit program).
@@ -96,7 +106,7 @@ Step by step: [how to use the SFTP service](https://serzhyale.github.io/FastMedi
 and the detailed [guide to publishing your folders for Android](https://serzhyale.github.io/FastMediaSorter_Lite/publish-folders-android.html)
 when the connection has to cross a router.
 
-**Always-on variant (optional):** by default the folders are reachable only while you are signed in and the Share Manager is running - right for a normal PC. If the machine's job is to stay available (a dedicated server, a VPS, an always-on home server), the same worker can be hosted by a Windows service instead: it starts at boot, serves with nobody logged on, and restarts itself if it fails. There are two ways in. An ordinary installation can switch itself over in the Share Manager (**Manage hosting.. -> Switch sharing to a Windows service..**, one administrator prompt that also moves the state and grants the service access to the folders you share), or you can install the separate **[Folder Share Server edition](https://serzhyale.github.io/FastMediaSorter_Lite/server.html)** (`winget install --id SerZhyAle.FastMediaSorter.Server`), which sets the same service up straight away - for a machine provisioned without ever opening the app. Either way it takes administrator approval once and is never enabled silently: no regular setup, winget install or Store install registers the service on its own, and the Store build cannot register one at all. SFTP, the QR/`.fmscfg` pairing and the Android app are identical - only the host differs, and switching editions preserves the host key so paired phones need no re-pairing.
+**Always-on variant (optional):** by default the folders are reachable only while you are signed in and the Share Manager is running - right for a normal PC. If the machine's job is to stay available (a dedicated server, a VPS, an always-on home server), the same worker can be hosted by a Windows service instead: it starts at boot, serves with nobody logged on, and restarts itself if it fails. There are two ways in. An ordinary installation can switch itself over in the Share Manager (**Manage hosting.. -> Switch sharing to a Windows service..**, one administrator prompt that also moves the state and grants the service access to the folders you share), or you can install the separate **[Folder Share Server edition](https://serzhyale.github.io/FastMediaSorter_Lite/server.html)** (`winget install --id SerZhyAle.FastMediaSorter.Server`), which sets the same service up straight away - for a machine provisioned without ever opening the app. Either way it takes administrator approval once and is never enabled silently: no regular setup, winget install or Store install registers the service on its own, and the Store build cannot register one at all. SFTP, the QR/`.fmscfg` pairing and the Android app are identical - only the host differs, and switching editions preserves the host key so paired phones need no re-pairing. The Server edition is a focused package: the server leads, and the media viewer is inside as an optional component that stays unticked unless you choose it.
 
 ## Usage
 
@@ -295,8 +305,8 @@ downloads the 32-bit codec and OCR pieces it needs on first use.
 
 The interactive installer exposes these as **selectable components** and shows each
 one's size: uncheck what you don't need and those parts download later on demand,
-or the feature is simply left out. A viewer-only ("Compact") install is a fraction
-of the full package. (Silent/winget installs always take the full set.)
+or the feature is simply left out. The **Compact** type is the viewer without the server -
+a fraction of the full package. (Silent/winget installs always take the full set.)
 
 Note: machine translation still depends on the provider you configure - the app
 is generous, but it won't translate by sheer willpower. Ollama requires a

@@ -13,7 +13,8 @@
 ; Why it is a SEPARATE script rather than a flag on FastMediaSorter.iss: it is a
 ; different product entry (its own AppId, ARP name, directory and winget package), it
 ; is always elevated, its wizard asks different questions, and it deliberately carries
-; a much smaller payload - no viewer, no VLC codecs, no OCR models. The one thing the
+; a much smaller payload - no VLC codecs, no OCR models, and the viewer only as an
+; optional component that stays unticked (ticket 132). The one thing the
 ; two installers MUST agree on lives in neither of them: the frozen service name and
 ; the on-disk state format, both owned by the worker.
 
@@ -23,6 +24,17 @@
 
 #ifndef SourceDir
   #error SourceDir must be defined (path to the staged build output)
+#endif
+
+; The OPTIONAL viewer component (ticket 132, Q132-1): the server leads and the viewer rides
+; along, unchecked. Its payload is staged under <SourceDir>\viewer\ by
+; tools\Stage-ServerViewerPayload.ps1 - the same files the User installer's "compact" type
+; installs (both viewer exes and their libraries, no VLC codecs, no OCR models). A stage
+; without that folder (a hand compile, a local build with no User stage of the same
+; version) compiles a Server installer with no viewer component at all, so the component
+; can never be offered with nothing behind it; the packagers that SHIP require the folder.
+#if FileExists(AddBackslash(SourceDir) + "viewer\FastMediaSorter_LITE.exe")
+  #define HaveViewer
 #endif
 
 ; The wizard name of this edition (docs/guides/PRODUCT_NAMING.md section 1, "Server
@@ -49,6 +61,17 @@
 ; This is a shortcut-placement name only, NOT an identity anchor: AppId, the ARP
 ; DisplayName and the winget package stay distinct per edition.
 #define AppGroupName  "Fast Media Sorter & Sharing for Windows"
+; The optional viewer's shortcut. NOT {#AppGroupName}: that is the User edition's own
+; shortcut name in the same shared group, and two different targets must never overwrite
+; each other's entry. Component first, product as suffix - the Share Manager's pattern.
+#define ViewerShortcutName "Viewer - Fast Media Sorter & Sharing"
+#define ViewerExe     "FastMediaSorter_LITE.exe"
+; The exchange server's name (docs/guides/PRODUCT_NAMING.md section 1; src/ProductNames.vb
+; ExchangeServer): never shortened, not translated, Latin in every setup language.
+#define ExchangeServerName "Media Exchange Server"
+; THE SHIPPING GATE (specification 133 section 8, ticket 141): the packagers pass /DNoExchange
+; unless -IncludeExchange / INCLUDE_EXCHANGE opened it. The `exchange` component, the
+; `exchangeservice` task, their [Files], messages and code then compile out (#ifndef NoExchange).
 #define AppPublisher  "SerZhyAle"
 #define CompanionExe  "FastMediaSorterCompanion.exe"
 #define WorkerExe     "fms-share-worker.exe"
@@ -124,31 +147,99 @@ Name: "ukrainian"; MessagesFile: "compiler:Languages\Ukrainian.isl"
 
 [Tasks]
 Name: "openmanager"; Description: "{cm:OpenManagerTask}"
+#ifndef NoExchange
+; The Media Exchange Server as a Windows service is its OWN choice, unticked: the component alone
+; only lays the files down (like the User edition), and nothing is registered, started or allowed
+; through the firewall unless this box is ticked (or /TASKS=exchangeservice is passed). Offered
+; only with the component (Components: exchange).
+Name: "exchangeservice"; Description: "{cm:ExchangeServiceTask}"; Components: exchange; Flags: unchecked
+#endif
 
 [CustomMessages]
-english.CompFileDO=FileDO virtual disk support (optional; sharing stays off until enabled)
-russian.CompFileDO=Поддержка виртуальных дисков FileDO (необязательно; общий доступ включается отдельно)
-ukrainian.CompFileDO=Підтримка віртуальних дисків FileDO (необов’язково; спільний доступ вмикається окремо)
+; Role order (ticket 132 section 3.3): the server leads and is the only required part; the
+; two secondary roles are one-line, optional, and say they are off until chosen.
+english.CompServer=Folder Share Server - Share Manager, SFTP worker and the Windows service (required)
+russian.CompServer=Сервер раздачи папок - Менеджер общего доступа, SFTP-воркер и служба Windows (обязательно)
+ukrainian.CompServer=Сервер роздачі тек - Менеджер спільного доступу, SFTP-воркер і служба Windows (обов’язково)
+english.CompFileDO=FileDO virtual disk host - optional extra (disk sharing stays off until you enable it)
+russian.CompFileDO=Хост виртуальных дисков FileDO - необязательное дополнение (общий доступ к дискам включается отдельно)
+ukrainian.CompFileDO=Хост віртуальних дисків FileDO - необов’язкове доповнення (спільний доступ до дисків вмикається окремо)
+english.CompViewer=Media viewer and sorter - optional extra, not installed unless ticked (codecs and OCR models download on demand)
+russian.CompViewer=Просмотрщик и сортировщик медиа - необязательное дополнение, не ставится, пока вы его не отметите (кодеки и модели OCR скачаются по мере надобности)
+ukrainian.CompViewer=Переглядач і сортувальник медіа - необов’язкове доповнення, не ставиться, доки ви його не позначите (кодеки та моделі OCR завантажаться за потреби)
+#ifndef NoExchange
+english.CompExchange={#ExchangeServerName} - optional extra; a relay that lets share servers and clients reach each other (not installed unless ticked; the Windows service is a separate choice on the tasks page)
+russian.CompExchange={#ExchangeServerName} - необязательное дополнение: сервер обмена, через который серверы раздачи и клиенты находят друг друга (не ставится, пока вы его не отметите; служба Windows - отдельный выбор на странице задач)
+ukrainian.CompExchange={#ExchangeServerName} - необов’язкове доповнення: сервер обміну, через який сервери роздачі та клієнти знаходять одне одного (не ставиться, доки ви його не позначите; служба Windows - окремий вибір на сторінці завдань)
+english.ExchangeServiceTask=Run the {#ExchangeServerName} as a Windows service (starts at boot; adds one program-scoped firewall rule)
+russian.ExchangeServiceTask=Запускать {#ExchangeServerName} как службу Windows (стартует при загрузке; добавляет одно правило брандмауэра для этой программы)
+ukrainian.ExchangeServiceTask=Запускати {#ExchangeServerName} як службу Windows (стартує під час завантаження; додає одне правило брандмауера для цієї програми)
+#endif
+english.ViewerBlockedSuffix=- not offered here: the User edition is already installed
+russian.ViewerBlockedSuffix=- здесь не предлагается: пользовательская редакция уже установлена
+ukrainian.ViewerBlockedSuffix=- тут не пропонується: користувацьку редакцію вже встановлено
+english.TypeServerCustom=Server - choose the optional extras
+russian.TypeServerCustom=Сервер - выберите необязательные дополнения
+ukrainian.TypeServerCustom=Сервер - виберіть необов’язкові доповнення
 english.OpenManagerTask=Open the Share Manager after installation to choose the folders to publish
 russian.OpenManagerTask=Открыть Менеджер общего доступа после установки, чтобы выбрать публикуемые папки
 ukrainian.OpenManagerTask=Відкрити Менеджер спільного доступу після встановлення, щоб вибрати публіковані теки
 
+; The wizard's first screen and the components page lead with the server role and name the
+; two secondary roles once, as optional and off until chosen. [name/ver] is Inno's own token.
+[Messages]
+english.WelcomeLabel2=This will install [name/ver] on your computer.%n%nThe server leads: it publishes the folders you choose over SFTP from boot, with nobody signed in, and it shares nothing until you choose folders. The media viewer and sorter and FileDO virtual disks are optional extras on the next pages - both stay off unless you tick them.%n%nIt is recommended that you close all other applications before continuing.
+russian.WelcomeLabel2=Это установит [name/ver] на ваш компьютер.%n%nГлавная роль здесь у сервера: он раздаёт выбранные вами папки по SFTP с загрузки Windows, когда никто не вошёл в систему, и ничего не раздаёт, пока вы не выберете папки. Просмотрщик и сортировщик медиа и виртуальные диски FileDO - необязательные дополнения на следующих страницах: пока вы их не отметите, они не устанавливаются.%n%nРекомендуется закрыть все остальные приложения перед продолжением.
+ukrainian.WelcomeLabel2=Це встановить [name/ver] на ваш комп’ютер.%n%nГоловна роль тут у сервера: він роздає вибрані вами теки по SFTP із завантаження Windows, коли ніхто не ввійшов у систему, і нічого не роздає, доки ви не виберете теки. Переглядач і сортувальник медіа та віртуальні диски FileDO - необов’язкові доповнення на наступних сторінках: доки ви їх не позначите, вони не встановлюються.%n%nРекомендовано закрити всі інші програми перед продовженням.
+english.SelectComponentsLabel2=The Folder Share Server is always installed. The media viewer and sorter and FileDO virtual disk support are optional extras; sharing stays off until you choose folders. Click Next when you are ready to continue.
+russian.SelectComponentsLabel2=Сервер раздачи папок устанавливается всегда. Просмотрщик и сортировщик медиа и поддержка виртуальных дисков FileDO - необязательные дополнения; раздача остаётся выключенной, пока вы не выберете папки. Нажмите "Далее", когда будете готовы продолжить.
+ukrainian.SelectComponentsLabel2=Сервер роздачі тек встановлюється завжди. Переглядач і сортувальник медіа та підтримка віртуальних дисків FileDO - необов’язкові доповнення; роздача лишається вимкненою, доки ви не виберете теки. Натисніть "Далі", коли будете готові продовжити.
+
 [Types]
-Name: "custom"; Description: "Choose optional disk support"; Flags: iscustom
+Name: "custom"; Description: "{cm:TypeServerCustom}"; Flags: iscustom
 
 [Components]
 ; Types: custom - a custom-only list starts with the component ticked (a component with no
 ; Types starts unticked, and the service then reports "bundled FileDO is missing"). The user can
 ; still untick it; sharing disks stays off until enabled either way.
+; "server" is the package itself: fixed, first, and its files carry no Components clause (they
+; are always installed), so the entry exists to lead the page and say what the package IS.
+; "viewer" has NO Types on purpose: a component without one starts unticked, which is the whole
+; rule of the secondary role - the default payload of this package stays exactly the server's,
+; and a silent install (winget) never gets a viewer it did not ask for (/COMPONENTS=viewer does).
+Name: "server"; Description: "{cm:CompServer}"; Types: custom; Flags: fixed
 Name: "filedo"; Description: "{cm:CompFileDO}"; Types: custom
+#ifdef HaveViewer
+Name: "viewer"; Description: "{cm:CompViewer}"
+#endif
+#ifndef NoExchange
+; Same rule as the viewer: NO Types, so it starts unticked and the default payload of this package
+; stays exactly the server's. It is listed AFTER the viewer on purpose - InitializeWizard addresses
+; the viewer row by index. dontinheritcheck: not a child of anything.
+Name: "exchange"; Description: "{cm:CompExchange}"; Flags: dontinheritcheck
+#endif
 
 [Files]
 ; The Share Manager (self-contained .NET 10) + the headless Go worker. Deliberately
-; NO viewer, no VLC codecs and no OCR models: this package's job is an always-on file
-; share on a machine that may well have no interactive user at all.
+; no VLC codecs and no OCR models, and the viewer only as the optional component
+; below: this package's job is an always-on file share on a machine that may well
+; have no interactive user at all.
 Source: "{#SourceDir}\{#CompanionExe}"; DestDir: "{app}"; Flags: ignoreversion
 Source: "{#SourceDir}\companion\*"; DestDir: "{app}\companion"; Flags: recursesubdirs createallsubdirs ignoreversion
 Source: "{#SourceDir}\filedo\*"; DestDir: "{app}\filedo"; Flags: recursesubdirs createallsubdirs ignoreversion; Components: filedo
+#ifdef HaveViewer
+; The OPTIONAL viewer (unticked by default, ticket 132): the mainline exe and the libraries it
+; loads, laid down NEXT TO the Share Manager exactly as the User edition lays them down - the
+; viewer's "Share this folder" finds FastMediaSorterCompanion.exe beside itself. No codecs and
+; no OCR models: those download on first use, as in the User edition's "compact" type.
+Source: "{#SourceDir}\viewer\*"; DestDir: "{app}"; Flags: recursesubdirs createallsubdirs ignoreversion; Components: viewer
+#endif
+#ifndef NoExchange
+; The Media Exchange Server tree (exe, .sha256, the two helpers, README.txt). Without
+; skipifsourcedoesntexist: a setup that claims the component carries it. The service helper
+; stages the exe into ProgramData at registration; the firewall helper is run by the Share Manager.
+Source: "{#SourceDir}\exchange\*"; DestDir: "{app}\exchange"; Flags: recursesubdirs createallsubdirs ignoreversion; Components: exchange
+#endif
 Source: "{#SourceDir}\LICENSE"; DestDir: "{app}"; Flags: ignoreversion skipifsourcedoesntexist
 Source: "{#SourceDir}\README.md"; DestDir: "{app}"; Flags: ignoreversion skipifsourcedoesntexist
 ; The worker statically links a dozen Go packages (SFTP, ed25519, mDNS, UPnP/NAT-PMP);
@@ -200,6 +291,19 @@ Type: files; Name: "{group}\* {#AppShortcutName}.lnk"
 ; nothing else removes it (ticket 055 I-03, the same entries as the User installer).
 Type: files; Name: "{app}\companion.log"
 Type: files; Name: "{app}\companion.log.old"
+#ifndef NoExchange
+; The exchange tree is wholly ours. Its DATA (certificate identity, settings, log) lives under
+; %ProgramData%\FastMediaSorterExchange and is NEVER listed: it holds the identity paired
+; producers pinned, and deleting it is a separate explicit choice (the service helper's remove
+; verb keeps it, ticket 144 T-6).
+Type: filesandordirs; Name: "{app}\exchange"
+#endif
+#ifdef HaveViewer
+; The optional viewer's own run-time logs next to its exe (AppFileLogger) - not [Files]
+; entries, so without these the install folder survives an uninstall that removed the viewer.
+Type: files; Name: "{app}\current.log"
+Type: files; Name: "{app}\previous.log"
+#endif
 
 [Icons]
 ; "--show": a bare launch obeys the manager's own "open the window at startup" option,
@@ -214,6 +318,12 @@ Name: "{group}\{cm:UninstallProgram,{#AppShortcutName}}"; Filename: "{uninstalle
 ; group), which is not where someone looks for a server they just installed. Create it
 ; on every install, including upgrades that remembered an unchecked desktop task.
 Name: "{autodesktop}\{#AppShortcutName}"; Filename: "{app}\{#CompanionExe}"; Parameters: "--show"
+#ifdef HaveViewer
+; The secondary role gets an entry ONLY when its component was ticked, and only in the Start
+; menu - never the desktop: the server's own icon is the one that leads (ticket 132 section
+; 3.3). Inno removes it with the rest of this installation's entries.
+Name: "{group}\{#ViewerShortcutName}"; Filename: "{app}\{#ViewerExe}"; Components: viewer
+#endif
 
 [Code]
 const
@@ -308,6 +418,24 @@ begin
             (CompareText(ExpandConstant('{param:MIGRATEFROMUSER|no}'), 'no') <> 0);
 end;
 
+#ifdef HaveViewer
+{ The optional viewer is not offered next to an installed User edition: that edition already
+  carries the viewer (its own directory, shortcut and file associations), and a second copy
+  would race it for the single-instance mutex and the "default app" choice. The row stays on
+  the page - nothing is hidden from the person who looks (ticket 132 section 3.3) - ticked
+  off, disabled, and saying why. Index 2 = server, filedo, viewer in [Components] order. }
+procedure InitializeWizard;
+begin
+  if UserEditionInstalled then
+  begin
+    WizardForm.ComponentsList.ItemCaption[2] :=
+      WizardForm.ComponentsList.ItemCaption[2] + ' ' + CustomMessage('ViewerBlockedSuffix');
+    WizardForm.ComponentsList.Checked[2] := False;
+    WizardForm.ComponentsList.ItemEnabled[2] := False;
+  end;
+end;
+#endif
+
 function InitializeSetup: Boolean;
 begin
   Result := True;
@@ -345,6 +473,137 @@ begin
             ' -UserDataDir "' + UserDataDirHint + '"';
   Exec('powershell.exe', Params, '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
 end;
+
+#ifndef NoExchange
+{ --- the Media Exchange Server (tickets 141 and 144) ------------------------------------
+  Everything machine-affecting goes through the ONE helper, install-exchange-service.ps1, and
+  only when the `exchangeservice` task was ticked or the service already exists: an upgrade where
+  the task was not ticked never registers anything, and a machine that never had the service
+  never gets one from an upgrade. The data directory is never touched by Setup. }
+const
+  ExchangeServiceName = 'FastMediaSorterExchangeServer';
+
+function ExchangeServiceRegistered: Boolean;
+begin
+  Result := RegKeyExists(HKLM, 'SYSTEM\CurrentControlSet\Services\' + ExchangeServiceName);
+end;
+
+function ExchangeHelperPath: String;
+begin
+  Result := ExpandConstant('{app}\exchange\install-exchange-service.ps1');
+end;
+
+function ExchangeExePath: String;
+begin
+  Result := ExpandConstant('{app}\exchange\fms-exchange-server.exe');
+end;
+
+function ExchangeMachineDataDir: String;
+begin
+  Result := ExpandConstant('{commonappdata}\FastMediaSorterExchange');
+end;
+
+{ The per-user store of a User-edition exchange server. In an elevated install this expands to
+  the ELEVATING administrator's profile - a hint only, like UserDataDirHint above. }
+function ExchangeUserDataDirHint: String;
+begin
+  Result := ExpandConstant('{localappdata}\FastMediaSorterExchange');
+end;
+
+{ The enrolled management user (Q144-1): the account that runs this Setup, whose SID the helper
+  puts in the service's security descriptor so that user can start and stop without UAC. Read by
+  PowerShell into a temp file (Inno has no SID API). Empty when it cannot be read or does not
+  look like a SID - the helper then resolves it its own way, and never from a malformed value. }
+function ExchangeManageSid: String;
+var
+  ResultCode: Integer;
+  OutFile: String;
+  Raw: AnsiString;
+begin
+  Result := '';
+  OutFile := ExpandConstant('{tmp}\fms-exchange-manage-sid.txt');
+  if not Exec('powershell.exe',
+    '-NoProfile -ExecutionPolicy Bypass -Command "[System.IO.File]::WriteAllText(''' + OutFile +
+    ''', [Security.Principal.WindowsIdentity]::GetCurrent().User.Value)"',
+    '', SW_HIDE, ewWaitUntilTerminated, ResultCode) then
+    exit;
+  if (ResultCode = 0) and LoadStringFromFile(OutFile, Raw) then
+  begin
+    Result := Trim(String(Raw));
+    if Pos('S-1-', Result) <> 1 then
+      Result := '';
+  end;
+end;
+
+procedure RunExchangeHelper(const Verb: String; var ResultCode: Integer);
+var
+  Params: String;
+  Sid: String;
+begin
+  ResultCode := -1;
+  if not FileExists(ExchangeHelperPath) then
+    exit;
+  Params := '-NoProfile -ExecutionPolicy Bypass -File "' + ExchangeHelperPath + '"' +
+            ' -Action ' + Verb +
+            ' -ExePath "' + ExchangeExePath + '"' +
+            ' -DataDir "' + ExchangeMachineDataDir + '"' +
+            ' -UserDataDir "' + ExchangeUserDataDirHint + '"';
+  Sid := ExchangeManageSid;
+  if Sid <> '' then
+    Params := Params + ' -ManageSid "' + Sid + '"';
+  Exec('powershell.exe', Params, '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
+end;
+
+function ExchangeServiceFailedText: String;
+begin
+  if IsLanguage('russian') then
+    Result := 'Не удалось зарегистрировать или запустить службу {#ExchangeServerName}. Файлы установлены; откройте Менеджер общего доступа и повторите регистрацию службы в группе {#ExchangeServerName}. Подробности - в журнале в каталоге ProgramData\FastMediaSorterExchange.'
+  else if IsLanguage('ukrainian') then
+    Result := 'Не вдалося зареєструвати або запустити службу {#ExchangeServerName}. Файли встановлено; відкрийте Менеджер спільного доступу й повторіть реєстрацію служби в групі {#ExchangeServerName}. Подробиці - у журналі в каталозі ProgramData\FastMediaSorterExchange.'
+  else
+    Result := 'The {#ExchangeServerName} service could not be registered or started. The files are installed; open the Share Manager and register the service again from its {#ExchangeServerName} group. Details are in the log under ProgramData\FastMediaSorterExchange.';
+end;
+
+{ ssPostInstall: an existing service is REPAIRED (re-staged from the files just installed,
+  certificate identity untouched); a new one is registered only when the task was ticked, taking
+  the user's per-user store with it when one exists (migrate-to-service is the whole transaction -
+  it validates the certificate fingerprint BEFORE registering, as migrate-to-server does for the
+  share worker). Nothing else ever registers it. }
+procedure ApplyExchangeService;
+var
+  ResultCode: Integer;
+begin
+  if ExchangeServiceRegistered then
+  begin
+    RunExchangeHelper('repair', ResultCode);
+    if (ResultCode <> 0) and (ResultCode <> -1) then
+      SuppressibleMsgBox(ExchangeServiceFailedText, mbError, MB_OK, IDOK);
+    exit;
+  end;
+  if not WizardIsTaskSelected('exchangeservice') then
+    exit;
+  if DirExists(ExchangeUserDataDirHint) then
+    RunExchangeHelper('migrate-to-service', ResultCode)
+  else
+    RunExchangeHelper('install', ResultCode);
+  if ResultCode <> 0 then
+    SuppressibleMsgBox(ExchangeServiceFailedText, mbError, MB_OK, IDOK);
+end;
+
+{ Uninstall: remove the service and its staged rule (the helper's remove verb) and then - this
+  Setup being elevated - any program-scoped rule the Share Manager added for the installed exe.
+  The data directory is KEPT: it holds the certificate identity paired producers pinned. }
+procedure RemoveExchangeServiceAndRule;
+var
+  ResultCode: Integer;
+begin
+  if FileExists(ExchangeHelperPath) and ExchangeServiceRegistered then
+    RunExchangeHelper('remove', ResultCode);
+  if FileExists(ExchangeExePath) then
+    Exec('netsh', 'advfirewall firewall delete rule name=all program="' + ExchangeExePath + '"',
+      '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
+end;
+#endif
 
 { Stops the service, the Companion and the worker before Setup/Uninstall replaces or
   removes their files. Best-effort: a hiccup here must not abort Setup. -AppDir scopes
@@ -395,6 +654,9 @@ begin
     RunHelperScript(ExpandConstant('{app}\install-share-service.ps1'), 'migrate-to-server', ResultCode);
     if ResultCode <> 0 then
       SuppressibleMsgBox(ServiceFailedText, mbError, MB_OK, IDOK);
+#ifndef NoExchange
+    ApplyExchangeService;
+#endif
   end;
 
   { The service is up but shares nothing until roots are chosen - it must never guess
@@ -434,6 +696,9 @@ begin
     the identity paired phones pinned, and deleting it is a separate explicit choice
     documented on the Server page. }
   RunHelperScript(ExpandConstant('{app}\install-share-service.ps1'), 'remove', ResultCode);
+#ifndef NoExchange
+  RemoveExchangeServiceAndRule;
+#endif
   StopEverything(ExpandConstant('{app}\stop-companion.ps1'));
   RemoveShareManagerAutostart;
 end;

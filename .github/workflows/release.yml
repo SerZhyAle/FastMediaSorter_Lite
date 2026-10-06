@@ -12,6 +12,14 @@ on:
 permissions:
   contents: write
 
+# THE SHIPPING GATE of the exchange server (specification 133 section 8, ticket 141): nothing
+# from the exchange module reaches a RELEASED package before rung 2 freezes the wire. While this
+# is 'false' no Go is installed, the module is neither tested nor built, the staged trees have no
+# exchange\ folder and both setups compile with /DNoExchange. THE ONE-LINE FLIP: change the value
+# below to 'true' - nothing else in this file needs to change.
+env:
+  INCLUDE_EXCHANGE: 'false'
+
 # Сериализуем релизы по тегу. cancel-in-progress: false - публикацию релиза
 # нельзя обрывать на середине (иначе полурелиз / битые ассеты).
 # Group by the TAG in both trigger paths: on a manual dispatch github.ref is the
@@ -111,6 +119,31 @@ jobs:
       - name: Publish Companion (Share Manager, net10 self-contained)
         run: dotnet publish src/FastMediaSorterCompanion/FastMediaSorterCompanion.vbproj -c Release -r win-x64 -p:ReleaseVersion=${{ steps.ver.outputs.version }} -o companion-publish -v minimal --nologo
 
+      # The exchange server (Go, specification 133) is compiled FROM SOURCE here - nothing is
+      # vendored (owner answer Q-133-3) - and only behind the shipping gate (INCLUDE_EXCHANGE at
+      # the top of this file). The action is pinned to a commit SHA (ticket 109 section 3), never
+      # a tag; the SHA is the v6.5.0 release commit, resolved from the action's own repository.
+      # go-version-file reads the `go` and `toolchain` lines of the module, so CI builds with the
+      # toolchain the repository pins.
+      - name: Set up Go (exchange server)
+        if: env.INCLUDE_EXCHANGE == 'true'
+        uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6.5.0
+        with:
+          go-version-file: exchange-server/go.mod
+          cache: true
+          cache-dependency-path: exchange-server/go.sum
+
+      - name: Test and build the exchange server
+        if: env.INCLUDE_EXCHANGE == 'true'
+        run: |
+          Push-Location exchange-server
+          go test ./...
+          $testExit = $LASTEXITCODE
+          Pop-Location
+          if ($testExit -ne 0) { throw "go test ./... failed in exchange-server (exit $testExit)" }
+          .\exchange-server\build.ps1 -Version '${{ steps.ver.outputs.version }}' -OutDir exchange-publish
+          if ($LASTEXITCODE -ne 0) { throw "exchange-server\build.ps1 failed (exit $LASTEXITCODE)" }
+
       - name: Stage release files
         id: stage
         run: |
@@ -146,6 +179,8 @@ jobs:
             Where-Object { $_.Extension -notin '.pdb','.xml','.log' } |
             ForEach-Object {
               $rel  = Get-RelativePath -BasePath $release -TargetPath $_.FullName
+              # Never from this wildcard copy: the exchange tree is staged below, behind the gate.
+              if ($rel -like 'exchange\*') { return }
               $dest = Join-Path $stage $rel
               New-Item -ItemType Directory -Path (Split-Path $dest -Parent) -Force | Out-Null
               Copy-Item $_.FullName $dest
@@ -178,6 +213,14 @@ jobs:
           $stageCompanion = Join-Path $stage "companion"
           New-Item -ItemType Directory -Path $stageCompanion -Force | Out-Null
           Copy-Item "payload/companion/*" $stageCompanion -Recurse -Force
+
+          # The exchange server tree - ONLY with the gate open (INCLUDE_EXCHANGE). The helper
+          # throws when the exe, its sidecar, either helper or the README is missing.
+          if ($env:INCLUDE_EXCHANGE -eq 'true') {
+            .\tools\Stage-ExchangePayload.ps1 -Source 'exchange-publish' -Destination $stage
+          } elseif (Test-Path (Join-Path $stage 'exchange')) {
+            throw "The stage carries an exchange\ folder but INCLUDE_EXCHANGE is not 'true'."
+          }
 
           "stage=$stage" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
           Get-ChildItem $stage -Recurse | Format-Table -AutoSize
@@ -242,7 +285,10 @@ jobs:
           $stageAbs = (Resolve-Path $stage).Path
           $distAbs  = (Resolve-Path dist).Path
 
-          & $iscc "/DVersion=$version" "/DSourceDir=$stageAbs" "/O$distAbs" publishing\installer\FastMediaSorter.iss
+          # Gate shut = the `exchange` component and all that belongs to it compile out.
+          $exchangeArgs = @()
+          if ($env:INCLUDE_EXCHANGE -ne 'true') { $exchangeArgs = @('/DNoExchange') }
+          & $iscc "/DVersion=$version" "/DSourceDir=$stageAbs" "/O$distAbs" @exchangeArgs publishing\installer\FastMediaSorter.iss
           if ($LASTEXITCODE -ne 0) { throw "ISCC failed (exit $LASTEXITCODE)" }
 
           $setupName = "FastMediaSorter-$version-windows-x64-setup.exe"
@@ -263,9 +309,10 @@ jobs:
       # rather than a mode of the one above.
       #
       # Its payload is deliberately LEAN and therefore staged separately: the Share
-      # Manager, the Go worker and the two elevated helper scripts only - no viewer,
-      # no VLC codecs, no OCR models. Reusing the User stage would ship hundreds of
-      # megabytes a headless server never runs.
+      # Manager, the Go worker and the two elevated helper scripts, plus the viewer as
+      # an UNCHECKED optional component (ticket 132) - and still no VLC codecs, no OCR
+      # models. Reusing the whole User stage would ship hundreds of megabytes a headless
+      # server never runs.
       - name: Build Server edition installer
         id: serversetup
         run: |
@@ -289,9 +336,23 @@ jobs:
           New-Item -ItemType Directory -Path $stageCompanion -Force | Out-Null
           Copy-Item "payload/companion/*" $stageCompanion -Recurse -Force
 
+          # The optional, unticked viewer component (ticket 132): the SAME viewer files the
+          # User installer's Compact type installs, taken from the stage above. -Require: a
+          # release never ships a Server installer that silently lacks the component.
+          .\tools\Stage-ServerViewerPayload.ps1 -UserStage '${{ steps.stage.outputs.stage }}' -Destination $stage -Require
+
+          # The exchange tree, the SAME binary as the User stage - only with the gate open.
+          $exchangeArgs = @()
+          if ($env:INCLUDE_EXCHANGE -eq 'true') {
+            .\tools\Stage-ExchangePayload.ps1 -Source (Join-Path '${{ steps.stage.outputs.stage }}' 'exchange') -Destination $stage
+          } else {
+            if (Test-Path (Join-Path $stage 'exchange')) { throw "The Server stage carries an exchange\ folder but INCLUDE_EXCHANGE is not 'true'." }
+            $exchangeArgs = @('/DNoExchange')
+          }
+
           $stageAbs = (Resolve-Path $stage).Path
           $distAbs  = (Resolve-Path dist).Path
-          & $iscc "/DVersion=$version" "/DSourceDir=$stageAbs" "/O$distAbs" publishing\installer\FastMediaSorterServer.iss
+          & $iscc "/DVersion=$version" "/DSourceDir=$stageAbs" "/O$distAbs" @exchangeArgs publishing\installer\FastMediaSorterServer.iss
           if ($LASTEXITCODE -ne 0) { throw "ISCC (Server edition) failed (exit $LASTEXITCODE)" }
 
           $setupName = "FastMediaSorter-$version-windows-x64-server-setup.exe"

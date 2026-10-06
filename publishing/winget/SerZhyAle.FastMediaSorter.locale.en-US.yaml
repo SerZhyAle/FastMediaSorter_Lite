@@ -21,6 +21,9 @@ LicenseUrl: https://github.com/SerZhyAle/FastMediaSorter_Lite/blob/main/LICENSE
 Copyright: Copyright (c) 2025 SZA
 ShortDescription: Fast Media Sorter & Sharing for Windows - sort, view and share images and videos with a keyboard-driven viewer and sorter that also shares folders to your phone over SFTP.
 Description: |-
+  View and sort your media; when you need it, the same program is also a folder-share server and a
+  host for FileDO virtual disks - each of those ships optional, off until you ask for it.
+
   Fast Media Sorter & Sharing for Windows is a fast, keyboard-driven viewer and sorter for images and
   video on Windows - sort, view and share. Tick folders to browse, then move, copy, rename or
   delete files with single-key hotkeys - built for photographers and creators who triage large media
@@ -29,7 +32,8 @@ Description: |-
 
   Sharing here means giving your own media to your own devices: the bundled Share Manager turns the PC
   into a private SFTP server for the folders you pick, and the Android app pairs with it by QR code. It
-  is opt-in and stays off until you switch it on.
+  is opt-in and stays off until you switch it on. The setup wizard lets you leave it out: the Compact
+  type installs the viewer without the server.
 
   The main program is now a 64-bit .NET 10 build that carries its own runtime - there is nothing extra
   to install and no .NET Framework requirement. It replaces the previous version in place and keeps

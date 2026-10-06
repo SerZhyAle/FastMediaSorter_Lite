@@ -41,12 +41,15 @@ not a local edit and not a local copy kept "in sync".
 | [`RULE-ADOPTION.md`](RULE-ADOPTION.md) | `REPO-STAMP`, `HARNESS-PROFILE`, `REPO-LAYOUT`, `RULE-DELIVERY` | producer of the stamp, consumer of the rest; at 0.11/0.10/0.10/0.11 |
 | [`PACKAGE-VERSIONING.md`](PACKAGE-VERSIONING.md) | `PACKAGE-VERSIONING` | declared consumer - one mechanical stamp per package; the `YY.M.D.HHmm` rendering is filed as a proposal (0.2) |
 | [`INPUT-CONTROLS.md`](INPUT-CONTROLS.md) | `INPUT-CHORD`, `INPUT-PARITY` | declared, not yet implementing - no chord storage or global hook today; expected device-column contributor |
+| [`SITE-STRUCTURE.md`](SITE-STRUCTURE.md) | `SITE-STRUCTURE` | consumer - opted in 2026-10-06, tier guide; the not-found page, the held-address list and the core-three locale floor are open exceptions (specification 147) |
+| [`SITE-EXPERIENCE.md`](SITE-EXPERIENCE.md) | `SITE-EXPERIENCE` | consumer - opted in 2026-10-06, guide tier; kit, shared keys and origin disclosure held, skip link and `nav` landmark and light-theme contrast open (specification 147); `style` attributes and the resolver order conform in the tree since 2026-10-06 (specification 154) |
+| [`SITE-REPRESENTATION.md`](SITE-REPRESENTATION.md) | `SITE-REPRESENTATION` | consumer - opted in 2026-10-06, guide tier; rules 1-4 held by `tools/Test-SitePositioning.ps1` (ticket 155), rules 5-10 not run (ticket 156) |
 | [`NO-ROLE.md`](NO-ROLE.md) | `LAN-DISCOVERY`, `UPDATE-MANIFEST`, `USER-PLAYLIST` | none - declared so the next run does not re-investigate |
 
 Last full alignment: **2026-10-02** (specification 098, the final inter-project contract sync before
 freeze). Every contract in the catalog was re-classified for this product against the catalog's
 2026-10-02 state; the per-contract verdicts and the freeze snapshot live in
-`docs/specifications/098_freeze_inventory_2026-10-02.md`. Not listed here: `OCR-ACCURACY` - the Android
+`docs/specifications/done/098_freeze_inventory_2026-10-02.md`. Not listed here: `OCR-ACCURACY` - the Android
 sibling's record; since ticket 033 Ф-3 removed the mis-citations nothing in this repository cites it, so
 no pointer is owed (a decision, 2026-09-25) - and `CLI-EVENT-STREAM`, `LAYOUT-SIGNAL`, `LAYOUT-PALETTE`,
 `SCENARIO-FILE`, `FDD-FORMAT`, `FDD-BEHAVIOUR` and `DISK-SHARE`, which belong to other

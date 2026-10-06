@@ -31,6 +31,38 @@ Public Class ProductNamesTests
         Assert.Equal("Fast Media Sorter && Sharing", ProductNames.CompactForLabel)
     End Sub
 
+    ''' <summary>The exchange server's name (ticket 141 T-7): exact, Latin, and never cut to its last two
+    ''' words (owner rule, specification 133 section 4). The bare form is assembled at run time so that
+    ''' this file does not carry it for tools/Test-ProductNaming.ps1 to find.</summary>
+    Private Const BareExchangeName As String = "Exchange " & "Server"
+
+    <Fact>
+    Public Sub The_exchange_server_name_is_exact_Latin_and_never_shortened()
+        Assert.Equal("Media " & BareExchangeName, ProductNames.ExchangeServer)
+        Assert.True(ProductNames.ExchangeServer.All(Function(c) AscW(c) < 128))
+
+        Dim bare As New Regex("(?<!Media )" & BareExchangeName, RegexOptions.CultureInvariant)
+        Dim offenders As New List(Of String)()
+        For Each sourcePath In CompanionSources()
+            Dim lineNo As Integer = 0
+            For Each line In File.ReadAllLines(sourcePath)
+                lineNo += 1
+                If bare.IsMatch(line) Then offenders.Add(Path.GetFileName(sourcePath) & ":" & lineNo)
+            Next
+        Next
+        ' The tables are not in CompanionSources (they are the translations): scan every column of
+        ' every registered string instead.
+        For Each entry In Localization.All
+            Dim candidates As New List(Of String)()
+            candidates.Add(entry.Key)
+            If entry.Value IsNot Nothing Then candidates.AddRange(entry.Value)
+            For Each candidateText In candidates
+                If candidateText IsNot Nothing AndAlso bare.IsMatch(candidateText) Then offenders.Add("table: " & Shorten(candidateText))
+            Next
+        Next
+        Assert.True(offenders.Count = 0, "The exchange server is named by its last two words alone: " & String.Join(", ", offenders.Take(20)))
+    End Sub
+
     <Fact>
     Public Sub The_share_manager_name_fits_the_tray_tooltip_limit()
         ' NotifyIcon.Text holds 63 characters (PRODUCT_NAMING.md section 3, rule 3).

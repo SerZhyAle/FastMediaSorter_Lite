@@ -32,6 +32,8 @@ plain text so maintained documentation works in a fresh clone.
   SEO/indexing, mandatory site pages, support & voice.
 - [guides/PRODUCT_NAMING.md](guides/PRODUCT_NAMING.md) - the one table of the product's names (full, Store,
   short, aliases, Share Manager, Server edition), the frozen technical anchors and the naming gate.
+- [guides/SITE_ADDRESSES.md](guides/SITE_ADDRESSES.md) - the not-found page, where the release notes live, and what a moved or retired page leaves behind.
+- [guides/POSITIONING.md](guides/POSITIONING.md) - the one positioning source: the family sentence, the pillars in order, the public editions, the reserved door and the facts typed once (language count, platform floor); machine form `tools/site-facts.json`, gate `tools/Test-SitePositioning.ps1`.
 - [guides/BUILD_AND_RELEASE.md](guides/BUILD_AND_RELEASE.md) - the concrete build-vs-release flow.
 - `specifications/RELEASE_QUEUE.md` (local specification) - the common release order for active
   specification tickets.

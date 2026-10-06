@@ -142,19 +142,23 @@ Friend Module ResourceTransfer
             Return
         End If
 
+        ' No server-side rename: the copy-then-delete pair below deletes the destination and then the
+        ' source, which on a case-insensitive server are ONE file when the names differ only in case -
+        ' so the pair would leave nothing. A destination whose canonical spelling IS the source is that
+        ' file: refused before a byte moves (057.S07-7). A different spelling is a different file.
+        If isCaseOnlyRename Then
+            Dim existing As ResourceEntry = Nothing
+            If ProbeExists(provider, remoteDest, existing) AndAlso existing IsNot Nothing AndAlso
+               String.Equals(existing.FullPath, remoteSource, StringComparison.Ordinal) Then
+                Throw New IOException("A case-only rename needs a server-side rename, which this resource does not have; nothing was changed.")
+            End If
+        End If
+
         Directory.CreateDirectory(stagingDir)
         Dim staged As String = Path.Combine(stagingDir, "move-" & Guid.NewGuid().ToString("N") & ".tmp")
         Try
-            ' For case-only rename, delete the destination first if it exists (it's the same file)
-            If isCaseOnlyRename Then
-                Try
-                    provider.DeleteFile(remoteDest)
-                Catch
-                    ' Ignore delete failure for case-only rename - the upload will handle it
-                End Try
-            End If
             DownloadVerified(provider, remoteSource, staged, True, progress, ct)
-            UploadVerified(provider, staged, remoteDest, overwrite OrElse isCaseOnlyRename, progress, ct)
+            UploadVerified(provider, staged, remoteDest, overwrite, progress, ct)
             provider.DeleteFile(remoteSource)
         Finally
             Try

@@ -6,12 +6,22 @@
     1. Viewer (net48 + net10)       -> tests/Lite.Tests        (dotnet test / xUnit)
     2. Share Manager (net10)        -> tests/Companion.Tests   (dotnet test / xUnit)
     3. SFTP worker (Go)             -> the fms_companion repository (go test ./...)
+    3b. Exchange server (Go)        -> exchange-server\ of this repository: its unit suite (and the
+                                       manual-proof tool's module) with a 64-bit Go, plus a
+                                       GOOS=linux go vet (no Windows assumption outside the
+                                       deployment layer)
     4. Check placement              -> tools/Test-CheckPlacement.ps1 (the registry vs its runners)
 
     5. Documentation registry       -> tools/Test-DocRegistry.ps1 (coverage, links, style, facts)
     5b. Product naming              -> tools/Test-ProductNaming.ps1 (no old name form without a written reason)
     6. Published site quality       -> tools/Test-SiteQuality.ps1 (DOC-EXTERNAL-QUALITY rules 1-7
                                        over every page the sitemap announces)
+    6b. Site addresses held outside -> tools/Test-SiteAddresses.ps1 (every address the programs, listings and
+                                       READMEs hold resolves against the page set; offline)
+    6c. Third-party origins         -> tools/Test-SiteOrigins.ps1 (every outside host a published page contacts is declared,
+                                       named on the privacy page and in each trust locale; offline)
+    6d. Positioning and typed facts -> tools/Test-SitePositioning.ps1 (the pillars in the source's order on every declared
+                                       surface, the editions, the reserved door, the language count and the platform floor; offline)
 
     These are UNIT/logic suites - fast, no network, no phone. Two live suites are opt-in:
     -Integration sends GetStatus to a RUNNING worker and validates the answer (read-only - it
@@ -31,6 +41,10 @@
 
 .PARAMETER SkipGo
     Skip the Go worker suite. It is reported as SKIPPED, never as passed.
+
+.PARAMETER SkipExchangeGo
+    Skip the exchange server's Go suite. It is reported as SKIPPED, never as passed. Without a
+    64-bit Go the suite is COULD NOT VERIFY (exit 2), also never a pass.
 
 .PARAMETER WorkerRepo
     The fms_companion checkout. Default: FMS_WORKER_REPO, else the fms_companion folder beside
@@ -53,6 +67,7 @@ param(
     [switch]$Integration,
     [switch]$OcrScenes,
     [switch]$SkipGo,
+    [switch]$SkipExchangeGo,
     [string]$WorkerRepo = ''
 )
 
@@ -70,7 +85,9 @@ trap {
 if (-not $WorkerRepo) { $WorkerRepo = $env:FMS_WORKER_REPO }
 if (-not $WorkerRepo) { $WorkerRepo = Join-Path (Split-Path $root -Parent) 'fms_companion' }
 
-$plan = @('viewer', 'share-manager', $(if ($SkipGo) { 'worker-go (skipped)' } else { 'worker-go' }), 'placement', 'documentation', 'naming', 'site')
+$plan = @('viewer', 'share-manager', $(if ($SkipGo) { 'worker-go (skipped)' } else { 'worker-go' }),
+          $(if ($SkipExchangeGo) { 'exchange-go (skipped)' } else { 'exchange-go' }),
+          'placement', 'documentation', 'naming', 'site', 'site-addresses')
 if ($Integration) { $plan += 'share-identity', 'share-helper-logic', 'worker-ipc' }
 if ($OcrScenes)   { $plan += 'ocr-scenes' }
 Write-Subject 'Run-AllTests' "$($plan -join ', '); $(Get-TreeLabel $root)"
@@ -159,6 +176,92 @@ if ($SkipGo) {
     }
 }
 
+# --- 3b: the exchange server's Go suite (specification 133, ticket 135) --------
+# Its module lives in THIS repository. A 64-bit Go is resolved explicitly: the `go` first on PATH
+# can be the 32-bit toolchain, and the suite must run (and the amd64 binary build) the way the
+# shipped exe does. No Go is "could not verify", never a pass.
+function Resolve-Go64 {
+    $candidates = @()
+    foreach ($base in @($env:ProgramW6432, $env:ProgramFiles)) {
+        if ($base) {
+            $p = Join-Path $base 'Go\bin\go.exe'
+            if (Test-Path $p) { $candidates += $p }
+        }
+    }
+    foreach ($c in @(Get-Command go -All -ErrorAction SilentlyContinue)) { $candidates += $c.Source }
+    foreach ($c in ($candidates | Select-Object -Unique)) {
+        $arch = $null
+        try { $arch = (& $c env GOHOSTARCH 2>$null) } catch { }
+        if ($arch -eq 'amd64') { return $c }
+    }
+    return $null
+}
+
+# Run one go command in a directory with temporary environment variables; returns exit and output.
+function Invoke-GoStep([string]$go, [string]$dir, [hashtable]$envVars, [string[]]$goArgs) {
+    $saved = @{}
+    foreach ($k in $envVars.Keys) { $saved[$k] = [Environment]::GetEnvironmentVariable($k, 'Process'); [Environment]::SetEnvironmentVariable($k, $envVars[$k], 'Process') }
+    Push-Location $dir
+    $prevEap = $ErrorActionPreference
+    $ErrorActionPreference = 'Continue'
+    try {
+        $log = @(& $go @goArgs 2>&1 | ForEach-Object { $t = "$_"; Write-Host $t; $t })
+        return [pscustomobject]@{ Exit = $LASTEXITCODE; Log = $log }
+    } finally {
+        $ErrorActionPreference = $prevEap
+        Pop-Location
+        foreach ($k in $saved.Keys) { [Environment]::SetEnvironmentVariable($k, $saved[$k], 'Process') }
+    }
+}
+
+if ($SkipExchangeGo) {
+    Add-Result 'exchange-go' 'Exchange server (Go)' $null 'skipped by -SkipExchangeGo'
+} else {
+    $exchangeDir = Join-Path $root 'exchange-server'
+    Write-Host "`n=== Exchange server (Go) ($exchangeDir) ===" -ForegroundColor Cyan
+    $go64 = Resolve-Go64
+    if (-not (Test-Path (Join-Path $exchangeDir 'go.mod'))) {
+        Add-Result 'exchange-go' 'Exchange server (Go)' 2 'exchange-server\go.mod not found'
+    } elseif (-not $go64) {
+        Add-Result 'exchange-go' 'Exchange server (Go)' 2 'no 64-bit go.exe found'
+    } else {
+        $amd64 = @{ GOARCH = 'amd64'; CGO_ENABLED = '0'; GOFLAGS = '' }
+        $steps = @(
+            @{ Name = 'module';       Dir = $exchangeDir;                                  Env = $amd64;                                   Args = @('test', '-count=1', './...') },
+            @{ Name = 'manual proof'; Dir = (Join-Path $exchangeDir 'cmd\exchange-fakeproducer'); Env = $amd64;                            Args = @('test', '-count=1', './...') },
+            @{ Name = 'linux vet';    Dir = $exchangeDir;                                  Env = @{ GOOS = 'linux'; GOARCH = 'amd64'; CGO_ENABLED = '0'; GOFLAGS = '' }; Args = @('vet', './...') }
+        )
+        # The race detector needs cgo and a C compiler (MinGW-w64: `winget install BrechtSanders.WinLibs.POSIX.UCRT`).
+        # With one it is a real step of the suite; without one the detail line says so - never silently absent.
+        $gccDir = $null
+        $gccCmd = Get-Command gcc -ErrorAction SilentlyContinue
+        if ($gccCmd) { $gccDir = Split-Path $gccCmd.Source } else {
+            $pkgRoot = Join-Path $env:LOCALAPPDATA 'Microsoft\WinGet\Packages'
+            if (Test-Path $pkgRoot) {
+                $found = Get-ChildItem $pkgRoot -Recurse -Filter gcc.exe -ErrorAction SilentlyContinue | Select-Object -First 1
+                if ($found) { $gccDir = $found.DirectoryName }
+            }
+        }
+        $raceNote = 'race not run (no C compiler)'
+        if ($gccDir) {
+            $raceNote = 'race ok'
+            $steps += @{ Name = 'race'; Dir = $exchangeDir; Env = @{ GOARCH = 'amd64'; CGO_ENABLED = '1'; GOFLAGS = ''; PATH = "$gccDir;$($env:PATH)" }; Args = @('test', '-race', '-count=1', './...') }
+        }
+        $okCount = 0; $failCount = 0; $worst = 0; $parts = @()
+        foreach ($s in $steps) {
+            Write-Host "--- $($s.Name)" -ForegroundColor DarkCyan
+            $r = Invoke-GoStep $go64 $s.Dir $s.Env $s.Args
+            $ok   = @($r.Log | Select-String -Pattern '^ok\s').Count
+            $fail = @($r.Log | Select-String -Pattern '^(FAIL|--- FAIL)').Count
+            if ($s.Args[0] -eq 'test' -and $s.Name -ne 'race') { $okCount += $ok; $failCount += $fail }
+            if ($r.Exit -ne 0) { $worst = 1; $parts += "$($s.Name) failed" }
+            elseif ($s.Args[0] -eq 'test' -and $ok -eq 0) { if ($worst -eq 0) { $worst = 2 }; $parts += "$($s.Name): no package tested" }
+        }
+        $detail = "$okCount pkg ok, $failCount fail" + $(if ($parts.Count) { '; ' + ($parts -join '; ') } else { "; linux vet ok; $raceNote" })
+        Add-Result 'exchange-go' 'Exchange server (Go)' $worst $detail
+    }
+}
+
 # --- 4: the placement registry against its runners ----------------------------
 Invoke-ScriptSuite 'placement' 'Check placement' (Join-Path $root 'tools\Test-CheckPlacement.ps1')
 
@@ -166,6 +269,9 @@ Invoke-ScriptSuite 'documentation' 'Documentation registry' (Join-Path $root 'to
 Invoke-ScriptSuite 'naming' 'Product naming' (Join-Path $root 'tools\Test-ProductNaming.ps1')
 
 Invoke-ScriptSuite 'site' 'Published site quality' (Join-Path $root 'tools\Test-SiteQuality.ps1')
+Invoke-ScriptSuite 'site-addresses' 'Site addresses held outside the site' (Join-Path $root 'tools\Test-SiteAddresses.ps1')
+Invoke-ScriptSuite 'site-origins' 'Third-party origins of the site' (Join-Path $root 'tools\Test-SiteOrigins.ps1')
+Invoke-ScriptSuite 'site-positioning' 'Positioning source and typed facts of the site' (Join-Path $root 'tools\Test-SitePositioning.ps1')
 
 # --- optional live suites -----------------------------------------------------
 if ($Integration) {

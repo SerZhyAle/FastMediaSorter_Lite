@@ -26,7 +26,7 @@ Public Class TrustPageContractTests
             For Each loc As JsonProperty In Locales(doc)
                 Assert.True(shape.SequenceEqual(SectionShape(loc.Value)),
                             $"{loc.Name}: sections/items {String.Join(",", SectionShape(loc.Value))} differ from English {String.Join(",", shape)}")
-                For Each key As String In {"title", "desc", "intro", "note", "backLabel", "dlLabel", "privacyLabel"}
+                For Each key As String In {"title", "desc", "intro", "note", "origins", "backLabel", "dlLabel", "privacyLabel"}
                     Assert.False(String.IsNullOrWhiteSpace(loc.Value.GetProperty(key).GetString()), $"{loc.Name}.{key} is empty")
                 Next
                 For Each section As JsonElement In loc.Value.GetProperty("sections").EnumerateArray()
@@ -118,6 +118,34 @@ Public Class TrustPageContractTests
         Next
     End Sub
 
+    ' --- SITE-EXPERIENCE rule 14 (ticket 153) -------------------------------------------
+
+    <Fact>
+    Public Sub EveryDeclaredSiteOriginIsNamedInEveryTrustLocaleAndInEachPrivacyBlock()
+        ' tools/Test-SiteOrigins.ps1 holds the pages against tools/site-origins.json; this holds the
+        ' two disclosures: each locale of the trust copy and each language block of the privacy page
+        ' names every declared host, so a host added to the declaration cannot go undisclosed.
+        Dim hosts As New List(Of String)()
+        Using decl As JsonDocument = ReadJson("tools", "site-origins.json")
+            For Each o As JsonElement In decl.RootElement.GetProperty("origins").EnumerateArray()
+                hosts.Add(o.GetProperty("host").GetString())
+            Next
+        End Using
+        Assert.NotEmpty(hosts)
+        Using doc As JsonDocument = TrustCopy()
+            For Each loc As JsonProperty In Locales(doc)
+                Dim text As String = loc.Value.GetProperty("origins").GetString()
+                For Each host As String In hosts
+                    Assert.True(text.Contains(host, StringComparison.Ordinal), $"trust-copy.json {loc.Name}.origins does not name {host}")
+                Next
+            Next
+        End Using
+        Dim privacy As String = ReadText("docs", "privacy.html")
+        For Each host As String In hosts
+            Assert.True(Regex.Matches(privacy, Regex.Escape(host)).Count >= 3,
+                        $"docs/privacy.html names {host} fewer than three times (one per language block: en, ru, ua)")
+        Next
+    End Sub
     ' --- rule 7 -------------------------------------------------------------------------
 
     <Fact>

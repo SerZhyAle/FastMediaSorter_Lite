@@ -199,6 +199,8 @@ Partial Public Class Main_Form
                 vlc_Video_View.Visible = False ' audio surface paints Picture_Box_1
                 KeepRecipientsOverlayOnTop()
 
+                ' Ticket 115: a pool-thread stop may still be inside the player; Play is legal only after it left.
+                WaitForPendingVlcStop()
                 vlc_Media_Player.Play(media)
                 media.Dispose()
 
@@ -260,6 +262,7 @@ Partial Public Class Main_Form
         ' Stop player and dispose old HTTP session before reconnect (§7 item 1)
         If vlc_Media_Player IsNot Nothing Then
             Try
+                WaitForPendingVlcStop()
                 vlc_Media_Player.Stop()
                 vlc_Media_Player.Media = Nothing
             Catch
@@ -317,6 +320,7 @@ Partial Public Class Main_Form
 
         If vlc_Media_Player IsNot Nothing Then
             Try
+                WaitForPendingVlcStop()
                 vlc_Media_Player.Stop()
                 vlc_Media_Player.Media = Nothing
             Catch

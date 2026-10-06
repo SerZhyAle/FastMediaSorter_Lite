@@ -32,3 +32,11 @@ What 1.2 settled for this site:
   collapse every non-Russian locale to English (`ru` or `en` only), so a stored `ua` shows English there.
   Whether 1.2's switcher rule reaches these child pages, or they are a documented exception, is an open
   question for the owner - carried in the registry row, not fixed silently.
+
+## Width: owner decision 2026-10-06
+
+The catalog leaves the container width open (`PAGE-CONTENT` and `PAGE-STYLE` section 1 say full available width,
+section 5 and the kit say `--wide: 1100px`). The owner decided for this site: **the full screen width, no centred
+column** - the earlier `min(1760px,94vw)` exception is withdrawn. `assets/fms-site.css` sets `--wide: 100%` after
+the byte-identical kit; `tools/Test-SiteQuality.ps1` rule 8 fails any page, template or stylesheet that caps a page,
+header, footer, heading or text width. Not yet proposed to the catalog: an amendment to `--wide` is the owner's call.

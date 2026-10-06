@@ -3,20 +3,20 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-
 <!-- pre-paint: resolve theme + language before CSS so nothing flashes -->
 <script>
 (function(){try{
-  var t=localStorage.getItem('sza-theme')||(matchMedia('(prefers-color-scheme: light)').matches?'light':'dark');
+  var t=localStorage.getItem('sza-theme');
+  if(t!=='dark'&&t!=='light')t=matchMedia('(prefers-color-scheme: light)').matches?'light':'dark';
   document.documentElement.setAttribute('data-theme',t);
-  var l=localStorage.getItem('sza-lang'); if(l==='uk'){l='ua';}
-  if(!l || ['ru','en','ua'].indexOf(l)<0){var n=(navigator.language||'en').toLowerCase();l=n.indexOf('ru')==0?'ru':n.indexOf('uk')==0?'ua':'en';}
+  var l=localStorage.getItem('sza-lang');
+  if(l==='uk')l='ua';
+  if(l!=='ru'&&l!=='en'&&l!=='ua'){var n=(navigator.language||'en').toLowerCase();l=n.indexOf('ru')==0?'ru':n.indexOf('uk')==0?'ua':'en';}
   document.documentElement.setAttribute('data-lang',l);
 }catch(e){}})();
 </script>
-
 <title>Photo &amp; video sorting | Fast Media Sorter &amp; Sharing</title>
-<meta name="description" content="Sort large photo and video folders with one-key actions, play video offline and share folders over SFTP to the Android app.">
+<meta name="description" content="Sort photo and video folders with one-key actions, play video offline. Optional extras, off by default: folder sharing to Android over SFTP and FileDO disks.">
 <meta name="theme-color" content="#0a0f0a">
 <link rel="canonical" href="https://serzhyale.github.io/FastMediaSorter_Lite/">
 <link rel="alternate" hreflang="en" href="https://serzhyale.github.io/FastMediaSorter_Lite/">
@@ -37,7 +37,7 @@
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="Fast Media Sorter &amp; Sharing">
 <meta property="og:title" content="Photo &amp; video sorting | Fast Media Sorter &amp; Sharing">
-<meta property="og:description" content="Sort large photo and video folders with one-key actions, play video offline and share folders over SFTP to the Android app.">
+<meta property="og:description" content="Sort photo and video folders with one-key actions, play video offline. Optional extras, off by default: folder sharing to Android over SFTP and FileDO disks.">
 <meta property="og:url" content="https://serzhyale.github.io/FastMediaSorter_Lite/">
 <meta property="og:image" content="https://serzhyale.github.io/FastMediaSorter_Lite/assets/social-preview-1280x640.png">
 <meta property="og:locale" content="en">
@@ -45,14 +45,14 @@
 <meta property="og:locale:alternate" content="uk">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="Photo &amp; video sorting | Fast Media Sorter &amp; Sharing">
-<meta name="twitter:description" content="Sort large photo and video folders with one-key actions, play video offline and share folders over SFTP to the Android app.">
+<meta name="twitter:description" content="Sort photo and video folders with one-key actions, play video offline. Optional extras, off by default: folder sharing to Android over SFTP and FileDO disks.">
 <meta name="twitter:image" content="https://serzhyale.github.io/FastMediaSorter_Lite/assets/social-preview-1280x640.png">
 <script type="application/ld+json">
 {
   "@context": "https://schema.org",
   "@type": "SoftwareApplication",
   "name": "Fast Media Sorter & Sharing for Windows",
-  "description": "Sort large photo and video folders with one-key actions, play video offline and share folders over SFTP to the Android app.",
+  "description": "Sort photo and video folders with one-key actions, play video offline. Optional extras, off by default: folder sharing to Android over SFTP and FileDO disks.",
   "url": "https://serzhyale.github.io/FastMediaSorter_Lite/",
   "inLanguage": "en",
   "applicationCategory": "MultimediaApplication",
@@ -82,13 +82,12 @@
   .footer-langs{display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center;
     margin:14px 0 0;padding-top:14px;border-top:1px solid var(--border);font-size:14px;opacity:.85}
   .footer-langs a{text-decoration:none}
-  .container,.site-header{max-width:min(1760px,94vw)}
   .site-header>.brand{margin-right:auto}
   .hero{text-align:left;padding:1.2rem 0}
   .hero-copy{min-width:0}
   .hero .eyebrow{display:block;color:var(--muted);font-family:var(--font-heading);font-size:.76rem;
     font-weight:700;letter-spacing:.08em;text-transform:uppercase;margin:0 0 .55rem}
-  .hero h1{margin:0;font-size:clamp(1.7rem,4vw,2.3rem);line-height:1.1}
+  .hero h1{margin:0}
   .hero .kicker{display:block;margin:.35rem 0 0}
   .hero .lead{max-width:none;margin:0 0 .9rem}
   .button-group{display:flex;flex-wrap:wrap;justify-content:flex-start;gap:.7rem;margin-top:.2rem}
@@ -119,16 +118,15 @@
   .get{max-width:none;margin:.4rem 0 1.5rem}
   .scenarios{margin:0 0 .2rem}
   #features details.sec{margin-top:1rem}
-  .site-footer .container{max-width:min(1760px,94vw)}
   /* Signature brand visual: procedural waves and drifting particles. */
   html{background:var(--bg)}
   body{background:transparent}
   .brand-visual{position:fixed;inset:0;width:100%;height:100%;z-index:0;pointer-events:none}
-  .site-header,.container,.site-footer{position:relative;z-index:1}
+  .container,.site-footer{position:relative;z-index:1}
   .site-footer{background:color-mix(in srgb,var(--bg) 68%,transparent);backdrop-filter:blur(3px)}
   @media(max-width:480px){
-    .container{width:100%!important;max-width:100%!important}
-    .site-header{max-width:calc(100% - 24px);min-width:0;padding:8px 10px;gap:6px}
+    .container{width:100%}
+    .site-header{min-width:0;padding:8px 10px;gap:6px}
     .brand-mark{flex:1 1 0;gap:6px;min-width:0}
     .brand-mark img{width:24px;height:24px}
     .brand{min-width:0;font-size:13px;line-height:1.2;white-space:normal}
@@ -138,21 +136,39 @@
 </style>
 </head>
 <body>
+<a class="skip-link" href="#top"><span data-l="en">Skip to main content</span><span data-l="ru">Перейти к основному содержимому</span><span data-l="ua">Перейти до основного вмісту</span></a>
 
 <canvas class="brand-visual" id="brandVisual" aria-hidden="true" data-wave-particles data-palette="GREEN" data-wave-theme="html" data-wave-wash="--bg"></canvas>
 
-<header class="site-header">
-  <a class="brand" href="#top" aria-label="Fast Media Sorter &amp; Sharing for Windows"><span class="brand-mark"><img src="assets/icons/Fast_Media_Sorter.ico" alt="" width="24" height="24"></span>Fast Media Sorter &amp; Sharing for Windows</a>
+<header class="site-header"><span id="site-nav-label" class="sr-only"><span data-l="en">Main navigation</span><span data-l="ru">Основная навигация</span><span data-l="ua">Основна навігація</span></span><nav class="site-nav" aria-labelledby="site-nav-label">
+  <a class="brand" href="#top" aria-label="Fast Media Sorter &amp; Sharing for Windows">Fast Media Sorter &amp; Sharing for Windows</a>
   <div class="seg" role="group" aria-label="Language">
     <button data-setlang="ru">RU</button><button data-setlang="en" aria-pressed="true">EN</button><button data-setlang="ua">UA</button>
   </div>
+  <details class="lang-menu">
+    <summary><span data-l="en">All languages</span><span data-l="ru">Все языки</span><span data-l="ua">Усі мови</span></summary>
+    <div class="lang-pop">
+      <a hreflang="de" href="lang/de/">Deutsch</a>
+      <a hreflang="it" href="lang/it/">Italiano</a>
+      <a hreflang="es" href="lang/es/">Español</a>
+      <a hreflang="fr" href="lang/fr/">Français</a>
+      <a hreflang="pt" href="lang/pt/">Português</a>
+      <a hreflang="ar" href="lang/ar/">العربية</a>
+      <a hreflang="hi" href="lang/hi/">हिन्दी</a>
+      <a hreflang="bn" href="lang/bn/">বাংলা</a>
+      <a hreflang="ur" href="lang/ur/">اردو</a>
+      <a hreflang="zh" href="lang/zh/">中文</a>
+    </div>
+  </details>
   <button class="theme-btn" id="themeBtn" aria-label="Switch theme">◐</button>
   <a class="btn btn-primary btn-sm" href="#get"><span data-l="en">Install</span><span data-l="ru">Установить</span><span data-l="ua">Встановити</span></a>
-</header>
+</nav></header>
 
-<main class="container" id="top">
+<main class="container" id="top" tabindex="-1">
 
   <section class="hero">
+    <div class="hero-id">
+    <img class="app-icon" src="assets/icons/store-icon-256.png" alt="" width="168" height="168">
     <div class="hero-copy">
       <span class="eyebrow"><span data-l="en">Windows desktop app</span><span data-l="ru">Приложение для Windows</span><span data-l="ua">Застосунок для Windows</span></span>
       <h1>Fast Media Sorter &amp; Sharing for Windows</h1>
@@ -162,6 +178,12 @@
         <span data-l="ua">Безкоштовно та з відкритим кодом</span>
       </span>
     </div>
+    </div>
+    <p class="lead lead-narrow family">
+      <span data-l="en">View and sort your media; when you need it, the same program is also a folder-share server and a host for FileDO virtual disks - each of those ships optional, off until you ask for it.</span>
+      <span data-l="ru">Просматривайте и сортируйте медиа; когда понадобится, эта же программа - ещё и сервер раздачи папок и хост виртуальных дисков FileDO: каждая из этих ролей необязательна и выключена, пока вы её не включите.</span>
+      <span data-l="ua">Переглядайте й сортуйте медіа; коли знадобиться, ця сама програма - ще й сервер роздачі тек і хост віртуальних дисків FileDO: кожна з цих ролей необов'язкова й вимкнена, доки ви її не ввімкнете.</span>
+    </p>
     <p class="lead lead-narrow whatfor">
       <span data-l="en">Fast Media Sorter is a local Windows app for reviewing a shoot, cleaning a Downloads folder, or breaking a large media archive into useful folders. Preview the next file, then move, copy, rename or delete it with one key instead of dragging files around all day.</span>
       <span data-l="ru">Fast Media Sorter - локальное приложение для Windows: разобрать съёмку, очистить папку «Загрузки» или разложить большой медиа-архив по понятным папкам. Просматривайте следующий файл и одним нажатием перемещайте, копируйте, переименовывайте или удаляйте его - без бесконечного drag-and-drop.</span>
@@ -175,6 +197,20 @@
     <div class="button-group">
       <a class="btn btn-primary" href="#get"><span data-l="en">Download for Windows</span><span data-l="ru">Скачать для Windows</span><span data-l="ua">Завантажити для Windows</span></a>
       <a class="btn btn-ghost" href="#features"><span data-l="en">Explore features</span><span data-l="ru">Посмотреть возможности</span><span data-l="ua">Переглянути можливості</span></a>
+      <a class="btn btn-ghost" href="#howto"><span data-l="en">Documentation</span><span data-l="ru">Документация</span><span data-l="ua">Документація</span></a>
+    </div>
+  </section>
+
+  <!-- THREE DOORS (ticket 132) -->
+  <section class="section doors" id="doors" aria-labelledby="doors-title">
+    <div class="sec-head">
+      <h2 class="section-title" id="doors-title"><span class="hash">#</span><span data-l="en">Three doors, one program</span><span data-l="ru">Три двери, одна программа</span><span data-l="ua">Троє дверей, одна програма</span></h2>
+      <p class="section-desc"><span data-l="en">Pick the way in that matches what you came for. The full package is the same download behind every door; the Server edition is a focused package for the always-on case.</span><span data-l="ru">Выберите вход под свою задачу. За каждой дверью - один и тот же полный пакет; серверная редакция - отдельный пакет для режима «всегда включено».</span><span data-l="ua">Виберіть вхід під свою задачу. За кожними дверима - той самий повний пакет; серверна редакція - окремий пакет для режиму «завжди ввімкнено».</span></p>
+    </div>
+    <div class="grid">
+      <article class="card scenario-card" id="door-1"><span class="pill"><span data-l="en">Viewer</span><span data-l="ru">Просмотрщик</span><span data-l="ua">Переглядач</span></span><h3><span data-l="en">I need a viewer</span><span data-l="ru">Мне нужен просмотрщик</span><span data-l="ua">Мені потрібен переглядач</span></h3><p><span data-l="en">Sort and look at photos and videos with one key per file. Download the full package - one installer, the whole family. Choose the Compact type in Setup and you get a complete viewer with no server in it; sharing and FileDO stay optional extras.</span><span data-l="ru">Просматривайте и сортируйте фото и видео одной клавишей на файл. Скачайте полный пакет - один установщик, вся семья целиком. Выберите в установщике тип «Компактная» - получите полноценный просмотрщик без сервера; раздача и FileDO остаются необязательными дополнениями.</span><span data-l="ua">Переглядайте й сортуйте фото та відео однією клавішею на файл. Завантажте повний пакет - один інсталятор, уся родина разом. Виберіть в інсталяторі тип «Компактна» - отримаєте повноцінний переглядач без сервера; роздача й FileDO лишаються необов'язковими доповненнями.</span></p><div class="scenario-foot"><a class="btn btn-primary btn-sm" href="#get"><span data-l="en">Download the full package</span><span data-l="ru">Скачать полный пакет</span><span data-l="ua">Завантажити повний пакет</span></a></div></article>
+      <article class="card scenario-card" id="door-2"><span class="pill"><span data-l="en">Share to Android</span><span data-l="ru">Раздача на Android</span><span data-l="ua">Роздача на Android</span></span><h3><span data-l="en">I want my folders on my phone</span><span data-l="ru">Хочу папки с ПК на телефоне</span><span data-l="ua">Хочу теки з ПК на телефоні</span></h3><p><span data-l="en">Give this PC's folders to your phone over SFTP: install the full package with the folder share server ticked and pair once by QR code - or install the always-on Server edition on a machine that must serve with nobody signed in. The viewer is inside too, and optional in the Server edition.</span><span data-l="ru">Отдайте папки этого ПК телефону по SFTP: установите полный пакет с отмеченным сервером раздачи папок и один раз привяжите телефон по QR-коду - либо поставьте серверную редакцию на машину, которая должна раздавать, когда никто не вошёл в систему. Просмотрщик тоже внутри, в серверной редакции он необязателен.</span><span data-l="ua">Віддайте теки цього ПК телефону по SFTP: встановіть повний пакет із позначеним сервером роздачі тек і один раз прив'яжіть телефон за QR-кодом - або поставте серверну редакцію на машину, що має роздавати, коли ніхто не ввійшов у систему. Переглядач теж усередині, у серверній редакції він необов'язковий.</span></p><div class="scenario-foot"><a class="btn btn-ghost btn-sm" href="server.html"><span data-l="en">Share to Android</span><span data-l="ru">Раздача на Android</span><span data-l="ua">Роздача на Android</span></a><a class="btn btn-ghost btn-sm" href="how-to-sftp.html"><span data-l="en">How the SFTP service works</span><span data-l="ru">Как работает SFTP-сервис</span><span data-l="ua">Як працює SFTP-сервіс</span></a></div></article>
+      <article class="card scenario-card" id="door-3"><span class="pill gold"><span data-l="en">Planned</span><span data-l="ru">В планах</span><span data-l="ua">У планах</span></span><h3><span data-l="en">I will raise a Media Exchange Server</span><span data-l="ru">Я подниму Media Exchange Server</span><span data-l="ua">Я підніму Media Exchange Server</span></h3><p><span data-l="en">Planned, and not available yet: the Media Exchange Server, a connect service for the day a share server has neither a reachable address nor a port forward. There is nothing to download, and nothing is promised beyond that.</span><span data-l="ru">В планах, пока недоступно: Media Exchange Server (сервер обмена) - сервис соединения на тот день, когда у сервера раздачи нет ни доступного адреса, ни проброса порта. Скачивать пока нечего, и больше ничего здесь не обещано.</span><span data-l="ua">У планах, поки недоступно: Media Exchange Server (сервер обміну) - сервіс з'єднання на той день, коли у сервера роздачі немає ні доступної адреси, ні прокидання порту. Завантажувати поки нічого, і більше нічого тут не обіцяно.</span></p></article>
     </div>
   </section>
 
@@ -226,6 +262,14 @@
       </span>
     </div>
     <!-- /gen:channels -->
+
+    <h3 class="inside-title"><span data-l="en">What is inside the full package</span><span data-l="ru">Что внутри полного пакета</span><span data-l="ua">Що всередині повного пакета</span></h3>
+    <div class="tools-grid" id="inside">
+      <a href="#features"><b data-l="en">Viewer and sorter</b><b data-l="ru">Просмотрщик и сортировщик</b><b data-l="ua">Переглядач і сортувальник</b><span data-l="en">The core - always installed</span><span data-l="ru">Основа - ставится всегда</span><span data-l="ua">Основа - ставиться завжди</span></a>
+      <a href="how-to-sftp.html"><b data-l="en">Folder share server</b><b data-l="ru">Сервер раздачи папок</b><b data-l="ua">Сервер роздачі тек</b><span data-l="en">Optional - Share Manager and SFTP worker, off until you enable it</span><span data-l="ru">Необязательно - Менеджер общего доступа и SFTP-воркер, выключен, пока вы его не включите</span><span data-l="ua">Необов'язково - Менеджер спільного доступу й SFTP-воркер, вимкнений, доки ви його не ввімкнете</span></a>
+      <a href="how-to-filedo-disks.html"><b data-l="en">FileDO virtual disks</b><b data-l="ru">Виртуальные диски FileDO</b><b data-l="ua">Віртуальні диски FileDO</b><span data-l="en">Optional - hosts .fdd disks through the same server, off until you enable it</span><span data-l="ru">Необязательно - раздаёт диски .fdd через тот же сервер, выключено, пока вы не включите</span><span data-l="ua">Необов'язково - роздає диски .fdd через той самий сервер, вимкнено, доки ви не ввімкнете</span></a>
+      <a href="#editions"><b data-l="en">Codecs and OCR models</b><b data-l="ru">Кодеки и модели OCR</b><b data-l="ua">Кодеки та моделі OCR</b><span data-l="en">Optional - offline playback and text recognition; the Compact type leaves them (and the server) out</span><span data-l="ru">Необязательно - работа без интернета; тип «Компактная» оставляет их (и сервер) за бортом</span><span data-l="ua">Необов'язково - робота без інтернету; тип «Компактна» лишає їх (і сервер) за бортом</span></a>
+    </div>
 
     <p class="dl-meta">
       <span data-l="en">Windows will warn you about these downloads: they are not code-signed. <a href="trust.html">What the warning is, why it appears, and exactly what to click</a>.</span>
@@ -472,17 +516,17 @@
         </p>
         <div class="kbds">
           <kbd>←</kbd><kbd>→</kbd>
-          <span style="color:var(--muted);font-size:.8rem" data-l="en">browse</span><span style="color:var(--muted);font-size:.8rem" data-l="ru">просмотр</span><span style="color:var(--muted);font-size:.8rem" data-l="ua">перегляд</span>
+          <span class="key-hint" data-l="en">browse</span><span class="key-hint" data-l="ru">просмотр</span><span class="key-hint" data-l="ua">перегляд</span>
           <kbd>0</kbd>–<kbd>9</kbd>
-          <span style="color:var(--muted);font-size:.8rem" data-l="en">move to folder</span><span style="color:var(--muted);font-size:.8rem" data-l="ru">в папку</span><span style="color:var(--muted);font-size:.8rem" data-l="ua">у папку</span>
+          <span class="key-hint" data-l="en">move to folder</span><span class="key-hint" data-l="ru">в папку</span><span class="key-hint" data-l="ua">у папку</span>
           <kbd>T</kbd>
-          <span style="color:var(--muted);font-size:.8rem" data-l="en">OCR translate</span><span style="color:var(--muted);font-size:.8rem" data-l="ru">OCR-перевод</span><span style="color:var(--muted);font-size:.8rem" data-l="ua">OCR-переклад</span>
+          <span class="key-hint" data-l="en">OCR translate</span><span class="key-hint" data-l="ru">OCR-перевод</span><span class="key-hint" data-l="ua">OCR-переклад</span>
           <kbd>NumPad +</kbd><kbd>-</kbd>
-          <span style="color:var(--muted);font-size:.8rem" data-l="en">zoom</span><span style="color:var(--muted);font-size:.8rem" data-l="ru">масштаб</span><span style="color:var(--muted);font-size:.8rem" data-l="ua">масштаб</span>
+          <span class="key-hint" data-l="en">zoom</span><span class="key-hint" data-l="ru">масштаб</span><span class="key-hint" data-l="ua">масштаб</span>
           <kbd>NumPad /</kbd><kbd>*</kbd>
-          <span style="color:var(--muted);font-size:.8rem" data-l="en">fit / 100 %</span><span style="color:var(--muted);font-size:.8rem" data-l="ru">вписать / 100 %</span><span style="color:var(--muted);font-size:.8rem" data-l="ua">вписати / 100 %</span>
+          <span class="key-hint" data-l="en">fit / 100 %</span><span class="key-hint" data-l="ru">вписать / 100 %</span><span class="key-hint" data-l="ua">вписати / 100 %</span>
           <kbd>A</kbd><kbd>V</kbd>
-          <span style="color:var(--muted);font-size:.8rem" data-l="en">audio / subtitles</span><span style="color:var(--muted);font-size:.8rem" data-l="ru">дорожка / субтитры</span><span style="color:var(--muted);font-size:.8rem" data-l="ua">доріжка / субтитри</span>
+          <span class="key-hint" data-l="en">audio / subtitles</span><span class="key-hint" data-l="ru">дорожка / субтитры</span><span class="key-hint" data-l="ua">доріжка / субтитри</span>
         </div>
       </article>
     </div>
@@ -534,7 +578,7 @@
   <!-- Technical details, licence & privacy -->
   <div class="note">
     <span class="tag">Links &amp; Details</span>
-    <div class="xlinks" style="margin-top:.4rem">
+    <div class="xlinks xlinks-tight">
       <a href="docs/privacy.html"><span data-l="en">Privacy policy</span><span data-l="ru">Политика конфиденциальности</span><span data-l="ua">Політика конфіденційності</span></a>
       <a href="https://github.com/SerZhyAle/FastMediaSorter_Lite/blob/master/LICENSE" target="_blank" rel="noopener"><span data-l="en">MIT Licence</span><span data-l="ru">Лицензия MIT</span><span data-l="ua">Ліцензія MIT</span></a>
       <a href="https://github.com/SerZhyAle/FastMediaSorter_Lite" target="_blank" rel="noopener"><span data-l="en">Source code (GitHub)</span><span data-l="ru">Исходный код (GitHub)</span><span data-l="ua">Вихідний код (GitHub)</span></a>
@@ -544,7 +588,7 @@
   <!-- contextual cross-links -->
   <div class="note">
     <span class="tag">Related tools</span>
-    <div class="xlinks" style="margin-top:.4rem">
+    <div class="xlinks xlinks-tight">
       <a data-l="en" href="https://serzhyale.github.io/FastMediaSorter_mob_v2/">Need mobile? → the Android app</a>
       <a data-l="ru" href="https://serzhyale.github.io/FastMediaSorter_mob_v2/index-ru.html">Нужно на телефон? → приложение для Android</a>
       <a data-l="ua" href="https://serzhyale.github.io/FastMediaSorter_mob_v2/index-uk.html">Потрібно на телефон? → застосунок для Android</a>
@@ -572,14 +616,25 @@
 </main>
 
 <footer class="site-footer"><div class="container">
-  <div class="tools-grid" style="margin-bottom:1rem">
+  <div class="tools-grid tools-grid-spaced">
     <a href="how-to-viewer.html"><b>HOW TO · Viewer</b><span data-l="en">Review and sort a media folder</span><span data-l="ru">Просмотр и сортировка медиафайлов</span><span data-l="ua">Перегляд і сортування медіафайлів</span></a>
     <a href="how-to-sftp.html"><b>HOW TO · SFTP</b><span data-l="en">Publish selected PC folders over SFTP</span><span data-l="ru">Публикация выбранных папок ПК по SFTP</span><span data-l="ua">Публікація вибраних папок ПК через SFTP</span></a>
     <a href="how-to-filedo-disks.html"><b>HOW TO · FileDO</b><span data-l="en">Share FileDO .fdd virtual disks</span><span data-l="ru">Общий доступ к дискам FileDO .fdd</span><span data-l="ua">Спільний доступ до дисків FileDO .fdd</span></a>
     <a href="server.html"><b>SERVER · Always-on</b><span data-l="en">Share folders from boot, with nobody signed in</span><span data-l="ru">Раздача папок с загрузки, без входа в систему</span><span data-l="ua">Роздача тек із завантаження, без входу в систему</span></a>
   </div>
+  <h2 class="footer-title"><span data-l="en">Documentation and help</span><span data-l="ru">Документация и справка</span><span data-l="ua">Документація та довідка</span></h2>
+  <div class="link-row">
+    <a href="#howto"><span data-l="en">Guides</span><span data-l="ru">Инструкции</span><span data-l="ua">Інструкції</span></a>
+    <a href="topics.html"><span data-l="en">Topics</span><span data-l="ru">Темы</span><span data-l="ua">Теми</span></a>
+    <a href="glossary.html"><span data-l="en">Glossary</span><span data-l="ru">Глоссарий</span><span data-l="ua">Глосарій</span></a>
+    <span data-l="en"><a href="trust.html">Install warning explained</a></span><span data-l="ru"><a href="lang/ru/trust.html">Предупреждение при установке</a></span><span data-l="ua"><a href="lang/uk/trust.html">Попередження під час встановлення</a></span>
+    <a href="docs/privacy.html"><span data-l="en">Privacy</span><span data-l="ru">Конфиденциальность</span><span data-l="ua">Конфіденційність</span></a>
+    <a href="https://github.com/SerZhyAle/FastMediaSorter_Lite#readme">README</a>
+    <a href="https://github.com/SerZhyAle/FastMediaSorter_Lite/blob/main/CHANGELOG.md"><span data-l="en">Changelog</span><span data-l="ru">История изменений</span><span data-l="ua">Історія змін</span></a>
+    <a href="https://github.com/SerZhyAle/FastMediaSorter_Lite/issues"><span data-l="en">Report an issue</span><span data-l="ru">Сообщить о проблеме</span><span data-l="ua">Повідомити про проблему</span></a>
+  </div>
   <!-- gen:family -->
-  <h2 class="sec-head" style="margin-bottom:1rem;font-size:1.1rem">
+  <h2 class="sec-head sec-head-family">
     <span data-l="en">More tools by SZA</span><span data-l="ru">Другие инструменты SZA</span><span data-l="ua">Інші інструменти SZA</span>
   </h2>
   <div class="tools-grid">
@@ -610,9 +665,13 @@
     <a hreflang="ur" href="lang/ur/">اردو</a>
     <a hreflang="zh" href="lang/zh/">中文</a>
   </div>
-  <div class="footer-bottom">
-    <span>© 2026 Serhii Zhyhunenko</span>
-    <span><a href="https://sza.od.ua">sza.od.ua</a> · <a href="https://github.com/SerZhyAle">GitHub</a> · <a href="mailto:sza@ukr.net">sza@ukr.net</a></span>
+  <div class="author-card">
+    <b>Serhii Zhyhunenko (SerZhyAle)</b>
+    <span><span data-l="en">Author</span><span data-l="ru">Автор</span><span data-l="ua">Автор</span> · © 2026</span>
+    <a href="https://sza.od.ua">sza.od.ua</a>
+    <a href="https://github.com/SerZhyAle">GitHub</a>
+    <a href="https://github.com/SerZhyAle/FastMediaSorter_Lite"><span data-l="en">Source code</span><span data-l="ru">Исходный код</span><span data-l="ua">Вихідний код</span></a>
+    <a href="mailto:sza@ukr.net">sza@ukr.net</a>
   </div>
 </div></footer>
 
@@ -627,7 +686,7 @@
   // ---- i18n ----
   var META={
     en:{title:"Photo & video sorting | Fast Media Sorter & Sharing",
-        desc:"Sort large photo and video folders with one-key actions, play video offline and share folders over SFTP to the Android app."},
+        desc:"Sort photo and video folders with one-key actions, play video offline. Optional extras, off by default: folder sharing to Android over SFTP and FileDO disks."},
     ru:{title:"Сортировка фото и видео | Fast Media Sorter & Sharing",
         desc:"Локальное приложение Windows для разбора больших папок с фото и видео: действия одной клавишей, офлайн-воспроизведение и общий доступ к папкам по SFTP для Android."},
     ua:{title:"Сортування фото та відео | Fast Media Sorter & Sharing",
@@ -709,7 +768,7 @@
         if(zip&&z) z.href=zip.browser_download_url;
         if(tag){
           var meta=document.getElementById('dlMeta');
-          if(meta){var b=document.createElement('span');b.style.color='var(--acc)';b.style.fontWeight='600';
+          if(meta){var b=document.createElement('span');b.className='meta-strong';
             b.textContent=' '+tag;meta.querySelectorAll('[data-l]').forEach(function(sp){sp.appendChild(b.cloneNode(true));});}
         }
       })

@@ -3,6 +3,17 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<script>
+(function(){try{
+  var t=localStorage.getItem('sza-theme');
+  if(t!=='dark'&&t!=='light')t=matchMedia('(prefers-color-scheme: light)').matches?'light':'dark';
+  document.documentElement.setAttribute('data-theme',t);
+  var l=localStorage.getItem('sza-lang');
+  if(l==='uk')l='ua';
+  if(l!=='ru'&&l!=='en'&&l!=='ua'){var n=(navigator.language||'en').toLowerCase();l=n.indexOf('ru')==0?'ru':n.indexOf('uk')==0?'ua':'en';}
+  document.documentElement.setAttribute('data-lang',l);
+}catch(e){}})();
+</script>
 <title>Fast Media Sorter &amp; Sharing for Windows</title>
 <meta name="description" content="Быстро листайте огромные папки с фото и видео и раскладывайте файлы по каталогам одним нажатием клавиши.">
 <link rel="canonical" href="https://serzhyale.github.io/FastMediaSorter_Lite/lang/ru/">
@@ -39,28 +50,78 @@
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://serzhyale.github.io/FastMediaSorter_Lite/assets/sza-kit.css">
 <link rel="stylesheet" href="https://serzhyale.github.io/FastMediaSorter_Lite/assets/fms-site.css">
-<script>(function(){try{var t=localStorage.getItem('sza-theme');if(t==='light'||t==='dark'){document.documentElement.setAttribute('data-theme',t);}}catch(e){}})();</script>
 <script type="application/ld+json">{"@context":"https://schema.org","@type":"SoftwareApplication","name":"Fast Media Sorter & Sharing for Windows","description":"Быстро листайте огромные папки с фото и видео и раскладывайте файлы по каталогам одним нажатием клавиши.","url":"https://serzhyale.github.io/FastMediaSorter_Lite/lang/ru/","inLanguage":"ru","applicationCategory":"MultimediaApplication","operatingSystem":"Windows 7, Windows 8.1, Windows 10, Windows 11","image":"https://serzhyale.github.io/FastMediaSorter_Lite/assets/social-preview-1280x640.png","downloadUrl":"https://github.com/SerZhyAle/FastMediaSorter_Lite/releases/latest","isAccessibleForFree":true,"offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"author":{"@type":"Person","name":"SerZhyAle"}}</script>
 </head>
 <body>
+<a class="skip-link" href="#main">Перейти к основному содержимому</a>
 <header class="site-header">
-  <a class="brand" href="https://serzhyale.github.io/FastMediaSorter_Lite/lang/ru/" aria-label="Fast Media Sorter &amp; Sharing for Windows"><span class="brand-mark"><img src="https://serzhyale.github.io/FastMediaSorter_Lite/assets/icons/Fast_Media_Sorter.ico" alt="" width="24" height="24"></span>Fast Media Sorter &amp; Sharing for Windows</a>
+  <nav class="site-nav" aria-label="Основная навигация">
+  <a class="brand" href="https://serzhyale.github.io/FastMediaSorter_Lite/lang/ru/" aria-label="Fast Media Sorter &amp; Sharing for Windows">Fast Media Sorter &amp; Sharing for Windows</a>
+  <details class="lang-menu">
+    <summary>Русский</summary>
+    <div class="lang-pop">
+    <a hreflang="en" href="https://serzhyale.github.io/FastMediaSorter_Lite/">English</a>
+    <a class="on" hreflang="ru" href="https://serzhyale.github.io/FastMediaSorter_Lite/lang/ru/">Русский</a>
+    <a hreflang="uk" href="https://serzhyale.github.io/FastMediaSorter_Lite/lang/uk/">Українська</a>
+    <a hreflang="de" href="https://serzhyale.github.io/FastMediaSorter_Lite/lang/de/">Deutsch</a>
+    <a hreflang="it" href="https://serzhyale.github.io/FastMediaSorter_Lite/lang/it/">Italiano</a>
+    <a hreflang="es" href="https://serzhyale.github.io/FastMediaSorter_Lite/lang/es/">Español</a>
+    <a hreflang="fr" href="https://serzhyale.github.io/FastMediaSorter_Lite/lang/fr/">Français</a>
+    <a hreflang="pt" href="https://serzhyale.github.io/FastMediaSorter_Lite/lang/pt/">Português</a>
+    <a hreflang="ar" href="https://serzhyale.github.io/FastMediaSorter_Lite/lang/ar/">العربية</a>
+    <a hreflang="hi" href="https://serzhyale.github.io/FastMediaSorter_Lite/lang/hi/">हिन्दी</a>
+    <a hreflang="bn" href="https://serzhyale.github.io/FastMediaSorter_Lite/lang/bn/">বাংলা</a>
+    <a hreflang="ur" href="https://serzhyale.github.io/FastMediaSorter_Lite/lang/ur/">اردو</a>
+    <a hreflang="zh" href="https://serzhyale.github.io/FastMediaSorter_Lite/lang/zh/">中文</a>
+    </div>
+  </details>
   <button class="theme-btn" id="themeBtn" aria-label="Switch theme">◐</button>
   <a class="btn btn-primary btn-sm" href="#get">Установщик (GitHub)</a>
+  </nav>
 </header>
 
-<main class="container">
+<main class="container" id="main" tabindex="-1">
   <section class="hero">
-    <div class="hero-copy">
-      <span class="eyebrow">Windows desktop app</span>
-      <h1>Fast Media Sorter &amp; Sharing for Windows</h1>
-      <span class="kicker">Free &amp; open-source</span>
+    <div class="hero-id">
+      <img class="app-icon" src="https://serzhyale.github.io/FastMediaSorter_Lite/assets/icons/store-icon-256.png" alt="" width="168" height="168">
+      <div class="hero-copy">
+        <span class="eyebrow">Windows desktop app</span>
+        <h1>Fast Media Sorter &amp; Sharing for Windows</h1>
+        <span class="kicker">Free &amp; open-source</span>
+      </div>
     </div>
+    <p class="lead lead-narrow">Просматривайте и сортируйте медиа; когда понадобится, эта же программа - ещё и сервер раздачи папок и хост виртуальных дисков FileDO: каждая из этих ролей необязательна и выключена, пока вы её не включите.</p>
     <p class="lead lead-narrow">Быстро листайте огромные папки с фото и видео и раскладывайте файлы по каталогам одним нажатием клавиши.</p>
     <p class="lead lead-narrow">«Sharing» в названии - это передача ваших медиафайлов другому: телефону с Android, другой копии программы или любому SFTP-клиенту. Пока вы не включите, она выключена. <a href="https://serzhyale.github.io/FastMediaSorter_Lite/how-to-sftp.html" lang="en" dir="ltr">Publish selected PC folders over SFTP</a> &middot; <a href="https://serzhyale.github.io/FastMediaSorter_Lite/publish-folders-android.html" lang="en" dir="ltr">Network and router, step by step</a></p>
     <div class="button-group">
       <a class="btn btn-primary" href="#get">Установщик (GitHub)</a>
       <a class="btn btn-ghost" href="#features">Что стоит знать</a>
+    </div>
+  </section>
+
+  <section class="section doors" id="doors" aria-labelledby="doors-title">
+    <div class="sec-head">
+      <h2 class="section-title" id="doors-title"><span class="hash">#</span>Три двери, одна программа</h2>
+      <p class="section-desc">Выберите вход под свою задачу. За каждой дверью - один и тот же полный пакет; серверная редакция - отдельный пакет для режима «всегда включено».</p>
+    </div>
+    <div class="grid">
+    <article class="card scenario-card" id="door-1">
+      <span class="pill">Просмотрщик</span>
+      <h3>Мне нужен просмотрщик</h3>
+      <p>Просматривайте и сортируйте фото и видео одной клавишей на файл. Скачайте полный пакет - один установщик, вся семья целиком. Выберите в установщике тип «Компактная» - получите полноценный просмотрщик без сервера; раздача и FileDO остаются необязательными дополнениями.</p>
+      <div class="scenario-foot"><a class="btn btn-primary btn-sm" href="#get">Скачать полный пакет</a></div>
+    </article>
+    <article class="card scenario-card" id="door-2">
+      <span class="pill">Раздача на Android</span>
+      <h3>Хочу папки с ПК на телефоне</h3>
+      <p>Отдайте папки этого ПК телефону по SFTP: установите полный пакет с отмеченным сервером раздачи папок и один раз привяжите телефон по QR-коду - либо поставьте серверную редакцию на машину, которая должна раздавать, когда никто не вошёл в систему. Просмотрщик тоже внутри, в серверной редакции он необязателен.</p>
+      <div class="scenario-foot"><a class="btn btn-ghost btn-sm" href="https://serzhyale.github.io/FastMediaSorter_Lite/server.html">Раздача на Android</a></div>
+    </article>
+    <article class="card scenario-card" id="door-3">
+      <span class="pill gold">В планах</span>
+      <h3>Я подниму Media Exchange Server</h3>
+      <p>В планах, пока недоступно: Media Exchange Server (сервер обмена) - сервис соединения на тот день, когда у сервера раздачи нет ни доступного адреса, ни проброса порта. Скачивать пока нечего, и больше ничего здесь не обещано.</p>
+    </article>
     </div>
   </section>
 
@@ -108,6 +169,7 @@
         <a class="btn btn-ghost btn-sm" href="https://apps.microsoft.com/detail/9N59Z73WZ53C" target="_blank" rel="noopener"><span>Microsoft Store</span></a>
         <span class="dl-meta" id="dlMeta">Offline-ready bundles - VLC runtimes and OCR packs included. Windows 10 1607+ / 11; a 32-bit build for Windows 7/8.1 is in the same download.</span>
       </div>
+      <p class="dl-meta">Внутри полного пакета, всё необязательное и выключенное, пока вы не включите: сервер раздачи папок (Менеджер общего доступа и SFTP-воркер), хост виртуальных дисков FileDO, видео-кодеки и модели OCR для работы без интернета. Выберите тип «Компактная», чтобы сервер не ставился.</p>
       <p class="dl-meta">
         <a href="https://serzhyale.github.io/FastMediaSorter_Lite/lang/ru/trust.html">Почему Windows предупреждает об этой загрузке</a>
       </p>
@@ -133,9 +195,9 @@
       <p>Опубликуйте выбранные папки по SFTP и откройте их в приложении для Android - или в любом SFTP-клиенте. Выключено, пока не включите.</p>
     </article>
     </div>
-    <details class="sec" id="all-features" style="margin-top:1.5rem">
+    <details class="sec sec-spaced" id="all-features">
       <summary><span class="secnum">01</span>Fast Media Sorter &amp; Sharing for Windows - Features</summary>
-      <div class="grid" style="margin-top:1rem">
+      <div class="grid grid-spaced">
       <article class="card">
         <h3>Одна клавиша на файл</h3>
         <p>Назначьте папки клавишам 1-9, 0 и Del - и разберите каталог, ни разу не потянувшись к мыши. С Shift тот же файл копируется, а не переносится.</p>
@@ -213,7 +275,18 @@
 </main>
 
 <footer class="site-footer"><div class="container">
-  <h2 class="sec-head" style="margin-bottom:1rem;font-size:1.1rem">Другие инструменты SZA</h2>
+  <h2 class="footer-title" lang="en" dir="ltr">Documentation</h2>
+  <div class="link-row" lang="en" dir="ltr">
+    <a href="#howto">HOW TO</a>
+    <a href="https://serzhyale.github.io/FastMediaSorter_Lite/topics.html">Topics</a>
+    <a href="https://serzhyale.github.io/FastMediaSorter_Lite/glossary.html">Glossary</a>
+    <a href="https://serzhyale.github.io/FastMediaSorter_Lite/lang/ru/trust.html">Почему Windows предупреждает об этой загрузке</a>
+    <a href="https://serzhyale.github.io/FastMediaSorter_Lite/docs/privacy.html">Privacy</a>
+    <a href="https://github.com/SerZhyAle/FastMediaSorter_Lite#readme">README</a>
+    <a href="https://github.com/SerZhyAle/FastMediaSorter_Lite/blob/main/CHANGELOG.md">Changelog</a>
+    <a href="https://github.com/SerZhyAle/FastMediaSorter_Lite/issues">Issues</a>
+  </div>
+  <h2 class="sec-head sec-head-family">Другие инструменты SZA</h2>
   <div class="tools-grid">
     <a href="https://serzhyale.github.io/FastMediaSorter_mob_v2/"><b>FastMediaSorter v2</b><span>Сортировщик медиа для Android</span></a>
     <a href="https://serzhyale.github.io/CyrFlip/"><b>CyrFlip</b><span>Исправление раскладки Windows</span></a>
@@ -240,9 +313,13 @@
     <a hreflang="ur" href="https://serzhyale.github.io/FastMediaSorter_Lite/lang/ur/">اردو</a>
     <a hreflang="zh" href="https://serzhyale.github.io/FastMediaSorter_Lite/lang/zh/">中文</a>
   </div>
-  <div class="footer-bottom">
-    <span>&copy; 2026 <a href="https://sza.od.ua">SerZhyAle</a></span>
-    <span><a href="https://sza.od.ua">sza.od.ua</a> &middot; <a href="https://github.com/SerZhyAle/FastMediaSorter_Lite">GitHub</a> &middot; <a href="mailto:sza@ukr.net">sza@ukr.net</a></span>
+  <div class="author-card" lang="en" dir="ltr">
+    <b>Serhii Zhyhunenko (SerZhyAle)</b>
+    <span>&copy; 2026</span>
+    <a href="https://sza.od.ua">sza.od.ua</a>
+    <a href="https://github.com/SerZhyAle">GitHub</a>
+    <a href="https://github.com/SerZhyAle/FastMediaSorter_Lite">FastMediaSorter_Lite</a>
+    <a href="mailto:sza@ukr.net">sza@ukr.net</a>
   </div>
 </div></footer>
 
@@ -287,7 +364,7 @@
         if(zip&&z) z.href=zip.browser_download_url;
         if(tag){
           var meta=document.getElementById('dlMeta');
-          if(meta){var b=document.createElement('span');b.style.color='var(--acc)';b.style.fontWeight='600';
+          if(meta){var b=document.createElement('span');b.className='meta-strong';
             b.textContent=' '+tag;meta.appendChild(b);}
         }
       })

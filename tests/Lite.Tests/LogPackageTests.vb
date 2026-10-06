@@ -4,6 +4,7 @@ Option Strict On
 Imports System.Collections.Generic
 Imports System.IO
 Imports System.IO.Compression
+Imports System.Linq
 Imports System.Text
 Imports System.Threading.Tasks
 Imports Xunit
@@ -393,6 +394,77 @@ Public Class LogPackageTests
             Catch
             End Try
         End Try
+    End Sub
+
+    ' ---- ticket 141 T-8: the exchange server in the package ----
+
+    <Fact>
+    Public Sub The_report_lists_the_exchange_server_component_beside_the_share_worker()
+        Dim names As List(Of String) = LogPackage.ComponentPaths().Select(Function(p) p.Key).ToList()
+        Assert.Contains("share worker", names)
+        Assert.Contains("exchange server", names)
+        Dim exchange As KeyValuePair(Of String, String) = LogPackage.ComponentPaths().Single(Function(p) p.Key = "exchange server")
+        Assert.EndsWith("exchange" & Path.DirectorySeparatorChar & "fms-exchange-server.exe", exchange.Value)
+        Assert.StartsWith(AppContext.BaseDirectory, exchange.Value)
+    End Sub
+
+    <Fact>
+    Public Sub Exchange_log_is_looked_for_in_both_data_directories_machine_store_first()
+        Dim sibling As KeyValuePair(Of String, String()) =
+            LogPackage.SiblingLogCandidates().Single(Function(p) p.Key = "exchange.log")
+        Dim common As String = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData)
+        Dim local As String = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData)
+        Dim machine As Integer = Array.IndexOf(sibling.Value, Path.Combine(common, "FastMediaSorterExchange", "exchange.log"))
+        Dim perUser As Integer = Array.IndexOf(sibling.Value, Path.Combine(local, "FastMediaSorterExchange", "exchange.log"))
+        Assert.True(machine >= 0, "the machine store (the service's) is not a candidate")
+        Assert.True(perUser >= 0, "the per-user store (a console run's) is not a candidate")
+        Assert.True(machine < perUser, "the service's store wins whenever it exists, so it is looked at first")
+    End Sub
+
+    <Fact>
+    Public Sub An_exchange_data_directory_override_is_honoured_before_the_two_stores()
+        Dim saved As String = Environment.GetEnvironmentVariable("FMS_EXCHANGE_DATA_DIR")
+        Try
+            Environment.SetEnvironmentVariable("FMS_EXCHANGE_DATA_DIR", "D:\scratch\xd")
+            Dim list As String() = LogPackage.ExchangeLogCandidates("C:\ProgramData", "C:\Users\a\AppData\Local")
+            Assert.Equal(Path.Combine("D:\scratch\xd", "exchange.log"), list(0))
+            Assert.Equal(3, list.Length)
+        Finally
+            Environment.SetEnvironmentVariable("FMS_EXCHANGE_DATA_DIR", saved)
+        End Try
+    End Sub
+
+    ''' <summary>The allow-list never carries a value that could be a password or a hash, however the
+    ''' name is spelled - a future "Exchange_PasswordHint" must be refused at review, not by luck.</summary>
+    <Fact>
+    Public Sub No_allow_listed_setting_name_can_carry_a_password_or_a_hash()
+        For Each name As String In LogPackage.SafeSettingNames
+            Assert.False(name.IndexOf("Password", StringComparison.OrdinalIgnoreCase) >= 0, "Password in the name: " & name)
+            Assert.False(name.IndexOf("Hash", StringComparison.OrdinalIgnoreCase) >= 0, "Hash in the name: " & name)
+            Assert.False(name.IndexOf("Fingerprint", StringComparison.OrdinalIgnoreCase) >= 0, "Fingerprint in the name: " & name)
+        Next
+        ' And the exchange settings that ARE on the list are exactly the three that cannot hold a secret.
+        Dim exchange As List(Of String) = LogPackage.SafeSettingNames.Where(Function(n) n.StartsWith("Exchange_", StringComparison.OrdinalIgnoreCase)).
+            OrderBy(Function(n) n, StringComparer.Ordinal).ToList()
+        Assert.Equal({"Exchange_EverStarted", "Exchange_KeepRunningOnExit", "Exchange_ListenPort"}, exchange.ToArray())
+    End Sub
+
+    <Fact>
+    Public Sub An_exchange_setting_that_is_not_on_the_list_is_counted_not_sent()
+        Dim values As New List(Of KeyValuePair(Of String, Object)) From {
+            New KeyValuePair(Of String, Object)("Exchange_KeepRunningOnExit", "1"),
+            New KeyValuePair(Of String, Object)("Exchange_ListenPort", "22022"),
+            New KeyValuePair(Of String, Object)("Exchange_PasswordHint", "my cat"),
+            New KeyValuePair(Of String, Object)("Exchange_Fingerprint", "AB:CD")
+        }
+        Dim lines As List(Of String) = LogPackage.DescribeSettings(values)
+        Assert.Contains("Exchange_KeepRunningOnExit=1", lines)
+        Assert.Contains("Exchange_ListenPort=22022", lines)
+        ' A name with Password in it is shown as <hidden>; anything else unlisted is only counted.
+        Assert.Contains("Exchange_PasswordHint=<hidden>", lines)
+        Assert.DoesNotContain("my cat", String.Join(vbLf, lines))
+        Assert.DoesNotContain("AB:CD", String.Join(vbLf, lines))
+        Assert.Contains("(1 other values not sent)", lines)
     End Sub
 
     Private Shared Function ReadEntry(zipPath As String, entryName As String) As String

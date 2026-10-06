@@ -1,6 +1,13 @@
+# -IncludeExchange is THE SHIPPING GATE of the exchange server (specification 133 section 8,
+# ticket 141), off by default: nothing from the exchange module may reach a RELEASED package
+# before rung 2 freezes the wire. Off, the stage (ZIP and both setups) has no exchange\ folder
+# and ISCC is called with /DNoExchange. On, this script builds the Go module itself (it builds
+# bin\Release itself too), stages the tree into the ZIP and both setups, and fails when the
+# binary cannot be built - it never packages a component it lacks.
 param(
     [string]$Version = (Get-Date -Format "yy.M.d.HHmm"),
-    [switch]$NoClean
+    [switch]$NoClean,
+    [switch]$IncludeExchange
 )
 
 $ErrorActionPreference = "Stop"
@@ -81,6 +88,17 @@ Install it, then re-run:
     exit 1
 }
 
+# Drift guard, before anything is built: this script is the free pre-flight tools\Release.ps1 runs
+# before the billable tag push, and it promises to build what release.yml builds. If the workflow's
+# shipping gate was flipped (INCLUDE_EXCHANGE: 'true') while this run was started without
+# -IncludeExchange, the pre-flight would prove a package the release does not build - stop instead
+# of passing silently.
+$workflowFile = Join-Path $solutionDir ".github\workflows\release.yml"
+if ((-not $IncludeExchange) -and (Test-Path $workflowFile) -and
+    ((Get-Content $workflowFile -Raw) -match "(?m)^\s*INCLUDE_EXCHANGE:\s*'true'")) {
+    throw "release.yml has INCLUDE_EXCHANGE: 'true' but -IncludeExchange was not given: this pre-flight would build a different package than the release. Pass -IncludeExchange (and make tools\Release.ps1 pass it) or shut the gate in release.yml."
+}
+
 $msbuild = Resolve-MsBuild
 $nuget = & (Join-Path $PSScriptRoot "Get-PinnedNuGet.ps1")
 
@@ -111,6 +129,21 @@ if (-not (Test-Path (Join-Path $releaseDir "FastMediaSorter_x86.exe"))) {
     throw "Release executable not found in $releaseDir"
 }
 
+# The exchange server, from source (nothing is vendored - owner answer Q-133-3), into the same
+# bin\ExchangePublish build.ps1 uses. Exit 2 = no 64-bit Go: with the gate open that is a failure,
+# never a quiet skip.
+$exchangePublish = Join-Path $solutionDir "bin\ExchangePublish"
+if ($IncludeExchange) {
+    Write-Host "Building the exchange server (Go, windows/amd64).."
+    Remove-Item -LiteralPath $exchangePublish -Recurse -Force -ErrorAction SilentlyContinue
+    & (Join-Path $solutionDir "exchange-server\build.ps1") -Version $Version -OutDir $exchangePublish
+    if ($LASTEXITCODE -ne 0) {
+        throw "exchange-server\build.ps1 exited with code $LASTEXITCODE (2 = no 64-bit Go). -IncludeExchange cannot ship without the binary."
+    }
+} else {
+    Write-Host "Exchange server: not included (shipping gate shut - pass -IncludeExchange once rung 2 has frozen the wire)."
+}
+
 Remove-Item -LiteralPath $stageDir -Recurse -Force -ErrorAction SilentlyContinue
 New-Item -ItemType Directory -Path $stageDir -Force | Out-Null
 New-Item -ItemType Directory -Path $distDir -Force | Out-Null
@@ -124,6 +157,11 @@ Get-ChildItem $releaseDir -Recurse -File |
     Where-Object { $_.Extension -notin ".pdb", ".xml", ".log" } |
     ForEach-Object {
         $relative = Get-RelativePath -BasePath $releaseDir -TargetPath $_.FullName
+        # The exchange server (specification 133) is never taken from this wildcard copy: a
+        # development copy that build.ps1 deployed into bin\Release must not ride into the ZIP or
+        # a setup.exe by luck. With the gate open the tree is staged below by
+        # tools\Stage-ExchangePayload.ps1; with it shut there is no exchange\ in the stage at all.
+        if ($relative -like 'exchange\*') { return }
         $destination = Join-Path $stageDir $relative
         New-Item -ItemType Directory -Path (Split-Path $destination -Parent) -Force | Out-Null
         Copy-Item $_.FullName $destination -Force
@@ -189,6 +227,19 @@ Copy-Item (Join-Path $workerSrc "*") $stageCompanion -Recurse -Force
 & (Join-Path $PSScriptRoot "Stage-FileDoPayload.ps1") -Destination $stageDir
 & (Join-Path $PSScriptRoot "Prepare-OcrOfflinePayload.ps1") -StageDir $stageDir -IncludeBest
 
+# The exchange tree rides in the portable ZIP like every other support tree (Q141-1: it is the
+# full package, nothing runs it until asked) and in both setups - only when the gate is open.
+if ($IncludeExchange) {
+    & (Join-Path $PSScriptRoot "Stage-ExchangePayload.ps1") -Source $exchangePublish -Destination $stageDir
+    if (-not (Test-Path (Join-Path $stageDir "exchange\fms-exchange-server.exe"))) {
+        throw "-IncludeExchange was given but the stage has no exchange\fms-exchange-server.exe."
+    }
+} elseif (Test-Path (Join-Path $stageDir "exchange")) {
+    throw "The stage carries an exchange\ folder but the shipping gate is shut (-IncludeExchange not given)."
+}
+$noExchangeDefine = @()
+if (-not $IncludeExchange) { $noExchangeDefine = @("/DNoExchange") }
+
 $zipName = "FastMediaSorter-$Version-windows-x64.zip"
 $zipPath = Join-Path $distDir $zipName
 if (Test-Path $zipPath) {
@@ -203,7 +254,7 @@ Write-Host "SHA256: $zipHash"
 # ISCC was resolved (or the script stopped) at the top - see the note there.
 $stageAbs = (Resolve-Path $stageDir).Path
 $distAbs = (Resolve-Path $distDir).Path
-& $iscc "/DVersion=$Version" "/DSourceDir=$stageAbs" "/O$distAbs" (Join-Path $solutionDir "publishing\installer\FastMediaSorter.iss")
+& $iscc "/DVersion=$Version" "/DSourceDir=$stageAbs" "/O$distAbs" @noExchangeDefine (Join-Path $solutionDir "publishing\installer\FastMediaSorter.iss")
 if ($LASTEXITCODE -ne 0) {
     throw "Inno Setup failed with exit code $LASTEXITCODE."
 }
@@ -225,9 +276,10 @@ Write-Host "SHA256: $setupHash"
 # first proof of compiling is a paid, red CI job.
 #
 # Mirror of release.yml's "Build Server edition installer" step, including its lean
-# stage - the Share Manager, the Go worker and the two elevated helper scripts only.
-# No viewer, no VLC codecs, no OCR models: a headless server runs none of them, and
-# reusing the stage above would ship hundreds of megabytes it never opens.
+# stage - the Share Manager, the Go worker and the two elevated helper scripts, plus
+# the viewer as an optional, unticked component (ticket 132). No VLC codecs, no OCR
+# models: a headless server runs none of them, and reusing the stage above would
+# ship hundreds of megabytes it never opens.
 $serverStage = Join-Path $solutionDir "stage\FastMediaSorter-$Version-windows-x64-server"
 if (Test-Path $serverStage) {
     Remove-Item -LiteralPath $serverStage -Recurse -Force
@@ -248,10 +300,18 @@ Copy-Item (Join-Path $stageDir "FastMediaSorterCompanion.exe") $serverStage -For
 $serverCompanion = Join-Path $serverStage "companion"
 New-Item -ItemType Directory -Path $serverCompanion -Force | Out-Null
 Copy-Item (Join-Path $stageCompanion "*") $serverCompanion -Recurse -Force
-& (Join-Path $PSScriptRoot "Stage-FileDoPayload.ps1") -Destination $serverStage
+& (Join-Path $PSScriptRoot "Stage-FileDoPayload.ps1") -Destination $serverStage -Server
+# The optional, unticked viewer component of the Server edition (ticket 132), taken from the
+# User stage above - this script is the free mirror of the release, so it requires it.
+& (Join-Path $PSScriptRoot "Stage-ServerViewerPayload.ps1") -UserStage $stageDir -Destination $serverStage -Server -Require
+# The same exchange binary as the User stage (gate open only): the two setups of one build never
+# differ in it.
+if ($IncludeExchange) {
+    & (Join-Path $PSScriptRoot "Stage-ExchangePayload.ps1") -Source (Join-Path $stageDir "exchange") -Destination $serverStage -Server
+}
 
 $serverStageAbs = (Resolve-Path $serverStage).Path
-& $iscc "/DVersion=$Version" "/DSourceDir=$serverStageAbs" "/O$distAbs" (Join-Path $solutionDir "publishing\installer\FastMediaSorterServer.iss")
+& $iscc "/DVersion=$Version" "/DSourceDir=$serverStageAbs" "/O$distAbs" @noExchangeDefine (Join-Path $solutionDir "publishing\installer\FastMediaSorterServer.iss")
 if ($LASTEXITCODE -ne 0) {
     throw "Inno Setup (Server edition) failed with exit code $LASTEXITCODE."
 }

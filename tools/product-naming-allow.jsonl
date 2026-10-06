@@ -1,7 +1,7 @@
 {"path":"*","pattern":"Lite\\.Tests","reason":"The frozen test project folder, project file and namespace (tests/Lite.Tests, Namespace Lite.Tests): an identifier every script path and linked source depends on, never visible text."}
-{"path":"tools/Test-ProductNaming.ps1","pattern":"LITE|Lite|for Windows","reason":"The check names the forbidden forms it searches for."}
+{"path":"tools/Test-ProductNaming.ps1","pattern":"LITE|Lite|for Windows|Exchange Server","reason":"The check names the forbidden forms it searches for."}
 {"path":"tools/product-naming-allow.jsonl","pattern":".","reason":"The allow-list quotes the forms it permits."}
-{"path":"docs/guides/PRODUCT_NAMING.md","pattern":"LITE|Lite|for Windows","reason":"The standard defines the forbidden forms and the frozen identifiers that still carry them."}
+{"path":"docs/guides/PRODUCT_NAMING.md","pattern":"LITE|Lite|for Windows|Exchange Server","reason":"The standard defines the forbidden forms and the frozen identifiers that still carry them."}
 {"path":"CHANGELOG.md","pattern":"FastMediaSorter LITE|for Windows","reason":"Past entries are history, and the Unreleased entry names the old product and the frozen package name once."}
 {"path":"README.md","pattern":"FastMediaSorter LITE","reason":"States once that Add/Remove Programs and winget keep the frozen package name FastMediaSorter LITE."}
 {"path":"README_RU.md","pattern":"FastMediaSorter LITE","reason":"Same statement as README.md, in Russian."}

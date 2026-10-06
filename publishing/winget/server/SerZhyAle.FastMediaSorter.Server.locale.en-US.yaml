@@ -43,6 +43,11 @@ Description: |-
   the folders - the service never guesses. Uninstalling stops and deletes the service and removes
   the firewall rule; your host key is kept unless you delete it yourself.
 
+  The server leads in this package. The media viewer and sorter is inside it as an optional
+  component that stays unticked unless you choose it on the components page (a silent install does
+  not add it), and FileDO virtual-disk hosting is the other optional extra - both are off until you
+  enable them.
+
   Setup requires administrator rights and Windows 10 version 1607 or newer, Windows 11, or
   Windows Server 2016 or newer. The management console is available in 13 languages.
 Moniker: fastmediasorter-server

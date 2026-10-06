@@ -8,7 +8,7 @@
     "locale that has pages there. 'forbidden' substrings must not appear in those pages",
     "at all. 'everyPage' terms must hit on every public page, title text included.",
     "Scope 'lang' looks at the two pages of each locale under lang/; scope 'guides'",
-    "looks at the eight English task guides, whose RU spans carry the Russian text.",
+    "looks at the English task guides, whose RU and UA spans carry the Russian and Ukrainian text.",
     "The product name of the Android reader app is FastMediaSorter - one word - and is",
     "a legitimate string on publish-folders-android.html, so it is not forbidden here."
   ],
@@ -49,7 +49,8 @@
       "scope": "guides",
       "stems": {
         "en": ["estination folder"],
-        "ru": ["олучател"]
+        "ru": ["олучател"],
+        "uk": ["отримувач"]
       },
       "forbidden": {}
     },
@@ -58,7 +59,8 @@
       "scope": "guides",
       "stems": {
         "en": ["NumPad"],
-        "ru": ["NumPad"]
+        "ru": ["NumPad"],
+        "uk": ["NumPad"]
       },
       "forbidden": {
         "ru": ["Шифт", "НумПад"],

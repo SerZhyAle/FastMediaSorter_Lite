@@ -141,6 +141,15 @@ Friend NotInheritable Class TrayContext
         AddHandler miStatus.Click, Sub() TrayStatus()
         menu.Items.Add(miStatus)
 
+        ' The exchange server (ticket 142 T-6): one item right after Status - the name, then what it is
+        ' doing. Present only while the component is installed: its visibility is decided on Opening, like
+        ' the viewer item below, and its text is refreshed there off the UI thread (two cheap reads: the
+        ' process list and the service state). Nothing is started by showing it; a click opens the window.
+        Dim miExchange As New ToolStripMenuItem(ExchangeText.TrayItem(ExchangeRunKind.Stopped)) With {.Visible = False}
+        AddHandler miExchange.Click, Sub() ShowMainWindow(Nothing)
+        menu.Items.Add(miExchange)
+        AddHandler menu.Opening, Sub() RefreshExchangeTrayItem(miExchange)
+
         ' Online "publish your folders for Android" guide.
         Dim miDesc As New ToolStripMenuItem(Localization.T("Описание.."))
         AddHandler miDesc.Click, Sub() NetworkInfo.OpenInBrowser(ShareGuide.SiteGuideUrl)
@@ -188,6 +197,29 @@ Friend NotInheritable Class TrayContext
         menu.Items.Add(miExit)
 
         Return menu
+    End Function
+
+    ''' <summary>Shows or hides the exchange item for the component's presence, then refreshes its text from a
+    ''' background read. The read never starts, stops or changes anything.</summary>
+    Private Sub RefreshExchangeTrayItem(item As ToolStripMenuItem)
+        Try
+            item.Visible = ExchangeProcess.IsAvailable()
+            If Not item.Visible Then Return
+            Dim t As Task = RefreshExchangeTrayTextAsync(item)
+        Catch ex As Exception
+            AppFileLogger.LogException("Tray: exchange item", ex)
+        End Try
+    End Sub
+
+    Private Async Function RefreshExchangeTrayTextAsync(item As ToolStripMenuItem) As Task
+        Dim kind As ExchangeRunKind = Await Task.Run(
+            Function()
+                Dim serviceExists As Boolean = ExchangeService.Exists()
+                Dim state As ServiceControl.ServiceState = If(serviceExists, ExchangeService.QueryState(), ServiceControl.ServiceState.NotInstalled)
+                Return ExchangeText.TrayKind(ExchangeProcess.RunningPid() > 0, serviceExists, state)
+            End Function)
+        If _disposed OrElse item.IsDisposed Then Return
+        item.Text = ExchangeText.TrayItem(kind)
     End Function
 
     ''' <summary>
@@ -722,6 +754,15 @@ Friend NotInheritable Class TrayContext
                 _statsTimer.Stop()
                 _statsTimer.Dispose()
             Catch
+            End Try
+            ' A server THIS session started is stopped with it, unless the person asked to keep it running
+            ' (Exchange_KeepRunningOnExit, default off). One that was already running is never touched.
+            Try
+                Dim exSettings As New ExchangeSettings()
+                exSettings.Load()
+                ExchangeProcess.StopStartedOnExit(exSettings.KeepRunningOnExit)
+            Catch e As Exception
+                AppFileLogger.LogException("Exchange: stopping the server at exit", e)
             End Try
             Try
                 ' Close BEFORE Dispose, as the language switch above does: FormClosing is
