@@ -84,15 +84,15 @@ main:focus{outline:none}
    answers the kit proposal; the dark theme passes as shipped, so nothing here touches it. */
 html[data-theme="light"]{--acc:#216f2b;--acc-strong:#1a5d24;--gold:#7e560f;--gold-strong:#6b4709}
 
-/* Touch targets (rule 17, T-4): 44 px on a coarse pointer, by padding and not by a larger font. The kit lifts the buttons,
-   the language buttons, the theme button and the tools grid; this lifts the rest of the chrome and the footer links.
-   Fine pointers are left as they are - whether 44 px holds for every pointer is the owner's decision (PAGE-STYLE section 1). */
-@media(pointer:coarse){
-  .brand,.lang-menu>summary,.lang-pop a,.footer-bottom a,.footer-langs a,.link-row a,.author-card a,.xlinks a{display:inline-flex;align-items:center;justify-content:center;min-height:44px;min-width:44px}
-  .lang-pop a{display:flex}
-  .xlinks a{justify-content:flex-start}
-  .seg button,.theme-btn{min-width:44px}
-}
+/* Touch targets (rule 17, ticket 158 T-4, owner ruling 2026-10-07): 44 px for EVERY pointer, by padding and not by a larger
+   font (PAGE-STYLE section 1: "44px touch targets"; the kit itself lifts only on a coarse pointer, so this page layer carries
+   the fine-pointer half and the kit file stays byte-identical to the catalog copy). */
+.brand,.lang-menu>summary,.lang-pop a,.footer-bottom a,.footer-langs a,.link-row a,.author-card a,.xlinks a{display:inline-flex;align-items:center;justify-content:center;min-height:44px;min-width:44px}
+.lang-pop a{display:flex}
+.xlinks a{justify-content:flex-start}
+.btn,.seg button,.theme-btn,.tools-grid a{min-height:44px}
+.seg button,.theme-btn{min-width:44px}
+.copybox .copy{min-height:44px;min-width:44px;top:50%;transform:translateY(-50%)}
 
 /* 360 px (SITE-EXPERIENCE rule 17, ticket 152 T-5): a grid or flex child may be narrower than its content, so a long
    command or a row of buttons wraps inside its box instead of widening the page (body hides the overflow, it did not scroll);
