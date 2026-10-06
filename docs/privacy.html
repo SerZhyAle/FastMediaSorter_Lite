@@ -3,6 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<script>
+(function(){try{
+  var t=localStorage.getItem('sza-theme');
+  if(t!=='dark'&&t!=='light')t=matchMedia('(prefers-color-scheme: light)').matches?'light':'dark';
+  document.documentElement.setAttribute('data-theme',t);
+  var l=localStorage.getItem('sza-lang');
+  if(l==='uk')l='ua';
+  if(l!=='ru'&&l!=='en'&&l!=='ua'){var n=(navigator.language||'en').toLowerCase();l=n.indexOf('ru')==0?'ru':n.indexOf('uk')==0?'ua':'en';}
+  document.documentElement.setAttribute('data-lang',l);
+}catch(e){}})();
+</script>
     <title>Privacy Policy | Fast Media Sorter &amp; Sharing</title>
     <meta name="description" content="Privacy policy of Fast Media Sorter &amp; Sharing for Windows: runs on your device, no personal data, no telemetry; network only for features you switch on.">
     <link rel="canonical" href="https://serzhyale.github.io/FastMediaSorter_Lite/docs/privacy.html">
@@ -21,56 +32,25 @@
     <meta name="twitter:description" content="Privacy policy of Fast Media Sorter &amp; Sharing for Windows: runs on your device, no personal data, no telemetry; network only for features you switch on.">
     <meta name="twitter:image" content="https://serzhyale.github.io/FastMediaSorter_Lite/assets/social-preview-1280x640.png">
     <script type="application/ld+json">{"@context":"https://schema.org","@type":"WebPage","name":"Privacy Policy | Fast Media Sorter & Sharing","description":"Privacy policy of Fast Media Sorter & Sharing for Windows: runs on your device, no personal data, no telemetry; network only for features you switch on.","url":"https://serzhyale.github.io/FastMediaSorter_Lite/docs/privacy.html","inLanguage":["en","ru","uk"],"isPartOf":{"@type":"WebSite","name":"Fast Media Sorter & Sharing for Windows","url":"https://serzhyale.github.io/FastMediaSorter_Lite/"}}</script>
-    <link rel="icon" href="../assets/icons/Fast_Media_Sorter.ico" sizes="any">
-    <style>
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-            line-height: 1.6;
-            margin: 0;
-            padding: 20px;
-            background-color: #f4f4f4;
-            color: #333;
-        }
-        .container {
-            max-width: none;
-            margin: 0;
-            background: #fff;
-            padding: 24px 28px;
-            border-radius: 8px;
-            box-shadow: 0 0 10px rgba(0,0,0,0.1);
-        }
-        h1, h2, h3 { color: #0056b3; }
-        h1 { border-bottom: 2px solid #eee; padding-bottom: 10px; }
-        .note { color: #595959; font-size: 0.9em; }
-        ul { padding-left: 18px; }
-        li { margin-bottom: 8px; }
-        code { background: #eee; padding: 2px 4px; border-radius: 4px; font-family: "Courier New", Courier, monospace; }
-        a { color: #0056b3; }
-        footer { margin-top: 28px; padding-top: 14px; border-top: 1px solid #eee; color: #595959; font-size: 0.9em; }
-        html[data-lang="ru"] [data-l]:not([data-l="ru"]),html[data-lang="en"] [data-l]:not([data-l="en"]),html[data-lang="ua"] [data-l]:not([data-l="ua"]) { display: none; }
-        .topbar { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; }
-        .topbar p { margin: 0; margin-right: auto; }
-        .seg { display: inline-flex; gap: 4px; }
-        .seg button { font: inherit; padding: 2px 10px; border: 1px solid #ccc; border-radius: 6px; background: #fff; color: #333; cursor: pointer; }
-        .seg button[aria-pressed="true"] { background: #0056b3; border-color: #0056b3; color: #fff; }
-        .skip-link { position: absolute; left: 20px; top: 0; z-index: 100; display: inline-flex; align-items: center; min-height: 44px; padding: 0 16px; border-radius: 0 0 8px 8px; background: #0056b3; color: #fff; font-weight: 700; text-decoration: none; transform: translateY(-120%); }
-        .skip-link:focus { transform: none; }
-        .sr-only { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
-        main:focus { outline: none; }
-        main, main code, main a { overflow-wrap: anywhere; }
-        @media (pointer: coarse) { .seg button, .topbar a, footer a { display: inline-flex; align-items: center; min-height: 44px; min-width: 44px; justify-content: center; } }
-    </style>
-    <script>(function(){try{var l=localStorage.getItem('sza-lang');if(l==='uk'){l='ua';}if(!l||['ru','en','ua'].indexOf(l)<0){var n=(navigator.language||'en').toLowerCase();l=n.indexOf('ru')===0?'ru':n.indexOf('uk')===0?'ua':'en';}document.documentElement.setAttribute('data-lang',l);document.documentElement.setAttribute('lang',l==='ua'?'uk':l);}catch(e){}})();</script>
+<link rel="icon" href="../assets/icons/Fast_Media_Sorter.ico" sizes="any">
+<link rel="stylesheet" href="../assets/sza-kit.css">
+<link rel="stylesheet" href="../assets/fms-site.css">
+<style>
+html[data-lang="ru"] [data-l]:not([data-l="ru"]),html[data-lang="en"] [data-l]:not([data-l="en"]),html[data-lang="ua"] [data-l]:not([data-l="ua"]){display:none}
+.site-header>.brand{margin-right:auto}
+main h1{margin:.4rem 0 .6rem}
+main h2{font-size:1.2rem;margin:1.6rem 0 .5rem}
+main ul{padding-inline-start:1.25em}
+main li{margin-bottom:.5rem}
+main code{overflow-wrap:anywhere}
+main,main a{overflow-wrap:anywhere}
+main:focus{outline:none}
+</style>
 </head>
 <body>
-    <a class="skip-link" href="#main"><span data-l="en">Skip to main content</span><span data-l="ru">Перейти к основному содержимому</span><span data-l="ua">Перейти до основного вмісту</span></a>
-    <div class="container">
-        <span id="site-nav-label" class="sr-only"><span data-l="en">Main navigation</span><span data-l="ru">Основная навигация</span><span data-l="ua">Основна навігація</span></span>
-        <nav class="topbar" aria-labelledby="site-nav-label">
-            <p><a href="../">&larr; Fast Media Sorter &amp; Sharing for Windows</a> &middot; <a href="https://github.com/SerZhyAle/FastMediaSorter_Lite">GitHub</a></p>
-            <div class="seg" role="group" aria-label="Language"><button data-setlang="ru">RU</button><button data-setlang="en">EN</button><button data-setlang="ua">UA</button></div>
-        </nav>
-        <main id="main" tabindex="-1">
+<a class="skip-link" href="#main"><span data-l="en">Skip to main content</span><span data-l="ru">Перейти к основному содержимому</span><span data-l="ua">Перейти до основного вмісту</span></a><div class="bg-blobs" aria-hidden="true"><div class="blob blob-1"></div><div class="blob blob-2"></div><div class="blob blob-3"></div></div>
+<header class="site-header"><span id="site-nav-label" class="sr-only"><span data-l="en">Main navigation</span><span data-l="ru">Основная навигация</span><span data-l="ua">Основна навігація</span></span><nav class="site-nav" aria-labelledby="site-nav-label"><a class="brand" href="../" aria-label="Fast Media Sorter &amp; Sharing for Windows">Fast Media Sorter &amp; Sharing for Windows<span class="dot">.</span></a><div class="seg" role="group" aria-label="Language"><button data-setlang="ru">RU</button><button data-setlang="en">EN</button><button data-setlang="ua">UA</button></div><button class="theme-btn" id="themeBtn" aria-label="Switch theme">◐</button><a class="btn btn-ghost btn-sm" href="https://github.com/SerZhyAle/FastMediaSorter_Lite">GitHub</a></nav></header>
+<main class="container" id="main" tabindex="-1">
         <div data-l="en">
         <h1>Privacy Policy</h1>
         <p class="note">Last updated: 6 October 2026</p>
@@ -94,7 +74,7 @@
             developer. Three small things are kept on your PC, in your Windows account: the server's address and
             user name, the server's SSH key fingerprint (so a server pretending to be yours is refused), and the
             password, encrypted with Windows (DPAPI) so it can be read only by you on this PC. If you untick
-            &quot;Remember&quot;, the password is held in memory until the program closes and is never written
+            &quot;Remember the password (protected by Windows)&quot;, the password is held in memory until the program closes and is never written
             anywhere. Files you open from a server are copied into a private cache folder that is deleted when
             you leave the resource or close the program. Passwords are never included in the logs package you may
             choose to send.</li>
@@ -107,13 +87,21 @@
             PC on the share port; access needs the password embedded in the QR/config you share, so treat
             that code as a key and do not post it publicly. A <em>LAN only</em> switch keeps the share off
             the internet; idle connections close after a few hours, and you can cap how many devices connect
-            at once. If you turn on internet access, the app asks the public service
-            <a href="https://check-host.net">check-host.net</a> to confirm your forwarded port is reachable,
-            which reveals your public address and port to that service for the check. With internet access
-            on, the app also asks your own router to forward the share port (UPnP or NAT-PMP), and while a
-            share runs the PC announces itself on your local network (mDNS) so a paired phone can find it
-            again when its address changes; neither of those leaves your network. The app keeps
-            local-only connection counters (this is not telemetry and never leaves your PC).</li>
+            at once. Starting a share also reaches out, with no extra switch to turn on: the worker asks
+            two public services, <a href="https://api.ipify.org">api.ipify.org</a> and
+            <a href="https://icanhazip.com">icanhazip.com</a>, which address the internet sees for your PC
+            (they see your public IP address and nothing else), and this happens even with <em>LAN only</em>
+            on. Unless <em>LAN only</em> is on (it is off by default), the worker also asks your own router
+            to forward the share port (UPnP or NAT-PMP) and, once a forwarded port exists, asks
+            <a href="https://check-host.net">check-host.net</a> to confirm that it answers from outside,
+            which reveals your public address and port to that service for the check. While a share runs
+            the PC announces itself on your local network (mDNS) so a paired phone can find it
+            again when its address changes; that stays inside your network. Turning folder sharing on needs
+            one administrator approval, either in the installer or the first time you enable it in the app
+            (Windows asks): it adds a firewall rule that lets only the sharing program accept connections,
+            and uninstalling removes it (the Microsoft Store package declares that rule in its manifest
+            instead). The app keeps local-only connection counters (this is not telemetry and never leaves
+            your PC).</li>
 
             <li><strong>FileDO disks - optional, opt-in.</strong> If you connect a .fdd container for sharing,
             the server mounts it on this PC and publishes its contents to authorized SFTP clients.
@@ -183,14 +171,37 @@
             files you have opened, kept so the second view is instant) are stored under
             <code>%LOCALAPPDATA%\SZA\FastMediaSorter</code>. These never leave your device, and both caches
             can be emptied or switched off in Settings.</li>
+            <li><strong>Viewing history (64-bit program).</strong> In the same registry place as the settings, the
+            viewer keeps the lists of recent files and folders (up to the limits you set), the zoom of a folder when
+            you choose to remember zoom per folder, and, for video, the playback position of each file - its path,
+            size, modification time and position - so a video resumes where you stopped. &quot;Remember the playback
+            position&quot; switches the last one off. A file opened from an archive or from a server is never
+            remembered by its temporary copy.</li>
+            <li><strong>Archives (64-bit program).</strong> A ZIP, CBZ, 7z or RAR you open is shown as a folder: its
+            pictures and videos are unpacked one by one into a private folder under
+            <code>%LOCALAPPDATA%\SZA\FastMediaSorter\archive-cache</code> while you browse it. The folder is deleted
+            when you leave the archive or close the program, and anything a crash left behind is swept the next
+            time you open an archive.</li>
+            <li><strong>Editing a picture (64-bit program).</strong> When the editor saves over the original, it first
+            writes the result beside it under a temporary name that contains <code>.fms-tmp</code>
+            (for example <code>photo.fms-tmp.jpg</code>) and swaps it in only when it is complete, so a failure
+            cannot leave half a photo. The rest of the original's EXIF is carried over except the embedded preview
+            thumbnail, which would show the picture from before the edit.</li>
+            <li><strong>Exports that carry a key.</strong> &quot;Export..&quot; in the Resource Manager (64-bit
+            program) writes a <code>.fmscfg</code> file to the place you choose, readable only by your account;
+            it holds the server's address and user name, and the password only if you pick that option. The Share
+            Manager's &quot;Send by email..&quot; hands its <code>.fmscfg</code> (the share's access key) to your mail
+            program through a temporary copy in a private folder that exists only for that call and is deleted
+            right after. Treat such a file as you would a password.</li>
         </ul>
 
         <h2>Data sharing</h2>
         <p>None with the developer - the kind of "none" that is actually none, and no telemetry or analytics
         ever. The only things that leave your device do so at your explicit choice and go where you direct them,
         not to us: the text you translate goes to the translation endpoint you configured; shared files go
-        directly to your own phone over SFTP; if you enable internet access, your public address and port
-        are shown to check-host.net solely to test reachability; and the log archive reaches the developer only
+        directly to your own phone over SFTP; when a share starts, your public IP address is seen by
+        api.ipify.org and icanhazip.com (which return it to the program) and, unless LAN only is on, your public address
+        and port are shown to check-host.net solely to test reachability; and the log archive reaches the developer only
         if you send it yourself from your own mail program.</p>
 
         <h2 id="website">This website</h2>
@@ -266,13 +277,20 @@
             ПК на порт общего доступа; для доступа нужен пароль, встроенный в QR-код или конфигурацию, которыми вы делитесь, поэтому относитесь к
             этому коду как к ключу и не публикуйте его. Переключатель <em>Только локальная сеть</em> не выпускает общий доступ
             в интернет; неактивные соединения закрываются через несколько часов, а число одновременно подключённых
-            устройств можно ограничить. Если вы включите доступ из интернета, программа обращается к публичному сервису
-            <a href="https://check-host.net">check-host.net</a>, чтобы проверить, что ваш проброшенный порт доступен,
-            и на время проверки этот сервис узнаёт ваш публичный адрес и порт.
-            При включённом доступе из интернета программа также просит ваш собственный роутер пробросить порт общего доступа (UPnP или NAT-PMP), а пока
+            устройств можно ограничить. Запуск общего доступа также обращается наружу без отдельного переключателя: рабочая программа
+            спрашивает у двух публичных сервисов, <a href="https://api.ipify.org">api.ipify.org</a> и
+            <a href="https://icanhazip.com">icanhazip.com</a>, какой адрес видит интернет у вашего ПК
+            (они видят ваш публичный IP-адрес и больше ничего), и это происходит даже при включённом режиме <em>Только локальная сеть</em>.
+            Если этот режим не включён (по умолчанию он выключен), рабочая программа также просит ваш собственный роутер
+            пробросить порт общего доступа (UPnP или NAT-PMP) и, когда проброшенный порт есть, просит
+            <a href="https://check-host.net">check-host.net</a> проверить, что он отвечает снаружи;
+            на время проверки этот сервис узнаёт ваш публичный адрес и порт. Пока
             общий доступ работает, ПК объявляет о себе в локальной сети (mDNS), чтобы сопряжённый телефон мог найти его
-            снова, когда адрес изменится; ни то, ни другое не выходит за пределы вашей сети. Программа ведёт
-            только локальные счётчики соединений (это не телеметрия, и они никогда не покидают ваш ПК).</li>
+            снова, когда адрес изменится; это не выходит за пределы вашей сети. Для включения общего доступа к папкам
+            нужно одно подтверждение администратора - в установщике или при первом включении в программе (спросит Windows):
+            оно добавляет правило брандмауэра, которое разрешает принимать подключения только программе общего доступа;
+            при удалении программы правило убирается (пакет из Microsoft Store объявляет это правило в своём манифесте).
+            Программа ведёт только локальные счётчики соединений (это не телеметрия, и они никогда не покидают ваш ПК).</li>
 
             <li><strong>Диски FileDO - по желанию, только по вашему согласию.</strong> Если вы подключаете контейнер .fdd для общего доступа,
             сервер монтирует его на этом ПК и публикует его содержимое для авторизованных SFTP-клиентов.
@@ -342,13 +360,36 @@
             которые хранятся, чтобы второй просмотр был мгновенным) находятся в
             <code>%LOCALAPPDATA%\SZA\FastMediaSorter</code>. Они никогда не покидают ваше устройство, а оба кэша
             можно очистить или отключить в Настройках.</li>
+            <li><strong>История просмотра (64-разрядная программа).</strong> В том же месте реестра, что и настройки,
+            просмотрщик хранит списки недавних файлов и папок (в пределах заданных вами лимитов), масштаб папки, если вы
+            выбрали запоминать масштаб для каждой папки, а для видео - позицию воспроизведения каждого файла: его путь,
+            размер, время изменения и позицию, чтобы видео продолжалось с того места, где вы остановились. Пункт
+            «Запоминать позицию просмотра» отключает последнее. Файл, открытый из архива или с сервера, по его временной
+            копии никогда не запоминается.</li>
+            <li><strong>Архивы (64-разрядная программа).</strong> ZIP, CBZ, 7z или RAR, который вы открываете, показывается
+            как папка: его картинки и видео по одному распаковываются в закрытую папку в
+            <code>%LOCALAPPDATA%\SZA\FastMediaSorter\archive-cache</code>, пока вы его просматриваете. Папка удаляется,
+            когда вы выходите из архива или закрываете программу, а то, что осталось после сбоя, убирается при следующем
+            открытии архива.</li>
+            <li><strong>Правка картинки (64-разрядная программа).</strong> Когда редактор сохраняет результат поверх оригинала,
+            он сначала записывает его рядом под временным именем с <code>.fms-tmp</code>
+            (например <code>photo.fms-tmp.jpg</code>) и подставляет, только когда файл готов целиком, поэтому сбой не может
+            оставить половину фотографии. Остальные данные EXIF оригинала переносятся, кроме встроенной миниатюры,
+            которая показывала бы картинку до правки.</li>
+            <li><strong>Выгрузки, несущие ключ.</strong> «Экспорт..» в Менеджере ресурсов (64-разрядная программа) записывает
+            файл <code>.fmscfg</code> в выбранное вами место, доступный для чтения только вашей учётной записи; в нём адрес
+            и имя пользователя сервера, а пароль - только если вы выбрали этот вариант. «Отправить по почте..» в Менеджере общего
+            доступа передаёт вашей почтовой программе свой <code>.fmscfg</code> (ключ доступа к общей папке) через временную копию
+            в закрытой папке, которая существует только на время этого вызова и сразу удаляется. Относитесь к такому файлу
+            как к паролю.</li>
         </ul>
 
         <h2>Передача данных</h2>
         <p>Разработчику - ничего, причём такое «ничего», которое действительно ничего, и никакой телеметрии или аналитики
         никогда. Единственное, что покидает ваше устройство, делает это по вашему явному выбору и идёт туда, куда вы укажете,
         а не к нам: переводимый вами текст уходит на настроенную вами конечную точку перевода; общие файлы идут
-        напрямую на ваш собственный телефон по SFTP; если вы включаете доступ из интернета, ваш публичный адрес и порт
+        напрямую на ваш собственный телефон по SFTP; при запуске общего доступа ваш публичный IP-адрес видят api.ipify.org
+        и icanhazip.com (они возвращают его программе), а если не включён режим «Только локальная сеть», ваш публичный адрес и порт
         показываются check-host.net исключительно для проверки доступности; а архив логов попадает к разработчику, только
         если вы сами отправите его из своей почтовой программы.</p>
 
@@ -425,13 +466,20 @@
             ПК на порт спільного доступу; для доступу потрібен пароль, вбудований у QR-код або конфігурацію, якими ви ділитеся, тож ставтеся до
             цього коду як до ключа і не публікуйте його. Перемикач <em>Лише локальна мережа</em> не випускає спільний доступ
             в інтернет; неактивні з'єднання закриваються за кілька годин, а кількість одночасно підключених
-            пристроїв можна обмежити. Якщо ви ввімкнете доступ з інтернету, програма звертається до публічного сервісу
-            <a href="https://check-host.net">check-host.net</a>, щоб перевірити, що ваш прокинутий порт доступний,
-            і на час перевірки цей сервіс дізнається вашу публічну адресу та порт.
-            Коли доступ з інтернету ввімкнено, програма також просить ваш власний роутер прокинути порт спільного доступу (UPnP або NAT-PMP), а поки
+            пристроїв можна обмежити. Запуск спільного доступу також звертається назовні без окремого перемикача: робоча програма
+            питає у двох публічних сервісів, <a href="https://api.ipify.org">api.ipify.org</a> та
+            <a href="https://icanhazip.com">icanhazip.com</a>, яку адресу бачить інтернет у вашого ПК
+            (вони бачать вашу публічну IP-адресу і більше нічого), і це відбувається навіть за ввімкненого режиму <em>Лише локальна мережа</em>.
+            Якщо цей режим не ввімкнено (за замовчуванням він вимкнений), робоча програма також просить ваш власний роутер
+            прокинути порт спільного доступу (UPnP або NAT-PMP) і, коли прокинутий порт є, просить
+            <a href="https://check-host.net">check-host.net</a> перевірити, що він відповідає ззовні;
+            на час перевірки цей сервіс дізнається вашу публічну адресу та порт. Поки
             спільний доступ працює, ПК оголошує про себе в локальній мережі (mDNS), щоб сполучений телефон міг знайти його
-            знову, коли адреса зміниться; ні те, ні інше не виходить за межі вашої мережі. Програма веде
-            лише локальні лічильники з'єднань (це не телеметрія, і вони ніколи не залишають ваш ПК).</li>
+            знову, коли адреса зміниться; це не виходить за межі вашої мережі. Для ввімкнення спільного доступу до тек
+            потрібне одне підтвердження адміністратора - в інсталяторі або під час першого ввімкнення в програмі (запитає Windows):
+            воно додає правило брандмауера, яке дозволяє приймати підключення лише програмі спільного доступу;
+            під час видалення програми правило прибирається (пакет зі Microsoft Store оголошує це правило у своєму маніфесті).
+            Програма веде лише локальні лічильники з'єднань (це не телеметрія, і вони ніколи не залишають ваш ПК).</li>
 
             <li><strong>Диски FileDO - за бажанням, лише за вашою згодою.</strong> Якщо ви підключаєте контейнер .fdd для спільного доступу,
             сервер монтує його на цьому ПК і публікує його вміст для авторизованих SFTP-клієнтів.
@@ -501,13 +549,36 @@
             які зберігаються, щоб другий перегляд був миттєвим) містяться в
             <code>%LOCALAPPDATA%\SZA\FastMediaSorter</code>. Вони ніколи не залишають ваш пристрій, а обидва кеші
             можна очистити або вимкнути в Налаштуваннях.</li>
+            <li><strong>Історія перегляду (64-розрядна програма).</strong> У тому самому місці реєстру, що й налаштування,
+            переглядач зберігає списки нещодавніх файлів і тек (в межах заданих вами лімітів), масштаб теки, якщо ви
+            обрали запам'ятовувати масштаб для кожної теки, а для відео - позицію відтворення кожного файлу: його шлях,
+            розмір, час зміни та позицію, щоб відео продовжувалося з того місця, де ви зупинилися. Пункт
+            «Запам'ятовувати позицію перегляду» вимикає останнє. Файл, відкритий з архіву чи із сервера, за його тимчасовою
+            копією ніколи не запам'ятовується.</li>
+            <li><strong>Архіви (64-розрядна програма).</strong> ZIP, CBZ, 7z або RAR, який ви відкриваєте, показується
+            як тека: його картинки й відео по одному розпаковуються в закриту теку в
+            <code>%LOCALAPPDATA%\SZA\FastMediaSorter\archive-cache</code>, поки ви його переглядаєте. Теку видаляють,
+            коли ви виходите з архіву або закриваєте програму, а те, що залишилося після збою, прибирається під час наступного
+            відкриття архіву.</li>
+            <li><strong>Редагування картинки (64-розрядна програма).</strong> Коли редактор зберігає результат поверх оригіналу,
+            він спершу записує його поруч під тимчасовою назвою з <code>.fms-tmp</code>
+            (наприклад <code>photo.fms-tmp.jpg</code>) і підставляє, лише коли файл готовий повністю, тож збій не може
+            залишити половину фотографії. Решта даних EXIF оригіналу переноситься, окрім вбудованої мініатюри,
+            яка показувала б картинку до правки.</li>
+            <li><strong>Вивантаження, що несуть ключ.</strong> «Експорт..» у Менеджері ресурсів (64-розрядна програма) записує
+            файл <code>.fmscfg</code> у вибране вами місце, доступний для читання лише вашому обліковому запису; у ньому адреса
+            й ім'я користувача сервера, а пароль - лише якщо ви обрали цей варіант. «Надіслати поштою..» у Менеджері спільного
+            доступу передає вашій поштовій програмі свій <code>.fmscfg</code> (ключ доступу до спільної теки) через тимчасову копію
+            в закритій теці, яка існує лише на час цього виклику і відразу видаляється. Ставтеся до такого файлу
+            як до пароля.</li>
         </ul>
 
         <h2>Передавання даних</h2>
         <p>Розробнику - нічого, причому таке «нічого», яке справді нічого, і жодної телеметрії чи аналітики
         ніколи. Єдине, що залишає ваш пристрій, робить це за вашим явним вибором і йде туди, куди ви вкажете,
         а не до нас: текст, який ви перекладаєте, іде на налаштовану вами кінцеву точку перекладу; спільні файли йдуть
-        напряму на ваш власний телефон через SFTP; якщо ви вмикаєте доступ з інтернету, вашу публічну адресу та порт
+        напряму на ваш власний телефон через SFTP; під час запуску спільного доступу вашу публічну IP-адресу бачать api.ipify.org
+        та icanhazip.com (вони повертають її програмі), а якщо не ввімкнено режим «Лише локальна мережа», вашу публічну адресу та порт
         показують check-host.net виключно для перевірки доступності; а архів журналів потрапляє до розробника, лише
         якщо ви самі надішлете його зі своєї поштової програми.</p>
 
@@ -548,14 +619,13 @@
         <h2>Контакти</h2>
         <p>Питання щодо цієї політики: <a href="mailto:sza@ukr.net">sza@ukr.net</a>.</p>
         </div>
-        </main>
-
-        <footer>
-            <span data-l="en">MIT licensed &middot; &copy; 2026 <a href="https://github.com/SerZhyAle">SerZhyAle</a> &middot; <a href="https://github.com/SerZhyAle/FastMediaSorter_Lite">Source on GitHub</a></span>
-            <span data-l="ru">Лицензия MIT &middot; &copy; 2026 <a href="https://github.com/SerZhyAle">SerZhyAle</a> &middot; <a href="https://github.com/SerZhyAle/FastMediaSorter_Lite">Исходный код на GitHub</a></span>
-            <span data-l="ua">Ліцензія MIT &middot; &copy; 2026 <a href="https://github.com/SerZhyAle">SerZhyAle</a> &middot; <a href="https://github.com/SerZhyAle/FastMediaSorter_Lite">Вихідний код на GitHub</a></span>
-        </footer>
-    </div>
-    <script>(function(){var d=document.documentElement;function lang(v){d.setAttribute('data-lang',v);d.setAttribute('lang',v==='ua'?'uk':v);document.querySelectorAll('[data-setlang]').forEach(function(b){b.setAttribute('aria-pressed',String(b.getAttribute('data-setlang')===v))});try{localStorage.setItem('sza-lang',v)}catch(e){}}document.querySelectorAll('[data-setlang]').forEach(function(b){b.onclick=function(){lang(b.getAttribute('data-setlang'))}});lang(d.getAttribute('data-lang')==='ru'?'ru':d.getAttribute('data-lang')==='ua'?'ua':'en');})();</script>
+</main>
+<footer class="site-footer"><div class="container"><div class="footer-bottom">
+<span data-l="en">MIT licensed &middot; &copy; 2026 <a href="https://github.com/SerZhyAle">SerZhyAle</a> &middot; <a href="https://github.com/SerZhyAle/FastMediaSorter_Lite">Source on GitHub</a></span>
+<span data-l="ru">Лицензия MIT &middot; &copy; 2026 <a href="https://github.com/SerZhyAle">SerZhyAle</a> &middot; <a href="https://github.com/SerZhyAle/FastMediaSorter_Lite">Исходный код на GitHub</a></span>
+<span data-l="ua">Ліцензія MIT &middot; &copy; 2026 <a href="https://github.com/SerZhyAle">SerZhyAle</a> &middot; <a href="https://github.com/SerZhyAle/FastMediaSorter_Lite">Вихідний код на GitHub</a></span>
+<span><a href="../">Fast Media Sorter &amp; Sharing for Windows</a></span>
+</div></div></footer>
+<script>(function(){var d=document.documentElement;function lang(v){d.setAttribute('data-lang',v);d.setAttribute('lang',v==='ua'?'uk':v);document.querySelectorAll('[data-setlang]').forEach(function(b){b.setAttribute('aria-pressed',String(b.getAttribute('data-setlang')===v))});try{localStorage.setItem('sza-lang',v)}catch(e){}}document.querySelectorAll('[data-setlang]').forEach(function(b){b.onclick=function(){lang(b.getAttribute('data-setlang'))}});lang(d.getAttribute('data-lang')==='ru'?'ru':d.getAttribute('data-lang')==='ua'?'ua':'en');document.getElementById('themeBtn').onclick=function(){var v=d.getAttribute('data-theme')==='light'?'dark':'light';d.setAttribute('data-theme',v);try{localStorage.setItem('sza-theme',v)}catch(e){}}})();</script>
 </body>
 </html>

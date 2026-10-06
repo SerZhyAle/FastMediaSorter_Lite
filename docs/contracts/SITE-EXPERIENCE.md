@@ -28,4 +28,6 @@
 ## Where the evidence is
 
 Specification 147 (`done/`): the measured values, the boxes not run, and the gate-or-manual table. Gaps are
-exceptions in the catalog registry, one per ticket (152, 154, 156; 153 is closed).
+exceptions in the catalog registry, one per ticket (152, 154, 158; 153 is closed). The browser run of 2026-10-06
+(specification 156) held rules 1, 10, 13, 15, 16, 17 (text contrast; the coarse-pointer target lift read, not emulated), 18 (`alt` present, content not read) and 20 on the tree, with the privacy page as the exception (158 F-2); what it found and what it could not
+run (reduced motion, the coarse pointer, the deployed site) is ticket 158.

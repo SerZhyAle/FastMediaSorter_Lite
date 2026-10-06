@@ -135,7 +135,13 @@ function Expected-Canonical([string]$file) {
 $pages = @()
 # 404.html is the host's not-found page (SITE-STRUCTURE rule 15): noindex, never in the sitemap, so not a page of this set
 # - its links are walked on their own below.
-Get-ChildItem -LiteralPath $Root -Filter '*.html' -File | Where-Object { $_.Name -ne '404.html' } | Sort-Object Name | ForEach-Object {
+# A redirect stub (noindex + meta refresh) keeps a retired address alive for old links: it is not content, so it is not a
+# page of this set either; what is held for it is that its refresh target exists (checked below, with the 404 page).
+function Test-RedirectStub([string]$path) {
+    $h = [IO.File]::ReadAllText($path)
+    return ($h -match '<meta name="robots" content="noindex">') -and ($h -match '(?i)<meta http-equiv="refresh"')
+}
+Get-ChildItem -LiteralPath $Root -Filter '*.html' -File | Where-Object { $_.Name -ne '404.html' -and -not (Test-RedirectStub $_.FullName) } | Sort-Object Name | ForEach-Object {
     $kind = if ($_.Name -eq 'index.html') { 'landing' } elseif ($_.Name -eq 'trust.html') { 'trust' } else { 'root' }
     $pages += @{ File = $_.Name; Lang = 'en'; Kind = $kind }
 }
@@ -359,6 +365,17 @@ if (Test-Path (Join-Path $Root '404.html')) {
     foreach ($m in [regex]::Matches($nfHtml, '(?i)<img\b[^>]*?\bsrc="([^"]+)"')) { $imgCount++; $null = Resolve-SiteLink '404.html' $m.Groups[1].Value 'image' }
 } else { Problem '404.html (the not-found page) does not exist' }
 
+# --- redirect stubs: a retired address must still lead somewhere that exists -------
+foreach ($stub in @(Get-ChildItem -LiteralPath $Root -Filter '*.html' -File | Where-Object { Test-RedirectStub $_.FullName }) +
+                  @(Get-ChildItem -LiteralPath (Join-Path $Root 'docs') -Filter '*.html' -File -ErrorAction SilentlyContinue | Where-Object { Test-RedirectStub $_.FullName })) {
+    $rel = $stub.FullName.Substring($Root.Length).TrimStart('\', '/') -replace '\\', '/'
+    $h = [IO.File]::ReadAllText($stub.FullName)
+    $m = [regex]::Match($h, '(?i)<meta http-equiv="refresh" content="[^"]*url=([^"]+)"')
+    if (-not $m.Success) { Problem "${rel}: a redirect stub without a refresh target"; continue }
+    $linkCount++
+    $null = Resolve-SiteLink $rel $m.Groups[1].Value 'refresh target'
+}
+
 # --- sitemap and search index: rule 2 ------------------------------------------
 if (-not (Test-Path $Sitemap)) { Exit-Verdict 'Test-SiteQuality' 2 'sitemap.xml not found - run tools\Build-SitePages.ps1' }
 $smText = Get-Content $Sitemap -Raw -Encoding UTF8
@@ -488,6 +505,25 @@ else {
     } catch { Exit-Verdict 'Test-SiteQuality' 2 "site-termbase.json is unreadable: $($_.Exception.Message)" }
 }
 
+# --- rule 11: the interface's words in the guides (SITE-REPRESENTATION rule 8, specification 157 T-2) ---------------
+# A bold name on a guide page must be the program's own string in that language (src/Localization, the Share Manager's
+# tables) or be listed in the termbase's uiNames as not-an-interface-name; an exemption no guide uses any more fails too.
+if ($tb -and $tb.uiNames) {
+    . (Join-Path $PSScriptRoot 'lib\UiStrings.ps1')
+    $uiSets = Get-UiStrings $Root
+    $exempt = @{ any = @($tb.uiNames.any); en = @($tb.uiNames.en); ru = @($tb.uiNames.ru); uk = @($tb.uiNames.uk) }
+    $guidePages = @($pages | Where-Object { $_.Kind -eq 'root' -and ($_.File -like 'how-to-*.html' -or $_.File -eq 'publish-folders-android.html') } | ForEach-Object { $_.File })
+    foreach ($miss in (Get-GuideUiMisses $Root $guidePages $uiSets $exempt)) {
+        $f = $miss -split '\|', 3
+        Problem "$($f[0]) ($($f[1])): bold name '$($f[2])' is not a string of the program in that language and is not listed as an exemption in site-termbase.json uiNames (rule 11)"
+    }
+    foreach ($lang in 'any', 'en', 'ru', 'uk') {
+        foreach ($e in $exempt[$lang]) {
+            $used = if ($lang -eq 'any') { ($script:UiSeen.Contains("en|$e")) -or ($script:UiSeen.Contains("ru|$e")) -or ($script:UiSeen.Contains("uk|$e")) } else { $script:UiSeen.Contains("$lang|$e") }
+            if (-not $used) { Problem "site-termbase.json uiNames.${lang}: '$e' is not bold on any guide page any more - remove the exemption (rule 11)" }
+        }
+    }
+}
 # --- rule 8: full width (owner decision 2026-10-06, restating PAGE-CONTENT "Layout contract") --
 # Every page uses the whole width of the screen. A page, its header, its footer, its headings and its
 # text carry no fixed measure (px/ch/rem cap) and no `--wide` other than 100%: narrow measures belong
@@ -579,4 +615,4 @@ if ($problems.Count -gt 0) {
     $problems | ForEach-Object { Write-Host "  - $_" }
     Exit-Verdict 'Test-SiteQuality' 1 "$($problems.Count) defect(s): $($pages.Count) pages, $linkCount links, $imgCount images"
 }
-Exit-Verdict 'Test-SiteQuality' 0 "$($pages.Count) pages, $linkCount links, $imgCount images, $($codes.Count) locales, rules 1-7, the full-width rule and the keyboard-and-landmarks rule held"
+Exit-Verdict 'Test-SiteQuality' 0 "$($pages.Count) pages, $linkCount links, $imgCount images, $($codes.Count) locales, rules 1-7, the guides' interface words, the full-width rule and the keyboard-and-landmarks rule held"

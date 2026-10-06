@@ -22,7 +22,6 @@
 {"address":"https://serzhyale.github.io/FastMediaSorter_Lite/trust.html","holder":"publishing/winget/server/SerZhyAle.FastMediaSorter.Server.locale.en-US.yaml","kind":"trust"}
 {"address":"https://serzhyale.github.io/FastMediaSorter_Lite/trust.html","holder":".github/workflows/release.yml","kind":"trust"}
 {"address":"https://serzhyale.github.io/FastMediaSorter_Lite/docs/privacy.html","holder":"Partner Center: the Store listing privacy policy URL","kind":"privacy","carried":"external","note":"set by hand in the listing, documented in docs/guides/STORE_PUBLISHING.md; the gate resolves the address but cannot read the field"}
-{"address":"https://serzhyale.github.io/FastMediaSorter_Lite/how-to-sftp.html","holder":"README.md","kind":"guide"}
 {"address":"https://serzhyale.github.io/FastMediaSorter_Lite/publish-folders-android.html","holder":"README.md","kind":"guide"}
 {"address":"https://serzhyale.github.io/FastMediaSorter_Lite/server.html","holder":"README.md","kind":"edition"}
 {"address":"https://serzhyale.github.io/FastMediaSorter_Lite/how-to-viewer.html","holder":"README.md","kind":"guide"}
@@ -33,7 +32,6 @@
 {"address":"https://serzhyale.github.io/FastMediaSorter_Lite/how-to-archives.html","holder":"README.md","kind":"guide"}
 {"address":"https://serzhyale.github.io/FastMediaSorter_Lite/how-to-resources.html","holder":"README.md","kind":"guide"}
 {"address":"https://serzhyale.github.io/FastMediaSorter_Lite/trust.html","holder":"README.md","kind":"trust"}
-{"address":"https://serzhyale.github.io/FastMediaSorter_Lite/how-to-sftp.html","holder":"README_RU.md","kind":"guide"}
 {"address":"https://serzhyale.github.io/FastMediaSorter_Lite/publish-folders-android.html","holder":"README_RU.md","kind":"guide"}
 {"address":"https://serzhyale.github.io/FastMediaSorter_Lite/server.html","holder":"README_RU.md","kind":"edition"}
 {"address":"https://serzhyale.github.io/FastMediaSorter_Lite/how-to-viewer.html","holder":"README_RU.md","kind":"guide"}
@@ -43,7 +41,6 @@
 {"address":"https://serzhyale.github.io/FastMediaSorter_Lite/how-to-editor.html","holder":"README_RU.md","kind":"guide"}
 {"address":"https://serzhyale.github.io/FastMediaSorter_Lite/how-to-archives.html","holder":"README_RU.md","kind":"guide"}
 {"address":"https://serzhyale.github.io/FastMediaSorter_Lite/lang/ru/trust.html","holder":"README_RU.md","kind":"trust"}
-{"address":"https://serzhyale.github.io/FastMediaSorter_Lite/how-to-sftp.html","holder":"README_UK.md","kind":"guide"}
 {"address":"https://serzhyale.github.io/FastMediaSorter_Lite/publish-folders-android.html","holder":"README_UK.md","kind":"guide"}
 {"address":"https://serzhyale.github.io/FastMediaSorter_Lite/server.html","holder":"README_UK.md","kind":"edition"}
 {"address":"https://serzhyale.github.io/FastMediaSorter_Lite/how-to-viewer.html","holder":"README_UK.md","kind":"guide"}

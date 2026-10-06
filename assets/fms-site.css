@@ -126,3 +126,7 @@ p.flush-bottom{margin-bottom:0}
 ul.flush-list{margin:0}
 .lead-narrow.lead-small{font-size:15px;margin-top:1rem}
 .meta-strong{color:var(--acc);font-weight:600}
+.glyph{display:inline-block;vertical-align:-.15em;margin-inline-end:.3em;flex:none}
+/* Section lists: the kit zeroes the padding, so an outside marker hangs in the gutter - in a right-to-left page at 360 px that
+   is 2 px past the page and the Arabic landing scrolled sideways (specification 158 F-3). Keep the marker inside the box. */
+.section>ul{padding-inline-start:1.25em}

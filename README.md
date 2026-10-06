@@ -1,6 +1,6 @@
-﻿# Fast Media Sorter & Sharing for Windows
+# Fast Media Sorter & Sharing for Windows
 
-Fast Media Sorter & Sharing for Windows is a Windows Forms application for quickly sorting, viewing, and managing image and video files - because that folder full of 4000 photos is not going to triage itself. **Sharing** means giving your media to someone else: the folders you pick can be opened from the Android app, from another copy of this program, or from any SFTP client (see [Your folders over SFTP](#your-folders-over-sftp), [how to use the SFTP service](https://serzhyale.github.io/FastMediaSorter_Lite/how-to-sftp.html) and [publishing folders for Android](https://serzhyale.github.io/FastMediaSorter_Lite/publish-folders-android.html)).
+Fast Media Sorter & Sharing for Windows is a Windows Forms application for quickly sorting, viewing, and managing image and video files - because that folder full of 4000 photos is not going to triage itself. **Sharing** means giving your media to someone else: the folders you pick can be opened from the Android app, from another copy of this program, or from any SFTP client (see [Your folders over SFTP](#your-folders-over-sftp), [publishing folders for Android](https://serzhyale.github.io/FastMediaSorter_Lite/publish-folders-android.html)).
 
 The name changed from "Fast Media Sorter for Windows" (earlier still, "FastMediaSorter LITE"). The Microsoft Store, Add/Remove Programs and winget still list the package as "FastMediaSorter LITE" - that name is frozen on purpose, so upgrades keep correlating with installed copies.
 
@@ -99,12 +99,10 @@ What it does, and what it deliberately does not:
 - **The connection is encrypted and direct** (SSH/SFTP), device to PC. The client pins this PC's host
   key at the first pairing, so a substituted server is noticed rather than trusted.
 - **Sharing is managed by a separate program** - the bundled tray companion **Share Manager - Fast
-  Media Sorter & Sharing**, opened from the viewer's folder right-click or from Settings &rarr; Files and system.
+  Media Sorter & Sharing**, opened from the viewer's folder right-click or from Settings &rarr; Server and resources.
   Being a 64-bit program itself, it is why folder sharing is 64-bit only.
 
-Step by step: [how to use the SFTP service](https://serzhyale.github.io/FastMediaSorter_Lite/how-to-sftp.html),
-and the detailed [guide to publishing your folders for Android](https://serzhyale.github.io/FastMediaSorter_Lite/publish-folders-android.html)
-when the connection has to cross a router.
+Step by step, from the first click to the router: [guide to publishing your folders for Android](https://serzhyale.github.io/FastMediaSorter_Lite/publish-folders-android.html).
 
 **Always-on variant (optional):** by default the folders are reachable only while you are signed in and the Share Manager is running - right for a normal PC. If the machine's job is to stay available (a dedicated server, a VPS, an always-on home server), the same worker can be hosted by a Windows service instead: it starts at boot, serves with nobody logged on, and restarts itself if it fails. There are two ways in. An ordinary installation can switch itself over in the Share Manager (**Manage hosting.. -> Switch sharing to a Windows service..**, one administrator prompt that also moves the state and grants the service access to the folders you share), or you can install the separate **[Folder Share Server edition](https://serzhyale.github.io/FastMediaSorter_Lite/server.html)** (`winget install --id SerZhyAle.FastMediaSorter.Server`), which sets the same service up straight away - for a machine provisioned without ever opening the app. Either way it takes administrator approval once and is never enabled silently: no regular setup, winget install or Store install registers the service on its own, and the Store build cannot register one at all. SFTP, the QR/`.fmscfg` pairing and the Android app are identical - only the host differs, and switching editions preserves the host key so paired phones need no re-pairing. The Server edition is a focused package: the server leads, and the media viewer is inside as an optional component that stays unticked unless you choose it.
 
@@ -129,8 +127,7 @@ Short, practical walkthroughs on the site - one per task (English and Russian):
 | [Editor](https://serzhyale.github.io/FastMediaSorter_Lite/how-to-editor.html) | Draw on a photo, crop it, and write the result back |
 | [Archives](https://serzhyale.github.io/FastMediaSorter_Lite/how-to-archives.html) | Page through a ZIP or CBZ as if it were a folder |
 | [Resources](https://serzhyale.github.io/FastMediaSorter_Lite/how-to-resources.html) | Open an SFTP server or a network share that needs a login like a folder |
-| [SFTP](https://serzhyale.github.io/FastMediaSorter_Lite/how-to-sftp.html) | Publish selected PC folders to your Android device |
-| [Android network](https://serzhyale.github.io/FastMediaSorter_Lite/publish-folders-android.html) | Router, port forwarding and the internet path, step by step |
+| [Android and SFTP](https://serzhyale.github.io/FastMediaSorter_Lite/publish-folders-android.html) | Publish selected PC folders to your Android device: the first run, the router and the internet path, step by step |
 
 ## Two programs, one app
 

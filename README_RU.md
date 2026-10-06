@@ -1,6 +1,6 @@
-﻿# Fast Media Sorter & Sharing for Windows
+# Fast Media Sorter & Sharing for Windows
 
-Fast Media Sorter & Sharing for Windows - это приложение Windows Forms для быстрой сортировки, просмотра и управления файлами изображений и видео. Потому что папка с 4000 фотографий сама себя не разберёт. **Sharing** значит «поделиться своими медиа с кем-то ещё»: выбранные вами папки можно открыть из Android-приложения, из другой копии этой программы или из любого SFTP-клиента (см. [Ваши папки по SFTP](#ваши-папки-по-sftp), [как пользоваться SFTP-сервисом](https://serzhyale.github.io/FastMediaSorter_Lite/how-to-sftp.html) и [публикацию папок для Android](https://serzhyale.github.io/FastMediaSorter_Lite/publish-folders-android.html)).
+Fast Media Sorter & Sharing for Windows - это приложение Windows Forms для быстрой сортировки, просмотра и управления файлами изображений и видео. Потому что папка с 4000 фотографий сама себя не разберёт. **Sharing** значит «поделиться своими медиа с кем-то ещё»: выбранные вами папки можно открыть из Android-приложения, из другой копии этой программы или из любого SFTP-клиента (см. [Ваши папки по SFTP](#ваши-папки-по-sftp), [публикацию папок для Android](https://serzhyale.github.io/FastMediaSorter_Lite/publish-folders-android.html)).
 
 Название изменилось: раньше программа называлась «Fast Media Sorter for Windows», а ещё раньше - «FastMediaSorter LITE». Microsoft Store, «Программы и компоненты» Windows и winget по-прежнему показывают пакет как «FastMediaSorter LITE» - это имя намеренно заморожено, чтобы обновления продолжали находить уже установленные копии.
 
@@ -101,12 +101,10 @@ Fast Media Sorter & Sharing for Windows - это приложение Windows Fo
 - **Соединение шифрованное и прямое** (SSH/SFTP), устройство - ПК напрямую. Клиент запоминает ключ узла
   этого ПК при первой привязке, так что подменённый сервер будет замечен, а не принят на веру.
 - **Раздачей управляет отдельная программа** - «Share Manager - Fast Media Sorter & Sharing» в трее, открывается
-  правым кликом по полю папки в просмотрщике или из раздела Настройки &rarr; Файлы и система. Она сама
+  правым кликом по полю папки в просмотрщике или из раздела Настройки &rarr; Сервер и ресурсы. Она сама
   64-битная - поэтому и раздача папок есть только в 64-битной программе.
 
-Пошагово: [как пользоваться SFTP-сервисом](https://serzhyale.github.io/FastMediaSorter_Lite/how-to-sftp.html)
-и подробное [руководство по публикации папок для Android](https://serzhyale.github.io/FastMediaSorter_Lite/publish-folders-android.html),
-когда соединению нужно пройти через роутер.
+Пошагово, от первого щелчка до роутера: [руководство по публикации папок для Android](https://serzhyale.github.io/FastMediaSorter_Lite/publish-folders-android.html).
 
 **Вариант «всегда доступно» (по желанию):** по умолчанию папки видны, только пока вы вошли в систему и Share Manager запущен - для обычного ПК это правильно. Если же задача машины - быть доступной постоянно (выделенный сервер, VPS, домашний сервер), тот же воркер может поднимать служба Windows: она стартует с загрузкой, раздаёт без входа в систему и сама перезапускается при сбое. Путей два. Обычная установка переводится в этот режим прямо в Share Manager (**Управление хостингом.. -> Перевести раздачу в режим службы Windows..**, одно подтверждение администратора, которое заодно переносит состояние и выдаёт службе доступ к вашим папкам), либо ставится отдельная **[серверная редакция](https://serzhyale.github.io/FastMediaSorter_Lite/server.html)** (`winget install --id SerZhyAle.FastMediaSorter.Server`), которая настраивает ту же службу сразу - для машины, которую разворачивают, ни разу не открыв программу. В обоих случаях нужно однократное подтверждение администратора, и молча это не включается никогда: ни обычный установщик, ни winget, ни Store сами службу не регистрируют, а версия из Store не может этого в принципе. SFTP, привязка по QR/`.fmscfg` и приложение Android - те же самые; отличается только хост, а при переключении редакций сохраняется ключ узла, поэтому привязанные телефоны не нужно привязывать заново.
 
@@ -130,8 +128,7 @@ Fast Media Sorter & Sharing for Windows - это приложение Windows Fo
 | [OCR](https://serzhyale.github.io/FastMediaSorter_Lite/how-to-ocr.html) | Распознать текст на картинке и прочитать его на своём языке |
 | [Редактор](https://serzhyale.github.io/FastMediaSorter_Lite/how-to-editor.html) | Порисовать на фото, обрезать его и записать результат |
 | [Архивы](https://serzhyale.github.io/FastMediaSorter_Lite/how-to-archives.html) | Листать ZIP или CBZ так, будто это папка |
-| [SFTP](https://serzhyale.github.io/FastMediaSorter_Lite/how-to-sftp.html) | Опубликовать выбранные папки ПК на устройстве Android |
-| [Сеть для Android](https://serzhyale.github.io/FastMediaSorter_Lite/publish-folders-android.html) | Роутер, проброс портов и путь через интернет, шаг за шагом |
+| [Android и SFTP](https://serzhyale.github.io/FastMediaSorter_Lite/publish-folders-android.html) | Опубликовать выбранные папки ПК на устройстве Android: первый запуск, роутер и путь через интернет, шаг за шагом |
 
 ## Две программы, одно приложение
 

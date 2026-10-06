@@ -26,9 +26,8 @@
       ["how-to-editor.html",            "Draw on a photo and crop it"],
       ["how-to-archives.html",          "Read a ZIP or CBZ like a folder"],
       ["how-to-resources.html",         "Open a server or a network share like a folder"],
-      ["how-to-sftp.html",              "Publish selected PC folders over SFTP"],
       ["how-to-filedo-disks.html",      "Share FileDO .fdd virtual disks"],
-      ["publish-folders-android.html",  "Network and router, step by step"]
+      ["publish-folders-android.html",  "Share folders to Android over SFTP"]
     ]
   },
 

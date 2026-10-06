@@ -43,7 +43,7 @@ not a local edit and not a local copy kept "in sync".
 | [`INPUT-CONTROLS.md`](INPUT-CONTROLS.md) | `INPUT-CHORD`, `INPUT-PARITY` | declared, not yet implementing - no chord storage or global hook today; expected device-column contributor |
 | [`SITE-STRUCTURE.md`](SITE-STRUCTURE.md) | `SITE-STRUCTURE` | consumer - opted in 2026-10-06, tier guide; the not-found page, the held-address list and the core-three locale floor are open exceptions (specification 147) |
 | [`SITE-EXPERIENCE.md`](SITE-EXPERIENCE.md) | `SITE-EXPERIENCE` | consumer - opted in 2026-10-06, guide tier; kit, shared keys and origin disclosure held, skip link and `nav` landmark and light-theme contrast open (specification 147); `style` attributes and the resolver order conform in the tree since 2026-10-06 (specification 154) |
-| [`SITE-REPRESENTATION.md`](SITE-REPRESENTATION.md) | `SITE-REPRESENTATION` | consumer - opted in 2026-10-06, guide tier; rules 1-4 held by `tools/Test-SitePositioning.ps1` (ticket 155), rules 5-10 not run (ticket 156) |
+| [`SITE-REPRESENTATION.md`](SITE-REPRESENTATION.md) | `SITE-REPRESENTATION` | consumer - opted in 2026-10-06, guide tier; rules 1-4 held by `tools/Test-SitePositioning.ps1` (ticket 155), rules 5-10 and 12 run 2026-10-06 and failing on the ten function pages (specification 156; ticket 157) |
 | [`NO-ROLE.md`](NO-ROLE.md) | `LAN-DISCOVERY`, `UPDATE-MANIFEST`, `USER-PLAYLIST` | none - declared so the next run does not re-investigate |
 
 Last full alignment: **2026-10-02** (specification 098, the final inter-project contract sync before

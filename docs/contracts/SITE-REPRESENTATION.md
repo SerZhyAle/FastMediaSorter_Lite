@@ -5,7 +5,7 @@
 | **Id** | `SITE-REPRESENTATION` |
 | **Version** | 0.1, draft (written 2026-10-06 by FastMediaSorter Android, ticket S4096) |
 | **Home** | `product-site/SITE-REPRESENTATION.md` and the run-list `product-site/SITE-CHECKLIST.md` in the shared contracts catalog |
-| **Role here** | consumer, opted in by the owner on 2026-10-06 (specification 147, D1); guide tier: rules 1-5 and 12 are read, rules 6-10 apply to the task guides and were not run |
+| **Role here** | consumer, opted in by the owner on 2026-10-06 (specification 147, D1); guide tier: rules 1-4 held by the positioning gate (ticket 155); rules 5-10 and 12 were run on the ten function pages on 2026-10-06 (specification 156) and fail on all ten (ticket 157) |
 
 ## What this repository must do
 
@@ -27,8 +27,14 @@
    with no link, date or download, on the landing, its twelve locale pages and the three READMEs; the gate fails a
    mention anywhere else.
 4. **Keep the trust pages saying one thing** (rule 12): the install-trust page is held by
-   `TrustPageContractTests`; the guides' data claims against the privacy page were not run.
+   `TrustPageContractTests`. The data claims of the ten function pages were read against `docs/privacy.html` on
+   2026-10-06: the UPnP / reachability-check wording, the firewall step and several local files do not agree or
+   are missing (ticket 157 T-4).
+5. **Say what the page's controls are called, state limits and availability in place, one function per page** (rules
+   5-10): none of it holds today - quoted names that are not the product's strings, no requirements element or
+   outcome callout, defaults repeated, no settings reference or capability matrix, two pages on one flow (ticket 157,
+   owner questions Q157-1 and Q157-2).
 
 ## Where the evidence is
 
-Specification 147 (`done/`), specification 155 (rules 1 to 4) and the catalog registry; the one open gap is the exception with ticket 156 (rules 5 to 10 and the browser boxes, not run).
+Specification 147 (`done/`), specification 155 (rules 1 to 4) and the catalog registry; specification 156 (`done/`, the browser run and the reading of the ten pages) and its follow-ups 157 (the function pages) and 158 (the browser findings and what is still not run).

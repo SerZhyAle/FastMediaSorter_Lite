@@ -1,4 +1,4 @@
-﻿<#
+<#
 .SYNOPSIS
     Renders the per-language first pages of the site - lang/<code>/index.html -
     from tools/site-copy.json, and the install-trust page from tools/trust-copy.json,
@@ -151,6 +151,12 @@ function TrustJsonLd([string]$code, $t) {
 function PageUrl([string]$code) { if ($code -eq 'en') { "$BaseUrl/" } else { "$BaseUrl/$LangDir/$code/" } }
 function TrustUrl([string]$code) { if ($code -eq 'en') { "$BaseUrl/trust.html" } else { "$BaseUrl/$LangDir/$code/trust.html" } }
 
+# Where a generated page finds its own assets (stylesheets, icons): relative to its own depth, so a local or staged view
+# renders with the tree's CSS and not whatever is deployed (specification 158 F-4). The page's public identity - canonical,
+# og:image, hreflang - stays absolute. The root trust page (en) sits at depth 0, every other page at lang/<code>/ (depth 2).
+# 404.html is the one page served from any depth, so it keeps the absolute form (RenderNotFound).
+function AssetBase([string]$code) { if ($code -eq 'en') { '' } else { '../../' } }
+
 function RenderFamilyGridForLocale([string]$code) {
     $familyTitle = $copy._family.title
     if ($copy._familyTranslations.PSObject.Properties[$code] -and $copy._familyTranslations.$code.title) {
@@ -233,6 +239,7 @@ $familyItems
 
 function Render([string]$code) {
     $e = $copy.$code
+    $A = AssetBase $code
     $rtl = ($e.dir -eq 'rtl')
     $script:RtlPage = $rtl
     $scriptClass = if ($code -in @('ar','ur','hi','bn','zh')) { " class=`"script-$code`"" } else { '' }
@@ -261,7 +268,6 @@ function Render([string]$code) {
         "      <article class=`"card`">`n        <h3>$(Esc $_[0])</h3>`n        <p>$(Esc $_[1])</p>`n      </article>"
     }) -join "`n"
 
-    $howtoSftp    = ($copy._howto.items | Where-Object { $_[0] -eq 'how-to-sftp.html' } | ForEach-Object { $_[1] })
     $howtoAndroid = ($copy._howto.items | Where-Object { $_[0] -eq 'publish-folders-android.html' } | ForEach-Object { $_[1] })
     $note = ''
     if ($e.machine) { $note = "      <p class=`"note`">$(Esc $e.machineNote)</p>`n" }
@@ -309,13 +315,13 @@ $alts
 <meta name="twitter:description" content="$(Esc $e.tagline)">
 <meta name="twitter:image" content="$BaseUrl/$OgImage">
 <meta name="theme-color" content="#0a0f0a">
-<link rel="icon" href="$BaseUrl/$Favicon" sizes="any">
-<link rel="apple-touch-icon" href="$BaseUrl/assets/icons/store-icon-256.png">
+<link rel="icon" href="$A$Favicon" sizes="any">
+<link rel="apple-touch-icon" href="${A}assets/icons/store-icon-256.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="$BaseUrl/assets/sza-kit.css">
-<link rel="stylesheet" href="$BaseUrl/assets/fms-site.css">
+<link rel="stylesheet" href="${A}assets/sza-kit.css">
+<link rel="stylesheet" href="${A}assets/fms-site.css">
 <script type="application/ld+json">$(JsonLd $code $e)</script>
 </head>
 <body>
@@ -337,7 +343,7 @@ $alts
 <main class="container" id="main" tabindex="-1">
   <section class="hero">
     <div class="hero-id">
-      <img class="app-icon" src="$BaseUrl/assets/icons/store-icon-256.png" alt="" width="168" height="168">
+      <img class="app-icon" src="${A}assets/icons/store-icon-256.png" alt="" width="168" height="168">
       <div class="hero-copy">
         <span class="eyebrow">Windows desktop app</span>
         <h1>$(Body $e.title)</h1>
@@ -346,7 +352,7 @@ $alts
     </div>
     <p class="lead lead-narrow">$(Body $e.family)</p>
     <p class="lead lead-narrow">$(Body $e.tagline)</p>
-    <p class="lead lead-narrow">$(Body $e.sharing) <a href="$BaseUrl/how-to-sftp.html" lang="en" dir="ltr">$(Esc $howtoSftp)</a> &middot; <a href="$BaseUrl/publish-folders-android.html" lang="en" dir="ltr">$(Esc $howtoAndroid)</a></p>
+    <p class="lead lead-narrow">$(Body $e.sharing) <a href="$BaseUrl/publish-folders-android.html" lang="en" dir="ltr">$(Esc $howtoAndroid)</a></p>
     <div class="button-group">
       <a class="btn btn-primary" href="#get">$(Esc $e.dlSetup)</a>
       <a class="btn btn-ghost" href="#features">$(Esc $e.knowTitle)</a>
@@ -512,6 +518,7 @@ $familyGrid
 }
 
 function RenderTrust([string]$code) {
+    $A = AssetBase $code
     $t   = $trust.$code
     $e   = $copy.$code
     $rtl = ($e.dir -eq 'rtl')
@@ -561,20 +568,20 @@ $alts
 <meta name="twitter:description" content="$(Esc $t.desc)">
 <meta name="twitter:image" content="$BaseUrl/$OgImage">
 <meta name="theme-color" content="#0a0f0a">
-<link rel="icon" href="$BaseUrl/$Favicon" sizes="any">
-<link rel="apple-touch-icon" href="$BaseUrl/assets/icons/store-icon-256.png">
+<link rel="icon" href="$A$Favicon" sizes="any">
+<link rel="apple-touch-icon" href="${A}assets/icons/store-icon-256.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="$BaseUrl/assets/sza-kit.css">
-<link rel="stylesheet" href="$BaseUrl/assets/fms-site.css">
+<link rel="stylesheet" href="${A}assets/sza-kit.css">
+<link rel="stylesheet" href="${A}assets/fms-site.css">
 <script type="application/ld+json">$(TrustJsonLd $code $t)</script>
 </head>
 <body>
 <a class="skip-link" href="#main">$(Esc $e.skipLabel)</a>
 <header class="site-header">
   <nav class="site-nav" aria-label="$(Esc $e.navLabel)">
-  <a class="brand" href="$(PageUrl $code)" aria-label="$(Esc $ProductFull)"><span class="brand-mark"><img src="$BaseUrl/$Favicon" alt="" width="24" height="24"></span>$(Body $ProductFull)</a>
+  <a class="brand" href="$(PageUrl $code)" aria-label="$(Esc $ProductFull)"><span class="brand-mark"><img src="$A$Favicon" alt="" width="24" height="24"></span>$(Body $ProductFull)</a>
   <button class="theme-btn" id="themeBtn" aria-label="Switch theme">◐</button>
   <a class="btn btn-ghost btn-sm" href="$(PageUrl $code)">$(Esc $t.backLabel)</a>
   </nav>
@@ -832,10 +839,17 @@ if ($Check) {
 }
 
 # --- robots.txt + sitemap.xml -------------------------------------------------
+# A redirect stub keeps a retired address alive: noindex AND an immediate meta refresh. It is not a page of the set.
+function Test-RedirectStub([string]$path) {
+    $h = [IO.File]::ReadAllText($path)
+    return ($h -match '<meta name="robots" content="noindex">') -and ($h -match '(?i)<meta http-equiv="refresh"')
+}
+
 function RootPages {
-    # 404.html is served by the host for unknown addresses; it is noindex and never a page of the set.
+    # 404.html is served by the host for unknown addresses; it is noindex and never a page of the set. The same holds for a
+    # redirect stub: a retired address kept alive for old links (noindex + meta refresh), which is not content and is not listed.
     Get-ChildItem -LiteralPath $Root -Filter '*.html' -File |
-        Where-Object { $_.Name -ne '404.html' } |
+        Where-Object { $_.Name -ne '404.html' -and -not (Test-RedirectStub $_.FullName) } |
         Sort-Object Name | ForEach-Object { $_.Name }
 }
 
