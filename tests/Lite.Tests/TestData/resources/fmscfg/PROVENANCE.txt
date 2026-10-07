@@ -1,23 +1,92 @@
 FMSCFG interchange fixtures - vendored artifacts, not a vendored contract
 ========================================================================
 
+Catalog snapshot (101 section 5 item 1)
+---------------------------------------
+Read on 2026-10-07 from the shared contracts catalog (a checkout, not a repository: there is no catalog revision
+id, so the SHA-256 of each document as read is the identity). One line per document, format
+`catalog <path in the catalog> v<document version> <sha256>`:
+
+catalog config-interchange/CONFIG_FORMAT.md v2.4 544e036b56d3f244cae4a19620f2ea69b709530383940571a3953f8c4f6d4ef2
+catalog config-interchange/README.md v2.4 5a4c5b6123adda713cfef2b54891e80ac5a77c7f8d0840decdbb326bcca70655
+catalog remote-folder-access/share-session-reconnect.md v1.1 3e8edd562c8f0a869c21433468a9921f787b83597c83646d0b519e95f53ff00b
+catalog remote-folder-access/README.md v1.1 bac98e8ef406caef73b0a75efdfb485581bab4c326aaae6d0a45658ff937ef33
+
+Rules the consumer behaviour rests on (cited by id and section elsewhere, never copied):
+
+catalog-rules _meta/RULES.md (unversioned document) 0d93449389740ffcac132ecc2725842b168ec801f18dd1d402468f123f5d9281
+catalog-rules _meta/VERSIONING.md (unversioned document) 972ba8e41abb755caf87408ed41be6c08c4fc0d1bf28cf773492b04cc05b7d23
+
+The snapshot moved from FMSCFG 2.1 (read 2026-10-02, when these fixtures were first vendored) to 2.4. The
+amendments 2.2 (parser pinned by role, empty password = not carried), 2.3 (accessNote language) and 2.4 (the
+`rendezvousTunnel` access-path kind and its producer duty) leave `schemaVersion` and both canonical vectors
+unchanged; this consumer does less than 2.4 allows (it skips the kind, it never dials it) and nothing wrong.
+SHARE-SESSION 1.1 only restates what ends a share's identity; the client rules 6-10 the reconnect policy follows
+are unchanged.
+
+Verification on 2026-10-07: the two json code fences of CONFIG_FORMAT.md 2.4 were extracted by script (UTF-8, no
+BOM, no trailing newline) and compared with canonical-v1.fmscfg / canonical-v2.fmscfg as bytes - identical
+(447 and 760 bytes, digests below). To repeat: match the fence body with the pattern (?s)```json\r?\n(.*?)\r?\n```
+against the catalog document, hash each group, and compare with the two canonical lines in the SHA-256 list.
+
+Android response provenance (kept apart from the catalog): docs/specifications/101_RESPONSE_FMS_ANDROID_CONTRACT_ALIGNMENT.md,
+dated 2026-10-01, a static read of the Android working tree; nothing was run on a device. SHA-256 of that file as
+used by this snapshot: 67a56269a96846688e7cde1ec860f42758c71d41d695172e0cabc00d8c8d38d5. The catalog registry's own FMSCFG row for the Android app (2.4, 2026-10-07) is a
+separate statement by its owner and is not copied here. Android's answers inform implementation choices; they
+authorise no relaxed host-key check, no SMB wire field and no change to the canonical vectors.
+
+Files (every file in this folder is listed in MANIFEST.txt, which says where it came from, whether it is meant to
+be valid and what the reader must answer; FmsFixtureCorpusTests holds both directions)
+-------------------------------------------------------------------------------------
+
 canonical-v1.fmscfg, canonical-v2.fmscfg
-  The two canonical vectors of the FMSCFG contract (catalog: config-interchange/CONFIG_FORMAT.md,
-  document version 2.1, read 2026-10-02). Extracted VERBATIM from the contract's own code fences by
-  script, byte for byte, no trailing newline. They are the shared bytes the parser is pinned to; they
-  must never be regenerated from this repository's serializer.
+  The two canonical vectors of the FMSCFG contract (catalog: config-interchange/CONFIG_FORMAT.md). Extracted
+  VERBATIM from the contract's own code fences by script, byte for byte, no trailing newline. They are the shared
+  bytes the parser is pinned to; they must never be regenerated from this repository's serializer.
 
 android-export-synthetic.fmscfg, companion-export-synthetic.fmscfg
-  SYNTHETIC. Written by hand to the SHAPE the Android response 101 section 11 describes (one root, one
-  lan path, schemaVersion 2, readOnly omitted, slideshowInterval written, password and fingerprint empty)
-  and the Share Manager's own producer (readOnly written on every root, a destination with readOnly:true
-  and isDestination:true, an ipv6 path, an accessNote). Dummy credentials and documentation addresses
-  (RFC 5737 / 3849) only. They are not captures from a named build; a live Android export remains a manual
-  acceptance item.
+  SYNTHETIC. Written by hand to the SHAPE the Android response 101 section 11 describes (one root, one lan path,
+  schemaVersion 2, readOnly omitted, slideshowInterval written, password and fingerprint empty) and the Share
+  Manager's own producer (readOnly written on every root, a destination with readOnly:true and isDestination:true,
+  an ipv6 path, an accessNote). Dummy credentials and documentation addresses (RFC 5737 / 3849) only. They are not
+  captures from a named build; a live Android export remains a manual acceptance item (101 section 5 item 7).
+
+canonical-v2.qr.txt, android-export-synthetic.qr.txt
+  The compressed QR transport (FMSCFG1: + base64(gzip(json))) of the two files named in their stems, made on
+  2026-10-07 with .NET GZipStream (optimal level). The bytes are fixed here; the tests do not regenerate them.
+
+tunnel-path-synthetic.fmscfg
+  SYNTHETIC, from the 2.4 amendment's table: lan, portforward and a last `rendezvousTunnel` path with a valid
+  host/port and a shareId of 22 base64url characters. The reader skips the kind without dialling it.
+
+pin-locked-mixed-synthetic.fmscfg
+  SYNTHETIC. One open root and one root with a non-empty accessPin: the file reads, the locked root is refused,
+  and the mixed file cannot commit whole (Q100-1 interim: whole-file refusal, nothing imports unlocked).
+
+invalid-*.fmscfg, invalid-not-gzip.qr.txt
+  SYNTHETIC negatives, one defect each: a future schemaVersion, a protocol other than sftp, a malformed non-empty
+  fingerprint, a repeated security property, a traversal virtualPath, a port above 65535, an empty roots array,
+  a QR body that is not gzip. The expected typed result of each is in MANIFEST.txt.
+
+No file here holds a live password or PIN or the endpoint of a reachable user: the test
+A_fixture_carries_only_dummy_secrets_and_addresses_nobody_owns checks it.
 
 SHA-256
 -------
+1935b34369b3dbfe589bcc2519766004086c5abc5ea3d31cffff8ffec2c0643e  MANIFEST.txt
 2b7aa660c0744a667d5a1d7382fe0e682b2df33c38ce7c78d7163a88b553e105  android-export-synthetic.fmscfg
+edfc2ef2a91b5e78743166adefd88bbf81a5c2061ff56eddf6b1f8ece0c62fe7  android-export-synthetic.qr.txt
 fbaeb3572266c1f94084dbc4a28f3887dbba77cb2d5d33157f115175a2c9a56f  canonical-v1.fmscfg
 cbf71972f466629eb1d7249640a92290288064de22cbb6b1e38a82afe0cac10c  canonical-v2.fmscfg
+dc397d98ba0c21d4aaa365831b55a064aa30492550e6ac6c4f9f1befea26ba71  canonical-v2.qr.txt
 4e0c8ea9b1d113afd079d16a9ad29c602ede6eca697d0708ab52af37d79d2df4  companion-export-synthetic.fmscfg
+70376f0800b7147d0953e7e10170778142dcaef6f9254a8a5df61441624192ff  invalid-duplicate-readonly.fmscfg
+5a9aa90497ae04a9ccc9c7d168f1bc0cd4bd740310096eef600fb89780b34069  invalid-empty-roots.fmscfg
+c149a4cf96038b675e99c3e0c864053a8b603a8aea9da5041da79dd9094b471a  invalid-fingerprint-malformed.fmscfg
+1a84e2d28fa124ec3131ba3238595a5ca7fc20dc8e7907e59ed20331607bb832  invalid-future-schema-3.fmscfg
+e31d33c5ce997c0e41934637f5ed4d1fc10bfc18f96894cc3ccf5d882830b721  invalid-not-gzip.qr.txt
+dc42069ae3014ac79aa52fc67d303cca4c81a8cf5a3aa882c468cf713aa204f3  invalid-port-65536.fmscfg
+1ddc898fb219b448813cf0ff4415dfee376d8fb48a927313fb444b4a58e04338  invalid-protocol-smb.fmscfg
+9a17950f40cb896f53c0573715405c337f0e46db23b82c68ece5885e192d0042  invalid-traversal-virtualpath.fmscfg
+997ee7b9b0e3dd502dcd0d46d7be058bc536243b36858c4e18bfa11589ef511d  pin-locked-mixed-synthetic.fmscfg
+a74a7e7b9a3160a814facb9d99b06a06ba1166aa9e2bf203053a7ecc7d41528d  tunnel-path-synthetic.fmscfg

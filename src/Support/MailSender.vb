@@ -1,7 +1,9 @@
 Option Strict On
 
+Imports System.Collections.Generic
 Imports System.IO
 Imports System.Runtime.InteropServices
+Imports Microsoft.Win32
 
 ''' <summary>
 ''' Opens a new email in the user's default mail client with a file attached,
@@ -239,6 +241,92 @@ Public Module MailSender
             Finally
                 Marshal.FreeHGlobal(fileMem)
             End Try
+        End Try
+    End Function
+
+    ' --- is there a mail client at all? (ticket 182 L-6) ---------------------------------------
+
+    ''' <summary>What the manual route (clipboard, the folder, a plain mailto) does next.</summary>
+    Friend Enum ManualRoute
+        ''' <summary>A mail handler is registered: the mailto is worth starting.</summary>
+        TryMailto
+        ''' <summary>No handler (a Windows Server never has one): a blind mailto would raise a "choose an
+        ''' app" prompt for nothing, so it is skipped and the archive's full path is printed instead.</summary>
+        PrintPathOnly
+    End Enum
+
+    ''' <summary>The decision of the manual route, from the one fact that matters.</summary>
+    Friend Function ManualRouteFor(handlerRegistered As Boolean) As ManualRoute
+        Return If(handlerRegistered, ManualRoute.TryMailto, ManualRoute.PrintPathOnly)
+    End Function
+
+    ''' <summary>
+    ''' Pure: is a mail handler registered, given what the registry says? Three independent signs, any one
+    ''' is enough - the user's own choice for mailto (UserChoice ProgId), a mailto open command whose program
+    ''' really exists on disk (a registration left behind by a removed Windows Mail points at nothing and
+    ''' only raises the "choose an app" prompt), or a MAPI client registered under HKLM\SOFTWARE\Clients\Mail.
+    ''' </summary>
+    Friend Function IsMailHandlerRegistered(userChoiceProgId As String, openCommand As String,
+                                            mapiClientNames As IEnumerable(Of String),
+                                            fileExists As Func(Of String, Boolean)) As Boolean
+        If Not String.IsNullOrWhiteSpace(userChoiceProgId) Then Return True
+        Dim program As String = ProgramOfCommand(openCommand)
+        If program.Length > 0 AndAlso fileExists IsNot Nothing AndAlso fileExists(program) Then Return True
+        If mapiClientNames IsNot Nothing Then
+            For Each name As String In mapiClientNames
+                If Not String.IsNullOrWhiteSpace(name) Then Return True
+            Next
+        End If
+        Return False
+    End Function
+
+    ''' <summary>The program of a registry open command: the quoted path, or the text up to the first space,
+    ''' with environment variables expanded. "" when there is none. Pure.</summary>
+    Friend Function ProgramOfCommand(command As String) As String
+        If String.IsNullOrWhiteSpace(command) Then Return ""
+        Dim text As String = command.Trim()
+        Dim program As String
+        If text.StartsWith("""", StringComparison.Ordinal) Then
+            Dim close As Integer = text.IndexOf(""""c, 1)
+            program = If(close > 0, text.Substring(1, close - 1), text.Substring(1))
+        Else
+            Dim space As Integer = text.IndexOf(" "c)
+            program = If(space > 0, text.Substring(0, space), text)
+        End If
+        Try
+            Return Environment.ExpandEnvironmentVariables(program.Trim())
+        Catch
+            Return program.Trim()
+        End Try
+    End Function
+
+    ''' <summary>The live registry answer behind <see cref="IsMailHandlerRegistered"/>. Never throws.</summary>
+    Friend Function HasMailHandler() As Boolean
+        Dim userChoice As String = ""
+        Dim openCommand As String = ""
+        Dim clients As New List(Of String)()
+        Try
+            Using key As RegistryKey = Registry.CurrentUser.OpenSubKey("Software\Microsoft\Windows\Shell\Associations\UrlAssociations\mailto\UserChoice", False)
+                If key IsNot Nothing Then userChoice = Convert.ToString(key.GetValue("ProgId"))
+            End Using
+        Catch
+        End Try
+        Try
+            Using key As RegistryKey = Registry.ClassesRoot.OpenSubKey("mailto\shell\open\command", False)
+                If key IsNot Nothing Then openCommand = Convert.ToString(key.GetValue(""))
+            End Using
+        Catch
+        End Try
+        Try
+            Using key As RegistryKey = Registry.LocalMachine.OpenSubKey("SOFTWARE\Clients\Mail", False)
+                If key IsNot Nothing Then clients.AddRange(key.GetSubKeyNames())
+            End Using
+        Catch
+        End Try
+        Try
+            Return IsMailHandlerRegistered(userChoice, openCommand, clients, Function(p) File.Exists(p))
+        Catch
+            Return False
         End Try
     End Function
 

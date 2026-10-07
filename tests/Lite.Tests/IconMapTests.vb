@@ -30,7 +30,9 @@ Public Class IconMapTests
         Next
         Assert.True(IconMap.IsToolbarCatalogGlyph("btn_Edit"))
         Assert.False(IconMap.IsToolbarCatalogGlyph("btn_Translate"))
-        Assert.False(IconMap.IsToolbarCatalogGlyph("btn_ToVideo"))       ' no vocabulary glyph yet
+        ' ICON-SET 0.28 brought action.convert-to-video: the button draws it like any other.
+        Assert.True(IconMap.IsToolbarCatalogGlyph("btn_ToVideo"))
+        Assert.False(IconMap.IsToolbarCatalogGlyph("btn_Random_Slideshow"))  ' its drawing (variant "random") is still owed
         Assert.False(IconMap.IsToolbarCatalogGlyph("btnShare"))          ' Share Manager surface
     End Sub
 

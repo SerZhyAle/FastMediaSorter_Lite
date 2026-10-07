@@ -8,15 +8,26 @@ import (
 )
 
 // command is a parsed command line. The parser is hand-written, the worker's style: an unknown
-// flag is an error, never silently ignored.
+// flag is an error, never silently ignored. Every field is comparable so a test can compare whole
+// commands.
 type command struct {
-	name     string // version | serve | set-password | set-listen | inspect | stop
+	name     string // version | serve | stop | set-listen | set-endpoint | inspect | account | device
+	sub      string // account: add|passwd|remove|list; device: list|revoke
 	config   string
-	generate bool   // set-password --generate
+	generate bool   // account add / passwd --generate
+	signOut  bool   // account passwd --sign-out
+	json     bool   // list commands --json
 	init     bool   // inspect --init
 	service  bool   // serve --service (under the Windows service control manager)
-	value    string // set-listen: the host:port to store
+	value    string // set-listen / set-endpoint: the host:port to store
+	login    string // account and device commands
+	deviceID string // device revoke
 }
+
+const (
+	usageAccount = "account add <login> [--generate] | passwd <login> [--generate] [--sign-out] | remove <login> | list [--json]"
+	usageDevice  = "device list <login> [--json] | revoke <login> <deviceId>"
+)
 
 func parseArgs(args []string) (command, error) {
 	var c command
@@ -30,12 +41,13 @@ func parseArgs(args []string) (command, error) {
 		}
 		c.name = "version"
 		return c, nil
-	case "serve", "set-password", "set-listen", "inspect", "stop":
+	case "serve", "stop", "set-listen", "set-endpoint", "inspect", "account", "device":
 		c.name = args[0]
 	default:
 		return c, fmt.Errorf("unknown command %q", args[0])
 	}
 	rest := args[1:]
+	var pos []string
 	for i := 0; i < len(rest); i++ {
 		a := rest[i]
 		name, val, hasVal := strings.Cut(a, "=")
@@ -53,10 +65,20 @@ func parseArgs(args []string) (command, error) {
 			}
 			c.config = val
 		case "--generate":
-			if c.name != "set-password" || hasVal {
+			if c.name != "account" || hasVal {
 				return c, fmt.Errorf("unknown option %q for %s", a, c.name)
 			}
 			c.generate = true
+		case "--sign-out":
+			if c.name != "account" || hasVal {
+				return c, fmt.Errorf("unknown option %q for %s", a, c.name)
+			}
+			c.signOut = true
+		case "--json":
+			if (c.name != "account" && c.name != "device") || hasVal {
+				return c, fmt.Errorf("unknown option %q for %s", a, c.name)
+			}
+			c.json = true
 		case "--init":
 			if c.name != "inspect" || hasVal {
 				return c, fmt.Errorf("unknown option %q for %s", a, c.name)
@@ -68,15 +90,69 @@ func parseArgs(args []string) (command, error) {
 			}
 			c.service = true
 		default:
-			if c.name == "set-listen" && c.value == "" && !strings.HasPrefix(a, "-") {
-				c.value = a
-				continue
+			if strings.HasPrefix(a, "-") && a != "-" {
+				return c, fmt.Errorf("unknown option %q for %s", a, c.name)
 			}
-			return c, fmt.Errorf("unknown option %q for %s", a, c.name)
+			pos = append(pos, a)
 		}
 	}
-	if c.name == "set-listen" && c.value == "" {
-		return c, errors.New("set-listen needs an address such as :22022 or 0.0.0.0:22022")
+
+	switch c.name {
+	case "set-listen", "set-endpoint":
+		if len(pos) != 1 {
+			if c.name == "set-listen" {
+				return c, errors.New("set-listen needs an address such as :22022 or 0.0.0.0:22022")
+			}
+			return c, errors.New("set-endpoint needs the public host:port, such as exchange.example.org:22022 (or - to clear it)")
+		}
+		c.value = pos[0]
+	case "account":
+		if len(pos) == 0 {
+			return c, errors.New("account needs a subcommand: " + usageAccount)
+		}
+		c.sub = pos[0]
+		switch c.sub {
+		case "add", "passwd", "remove":
+			if len(pos) != 2 {
+				return c, fmt.Errorf("account %s needs a login: %s", c.sub, usageAccount)
+			}
+			c.login = pos[1]
+		case "list":
+			if len(pos) != 1 {
+				return c, errors.New("account list takes no argument")
+			}
+		default:
+			return c, fmt.Errorf("unknown account subcommand %q: %s", c.sub, usageAccount)
+		}
+		if (c.generate && c.sub != "add" && c.sub != "passwd") || (c.signOut && c.sub != "passwd") || (c.json && c.sub != "list") {
+			return c, fmt.Errorf("an option does not belong to account %s: %s", c.sub, usageAccount)
+		}
+	case "device":
+		if len(pos) == 0 {
+			return c, errors.New("device needs a subcommand: " + usageDevice)
+		}
+		c.sub = pos[0]
+		switch c.sub {
+		case "list":
+			if len(pos) != 2 {
+				return c, fmt.Errorf("device list needs a login: %s", usageDevice)
+			}
+			c.login = pos[1]
+		case "revoke":
+			if len(pos) != 3 {
+				return c, fmt.Errorf("device revoke needs a login and a deviceId: %s", usageDevice)
+			}
+			c.login, c.deviceID = pos[1], pos[2]
+		default:
+			return c, fmt.Errorf("unknown device subcommand %q: %s", c.sub, usageDevice)
+		}
+		if c.json && c.sub != "list" {
+			return c, fmt.Errorf("--json does not belong to device %s", c.sub)
+		}
+	default:
+		if len(pos) > 0 {
+			return c, fmt.Errorf("unknown option %q for %s", pos[0], c.name)
+		}
 	}
 	return c, nil
 }
@@ -86,8 +162,11 @@ func printUsage(w io.Writer, err error) {
 	printf(w, "usage:\n")
 	printf(w, "  fms-exchange-server serve [--config <file>] [--service]   (--service: only under the Windows service control manager)\n")
 	printf(w, "  fms-exchange-server stop [--config <file>]                (asks the console server of that config to stop cleanly)\n")
-	printf(w, "  fms-exchange-server set-password [--config <file>] [--generate]   (reads the password from stdin)\n")
-	printf(w, "  fms-exchange-server set-listen [--config <file>] <host:port>   (the rendezvous listen address, e.g. :22022)\n")
+	printf(w, "  fms-exchange-server account %s [--config <file>]\n", usageAccount)
+	printf(w, "      (a password is read from stdin, or --generate makes one that meets the policy and prints it ONCE)\n")
+	printf(w, "  fms-exchange-server device %s [--config <file>]\n", usageDevice)
+	printf(w, "  fms-exchange-server set-listen [--config <file>] <host:port>   (the listen address, e.g. :22022)\n")
+	printf(w, "  fms-exchange-server set-endpoint [--config <file>] <host:port|->   (the public address announced in welcome)\n")
 	printf(w, "  fms-exchange-server inspect [--config <file>] [--init]\n")
 	printf(w, "  fms-exchange-server --version\n")
 }

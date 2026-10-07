@@ -1,9 +1,13 @@
 package logx
 
 import (
+	"go/ast"
+	"go/parser"
+	"go/token"
 	"os"
 	"path/filepath"
 	"regexp"
+	"sort"
 	"strings"
 	"testing"
 )
@@ -33,13 +37,23 @@ func goFiles(t *testing.T, root string) []string {
 	return out
 }
 
-// TestStaticGuard is contract section 5.3 as a source scan (ticket 139 T-4): the log is the only
-// way out for a session, and it names a session by its 8-hex fingerprint only.
+// The patterns of the scan, shared with the test that proves they can fail.
+var (
+	importLog = regexp.MustCompile(`(?m)^\s*(?:\w+\s+)?"(log|log/slog)"\s*$`)
+	stdout    = regexp.MustCompile(`fmt\.Fprint\w*\(\s*os\.Std(?:out|err)\b|\bos\.Std(?:out|err)\.Write`)
+	// an id, a token, a password, a pairing code, a login, an `access` or a descriptor handed to Text
+	textArg = regexp.MustCompile(`logx\.Text\([^)]*(?:[Ss]hareI[Dd]|[Tt]unnelI[Dd]|[Dd]eviceI[Dd]|[Rr]esourceI[Dd]|[Bb]roadcastI[Dd]|` +
+		`[Pp]assword|[Tt]oken|ResumeToken|PairingCode|[Pp]airing[Cc]ode|[Aa]ccess|[Dd]escriptor|\.Login|[Ll]ogin\b)`)
+	// a wire envelope, a record or a string built from one handed to the logger
+	envelopeArg = regexp.MustCompile(`logx\.\w+\([^)]*(?:\bwire\.(?:Encode|Frame|Record|Envelope)|\.Marshal\(|json\.|Encode\(|\.Raw\b|Envelope)`)
+	// a forbidden field KEY (DEVICE-EXCHANGE 7.9: a log never carries these)
+	badKey = regexp.MustCompile(`logx\.(?:Text|Int)\(\s*"(?:token|password|pairingCode|access|shareId|broadcastId|deviceToken|resourceId|deviceId|tunnelId|secret)"`)
+)
+
+// TestStaticGuard is DEVICE-EXCHANGE 7.9 as a source scan (tickets 139 T-4 and 167 rules 4 and 5):
+// the log is the only way out for an id, and it names an id by its 8-hex fingerprint only.
 func TestStaticGuard(t *testing.T) {
 	root := moduleRoot(t)
-	importLog := regexp.MustCompile(`(?m)^\s*(?:\w+\s+)?"(log|log/slog)"\s*$`)
-	stdout := regexp.MustCompile(`fmt\.Fprint\w*\(\s*os\.Std(?:out|err)\b|\bos\.Std(?:out|err)\.Write`)
-	textArg := regexp.MustCompile(`logx\.Text\([^)]*\b(?:[Ss]hareI[Dd]|[Tt]unnelI[Dd]|[Pp]assword|ResumeToken)\b`)
 	for _, f := range goFiles(t, root) {
 		rel, _ := filepath.Rel(root, f)
 		rel = filepath.ToSlash(rel)
@@ -57,26 +71,82 @@ func TestStaticGuard(t *testing.T) {
 			t.Errorf("%s writes to the standard streams outside cmd/", rel)
 		}
 		if textArg.MatchString(s) {
-			t.Errorf("%s passes an id, a token or a password to logx.Text", rel)
+			t.Errorf("%s passes an id, a token, a password, a code or a descriptor to logx.Text", rel)
+		}
+		if !inLogx && envelopeArg.MatchString(s) {
+			t.Errorf("%s hands a wire envelope, a record or an encoding to the logger", rel)
+		}
+		if badKey.MatchString(s) {
+			t.Errorf("%s uses a forbidden log field key", rel)
 		}
 	}
 }
 
 // The guard must be able to fail: prove each pattern matches what it is meant to catch.
 func TestGuardPatternsCatch(t *testing.T) {
-	importLog := regexp.MustCompile(`(?m)^\s*(?:\w+\s+)?"(log|log/slog)"\s*$`)
 	if !importLog.MatchString("import (\n\t\"fmt\"\n\t\"log\"\n)") {
 		t.Error("the log import pattern misses a plain import")
 	}
 	if !importLog.MatchString("import (\n\tl \"log/slog\"\n)") {
 		t.Error("the log import pattern misses an aliased slog import")
 	}
-	stdout := regexp.MustCompile(`fmt\.Fprint\w*\(\s*os\.Std(?:out|err)\b|\bos\.Std(?:out|err)\.Write`)
 	if !stdout.MatchString(`fmt.Fprintln(os.Stderr, "x")`) || !stdout.MatchString(`os.Stdout.Write(b)`) {
 		t.Error("the standard-stream pattern misses a direct write")
 	}
-	textArg := regexp.MustCompile(`logx\.Text\([^)]*\b(?:[Ss]hareI[Dd]|[Tt]unnelI[Dd]|[Pp]assword|ResumeToken)\b`)
-	if !textArg.MatchString(`logx.Text("id", m.ShareID)`) || !textArg.MatchString(`logx.Text("t", tunnelID)`) {
-		t.Error("the Text-argument pattern misses an id")
+	for _, bad := range []string{
+		`logx.Text("id", m.ShareID)`, `logx.Text("t", tunnelID)`, `logx.Text("d", req.DeviceID)`,
+		`logx.Text("p", e.Password)`, `logx.Text("c", e.PairingCode)`, `logx.Text("a", rec.Access)`,
+		`logx.Text("l", e.Login)`, `logx.Text("x", deviceToken)`, `logx.Text("r", resourceID)`,
+	} {
+		if !textArg.MatchString(bad) {
+			t.Errorf("the Text-argument pattern misses %s", bad)
+		}
+	}
+	for _, bad := range []string{`logx.Text("e", wire.Encode(x))`, `logx.Text("e", string(raw.Raw))`, `logx.Text("j", json.Marshal(x))`} {
+		if !envelopeArg.MatchString(bad) {
+			t.Errorf("the envelope pattern misses %s", bad)
+		}
+	}
+	for _, bad := range []string{`logx.Text("token", x)`, `logx.Text("access", x)`, `logx.Int("password", 1)`, `logx.Text( "shareId", x)`} {
+		if !badKey.MatchString(bad) {
+			t.Errorf("the key pattern misses %s", bad)
+		}
+	}
+	for _, ok := range []string{`logx.Text("why", ternary(c, "a", "b"))`, `logx.Text("kind", "sftp-share")`, `logx.Device(id)`} {
+		if textArg.MatchString(ok) || badKey.MatchString(ok) || envelopeArg.MatchString(ok) {
+			t.Errorf("a clean call is flagged: %s", ok)
+		}
+	}
+}
+
+// TestOnlyTheKnownFieldConstructorsExist: there is no constructor that takes a raw secret. A new
+// exported function that returns a Field must be added to this list on purpose, with the reader
+// asking whether it can carry a secret.
+func TestOnlyTheKnownFieldConstructorsExist(t *testing.T) {
+	fset := token.NewFileSet()
+	pkgs, err := parser.ParseDir(fset, ".", func(fi os.FileInfo) bool { return !strings.HasSuffix(fi.Name(), "_test.go") }, 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var got []string
+	for _, p := range pkgs {
+		for _, f := range p.Files {
+			for _, d := range f.Decls {
+				fn, ok := d.(*ast.FuncDecl)
+				if !ok || fn.Recv != nil || !fn.Name.IsExported() || fn.Type.Results == nil {
+					continue
+				}
+				for _, r := range fn.Type.Results.List {
+					if id, ok := r.Type.(*ast.Ident); ok && id.Name == "Field" {
+						got = append(got, fn.Name.Name)
+					}
+				}
+			}
+		}
+	}
+	sort.Strings(got)
+	want := []string{"Addr", "Broadcast", "Device", "Int", "Login", "Port", "Resource", "Share", "Text", "Tunnel"}
+	if strings.Join(got, ",") != strings.Join(want, ",") {
+		t.Fatalf("the Field constructors are %v, want %v", got, want)
 	}
 }

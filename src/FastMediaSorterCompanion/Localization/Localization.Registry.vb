@@ -27,6 +27,7 @@ Partial Public NotInheritable Class Localization
         AddDiskStrings()        ' DISK-SHARE: file-backed containers and local drive aliases
         AddExchangeStrings()    ' tickets 142-144: the Media Exchange Server group and tray item
         AddExchangeProducerStrings()   ' ticket 148: the share service registering on an exchange server
+        AddSendLogsStrings()    ' ticket 182 L-3/L-6: a log that cannot be included, no mail program (table linked from the viewer)
     End Sub
 
     ''' <summary>

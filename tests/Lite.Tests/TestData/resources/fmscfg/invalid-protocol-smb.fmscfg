@@ -1,0 +1,1 @@
+{"schemaVersion":1,"resourceName":"Bad","protocol":"smb","accessPaths":[{"kind":"lan","host":"192.0.2.1","port":2022}],"username":"fms","password":"dummy-not-a-real-secret","hostKeyFingerprintSha256":"SHA256:8f6TQvCbXjDMOyu4A9JzKcWlEHmR5pNsGgVaU2wYqhk","roots":[{"virtualPath":"/Photos","label":"Photos"}]}

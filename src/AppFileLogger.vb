@@ -168,6 +168,16 @@ Friend Module AppFileLogger
                 End Using
                 acquiredWriter.WriteLine("Version: " & Assembly.GetExecutingAssembly().GetName().Version.ToString())
                 acquiredWriter.WriteLine("OS: " & Environment.OSVersion.ToString())
+                ' Ticket 182 L-8: the runtime too, so a log says which of the two exes wrote it
+                ' without anyone reading the file name (".NET 10.x" for the mainline, ".NET Framework 4.8.x").
+                Try
+#If NETFRAMEWORK Then
+                    acquiredWriter.WriteLine("Runtime: .NET Framework " & Environment.Version.ToString())
+#Else
+                    acquiredWriter.WriteLine("Runtime: " & RuntimeInformation.FrameworkDescription)
+#End If
+                Catch
+                End Try
                 acquiredWriter.WriteLine("64-bit OS: " & Environment.Is64BitOperatingSystem.ToString() & "; 64-bit process: " & Environment.Is64BitProcess.ToString())
                 acquiredWriter.WriteLine("Command line: " & Environment.CommandLine)
                 acquiredWriter.Flush()

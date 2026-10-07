@@ -12,6 +12,10 @@ publishing/store/listingData.csv -text
 assets/glyphs/*.svg -text
 tests/Lite.Tests/TestData/icon-vocabulary/vocabulary.jsonl -text
 
+# The vendored site kit is the catalog's reference stylesheet byte for byte (PAGE-STYLE section 0 step 1;
+# the served file is what is compared). No line-ending normalization may alter it.
+assets/sza-kit.css -text
+
 # WORKER-IPC request fixtures are the exact bytes the Share Manager puts on the pipe, pinned
 # byte for byte and by SHA-256 (tests/Companion.Tests/TestData/worker-ipc/requests/PROVENANCE.txt).
 tests/Companion.Tests/TestData/worker-ipc/** -text

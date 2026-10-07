@@ -1,0 +1,6 @@
+# Provenance of the dual-mode baseline (ticket 177). The suites check these hashes FIRST: a hand edit of a
+# fixture fails them. Regenerate by running tests\Integration\ExchangeBaseline.ps1 -WriteProvenance (the two
+# JSON captures) and the Companion test DualModeBaselineGenerator (the two reference-share files).
+# written: 2026-10-07 12:22 UTC
+# FILE<TAB>SHA-256
+viewer-baseline.json	7bf8ef8a0d185bad29984eafb5b591145069801697c0587d600e7bc76bb015e9

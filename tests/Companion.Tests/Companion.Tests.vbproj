@@ -11,6 +11,8 @@
     <OptionInfer>On</OptionInfer>
     <IsPackable>false</IsPackable>
     <IsTestProject>true</IsTestProject>
+    <!-- Selects the namespace import of the test files compiled into BOTH test projects (below). -->
+    <DefineConstants>COMPANION_TESTS=True</DefineConstants>
   </PropertyGroup>
 
   <ItemGroup>
@@ -30,6 +32,11 @@
     <Compile Include="..\Lite.Tests\ExceptionTextScanner.vb" Link="Linked\ExceptionTextScanner.vb" />
     <!-- tools/site-addresses.jsonl reader (ticket 150), shared with Lite.Tests. -->
     <Compile Include="..\Lite.Tests\SiteAddressList.vb" Link="Linked\SiteAddressList.vb" />
+    <!-- Ticket 182 L-7: the archive's sources, the unreadable-source rule, the [hosting] block, the state line and
+         the no-mail-client decision are tested ONCE and compiled into both test projects, because both programs
+         link the same LogPackage / HostingReport / MailSender and must come out with the same sources. -->
+    <Compile Include="..\Lite.Tests\LogPackageSourcesTests.vb" Link="Linked\LogPackageSourcesTests.vb" />
+    <Compile Include="..\Lite.Tests\HostingReportTests.vb" Link="Linked\HostingReportTests.vb" />
   </ItemGroup>
 
   <!-- WORKER-IPC section 7 fixtures (WorkerIpcConformanceTests): the request half is generated

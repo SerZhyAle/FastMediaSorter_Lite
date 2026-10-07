@@ -86,3 +86,31 @@ func TestRotation(t *testing.T) {
 		t.Fatalf("expected the log and one .1, found %d files", len(entries))
 	}
 }
+
+func TestEveryIDTypeRendersTheFirst8HexOfItsSHA256(t *testing.T) {
+	id := wire.NewID()
+	want := Share(id).val
+	for name, f := range map[string]Field{
+		"share": Share(id), "device": Device(id), "resource": Resource(id), "broadcast": Broadcast(id),
+		"tunnel": Tunnel(id), "login": Login(id),
+	} {
+		if f.key != name {
+			t.Errorf("%s: key %q", name, f.key)
+		}
+		if name != "login" && f.val != want {
+			t.Errorf("%s: %q, want the shared form %q", name, f.val, want)
+		}
+		if len(f.val) != 8 || strings.Contains(f.val, id[:4]) {
+			t.Errorf("%s: %q", name, f.val)
+		}
+	}
+	if Login("Alice").val != Login("alice").val || Login("alice").val == Login("bob").val {
+		t.Fatal("a login is folded to lower case before it is hashed")
+	}
+	// a password typed into the login field is not in the line
+	c := NewCapture()
+	c.Info("enroll", Login("Sup3rSecretPw"))
+	if strings.Contains(strings.Join(c.Lines(), "\n"), "Sup3rSecretPw") {
+		t.Fatal("the login field carried a password into the log")
+	}
+}

@@ -19,9 +19,14 @@ Public Module IconMap
         ShareManager
     End Enum
 
-    ''' <summary>The catalog proposal the meanings without a vocabulary record wait for
-    ''' (spec 027 section 3.1). Such a control keeps its pre-contract picture under a
-    ''' dated exception until the owner decides.</summary>
+    ''' <summary>The catalog proposal the meanings without a usable vocabulary picture wait
+    ''' for (spec 027 section 3.1). Accepted by the catalog owner on 2026-10-07 (ICON-SET
+    ''' 0.28): <c>action.convert-to-video</c> (taken by btn_ToVideo) and <c>app.language</c> arrived
+    ''' with glyphs; what remains here waits for a drawing the catalog still owes - the
+    ''' <c>random</c> variant of <c>media.slideshow</c> and the <c>filled</c> variants of
+    ''' <c>tool.rectangle</c> / <c>tool.oval</c> - or for the Share Manager to adopt
+    ''' <c>action.reveal</c> (whose off form's file is also owed). Such a control keeps its
+    ''' pre-contract picture under a dated exception.</summary>
     Public Const DesktopMeaningsProposal As String = "PROPOSAL-2026-09-24-fms-windows-meanings.md"
 
     Public NotInheritable Class IconMeaning
@@ -75,7 +80,7 @@ Public Module IconMap
         {"btn_Image_Menu", New IconMeaning("btn_Image_Menu", "nav.more", "Ещё", IconRole.Content)},
         {"btn_Translate", New IconMeaning("btn_Translate", "action.translate", "Перевод", IconRole.Content)},
         {"btn_Edit", New IconMeaning("btn_Edit", "action.edit", "Редактировать", IconRole.Content)},
-        {"btn_ToVideo", New IconMeaning("btn_ToVideo", "", "Анимацию - в видео", IconRole.Content, DesktopMeaningsProposal)},
+        {"btn_ToVideo", New IconMeaning("btn_ToVideo", "action.convert-to-video", "Анимацию - в видео", IconRole.Content)},
         {"btn_Video_Play", New IconMeaning("btn_Video_Play", "media.play", "Воспроизвести", IconRole.Content)},
         {"btn_Video_Mute", New IconMeaning("btn_Video_Mute", "media.volume", "Громкость", IconRole.Content)},
         {"editor_Tool_Crop", New IconMeaning("editor_Tool_Crop", "action.crop", "Обрезка", IconRole.Content)},

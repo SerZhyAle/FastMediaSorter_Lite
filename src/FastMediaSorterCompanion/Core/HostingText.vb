@@ -113,7 +113,7 @@ Public Module HostingText
     End Function
 
     Public Function GrantDeclinedHint() As String
-        Return Localization.T("Без доступа служба не откроет эти папки на телефоне. Выдать его можно позже - «Управление хостингом..».")
+        Return Localization.T("Без доступа служба не откроет эти папки на телефоне. Выдать его можно позже - «Настройки менеджера..», группа «Хостинг».")
     End Function
 
     Public Function GrantWorkingHint() As String

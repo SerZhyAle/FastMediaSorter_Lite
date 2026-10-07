@@ -150,8 +150,8 @@ Partial Friend NotInheritable Class Image_Editor_Form
 
     ' ---------------------------------------------------------------- toolbar ----
 
-    ''' <summary>The grab zone of a crop grip, at the DPI the canvas is really on. The
-    ''' window does not auto-scale its hand-laid toolbar, so screen pixels here are
+    ''' <summary>The grab zone of a crop grip, at the DPI the canvas is really on. The canvas is
+    ''' not part of the window's auto-scale (it fills what the bands leave), so its pixels are
     ''' device pixels - and a fixed 7 was comfortable at 96 dpi and guesswork at 175 %.</summary>
     Private Function GripTolerancePx() As Integer
         Return ScaleForDpi(Crop_Grip_Tolerance)
@@ -170,11 +170,11 @@ Partial Friend NotInheritable Class Image_Editor_Form
 
     ''' <summary>
     ''' Builds the one toolbar row (§5). Laid out by hand along a running x, in 96-dpi pixels. NOTE (124 UX-202):
-    ''' the viewer has been PerMonitorV2 since the chrome migration, so the old claim that a pixel here is a pixel
-    ''' on screen no longer holds at 150-175 %. The window is NOT auto-scaled yet on purpose - it restores its
-    ''' rectangle in device pixels, so scaling it on open would grow it every session - and its toolbar, its
-    ''' 40 px strip and its remembered placement are owned by ticket 126 (which scaled what is a matter of aim -
-    ''' the crop grip zone - and left the chrome where it is).
+    ''' the viewer has been PerMonitorV2 since the chrome migration, so a pixel here is NOT a pixel on screen at
+    ''' 125-175 %: the window scales itself (DialogLayout.ApplyAutoScale, last line of BuildChrome) and these
+    ''' positions, the 40 px bands and the button sizes grow with it. The remembered window rectangle is applied
+    ''' after that scaling, in the pixels of the DPI it was measured at (WindowPlacement.SizeForDpi), so it does
+    ''' not grow session by session.
     ''' </summary>
     Private Function BuildToolBar() As Panel
         tool_Bar = New Panel With {

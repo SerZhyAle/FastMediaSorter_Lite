@@ -209,9 +209,10 @@ Public Class LogTailSnapshotTests
         Try
             Using zip As New FileStream(zipPath, FileMode.Create, FileAccess.Write, FileShare.None)
                 Using archive As New ZipArchive(zip, ZipArchiveMode.Create)
-                    Dim line As String = LogPackage.CopyLogEntry(archive, "current.log", path,
-                                                                 Function(p) New RestlessStream(p, AddressOf AppendTo))
-                    Assert.NotNull(line)
+                    Dim outcome As LogPackage.LogEntryOutcome = LogPackage.CopyLogEntry(archive, "current.log", path,
+                                                                                        Function(p) New RestlessStream(p, AddressOf AppendTo))
+                    Assert.Equal(LogPackage.LogSourceState.Included, outcome.State)
+                    Assert.NotNull(outcome.Line)
                 End Using
             End Using
             Using zip As New ZipArchive(File.OpenRead(zipPath), ZipArchiveMode.Read)

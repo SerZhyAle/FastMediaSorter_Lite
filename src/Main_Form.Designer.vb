@@ -424,7 +424,7 @@ Partial Class Main_Form
         Me.KeyPreview = True
         Me.Margin = New System.Windows.Forms.Padding(4, 2, 4, 2)
         Me.Name = "Main_Form"
-        Me.Text = "Fast Media Sorter & Sharing for Windows by SZA"
+        Me.Text = "Fast Media Sorter by SZA"
         CType(Me.Picture_Box_2, System.ComponentModel.ISupportInitialize).EndInit()
         CType(Me.Picture_Box_1, System.ComponentModel.ISupportInitialize).EndInit()
         Me.ResumeLayout(False)

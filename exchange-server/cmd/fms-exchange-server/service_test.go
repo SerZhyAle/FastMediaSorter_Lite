@@ -57,7 +57,7 @@ func TestParseArgsStopAndService(t *testing.T) {
 	bad := [][]string{
 		{"stop", "--service"}, {"stop", "--generate"}, {"stop", "--init"}, {"stop", "--nope"},
 		{"stop", "--config"}, {"stop", "stray"}, {"stop", "--service=1"},
-		{"serve", "--service=1"}, {"inspect", "--service"}, {"set-password", "--service"},
+		{"serve", "--service=1"}, {"inspect", "--service"}, {"account", "--service"},
 	}
 	for _, in := range bad {
 		if _, err := parseArgs(in); err == nil {
@@ -110,7 +110,7 @@ func TestServeRefusesBesideARunningService(t *testing.T) {
 	}
 	// it started nothing: no identity, no log
 	dir := filepath.Dir(cfgFile)
-	for _, rel := range []string{"tls", config.LogName} {
+	for _, rel := range []string{"tls", config.LogsDir} {
 		if _, err := os.Stat(filepath.Join(dir, rel)); err == nil {
 			t.Errorf("a refused serve created %s", rel)
 		}

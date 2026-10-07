@@ -89,7 +89,7 @@ Friend Module SendLogsFlow
                     .Text = Localization.TF("Готов архив {0} ({1}).", Path.GetFileName(package.Path),
                                             LogPackage.DescribeSize(package.SizeBytes))}
             Dim contents As New TextBox With {
-                .Width = 520, .Height = 96, .Multiline = True, .ReadOnly = True, .ScrollBars = ScrollBars.Vertical,
+                .Width = 520, .Height = 140, .Multiline = True, .ReadOnly = True, .ScrollBars = ScrollBars.Vertical,
                 .Margin = New Padding(0, 0, 0, 8),
                 .Text = String.Join(Environment.NewLine, package.Entries.ToArray())}
             Dim warning As New Label With {
@@ -156,6 +156,15 @@ Friend Module SendLogsFlow
             AppFileLogger.LogException("Send logs: clipboard", ex)
         End Try
         RevealPackage(zipPath)
+        ' A blind mailto on a machine with no mail handler (every Windows Server) raises a "choose an app"
+        ' prompt for nothing (ticket 182 L-6): without a registered handler it is skipped, and the message
+        ' carries the archive's FULL path, so it can be read out or typed on another machine.
+        If MailSender.ManualRouteFor(MailSender.HasMailHandler()) = MailSender.ManualRoute.PrintPathOnly Then
+            AppFileLogger.WriteLine("Send logs: no mail handler is registered - the mailto was skipped, the archive path was shown")
+            ShowMessage(owner, Localization.TF("Почтовая программа не найдена. Архив скопирован в буфер обмена и показан в папке. Полный путь к архиву: {0}", zipPath),
+                        MessageBoxIcon.Information)
+            Return
+        End If
         Try
             Dim url As String = "mailto:" & MailSender.AuthorAddress &
                                 "?subject=" & Uri.EscapeDataString(subject) &

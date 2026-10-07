@@ -50,6 +50,31 @@ Partial Public Class Image_Panel_Form
             ApplyHeaders()
         End Sub
 
+        ''' <summary>The DPI the column widths are in now. They are authored above in 96-dpi pixels, and a
+        ''' ListView never scales its columns (neither at the first layout nor on a DPI change), so this does.</summary>
+        Private columns_Dpi As Integer = 96
+
+        Protected Overrides Sub OnHandleCreated(e As EventArgs)
+            MyBase.OnHandleCreated(e)
+            ScaleColumnsTo(DeviceDpi)
+        End Sub
+
+        Protected Overrides Sub OnDpiChangedAfterParent(e As EventArgs)
+            MyBase.OnDpiChangedAfterParent(e)
+            ScaleColumnsTo(DeviceDpi)
+        End Sub
+
+        ''' <summary>Rescales every column by the ratio of the new DPI to the one they are in - proportionally, so a
+        ''' column the user dragged keeps its relation to the others.</summary>
+        Private Sub ScaleColumnsTo(dpi As Integer)
+            If dpi <= 0 OrElse dpi = columns_Dpi Then Return
+            Dim ratio As Double = dpi / CDbl(columns_Dpi)
+            For Each column As ColumnHeader In Columns
+                column.Width = Math.Max(1, CInt(Math.Round(column.Width * ratio)))
+            Next
+            columns_Dpi = dpi
+        End Sub
+
         Friend Sub Bind(selection As SelectionModel, displayRows As IReadOnlyList(Of PanelFileRow))
             model = selection
             rows = displayRows

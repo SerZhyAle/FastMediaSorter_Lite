@@ -69,7 +69,17 @@ Public Module BroadcastController
     End Function
 
     ''' <summary>
-    ''' Returns true if an error string indicates that the worker is older and does not support broadcast verbs.
+    ''' True when the worker STATES it serves the broadcast verbs (<see cref="WorkerStatus.BroadcastSupported"/>).
+    ''' This is the primary test; no status at all is "not known", never "supported".
+    ''' </summary>
+    Public Function IsSupported(status As WorkerStatus) As Boolean
+        Return status IsNot Nothing AndAlso status.BroadcastSupported
+    End Function
+
+    ''' <summary>
+    ''' Secondary guard only: true if an error string says the worker did not know a broadcast verb, i.e. a
+    ''' host that offered the page still met a worker without it. The page is not offered on this test
+    ''' (<see cref="IsSupported"/> decides that), because a reworded error would silently defeat it.
     ''' </summary>
     Public Function IsUnsupportedWorker(errorText As String) As Boolean
         If String.IsNullOrEmpty(errorText) Then Return False

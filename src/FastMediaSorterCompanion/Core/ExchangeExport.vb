@@ -33,8 +33,9 @@ Public NotInheritable Class ExchangeWireNames
 
     ''' <summary>The tunnel path's kind (ANYWHERE-ACCESS 4.2 names it; the spelling freezes at rung 2).</summary>
     Public Const TunnelKind As String = "rendezvousTunnel"
-    ''' <summary>The member of the tunnel path that carries the share id. PROVISIONAL - not in the contract text.</summary>
-    Public Const TunnelShareIdMember As String = "sid"
+    ''' <summary>The member of the tunnel path that carries the share id (FMSCFG 2.4: the optional member
+    ''' <c>shareId</c>, 22 base64url characters).</summary>
+    Public Const TunnelShareIdMember As String = "shareId"
     ''' <summary>The kind of the third-party relay port. Q148-1: an existing direct kind, because it behaves
     ''' identically and an unchanged client then reaches the share through the relay with no update
     ''' (contract section 8.6). The catalog owner confirms at rung 1.</summary>

@@ -88,6 +88,12 @@ Partial Public Class Image_Panel_Form
     Private run_Is_Active As Boolean
     Private has_Remembered_Placement As Boolean
 
+    ''' <summary>The remembered rectangle as stored: the size in device pixels at <see cref="remembered_Dpi"/>
+    ''' (0 = not recorded), and the raw position. <see cref="ApplyRememberedBounds"/> turns them into the window's.</summary>
+    Private remembered_Size As Size
+    Private remembered_Location As Point
+    Private remembered_Dpi As Integer
+
     ''' <summary>True once PrepareForDisplay restored a rectangle the user left the panel at. The
     ''' viewer then keeps it instead of centring the panel on its own monitor.</summary>
     Friend ReadOnly Property HasRememberedPlacement As Boolean
@@ -117,6 +123,10 @@ Partial Public Class Image_Panel_Form
         ApplyContentColors()
         AddHandler Me.KeyDown, AddressOf OnFormKeyDown
         AddHandler flush_Timer.Tick, AddressOf OnFlushTick
+
+        ' Last, once every child exists: scaling touches only the children present when it runs. The panel's
+        ' size is NOT part of what this decides - see ApplyRememberedBounds (124 UX-202).
+        DialogLayout.ApplyAutoScale(Me)
     End Sub
 
     Private Sub BuildToolbar()
@@ -133,7 +143,7 @@ Partial Public Class Image_Panel_Form
         cmb_CardSize = New ToolStripComboBox With {
             .DropDownStyle = ComboBoxStyle.DropDownList,
             .AutoSize = False,
-            .Width = 64,
+            .Width = 88,
             .ToolTipText = Localization.T("Размер миниатюр")}
         For Each tier As Integer In ModernViewerPreferences.PanelThumbnailTiers
             cmb_CardSize.Items.Add(tier.ToString())
@@ -307,6 +317,12 @@ Partial Public Class Image_Panel_Form
         Return ModernViewerPreferences.SnapPanelThumbnailSize(Math.Max(Picture_Box_Width_At_Panel, Picture_Box_Height_At_Panel))
     End Function
 
+    ''' <summary>
+    ''' Reads the remembered rectangle - on every open, because the panel is built once and shown many times -
+    ''' and puts it on the window. The size is stored in device pixels together with the DPI it was measured at
+    ''' (<c>PicturePanelDpi</c>); a stored size without one is device pixels at the DPI the window has now. The
+    ''' defaults are authored in 96-dpi pixels, like the layout.
+    ''' </summary>
     Private Sub PlaceFromRegistry()
         Dim app_Top As Integer = first_Run_Top
         Dim app_Left As Integer = first_Run_Left
@@ -316,17 +332,54 @@ Partial Public Class Image_Panel_Form
         Integer.TryParse(GetSetting(App_name, Second_App_Name, "PicturePanelLeft"), app_Left)
         Integer.TryParse(GetSetting(App_name, Second_App_Name, "PicturePanelWidth"), app_Width)
         Integer.TryParse(GetSetting(App_name, Second_App_Name, "PicturePanelHeight"), app_Height)
-        app_Width = If(app_Width < Limit_Width_Low OrElse app_Width > Limit_Width_High, first_Run_Width, app_Width)
-        app_Height = If(app_Height < Limit_Height_Low OrElse app_Height > Limit_Height_High, first_Run_Height, app_Height)
+
+        Dim size_Dpi As Integer = WindowPlacement.ParseDpi(GetSetting(App_name, Second_App_Name, "PicturePanelDpi"))
+        If app_Width < Limit_Width_Low OrElse app_Width > Limit_Width_High OrElse
+           app_Height < Limit_Height_Low OrElse app_Height > Limit_Height_High Then
+            ' One size, one DPI: if either side is unusable both fall back to the authored default.
+            app_Width = first_Run_Width
+            app_Height = first_Run_Height
+            size_Dpi = 96
+        End If
 
         ' APP-BEHAVIOUR rule 10: the position is judged by the displays that exist, and one
         ' that lands on none goes to the nearest. A manual start position, or Windows picks its
         ' own and the rectangle is ignored.
         Me.StartPosition = FormStartPosition.Manual
         has_Remembered_Placement = GetSetting(App_name, Second_App_Name, "PicturePanelLeft", "").Length > 0
-        Dim placed As Rectangle = WindowPlacement.Place(New Rectangle(app_Left, app_Top, app_Width, app_Height),
+        remembered_Location = New Point(app_Left, app_Top)
+        remembered_Size = New Size(app_Width, app_Height)
+        remembered_Dpi = size_Dpi
+        ApplyRememberedBounds()
+    End Sub
+
+    ''' <summary>
+    ''' Puts the remembered rectangle on the window, in the pixels of the DPI the window has NOW. Before the
+    ''' panel has ever been shown that DPI is only the system's, so the answer is a guess for the viewer's
+    ''' centring and <see cref="OnLoad"/> repeats it once the window has scaled itself; on every later open the
+    ''' window is long scaled and this is final.
+    ''' </summary>
+    Private Sub ApplyRememberedBounds()
+        Dim size As Size = WindowPlacement.SizeForDpi(remembered_Size.Width, remembered_Size.Height, remembered_Dpi, Me.DeviceDpi)
+        Dim placed As Rectangle = WindowPlacement.Place(New Rectangle(remembered_Location, size),
                                                         WindowPlacement.CurrentWorkAreas())
         Me.SetBounds(placed.Left, placed.Top, placed.Width, placed.Height)
+    End Sub
+
+    ''' <summary>
+    ''' The window scales itself at its first layout, which is the first time it is shown. Doing it here, before
+    ''' the rectangle, is the whole rule: the remembered size is applied AFTER scaling, so it is not multiplied
+    ''' by the DPI a second time (the window grew every session when it was). Only the first show gets here.
+    ''' </summary>
+    Protected Overrides Sub OnLoad(e As EventArgs)
+        MyBase.OnLoad(e)
+        PerformAutoScale()
+        ApplyRememberedBounds()
+        If Not has_Remembered_Placement Then
+            Dim viewer As Main_Form = TryCast(Me.Owner, Main_Form)
+            If viewer IsNot Nothing Then viewer.PositionChildOnViewerMonitor(Me)
+        End If
+        DialogLayout.ClampToWorkingArea(Me)
     End Sub
 
     Protected Overrides Sub OnShown(e As EventArgs)
@@ -363,6 +416,8 @@ Partial Public Class Image_Panel_Form
             SaveSetting(App_name, Second_App_Name, "PicturePanelLeft", normal_Bounds.Left.ToString)
             If normal_Bounds.Height >= 200 Then SaveSetting(App_name, Second_App_Name, "PicturePanelHeight", normal_Bounds.Height.ToString)
             If normal_Bounds.Width >= 320 Then SaveSetting(App_name, Second_App_Name, "PicturePanelWidth", normal_Bounds.Width.ToString)
+            ' The pixels above belong to this DPI; without it the next open cannot tell them from another monitor's.
+            SaveSetting(App_name, Second_App_Name, "PicturePanelDpi", Me.DeviceDpi.ToString)
         End If
 
         If tip IsNot Nothing Then

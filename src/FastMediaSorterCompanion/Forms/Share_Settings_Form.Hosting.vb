@@ -121,6 +121,13 @@ Partial Public NotInheritable Class Share_Settings_Form
         AddHandler lnkTrust.LinkClicked, Sub() NetworkInfo.OpenInBrowser(ShareText.TrustPageUrl())
         sec.AddBodyRow(lnkTrust)
 
+        ' A service that did not start or a repair that failed is seen here: the way to send its log
+        ' (ticket 182 L-5) is one click away, through the same flow as the tray menu and the footer.
+        Dim lnkSendLog As New LinkLabel With {.AutoSize = True, .MaximumSize = New Size(HostingContentWidth, 0),
+            .Margin = New Padding(0, 0, 0, 10), .Text = Localization.T("Отправить журнал автору..")}
+        AddHandler lnkSendLog.LinkClicked, Async Sub() Await SendLogsFlow.RunAsync(Me)
+        sec.AddBodyRow(lnkSendLog)
+
         _lblResult = New Label With {.AutoSize = True, .Margin = New Padding(0, 8, 0, 0),
             .MaximumSize = New Size(HostingContentWidth, 0),
             .ForeColor = Color.DimGray, .Text = ""}
@@ -289,7 +296,7 @@ Partial Public NotInheritable Class Share_Settings_Form
             RunManage(ServiceControl.ManageAction.MigrateToUser)
         Else
             ' Open the page, never fetch or run anything (spec §1.4 / §2).
-            NetworkInfo.OpenInBrowser(HostingText.ServerEditionUrl)
+            NetworkInfo.OpenInBrowser(ShareLinks.Localized(HostingText.ServerEditionUrl))
         End If
     End Sub
 
@@ -310,7 +317,7 @@ Partial Public NotInheritable Class Share_Settings_Form
 
     Private Sub OnOpenServerPage()
         ' Open the page, never fetch or run anything (spec §1.4 / §2).
-        NetworkInfo.OpenInBrowser(HostingText.ServerEditionUrl)
+        NetworkInfo.OpenInBrowser(ShareLinks.Localized(HostingText.ServerEditionUrl))
     End Sub
 
     ''' <summary>

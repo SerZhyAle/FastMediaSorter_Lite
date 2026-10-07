@@ -9,8 +9,10 @@ Imports Xunit
 ''' <summary>
 ''' APP-BEHAVIOUR rule 7 for the Share Manager (028_SPECIFICATION_CONTRACT_SYNC_DESKTOP_APP_UX.md
 ''' Ф-4, §5 item 2). The engine is the viewer's, linked; the call sites and the table are this
-''' program's own, so the gate runs here over them.
+''' program's own, so the gate runs here over them. It walks every language through the one global
+''' <c>Localization.CurrentCode</c>, so it runs in the same serial collection as every other test that sets it.
 ''' </summary>
+<Collection(UiLanguageCollection.Name)>
 Public Class LocalizationCallSiteTests
 
     <Fact>

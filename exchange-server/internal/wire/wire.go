@@ -1,148 +1,91 @@
-// Package wire holds everything a producer and a consumer see on the exchange wire: the envelope
-// set, its codec and the TCP framing (ANYWHERE-ACCESS section 6 plus the wire completion of
-// ticket 134, still a proposal until rung 2 freezes it).
+// Package wire holds everything a device and the exchange server see on the wire of DEVICE-EXCHANGE
+// section 7: the envelope set, its codec, the 4-byte length framing, the opaque records and the
+// reason list. It is the ONE place that builds or parses a wire byte (ticket 161): no other package
+// writes a JSON member name of an envelope, a frame header or an HTTP status line, so a changed
+// owner decision costs edits here and nowhere else, and the golden frames of ticket 178 can be
+// generated from this code and nothing else.
 //
-// It is the one place a changed owner decision costs edits: no other package builds or parses a
-// byte of the wire. It is pure Go with no OS dependency.
+// It is pure Go with no OS dependency and no dependency on any other package of the module.
 package wire
 
 import (
 	"crypto/rand"
 	"encoding/base64"
-	"encoding/json"
 	"errors"
-	"fmt"
 	"io"
 )
 
 const (
-	// SchemaVersion is the integer every envelope carries (Q134-6): 1 for the whole 0.x wire.
-	SchemaVersion = 1
-	// MaxFrame is the largest JSON body one frame may carry (Q134-2). An envelope never needs more.
+	// SchemaVersion is the integer every envelope carries (DEVICE-EXCHANGE 7.1).
+	SchemaVersion = 2
+
+	// MaxFrame is the most a frame may carry until its stream is authenticated, in both directions
+	// (DEVICE-EXCHANGE 7.1 and 15 item T): every frame up to and including `welcome` or `enrolled`,
+	// and every frame of a stream that never authenticates. An unauthenticated peer cannot make the
+	// other side buffer more. 16384 bytes of JSON.
 	MaxFrame = 16 * 1024
+
+	// MaxFrameAuth is the most a frame may carry after `welcome` or `enrolled`, in both directions
+	// (DEVICE-EXCHANGE 15 item T, owner decision of 2026-10-07: FMS_W's answer to ask 1, no paging).
+	// 262144 bytes of JSON. Question 1 of ticket 181 was open when this module was started; the
+	// contract text of 0.17 settled it, and this is the one line to change if the owner moves it.
+	MaxFrameAuth = 256 * 1024
+
+	// MaxRecord is the most one record (a resource, a broadcast, a receiver block) may hold
+	// (DEVICE-EXCHANGE 6): unchanged by the frame limit, the record ceiling is not lowered below the
+	// frame and the frame is raised above it.
+	MaxRecord = 16 * 1024
 )
 
-// Envelope types (contract section 6 plus Q134-1: control stream and per-tunnel data stream).
-const (
-	TypeRegister   = "register"
-	TypeRegistered = "registered"
-	TypeRefused    = "refused"
-	TypeKeepalive  = "keepalive"
-	TypeUnregister = "unregister"
-	TypeOpen       = "open"
-	TypeAttach     = "attach"
-	TypeConnect    = "connect"
-	TypeConnected  = "connected"
-)
-
-// Refusal reasons (Q134-5). Clients show an unknown reason as a generic refusal.
-const (
-	ReasonBadPassword     = "bad-password"
-	ReasonIDCollision     = "id-collision"
-	ReasonCapacity        = "capacity"
-	ReasonPortUnavailable = "port-unavailable"
-	ReasonTLSRequired     = "tls-required"
-	ReasonUnavailable     = "unavailable"
-	ReasonRateLimited     = "rate-limited"
-)
-
-// Errors a decoder reports. Every one of them ends the stream (Q134-12); an unknown TYPE is not one.
+// Errors a decoder or a frame reader reports. Every one of them ends the stream; an unknown TYPE
+// and an unknown MEMBER are not errors (DEVICE-EXCHANGE 7.1).
 var (
-	ErrMalformed  = errors.New("wire: malformed envelope")
-	ErrSchema     = errors.New("wire: unsupported schemaVersion")
-	ErrNoType     = errors.New("wire: envelope has no type")
-	ErrFrameSize  = errors.New("wire: frame length out of range")
+	// ErrMalformed: not one JSON object, a member of the wrong shape, a required member missing.
+	ErrMalformed = errors.New("wire: malformed envelope")
+	// ErrSchema: a schemaVersion that is neither 2 nor the one this server recognises only to
+	// refuse it. The stream closes without an answer.
+	ErrSchema = errors.New("wire: unsupported schemaVersion")
+	// ErrVersionRefused: the legacy schemaVersion of the superseded wire. The peer is answered
+	// `refused {version-unsupported}` carrying schemaVersion 2 and the stream closes (7.1, item P).
+	// This is the only place the number 1 of that wire exists in the module.
+	ErrVersionRefused = errors.New("wire: schemaVersion 1 is not supported")
+	// ErrNoType: an object with no type member.
+	ErrNoType = errors.New("wire: envelope has no type")
+	// ErrFrameSize: a zero length or a length above the limit in force for the stream.
+	ErrFrameSize = errors.New("wire: frame length out of range")
+	// ErrBadMessage: an envelope that cannot be encoded.
 	ErrBadMessage = errors.New("wire: message cannot be encoded")
 )
 
-// Message is every envelope of the wire in one shape; which members are meaningful depends on Type.
-// The member order below is the order Encode writes, so the golden vectors are byte-stable.
-type Message struct {
-	SchemaVersion    int             `json:"schemaVersion"`
-	Type             string          `json:"type"`
-	Password         string          `json:"password,omitempty"`
-	ShareID          string          `json:"shareId,omitempty"`
-	KeepaliveSeconds int             `json:"keepaliveSeconds,omitempty"`
-	Port             *int            `json:"port,omitempty"`
-	ResumeToken      string          `json:"resumeToken,omitempty"`
-	Claim            json.RawMessage `json:"claim,omitempty"`
-	Reason           string          `json:"reason,omitempty"`
-	TunnelID         string          `json:"tunnelId,omitempty"`
-}
-
-// String never prints the password, so a Message handed to a formatter by mistake cannot leak it.
-func (m Message) String() string {
-	return fmt.Sprintf("wire.Message{type=%s}", m.Type)
-}
-
-// Known reports whether the type is one this wire defines. A caller ignores an unknown type
-// (contract section 6.1: never an error).
-func (m Message) Known() bool {
-	switch m.Type {
-	case TypeRegister, TypeRegistered, TypeRefused, TypeKeepalive, TypeUnregister,
-		TypeOpen, TypeAttach, TypeConnect, TypeConnected:
-		return true
-	}
-	return false
-}
-
-// New returns an envelope of the given type with the schema version set.
-func New(typ string) Message { return Message{SchemaVersion: SchemaVersion, Type: typ} }
-
-// Refused builds a refusal.
-func Refused(reason string) Message {
-	m := New(TypeRefused)
-	m.Reason = reason
-	return m
-}
-
-// IntPtr is a helper for the optional port member.
-func IntPtr(n int) *int { return &n }
-
-// Encode renders the envelope as its JSON body.
-func Encode(m Message) ([]byte, error) {
-	if m.Type == "" {
-		return nil, ErrBadMessage
-	}
-	if m.SchemaVersion == 0 {
-		m.SchemaVersion = SchemaVersion
-	}
-	b, err := json.Marshal(m)
-	if err != nil {
-		return nil, fmt.Errorf("%w: %v", ErrBadMessage, err)
-	}
-	if len(b) > MaxFrame {
-		return nil, ErrFrameSize
-	}
-	return b, nil
-}
-
-// Decode parses one JSON body. Unknown members are ignored. An absent or different schemaVersion
-// is refused; an unknown type is returned as is (Known() is false) and is for the caller to ignore.
-func Decode(b []byte) (Message, error) {
-	var m Message
-	if err := json.Unmarshal(b, &m); err != nil {
-		return Message{}, ErrMalformed
-	}
-	if m.SchemaVersion != SchemaVersion {
-		return Message{}, ErrSchema
-	}
-	if m.Type == "" {
-		return Message{}, ErrNoType
-	}
-	return m, nil
-}
-
 var idEncoding = base64.RawURLEncoding.Strict()
 
+// idRand is the id source; a test or the vector generator replaces it through NewIDFrom.
+var idRand io.Reader = rand.Reader
+
 // NewID returns 16 bytes from the system's cryptographic generator as base64url without padding:
-// the form of a share id, a tunnel id and a resume token (contract section 6.2).
-func NewID() string {
+// the id form of a deviceId, resourceId, shareId, broadcastId and tunnelId (DEVICE-EXCHANGE 2).
+func NewID() string { return NewIDFrom(idRand) }
+
+// NewIDFrom is NewID over an injected source (ticket 178: a generated vector draws its ids from a
+// seeded source so the bytes are stable).
+func NewIDFrom(r io.Reader) string {
 	var b [16]byte
-	if _, err := rand.Read(b[:]); err != nil {
-		panic("wire: system random source failed: " + err.Error())
+	if _, err := io.ReadFull(r, b[:]); err != nil {
+		panic("wire: random source failed: " + err.Error())
 	}
 	return idEncoding.EncodeToString(b[:])
+}
+
+// NewToken returns 32 random bytes as base64url without padding: a device token (5.2).
+func NewToken() string { return NewTokenFrom(idRand) }
+
+// NewTokenFrom is NewToken over an injected source.
+func NewTokenFrom(r io.Reader) string {
+	var b [32]byte
+	if _, err := io.ReadFull(r, b[:]); err != nil {
+		panic("wire: random source failed: " + err.Error())
+	}
+	return base64.RawURLEncoding.EncodeToString(b[:])
 }
 
 // ValidID reports whether s is exactly 22 characters of base64url that decode to 16 bytes.
@@ -154,73 +97,12 @@ func ValidID(s string) bool {
 	return err == nil && len(b) == 16
 }
 
-// FrameWriter writes envelopes as frames: a 4-byte unsigned big-endian length, then the JSON body.
-type FrameWriter struct{ w io.Writer }
-
-// NewFrameWriter wraps w. A frame is written with one Write call.
-func NewFrameWriter(w io.Writer) *FrameWriter { return &FrameWriter{w: w} }
-
-// Write encodes and sends one envelope.
-func (fw *FrameWriter) Write(m Message) error {
-	body, err := Encode(m)
-	if err != nil {
-		return err
+// ValidToken reports whether s has the form of a device token: 43 characters of base64url that
+// decode to 32 bytes. The server compares a presented token only after this shape check.
+func ValidToken(s string) bool {
+	if len(s) != 43 {
+		return false
 	}
-	return fw.writeBody(body)
-}
-
-func (fw *FrameWriter) writeBody(body []byte) error {
-	buf := make([]byte, 4+len(body))
-	buf[0] = byte(len(body) >> 24)
-	buf[1] = byte(len(body) >> 16)
-	buf[2] = byte(len(body) >> 8)
-	buf[3] = byte(len(body))
-	copy(buf[4:], body)
-	_, err := fw.w.Write(buf)
-	return err
-}
-
-// Frame returns the exact bytes WriteMessage puts on the stream: the golden-vector form.
-func Frame(m Message) ([]byte, error) {
-	body, err := Encode(m)
-	if err != nil {
-		return nil, err
-	}
-	var sink frameSink
-	if err := NewFrameWriter(&sink).writeBody(body); err != nil {
-		return nil, err
-	}
-	return sink.b, nil
-}
-
-type frameSink struct{ b []byte }
-
-func (s *frameSink) Write(p []byte) (int, error) { s.b = append(s.b, p...); return len(p), nil }
-
-// FrameReader reads frames. It reads exactly the bytes of one frame and nothing more, so the bytes
-// that follow a frame stay in the underlying reader: after `connected` the stream is raw SSH.
-type FrameReader struct{ r io.Reader }
-
-// NewFrameReader wraps r.
-func NewFrameReader(r io.Reader) *FrameReader { return &FrameReader{r: r} }
-
-// Read returns the next envelope. A length of zero or above MaxFrame is ErrFrameSize and the stream
-// must be closed by the caller.
-func (fr *FrameReader) Read() (Message, error) {
-	var hdr [4]byte
-	if _, err := io.ReadFull(fr.r, hdr[:]); err != nil {
-		return Message{}, err
-	}
-	n := int(hdr[0])<<24 | int(hdr[1])<<16 | int(hdr[2])<<8 | int(hdr[3])
-	if n <= 0 || n > MaxFrame {
-		return Message{}, ErrFrameSize
-	}
-	body := make([]byte, n)
-	if _, err := io.ReadFull(fr.r, body); err != nil {
-		if err == io.EOF {
-			err = io.ErrUnexpectedEOF
-		}
-		return Message{}, err
-	}
-	return Decode(body)
+	b, err := base64.RawURLEncoding.Strict().DecodeString(s)
+	return err == nil && len(b) == 32
 }

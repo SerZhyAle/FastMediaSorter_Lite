@@ -39,4 +39,54 @@ Public Module SitePages
         Return SiteRoot & "lang/" & code & "/trust.html"
     End Function
 
+    ''' <summary>The languages that have a generated landing (and trust page) under lang/&lt;code&gt;/.</summary>
+    Private ReadOnly LandingCodes As String() = {"ru", "uk", "de", "es", "fr", "it", "pt", "ar", "hi", "bn", "ur", "zh"}
+
+    ''' <summary>
+    ''' The page a link should open for the language the program is speaking. Pass the English
+    ''' address of a page of this site; what comes back is the same page in <paramref name="languageCode"/>:
+    ''' the landing and the trust page have a generated copy per language (lang/&lt;code&gt;/), every other
+    ''' page is one file that switches English / Russian / Ukrainian in-page and reads
+    ''' <c>?lang=ru</c> / <c>?lang=uk</c> (the same query the installer already appends to the
+    ''' Android guide). A language the page does not have, an address that is not on this site and an
+    ''' address that already carries a query or a fragment come back unchanged - never a page that
+    ''' does not exist.
+    ''' </summary>
+    Public Function ForLanguage(address As String, languageCode As String) As String
+        Dim code As String = If(languageCode, "").Trim().ToLowerInvariant()
+        If String.IsNullOrEmpty(address) OrElse code.Length = 0 OrElse code = "en" Then Return address
+        If Not address.StartsWith(SiteRoot, StringComparison.Ordinal) Then Return address
+        Dim rest As String = address.Substring(SiteRoot.Length)
+        If rest.Length = 0 Then
+            If Array.IndexOf(LandingCodes, code) >= 0 Then Return SiteRoot & "lang/" & code & "/"
+            Return address
+        End If
+        If rest = "trust.html" Then Return If(Array.IndexOf(LandingCodes, code) >= 0, TrustPageUrl(code), address)
+        If rest.IndexOf("?"c) >= 0 OrElse rest.IndexOf("#"c) >= 0 OrElse rest.StartsWith("lang/", StringComparison.Ordinal) Then Return address
+        If rest.EndsWith(".html", StringComparison.Ordinal) AndAlso (code = "ru" OrElse code = "uk") Then Return address & "?lang=" & code
+        Return address
+    End Function
+
+    ''' <summary>The Android app's own site; it has a Russian and a Ukrainian landing, everything else reads the English one.</summary>
+    Public Const AndroidAppSiteRoot As String = "https://serzhyale.github.io/FastMediaSorter_mob_v2/"
+
+    Public Function AndroidAppSiteUrl(languageCode As String) As String
+        Select Case If(languageCode, "").Trim().ToLowerInvariant()
+            Case "ru" : Return AndroidAppSiteRoot & "index-ru.html"
+            Case "uk" : Return AndroidAppSiteRoot & "index-uk.html"
+            Case Else : Return AndroidAppSiteRoot
+        End Select
+    End Function
+
+    ''' <summary>The document-translation project's site: Russian and Ukrainian are a query on the root page, the
+    ''' other eleven languages a folder.</summary>
+    Public Const DocHtmlTranslateSiteRoot As String = "https://serzhyale.github.io/doc-html-translate/"
+
+    Public Function DocHtmlTranslateSiteUrl(languageCode As String) As String
+        Dim code As String = If(languageCode, "").Trim().ToLowerInvariant()
+        If code = "ru" OrElse code = "uk" Then Return DocHtmlTranslateSiteRoot & "?l=" & code
+        If Array.IndexOf(LandingCodes, code) >= 0 Then Return DocHtmlTranslateSiteRoot & code & "/"
+        Return DocHtmlTranslateSiteRoot
+    End Function
+
 End Module

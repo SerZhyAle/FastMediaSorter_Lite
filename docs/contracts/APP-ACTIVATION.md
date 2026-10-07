@@ -3,7 +3,7 @@
 | | |
 | --- | --- |
 | **Id** | `APP-ACTIVATION` |
-| **Version** | 0.11, draft (read 2026-10-02). Owner: CyrFlip. The transport this product ships is now **declared and permitted**, not excepted: 0.11 section 7 item A admits `WM_COPYDATA` sent with a bounded wait |
+| **Version** | 0.11, draft (read 2026-10-02, re-read 2026-10-07: the catalog is still at 0.11). Owner: CyrFlip. The transport this product ships is now **declared and permitted**, not excepted: 0.11 section 7 item A admits `WM_COPYDATA` sent with a bounded wait |
 | **Home** | `app-activation/README.md` in the shared contracts catalog |
 | **Role here** | consumer - single-instance forwarding in the viewer (`src/Application_Events.vb`, both exes) and the Share Manager (`src/FastMediaSorterCompanion/Program.vb`), and the viewer's wake of the Share Manager (`src/Main_Form.ShareLauncher.vb`) |
 
@@ -28,6 +28,12 @@
 - Every send is bounded (6 s total, 3 s per attempt) and actually bound - since ticket 040 the wake of the
   Share Manager declares its entry point explicitly, so a delivery is counted only on the receiver's
   answer.
+- **Rule 5's mechanism is the one open deviation (registry exception).** The sender allows the receiver to
+  take the foreground (`AllowSetForegroundWindow`, `Application_Events.vb` and `Main_Form.ShareLauncher.vb`);
+  the contract's `AttachThreadInput` bracket and the `WM_NULL` responsiveness probe before it are not used
+  anywhere in the source - the hang the probe guards against cannot arise without the attach, and every
+  send already carries `SMTO_ABORTIFHUNG`. Whether that is conformant is the owner's reading; it is recorded
+  as a deviation until then.
 
 ## Current compatibility policy (2026-10-03)
 

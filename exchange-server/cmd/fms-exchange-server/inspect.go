@@ -6,27 +6,31 @@ import (
 	"io"
 	"os"
 
+	"fms/exchange-server/internal/accounts"
 	"fms/exchange-server/internal/config"
 	"fms/exchange-server/internal/deploy"
-	"fms/exchange-server/internal/password"
 	"fms/exchange-server/internal/tlsid"
 )
 
-// inspectReport is the read-only state report: no session data exists to report.
+// inspectReport is the read-only state report: counts of what exists, never a secret, a login or an
+// id. The single server password of the superseded design is gone from it (ticket 162): what the
+// server needs to serve is at least one account.
 type inspectReport struct {
-	DataDir           string `json:"dataDir"`
-	ConfigPresent     bool   `json:"configPresent"`
-	PasswordSet       bool   `json:"passwordSet"`
-	PasswordHashValid bool   `json:"passwordHashValid"`
-	CertPresent       bool   `json:"certPresent"`
-	Fingerprint       string `json:"fingerprint"`
-	Listen            string `json:"listen"`
-	PortRange         string `json:"portRange"`
-	Error             string `json:"error,omitempty"`
+	DataDir        string `json:"dataDir"`
+	ConfigPresent  bool   `json:"configPresent"`
+	Accounts       int    `json:"accounts"`
+	Devices        int    `json:"devices"`
+	CertPresent    bool   `json:"certPresent"`
+	Fingerprint    string `json:"fingerprint"`
+	Listen         string `json:"listen"`
+	PortRange      string `json:"portRange"`
+	PublicEndpoint string `json:"publicEndpoint"`
+	Error          string `json:"error,omitempty"`
 }
 
 // runInspect prints the report as JSON, even on failure, and creates nothing - except with --init,
-// which writes the commented defaults and the TLS identity if they do not exist yet.
+// which writes the commented defaults and the TLS identity if they do not exist yet. It reads the
+// account files without opening the store, so it works on a directory a server is running from.
 func runInspect(cmd command, stdout, stderr io.Writer) int {
 	paths := config.Resolve(cmd.config, os.Getenv)
 	rep := inspectReport{DataDir: paths.Dir}
@@ -51,9 +55,12 @@ func runInspect(cmd command, stdout, stderr io.Writer) int {
 	if _, err := os.Stat(paths.Config); err == nil {
 		rep.ConfigPresent = true
 	}
-	rep.Listen, rep.PortRange = cfg.Listen, cfg.PortRange
-	rep.PasswordSet = cfg.PasswordHash != ""
-	rep.PasswordHashValid = rep.PasswordSet && password.ValidRecord(cfg.PasswordHash) == nil
+	rep.Listen, rep.PortRange, rep.PublicEndpoint = cfg.Listen, cfg.PortRange, cfg.PublicEndpoint
+	if a, d, err := accounts.Peek(paths.Dir); err != nil {
+		fail(exitConfig, err)
+	} else {
+		rep.Accounts, rep.Devices = a, d
+	}
 
 	certPath, keyPath := paths.Cert, paths.Key
 	if cfg.TLS.CertFile != "" {

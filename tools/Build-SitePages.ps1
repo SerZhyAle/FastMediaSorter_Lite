@@ -157,6 +157,24 @@ function TrustUrl([string]$code) { if ($code -eq 'en') { "$BaseUrl/trust.html" }
 # 404.html is the one page served from any depth, so it keeps the absolute form (RenderNotFound).
 function AssetBase([string]$code) { if ($code -eq 'en') { '' } else { '../../' } }
 
+# The copy button's two states in the page's own language (PAGE-STYLE 4.7, 1.4): the idle label and the done word - "Copied" -
+# without a check mark. One row per locale of site-copy.json; the Test-SiteQuality locale count catches a locale without one.
+$CopyWords = @{
+    en = @('Copy', 'Copied');            ru = @('Копировать', 'Скопировано');  uk = @('Копіювати', 'Скопійовано')
+    de = @('Kopieren', 'Kopiert');       it = @('Copia', 'Copiato');           es = @('Copiar', 'Copiado')
+    fr = @('Copier', 'Copié');           pt = @('Copiar', 'Copiado');          ar = @('نسخ', 'تم النسخ')
+    hi = @('कॉपी करें', 'कॉपी हो गया');    bn = @('কপি করুন', 'কপি হয়েছে');       ur = @('کاپی کریں', 'کاپی ہو گیا')
+    zh = @('复制', '已复制')
+}
+# The locale list of a static page: choosing RU, EN or UA writes sza-lang before navigating, a further locale never does
+# (PAGE-STYLE 4.2 and 1.6). The landing's own list offers only further locales, so only the generated pages carry this.
+$LocaleListScript = @'
+  document.querySelectorAll('.lang-pop a[hreflang],.footer-langs a[hreflang]').forEach(function(a){
+    var k={ru:'ru',en:'en',uk:'ua'}[a.getAttribute('hreflang')];
+    if(k) a.addEventListener('click',function(){try{localStorage.setItem('sza-lang',k);}catch(e){}});
+  });
+'@
+
 function RenderFamilyGridForLocale([string]$code) {
     $familyTitle = $copy._family.title
     if ($copy._familyTranslations.PSObject.Properties[$code] -and $copy._familyTranslations.$code.title) {
@@ -389,7 +407,7 @@ $scenarioCards
     <div class="get">
       <div>
         <div class="copybox"><span class="tok">winget</span> install --id $($copy._channels.winget.id)
-          <button class="copy" data-copy="$($copy._channels.winget.command)">Copy</button></div>
+          <button class="copy" data-copy="$($copy._channels.winget.command)">$($CopyWords[$code][0])</button></div>
       </div>
       <div class="dl-row" id="dlRow">
         <a class="btn btn-primary" id="dl-setup" href="$($copy._channels.github.url)">$(Esc $e.dlSetup)</a>
@@ -454,7 +472,7 @@ $familyGrid
     $switcher
   </div>
   <div class="author-card" lang="en" dir="ltr">
-    <b>Serhii Zhyhunenko (SerZhyAle)</b>
+    <b><a href="https://$($copy._contact.website)">Serhii Zhyhunenko (SerZhyAle)</a></b>
     <span>&copy; $(Get-Date -Format 'yyyy')</span>
     <a href="https://$($copy._contact.website)">$($copy._contact.website)</a>
     <a href="https://github.com/$($copy._contact.github)">GitHub</a>
@@ -476,10 +494,11 @@ $familyGrid
   if(tb) tb.addEventListener('click',function(){setTheme(doc.getAttribute('data-theme')==='light'?'dark':'light');});
   setTheme(doc.getAttribute('data-theme')||'dark');
 
+$LocaleListScript
   document.querySelectorAll('.copy').forEach(function(btn){
     btn.addEventListener('click',function(){
       var txt=btn.getAttribute('data-copy')||'';
-      var done=function(){var o=btn.textContent;btn.textContent='✓ Copied';btn.classList.add('done');
+      var done=function(){var o=btn.textContent;btn.textContent='$($CopyWords[$code][1])';btn.classList.add('done');
         setTimeout(function(){btn.textContent=o;btn.classList.remove('done');},1600);};
       if(navigator.clipboard&&navigator.clipboard.writeText){
         navigator.clipboard.writeText(txt).then(done,function(){fallback(txt);done();});
@@ -629,6 +648,8 @@ $familyGrid
   var tb=document.getElementById('themeBtn');
   if(tb) tb.addEventListener('click',function(){setTheme(doc.getAttribute('data-theme')==='light'?'dark':'light');});
   setTheme(doc.getAttribute('data-theme')||'dark');
+
+$LocaleListScript
 })();
 </script>
 </body>
@@ -947,10 +968,12 @@ if ($Check) {
     }
 
     # --- 12 Contract Conformance Checks (ticket 030 section 5, DOC-EXTERNAL-QUALITY), then 13-14 (specification 154) ---
-    # 1. Kit identity - the catalog's reference/sza-kit.css as re-vendored 2026-10-02 (kit 1.2).
+    # 1. Kit identity - the catalog's reference/sza-kit.css as re-vendored 2026-10-07 (the PAGE-STYLE 1.3 revision:
+    # 14521 bytes; the 1.4/1.5 revision the catalog still owes is NOT in it - re-pin when that one lands).
     # Hashed with CRLF folded to LF: the catalog file is LF, and a text=auto checkout with
     # core.autocrlf turns the working copy CRLF without changing a single character of the kit.
-    $pinnedKitSha = 'E544A6CE47160F827DC97379C3E4814D4AECE763593C5A9420E681F1F4E4EB48'
+    # assets/sza-kit.css is also marked -text in .gitattributes (PAGE-STYLE section 0 step 1), so a new clone is LF.
+    $pinnedKitSha = 'AEA958F805249D300B7417373E4CAD18B44D7EED9765954DF19ED710276C4C9E'
     $kitFile = Join-Path $Root 'assets/sza-kit.css'
     if (-not (Test-Path $kitFile)) {
         $problems += "Kit identity: missing assets/sza-kit.css"

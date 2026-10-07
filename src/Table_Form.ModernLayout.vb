@@ -959,6 +959,7 @@ Partial Public Class Table_Form
             Case "secure_remember_minutes" : Return Localization.T("Помнить пароль, минут")
             Case "secure_show_true_name" : Return Localization.T("Показывать настоящее имя файла")
             Case "secure_open_with" : Return Localization.T("Контейнеры .fd-sec")
+            Case "live_open_with" : Return Localization.T("Файлы .fmsbcast (live-трансляции)")
             Case "settings_export_personal" : Return Localization.T("Включить личные данные")
             Case "settings_export" : Return Localization.T("Экспорт дополнительных настроек")
             Case "settings_import" : Return Localization.T("Импорт дополнительных настроек")
@@ -1092,6 +1093,7 @@ Partial Public Class Table_Form
             Case "secure_remember_minutes" : Return Localization.T("Пароль хранится только в памяти программы и нигде не записывается. 0 - помнить до закрытия программы.")
             Case "secure_show_true_name" : Return Localization.T("Открытый контейнер показывает имя файла, который в нём спрятан - в строке состояния и в подписи поверх картинки. Выключите, если на экран смотрит кто-то ещё.")
             Case "secure_open_with" : Return Localization.T("Добавляет программу в меню «Открыть с помощью» для .fd-sec, ничего не отбирая у той программы, которой эти файлы принадлежат сейчас.")
+            Case "live_open_with" : Return Localization.T("Файлы .fmsbcast присылают телефон и часы, когда вещают звук. Если у них ещё нет программы по умолчанию, их будет открывать эта; чужую запись она не заменяет, а только появляется в меню «Открыть с помощью».")
             Case "settings_export_personal" : Return Localization.T("История папок и позиции просмотра попадут в файл. API-ключи и пароли - никогда.")
             Case "settings_export" : Return Localization.T("Файл содержит только дополнительные настройки. Получатели, язык, тема, звук и OCR не включаются.")
             Case "settings_import" : Return Localization.T("Файл содержит только дополнительные настройки. Получатели, язык, тема, звук и OCR не включаются.") & " " & Localization.T("Читает параметры из файла. Прежний профиль сохраняется в резервную копию.")
@@ -1782,8 +1784,8 @@ Partial Public Class Table_Form
         Dim flow As FlowLayoutPanel = PageFlow(modernResourcesPage)
         AddInformationBlock(flow, "sftp_intro")
         If btn_Share_Manager IsNot Nothing Then AddSettingRow(flow, "sftp_manager", btn_Share_Manager, 230, True)
-        AddProjectLinkRow(flow, "sftp_guide", "https://serzhyale.github.io/FastMediaSorter_Lite/publish-folders-android.html")
-        AddProjectLinkRow(flow, "android_app", Localization.T("https://serzhyale.github.io/FastMediaSorter_mob_v2/index-ru.html"))
+        AddProjectLinkRow(flow, "sftp_guide", SitePages.ForLanguage("https://serzhyale.github.io/FastMediaSorter_Lite/publish-folders-android.html", Localization.CurrentCode))
+        AddProjectLinkRow(flow, "android_app", SitePages.AndroidAppSiteUrl(Localization.CurrentCode))
     End Sub
 
     Private Sub BuildModernAboutPage()
@@ -1794,12 +1796,12 @@ Partial Public Class Table_Form
         EnsureSendLogsButton()
         AddSettingRow(flow, "support_send_logs", btn_Send_Logs, 230, True)
         AddInformationBlock(flow, "doc_html_intro")
-        AddProjectLinkRow(flow, "doc_html_site", "https://serzhyale.github.io/doc-html-translate/")
-        AddProjectLinkRow(flow, "project_site", "https://serzhyale.github.io/FastMediaSorter_Lite/")
+        AddProjectLinkRow(flow, "doc_html_site", SitePages.DocHtmlTranslateSiteUrl(Localization.CurrentCode))
+        AddProjectLinkRow(flow, "project_site", SitePages.ForLanguage("https://serzhyale.github.io/FastMediaSorter_Lite/", Localization.CurrentCode))
         AddProjectLinkRow(flow, "project_github", "https://github.com/SerZhyAle/FastMediaSorter_Lite")
         AddProjectLinkRow(flow, "project_releases", "https://github.com/SerZhyAle/FastMediaSorter_Lite/releases")
         ' The policy lives under docs/ - the root /privacy.html this row used to open is a 404.
-        AddProjectLinkRow(flow, "project_privacy", SitePages.PrivacyPageUrl)
+        AddProjectLinkRow(flow, "project_privacy", SitePages.ForLanguage(SitePages.PrivacyPageUrl, Localization.CurrentCode))
         AddProjectLinkRow(flow, "project_license", "https://github.com/SerZhyAle/FastMediaSorter_Lite/blob/main/LICENSE")
         ' Beside the privacy page, because it answers the same question from the other side:
         ' the warnings Windows raises and what administrator rights are used for (INSTALL-TRUST

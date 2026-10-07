@@ -3,7 +3,7 @@
 | | |
 | --- | --- |
 | **Ids** | `DOC-INTERNAL-QUALITY`, `DOC-EXTERNAL-QUALITY` |
-| **Version** | 0.9 / 0.10, draft (read 2026-10-02: the 0.10 additions to the external contract only widen what the gates already hold - the search-index threshold is met by holding the index against the sitemap page set; the per-locale hreflang check is implemented; the code-point counting of the length limits is stricter here than the raw-string measure, a deviation in the strict direction). Owner: FastMediaSorter Android |
+| **Version** | 0.9 / 0.10, draft (read 2026-10-02 and again 2026-10-07; both are the catalog's current versions - `DOC-INTERNAL-QUALITY` stayed 0.9 when the external one went to 0.10, and the log row of 2026-10-06 is a companion note that moved no version). The 0.10 additions only widen what the gates already hold: the search-index threshold is met by holding the index against the sitemap page set (item B); the per-locale hreflang check and the `x-default` check are implemented (item D); the length limits count Unicode code points after entity decoding, exactly, since 2026-10-07 (item C; before it the count was UTF-16 units, the same for every character the thirteen locales use); item A holds by the guides' task sections and item E applies to no page of this site. Owner: FastMediaSorter Android |
 | **Home** | `documentation-quality/README.md` in the shared contracts catalog |
 | **Role here** | consumer of both, adopted 2026-09-26 - the internal corpus (`CLAUDE.md`, `docs/guides/`, `docs/contracts/`, the READMEs, `CHANGELOG.md`) and the published site at the repository root (37 pages in `sitemap.xml`) |
 
@@ -78,3 +78,17 @@ existing glyph drift. No release or full-corpus acceptance is claimed by a focus
   blanking it would mean reconfiguring the live share service.
 - The external dated exception in the catalog registry (until 2026-12-31) is closed with the
   command output above; rules 2, 3, 5 and 7 are gated in the release preflight.
+
+## Verification on 2026-10-07 (specification 181, after the kit re-vendor, the copy-button words and the sibling label)
+
+- `pwsh -NoProfile -File tools/Test-SiteQuality.ps1`: PASS (39 pages, 2344 links, 36 images, 13 locales, rules 1-7,
+  the guides' interface words, the full-width rule and the keyboard-and-landmarks rule held), exit 0; the title and
+  description limits now count code points.
+- `pwsh -NoProfile -File tools/Build-SitePages.ps1 -Check`: PASS (30 render targets and 14 conformance checks
+  passed), exit 0, the kit pinned to the catalog's current file.
+- `pwsh -NoProfile -File tools/Test-DocRegistry.ps1`: PASS (111 documents, 401 links, source facts agree), exit 0 before
+  the first edit of the day, and PASS (112 documents, 405 links) after the pointer edits. One run in between reported
+  a defect that was not this ticket's: a `docs/contracts/` pointer written by a parallel contract-sync auditor and
+  not yet declared in `docs/DOCUMENT_REGISTRY.jsonl`.
+- Not run: `tools/Run-AllTests.ps1` (other sessions were building and editing the shared tree), so the full-run
+  acceptance recorded for ticket 058 is neither confirmed nor withdrawn.

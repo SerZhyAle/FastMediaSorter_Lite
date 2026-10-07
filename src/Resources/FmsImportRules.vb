@@ -9,7 +9,8 @@ Imports System.Linq
 Friend Enum FmsFieldHandling
     ''' <summary>Decides whether the document is read at all (version, protocol).</summary>
     EnvelopeGate = 0
-    ''' <summary>Validated and carried into the resource; a malformed value refuses the whole document.</summary>
+    ''' <summary>Validated and carried into the import PLAN; a malformed value refuses the whole document.
+    ''' Whether the value also reaches the SAVED resource is <see cref="FmsFieldRule.StoredInResource"/>.</summary>
     Mapped = 1
     ''' <summary>Kept in the plan so it round-trips, never applied; the preview shows a notice.</summary>
     PreservedNotApplied = 2
@@ -25,14 +26,21 @@ Friend NotInheritable Class FmsFieldRule
     Friend ReadOnly Handling As FmsFieldHandling
     ''' <summary>What an ABSENT value means; the restrictive default where the contract names one.</summary>
     Friend ReadOnly WhenAbsent As String
-    ''' <summary>One line for the preview and the guide.</summary>
+    ''' <summary>One line for the guide: what the field does today, not what the contract allows.</summary>
     Friend ReadOnly Note As String
+    ''' <summary>True when a value of this field changes what <c>ResourceImport.Preview</c> saves (the
+    ''' resource's name, address, root, writability, subfolder scan, pin) or the credential. False for a gate
+    ''' (version, protocol), a refused field and the presentation values that are read, validated and then NOT
+    ''' kept (100 §15.5.3 wants them preserved with a notice; Q100-4 has not been decided). The rows are held
+    ''' to this by a differential test: a False row must leave the saved descriptor untouched.</summary>
+    Friend ReadOnly StoredInResource As Boolean
 
-    Friend Sub New(path As String, since As Integer, handling As FmsFieldHandling, whenAbsent As String, note As String)
+    Friend Sub New(path As String, since As Integer, handling As FmsFieldHandling, whenAbsent As String, storedInResource As Boolean, note As String)
         Me.Path = path
         Me.Since = since
         Me.Handling = handling
         Me.WhenAbsent = whenAbsent
+        Me.StoredInResource = storedInResource
         Me.Note = note
     End Sub
 End Class
@@ -47,30 +55,30 @@ End Class
 Friend Module FmsFieldSupport
 
     Private ReadOnly RuleList As New List(Of FmsFieldRule) From {
-        New FmsFieldRule("schemaVersion", 1, FmsFieldHandling.EnvelopeGate, "invalid", "Judged first; above 2 asks to update the app and nothing else is read."),
-        New FmsFieldRule("protocol", 1, FmsFieldHandling.EnvelopeGate, "invalid", "Exactly ""sftp"", case-sensitive."),
-        New FmsFieldRule("resourceName", 1, FmsFieldHandling.Mapped, "empty name", "Display text only; never an identity."),
-        New FmsFieldRule("accessPaths[].kind", 1, FmsFieldHandling.Mapped, "entry skipped", "lan, ipv6, portforward; an unknown kind is skipped without being dialled."),
-        New FmsFieldRule("accessPaths[].host", 1, FmsFieldHandling.Mapped, "entry refused", "Plain host or literal; no blanks, slashes or user-info."),
-        New FmsFieldRule("accessPaths[].port", 1, FmsFieldHandling.Mapped, "entry refused", "Integer 1..65535."),
-        New FmsFieldRule("username", 1, FmsFieldHandling.Mapped, "invalid", "Required, not blank."),
-        New FmsFieldRule("password", 1, FmsFieldHandling.Mapped, "ask before commit", "Empty or absent: the user is asked, an unusable resource is never saved."),
-        New FmsFieldRule("accessNote", 1, FmsFieldHandling.Mapped, "no note", "Plain display text for a connection failure."),
-        New FmsFieldRule("hostKeyFingerprintSha256", 1, FmsFieldHandling.Mapped, "unpinned (first-use consent)", "Canonical SHA256:+43 base64 only; present-but-malformed refuses the document."),
-        New FmsFieldRule("roots[].virtualPath", 1, FmsFieldHandling.Mapped, "invalid", "POSIX namespace path; no backslash, control character or dot segment."),
-        New FmsFieldRule("roots[].label", 1, FmsFieldHandling.Mapped, "empty label", "Display text."),
-        New FmsFieldRule("roots[].readOnly", 1, FmsFieldHandling.Mapped, "true", "Writable iff readOnly == false OR isDestination == true."),
-        New FmsFieldRule("roots[].isDestination", 2, FmsFieldHandling.Mapped, "false", "Offers an unoccupied destination slot; never replaces an occupied one."),
-        New FmsFieldRule("roots[].profile", 2, FmsFieldHandling.Mapped, "none", "Supplies default media types; an unrecognised token is ignored with a notice."),
-        New FmsFieldRule("roots[].mediaTypes", 2, FmsFieldHandling.Mapped, "profile default", "Overrides the profile; unrecognised tokens are ignored with a notice."),
-        New FmsFieldRule("roots[].scanSubdirectories", 2, FmsFieldHandling.Mapped, "true", "Recursive listing."),
-        New FmsFieldRule("roots[].showSubfoldersAsItems", 2, FmsFieldHandling.PreservedNotApplied, "false", "Kept, not applied until Q100-4 decides subfolders-as-items."),
-        New FmsFieldRule("roots[].showHiddenFiles", 2, FmsFieldHandling.Mapped, "false", "Listing flag."),
-        New FmsFieldRule("roots[].allFiles", 2, FmsFieldHandling.Mapped, "false", "Bypasses media filtering."),
-        New FmsFieldRule("roots[].destinationColor", 2, FmsFieldHandling.Mapped, "none", "Best-effort ARGB integer."),
-        New FmsFieldRule("roots[].slideshowInterval", 2, FmsFieldHandling.Mapped, "resource default", "Seconds; a non-positive value does not take effect."),
-        New FmsFieldRule("roots[].comment", 2, FmsFieldHandling.Mapped, "no comment", "Plain display text."),
-        New FmsFieldRule("roots[].accessPin", 2, FmsFieldHandling.RefusesRootWhenSet, "no lock", "Non-empty: that root is refused (no PIN is implemented); empty means no lock.")}
+        New FmsFieldRule("schemaVersion", 1, FmsFieldHandling.EnvelopeGate, "invalid", False, "Judged first; above 2 asks to update the app and nothing else is read."),
+        New FmsFieldRule("protocol", 1, FmsFieldHandling.EnvelopeGate, "invalid", False, "Exactly ""sftp"", case-sensitive."),
+        New FmsFieldRule("resourceName", 1, FmsFieldHandling.Mapped, "empty name", True, "Display name of the saved resource, with the root's label; never an identity."),
+        New FmsFieldRule("accessPaths[].kind", 1, FmsFieldHandling.Mapped, "entry skipped", True, "lan, ipv6, portforward; an unknown kind (rendezvousTunnel included) is skipped without being dialled."),
+        New FmsFieldRule("accessPaths[].host", 1, FmsFieldHandling.Mapped, "entry refused", True, "Plain host or literal; no blanks, slashes or user-info."),
+        New FmsFieldRule("accessPaths[].port", 1, FmsFieldHandling.Mapped, "entry refused", True, "Integer 1..65535."),
+        New FmsFieldRule("username", 1, FmsFieldHandling.Mapped, "invalid", True, "Required, not blank."),
+        New FmsFieldRule("password", 1, FmsFieldHandling.Mapped, "ask before commit", True, "Empty or absent: the user is asked, an unusable resource is never saved."),
+        New FmsFieldRule("accessNote", 1, FmsFieldHandling.Mapped, "no note", False, "Plain text for a connection failure; read and validated, not kept."),
+        New FmsFieldRule("hostKeyFingerprintSha256", 1, FmsFieldHandling.Mapped, "unpinned (first-use consent)", True, "Canonical SHA256:+43 base64 only; present-but-malformed refuses the document."),
+        New FmsFieldRule("roots[].virtualPath", 1, FmsFieldHandling.Mapped, "invalid", True, "POSIX namespace path; no backslash, control character or dot segment."),
+        New FmsFieldRule("roots[].label", 1, FmsFieldHandling.Mapped, "empty label", True, "Part of the saved resource's display name."),
+        New FmsFieldRule("roots[].readOnly", 1, FmsFieldHandling.Mapped, "true", True, "Writable iff readOnly == false OR isDestination == true."),
+        New FmsFieldRule("roots[].isDestination", 2, FmsFieldHandling.Mapped, "false", True, "Makes the root writable (readOnly OR isDestination); no destination slot is offered yet."),
+        New FmsFieldRule("roots[].profile", 2, FmsFieldHandling.Mapped, "none", False, "Read and validated, an unrecognised token noticed in the plan; the saved resource does not keep it."),
+        New FmsFieldRule("roots[].mediaTypes", 2, FmsFieldHandling.Mapped, "profile default", False, "Read and validated, unrecognised tokens noticed in the plan; the saved resource does not keep them."),
+        New FmsFieldRule("roots[].scanSubdirectories", 2, FmsFieldHandling.Mapped, "true", True, "Becomes the resource's subfolder scan."),
+        New FmsFieldRule("roots[].showSubfoldersAsItems", 2, FmsFieldHandling.PreservedNotApplied, "false", False, "Kept in the plan, not applied and not saved, until Q100-4 decides subfolders-as-items."),
+        New FmsFieldRule("roots[].showHiddenFiles", 2, FmsFieldHandling.Mapped, "false", False, "Read and validated; the saved resource does not keep it."),
+        New FmsFieldRule("roots[].allFiles", 2, FmsFieldHandling.Mapped, "false", False, "Read and validated; the saved resource does not keep it."),
+        New FmsFieldRule("roots[].destinationColor", 2, FmsFieldHandling.Mapped, "none", False, "Best-effort ARGB integer; read and validated, not kept."),
+        New FmsFieldRule("roots[].slideshowInterval", 2, FmsFieldHandling.Mapped, "resource default", False, "Seconds; a non-positive value does not take effect; read and validated, not kept."),
+        New FmsFieldRule("roots[].comment", 2, FmsFieldHandling.Mapped, "no comment", False, "Plain display text; read and validated, not kept."),
+        New FmsFieldRule("roots[].accessPin", 2, FmsFieldHandling.RefusesRootWhenSet, "no lock", False, "Non-empty: that root is refused (no PIN is implemented); empty means no lock.")}
 
     Friend ReadOnly Property Rules As IReadOnlyList(Of FmsFieldRule)
         Get

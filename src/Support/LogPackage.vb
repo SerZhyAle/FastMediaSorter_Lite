@@ -37,7 +37,8 @@ Public Module LogPackage
         ''' <summary>Full path of the ZIP, or "" when building failed.</summary>
         Public Path As String
         Public SizeBytes As Long
-        ''' <summary>One human-readable line per archive entry, for the consent dialog.</summary>
+        ''' <summary>One human-readable line per archive entry, for the consent dialog. A source that exists
+        ''' but could not be read has its own line here, naming the reason (ticket 182 L-3).</summary>
         Public Entries As List(Of String)
         Public OverSizeLimit As Boolean
         ''' <summary>The failure's type, for a test's message - never shown to the user.</summary>
@@ -45,6 +46,75 @@ Public Module LogPackage
         ''' <summary>What ended the build, for the caller to describe in its own words
         ''' (APP-BEHAVIOUR rule 6) - or Nothing.</summary>
         Public Failure As Exception
+        ''' <summary>Every log source that EXISTED, in archive order: included, or unreadable with its
+        ''' reason. A source that does not exist is not here at all - a missing log is normal.</summary>
+        Friend Sources As List(Of LogEntryOutcome)
+    End Structure
+
+    ' --- where the logs are, and what became of each (ticket 182 L-2, L-3) -------------------------
+
+    ''' <summary>The folders every log location is built from. One value, so a test can seed a whole
+    ''' machine (a service store, a per-user store, a helper's %TEMP% fallback) without touching the real
+    ''' one - and so the viewer and the Share Manager, which both call the same module, cannot disagree.</summary>
+    Friend Structure LogSourceRoots
+        ''' <summary>The folder of the running exe.</summary>
+        Public ExeDir As String
+        Public LocalAppData As String
+        Public CommonAppData As String
+        ''' <summary>%TEMP% - where an elevated helper that could not trust the data directory leaves its log.</summary>
+        Public TempDir As String
+        ''' <summary>FMS_EXCHANGE_DATA_DIR, the exchange server's own override, or "".</summary>
+        Public ExchangeDataDirOverride As String
+        ''' <summary>The running program's own log (current.log in the viewer, companion.log in the Share Manager), or "".</summary>
+        Public OwnLogPath As String
+    End Structure
+
+    ''' <summary>One archive entry and the places its file may be, in the order they are tried.</summary>
+    Friend Structure LogSourceSpec
+        Public EntryName As String
+        Public Candidates As String()
+    End Structure
+
+    ''' <summary>Why a log that exists could not be read.</summary>
+    Friend Enum LogReadFailure
+        None
+        AccessDenied
+        InUse
+        Other
+    End Enum
+
+    Friend Enum LogSourceState
+        ''' <summary>No candidate exists. Silent everywhere - the logs of a program that was never installed
+        ''' or never ran are not an error.</summary>
+        Missing
+        Included
+        ''' <summary>The file exists (or its name resolves) but opening or reading it failed: named in the
+        ''' consent list and in report.txt with the reason.</summary>
+        Unreadable
+    End Enum
+
+    ''' <summary>What became of one source. <see cref="Line"/> is the consent-list line.</summary>
+    Friend Structure LogEntryOutcome
+        Public EntryName As String
+        Public State As LogSourceState
+        Public SourcePath As String
+        Public Failure As LogReadFailure
+        ''' <summary>The exception's type name for an unreadable source (for the report), or "".</summary>
+        Public FailureType As String
+        ''' <summary>Bytes of text written into the entry (included sources), else 0.</summary>
+        Public Bytes As Integer
+        Public Line As String
+    End Structure
+
+    ''' <summary>The bytes of a source read ONCE, before anything is written: the report that names what
+    ''' could not be read is written first, so every read is finished before the archive gets an entry.</summary>
+    Friend Structure LogSourceRead
+        Public EntryName As String
+        Public State As LogSourceState
+        Public SourcePath As String
+        Public Snapshot As TailSnapshot
+        Public Failure As LogReadFailure
+        Public FailureType As String
     End Structure
 
     ''' <summary>
@@ -68,11 +138,17 @@ Public Module LogPackage
     ''' Atomically reserves the unique package with FileMode.CreateNew and deletes on failure only the file
     ''' reserved by this invocation.
     ''' </summary>
+    ''' <param name="roots">Where the logs are (default: this machine, this process). A test seeds a whole layout.</param>
+    ''' <param name="openSource">How a log is opened (default: shared read of a live file). A test makes one fail.</param>
+    ''' <param name="hostingProbes">What the [hosting] block asks (default: the live probes). A test hands stubs.</param>
     Friend Function Build(settingsSource As Func(Of List(Of KeyValuePair(Of String, Object))),
                           now As DateTime?,
                           destinationDirectory As String,
-                          Optional reportGenerator As Func(Of Func(Of List(Of KeyValuePair(Of String, Object))), String) = Nothing) As LogPackageResult
-        Dim result As New LogPackageResult With {.Path = "", .Entries = New List(Of String)()}
+                          Optional reportGenerator As Func(Of Func(Of List(Of KeyValuePair(Of String, Object))), String) = Nothing,
+                          Optional roots As LogSourceRoots? = Nothing,
+                          Optional openSource As Func(Of String, Stream) = Nothing,
+                          Optional hostingProbes As HostingProbes = Nothing) As LogPackageResult
+        Dim result As New LogPackageResult With {.Path = "", .Entries = New List(Of String)(), .Sources = New List(Of LogEntryOutcome)()}
         Dim reservedPath As String = Nothing
 
         Try
@@ -108,16 +184,28 @@ Public Module LogPackage
 
             Using zipStream
                 Using archive As New ZipArchive(zipStream, ZipArchiveMode.Create)
+                    ' Every source is READ first (nothing is written yet): report.txt, which is the first
+                    ' entry of the archive, has to say which of them could not be read. Memory is bounded
+                    ' by the per-entry cap times the number of sources.
+                    Dim effectiveRoots As LogSourceRoots = If(roots.HasValue, roots.Value, CurrentLogRoots())
+                    Dim reads As New List(Of LogSourceRead)()
+                    For Each spec As LogSourceSpec In PlanLogSources(effectiveRoots)
+                        Dim read As LogSourceRead = ReadLogSource(spec, openSource)
+                        If read.State <> LogSourceState.Missing Then reads.Add(read)
+                    Next
+
                     Dim reportText As String = If(reportGenerator IsNot Nothing,
                                                   reportGenerator(effectiveSettingsSource),
-                                                  BuildReport(effectiveSettingsSource))
+                                                  BuildReport(effectiveSettingsSource, Nothing, DescribeLogSources(reads),
+                                                              HostingReport.Build(If(hostingProbes, HostingProbesLive.Live()))))
 
                     WriteTextEntry(archive, "report.txt", RedactUserProfile(reportText))
                     result.Entries.Add("report.txt")
 
-                    For Each source As KeyValuePair(Of String, String) In LogSources()
-                        Dim line As String = CopyLogEntry(archive, source.Key, source.Value)
-                        If line IsNot Nothing Then result.Entries.Add(line)
+                    For Each read As LogSourceRead In reads
+                        Dim outcome As LogEntryOutcome = WriteLogSource(archive, read)
+                        result.Sources.Add(outcome)
+                        If outcome.Line IsNot Nothing Then result.Entries.Add(outcome.Line)
                     Next
                 End Using
             End Using
@@ -167,62 +255,86 @@ Public Module LogPackage
         End Try
     End Sub
 
-    ''' <summary>
-    ''' Archive entry name -> source path, for the logs that exist. The running program's own
-    ''' log goes under its own file name, then the other program's: this module is linked
-    ''' into the Share Manager too (ticket 028 Ф-3), where AppFileLogger is companion.log and
-    ''' the viewer's current.log is the sibling to look for.
-    ''' </summary>
-    Private Function LogSources() As List(Of KeyValuePair(Of String, String))
-        Dim sources As New List(Of KeyValuePair(Of String, String))()
-        Dim own As String = AppFileLogger.LogFilePath
-        If Not String.IsNullOrEmpty(own) Then
-            sources.Add(New KeyValuePair(Of String, String)(Path.GetFileName(own), own))
-        End If
+    ''' <summary>This machine, this process: the folders every log location is built from.</summary>
+    Friend Function CurrentLogRoots() As LogSourceRoots
+        Dim roots As New LogSourceRoots With {.ExeDir = "", .LocalAppData = "", .CommonAppData = "", .TempDir = "",
+                                              .ExchangeDataDirOverride = "", .OwnLogPath = ""}
+        Try : roots.ExeDir = If(AppContext.BaseDirectory, "") : Catch : End Try
+        Try : roots.LocalAppData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData) : Catch : End Try
+        Try : roots.CommonAppData = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData) : Catch : End Try
+        Try : roots.TempDir = Path.GetTempPath() : Catch : End Try
+        Try : roots.ExchangeDataDirOverride = If(Environment.GetEnvironmentVariable("FMS_EXCHANGE_DATA_DIR"), "") : Catch : End Try
+        Try : roots.OwnLogPath = If(AppFileLogger.LogFilePath, "") : Catch : End Try
+        Return roots
+    End Function
 
-        For Each sibling As KeyValuePair(Of String, String()) In SiblingLogCandidates()
-            If sources.Any(Function(s) String.Equals(s.Key, sibling.Key, StringComparison.OrdinalIgnoreCase)) Then Continue For
-            For Each candidate As String In sibling.Value
-                If File.Exists(candidate) Then
-                    sources.Add(New KeyValuePair(Of String, String)(sibling.Key, candidate))
-                    Exit For
-                End If
-            Next
+    Private Function Spec(entryName As String, ParamArray candidates As String()) As LogSourceSpec
+        Dim kept As New List(Of String)()
+        For Each candidate As String In candidates
+            If Not String.IsNullOrWhiteSpace(candidate) Then kept.Add(candidate)
+        Next
+        Return New LogSourceSpec With {.EntryName = entryName, .Candidates = kept.ToArray()}
+    End Function
+
+    ''' <summary>
+    ''' Every archive entry and the places its file may be (ticket 182 L-2), pure over <paramref name="roots"/>.
+    ''' Names are FOLDER-QUALIFIED where the same file name exists in two products - exchange/service.log and
+    ''' share/service.log never collide. Order of candidates is the order of authority: the machine store the
+    ''' services write to first (it wins whenever it exists, exactly as each server resolves its own data
+    ''' directory), then the per-user store of a console run, then - for the helpers' logs - the elevated
+    ''' account's %TEMP% copy, which is where a helper that could not trust the data directory leaves it.
+    ''' The first candidate that exists decides the entry, readable or not: an unreadable machine-store log is
+    ''' reported as such, never silently replaced by an older per-user one.
+    '''
+    ''' This module is linked into the Share Manager too (ticket 028 Ф-3): the running program's own log goes
+    ''' under its own file name, then the other program's (AppFileLogger is companion.log there, and the
+    ''' viewer's current.log is the sibling to look for).
+    ''' </summary>
+    Friend Function PlanLogSources(roots As LogSourceRoots) As List(Of LogSourceSpec)
+        Dim specs As New List(Of LogSourceSpec)()
+        Dim exeDir As String = If(roots.ExeDir, "")
+        Dim local As String = If(roots.LocalAppData, "")
+        Dim common As String = If(roots.CommonAppData, "")
+        Dim temp As String = If(roots.TempDir, "")
+
+        If Not String.IsNullOrEmpty(roots.OwnLogPath) Then
+            specs.Add(Spec(Path.GetFileName(roots.OwnLogPath), roots.OwnLogPath))
+        End If
+        For Each sibling As LogSourceSpec In {
+            Spec("current.log", Under(exeDir, "current.log"), Under(local, App_name, Second_App_Name, "logs", "current.log")),
+            Spec("companion.log", Under(exeDir, "companion.log"), Under(local, "FastMediaSorterCompanion", "companion.log"))}
+            If specs.Any(Function(s) String.Equals(s.EntryName, sibling.EntryName, StringComparison.OrdinalIgnoreCase)) Then Continue For
+            specs.Add(sibling)
         Next
 
-        Return sources
+        ' The exchange server: its data directories in the order the server prefers them.
+        Dim exchangeDirs As New List(Of String)()
+        If Not String.IsNullOrWhiteSpace(roots.ExchangeDataDirOverride) Then exchangeDirs.Add(roots.ExchangeDataDirOverride)
+        If common.Length > 0 Then exchangeDirs.Add(Path.Combine(common, "FastMediaSorterExchange"))
+        If local.Length > 0 Then exchangeDirs.Add(Path.Combine(local, "FastMediaSorterExchange"))
+        For Each file As String In {"exchange.log", "exchange.log.1", "service.log"}
+            specs.Add(Spec("exchange/" & file, exchangeDirs.Select(Function(d) Path.Combine(d, "logs", file)).ToArray()))
+        Next
+        ' The helpers' logs: only the machine store's logs\ and the %TEMP% fallback - a helper never writes
+        ' into a per-user store.
+        Dim exchangeMachineLogs As String = If(common.Length > 0, Path.Combine(common, "FastMediaSorterExchange", "logs"), "")
+        For Each helperLog As String In {"install-exchange-service.log", "enable-exchange-server.log"}
+            specs.Add(Spec("exchange/" & helperLog, Under(exchangeMachineLogs, helperLog), Under(temp, helperLog)))
+        Next
+
+        ' The folder-share worker's service: its machine store, then the per-user one of a User-edition run.
+        Dim shareMachine As String = If(common.Length > 0, Path.Combine(common, "FastMediaSorterCompanion"), "")
+        Dim shareUser As String = If(local.Length > 0, Path.Combine(local, "FastMediaSorterCompanion"), "")
+        specs.Add(Spec("share/service.log", Under(shareMachine, "service.log"), Under(shareUser, "service.log")))
+        specs.Add(Spec("share/install-share-service.log", Under(shareMachine, "install-share-service.log"), Under(temp, "install-share-service.log")))
+        Return specs
     End Function
 
-    ''' <summary>Where each program writes its log: next to the exe, or the per-user fallback.</summary>
-    Friend Function SiblingLogCandidates() As List(Of KeyValuePair(Of String, String()))
-        Dim exeDir As String = If(AppContext.BaseDirectory, "")
-        Dim localAppData As String = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData)
-        Dim commonAppData As String = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData)
-        Return New List(Of KeyValuePair(Of String, String())) From {
-            New KeyValuePair(Of String, String())("current.log", {
-                Path.Combine(exeDir, "current.log"),
-                Path.Combine(localAppData, App_name, Second_App_Name, "logs", "current.log")}),
-            New KeyValuePair(Of String, String())("companion.log", {
-                Path.Combine(exeDir, "companion.log"),
-                Path.Combine(localAppData, "FastMediaSorterCompanion", "companion.log")}),
-            New KeyValuePair(Of String, String())("exchange.log", ExchangeLogCandidates(commonAppData, localAppData))
-        }
-    End Function
-
-    ''' <summary>
-    ''' Where the exchange server writes exchange.log (ticket 141 T-8): the machine store the service uses
-    ''' first - it wins whenever it exists, exactly as the server resolves its own data directory - then
-    ''' the per-user store of a console run. The server's log names sessions by hash only, so it is
-    ''' redacted by construction; the tail cap and the user-profile replacement apply on top, like for
-    ''' every other log. A data-directory override (the server's own FMS_EXCHANGE_DATA_DIR) comes first.
-    ''' </summary>
-    Friend Function ExchangeLogCandidates(commonAppData As String, localAppData As String) As String()
-        Dim list As New List(Of String)()
-        Dim overrideDir As String = Environment.GetEnvironmentVariable("FMS_EXCHANGE_DATA_DIR")
-        If Not String.IsNullOrWhiteSpace(overrideDir) Then list.Add(Path.Combine(overrideDir, "exchange.log"))
-        If Not String.IsNullOrEmpty(commonAppData) Then list.Add(Path.Combine(commonAppData, "FastMediaSorterExchange", "exchange.log"))
-        If Not String.IsNullOrEmpty(localAppData) Then list.Add(Path.Combine(localAppData, "FastMediaSorterExchange", "exchange.log"))
-        Return list.ToArray()
+    Private Function Under(root As String, ParamArray parts As String()) As String
+        If String.IsNullOrEmpty(root) Then Return ""
+        Dim all As New List(Of String) From {root}
+        all.AddRange(parts)
+        Return Path.Combine(all.ToArray())
     End Function
 
     ''' <summary>What a bounded read of a live log produced: the bytes themselves, so every
@@ -290,47 +402,170 @@ Public Module LogPackage
         Return 0
     End Function
 
+    ''' <summary>A missing file is not a failure: the program was never installed, never ran, or the
+    ''' helper that writes the log never had to.</summary>
+    Friend Function IsMissingFailure(ex As Exception) As Boolean
+        Return TypeOf ex Is FileNotFoundException OrElse TypeOf ex Is DirectoryNotFoundException
+    End Function
+
+    ''' <summary>Why a file that is there could not be read. Pure.</summary>
+    Friend Function ClassifyReadFailure(ex As Exception) As LogReadFailure
+        If ex Is Nothing Then Return LogReadFailure.Other
+        If TypeOf ex Is UnauthorizedAccessException OrElse TypeOf ex Is System.Security.SecurityException Then Return LogReadFailure.AccessDenied
+        If TypeOf ex Is IOException Then
+            ' The Win32 code is the low word of the HRESULT: 5 access denied, 32 sharing violation, 33 lock violation.
+            Select Case ex.HResult And &HFFFF
+                Case 5 : Return LogReadFailure.AccessDenied
+                Case 32, 33 : Return LogReadFailure.InUse
+            End Select
+        End If
+        Return LogReadFailure.Other
+    End Function
+
+    ''' <summary>The reason as the author reads it (report.txt is English).</summary>
+    Friend Function ReasonText(failure As LogReadFailure) As String
+        Select Case failure
+            Case LogReadFailure.AccessDenied : Return "access denied"
+            Case LogReadFailure.InUse : Return "in use by another process"
+            Case Else : Return "could not be read"
+        End Select
+    End Function
+
+    ''' <summary>The Russian KEY of the reason as the user reads it in the consent list.</summary>
+    Friend Function ReasonKey(failure As LogReadFailure) As String
+        Select Case failure
+            Case LogReadFailure.AccessDenied : Return "доступ к файлу запрещён"
+            Case LogReadFailure.InUse : Return "файл занят другим процессом"
+            Case Else : Return "файл не удалось прочитать"
+        End Select
+    End Function
+
+    ''' <summary>The consent-list line of a source that exists but could not be read: the entry name, then
+    ''' the reason - so nothing is silently missing from what the user is about to send.</summary>
+    Friend Function UnreadableLine(entryName As String, failure As LogReadFailure) As String
+        Return Localization.TF("{0} - не включён в архив: {1}", entryName, Localization.T(ReasonKey(failure)))
+    End Function
+
     ''' <summary>
-    ''' Copies one log into the archive, keeping only the tail when it is long.
+    ''' Reads one source: the first candidate that is not MISSING decides it. Included (its tail, read once and
+    ''' bounded, so a log that keeps growing cannot outrun the read) or Unreadable with the reason; a source
+    ''' with no existing candidate comes back Missing and stays silent.
     '''
-    ''' The share mode is the point: AppFileLogger holds current.log open for writing,
-    ''' so ZipFileExtensions.CreateEntryFromFile - which opens with FileShare.Read -
-    ''' throws IOException on the very file this feature exists for.
+    ''' The share mode is the point of the default opener: AppFileLogger holds current.log open for writing,
+    ''' so ZipFileExtensions.CreateEntryFromFile - which opens with FileShare.Read - throws IOException on the
+    ''' very file this feature exists for.
+    '''
+    ''' Existence is decided by OPENING, never by File.Exists: where the enrolled user has no right on a file
+    ''' (the exchange state directory before ticket 182 L-1 gave them nothing), File.Exists answers False and
+    ''' the log would have been "missing" - the silent hole this function exists to close. Opening such a file
+    ''' fails with access denied, which is a different, loud answer.
+    ''' </summary>
+    Friend Function ReadLogSource(spec As LogSourceSpec, Optional openSource As Func(Of String, Stream) = Nothing) As LogSourceRead
+        Dim result As New LogSourceRead With {
+            .EntryName = spec.EntryName, .State = LogSourceState.Missing, .SourcePath = "",
+            .Failure = LogReadFailure.None, .FailureType = ""}
+        Dim opener As Func(Of String, Stream) = If(openSource, AddressOf OpenLiveLog)
+        If spec.Candidates Is Nothing Then Return result
+        For Each candidate As String In spec.Candidates
+            If String.IsNullOrEmpty(candidate) Then Continue For
+            Try
+                Dim snapshot As TailSnapshot
+                Using source As Stream = opener(candidate)
+                    snapshot = ReadTail(source, MaxEntryBytes)
+                End Using
+                result.State = LogSourceState.Included
+                result.SourcePath = candidate
+                result.Snapshot = snapshot
+                Return result
+            Catch ex As Exception
+                If IsMissingFailure(ex) Then Continue For
+                AppFileLogger.LogException("LogPackage: " & spec.EntryName & " exists but could not be read", ex)
+                result.State = LogSourceState.Unreadable
+                result.SourcePath = candidate
+                result.Failure = ClassifyReadFailure(ex)
+                result.FailureType = ex.GetType().Name
+                Return result
+            End Try
+        Next
+        Return result
+    End Function
+
+    ''' <summary>Writes an included source into the archive (tail with its truncation marker, the
+    ''' user-profile path replaced line by line), or describes an unreadable one. Never throws.</summary>
+    Friend Function WriteLogSource(archive As ZipArchive, read As LogSourceRead) As LogEntryOutcome
+        Dim outcome As New LogEntryOutcome With {
+            .EntryName = read.EntryName, .State = read.State, .SourcePath = read.SourcePath,
+            .Failure = read.Failure, .FailureType = read.FailureType, .Bytes = 0, .Line = Nothing}
+        Select Case read.State
+            Case LogSourceState.Included
+                Try
+                    Dim snapshot As TailSnapshot = read.Snapshot
+                    Dim entry As ZipArchiveEntry = archive.CreateEntry(read.EntryName, CompressionLevel.Optimal)
+                    Using target As New StreamWriter(entry.Open(), New UTF8Encoding(False))
+                        If snapshot.Truncated Then
+                            target.Write("[.. truncated: original " & snapshot.SourceLength.ToString(CultureInfo.InvariantCulture) &
+                                         " bytes, keeping the last " & MaxEntryBytes.ToString(CultureInfo.InvariantCulture) & " ..]" &
+                                         Environment.NewLine)
+                        End If
+                        ' Line by line, so the user-profile path is replaced before it is
+                        ' written (spec 039 phase 1). ReadLine drops the terminator; LF goes
+                        ' back, which every log reader accepts.
+                        Using reader As New StreamReader(New MemoryStream(snapshot.Bytes), New UTF8Encoding(False), False)
+                            Dim line As String = reader.ReadLine()
+                            While line IsNot Nothing
+                                target.Write(RedactUserProfile(line))
+                                target.Write(vbLf)
+                                line = reader.ReadLine()
+                            End While
+                        End Using
+                    End Using
+                    outcome.Bytes = snapshot.Bytes.Length
+                    outcome.Line = read.EntryName & "  (" & DescribeSize(snapshot.Bytes.Length) & ")"
+                Catch ex As Exception
+                    ' The archive itself refused the entry: that is the same news as an unreadable source.
+                    AppFileLogger.LogException("LogPackage.WriteLogSource " & read.EntryName, ex)
+                    outcome.State = LogSourceState.Unreadable
+                    outcome.Failure = LogReadFailure.Other
+                    outcome.FailureType = ex.GetType().Name
+                    outcome.Line = UnreadableLine(read.EntryName, LogReadFailure.Other)
+                End Try
+            Case LogSourceState.Unreadable
+                outcome.Line = UnreadableLine(read.EntryName, read.Failure)
+        End Select
+        Return outcome
+    End Function
+
+    ''' <summary>
+    ''' One source straight into the archive from one path - the shape the tests of the tail and the
+    ''' redaction use. Missing comes back with no line; Included and Unreadable as in the package.
     ''' </summary>
     Friend Function CopyLogEntry(archive As ZipArchive, entryName As String, sourcePath As String,
-                                 Optional openSource As Func(Of String, Stream) = Nothing) As String
-        Try
-            Dim opener As Func(Of String, Stream) = If(openSource, AddressOf OpenLiveLog)
-            Dim snapshot As TailSnapshot
-            Using source As Stream = opener(sourcePath)
-                snapshot = ReadTail(source, MaxEntryBytes)
-            End Using
+                                 Optional openSource As Func(Of String, Stream) = Nothing) As LogEntryOutcome
+        Dim read As LogSourceRead = ReadLogSource(
+            New LogSourceSpec With {.EntryName = entryName, .Candidates = New String() {sourcePath}}, openSource)
+        If read.State = LogSourceState.Missing Then
+            Return New LogEntryOutcome With {.EntryName = entryName, .State = LogSourceState.Missing, .SourcePath = "",
+                                             .Failure = LogReadFailure.None, .FailureType = "", .Bytes = 0, .Line = Nothing}
+        End If
+        Return WriteLogSource(archive, read)
+    End Function
 
-            Dim entry As ZipArchiveEntry = archive.CreateEntry(entryName, CompressionLevel.Optimal)
-            Using target As New StreamWriter(entry.Open(), New UTF8Encoding(False))
-                If snapshot.Truncated Then
-                    target.Write("[.. truncated: original " & snapshot.SourceLength.ToString(CultureInfo.InvariantCulture) &
-                                 " bytes, keeping the last " & MaxEntryBytes.ToString(CultureInfo.InvariantCulture) & " ..]" &
-                                 Environment.NewLine)
-                End If
-                ' Line by line, so the user-profile path is replaced before it is
-                ' written (spec 039 phase 1). ReadLine drops the terminator; LF goes
-                ' back, which every log reader accepts.
-                Using reader As New StreamReader(New MemoryStream(snapshot.Bytes), New UTF8Encoding(False), False)
-                    Dim line As String = reader.ReadLine()
-                    While line IsNot Nothing
-                        target.Write(RedactUserProfile(line))
-                        target.Write(vbLf)
-                        line = reader.ReadLine()
-                    End While
-                End Using
-            End Using
-
-            Return entryName & "  (" & DescribeSize(snapshot.Bytes.Length) & ")"
-        Catch ex As Exception
-            AppFileLogger.LogException("LogPackage.CopyLogEntry " & entryName, ex)
-            Return Nothing
-        End Try
+    ''' <summary>The "[log sources]" lines of report.txt: what went in, and - with the reason - what exists
+    ''' but could not be read. A source that does not exist is not mentioned (a missing log is normal).</summary>
+    Friend Function DescribeLogSources(reads As IEnumerable(Of LogSourceRead)) As List(Of String)
+        Dim lines As New List(Of String)()
+        For Each read As LogSourceRead In reads
+            Select Case read.State
+                Case LogSourceState.Included
+                    lines.Add(read.EntryName & ": included (" & DescribeSize(read.Snapshot.Bytes.Length) & ")" &
+                              If(read.Snapshot.Truncated, ", tail only", "") & " from " & read.SourcePath)
+                Case LogSourceState.Unreadable
+                    lines.Add(read.EntryName & ": NOT included - " & ReasonText(read.Failure) &
+                              " (" & read.FailureType & "; source " & read.SourcePath & ")")
+            End Select
+        Next
+        If lines.Count = 0 Then lines.Add("no log file found")
+        Return lines
     End Function
 
     Private Function OpenLiveLog(path As String) As Stream
@@ -422,7 +657,10 @@ Public Module LogPackage
     ''' <summary>
     ''' The diagnostic sheet. English on purpose - the author reads it, not the user.
     ''' </summary>
-    Friend Function BuildReport(settingsSource As Func(Of List(Of KeyValuePair(Of String, Object))), Optional dumpDirectory As String = Nothing) As String
+    Friend Function BuildReport(settingsSource As Func(Of List(Of KeyValuePair(Of String, Object))),
+                                Optional dumpDirectory As String = Nothing,
+                                Optional logSourceLines As IEnumerable(Of String) = Nothing,
+                                Optional hostingBlock As String = Nothing) As String
         Dim sb As New StringBuilder()
 
         sb.AppendLine(ProductNames.Full & " - diagnostic report")
@@ -460,6 +698,28 @@ Public Module LogPackage
                              "missing"))
         Next
         sb.AppendLine("tessdata: " & DescribeTessdata())
+        sb.AppendLine()
+
+        ' Ticket 182 L-4: the machine, the two services, the ports and the firewall - what an author
+        ' needs to read a Server host without asking. Built by HostingReport from injected probes;
+        ' never a login, a hash, a fingerprint or the public endpoint (see its remarks).
+        sb.AppendLine("[hosting]")
+        If String.IsNullOrEmpty(hostingBlock) Then
+            sb.AppendLine("not collected")
+        Else
+            sb.Append(hostingBlock.TrimEnd(ControlChars.Cr, ControlChars.Lf)).AppendLine()
+        End If
+        sb.AppendLine()
+
+        ' Ticket 182 L-3: what went into the archive and, with the reason, what exists but could not.
+        sb.AppendLine("[log sources]")
+        If logSourceLines Is Nothing Then
+            sb.AppendLine("not collected")
+        Else
+            For Each sourceLine As String In logSourceLines
+                sb.AppendLine(sourceLine)
+            Next
+        End If
         sb.AppendLine()
 
         sb.AppendLine("[settings]")

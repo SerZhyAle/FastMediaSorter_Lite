@@ -17,14 +17,22 @@ import (
 type Class int
 
 const (
-	// Connection counts accepted connections.
+	// Connection counts accepted connections, per client address.
 	Connection Class = iota
-	// UnknownID counts connects that named an id nobody registered.
+	// UnknownID counts connects that named an id nobody holds, per client address.
 	UnknownID
-	// FailedRegister counts registrations that presented a wrong password.
-	FailedRegister
-	// AttachMiss counts attaches that named no pending tunnel.
+	// FailedAuth counts failed enroll and hello, per client address (ticket 162 rule 10).
+	FailedAuth
+	// AttachMiss counts attaches that named no pending tunnel, per client address.
 	AttachMiss
+	// FailedEnroll counts failed enroll, per login: the key is the folded login (ticket 162 rule 10).
+	FailedEnroll
+	// FailedHello counts failed hello, per account: the key is the account once the device is known.
+	FailedHello
+	// PairingRequest counts pairing-request, per account (ticket 167 rule 6).
+	PairingRequest
+	// BroadcastStart counts broadcast-start, per device (ticket 167 rule 6).
+	BroadcastStart
 	classCount
 )
 
@@ -49,8 +57,12 @@ func DefaultConfig() Config {
 	var c Config
 	c.Rates[Connection] = Rate{PerMinute: 120, Burst: 40}
 	c.Rates[UnknownID] = Rate{PerMinute: 10, Burst: 3}
-	c.Rates[FailedRegister] = Rate{PerMinute: 5, Burst: 2}
+	c.Rates[FailedAuth] = Rate{PerMinute: 5, Burst: 2}
 	c.Rates[AttachMiss] = Rate{PerMinute: 10, Burst: 5}
+	c.Rates[FailedEnroll] = Rate{PerMinute: 10, Burst: 5}
+	c.Rates[FailedHello] = Rate{PerMinute: 10, Burst: 5}
+	c.Rates[PairingRequest] = Rate{PerMinute: 6, Burst: 6}
+	c.Rates[BroadcastStart] = Rate{PerMinute: 6, Burst: 6}
 	c.MaxAddrs = 4096
 	return c
 }
@@ -237,6 +249,13 @@ func NewVerifier(verify func(string) bool, concurrency int, wait time.Duration) 
 
 // Verify runs the wrapped check inside the bound.
 func (v *Verifier) Verify(password string) (bool, error) {
+	return v.Run(func() bool { return v.verify(password) })
+}
+
+// Run runs fn - one memory-hard verification against a record the caller picked - inside the same
+// bound. An unknown login runs the same fn against a dummy record, so the work and the time are
+// the same and the bound counts both (ticket 162 rule 2).
+func (v *Verifier) Run(fn func() bool) (bool, error) {
 	t := time.NewTimer(v.wait)
 	defer t.Stop()
 	select {
@@ -258,7 +277,7 @@ func (v *Verifier) Verify(password string) (bool, error) {
 		v.inFlight--
 		v.mu.Unlock()
 	}()
-	return v.verify(password), nil
+	return fn(), nil
 }
 
 // Calls is how many verifications actually ran (a refused or timed-out caller is not one).

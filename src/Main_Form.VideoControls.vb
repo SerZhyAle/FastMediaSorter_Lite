@@ -552,7 +552,9 @@ Partial Public Class Main_Form
                 video_Seek.Enabled = False
                 lbl_Video_Time.Text = "LIVE"
 
-                Dim livePlaying As Boolean = IsVlcActuallyPlaying()
+                ' Stop while the loop is alive - connecting and reconnecting included, where there is no sound to
+                ' pause - and "Connect again" once it is over (a live stream has no pause: 023 section 8).
+                Dim livePlaying As Boolean = IsLiveBroadcastRunning()
                 SetVideoGlyph(btn_Video_Play, If(livePlaying, "media.stop", "media.play"))
                 btn_Video_Play.AccessibleName = Localization.T(If(livePlaying, "Остановить", "Подключиться снова"))
                 RefreshMuteState()
@@ -640,7 +642,7 @@ Partial Public Class Main_Form
     ''' stream stops or reconnects, anything else flips playback. Refreshing the bar is the caller's.</summary>
     Private Sub PlayPauseFromUser()
         If IsLiveBroadcastActive() Then
-            If IsVlcActuallyPlaying() Then
+            If IsLiveBroadcastRunning() Then
                 StopLivePlayback(isUserStop:=True)
             Else
                 ReconnectLiveBroadcast()

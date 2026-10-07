@@ -47,7 +47,7 @@ func TestStopRoundTripInProcess(t *testing.T) {
 	case <-time.After(10 * time.Second):
 		t.Fatal("serve did not stop on the stop request")
 	}
-	if !hasStopLine(filepath.Join(filepath.Dir(cfgFile), config.LogName)) {
+	if !hasStopLine(filepath.Join(filepath.Dir(cfgFile), config.LogsDir, config.LogName)) {
 		t.Fatal("the log has no stop line")
 	}
 	// the event is gone with the server: a second stop finds nothing
@@ -86,10 +86,10 @@ func TestStopRoundTripWithTheBuiltBinary(t *testing.T) {
 
 	dir := t.TempDir()
 	env := append(os.Environ(), config.EnvDataDir+"="+dir)
-	gen := exec.Command(bin, "set-password", "--generate")
+	gen := exec.Command(bin, "account", "add", "alice", "--generate")
 	gen.Env = env
 	if _, err := gen.Output(); err != nil {
-		t.Fatalf("set-password: %v", err)
+		t.Fatalf("account add: %v", err)
 	}
 	cfgFile := filepath.Join(dir, config.FileName)
 	cfg, _ := config.Load(cfgFile)
@@ -145,8 +145,8 @@ func TestStopRoundTripWithTheBuiltBinary(t *testing.T) {
 	case <-time.After(15 * time.Second):
 		t.Fatal("the server process did not exit after stop")
 	}
-	if !hasStopLine(filepath.Join(dir, config.LogName)) {
-		b, _ := os.ReadFile(filepath.Join(dir, config.LogName))
+	if !hasStopLine(filepath.Join(dir, config.LogsDir, config.LogName)) {
+		b, _ := os.ReadFile(filepath.Join(dir, config.LogsDir, config.LogName))
 		t.Fatalf("the log has no stop line:\n%s", b)
 	}
 }

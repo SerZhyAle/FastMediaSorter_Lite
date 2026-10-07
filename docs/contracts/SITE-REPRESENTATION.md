@@ -3,7 +3,7 @@
 | | |
 | --- | --- |
 | **Id** | `SITE-REPRESENTATION` |
-| **Version** | 0.1, draft (written 2026-10-06 by FastMediaSorter Android, ticket S4096) |
+| **Version** | 0.1, draft (written 2026-10-06 by FastMediaSorter Android, ticket S4096; unchanged on 2026-10-07, re-read that day) |
 | **Home** | `product-site/SITE-REPRESENTATION.md` and the run-list `product-site/SITE-CHECKLIST.md` in the shared contracts catalog |
 | **Role here** | consumer, opted in by the owner on 2026-10-06 (specification 147, D1); guide tier: rules 1-4 held by the positioning gate (ticket 155); rules 5-10 and 12 were run on the ten function pages on 2026-10-06 (specification 156) and fail on all ten (ticket 157) |
 
@@ -38,3 +38,12 @@
 ## Where the evidence is
 
 Specification 147 (`done/`), specification 155 (rules 1 to 4) and the catalog registry; specification 156 (`done/`, the browser run and the reading of the ten pages) and its follow-ups 157 (the function pages) and 158 (the browser findings and what is still not run).
+
+## State on 2026-10-07
+
+Rules 1 to 4 still hold: `tools/Test-SitePositioning.ps1` PASS (3 pillars, 41 regions of 41 surface files, 2 edition
+names, 33 reservation mentions, 118 typed claims in 60 files). The ten function pages (rules 5-10 and 12) were not
+re-read and the gaps of ticket 157 stand. One name question sits beside rule 4 and is the family map's, not this
+contract's: the visible full name is *Fast Media Sorter & Sharing for Windows* (`docs/guides/PRODUCT_NAMING.md`),
+while the `Tool` cell of `SITE-FAMILY-MAP` still carries the name this product had before that rename - see
+`docs/contracts/PAGE.md`.

@@ -94,6 +94,41 @@ Public Class TrustPageContractTests
         End Using
     End Sub
 
+    <Fact>
+    Public Sub NoSurfaceTellsTheUserToUnblockAFile()
+        ' INSTALL-TRUST 1.2 item K: the per-file "Unblock" checkbox of a download's Properties is not a permitted
+        ' instruction - rule 4's list is closed (More info -> Run anyway, or an exception for one install folder),
+        ' because "Unblock" removes the mark of the web that SmartScreen keys on. The thirteen locales of the trust
+        ' copy and every surface that tells a user what to click are searched for the checkbox's names and for the
+        ' mark itself. (Russian "разблокируется", an encrypted disk unlocking, is not an instruction and does not
+        ' match: only the infinitives that name the action do.)
+        Dim unblock As New Regex(
+            "unblock|zone\.identifier|mark[\s-]of[\s-]the[\s-]web|разблокировать|розблокувати|desbloquear|débloquer|" &
+            "blockierung aufheben|entsperren|sbloccare|解除阻止|解除锁定|取消阻止|إلغاء الحظر|إلغاء حظر|अनब्लॉक|আনব্লক|ان بلاک",
+            RegexOptions.IgnoreCase Or RegexOptions.CultureInvariant)
+        Dim root As String = RepoRoot()
+        Dim files As New List(Of String)()
+        files.AddRange(Directory.EnumerateFiles(root, "*.html", SearchOption.TopDirectoryOnly))
+        files.AddRange(Directory.EnumerateFiles(Path.Combine(root, "lang"), "*.html", SearchOption.AllDirectories))
+        files.AddRange(Directory.EnumerateFiles(Path.Combine(root, "docs"), "*.html", SearchOption.TopDirectoryOnly))
+        files.AddRange(Directory.EnumerateFiles(root, "README*.md", SearchOption.TopDirectoryOnly))
+        files.AddRange(Directory.EnumerateFiles(Path.Combine(root, "publishing", "winget"), "*.yaml", SearchOption.AllDirectories))
+        For Each parts As String() In {
+                New String() {"tools", "trust-copy.json"}, New String() {"tools", "site-copy.json"},
+                New String() {"publishing", "installer", "FastMediaSorter.iss"},
+                New String() {"publishing", "installer", "FastMediaSorterServer.iss"},
+                New String() {"docs", "guides", "STORE_PUBLISHING.md"},
+                New String() {".github", "workflows", "release.yml"}}
+            files.Add(Path.Combine({root}.Concat(parts).ToArray()))
+        Next
+        Assert.True(files.Count > 40, $"the surface list found only {files.Count} files - a path moved")
+        For Each surface As String In files
+            Assert.True(File.Exists(surface), $"{surface} is listed as a trust surface and is missing")
+            Dim m As Match = unblock.Match(File.ReadAllText(surface))
+            Assert.False(m.Success, $"{Path.GetRelativePath(root, surface)} mentions ""{m.Value}"" - INSTALL-TRUST rule 4 permits no ""Unblock"" instruction")
+        Next
+    End Sub
+
     ' --- rule 6 -------------------------------------------------------------------------
 
     <Fact>

@@ -52,16 +52,8 @@ Partial Public NotInheritable Class Localization
         ' including Russian.
         Add("Выберите, на каком языке показывать интерфейс.", "Choose the language the interface is shown in.", "Виберіть, якою мовою показувати інтерфейс.", "Wählen Sie die Sprache der Oberfläche.", "Scegli la lingua in cui mostrare l'interfaccia.", "Elija el idioma en el que se muestra la interfaz.", "Choisissez la langue d'affichage de l'interface.", "Escolha o idioma em que a interface é exibida.", "اختر اللغة التي تُعرض بها الواجهة.", "चुनें कि इंटरफ़ेस किस भाषा में दिखे।", "ইন্টারফেস কোন ভাষায় দেখাবে তা বেছে নিন।", "منتخب کریں کہ انٹرفیس کس زبان میں دکھایا جائے۔", "选择界面显示的语言。")
 
-        ' Not a translation but a per-language TARGET: the Android client's site has a
-        ' Russian page and an English one. Everything that is not Russian goes to the
-        ' English page rather than to a page it cannot read.
-        Add("https://serzhyale.github.io/FastMediaSorter_mob_v2/index-ru.html",
-            "https://serzhyale.github.io/FastMediaSorter_mob_v2/", "https://serzhyale.github.io/FastMediaSorter_mob_v2/",
-            "https://serzhyale.github.io/FastMediaSorter_mob_v2/", "https://serzhyale.github.io/FastMediaSorter_mob_v2/",
-            "https://serzhyale.github.io/FastMediaSorter_mob_v2/", "https://serzhyale.github.io/FastMediaSorter_mob_v2/",
-            "https://serzhyale.github.io/FastMediaSorter_mob_v2/", "https://serzhyale.github.io/FastMediaSorter_mob_v2/",
-            "https://serzhyale.github.io/FastMediaSorter_mob_v2/", "https://serzhyale.github.io/FastMediaSorter_mob_v2/",
-            "https://serzhyale.github.io/FastMediaSorter_mob_v2/", "https://serzhyale.github.io/FastMediaSorter_mob_v2/")
+        ' The Android client's site address is not a translation: SitePages.AndroidAppSiteUrl
+        ' picks it by the UI language (Russian and Ukrainian pages, English for the rest).
 
         ' The deletion rows (R-1 Ф4). The first description says the load-bearing fact of
         ' the whole feature - there is NO bin on a share or a memory stick, and those are

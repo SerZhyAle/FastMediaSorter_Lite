@@ -246,6 +246,7 @@ Partial Public Class Table_Form
                            Function() Main_Form.GetModernPreferences().SecureShowTrueName,
                            Sub(v) Main_Form.GetModernPreferences().SecureShowTrueName = v)
         AddSecureAssociationRow(files)
+        AddLiveAssociationRow(files)
 
         AddPreferenceNumber(ocr, "ocr_cache_limit", -1, 1024,
                             Function() If(Not _ocrSettings.DiskCache, 0, If(Main_Form.GetModernPreferences().OcrDiskCacheMaxMb = 0, -1, Main_Form.GetModernPreferences().OcrDiskCacheMaxMb)),
@@ -612,6 +613,34 @@ Partial Public Class Table_Form
             End Sub
         expandedRefreshActions.Add(refresh)
         AddSettingRow(files, "secure_open_with", button, 230, True)
+    End Sub
+
+    ''' <summary>
+    ''' The same opt-in for the files a phone or a watch sends when it broadcasts (023 §4.2): one button, both
+    ''' directions, its caption derived from the registry every time. Never done by the installer.
+    ''' </summary>
+    Private Sub AddLiveAssociationRow(files As FlowLayoutPanel)
+        Dim button As New Button With {.AutoSize = True}
+        Dim refresh As Action =
+            Sub()
+                button.Text = If(Main_Form.IsLiveBroadcastOpenWithRegistered(),
+                                 Localization.T("Убрать из «Открыть с помощью»"),
+                                 Localization.T("Добавить в «Открыть с помощью»"))
+            End Sub
+        refresh()
+        AddHandler button.Click,
+            Sub()
+                Dim ok As Boolean = If(Main_Form.IsLiveBroadcastOpenWithRegistered(),
+                                       Main_Form.UnregisterLiveBroadcastOpenWith(),
+                                       Main_Form.RegisterLiveBroadcastOpenWith())
+                If Not ok Then
+                    ViewerBox.Show(Me, Localization.T("Не удалось изменить запись в реестре"),
+                                    Localization.T("Настройки"), MessageBoxButtons.OK, MessageBoxIcon.Warning)
+                End If
+                refresh()
+            End Sub
+        expandedRefreshActions.Add(refresh)
+        AddSettingRow(files, "live_open_with", button, 230, True)
     End Sub
 
     ''' <summary>The window is closing: every outstanding cache measurement is invalidated,

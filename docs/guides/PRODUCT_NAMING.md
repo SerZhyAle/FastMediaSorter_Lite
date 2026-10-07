@@ -14,11 +14,12 @@ technical anchors stays frozen (section 2).
 
 | Form | Text | Where it is used |
 | --- | --- | --- |
-| **Full name** | `Fast Media Sorter & Sharing for Windows` | the main window's title bar (followed by `by SZA`), the About page, exe and assembly properties, the installer wizard and shortcuts, README and site headings, the release title, the first mention in any document |
+| **Full name** | `Fast Media Sorter & Sharing for Windows` | the About page, exe and assembly properties, the installer wizard and shortcuts, README and site headings, the release title, the first mention in any document |
 | **Compact name** | `Fast Media Sorter & Sharing` | title-length and label-length places: a page `<title>`, a tray or menu item, a file-type description, the Share Manager and Server edition names. **It is not the Store name** - see the Store row of section 2 |
-| **Short name (legacy)** | `Fast Media Sorter` | running prose after the first full-name mention. Never a title, a heading, a store field, an Add/Remove Programs entry or a window caption |
+| **Short name (legacy)** | `Fast Media Sorter` | running prose after the first full-name mention, the Share Manager's "Open Fast Media Sorter" tray item and settings link (they open the viewer), and **the viewer's title bar (`Fast Media Sorter by SZA`; owner decision 2026-10-07: sharing is run from the Share Manager's own window, so the viewer's caption does not say "Sharing")**. Never a heading, a store field, an Add/Remove Programs entry or any other window caption |
 | **Alias FMS_W** | `FMS_W` | internal and technical text only: specifications, contracts, tickets, code comments, support triage. Never in the UI |
 | **Alias FMS_A** | `FMS_A` | the same, for the Android product |
+| **Android app** | `Fast Media Sorter & Organizer` | the Android product's own display name (its in-app title and the en-US Play title), named by a Windows page only when "the Android app" is not enough. Owned by the Android repository; it does **not** take "& Sharing" (owner answer to Q-4 of ticket 111, 2026-10-07). Its ru-RU and uk-UA Play titles differ (`FastMedia: ..`) and are not ours to unify - request 113 asks which one a Russian or Ukrainian Windows page should name |
 | **Alias FMS** | `FMS` | only where the platform is obvious from context; a bare `FMS` is ambiguous between W and A, so it is never the only name on a page |
 | **Share Manager** | `Share Manager - Fast Media Sorter & Sharing` | the separate sharing program's window, tray, shortcuts and message captions (component first, product as suffix) |
 | **Server edition** | `Fast Media Sorter & Sharing: Folder Share Server` | the Server installer's wizard and shortcut text |

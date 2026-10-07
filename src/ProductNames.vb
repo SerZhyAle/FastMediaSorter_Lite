@@ -36,8 +36,9 @@ Friend Module ProductNames
     ''' <summary>The byline the main window's title bar carries after the full name.</summary>
     Public Const Author As String = "SZA"
 
-    ''' <summary>The main window's title bar text.</summary>
-    Public Const WindowTitle As String = Full & " by " & Author
+    ''' <summary>The viewer's title bar text. It names the viewer only: sharing is run from the Share
+    ''' Manager's own window, so "Sharing" is not in this caption (owner decision 2026-10-07).</summary>
+    Public Const WindowTitle As String = ShortLegacy & " by " & Author
 
     ''' <summary>
     ''' The same names with the ampersand doubled, for a WinForms Label, Button or menu item whose

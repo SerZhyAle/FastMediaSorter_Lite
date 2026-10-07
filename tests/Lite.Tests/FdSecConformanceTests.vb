@@ -570,6 +570,67 @@ Public Class FdSecConformanceTests
         Assert.True(FdSecScreen.CouldBeContainer(length))
     End Sub
 
+    ' ---------------------------- suites this reader does not implement (1.2, 1.3) ----
+
+    ' The four suite-3 (directory) reference containers of the catalog, vendored for the one
+    ' negative test below. They open with SlowCredential under the version-1 profile.
+    Private Shared ReadOnly Suite3Containers As String() = {
+        "dir-empty.fd-sec", "dir-multichunk.fd-sec", "dir-onesubdir.fd-sec", "dir-unsorted.fd-sec"}
+
+    <Fact>
+    Public Sub Vendored_suite3_containers_match_their_recorded_digests()
+        Dim provenance As String = File.ReadAllText(Path.Combine(VectorDirectory, "PROVENANCE.txt"))
+        For Each fileName As String In Suite3Containers
+            Dim actual As String
+            Using sha As SHA256 = SHA256.Create()
+                actual = ToHex(sha.ComputeHash(File.ReadAllBytes(Path.Combine(VectorDirectory, fileName))))
+            End Using
+            Assert.Contains("SHA-256  " & actual & "  " & fileName, provenance)
+        Next
+    End Sub
+
+    ''' <summary>
+    ''' FDSEC-FORMAT 13.2 / 1.2: a reader that implements only suite 1 meets a suite-3 file
+    ''' with the RIGHT credential and refuses it by name as unsupported - not damaged, not a
+    ''' wrong password. It does less; it does nothing wrong. Run against the catalog's own
+    ''' four directory containers, which the length screen lets through like any container.
+    ''' </summary>
+    <Theory>
+    <InlineData("dir-empty.fd-sec")>
+    <InlineData("dir-multichunk.fd-sec")>
+    <InlineData("dir-onesubdir.fd-sec")>
+    <InlineData("dir-unsorted.fd-sec")>
+    Public Sub A_suite3_directory_container_is_refused_by_name_as_unsupported(fileName As String)
+        Dim bytes As Byte() = File.ReadAllBytes(Path.Combine(VectorDirectory, fileName))
+        Assert.True(FdSecScreen.CouldBeContainer(bytes.Length))
+
+        Dim refusal As FdSecException = Assert.Throws(Of FdSecException)(
+            Sub()
+                Using opened As FdSecContainer = FdSecContainer.Open(New MemoryStream(bytes, writable:=False),
+                                                                     SlowCredential, ownsSource:=True, profile:=Nothing)
+                    opened.VerifyAll()
+                End Using
+            End Sub)
+        Assert.Equal(FdSecOutcome.Unsupported, refusal.Outcome)
+        Assert.Contains("suite id 3", refusal.Message)
+    End Sub
+
+    ''' <summary>
+    ''' FDSEC-FORMAT 18.8 / 1.3: a reader without suite 2 cannot tell a suite-2 file from any
+    ''' other file it cannot open, and about 511 in 512 of them fail the length screen. The
+    ''' three lengths are those of the catalog's three suite-2 reference files (taken
+    ''' 2026-10-07; the files themselves are not vendored). Reporting "damaged or incomplete"
+    ''' for them is within the rules of FDSEC-FORMAT section 12 - and it is also why a suite-2
+    ''' file written by FileDO does not open here.
+    ''' </summary>
+    <Theory>
+    <InlineData(14563)>    ' quiet-empty.bin
+    <InlineData(87416)>    ' quiet-multiframe.bin
+    <InlineData(19059)>    ' quiet-onebyte.bin
+    Public Sub A_suite2_reference_file_fails_the_length_screen(length As Long)
+        Assert.False(FdSecScreen.CouldBeContainer(length))
+    End Sub
+
     ' ------------------------------------------- the remaining porting mistakes ----
 
     ''' <summary>

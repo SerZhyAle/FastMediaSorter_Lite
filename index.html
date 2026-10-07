@@ -638,7 +638,7 @@
     <span data-l="en">More tools by SZA</span><span data-l="ru">Другие инструменты SZA</span><span data-l="ua">Інші інструменти SZA</span>
   </h2>
   <div class="tools-grid">
-    <a href="https://serzhyale.github.io/FastMediaSorter_mob_v2/"><b>FastMediaSorter v2</b><span data-l="en">Android media sorter</span><span data-l="ru">Сортировщик медиа для Android</span><span data-l="ua">Сортувальник медіа для Android</span></a>
+    <a href="https://serzhyale.github.io/FastMediaSorter_mob_v2/"><b>Fast Media Sorter &amp; Organizer</b><span data-l="en">Android media sorter</span><span data-l="ru">Сортировщик медиа для Android</span><span data-l="ua">Сортувальник медіа для Android</span></a>
     <a href="https://serzhyale.github.io/CyrFlip/"><b>CyrFlip</b><span data-l="en">Windows layout fixer</span><span data-l="ru">Исправление раскладки Windows</span><span data-l="ua">Виправлення розкладки Windows</span></a>
     <a href="https://serzhyale.github.io/doc-html-translate/"><b>doc-html-translate</b><span data-l="en">Windows ebook converter</span><span data-l="ru">Конвертер книг для Windows</span><span data-l="ua">Конвертер книг для Windows</span></a>
     <a href="https://serzhyale.github.io/FileDO/"><b>FileDO</b><span data-l="en">Windows storage CLI</span><span data-l="ru">CLI для проверки накопителей</span><span data-l="ua">CLI для перевірки носіїв</span></a>
@@ -666,7 +666,7 @@
     <a hreflang="zh" href="lang/zh/">中文</a>
   </div>
   <div class="author-card">
-    <b>Serhii Zhyhunenko (SerZhyAle)</b>
+    <b><a href="https://sza.od.ua">Serhii Zhyhunenko (SerZhyAle)</a></b>
     <span><span data-l="en">Author</span><span data-l="ru">Автор</span><span data-l="ua">Автор</span> · © 2026</span>
     <a href="https://sza.od.ua">sza.od.ua</a>
     <a href="https://github.com/SerZhyAle">GitHub</a>
@@ -692,6 +692,10 @@
     ua:{title:"Сортування фото та відео | Fast Media Sorter & Sharing",
         desc:"Локальний застосунок Windows для розбору великих папок з фото й відео: дії однією клавішею, офлайн-відтворення та спільний доступ до папок через SFTP для Android."}
   };
+  // PAGE-STYLE 4.7 (1.4): the copy button's idle and done states are words of the page's language, no check mark.
+  var COPY={en:['Copy','Copied'],ru:['Копировать','Скопировано'],ua:['Копіювати','Скопійовано']};
+  function copyWords(){return COPY[doc.getAttribute('data-lang')]||COPY.en;}
+  function labelCopyButtons(){document.querySelectorAll('.copy:not(.done)').forEach(function(b){b.textContent=copyWords()[0];});}
   function setLang(l){
     if(!META[l]) l='en';
     doc.setAttribute('data-lang',l);
@@ -708,6 +712,7 @@
     var od=document.querySelector('meta[property="og:description"]'); if(od) od.setAttribute('content',META[l].desc);
     var ttTitle=document.querySelector('meta[name="twitter:title"]'); if(ttTitle) ttTitle.setAttribute('content',META[l].title);
     var ttDesc=document.querySelector('meta[name="twitter:description"]'); if(ttDesc) ttDesc.setAttribute('content',META[l].desc);
+    labelCopyButtons();
   }
   document.querySelectorAll('.seg [data-setlang]').forEach(function(b){
     b.addEventListener('click',function(){setLang(b.getAttribute('data-setlang'));});
@@ -742,8 +747,8 @@
   document.querySelectorAll('.copy').forEach(function(btn){
     btn.addEventListener('click',function(){
       var txt=btn.getAttribute('data-copy')||'';
-      var done=function(){var o=btn.textContent;btn.textContent='✓ Copied';btn.classList.add('done');
-        setTimeout(function(){btn.textContent=o;btn.classList.remove('done');},1600);};
+      var done=function(){btn.textContent=copyWords()[1];btn.classList.add('done');
+        setTimeout(function(){btn.classList.remove('done');btn.textContent=copyWords()[0];},1600);};
       if(navigator.clipboard&&navigator.clipboard.writeText){
         navigator.clipboard.writeText(txt).then(done,function(){fallback(txt);done();});
       }else{fallback(txt);done();}

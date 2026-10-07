@@ -55,27 +55,27 @@ func TestBurstThenRefill(t *testing.T) {
 }
 
 func TestRefundKeepsATokenForFailuresOnly(t *testing.T) {
-	l := NewLimiter(DefaultConfig(), newClock().now) // failed-register: 5/min burst 2
+	l := NewLimiter(DefaultConfig(), newClock().now) // failed-auth: 5/min burst 2
 	// Take-first, refund-on-success: a stream of correct passwords never uses the bucket up...
 	for i := 0; i < 50; i++ {
-		if !l.Allow("a", FailedRegister) {
+		if !l.Allow("a", FailedAuth) {
 			t.Fatalf("a refunded token must be available again (round %d)", i)
 		}
-		l.Refund("a", FailedRegister)
+		l.Refund("a", FailedAuth)
 	}
 	// ...two failures do.
-	l.Allow("a", FailedRegister)
-	l.Allow("a", FailedRegister)
-	if l.Allow("a", FailedRegister) {
+	l.Allow("a", FailedAuth)
+	l.Allow("a", FailedAuth)
+	if l.Allow("a", FailedAuth) {
 		t.Fatal("two unrefunded takes must exhaust a burst of 2")
 	}
 	// A refund never lifts the bucket above its burst.
 	for i := 0; i < 10; i++ {
-		l.Refund("a", FailedRegister)
+		l.Refund("a", FailedAuth)
 	}
-	l.Allow("a", FailedRegister)
-	l.Allow("a", FailedRegister)
-	if l.Allow("a", FailedRegister) {
+	l.Allow("a", FailedAuth)
+	l.Allow("a", FailedAuth)
+	if l.Allow("a", FailedAuth) {
 		t.Fatal("refund exceeded the burst")
 	}
 }
@@ -84,7 +84,7 @@ func TestClassesAndAddressesAreIndependent(t *testing.T) {
 	l := NewLimiter(DefaultConfig(), newClock().now)
 	for l.Allow("a", UnknownID) {
 	}
-	if !l.Allow("a", FailedRegister) {
+	if !l.Allow("a", FailedAuth) {
 		t.Fatal("an exhausted class must not touch another class")
 	}
 	if !l.Allow("b", UnknownID) {

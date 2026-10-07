@@ -13,6 +13,7 @@ import (
 	"github.com/pkg/sftp"
 	"golang.org/x/crypto/ssh"
 
+	"fms/exchange-server/internal/limits"
 	"fms/exchange-server/internal/testkit"
 	"fms/exchange-server/internal/wire"
 )
@@ -23,7 +24,7 @@ import (
 // The tool-by-hand step (WinSCP or FileZilla against `serve`) stays in testdata/manual-winscp.md.
 func TestSFTPListsAndReadsThroughThePerSessionPort(t *testing.T) {
 	lo, hi := testkit.FreeRange(3)
-	env := testkit.StartServer(t, testkit.Options{PortRange: [2]int{lo, hi}})
+	env := testkit.StartServer(t, testkit.Options{PortRange: [2]int{lo, hi}, Logins: []string{"alice"}, Limits: looseLimits(), LoginLimits: looseLimits()})
 
 	root := t.TempDir()
 	if err := os.WriteFile(filepath.Join(root, "hello.txt"), []byte("through the exchange"), 0o600); err != nil {
@@ -36,17 +37,19 @@ func TestSFTPListsAndReadsThroughThePerSessionPort(t *testing.T) {
 		}
 		return nil, fmt.Errorf("denied")
 	}
-	p := env.NewProducer("")
-	p.Port = wire.IntPtr(0)
+	p := env.NewProducer("alice", "")
 	p.Handler = func(c net.Conn) { serveSFTP(c, cfg, root) }
-	reply, err := p.Register()
-	if err != nil || reply.Type != wire.TypeRegistered || reply.Port == nil {
-		t.Fatalf("register: %v %+v", err, reply)
+	if err := p.Start(); err != nil {
+		t.Fatal(err)
 	}
-	go p.Serve()
 	defer p.Close()
+	_, _, ans, err := p.PublishShare(true, intPtr(0))
+	pub, ok := ans.(*wire.Published)
+	if err != nil || !ok || pub.PublicPort == nil {
+		t.Fatalf("publish: %v %+v", err, ans)
+	}
 
-	raw, err := net.DialTimeout("tcp", net.JoinHostPort("127.0.0.1", strconv.Itoa(*reply.Port)), 3*time.Second)
+	raw, err := net.DialTimeout("tcp", net.JoinHostPort("127.0.0.1", strconv.Itoa(*pub.PublicPort)), 3*time.Second)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -101,3 +104,14 @@ func TestSFTPListsAndReadsThroughThePerSessionPort(t *testing.T) {
 		t.Fatal("a ../ path wrote outside the served folder")
 	}
 }
+
+// looseLimits keeps the per-address limits out of a test that is about something else.
+func looseLimits() *limits.Config {
+	c := limits.DefaultConfig()
+	for i := range c.Rates {
+		c.Rates[i] = limits.Rate{PerMinute: 60000, Burst: 10000}
+	}
+	return &c
+}
+
+func intPtr(n int) *int { return &n }

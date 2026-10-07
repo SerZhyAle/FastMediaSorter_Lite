@@ -3,7 +3,7 @@
 | | |
 | --- | --- |
 | **Id** | `OCR-OVERLAY` |
-| **Version** | 1.3, active (read 2026-10-02; 1.1-1.3 are additive to what this product holds) |
+| **Version** | 1.3, active (re-read 2026-10-07; the catalog has not moved since 1.3 of 2026-10-02, and 1.1-1.3 are additive to what this product holds) |
 | **Home** | `ocr-overlay/README.md` in the shared contracts catalog |
 | **Role here** | consumer - the in-app OCR + translation overlay (`src/Ocr/`, `src/Main_Form.Ocr*.vb`) |
 
@@ -47,9 +47,10 @@ What 1.1-1.3 added, and where this product stands:
   languages by the engine's own mean line confidence instead of taking the first "strong" reading, and
   `OcrLanguageGuard` gained the confidence of the winning reading as a second thing it reads
   (`MinAssumedConfidence` 0.64, `ClearlyReadConfidence` 0.80, both rule 13 `policy` rows in that file with
-  the measurements they sit between). Refusing more than the amendment asks is conformant; what is owed
-  is the registry row, which still describes the discard record alone, and an amendment proposal if the
-  catalog should name confidence as an evidence kind (`OcrPipelineVersion` is 10 for the same change).
+  the measurements they sit between). Refusing more than the amendment asks is conformant. The registry row
+  now names the second route (2026-10-07); whether the catalog should name engine confidence as an evidence
+  kind of rule 10 is a question for the contract's owner, to be raised as a proposal
+  (`OcrPipelineVersion` is 10 for the same change).
 
 Dated exceptions still carried, each a written decision rather than an omission:
 

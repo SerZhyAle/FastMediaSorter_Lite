@@ -78,6 +78,25 @@ Public Class ShareConfigBuilderTests
         End Using
     End Sub
 
+    ''' <summary>
+    ''' The default display name is a promise made to the Android product (request 113 section 3): the
+    ''' compact product name, " on ", the machine. A phone shows it as a label and never matches on it
+    ''' (FMSCFG matches server + user + root), but the text itself is what the request told that
+    ''' product to expect, so a rename here has to be a decision and not a side effect. The
+    ''' ampersand is written as a plain character - the relaxed JSON escaping keeps it out of
+    ''' & - and any JSON reader returns the same string either way.
+    ''' </summary>
+    <Fact>
+    Public Sub Build_DefaultResourceName_IsCompactProductNameOnMachine()
+        Dim res = ShareConfigBuilder.Build(RunningStatus(), includeExternal:=False, includePassword:=True)
+        Assert.NotNull(res)
+        Dim expected As String = "Fast Media Sorter & Sharing on " & Environment.MachineName
+        Using doc = JsonDocument.Parse(res.ConfigJson)
+            Assert.Equal(expected, doc.RootElement.GetProperty("resourceName").GetString())
+        End Using
+        Assert.Contains("""resourceName"":""" & expected & """", res.ConfigJson)
+    End Sub
+
     <Fact>
     Public Sub Build_Internet_OrdersLanThenIpv6ThenPortforward()
         Dim reach As New WorkerReachability With {

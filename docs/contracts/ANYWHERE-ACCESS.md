@@ -3,36 +3,33 @@
 | | |
 | --- | --- |
 | **Id** | `ANYWHERE-ACCESS` |
-| **Version** | 0.10, draft, [PROPOSED] in full (written 2026-10-05 by FastMediaSorter Android, ticket S4094; nothing implements it yet) |
+| **Version** | 0.13, draft (read in full 2026-10-07). Since 0.11 sections 5, 6 and 7 are **superseded** by `DEVICE-EXCHANGE` sections 5, 7 and 8 and stay as the record; section 4 (the descriptor `FMSSFTP1`/`FMSSFTP2`, its rung 1 vectors), section 5.5 (the third-party port) and section 8 (backward compatibility) still bind. 0.12 corrected 5.5: the port is not in `FMSSFTP2`; 0.13 narrowed Drive (a share's credentials and addresses reach it only by the user's opt-in) and put the share id inside TLS. Owner: FastMediaSorter Android |
 | **Home** | `anywhere-access/README.md` in the shared contracts catalog |
-| **Role here** | exchange-server implementer (sections 3, 5.1): the subproduct specified by local specification 133. The future anywhere-capable FMS_W server versions (producer/consumer, dual-mode) are the FMS_W session's own ticket (S4094 work/02), not this pointer's burden yet |
+| **Role here** | exchange-server implementer (now through `DEVICE-EXCHANGE`, see its pointer) and, for what stays here, **producer and consumer of the share descriptor** `FMSSFTP1`/`FMSSFTP2` and of the third-party port (local specifications 170 and 171). The server specification 133 is re-scoped by local specification 160 |
 
-The contract names this product the exchange-server implementer: a Go program for Windows distributed
-inside this product's package, the language and the packaging not normative. The share descriptor v2
-(`FMSSFTP2`), the `.fmscfg` additive kind, the Drive channel and the producer/consumer anywhere features
-belong to the other products' tickets and change nothing here until they land.
+What this pointer still covers is the descriptor (`FMSSFTP2` and `vectors/descriptor-v2.json`, rung 1), the
+`.fmscfg` additive kind `rendezvousTunnel` (registered by `FMSCFG` 2.4, see its pointer), the third-party TCP port
+(section 5.5, requested by `publish.publicPort` and carried by the resource record and a `.fmscfg` access path,
+never by `FMSSFTP2`) and the backward-compatibility rules of section 8.
 
-## What this repository holds while the contract is [PROPOSED]
+## What this repository holds while the contract is `[PROPOSED]`
 
-1. **The server-role review** is filed where the catalog requires it: `PROPOSAL-2026-10-05-fmsw-server-role-review.md`
-   in the contract's catalog folder - four asks (consumer-leg TLS, the port `refused` reason, the
-   self-hosted certificate model, the Drive appDataFolder scope). The owner answered on 2026-10-06
-   (recorded in the proposal's Decision section): ask 1 withdrawn, ask 2 accepted, ask 3 overtaken by
-   §6.1's text, ask 4 variant (a). Folding asks 2 and 4 into the contract is the contract owner's
-   amendment; no local divergence is kept anywhere.
-   **The wire-completion proposal** `PROPOSAL-2026-10-06-fmsw-wire-completion.md`, filed beside it on
-   2026-10-06 (ticket 134): thirteen asks that complete sections 5.4 and 6 so two parties can implement
-   them byte for byte - the control stream and the per-tunnel data stream (`open` / `attach`), the
-   4-byte length framing, the hand-over after `connect`, one `unavailable` answer for unknown, ended and
-   full ids, the reason names, `schemaVersion` 1, keepalive negotiation, `resumeToken`, port
-   reservation, the certificate fingerprint form, `unregister`, out-of-order envelopes and the member
-   table. All MINOR. The owner answered on 2026-10-06, each as recommended (recorded in the proposal's
-   Decision section); folding it in stays the contract owner's amendment, which rung 2 waits for. The
-   exchange server's `internal/wire` package is written against it behind one package, so a changed
-   decision costs edits in one place.
-2. **Local specification 133** is the subproduct's specification: responsibilities, the §5.3 discipline,
-   deploy configuration, package integration, dual-mode boundary, phases aligned with the contract's
-   freeze ladder. It freezes nothing; it releases nothing before the wire freezes (rung 2), and the
-   rung-2 engineering build it allows is the ladder's own instrument, not a shipped feature.
-3. **No conformance row yet**: the catalog registry gains this product's row only at rung 4, added by
-   this product's own session, with the dual-mode regression behind it (contract section 9).
+1. **No descriptor codec exists.** Nothing in `src/` or `exchange-server/` writes or reads an `FMSSFTP1` or
+   `FMSSFTP2` code, so the rung 1 vectors are not run here: the writer is 170, the reader 171 (which must refuse a
+   malformed code whole, read an `FMSSFTP1` code by the v1 rules only, and replay the catalog's vectors from a
+   vendored copy with a provenance note).
+2. **The dormant `.fmscfg` export** (`ExchangeExport`, ticket 148, kept by 170) was built to the 0.10 text with
+   provisional names: the third-party port rides as a `portforward` path (which 5.5 as corrected confirms) and the
+   tunnel path is written last with a valid host and port (`FMSCFG` rule 7). Its share-id member is named
+   `shareId`, as `FMSCFG` 2.4 registers it (renamed from the provisional `sid` on 2026-10-07).
+3. **The server and the producer are local specifications 161-168 and 170-180**, under the umbrella 160: the
+   dev-tree server built to the superseded wire is migrated, not kept, and nothing ships before the server wire's
+   rung 2. The producer no longer asks the worker to register anything: the Share Manager's device agent publishes
+   what the worker serves.
+4. **Section 8 rule 5 (dual mode)** is held by the byte-identical export tests today and by the baseline of local
+   specification 177 once the clients exist: with no account and no server a share is served and exported exactly
+   as before.
+5. **No proposal of this repository is open on this contract.** The one it filed on 2026-10-07 (the third-party
+   port cannot ride in an `FMSSFTP2` code) was folded as amendment G of 0.12.
+6. **The registry row** (role P/C, `Implements` `partial 0.10`) stays behind 0.13 by design: what exists was built
+   to the superseded text, and the descriptor of section 4 is not built at all.

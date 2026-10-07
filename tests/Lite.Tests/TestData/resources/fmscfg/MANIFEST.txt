@@ -1,0 +1,24 @@
+# Fixture manifest for the FMSCFG consumer corpus (100 T08, 101 section 5 items 4-5).
+# One row per file in this folder except PROVENANCE.txt and this file. Columns, separated by a TAB:
+#   file | origin | intended validity | expected typed result | expected plan facts (key=value, or - for a refusal)
+# origin: catalog-vector = bytes extracted from the catalog's contract; synthetic-* = written by hand to a shape,
+# dummy credentials and documentation addresses only; derived-transport:<file> = that file, gzip + base64.
+# validity: valid | valid-with-refusal (the file reads, a root is refused at preview) | invalid.
+# FmsFixtureCorpusTests holds both directions: every listed file reads to exactly this, and no file is unlisted.
+# Boundary cases (limit and limit+1) are generated in memory by FmsConfigReaderTests / FmsImportRulesTests, not stored here.
+canonical-v1.fmscfg	catalog-vector	valid	Succeeded	roots=2 endpoints=2 pinned=true needsPassword=false refused=0 transport=PlainJson
+canonical-v2.fmscfg	catalog-vector	valid-with-refusal	Succeeded	roots=2 endpoints=2 pinned=true needsPassword=false refused=1 transport=PlainJson
+android-export-synthetic.fmscfg	synthetic-phone-shape	valid	Succeeded	roots=1 endpoints=1 pinned=false needsPassword=true refused=0 transport=PlainJson
+companion-export-synthetic.fmscfg	synthetic-companion-shape	valid	Succeeded	roots=2 endpoints=2 pinned=true needsPassword=false refused=0 transport=PlainJson
+canonical-v2.qr.txt	derived-transport:canonical-v2.fmscfg	valid-with-refusal	Succeeded	roots=2 endpoints=2 pinned=true needsPassword=false refused=1 transport=CompressedQr
+android-export-synthetic.qr.txt	derived-transport:android-export-synthetic.fmscfg	valid	Succeeded	roots=1 endpoints=1 pinned=false needsPassword=true refused=0 transport=CompressedQr
+tunnel-path-synthetic.fmscfg	synthetic-contract-2.4	valid	Succeeded	roots=1 endpoints=2 pinned=true needsPassword=false refused=0 transport=PlainJson
+pin-locked-mixed-synthetic.fmscfg	synthetic-negative	valid-with-refusal	Succeeded	roots=2 endpoints=1 pinned=true needsPassword=false refused=1 transport=PlainJson
+invalid-future-schema-3.fmscfg	synthetic-negative	invalid	UpdateRequired	-
+invalid-protocol-smb.fmscfg	synthetic-negative	invalid	UnsupportedProtocol	-
+invalid-fingerprint-malformed.fmscfg	synthetic-negative	invalid	BadFingerprint	-
+invalid-duplicate-readonly.fmscfg	synthetic-negative	invalid	DuplicateProperty	-
+invalid-traversal-virtualpath.fmscfg	synthetic-negative	invalid	InvalidVirtualPath	-
+invalid-port-65536.fmscfg	synthetic-negative	invalid	BadAccessPaths	-
+invalid-empty-roots.fmscfg	synthetic-negative	invalid	BadRoots	-
+invalid-not-gzip.qr.txt	synthetic-negative	invalid	BadGzip	-

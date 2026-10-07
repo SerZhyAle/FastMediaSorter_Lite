@@ -3,7 +3,7 @@
 | | |
 | --- | --- |
 | **Id** | `SITE-STRUCTURE` |
-| **Version** | 0.1, draft (written 2026-10-06 by FastMediaSorter Android, ticket S4096) |
+| **Version** | 0.1, draft (written 2026-10-06 by FastMediaSorter Android, ticket S4096; unchanged on 2026-10-07, re-read that day) |
 | **Home** | `product-site/SITE-STRUCTURE.md` and the run-list `product-site/SITE-CHECKLIST.md` in the shared contracts catalog |
 | **Role here** | consumer, opted in by the owner on 2026-10-06 (specification 147, D1); tier **guide** (D2); locale sets as published today (D3) |
 
@@ -36,3 +36,10 @@ Russian and Ukrainian in-page for the guides, the reference pages, the edition p
 Specification 147 (`done/`) holds the profile, the per-group verdicts, the boxes that were not run and the
 mechanical-evidence table; the registry rows and exceptions are in the catalog's adoption and exception
 sections, one exception per gap, each with a ticket (149-156).
+
+## State on 2026-10-07
+
+On the working tree the not-found page (`404.html`), the declared release-notes address, the forwarder policy and the
+held-address list with its gate (`tools/Test-SiteAddresses.ps1`: 47 entries, 47 resolved, offline) all exist, so the
+three gaps of tickets 149 and 150 are built. None of it is published: the exceptions stay open in the catalog until
+the deployed site serves them. The live form of the address gate (`-Live`) was not run.

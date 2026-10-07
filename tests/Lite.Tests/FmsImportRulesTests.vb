@@ -183,6 +183,79 @@ Public Class FmsImportRulesTests
         Assert.True(dest.Plan.Roots.Single().EffectiveWritable)
     End Sub
 
+    ' ------------------------------------------- what the matrix says reaches the saved resource ----
+
+    Private Const SavedPin As String = "SHA256:8f6TQvCbXjDMOyu4A9JzKcWlEHmR5pNsGgVaU2wYqhk"
+
+    ''' <summary>The saved descriptor a one-root document previews to, as JSON, with a fixed id.</summary>
+    Private Shared Function Saved(access As String, user As String, topExtra As String, rootJson As String) As String
+        Dim json As String = "{""schemaVersion"":2,""protocol"":""sftp"",""accessPaths"":" & access & ",""username"":""" & user & """,""password"":""pw""" & topExtra &
+                             ",""roots"":[" & rootJson & "]}"
+        Dim read As FmsConfigReadResult = FmsConfigReader.ReadText(json)
+        Assert.True(read.Succeeded, read.Failure.ToString() & " at '" & read.FieldPath & "' for " & rootJson & topExtra)
+        Dim preview As ImportPreview = ResourceImport.Preview(read.Plan, New List(Of ResourceDescriptor)(), Function() "fixed-id")
+        Assert.True(preview.CanApply, rootJson)
+        Return System.Text.Json.JsonSerializer.Serialize(preview.Items.Single().Descriptor)
+    End Function
+
+    <Fact>
+    Public Sub A_field_the_matrix_says_is_not_stored_leaves_the_saved_resource_untouched_and_a_stored_one_changes_it()
+        ' 101 section 5 item 2: the inventory must say what becomes of every field, and it is held mechanically.
+        ' A row with StoredInResource = False must not move one byte of the saved descriptor; a row with True (and a
+        ' descriptor-visible effect) must. Pinning today's truth: when a presentation field starts to be kept
+        ' (Q100-4 / 100 section 15.5.3), its row flips to True and this test says so.
+        Const lan As String = "[{""kind"":""lan"",""host"":""192.0.2.1"",""port"":2022}]"
+        Const baseRoot As String = """virtualPath"":""/a"",""label"":""Lbl"""
+        Dim baseline As String = Saved(lan, "fms", "", "{" & baseRoot & "}")
+
+        ' path -> the same document with that one field set to a non-default value.
+        Dim variants As New Dictionary(Of String, String)(StringComparer.Ordinal) From {
+            {"resourceName", Saved(lan, "fms", ",""resourceName"":""Named""", "{" & baseRoot & "}")},
+            {"accessPaths[].kind", Saved("[{""kind"":""portforward"",""host"":""192.0.2.1"",""port"":2022}]", "fms", "", "{" & baseRoot & "}")},
+            {"accessPaths[].host", Saved("[{""kind"":""lan"",""host"":""192.0.2.2"",""port"":2022}]", "fms", "", "{" & baseRoot & "}")},
+            {"accessPaths[].port", Saved("[{""kind"":""lan"",""host"":""192.0.2.1"",""port"":2023}]", "fms", "", "{" & baseRoot & "}")},
+            {"username", Saved(lan, "other", "", "{" & baseRoot & "}")},
+            {"accessNote", Saved(lan, "fms", ",""accessNote"":""LAN only""", "{" & baseRoot & "}")},
+            {"hostKeyFingerprintSha256", Saved(lan, "fms", ",""hostKeyFingerprintSha256"":""" & SavedPin & """", "{" & baseRoot & "}")},
+            {"roots[].virtualPath", Saved(lan, "fms", "", "{""virtualPath"":""/b"",""label"":""Lbl""}")},
+            {"roots[].label", Saved(lan, "fms", "", "{""virtualPath"":""/a"",""label"":""Other""}")},
+            {"roots[].readOnly", Saved(lan, "fms", "", "{" & baseRoot & ",""readOnly"":false}")},
+            {"roots[].isDestination", Saved(lan, "fms", "", "{" & baseRoot & ",""isDestination"":true}")},
+            {"roots[].profile", Saved(lan, "fms", "", "{" & baseRoot & ",""profile"":""audio_library""}")},
+            {"roots[].mediaTypes", Saved(lan, "fms", "", "{" & baseRoot & ",""mediaTypes"":[""audio""]}")},
+            {"roots[].scanSubdirectories", Saved(lan, "fms", "", "{" & baseRoot & ",""scanSubdirectories"":false}")},
+            {"roots[].showSubfoldersAsItems", Saved(lan, "fms", "", "{" & baseRoot & ",""showSubfoldersAsItems"":true}")},
+            {"roots[].showHiddenFiles", Saved(lan, "fms", "", "{" & baseRoot & ",""showHiddenFiles"":true}")},
+            {"roots[].allFiles", Saved(lan, "fms", "", "{" & baseRoot & ",""allFiles"":true}")},
+            {"roots[].destinationColor", Saved(lan, "fms", "", "{" & baseRoot & ",""destinationColor"":-123}")},
+            {"roots[].slideshowInterval", Saved(lan, "fms", "", "{" & baseRoot & ",""slideshowInterval"":9}")},
+            {"roots[].comment", Saved(lan, "fms", "", "{" & baseRoot & ",""comment"":""c""}")}}
+
+        ' Not a descriptor field, so not this test's to move: the gates and the refused field (never stored by
+        ' definition) and the password (stored by handle through ResourceCommit; ResourceImportTests covers it).
+        Dim outside As String() = {"schemaVersion", "protocol", "password", "roots[].accessPin"}
+
+        Dim covered As New HashSet(Of String)(variants.Keys, StringComparer.Ordinal)
+        covered.UnionWith(outside)
+        Assert.Equal(FmsFieldSupport.Rules.Select(Function(r) r.Path).OrderBy(Function(p) p, StringComparer.Ordinal),
+                     covered.OrderBy(Function(p) p, StringComparer.Ordinal))
+
+        For Each rule As FmsFieldRule In FmsFieldSupport.Rules
+            If outside.Contains(rule.Path) Then Continue For
+            Dim changed As Boolean = Not String.Equals(baseline, variants(rule.Path), StringComparison.Ordinal)
+            Assert.True(changed = rule.StoredInResource,
+                        "'" & rule.Path & "' is declared StoredInResource=" & rule.StoredInResource.ToString() & " but " &
+                        If(changed, "does change", "does not change") & " the saved resource.")
+        Next
+        Assert.False(FmsFieldSupport.Find("roots[].accessPin").StoredInResource)
+        Assert.True(FmsFieldSupport.Find("password").StoredInResource)
+        ' The presentation fields are exactly the ones Q100-4 / 100 section 15.5.3 still owe a place to live.
+        Assert.Equal({"accessNote", "roots[].allFiles", "roots[].comment", "roots[].destinationColor", "roots[].mediaTypes", "roots[].profile",
+                      "roots[].showHiddenFiles", "roots[].showSubfoldersAsItems", "roots[].slideshowInterval"},
+                     FmsFieldSupport.Rules.Where(Function(r) r.Handling <> FmsFieldHandling.EnvelopeGate AndAlso r.Handling <> FmsFieldHandling.RefusesRootWhenSet AndAlso Not r.StoredInResource).
+                         Select(Function(r) r.Path).OrderBy(Function(p) p, StringComparer.Ordinal).ToArray())
+    End Sub
+
     ' ------------------------------------------------------ schema/protocol/type ----
 
     <Theory>

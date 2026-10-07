@@ -114,6 +114,13 @@
     -->
     <Compile Include="..\Support\LogPackage.vb" Link="Core\LogPackage.vb" />
     <!--
+      The "[hosting]" block of that report and the one state line of the log (ticket 182 L-4, L-8):
+      the pure builder with injected probes, and the live probes behind it. Whole-file
+      "#If Not NETFRAMEWORK", like LogPackage.
+    -->
+    <Compile Include="..\Support\HostingReport.vb" Link="Core\HostingReport.vb" />
+    <Compile Include="..\Support\HostingProbesLive.vb" Link="Core\HostingProbesLive.vb" />
+    <!--
       The site pages both programs link to by UI language - here the install-trust page
       the opt-in and the hosting group point at (ticket 037 Ф-4). Linked so a page that
       moves is corrected once.
@@ -137,6 +144,8 @@
     <Compile Include="..\Theming\ThemedMenuRenderer.vb" Link="Theming\ThemedMenuRenderer.vb" />
     <Compile Include="..\Theming\ThemeService.vb" Link="Theming\ThemeService.vb" />
     <Compile Include="..\Localization\Localization.Theme.vb" Link="Localization\Localization.Theme.vb" />
+    <!-- Ticket 182 L-3/L-6: the strings of the shared LogPackage / MailSender, registered by both programs. -->
+    <Compile Include="..\Localization\Localization.SendLogs.vb" Link="Localization\Localization.SendLogs.vb" />
   </ItemGroup>
 
 </Project>

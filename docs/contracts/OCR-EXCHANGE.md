@@ -3,7 +3,7 @@
 | | |
 | --- | --- |
 | **Id** | `OCR-EXCHANGE` |
-| **Version** | 1.0, record - with the owner's correction addendum of 2026-10-02 (re-checked every section 10.6 value on 2026-09-29: all stand as written; no constant changed value) |
+| **Version** | 1.0, record - with the owner's correction addendum of 2026-10-02 (re-checked every section 10.6 value on 2026-09-29: all stand as written; no constant changed value). Re-read 2026-10-07: the record's log has no row after that addendum; the later `OCR-PIPELINE` amendments (1.8, 1.9) are not folded into it, and a record is not required to be |
 | **Home** | `ocr-overlay/doc2html-ocr-positioning-exchange.md` in the shared contracts catalog |
 | **Role here** | this product owns the record |
 

@@ -201,6 +201,13 @@ Partial Public NotInheritable Class Share_Settings_Form
         AddHandler _lnkXTrust.LinkClicked, Sub() NetworkInfo.OpenInBrowser(ShareText.TrustPageUrl())
         sec.AddBodyRow(_lnkXTrust)
 
+        ' Where a failure of this group is seen, the way to get its log to the author (ticket 182 L-5): the
+        ' same flow as the tray menu and the window's footer, never a second archive format.
+        Dim lnkSendLog As New LinkLabel With {.AutoSize = True, .MaximumSize = New Size(HostingContentWidth, 0),
+            .Margin = New Padding(0, 0, 0, 10), .Text = Localization.T("Отправить журнал автору..")}
+        AddHandler lnkSendLog.LinkClicked, Async Sub() Await SendLogsFlow.RunAsync(Me)
+        sec.AddBodyRow(lnkSendLog)
+
         _lblXResult = New Label With {.AutoSize = True, .Margin = New Padding(0, 6, 0, 0),
             .MaximumSize = New Size(HostingContentWidth, 0), .Text = ""}
         sec.AddBodyRow(_lblXResult)

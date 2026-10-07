@@ -103,6 +103,19 @@
             </uap:SupportedFileTypes>
           </uap:FileTypeAssociation>
         </uap:Extension>
+        <!-- Live-broadcast descriptors a phone or a watch sends (spec 023, LIVE-BROADCAST section 4.2): the
+             .fmsbcast extension with its declared MIME type. Declarative, so Windows offers the app in Open with
+             and the user chooses; nothing here claims a default. Only this x64 mainline exe opens them - the
+             package never carries the x86 fallback. -->
+        <uap:Extension Category="windows.fileTypeAssociation">
+          <uap:FileTypeAssociation Name="fastmediasorterlivebroadcast">
+            <uap:DisplayName>Live broadcast</uap:DisplayName>
+            <uap:Logo>Assets\Square44x44Logo.png</uap:Logo>
+            <uap:SupportedFileTypes>
+              <uap:FileType ContentType="application/vnd.fms.bcast+json">.fmsbcast</uap:FileType>
+            </uap:SupportedFileTypes>
+          </uap:FileTypeAssociation>
+        </uap:Extension>
       </Extensions>
     </Application>
 

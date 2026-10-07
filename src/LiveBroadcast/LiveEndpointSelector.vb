@@ -40,6 +40,16 @@ Friend Module LiveEndpointSelector
         Return Nothing
     End Function
 
+    ''' <summary>
+    ''' The latency target the descriptor asks for: the chosen endpoint's value, then the top-level one (section 6.3),
+    ''' else Nothing (the effective default of 1000 ms is applied by <see cref="LivePlaybackOptions"/>).
+    ''' </summary>
+    Public Function TargetLatencyOf(descriptor As LiveBroadcastDescriptor, endpoint As LiveBroadcastEndpoint) As Long?
+        If endpoint IsNot Nothing AndAlso endpoint.TargetLatencyMs.HasValue Then Return endpoint.TargetLatencyMs
+        If descriptor IsNot Nothing Then Return descriptor.TargetLatencyMs
+        Return Nothing
+    End Function
+
     Private Function IsSupportedHttpAudioEndpoint(ep As LiveBroadcastEndpoint) As Boolean
         If ep Is Nothing OrElse String.IsNullOrWhiteSpace(ep.Url) Then Return False
 

@@ -40,5 +40,43 @@ Public Class SiteAddressListTests
         Next
     End Sub
 
+    <Fact>
+    Public Sub TheLandingFollowsTheUiLanguageToItsGeneratedCopy()
+        Assert.Equal(SitePages.SiteRoot, SitePages.ForLanguage(SitePages.SiteRoot, "en"))
+        Assert.Equal(SitePages.SiteRoot, SitePages.ForLanguage(SitePages.SiteRoot, ""))
+        For Each code As String In Localization.Codes.Where(Function(c) c <> "en")
+            Assert.Equal(SitePages.SiteRoot & "lang/" & code & "/", SitePages.ForLanguage(SitePages.SiteRoot, code))
+            Assert.Equal(SitePages.TrustPageUrl(code), SitePages.ForLanguage(SitePages.SiteRoot & "trust.html", code))
+        Next
+    End Sub
+
+    <Fact>
+    Public Sub AGuidePageGetsTheQueryTheSiteReadsForRussianAndUkrainianOnly()
+        Dim guide As String = SitePages.SiteRoot & "publish-folders-android.html"
+        Assert.Equal(guide & "?lang=ru", SitePages.ForLanguage(guide, "ru"))
+        Assert.Equal(guide & "?lang=uk", SitePages.ForLanguage(guide, "uk"))
+        Assert.Equal(guide, SitePages.ForLanguage(guide, "en"))
+        Assert.Equal(guide, SitePages.ForLanguage(guide, "de"))
+        Assert.Equal(SitePages.PrivacyPageUrl & "?lang=ru", SitePages.ForLanguage(SitePages.PrivacyPageUrl, "ru"))
+    End Sub
+
+    <Fact>
+    Public Sub AnAddressThatIsNotOursOrAlreadyQualifiedIsLeftAlone()
+        Assert.Equal("https://example.com/", SitePages.ForLanguage("https://example.com/", "ru"))
+        Dim q As String = SitePages.SiteRoot & "server.html?lang=uk"
+        Assert.Equal(q, SitePages.ForLanguage(q, "ru"))
+        Assert.Null(SitePages.ForLanguage(Nothing, "ru"))
+    End Sub
+
+    <Fact>
+    Public Sub TheAndroidAndDocumentTranslationSitesFollowTheUiLanguage()
+        Assert.Equal(SitePages.AndroidAppSiteRoot & "index-ru.html", SitePages.AndroidAppSiteUrl("ru"))
+        Assert.Equal(SitePages.AndroidAppSiteRoot & "index-uk.html", SitePages.AndroidAppSiteUrl("uk"))
+        Assert.Equal(SitePages.AndroidAppSiteRoot, SitePages.AndroidAppSiteUrl("de"))
+        Assert.Equal(SitePages.DocHtmlTranslateSiteRoot & "?l=ru", SitePages.DocHtmlTranslateSiteUrl("ru"))
+        Assert.Equal(SitePages.DocHtmlTranslateSiteRoot & "de/", SitePages.DocHtmlTranslateSiteUrl("de"))
+        Assert.Equal(SitePages.DocHtmlTranslateSiteRoot, SitePages.DocHtmlTranslateSiteUrl("en"))
+    End Sub
+
 End Class
 #End If

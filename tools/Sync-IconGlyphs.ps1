@@ -43,7 +43,7 @@ trap {
 # This is deliberately a small, declared product subset.  The catalog remains the
 # source of truth; adding a mapped meaning means adding it here as well.
 $glyphIds = @(
-    'action.add', 'action.choose-file', 'action.choose-folder', 'action.copy', 'action.crop', 'action.delete', 'action.download', 'action.edit',
+    'action.add', 'action.choose-file', 'action.choose-folder', 'action.convert-to-video', 'action.copy', 'action.crop', 'action.delete', 'action.download', 'action.edit',
     'action.extract-text', 'action.refresh', 'action.rename', 'action.search', 'action.send-to',
     'action.share', 'action.translate',
     'app.info', 'app.settings', 'content.apps', 'content.audio', 'content.disk-container', 'content.folder', 'content.image',

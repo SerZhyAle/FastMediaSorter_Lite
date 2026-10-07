@@ -54,6 +54,9 @@ Friend Module Program
     <STAThread>
     Friend Sub Main(args As String())
         AppFileLogger.Initialize()
+        ' What only this program knows (host mode, the worker's reachability), for the hosting report
+        ' of "Send the log to the author" (ticket 182 L-4) - registered before anything can ask.
+        HostingContext.Register()
         ' Sort the arguments into: silent-tray flag, explicit show-window request, folder.
         Dim silentTray As Boolean = False
         Dim windowRequested As Boolean = False
@@ -131,6 +134,11 @@ Friend Module Program
             ' Read the shared UI-language flag before any Share text is built, so
             ' Companion matches the viewer's language (invariant 9).
             CompanionGlobals.LoadLanguage()
+
+            ' ONE line about the machine this log came from (ticket 182 L-8): version, OS and build,
+            ' Server or client, session and RDP, host mode, the components, the two services. Only
+            ' the primary instance writes it - a forwarding launch exits before this point.
+            HostingContext.LogStartState()
 
             ' Upgrade migration (spec §9.3): if logon autostart still points at the
             ' bare worker (old viewer behavior), repoint it at Companion.exe so the

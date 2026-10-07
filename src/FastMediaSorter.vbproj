@@ -259,6 +259,13 @@
     <Compile Include="LiveBroadcast\LiveHttpPlaybackSession.vb" />
     <Compile Include="LiveBroadcast\ProgressReadStream.vb" />
     <Compile Include="LiveBroadcast\LiveReconnectPolicy.vb" />
+    <Compile Include="LiveBroadcast\LivePlaybackOptions.vb" />
+    <Compile Include="LiveBroadcast\AdtsFrameCounter.vb" />
+    <Compile Include="LiveBroadcast\LiveDriftGuard.vb" />
+    <Compile Include="LiveBroadcast\LiveBroadcastRunner.vb" />
+    <Compile Include="LiveBroadcast\LiveVlcMedia.vb" />
+    <Compile Include="LiveBroadcast\LiveBroadcastIngress.vb" />
+    <Compile Include="LiveBroadcast\LiveBroadcastMessages.vb" />
     <Compile Include="LiveBroadcast_Form.vb">
       <SubType>Form</SubType>
     </Compile>
@@ -702,6 +709,10 @@
       <SubType>Form</SubType>
     </Compile>
     <Compile Include="Support\LogPackage.vb" />
+    <!-- Ticket 182 L-4: the report's [hosting] block and its live probes. Whole-file
+         "#If Not NETFRAMEWORK" like LogPackage.vb - listed so the two file sets stay identical. -->
+    <Compile Include="Support\HostingReport.vb" />
+    <Compile Include="Support\HostingProbesLive.vb" />
     <Compile Include="Support\MailSender.vb" />
     <!-- Site page URLs by language (ticket 037). No seam: the x86 viewer's settings
          window never links them, and a constant it does not read costs nothing. -->
@@ -777,6 +788,9 @@
          tables above; the theme itself is .NET 10 only, so the four Theming files compile
          to nothing here. -->
     <Compile Include="Localization\Localization.Theme.vb" />
+    <!-- Ticket 182 L-3/L-6: the strings of the "send the log" flow when a log cannot be included and
+         when there is no mail program. Registered by both builds like the tables above. -->
+    <Compile Include="Localization\Localization.SendLogs.vb" />
     <!-- Spec 022 (stream catalog producer): its string table, and the producer itself. Every
          Streams file is whole-file "#If Not NETFRAMEWORK" except StreamCatalogCli, which provides
          the switch refusal on net48. Listed so the two file sets stay identical. -->

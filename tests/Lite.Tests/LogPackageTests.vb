@@ -34,9 +34,10 @@ Public Class LogPackageTests
             Using writer As New FileStream(logPath, FileMode.Append, FileAccess.Write, FileShare.ReadWrite)
                 Using zip As New FileStream(zipPath, FileMode.Create, FileAccess.Write, FileShare.None)
                     Using archive As New ZipArchive(zip, ZipArchiveMode.Create)
-                        Dim line As String = LogPackage.CopyLogEntry(archive, "current.log", logPath)
-                        Assert.NotNull(line)
-                        Assert.Contains("current.log", line)
+                        Dim outcome As LogPackage.LogEntryOutcome = LogPackage.CopyLogEntry(archive, "current.log", logPath)
+                        Assert.Equal(LogPackage.LogSourceState.Included, outcome.State)
+                        Assert.NotNull(outcome.Line)
+                        Assert.Contains("current.log", outcome.Line)
                     End Using
                 End Using
             End Using
@@ -408,27 +409,21 @@ Public Class LogPackageTests
         Assert.StartsWith(AppContext.BaseDirectory, exchange.Value)
     End Sub
 
-    <Fact>
-    Public Sub Exchange_log_is_looked_for_in_both_data_directories_machine_store_first()
-        Dim sibling As KeyValuePair(Of String, String()) =
-            LogPackage.SiblingLogCandidates().Single(Function(p) p.Key = "exchange.log")
-        Dim common As String = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData)
-        Dim local As String = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData)
-        Dim machine As Integer = Array.IndexOf(sibling.Value, Path.Combine(common, "FastMediaSorterExchange", "exchange.log"))
-        Dim perUser As Integer = Array.IndexOf(sibling.Value, Path.Combine(local, "FastMediaSorterExchange", "exchange.log"))
-        Assert.True(machine >= 0, "the machine store (the service's) is not a candidate")
-        Assert.True(perUser >= 0, "the per-user store (a console run's) is not a candidate")
-        Assert.True(machine < perUser, "the service's store wins whenever it exists, so it is looked at first")
-    End Sub
+    ' The exchange server's logs live in <data dir>\logs\ since ticket 182 L-1 - the one subdirectory the
+    ' enrolled user can read. Where each is looked for, the names it gets in the archive and what happens
+    ' when it cannot be read are asserted by LogPackageSourcesTests (compiled into both test projects).
 
     <Fact>
-    Public Sub An_exchange_data_directory_override_is_honoured_before_the_two_stores()
+    Public Sub The_real_roots_of_this_process_name_the_current_machine_and_the_override_variable()
         Dim saved As String = Environment.GetEnvironmentVariable("FMS_EXCHANGE_DATA_DIR")
         Try
             Environment.SetEnvironmentVariable("FMS_EXCHANGE_DATA_DIR", "D:\scratch\xd")
-            Dim list As String() = LogPackage.ExchangeLogCandidates("C:\ProgramData", "C:\Users\a\AppData\Local")
-            Assert.Equal(Path.Combine("D:\scratch\xd", "exchange.log"), list(0))
-            Assert.Equal(3, list.Length)
+            Dim roots As LogPackage.LogSourceRoots = LogPackage.CurrentLogRoots()
+            Assert.Equal("D:\scratch\xd", roots.ExchangeDataDirOverride)
+            Assert.Equal(Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData), roots.CommonAppData)
+            Assert.Equal(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), roots.LocalAppData)
+            Assert.Equal(AppContext.BaseDirectory, roots.ExeDir)
+            Assert.False(String.IsNullOrEmpty(roots.TempDir))
         Finally
             Environment.SetEnvironmentVariable("FMS_EXCHANGE_DATA_DIR", saved)
         End Try
@@ -482,6 +477,69 @@ Public Class LogPackageTests
             If File.Exists(path) Then File.Delete(path)
         Catch
         End Try
+    End Sub
+
+End Class
+
+''' <summary>
+''' The viewer's side of ticket 182 L-3 and L-6: the consent-list line of a log that cannot be included and the
+''' no-mail-client message, in every language the mainline ships; and the order of the manual route in the
+''' viewer's own flow (the mailto only after the handler check, the message carrying the full path).
+''' </summary>
+<Collection("LocalizationState")>
+Public Class LogPackageStringsTests
+
+    <Fact>
+    Public Sub An_unreadable_log_line_names_the_entry_and_a_reason_in_every_language()
+        Dim saved As String = Localization.CurrentCode
+        Try
+            For Each code As String In Localization.Codes
+                Localization.CurrentCode = code
+                For Each failure As LogPackage.LogReadFailure In {LogPackage.LogReadFailure.AccessDenied, LogPackage.LogReadFailure.InUse, LogPackage.LogReadFailure.Other}
+                    Dim line As String = LogPackage.UnreadableLine("exchange/exchange.log", failure)
+                    Assert.Contains("exchange/exchange.log", line)
+                    Assert.DoesNotContain("{0}", line)
+                    Assert.DoesNotContain("{1}", line)
+                    If code <> "ru" AndAlso code <> "uk" Then Assert.DoesNotContain(LogPackage.ReasonKey(failure), line)
+                Next
+            Next
+        Finally
+            Localization.CurrentCode = saved
+        End Try
+    End Sub
+
+    <Fact>
+    Public Sub The_no_mail_client_message_carries_the_full_path_in_every_language()
+        Dim saved As String = Localization.CurrentCode
+        Dim zipPath As String = "C:\Users\someone\AppData\Local\Temp\fms-logs-26.10.7.1200-20261007-120000-abcd1234.zip"
+        Try
+            For Each code As String In Localization.Codes
+                Localization.CurrentCode = code
+                Dim text As String = Localization.TF("Почтовая программа не найдена. Архив скопирован в буфер обмена и показан в папке. Полный путь к архиву: {0}", zipPath)
+                Assert.Contains(zipPath, text)
+                Assert.DoesNotContain("{0}", text)
+            Next
+        Finally
+            Localization.CurrentCode = saved
+        End Try
+    End Sub
+
+    <Fact>
+    Public Sub The_viewers_manual_route_checks_for_a_handler_before_it_starts_a_mailto_and_prints_the_path()
+        Dim dir As New DirectoryInfo(AppContext.BaseDirectory)
+        While dir IsNot Nothing AndAlso Not File.Exists(Path.Combine(dir.FullName, "FastMediaSorter.sln"))
+            dir = dir.Parent
+        End While
+        Assert.NotNull(dir)
+        Dim src As String = File.ReadAllText(Path.Combine(dir.FullName, "src", "Table_Form.SendLogs.vb"))
+        Dim decision As Integer = src.IndexOf("MailSender.ManualRouteFor(MailSender.HasMailHandler())", StringComparison.Ordinal)
+        Dim mailto As Integer = src.IndexOf("""mailto:""", decision, StringComparison.Ordinal)
+        Dim clipboard As Integer = src.IndexOf("Clipboard.SetFileDropList", StringComparison.Ordinal)
+        Dim reveal As Integer = src.IndexOf("RevealPackage(zipPath)", clipboard, StringComparison.Ordinal)
+        Assert.True(clipboard > 0 AndAlso reveal > clipboard, "the clipboard drop and the folder reveal stay")
+        Assert.True(decision > reveal AndAlso decision < mailto, "the handler check must sit between the reveal and the blind mailto")
+        Assert.Contains("Полный путь к архиву: {0}", src.Substring(decision, mailto - decision))
+        Assert.Contains("zipPath)", src.Substring(decision, mailto - decision))
     End Sub
 
 End Class

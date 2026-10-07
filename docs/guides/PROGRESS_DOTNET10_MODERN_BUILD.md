@@ -581,3 +581,41 @@ viewer retains that baseline. Actual-window chrome scenes run separately through
   not on screen -> `+0 -1, now 8`; a file created empty and then filled -> `+1 -0, now 9`; a `.txt` was ignored.
 - Not verified: acceptance on a network share (`\\szamedia\common` is not up yet, `\\p7` did not answer), a full
   `.\build.ps1`.
+
+### Session - 2026-10-07 (specification 018, S7: U-13 and U-15 - and why U-15 does not copy the raster)
+- 018 is closed. Its approved half (U-01) was built in S11 (S11 section 9.2, with the deviation from 018 section 2);
+  U-13 and U-15 were the rest of the document and are finished here.
+- **U-13 (do not keep the source bytes of a decoded picture):** on the mainline the decision is made in
+  `DecodeCache.Materialize` - a static WEBP/AVIF/HEIC becomes a detached `Bitmap` and no stream is returned (the
+  file's bytes are not kept beside the pixels while the picture is on screen), an animation keeps its GIF payload
+  stream because GDI+ reads later frames from it. `IImageDecoder.ImageOwnsData` is the seam's declaration (modern
+  True, WIC False); the check in `FileManager` sits in the `#If NETFRAMEWORK` branch and is inert there. Pinned by
+  `ImageDecoderSeamTests.U13_a_static_webp_holds_no_stream_but_an_animation_keeps_its_own` (net10). Not profiled:
+  the "no copy of the file's bytes in a dump" check of acceptance 4 is by reading the code, not by a profiler.
+- **U-15 (LockBits instead of GetPixel) - built, measured, and changed:** `EdgeSampler` first copied the whole
+  raster (one `LockBits` + `Marshal.Copy`, as the specification wrote). Measured in a throw-away harness
+  (synthetic uniform bitmaps, median of 7, copy as `EdgeSampler.TryCreate` did it vs `Bitmap.GetPixel`):
+
+  | bitmap | copy the raster | 3 reads (automatic scheme) | ~40 reads (side/top/bottom scheme) | 2 edge columns x H (perspective) |
+  |---|---|---|---|---|
+  | 6000x4000, 24 bpp | 37.6 ms (~96 MB) | 0.003 ms | 0.011 ms | 2.4 ms |
+  | 6000x4000, 32 bpp | 18.6 ms | 0.001 ms | 0.011 ms | 2.5 ms |
+  | 3840x2160, 24 bpp | 13.8 ms | 0.001 ms | 0.006 ms | 1.4 ms |
+  | 1920x1080, 32 bpp (panel) | 1.2 ms | - | - | 0.43 ms |
+
+  Both callers read a few dozen pixels, never a large share of the bitmap, so the copy cost thousands of times what
+  the reads saved - on the default colour scheme it would have added 14-38 ms and up to ~96 MB (large-object heap)
+  to every page flip, and was still 0.7 ms slower on the 1080p perspective edges. `EdgeSampler` therefore keeps the
+  sampling rules in one place (shared by the dynamic background and the perspective bars) but reads through
+  `Bitmap.GetPixel` and copies nothing. Specification 018 section 4's mechanism is dropped for that reason; its goal
+  (no per-pixel overhead worth speaking of) was never present in this access pattern. This agrees with S11 section 0,
+  which had already deferred U-15 as unproven.
+- **A parity bug found on the way:** the side/top/bottom averages of `EdgeSampler` used integer division (truncation)
+  where the code it replaced used `CInt(sum / count)` (rounding), so a tint could come out one level darker. Fixed;
+  `U15_EdgeSampler_side_top_bottom_averages_round_like_the_original` pins it.
+- Also removed: two unused private wrappers in `Main_Form.PerspectiveBackground.vb` that made a fresh sampler per
+  call; the two edges of one perspective frame now share one sampler.
+- Verified: `dotnet test` (EdgeSampler, decoder seam, async-core suites) green on net10 and net48; `dotnet build` of the
+  modern project and `msbuild` of the x86 project: 0 errors.
+- Not verified: acceptance 1-7 of 018 on a network share (`\\szamedia\common` is still the agreed place), a
+  before/after page-flip timing on a share, a full `.\build.ps1`.

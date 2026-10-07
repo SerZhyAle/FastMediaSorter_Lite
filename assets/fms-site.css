@@ -4,7 +4,9 @@
    every page uses the whole width of the screen. There is no centred column, no px cap on text, headings,
    the header or the footer. Narrow measures belong inside a card or a callout only, never to a page.
    tools/Test-SiteQuality.ps1 rule 8 fails a page or this file that brings a cap back. */
-:root{--wide:100%;--gutter:clamp(14px,2.4vw,48px)}
+/* --gutter is the kit's (PAGE-STYLE 1.3: clamp(16px,2.5vw,40px)); this layer no longer redefines it. --wide repeats the kit's value
+   so the Test-SiteQuality rule 8 guard on this file keeps reading it. */
+:root{--wide:100%}
 .container{max-width:none;width:100%;padding-inline:var(--gutter)}
 .site-header{max-width:none;margin:14px var(--gutter)}
 .hero h1,.hero .lead,.lead,.lead-narrow,.sec-head,.section-desc,.get,.callout,.note{max-width:none}
@@ -65,6 +67,7 @@
 .author-card b{font-family:var(--font-heading);color:var(--text);font-size:1rem}
 .author-card a{text-decoration:none;font-weight:600}
 .author-card a:hover{text-decoration:underline}
+.author-card b a{color:inherit;font-family:inherit;font-weight:inherit}
 .doors .grid{grid-template-columns:repeat(auto-fit,minmax(min(100%,22rem),1fr))}
 
 /* Keyboard and landmarks (SITE-EXPERIENCE rules 15-16, ticket 152 T-1): the skip link is the first focusable thing on
@@ -130,3 +133,8 @@ ul.flush-list{margin:0}
 /* Section lists: the kit zeroes the padding, so an outside marker hangs in the gutter - in a right-to-left page at 360 px that
    is 2 px past the page and the Arabic landing scrolled sideways (specification 158 F-3). Keep the marker inside the box. */
 .section>ul{padding-inline-start:1.25em}
+
+/* Reduced motion reaches the pseudo-elements too (PAGE-STYLE 1.5, section 5). The kit's own rule selects only `*`, which does
+   not match ::before or ::after, while the kit transitions details.sec>summary::after. The catalog still owes the kit revision
+   that selects `*,*::before,*::after`; this page-layer copy of the same declarations drops out when that revision is vendored. */
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important;scroll-behavior:auto!important}}

@@ -369,6 +369,210 @@ Public Class ExchangeHelperTests
         Assert.True(sync.IndexOf("does not match its .sha256", StringComparison.Ordinal) < sync.IndexOf("Copy-Item", StringComparison.Ordinal))
     End Sub
 
+    ' ============================================ ticket 182 L-1: logs\ the enrolled user may READ ===
+
+    <Fact>
+    Public Sub ServiceHelper_LogsDirectoryDescriptor_IsReadOnlyForTheEnrolledUser_AndTheDataDirectoryStaysClosed()
+        Dim code As String = CodeOnly(ServiceHelperFile)
+        Dim logsSec As String = FunctionBody(code, "New-LogsDirSecurity")
+        ' Its own descriptor, built from the locked one: owner Administrators, no inheritance, SYSTEM + Administrators.
+        Assert.Contains("New-LockedDirectorySecurity", logsSec)
+        ' LocalService: create entries in the directory, Modify only on what is inside (no DELETE on the directory itself).
+        Assert.Contains("New-AllowRule $SidLocalService 'ReadAndExecute, Write' 'this'", logsSec)
+        Assert.Contains("New-AllowRule $SidLocalService 'Modify' 'children'", logsSec)
+        ' The enrolled users: ReadAndExecute on the tree, and no other right anywhere in the descriptor.
+        Assert.Contains("foreach ($sid in @(Split-Sids $ManageSid))", logsSec)
+        Assert.Contains("New-AllowRule $sid 'ReadAndExecute' 'tree'", logsSec)
+        Assert.DoesNotContain("FullControl", logsSec)
+        Assert.Equal(1, Count(logsSec, "$ManageSid"))
+        ' The data directory ABOVE it still gives them nothing (ManageSid is nowhere in its descriptor).
+        Dim dataSec As String = FunctionBody(code, "New-DataDirSecurity")
+        Assert.DoesNotContain("ManageSid", dataSec)
+        Assert.DoesNotContain("$sid", dataSec)
+    End Sub
+
+    <Fact>
+    Public Sub ServiceHelper_VerifiersAssertBothFacts_OnDescriptorsHandedToThem()
+        Dim out As String = RunAclDriver(ServiceHelperPath(),
+            "$manage = @(Split-Sids $ManageSid)" & vbLf &
+            "$user = $manage[0]" & vbLf &
+            "function Show($label, $problem) { Write-Output ($label + '|' + $problem) }" & vbLf &
+            "Show 'LOGS-GOOD' (Get-LogsDirAclProblem (New-LogsDirSecurity) $manage)" & vbLf &
+            "Show 'DATA-GOOD' (Get-DataDirAclProblem (New-DataDirSecurity) $manage)" & vbLf &
+            "$b = New-DataDirSecurity; $b.AddAccessRule((New-AllowRule $user 'ReadAndExecute' 'this'))" & vbLf &
+            "Show 'DATA-USER' (Get-DataDirAclProblem $b $manage)" & vbLf &
+            "$b = New-LogsDirSecurity; $b.AddAccessRule((New-AllowRule $user 'Modify' 'tree'))" & vbLf &
+            "Show 'LOGS-WRITE' (Get-LogsDirAclProblem $b $manage)" & vbLf &
+            "$b = New-LockedDirectorySecurity; $b.AddAccessRule((New-AllowRule $SidLocalService 'ReadAndExecute, Write' 'this'))" & vbLf &
+            "Show 'LOGS-NOUSER' (Get-LogsDirAclProblem $b $manage)" & vbLf &
+            "$b = New-LockedDirectorySecurity; $b.AddAccessRule((New-AllowRule $SidLocalService 'Modify' 'tree')); $b.AddAccessRule((New-AllowRule $user 'ReadAndExecute' 'tree'))" & vbLf &
+            "Show 'LOGS-LSDELETE' (Get-LogsDirAclProblem $b $manage)" & vbLf &
+            "$b = New-LogsDirSecurity; $b.AddAccessRule((New-AllowRule 'S-1-5-11' 'ReadAndExecute' 'tree'))" & vbLf &
+            "Show 'LOGS-STRANGER' (Get-LogsDirAclProblem $b $manage)" & vbLf &
+            "$b = New-LogsDirSecurity; $b.AddAccessRule((New-Object System.Security.AccessControl.FileSystemAccessRule((New-Object System.Security.Principal.SecurityIdentifier($user)), 'Write', 'ContainerInherit, ObjectInherit', 'None', 'Deny')))" & vbLf &
+            "Show 'LOGS-DENY' (Get-LogsDirAclProblem $b $manage)" & vbLf &
+            "$f = New-Object System.Security.AccessControl.FileSecurity" & vbLf &
+            "foreach ($s in @($SidSystem, $SidAdmins)) { $f.AddAccessRule((New-Object System.Security.AccessControl.FileSystemAccessRule((New-Object System.Security.Principal.SecurityIdentifier($s)), 'FullControl', 'Allow'))) }" & vbLf &
+            "$f.AddAccessRule((New-Object System.Security.AccessControl.FileSystemAccessRule((New-Object System.Security.Principal.SecurityIdentifier($SidLocalService)), 'Modify', 'Allow')))" & vbLf &
+            "Show 'FILE-NOUSER' (Get-LogFileAclProblem $f $manage)" & vbLf &
+            "$id = New-Object System.Security.Principal.SecurityIdentifier($user)" & vbLf &
+            "$f.AddAccessRule((New-Object System.Security.AccessControl.FileSystemAccessRule($id, 'ReadAndExecute', 'Allow')))" & vbLf &
+            "Show 'FILE-GOOD' (Get-LogFileAclProblem $f $manage)" & vbLf &
+            "$f.AddAccessRule((New-Object System.Security.AccessControl.FileSystemAccessRule($id, 'Write', 'Allow')))" & vbLf &
+            "Show 'FILE-WRITE' (Get-LogFileAclProblem $f $manage)")
+        Dim r As Dictionary(Of String, String) = out.Split({vbCrLf, vbLf}, StringSplitOptions.RemoveEmptyEntries).
+            Select(Function(l) l.Split({"|"c}, 2)).ToDictionary(Function(p) p(0), Function(p) If(p.Length > 1, p(1), ""))
+        ' What the helper builds passes both checks...
+        Assert.Equal("", r("LOGS-GOOD"))
+        Assert.Equal("", r("DATA-GOOD"))
+        Assert.Equal("", r("FILE-GOOD"))
+        ' ...and each way of breaking one of the two facts is caught, with its own sentence.
+        Assert.Contains("holds an entry on the state directory itself", r("DATA-USER"))
+        Assert.Contains("holds more than read", r("LOGS-WRITE"))
+        Assert.Contains("has no read entry", r("LOGS-NOUSER"))
+        Assert.Contains("could delete or re-secure the logs directory itself", r("LOGS-LSDELETE"))
+        Assert.Contains("unexpected entry", r("LOGS-STRANGER"))
+        Assert.Contains("deny entry", r("LOGS-DENY"))
+        Assert.Contains("has no read entry", r("FILE-NOUSER"))
+        Assert.Contains("holds more than read", r("FILE-WRITE"))
+    End Sub
+
+    <Fact>
+    Public Sub ServiceHelper_LogOpensOnlyAfterTheLogsDirectoryIsVerified_AndTheFallbackStays()
+        Dim code As String = CodeOnly(ServiceHelperFile)
+        ' The helper's own log is <DataDir>\logs\install-exchange-service.log...
+        Dim init As String = FunctionBody(code, "Initialize-Log")
+        Assert.Contains("Join-Path $DataDir $LogsDirName", init)
+        Assert.Contains("Get-DirectoryDistrust $logsDir", init)
+        Assert.Contains("Join-Path $logsDir $LogName", init)
+        ' ...created and verified by Initialize-LogsDir, which opens the log LAST...
+        Dim logs As String = FunctionBody(code, "Initialize-LogsDir")
+        Assert.True(logs.IndexOf("Set-LogsAcls", StringComparison.Ordinal) >= 0 AndAlso
+                    logs.IndexOf("Set-LogsAcls", StringComparison.Ordinal) < logs.LastIndexOf("Initialize-Log", StringComparison.Ordinal),
+                    "the log must open only after logs\ was verified")
+        Assert.Contains("New-SecureDirectory $logsDir (New-LogsDirSecurity)", logs)
+        Assert.Contains("Set-DirectorySecurity $logsDir (New-LogsDirSecurity)", logs)
+        ' ...after the data directory's own lockdown, in the one function every writing verb goes through.
+        Dim machine As String = FunctionBody(code, "Initialize-MachineDataDir")
+        Assert.True(machine.IndexOf("Set-MachineDataDirAcl", StringComparison.Ordinal) < machine.IndexOf("Initialize-LogsDir", StringComparison.Ordinal))
+        Assert.DoesNotContain("Initialize-Log" & vbLf, machine)
+        ' The verbs that repair the state wait for it; the others append to an existing, trusted logs\ at once.
+        Assert.Contains("@('install', 'repair', 'migrate-to-service') -notcontains $Action) { Initialize-Log }", code)
+        ' Fact 1 is asserted where the data directory is locked down, fact 2 where logs\ is, and both again after the service started.
+        Assert.Contains("Get-DataDirProblem $DataDir", FunctionBody(code, "Set-MachineDataDirAcl"))
+        Dim setLogs As String = FunctionBody(code, "Set-LogsAcls")
+        Assert.Contains("Get-DataDirProblem $DataDir", setLogs)
+        Assert.Contains("Get-LogsDirProblem $logsDir", setLogs)
+        Assert.Contains("Get-LogFileProblem $file", setLogs)
+        Assert.Contains("Remove-LinkOnly $file", setLogs)
+        Assert.Contains("Set-LogsAcls", FunctionBody(code, "Set-StateFileAcls"))
+        ' The administrator's %TEMP% copy stays the last resort, written on success too.
+        Assert.Contains("function Get-FallbackLogPath", code)
+        Assert.Contains("if (-not $script:LogPath) { Write-PendingLog (Get-FallbackLogPath) }", code)
+    End Sub
+
+    <Fact>
+    Public Sub FirewallHelper_WritesItsLogIntoTheLogsDirectoryOnlyWhenItExistsAndIsTrusted_ElseTemp()
+        Dim code As String = CodeOnly(FirewallHelperFile)
+        Dim fn As String = FunctionBody(code, "Get-RunLogDirectory")
+        Assert.Contains("'logs'", fn)
+        Assert.Contains("S-1-5-32-544", fn)
+        Assert.Contains("ReparsePoint", fn)
+        ' It never creates anything (the service helper does, with the ACL).
+        For Each forbidden As String In {"New-Item", "CreateDirectory", "mkdir", "SetAccessControl", "Set-Acl"}
+            Assert.DoesNotContain(forbidden, code)
+        Next
+
+        Dim scratch As String = Path.Combine(Path.GetTempPath(), "fms-enable-log-" & Guid.NewGuid().ToString("N"))
+        Directory.CreateDirectory(scratch)
+        Try
+            Dim programData As String = Path.Combine(scratch, "pd")
+            Dim temp As String = Path.Combine(scratch, "tmp")
+            Directory.CreateDirectory(programData)
+            Directory.CreateDirectory(temp)
+            Dim stateDir As String = Path.Combine(programData, "FastMediaSorterExchange")
+            Dim out As String = RunLogDriver(FirewallHelperPath(), programData, temp,
+                "Write-Output ('NOLOGS|' + [bool](Get-RunLogDirectory))" & vbLf &
+                "Write-RunLog 'first'" & vbLf &
+                "New-Item -ItemType Directory -Path (Join-Path '" & stateDir & "' 'logs') -Force | Out-Null" & vbLf &
+                "Write-Output ('LOGS|' + (Get-RunLogDirectory))" & vbLf &
+                "Write-RunLog 'second'" & vbLf &
+                "Remove-Item -LiteralPath (Join-Path '" & stateDir & "' 'logs') -Force -Recurse" & vbLf &
+                "New-Item -ItemType Junction -Path (Join-Path '" & stateDir & "' 'logs') -Target '" & scratch & "' | Out-Null" & vbLf &
+                "Write-Output ('JUNCTION|' + [bool](Get-RunLogDirectory))")
+            Dim lines As String() = out.Split({vbCrLf, vbLf}, StringSplitOptions.RemoveEmptyEntries)
+            Assert.True(lines.Contains("NOLOGS|False"), "driver output: " & out)
+            Assert.True(lines.Contains("LOGS|" & Path.Combine(stateDir, "logs")), "driver output: " & out)
+            Assert.True(lines.Contains("JUNCTION|False"), "driver output: " & out)
+            ' 'first' (no logs\ yet) went to %TEMP%; 'second' (logs\ present) into logs\, never into the state directory.
+            Assert.Contains("first", File.ReadAllText(Path.Combine(temp, "enable-exchange-server.log")))
+            Assert.DoesNotContain("second", File.ReadAllText(Path.Combine(temp, "enable-exchange-server.log")))
+            Assert.False(File.Exists(Path.Combine(stateDir, "enable-exchange-server.log")))
+        Finally
+            Try
+                ' The junction first, as a link: never delete through it.
+                Dim junction As String = Path.Combine(scratch, "pd", "FastMediaSorterExchange", "logs")
+                If Directory.Exists(junction) Then Directory.Delete(junction, False)
+            Catch
+            End Try
+            ExchangeTestSupport.DeleteQuietly(scratch)
+        End Try
+    End Sub
+    ''' <summary>
+    ''' The helper's OWN functions on real folders (TestData\exchange-helper\logs-directory-driver.ps1 loads every
+    ''' function of the script and none of its top-level code), without elevation: the current user stands in for
+    ''' Administrators - the one owner a non-elevated process may set - and Authenticated Users for the enrolled
+    ''' user. It proves the code paths of the elevated run: logs\ created with its final descriptor, adopted and
+    ''' re-secured when something else made it, a wrong file descriptor caught and put right, a junction refused,
+    ''' and the helper's own log opened inside logs\ only afterwards. What stays for the elevated hand run C-2 is
+    ''' the real Administrators group, LocalService writing, and the SCM.
+    ''' </summary>
+    <Fact>
+    Public Sub ServiceHelper_LogsDirectory_OnRealFolders_IsCreatedAdoptedAndVerified_WithBothFactsHolding()
+        Dim driver As String = File.ReadAllText(Path.Combine(ExchangeTestSupport.RepoRoot(), "tests", "Companion.Tests", "TestData", "exchange-helper", "logs-directory-driver.ps1"))
+        Dim out As String = RunPowerShell(driver, ServiceHelperPath())
+        Dim facts As New Dictionary(Of String, String)()
+        For Each line As String In out.Split({vbCrLf, vbLf}, StringSplitOptions.RemoveEmptyEntries)
+            Dim bar As Integer = line.IndexOf("|"c)
+            ' The helper's own timestamped log lines go to the host too; the facts are KEY|value.
+            If bar > 0 AndAlso Not Char.IsDigit(line(0)) Then facts(line.Substring(0, bar)) = line.Substring(bar + 1)
+        Next
+        Assert.False(facts.ContainsKey("EXCEPTION"), If(facts.ContainsKey("EXCEPTION"), facts("EXCEPTION"), ""))
+
+        ' 1. the first install
+        Assert.Equal("True", facts("LOGSDIR-EXISTS"))
+        Assert.EndsWith("\logs\install-exchange-service.log", facts("LOGPATH"))
+        Assert.Equal("True", facts("HELPERLOG-HAS-LINE"))
+        Assert.Equal("True", facts("HELPERLOG-NOT-IN-DATADIR"))
+        '    fact 1: nothing for the enrolled user on the state directory; fact 2: read only on logs\
+        Assert.Equal("", facts("DATA-PROBLEM"))
+        Assert.Equal("", facts("LOGS-PROBLEM"))
+        Assert.Equal("0", facts("DATA-ENROLLED-ENTRIES"))
+        Assert.Equal("1", facts("LOGS-ENROLLED-ENTRIES"))
+        Assert.Equal("ReadAndExecute, Synchronize", facts("LOGS-ENROLLED-RIGHTS"))
+        Assert.Equal("True", facts("LOGS-PROTECTED"))
+        '    LocalService: create entries here, Modify only on what is inside (no DELETE on the directory itself)
+        Assert.Equal("Modify, Synchronize/InheritOnly ; Write, ReadAndExecute, Synchronize/None", facts("LOGS-LOCALSERVICE"))
+
+        ' 2. a file the service made inherits exactly the directory's read-only entry for the user
+        Assert.Equal("", facts("FILE-PROBLEM-INITIAL"))
+        Assert.Equal("ReadAndExecute, Synchronize", facts("FILE-ENROLLED-RIGHTS"))
+        Assert.Equal("True", facts("FILE-ENROLLED-INHERITED"))
+
+        ' 3. a wrong descriptor on a file is caught, and the next pass puts it right
+        Assert.Contains("holds more than read", facts("FILE-PROBLEM-BROKEN"))
+        Assert.Equal("", facts("FILE-PROBLEM-FIXED"))
+
+        ' 4. a logs\ somebody else made first is adopted and re-secured, and the helper's log reopens inside it
+        Assert.Contains("inherits entries", facts("ADOPT-PROBLEM-BEFORE"))
+        Assert.Equal("", facts("ADOPT-PROBLEM-AFTER"))
+        Assert.Equal("", facts("ADOPT-FILE-PROBLEM"))
+        Assert.Equal("True", facts("ADOPT-LOG-REOPENED"))
+
+        ' 5. a junction named logs is refused (exit 11) and never followed
+        Assert.Equal("True", facts("JUNCTION-REFUSED"))
+        Assert.Equal("True", facts("JUNCTION-TARGET-UNTOUCHED"))
+    End Sub
     ' ====================================================================== helpers ====
 
     Private Shared ReadOnly Cache As New Dictionary(Of String, String)()
@@ -437,6 +641,43 @@ Public Class ExchangeHelperTests
         Return RunPowerShell(prelude & cases, helperPath)
     End Function
 
+    Private Shared Function FirewallHelperPath() As String
+        Return Path.Combine(InstallerDir(), FirewallHelperFile)
+    End Function
+
+    ''' <summary>Defines the verifier and descriptor functions of the service helper (extracted by AST; nothing else
+    ''' of the script runs) with the script-level SIDs they read, then runs <paramref name="cases"/>.</summary>
+    Private Shared Function RunAclDriver(helperPath As String, cases As String) As String
+        Dim prelude As String =
+            "param([string]$Helper)" & vbLf &
+            "$ErrorActionPreference='Stop'" & vbLf &
+            "$SidSystem='S-1-5-18'; $SidLocalService='S-1-5-19'; $SidAdmins='S-1-5-32-544'" & vbLf &
+            "$ManageSid='S-1-5-21-1004336348-1177238915-682003330-1001'" & vbLf &
+            "$ast=[System.Management.Automation.Language.Parser]::ParseFile($Helper,[ref]$null,[ref]$null)" & vbLf &
+            "foreach ($n in 'Test-ManageSid','Split-Sids','New-AllowRule','New-LockedDirectorySecurity','New-DataDirSecurity','New-LogsDirSecurity','Get-SidDisplay','Get-LockdownAclProblem','Test-RightsWithin','Get-DataDirAclProblem','Get-LogsDirAclProblem','Get-LogFileAclProblem') {" & vbLf &
+            "  $fd=$ast.Find({param($x) $x -is [System.Management.Automation.Language.FunctionDefinitionAst] -and $x.Name -eq $n},$true)" & vbLf &
+            "  if (-not $fd) { throw ('function ' + $n + ' is missing from the helper') }" & vbLf &
+            "  Invoke-Expression $fd.Extent.Text" & vbLf &
+            "}" & vbLf
+        Return RunPowerShell(prelude & cases, helperPath)
+    End Function
+
+    ''' <summary>Defines Get-RunLogDirectory and Write-RunLog of the firewall helper with ProgramData and TEMP pointed at
+    ''' scratch folders (the child process only), then runs <paramref name="cases"/>.</summary>
+    Private Shared Function RunLogDriver(helperPath As String, programData As String, temp As String, cases As String) As String
+        Dim prelude As String =
+            "param([string]$Helper)" & vbLf &
+            "$ErrorActionPreference='Stop'" & vbLf &
+            "$env:ProgramData='" & programData & "'; $env:TMP='" & temp & "'; $env:TEMP='" & temp & "'" & vbLf &
+            "$logName='enable-exchange-server.log'" & vbLf &
+            "$ast=[System.Management.Automation.Language.Parser]::ParseFile($Helper,[ref]$null,[ref]$null)" & vbLf &
+            "foreach ($n in 'Get-RunLogDirectory','Write-RunLog') {" & vbLf &
+            "  $fd=$ast.Find({param($x) $x -is [System.Management.Automation.Language.FunctionDefinitionAst] -and $x.Name -eq $n},$true)" & vbLf &
+            "  if (-not $fd) { throw ('function ' + $n + ' is missing from the helper') }" & vbLf &
+            "  Invoke-Expression $fd.Extent.Text" & vbLf &
+            "}" & vbLf
+        Return RunPowerShell(prelude & cases, helperPath)
+    End Function
     Private Shared Function RunPowerShell(script As String, argument As String) As String
         Dim scriptPath As String = Path.Combine(Path.GetTempPath(), "fms-exchange-helper-test-" & Guid.NewGuid().ToString("N") & ".ps1")
         File.WriteAllText(scriptPath, script, New UTF8Encoding(False))
@@ -445,6 +686,9 @@ Public Class ExchangeHelperTests
                 .UseShellExecute = False, .CreateNoWindow = True,
                 .RedirectStandardOutput = True, .RedirectStandardError = True,
                 .StandardOutputEncoding = Encoding.UTF8}
+            ' The test host may itself run under PowerShell 7, whose module path Windows PowerShell 5.1 cannot load
+            ' (Get-Acl then fails to auto-load): the child starts from its own defaults, as the installer's does.
+            psi.Environment.Remove("PSModulePath")
             psi.ArgumentList.Add("-NoProfile")
             psi.ArgumentList.Add("-NonInteractive")
             psi.ArgumentList.Add("-ExecutionPolicy")

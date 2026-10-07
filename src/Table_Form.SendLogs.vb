@@ -95,7 +95,7 @@ Partial Public Class Table_Form
             .MinimizeBox = False,
             .MaximizeBox = False,
             .ShowInTaskbar = False,
-            .ClientSize = New Size(560, 300)
+            .ClientSize = New Size(560, 344)
         }
             ' A topmost owner does not reliably promote a WinForms modal child to the
             ' topmost band.  Without this explicit flag the consent window can be
@@ -119,18 +119,18 @@ Partial Public Class Table_Form
             }
 
             Dim contents As New TextBox With {
-                .Location = New Point(16, 44), .Size = New Size(528, 96),
+                .Location = New Point(16, 44), .Size = New Size(528, 140),
                 .Multiline = True, .ReadOnly = True, .ScrollBars = ScrollBars.Vertical,
                 .Text = String.Join(Environment.NewLine, package.Entries.ToArray())
             }
 
             Dim warning As New Label With {
-                .AutoSize = False, .Location = New Point(16, 150), .Size = New Size(528, 58),
+                .AutoSize = False, .Location = New Point(16, 194), .Size = New Size(528, 58),
                 .Text = Localization.T("В журнале есть пути и имена файлов, которые вы открывали, и названия ваших каталогов. Откройте архив и посмотрите, что уходит, если это важно.")
             }
 
             Dim oversize As New Label With {
-                .AutoSize = False, .Location = New Point(16, 208), .Size = New Size(528, 34),
+                .AutoSize = False, .Location = New Point(16, 252), .Size = New Size(528, 34),
                 .ForeColor = Color.Firebrick,
                 .Visible = package.OverSizeLimit,
                 .Text = Localization.TF("Архив получился больше {0} МБ - такое письмо почта не пропустит. Откройте архив и пришлите только нужное.",
@@ -138,18 +138,18 @@ Partial Public Class Table_Form
             }
 
             Dim sendButton As New Button With {
-                .Location = New Point(232, 252), .Size = New Size(150, 32),
+                .Location = New Point(232, 296), .Size = New Size(150, 32),
                 .Text = Localization.T("Отправить"),
                 .Enabled = Not package.OverSizeLimit,
                 .UseVisualStyleBackColor = True
             }
             Dim openButton As New Button With {
-                .Location = New Point(16, 252), .Size = New Size(150, 32),
+                .Location = New Point(16, 296), .Size = New Size(150, 32),
                 .Text = Localization.T("Открыть архив"),
                 .UseVisualStyleBackColor = True
             }
             Dim cancelButton As New Button With {
-                .Location = New Point(394, 252), .Size = New Size(150, 32),
+                .Location = New Point(394, 296), .Size = New Size(150, 32),
                 .Text = Localization.T("Отмена"),
                 .DialogResult = DialogResult.Cancel,
                 .UseVisualStyleBackColor = True
@@ -255,6 +255,17 @@ Partial Public Class Table_Form
         End Try
 
         RevealPackage(zipPath)
+
+        ' No registered mail handler (a Windows Server has none): a blind mailto would only raise a
+        ' "choose an app" prompt (ticket 182 L-6), so it is skipped and the archive's FULL path is
+        ' printed instead - the file is already on the clipboard and selected in its folder.
+        If MailSender.ManualRouteFor(MailSender.HasMailHandler()) = MailSender.ManualRoute.PrintPathOnly Then
+            AppFileLogger.WriteLine("Table_Form send-logs: no mail handler is registered - the mailto was skipped, the archive path was shown")
+            ViewerBox.Show(Me,
+                Localization.TF("Почтовая программа не найдена. Архив скопирован в буфер обмена и показан в папке. Полный путь к архиву: {0}", zipPath),
+                Me.Text, MessageBoxButtons.OK, MessageBoxIcon.Information)
+            Return
+        End If
 
         Try
             Dim url As String = "mailto:" & Author_Email &

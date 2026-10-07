@@ -1,26 +1,19 @@
 package config
 
 import (
+	"encoding/json"
 	"errors"
 	"io/fs"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
-
-	"fms/exchange-server/internal/password"
 )
 
 func TestDefaultsAreValid(t *testing.T) {
 	c := Default()
 	if err := c.Validate(); err != nil {
 		t.Fatalf("defaults do not validate: %v", err)
-	}
-	if err := c.CheckPassword(); !errors.Is(err, ErrNoPassword) {
-		t.Fatalf("a fresh config has no password: %v", err)
-	}
-	if c.ValidateForServe() == nil {
-		t.Fatal("serve must refuse a config with no password")
 	}
 }
 
@@ -32,7 +25,7 @@ func TestLoadOrInitWritesCommentedDefaults(t *testing.T) {
 	}
 	raw, _ := os.ReadFile(p)
 	s := string(raw)
-	for _, want := range []string{`"_comment"`, `"listen": ":22022"`, `"portRange": "40000-40100"`, `"passwordHash": ""`} {
+	for _, want := range []string{`"_comment"`, `"listen": ":22022"`, `"portRange": "40000-40100"`, `"publicEndpoint": ""`, `"tunnelsPerResource": 16`, `"failedAuthRate"`, `"manageSids": []`} {
 		if !strings.Contains(s, want) {
 			t.Errorf("first-run file lacks %s", want)
 		}
@@ -61,10 +54,8 @@ func TestMissingMembersKeepDefaultsAndUnknownAreIgnored(t *testing.T) {
 }
 
 func TestEveryRefusal(t *testing.T) {
-	rec, _ := password.HashWith("Passw0rdTest", password.Params{Time: 1, Memory: 8, Threads: 1, KeyLen: 32})
 	good := Default()
-	good.PasswordHash = rec
-	if err := good.ValidateForServe(); err != nil {
+	if err := good.Validate(); err != nil {
 		t.Fatalf("a good config is refused: %v", err)
 	}
 	mutate := map[string]func(*Config){
@@ -75,7 +66,12 @@ func TestEveryRefusal(t *testing.T) {
 		"range zero":              func(c *Config) { c.PortRange = "0-10" },
 		"keepalive min > default": func(c *Config) { c.Keepalive.MinSeconds = 60 },
 		"keepalive window zero":   func(c *Config) { c.Keepalive.WindowMultiplier = 0 },
-		"cap zero":                func(c *Config) { c.Limits.MaxRegistrations = 0 },
+		"cap zero":                func(c *Config) { c.Limits.DevicesPerAccount = 0 },
+		"tunnel cap zero":         func(c *Config) { c.Limits.TunnelsPerResource = 0 },
+		"loopback endpoint":       func(c *Config) { c.PublicEndpoint = "127.0.0.1:22022" },
+		"endpoint without a port": func(c *Config) { c.PublicEndpoint = "host" },
+		"admin sid that is not":   func(c *Config) { c.Admin.ManageSIDs = []string{"alice"} },
+		"pairing rate zero":       func(c *Config) { c.Limits.PairingRequest.Burst = 0 },
 		"rate zero":               func(c *Config) { c.Limits.UnknownID.PerMinute = 0 },
 		"tls half set":            func(c *Config) { c.TLS.CertFile = "x.pem" },
 		"log bound tiny":          func(c *Config) { c.Log.MaxBytes = 10 },
@@ -86,11 +82,6 @@ func TestEveryRefusal(t *testing.T) {
 		if c.Validate() == nil {
 			t.Errorf("%s: accepted", name)
 		}
-	}
-	c := good
-	c.PasswordHash = "$argon2id$garbage"
-	if c.ValidateForServe() == nil || errors.Is(c.CheckPassword(), ErrNoPassword) {
-		t.Error("a malformed hash must be refused as malformed, not as missing")
 	}
 }
 
@@ -177,7 +168,7 @@ func TestParsePortRange(t *testing.T) {
 func TestSaveRewritesInPlaceWhenTheTemporaryFileIsRefused(t *testing.T) {
 	p := filepath.Join(t.TempDir(), FileName)
 	c := Default()
-	c.PasswordHash = "kept"
+	c.PublicEndpoint = "kept.example:22022"
 	if err := Save(p, c); err != nil {
 		t.Fatal(err)
 	}
@@ -190,11 +181,69 @@ func TestSaveRewritesInPlaceWhenTheTemporaryFileIsRefused(t *testing.T) {
 		t.Fatalf("an in-place rewrite was expected: %v", err)
 	}
 	got, err := Load(p)
-	if err != nil || got.Listen != ":23023" || got.PasswordHash != "kept" {
+	if err != nil || got.Listen != ":23023" || got.PublicEndpoint != "kept.example:22022" {
 		t.Fatalf("load: %+v %v", got, err)
 	}
 	// With no existing file there is nothing to rewrite: the refusal stands.
 	if err := Save(filepath.Join(t.TempDir(), "absent.json"), c); !errors.Is(err, fs.ErrPermission) {
 		t.Fatalf("expected the permission error, got %v", err)
+	}
+}
+
+func TestPublicEndpointIsValidatedLikeAnAddressAndNeverLoopback(t *testing.T) {
+	for _, ok := range []string{"", "193.178.50.43:22022", "exchange.example.org:443", "[2001:db8::1]:22022", "host:1"} {
+		if err := CheckPublicEndpoint(ok); err != nil {
+			t.Errorf("%q refused: %v", ok, err)
+		}
+	}
+	for _, bad := range []string{"host", "host:", ":22022", "host:0", "host:70000", "host:abc", "127.0.0.1:22022", "[::1]:22022",
+		"localhost:22022", "LOCALHOST:22022", "x.localhost:22022", "0.0.0.0:22022", "[::]:22022", "a b:22022", "http://h:22022", "u@h:22022"} {
+		if err := CheckPublicEndpoint(bad); err == nil {
+			t.Errorf("%q accepted", bad)
+		}
+	}
+}
+
+func TestAnObsoletePasswordHashIsIgnoredFlaggedOnceAndGoneAfterTheNextSave(t *testing.T) {
+	p := filepath.Join(t.TempDir(), FileName)
+	if err := os.WriteFile(p, []byte(`{"listen":":9999","passwordHash":"$argon2id$v=19$m=8,t=1,p=1$c2FsdHNhbHQ$a2V5a2V5a2V5a2V5a2V5a2V5"}`), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	c, err := Load(p)
+	if err != nil || !c.ObsoletePasswordHash || c.Listen != ":9999" {
+		t.Fatalf("%+v %v", c, err)
+	}
+	if err := c.Validate(); err != nil {
+		t.Fatalf("an obsolete member must not make the file invalid: %v", err)
+	}
+	if err := Save(p, c); err != nil {
+		t.Fatal(err)
+	}
+	raw, _ := os.ReadFile(p)
+	if strings.Contains(string(raw), "passwordHash") || strings.Contains(string(raw), "argon2") {
+		t.Fatalf("the obsolete member must be gone after a save:\n%s", raw)
+	}
+	again, _ := Load(p)
+	if again.ObsoletePasswordHash {
+		t.Fatal("still flagged")
+	}
+	if plain, _ := Load(filepath.Join(t.TempDir(), "none.json")); plain.ObsoletePasswordHash {
+		t.Fatal("a fresh default is not flagged")
+	}
+}
+
+func TestTheNewLimitNamesReplaceTheOldOnes(t *testing.T) {
+	raw, _ := json.Marshal(Default())
+	s := string(raw)
+	for _, gone := range []string{"maxRegistrations", "tunnelsPerShare", "failedRegisterRate", "passwordHash"} {
+		if strings.Contains(s, gone) {
+			t.Errorf("the superseded member %q is still written", gone)
+		}
+	}
+	for _, want := range []string{"tunnelsPerResource", "failedAuthRate", "failedEnrollRate", "failedHelloRate", "pairingRequestRate",
+		"broadcastStartRate", "devicesPerAccount", "resourcesPerAccount", "publicEndpoint", "manageSids"} {
+		if !strings.Contains(s, want) {
+			t.Errorf("the member %q is missing from the defaults", want)
+		}
 	}
 }

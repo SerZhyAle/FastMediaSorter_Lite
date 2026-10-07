@@ -3,9 +3,23 @@
 | | |
 | --- | --- |
 | **Id** | `INSTALL-TRUST` |
-| **Version** | 1.1, active (read 2026-10-02). Owner: shared |
+| **Version** | 1.2, active (read 2026-10-07). Owner: shared |
 | **Home** | `install-trust/README.md` + `TRUST_GUIDE.md` (the reference rendering) in the shared contracts catalog |
-| **Role here** | producer - **adopted 2026-09-22** (ticket 025 section 7), **re-aligned 2026-09-25** (ticket 037), **re-read against 1.1 on 2026-10-02** |
+| **Role here** | producer - **adopted 2026-09-22** (ticket 025 section 7), **re-aligned 2026-09-25** (ticket 037), **re-read against 1.1 on 2026-10-02 and against 1.2 on 2026-10-07** |
+
+What 1.2 added, and where this page stands:
+
+- **Item K (rule 4): no "Unblock".** The per-file Properties checkbox is not a permitted instruction - the only
+  ones are More info -> Run anyway and an exception for one install folder. Nothing in this repository tells a
+  user to use it: not the thirteen locales of `tools/trust-copy.json`, not the three READMEs, the root pages,
+  `lang/**`, `docs/*.html`, the winget manifests, the installer scripts, the Store copy or the release workflow
+  (searched 2026-10-07 in English, Russian, Ukrainian and the other ten languages, and for `Zone.Identifier` and
+  the mark of the web). `TrustPageContractTests.NoSurfaceTellsTheUserToUnblockAFile` holds it from now on.
+- **Item L (rule 1): the four sections in order.** The page has five: what the warning is, why it appears, exactly
+  what to click, **what administrator rights are used for and how to take them back**, what the program never does.
+  The four of rule 1 stand in their order (the "never does" section is last); the fifth is rule 5's itemization,
+  which the reference rendering folds into its first and third sections. Section 3 of the contract reads only that
+  the four are carried, so no reordering is owed; `EnglishKeepsRuleOnesOrder` holds the order.
 
 What 1.1 added, and where this page stands:
 
@@ -85,8 +99,9 @@ asks for or approves.
 ## Held by tests
 
 `TrustPageContractTests` (in `tests/Lite.Tests`) holds rule 1's section order and per-locale structure
-parity, rule 4's forbidden instructions in English, the presence of the page link on every surface listed
-above that is a file in this repository, and every language's trust URL pointing at a page that exists.
+parity, rule 4's forbidden instructions in English, the absence of any "Unblock" instruction in every
+surface a user reads (item K), the presence of the page link on every surface listed above that is a file in
+this repository, and every language's trust URL pointing at a page that exists.
 The render check itself (`tools/Build-SitePages.ps1 -Check`) is a release-class check run by the release
 preflight, where `tools/check-placement.jsonl` places it (ticket 042).
 

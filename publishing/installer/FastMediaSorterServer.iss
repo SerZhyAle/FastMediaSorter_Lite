@@ -174,6 +174,9 @@ ukrainian.CompExchange={#ExchangeServerName} - необов’язкове до�
 english.ExchangeServiceTask=Run the {#ExchangeServerName} as a Windows service (starts at boot; adds one program-scoped firewall rule)
 russian.ExchangeServiceTask=Запускать {#ExchangeServerName} как службу Windows (стартует при загрузке; добавляет одно правило брандмауэра для этой программы)
 ukrainian.ExchangeServiceTask=Запускати {#ExchangeServerName} як службу Windows (стартує під час завантаження; додає одне правило брандмауера для цієї програми)
+english.CollectStateIcon=Collect host state for support
+russian.CollectStateIcon=Собрать состояние сервера для поддержки
+ukrainian.CollectStateIcon=Зібрати стан сервера для підтримки
 #endif
 english.ViewerBlockedSuffix=- not offered here: the User edition is already installed
 russian.ViewerBlockedSuffix=- здесь не предлагается: пользовательская редакция уже установлена
@@ -239,6 +242,9 @@ Source: "{#SourceDir}\viewer\*"; DestDir: "{app}"; Flags: recursesubdirs createa
 ; skipifsourcedoesntexist: a setup that claims the component carries it. The service helper
 ; stages the exe into ProgramData at registration; the firewall helper is run by the Share Manager.
 Source: "{#SourceDir}\exchange\*"; DestDir: "{app}\exchange"; Flags: recursesubdirs createallsubdirs ignoreversion; Components: exchange
+; The offline state collector (ticket 182 L-9): read-only, works when the Share Manager does not start
+; and no mail client exists. Gated with the exchange tree, so a gate-shut build carries nothing new.
+Source: "collect-host-state.ps1"; DestDir: "{app}"; Flags: ignoreversion
 #endif
 Source: "{#SourceDir}\LICENSE"; DestDir: "{app}"; Flags: ignoreversion skipifsourcedoesntexist
 Source: "{#SourceDir}\README.md"; DestDir: "{app}"; Flags: ignoreversion skipifsourcedoesntexist
@@ -318,6 +324,11 @@ Name: "{group}\{cm:UninstallProgram,{#AppShortcutName}}"; Filename: "{uninstalle
 ; group), which is not where someone looks for a server they just installed. Create it
 ; on every install, including upgrades that remembered an unchecked desktop task.
 Name: "{autodesktop}\{#AppShortcutName}"; Filename: "{app}\{#CompanionExe}"; Parameters: "--show"
+#ifndef NoExchange
+; Ticket 182 L-9: a Start-menu entry for the offline state collector (never the desktop). It runs
+; with -Pause so the window stays readable, and it only reads: no service is touched.
+Name: "{group}\{cm:CollectStateIcon}"; Filename: "{sys}\WindowsPowerShell\v1.0\powershell.exe"; Parameters: "-NoProfile -ExecutionPolicy Bypass -File ""{app}\collect-host-state.ps1"" -Pause"; WorkingDir: "{app}"
+#endif
 #ifdef HaveViewer
 ; The secondary role gets an entry ONLY when its component was ticked, and only in the Start
 ; menu - never the desktop: the server's own icon is the one that leads (ticket 132 section
@@ -386,11 +397,11 @@ end;
 function ServiceFailedText: String;
 begin
   if IsLanguage('russian') then
-    Result := 'Не удалось зарегистрировать или запустить службу общего доступа. Файлы установлены; откройте Менеджер общего доступа и нажмите «Управление хостингом..» -> «Восстановить регистрацию службы». Подробности - в файле install-share-service.log в каталоге ProgramData\FastMediaSorterCompanion.'
+    Result := 'Не удалось зарегистрировать или запустить службу общего доступа. Файлы установлены; откройте Менеджер общего доступа и нажмите «Настройки менеджера..» -> «Хостинг» -> «Восстановить регистрацию службы». Подробности - в файле install-share-service.log в каталоге ProgramData\FastMediaSorterCompanion.'
   else if IsLanguage('ukrainian') then
-    Result := 'Не вдалося зареєструвати або запустити службу спільного доступу. Файли встановлено; відкрийте Менеджер спільного доступу й натисніть «Керування хостингом..» -> «Відновити реєстрацію служби». Подробиці - у файлі install-share-service.log у каталозі ProgramData\FastMediaSorterCompanion.'
+    Result := 'Не вдалося зареєструвати або запустити службу спільного доступу. Файли встановлено; відкрийте Менеджер спільного доступу й натисніть «Налаштування менеджера..» -> «Хостинг» -> «Відновити реєстрацію служби». Подробиці - у файлі install-share-service.log у каталозі ProgramData\FastMediaSorterCompanion.'
   else
-    Result := 'The folder-share service could not be registered or started. The files are installed; open the Share Manager and use "Manage hosting.." -> "Repair the service registration". Details are in install-share-service.log under ProgramData\FastMediaSorterCompanion.';
+    Result := 'The folder-share service could not be registered or started. The files are installed; open the Share Manager and use "Manager settings.." -> "Hosting" -> "Repair the service registration". Details are in install-share-service.log under ProgramData\FastMediaSorterCompanion.';
 end;
 
 function MachineDataDir: String;

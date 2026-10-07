@@ -263,14 +263,24 @@ Partial Public Class Main_Form
         End If
 
         ' Something else is changing the list, or about to: the update waits for it.
-        If folder_Watch_Applying OrElse
-           (file_Op_Queue IsNot Nothing AndAlso file_Op_Queue.PendingCount > 0) Then
+        If folder_Watch_Applying OrElse ListIsBeingChangedElsewhere() Then
             If Not folder_Watch_Touched.IsEmpty Then folder_Watch_Timer.Start()
             Return
         End If
 
         ApplyFolderChangesAsync()
     End Sub
+
+    ''' <summary>
+    ''' Something other than the watcher is editing the list or is about to replace it: a queued file
+    ''' operation (which also carries every running batch), a batch still being planned or asked about,
+    ''' or a folder scan that outlived its grace and will hand over a fresh list. An edit made now would
+    ''' race the first two and be thrown away by the third, so the batch of touched paths waits.
+    ''' </summary>
+    Private Function ListIsBeingChangedElsewhere() As Boolean
+        If file_Op_Queue IsNot Nothing AndAlso file_Op_Queue.PendingCount > 0 Then Return True
+        Return BatchBusy() OrElse IsFolderScanRunning()
+    End Function
 
     Private Function WatchedListIsOnScreen() As Boolean
         If was_External_Input_Previously OrElse is_Files_Array_Active OrElse files_List Is Nothing Then Return False
@@ -312,8 +322,7 @@ Partial Public Class Main_Form
         ' Whatever happened while the disk was being asked decides whether the answers still
         ' describe THIS list: another folder, a rescan, or something that started editing it.
         Dim stale As Boolean = ticket <> folder_Watch_Ticket OrElse list_Stamp <> file_List_Generation OrElse
-                               Not WatchedListIsOnScreen() OrElse
-                               (file_Op_Queue IsNot Nothing AndAlso file_Op_Queue.PendingCount > 0)
+                               Not WatchedListIsOnScreen() OrElse ListIsBeingChangedElsewhere()
         If stale OrElse Not verdict_Valid Then
             ' Not lost: put back and tried again (a stale list is gone - its paths are harmless to reconcile).
             If ticket = folder_Watch_Ticket AndAlso folder_Watcher IsNot Nothing Then

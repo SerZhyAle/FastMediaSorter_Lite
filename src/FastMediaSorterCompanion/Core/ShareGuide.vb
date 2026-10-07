@@ -31,9 +31,9 @@ Public Module ShareGuide
     Public Const FileDoSharingGuideUrl As String = ShareLinks.FileDoSharingGuideUrl
 
     ''' <summary>The Android app's landing page (per language).</summary>
-    Public Const AndroidSiteEn As String = "https://serzhyale.github.io/FastMediaSorter_mob_v2/"
-    Public Const AndroidSiteRu As String = "https://serzhyale.github.io/FastMediaSorter_mob_v2/index-ru.html"
-    Public Const AndroidSiteUk As String = "https://serzhyale.github.io/FastMediaSorter_mob_v2/index-uk.html"
+    Public Const AndroidSiteEn As String = SitePages.AndroidAppSiteRoot
+    Public Const AndroidSiteRu As String = SitePages.AndroidAppSiteRoot & "index-ru.html"
+    Public Const AndroidSiteUk As String = SitePages.AndroidAppSiteRoot & "index-uk.html"
 
     ''' <summary>Android app site URL for the current UI language. Only three landing
     ''' pages exist, so anything outside ru/uk lands on the English one - same rule as
@@ -93,8 +93,8 @@ Public Module ShareGuide
             Replace("__PORT__", If(port > 0, port.ToString(), "-")).
             Replace("__ROUTER_MODEL__", enc(routerModel)).
             Replace("__ROUTER_SEARCH_URL__", enc(If(String.IsNullOrEmpty(routerSearchUrl), "https://www.google.com/search?q=how+to+set+up+port+forwarding", routerSearchUrl))).
-            Replace("__SITE_GUIDE_URL__", SiteGuideUrl).
-            Replace("__SITE_URL__", SiteUrl).
+            Replace("__SITE_GUIDE_URL__", ShareLinks.Localized(SiteGuideUrl)).
+            Replace("__SITE_URL__", ShareLinks.Localized(SiteUrl)).
             Replace("__LANG__", Localization.GuideCode())
     End Function
 

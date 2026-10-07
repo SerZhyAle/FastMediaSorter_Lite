@@ -45,9 +45,11 @@ Public NotInheritable Class ShareConfigResult
     ''' while the export is dormant.</summary>
     Public Property HasRelay As Boolean
     Public Property LanDisplay As String = ""   ' "host:port" for copy/display
-    ''' <summary>Localized short reachability line, also embedded in the .fmscfg as
-    ''' the optional "accessNote" (Android S1014 shows it on connection failure)
-    ''' and surfaced in the Share tab hint. "" when there is nothing to say.</summary>
+    ''' <summary>Exactly the string embedded in the .fmscfg as the optional "accessNote"
+    ''' (Android S1014 shows it on connection failure): the short reachability line in this PC's UI
+    ''' language, then - when that language is not English - one line feed and the same line in
+    ''' English (FMSCFG 2.3). A window that wants the own-language line alone asks
+    ''' <see cref="ShareText.AccessNote"/>. "" when there is nothing to say.</summary>
     Public Property AccessNote As String = ""
     ''' <summary>The payload does not fit a QR code (contract §7) - the UI must
     ''' tell the user to share the .fmscfg file instead. Never silently truncate.</summary>
@@ -103,9 +105,8 @@ Public Module ShareConfigBuilder
     ''' Nothing when there is nothing to serve (not running / no address / no roots).
     ''' <paramref name="includePassword"/> off = the "exclude password" safeguard: the
     ''' password key stays present with an empty value and the sender must pass the real
-    ''' password out-of-band. FMSCFG does not describe an empty password, and whether the
-    ''' shipped importer accepts one is an open question to the Android side - a dated
-    ''' registry exception until it is answered (ticket 034 phase 3).
+    ''' password out-of-band. FMSCFG 2.2 item C: an empty password means "not carried" - the
+    ''' importer asks the user before it creates anything.
     ''' </summary>
     ''' <param name="exportOverrides">Shared overrides applied to EVERY root (the legacy
     ''' uniform path - kept for callers/tests that set one PIN/RO/slideshow for the whole code).</param>
@@ -171,8 +172,10 @@ Public Module ShareConfigBuilder
             hasExt = True
         End If
 
-        ' Ticket 148 T-5, DORMANT: nothing on a product path passes `exchange` before contract rung 2, so
-        ' with Nothing this block does not run and the bytes are exactly what they were (ANYWHERE-ACCESS 8.5).
+        ' Ticket 148 T-5: with `exchange` = Nothing this block does not run and the bytes are exactly what they were
+        ' (ANYWHERE-ACCESS 8.5). The package wizard passes what ExchangeProducerRules.ExportFor returns, which is
+        ' Nothing unless the producer is on AND the worker reports a registered share. When a tunnel path is written
+        ' it follows FMSCFG 2.4 rule 7: a valid host and port, after every other path, never in the LAN-only export.
         Dim hasRelay As Boolean = AppendExchangePaths(paths, exchange, includeExternal)
         If paths.Length = 0 Then Return Nothing
 
@@ -204,11 +207,12 @@ Public Module ShareConfigBuilder
             Next
         End If
 
-        ' The short, localized reachability line the phone shows on connection
-        ' failure (Android S1014) and the Share tab surfaces. Built from the same
-        ' reach facts; emitted as an optional top-level field (old parsers ignore
-        ' it, so it never bumps schemaVersion).
-        Dim note As String = ShareText.AccessNote(reach, port, includeExternal)
+        ' The short reachability line the phone shows on connection failure (Android
+        ' S1014). Built from the same reach facts; emitted as an optional top-level field
+        ' (old parsers ignore it, so it never bumps schemaVersion). FMSCFG 2.3: written in
+        ' this PC's UI language and, when that is not English, followed by the same note in
+        ' English (amendment B, a SHOULD) - the phone's user may not read the PC's language.
+        Dim note As String = ShareText.AccessNoteForExport(reach, port, includeExternal)
 
         ' Field order mirrors CONFIG_FORMAT.md "Canonical test vector" and the Android
         ' fixture built from the same bytes (FMSCFG rule 5); accessNote is the optional
@@ -409,8 +413,12 @@ Public Module ShareConfigBuilder
 
     ''' <summary>The payload fields FMSCFG treats as secrets: the SFTP password and every
     ''' root's accessPin (the v2 table gives the PIN the password's sensitivity), and - since
-    ''' ticket 148 - a tunnel path's share id, which is a bearer secret link (133 R-6).</summary>
-    Private ReadOnly SecretField As New Regex("(""(?:password|accessPin|sid)"":"")(?:[^""\\]|\\.)*("")", RegexOptions.CultureInvariant)
+    ''' ticket 148 - a tunnel path's share id, which is a bearer secret link (133 R-6). The
+    ''' share id is listed under both spellings: <c>shareId</c> is the member FMSCFG 2.4 registers
+    ''' on a <c>rendezvousTunnel</c> path, <c>sid</c> the provisional one the dormant exporter still
+    ''' writes (<see cref="ExchangeWireNames.TunnelShareIdMember"/>) - redaction must not depend on
+    ''' which of the two the exporter has been moved to.</summary>
+    Private ReadOnly SecretField As New Regex("(""(?:password|accessPin|sid|shareId)"":"")(?:[^""\\]|\\.)*("")", RegexOptions.CultureInvariant)
 
     ''' <summary>Blanks out the value of every secret field for diagnostic logging - the
     ''' export JSON carries a live SFTP credential and per-root PINs by design (FMSCFG rule 6),

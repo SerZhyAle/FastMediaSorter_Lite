@@ -39,6 +39,7 @@ Partial Public NotInheritable Class Localization
         AddBroadcastStrings()       ' 016: streamsplayer broadcast resource
         AddHelpCardStrings()        ' 123: the F1 reference card - groups, fixed rows, mouse chords
         AddDialogStrings()          ' 124: named-button questions, prompts, notifications, empty and first-run states
+        AddSendLogsStrings()        ' 182 L-3/L-6: a log that cannot be included, no mail program (table shared with the Share Manager)
     End Sub
 
 End Class

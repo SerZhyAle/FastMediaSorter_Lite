@@ -3,13 +3,15 @@
 | | |
 | --- | --- |
 | **Id** | `STREAM-BANK` |
-| **Version** | 2.2, active (read 2026-10-02; 2.2 adds rule 13 - a blank or absent `is_live` means "not stated" - additive to this producer). Owner: FastMediaSorter Android |
+| **Version** | 2.2, active (re-read 2026-10-07; 2.2 adds rule 13 - a blank or absent `is_live` means "not stated" - which a producer that always leaves the column blank already holds). Owner: FastMediaSorter Android |
 | **Home** | `stream-catalog/README.md` in the shared contracts catalog |
-| **Role here** | **producer** - implemented under specification 022 (`src/Streams/`) |
+| **Role here** | **producer** - implemented under specification 022 (`src/Streams/`), on `main` since 2026-10-03 and in **no release yet** (the latest release predates it); the contract's own header still lists this product as "planned" |
 
 Specification 022 implements Fast Media Sorter & Sharing for Windows (FMS_W) as a conforming producer of `stream-catalog.zip`
 from `.m3u` and `.m3u8` playlists on the PC. The registry row for this product used to read "planned
-consumer"; it is a producer.
+consumer", then "planned producer, not started"; it is a producer, and the row says so since 2026-10-07.
+The producer's own version tag (`StreamCatalogSchema.ContractTag`, printed in its report and held by a test)
+reads `STREAM-BANK 2.2`.
 
 ## Producer Rules Implemented (STREAM-BANK 2.1, unchanged by 2.2)
 
@@ -21,3 +23,14 @@ consumer"; it is a producer.
 - **No favicon index without atlas**: in the first version, no atlas and no `favicon_index` values are emitted (preventing S0925 favicon wiping hazards).
 - **Validation suite (V1-V12)**: written bytes are validated prior to atomic destination replacement.
 - **Churn guard**: protects against accidental loss of >20% URLs when updating an existing catalog of >=50 rows.
+- **`is_live` is always blank** (2.2 rule 13: "not stated"), never `false`: this producer does not know whether a
+  playlist entry is live.
+
+## What is not claimed
+
+- No real consumer (StreamsPlayer, the Android app) has imported a ZIP built here; the evidence is this
+  product's own validator and unit suite, not a cross-product run.
+- The producer derives `media_kind` from the playlist's own `type`/`group-title`/`radio` attributes before the
+  URL classifier, by substring (`M3uPlaylistReader.ClassifyMediaKind`); `03` section 4 specifies only the URL
+  classifier, so a group title that merely contains `tv` (for example `Latvia`) is read as VIDEO (from the
+  code; not run). A producer choice outside the contract, recorded as a follow-up of specification 022.

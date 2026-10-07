@@ -109,7 +109,7 @@ Public Class ExchangeProducerTests
             Dim tunnel = paths(3)
             Assert.Equal("relay.example.org", tunnel.GetProperty("host").GetString())
             Assert.Equal(22022, tunnel.GetProperty("port").GetInt32())
-            Assert.Equal(GoodSid, tunnel.GetProperty("sid").GetString())
+            Assert.Equal(GoodSid, tunnel.GetProperty("shareId").GetString())
             ' one identity on every transport: the fingerprint is the same single top-level one
             Assert.Equal("SHA256:abc123", doc.RootElement.GetProperty("hostKeyFingerprintSha256").GetString())
         End Using

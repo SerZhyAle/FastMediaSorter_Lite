@@ -613,6 +613,11 @@ Public Class WorkerStatus
     Public Property BroadcastPort As Integer
     ''' <summary>Number of active broadcasts.</summary>
     Public Property BroadcastCount As Integer
+    ''' <summary>This worker serves all five broadcast verbs of 016 section 3.4 (spec 159 section 3.1), so none
+    ''' of them is answered with "unsupported request type". Additive and top level, the exact shape of
+    ''' <see cref="PortSupported"/> and <see cref="ExchangeSupported"/>: a worker that predates the verbs omits
+    ''' it, so absent is False. The host never infers support from a refusal's wording.</summary>
+    Public Property BroadcastSupported As Boolean
     ''' <summary>This worker understands <c>SetExchange</c>. Additive and top level, the exact shape of
     ''' <see cref="PortSupported"/>: an older worker omits it, so False after the host wanted an exchange
     ''' identifies a stale worker. The server password is sent ONLY once this is True (proposal rule 5).</summary>

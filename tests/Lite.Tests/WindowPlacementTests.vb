@@ -106,5 +106,120 @@ Public Class WindowPlacementTests
         Assert.Equal(WindowPlacement.StateFullScreen, WindowPlacement.ParseState("fullscreen"))
     End Sub
 
+    ' --- remembered size vs. DPI (124 UX-202) -------------------------------------------------------
+
+    <Fact>
+    Public Sub A_size_measured_at_the_same_dpi_is_applied_as_it_is()
+        Assert.Equal(New Size(1100, 800), WindowPlacement.SizeForDpi(1100, 800, 120, 120))
+    End Sub
+
+    <Fact>
+    Public Sub A_size_with_no_recorded_dpi_is_applied_as_it_is()
+        ' Written by a build before the rule: it is device pixels at the DPI the window has now, so the first run
+        ' after the update restores exactly what the user left - nothing grows, nothing shrinks.
+        Assert.Equal(New Size(1100, 800), WindowPlacement.SizeForDpi(1100, 800, 0, 168))
+        Assert.Equal(New Size(1100, 800), WindowPlacement.SizeForDpi(1100, 800, 168, 0))
+    End Sub
+
+    <Fact>
+    Public Sub A_size_keeps_its_logical_size_across_displays()
+        Dim at168 As Size = WindowPlacement.SizeForDpi(1100, 800, 120, 168)
+        Assert.Equal(New Size(1540, 1120), at168)
+        Assert.Equal(New Size(880, 640), WindowPlacement.SizeForDpi(at168.Width, at168.Height, 168, 96))
+    End Sub
+
+    ''' <summary>The bug the rule exists for: apply what was saved, let the window scale, save what it ended
+    ''' up as, repeat. The size must not move - at any DPI, and across a monitor with another one.</summary>
+    <Fact>
+    Public Sub Reopening_the_window_session_after_session_never_changes_its_size()
+        Dim width As Integer = 1100
+        Dim height As Integer = 800
+        Dim savedDpi As Integer = 120
+        For Each dpi As Integer In New Integer() {120, 120, 120, 168, 168, 96, 120, 192, 120}
+            Dim applied As Size = WindowPlacement.SizeForDpi(width, height, savedDpi, dpi)
+            width = applied.Width
+            height = applied.Height
+            savedDpi = dpi
+        Next
+        ' Back on the 120-dpi display it started on: the same window, give or take the rounding of the trips.
+        Assert.InRange(width, 1099, 1101)
+        Assert.InRange(height, 799, 801)
+    End Sub
+
+    <Fact>
+    Public Sub A_size_is_never_scaled_to_nothing()
+        Assert.Equal(New Size(1, 1), WindowPlacement.SizeForDpi(1, 1, 960, 72))
+    End Sub
+
+    <Theory>
+    <InlineData(Nothing, 0)>
+    <InlineData("", 0)>
+    <InlineData("abc", 0)>
+    <InlineData("0", 0)>
+    <InlineData("10", 0)>
+    <InlineData("5000", 0)>
+    <InlineData("120", 120)>
+    <InlineData(" 168 ", 168)>
+    Public Sub A_remembered_dpi_is_read_back_or_is_not_recorded(text As String, expected As Integer)
+        Assert.Equal(expected, WindowPlacement.ParseDpi(text))
+    End Sub
+
+    ' --- the order the two windows apply it in -------------------------------------------------------
+
+    Private Shared Function Source(fileName As String) As String
+        Dim dir As New IO.DirectoryInfo(AppContext.BaseDirectory)
+        While dir IsNot Nothing
+            If IO.File.Exists(IO.Path.Combine(dir.FullName, "FastMediaSorter.sln")) Then
+                Return IO.File.ReadAllText(IO.Path.Combine(dir.FullName, "src", fileName))
+            End If
+            dir = dir.Parent
+        End While
+        Throw New InvalidOperationException("repository root not found above " & AppContext.BaseDirectory)
+    End Function
+
+    ''' <summary>The body of the method that starts at <paramref name="signature"/>, up to its End Sub.</summary>
+    Private Shared Function BodyOf(source As String, signature As String) As String
+        Dim at As Integer = source.IndexOf(signature, StringComparison.Ordinal)
+        Assert.True(at >= 0, signature & " is gone")
+        Dim [end] As Integer = source.IndexOf("End Sub", at, StringComparison.Ordinal)
+        Assert.True([end] > at, signature & " has no End Sub")
+        Return source.Substring(at, [end] - at)
+    End Function
+
+    ''' <summary>A window that scales itself multiplies whatever size it has when it first lays out, so the
+    ''' remembered size must go on AFTER the scaling - and the two windows say so in the same two words.</summary>
+    <Theory>
+    <InlineData("Image_Editor_Form.vb")>
+    <InlineData("Image_Panel_Form.Modern.vb")>
+    Public Sub The_remembered_size_is_applied_after_the_window_has_scaled_itself(fileName As String)
+        Dim onLoad As String = BodyOf(Source(fileName), "Protected Overrides Sub OnLoad")
+        Dim scaled As Integer = onLoad.IndexOf("PerformAutoScale()", StringComparison.Ordinal)
+        Dim applied As Integer = onLoad.IndexOf("ApplyRememberedBounds()", StringComparison.Ordinal)
+        Assert.True(scaled >= 0, fileName & ": OnLoad does not scale the window before using its size")
+        Assert.True(applied > scaled, fileName & ": OnLoad applies the remembered size before the window has scaled itself")
+    End Sub
+
+    <Theory>
+    <InlineData("Image_Editor_Form.vb", "EditorDpi")>
+    <InlineData("Image_Panel_Form.Modern.vb", "PicturePanelDpi")>
+    Public Sub The_dpi_a_size_was_measured_at_is_written_with_it_and_read_back(fileName As String, key As String)
+        Dim text As String = Source(fileName)
+        Assert.Contains("""" & key & """", text)
+        Assert.Contains("WindowPlacement.ParseDpi(", text)
+        Assert.Contains("WindowPlacement.SizeForDpi(", text)
+    End Sub
+
+    <Fact>
+    Public Sub Both_windows_turn_scaling_on_as_the_last_line_of_their_builder()
+        Dim editor As String = Source("Image_Editor_Form.vb")
+        Assert.True(editor.IndexOf("DialogLayout.ApplyAutoScale(Me)", StringComparison.Ordinal) >
+                    editor.IndexOf("Me.Controls.Add(BuildToolBar())", StringComparison.Ordinal),
+                    "the editor scales before its last band exists")
+        Dim panel As String = Source("Image_Panel_Form.Modern.vb")
+        Assert.True(panel.IndexOf("DialogLayout.ApplyAutoScale(Me)", StringComparison.Ordinal) >
+                    panel.IndexOf("Controls.Add(toolbar)", StringComparison.Ordinal),
+                    "the panel scales before its last band exists")
+    End Sub
+
 End Class
 #End If

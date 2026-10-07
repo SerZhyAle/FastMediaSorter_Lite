@@ -12,50 +12,53 @@ not a local edit and not a local copy kept "in sync".
 
 | Pointer | Id | This product's role |
 | --- | --- | --- |
-| [`OCR-OVERLAY.md`](OCR-OVERLAY.md) | `OCR-OVERLAY` | consumer - the in-app OCR + translation overlay (1.3) |
+| [`OCR-OVERLAY.md`](OCR-OVERLAY.md) | `OCR-OVERLAY` | consumer - the in-app OCR + translation overlay (1.3, re-read 2026-10-07) |
 | [`OCR-EXCHANGE.md`](OCR-EXCHANGE.md) | `OCR-EXCHANGE` | owner of the record |
 | [`OCR-INVOCATION.md`](OCR-INVOCATION.md) | `OCR-INVOCATION` | consumer - the "translate in the browser" button (1.1) |
-| [`OCR-PIPELINE.md`](OCR-PIPELINE.md) | `OCR-PIPELINE` | none as an implementer - the source every *inherited* OCR constant cites (ticket 033) |
-| [`FMSCFG.md`](FMSCFG.md) | `FMSCFG` | producer - the Share Manager writes the `.fmscfg` and its QR (2.2) |
+| [`OCR-PIPELINE.md`](OCR-PIPELINE.md) | `OCR-PIPELINE` | consumer of part of the mechanism and the source every *inherited* OCR constant cites (1.9; registry row since 2026-10-07) |
+| [`FMSCFG.md`](FMSCFG.md) | `FMSCFG` | producer - the Share Manager writes the `.fmscfg` and its QR (2.4: `accessNote` in the PC's language plus English, tunnel rule 7); consumer - the 64-bit viewer reads it through one reader (consumer section, re-read against 2.4 on 2026-10-07) |
 | [`CONTRACT_BROADCAST_RESOURCE.md`](CONTRACT_BROADCAST_RESOURCE.md) | `BROADCAST-RESOURCE` | producer - the Share Manager writes the `.spres`, QR and quick link (1.0) |
-| [`WORKER-IPC.md`](WORKER-IPC.md) | `WORKER-IPC` | consumer - the Share Manager drives the worker (0.10, schema-1 client) |
-| [`DISK-SHARE.md`](DISK-SHARE.md) | `DISK-SHARE` | consumer - file-backed Share Manager disk control; native/service release proof remains open |
-| [`SHARE-SESSION.md`](SHARE-SESSION.md) | `SHARE-SESSION` | custodian of guarantee 3's state across installs, uninstalls and host-mode changes; no session implementation (1.1) |
-| [`ANYWHERE-ACCESS.md`](ANYWHERE-ACCESS.md) | `ANYWHERE-ACCESS` | exchange-server implementer (section 5; local specification 133) - 0.10 draft [PROPOSED], nothing ships before its ladder moves; the server-role review is a catalog proposal |
-| [`LIVE-BROADCAST.md`](LIVE-BROADCAST.md) | `LIVE-BROADCAST` | planned consumer (specification 023) |
-| [`STREAM-BANK.md`](STREAM-BANK.md) | `STREAM-BANK` | planned producer (specification 022) |
-| [`INSTALL-TRUST.md`](INSTALL-TRUST.md) | `INSTALL-TRUST` | producer - adopted 2026-09-22; the page is a render target in 13 locales (1.1) |
-| [`FDSEC.md`](FDSEC.md) | `FDSEC-FORMAT`, `FDSEC-BEHAVIOUR` | consumer, reader half - shipped (specification 026); reader implements 1.1, catalog at 1.3/1.5 with no reader obligation moved |
-| [`ICON.md`](ICON.md) | `ICON-SET`, `ICON-RENDER`, `ICON-EXTERNAL` | consumer - viewer, Share Manager and site (specification 027); vendored at 0.17/0.15/0.11 |
-| [`APP-UX.md`](APP-UX.md) | `APP-BEHAVIOUR`, `APP-STYLE` | consumer, twice - viewer and Share Manager (specification 028); at 0.12/0.11 |
-| [`WAVE-PARTICLES.md`](WAVE-PARTICLES.md) | `WAVE-PARTICLES` | consumer - the audio backdrop and the site hero, at 0.14 (specification 029) |
-| [`LETTERBOX-FILL.md`](LETTERBOX-FILL.md) | `LETTERBOX-BARS`, `LETTERBOX-HALO` | **owner** - the perspective bars and the halo; rung 1 not yet held (specification 056) |
-| [`PAGE.md`](PAGE.md) | `PAGE-CONTENT`, `PAGE-STYLE`, `SITE-FAMILY-MAP` | consumer - the product site (specification 030); at 1.2/1.2/1.2, kit re-vendored |
-| [`DIAGNOSTIC-REPORT.md`](DIAGNOSTIC-REPORT.md) | `DIAGNOSTIC-REPORT` | producer - the send-logs bundle (0.12; the PIN leak is fixed, the shape items stay open) |
-| [`APP-ACTIVATION.md`](APP-ACTIVATION.md) | `APP-ACTIVATION` | consumer - single-instance forwarding over `WM_COPYDATA` (ticket 040); declared transport under 0.11 |
-| [`CLIPBOARD-GUARD.md`](CLIPBOARD-GUARD.md) | `CLIPBOARD-GUARD` | consumer - the Share Manager copies credentials (ticket 041); at 0.10 |
-| [`MEDIA-CLASSIFICATION.md`](MEDIA-CLASSIFICATION.md) | `MEDIA-CLASSIFICATION` | consumer - category and browsing alignment to 0.10 (ticket 043) |
-| [`AUTOMATED-CHECKS.md`](AUTOMATED-CHECKS.md) | `CHECK-VERDICT`, `CHECK-BASELINE`, `CHECK-PLACEMENT`, `BUILD-EVIDENCE` | consumer - the test runner and generator checks (ticket 042); at 0.11/0.10/0.11/0.10 |
+| [`WORKER-IPC.md`](WORKER-IPC.md) | `WORKER-IPC` | consumer - the Share Manager drives the worker (0.14: host half of the exchange vectors, the `[excluded-range]` token, the status sub-fields and the unknown-is-never-authority rule for the disk requests) |
+| [`DISK-SHARE.md`](DISK-SHARE.md) | `DISK-SHARE` | consumer - file-backed Share Manager disk control (1.4, partial); an unknown state, holder or record never enables a mount; native/service release proof remains open |
+| [`SHARE-SESSION.md`](SHARE-SESSION.md) | `SHARE-SESSION` | client of the session for the viewer's SFTP resources (O1-O4); custodian of guarantee 3's state across installs, uninstalls and host-mode changes; no server half (1.1, re-read 2026-10-07) |
+| [`DEVICE-EXCHANGE.md`](DEVICE-EXCHANGE.md) | `DEVICE-EXCHANGE` | **exchange-server implementer** and device client, resource producer and consumer, broadcaster and receiver (local specifications 160-180) - 0.17 draft, planned: no client is built, the Go server is being migrated off the superseded wire by 161-167, and nothing ships before its server rung; rung 1 (`records-v1`) not run, no record codec yet |
+| [`ANYWHERE-ACCESS.md`](ANYWHERE-ACCESS.md) | `ANYWHERE-ACCESS` | producer and consumer of the share descriptor and the third-party port (local specifications 170 and 171) - 0.13 read; its exchange-server sections 5-7 moved to `DEVICE-EXCHANGE` in 0.11, sections 4, 5.5 and 8 still bind; no `FMSSFTP` codec yet, so the descriptor vector is not run |
+| [`LIVE-BROADCAST.md`](LIVE-BROADCAST.md) | `LIVE-BROADCAST` | consumer (specification 023, built 2026-10-07, real-device acceptance not run) re-audited against 0.18 on 2026-10-07; planned producer and receiver (172-174) |
+| [`STREAM-BANK.md`](STREAM-BANK.md) | `STREAM-BANK` | producer, implemented (specification 022, `src/Streams/`, 2.2); on main, in no release |
+| [`INSTALL-TRUST.md`](INSTALL-TRUST.md) | `INSTALL-TRUST` | producer - adopted 2026-09-22; the page is a render target in 13 locales (1.2: no "Unblock" instruction, held by a test) |
+| [`FDSEC.md`](FDSEC.md) | `FDSEC-FORMAT`, `FDSEC-BEHAVIOUR` | consumer, reader half (specification 026): suite 1 of the format (reads 1.3) and the reader sections of the behaviour (1.5); suites 2 and 3 not opened; on main, in no release |
+| [`ICON.md`](ICON.md) | `ICON-SET`, `ICON-RENDER`, `ICON-EXTERNAL` | consumer - viewer, Share Manager and site (specification 027); vendored at 0.28, reads 0.18 / 0.12, partial under dated registry exceptions |
+| [`APP-UX.md`](APP-UX.md) | `APP-BEHAVIOUR`, `APP-STYLE`, `APP-SETTINGS`, `WINDOWS-UI` | consumer, twice - viewer and Share Manager (specification 028); at 0.12 / 0.12 / 0.3 / 0.3, partial under dated registry exceptions |
+| [`WAVE-PARTICLES.md`](WAVE-PARTICLES.md) | `WAVE-PARTICLES` | consumer - the audio backdrop and the site hero, at 0.15 (specification 029; 0.15 asks nothing of the viewer) |
+| [`LETTERBOX-FILL.md`](LETTERBOX-FILL.md) | `LETTERBOX-BARS`, `LETTERBOX-HALO` | **owner** - the perspective bars and the halo at 0.1; rung 1 not yet held (specification 056, open) |
+| [`PAGE.md`](PAGE.md) | `PAGE-CONTENT`, `PAGE-STYLE`, `SITE-FAMILY-MAP` | consumer - the product site (specifications 030, 181); at 1.4 / 1.6 / 1.3, the 1.3 kit vendored again 2026-10-07, gaps are exceptions |
+| [`DIAGNOSTIC-REPORT.md`](DIAGNOSTIC-REPORT.md) | `DIAGNOSTIC-REPORT` | producer - the send-logs bundle (0.12; the PIN leak is fixed, the bundle shape and the credential-shape redactor stay open) |
+| [`APP-ACTIVATION.md`](APP-ACTIVATION.md) | `APP-ACTIVATION` | consumer - single-instance forwarding over `WM_COPYDATA` (ticket 040); declared transport under 0.11, rule 5's foreground mechanism recorded as a deviation |
+| [`CLIPBOARD-GUARD.md`](CLIPBOARD-GUARD.md) | `CLIPBOARD-GUARD` | consumer, writer side - the Share Manager and the viewer's resource export copy credentials with the 0.10 privacy markers; the item B retry numbers are an exception |
+| [`MEDIA-CLASSIFICATION.md`](MEDIA-CLASSIFICATION.md) | `MEDIA-CLASSIFICATION` | consumer - category and browsing alignment to 0.10 (ticket 043); rule 4 (sidecars) not implemented |
+| [`USER-PLAYLIST.md`](USER-PLAYLIST.md) | `USER-PLAYLIST` | consumer, partial - the Extended M3U8 reader of the stream-catalog producer (specification 022) at 0.12; HLS manifest rejection and two section 8 bounds are exceptions |
+| [`AUTOMATED-CHECKS.md`](AUTOMATED-CHECKS.md) | `CHECK-VERDICT`, `CHECK-BASELINE`, `CHECK-PLACEMENT`, `BUILD-EVIDENCE` | producer and consumer - the test runner and generator checks (ticket 042); at 0.12 / 0.11 / 0.11 / 0.10, partial, see the registry |
 | [`DOC-QUALITY.md`](DOC-QUALITY.md) | `DOC-INTERNAL-QUALITY`, `DOC-EXTERNAL-QUALITY` | consumer - the internal docs and the published site, adopted 2026-09-26 (tickets 058, 059); at 0.9/0.10 |
-| [`CAPTURE-OUTPUT.md`](CAPTURE-OUTPUT.md) | `CAPTURE-OUTPUT` | not bound, re-read against 0.3 on 2026-10-02 - no capture kind is written; section 5 excludes edited copies and conversions; only the QR image's name and folder await the owner (ticket 096) |
-| [`RULE-ADOPTION.md`](RULE-ADOPTION.md) | `REPO-STAMP`, `HARNESS-PROFILE`, `REPO-LAYOUT`, `RULE-DELIVERY` | producer of the stamp, consumer of the rest; at 0.11/0.10/0.10/0.11 |
-| [`PACKAGE-VERSIONING.md`](PACKAGE-VERSIONING.md) | `PACKAGE-VERSIONING` | declared consumer - one mechanical stamp per package; the `YY.M.D.HHmm` rendering is filed as a proposal (0.2) |
-| [`INPUT-CONTROLS.md`](INPUT-CONTROLS.md) | `INPUT-CHORD`, `INPUT-PARITY` | declared, not yet implementing - no chord storage or global hook today; expected device-column contributor |
+| [`CAPTURE-OUTPUT.md`](CAPTURE-OUTPUT.md) | `CAPTURE-OUTPUT` | not bound, re-read against 0.5 on 2026-10-07 - no capture kind is written, so the PNG `tIME` rule 16 does not bind; section 5 excludes edited copies, conversions and the QR image, whose name and folder are `FMSCFG`'s to decide (a proposal is drafted) |
+| [`RULE-ADOPTION.md`](RULE-ADOPTION.md) | `REPO-STAMP`, `HARNESS-PROFILE`, `REPO-LAYOUT`, `RULE-DELIVERY` | producer of the stamp, consumer of the rest; at 0.12 / 0.11 / 0.11 / 0.12; `HARNESS-PROFILE` not bound |
+| [`PACKAGE-VERSIONING.md`](PACKAGE-VERSIONING.md) | `PACKAGE-VERSIONING` | consumer, Windows desktop profile - one mechanical stamp per package, registered as dotted-loose (0.4); read at 0.5 |
+| [`WINDOWS-STORE.md`](WINDOWS-STORE.md) | `WINDOWS-STORE` | producer - the MSIX and the listing copy (0.1); rules 1-5 and 17 held on the last package, the listing builder is not the contract's (exceptions) |
+| [`INPUT-CONTROLS.md`](INPUT-CONTROLS.md) | `INPUT-CHORD`, `INPUT-PARITY` | consumer, partial - the viewer's shortcuts dialog stores and captures chords at 0.3; token, refusal and keyboard-column deviations are exceptions |
 | [`SITE-STRUCTURE.md`](SITE-STRUCTURE.md) | `SITE-STRUCTURE` | consumer - opted in 2026-10-06, tier guide; the not-found page, the held-address list and the core-three locale floor are open exceptions (specification 147) |
-| [`SITE-EXPERIENCE.md`](SITE-EXPERIENCE.md) | `SITE-EXPERIENCE` | consumer - opted in 2026-10-06, guide tier; kit, shared keys and origin disclosure held, skip link and `nav` landmark and light-theme contrast open (specification 147); `style` attributes and the resolver order conform in the tree since 2026-10-06 (specification 154) |
+| [`SITE-EXPERIENCE.md`](SITE-EXPERIENCE.md) | `SITE-EXPERIENCE` | consumer - opted in 2026-10-06, guide tier; kit, shared keys and origin disclosure held, skip link and `nav` landmark and light-theme contrast open (specification 147); `style` attributes and the resolver order conform in the tree since 2026-10-06 (specification 154); read at 0.3 on 2026-10-07 |
 | [`SITE-REPRESENTATION.md`](SITE-REPRESENTATION.md) | `SITE-REPRESENTATION` | consumer - opted in 2026-10-06, guide tier; rules 1-4 held by `tools/Test-SitePositioning.ps1` (ticket 155), rules 5-10 and 12 run 2026-10-06 and failing on the ten function pages (specification 156; ticket 157) |
-| [`NO-ROLE.md`](NO-ROLE.md) | `LAN-DISCOVERY`, `UPDATE-MANIFEST`, `USER-PLAYLIST` | none - declared so the next run does not re-investigate |
+| [`NO-ROLE.md`](NO-ROLE.md) | `LAN-DISCOVERY`, `UPDATE-MANIFEST` | none - declared so the next run does not re-investigate (re-read at 0.10 and 0.11) |
 
-Last full alignment: **2026-10-02** (specification 098, the final inter-project contract sync before
-freeze). Every contract in the catalog was re-classified for this product against the catalog's
+Last full alignment: **2026-10-07** (specification 181, the contract sync after the catalog was sealed; the
+previous one was 2026-10-02, specification 098, the final sync before the freeze). Every contract in the catalog was re-classified for this product against the catalog's
 2026-10-02 state; the per-contract verdicts and the freeze snapshot live in
 `docs/specifications/done/098_freeze_inventory_2026-10-02.md`. Not listed here: `OCR-ACCURACY` - the Android
 sibling's record; since ticket 033 Ф-3 removed the mis-citations nothing in this repository cites it, so
 no pointer is owed (a decision, 2026-09-25) - and `CLI-EVENT-STREAM`, `LAYOUT-SIGNAL`, `LAYOUT-PALETTE`,
-`SCENARIO-FILE`, `FDD-FORMAT`, `FDD-BEHAVIOUR` and `DISK-SHARE`, which belong to other
+`SCENARIO-FILE`, `FDD-FORMAT` and `FDD-BEHAVIOUR`, which belong to other
 products' functions and bind nothing here (the
 `WORKER-IPC` pointer covers the schema-2 disk extension of `DISK-SHARE` this host does not use).
 
-Windows UI amendment, 2026-10-05: the `APP-UX` pointer covers `APP-SETTINGS` 0.2, `APP-STYLE` 0.12
-and `WINDOWS-UI` 0.1. The owner adopted the modern viewer/settings as the shared Windows reference;
+Windows UI amendment, 2026-10-05: the `APP-UX` pointer covers `APP-SETTINGS` 0.3, `APP-STYLE` 0.12
+and `WINDOWS-UI` 0.3 (read again on 2026-10-07). The owner adopted the modern viewer/settings as the shared Windows reference;
 other projects' implementation and acceptance remain their own audits.

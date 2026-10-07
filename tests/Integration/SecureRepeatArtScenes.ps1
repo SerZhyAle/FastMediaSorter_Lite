@@ -15,12 +15,17 @@
     the environment is wrong and any "empty" result about the sealed scene is worthless,
     so the run answers COULD NOT VERIFY, never PASS.
 
-    Scene B (the ticket): the same video sealed into a .fd-sec container. The viewer asks
-    for the password, the video plays (the G-04 watch scrubs the first extraction), the
-    harness opens the video's right-click menu, invokes "Повторять" - which reopens the
-    media through RestartCurrentVideoPreservingPosition, the exact call site the ticket
-    fixed - and then checks the art roots: the cover must NOT come back. A final
-    "next file" navigation checks the last scrub left nothing behind either.
+    Scene B (the ticket): the same video sealed into a .fd-sec container, started with
+    Repeat ON. The viewer asks for the password, the video plays (the G-04 watch scrubs the
+    first extraction), the harness opens the video's right-click menu and invokes
+    "Повторять", which turns Repeat OFF. That is the toggle that reopens the media through
+    RestartCurrentVideoPreservingPosition - the exact call site the ticket fixed -
+    because ":input-repeat" is baked into the media when it is played and cannot be
+    changed on a running one (TransportRules.RepeatToggleNeedsReopen, UX-413). Turning
+    Repeat ON reopens nothing, so a run that started with Repeat off and switched it on
+    would reach neither the fixed line nor any cover, and would "pass" for nothing. The
+    harness then checks the art roots: the cover must NOT come back. A final "next file"
+    navigation checks the last scrub left nothing behind either.
 
     Where the cache is: VlcArtCache.ArtRoots - "<exe dir>\portable\art" when a portable
     directory sits beside the executable, otherwise %APPDATA%\vlc\art. The harness creates
@@ -74,6 +79,14 @@ public static extern void mouse_event(uint dwFlags, uint dx, uint dy, uint dwDat
 public static extern bool SetProcessDPIAware();
 [System.Runtime.InteropServices.DllImport("user32.dll")]
 public static extern bool SetWindowPos(System.IntPtr hWnd, System.IntPtr hWndInsertAfter, int X, int Y, int cx, int cy, uint uFlags);
+[System.Runtime.InteropServices.DllImport("user32.dll")]
+public static extern bool ShowWindow(System.IntPtr hWnd, int nCmdShow);
+[System.Runtime.InteropServices.DllImport("user32.dll")]
+public static extern bool PostMessage(System.IntPtr hWnd, uint msg, System.IntPtr wParam, System.IntPtr lParam);
+[System.Runtime.InteropServices.DllImport("user32.dll")]
+public static extern System.IntPtr GetForegroundWindow();
+[System.Runtime.InteropServices.DllImport("user32.dll")]
+public static extern uint GetWindowThreadProcessId(System.IntPtr hWnd, out uint processId);
 '@
 
 # UIA hands out PHYSICAL screen coordinates; a DPI-unaware PowerShell would scale every
@@ -100,9 +113,11 @@ trap {
 # every language the viewer ships, so the script survives a language change.
 $repeatItemNames = @('Повторять', 'Repeat', 'Повторювати', 'Wiederholen', 'Ripeti', 'Repetir',
                      'Répéter', 'تكرار', 'दोहराएँ', 'পুনরাবৃত্তি', 'دہرائیں', '循环')
-$repeatOnNames   = @('Повтор включён', 'Repeat on', 'Повтор увімкнено', 'Wiederholung ein',
-                     'Ripetizione attiva', 'Repetición activada', 'Répétition activée',
-                     'Repetição ligada', '循环已开启')
+# "Повтор выключен" - the status line after the toggle turns Repeat OFF
+$repeatOffNames  = @('Повтор выключен', 'Repeat off', 'Повтор вимкнено', 'Wiederholung aus',
+                     'Ripetizione disattivata', 'Repetición desactivada', 'Répétition désactivée',
+                     'Repetição desligada', 'التكرار متوقف', 'दोहराव बंद', 'পুনরাবৃত্তি বন্ধ',
+                     'دہرانا بند', '循环已关闭')
 
 $credential = 'fms092-ArtProbe'          # SendKeys-safe: letters, digits, hyphen
 $artist     = 'FMS092 Artist'
@@ -158,6 +173,15 @@ $ffmpeg = Find-Ffmpeg
 if (-not $ffmpeg) { Exit-Verdict 'SecureRepeatArtScenes' 2 'no ffmpeg.exe found - pass -Ffmpeg' }
 $dotnet = Find-Dotnet
 if (-not $dotnet) { Exit-Verdict 'SecureRepeatArtScenes' 2 'no dotnet SDK found - the seal tool needs one' }
+
+# A locked workstation runs LogonUI in the user's session: the screen then shows the lock
+# screen, the mouse cannot reach any window and a frame sample is a picture of the lock
+# screen's wallpaper - every step after this would be theatre (it was: a "moving picture"
+# on a locked machine was the desktop wallpaper, not the video). Say so up front.
+$mySession = (Get-Process -Id $PID).SessionId
+if (Get-Process -Name LogonUI -ErrorAction SilentlyContinue | Where-Object { $_.SessionId -eq $mySession }) {
+    Exit-Verdict 'SecureRepeatArtScenes' 2 'the workstation is locked (LogonUI is running in this session) - unlock it and leave the desktop alone while the scenes run'
+}
 
 $running = Get-Process -Name FastMediaSorter_LITE, FastMediaSorter_x86 -ErrorAction SilentlyContinue
 if ($running) {
@@ -349,6 +373,32 @@ function Find-VlcSupportPrompt([int]$ProcId) {
     return $false
 }
 
+# --- never type or click into somebody else's window ---------------------------------
+# The harness shares the desktop with whoever is working on it. Input that goes "to
+# whatever has the focus" or "to the point under the cursor" can land in an editor or a
+# terminal that is not the viewer, so every such step first proves the viewer owns the
+# target and refuses (COULD NOT VERIFY) when it does not.
+
+function Get-ViewerPidSet {
+    @(Get-Process -Name FastMediaSorter_LITE, FastMediaSorter_x86 -ErrorAction SilentlyContinue | ForEach-Object { $_.Id })
+}
+
+function Test-ViewerOwnsPoint([int]$X, [int]$Y) {
+    try {
+        $element = [System.Windows.Automation.AutomationElement]::FromPoint((New-Object System.Windows.Point($X, $Y)))
+        return ((Get-ViewerPidSet) -contains $element.Current.ProcessId)
+    } catch {
+        return $false
+    }
+}
+
+function Test-ViewerForeground {
+    $hwnd = [FmsHarness.Native]::GetForegroundWindow()
+    $owner = [uint32]0
+    [FmsHarness.Native]::GetWindowThreadProcessId($hwnd, [ref]$owner) | Out-Null
+    return ((Get-ViewerPidSet) -contains [int]$owner)
+}
+
 function Submit-Password($Dialog, [string]$Credential) {
     # The dialog does not necessarily hold the desktop foreground when it opens (the
     # foreground lock lets a background process show a modal that never activates), so
@@ -360,6 +410,7 @@ function Submit-Password($Dialog, [string]$Credential) {
     if ($Dialog.Field.TryGetCurrentPattern([System.Windows.Automation.ValuePattern]::Pattern, [ref]$pattern)) {
         $pattern.SetValue($Credential)
     } else {
+        if (-not (Test-ViewerForeground)) { throw 'the password field has no ValuePattern and the viewer does not hold the foreground - refusing to type the credential into another window' }
         $Dialog.Field.SetFocus()
         Start-Sleep -Milliseconds 200
         [System.Windows.Forms.SendKeys]::SendWait($Credential)
@@ -379,6 +430,7 @@ function Submit-Password($Dialog, [string]$Credential) {
     if ($btn -and $btn.TryGetCurrentPattern([System.Windows.Automation.InvokePattern]::Pattern, [ref]$invoke)) {
         $invoke.Invoke()
     } else {
+        if (-not (Test-ViewerForeground)) { throw 'the OK button cannot be invoked and the viewer does not hold the foreground - refusing to press Enter into another window' }
         [System.Windows.Forms.SendKeys]::SendWait('{ENTER}')
     }
 }
@@ -417,6 +469,80 @@ function Save-Screenshot([System.Windows.Automation.AutomationElement]$Scope, [s
     }
 }
 
+function Get-ClockText([int]$ProcId) {
+    # "00:05 / 01:00" in the transport bar, when the chrome exposes it to UIA at all
+    $win = Get-MainWindow $ProcId
+    if (-not $win) { return '' }
+    $condPane = New-Object System.Windows.Automation.PropertyCondition(
+        [System.Windows.Automation.AutomationElement]::ControlTypeProperty,
+        [System.Windows.Automation.ControlType]::Pane)
+    foreach ($pane in @($win.FindAll([System.Windows.Automation.TreeScope]::Descendants, $condPane) | ForEach-Object { $_ })) {
+        if ($pane.Current.Name -match '^\d\d:\d\d / \d\d:\d\d$') { return $pane.Current.Name }
+    }
+    return ''
+}
+
+function Get-FrameSignature([System.Windows.Automation.AutomationElement]$Scope) {
+    # The middle of the window as a 32x32 grey grid. The edges are left out on purpose: the
+    # floating chrome fades in and out there and would look like motion.
+    $r = $Scope.Current.BoundingRectangle
+    $w = [int]($r.Width / 2)
+    $h = [int]($r.Height / 2)
+    if ($w -lt 64 -or $h -lt 64) { return $null }
+    # Only what the viewer itself is showing counts: with another window on top the screen
+    # changes for reasons that have nothing to do with the video.
+    if (-not (Test-ViewerOwnsPoint ([int]($r.X + $r.Width / 2)) ([int]($r.Y + $r.Height / 2)))) { return $null }
+    $full = New-Object System.Drawing.Bitmap $w, $h
+    $g = [System.Drawing.Graphics]::FromImage($full)
+    $g.CopyFromScreen([int]($r.X + $r.Width / 4), [int]($r.Y + $r.Height / 4), 0, 0, $full.Size)
+    $g.Dispose()
+    $small = New-Object System.Drawing.Bitmap 32, 32
+    $g2 = [System.Drawing.Graphics]::FromImage($small)
+    $g2.InterpolationMode = [System.Drawing.Drawing2D.InterpolationMode]::HighQualityBilinear
+    $g2.DrawImage($full, 0, 0, 32, 32)
+    $g2.Dispose()
+    $full.Dispose()
+    $grid = New-Object 'int[]' 1024
+    for ($yy = 0; $yy -lt 32; $yy++) {
+        for ($xx = 0; $xx -lt 32; $xx++) {
+            $px = $small.GetPixel($xx, $yy)
+            $grid[$yy * 32 + $xx] = [int](($px.R + $px.G + $px.B) / 3)
+        }
+    }
+    $small.Dispose()
+    return ,$grid
+}
+
+function Wait-PlaybackMoving([int]$ProcId, [int]$Seconds) {
+    # A one-line proof that playback is advancing, or '' when nothing moved within the time.
+    $firstClock = ''
+    $firstGrid = $null
+    $deadline = (Get-Date).AddSeconds($Seconds)
+    while ((Get-Date) -lt $deadline) {
+        $clock = Get-ClockText $ProcId
+        if ($clock) {
+            if (-not $firstClock) { $firstClock = $clock }
+            elseif ($clock -ne $firstClock) { return "clock $firstClock -> $clock" }
+        }
+        $win = Get-MainWindow $ProcId
+        if ($win) {
+            $grid = Get-FrameSignature $win
+            if ($null -ne $grid) {
+                if ($null -eq $firstGrid) {
+                    $firstGrid = $grid
+                } else {
+                    $sum = 0
+                    for ($i = 0; $i -lt 1024; $i++) { $sum += [Math]::Abs($grid[$i] - $firstGrid[$i]) }
+                    $mean = $sum / 1024.0
+                    if ($mean -ge 1.0) { return ('picture changed (mean grey difference {0:N1} of 255)' -f $mean) }
+                }
+            }
+        }
+        Start-Sleep -Milliseconds 400
+    }
+    return ''
+}
+
 function Find-TextByName([System.Windows.Automation.AutomationElement]$Scope, [string[]]$Names) {
     foreach ($n in $Names) {
         $cond = New-Object System.Windows.Automation.PropertyCondition(
@@ -444,8 +570,13 @@ function Start-Viewer([string]$File) {
     $proc.Refresh()
     $mw = Get-MainWindow $proc.Id
     if ($mw) {
-        [FmsHarness.Native]::SetWindowPos([IntPtr]$mw.Current.NativeWindowHandle, [IntPtr]::Zero, 200, 200, 0, 0, 0x0001 -bor 0x0004) | Out-Null
-        [FmsHarness.Native]::SetForegroundWindow([IntPtr]$mw.Current.NativeWindowHandle) | Out-Null
+        # Restored, shown and TOPMOST (-1): a window that merely asks for the foreground
+        # loses to the foreground lock and stays under whatever the user has open, and
+        # then every click and every frame sample would be of somebody else's window.
+        $hwnd = [IntPtr]$mw.Current.NativeWindowHandle
+        [FmsHarness.Native]::ShowWindow($hwnd, 9) | Out-Null                       # SW_RESTORE
+        [FmsHarness.Native]::SetWindowPos($hwnd, [IntPtr](-1), 200, 200, 0, 0, 0x0001 -bor 0x0040) | Out-Null   # NOSIZE | SHOWWINDOW
+        [FmsHarness.Native]::SetForegroundWindow($hwnd) | Out-Null
     }
     return $proc
 }
@@ -471,6 +602,9 @@ function Get-ClickTarget([System.Windows.Automation.AutomationElement]$MainWindo
 }
 
 function Send-ClickAt([int]$X, [int]$Y, [bool]$Right) {
+    if (-not (Test-ViewerOwnsPoint $X $Y)) {
+        throw "refusing to click at ${X}x${Y}: the element there is not the viewer's (another window is on top of it)"
+    }
     [System.Windows.Forms.Cursor]::Position = New-Object System.Drawing.Point($X, $Y)
     Start-Sleep -Milliseconds 150
     $down = 0x0002; $up = 0x0004                 # left
@@ -503,12 +637,13 @@ function Show-PidWindows([int]$ProcId) {
 
 function Invoke-VideoMenuItem([int]$ProcId, [string[]]$Names) {
     # The open strip is a window of the same process and its items are readable, so the
-    # item is reached by rect with the mouse, then by InvokePattern, then by keys - each
+    # item is reached by rect with the mouse, then by InvokePattern - each
     # step checked against the menu actually closing, because a click beside an open
     # strip only dismisses it. Returns when the strip is gone.
     $deliver = {
         param([System.Windows.Automation.AutomationElement[]]$Items, [string[]]$Labels, [int]$Mode)
-        # 0 = mouse at the item rectangle, 1 = InvokePattern, 2 = keyboard fallback
+        # 0 = mouse at the item rectangle, 1 = InvokePattern (no keyboard fallback: keys go
+        # to whoever holds the focus, which on a shared desktop need not be the viewer)
         for ($i = 0; $i -lt $Items.Count; $i++) {
             if (-not $Labels[$i] -or ($Names -notcontains $Labels[$i])) { continue }
             if ($Mode -eq 0) {
@@ -525,16 +660,13 @@ function Invoke-VideoMenuItem([int]$ProcId, [string[]]$Names) {
                 } else {
                     return $false
                 }
-            } else {
-                Write-Host '  sending keys to whatever holds them'
-                [System.Windows.Forms.SendKeys]::SendWait('{DOWN}{DOWN}{ENTER}')
             }
             return $true
         }
         return $false
     }
 
-    for ($mode = 0; $mode -le 2; $mode++) {
+    for ($mode = 0; $mode -le 1; $mode++) {
         foreach ($w in (Get-PidWindows $ProcId)) {
             $menuCond = New-Object System.Windows.Automation.PropertyCondition(
                 [System.Windows.Automation.AutomationElement]::ControlTypeProperty,
@@ -602,11 +734,13 @@ $appdataBefore = Get-TreeListing $appdataVlc
 $portableExistedBefore = Test-Path -LiteralPath $portableDir
 New-Item -ItemType Directory -Force -Path $portableDir | Out-Null
 
-# The ticket's scene is "repeat was off, the toggle turns it on". The user's own
-# IsVideoLoop would start the first play with the repeat option already baked, the menu
-# item already checked, and the toggle would run the wrong way - so the run starts from
-# off; the registry snapshot puts the user's value back in finally.
-if ($regExisted) { Set-ItemProperty -Path $regPath -Name 'IsVideoLoop' -Value '0' }
+# The ticket's scene is "the video was started with Repeat on, the toggle turns it off":
+# only that direction reopens the media (":input-repeat" is baked in at Play and cannot be
+# lifted from a running media), and the reopen is the call site the ticket fixed. The run
+# therefore starts from ON whatever the user's own setting is; the registry snapshot
+# puts the user's value back in finally (and removes the hive when it did not exist).
+if (-not (Test-Path $regPath)) { New-Item -Path $regPath -Force | Out-Null }
+Set-ItemProperty -Path $regPath -Name 'IsVideoLoop' -Value '1'
 
 $logMark = 0
 $logPath = Join-Path $exeDir 'current.log'
@@ -675,44 +809,17 @@ try {
         throw 'the viewer window is gone after the unlock'
     }
     $mainWindow = Get-MainWindow $viewer.Id
-    $condPane = New-Object System.Windows.Automation.PropertyCondition(
-        [System.Windows.Automation.AutomationElement]::ControlTypeProperty,
-        [System.Windows.Automation.ControlType]::Pane)
-    function Get-ClockPane([System.Windows.Automation.AutomationElement]$Scope) {
-        $win = Get-MainWindow $viewer.Id
-        if (-not $win) { return '' }
-        foreach ($pane in @($win.FindAll([System.Windows.Automation.TreeScope]::Descendants, $condPane) | ForEach-Object { $_ })) {
-            if ($pane.Current.Name -match '^\d\d:\d\d / \d\d:\d\d$') { return $pane.Current.Name }
-        }
-        return ''
-    }
+    Save-Screenshot $mainWindow 'b0-after-unlock.png'
 
-    # The clock must tick: a covered or dead video surface would make every later step theatre.
-    $clock1 = ''
-    $clock2 = ''
-    $deadline = (Get-Date).AddSeconds(8)
-    while ((Get-Date) -lt $deadline) {
-        $c = Get-ClockPane $mainWindow
-        if ($c) {
-            if (-not $clock1) {
-                $clock1 = $c
-            } elseif ($c -ne $clock1) {
-                $clock2 = $c
-                break
-            }
-        }
-        Start-Sleep -Milliseconds 400
+    # Playback must be moving: a covered or dead video surface would make every later step
+    # theatre. The proof is the transport clock when UIA exposes it, otherwise the picture
+    # itself changing (the test video is full motion).
+    $moving = Wait-PlaybackMoving $viewer.Id 12
+    if (-not $moving) {
+        Save-Screenshot $mainWindow 'b0-not-moving.png'
+        throw 'playback is not running (neither the clock nor the picture moved) - is something covering or stopping the video?'
     }
-
-    try {
-        if (-not $clock1 -or -not $clock2 -or $clock1 -eq $clock2) {
-            throw "playback is not running (clock '$clock1' -> '$clock2') - is something covering or stopping the video?"
-        }
-    } catch {
-        Write-Host ("  clock probe: " + $_.InvocationInfo.PositionMessage)
-        throw
-    }
-    Write-Host "  playback confirmed: $clock1 -> $clock2"
+    Write-Host "  playback confirmed: $moving"
 
     Start-Sleep -Seconds 3   # open, first play, first scrub
     if ($null -ne (Find-PasswordField $viewer.Id)) {
@@ -732,8 +839,8 @@ try {
     # open the menu, deliver the item, confirm through the status line - the whole cycle
     # up to three times, because a menu click shares the desktop with whatever else is
     # going on and one delivery in three can miss
-    $on = ''
-    for ($attempt = 1; $attempt -le 3 -and -not $on; $attempt++) {
+    $off = ''
+    for ($attempt = 1; $attempt -le 3 -and -not $off; $attempt++) {
         [FmsHarness.Native]::SetForegroundWindow($mainWindow.Current.NativeWindowHandle) | Out-Null
         Start-Sleep -Milliseconds 300
         if (Find-VlcSupportPrompt $viewer.Id) {
@@ -749,13 +856,13 @@ try {
         Invoke-VideoMenuItem $viewer.Id $repeatItemNames | Out-Null
 
         # the status line may lag the menu closing by a frame - poll rather than snapshot
-        for ($i = 0; $i -lt 12 -and -not $on; $i++) {
+        for ($i = 0; $i -lt 12 -and -not $off; $i++) {
             Start-Sleep -Milliseconds 250
-            $on = Find-TextByName $mainWindow $repeatOnNames
+            $off = Find-TextByName $mainWindow $repeatOffNames
         }
     }
     Save-Screenshot $mainWindow 'b3-after-item-click.png'
-    if (-not $on) {
+    if (-not $off) {
         # what IS on screen, for the run record - the status line may expose under a
         # name this probe does not guess
         $named = @($mainWindow.FindAll([System.Windows.Automation.TreeScope]::Descendants,
@@ -764,9 +871,9 @@ try {
             ForEach-Object { '{0}:{1}' -f $_.Current.ControlType.ProgrammaticName, $_.Current.Name })
         Write-Host ("  named elements: " + ($named -join ' | '))
         Show-ViewerLogTail
-        throw 'could not confirm the repeat toggle ran (no "repeat on" status text) - an empty result would not mean anything'
+        throw 'could not confirm the repeat toggle ran (no "repeat off" status text) - an empty result would not mean anything'
     }
-    Write-Host "  repeat confirmed on: $on"
+    Write-Host "  repeat confirmed off: $off (the media was started with Repeat on, so this toggle reopens it)"
 
     # the reopen the toggle ordered must not have failed: that failure is logged and
     # nothing else (AppFileLogger, Main_Form.VideoMenu.vb)
@@ -778,6 +885,15 @@ try {
         throw $detail
     }
 
+    # The reopened media must be playing: a reopen that silently died would leave an empty
+    # art cache for the wrong reason. It has to move again.
+    $reMoving = Wait-PlaybackMoving $viewer.Id 12
+    if (-not $reMoving) {
+        Save-Screenshot $mainWindow 'b4-not-moving-after-reopen.png'
+        throw 'playback did not resume after the reopen (neither the clock nor the picture moved)'
+    }
+    Write-Host "  playback resumed after the reopen: $reMoving"
+
     Start-Sleep -Seconds 2
     $afterToggle = @(Get-TreeListing (Join-Path $portableDir 'art'))
     if ($afterToggle.Count -ne 0) {
@@ -786,8 +902,12 @@ try {
         throw $detail
     }
 
-    # navigate away (wraps to the same file; the credential is remembered for the session)
-    [System.Windows.Forms.SendKeys]::SendWait(' ')
+    # navigate away (wraps to the same file; the credential is remembered for the session).
+    # Posted to the viewer's own window, never SendKeys: that would type into whichever
+    # program holds the focus.
+    $navHwnd = [IntPtr](Get-MainWindow $viewer.Id).Current.NativeWindowHandle
+    [FmsHarness.Native]::PostMessage($navHwnd, 0x0100, [IntPtr]0x20, [IntPtr]0x00390001) | Out-Null   # WM_KEYDOWN, VK_SPACE
+    [FmsHarness.Native]::PostMessage($navHwnd, 0x0101, [IntPtr]0x20, [IntPtr]0xC0390001) | Out-Null   # WM_KEYUP
     Start-Sleep -Seconds 3
     if ($null -ne (Find-PasswordField $viewer.Id)) {
         throw 'the password dialog came back on navigation'

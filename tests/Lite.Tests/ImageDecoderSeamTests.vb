@@ -131,6 +131,52 @@ Public Class ImageDecoderSeamTests
     End Sub
 
     ''' <summary>
+    ''' 018 U-13: the byte stream is kept only for what GDI+ still reads from. A static WEBP
+    ''' comes back as a detached Bitmap and NO stream (the file's bytes are not held beside the
+    ''' pixels for as long as the picture is on screen); an animation keeps the GIF stream,
+    ''' because GDI+ pulls the later frames from it for the life of the Image.
+    ''' </summary>
+    <Fact>
+    Public Sub U13_a_static_webp_holds_no_stream_but_an_animation_keeps_its_own()
+        Dim saved As Integer = DecodeCacheStore.BudgetMb
+        DecodeCacheStore.BudgetMb = 0 ' cache off: what is loaded below is the decode itself
+        Dim stillPath As String = WriteTemp(StaticWebp, ".webp")
+        Dim movingPath As String = WriteTemp(AnimatedWebp, ".webp")
+        Try
+            Dim failure As PathFailureKind = PathFailureKind.None
+
+            Dim still As Tuple(Of Image, MemoryStream) = FileManager.LoadImageWithStream(stillPath, failure)
+            Assert.NotNull(still)
+            Try
+                Assert.Null(still.Item2)
+                Assert.Equal(New Size(120, 90), still.Item1.Size)
+                ' A Bitmap still bound to a disposed stream throws when it is first painted.
+                Using canvas As New Bitmap(120, 90)
+                    Using g As Graphics = Graphics.FromImage(canvas)
+                        g.DrawImage(still.Item1, 0, 0)
+                    End Using
+                End Using
+            Finally
+                still.Item1.Dispose()
+            End Try
+
+            Dim moving As Tuple(Of Image, MemoryStream) = FileManager.LoadImageWithStream(movingPath, failure)
+            Assert.NotNull(moving)
+            Try
+                Assert.NotNull(moving.Item2)
+                Assert.Equal(System.Drawing.Imaging.ImageFormat.Gif, moving.Item1.RawFormat)
+            Finally
+                moving.Item1.Dispose()
+                moving.Item2?.Dispose()
+            End Try
+        Finally
+            DecodeCacheStore.BudgetMb = saved
+            File.Delete(stillPath)
+            File.Delete(movingPath)
+        End Try
+    End Sub
+
+    ''' <summary>
     ''' Utils.GetImageDimensions routes .webp through the seam (every other format is
     ''' parsed from the header). The background worker relies on this never touching
     ''' GDI+, so the answer must come back from the decoder, not a decode.

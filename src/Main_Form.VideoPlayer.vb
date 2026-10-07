@@ -603,6 +603,10 @@ Partial Public Class Main_Form
                 Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0873: LibVLC stop error: " & ex.Message)
             End Try
         End If
+#If Not NETFRAMEWORK Then
+        ' A live broadcast's stream input may be freed only once the player is stopped (spec 023).
+        DisposeLiveVlcMedia()
+#End If
         is_Vlc_Playing = False
         vlc_Playing_Path = ""
         If vlc_Video_View IsNot Nothing Then vlc_Video_View.Visible = False
@@ -707,7 +711,7 @@ Partial Public Class Main_Form
                                If Not IsVlcEventCurrent(event_Generation) Then Return
 #If Not NETFRAMEWORK Then
                                If IsLiveBroadcastActive() Then
-                                   OnLiveSessionStalled(event_Generation)
+                                   NotifyLivePlayerEnded(event_Generation)
                                    Return
                                End If
 #End If
@@ -934,7 +938,7 @@ Partial Public Class Main_Form
             Me.BeginInvoke(Sub()
                                If Not IsVlcEventCurrent(event_Generation) Then Return
                                If IsLiveBroadcastActive() Then
-                                   OnLiveSessionStalled(event_Generation)
+                                   NotifyLivePlayerEnded(event_Generation)
                                    Return
                                End If
                                ' The defensive A-B path (119 Ф-4, decision Q119-2): inside an

@@ -255,6 +255,94 @@ Partial Public Class Main_Form
         End Try
     End Function
 
+    ' Live broadcast descriptors (023_SPECIFICATION_FMS_LIVE_BROADCAST_CONSUMER.md §4.2, LIVE-BROADCAST §4.2).
+    '
+    ' The same rule as .fd-sec above: an association is an explicit, reversible, user-invoked act - never a side
+    ' effect of installation (open question 3 of 023, answered by following the house pattern). What differs is
+    ' only that nobody owns .fmsbcast yet, so there is nobody to displace: when the extension has no default
+    ' handler this program becomes it, and when another program already owns it this one is only offered in
+    ' "Open with". Removing it takes back exactly what was added and nothing that is not ours.
+
+    Private Const Live_Prog_Id As String = "FastMediaSorter.LiveBroadcast"
+    Private Const Live_Extension As String = ".fmsbcast"
+    Private Const Live_Mime As String = "application/vnd.fms.bcast+json"
+
+    ''' <summary>Is this viewer currently registered for .fmsbcast files (offered in Open with, or the default)?</summary>
+    Friend Shared Function IsLiveBroadcastOpenWithRegistered() As Boolean
+        Try
+            Using key = Registry.CurrentUser.OpenSubKey("Software\Classes\" & Live_Extension & "\OpenWithProgids")
+                If key IsNot Nothing AndAlso key.GetValue(Live_Prog_Id) IsNot Nothing Then Return True
+            End Using
+            Using extKey = Registry.CurrentUser.OpenSubKey("Software\Classes\" & Live_Extension)
+                If extKey Is Nothing Then Return False
+                Return String.Equals(TryCast(extKey.GetValue(""), String), Live_Prog_Id, StringComparison.OrdinalIgnoreCase)
+            End Using
+        Catch
+            Return False
+        End Try
+    End Function
+
+    Friend Shared Function RegisterLiveBroadcastOpenWith() As Boolean
+        Try
+            Dim exePath As String = Application.ExecutablePath
+            Using classesKey = Registry.CurrentUser.CreateSubKey("Software\Classes")
+                Using progKey = classesKey.CreateSubKey(Live_Prog_Id)
+                    progKey.SetValue("", "Live broadcast - " & ProductNames.Compact)
+                    Using shellKey = progKey.CreateSubKey("shell\open\command")
+                        shellKey.SetValue("", """" & exePath & """ ""%1""")
+                    End Using
+                    Using iconKey = progKey.CreateSubKey("DefaultIcon")
+                        iconKey.SetValue("", """" & exePath & """,0")
+                    End Using
+                End Using
+                Using extKey = classesKey.CreateSubKey(Live_Extension)
+                    ' The declared type of the file (LIVE-BROADCAST §4.2): Windows hands it to whoever asks for it.
+                    If extKey.GetValue("Content Type") Is Nothing Then extKey.SetValue("Content Type", Live_Mime)
+                    ' Nobody owns the extension: it is this program's. Somebody does: only offered, never taken.
+                    Dim owner As String = TryCast(extKey.GetValue(""), String)
+                    If String.IsNullOrEmpty(owner) Then extKey.SetValue("", Live_Prog_Id)
+                End Using
+                Using openWithKey = classesKey.CreateSubKey(Live_Extension & "\OpenWithProgids")
+                    openWithKey.SetValue(Live_Prog_Id, Array.Empty(Of Byte)(), RegistryValueKind.None)
+                End Using
+            End Using
+            SHChangeNotify(&H8000000, &H1000, IntPtr.Zero, IntPtr.Zero)
+            Return True
+        Catch ex As Exception
+            AppFileLogger.LogException("Live broadcast: registering the .fmsbcast association", ex)
+            Return False
+        End Try
+    End Function
+
+    ''' <summary>Takes back what was added: the Open-with entry, the ProgID, and the default only while it still names us.</summary>
+    Friend Shared Function UnregisterLiveBroadcastOpenWith() As Boolean
+        Try
+            Using extKey = Registry.CurrentUser.OpenSubKey("Software\Classes\" & Live_Extension, True)
+                If extKey IsNot Nothing Then
+                    If String.Equals(TryCast(extKey.GetValue(""), String), Live_Prog_Id, StringComparison.OrdinalIgnoreCase) Then
+                        extKey.DeleteValue("", False)
+                    End If
+                    If String.Equals(TryCast(extKey.GetValue("Content Type"), String), Live_Mime, StringComparison.OrdinalIgnoreCase) Then
+                        extKey.DeleteValue("Content Type", False)
+                    End If
+                End If
+            End Using
+            Using openWithKey = Registry.CurrentUser.OpenSubKey("Software\Classes\" & Live_Extension & "\OpenWithProgids", True)
+                If openWithKey IsNot Nothing AndAlso openWithKey.GetValue(Live_Prog_Id) IsNot Nothing Then
+                    openWithKey.DeleteValue(Live_Prog_Id, False)
+                End If
+            End Using
+            Using classesKey = Registry.CurrentUser.OpenSubKey("Software\Classes", True)
+                If classesKey IsNot Nothing Then classesKey.DeleteSubKeyTree(Live_Prog_Id, False)
+            End Using
+            SHChangeNotify(&H8000000, &H1000, IntPtr.Zero, IntPtr.Zero)
+            Return True
+        Catch ex As Exception
+            AppFileLogger.LogException("Live broadcast: removing the .fmsbcast association", ex)
+            Return False
+        End Try
+    End Function
+
     ''' <summary>Takes it back out again, leaving the extension exactly as it was found -
     ''' both directions from the same place (§8).</summary>
     Friend Shared Function UnregisterSecureContainerOpenWith() As Boolean

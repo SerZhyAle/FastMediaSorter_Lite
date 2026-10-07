@@ -37,6 +37,25 @@ assembles it from those fields and checks the result against blake2b256_of_file.
   SHA-256  c151e3fbcfbc915229dd777ac0505d71313b1896f2678c34b6bfc68dd43e681f  container-empty.fd-sec
   SHA-256  f101bfb460a7b2674d6b54283052b3289b7c636388cbaf5ea088660714245d3a  container-onebyte.fd-sec
 
+Suite 3 containers - four files, one negative test (taken 2026-10-07)
+---------------------------------------------------------------------
+FDSEC-FORMAT 1.2 added suite 3 (the directory container) and 1.3 suite 2 (the quiet suite).
+This reader implements suite 1 only (docs/contracts/FDSEC.md), so these four containers are
+here for ONE reason: a suite-1 reader that opens a suite-3 file with the RIGHT credential must
+refuse it by name as unsupported (FDSEC-FORMAT 13.2), neither calling it damage nor a wrong
+password. FdSecConformanceTests asserts exactly that. They open with the credential of the
+suite-1 reference containers under the version-1 profile; their directory vectors, the
+vectors.json of suite 3, are NOT vendored - this reader reads none of it.
+
+The suite-2 reference files are not vendored at all: none of the three is a whole number of
+512-byte clusters (14563, 87416 and 19059 bytes), so the length screen of FDSEC-FORMAT 18.8
+answers for them, and the test pins those three lengths instead of the bytes.
+
+  SHA-256  e12f4e38e2eeee5e1423e04d87c8d2b86e8b24ffbedf2a6eaf1585829c02ca51  dir-empty.fd-sec
+  SHA-256  963002e5796fa6005c2f06ec71527fa8f314679da7a7e9fe9e9ffe59efc72de3  dir-multichunk.fd-sec
+  SHA-256  7f6650ac505b0f3c3e2baf65ce72f07003307259722a3f4f13a1c3e7f3ae50a4  dir-onesubdir.fd-sec
+  SHA-256  346607c6a2d5c8a64497c14114ba9021e6c821785443949f3a0898f8de6c3c3f  dir-unsorted.fd-sec
+
 One value the vectors do not carry
 ----------------------------------
 vectors.json publishes root_fast_branch but not the credential it was derived from - the

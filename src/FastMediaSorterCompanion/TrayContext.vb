@@ -131,10 +131,13 @@ Friend NotInheritable Class TrayContext
         AddHandler miShare.Click, Sub() TrayShare()
         menu.Items.Add(miShare)
 
-        ' Broadcasts for StreamsPlayer
-        Dim miBroadcasts As New ToolStripMenuItem(Localization.T("Трансляции для StreamsPlayer.."))
+        ' Broadcasts for StreamsPlayer (spec 159): absent - not disabled - unless this build offers the page
+        ' AND the last status the worker gave says it serves the broadcast verbs. Decided on Opening, like the
+        ' exchange item below; nothing is started by showing it.
+        Dim miBroadcasts As New ToolStripMenuItem(Localization.T("Трансляции для StreamsPlayer..")) With {.Visible = False}
         AddHandler miBroadcasts.Click, Sub() ShowBroadcastsWindow("")
         menu.Items.Add(miBroadcasts)
+        AddHandler menu.Opening, Sub() RefreshBroadcastTrayItem(miBroadcasts)
 
         ' Current state + local usage counters (last connection, totals, files served).
         Dim miStatus As New ToolStripMenuItem(Localization.T("Текущее состояние.."))
@@ -152,7 +155,7 @@ Friend NotInheritable Class TrayContext
 
         ' Online "publish your folders for Android" guide.
         Dim miDesc As New ToolStripMenuItem(Localization.T("Описание.."))
-        AddHandler miDesc.Click, Sub() NetworkInfo.OpenInBrowser(ShareGuide.SiteGuideUrl)
+        AddHandler miDesc.Click, Sub() NetworkInfo.OpenInBrowser(ShareLinks.Localized(ShareGuide.SiteGuideUrl))
         menu.Items.Add(miDesc)
 
         ' Stop the SFTP server (worker process keeps running).
@@ -175,7 +178,7 @@ Friend NotInheritable Class TrayContext
         ' once, and a viewer installed later would otherwise stay unreachable until
         ' the next restart. A menu item that silently does nothing is worse than one
         ' that is not there.
-        Dim miViewer As New ToolStripMenuItem(Localization.TF("Открыть {0}", ProductNames.CompactForLabel))
+        Dim miViewer As New ToolStripMenuItem(Localization.TF("Открыть {0}", ProductNames.ShortLegacy))
         AddHandler miViewer.Click, Sub() LaunchViewer()
         menu.Items.Add(miViewer)
         AddHandler menu.Opening, Sub() miViewer.Visible = ViewerExePath().Length > 0
@@ -197,6 +200,29 @@ Friend NotInheritable Class TrayContext
         menu.Items.Add(miExit)
 
         Return menu
+    End Function
+
+    ''' <summary>The last status a worker gave this tray, for the broadcasts item only. Nothing means the worker
+    ''' did not answer, and an item the worker has not vouched for is not shown.</summary>
+    Private _broadcastStatus As WorkerStatus
+
+    ''' <summary>Shows the broadcasts item from the last known status, then re-reads the status in the
+    ''' background. A build that does not offer the page never asks the worker at all.</summary>
+    Private Sub RefreshBroadcastTrayItem(item As ToolStripMenuItem)
+        Try
+            item.Visible = BroadcastPage.ShouldOffer(_broadcastStatus)
+            If Not BroadcastPage.Offered Then Return
+            Dim t As Task = RefreshBroadcastTrayVisibilityAsync(item)
+        Catch ex As Exception
+            AppFileLogger.LogException("Tray: broadcasts item", ex)
+        End Try
+    End Sub
+
+    Private Async Function RefreshBroadcastTrayVisibilityAsync(item As ToolStripMenuItem) As Task
+        Dim st As WorkerStatus = Await ShareController.GetStatusAsync()
+        If _disposed OrElse item.IsDisposed Then Return
+        _broadcastStatus = st
+        item.Visible = BroadcastPage.ShouldOffer(st)
     End Function
 
     ''' <summary>Shows or hides the exchange item for the component's presence, then refreshes its text from a
@@ -563,10 +589,31 @@ Friend NotInheritable Class TrayContext
         End Select
     End Sub
 
-    Private Sub ShowBroadcastsWindow(targetPath As String)
+    ''' <summary>
+    ''' Every way into the broadcasts page (the tray item, a launch forwarded by the viewer) goes through the
+    ''' same predicate as the item itself (spec 159 section 3.2). When it says no, the answer is one line in the
+    ''' Share Manager window, not a page the user cannot use. The status is read fresh: a worker can be
+    ''' replaced under a tray that has been up for weeks.
+    ''' </summary>
+    Private Async Sub ShowBroadcastsWindow(targetPath As String)
         Try
             If Not ServerFeatures.IsEnabled() OrElse Not WorkerProcess.IsAvailable() Then
                 ShowMainWindow(Nothing)
+                Return
+            End If
+            Dim status As WorkerStatus = Nothing
+            If BroadcastPage.Offered Then status = Await ShareController.GetStatusAsync()
+            If _disposed Then Return
+            _broadcastStatus = status
+            If Not BroadcastPage.ShouldOffer(status) Then
+                AppFileLogger.WriteLine("Broadcasts: the page was asked for and is not offered (this build offers it: " &
+                                        BroadcastPage.Offered.ToString() & "; the worker reports support: " &
+                                        BroadcastController.IsSupported(status).ToString() & ")")
+                ShowMainWindow(Nothing)
+                If _mainWindow IsNot Nothing AndAlso Not _mainWindow.IsDisposed Then
+                    Dim t As Task = _mainWindow.ShowNoticeAsync(
+                        BroadcastMessages.Text(BroadcastMessages.EntryReason(status, BroadcastPage.Offered)))
+                End If
                 Return
             End If
             Using dlg As New Share_Broadcasts_Form(targetPath)

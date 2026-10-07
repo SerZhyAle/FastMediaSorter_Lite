@@ -291,7 +291,7 @@ Source: "stop-companion.ps1"; DestDir: "{app}"; Flags: ignoreversion
 ; ServerFeatures.EnableViaElevation prefers it over a direct netsh fallback.
 Source: "enable-share-server.ps1"; DestDir: "{app}"; Flags: ignoreversion; Components: share
 ; Elevated management helper for the in-app switch to always-on hosting: Share Manager
-; -> "Manage hosting.." -> switch to the Windows service. It is the SAME script the
+; -> "Manager settings.." -> Hosting -> switch to the Windows service. It is the SAME script the
 ; Server edition installer drives, so every machine-affecting step still lives in one
 ; auditable place; shipping it here is what lets an ordinary installation take that role
 ; on (behind one visible UAC prompt) instead of requiring a second download. It never
@@ -531,15 +531,15 @@ begin
   if IsLanguage('russian') then
     Result := 'На этом компьютере установлена СЕРВЕРНАЯ редакция общего доступа: папки раздаёт служба Windows, которая работает без входа в систему.' + #13#10#13#10 +
               'Установка обычной (пользовательской) редакции поверх неё не остановлена - просмотрщик поставится как обычно. Но раздачей по-прежнему будет управлять служба: Менеджер общего доступа откроется как пульт управления и не станет запускать второй сервер.' + #13#10#13#10 +
-              'Чтобы вернуться к пользовательскому режиму, откройте Менеджер общего доступа -> «Управление хостингом..» -> «Вернуться к пользовательской редакции..» (потребуются права администратора).'
+              'Чтобы вернуться к пользовательскому режиму, откройте Менеджер общего доступа -> «Настройки менеджера..» -> «Хостинг» -> «Вернуться к пользовательской редакции..» (потребуются права администратора).'
   else if IsLanguage('ukrainian') then
     Result := 'На цьому комп''ютері встановлено СЕРВЕРНУ редакцію спільного доступу: теки роздає служба Windows, яка працює без входу в систему.' + #13#10#13#10 +
               'Встановлення звичайної (користувацької) редакції поверх неї не зупинено - переглядач встановиться як завжди. Але роздачею й далі керуватиме служба: Менеджер спільного доступу відкриється як пульт керування й не запускатиме другий сервер.' + #13#10#13#10 +
-              'Щоб повернутися до користувацького режиму, відкрийте Менеджер спільного доступу -> «Керування хостингом..» -> «Повернутися до користувацької редакції..» (потрібні права адміністратора).'
+              'Щоб повернутися до користувацького режиму, відкрийте Менеджер спільного доступу -> «Налаштування менеджера..» -> «Хостинг» -> «Повернутися до користувацької редакції..» (потрібні права адміністратора).'
   else
     Result := 'The SERVER edition of folder sharing is installed on this computer: a Windows service serves the folders and keeps running with nobody signed in.' + #13#10#13#10 +
               'Installing the regular (User) edition over it is not blocked - the viewer installs as usual. But the service stays in charge of sharing: the Share Manager opens as a management console and will not start a second server.' + #13#10#13#10 +
-              'To go back to User mode, open the Share Manager -> "Manage hosting.." -> "Return to the User edition.." (administrator rights are required).';
+              'To go back to User mode, open the Share Manager -> "Manager settings.." -> "Hosting" -> "Return to the User edition.." (administrator rights are required).';
 end;
 
 function ServerEditionSilentText: String;
@@ -1653,6 +1653,11 @@ begin
   RemoveImageAssociation('.flv', 'FastMediaSorter.flv');
   RemoveImageAssociation('.wav', 'FastMediaSorter.wav');
   RemoveImageAssociation('.wma', 'FastMediaSorter.wma');
+
+  { Live-broadcast descriptors (spec 023): the installer never registers .fmsbcast - the viewer's Settings does, by an
+    explicit act - but what that act wrote must not outlive the program. Same rule as above: the extension's default is
+    cleared only while it still names our ProgID, and the Open-with entry and the ProgID go. }
+  RemoveImageAssociation('.fmsbcast', 'FastMediaSorter.LiveBroadcast');
 
   { Both names: which one was registered depends on the OS this was installed on. }
   RegDeleteKeyIncludingSubkeys(HKCU, 'Software\Classes\Applications\{#AppExeName}');

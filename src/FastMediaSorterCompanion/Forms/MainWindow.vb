@@ -223,6 +223,17 @@ Partial Public NotInheritable Class MainWindow
         OnShareClicked(Me, EventArgs.Empty)
     End Function
 
+    ''' <summary>
+    ''' Puts one line on the hint row once the window has finished its first entry. For a request another
+    ''' process made that this build cannot serve (a broadcast launch, spec 159 section 3.2): the line is the
+    ''' answer, instead of a window the user cannot use. Waits on the same gate as the wake handlers because
+    ''' the last step of <see cref="EnterAsync"/> clears the hint row and would erase a line set earlier.
+    ''' </summary>
+    Friend Async Function ShowNoticeAsync(text As String) As Task
+        If Not Await wake_Ready.Task OrElse IsDisposed Then Return
+        SetHint(text)
+    End Function
+
     Private ReadOnly wake_Ready As New TaskCompletionSource(Of Boolean)(TaskCreationOptions.RunContinuationsAsynchronously)
 
     Private Async Sub OnShownFirst(sender As Object, e As EventArgs)
@@ -459,6 +470,7 @@ Partial Public NotInheritable Class MainWindow
 
     Private Sub OnBroadcastsClicked(sender As Object, e As EventArgs)
         Try
+            If Not BroadcastPage.ShouldOffer(_status) Then Return
             Using dlg As New Share_Broadcasts_Form()
                 dlg.ShowDialog(Me)
             End Using

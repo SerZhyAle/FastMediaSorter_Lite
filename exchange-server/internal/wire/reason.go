@@ -1,0 +1,53 @@
+package wire
+
+// Reason is a `refused.reason` of DEVICE-EXCHANGE 7.10: kebab-case, frozen with the wire. Exactly
+// nine exist; a client shows an unknown value as a generic refusal.
+type Reason string
+
+// The nine reasons. Refuse is the only way a `refused` envelope is built, and a source scan
+// (guard_test.go) fails any other construction and any Refuse argument that is not one of these.
+const (
+	ReasonBadCredentials     Reason = "bad-credentials"
+	ReasonDeviceRevoked      Reason = "device-revoked"
+	ReasonVersionUnsupported Reason = "version-unsupported"
+	ReasonTLSRequired        Reason = "tls-required"
+	ReasonIDCollision        Reason = "id-collision"
+	ReasonCapacity           Reason = "capacity"
+	ReasonPortUnavailable    Reason = "port-unavailable"
+	ReasonUnavailable        Reason = "unavailable"
+	ReasonRateLimited        Reason = "rate-limited"
+)
+
+// AllReasons is the closed list of 7.10, in the order of the contract.
+var AllReasons = []Reason{
+	ReasonBadCredentials, ReasonDeviceRevoked, ReasonVersionUnsupported, ReasonTLSRequired,
+	ReasonIDCollision, ReasonCapacity, ReasonPortUnavailable, ReasonUnavailable, ReasonRateLimited,
+}
+
+// Valid reports whether r is one of the nine.
+func (r Reason) Valid() bool {
+	for _, k := range AllReasons {
+		if r == k {
+			return true
+		}
+	}
+	return false
+}
+
+// The reasons a receiver may put in `cast-result` and `cast-answer` (DEVICE-EXCHANGE 7.8 and item
+// R). They are not `refused` reasons.
+const (
+	CastUnavailable = "unavailable"
+	CastDeclined    = "declined"
+	CastTimeout     = "timeout"
+	CastUnsupported = "unsupported"
+)
+
+// Refuse builds a `refused` envelope. The refusal carries the server's own schemaVersion (item P),
+// which is also what answers a peer that spoke the legacy one.
+func Refuse(r Reason) *Refused {
+	if !r.Valid() {
+		panic("wire: Refuse with a reason outside the nine of DEVICE-EXCHANGE 7.10: " + string(r))
+	}
+	return &Refused{Head: Head{SchemaVersion, TypeRefused}, Reason: string(r)}
+}

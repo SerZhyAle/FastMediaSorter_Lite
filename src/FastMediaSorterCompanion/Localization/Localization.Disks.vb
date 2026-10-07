@@ -63,6 +63,22 @@ Partial Public NotInheritable Class Localization
         Add("Состояние", "State", "Стан", "Status", "Stato", "Estado", "État", "Estado", "الحالة", "स्थिति", "অবস্থা", "حالت", "状态")
         Add("Открыть..", "Open..", "Відкрити..", "Öffnen..", "Apri..", "Abrir..", "Ouvrir..", "Abrir..", "فتح..", "खोलें..", "খুলুন..", "کھولیں..", "打开..")
         Add("Нет", "No", "Ні", "Nein", "No", "No", "Non", "Não", "لا", "नहीं", "না", "نہیں", "否")
+        ' WORKER-IPC 0.14 item D: a disk state, holder or record the host does not know is UNKNOWN - never "no
+        ' holder" and never an error of the disk - so the list says so and the verbs that depend on it wait.
+        Add("Неизвестно", "Unknown", "Невідомо", "Unbekannt", "Sconosciuto", "Desconocido", "Inconnu", "Desconhecido", "غير معروف", "अज्ञात", "অজানা", "نامعلوم", "未知")
+        Add("Состояние диска неизвестно - обновите список и повторите.",
+            "The disk state is unknown - refresh the list and retry.",
+            "Стан диска невідомий - оновіть список і повторіть.",
+            "Der Zustand des Laufwerks ist unbekannt - Liste aktualisieren und erneut versuchen.",
+            "Lo stato del disco è sconosciuto - aggiorna l'elenco e riprova.",
+            "Se desconoce el estado del disco - actualiza la lista e inténtalo de nuevo.",
+            "L'état du disque est inconnu - actualisez la liste et réessayez.",
+            "O estado do disco é desconhecido - atualize a lista e tente novamente.",
+            "حالة القرص غير معروفة - حدّث القائمة وأعد المحاولة.",
+            "डिस्क की स्थिति अज्ञात है - सूची रीफ़्रेश करके पुनः प्रयास करें।",
+            "ডিস্কের অবস্থা অজানা - তালিকা রিফ্রেশ করে আবার চেষ্টা করুন।",
+            "ڈسک کی حالت نامعلوم ہے - فہرست تازہ کر کے دوبارہ کوشش کریں۔",
+            "磁盘状态未知 - 请刷新列表后重试。")
         Add("Да", "Yes", "Так", "Ja", "Sì", "Sí", "Oui", "Sim", "نعم", "हाँ", "হ্যাঁ", "ہاں", "是")
         Add("Ошибка", "Error", "Помилка", "Fehler", "Errore", "Error", "Erreur", "Erro", "خطأ", "त्रुटि", "ত্রুটি", "خرابی", "错误")
         Add("ОК", "OK", "ОК", "OK", "OK", "OK", "OK", "OK", "موافق", "ठीक", "ঠিক", "ٹھیک", "确定")

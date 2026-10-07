@@ -118,6 +118,18 @@ Partial Friend NotInheritable Class Image_Editor_Form
     Private Const Registry_Left As String = "EditorLeft"
     Private Const Registry_Width As String = "EditorWidth"
     Private Const Registry_Height As String = "EditorHeight"
+    ''' <summary>The DPI Registry_Width/Registry_Height were measured at (WindowPlacement.SizeForDpi).</summary>
+    Private Const Registry_Dpi As String = "EditorDpi"
+
+    ''' <summary>The size the editor opens at the first time, in 96-dpi pixels like the rest of the layout.</summary>
+    Private Const Default_Width As Integer = 1100
+    Private Const Default_Height As Integer = 800
+
+    ''' <summary>The remembered size exactly as stored (device pixels at <see cref="remembered_Dpi"/>), the
+    ''' remembered position when it lies on a screen, and the DPI the size belongs to (0 = not recorded).</summary>
+    Private remembered_Size As Size
+    Private remembered_Location As Point
+    Private remembered_Dpi As Integer
 
     Friend Sub New(filePath As String, autoRotate As Boolean)
         source_Path = filePath
@@ -207,9 +219,10 @@ Partial Friend NotInheritable Class Image_Editor_Form
         Me.ShowInTaskbar = False
 
         ' The viewer is PerMonitorV2 (Application_Events.vb) - the old note here said DpiUnaware, which
-        ' is true of the net48 reference build only (124 UX-202). This window is not auto-scaled yet: it
-        ' restores its rectangle in device pixels, so scaling on open would grow it each session; ticket 126
-        ' owns that. The font is only touched
+        ' is true of the net48 reference build only. The layout below is authored in 96-dpi pixels and
+        ' scaled by DialogLayout.ApplyAutoScale (the last line of this builder); the remembered
+        ' rectangle is applied after that scaling, never before it (WindowPlacement, 124 UX-202).
+        ' The font is only touched
         ' for a script the pinned Microsoft Sans Serif cannot draw at all - and it is
         ' kept in a field because a Control never disposes a Font it was handed (audit
         ' 057.S18-1, the class of 057.S17-6); Dispose below lets it go.
@@ -268,7 +281,30 @@ Partial Friend NotInheritable Class Image_Editor_Form
         Me.Controls.Add(bottom)
         Me.Controls.Add(BuildToolBar())
 
-        RestoreWindowBounds()
+        ' A first guess for the size, so the viewer can centre the window before it is shown; OnLoad
+        ' replaces it once the window has scaled itself and knows its real DPI.
+        ReadRememberedBounds()
+        ApplyRememberedBounds()
+
+        ' Last, once every child exists: scaling touches only the children present when it runs.
+        DialogLayout.ApplyAutoScale(Me)
+    End Sub
+
+    ''' <summary>
+    ''' The window scales itself at its first layout. Doing it here, before the rectangle below, is the whole
+    ''' rule: the remembered size is applied AFTER scaling, so it is not multiplied by the DPI a second time
+    ''' (the window grew every session when it was). A window opened without a remembered place is centred on
+    ''' the viewer's monitor again, because its size changed since the viewer centred it.
+    ''' </summary>
+    Protected Overrides Sub OnLoad(e As EventArgs)
+        MyBase.OnLoad(e)
+        PerformAutoScale()
+        ApplyRememberedBounds()
+        If Not has_Remembered_Placement Then
+            Dim viewer As Main_Form = TryCast(Me.Owner, Main_Form)
+            If viewer IsNot Nothing Then viewer.PositionChildOnViewerMonitor(Me)
+        End If
+        DialogLayout.ClampToWorkingArea(Me)
     End Sub
 
     Private Function NewFooterButton(name As String, caption As String) As Button
@@ -282,27 +318,31 @@ Partial Friend NotInheritable Class Image_Editor_Form
     End Function
 
     ''' <summary>
-    ''' Restores the window's own place (§5). Judged against the desktop that actually
+    ''' Reads the window's own place (§5) - once, at construction. Judged against the desktop that actually
     ''' exists, exactly as the main window's restore is: a saved rectangle is good when
     ''' any part of it lands on the virtual screen, so a monitor placed left of or above
-    ''' the primary one is not thrown away.
+    ''' the primary one is not thrown away. The size is kept as it was stored (device pixels, with
+    ''' the DPI it was measured at); <see cref="ApplyRememberedBounds"/> turns it into the window's own.
     ''' </summary>
-    ' NOTE: not "RestoreBounds" - Form already has a property by that name (the
-    ' normal-state rectangle of a maximized window), and SaveWindowBounds below reads it.
-    Private Sub RestoreWindowBounds()
-        Dim width As Integer = 1100
-        Dim height As Integer = 800
-        Integer.TryParse(GetSetting(App_name, Second_App_Name, Registry_Width), width)
-        Integer.TryParse(GetSetting(App_name, Second_App_Name, Registry_Height), height)
-        width = Math.Max(Me.MinimumSize.Width, width)
-        height = Math.Max(Me.MinimumSize.Height, height)
+    Private Sub ReadRememberedBounds()
+        Dim width As Integer, height As Integer
+        If Integer.TryParse(GetSetting(App_name, Second_App_Name, Registry_Width), width) AndAlso
+           Integer.TryParse(GetSetting(App_name, Second_App_Name, Registry_Height), height) AndAlso
+           width > 0 AndAlso height > 0 Then
+            remembered_Size = New Size(width, height)
+            remembered_Dpi = WindowPlacement.ParseDpi(GetSetting(App_name, Second_App_Name, Registry_Dpi))
+        Else
+            ' Nothing remembered: the default is authored in 96-dpi pixels, like the layout.
+            remembered_Size = New Size(Default_Width, Default_Height)
+            remembered_Dpi = 96
+        End If
 
-        Dim placed As Boolean = False
         Dim left As Integer, top As Integer
+        Dim placed As Boolean = False
         If Integer.TryParse(GetSetting(App_name, Second_App_Name, Registry_Left), left) AndAlso
            Integer.TryParse(GetSetting(App_name, Second_App_Name, Registry_Top), top) Then
-            If SystemInformation.VirtualScreen.IntersectsWith(New Rectangle(left, top, width, height)) Then
-                Me.SetBounds(left, top, width, height)
+            If SystemInformation.VirtualScreen.IntersectsWith(New Rectangle(left, top, remembered_Size.Width, remembered_Size.Height)) Then
+                remembered_Location = New Point(left, top)
                 placed = True
             End If
         End If
@@ -311,14 +351,28 @@ Partial Friend NotInheritable Class Image_Editor_Form
         ' whether there was one - it centres the editor on its monitor only when there is
         ' nothing remembered, exactly as it already does for the thumbnail panel.
         has_Remembered_Placement = placed
+    End Sub
 
-        If Not placed Then
-            Dim work As Rectangle = Screen.PrimaryScreen.WorkingArea
-            width = Math.Min(width, work.Width)
-            height = Math.Min(height, work.Height)
-            Me.SetBounds(work.Left + (work.Width - width) \ 2, work.Top + (work.Height - height) \ 2,
-                         width, height)
+    ''' <summary>
+    ''' Puts the remembered rectangle on the window, in the pixels of the DPI the window has NOW. Called twice:
+    ''' from the builder, where the DPI is only the system's and the answer is a guess for the viewer's
+    ''' centring, and from OnLoad, after the window has scaled itself, where it is final.
+    ''' </summary>
+    Private Sub ApplyRememberedBounds()
+        Dim size As Size = WindowPlacement.SizeForDpi(remembered_Size.Width, remembered_Size.Height, remembered_Dpi, Me.DeviceDpi)
+        Dim width As Integer = Math.Max(Me.MinimumSize.Width, size.Width)
+        Dim height As Integer = Math.Max(Me.MinimumSize.Height, size.Height)
+
+        If has_Remembered_Placement Then
+            Me.SetBounds(remembered_Location.X, remembered_Location.Y, width, height)
+            Return
         End If
+
+        Dim work As Rectangle = Screen.PrimaryScreen.WorkingArea
+        width = Math.Min(width, work.Width)
+        height = Math.Min(height, work.Height)
+        Me.SetBounds(work.Left + (work.Width - width) \ 2, work.Top + (work.Height - height) \ 2,
+                     width, height)
     End Sub
 
     Private Sub SaveWindowBounds()
@@ -330,6 +384,8 @@ Partial Friend NotInheritable Class Image_Editor_Form
             SaveSetting(App_name, Second_App_Name, Registry_Top, bounds.Top.ToString())
             SaveSetting(App_name, Second_App_Name, Registry_Width, bounds.Width.ToString())
             SaveSetting(App_name, Second_App_Name, Registry_Height, bounds.Height.ToString())
+            ' The pixels above belong to this DPI; without it the next open cannot tell them from another monitor's.
+            SaveSetting(App_name, Second_App_Name, Registry_Dpi, Me.DeviceDpi.ToString())
         Catch ex As Exception
             AppFileLogger.LogException("Image editor: saving window bounds", ex)
         End Try

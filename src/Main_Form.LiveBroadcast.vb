@@ -1,30 +1,42 @@
 #If Not NETFRAMEWORK Then
 Option Strict On
 
-Imports System.Drawing
 Imports System.IO
 Imports System.Threading
 Imports System.Threading.Tasks
 Imports System.Windows.Forms
 
-' 023_SPECIFICATION_FMS_LIVE_BROADCAST_CONSUMER.md §1, §6, §7, §8.
-' Main_Form integration for Live Broadcast reception and playback.
+' 023_SPECIFICATION_FMS_LIVE_BROADCAST_CONSUMER.md sections 1, 6, 7, 8.
+' Main_Form integration for live broadcast reception. The loop that keeps the listener alive - one request at a
+' time, backoff, the budget, the drift guard - is LiveBroadcastRunner (pure, tested against a mock device); what
+' lives here is only what needs the window: the audio surface, the player, the status line, the control bar.
 
 Partial Public Class Main_Form
 
+    ''' <summary>A live session is on screen: connecting, playing, reconnecting, stopped or failed. Cleared when the viewer moves on.</summary>
     Private live_Broadcast_Active As Boolean = False
-    Private live_Playback_Session As LiveHttpPlaybackSession
-    Private live_Reconnect_Policy As New LiveReconnectPolicy()
+
+    ''' <summary>The runner has not returned yet: the transport button means "Stop", otherwise "Connect again".</summary>
+    Private live_Runner_Running As Boolean = False
+
+    Private live_Runner As LiveBroadcastRunner
+    Private live_Runner_Cts As CancellationTokenSource
     Private live_Current_Descriptor As LiveBroadcastDescriptor
     Private live_Current_Endpoint As LiveBroadcastEndpoint
-    Private live_Reconnect_Cts As CancellationTokenSource
-    Private WithEvents live_Reconnect_Timer As New System.Windows.Forms.Timer()
+    Private live_Vlc_Media As LiveVlcMedia
+    Private live_Options As New LivePlaybackOptions()
+    Private WithEvents live_Drift_Timer As New System.Windows.Forms.Timer() With {.Interval = 1000}
 
     ''' <summary>
-    ''' Indicates whether a live audio broadcast session is currently active.
+    ''' Indicates whether a live audio broadcast session is currently on screen.
     ''' </summary>
     Friend Function IsLiveBroadcastActive() As Boolean
         Return live_Broadcast_Active
+    End Function
+
+    ''' <summary>True while the loop is alive (a connection, or waiting to try again): the bar then offers Stop.</summary>
+    Friend Function IsLiveBroadcastRunning() As Boolean
+        Return live_Broadcast_Active AndAlso live_Runner_Running
     End Function
 
     ''' <summary>
@@ -33,60 +45,40 @@ Partial Public Class Main_Form
     Friend Sub ShowLiveBroadcastDialog()
         SlideShowStop()
         Using dlg As New LiveBroadcast_Form()
-            If DialogLayer.ShowViewerDialog(dlg, Me) = DialogResult.OK AndAlso dlg.ResultDescriptor IsNot Nothing Then
-                PlayLiveBroadcast(dlg.ResultDescriptor)
+            If DialogLayer.ShowViewerDialog(dlg, Me) = DialogResult.OK Then
+                If dlg.ResultDescriptor IsNot Nothing Then
+                    PlayLiveBroadcast(dlg.ResultDescriptor)
+                ElseIf Not String.IsNullOrEmpty(dlg.ResultOnDemandUrl) Then
+                    ' The user did not mark the address as live: the ordinary "Open URL.." path, unchanged.
+                    OpenMediaUrl(dlg.ResultOnDemandUrl)
+                End If
             End If
         End Using
     End Sub
 
     ''' <summary>
-    ''' Attempts to route a command line argument or drag-dropped path to the live broadcast parser.
-    ''' Returns True if handled.
+    ''' Routes a command-line argument, a forwarded launch or a drop to the live-broadcast parser - the one door of
+    ''' section 4. Returns True when the argument was one of the three hand-off forms (read, refused or played).
     ''' </summary>
     Friend Function TryHandleLiveBroadcastArgument(argumentText As String) As Boolean
-        If String.IsNullOrWhiteSpace(argumentText) Then Return False
-        Dim trimmed As String = argumentText.Trim().Trim(""""c)
+        Dim result As LiveBroadcastReadResult = LiveBroadcastIngress.TryRead(argumentText)
+        If result Is Nothing Then Return False
 
-        ' 1. File path ending with .fmsbcast (§4.2)
-        If trimmed.EndsWith(".fmsbcast", StringComparison.OrdinalIgnoreCase) Then
-            Dim fileRes As LiveBroadcastReadResult = LiveBroadcastReader.ReadFile(trimmed)
-            If fileRes.Status = LiveReadStatus.Ok AndAlso fileRes.Descriptor IsNot Nothing Then
-                Dim store As New LiveBroadcastStore()
-                store.Upsert(fileRes.Descriptor)
-                PlayLiveBroadcast(fileRes.Descriptor)
-                Return True
-            Else
-                ShowLiveBroadcastError(fileRes.Status)
-                Return True
-            End If
+        If result.Status = LiveReadStatus.Ok AndAlso result.Descriptor IsNot Nothing Then
+            ' An imported descriptor is live whatever it says about isLive (section 1 item 5), and is remembered
+            ' before it plays: a failed write only costs the recent list, never the broadcast (section 5 rule 4).
+            Dim store As New LiveBroadcastStore()
+            store.Upsert(result.Descriptor)
+            PlayLiveBroadcast(result.Descriptor)
+        Else
+            ShowLiveBroadcastError(result.Status)
         End If
-
-        ' 2. Barcode text, intent URL, or fmsbcast link (§4.1, §4.3)
-        If trimmed.StartsWith("FMSBCAST1:", StringComparison.OrdinalIgnoreCase) OrElse
-           trimmed.StartsWith("intent:", StringComparison.OrdinalIgnoreCase) OrElse
-           trimmed.StartsWith("fmsbcast:", StringComparison.OrdinalIgnoreCase) Then
-
-            Dim readRes As LiveBroadcastReadResult = LiveBroadcastReader.ReadText(trimmed)
-            If readRes.Status <> LiveReadStatus.Ok Then
-                readRes = LiveBroadcastLinkReader.ReadLink(trimmed)
-            End If
-
-            If readRes.Status = LiveReadStatus.Ok AndAlso readRes.Descriptor IsNot Nothing Then
-                Dim store As New LiveBroadcastStore()
-                store.Upsert(readRes.Descriptor)
-                PlayLiveBroadcast(readRes.Descriptor)
-                Return True
-            Else
-                ShowLiveBroadcastError(readRes.Status)
-                Return True
-            End If
-        End If
-
-        Return False
+        Return True
     End Function
 
     ''' <summary>
-    ''' Starts playback of a live broadcast descriptor.
+    ''' Starts playback of a live broadcast descriptor. A session already on screen is replaced; the budget of the
+    ''' new one starts from nothing.
     ''' </summary>
     Friend Sub PlayLiveBroadcast(descriptor As LiveBroadcastDescriptor)
         If descriptor Is Nothing Then Return
@@ -97,15 +89,17 @@ Partial Public Class Main_Form
             Return
         End If
 
+        CancelLiveRunner(finishVisibly:=False)
         live_Current_Descriptor = descriptor
         live_Current_Endpoint = endpoint
-        live_Reconnect_Policy = New LiveReconnectPolicy()
 
         EnterLiveBroadcastDisplayState()
-        ConnectLiveBroadcastSession()
+        StartLiveRunner()
     End Sub
 
     Private Sub EnterLiveBroadcastDisplayState()
+        ' The outgoing video's position, while its name is still known (a live stream never has one: see
+        ' CanRememberPositionFor - an address is not a file).
         If is_Vlc_Playing Then RememberCurrentVideoPosition()
         media_Generation += 1
         open_Coordinator.NoteNavigation()
@@ -114,6 +108,10 @@ Partial Public Class Main_Form
             If is_Vlc_Playing Then StopVlcPlayback()
             SecureReleaseCurrent()
         End If
+
+        ' Nothing of the previous media's playback state may reach a broadcast: no stale seek, no rate, no A-B marks.
+        ClearPendingVideoPosition()
+        ResetPlaybackExtrasForNewMedia()
 
         ClearAudioSurface()
         SetMediaDisplayKind(MediaKind.Audio)
@@ -130,215 +128,265 @@ Partial Public Class Main_Form
 
         vlc_Playing_Path = live_Current_Endpoint.Url
         current_Loaded_File_Name = live_Current_Endpoint.Url
+        ' The bar and the control timers key on this: while the live surface is up the player is "owned", even
+        ' between two connections, so "Connect again" has a bar to live on.
+        is_Vlc_Playing = True
     End Sub
 
+    ''' <summary>
+    ''' The viewer is leaving the broadcast (another file, another stream, close). The connection is closed at once -
+    ''' that is what releases a read blocked inside LibVLC - and the loop is told to end. The player itself is
+    ''' stopped by whatever takes the screen next; a late cleanup of the loop never touches a player that is
+    ''' already someone else's (see StopLivePlayerAsync).
+    ''' </summary>
     Friend Sub ExitLiveBroadcastDisplayState()
         live_Broadcast_Active = False
-        live_Reconnect_Timer.Stop()
+        live_Runner_Running = False
+        CancelLiveRunner(finishVisibly:=False)
+    End Sub
 
-        If live_Reconnect_Cts IsNot Nothing Then
-            live_Reconnect_Cts.Cancel()
-            live_Reconnect_Cts.Dispose()
-            live_Reconnect_Cts = Nothing
+    ''' <summary>
+    ''' Ends the loop and closes its connection. <paramref name="finishVisibly"/> keeps the loop's bookkeeping so that,
+    ''' when it returns, the status line and the bar say it stopped (the user pressed Stop); without it the loop is
+    ''' simply forgotten, because something else - another broadcast, another file - owns the screen now.
+    ''' </summary>
+    Private Sub CancelLiveRunner(finishVisibly As Boolean)
+        live_Drift_Timer.Stop()
+        Dim cts As CancellationTokenSource = live_Runner_Cts
+        If Not finishVisibly Then live_Runner_Cts = Nothing
+        If cts IsNot Nothing Then
+            Try
+                cts.Cancel()
+            Catch ex As ObjectDisposedException
+            End Try
         End If
-
-        If live_Playback_Session IsNot Nothing Then
-            live_Playback_Session.Dispose()
-            live_Playback_Session = Nothing
+        ' Closed NOW, not at the loop's next turn: the player may be blocked in a read of this very stream.
+        Dim running As LiveBroadcastRunner = live_Runner
+        If Not finishVisibly Then live_Runner = Nothing
+        If running IsNot Nothing Then
+            Dim session As LiveHttpPlaybackSession = running.CurrentSession
+            If session IsNot Nothing Then session.Close(LiveStreamEnd.Closed)
         End If
     End Sub
 
-    Private Async Sub ConnectLiveBroadcastSession()
-        If Not live_Broadcast_Active OrElse live_Current_Endpoint Is Nothing Then Return
-
+    Private Async Sub StartLiveRunner()
         Dim generation As Integer = media_Generation
 
-        ' Cancel previous reconnect CTS
-        If live_Reconnect_Cts IsNot Nothing Then
-            live_Reconnect_Cts.Cancel()
-            live_Reconnect_Cts.Dispose()
-            live_Reconnect_Cts = Nothing
-        End If
-        live_Reconnect_Cts = New CancellationTokenSource()
-        Dim token As CancellationToken = live_Reconnect_Cts.Token
-
-        ' Dispose previous session before opening a new connection (§6.2 item 4)
-        If live_Playback_Session IsNot Nothing Then
-            live_Playback_Session.Dispose()
-            live_Playback_Session = Nothing
-        End If
-
         If Not Await EnsureVlcInitializedAsync() Then
-            If generation <> media_Generation Then Return
-            lbl_Status.Text = OptionalRuntimeManager.GetVlcUnavailableStatusText()
+            If generation = media_Generation Then lbl_Status.Text = OptionalRuntimeManager.GetVlcUnavailableStatusText()
             Return
         End If
+        If generation <> media_Generation OrElse Not live_Broadcast_Active Then Return
 
-        If generation <> media_Generation Then Return
+        Dim policy As New LiveReconnectPolicy()
+        Dim target As Long? = LiveEndpointSelector.TargetLatencyOf(live_Current_Descriptor, live_Current_Endpoint)
+        Dim runner As New LiveBroadcastRunner(live_Current_Endpoint, policy, New LiveHost(Me, generation), live_Options, target)
+        Dim cts As New CancellationTokenSource()
+        live_Runner = runner
+        live_Runner_Cts = cts
+        live_Runner_Running = True
+        live_Drift_Timer.Start()
 
-        live_Reconnect_Policy.NoteConnecting()
         lbl_Status.Text = Localization.T("Подключение..")
         lbl_Status.Refresh()
 
-        Dim session As New LiveHttpPlaybackSession(live_Current_Endpoint, libVlc)
-        live_Playback_Session = session
-        AddHandler session.Stalled, Sub() OnLiveSessionStalled(generation)
+        Dim ended As LiveRunEnd = LiveRunEnd.UserStopped
+        Try
+            ended = Await runner.RunAsync(cts.Token)
+        Catch ex As Exception
+            AppFileLogger.LogException("Live broadcast loop", ex)
+            ended = LiveRunEnd.Failed
+        End Try
 
-        Dim media As LibVLCSharp.Shared.Media = Await session.OpenAsync(token)
-
-        If generation <> media_Generation OrElse Not live_Broadcast_Active Then
-            session.Dispose()
+        ' Another session (or another file) took the screen while this one was ending: it owns the status now.
+        If generation <> media_Generation OrElse Not ReferenceEquals(live_Runner, runner) Then
+            cts.Dispose()
             Return
         End If
 
-        If media IsNot Nothing Then
-            Try
-                ' Setup player surface
-                vlc_Video_View.Location = Picture_Box_1.Location
-                vlc_Video_View.Size = Picture_Box_1.Size
-                vlc_Video_View.Visible = False ' audio surface paints Picture_Box_1
-                KeepRecipientsOverlayOnTop()
+        live_Runner_Running = False
+        live_Drift_Timer.Stop()
+        If IsDisposed OrElse Not live_Broadcast_Active Then
+            cts.Dispose()
+            Return
+        End If
 
-                ' Ticket 115: a pool-thread stop may still be inside the player; Play is legal only after it left.
-                WaitForPendingVlcStop()
-                vlc_Media_Player.Play(media)
-                media.Dispose()
-
-                ApplyVideoAudioStateToVlc()
-                is_Vlc_Playing = True
-                vlc_Play_Generation = generation
-
-                live_Reconnect_Policy.NotePlaying()
-                BeginAudioPlayback()
-                ShowVideoControls()
-
-                Dim titleText As String = If(Not String.IsNullOrEmpty(live_Current_Descriptor.Title),
-                                             live_Current_Descriptor.Title,
-                                             live_Current_Endpoint.Url)
-                lbl_Status.Text = Localization.TF("LIVE - {0}", titleText)
-                Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " Live broadcast playing: " & live_Current_Endpoint.Url)
-            Catch ex As Exception
-                AppFileLogger.LogException("Failed to start VLC live media playback", ex)
-                OnLiveSessionStalled(generation)
-            End Try
+        If ended = LiveRunEnd.Failed Then
+            Notify(policy.GetTerminalStatusText(), NotifyLevel.Warning)
         Else
-            ' Session open returned Nothing
-            HandleSessionOpenFailure(session, generation)
+            lbl_Status.Text = Localization.T("Трансляция остановлена")
         End If
+        RefreshVideoControlsState()
+        cts.Dispose()
     End Sub
 
-    Private Sub HandleSessionOpenFailure(session As LiveHttpPlaybackSession, generation As Integer)
-        If generation <> media_Generation OrElse Not live_Broadcast_Active Then Return
+    ''' <summary>The player side of the loop. Every call is on the UI thread: the loop was started there.</summary>
+    Private NotInheritable Class LiveHost
+        Implements ILiveRunnerHost
 
-        Dim reason As LiveTerminationKind = session.TerminationReason
-        If reason = LiveTerminationKind.MaxListeners503 OrElse
-           reason = LiveTerminationKind.AccessDenied OrElse
-           reason = LiveTerminationKind.NotFoundOrGone OrElse
-           reason = LiveTerminationKind.NotAudioStream OrElse
-           reason = LiveTerminationKind.UnsupportedMode OrElse
-           reason = LiveTerminationKind.UnsupportedVersion OrElse
-           reason = LiveTerminationKind.LoopbackAddress Then
+        Private ReadOnly form As Main_Form
+        Private ReadOnly generation As Integer
 
-            live_Reconnect_Policy.NoteFatalTermination(reason, session.CustomErrorMessage)
-            lbl_Status.Text = live_Reconnect_Policy.GetTerminalStatusText()
-            StopLivePlayback(isUserStop:=False)
-            Return
-        End If
+        Public Sub New(form As Main_Form, generation As Integer)
+            Me.form = form
+            Me.generation = generation
+        End Sub
 
-        ' Trigger reconnect backoff (§7)
-        ScheduleReconnect(generation)
-    End Sub
+        Public Function StartPlaybackAsync(session As LiveHttpPlaybackSession) As Task Implements ILiveRunnerHost.StartPlaybackAsync
+            form.StartLivePlayer(session, generation)
+            Return Task.CompletedTask
+        End Function
 
-    Private Sub OnLiveSessionStalled(generation As Integer)
-        If Me.InvokeRequired Then
-            Me.BeginInvoke(New Action(Sub() OnLiveSessionStalled(generation)))
-            Return
-        End If
+        Public Function StopPlaybackAsync() As Task Implements ILiveRunnerHost.StopPlaybackAsync
+            Return form.StopLivePlayerAsync(generation)
+        End Function
 
-        If generation <> media_Generation OrElse Not live_Broadcast_Active Then Return
+        Public Sub OnState(state As LiveSessionState, retryCount As Integer, elapsedMs As Long) Implements ILiveRunnerHost.OnState
+            form.OnLiveState(state, retryCount, elapsedMs, generation)
+        End Sub
+    End Class
 
-        Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " Live broadcast session stalled / ended. Scheduling reconnect.")
+    ''' <summary>Hands the connection's body to LibVLC and starts it. The connection is already open (one GET).</summary>
+    Private Sub StartLivePlayer(session As LiveHttpPlaybackSession, generation As Integer)
+        If generation <> media_Generation OrElse Not live_Broadcast_Active OrElse IsDisposed Then Return
+        If libVlc Is Nothing OrElse vlc_Media_Player Is Nothing Then Return
 
-        ' Stop player and dispose old HTTP session before reconnect (§7 item 1)
-        If vlc_Media_Player IsNot Nothing Then
-            Try
-                WaitForPendingVlcStop()
-                vlc_Media_Player.Stop()
-                vlc_Media_Player.Media = Nothing
-            Catch
-            End Try
-        End If
+        vlc_Play_Serial += 1
+        Dim target As Long? = LiveEndpointSelector.TargetLatencyOf(live_Current_Descriptor, live_Current_Endpoint)
+        Dim previousMedia As LiveVlcMedia = live_Vlc_Media
+        live_Vlc_Media = LiveVlcMedia.Create(libVlc, session, live_Options, target)
 
-        If live_Playback_Session IsNot Nothing Then
-            live_Playback_Session.Dispose()
-            live_Playback_Session = Nothing
-        End If
+        vlc_Video_View.Location = Picture_Box_1.Location
+        vlc_Video_View.Size = Picture_Box_1.Size
+        vlc_Video_View.Visible = False ' the audio surface paints Picture_Box_1
+        KeepRecipientsOverlayOnTop()
 
-        ScheduleReconnect(generation)
-    End Sub
+        ' Ticket 115: a pool-thread stop may still be inside the player; Play is legal only after it left.
+        WaitForPendingVlcStop()
+        vlc_Media_Player.Play(live_Vlc_Media.Media)
+        ' The player let go of the previous connection's media when it took this one; only now is it safe to free.
+        If previousMedia IsNot Nothing Then previousMedia.Dispose()
 
-    Private Sub ScheduleReconnect(generation As Integer)
-        If generation <> media_Generation OrElse Not live_Broadcast_Active Then Return
+        ApplyVideoAudioStateToVlc()
+        is_Vlc_Playing = True
+        vlc_Play_Generation = generation
 
-        Dim backoffMs As Integer? = live_Reconnect_Policy.GetNextBackoffDelayMs()
-        If backoffMs.HasValue Then
-            lbl_Status.Text = Localization.TF("Переподключение {0}/5..", live_Reconnect_Policy.RetryCount)
-            lbl_Status.Refresh()
-
-            live_Reconnect_Timer.Stop()
-            live_Reconnect_Timer.Interval = Math.Max(50, backoffMs.Value)
-            live_Reconnect_Timer.Start()
-        Else
-            ' Budget exhausted (§7)
-            lbl_Status.Text = live_Reconnect_Policy.GetTerminalStatusText()
-            StopLivePlayback(isUserStop:=False)
-        End If
-    End Sub
-
-    Private Sub live_Reconnect_Timer_Tick(sender As Object, e As EventArgs) Handles live_Reconnect_Timer.Tick
-        live_Reconnect_Timer.Stop()
-        If live_Broadcast_Active Then
-            ConnectLiveBroadcastSession()
-        End If
+        BeginAudioPlayback()
+        ShowVideoControls()
     End Sub
 
     ''' <summary>
-    ''' Stops live broadcast playback cleanly.
+    ''' Stops the player and waits until it let go. The connection was closed first (by the loop), so a read the
+    ''' player had blocked is released and Stop cannot wait on it. When the screen is no longer this broadcast's, the
+    ''' player belongs to whatever replaced it and is left alone.
+    ''' </summary>
+    Private Async Function StopLivePlayerAsync(generation As Integer) As Task
+        Dim ours As Boolean = generation = media_Generation AndAlso live_Broadcast_Active
+        Dim player = vlc_Media_Player
+        If Not ours OrElse player Is Nothing OrElse IsDisposed Then Return
+
+        ' Ticket 115: the stop is native work on a pool thread. It is counted in, so the instance is not freed under
+        ' it, and chained behind the previous stop, so two never run against one player.
+        If Not vlc_Lease.TryEnter() Then Return
+        Dim previous As Task = vlc_Pending_Stop
+        Dim stopping As Task = Task.Run(Sub()
+                                            Try
+                                                If previous IsNot Nothing Then
+                                                    Try : previous.Wait() : Catch : End Try
+                                                End If
+                                                player.Stop()
+                                                player.Media = Nothing
+                                            Catch
+                                            Finally
+                                                vlc_Lease.Leave()
+                                            End Try
+                                        End Sub)
+        vlc_Pending_Stop = stopping
+
+        ' Bounded: a stop that never returns must not hang the window (the same bound WaitForPendingVlcStop uses).
+        Dim done As Task = Await Task.WhenAny(stopping, Task.Delay(3000))
+        If done Is stopping Then
+            DisposeLiveVlcMedia()
+        Else
+            AppFileLogger.WriteLine("Live broadcast: the player did not stop within 3 s; its media is left to the next stop")
+        End If
+    End Function
+
+    ''' <summary>Frees the player's current live media. Only after the player was stopped or has taken another media -
+    ''' LibVLC may still call into a stream input until then.</summary>
+    Friend Sub DisposeLiveVlcMedia()
+        Dim old As LiveVlcMedia = live_Vlc_Media
+        live_Vlc_Media = Nothing
+        If old IsNot Nothing Then old.Dispose()
+    End Sub
+
+    ''' <summary>A transition of the loop: logged with its monotonic time and generation (section 7), and shown.</summary>
+    Private Sub OnLiveState(state As LiveSessionState, retryCount As Integer, elapsedMs As Long, generation As Integer)
+        ' Never the address: it can carry a token, and current.log is what "Send logs" ships. What the last attempt came to
+        ' and, when it is over, why - a state alone does not say.
+        Dim running As LiveBroadcastRunner = live_Runner
+        Dim why As String = ""
+        If running IsNot Nothing Then
+            If running.LastOpen IsNot Nothing Then why = ", open=" & running.LastOpen.Outcome.ToString() & If(running.LastOpen.HttpStatus > 0, " " & running.LastOpen.HttpStatus.ToString(Globalization.CultureInfo.InvariantCulture), "")
+            If state = LiveSessionState.Failed OrElse state = LiveSessionState.Ended Then why &= ", reason=" & running.Policy.TerminationReason.ToString()
+        End If
+        AppFileLogger.WriteLine("Live broadcast: " & state.ToString() & ", retry " & retryCount.ToString(Globalization.CultureInfo.InvariantCulture) &
+                                ", t=" & elapsedMs.ToString(Globalization.CultureInfo.InvariantCulture) & " ms, generation " &
+                                generation.ToString(Globalization.CultureInfo.InvariantCulture) & why)
+        If generation <> media_Generation OrElse Not live_Broadcast_Active Then Return
+
+        Select Case state
+            Case LiveSessionState.Connecting, LiveSessionState.Buffering
+                If retryCount = 0 Then lbl_Status.Text = Localization.T("Подключение..")
+            Case LiveSessionState.Playing
+                Dim titleText As String = live_Current_Descriptor.Title
+                If String.IsNullOrEmpty(titleText) Then titleText = MediaUrl.DisplayName(live_Current_Endpoint.Url)
+                lbl_Status.Text = Localization.TF("LIVE - {0}", titleText)
+            Case LiveSessionState.Reconnecting
+                lbl_Status.Text = If(retryCount > 0,
+                                     Localization.TF("Переподключение {0}/5..", retryCount),
+                                     Localization.T("Подключение.."))
+        End Select
+    End Sub
+
+    ''' <summary>The player reported the end of its media or an error for the broadcast on screen: the loop reconnects.</summary>
+    Private Sub NotifyLivePlayerEnded(eventGeneration As Integer)
+        If eventGeneration <> media_Generation OrElse Not live_Broadcast_Active Then Return
+        Dim running As LiveBroadcastRunner = live_Runner
+        If running IsNot Nothing Then running.NotifyPlayerEnded()
+    End Sub
+
+    ''' <summary>
+    ''' Once a second: how far the player sits behind what has arrived. While the producer's clock and this PC's
+    ''' differ, a session that never stalls still drifts; the guard rejoins the live edge when it does (LIVE-BROADCAST
+    ''' rule 2, steady state).
+    ''' </summary>
+    Private Sub Live_Drift_Timer_Tick(sender As Object, e As EventArgs) Handles live_Drift_Timer.Tick
+        Dim running As LiveBroadcastRunner = live_Runner
+        If running Is Nothing OrElse Not live_Runner_Running OrElse vlc_Media_Player Is Nothing Then Return
+        Try
+            Dim played As Long = vlc_Media_Player.Time
+            Dim playing As Boolean = vlc_Media_Player.IsPlaying
+            If running.SampleDrift(played, playing) = LiveDriftAction.Rejoin Then
+                AppFileLogger.WriteLine("Live broadcast: playback fell " & running.Drift.LastLagMs.ToString("0", Globalization.CultureInfo.InvariantCulture) &
+                                        " ms behind the data received (limit " & running.Drift.ThresholdMs.ToString(Globalization.CultureInfo.InvariantCulture) &
+                                        " ms); rejoining the live edge")
+            End If
+        Catch ex As Exception
+            ' The player can be torn down between the check and the call.
+            Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " live drift sample skipped: " & ex.Message)
+        End Try
+    End Sub
+
+    ''' <summary>
+    ''' Stops live broadcast playback: the loop ends, the connection and the player are released, and the bar offers
+    ''' "Connect again". The surface stays, so the broadcast can be resumed from it.
     ''' </summary>
     Friend Sub StopLivePlayback(Optional isUserStop As Boolean = True)
-        live_Reconnect_Timer.Stop()
-
-        If isUserStop AndAlso live_Reconnect_Policy IsNot Nothing Then
-            live_Reconnect_Policy.NoteUserStopped()
-        End If
-
-        If live_Reconnect_Cts IsNot Nothing Then
-            live_Reconnect_Cts.Cancel()
-            live_Reconnect_Cts.Dispose()
-            live_Reconnect_Cts = Nothing
-        End If
-
-        If vlc_Media_Player IsNot Nothing Then
-            Try
-                WaitForPendingVlcStop()
-                vlc_Media_Player.Stop()
-                vlc_Media_Player.Media = Nothing
-            Catch
-            End Try
-        End If
-
-        If live_Playback_Session IsNot Nothing Then
-            live_Playback_Session.Dispose()
-            live_Playback_Session = Nothing
-        End If
-
-        is_Vlc_Playing = False
-        HideVideoControls()
+        CancelLiveRunner(finishVisibly:=True)
     End Sub
 
-    ''' <summary>
-    ''' Reconnects to the current live broadcast starting a fresh budget from scratch (§7).
-    ''' </summary>
+    ''' <summary>Reconnects to the current live broadcast starting a fresh budget from scratch (section 7).</summary>
     Friend Sub ReconnectLiveBroadcast()
         If live_Current_Descriptor IsNot Nothing Then
             PlayLiveBroadcast(live_Current_Descriptor)
@@ -346,20 +394,7 @@ Partial Public Class Main_Form
     End Sub
 
     Private Sub ShowLiveBroadcastError(status As LiveReadStatus)
-        Select Case status
-            Case LiveReadStatus.UnsupportedVersion
-                lbl_Status.Text = Localization.T("Требуется обновить приложение для этой трансляции")
-            Case LiveReadStatus.UnsupportedMode
-                lbl_Status.Text = Localization.T("Этот режим пока не поддерживается")
-            Case LiveReadStatus.LoopbackHost
-                lbl_Status.Text = Localization.T("Устройство передало локальный адрес (loopback), недоступный с ПК")
-            Case LiveReadStatus.TooLarge
-                lbl_Status.Text = Localization.T("Превышен максимальный размер дескриптора (64 КБ)")
-            Case LiveReadStatus.InvalidDocument
-                lbl_Status.Text = Localization.T("Неверный формат трансляции или повреждённые данные")
-            Case Else
-                lbl_Status.Text = Localization.T("Не удалось распознать трансляцию")
-        End Select
+        lbl_Status.Text = LiveBroadcastMessages.ForReadStatus(status)
     End Sub
 
 End Class

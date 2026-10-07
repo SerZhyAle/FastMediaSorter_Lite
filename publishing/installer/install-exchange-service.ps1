@@ -32,7 +32,14 @@
                       inheritance off - the enrolled user is excluded
       bin\            the staged fms-exchange-server.exe (+ .sha256), code: LocalService may read
                       and execute it, nobody but SYSTEM / Administrators may write it
-      install-exchange-service.log
+      logs\           the ONE subdirectory the enrolled user may READ (ticket 182 L-1): exchange.log
+                      (+ exchange.log.1), service.log, install-exchange-service.log and
+                      enable-exchange-server.log. Its own descriptor: owner Administrators, no
+                      inheritance, SYSTEM + Administrators full control, LocalService Modify on its
+                      files, the enrolled user(s) ReadAndExecute and nothing else. The logs are
+                      redacted by construction (typed hashed ids, no secret field), which is what
+                      makes reading them safe; the data directory ABOVE it keeps giving the enrolled
+                      user nothing, so "Send the log to the author" reaches the logs and nothing else.
 
     Exit codes: 0 ok | 1 unexpected error | 2 missing or invalid argument / unusable exe |
     3 the service did not start | 4 an ACL (file or SCM) could not be set | 5 not elevated |
@@ -42,9 +49,13 @@
     LocalService | 14 the old registration is still marked for deletion | 16 another run of
     this helper holds the state lock (nothing was changed).
 
-    The log is appended to <DataDir>\install-exchange-service.log once the directory is
-    verified - and to the elevated account's own %TEMP% copy when it cannot be trusted - and the
-    fallback copy is written on SUCCESS too.
+    The log is appended to <DataDir>\logs\install-exchange-service.log once that directory is
+    verified (created with its final descriptor, re-secured and read back by install, repair and
+    migrate-to-service; the other verbs only append to an existing, trusted one) - and to the
+    elevated account's own %TEMP% copy when it cannot be trusted - and the fallback copy is
+    written on SUCCESS too. Every run that touches the state ASSERTS BOTH FACTS and fails with exit
+    4 otherwise: the data directory gives the enrolled user nothing, and logs\ gives them read and
+    nothing more.
 
 .PARAMETER Action
     install | repair | remove | start | stop | restart | migrate-to-service
@@ -92,6 +103,7 @@ $TlsDirName     = 'tls'
 $CertName       = 'cert.pem'
 $KeyName        = 'key.pem'
 $BinDirName     = 'bin'
+$LogsDirName    = 'logs'
 $LogName        = 'install-exchange-service.log'
 
 # Set by Sync-ServiceBinaries: the executable the SERVICE is registered against and the one the
@@ -172,14 +184,19 @@ function Write-PendingLog([string]$path) {
     }
 }
 
-# Opens the log inside the state directory - ONLY after that directory was verified, and never
-# by creating it (creating it here, before the ownership check, is one way a directory owned by
-# someone else gets adopted by the next elevated run).
+# Opens the log inside <DataDir>\logs - ONLY after that directory was verified, and never by
+# creating it (creating it here, before the ownership check, is one way a directory owned by
+# someone else gets adopted by the next elevated run; Initialize-LogsDir is what creates it, with
+# its final ACL, and then calls this again). Until then every line waits in memory, and a run that
+# never gets a verified logs\ ends in the administrator's %TEMP% copy (Get-FallbackLogPath).
 function Initialize-Log {
     if (-not $DataDir) { return }
-    $attr = Get-RawAttributes $DataDir
+    $logsDir = Join-Path $DataDir $LogsDirName
+    $attr = Get-RawAttributes $logsDir
     if ($null -eq $attr -or -not ($attr -band [System.IO.FileAttributes]::Directory)) { return }
-    $candidate = Join-Path $DataDir $LogName
+    # A link, or a directory somebody else owns, is never written into by an elevated process.
+    if (Get-DirectoryDistrust $logsDir) { return }
+    $candidate = Join-Path $logsDir $LogName
     # A log file that is a link would turn every elevated Add-Content into a write wherever the
     # link points. It is only our own text, so the link goes, never its target.
     try { if (Test-ReparsePoint $candidate) { Remove-LinkOnly $candidate } } catch { return }
@@ -367,6 +384,23 @@ function New-BinDirSecurity {
     return $sec
 }
 
+# The logs directory (ticket 182 L-1): the ONE place under the state directory the enrolled user
+# may read. LocalService creates and rotates its files (the same split as the state directory:
+# it may create entries in the directory but holds no DELETE on the directory itself, and Modify
+# only on what is inside), SYSTEM and Administrators are in full control, and every enrolled user
+# gets ReadAndExecute - on the directory (to list it) and, inherited, on each file - and nothing
+# else, so a log can be read and sent but never edited or removed from the user's account. No
+# inheritance from the parent: the state directory above keeps giving that user nothing.
+function New-LogsDirSecurity {
+    $sec = New-LockedDirectorySecurity
+    $sec.AddAccessRule((New-AllowRule $SidLocalService 'ReadAndExecute, Write' 'this'))
+    $sec.AddAccessRule((New-AllowRule $SidLocalService 'Modify' 'children'))
+    foreach ($sid in @(Split-Sids $ManageSid)) {
+        $sec.AddAccessRule((New-AllowRule $sid 'ReadAndExecute' 'tree'))
+    }
+    return $sec
+}
+
 function Set-DirectorySecurity([string]$path, $security) {
     $info = New-Object System.IO.DirectoryInfo($path)
     if ($script:IsDesktopEdition) { $info.SetAccessControl($security) }
@@ -394,11 +428,12 @@ function Set-FileSecurity([string]$path, $security) {
     else { [System.IO.FileSystemAclExtensions]::SetAccessControl($info, $security) }
 }
 
-# '' when $path is owned by Administrators, inherits nothing and carries entries for
-# $allowedSids only; otherwise what is wrong with it.
-function Get-LockdownProblem([string]$path, [string[]]$allowedSids) {
-    try { $acl = Get-Acl -LiteralPath $path } catch { return "its ACL cannot be read: $($_.Exception.Message)" }
-    $owner = $acl.GetOwner([System.Security.Principal.SecurityIdentifier]).Value
+# '' when the descriptor is owned by Administrators, inherits nothing and carries entries for
+# $allowedSids only; otherwise what is wrong with it. Pure (it reads the object it is given, never
+# the disk), so the tests can hand it descriptors built in memory.
+function Get-LockdownAclProblem($acl, [string[]]$allowedSids) {
+    $ownerId = $acl.GetOwner([System.Security.Principal.SecurityIdentifier])
+    $owner = if ($ownerId) { $ownerId.Value } else { '' }
     if ($owner -ne $SidAdmins) { return "its owner is '$(Get-SidDisplay $owner)', not Administrators" }
     if (-not $acl.AreAccessRulesProtected) { return 'it still inherits entries from its parent' }
     foreach ($rule in $acl.GetAccessRules($true, $true, [System.Security.Principal.SecurityIdentifier])) {
@@ -408,6 +443,116 @@ function Get-LockdownProblem([string]$path, [string[]]$allowedSids) {
         }
     }
     return ''
+}
+
+# '' when $path is owned by Administrators, inherits nothing and carries entries for
+# $allowedSids only; otherwise what is wrong with it.
+function Get-LockdownProblem([string]$path, [string[]]$allowedSids) {
+    try { $acl = Get-Acl -LiteralPath $path } catch { return "its ACL cannot be read: $($_.Exception.Message)" }
+    return (Get-LockdownAclProblem $acl $allowedSids)
+}
+
+# $true when every right in $rights is within $allowed (a mask test on the rights enumeration).
+function Test-RightsWithin($rights, $allowed) {
+    return ((([int]$rights) -band (-bnot ([int]$allowed))) -eq 0)
+}
+
+# The two facts of ticket 182 L-1, each asserted on its own, on a descriptor in hand (pure).
+#
+# FACT 1 - the state directory gives the enrolled user NOTHING: no entry for any enrolled SID (the
+# accounts, the password hash, the TLS key and every token's record live under it), on top of the
+# generic lockdown (owner Administrators, no inheritance, only the three service identities).
+function Get-DataDirAclProblem($acl, [string[]]$manage) {
+    $service = @($SidSystem, $SidAdmins, $SidLocalService)
+    foreach ($rule in $acl.GetAccessRules($true, $true, [System.Security.Principal.SecurityIdentifier])) {
+        $sid = $rule.IdentityReference.Value
+        if (($manage -contains $sid) -and ($service -notcontains $sid)) {
+            return "the enrolled user '$(Get-SidDisplay $sid)' holds an entry on the state directory itself - it must hold none (only logs\ is theirs to read)"
+        }
+    }
+    return (Get-LockdownAclProblem $acl $service)
+}
+
+# FACT 2 - logs\ gives each enrolled user READ and nothing more: an explicit allow entry per
+# enrolled SID within ReadAndExecute, no deny entry, no other account, LocalService unable to
+# delete or re-secure the directory itself (an inherit-only entry applies to what is inside, not
+# to the directory), on top of the generic lockdown.
+function Get-LogsDirAclProblem($acl, [string[]]$manage) {
+    $service = @($SidSystem, $SidAdmins, $SidLocalService)
+    $problem = Get-LockdownAclProblem $acl ($service + @($manage))
+    if ($problem) { return $problem }
+    $readEntry = @{}
+    $beyondRead = [System.Security.AccessControl.FileSystemRights]'Delete, DeleteSubdirectoriesAndFiles, ChangePermissions, TakeOwnership'
+    # .NET adds Synchronize to every allow entry it builds, so a read entry reads back as
+    # "ReadAndExecute, Synchronize"; that is still read.
+    $readRights = [System.Security.AccessControl.FileSystemRights]'ReadAndExecute, Synchronize'
+    foreach ($rule in $acl.GetAccessRules($true, $true, [System.Security.Principal.SecurityIdentifier])) {
+        $sid = $rule.IdentityReference.Value
+        if (($manage -contains $sid) -and ($service -notcontains $sid)) {
+            if ($rule.AccessControlType -ne [System.Security.AccessControl.AccessControlType]::Allow) {
+                return "the enrolled user '$(Get-SidDisplay $sid)' carries a deny entry on it"
+            }
+            if (-not (Test-RightsWithin $rule.FileSystemRights $readRights)) {
+                return "the enrolled user '$(Get-SidDisplay $sid)' holds more than read on it ($($rule.FileSystemRights))"
+            }
+            $readEntry[$sid] = $true
+        } elseif ($sid -eq $SidLocalService) {
+            $inheritOnly = ($rule.PropagationFlags -band [System.Security.AccessControl.PropagationFlags]::InheritOnly) -ne 0
+            if (-not $inheritOnly -and (([int]$rule.FileSystemRights) -band ([int]$beyondRead)) -ne 0) {
+                return "LocalService could delete or re-secure the logs directory itself ($($rule.FileSystemRights))"
+            }
+        }
+    }
+    foreach ($sid in $manage) {
+        if (($service -notcontains $sid) -and -not $readEntry.ContainsKey($sid)) {
+            return "the enrolled user '$(Get-SidDisplay $sid)' has no read entry on it"
+        }
+    }
+    return ''
+}
+
+# The same read-only rule for one FILE inside logs\ (inherited entries are expected there): only
+# the three service identities and the enrolled users, each enrolled user holding an allow entry
+# within ReadAndExecute.
+function Get-LogFileAclProblem($acl, [string[]]$manage) {
+    $service = @($SidSystem, $SidAdmins, $SidLocalService)
+    $readEntry = @{}
+    $readRights = [System.Security.AccessControl.FileSystemRights]'ReadAndExecute, Synchronize'
+    foreach ($rule in $acl.GetAccessRules($true, $true, [System.Security.Principal.SecurityIdentifier])) {
+        $sid = $rule.IdentityReference.Value
+        if (($service + @($manage)) -notcontains $sid) { return "it carries an unexpected entry for '$(Get-SidDisplay $sid)'" }
+        if (($manage -contains $sid) -and ($service -notcontains $sid)) {
+            if ($rule.AccessControlType -ne [System.Security.AccessControl.AccessControlType]::Allow) {
+                return "the enrolled user '$(Get-SidDisplay $sid)' carries a deny entry on it"
+            }
+            if (-not (Test-RightsWithin $rule.FileSystemRights $readRights)) {
+                return "the enrolled user '$(Get-SidDisplay $sid)' holds more than read on it ($($rule.FileSystemRights))"
+            }
+            $readEntry[$sid] = $true
+        }
+    }
+    foreach ($sid in $manage) {
+        if (($service -notcontains $sid) -and -not $readEntry.ContainsKey($sid)) {
+            return "the enrolled user '$(Get-SidDisplay $sid)' has no read entry on it"
+        }
+    }
+    return ''
+}
+
+# Disk wrappers of the three pure checks. '' when fine, otherwise what is wrong.
+function Get-DataDirProblem([string]$path) {
+    try { $acl = Get-Acl -LiteralPath $path } catch { return "its ACL cannot be read: $($_.Exception.Message)" }
+    return (Get-DataDirAclProblem $acl @(Split-Sids $ManageSid))
+}
+
+function Get-LogsDirProblem([string]$path) {
+    try { $acl = Get-Acl -LiteralPath $path } catch { return "its ACL cannot be read: $($_.Exception.Message)" }
+    return (Get-LogsDirAclProblem $acl @(Split-Sids $ManageSid))
+}
+
+function Get-LogFileProblem([string]$path) {
+    try { $acl = Get-Acl -LiteralPath $path } catch { return "its ACL cannot be read: $($_.Exception.Message)" }
+    return (Get-LogFileAclProblem $acl @(Split-Sids $ManageSid))
 }
 
 # '' when exchange.json carries entries for the service identities and the enrolled user(s)
@@ -758,8 +903,63 @@ function Set-MachineDataDirAcl {
     # implicit right to rewrite the DACL away from whoever created it.
     Write-Log "locking down $DataDir"
     Set-DirectorySecurity $DataDir (New-DataDirSecurity)
-    $problem = Get-LockdownProblem $DataDir @($SidSystem, $SidAdmins, $SidLocalService)
+    # FACT 1 of ticket 182 L-1: the enrolled user holds nothing on this directory.
+    $problem = Get-DataDirProblem $DataDir
     if ($problem) { Fail "could not secure '$DataDir': $problem" 4 }
+}
+
+# logs\ inside the state directory: created with its FINAL descriptor when absent, adopted only when
+# an administrator or the system owns it and it is no link, then its descriptor is rebuilt and read
+# back (FACT 2 of ticket 182 L-1: the enrolled user reads, never writes), and every file already in
+# it is re-pointed at the directory's entries. Only then does the helper's own log open there.
+function Initialize-LogsDir {
+    Assert-DataDir
+    $logsDir = Join-Path $DataDir $LogsDirName
+    if (Assert-TrustedDirectory $logsDir 'the logs directory') {
+        Write-Log "logs directory '$logsDir' exists and is owned by an administrator or the system"
+    } else {
+        Write-Log "creating '$logsDir' with its final ACL"
+        New-SecureDirectory $logsDir (New-LogsDirSecurity)
+        if (-not (Assert-TrustedDirectory $logsDir 'the logs directory')) { Fail "could not create '$logsDir'" 4 }
+    }
+    Write-Log "locking down $logsDir (the enrolled user reads, never writes)"
+    Set-DirectorySecurity $logsDir (New-LogsDirSecurity)
+    Set-LogsAcls
+    Initialize-Log
+}
+
+# Verifies logs\ and brings its files to the directory's entries. Run by Initialize-LogsDir and again
+# after the service has started (it creates exchange.log and service.log itself), so a file the
+# service made is read back too. A missing directory is not an error here - nothing to verify.
+function Set-LogsAcls {
+    # FACT 1 again, so the "verified" line below states both facts from this very read.
+    $dataProblem = Get-DataDirProblem $DataDir
+    if ($dataProblem) { Fail "could not secure '$DataDir': $dataProblem" 4 }
+    $logsDir = Join-Path $DataDir $LogsDirName
+    if ($null -eq (Get-RawAttributes $logsDir)) { return }
+    if (Test-ReparsePoint $logsDir) { Fail "'$logsDir' is a link - refused" 11 }
+    $problem = Get-LogsDirProblem $logsDir
+    if ($problem) { Fail "could not secure '$logsDir': $problem" 4 }
+    foreach ($file in [System.IO.Directory]::GetFiles($logsDir)) {
+        # A link among the logs is removed AS a link (never followed): LocalService may create
+        # entries here, and an elevated step must not write or re-secure through one.
+        if (Test-ReparsePoint $file) {
+            Write-Log "WARNING: '$file' is a link - removed (the link only, never its target)"
+            Remove-LinkOnly $file
+            continue
+        }
+        $sec = Get-FileSecurity $file
+        # Inherit from logs\: drop what is explicit, switch inheritance on, and the file carries
+        # exactly the directory's entries (LocalService Modify, the enrolled user(s) read).
+        $sec.SetAccessRuleProtection($false, $false)
+        foreach ($rule in @($sec.GetAccessRules($true, $false, [System.Security.Principal.SecurityIdentifier]))) {
+            [void]$sec.RemoveAccessRuleAll($rule)
+        }
+        Set-FileSecurity $file $sec
+        $fileProblem = Get-LogFileProblem $file
+        if ($fileProblem) { Fail "could not secure '$file': $fileProblem" 4 }
+    }
+    Write-Log "verified: '$DataDir' gives the enrolled user nothing; '$logsDir' gives them read only"
 }
 
 # The one way the machine state directory comes into use by an action that writes to it: an
@@ -776,7 +976,8 @@ function Initialize-MachineDataDir {
         if (-not (Assert-TrustedDirectory $DataDir 'the machine state directory')) { Fail "could not create '$DataDir'" 4 }
     }
     Set-MachineDataDirAcl
-    Initialize-Log
+    # logs\ is created and verified here, and only then does the helper's log open in it.
+    Initialize-LogsDir
 }
 
 # Seeds exchange.json with `{}` (every member keeps its default, no password) when it is absent:
@@ -860,6 +1061,10 @@ function Set-StateFileAcls {
         }
         Set-FileSecurity $cert $sec
     }
+
+    # logs\ - re-verified on every pass (the service may have created its log files since the last),
+    # so a run asserts both facts: nothing on the state directory, read only on logs\.
+    Set-LogsAcls
 }
 
 # The SID of the profile a path lives under, read from the profile list rather than guessed from
@@ -1098,7 +1303,12 @@ $script:DataDirDistrust = if ($DataDir) { Get-DirectoryDistrust $DataDir } else 
 if ($script:DataDirDistrust -and $Action -ne 'remove' -and $Action -ne 'stop') {
     Fail "the machine state directory refused: $script:DataDirDistrust" 11
 }
-if (-not $script:DataDirDistrust) { Initialize-Log }
+#
+# The verbs that fix the state (install, repair, migrate-to-service) do NOT open the log here: their
+# lines wait in memory until Initialize-LogsDir has created or re-secured and verified logs\ - the
+# log opens in a directory only after the helper has checked it. The verbs that only start, stop or
+# remove append to an existing logs\ that passes the owner and link checks, or go to %TEMP%.
+if (-not $script:DataDirDistrust -and @('install', 'repair', 'migrate-to-service') -notcontains $Action) { Initialize-Log }
 
 if ($Action -ne 'stop') { Enter-StateLock }
 

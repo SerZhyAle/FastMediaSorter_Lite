@@ -1,7 +1,8 @@
-// Package logx is the only logger of the module. Its API takes typed values so that a share id,
-// a tunnel id or a password cannot reach a log line by accident (contract section 5.3, duty R-6):
+// Package logx is the only logger of the module. Its API takes typed values so that an id or a
+// secret cannot reach a log line by accident (DEVICE-EXCHANGE 7.9, tickets 139 and 167):
 //
-//   - Share(id) renders the session by the first 8 hex characters of SHA-256(id), never the id;
+//   - Device, Resource, Share, Broadcast, Tunnel and Login render an id by the first 8 hex characters
+//     of its SHA-256, never the id;
 //   - Text(key, s) strips control characters and caps the value at 1024 bytes;
 //   - there is no way to pass a raw string field.
 //
@@ -29,11 +30,33 @@ const MaxText = 1024
 // Field is one key=value pair of a line. Build it with Share, Addr, Port, Int or Text.
 type Field struct{ key, val string }
 
-// Share names a session by the first 8 hex characters of the SHA-256 of its id.
-func Share(id string) Field {
+// hashed renders an id as the first 8 hex characters of its SHA-256 under a fixed key. Every id type
+// below goes through it; there is no constructor that takes a raw secret, so a token, a password, a
+// pairing code, an `access` string or a descriptor has nothing to be handed to (DEVICE-EXCHANGE 7.9,
+// ticket 167 rule 4).
+func hashed(key, id string) Field {
 	sum := sha256.Sum256([]byte(id))
-	return Field{"share", hex.EncodeToString(sum[:4])}
+	return Field{key, hex.EncodeToString(sum[:4])}
 }
+
+// Share names a share id by the first 8 hex characters of the SHA-256 of its id.
+func Share(id string) Field { return hashed("share", id) }
+
+// Device names a device by the hashed form of its deviceId.
+func Device(id string) Field { return hashed("device", id) }
+
+// Resource names a resource by the hashed form of its resourceId.
+func Resource(id string) Field { return hashed("resource", id) }
+
+// Broadcast names a broadcast by the hashed form of its broadcastId.
+func Broadcast(id string) Field { return hashed("broadcast", id) }
+
+// Tunnel names a tunnel by the hashed form of its tunnelId.
+func Tunnel(id string) Field { return hashed("tunnel", id) }
+
+// Login names an account by the hashed form of its login, folded to lower case like every login. It
+// is hashed because a person who types a password into the login field must not leave it in a log.
+func Login(login string) Field { return hashed("login", strings.ToLower(login)) }
 
 // Addr renders a client address. Only the IP is kept: a port tells nothing a log needs.
 func Addr(a string) Field {

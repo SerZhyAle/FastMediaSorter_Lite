@@ -8,7 +8,7 @@ Imports System.Net
 
 Friend Module LiveBroadcastLinkReader
 
-    Private ReadOnly KnownLiveAudioPaths As New HashSet(Of String)(StringComparer.OrdinalIgnoreCase) From {
+    Private ReadOnly KnownLiveAudioPaths As New HashSet(Of String)(StringComparer.Ordinal) From {
         "/live-audio",
         "/live-audio.aac",
         "/listen"
@@ -47,53 +47,62 @@ Friend Module LiveBroadcastLinkReader
     ''' Payload is URL-decoded exactly once.
     ''' </summary>
     Private Function ReadIntentOrCustomScheme(linkText As String) As LiveBroadcastReadResult
-        Dim payloadParam As String = Nothing
+        ' Only the URI proper is read. An Android intent link carries its own parameters after '#Intent;' (the package
+        ' hint, the browser fallback page): they are never opened and never executed (section 4.3), so they are never
+        ' even looked at for a payload.
+        Dim hash As Integer = linkText.IndexOf("#"c)
+        Dim uriPart As String = If(hash >= 0, linkText.Substring(0, hash), linkText)
+        Dim intentPart As String = If(hash >= 0, linkText.Substring(hash), "")
+
+        ' A link that is not ours is not our business (an intent for another scheme, say).
+        Dim isOurs As Boolean = uriPart.StartsWith("fmsbcast:", StringComparison.OrdinalIgnoreCase) OrElse
+                                intentPart.IndexOf("scheme=fmsbcast", StringComparison.OrdinalIgnoreCase) >= 0
+        If Not isOurs Then Return LiveBroadcastReadResult.Fail(LiveReadStatus.NotBroadcast)
+
+        Dim query As Integer = uriPart.IndexOf("?"c)
+        If query < 0 Then Return LiveBroadcastReadResult.Fail(LiveReadStatus.InvalidDocument)
+
+        Dim payloadRaw As String = Nothing
         Dim count As Integer = 0
+        For Each pair As String In uriPart.Substring(query + 1).Split("&"c)
+            Dim equals As Integer = pair.IndexOf("="c)
+            Dim name As String = If(equals >= 0, pair.Substring(0, equals), pair)
+            If Not String.Equals(name, "payload", StringComparison.Ordinal) Then Continue For
+            count += 1
+            payloadRaw = If(equals >= 0, pair.Substring(equals + 1), "")
+        Next
 
-        ' Search for payload= in query or parameters
-        Dim searchIndex As Integer = 0
-        While True
-            Dim idx As Integer = linkText.IndexOf("payload=", searchIndex, StringComparison.OrdinalIgnoreCase)
-            If idx < 0 Then Exit While
+        ' Missing, or given twice: both refused (section 4.3).
+        If count <> 1 Then Return LiveBroadcastReadResult.Fail(LiveReadStatus.InvalidDocument)
 
-            ' Ensure it is preceded by ?, &, ;, or start of string / host
-            If idx = 0 OrElse linkText(idx - 1) = "?"c OrElse linkText(idx - 1) = "&"c OrElse linkText(idx - 1) = ";"c Then
-                Dim valStart As Integer = idx + "payload=".Length
-                Dim valEnd As Integer = linkText.IndexOfAny(New Char() {"&"c, ";"c, "#"c}, valStart)
-                Dim rawVal As String = If(valEnd >= 0, linkText.Substring(valStart, valEnd - valStart), linkText.Substring(valStart))
-                payloadParam = rawVal
-                count += 1
-            End If
-            searchIndex = idx + 8
-        End While
+        Dim payload As String = StrictPercentDecode(payloadRaw)
+        If payload Is Nothing Then Return LiveBroadcastReadResult.Fail(LiveReadStatus.InvalidDocument)
 
-        If count = 0 Then
-            Return LiveBroadcastReadResult.Fail(LiveReadStatus.NotBroadcast)
-        End If
-
-        If count > 1 Then
-            ' Duplicate payload parameter is an invalid document (§4.3)
+        ' Decoded exactly once, and it must be an FMSBCAST1 payload: not JSON, not a second link.
+        payload = payload.Trim()
+        If Not payload.StartsWith(LiveBroadcastReader.BarcodePrefix, StringComparison.OrdinalIgnoreCase) Then
             Return LiveBroadcastReadResult.Fail(LiveReadStatus.InvalidDocument)
         End If
 
-        Dim decodedPayload As String
+        Return LiveBroadcastReader.ReadText(payload)
+    End Function
+
+    ''' <summary>
+    ''' Percent-decodes ONCE and refuses what a lenient decoder would let through: a '%' that is not followed by two
+    ''' hex digits. A '+' stays a plus (the payload is Base64; this is not form encoding). Returns Nothing when malformed.
+    ''' </summary>
+    Public Function StrictPercentDecode(raw As String) As String
+        If raw Is Nothing Then Return Nothing
+        For i As Integer = 0 To raw.Length - 1
+            If raw(i) <> "%"c Then Continue For
+            If i + 2 >= raw.Length OrElse Not Uri.IsHexDigit(raw(i + 1)) OrElse Not Uri.IsHexDigit(raw(i + 2)) Then Return Nothing
+            i += 2
+        Next
         Try
-            decodedPayload = Uri.UnescapeDataString(payloadParam)
+            Return Uri.UnescapeDataString(raw)
         Catch
-            Return LiveBroadcastReadResult.Fail(LiveReadStatus.InvalidDocument)
+            Return Nothing
         End Try
-
-        If String.IsNullOrWhiteSpace(decodedPayload) Then
-            Return LiveBroadcastReadResult.Fail(LiveReadStatus.InvalidDocument)
-        End If
-
-        Dim trimmedPayload As String = decodedPayload.Trim()
-        If Not trimmedPayload.StartsWith(LiveBroadcastReader.BarcodePrefix, StringComparison.OrdinalIgnoreCase) AndAlso
-           Not trimmedPayload.StartsWith("{", StringComparison.Ordinal) Then
-            Return LiveBroadcastReadResult.Fail(LiveReadStatus.InvalidDocument)
-        End If
-
-        Return LiveBroadcastReader.ReadText(trimmedPayload)
     End Function
 
     ''' <summary>

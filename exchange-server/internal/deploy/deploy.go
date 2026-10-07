@@ -97,3 +97,32 @@ func CheckBesideService(p ServiceProbe, listen string) (reason string, probeErr 
 	}
 	return "", probeErr
 }
+
+// LockFile is the file in the data directory whose lock says "a server holds this directory". The
+// lock is the operating system's (a sharing mode of none on Windows, flock elsewhere), so it dies with
+// the process and a hard kill leaves nothing that blocks the next start - only an empty file.
+const LockFile = "store.lock"
+
+// ErrLocked is what LockDir returns when another server (or an offline command) holds the directory.
+var ErrLocked = errors.New("the data directory is in use by another server")
+
+// ErrNoAdminChannel is what DialAdmin returns when no server listens on the directory's channel.
+var ErrNoAdminChannel = errors.New("no server answers on the admin channel of this data directory")
+
+// AdminPipePrefix is the fixed part of the named pipe of the local admin channel (Windows).
+const AdminPipePrefix = `\\.\pipe\fms-exchange-admin-`
+
+// AdminPipeName is the name of the admin pipe of one data directory: the prefix plus 8 lower-case hex
+// characters, the first 4 bytes of SHA-256 over the lower-cased absolute path of the data directory.
+// The Share Manager computes the same name to reach the running server (ticket 168).
+func AdminPipeName(dataDir string) string {
+	abs, err := filepath.Abs(dataDir)
+	if err != nil {
+		abs = dataDir
+	}
+	sum := sha256.Sum256([]byte(strings.ToLower(abs)))
+	return AdminPipePrefix + hex.EncodeToString(sum[:4])
+}
+
+// AdminSocketName is the file of the admin channel off Windows, inside the data directory.
+const AdminSocketName = "admin.sock"

@@ -1401,10 +1401,11 @@ Partial Public Class Main_Form
 
             Dim active_Bitmap As Bitmap = Nothing
 
-            ' The dynamic-background analysis below samples the freshly-loaded bitmap
-            ' using EdgeSampler (LockBits) instead of GetPixel (018_SPECIFICATION_VIEWER_CORE_S7_MODERN_PIPELINE.md U-15).
-            ' GDI+ can transiently fail on concurrent access, so the Try/Catch protects
-            ' against display disruption.
+            ' The dynamic-background analysis below samples the freshly-loaded bitmap through
+            ' EdgeSampler, the one home of the sampling rules shared with the perspective bars
+            ' (018_SPECIFICATION_VIEWER_CORE_S7_MODERN_PIPELINE.md U-15). It reads a few pixels
+            ' and never copies the raster. GDI+ can transiently fail on concurrent access, so
+            ' the Try/Catch protects against display disruption.
             Try
                 If Form_Color_Scheme = 2 Then
                     back_Color = System.Drawing.Color.White

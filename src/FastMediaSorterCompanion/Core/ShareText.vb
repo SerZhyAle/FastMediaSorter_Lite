@@ -76,17 +76,47 @@ Public Module ShareText
         Return Localization.T("Ваш провайдер использует CGNAT (общий внешний адрес). Проброс портов не поможет - извне к этому ПК подключиться нельзя. По локальной сети всё работает как обычно.")
     End Function
 
-    ''' <summary>Short (&lt;=~200 char) reachability line embedded in the .fmscfg as
-    ''' the optional "accessNote" and shown on the phone (Android S1014) when no
-    ''' access path connects, plus surfaced in the Share tab. Describes the current
+    ''' <summary>Short (&lt;=~200 char) reachability line shown in the Share Manager and, through
+    ''' <see cref="AccessNoteForExport"/>, embedded in the .fmscfg as the optional "accessNote"
+    ''' the phone shows (Android S1014) when no access path connects. Describes the current
     ''' state and the concrete next step, worst-actionable-case first: dead forward
     ''' -&gt; CGNAT -&gt; IPv6-only -&gt; unconfirmed forward -&gt; confirmed -&gt; LAN-only.
-    ''' Emitted in the PC UI language (the sharer's audience). "" when nothing to
-    ''' say (no address at all). <paramref name="includeExternal"/> off = the
+    ''' Written in the PC UI language (the sharer's audience; FMSCFG 2.3 amendment A). "" when
+    ''' nothing to say (no address at all). <paramref name="includeExternal"/> off = the
     ''' LAN-only export: the note must describe ONLY the LAN path, never the
     ''' internet reachability the config deliberately left out.</summary>
     Public Function AccessNote(reach As WorkerReachability, port As Integer,
                                Optional includeExternal As Boolean = True) As String
+        Return AccessNoteCore(reach, port, includeExternal, english:=False)
+    End Function
+
+    ''' <summary>The separator between the note in the exporter's own language and its English
+    ''' duplicate: one line feed. FMSCFG 2.3 amendment B leaves the separator to the exporter and
+    ''' says an importer parses nothing out of the note, so the choice is ours; a line break keeps
+    ''' each language on a line of its own, which also keeps a right-to-left note from reordering
+    ''' around a neutral character that a " / " or " | " would put between two directions.</summary>
+    Public Const AccessNoteLanguageSeparator As String = vbLf
+
+    ''' <summary>
+    ''' The <c>accessNote</c> as it goes into the .fmscfg (FMSCFG 2.3): the note in the PC's own UI
+    ''' language, and - when that language is not English - the same note in English after it
+    ''' (amendment B, a SHOULD), so a phone whose user cannot read the PC's language still reads the
+    ''' state and the next step. English itself is written once, so the two canonical vectors the
+    ''' producer is pinned against stay byte-identical. "" when there is nothing to say.
+    ''' </summary>
+    Public Function AccessNoteForExport(reach As WorkerReachability, port As Integer,
+                                        Optional includeExternal As Boolean = True) As String
+        Dim own As String = AccessNoteCore(reach, port, includeExternal, english:=False)
+        If own.Length = 0 OrElse String.Equals(Localization.CurrentCode, "en", StringComparison.OrdinalIgnoreCase) Then Return own
+        Dim en As String = AccessNoteCore(reach, port, includeExternal, english:=True)
+        ' A key the table has no English for would repeat the Russian source - never a "duplicate".
+        If en.Length = 0 OrElse String.Equals(en, own, StringComparison.Ordinal) Then Return own
+        Return own & AccessNoteLanguageSeparator & en
+    End Function
+
+    ''' <summary>The one ladder behind both: the same branches, in the UI language or in English.</summary>
+    Private Function AccessNoteCore(reach As WorkerReachability, port As Integer,
+                                    includeExternal As Boolean, english As Boolean) As String
         If reach Is Nothing Then Return ""
         Dim lan As String = If(reach.LanAddress, "")
         Dim ext As String = If(reach.ExternalHost, "")
@@ -95,24 +125,57 @@ Public Module ShareText
             ' LAN-only export: no internet/IPv6 address was embedded, so describe
             ' only the local path (never claim internet reachability the config omits).
             If lan.Length > 0 Then
-                Return Localization.T("Работает в той же сети Wi-Fi (интернет-адрес намеренно не включён).")
+                Return Say(english, "Работает в той же сети Wi-Fi (интернет-адрес намеренно не включён).")
             End If
             Return ""
         End If
         If reach.ExternalPortChecked AndAlso reach.ExternalPortOpen Then
-            Return Localization.T("Работает по Wi-Fi и из интернета - проброшенный порт ответил на внешнюю проверку.")
+            Return Say(english, "Работает по Wi-Fi и из интернета - проброшенный порт ответил на внешнюю проверку.")
         ElseIf reach.ExternalPortChecked AndAlso Not reach.ExternalPortOpen Then
-            Return Localization.TF("Работает только в той же сети Wi-Fi. Интернет-порт {0} не ответил на внешнюю проверку - проверьте проброс порта на роутере или включите UPnP.", port)
+            Return SayF(english, "Работает только в той же сети Wi-Fi. Интернет-порт {0} не ответил на внешнюю проверку - проверьте проброс порта на роутере или включите UPnP.", port)
         ElseIf reach.IsCgnat Then
-            Return Localization.T("Работает только в той же сети Wi-Fi. Провайдер использует CGNAT - проброс порта не сработает; используйте адрес IPv6 (если показан) или VPN.")
+            Return Say(english, "Работает только в той же сети Wi-Fi. Провайдер использует CGNAT - проброс порта не сработает; используйте адрес IPv6 (если показан) или VPN.")
         ElseIf ipv6.Length > 0 AndAlso ext.Length = 0 Then
-            Return Localization.T("Работает по Wi-Fi и по IPv6 из сетей, где он поддерживается. Обычный проброс порта на этом подключении недоступен.")
+            Return Say(english, "Работает по Wi-Fi и по IPv6 из сетей, где он поддерживается. Обычный проброс порта на этом подключении недоступен.")
         ElseIf ext.Length > 0 AndAlso reach.ExternalPort > 0 Then
-            Return Localization.T("Работает по Wi-Fi и, если проброс/UPnP держится, из интернета - проверьте с телефона по мобильной сети.")
+            Return Say(english, "Работает по Wi-Fi и, если проброс/UPnP держится, из интернета - проверьте с телефона по мобильной сети.")
         ElseIf lan.Length > 0 Then
-            Return Localization.TF("Работает в той же сети Wi-Fi. Для доступа из других сетей пробросьте TCP-порт {0} на {1} в роутере или включите UPnP.", port, lan)
+            Return SayF(english, "Работает в той же сети Wi-Fi. Для доступа из других сетей пробросьте TCP-порт {0} на {1} в роутере или включите UPnP.", port, lan)
         End If
         Return ""
+    End Function
+
+    ''' <summary>A registered string in the UI language, or - for the export's English duplicate -
+    ''' in English, taken from the same table without touching the process-wide language.</summary>
+    Private Function Say(english As Boolean, ru As String) As String
+        Return If(english, EnglishOf(ru), Localization.T(ru))
+    End Function
+
+    Private Function SayF(english As Boolean, ru As String, ParamArray args As Object()) As String
+        If Not english Then Return Localization.TF(ru, args)
+        Return Localization.SafeFormat(EnglishOf(ru), args)
+    End Function
+
+    ''' <summary>Russian source string -> its English translation, built once from the registered
+    ''' table. The language is NOT switched to read it: <c>Localization.CurrentCode</c> is process-wide
+    ''' and a UI thread paints with it while an export is built, so flipping it - even briefly -
+    ''' would put English captions on a window that did not ask for them. Column 0 of a table row is
+    ''' English (the Russian key is the source, not a column).</summary>
+    Private ReadOnly EnglishIndex As New Lazy(Of Dictionary(Of String, String))(
+        Function()
+            Dim index As New Dictionary(Of String, String)(StringComparer.Ordinal)
+            For Each pair As KeyValuePair(Of String, String()) In Localization.All
+                If pair.Value IsNot Nothing AndAlso pair.Value.Length > 0 AndAlso Not String.IsNullOrEmpty(pair.Value(0)) Then
+                    index(pair.Key) = pair.Value(0)
+                End If
+            Next
+            Return index
+        End Function)
+
+    Private Function EnglishOf(ru As String) As String
+        Dim en As String = Nothing
+        If EnglishIndex.Value.TryGetValue(ru, en) Then Return en
+        Return ru
     End Function
 
     ''' <summary>Plain answer to "what actually works right now?", shown under the address

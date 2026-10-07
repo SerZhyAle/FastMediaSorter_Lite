@@ -462,6 +462,7 @@ Actions are entry points, not preferences: no stored default/range, and opening 
 | `custom_hotkeys` | files / advanced | ModernViewerPreferences.CustomHotkeysJson; empty map; explicit editor commit | Matching row constructor |
 | `image_associations` | files / advanced | Action/information; matching row constructor (no preference default) | Matching row constructor |
 | `video_associations` | files / advanced | Action/information; matching row constructor (no preference default) | Matching row constructor |
+| `live_open_with` | files / advanced | Action/information; matching row constructor (no preference default) | Matching row constructor |
 | `ocr_enabled` | ocr / basic | OcrTranslateSettings.Enabled; False; Load/Save owns key | OcrTranslateSettings.Load; Table_Form.Ocr editor/dependency rules |
 | `ocr_auto` | ocr / basic | OcrTranslateSettings.AutoMode; False; Load/Save owns key | OcrTranslateSettings.Load; Table_Form.Ocr editor/dependency rules |
 | `ocr_source` | ocr / recognition | OcrTranslateSettings.SourceLang; "auto"; Load/Save owns key | OcrTranslateSettings.Load; Table_Form.Ocr editor/dependency rules |
@@ -487,12 +488,11 @@ Actions are entry points, not preferences: no stored default/range, and opening 
 | `ocr_disk_cache` | storage / ocr | OcrTranslateSettings.DiskCache; True; Load/Save owns key | OcrTranslateSettings.Load; Table_Form.Ocr editor/dependency rules |
 | `ocr_cache_limit` | storage / ocr | ModernViewerPreferences.DecodeCacheMaxMb; Integer; default 512; Load/Save key DecodeCacheMaxMb | range: -1, 1024 |
 | `ocr_cache_clear` | storage / ocr | Action/information; matching row constructor (no preference default) | Matching row constructor |
-| `sftp_intro` | sharing / basic | Action/information; matching row constructor (no preference default) | Matching row constructor |
-| `sftp_manager` | sharing / basic | Action/information; matching row constructor (no preference default) | Matching row constructor |
-| `sftp_guide` | sharing / basic | Action/information; matching row constructor (no preference default) | Matching row constructor |
-| `android_app` | sharing / basic | Action/information; matching row constructor (no preference default) | Matching row constructor |
 | `resources_intro` | resources / basic | Action/information; matching row constructor (no preference default) | Matching row constructor |
-| `resources_open` | resources / basic | Action/information; matching row constructor (no preference default) | Matching row constructor |
+| `sftp_intro` | resources / server | Action/information; matching row constructor (no preference default) | Matching row constructor |
+| `sftp_manager` | resources / server | Action/information; matching row constructor (no preference default) | Matching row constructor |
+| `sftp_guide` | resources / server | Action/information; matching row constructor (no preference default) | Matching row constructor |
+| `android_app` | resources / server | Action/information; matching row constructor (no preference default) | Matching row constructor |
 
 Recipients additionally persist the grid slots under `MoveOn1` through `MoveOn9` and `MoveOn0`;
 DEL is an action. Resources use the shared resource registry and dedicated editors (ticket 118). About

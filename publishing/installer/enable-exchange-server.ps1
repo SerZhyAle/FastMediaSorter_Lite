@@ -24,8 +24,10 @@
     is not ours. By program it catches every rule aimed at this exe whatever its name and
     cannot match another installation's, which has another path.
 
-    One line per run goes to <ProgramData>\FastMediaSorterExchange\enable-exchange-server.log
-    when that directory already exists (never created here), else to %TEMP%.
+    One line per run goes to <ProgramData>\FastMediaSorterExchange\logs\enable-exchange-server.log
+    when that directory already exists (never created here; the service helper creates it with
+    the ACL that lets the enrolled user read it, ticket 182 L-1) and an administrator or the
+    system owns it, else to the elevated account's %TEMP%.
 
     Exit codes: 0 ok | 1 unexpected error | 2 missing or unusable -ExePath (enable only
     needs the file to exist) | 5 not elevated | 8 netsh could not add the rule.
@@ -46,18 +48,40 @@ $ErrorActionPreference = 'Stop'
 $rule = 'FastMediaSorter Media Exchange Server'
 $logName = 'enable-exchange-server.log'
 
+# The directory the one line per run goes to: <ProgramData>\FastMediaSorterExchange\logs when it
+# exists as an ordinary directory that an administrator or the system owns (ticket 182 L-1: the
+# one place the enrolled user can read, which is what lets "Send the log to the author" include
+# this file), else the elevated account's %TEMP% - the state directory itself is never written
+# into (it is not the user's to read), and nothing is created here: that is the service helper's
+# job, which also gives the directory its ACL. $null when nothing usable was found.
+function Get-RunLogDirectory {
+    if (-not $env:ProgramData) { return $null }
+    $logs = Join-Path (Join-Path $env:ProgramData 'FastMediaSorterExchange') 'logs'
+    $attr = $null
+    try { $attr = [System.IO.File]::GetAttributes($logs) } catch { }
+    # An existing, ordinary directory only: a link would turn an elevated append into a write
+    # wherever it points.
+    if ($null -eq $attr -or -not ($attr -band [System.IO.FileAttributes]::Directory) -or ($attr -band [System.IO.FileAttributes]::ReparsePoint)) { return $null }
+    # ...and one no ordinary user owns: the service helper makes it Administrators', the service
+    # (LocalService) may have created it first, and a directory this same elevated account made
+    # earlier is its own.
+    $trusted = @('S-1-5-18', 'S-1-5-19', 'S-1-5-32-544', 'S-1-5-80-956008885-3418522649-1831038044-1853292631-2271478464',
+                 ([Security.Principal.WindowsIdentity]::GetCurrent()).User.Value)
+    try {
+        # The .NET security API, not Get-Acl: the same two lines work on Windows PowerShell and on 7,
+        # and nothing here depends on a PowerShell module being loadable.
+        $info = New-Object System.IO.DirectoryInfo($logs)
+        $security = if ($PSVersionTable.PSEdition -eq 'Core') { [System.IO.FileSystemAclExtensions]::GetAccessControl($info) } else { $info.GetAccessControl() }
+        $owner = $security.GetOwner([System.Security.Principal.SecurityIdentifier]).Value
+        if ($trusted -notcontains $owner) { return $null }
+    } catch { return $null }
+    return $logs
+}
+
 function Write-RunLog([string]$message) {
     $line = '{0} {1}' -f (Get-Date).ToUniversalTime().ToString('s'), $message
     try {
-        $dir = $null
-        if ($env:ProgramData) {
-            $candidate = Join-Path $env:ProgramData 'FastMediaSorterExchange'
-            $attr = $null
-            try { $attr = [System.IO.File]::GetAttributes($candidate) } catch { }
-            # An existing, ordinary directory only: a link would turn an elevated append into a
-            # write wherever it points.
-            if ($null -ne $attr -and ($attr -band [System.IO.FileAttributes]::Directory) -and -not ($attr -band [System.IO.FileAttributes]::ReparsePoint)) { $dir = $candidate }
-        }
+        $dir = Get-RunLogDirectory
         if (-not $dir) { $dir = [System.IO.Path]::GetTempPath() }
         $path = Join-Path $dir $logName
         $fileAttr = $null

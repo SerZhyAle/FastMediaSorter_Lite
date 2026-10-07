@@ -160,7 +160,7 @@ Namespace Lite.Tests
                     Assert.Equal("", row(5)) ' protocol
                     Assert.Equal("", row(6)) ' format
                     Assert.Equal("", row(7)) ' bitrate
-                    Assert.Equal("", row(8)) ' is_live
+                    Assert.Equal("", row(8)) ' is_live - blank is "not stated" (STREAM-BANK 2.2 rule 13); never "false"
                     Assert.Equal("true", row(9)) ' https
                     Assert.Equal("english", row(10)) ' language
                     Assert.Equal("US", row(11)) ' country
@@ -392,7 +392,7 @@ Namespace Lite.Tests
             Assert.True(File.Exists(reportFile))
 
             Dim reportText = File.ReadAllText(reportFile)
-            Assert.Contains("STREAM-BANK 2.1", reportText)
+            Assert.Contains("STREAM-BANK 2.2", reportText)
             Assert.Contains("FINAL VERDICT: PASS", reportText)
 
             ' Test Check
@@ -411,7 +411,7 @@ Namespace Lite.Tests
             Assert.Equal("stream-catalog.zip", StreamCatalogSchema.ArchiveFileName)
             Assert.Equal("streams.csv", StreamCatalogSchema.CatalogCsvEntryName)
             Assert.Equal("favicon-atlas.png", StreamCatalogSchema.FaviconAtlasEntryName)
-            Assert.Equal("STREAM-BANK 2.1", StreamCatalogSchema.ContractTag)
+            Assert.Equal("STREAM-BANK 2.2", StreamCatalogSchema.ContractTag)
 
             ' 19 columns exact order
             Dim expectedCols = New String() {

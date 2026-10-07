@@ -18,15 +18,25 @@ Friend NotInheritable Class LiveBroadcast_Form
     Private ReadOnly btnBrowseFile As Button
     Private ReadOnly lstRecent As ListView
     Private ReadOnly lblLanHint As Label
+    Private ReadOnly lblRecentNote As Label
     Private ReadOnly lblStatus As Label
     Private ReadOnly btnConnect As Button
     Private ReadOnly btnCancel As Button
 
     Private recentDescriptors As List(Of LiveBroadcastDescriptor)
+    Private selectedRecent As LiveBroadcastDescriptor
     Private scriptFont As Font
 
+    ''' <summary>The broadcast to play. Set when the text was a descriptor, a link, a file or a marked-live address.</summary>
     <System.ComponentModel.Browsable(False), System.ComponentModel.DesignerSerializationVisibility(System.ComponentModel.DesignerSerializationVisibility.Hidden)>
     Public Property ResultDescriptor As LiveBroadcastDescriptor
+
+    ''' <summary>
+    ''' An address the user did NOT mark as live and that is not one of ours: it goes to the ordinary "Open URL.."
+    ''' path, unchanged (section 4.3).
+    ''' </summary>
+    <System.ComponentModel.Browsable(False), System.ComponentModel.DesignerSerializationVisibility(System.ComponentModel.DesignerSerializationVisibility.Hidden)>
+    Public Property ResultOnDemandUrl As String
 
     Public Sub New()
         Me.Text = Localization.T("Открыть live-трансляцию")
@@ -35,7 +45,7 @@ Friend NotInheritable Class LiveBroadcast_Form
         Me.MinimizeBox = False
         Me.ShowInTaskbar = False
         Me.StartPosition = FormStartPosition.CenterParent
-        Me.ClientSize = New Size(540, 390)
+        Me.ClientSize = New Size(540, 414)
 
         Dim family As String = Localization.FontFamily()
         If family IsNot Nothing Then
@@ -63,11 +73,12 @@ Friend NotInheritable Class LiveBroadcast_Form
         }
         AddHandler btnBrowseFile.Click, AddressOf OnBrowseFileClick
 
+        ' Section 4.3: for an address that is not one of ours the user says it is live. Unticked, it is an ordinary URL.
         chkIsLive = New CheckBox With {
             .AutoSize = True,
             .Location = New Point(14, 68),
             .Text = Localization.T("Это live-трансляция"),
-            .Checked = True
+            .Checked = False
         }
 
         lblLanHint = New Label With {
@@ -98,16 +109,25 @@ Friend NotInheritable Class LiveBroadcast_Form
         AddHandler lstRecent.SelectedIndexChanged, AddressOf OnRecentSelectionChanged
         AddHandler lstRecent.DoubleClick, AddressOf OnRecentDoubleClick
 
+        ' Section 5: a remembered entry promises nothing - the device may have stopped, or moved to another port.
+        lblRecentNote = New Label With {
+            .AutoSize = False,
+            .Location = New Point(14, 302),
+            .Size = New Size(512, 30),
+            .ForeColor = Color.DimGray,
+            .Text = Localization.T("Адреса в списке - последние известные: устройство могло перестать вещать или сменить порт.")
+        }
+
         lblStatus = New Label With {
             .AutoSize = False,
-            .Location = New Point(14, 308),
+            .Location = New Point(14, 336),
             .Size = New Size(512, 34),
             .ForeColor = Color.DarkRed,
             .Text = ""
         }
 
         btnConnect = New Button With {
-            .Location = New Point(310, 348),
+            .Location = New Point(310, 374),
             .Size = New Size(110, 30),
             .Text = Localization.T("Подключиться"),
             .DialogResult = DialogResult.None
@@ -115,7 +135,7 @@ Friend NotInheritable Class LiveBroadcast_Form
         AddHandler btnConnect.Click, AddressOf OnConnectClick
 
         btnCancel = New Button With {
-            .Location = New Point(426, 348),
+            .Location = New Point(426, 374),
             .Size = New Size(100, 30),
             .Text = Localization.T("Отмена"),
             .DialogResult = DialogResult.Cancel
@@ -123,7 +143,7 @@ Friend NotInheritable Class LiveBroadcast_Form
 
         Me.Controls.AddRange(New Control() {
             lblPrompt, txtInput, btnBrowseFile, chkIsLive, lblLanHint,
-            lblRecentTitle, lstRecent, lblStatus, btnConnect, btnCancel
+            lblRecentTitle, lstRecent, lblRecentNote, lblStatus, btnConnect, btnCancel
         })
 
         Me.AcceptButton = btnConnect
@@ -157,12 +177,27 @@ Friend NotInheritable Class LiveBroadcast_Form
         lstRecent.Items.Clear()
         recentDescriptors = store.LoadAll()
         For Each d As LiveBroadcastDescriptor In recentDescriptors
-            Dim titleText As String = If(Not String.IsNullOrEmpty(d.Title), d.Title, d.Url)
+            Dim titleText As String = If(Not String.IsNullOrEmpty(d.Title), d.Title, HostOf(d.Url))
             Dim item As New ListViewItem(titleText)
-            item.SubItems.Add(d.Url)
+            item.SubItems.Add(HostOf(d.Url))
             item.Tag = d
             lstRecent.Items.Add(item)
         Next
+    End Sub
+
+    ''' <summary>host:port - never the path or the query, which can carry a token.</summary>
+    Private Shared Function HostOf(url As String) As String
+        Dim parsed As Uri = Nothing
+        If Uri.TryCreate(url, UriKind.Absolute, parsed) Then Return parsed.Authority
+        Return url
+    End Function
+
+    ''' <summary>Takes a descriptor as the result, remembers it and closes.</summary>
+    Private Sub Accept(descriptor As LiveBroadcastDescriptor)
+        ResultDescriptor = descriptor
+        store.Upsert(descriptor)
+        Me.DialogResult = DialogResult.OK
+        Me.Close()
     End Sub
 
     Private Sub OnBrowseFileClick(sender As Object, e As EventArgs)
@@ -172,10 +207,7 @@ Friend NotInheritable Class LiveBroadcast_Form
             If ofd.ShowDialog(Me) = DialogResult.OK Then
                 Dim res As LiveBroadcastReadResult = LiveBroadcastReader.ReadFile(ofd.FileName)
                 If res.Status = LiveReadStatus.Ok AndAlso res.Descriptor IsNot Nothing Then
-                    ResultDescriptor = res.Descriptor
-                    store.Upsert(ResultDescriptor)
-                    Me.DialogResult = DialogResult.OK
-                    Me.Close()
+                    Accept(res.Descriptor)
                 Else
                     ShowReadError(res.Status)
                 End If
@@ -183,17 +215,35 @@ Friend NotInheritable Class LiveBroadcast_Form
         End Using
     End Sub
 
+    ''' <summary>Reads what is typed the way the Connect button will, without side effects.</summary>
+    Private Shared Function Read(text As String) As LiveBroadcastReadResult
+        Dim res As LiveBroadcastReadResult = LiveBroadcastIngress.TryRead(text)
+        If res IsNot Nothing Then Return res
+
+        res = LiveBroadcastReader.ReadText(text)
+        If res.Status = LiveReadStatus.NotBroadcast Then
+            Dim link As LiveBroadcastReadResult = LiveBroadcastLinkReader.ReadLink(text)
+            If link.Status = LiveReadStatus.Ok Then Return link
+        End If
+        Return res
+    End Function
+
     Private Sub OnInputTextChanged(sender As Object, e As EventArgs)
         lblStatus.Text = ""
         Dim text As String = txtInput.Text.Trim()
-        If String.IsNullOrEmpty(text) Then Return
+        If selectedRecent IsNot Nothing AndAlso Not String.Equals(text, selectedRecent.Url, StringComparison.Ordinal) Then selectedRecent = Nothing
+        If String.IsNullOrEmpty(text) Then
+            chkIsLive.Enabled = True
+            Return
+        End If
 
-        ' Auto-check IsLive for descriptors or recognized URLs
-        If text.StartsWith("FMSBCAST1:", StringComparison.OrdinalIgnoreCase) OrElse
-           text.StartsWith("intent:", StringComparison.OrdinalIgnoreCase) OrElse
-           text.StartsWith("fmsbcast:", StringComparison.OrdinalIgnoreCase) OrElse
-           text.StartsWith("{", StringComparison.Ordinal) Then
+        ' Everything that arrives through a hand-off channel, and every address of our own shape, IS live: the box
+        ' has nothing left to ask (section 1 item 5). For any other address the user decides.
+        If selectedRecent IsNot Nothing OrElse Read(text).Status = LiveReadStatus.Ok Then
             chkIsLive.Checked = True
+            chkIsLive.Enabled = False
+        Else
+            chkIsLive.Enabled = True
         End If
     End Sub
 
@@ -202,7 +252,10 @@ Friend NotInheritable Class LiveBroadcast_Form
             Dim d As LiveBroadcastDescriptor = TryCast(lstRecent.SelectedItems(0).Tag, LiveBroadcastDescriptor)
             If d IsNot Nothing Then
                 txtInput.Text = d.Url
+                ' After the text: setting it clears the selection of a different text.
+                selectedRecent = d
                 chkIsLive.Checked = True
+                chkIsLive.Enabled = False
                 lblStatus.Text = ""
             End If
         End If
@@ -211,12 +264,7 @@ Friend NotInheritable Class LiveBroadcast_Form
     Private Sub OnRecentDoubleClick(sender As Object, e As EventArgs)
         If lstRecent.SelectedItems.Count > 0 Then
             Dim d As LiveBroadcastDescriptor = TryCast(lstRecent.SelectedItems(0).Tag, LiveBroadcastDescriptor)
-            If d IsNot Nothing Then
-                ResultDescriptor = d
-                store.Upsert(d)
-                Me.DialogResult = DialogResult.OK
-                Me.Close()
-            End If
+            If d IsNot Nothing Then Accept(d)
         End If
     End Sub
 
@@ -228,26 +276,29 @@ Friend NotInheritable Class LiveBroadcast_Form
             Return
         End If
 
-        ' Try reading text as descriptor / FMSBCAST1 / JSON / link
-        Dim res As LiveBroadcastReadResult = LiveBroadcastReader.ReadText(text)
-        If res.Status <> LiveReadStatus.Ok Then
-            res = LiveBroadcastLinkReader.ReadLink(text)
-        End If
-
-        If res.Status = LiveReadStatus.Ok AndAlso res.Descriptor IsNot Nothing Then
-            ResultDescriptor = res.Descriptor
-            store.Upsert(ResultDescriptor)
-            Me.DialogResult = DialogResult.OK
-            Me.Close()
+        ' A remembered entry plays as it was stored (title, sourceId, endpoints), not rebuilt from its address.
+        If selectedRecent IsNot Nothing AndAlso String.Equals(text, selectedRecent.Url, StringComparison.Ordinal) Then
+            Accept(selectedRecent)
             Return
         End If
 
-        ' If user checked "This is a live broadcast" on an arbitrary URL
-        If chkIsLive.Checked AndAlso (text.StartsWith("http://", StringComparison.OrdinalIgnoreCase) OrElse text.StartsWith("https://", StringComparison.OrdinalIgnoreCase)) Then
-            Dim descriptor As LiveBroadcastDescriptor = LiveBroadcastLinkReader.CreateExplicitLiveDescriptor(text)
-            If descriptor IsNot Nothing Then
-                ResultDescriptor = descriptor
-                store.Upsert(ResultDescriptor)
+        Dim res As LiveBroadcastReadResult = Read(text)
+        If res.Status = LiveReadStatus.Ok AndAlso res.Descriptor IsNot Nothing Then
+            Accept(res.Descriptor)
+            Return
+        End If
+
+        ' Not a hand-off, not one of our addresses: a plain address. Marked live it plays as a live stream; not
+        ' marked, it is the ordinary "Open URL.." path and nothing here changes it.
+        If res.Status = LiveReadStatus.NotBroadcast AndAlso IsHttpAddress(text) Then
+            If chkIsLive.Checked Then
+                Dim descriptor As LiveBroadcastDescriptor = LiveBroadcastLinkReader.CreateExplicitLiveDescriptor(text)
+                If descriptor IsNot Nothing Then
+                    Accept(descriptor)
+                    Return
+                End If
+            Else
+                ResultOnDemandUrl = text
                 Me.DialogResult = DialogResult.OK
                 Me.Close()
                 Return
@@ -257,21 +308,12 @@ Friend NotInheritable Class LiveBroadcast_Form
         ShowReadError(res.Status)
     End Sub
 
+    Private Shared Function IsHttpAddress(text As String) As Boolean
+        Return text.StartsWith("http://", StringComparison.OrdinalIgnoreCase) OrElse text.StartsWith("https://", StringComparison.OrdinalIgnoreCase)
+    End Function
+
     Private Sub ShowReadError(status As LiveReadStatus)
-        Select Case status
-            Case LiveReadStatus.UnsupportedVersion
-                lblStatus.Text = Localization.T("Требуется обновить приложение для этой трансляции")
-            Case LiveReadStatus.UnsupportedMode
-                lblStatus.Text = Localization.T("Этот режим пока не поддерживается")
-            Case LiveReadStatus.LoopbackHost
-                lblStatus.Text = Localization.T("Устройство передало локальный адрес (loopback), недоступный с ПК")
-            Case LiveReadStatus.TooLarge
-                lblStatus.Text = Localization.T("Превышен максимальный размер дескриптора (64 КБ)")
-            Case LiveReadStatus.InvalidDocument
-                lblStatus.Text = Localization.T("Неверный формат трансляции или повреждённые данные")
-            Case Else
-                lblStatus.Text = Localization.T("Не удалось распознать трансляцию")
-        End Select
+        lblStatus.Text = LiveBroadcastMessages.ForReadStatus(status)
         DialogLayout.FitLabel(lblStatus)
     End Sub
 

@@ -186,6 +186,10 @@ function Attr([string]$html, [string]$pattern) {
     $m = [regex]::Match($html, $pattern)
     if ($m.Success) { [Net.WebUtility]::HtmlDecode($m.Groups[1].Value) } else { $null }
 }
+# The length limits count Unicode code points after entity decoding (DOC-EXTERNAL-QUALITY 0.10 section 8 item C): a character
+# outside the BMP is one, not the two UTF-16 units that String.Length reports. Counted as units less the low surrogates, which
+# also runs under Windows PowerShell.
+function CodePoints([string]$s) { $s.Length - [regex]::Matches($s, '[\uDC00-\uDFFF]').Count }
 
 $inventory = @(Get-WorkspaceFiles $Root)
 
@@ -242,10 +246,10 @@ foreach ($p in $pages) {
     # rule 5 - title and description
     $title = Attr $h '<title>([^<]*)</title>'
     if (-not $title) { Problem "${rel}: no <title>" }
-    elseif ($title.Length -gt 60) { Problem "${rel}: title is $($title.Length) chars, over 60: $title" }
+    elseif ((CodePoints $title) -gt 60) { Problem "${rel}: title is $(CodePoints $title) chars, over 60: $title" }
     $desc = Attr $h '(?i)<meta\s+name="description"\s+content="([^"]*)"'
     if (-not $desc) { Problem "${rel}: no meta description" }
-    elseif ($desc.Length -gt 160) { Problem "${rel}: description is $($desc.Length) chars, over 160" }
+    elseif ((CodePoints $desc) -gt 160) { Problem "${rel}: description is $(CodePoints $desc) chars, over 160" }
 
     # rule 5 - canonical at the page's real URL
     $canSeen = Attr $h '(?i)<link\s+rel="canonical"\s+href="([^"]*)"'

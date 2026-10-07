@@ -270,8 +270,18 @@ Public Class FolderLiveListTests
     <Fact>
     Public Sub U04_the_list_edits_wait_for_whatever_else_is_editing_it()
         Dim watch As String = ReadSource("Main_Form.FolderWatch.vb")
-        ' Re-armed, not applied, while a file operation is queued ...
+        ' Re-armed, not applied, while a file operation is queued, a batch is planned or running,
+        ' or a folder scan that outlived its grace is about to hand over a fresh list ...
         Assert.Contains("file_Op_Queue.PendingCount > 0", watch)
+        Assert.Contains("BatchBusy() OrElse IsFolderScanRunning()", watch)
+        ' ... both when the timer fires and when the answers of the disk come back.
+        Dim tick As String = watch.Substring(watch.IndexOf("Private Sub OnFolderWatchTick", StringComparison.Ordinal))
+        tick = tick.Substring(0, tick.IndexOf("End Sub", StringComparison.Ordinal))
+        Assert.Contains("ListIsBeingChangedElsewhere()", tick)
+        Dim apply As String = watch.Substring(watch.IndexOf("Private Async Sub ApplyFolderChangesAsync", StringComparison.Ordinal))
+        ' Up to the next member: the method holds a Sub() lambda of its own, so its first "End Sub" is not its end.
+        apply = apply.Substring(0, apply.IndexOf("Private Function DrainTouchedPaths", StringComparison.Ordinal))
+        Assert.Contains("ListIsBeingChangedElsewhere()", apply)
         ' ... and a verdict is dropped when the list was replaced while the disk was being asked.
         Assert.Contains("list_Stamp <> file_List_Generation", watch)
         ' The share is asked from the pool, never the UI thread.

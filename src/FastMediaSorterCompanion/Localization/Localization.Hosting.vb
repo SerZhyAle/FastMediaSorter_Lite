@@ -388,19 +388,19 @@ Partial Public NotInheritable Class Localization
             "فولڈرز ایک Windows سروس فراہم کرتی ہے، اور وہ اپنے الگ اکاؤنٹ سے چلتی ہے - ان فولڈرز تک اسے ابھی رسائی نہیں ہے:" & vbCrLf & vbCrLf & "{0}" & vbCrLf & vbCrLf & "ابھی دیں؟ Windows تصدیق مانگے گا۔",
             "文件夹由一个 Windows 服务提供，它以自己的账户运行 - 目前它还无法访问这些文件夹：" & vbCrLf & vbCrLf & "{0}" & vbCrLf & vbCrLf & "现在授予吗？Windows 会请求确认。")
 
-        Add("Без доступа служба не откроет эти папки на телефоне. Выдать его можно позже - «Управление хостингом..».",
-            "Without access the service cannot open these folders on the phone. You can grant it later - «Manage hosting..».",
-            "Без доступу служба не відкриє ці теки на телефоні. Видати його можна пізніше - «Керування хостингом..».",
-            "Ohne Zugriff kann der Dienst diese Ordner auf dem Telefon nicht öffnen. Sie können ihn später vergeben - «Hosting verwalten..».",
-            "Senza accesso il servizio non può aprire queste cartelle sul telefono. Puoi concederlo più tardi - «Gestisci hosting..».",
-            "Sin acceso el servicio no puede abrir estas carpetas en el teléfono. Puede concederlo más tarde - «Gestionar el alojamiento..».",
-            "Sans accès, le service ne peut pas ouvrir ces dossiers sur le téléphone. Vous pouvez l'accorder plus tard - «Gérer l'hébergement..».",
-            "Sem acesso o serviço não consegue abrir estas pastas no telefone. Pode concedê-lo mais tarde - «Gerir o alojamento..».",
-            "بدون صلاحية الوصول لن تتمكن الخدمة من فتح هذه المجلدات على الهاتف. يمكنك منحها لاحقًا - «إدارة الاستضافة..».",
-            "पहुँच के बिना सेवा इन फ़ोल्डरों को फ़ोन पर नहीं खोल पाएगी। आप इसे बाद में दे सकते हैं - «होस्टिंग प्रबंधन..»।",
-            "অনুমতি ছাড়া সার্ভিসটি এই ফোল্ডারগুলো ফোনে খুলতে পারবে না। আপনি পরে দিতে পারেন - «হোস্টিং ব্যবস্থাপনা..»।",
-            "رسائی کے بغیر سروس یہ فولڈرز فون پر نہیں کھول سکے گی۔ آپ بعد میں دے سکتے ہیں - «ہوسٹنگ کا انتظام..»۔",
-            "没有访问权限，该服务无法在手机上打开这些文件夹。你可以稍后授予 - «管理托管..»。")
+        Add("Без доступа служба не откроет эти папки на телефоне. Выдать его можно позже - «Настройки менеджера..», группа «Хостинг».",
+            "Without access the service cannot open these folders on the phone. You can grant it later - «Manager settings..», the Hosting group.",
+            "Без доступу служба не відкриє ці теки на телефоні. Видати його можна пізніше - «Налаштування менеджера..», група «Хостинг».",
+            "Ohne Zugriff kann der Dienst diese Ordner auf dem Telefon nicht öffnen. Sie können ihn später vergeben - «Manager-Einstellungen..», Gruppe «Hosting».",
+            "Senza accesso il servizio non può aprire queste cartelle sul telefono. Puoi concederlo più tardi - «Impostazioni del gestore..», gruppo «Hosting».",
+            "Sin acceso el servicio no puede abrir estas carpetas en el teléfono. Puede concederlo más tarde - «Ajustes del gestor..», grupo «Alojamiento».",
+            "Sans accès, le service ne peut pas ouvrir ces dossiers sur le téléphone. Vous pouvez l'accorder plus tard - «Paramètres du gestionnaire..», groupe «Hébergement».",
+            "Sem acesso o serviço não consegue abrir estas pastas no telefone. Pode concedê-lo mais tarde - «Definições do gestor..», grupo «Alojamento».",
+            "بدون صلاحية الوصول لن تتمكن الخدمة من فتح هذه المجلدات على الهاتف. يمكنك منحها لاحقًا - «إعدادات المدير..»، مجموعة «الاستضافة».",
+            "पहुँच के बिना सेवा इन फ़ोल्डरों को फ़ोन पर नहीं खोल पाएगी। आप इसे बाद में दे सकते हैं - «मैनेजर सेटिंग्स..», समूह «होस्टिंग»।",
+            "অনুমতি ছাড়া সার্ভিসটি এই ফোল্ডারগুলো ফোনে খুলতে পারবে না। আপনি পরে দিতে পারেন - «ম্যানেজার সেটিংস..», গ্রুপ «হোস্টিং»।",
+            "رسائی کے بغیر سروس یہ فولڈرز فون پر نہیں کھول سکے گی۔ آپ بعد میں دے سکتے ہیں - «مینیجر کی ترتیبات..»، گروپ «ہوسٹنگ»۔",
+            "没有访问权限，该服务无法在手机上打开这些文件夹。你可以稍后授予 - «管理器设置..» 中的 «托管» 组。")
 
         Add("Выдаю службе доступ к папкам..",
             "Granting the service access to the folders..",

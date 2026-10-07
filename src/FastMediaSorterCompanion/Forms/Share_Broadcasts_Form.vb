@@ -17,10 +17,14 @@ Public NotInheritable Class Share_Broadcasts_Form
     Private _status As WorkerStatus
     Private _broadcasts As New List(Of WorkerBroadcast)()
     Private _initialTargetPath As String
+    ''' <summary>The worker under this page stopped serving the broadcast verbs (it was swapped, or never had
+    ''' them): the toggle and every action are off and one inline line says why (spec 159 section 3.2).</summary>
+    Private _degraded As Boolean
 
     Private chkEnableGateway As CheckBox
     Private lblGatewayDesc As Label
     Private lblGatewayStatus As Label
+    Private lblNotice As Label
     Private lvBroadcasts As ListView
     Private btnCreate As Button
     Private btnCopyLink As Button
@@ -84,8 +88,17 @@ Public NotInheritable Class Share_Broadcasts_Form
             .ForeColor = Color.DarkSlateGray,
             .Text = Localization.T("Шлюз трансляций выключен")
         }
+        ' The page's one place for a refusal or a failure: an inline line, never a dialog (spec 159 section 3.3).
+        lblNotice = New Label With {
+            .AutoSize = True,
+            .Margin = New Padding(0, 4, 0, 0),
+            .ForeColor = Color.Firebrick,
+            .MaximumSize = New Size(700, 0),
+            .Visible = False
+        }
         pnlDesc.Controls.Add(lblGatewayDesc)
         pnlDesc.Controls.Add(lblGatewayStatus)
+        pnlDesc.Controls.Add(lblNotice)
         pnlMain.Controls.Add(pnlDesc, 0, 1)
         lblGatewayDesc.Margin = Padding.Empty
         CheckBoxLayout.BindHint(chkEnableGateway, pnlDesc)
@@ -202,36 +215,82 @@ Public NotInheritable Class Share_Broadcasts_Form
         If Not String.IsNullOrEmpty(_initialTargetPath) Then
             Dim path As String = _initialTargetPath
             _initialTargetPath = ""
+            If _degraded Then Return
             Await PromptCreateBroadcastAsync(path)
         End If
+    End Sub
+
+    ''' <summary>Shows one inline line (empty hides it). The only surface a refusal or failure uses.</summary>
+    Private Sub ShowNotice(text As String)
+        lblNotice.Text = If(text, "")
+        lblNotice.Visible = lblNotice.Text.Length > 0
+    End Sub
+
+    ''' <summary>Turns the page off in place, or back on: the toggle, Create and the per-row actions.</summary>
+    Private Sub SetDegraded(degraded As Boolean)
+        _degraded = degraded
+        chkEnableGateway.Enabled = Not degraded
+        btnCreate.Enabled = Not degraded
+        UpdateActionButtons()
+    End Sub
+
+    ''' <summary>
+    ''' One failed request, one inline sentence, details in the log. A worker that says it does not know the
+    ''' verb turns the page off in place (the secondary guard of spec 159 section 3.1); any other failure
+    ''' leaves the page usable, since a refused port or one lost answer is not a reason to lock it.
+    ''' </summary>
+    Private Sub ReportFailure(resp As WorkerResponse, gatewayRequest As Boolean, action As String)
+        Dim reason As BroadcastNoticeReason = BroadcastMessages.ReasonFor(resp, gatewayRequest)
+        Dim detail As String = "no answer"
+        If resp IsNot Nothing Then
+            detail = If(resp.IsProblem, "exchange problem " & resp.Problem.ToString(), If(resp.Error, ""))
+        End If
+        AppFileLogger.WriteLine("Broadcasts: " & action & " failed (" & reason.ToString() & "): " & detail)
+        If reason = BroadcastNoticeReason.WorkerTooOld Then SetDegraded(True)
+        ShowNotice(BroadcastMessages.Text(reason, If(resp Is Nothing, "", resp.Error)))
     End Sub
 
     Public Async Function RefreshStatusAndListAsync() As Task
         Try
             Dim statusResp As WorkerStatus = Await ShareController.GetStatusAsync()
             _status = statusResp
-            If _status IsNot Nothing Then
-                RemoveHandler chkEnableGateway.CheckedChanged, AddressOf OnGatewayToggleChanged
-                chkEnableGateway.Checked = _status.BroadcastEnabled
-                AddHandler chkEnableGateway.CheckedChanged, AddressOf OnGatewayToggleChanged
+            If _status Is Nothing Then
+                ' The worker did not answer (not running, or it refused): nothing on this page can work and
+                ' the page does not know why - so it says the one true generic thing and keeps the detail in the log.
+                AppFileLogger.WriteLine("Broadcasts: the worker's status is unavailable")
+                ShowNotice(BroadcastMessages.Text(BroadcastNoticeReason.Failed))
+                Return
+            End If
 
-                If _status.BroadcastEnabled Then
-                    Dim port As Integer = If(_status.BroadcastPort > 0, _status.BroadcastPort, _status.ListenPort)
-                    lblGatewayStatus.Text = Localization.TF("Шлюз трансляций включён (порт {0})", port)
-                    lblGatewayStatus.ForeColor = Color.DarkGreen
-                Else
-                    lblGatewayStatus.Text = Localization.T("Шлюз трансляций выключен")
-                    lblGatewayStatus.ForeColor = Color.DarkSlateGray
-                End If
+            ' The worker states what it can do; the page never guesses it from the wording of a refusal.
+            If Not BroadcastController.IsSupported(_status) Then
+                AppFileLogger.WriteLine("Broadcasts: the worker does not report broadcastSupported")
+                SetDegraded(True)
+                ShowNotice(BroadcastMessages.Text(BroadcastNoticeReason.WorkerTooOld))
+                Return
+            End If
+
+            RemoveHandler chkEnableGateway.CheckedChanged, AddressOf OnGatewayToggleChanged
+            chkEnableGateway.Checked = _status.BroadcastEnabled
+            AddHandler chkEnableGateway.CheckedChanged, AddressOf OnGatewayToggleChanged
+
+            If _status.BroadcastEnabled Then
+                Dim port As Integer = If(_status.BroadcastPort > 0, _status.BroadcastPort, _status.ListenPort)
+                lblGatewayStatus.Text = Localization.TF("Шлюз трансляций включён (порт {0})", port)
+                lblGatewayStatus.ForeColor = Color.DarkGreen
+            Else
+                lblGatewayStatus.Text = Localization.T("Шлюз трансляций выключен")
+                lblGatewayStatus.ForeColor = Color.DarkSlateGray
             End If
 
             Dim listResp As WorkerResponse = Await BroadcastController.ListBroadcastsAsync()
             If listResp IsNot Nothing AndAlso listResp.Ok Then
                 _broadcasts = If(listResp.Broadcasts, New List(Of WorkerBroadcast)())
+                SetDegraded(False)
+                ShowNotice("")
                 PopulateListView()
-            ElseIf listResp IsNot Nothing AndAlso BroadcastController.IsUnsupportedWorker(listResp.Error) Then
-                lblGatewayStatus.Text = Localization.T("Обновите Fast Media Sorter для поддержки трансляций.")
-                lblGatewayStatus.ForeColor = Color.Firebrick
+            Else
+                ReportFailure(listResp, gatewayRequest:=False, action:="ListBroadcasts")
             End If
         Catch ex As Exception
             AppFileLogger.LogException("Share_Broadcasts_Form.RefreshStatusAndListAsync", ex)
@@ -266,7 +325,7 @@ Public NotInheritable Class Share_Broadcasts_Form
 
     Private Sub UpdateActionButtons()
         Dim sel As WorkerBroadcast = SelectedBroadcast()
-        Dim hasSel As Boolean = sel IsNot Nothing
+        Dim hasSel As Boolean = sel IsNot Nothing AndAlso Not _degraded
         btnCopyLink.Enabled = hasSel
         btnSaveSpres.Enabled = hasSel
         btnShowQr.Enabled = hasSel
@@ -280,22 +339,24 @@ Public NotInheritable Class Share_Broadcasts_Form
     End Function
 
     Private Async Sub OnGatewayToggleChanged(sender As Object, e As EventArgs)
+        If _degraded Then Return
         Dim enable As Boolean = chkEnableGateway.Checked
+        ShowNotice("")
         Dim resp As WorkerResponse = Await BroadcastController.SetBroadcastPolicyAsync(enable)
         If resp IsNot Nothing AndAlso resp.Ok Then
             Await RefreshStatusAndListAsync()
         Else
-            If resp IsNot Nothing AndAlso BroadcastController.IsUnsupportedWorker(resp.Error) Then
-                MessageBox.Show(Me, Localization.T("Обновите Fast Media Sorter для поддержки трансляций."),
-                                Localization.T("Трансляции для StreamsPlayer"), MessageBoxButtons.OK, MessageBoxIcon.Information)
-            End If
+            ' The box goes back to what is true BEFORE the line is shown, so the one reason on screen
+            ' (a refused port, the firewall) is never next to a checkbox that says it worked.
             RemoveHandler chkEnableGateway.CheckedChanged, AddressOf OnGatewayToggleChanged
             chkEnableGateway.Checked = Not enable
             AddHandler chkEnableGateway.CheckedChanged, AddressOf OnGatewayToggleChanged
+            ReportFailure(resp, gatewayRequest:=True, action:="SetBroadcastPolicy")
         End If
     End Sub
 
     Private Async Sub OnCreateClick(sender As Object, e As EventArgs)
+        If _degraded Then Return
         Using dlg As New OpenFileDialog With {
             .Title = Localization.T("Выбрать медиафайл для трансляции"),
             .Filter = Localization.T("Медиафайлы|*.mp4;*.mkv;*.avi;*.mov;*.wmv;*.webm;*.mp3;*.flac;*.wav;*.m4a;*.ogg;*.opus|Все файлы (*.*)|*.*")
@@ -307,12 +368,18 @@ Public NotInheritable Class Share_Broadcasts_Form
     End Sub
 
     Public Async Function PromptCreateBroadcastAsync(targetPath As String) As Task
-        If String.IsNullOrWhiteSpace(targetPath) Then Return
+        If String.IsNullOrWhiteSpace(targetPath) OrElse _degraded Then Return
         Using createDlg As New Broadcast_Create_Form(targetPath)
             If createDlg.ShowDialog(Me) = DialogResult.OK Then
-                ' Ensure gateway is enabled if not already
+                ShowNotice("")
+                ' Ensure gateway is enabled if not already. A gateway that will not start is not a place to
+                ' create a link that cannot be served: the worker's own refusal (port, firewall) is the answer.
                 If _status Is Nothing OrElse Not _status.BroadcastEnabled Then
-                    Await BroadcastController.SetBroadcastPolicyAsync(True)
+                    Dim policy As WorkerResponse = Await BroadcastController.SetBroadcastPolicyAsync(True)
+                    If policy Is Nothing OrElse Not policy.Ok Then
+                        ReportFailure(policy, gatewayRequest:=True, action:="SetBroadcastPolicy")
+                        Return
+                    End If
                 End If
 
                 Dim kind As String = If(createDlg.IsFolderKind, "folder", "file")
@@ -337,12 +404,7 @@ Public NotInheritable Class Share_Broadcasts_Form
                             Localization.T("Трансляции для StreamsPlayer"), MessageBoxButtons.OK, MessageBoxIcon.Information)
                     End If
                 Else
-                    Dim errMsg As String = If(createResp IsNot Nothing AndAlso Not String.IsNullOrEmpty(createResp.Error),
-                                             createResp.Error, Localization.T("Не удалось создать трансляцию."))
-                    If createResp IsNot Nothing AndAlso BroadcastController.IsUnsupportedWorker(createResp.Error) Then
-                        errMsg = Localization.T("Обновите Fast Media Sorter для поддержки трансляций.")
-                    End If
-                    MessageBox.Show(Me, errMsg, Localization.T("Трансляции для StreamsPlayer"), MessageBoxButtons.OK, MessageBoxIcon.Warning)
+                    ReportFailure(createResp, gatewayRequest:=False, action:="CreateBroadcast")
                 End If
             End If
         End Using

@@ -29,7 +29,7 @@ Public Class WaveParticlesSessionTests
 
     <Fact>
     Public Sub Section_3_1_clock_values()
-        Assert.Equal("0.14", WaveParticlesConstants.ContractVersion)
+        Assert.Equal("0.15", WaveParticlesConstants.ContractVersion)
         Assert.Equal(1.0R / 60.0R, WaveParticlesConstants.ReferenceFrameSeconds, 12)
         Assert.Equal(0.002R, WaveParticlesConstants.TimeStep)
         Assert.Equal(36, WaveParticlesConstants.RampFrames)

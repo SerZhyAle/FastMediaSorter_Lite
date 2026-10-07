@@ -128,7 +128,7 @@ $required = @(
     @{ Path = 'src/ProductNames.vb';                         Text = 'ExchangeServer As String = "Media Exchange Server"' },
     @{ Path = 'docs/guides/PRODUCT_NAMING.md';               Text = '`Media Exchange Server`' },
     @{ Path = 'docs/guides/PRODUCT_NAMING.md';               Text = 'FastMediaSorterExchangeServer' },
-    @{ Path = 'src/Main_Form.Designer.vb';                   Text = '"Fast Media Sorter & Sharing for Windows by SZA"' },
+    @{ Path = 'src/Main_Form.Designer.vb';                   Text = '"Fast Media Sorter by SZA"' },
     @{ Path = 'src/My Project/AssemblyInfo.vb';              Text = 'AssemblyTitle("Fast Media Sorter & Sharing for Windows")' },
     @{ Path = 'src/My Project/AssemblyInfo.vb';              Text = 'AssemblyProduct("Fast Media Sorter & Sharing for Windows")' },
     @{ Path = 'src/Modern/FastMediaSorter.Modern.vbproj';    Text = '<Product>Fast Media Sorter &amp; Sharing for Windows</Product>' },

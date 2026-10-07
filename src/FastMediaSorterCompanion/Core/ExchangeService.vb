@@ -345,12 +345,19 @@ Friend Module ExchangeService
             Case 8 : Return "firewall"
             Case 9 : Return "the service is not installed"
             Case 10 : Return "several identities - the migration source is ambiguous"
-            Case 11 : Return "the state directory cannot be trusted - see install-exchange-service.log"
+            Case 11 : Return "the state directory cannot be trusted - see install-exchange-service.log in the administrator's %TEMP% (the data directory's logs\ is not opened until it is trusted)"
             Case 13 : Return "the service account is not LocalService"
             Case 14 : Return "the old registration is still marked for deletion"
             Case 16 : Return "another run of the helper holds the state lock - nothing was changed"
-            Case Else : Return "unexpected error"
+            Case Else : Return "unexpected error - see " & HelperLogHint()
         End Select
+    End Function
+
+    ''' <summary>Where the helper's own log is: <c>logs\install-exchange-service.log</c> in the machine data
+    ''' directory once that directory was verified (ticket 182 L-1: the one place the enrolled user can
+    ''' read, so "Send the log to the author" carries it), else the elevated account's %TEMP% copy.</summary>
+    Friend Function HelperLogHint() As String
+        Return "install-exchange-service.log in the logs folder of the exchange data directory (or in the administrator's %TEMP%)"
     End Function
 
 End Module

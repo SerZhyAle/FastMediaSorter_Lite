@@ -139,6 +139,45 @@ Friend NotInheritable Class WindowPlacement
         Return areas
     End Function
 
+    ' --- remembered SIZE vs. DPI (124 UX-202) ------------------------------------------------------
+    '
+    ' The editor and the thumbnail panel remember their rectangle in DEVICE pixels, and the keys already
+    ' hold values written that way. A window that is scaled by AutoScaleMode.Dpi multiplies whatever size
+    ' it has at its first layout, so restoring "1100 wide" on a 125 % display and letting it scale gave
+    ' 1375 - and 1719 after the next close and open: the window grew every session. The rule that stops
+    ' it, in three parts:
+    '   1. the size is remembered together with the DPI it was measured at (written next to it);
+    '   2. it is applied only AFTER the window has scaled itself (OnLoad, after PerformAutoScale; a window
+    '      that is shown again applies it from its prepare step, when scaling is long done);
+    '   3. a size written by a build that did not record the DPI is device pixels at the DPI the window has
+    '      now, so the first run after the update restores exactly what the user left.
+    ' The position stays raw: a scaled screen coordinate means nothing on a multi-monitor desktop.
+
+    ''' <summary>The smallest and largest DPI a remembered value may claim; outside that it is noise.</summary>
+    Private Const MinPlausibleDpi As Integer = 72
+    Private Const MaxPlausibleDpi As Integer = 960
+
+    ''' <summary>The DPI a size was measured at, as read back from the registry: 0 for "not recorded" (a build
+    ''' before the rule, a deleted value) and for anything that is not a plausible DPI.</summary>
+    Friend Shared Function ParseDpi(value As String) As Integer
+        Dim dpi As Integer
+        If Integer.TryParse(If(value, "").Trim(), dpi) AndAlso dpi >= MinPlausibleDpi AndAlso dpi <= MaxPlausibleDpi Then Return dpi
+        Return 0
+    End Function
+
+    ''' <summary>
+    ''' A remembered size in device pixels, as it has to be applied to a window whose DPI is
+    ''' <paramref name="targetDpi"/>. Measured at <paramref name="savedDpi"/> it keeps its LOGICAL size, so a window
+    ''' left at 1100 px on a 120-dpi display is 1467 px on a 160-dpi one. An unrecorded DPI (0) means the size
+    ''' already is in the target's pixels and comes back unchanged - the rule that keeps an upgrade from resizing
+    ''' anything. The result is never smaller than 1 px on a side.
+    ''' </summary>
+    Friend Shared Function SizeForDpi(width As Integer, height As Integer, savedDpi As Integer, targetDpi As Integer) As Size
+        If savedDpi <= 0 OrElse targetDpi <= 0 OrElse savedDpi = targetDpi Then Return New Size(width, height)
+        Dim factor As Double = targetDpi / CDbl(savedDpi)
+        Return New Size(Math.Max(1, CInt(Math.Round(width * factor))), Math.Max(1, CInt(Math.Round(height * factor))))
+    End Function
+
     ''' <summary>A registry value read back as a state, with anything unknown as normal.</summary>
     Friend Shared Function ParseState(value As String) As String
         Select Case If(value, "").Trim().ToLowerInvariant()

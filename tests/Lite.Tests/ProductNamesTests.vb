@@ -32,7 +32,7 @@ Public Class ProductNamesTests
         Assert.Equal("FMS_W", ProductNames.AliasW)
         Assert.Equal("FMS_A", ProductNames.AliasA)
         Assert.Equal("SZA", ProductNames.Author)
-        Assert.Equal("Fast Media Sorter & Sharing for Windows by SZA", ProductNames.WindowTitle)
+        Assert.Equal("Fast Media Sorter by SZA", ProductNames.WindowTitle)
         Assert.Equal("Share Manager - Fast Media Sorter & Sharing", ProductNames.ShareManager)
         Assert.Equal("Fast Media Sorter & Sharing: Folder Share Server", ProductNames.ServerEdition)
         Assert.Equal("Media Exchange Server", ProductNames.ExchangeServer)

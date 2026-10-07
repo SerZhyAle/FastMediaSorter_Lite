@@ -3,9 +3,9 @@
 | | |
 | --- | --- |
 | **Ids** | `FDSEC-FORMAT` (the bytes) and `FDSEC-BEHAVIOUR` (what a program handling them must do) |
-| **Version** | catalog `FDSEC-FORMAT` 1.3, `FDSEC-BEHAVIOUR` 1.5, active (read 2026-10-02). **This reader implements and reads 1.1** - brought up from 1.0 by ticket 038 on 2026-09-24, which closed the registry exception; 1.2-1.3 add suite 3 and suite 2 containers, which a suite-1 reader refuses by name as unsupported ("no shipped consumer does anything wrong"), and 1.5 adds an optional GUI credential source this product does not ship. No reader obligation moved. Owner: FileDO |
+| **Version** | catalog `FDSEC-FORMAT` 1.3, `FDSEC-BEHAVIOUR` 1.5, active (re-read 2026-10-07). **This reader implements suite 1 of the format and the reader-half sections of the behaviour** (its 1.1 level of 2026-09-24, ticket 038), and reads 1.3 / 1.5. 1.2 adds suite 3 (directory containers) and 1.3 suite 2 (the quiet suite): this reader opens neither - it refuses a suite-3 file by name as *unsupported* (`FdSecHead.Validate`, run on the catalog's four suite-3 containers) and a suite-2 file fails the length screen as *damaged or incomplete* (`FDSEC-FORMAT` 18.8), which the contract says does nothing wrong. 1.4 (the `p:<value>` token) and 1.5 (a "remembered on this device" credential source) concern a command-line credential and a keystore this product does not have. Owner: FileDO |
 | **Home** | `secure-container/README.md`, with `FDSEC-FORMAT.md`, `FD-SEC-CONTRACT.md` and `vectors/` in the shared contracts catalog |
-| **Role here** | consumer, reader half - `specification 026` (local specification), shipped 2026-09-22 in `src/Secure/` |
+| **Role here** | consumer, reader half - `specification 026` (local specification), in `src/Secure/` on `main`, in **no release yet** (the latest release predates it; first release containing it: to be recorded, with a fresh cross-product vector run, when it ships) |
 
 Two ids, deliberately separate: the format is what the bytes are, the behaviour is what a program that
 reads and writes them must do to be safe. This repository implements the **reader half of both** -
@@ -26,6 +26,10 @@ can mostly ignore into the thing that decides whether a feature destroys data.
 - The two deviations 026 recorded - the **streaming reader** (see below) and the absence of the writer -
   were both closed by 1.1 (§14.4 and the consumer-only scope). The registry, not this page, says what
   is open today.
+- The vendored `vectors.json` and the two suite-1 containers are byte-identical to the catalog's current
+  ones (checked 2026-10-07, SHA-256 against `PROVENANCE.txt`). Four suite-3 containers were added to the same
+  folder on that date for one negative test - they are never opened, only refused - and the suite-2 files are
+  not vendored (their three lengths are pinned instead).
 
 ## What this repository must keep doing
 
@@ -52,12 +56,21 @@ All four, on 2026-09-22:
 
 1. **This pointer**, added with the specification.
 2. **Consumer rows in the registry** for both ids, carrying the conformance run rather than a reading.
-3. **The amendment**, proposed and not taken: the streaming reader of §4.2 hands a seekable decrypting
-   stream to a decoder instead of unpacking a whole file, so it authenticates every byte it returns but
-   cannot verify the sealed digest of bytes it never read. That mode is not described in the contract,
-   and the nearest named surface, `14.1 Reveal`, is not it - `reveal` writes a copy into a sandbox and
-   this writes nothing at all. The proposal asks for it as `14.4`, with its weaker guarantee written
-   down, and lives beside the contract in the catalog as `PROPOSAL-2026-09-22-streaming-reader.md`. It is
-   recorded as a dated deviation until the owner rules. Comply or amend - never deviate in silence.
+3. **The amendment**, proposed on 2026-09-22 and **accepted into `FDSEC-BEHAVIOUR` 1.1 as §14.4**: the
+   streaming reader of §4.2 hands a seekable decrypting stream to a decoder instead of unpacking a whole
+   file, so it authenticates every byte it returns but cannot verify the sealed digest of bytes it never
+   read, and the viewer therefore never claims a container is intact and offers an explicit "verify this
+   container". The dated deviation it was recorded as is closed; the proposal stays beside the contract in
+   the catalog as `PROPOSAL-2026-09-22-streaming-reader.md`.
 4. **A declaration that the vectors are vendored** into this repository's test data, which is an artifact
    copy and not a document copy.
+
+## Open, and not this repository's to settle alone
+
+- **Suites 2 and 3.** A suite-2 or suite-3 file written by FileDO does not open in this viewer (the reader says
+  so honestly: *damaged or incomplete* for suite 2, *unsupported* for suite 3). Whether to implement them is a
+  product decision, not a conformance debt - `FDSEC-FORMAT` 1.2 and 1.3 say a reader without them does nothing
+  wrong.
+- **Sealed-name parity** (`PROPOSAL-2026-09-30-sealed-name-parity.md`, awaiting the owner): this reader follows
+  the 1.1 text and so accepts a sealed true name carrying `"`, `<`, `>` or `|`, which FileDO refuses as damaged.
+  No code changes until the catalog rules.

@@ -86,13 +86,13 @@ Public NotInheritable Class Share_Disks_Form
             .Margin = New Padding(0, 0, 16, 0),
             .Text = Localization.T("Инструкция: диски FileDO")
         }
-        AddHandler lnkGuide.LinkClicked, Sub() NetworkInfo.OpenInBrowser(ShareLinks.FileDoDisksGuideUrl)
+        AddHandler lnkGuide.LinkClicked, Sub() NetworkInfo.OpenInBrowser(ShareLinks.FileDoLocalized(ShareLinks.FileDoDisksGuideUrl))
         Dim lnkFileDo As New LinkLabel With {
             .AutoSize = True,
             .Margin = New Padding(0),
             .Text = Localization.T("Сайт FileDO")
         }
-        AddHandler lnkFileDo.LinkClicked, Sub() NetworkInfo.OpenInBrowser(ShareLinks.FileDoSiteUrl)
+        AddHandler lnkFileDo.LinkClicked, Sub() NetworkInfo.OpenInBrowser(ShareLinks.FileDoLocalized(ShareLinks.FileDoSiteUrl))
         linksFlow.Controls.Add(lnkGuide)
         linksFlow.Controls.Add(lnkFileDo)
         ' APP-BEHAVIOUR rule 1: one no-action exit - the close box, Escape and this button are the
@@ -178,8 +178,7 @@ Public NotInheritable Class Share_Disks_Form
             For Each disk As SharedDisk In response.Disks
                 Dim item As New ListViewItem(disk.RootName) With {.Tag = disk}
                 item.SubItems.Add(StateText(disk.State))
-                item.SubItems.Add(If(disk.Holder = "service", Localization.T("Служба Windows"),
-                    If(disk.Holder = "session", Localization.T("Текущий сеанс"), Localization.T("Нет"))))
+                item.SubItems.Add(HolderText(disk.Holder))
                 item.SubItems.Add(disk.ContainerPath)
                 _list.Items.Add(item)
                 If disk.ContainerId = selected Then item.Selected = True
@@ -203,6 +202,9 @@ Public NotInheritable Class Share_Disks_Form
         End If
     End Sub
 
+    ''' <summary>The state column. The six states of DISK-SHARE section 16 are named; a value the host does not
+    ''' know (or no value) is "Unknown" - WORKER-IPC 0.14 item D - and is never worded as an error of the disk,
+    ''' which is what the catch-all branch used to say.</summary>
     Friend Shared Function StateText(state As String) As String
         Select Case state
             Case "open" : Return Localization.T("Открыт")
@@ -210,7 +212,20 @@ Public NotInheritable Class Share_Disks_Form
             Case "closing" : Return Localization.T("Закрывается")
             Case "closed" : Return Localization.T("Закрыт")
             Case "locked" : Return Localization.T("Заблокирован")
-            Case Else : Return Localization.T("Ошибка")
+            Case "failed" : Return Localization.T("Ошибка")
+            Case Else : Return Localization.T("Неизвестно")
+        End Select
+    End Function
+
+    ''' <summary>The holder column: none, the Windows service or this session. A holder the host does not know,
+    ''' or none at all in the record, is "Unknown" - NEVER "No holder": item D says unknown is never none, and a
+    ''' list that shows "No" beside a disk somebody may be holding invites the mount it must not authorize.</summary>
+    Friend Shared Function HolderText(holder As String) As String
+        Select Case holder
+            Case "service" : Return Localization.T("Служба Windows")
+            Case "session" : Return Localization.T("Текущий сеанс")
+            Case "none" : Return Localization.T("Нет")
+            Case Else : Return Localization.T("Неизвестно")
         End Select
     End Function
 

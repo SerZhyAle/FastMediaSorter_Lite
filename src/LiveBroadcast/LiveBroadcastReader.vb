@@ -109,36 +109,168 @@ Friend Module LiveBroadcastReader
             Return LiveBroadcastReadResult.Fail(LiveReadStatus.InvalidDocument)
         End If
 
-        ' Decompress with GZIP and enforce MaxPayloadBytes limit on decompressed bytes
-        Dim decompressed As Byte()
-        Try
-            Using msIn As New MemoryStream(compressed)
-                Using gz As New GZipStream(msIn, CompressionMode.Decompress)
-                    Using msOut As New MemoryStream()
-                        Dim buf(4095) As Byte
-                        Dim totalRead As Integer = 0
-                        While True
-                            Dim count As Integer = gz.Read(buf, 0, buf.Length)
-                            If count <= 0 Then Exit While
-                            totalRead += count
-                            If totalRead > MaxPayloadBytes Then
-                                Return LiveBroadcastReadResult.Fail(LiveReadStatus.TooLarge)
-                            End If
-                            msOut.Write(buf, 0, count)
-                        End While
-                        decompressed = msOut.ToArray()
-                    End Using
-                End Using
-            End Using
-        Catch
-            Return LiveBroadcastReadResult.Fail(LiveReadStatus.InvalidDocument)
-        End Try
+        ' ONE gzip member and nothing after it (section 3.3); the decompressed size is capped as it is produced.
+        Dim decompressed As Byte() = Nothing
+        Dim inflated As LiveReadStatus = InflateSingleGzipMember(compressed, decompressed)
+        If inflated <> LiveReadStatus.Ok Then Return LiveBroadcastReadResult.Fail(inflated)
 
         If decompressed.Length = 0 Then
             Return LiveBroadcastReadResult.Fail(LiveReadStatus.InvalidDocument)
         End If
 
         Return ReadJsonBytes(decompressed, 0, decompressed.Length)
+    End Function
+
+    ''' <summary>
+    ''' Hands out one byte per read. A decompressor fed this way consumes exactly the bytes of its own stream and
+    ''' never reads ahead, so what is left over afterwards is exactly what follows the stream.
+    ''' </summary>
+    Private NotInheritable Class OneByteSource
+        Inherits Stream
+
+        Private ReadOnly data As Byte()
+        Private ReadOnly [end] As Integer
+        Private cursor As Integer
+
+        Public Sub New(data As Byte(), start As Integer)
+            Me.data = data
+            Me.cursor = start
+            Me.[end] = data.Length
+        End Sub
+
+        Public ReadOnly Property Index As Integer
+            Get
+                Return cursor
+            End Get
+        End Property
+
+        Public Overrides ReadOnly Property CanRead As Boolean
+            Get
+                Return True
+            End Get
+        End Property
+        Public Overrides ReadOnly Property CanSeek As Boolean
+            Get
+                Return False
+            End Get
+        End Property
+        Public Overrides ReadOnly Property CanWrite As Boolean
+            Get
+                Return False
+            End Get
+        End Property
+        Public Overrides ReadOnly Property Length As Long
+            Get
+                Throw New NotSupportedException()
+            End Get
+        End Property
+        Public Overrides Property Position As Long
+            Get
+                Throw New NotSupportedException()
+            End Get
+            Set(value As Long)
+                Throw New NotSupportedException()
+            End Set
+        End Property
+
+        Public Overrides Function Read(buffer As Byte(), offset As Integer, count As Integer) As Integer
+            If count <= 0 OrElse cursor >= [end] Then Return 0
+            buffer(offset) = data(cursor)
+            cursor += 1
+            Return 1
+        End Function
+
+        Public Overrides Sub Flush()
+        End Sub
+        Public Overrides Function Seek(offset As Long, origin As SeekOrigin) As Long
+            Throw New NotSupportedException()
+        End Function
+        Public Overrides Sub SetLength(value As Long)
+            Throw New NotSupportedException()
+        End Sub
+        Public Overrides Sub Write(buffer As Byte(), offset As Integer, count As Integer)
+            Throw New NotSupportedException()
+        End Sub
+    End Class
+
+    ''' <summary>
+    ''' RFC 1952 by hand, because <c>GZipStream</c> reads concatenated members and silently ignores trailing bytes - and
+    ''' the contract accepts one member and calls anything after it invalid (section 3.3). The header is walked here, the
+    ''' deflate body is inflated from a source that never reads ahead, and the trailer (CRC-32 and size) must be the last
+    ''' eight bytes, exactly where the body ended.
+    ''' </summary>
+    Private Function InflateSingleGzipMember(data As Byte(), ByRef output As Byte()) As LiveReadStatus
+        output = Nothing
+        If data.Length < 20 OrElse data(0) <> &H1F OrElse data(1) <> &H8B OrElse data(2) <> 8 Then Return LiveReadStatus.InvalidDocument
+
+        Dim flags As Integer = data(3)
+        If (flags And &HE0) <> 0 Then Return LiveReadStatus.InvalidDocument     ' reserved bits
+
+        Dim position As Integer = 10
+        If (flags And 4) <> 0 Then                                              ' FEXTRA
+            If position + 2 > data.Length Then Return LiveReadStatus.InvalidDocument
+            position += 2 + (data(position) Or (CInt(data(position + 1)) << 8))
+        End If
+        For Each terminated As Integer In New Integer() {8, 16}                  ' FNAME, FCOMMENT
+            If (flags And terminated) = 0 Then Continue For
+            While position < data.Length AndAlso data(position) <> 0
+                position += 1
+            End While
+            position += 1
+        Next
+        If (flags And 2) <> 0 Then position += 2                                ' FHCRC
+        If position >= data.Length - 8 Then Return LiveReadStatus.InvalidDocument
+
+        Dim inflated As Byte()
+        Dim source As New OneByteSource(data, position)
+        Try
+            Using deflate As New DeflateStream(source, CompressionMode.Decompress)
+                Using msOut As New MemoryStream()
+                    Dim buf(4095) As Byte
+                    Dim total As Integer = 0
+                    While True
+                        Dim count As Integer = deflate.Read(buf, 0, buf.Length)
+                        If count <= 0 Then Exit While
+                        total += count
+                        If total > MaxPayloadBytes Then Return LiveReadStatus.TooLarge
+                        msOut.Write(buf, 0, count)
+                    End While
+                    inflated = msOut.ToArray()
+                End Using
+            End Using
+        Catch
+            Return LiveReadStatus.InvalidDocument
+        End Try
+
+        ' The deflate body ended at source.Index; the trailer is the next eight bytes and nothing follows it.
+        If data.Length - source.Index <> 8 Then Return LiveReadStatus.InvalidDocument
+        Dim trailerCrc As UInteger = BitConverter.ToUInt32(data, source.Index)
+        Dim trailerSize As UInteger = BitConverter.ToUInt32(data, source.Index + 4)
+        If trailerSize <> CUInt(inflated.Length) OrElse trailerCrc <> Crc32(inflated) Then Return LiveReadStatus.InvalidDocument
+
+        output = inflated
+        Return LiveReadStatus.Ok
+    End Function
+
+    Private crcTable As UInteger()
+
+    Private Function Crc32(bytes As Byte()) As UInteger
+        If crcTable Is Nothing Then
+            Dim table(255) As UInteger
+            For n As Integer = 0 To 255
+                Dim c As UInteger = CUInt(n)
+                For k As Integer = 0 To 7
+                    c = If((c And 1UI) <> 0UI, &HEDB88320UI Xor (c >> 1), c >> 1)
+                Next
+                table(n) = c
+            Next
+            crcTable = table
+        End If
+        Dim crc As UInteger = &HFFFFFFFFUI
+        For Each b As Byte In bytes
+            crc = crcTable(CInt((crc Xor b) And &HFFUI)) Xor (crc >> 8)
+        Next
+        Return crc Xor &HFFFFFFFFUI
     End Function
 
     ''' <summary>
@@ -213,8 +345,9 @@ Friend Module LiveBroadcastReader
                 Return LiveBroadcastReadResult.Fail(LiveReadStatus.InvalidDocument)
             End If
 
-            If IsLoopbackOrUnspecifiedHost(uri.Host) Then
-                Return LiveBroadcastReadResult.Fail(LiveReadStatus.LoopbackHost)
+            ' An absolute address with no host (mailto:, file:///) is no broadcast address at all.
+            If String.IsNullOrEmpty(uri.Host) Then
+                Return LiveBroadcastReadResult.Fail(LiveReadStatus.InvalidDocument)
             End If
 
             ' mode
@@ -226,9 +359,16 @@ Friend Module LiveBroadcastReader
             Dim modeStr As String = modeProp.GetString()
             Dim modeVal As LiveBroadcastMode = ParseMode(modeStr)
 
-            ' Rule: If top-level mode is not AUDIO_ONLY, return UnsupportedMode immediately
+            ' Section 3.2: the required top-level mode is judged FIRST. Until it is AUDIO_ONLY the answer is always
+            ' UnsupportedMode - even when an endpoint below would be playable, and before the address is looked at.
             If modeVal <> LiveBroadcastMode.AudioOnly Then
                 Return LiveBroadcastReadResult.Fail(LiveReadStatus.UnsupportedMode)
+            End If
+
+            ' A device that published an address only it can reach (the producer rule says it never does, and the
+            ' owner's own exception shows it can): refused by name, and nothing is ever connected to.
+            If IsLoopbackOrUnspecifiedHost(uri.Host) Then
+                Return LiveBroadcastReadResult.Fail(LiveReadStatus.LoopbackHost)
             End If
 
             Dim descriptor As New LiveBroadcastDescriptor With {
@@ -294,6 +434,12 @@ Friend Module LiveBroadcastReader
                     .IsLive = descriptor.IsLive,
                     .TargetLatencyMs = descriptor.TargetLatencyMs
                 })
+            End If
+
+            ' A correct descriptor whose every address is one this build cannot play (an RTSP URL under AUDIO_ONLY):
+            ' refused here, by name, so it is never remembered and never half-played (section 3.2).
+            If LiveEndpointSelector.SelectEndpoint(descriptor) Is Nothing Then
+                Return LiveBroadcastReadResult.Fail(LiveReadStatus.UnsupportedMode)
             End If
 
             Return LiveBroadcastReadResult.Ok(descriptor)

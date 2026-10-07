@@ -3,8 +3,9 @@ Option Strict On
 
 Imports System.Diagnostics
 
-' 023_SPECIFICATION_FMS_LIVE_BROADCAST_CONSUMER.md §7.
-' Reconnect state machine and bounded backoff budget (0, 500, 1000, 2000, 4000 ms; max 12s budget).
+' 023_SPECIFICATION_FMS_LIVE_BROADCAST_CONSUMER.md section 7.
+' Reconnect state machine and bounded backoff budget (0, 500, 1000, 2000, 4000 ms; max 12 s budget).
+' Pure: it reads time through an injected clock, so the budget is testable without waiting.
 
 Friend Enum LiveSessionState
     Idle = 0
@@ -28,115 +29,149 @@ Friend Enum LiveTerminationKind
     LoopbackAddress = 8
     BudgetExhausted = 9
     UnknownError = 10
+    ''' <summary>Any other non-2xx answer that is not worth retrying (a 3xx is never followed, a 4xx will not change).</summary>
+    HttpStatus = 11
 End Enum
 
 Friend NotInheritable Class LiveReconnectPolicy
 
     Public Const MaxRetries As Integer = 5
-    Public Const TotalBudgetMs As Long = 12000L
+    Public Const DefaultTotalBudgetMs As Long = 12000L
     Public Const StablePlayingResetThresholdMs As Long = 10000L
 
     Private Shared ReadOnly BackoffDelays As Integer() = {0, 500, 1000, 2000, 4000}
 
+    Private ReadOnly clock As Func(Of Long)
+    Private budgetStartMs As Long = -1L
+    Private playingSinceMs As Long = -1L
+
     Public Property CurrentState As LiveSessionState = LiveSessionState.Idle
     Public Property TerminationReason As LiveTerminationKind = LiveTerminationKind.None
-    Public Property CustomErrorMessage As String = Nothing
+
+    ''' <summary>The HTTP status behind <see cref="LiveTerminationKind.HttpStatus"/>, else 0.</summary>
+    Public Property HttpStatusCode As Integer
 
     Public Property RetryCount As Integer = 0
     Public Property HasEverPlayed As Boolean = False
 
-    Private ReadOnly budgetStopwatch As New Stopwatch()
-    Private ReadOnly playingStopwatch As New Stopwatch()
+    ''' <summary>The wall-clock cap of one outage (section 7). Settable only so a test can run it short.</summary>
+    Public Property TotalBudgetMs As Long = DefaultTotalBudgetMs
 
     Public Sub New()
+        Me.New(Nothing)
+    End Sub
+
+    ''' <summary>A clock in milliseconds that only moves forward; Nothing means the process's stopwatch.</summary>
+    Public Sub New(clock As Func(Of Long))
+        Me.clock = If(clock, Function() Stopwatch.GetTimestamp() * 1000L \ Stopwatch.Frequency)
+    End Sub
+
+    Private Function ClockMs() As Long
+        Return clock()
+    End Function
+
+    Private Sub StartBudgetIfIdle()
+        If budgetStartMs < 0L Then budgetStartMs = ClockMs()
     End Sub
 
     ''' <summary>
-    ''' Transitions to Connecting state.
+    ''' Time left of this outage's budget. The attempt in flight is cut at this, so "12 s" is a wall-clock
+    ''' bound and not merely "no new attempt after 12 s".
     ''' </summary>
+    Public ReadOnly Property RemainingBudgetMs As Long
+        Get
+            If budgetStartMs < 0L Then Return TotalBudgetMs
+            Return Math.Max(0L, TotalBudgetMs - (ClockMs() - budgetStartMs))
+        End Get
+    End Property
+
+    ''' <summary>Transitions to Connecting. The outage budget starts with the first connect.</summary>
     Public Sub NoteConnecting()
         CurrentState = LiveSessionState.Connecting
-        playingStopwatch.Reset()
+        playingSinceMs = -1L
+        StartBudgetIfIdle()
     End Sub
 
-    ''' <summary>
-    ''' Transitions to Playing state. Marks HasEverPlayed.
-    ''' </summary>
+    ''' <summary>Transitions to Playing. Marks HasEverPlayed.</summary>
     Public Sub NotePlaying()
         CurrentState = LiveSessionState.Playing
         HasEverPlayed = True
-        playingStopwatch.Restart()
+        playingSinceMs = ClockMs()
     End Sub
 
     ''' <summary>
-    ''' Updates active playing time. If playing continuously for 10 s, resets the retry count and budget.
+    ''' If it has been playing continuously for 10 s the outage is over: the retry count and the budget
+    ''' start from nothing again (section 7). Returns True when it did so.
     ''' </summary>
-    Public Sub CheckPlayingLiveness()
-        If CurrentState = LiveSessionState.Playing AndAlso playingStopwatch.IsRunning Then
-            If playingStopwatch.ElapsedMilliseconds >= StablePlayingResetThresholdMs Then
-                ResetRetries()
-            End If
+    Public Function CheckPlayingLiveness() As Boolean
+        If CurrentState = LiveSessionState.Playing AndAlso playingSinceMs >= 0L AndAlso
+           ClockMs() - playingSinceMs >= StablePlayingResetThresholdMs Then
+            ResetRetries()
+            Return True
         End If
-    End Sub
+        Return False
+    End Function
 
-    ''' <summary>
-    ''' Resets retry counters and budget stopwatch.
-    ''' </summary>
+    ''' <summary>Resets the retry counter and the budget.</summary>
     Public Sub ResetRetries()
         RetryCount = 0
-        budgetStopwatch.Reset()
+        budgetStartMs = -1L
     End Sub
 
     ''' <summary>
-    ''' Checks if another reconnect attempt is allowed within the 5-retry limit and 12s budget.
-    ''' Returns the delay in milliseconds for this attempt, or Nothing if the budget is exhausted.
+    ''' Whether another reconnect fits in 5 retries and the budget. Returns the wait before it, in ms, or
+    ''' Nothing when the budget is spent (the state then becomes Failed with BudgetExhausted).
+    ''' A wait that would not end inside the budget is not started.
     ''' </summary>
     Public Function GetNextBackoffDelayMs() As Integer?
-        If Not budgetStopwatch.IsRunning Then
-            budgetStopwatch.Start()
-        End If
+        StartBudgetIfIdle()
 
-        If RetryCount >= MaxRetries OrElse budgetStopwatch.ElapsedMilliseconds >= TotalBudgetMs Then
-            CurrentState = LiveSessionState.Failed
-            TerminationReason = LiveTerminationKind.BudgetExhausted
-            Return Nothing
-        End If
+        If RetryCount >= MaxRetries Then Return Exhausted()
+
+        Dim remaining As Long = RemainingBudgetMs
+        If remaining <= 0L Then Return Exhausted()
 
         Dim delay As Integer = BackoffDelays(Math.Min(RetryCount, BackoffDelays.Length - 1))
+        If delay > 0 AndAlso delay >= remaining Then Return Exhausted()
+
         RetryCount += 1
         CurrentState = LiveSessionState.Reconnecting
         Return delay
     End Function
 
-    ''' <summary>
-    ''' Marks session failed with a specific non-retryable termination reason.
-    ''' </summary>
-    Public Sub NoteFatalTermination(reason As LiveTerminationKind, Optional customMsg As String = Nothing)
+    Private Function Exhausted() As Integer?
         CurrentState = LiveSessionState.Failed
-        TerminationReason = reason
-        CustomErrorMessage = customMsg
-        budgetStopwatch.Reset()
-        playingStopwatch.Reset()
-    End Sub
+        TerminationReason = LiveTerminationKind.BudgetExhausted
+        Return Nothing
+    End Function
 
     ''' <summary>
-    ''' Marks session stopped by user (clean end).
+    ''' A drift rejoin is not a failure: it reconnects at once, spends no retry and starts no outage.
     ''' </summary>
+    Public Sub NoteRejoin()
+        CurrentState = LiveSessionState.Reconnecting
+        playingSinceMs = -1L
+    End Sub
+
+    ''' <summary>Marks the session failed with a specific reason that no retry would change.</summary>
+    Public Sub NoteFatalTermination(reason As LiveTerminationKind, Optional httpStatus As Integer = 0)
+        CurrentState = LiveSessionState.Failed
+        TerminationReason = reason
+        HttpStatusCode = httpStatus
+        budgetStartMs = -1L
+        playingSinceMs = -1L
+    End Sub
+
+    ''' <summary>Marks the session stopped by the user (a clean end).</summary>
     Public Sub NoteUserStopped()
         CurrentState = LiveSessionState.Ended
         TerminationReason = LiveTerminationKind.UserStopped
-        budgetStopwatch.Reset()
-        playingStopwatch.Reset()
+        budgetStartMs = -1L
+        playingSinceMs = -1L
     End Sub
 
-    ''' <summary>
-    ''' Formats the user-facing status message upon termination.
-    ''' </summary>
+    ''' <summary>Formats the user-facing status message upon termination.</summary>
     Public Function GetTerminalStatusText() As String
-        If Not String.IsNullOrEmpty(CustomErrorMessage) Then
-            Return CustomErrorMessage
-        End If
-
         Select Case TerminationReason
             Case LiveTerminationKind.MaxListeners503
                 Return Localization.T("На часах уже максимальное число слушателей")
@@ -152,6 +187,8 @@ Friend NotInheritable Class LiveReconnectPolicy
                 Return Localization.T("Требуется обновить приложение для этой трансляции")
             Case LiveTerminationKind.LoopbackAddress
                 Return Localization.T("Устройство передало локальный адрес (loopback), недоступный с ПК")
+            Case LiveTerminationKind.HttpStatus
+                Return Localization.TF("Устройство ответило: HTTP {0}", HttpStatusCode)
             Case LiveTerminationKind.BudgetExhausted
                 If HasEverPlayed Then
                     Return Localization.T("Трансляция завершена или устройство недоступно")

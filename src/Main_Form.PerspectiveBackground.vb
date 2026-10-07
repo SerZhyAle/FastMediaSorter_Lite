@@ -157,24 +157,6 @@ Partial Public Class Main_Form
         Return Math.Min(Math.Max(scaledSampleDepth, 2), maxDepth)
     End Function
 
-    Private Function SampleVerticalEdgeColor(sourceBitmap As Bitmap, isLeftEdge As Boolean, sourceY As Integer, sampleDepth As Integer) As Color
-        Using sampler As EdgeSampler = EdgeSampler.TryCreate(sourceBitmap)
-            If sampler IsNot Nothing Then
-                Return sampler.SampleVerticalEdgeColor(isLeftEdge, sourceY, sampleDepth)
-            End If
-        End Using
-        Return Color.Black
-    End Function
-
-    Private Function SampleHorizontalEdgeColor(sourceBitmap As Bitmap, isTopEdge As Boolean, sourceX As Integer, sampleDepth As Integer) As Color
-        Using sampler As EdgeSampler = EdgeSampler.TryCreate(sourceBitmap)
-            If sampler IsNot Nothing Then
-                Return sampler.SampleHorizontalEdgeColor(isTopEdge, sourceX, sampleDepth)
-            End If
-        End Using
-        Return Color.Black
-    End Function
-
     Private Function GetTrimmedChannelAverage(channelValues As IEnumerable(Of Integer)) As Integer
         Dim sortedValues = channelValues.OrderBy(Function(v) v).ToList()
         If sortedValues.Count = 0 Then Return 0
@@ -264,22 +246,18 @@ Partial Public Class Main_Form
         Return samples
     End Function
 
-    Private Function GetDisplayedVerticalEdgeColors(displayedBitmap As Bitmap, targetHeight As Integer, imageRect As Rectangle, isLeftEdge As Boolean) As List(Of Color)
-        Using sampler As EdgeSampler = EdgeSampler.TryCreate(displayedBitmap)
-            If sampler IsNot Nothing Then
-                Return sampler.GetDisplayedVerticalEdgeColors(targetHeight, imageRect, isLeftEdge)
-            End If
-        End Using
-        Return New List(Of Color)()
+    ' The sampler is made once per frame by the caller (018 U-15) and shared by both edges. It
+    ' wraps the displayed bitmap without copying it (see EdgeSampler: a copy costs more than
+    ' the reads); Nothing - an unusable bitmap - means no colors, which the painters below
+    ' already treat as "nothing to draw".
+    Private Function GetDisplayedVerticalEdgeColors(sampler As EdgeSampler, targetHeight As Integer, imageRect As Rectangle, isLeftEdge As Boolean) As List(Of Color)
+        If sampler Is Nothing Then Return New List(Of Color)()
+        Return sampler.GetDisplayedVerticalEdgeColors(targetHeight, imageRect, isLeftEdge)
     End Function
 
-    Private Function GetDisplayedHorizontalEdgeColors(displayedBitmap As Bitmap, targetWidth As Integer, imageRect As Rectangle, isTopEdge As Boolean) As List(Of Color)
-        Using sampler As EdgeSampler = EdgeSampler.TryCreate(displayedBitmap)
-            If sampler IsNot Nothing Then
-                Return sampler.GetDisplayedHorizontalEdgeColors(targetWidth, imageRect, isTopEdge)
-            End If
-        End Using
-        Return New List(Of Color)()
+    Private Function GetDisplayedHorizontalEdgeColors(sampler As EdgeSampler, targetWidth As Integer, imageRect As Rectangle, isTopEdge As Boolean) As List(Of Color)
+        If sampler Is Nothing Then Return New List(Of Color)()
+        Return sampler.GetDisplayedHorizontalEdgeColors(targetWidth, imageRect, isTopEdge)
     End Function
 
     Private Function PaintVerticalPerspectiveBackground(g As Graphics, edgeColors As List(Of Color), targetRect As Rectangle, colorDeviationThreshold As Double) As Boolean
@@ -484,13 +462,14 @@ Partial Public Class Main_Form
                             Dim color_deviation_threshold As Double = (percent_of_color_deviation / 100) * 255 * 3
                             Dim edgeOverlap As Integer = 2
 
-                            Using displayedBitmap As Bitmap = CreateDisplayedImageBitmap(active_Bitmap, imageRect.Size, Me.BackColor)
+                            Using displayedBitmap As Bitmap = CreateDisplayedImageBitmap(active_Bitmap, imageRect.Size, Me.BackColor),
+                                  edgeSampler As EdgeSampler = EdgeSampler.TryCreate(displayedBitmap)
                                 Using g As Graphics = Graphics.FromImage(Perspective_Bitmap)
                                     g.CompositingMode = Drawing2D.CompositingMode.SourceCopy
 
                                     If bitmap_proportion < pictureBox_proportion Then
-                                        Dim leftColors As List(Of Color) = GetDisplayedVerticalEdgeColors(displayedBitmap, targetHeight, imageRect, True)
-                                        Dim rightColors As List(Of Color) = GetDisplayedVerticalEdgeColors(displayedBitmap, targetHeight, imageRect, False)
+                                        Dim leftColors As List(Of Color) = GetDisplayedVerticalEdgeColors(edgeSampler, targetHeight, imageRect, True)
+                                        Dim rightColors As List(Of Color) = GetDisplayedVerticalEdgeColors(edgeSampler, targetHeight, imageRect, False)
                                         Dim leftRect As New Rectangle(0, 0, Math.Min(targetWidth, imageRect.Left + edgeOverlap), targetHeight)
                                         Dim rightStart As Integer = Math.Max(0, imageRect.Right - edgeOverlap)
                                         Dim rightRect As New Rectangle(rightStart, 0, targetWidth - rightStart, targetHeight)
@@ -510,8 +489,8 @@ Partial Public Class Main_Form
 
                                         is_perspective_drown = didDrawLeft OrElse didDrawRight
                                     Else
-                                        Dim topColors As List(Of Color) = GetDisplayedHorizontalEdgeColors(displayedBitmap, targetWidth, imageRect, True)
-                                        Dim bottomColors As List(Of Color) = GetDisplayedHorizontalEdgeColors(displayedBitmap, targetWidth, imageRect, False)
+                                        Dim topColors As List(Of Color) = GetDisplayedHorizontalEdgeColors(edgeSampler, targetWidth, imageRect, True)
+                                        Dim bottomColors As List(Of Color) = GetDisplayedHorizontalEdgeColors(edgeSampler, targetWidth, imageRect, False)
                                         Dim topRect As New Rectangle(0, 0, targetWidth, Math.Min(targetHeight, imageRect.Top + edgeOverlap))
                                         Dim bottomStart As Integer = Math.Max(0, imageRect.Bottom - edgeOverlap)
                                         Dim bottomRect As New Rectangle(0, bottomStart, targetWidth, targetHeight - bottomStart)

@@ -12,8 +12,10 @@ Friend Module WaveParticlesConstants
 
     ' --- WAVE-PARTICLES section 3.1 - clock ---------------------------------------------------
     ' 0.13 mapped the Windows host signals, 0.14 settled the arbitration (the system wins);
-    ' both were already implemented here, so only the recorded version moves.
-    Friend Const ContractVersion As String = "0.14"
+    ' both were already implemented here, so only the recorded version moves. 0.15 (section 5) lets a
+    ' decorative surface behind text fix intensity and speed itself; the audio player backdrop is an
+    ' ambient surface with no tuning, so it owes nothing and the version moves again by record only.
+    Friend Const ContractVersion As String = "0.15"
     Friend Const ReferenceFrameSeconds As Double = 1.0R / 60.0R   ' REFERENCE_FRAME
     Friend Const TimeStep As Double = 0.002R                       ' TIME_STEP, per reference frame
     Friend Const RampFrames As Integer = 36                        ' RAMP_FRAMES (also the still-frame pass count)

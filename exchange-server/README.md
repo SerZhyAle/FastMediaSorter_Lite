@@ -1,10 +1,17 @@
 # exchange-server
 
-The exchange server of the Fast Media Sorter package: rendezvous and relay for anywhere access
-(contract `ANYWHERE-ACCESS`, specification 133). Developer notes only - the user-facing guide arrives
-with ticket 145. **Nothing here ships in any package yet**: the wire is a proposal until rung 2 freezes
-it (133 section 8), and the installers, the Share Manager entry and the firewall opt-in are tickets
+The exchange server of the Fast Media Sorter package: accounts, enrolled devices, the directory of
+resources and broadcasts, tunnels and the third-party port (contract `DEVICE-EXCHANGE` 0.17, with
+`ANYWHERE-ACCESS` 5.5 for the port; specifications 160-164). Developer notes only - the user-facing guide
+arrives with ticket 145/179. **Nothing here ships in any package yet**: the wire is a proposal until rung 2
+freezes it (133 section 8), and the installers, the Share Manager entry and the firewall opt-in are tickets
 141-144.
+
+The wire is `schemaVersion` 2. The superseded `ANYWHERE-ACCESS` 0.10 wire (`schemaVersion` 1: one server
+password, `register`/`registered`) is **not** kept alive anywhere: the number 1 appears in the code in exactly
+one place, the refusal that recognises it (`wire/codec.go`, held by a source scan). Not built yet: the
+fan-out relay (165), cast routing (166), the disk/limit guards of ticket 167 beyond what 162-164 needed, and
+the vector generator and probe (178) - see the "Implementation record" of tickets 161-164.
 
 One Go program, `fms-exchange-server.exe`, windows/amd64 first. It is pure Go with no cgo and a
 `GOOS=linux` build that must keep working (a future Linux microservice replaces `internal/deploy`,
@@ -14,19 +21,23 @@ never the protocol core).
 
 | Path | What it is |
 | --- | --- |
-| `cmd/fms-exchange-server` | the program: `serve` (console, or `--service` under the SCM), `stop`, `set-password`, `inspect`, `--version` |
-| `cmd/exchange-fakeproducer` | **manual-proof tool, its own module** (serves a real SFTP subsystem through the bridge); see `testdata/manual-winscp.md` |
-| `internal/wire` | envelopes, codec and the 4-byte length framing - the only place that builds or parses a wire byte |
-| `internal/rendezvous` | the listener's first-byte split, the registration table, keepalive, connect, `open`/`attach` tunnels |
+| `cmd/fms-exchange-server` | the program: `serve` (console, or `--service` under the SCM), `stop`, `account add/passwd/remove/list`, `device list/revoke`, `set-listen`, `set-endpoint`, `inspect`, `--version` |
+| `cmd/exchange-fakeproducer` | **manual-proof tool, its own module** (enrolls into an account, publishes a share and serves a real SFTP subsystem through the bridge); see `testdata/manual-winscp.md`; ticket 178's probe will supersede it |
+| `internal/wire` | the typed envelopes of `schemaVersion` 2, the codec, the 4-byte length framing (`MaxFrame` 16384 before `welcome`, `MaxFrameAuth` 262144 after), the verbatim records, the nine reasons, the HTTP-opening reader - the only place that builds or parses a wire byte |
+| `internal/accounts` | accounts, enrolled devices, token hashes, tombstones (`accounts.json`, `devices.json`) and the in-memory pairing codes |
+| `internal/directory` | the per-account directory: presence, `list`/`changed` with a revision per transaction, resources (on disk without `access`, `shareId`, `publicPort`) and broadcasts (memory only), `directory.json` |
+| `internal/tunnel` | the table of pending and bridged tunnels, the per-resource and per-broadcast caps, abort by resource, broadcast or device |
+| `internal/admin` | the operator's operations (shared by the running server and the offline commands) and the local admin channel protocol |
+| `internal/rendezvous` | the connection layer and the stream state machine (`conn.go`, `stream.go`: three openings on one port, TLS-only envelopes, the role of a stream) and the real `Backend` (`engine*.go`: enroll/hello, control stream, tunnels, the third-party port) |
 | `internal/relay` | the splice: opaque bytes both ways, half-close, idle timeout |
-| `internal/ports` | the per-session TCP port pool (third-party SFTP clients) |
+| `internal/ports` | the TCP port pool of published resources (third-party SFTP clients) |
 | `internal/limits` | token buckets per address and class, the Argon2id verification bound, the pre-auth stream pool |
 | `internal/logx` | the only logger: sessions are named by 8 hex characters of SHA-256, never by id |
-| `internal/password` | the owner's password policy and the Argon2id record |
+| `internal/password` | the password policy and the Argon2id record (account passwords) |
 | `internal/tlsid` | the self-signed identity, pinned by producers, never regenerated |
-| `internal/config` | `exchange.json` and the data directory |
-| `internal/deploy` | the ONLY OS-specific layer (key-directory ACL, the stop event, the SCM wrapper and the service probe of ticket 144) |
-| `internal/testkit` | wire client, fake producer with a real SSH server, a started server - used by the tests |
+| `internal/config` | `exchange.json` (no secret in it; `publicEndpoint`, limits, admin SIDs) and the data directory |
+| `internal/deploy` | the ONLY OS-specific layer (key-directory ACL, the stop event, the SCM wrapper and the service probe of ticket 144, the data-directory lock, the admin pipe or socket) |
+| `internal/testkit` | wire client, scripted devices that enroll and say hello, a producer that serves a real SSH server through the bridge, a started server - used by the tests |
 
 ## Build and test
 
@@ -80,11 +91,26 @@ outside the lock); it is fixed, and the suite passes under `-race` on Linux.
 fms-exchange-server serve [--config <file>]            console server; Ctrl+C or `stop` ends it cleanly
 fms-exchange-server stop  [--config <file>]            asks that console server to stop; does not wait for it
 fms-exchange-server serve --service [--config <file>]  only under the Windows service control manager
+fms-exchange-server account add <login> [--generate]    an account; the password is read from stdin or made by --generate and printed ONCE
+fms-exchange-server account passwd|remove|list ...      change, delete or list accounts (passwd --sign-out revokes every device)
+fms-exchange-server device list <login> | revoke <login> <deviceId>
 ```
+
+**Accounts.** `serve` refuses to start with no account (exit 3, it says how to add one). The `account` and
+`device` commands take the data directory's lock when no server holds it and edit the stores directly; when a
+server holds it they use the local admin channel instead (a named pipe `\\.\pipe\fms-exchange-admin-<8 hex>` on
+Windows - the first 4 bytes of SHA-256 over the lower-cased absolute data directory, pinned by
+`TestAdminPipeNameVector` - and a mode-0600 socket `admin.sock` elsewhere; one JSON request per connection,
+no secret ever returned; extra Windows SIDs from `admin.manageSids` in `exchange.json`). `exchange.json` holds
+no secret: accounts live in `accounts.json` (Argon2id records), devices and revoked-token tombstones in
+`devices.json` (SHA-256 of a token only), resource records and revisions in `directory.json` - never `access`,
+`shareId`, a broadcast or a pairing code. `set-endpoint <host:port|->` stores `publicEndpoint`, announced in
+`welcome` (empty: the server serves and hides `tunnel` and `relay`). A leftover `passwordHash` member of the
+superseded design is ignored, logged once as `obsolete` and removed by the next config save.
 
 **Exit codes.** 0 ok; 1 a runtime failure (for `stop`: nothing is running for that config, or the
 platform has no stop request yet); 2 usage (also `serve --service` from a console, and on Linux);
-3 no usable password / a password the policy refuses; 4 a config that cannot be read or written;
+3 a `serve` with no account to serve, or a password the policy refuses; 4 a config or a store that cannot be read or written (for `serve`, 1 also means another server holds the data directory; for `account`/`device`, 1 also means no such account or device, 2 a bad login);
 **5 a console `serve` that refused to start because the Media Exchange Server service is running or its
 process holds the configured listen port** ("the service wins", 133 section 6.1). A stop request is
 delivered with exit 0; the `stop` line in the log is how a caller sees that the server really closed.
@@ -118,18 +144,21 @@ port comes from the TCP table). A probe that cannot answer (no SCM access) never
 it prints a warning and the listen decides. The probe is `deploy.Probe`, replaceable in tests.
 ## Settled behaviour worth knowing before changing it
 
-* **One answer for unknown, ended and full.** `refused {reason:"unavailable"}` after a fixed minimum
-  delay. `TestUnavailableIsOneAnswerForUnknownEndedAndFull` compares the bytes and the timing.
+* **One answer for unknown, ended, foreign, offline and full.** `refused {reason:"unavailable"}` after a fixed minimum
+  delay measured from the connect. `TestUnavailableIsOneAnswerForUnknownEndedForeignOfflineAndFull` compares the bytes and the timing.
 * **Take a token before the expensive step, refund it on success** (`limits.Limiter.Refund`). Taking it
   after would let a parallel wave pass a "has a token" check before the first failure was counted.
 * **The control stream carries envelopes only, for its whole life.** Every tunnel gets its own data
-  stream through `open` / `attach`; after `connected` (or at once on a per-session port) a stream is
-  raw bytes. The frame reader reads exactly one frame so nothing behind it is lost.
+  stream through `open` / `attach`; after `connected` (or at once on a published resource's port) a stream is
+  raw bytes. A plain stream is answered only with a refusal (`tls-required`, `version-unsupported`); every
+  `enroll`, `hello` and `connect` runs inside TLS (`DEVICE-EXCHANGE` 15 item V). The frame reader reads exactly one frame so nothing behind it is lost.
 * **The rate defaults depart from ticket 139 in one number:** `connection` is 120/min with a burst of
   40, not 30/10. One SFTP client opens up to 15 sessions through the exchange, each a connection from
   the same address; a burst of 10 would turn it away. Working defaults until rung 2.
-* **A dropped control stream does not end a registration**; only a missed keepalive window or
-  `unregister` does, so a producer that reconnects inside the window can resume (`resumeToken`).
+* **Presence is the control stream.** A device is online while its control stream lives and offline after a
+  `bye` or three missed keepalive intervals; offline keeps its resources listed without `access`, `shareId` and
+  port lease and ENDS its broadcasts, in one transaction with one revision. A second control stream of the
+  same device replaces the first and everything carries over.
 * **The logger takes typed fields only.** `internal/logx/guard_test.go` fails on `log`, `log/slog`,
   direct writes to the standard streams outside `cmd/`, and an id or a password passed to `logx.Text`.
   Every test that starts a server also checks, at its end, that no secret it handled is in the log.
@@ -137,3 +166,7 @@ it prints a warning and the listen decides. The probe is `deploy.Probe`, replace
 ### set-listen
 
 `fms-exchange-server set-listen [--config <file>] <host:port>` stores the rendezvous listen address (for example `:22022`), validated by the rules `serve` uses, and keeps every other member. A UI changes the port through it instead of editing the JSON. A running server reads the file only at start. `config.Save` rewrites the file in place when the caller may modify it but not add files to its directory (the service directory of ticket 144).
+
+### set-endpoint
+
+`fms-exchange-server set-endpoint [--config <file>] <host:port>` stores the public address announced in `welcome.publicEndpoint` (validated like any address, never loopback or a wildcard); `-` clears it. Like `set-listen`, a running server reads it only at start.

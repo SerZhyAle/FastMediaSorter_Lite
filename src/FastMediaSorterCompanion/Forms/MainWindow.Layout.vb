@@ -211,8 +211,10 @@ Partial Public NotInheritable Class MainWindow
         ' silently does nothing is worse than one that shows it has nothing to act on.
         btnParams = New Button With {.AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink, .Padding = New Padding(10, 5, 10, 5),
             .Text = Localization.T("Редактировать"), .Enabled = False}
+        ' Absent, not disabled, until the build offers the page AND the worker states it serves it (spec 159):
+        ' ApplyStatusToUi is the one place that shows it.
         btnBroadcasts = New Button With {.AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink, .Padding = New Padding(10, 5, 10, 5),
-            .Text = Localization.T("Трансляции..")}
+            .Text = Localization.T("Трансляции.."), .Visible = False}
         AddHandler btnAdd.Click, AddressOf OnAddFolder
         AddHandler btnAddCurrent.Click, AddressOf OnAddCurrentFolder
         AddHandler btnRemove.Click, AddressOf OnRemoveFolder

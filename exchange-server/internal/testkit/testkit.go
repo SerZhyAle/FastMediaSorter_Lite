@@ -1,6 +1,7 @@
 // Package testkit is the harness shared by the module's tests, the in-process end-to-end proof and
-// the manual-proof binary cmd/exchange-fakeproducer: a wire client, a fake producer that serves a
-// real SSH server behind its attach streams, and a started server on loopback.
+// the manual-proof binary cmd/exchange-fakeproducer: a wire client that speaks DEVICE-EXCHANGE
+// section 7, a device that enrolls and says hello, a producer that serves a real SSH server behind
+// its attach streams, and a started server on loopback.
 //
 // It is not part of the shipped binary (nothing under cmd/fms-exchange-server imports it).
 package testkit
@@ -11,20 +12,12 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"errors"
-	"fmt"
 	"net"
-	"path/filepath"
 	"strconv"
-	"sync"
 	"time"
 
 	"golang.org/x/crypto/ssh"
 
-	"fms/exchange-server/internal/limits"
-	"fms/exchange-server/internal/logx"
-	"fms/exchange-server/internal/password"
-	"fms/exchange-server/internal/ports"
-	"fms/exchange-server/internal/rendezvous"
 	"fms/exchange-server/internal/tlsid"
 	"fms/exchange-server/internal/wire"
 )
@@ -47,22 +40,31 @@ type Conn struct {
 	fw *wire.FrameWriter
 }
 
-// NewConn wraps c.
+// NewConn wraps c under the pre-authentication frame limit; call Authenticated after welcome.
 func NewConn(c net.Conn) *Conn {
-	return &Conn{Conn: c, fr: wire.NewFrameReader(c), fw: wire.NewFrameWriter(c)}
+	return &Conn{Conn: c, fr: wire.NewFrameReader(c, wire.MaxFrame), fw: wire.NewFrameWriter(c, wire.MaxFrame)}
+}
+
+// Authenticated raises the frame limit both ways, as the server did when it sent welcome or enrolled.
+func (c *Conn) Authenticated() {
+	c.fr.SetLimit(wire.MaxFrameAuth)
+	c.fw.SetLimit(wire.MaxFrameAuth)
 }
 
 // Send writes one envelope.
-func (c *Conn) Send(m wire.Message) error { return c.fw.Write(m) }
+func (c *Conn) Send(e wire.Envelope) error { return c.fw.Write(e) }
 
-// Recv reads one envelope, failing after timeout.
-func (c *Conn) Recv(timeout time.Duration) (wire.Message, error) {
+// SendRaw writes bytes as they are (a frame built by hand, or bytes behind a frame).
+func (c *Conn) SendRaw(b []byte) error { _, err := c.Conn.Write(b); return err }
+
+// Recv reads one envelope (an unknown type comes back as *wire.Unknown), failing after timeout.
+func (c *Conn) Recv(timeout time.Duration) (wire.Envelope, error) {
 	_ = c.SetReadDeadline(time.Now().Add(timeout))
 	defer c.SetReadDeadline(time.Time{})
 	return c.fr.Read()
 }
 
-// DialTLS connects over TLS the way a producer does: no name check, the certificate pinned by its
+// DialTLS connects over TLS the way a device does: no name check, the certificate pinned by its
 // fingerprint when pin is not empty.
 func DialTLS(addr, pin string) (*Conn, error) {
 	cfg := &tls.Config{
@@ -95,128 +97,10 @@ func DialPlain(addr string) (*Conn, error) {
 	return NewConn(c), nil
 }
 
-// --- the fake producer ---
-
-// Producer is a producer's side of the wire: it registers, answers the control stream and opens a
-// data stream for every `open`, handing that stream to Handler.
-type Producer struct {
-	Addr      string
-	Pin       string
-	Password  string
-	ShareID   string
-	Keepalive int
-	Port      *int
-	Handler   func(net.Conn)
-	// Secret is told about every secret the producer learns (resume token, tunnel ids), so a test
-	// can prove none of them reaches a log.
-	Secret func(string)
-
-	mu         sync.Mutex
-	control    *Conn
-	registered wire.Message
-}
-
-// Register dials, registers (resuming with the stored token when there is one) and returns the
-// server's answer. On `registered` the control stream is kept.
-func (p *Producer) Register() (wire.Message, error) {
-	c, err := DialTLS(p.Addr, p.Pin)
-	if err != nil {
-		return wire.Message{}, err
-	}
-	m := wire.New(wire.TypeRegister)
-	m.Password, m.ShareID, m.KeepaliveSeconds, m.Port = p.Password, p.ShareID, p.Keepalive, p.Port
-	p.mu.Lock()
-	m.ResumeToken = p.registered.ResumeToken
-	p.mu.Unlock()
-	if err := c.Send(m); err != nil {
-		_ = c.Close()
-		return wire.Message{}, err
-	}
-	reply, err := c.Recv(5 * time.Second)
-	if err != nil {
-		_ = c.Close()
-		return wire.Message{}, err
-	}
-	if reply.Type != wire.TypeRegistered {
-		_ = c.Close()
-		return reply, nil
-	}
-	p.mu.Lock()
-	p.control, p.registered = c, reply
-	p.mu.Unlock()
-	if p.Secret != nil {
-		p.Secret(reply.ResumeToken)
-	}
-	return reply, nil
-}
-
-// Registered is the last `registered` answer.
-func (p *Producer) Registered() wire.Message {
-	p.mu.Lock()
-	defer p.mu.Unlock()
-	return p.registered
-}
-
-// Control is the control stream.
-func (p *Producer) Control() *Conn {
-	p.mu.Lock()
-	defer p.mu.Unlock()
-	return p.control
-}
-
-// Serve answers the control stream until it closes: an `open` starts an attach. Run it in a goroutine.
-func (p *Producer) Serve() {
-	c := p.Control()
-	for {
-		m, err := c.fr.Read()
-		if err != nil {
-			return
-		}
-		if m.Type == wire.TypeOpen {
-			if p.Secret != nil {
-				p.Secret(m.TunnelID)
-			}
-			go p.Attach(m.TunnelID)
-		}
-	}
-}
-
-// Attach opens a data stream for one tunnel and hands it to Handler.
-func (p *Producer) Attach(tunnelID string) {
-	c, err := DialTLS(p.Addr, p.Pin)
-	if err != nil {
-		return
-	}
-	m := wire.New(wire.TypeAttach)
-	m.ShareID, m.TunnelID = p.ShareID, tunnelID
-	if err := c.Send(m); err != nil {
-		_ = c.Close()
-		return
-	}
-	p.Handler(c.Conn)
-}
-
-// SendKeepalive sends one keepalive on the control stream and waits for the echo.
-func (p *Producer) SendKeepalive() error {
-	c := p.Control()
-	if err := c.Send(wire.New(wire.TypeKeepalive)); err != nil {
-		return err
-	}
-	m, err := c.Recv(5 * time.Second)
-	if err != nil {
-		return err
-	}
-	if m.Type != wire.TypeKeepalive {
-		return fmt.Errorf("testkit: expected keepalive, got %s", m.Type)
-	}
-	return nil
-}
-
-// Close closes the control stream.
-func (p *Producer) Close() {
-	if c := p.Control(); c != nil {
-		_ = c.Close()
-	}
+// RawFrame frames a JSON body by hand, for envelopes the codec would not build.
+func RawFrame(body string) []byte {
+	n := len(body)
+	return append([]byte{byte(n >> 24), byte(n >> 16), byte(n >> 8), byte(n)}, body...)
 }
 
 // --- a real SSH server and client ---
@@ -316,56 +200,6 @@ func SSHExec(conn net.Conn, user, pw, cmd string) (string, error) {
 	return string(out), err
 }
 
-// --- a started server ---
-
-// Options tune StartServer; a zero field keeps the test default.
-type Options struct {
-	Params      *rendezvous.Params
-	Limits      *limits.Config
-	PortRange   [2]int // zero: no pool
-	VerifyConc  int
-	VerifyWait  time.Duration
-	PreAuthSlot int
-	Now         func() time.Time
-	// Verify replaces the password check (a test that must hold a verification in flight).
-	Verify func(string) bool
-}
-
-// Env is a running server.
-type Env struct {
-	Server      *rendezvous.Server
-	Addr        string
-	Host        string
-	Fingerprint string
-	Password    string
-	Log         *logx.Capture
-	Limiter     *limits.Limiter
-	Verifier    *limits.Verifier
-	Pool        *ports.Pool
-	Params      rendezvous.Params
-
-	secretMu sync.Mutex
-	secrets  []string
-}
-
-// TestPassword is the password every started server accepts.
-const TestPassword = "Passw0rdTest"
-
-// cheap Argon2id so a test run does not spend seconds on the hash.
-var cheap = password.Params{Time: 1, Memory: 8, Threads: 1, KeyLen: 32}
-
-// TestParams are defaults tuned for tests: short delays and windows.
-func TestParams() rendezvous.Params {
-	p := rendezvous.DefaultParams()
-	p.PendingWindow = 2 * time.Second
-	p.UnavailableDelay = 60 * time.Millisecond
-	p.IdleTimeout = 10 * time.Second
-	p.PeekTimeout = time.Second
-	p.FirstFrameTimeout = 2 * time.Second
-	p.SweepInterval = 50 * time.Millisecond
-	return p
-}
-
 // FreeRange finds n consecutive loopback ports that can be bound right now.
 func FreeRange(n int) (lo, hi int) {
 	for base := 41000; base < 60000; base += 37 {
@@ -387,97 +221,4 @@ func FreeRange(n int) (lo, hi int) {
 		}
 	}
 	panic("testkit: no free port range")
-}
-
-// StartServer starts a server on 127.0.0.1 with a fresh identity and the test password.
-func StartServer(t TB, opt Options) *Env {
-	t.Helper()
-	dir := t.TempDir()
-	id, err := tlsid.LoadOrCreate(filepath.Join(dir, "cert.pem"), filepath.Join(dir, "key.pem"), nil)
-	if err != nil {
-		t.Fatalf("identity: %v", err)
-	}
-	rec, err := password.HashWith(TestPassword, cheap)
-	if err != nil {
-		t.Fatalf("hash: %v", err)
-	}
-	env := &Env{Params: TestParams(), Password: TestPassword, Fingerprint: id.Fingerprint, Log: logx.NewCapture()}
-	if opt.Params != nil {
-		env.Params = *opt.Params
-	}
-	lc := limits.DefaultConfig()
-	if opt.Limits != nil {
-		lc = *opt.Limits
-	}
-	env.Limiter = limits.NewLimiter(lc, opt.Now)
-	conc, wait := opt.VerifyConc, opt.VerifyWait
-	if conc == 0 {
-		conc = 2
-	}
-	if wait == 0 {
-		wait = 2 * time.Second
-	}
-	verify := opt.Verify
-	if verify == nil {
-		verify = func(p string) bool { return password.Verify(rec, p) }
-	}
-	env.Verifier = limits.NewVerifier(verify, conc, wait)
-	slots := opt.PreAuthSlot
-	if slots == 0 {
-		slots = 16
-	}
-	if opt.PortRange[0] != 0 {
-		env.Pool = ports.NewPool(opt.PortRange[0], opt.PortRange[1], "127.0.0.1", nil, opt.Now)
-	}
-	ln, err := net.Listen("tcp", "127.0.0.1:0")
-	if err != nil {
-		t.Fatalf("listen: %v", err)
-	}
-	env.Addr = ln.Addr().String()
-	env.Host = "127.0.0.1"
-	env.Server = rendezvous.New(rendezvous.Config{
-		Params:   env.Params,
-		TLS:      &tls.Config{Certificates: []tls.Certificate{id.Cert}, MinVersion: tls.VersionTLS12},
-		Verifier: env.Verifier, Limiter: env.Limiter, PreAuth: limits.NewPreAuth(slots),
-		Pool: env.Pool, Log: env.Log.Logger, Now: opt.Now,
-	})
-	go func() { _ = env.Server.Serve(ln) }()
-	t.Cleanup(env.Server.Close)
-	// Every test of every package that starts a server also proves, at its end, that no secret it
-	// handled reached the log (ticket 139 acceptance 1). Cleanups run last-in first-out, so this
-	// one runs before the server closes.
-	t.Cleanup(func() { env.AssertLogsClean(t) })
-	return env
-}
-
-// NewProducer returns a producer for this server with a fresh share id and an SSH server behind it.
-// Every secret it learns is remembered, and AssertLogsClean checks none of them is in the log.
-func (e *Env) NewProducer(sshPassword string) *Producer {
-	cfg := SSHServerConfig(sshPassword)
-	p := &Producer{
-		Addr: e.Addr, Pin: e.Fingerprint, Password: e.Password, ShareID: wire.NewID(), Keepalive: 30,
-		Handler: func(c net.Conn) { ServeSSH(c, cfg) },
-		Secret:  e.AddSecret,
-	}
-	e.AddSecret(p.ShareID)
-	return p
-}
-
-// AddSecret records a value that must never appear in a log line.
-func (e *Env) AddSecret(s string) {
-	if s == "" {
-		return
-	}
-	e.secretMu.Lock()
-	e.secrets = append(e.secrets, s)
-	e.secretMu.Unlock()
-}
-
-// AssertLogsClean fails if any recorded secret, or the server password, is in the captured log.
-func (e *Env) AssertLogsClean(t TB) {
-	t.Helper()
-	e.secretMu.Lock()
-	all := append([]string{e.Password}, e.secrets...)
-	e.secretMu.Unlock()
-	e.Log.AssertNone(t, all...)
 }

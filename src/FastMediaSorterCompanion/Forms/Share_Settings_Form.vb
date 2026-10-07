@@ -286,14 +286,14 @@ Partial Public NotInheritable Class Share_Settings_Form
         AddHelpLink(sec, Localization.T("Приложение для Android"),
                     Sub() NetworkInfo.OpenInBrowser(ShareGuide.AndroidSite()))
         AddHelpLink(sec, Localization.T("Как публиковать папки (сайт)"),
-                    Sub() NetworkInfo.OpenInBrowser(ShareGuide.SiteGuideUrl))
+                    Sub() NetworkInfo.OpenInBrowser(ShareLinks.Localized(ShareGuide.SiteGuideUrl)))
         lnkRouterSearch = AddHelpLink(sec, Localization.T("Инструкция для моей модели роутера"),
                                       AddressOf OnRouterSearchClicked)
         ' The search walks the port-forward instructions for the model it finds; without a
         ' running share there is no forwarding to instruct - the status strip disabled the
         ' item for the same reason.
         lnkRouterSearch.Enabled = _status IsNot Nothing AndAlso _status.Running
-        AddHelpLink(sec, Localization.TF("Открыть {0}", ProductNames.CompactForLabel),
+        AddHelpLink(sec, Localization.TF("Открыть {0}", ProductNames.ShortLegacy),
                     AddressOf OnOpenViewerClicked)
     End Sub
 

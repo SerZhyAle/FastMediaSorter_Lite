@@ -48,6 +48,45 @@ Public Class IconographyContractTests
     End Sub
 
     <Fact>
+    Public Sub The_rows_still_waiting_on_the_catalog_are_exactly_these_four()
+        ' ICON-SET rule 5 / registry exception: a control whose meaning has no usable catalog
+        ' picture keeps its own under a dated exception. The list is pinned by name so a row
+        ' joins or leaves it on purpose, in the same edit as the exception that records it.
+        ' Left in 2026-10-07: btn_ToVideo (action.convert-to-video arrived with ICON-SET 0.21 and a
+        ' glyph file in 0.28). Still here: the random slideshow and the two filled shapes wait for
+        ' the variants the catalog still owes; the password eye waits for the Share Manager to adopt
+        ' action.reveal (its off form's file is owed too).
+        Dim waiting = IconMap.All.Where(Function(m) Not m.IsVocabulary).Select(Function(m) m.ControlName).OrderBy(Function(n) n, StringComparer.Ordinal).ToArray()
+        Assert.Equal(New String() {"btnRevealPassword", "btn_Random_Slideshow", "editor_Tool_Oval_Filled", "editor_Tool_Rectangle_Filled"}, waiting)
+    End Sub
+
+    <Fact>
+    Public Sub The_meanings_the_2026_10_07_catalog_delivered_are_in_the_vendored_vocabulary()
+        ' ICON-SET 0.28: action.convert-to-video and app.language carry a drawing of their own,
+        ' view.table and feature.drawing exist as records. This product draws only the first (the
+        ' animation-to-video button); the others have no control here, so only their records are
+        ' asserted - the day one gets a control, it takes its row in IconMap.
+        Dim ids = VocabularyIds()
+        For Each id As String In New String() {"action.convert-to-video", "app.language", "view.table", "feature.drawing"}
+            Assert.True(ids.ContainsKey(id), id & " is not in the vendored vocabulary")
+        Next
+        Assert.Equal("action.convert-to-video", IconMap.GetMeaning("btn_ToVideo").GlyphId)
+        Assert.True(File.Exists(Path.Combine(GlyphDir, "action.convert-to-video.svg")))
+    End Sub
+
+    <Fact>
+    Public Sub The_brush_tool_is_not_drawn_as_the_edit_pencil()
+        ' ICON-SET 0.28 item A: tool.brush is the Material brush, never the pencil that
+        ' action.edit and action.rename share; the editor's brush button and the toolbar's edit
+        ' button sit one window apart.
+        Dim brush As String = Regex.Match(File.ReadAllText(Path.Combine(GlyphDir, "tool.brush.svg")), "\bd=""([^""]+)""").Groups(1).Value
+        Dim pencil As String = Regex.Match(File.ReadAllText(Path.Combine(GlyphDir, "action.edit.svg")), "\bd=""([^""]+)""").Groups(1).Value
+        Assert.NotEmpty(brush)
+        Assert.NotEmpty(pencil)
+        Assert.NotEqual(pencil, brush)
+    End Sub
+
+    <Fact>
     Public Sub One_glyph_never_stands_for_two_meanings()
         ' ICON-SET rule 1: controls that share a glyph must share its name too (the two
         ' overflow buttons are one meaning on two rows).

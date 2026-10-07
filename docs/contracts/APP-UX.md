@@ -3,7 +3,7 @@
 | | |
 | --- | --- |
 | **Ids** | `APP-BEHAVIOUR`, `APP-STYLE`, `APP-SETTINGS`, `WINDOWS-UI` |
-| **Version** | 0.12 / 0.12 / 0.2 / 0.1, draft. Windows profile and amendments read 2026-10-05; general behaviour retains its 2026-10-02 audit. Owners: StreamsPlayer, CyrFlip, and this Windows reference respectively |
+| **Version** | catalog 0.12 / 0.12 / 0.3 / 0.3, draft (read 2026-10-07). Behaviour and style keep their 2026-10-02 audit (`APP-BEHAVIOUR` is unchanged since 0.12, `APP-STYLE` 0.12 section 10 was read 2026-10-05); the 0.2 / 0.3 amendments of `WINDOWS-UI` and `APP-SETTINGS` were read 2026-10-07. Owners: StreamsPlayer (the first two), CyrFlip, and this Windows reference respectively |
 | **Home** | `desktop-app-ux/README.md` in the shared contracts catalog |
 | **Role here** | consumer, twice - the viewer (.NET 10 mainline) and the Share Manager each have their own registry row; audit and phases in `specification 028` (local specification) |
 
@@ -60,16 +60,34 @@
   from accessibility properties. Later findings of audit 122 remain separate open follow-ups.
 - The net48 x86 fallback takes bug fixes only; its gaps are one dated exception in the registry.
 
-## Windows reference profile - owner decision 2026-10-05
+## Windows reference profile - owner decision 2026-10-05, read again 2026-10-07
 
-`WINDOWS-UI` 0.1 is the shared Windows settings/dialog/working-viewer profile requested by the portfolio
-owner. `APP-SETTINGS` 0.2 section 8 accepts the previously proposed independent groups and remembered
-context; `APP-STYLE` 0.12 section 10 clarifies complete theme lifecycle coverage. Earlier 0.1 references
-above describe historical audit evidence, not the current catalog version.
+`WINDOWS-UI` is the shared Windows settings/dialog/working-viewer profile requested by the portfolio owner
+(0.1 on 2026-10-05; 0.2 and 0.3 on 2026-10-07). `APP-SETTINGS` 0.2 section 8 accepts the independent groups and
+remembered context; `APP-STYLE` 0.12 section 10 clarifies complete theme lifecycle coverage. The modern viewer
+is the reference. Adopt by id and section; the shared catalog holds the normative text and the source-derived
+metric/hash artifact.
 
-The modern viewer is the reference. Adopt by ID and section; the shared catalog holds the normative
-text and source-derived metric/hash artifact. Full runtime, physical DPI, high-contrast and spoken
-accessibility conformance remains separately verified. The net48 maintenance policy is unchanged.
+What the 2026-10-07 versions ask, and where this product stands (source read, nothing driven; the line-level
+record is in the registry rows and in the addendum of the [Windows UI audit](../guides/WINDOWS_UI_AUDIT.md)):
+
+- `WINDOWS-UI` 0.3 section 2 item 6 (destinations under a navigation group header stand one indent in): not
+  applicable today - the viewer's settings navigation is a flat list of eleven pages and the Share Manager has no
+  navigation list. It binds the day either gets a group header.
+- `WINDOWS-UI` 0.2 section 5 (a page is laid out once; a scroll position is restored only after that layout)
+  and section 9 (every page and secondary window is timed): in both settings windows the restore already runs
+  after layout and the viewer's window is built under one suspended layout, but a page switch and a group toggle
+  are not held and re-measure every page, and no first-visit, repeat-visit or dialog time has been measured.
+  A dated exception in the registry, until 2026-12-31.
+- `APP-SETTINGS` 0.3 section 9 (an irreversible operation on a page of a surface with no Commit): the viewer's
+  settings apply on touch and close with Close, so the section applies. Its cache Clear buttons, "restore
+  defaults" and the settings import are buttons with their own confirmation (safe answer focused), and no value
+  control starts one. Two gaps are recorded: a Clear asks even when the cache is empty, and the static sweep of
+  rung 3 is not built. Spec 169 (reset all settings, About page) is the planned operation this section makes
+  permissible; it is not built, and it should cite section 9.
+
+Full runtime, physical DPI, high-contrast and spoken-accessibility conformance remains separately verified, and
+the net48 maintenance policy is unchanged.
 
 The [2026-10-05 Windows UI audit](../guides/WINDOWS_UI_AUDIT.md) records a bounded construction/theme pass
 over all 37 viewer and Share Manager form types, seven rendered dialog types, native numeric checks,

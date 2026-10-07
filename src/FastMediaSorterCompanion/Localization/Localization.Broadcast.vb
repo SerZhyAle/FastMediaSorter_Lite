@@ -239,21 +239,24 @@ Partial Public NotInheritable Class Localization
             "!نشریات کامیابی سے بن گئی ہے" & vbCrLf & vbCrLf & ":پر فوری پلے لنک کلپ بورڈ پر کاپی ہو گیا ہے StreamsPlayer" & vbCrLf & "{0}",
             "广播创建成功！" & vbCrLf & vbCrLf & "StreamsPlayer 快速播放链接已复制到剪贴板：" & vbCrLf & "{0}")
 
-        Add("Не удалось создать трансляцию.",
-            "Failed to create broadcast.", "Не вдалося створити трансляцію.",
-            "Übertragung konnte nicht erstellt werden.", "Impossibile creare la trasmissione.",
-            "No se pudo crear la transmisión.", "Échec de la création de la diffusion.",
-            "Não foi possível criar a transmissão.", ".فشل إنشاء البث",
-            "प्रसारण बनाने में विफल।", "সম্প্রচার তৈরি করতে ব্যর্থ হয়েছে।",
-            "نشریات بنانے میں ناکام۔", "创建广播失败。")
+        ' Spec 159 section 3.3: the two sentences the broadcasts page shows inline. The product name is a
+        ' placeholder ({0} = ProductNames.ShortLegacy), never spelled in a table. The old "update to broadcast"
+        ' key and the create-failure key are gone: every failure now maps to one of these reasons.
+        Add("Эта версия службы трансляций устарела. Обновите {0}.",
+            "This version of the broadcast service is out of date. Update {0}.", "Ця версія служби трансляцій застаріла. Оновіть {0}.",
+            "Diese Version des Übertragungsdienstes ist veraltet. Aktualisieren Sie {0}.", "Questa versione del servizio di trasmissione è obsoleta. Aggiorna {0}.",
+            "Esta versión del servicio de transmisión está obsoleta. Actualiza {0}.", "Cette version du service de diffusion est obsolète. Mettez à jour {0}.",
+            "Esta versão do serviço de transmissão está desatualizada. Atualize o {0}.", "إصدار خدمة البث هذا قديم. قم بتحديث {0}.",
+            "प्रसारण सेवा का यह संस्करण पुराना है। {0} को अपडेट करें।", "সম্প্রচার পরিষেবার এই সংস্করণটি পুরোনো। {0} আপডেট করুন।",
+            "نشریاتی سروس کا یہ ورژن پرانا ہے۔ {0} کو اپ ڈیٹ کریں۔", "此版本的广播服务已过时。请更新 {0}。")
 
-        Add("Обновите Fast Media Sorter для поддержки трансляций.",
-            "Update Fast Media Sorter to broadcast.", "Оновіть Fast Media Sorter для підтримки трансляцій.",
-            "Aktualisieren Sie Fast Media Sorter für Übertragungen.", "Aggiorna Fast Media Sorter per supportare le trasmissioni.",
-            "Actualiza Fast Media Sorter para admitir transmisiones.", "Mettez à jour Fast Media Sorter pour prendre en charge les diffusions.",
-            "Atualize o Fast Media Sorter para suportar transmissões.", ".لدعم البث Fast Media Sorter قم بتحديث",
-            "प्रसारण के लिए Fast Media Sorter को अपडेट करें।", "সম্প্রচারের জন্য Fast Media Sorter আপডেট করুন।",
-            "کو اپ ڈیٹ کریں۔ Fast Media Sorter نشریات کے لیے", "更新 Fast Media Sorter 以支持广播。")
+        Add("Не удалось выполнить действие. Подробности в журнале.",
+            "The action could not be completed. Details are in the log.", "Не вдалося виконати дію. Подробиці в журналі.",
+            "Die Aktion konnte nicht ausgeführt werden. Details stehen im Protokoll.", "Impossibile eseguire l'azione. I dettagli sono nel registro.",
+            "No se pudo completar la acción. Los detalles están en el registro.", "Impossible d'effectuer l'action. Les détails figurent dans le journal.",
+            "Não foi possível concluir a ação. Os detalhes estão no registo.", "تعذر تنفيذ الإجراء. التفاصيل في السجل.",
+            "कार्रवाई पूरी नहीं हो सकी। विवरण लॉग में है।", "কাজটি সম্পন্ন করা যায়নি। বিস্তারিত লগে আছে।",
+            "کارروائی مکمل نہیں ہو سکی۔ تفصیلات لاگ میں ہیں۔", "无法完成该操作。详细信息见日志。")
 
         Add("Ссылка на трансляцию скопирована в буфер обмена.",
             "Broadcast link copied to clipboard.", "Посилання на трансляцію скопійовано в буфер обміну.",

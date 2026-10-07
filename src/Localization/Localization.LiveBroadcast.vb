@@ -256,6 +256,59 @@ Partial Public NotInheritable Class Localization
             "फिर से कनेक्ट करें", "আবার সংযোগ করুন",
             "دوبارہ منسلک کریں", "重新连接")
 
+        Add("Адреса в списке - последние известные: устройство могло перестать вещать или сменить порт.",
+            "Addresses in the list are the last known ones: the device may have stopped broadcasting or changed its port.",
+            "Адреси в списку - останні відомі: пристрій міг припинити мовлення або змінити порт.",
+            "Die Adressen in der Liste sind die zuletzt bekannten: Das Gerät hat möglicherweise aufgehört zu senden oder den Port gewechselt.",
+            "Gli indirizzi nell'elenco sono gli ultimi noti: il dispositivo potrebbe aver smesso di trasmettere o aver cambiato porta.",
+            "Las direcciones de la lista son las últimas conocidas: el dispositivo puede haber dejado de emitir o haber cambiado de puerto.",
+            "Les adresses de la liste sont les dernières connues : l'appareil a pu cesser d'émettre ou changer de port.",
+            "Os endereços da lista são os últimos conhecidos: o dispositivo pode ter parado de transmitir ou mudado de porta.",
+            ".العناوين في القائمة هي آخر عناوين معروفة: ربما توقف الجهاز عن البث أو غيّر المنفذ",
+            "सूची के पते अंतिम ज्ञात पते हैं: उपकरण ने प्रसारण बंद कर दिया हो या पोर्ट बदल लिया हो सकता है।",
+            "তালিকার ঠিকানাগুলি সর্বশেষ জানা ঠিকানা: ডিভাইসটি সম্প্রচার বন্ধ করে থাকতে পারে বা পোর্ট বদলাতে পারে।",
+            ".فہرست میں موجود پتے آخری معلوم پتے ہیں: ہو سکتا ہے ڈیوائس نے نشریات بند کر دی ہوں یا پورٹ بدل لیا ہو",
+            "列表中的地址是最后已知的地址：设备可能已停止广播或更换了端口。")
+
+        Add("Трансляция остановлена",
+            "Broadcast stopped", "Трансляцію зупинено",
+            "Übertragung gestoppt", "Trasmissione interrotta",
+            "Transmisión detenida", "Diffusion arrêtée",
+            "Transmissão parada", "توقف البث",
+            "प्रसारण रोक दिया गया", "সম্প্রচার থামানো হয়েছে",
+            "نشریات روک دی گئی", "直播已停止")
+
+        ' --- Settings: the explicit, reversible .fmsbcast association (never done by the installer) ---
+        Add("Файлы .fmsbcast (live-трансляции)",
+            ".fmsbcast files (live broadcasts)", "Файли .fmsbcast (live-трансляції)",
+            ".fmsbcast-Dateien (Live-Übertragungen)", "File .fmsbcast (trasmissioni live)",
+            "Archivos .fmsbcast (transmisiones en vivo)", "Fichiers .fmsbcast (diffusions en direct)",
+            "Arquivos .fmsbcast (transmissões ao vivo)", "ملفات ‎.fmsbcast (بث مباشر)",
+            ".fmsbcast फ़ाइलें (लाइव प्रसारण)", ".fmsbcast ফাইল (লাইভ সম্প্রচার)",
+            ".fmsbcast فائلیں (لائیو نشریات)", ".fmsbcast 文件（实时直播）")
+
+        Add("Файлы .fmsbcast присылают телефон и часы, когда вещают звук. Если у них ещё нет программы по умолчанию, их будет открывать эта; чужую запись она не заменяет, а только появляется в меню «Открыть с помощью».",
+            "Phones and watches send .fmsbcast files when they broadcast sound. If these files have no default program yet, this one will open them; it never replaces someone else's entry and then only appears in the Open with menu.",
+            "Файли .fmsbcast надсилають телефон і годинник, коли транслюють звук. Якщо в них ще немає програми за замовчуванням, їх відкриватиме ця; чужий запис вона не замінює, а лише з'являється в меню «Відкрити за допомогою».",
+            "Smartphones und Uhren senden .fmsbcast-Dateien, wenn sie Ton übertragen. Hat diese Dateien noch kein Standardprogramm, öffnet dieses Programm sie; einen fremden Eintrag ersetzt es nie und erscheint dann nur im Menü «Öffnen mit».",
+            "Telefoni e smartwatch inviano file .fmsbcast quando trasmettono audio. Se questi file non hanno ancora un programma predefinito, li aprirà questo; non sostituisce mai la voce di un altro programma e compare solo nel menu «Apri con».",
+            "Los teléfonos y relojes envían archivos .fmsbcast cuando emiten sonido. Si estos archivos aún no tienen un programa predeterminado, los abrirá este; nunca reemplaza la entrada de otro programa y solo aparece en el menú «Abrir con».",
+            "Les téléphones et les montres envoient des fichiers .fmsbcast lorsqu'ils diffusent du son. Si ces fichiers n'ont pas encore de programme par défaut, celui-ci les ouvrira ; il ne remplace jamais l'entrée d'un autre programme et apparaît alors seulement dans le menu «Ouvrir avec».",
+            "Telefones e relógios enviam arquivos .fmsbcast quando transmitem som. Se esses arquivos ainda não têm um programa padrão, este os abrirá; ele nunca substitui a entrada de outro programa e, nesse caso, só aparece no menu «Abrir com».",
+            ".ترسل الهواتف والساعات ملفات ‎.fmsbcast عندما تبث الصوت. إذا لم يكن لهذه الملفات برنامج افتراضي بعد فسيفتحها هذا البرنامج، ولا يستبدل أبدًا إدخال برنامج آخر بل يظهر فقط في قائمة «فتح باستخدام»",
+            ".fmsbcast फ़ाइलें फ़ोन और घड़ियाँ तब भेजते हैं जब वे ध्वनि प्रसारित करते हैं। यदि इन फ़ाइलों का अभी कोई डिफ़ॉल्ट प्रोग्राम नहीं है, तो इन्हें यह प्रोग्राम खोलेगा; यह किसी और की प्रविष्टि को कभी नहीं बदलता, केवल «इसके साथ खोलें» मेनू में दिखाई देता है।",
+            "ফোন ও ঘড়ি শব্দ সম্প্রচার করার সময় .fmsbcast ফাইল পাঠায়। এই ফাইলগুলির এখনও কোনো ডিফল্ট প্রোগ্রাম না থাকলে এই প্রোগ্রামটি সেগুলি খুলবে; এটি অন্য কারও এন্ট্রি কখনও প্রতিস্থাপন করে না, শুধু «এর সাহায্যে খুলুন» মেনুতে দেখা যায়।",
+            ".فون اور گھڑیاں آواز نشر کرتے وقت ‎.fmsbcast فائلیں بھیجتی ہیں۔ اگر ان فائلوں کا ابھی کوئی ڈیفالٹ پروگرام نہیں ہے تو انہیں یہ پروگرام کھولے گا؛ یہ کسی اور کی اندراج کو کبھی تبدیل نہیں کرتا بلکہ صرف «اس کے ساتھ کھولیں» مینو میں ظاہر ہوتا ہے",
+            ".fmsbcast 文件由手机和手表在广播声音时发送。如果这些文件还没有默认程序，将由本程序打开；它绝不会替换其他程序的设置，只会出现在「打开方式」菜单中。")
+
+        Add("Устройство ответило: HTTP {0}",
+            "The device answered: HTTP {0}", "Пристрій відповів: HTTP {0}",
+            "Das Gerät antwortete: HTTP {0}", "Il dispositivo ha risposto: HTTP {0}",
+            "El dispositivo respondió: HTTP {0}", "L'appareil a répondu : HTTP {0}",
+            "O dispositivo respondeu: HTTP {0}", "رد الجهاز: HTTP {0}",
+            "उपकरण ने उत्तर दिया: HTTP {0}", "ডিভাইস উত্তর দিয়েছে: HTTP {0}",
+            "ڈیوائس نے جواب دیا: HTTP {0}", "设备返回：HTTP {0}")
+
     End Sub
 
 End Class
