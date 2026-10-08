@@ -22,14 +22,14 @@ Imports System.Windows.Forms
 '''     line - and only after 5 s without an exit is it killed;
 '''   * the Share Manager stops a server it started itself when it exits, unless
 '''     <see cref="ExchangeSettings.KeepRunningOnExit"/> is on (<see cref="StopStartedOnExit"/>);
-'''   * the password goes to the binary over STDIN and never appears on a command line, in the registry or
-'''     in any log; a generated one is read once from the binary's stdout and handed to the caller, which
-'''     shows it once and drops it.
+'''   * an account's password goes to the binary over STDIN (or the admin pipe, <see cref="ExchangeAdmin"/>)
+'''     and never appears on a command line, in the registry or in any log.
 '''
-''' The binary owns the password policy, its generation and its hashing, and the config file; this module
-''' only drives it. Everything the UI needs to know about the server's state comes from <c>inspect</c>
-''' (JSON on stdout), the process list and, for the service, <see cref="ExchangeService"/> - the server
-''' keeps no session list and exposes none (133 section 5.3).
+''' The binary owns the accounts and their password hashing, the certificate and the config file; this
+''' module only drives it (ticket 168: the accounts model of 162 replaced the single server password and
+''' its <c>set-password</c> verb). Everything the UI needs to know about the server's state comes from
+''' <c>inspect</c> (JSON on stdout, counts and a fingerprint - never a login, a hash or a secret), the
+''' process list and, for the service, <see cref="ExchangeService"/>.
 ''' </summary>
 Friend Module ExchangeProcess
 
@@ -50,7 +50,7 @@ Friend Module ExchangeProcess
     ''' <summary>How long a stop request may take before the process is killed (ticket 142: 5 s).</summary>
     Friend Const StopWaitMs As Integer = 5000
 
-    ''' <summary>A one-shot subcommand (inspect, set-password) is quick; this bounds a hung one.</summary>
+    ''' <summary>A one-shot subcommand (inspect, set-endpoint, an offline account change) is quick; this bounds a hung one.</summary>
     Friend Const CommandTimeoutMs As Integer = 20000
 
     ' The binary's exit codes (cmd/fms-exchange-server/main.go).
@@ -117,18 +117,25 @@ Friend Module ExchangeProcess
     ' --- what the binary reports ---------------------------------------------------------
 
     ''' <summary>The parsed <c>inspect</c> report. <see cref="Answered"/> False means the binary could not be
-    ''' asked or printed no JSON - never "no password"; callers keep the two apart.</summary>
+    ''' asked or printed no JSON - never "no account"; callers keep the two apart. The report holds COUNTS
+    ''' and the public facts of the certificate and the addresses: no login, hash, token or key (162).</summary>
     Friend NotInheritable Class InspectReport
         Public Property Answered As Boolean
         Public Property ExitCode As Integer
         Public Property DataDir As String = ""
         Public Property ConfigPresent As Boolean
-        Public Property PasswordSet As Boolean
-        Public Property PasswordHashValid As Boolean
+        ''' <summary>How many accounts the stores hold. The server refuses to start with none.</summary>
+        Public Property Accounts As Integer
+        Public Property Devices As Integer
         Public Property CertPresent As Boolean
+        ''' <summary>exchange.json names a certificate and key to serve (an import) instead of the generated
+        ''' self-signed identity.</summary>
+        Public Property CertImported As Boolean
         Public Property Fingerprint As String = ""
         Public Property Listen As String = ""
         Public Property PortRange As String = ""
+        ''' <summary>The <c>host:port</c> announced in every welcome, "" while none is set.</summary>
+        Public Property PublicEndpoint As String = ""
         Public Property ErrorText As String = ""
 
         ''' <summary>The listen port from the endpoint ("" host or not), or 0 when it has none.</summary>
@@ -138,10 +145,10 @@ Friend Module ExchangeProcess
             End Get
         End Property
 
-        ''' <summary>A password is set and the record parses: the server can start.</summary>
+        ''' <summary>At least one account exists: the server can start (162 - it refuses to serve nobody).</summary>
         Public ReadOnly Property Configured As Boolean
             Get
-                Return PasswordSet AndAlso PasswordHashValid
+                Return Accounts > 0
             End Get
         End Property
 
@@ -165,12 +172,14 @@ Friend Module ExchangeProcess
                 If root.ValueKind <> JsonValueKind.Object Then Return report
                 report.DataDir = ReadString(root, "dataDir")
                 report.ConfigPresent = ReadBool(root, "configPresent")
-                report.PasswordSet = ReadBool(root, "passwordSet")
-                report.PasswordHashValid = ReadBool(root, "passwordHashValid")
+                report.Accounts = ReadInt(root, "accounts")
+                report.Devices = ReadInt(root, "devices")
                 report.CertPresent = ReadBool(root, "certPresent")
+                report.CertImported = ReadBool(root, "certImported")
                 report.Fingerprint = ReadString(root, "fingerprint")
                 report.Listen = ReadString(root, "listen")
                 report.PortRange = ReadString(root, "portRange")
+                report.PublicEndpoint = ReadString(root, "publicEndpoint")
                 report.ErrorText = ReadString(root, "error")
                 report.Answered = True
             End Using
@@ -189,6 +198,13 @@ Friend Module ExchangeProcess
     Private Function ReadBool(root As JsonElement, name As String) As Boolean
         Dim v As JsonElement = Nothing
         Return root.TryGetProperty(name, v) AndAlso v.ValueKind = JsonValueKind.True
+    End Function
+
+    Private Function ReadInt(root As JsonElement, name As String) As Integer
+        Dim v As JsonElement = Nothing
+        Dim n As Integer
+        If root.TryGetProperty(name, v) AndAlso v.ValueKind = JsonValueKind.Number AndAlso v.TryGetInt32(n) AndAlso n >= 0 Then Return n
+        Return 0
     End Function
 
     ''' <summary>The port of a listen endpoint (":22022", "127.0.0.1:22022", "[::1]:22022"), or 0.</summary>
@@ -249,62 +265,141 @@ Friend Module ExchangeProcess
         End Select
     End Function
 
-    ' --- passwords -----------------------------------------------------------------------
+    ' --- the public address, the third-party range, the certificate ------------------------------
+    ' Every one of these is written THROUGH the binary (it validates with the serve rules and keeps every
+    ' other member of exchange.json); this program never edits the file itself. All of them reach a running
+    ' server only at its next start, and the group says so.
 
-    Friend Enum PasswordOutcome
+    ''' <summary>The outcome of a configuration verb of the binary.</summary>
+    Friend Enum ConfigOutcome
         Saved
-        ''' <summary>The binary refused the password (exit 3): the policy floor.</summary>
-        PolicyRefused
-        ''' <summary>The config could not be read or written (exit 4).</summary>
+        ''' <summary>Exit 2: the binary refused the value.</summary>
+        Refused
+        ''' <summary>Exit 4: the config cannot be read or written.</summary>
         ConfigProblem
         Failed
         Unavailable
     End Enum
 
-    ''' <summary>The outcome of a set / generate, with the generated plaintext when there is one. The plaintext
-    ''' is the ONLY place it lives; the caller shows it once and lets go of it.</summary>
-    Friend NotInheritable Class PasswordResult
-        Public Property Outcome As PasswordOutcome
-        Public Property ExitCode As Integer
-        ''' <summary>Set only by <see cref="GeneratePassword"/> on success.</summary>
-        Public Property Plaintext As String = ""
-    End Class
-
-    ''' <summary>Stores the Argon2id record of <paramref name="plaintext"/> in the config (the binary hashes and
-    ''' writes; this only feeds stdin). The password never reaches a command line, a log or the registry.</summary>
-    Friend Function SetPassword(plaintext As String) As PasswordResult
-        If Not IsAvailable() Then Return New PasswordResult With {.Outcome = PasswordOutcome.Unavailable}
-        Dim r As RunResult = Run({"set-password"}, If(plaintext, ""), CommandTimeoutMs)
-        Log("set-password", r)
-        Return New PasswordResult With {.Outcome = OutcomeOf(r), .ExitCode = r.ExitCode}
+    Private Function ConfigOutcomeOf(r As RunResult) As ConfigOutcome
+        If Not r.Started OrElse r.TimedOut Then Return ConfigOutcome.Failed
+        Select Case r.ExitCode
+            Case ExitOk : Return ConfigOutcome.Saved
+            Case ExitUsage : Return ConfigOutcome.Refused
+            Case ExitConfig : Return ConfigOutcome.ConfigProblem
+            Case Else : Return ConfigOutcome.Failed
+        End Select
     End Function
 
-    ''' <summary>Makes the binary generate a password, store its hash and print the plaintext ONCE. The text is
-    ''' returned to the caller and logged nowhere. A reply that is not one well-formed password is a failure,
-    ''' never something to show.</summary>
-    Friend Function GeneratePassword() As PasswordResult
-        If Not IsAvailable() Then Return New PasswordResult With {.Outcome = PasswordOutcome.Unavailable}
-        Dim r As RunResult = Run({"set-password", "--generate"}, Nothing, CommandTimeoutMs)
-        Log("set-password --generate", r)
-        Dim result As New PasswordResult With {.Outcome = OutcomeOf(r), .ExitCode = r.ExitCode}
-        If result.Outcome <> PasswordOutcome.Saved Then Return result
-        Dim text As String = If(r.StdOut, "").Trim()
-        If text.Length = 0 OrElse text.IndexOfAny({ChrW(10), ChrW(13)}) >= 0 OrElse Not ExchangePasswordPolicy.IsAccepted(text) Then
-            result.Outcome = PasswordOutcome.Failed
+    ''' <summary>Stores the public <c>host:port</c> every welcome announces (<c>set-endpoint</c>); an empty
+    ''' value clears it. The binary refuses a loopback or wildcard address.</summary>
+    Friend Function SetEndpoint(value As String) As ConfigOutcome
+        If Not IsAvailable() Then Return ConfigOutcome.Unavailable
+        Dim text As String = If(value, "").Trim()
+        Dim r As RunResult = Run({"set-endpoint", If(text.Length = 0, "-", text)}, Nothing, CommandTimeoutMs)
+        Log("set-endpoint", r)
+        Return ConfigOutcomeOf(r)
+    End Function
+
+    ''' <summary>Stores the third-party port range as "lo-hi" (<c>set-port-range</c>).</summary>
+    Friend Function SetPortRange(range As String) As ConfigOutcome
+        If Not IsAvailable() Then Return ConfigOutcome.Unavailable
+        Dim r As RunResult = Run({"set-port-range", If(range, "")}, Nothing, CommandTimeoutMs)
+        Log("set-port-range", r)
+        Return ConfigOutcomeOf(r)
+    End Function
+
+    Friend Enum CertificateOutcome
+        ''' <summary>Done; <see cref="CertificateResult.Fingerprint"/> is the one the next start serves.</summary>
+        Done
+        ''' <summary>Import: the key is not the certificate's key.</summary>
+        Mismatch
+        Expired
+        NotYetValid
+        ''' <summary>Import: a file is missing or is not PEM.</summary>
+        Unreadable
+        Failed
+        Unavailable
+    End Enum
+
+    Friend NotInheritable Class CertificateResult
+        Public Property Outcome As CertificateOutcome
+        ''' <summary>The <c>SHA256:</c> fingerprint the binary printed on success; never a key.</summary>
+        Public Property Fingerprint As String = ""
+    End Class
+
+    ''' <summary>Replaces the identity with a NEW self-signed one (<c>tls replace</c>). Every device that pinned
+    ''' the old fingerprint refuses the server until its user pins the new one - the caller has asked twice.</summary>
+    Friend Function ReplaceCertificate() As CertificateResult
+        If Not IsAvailable() Then Return New CertificateResult With {.Outcome = CertificateOutcome.Unavailable}
+        Dim r As RunResult = Run({"tls", "replace"}, Nothing, CommandTimeoutMs)
+        Log("tls replace", r)
+        Return CertificateResultOf(r)
+    End Function
+
+    ''' <summary>Imports a PEM certificate and key to serve (<c>tls import</c>): the binary checks that they
+    ''' are a pair, inside their validity and readable, copies them into its own folder with its access list
+    ''' and names the copy in its config. The key path travels as an argument; the key itself is never read
+    ''' here, shown, logged or copied to the clipboard.</summary>
+    Friend Function ImportCertificate(certPath As String, keyPath As String) As CertificateResult
+        If Not IsAvailable() Then Return New CertificateResult With {.Outcome = CertificateOutcome.Unavailable}
+        Dim r As RunResult = Run({"tls", "import", "--cert", If(certPath, ""), "--key", If(keyPath, "")}, Nothing, CommandTimeoutMs)
+        Log("tls import", r)
+        Return CertificateResultOf(r)
+    End Function
+
+    ''' <summary>Maps one run of a <c>tls</c> verb: exit 0 and a <c>fingerprint SHA256:..</c> line, or exit 2
+    ''' and the one stable stderr line <c>tls-refused: &lt;class&gt;</c>.</summary>
+    Friend Function CertificateResultOf(r As RunResult) As CertificateResult
+        Dim result As New CertificateResult With {.Outcome = CertificateOutcome.Failed}
+        If Not r.Started OrElse r.TimedOut Then Return result
+        If r.ExitCode = ExitOk Then
+            For Each line As String In If(r.StdOut, "").Split({ChrW(10), ChrW(13)}, StringSplitOptions.RemoveEmptyEntries)
+                If line.StartsWith("fingerprint SHA256:", StringComparison.Ordinal) Then
+                    result.Fingerprint = line.Substring("fingerprint ".Length).Trim()
+                    result.Outcome = CertificateOutcome.Done
+                End If
+            Next
             Return result
         End If
-        result.Plaintext = text
+        If r.ExitCode = ExitUsage Then
+            Dim err As String = If(r.StdErr, "")
+            If err.Contains("tls-refused: mismatch") Then
+                result.Outcome = CertificateOutcome.Mismatch
+            ElseIf err.Contains("tls-refused: expired") Then
+                result.Outcome = CertificateOutcome.Expired
+            ElseIf err.Contains("tls-refused: not-yet-valid") Then
+                result.Outcome = CertificateOutcome.NotYetValid
+            ElseIf err.Contains("tls-refused: unreadable") Then
+                result.Outcome = CertificateOutcome.Unreadable
+            End If
+        End If
         Return result
     End Function
 
-    Private Function OutcomeOf(r As RunResult) As PasswordOutcome
-        If Not r.Started OrElse r.TimedOut Then Return PasswordOutcome.Failed
-        Select Case r.ExitCode
-            Case ExitOk : Return PasswordOutcome.Saved
-            Case ExitPolicy : Return PasswordOutcome.PolicyRefused
-            Case ExitConfig : Return PasswordOutcome.ConfigProblem
-            Case Else : Return PasswordOutcome.Failed
-        End Select
+    ' --- where the data lives ----------------------------------------------------------------
+
+    Private _dataDirCache As String = ""
+    Private _dataDirAt As DateTime = DateTime.MinValue
+
+    ''' <summary>Forgets what <see cref="DataDir"/> remembered (a test, or a service just registered).</summary>
+    Friend Sub ForgetDataDir()
+        _dataDirCache = ""
+        _dataDirAt = DateTime.MinValue
+    End Sub
+
+    ''' <summary>The data directory the binary resolves, as its own <c>inspect</c> reports it, remembered for
+    ''' 20 s (it only changes when a service is registered or removed). "" when it cannot be asked. The admin
+    ''' pipe's name is derived from it (<see cref="ExchangeAdmin.PipeNameFor"/>). Blocks on the first call.</summary>
+    Friend Function DataDir() As String
+        If Not String.IsNullOrEmpty(DataDirOverride) Then Return DataDirOverride
+        If _dataDirCache.Length > 0 AndAlso (DateTime.UtcNow - _dataDirAt).TotalSeconds < 20 Then Return _dataDirCache
+        Dim report As InspectReport = Inspect()
+        If report.Answered AndAlso report.DataDir.Length > 0 Then
+            _dataDirCache = report.DataDir
+            _dataDirAt = DateTime.UtcNow
+        End If
+        Return _dataDirCache
     End Function
 
     ' --- start / stop ---------------------------------------------------------------------
@@ -312,8 +407,8 @@ Friend Module ExchangeProcess
     Friend Enum StartOutcome
         Started
         AlreadyRunning
-        ''' <summary>Exit 3: no password, or a record that does not parse.</summary>
-        NoPassword
+        ''' <summary>Exit 3: no account yet - the server refuses to serve nobody (162).</summary>
+        NoAccount
         ''' <summary>Exit 4: the config cannot be read or is not valid.</summary>
         ConfigProblem
         ''' <summary>Exit 5: the service runs - the service wins (133 section 6.1).</summary>
@@ -361,7 +456,7 @@ Friend Module ExchangeProcess
             p.Dispose()
             AppFileLogger.WriteLine("Exchange server: serve exited at once with code " & code.ToString(Globalization.CultureInfo.InvariantCulture))
             Select Case code
-                Case ExitPolicy : Return StartOutcome.NoPassword
+                Case ExitPolicy : Return StartOutcome.NoAccount
                 Case ExitConfig : Return StartOutcome.ConfigProblem
                 Case ExitBesideService : Return StartOutcome.BesideService
                 Case Else : Return StartOutcome.Failed
@@ -563,7 +658,8 @@ Friend Module ExchangeProcess
     End Function
 
     ''' <summary>One line for companion.log: the verb and the exit code. The command line, stdin and both
-    ''' output streams are NEVER logged - stdout of <c>set-password --generate</c> is the plaintext.</summary>
+    ''' output streams are NEVER logged - stdin of <c>account add</c> is a password and stdout of an account
+    ''' listing is a set of logins.</summary>
     Private Sub Log(verb As String, r As RunResult)
         AppFileLogger.WriteLine("Exchange server: " & verb & " - " &
             If(Not r.Started, "could not run", If(r.TimedOut, "timed out", "exit " & r.ExitCode.ToString(Globalization.CultureInfo.InvariantCulture))))

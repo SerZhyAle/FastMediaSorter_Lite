@@ -79,6 +79,38 @@ Public Class DualModeViewerBaselineTests
         Assert.DoesNotContain(names, Function(n) n.StartsWith("Exchange", StringComparison.OrdinalIgnoreCase))
     End Sub
 
+    <Fact>
+    Public Sub The_x86_viewer_baseline_holds_no_connection_no_child_no_new_file_and_nothing_of_the_exchange()
+        ' The net48 fallback is outside the exchange program (177 section 3 item 5): its capture on a clean profile is the
+        ' "today" the later build is compared with, and it must stay exactly that. It records ONE loopback TCP listener
+        ' that the net10 viewer does not have (pre-existing in the net48 build: no source line of this repository
+        ' listens, no exchange word or value is anywhere in it) - it is written down here instead of being hidden, and
+        ' any other endpoint kind is a difference.
+        DualModeFixtures.VerifyProvenance()
+        Using doc As JsonDocument = JsonDocument.Parse(File.ReadAllText(DualModeFixtures.FixturePath("viewer-x86-baseline.json")))
+            Dim root As JsonElement = doc.RootElement
+            Assert.Equal("viewer-x86", root.GetProperty("program").GetString())
+            Assert.True(root.GetProperty("captured").GetBoolean())
+            Assert.StartsWith("clean", root.GetProperty("profile").GetString())
+            Assert.True(root.GetProperty("closedGracefully").GetBoolean())
+            Dim network As JsonElement = root.GetProperty("network")
+            Assert.Equal(0, network.GetProperty("maxConnections").GetInt32())
+            Assert.True(network.GetProperty("maxListeningOrUdpEndpoints").GetInt32() <= 1)
+            For Each kind As JsonElement In network.GetProperty("endpointKinds").EnumerateArray()
+                Assert.Equal("tcp Listen loopback remote=-", kind.GetString())
+            Next
+            Assert.Equal(0, root.GetProperty("childProcesses").GetArrayLength())
+            Assert.Equal(0, root.GetProperty("files").GetProperty("created").GetArrayLength())
+            Dim registry As JsonElement = root.GetProperty("registry")
+            Assert.Equal(0, registry.GetProperty("forbiddenValueNames").GetArrayLength())
+            For Each name As JsonElement In registry.GetProperty("added").EnumerateArray()
+                Assert.False(DualModeFixtures.ExchangeValuePattern.IsMatch(name.GetString()), "an exchange value name in the x86 baseline: " & name.GetString())
+                Assert.False(name.GetString().StartsWith("Exchange", StringComparison.OrdinalIgnoreCase))
+            Next
+            Assert.False(root.GetProperty("log").GetProperty("mentionsExchange").GetBoolean())
+        End Using
+    End Sub
+
     <FactWhenFixture("sharemanager-baseline.json")>
     Public Sub The_Share_Manager_baseline_holds_nothing_either()
         DualModeFixtures.VerifyProvenance()

@@ -1,4 +1,4 @@
-Imports System.Drawing
+﻿Imports System.Drawing
 Imports System.Runtime.InteropServices
 Imports System.Text
 Imports System.Windows.Forms
@@ -55,6 +55,10 @@ Friend NotInheritable Class TrayContext
         ' Resume sharing silently if it was ever started - covers the "dedicated
         ' server" scenario where Companion autostarts into the tray with no window.
         ResumeShareIfEnabled()
+
+        ' The device agent of the exchange (ticket 180). Dormant unless the client gate is open AND an account is configured: with
+        ' neither, no agent is even constructed - no connection, no pipe, no registry value, no file.
+        ExchangeDeviceHost.StartIfConfigured()
 
         ' Who gets a window. An EXPLICIT gesture always does: a folder argument ("share
         ' this folder", jumps to the package wizard) or windowRequested (the viewer's Share
@@ -249,10 +253,7 @@ Friend NotInheritable Class TrayContext
     End Function
 
     ''' <summary>
-    ''' The interface language changed. Companion's windows resolve every caption once,
-    ''' at construction, so there is nothing to re-label - the window is rebuilt instead,
-    ''' and only if it was open. The tray menu is rebuilt too: it is created once in the
-    ''' constructor and would otherwise keep the old language until the next start.
+    ''' Open windows refresh captions in place; rebuild the tray menu after a language change.
     ''' </summary>
     Private Sub OnLanguageChanged(sender As Object, e As EventArgs)
         If _disposed Then Return
@@ -281,16 +282,7 @@ Friend NotInheritable Class TrayContext
         End Try
         Try
             If _mainWindow Is Nothing OrElse _mainWindow.IsDisposed Then Return
-            Dim wasVisible As Boolean = _mainWindow.Visible
-            RemoveHandler _mainWindow.ServerStateChanged, AddressOf RefreshTrayState
-            ' Close BEFORE Dispose: the window does its own teardown in FormClosing (its
-            ' 10 s stats timer, its window icon). Disposing straight out from under it
-            ' skipped that handler, so every language switch left the old window's poll
-            ' timer running against the worker and leaked its HICON.
-            _mainWindow.Close()
-            _mainWindow.Dispose()
-            _mainWindow = Nothing
-            If wasVisible Then ShowMainWindow(Nothing)
+            _mainWindow.RefreshInterfaceLanguage()
         Catch
         End Try
     End Sub
@@ -801,6 +793,12 @@ Friend NotInheritable Class TrayContext
                 _statsTimer.Stop()
                 _statsTimer.Dispose()
             Catch
+            End Try
+            ' A clean exit says `bye` (presence goes offline at once) and closes the agent's stream and local channel.
+            Try
+                ExchangeDeviceHost.StopAtExit()
+            Catch e As Exception
+                AppFileLogger.LogException("Exchange: stopping the device agent at exit", e)
             End Try
             ' A server THIS session started is stopped with it, unless the person asked to keep it running
             ' (Exchange_KeepRunningOnExit, default off). One that was already running is never touched.

@@ -1,18 +1,16 @@
-Option Strict On
+﻿Option Strict On
 
 Imports System.Drawing
 Imports System.Threading
+Imports System.Linq
 Imports System.Windows.Forms
 
 ''' <summary>
 ''' The UI-language picker for the Share Manager, and what has to happen when the
 ''' choice changes.
 '''
-''' Companion's windows are built entirely in code, in one pass, with every caption
-''' resolved at construction time - there is no LngCh()-style re-caption pass as in the
-''' viewer. So a language switch does not re-label the live window: it rebuilds it.
-''' That is why <see cref="Changed"/> exists - TrayContext owns the window and the tray
-''' menu, so it is the one that can recreate both.
+''' Captures localized control identities and updates open windows in place.
+''' Changed refreshes dynamic status captions and the tray menu.
 '''
 ''' See docs/specifications/013_SPECIFICATION_THIRTEEN_UI_LANGUAGES.md block A'.
 ''' </summary>
@@ -29,12 +27,16 @@ Friend Module UiLanguage
     Friend Sub Switch(code As String)
         If String.IsNullOrEmpty(code) Then Return
         If String.Equals(Localization.CurrentCode, code, StringComparison.OrdinalIgnoreCase) Then Return
+        Dim windows = Application.OpenForms.Cast(Of Form)().Select(Function(window) New LiveControlLocalization(window)).ToArray()
         Localization.CurrentCode = code
         Try
             Localization.SaveToSettings()
         Catch
             ' A locked/denied HKCU still leaves the switch working for this session.
         End Try
+        For Each window In windows
+            window.Apply()
+        Next
         RaiseEvent Changed(Nothing, EventArgs.Empty)
     End Sub
 
@@ -107,7 +109,7 @@ Friend Module UiLanguage
     Friend Sub ApplyTo(f As Form)
         If f Is Nothing Then Return
 
-        Dim family = Localization.FontFamily()
+        Dim family = If(Localization.FontFamily(), "Segoe UI")
         If family IsNot Nothing Then
             Try
                 Dim candidate As New Font(family, f.Font.Size)
@@ -116,7 +118,7 @@ Friend Module UiLanguage
                 If String.Equals(candidate.FontFamily.Name, family, StringComparison.OrdinalIgnoreCase) Then
                     f.Font = candidate
                     ' A form does not own the Font it is handed: release it with the window,
-                    ' or every language switch (which rebuilds the window) strands one.
+                    ' or repeated language changes strand one.
                     AddHandler f.Disposed, Sub() candidate.Dispose()
                 Else
                     candidate.Dispose()
@@ -125,7 +127,7 @@ Friend Module UiLanguage
             End Try
         End If
 
-        If Localization.IsRightToLeft() Then f.RightToLeft = RightToLeft.Yes
+        f.RightToLeft = If(Localization.IsRightToLeft(), RightToLeft.Yes, RightToLeft.No)
     End Sub
 
 End Module

@@ -397,6 +397,14 @@ Partial Public NotInheritable Class Localization
             "Vider le cache", "Limpar a cache", "مسح الذاكرة المؤقتة", "कैश साफ़ करें",
             "ক্যাশ পরিষ্কার করুন", "کیش صاف کریں", "清除缓存")
 
+        ' APP-SETTINGS section 9 (specification 183): a cache measured at 0 bytes has nothing to clear, so the
+        ' button says so instead of asking a question whose answer changes nothing.
+        Add("Очищать нечего: кэш пуст.",
+            "Nothing to clear: the cache is empty.", "Нічого очищати: кеш порожній.", "Nichts zu leeren: Der Cache ist leer.",
+            "Niente da svuotare: la cache è vuota.", "Nada que vaciar: la caché está vacía.", "Rien à vider : le cache est vide.",
+            "Nada a limpar: o cache está vazio.", "لا شيء لمسحه: الذاكرة المؤقتة فارغة.", "साफ़ करने के लिए कुछ नहीं: कैश खाली है।",
+            "পরিষ্কার করার কিছু নেই: ক্যাশ খালি।", "صاف کرنے کے لیے کچھ نہیں: کیش خالی ہے۔", "无需清除：缓存为空。")
+
         Add("Удалить сохранённые результаты распознавания? Настройки OCR не изменятся.",
             "Delete the stored recognition results? The OCR settings stay as they are.",
             "Видалити збережені результати розпізнавання? Налаштування OCR не зміняться.",

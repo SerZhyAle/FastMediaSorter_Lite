@@ -110,6 +110,9 @@ Friend NotInheritable Class Resource_List_Panel
     ''' command only says where the folder is managed), so the panel never grows a
     ''' dependency on a form.</summary>
     Private ReadOnly manageSharesAction As Action
+    ''' <summary>The "My devices" section (ticket 171). Nothing unless the exchange client features are offered and the Share Manager is installed;
+    ''' never in an injected world (a test's custom hive), where the agent's channel must not be asked.</summary>
+    Private ReadOnly devices As Exchange_Devices_Panel
 
     ''' <summary>Any registry write happened through this panel: adds, edits, removals, imports.
     ''' Carries the ids removed so far, so a host can close a resource that is on screen.</summary>
@@ -247,6 +250,19 @@ Friend NotInheritable Class Resource_List_Panel
         Controls.Add(statusRow)
         Controls.Add(actionRow)
 
+        ' Ticket 171: "My devices". Built only where it can exist (the gate and the Share Manager); the section hides itself otherwise.
+        If Not customStore AndAlso ExchangeFeatures.IsEnabled() Then
+            Dim feed As ExchangeDevicesFeed = ExchangeDevicesFeed.CreateDefault()
+            If feed.IsOffered() Then
+                devices = New Exchange_Devices_Panel(feed, ExchangeSync.CreateDefault(), AddressOf ResourceRegistry.Load, confirmRemove, AddressOf RemoveExchangeResource)
+                devices.SetMetrics(Function(n) Dv(n))
+                AddHandler devices.ResourcesChanged, Sub() OnDevicesChangedResources()
+                AddHandler devices.StatesChanged, Sub() Refill(If(Selected() Is Nothing, Nothing, Selected().Id))
+                AddHandler devices.StatusSaid, Sub(text, ok) Say(text, If(ok, ResourceStatusSeverity.Success, ResourceStatusSeverity.Warning))
+                Controls.Add(devices)
+            End If
+        End If
+
         AddHandler Resize, Sub() Relayout()
         AddHandler FontChanged, Sub() Relayout()
         AddHandler RightToLeftChanged, Sub() Relayout()
@@ -338,6 +354,12 @@ Friend NotInheritable Class Resource_List_Panel
         Dim statusRowHeight As Integer = Dv(StatusHeight)
         Dim bodyTop As Integer = rowHeight + Dv(6)
         Dim bodyHeight As Integer = Math.Max(Dv(60), ClientSize.Height - bodyTop - statusRowHeight - Dv(6))
+        ' Ticket 171: "My devices" takes the lower part of the body when it is offered; the resource list keeps the rest
+        Dim devicesHeight As Integer = 0
+        If devices IsNot Nothing Then devicesHeight = Math.Min(devices.WantedHeight(bodyHeight), Math.Max(0, bodyHeight - Dv(80)))
+        devices?.SetBounds(0, bodyTop + bodyHeight - devicesHeight, width, devicesHeight)
+        If devices IsNot Nothing Then devices.Visible = devicesHeight > 0
+        If devicesHeight > 0 Then bodyHeight = Math.Max(Dv(60), bodyHeight - devicesHeight - Dv(6))
         list.SetBounds(0, bodyTop, width, bodyHeight)
         emptyPanel.SetBounds(0, bodyTop, width, bodyHeight)
         statusRow.SetBounds(0, ClientSize.Height - statusRowHeight, width, statusRowHeight)
@@ -464,6 +486,7 @@ Friend NotInheritable Class Resource_List_Panel
         End If
         ' The painted menu follows the same scheme; a stale theme is simply replaced.
         menuTheme = Nothing
+        devices?.ApplyPalette(theme)
         RefreshGlyphImages()
         list.Invalidate()
     End Sub
@@ -578,6 +601,7 @@ Friend NotInheritable Class Resource_List_Panel
         moreButton.AccessibleName = Localization.T("Ещё")
         hint.Text = Localization.T("Здесь пока нет ресурсов. Добавьте сервер вручную или импортируйте файл настроек из Share Manager (.fmscfg).")
         list.AccessibleName = Localization.T("Ресурсы")
+        devices?.Localize()
         Dim captions As String() = {Localization.T("Название"), Localization.T("Тип"), Localization.T("Адрес"),
                                     Localization.T("Доступ"), Localization.T("Открывался")}
         For index As Integer = 0 To Math.Min(captions.Length, list.Columns.Count) - 1
@@ -648,6 +672,7 @@ Friend NotInheritable Class Resource_List_Panel
         UpdateSummary()
         UpdateButtons()
         Relayout()
+        ClearShownNotices(list.Items.Cast(Of ListViewItem)().Select(Function(i) DirectCast(i.Tag, ResourceDescriptor)))
     End Sub
 
     Private Sub UpdateRowPresentation(item As ListViewItem, resource As ResourceDescriptor)
@@ -656,6 +681,14 @@ Friend NotInheritable Class Resource_List_Panel
             typeText = Localization.T(ManagedDiskTypeLabelKey)
         ElseIf WorkerShares.IsManaged(resource) Then
             typeText = Localization.T(ManagedTypeLabelKey)
+        ElseIf ResourceOrigin.IsExchange(resource) Then
+            ' Ticket 171: a resource attached from "My devices" says whose it is, what it is now and - once - that its access was updated
+            typeText = ExchangeResourceText.TypeOfDevice(resource.ExchangeDeviceName)
+            Dim stateText As String = If(devices Is Nothing, "", ExchangeResourceText.ListState(devices.StateOf(resource)))
+            If stateText.Length > 0 Then typeText &= " - " & stateText
+            If resource.ExchangeNotice.GetValueOrDefault() Then typeText &= " - " & ExchangeResourceText.AccessUpdatedCell()
+        ElseIf ResourceOrigin.IsLink(resource) Then
+            typeText = ExchangeResourceText.TypeOfLink()
         Else
             typeText = ResourceMessages.KindLabel(resource.Kind)
         End If
@@ -896,6 +929,43 @@ Friend NotInheritable Class Resource_List_Panel
                                MessageBoxButtons.YesNo, MessageBoxIcon.Question, MessageBoxDefaultButton.Button2) = DialogResult.Yes
     End Function
 
+    ''' <summary>"My devices" attached or followed a resource: show it, and tell the host the registry moved.</summary>
+    Private Sub OnDevicesChangedResources()
+        Refill(If(Selected() Is Nothing, Nothing, Selected().Id))
+        RaiseEvent ResourcesChanged(removed)
+    End Sub
+
+    ''' <summary>An untick of an attached resource under "My devices": the user's own removal, the same commit as the Remove button's (the
+    ''' registry first, the credential afterwards). The confirmation was asked by the section.</summary>
+    Private Sub RemoveExchangeResource(resource As ResourceDescriptor)
+        Dim result As ResourceCommitResult = ResourceCommit.Remove(resource.Id, hiveRead, hiveWrite, secrets)
+        If result.Succeeded Then
+            removed.Add(resource.Id)
+            Say("")
+        Else
+            Say(Localization.T("Не удалось удалить ресурс"), ResourceStatusSeverity.Danger)
+        End If
+    End Sub
+
+    ''' <summary>"Told once": a row that carried the notice that its producer updated its access has now been shown, so the flag goes. The
+    ''' registry is only touched when a flag was set (and never in an injected world).</summary>
+    Private Sub ClearShownNotices(shown As IEnumerable(Of ResourceDescriptor))
+        If customStore OrElse Not shown.Any(Function(r) r.ExchangeNotice.GetValueOrDefault()) Then Return
+        Try
+            Dim current As List(Of ResourceDescriptor) = ResourceRegistry.Load()
+            Dim changed As Boolean
+            For Each r As ResourceDescriptor In current
+                If ResourceOrigin.IsExchange(r) AndAlso r.ExchangeNotice.GetValueOrDefault() Then
+                    r.ExchangeNotice = Nothing
+                    changed = True
+                End If
+            Next
+            If changed Then ResourceRegistry.Save(current)
+        Catch ex As Exception When TypeOf ex Is IOException OrElse TypeOf ex Is InvalidOperationException
+            AppFileLogger.WriteLine("Resource: a notice could not be cleared - " & ex.GetType().Name)
+        End Try
+    End Sub
+
     Private Sub OnRemove(sender As Object, e As EventArgs)
         Dim current As ResourceDescriptor = Selected()
         If current Is Nothing Then Return
@@ -1077,7 +1147,13 @@ Friend NotInheritable Class Resource_List_Panel
             Say(Localization.T("В буфере обмена нет настроек ресурса"), ResourceStatusSeverity.Warning)
             Return
         End If
-        ImportAndRefresh(FmsConfigReader.ReadText(text))
+        ' Ticket 171 C1: an FMSSFTP1/FMSSFTP2 pairing code is accepted here too (where the exchange client features are offered), through the same
+        ' preview and confirmation as a file
+        If ExchangeFeatures.IsEnabled() AndAlso FmsSftpPlans.LooksLikeCode(text) Then
+            ImportAndRefresh(FmsSftpPlans.Read(text))
+        Else
+            ImportAndRefresh(FmsConfigReader.ReadText(text))
+        End If
     End Sub
 
     Private Sub ImportAndRefresh(read As FmsConfigReadResult)

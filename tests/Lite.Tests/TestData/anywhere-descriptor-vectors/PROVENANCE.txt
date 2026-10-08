@@ -1,0 +1,29 @@
+ANYWHERE-ACCESS rung 1 vectors - vendored artifact, not a vendored contract
+============================================================================
+
+What this folder is
+-------------------
+The committed rung 1 vectors of the ANYWHERE-ACCESS contract, section 4 (the FMSSFTP1/FMSSFTP2 pairing
+code and the .fmscfg rendezvousTunnel path), copied here so that FmsSftpCodeTests can run for anyone who
+clones this repository. A test that depends on a drive letter cannot run for anybody else.
+
+What this folder is NOT
+-----------------------
+A copy of a contract. ANYWHERE-ACCESS stays in the shared catalog and is CITED, never duplicated (see
+docs/contracts/README.md and CLAUDE.md's first line for where the catalog lives). Copying an artifact so a
+test can run is a different act from copying a document so a repository can disagree with it.
+
+Source
+------
+  contract id  : ANYWHERE-ACCESS 0.13 (section 4, rung 1; unchanged by the DEVICE-EXCHANGE amendments)
+  artifact     : vectors/descriptor-v2.json beside that document in the shared catalog
+  producer     : FastMediaSorter Android (SftpPairingPayload, CompanionAccessPathDto)
+  taken on     : 2026-10-07 (ticket 170, T-1)
+
+Digest
+------
+The test asserts this before it trusts a byte, so a vector file that changed under us fails loudly instead of
+quietly redefining what "conformant" means. Re-copying the artifact is a deliberate act and updates this file
+with it.
+
+  SHA-256  04354e86fa5700c1fafd9fac7842949ea9a8824cb4b09587d9c849c29e9d89b6  descriptor-v2.json

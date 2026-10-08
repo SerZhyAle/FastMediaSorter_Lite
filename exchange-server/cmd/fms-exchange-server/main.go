@@ -56,6 +56,10 @@ func run(ctx context.Context, args []string, stdin io.Reader, stdout, stderr io.
 		return runSetListen(cmd, stdout, stderr)
 	case "set-endpoint":
 		return runSetEndpoint(cmd, stdout, stderr)
+	case "set-port-range":
+		return runSetPortRange(cmd, stdout, stderr)
+	case "tls":
+		return runTLS(cmd, stdout, stderr)
 	case "inspect":
 		return runInspect(cmd, stdout, stderr)
 	case "stop":

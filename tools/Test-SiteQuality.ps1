@@ -5,11 +5,12 @@
 
 .DESCRIPTION
     The published corpus is the repository root as GitHub Pages serves it: the root
-    *.html pages (the hand-authored portal, guides and reference pages) plus the
+    *.html pages (the hand-authored portal and reference pages), the task guides under
+    docs/how-to-*.html, the privacy policy and the
     generated lang/<code>/index.html and lang/<code>/trust.html renders - the exact
     set tools/Build-SitePages.ps1 lists in sitemap.xml. This check holds that set to:
 
-      rule 1  the subject index (topics.html) links every other root page; the glossary
+      rule 1  the subject index (topics.html) links every other root page and guide; the glossary
               (glossary.html) defines every termbase term (both directions);
       rule 2  search-index.json covers the same page set as sitemap.xml, with each
               page's real title and description;
@@ -144,6 +145,12 @@ function Test-RedirectStub([string]$path) {
 Get-ChildItem -LiteralPath $Root -Filter '*.html' -File | Where-Object { $_.Name -ne '404.html' -and -not (Test-RedirectStub $_.FullName) } | Sort-Object Name | ForEach-Object {
     $kind = if ($_.Name -eq 'index.html') { 'landing' } elseif ($_.Name -eq 'trust.html') { 'trust' } else { 'root' }
     $pages += @{ File = $_.Name; Lang = 'en'; Kind = $kind }
+}
+# The task guides live under docs/ (docs/how-to-*.html) and are pages of the set; the same address kept at the root is a
+# redirect stub (skipped above and checked below).
+Get-ChildItem -LiteralPath (Join-Path $Root 'docs') -Filter 'how-to-*.html' -File -ErrorAction SilentlyContinue |
+    Where-Object { -not (Test-RedirectStub $_.FullName) } | Sort-Object Name | ForEach-Object {
+    $pages += @{ File = "docs/$($_.Name)"; Lang = 'en'; Kind = 'guide' }
 }
 # The privacy policy is a required page type that lives under docs/ and is listed in the sitemap (specification 151, T-3).
 if (Test-Path (Join-Path $Root 'docs/privacy.html')) { $pages += @{ File = 'docs/privacy.html'; Lang = 'en'; Kind = 'privacy' } }
@@ -319,7 +326,7 @@ foreach ($p in $pages) {
 
     # rule 6 - screenshots: a guide that declares multi-step UI must show the UI
     if ($h -match 'data-ui-steps') {
-        $shots = @([regex]::Matches($h, '(?i)<img\b[^>]*\bsrc="((?:assets/guides|assets\\guides)/[^"]+)"[^>]*>'))
+        $shots = @([regex]::Matches($h, '(?i)<img\b[^>]*\bsrc="((?:\.\./)?(?:assets/guides|assets\\guides)/[^"]+)"[^>]*>'))
         if ($shots.Count -eq 0) { Problem "${rel}: declares data-ui-steps but carries no assets/guides/ screenshot" }
         foreach ($m in $shots) {
             $tag = $m.Groups[0].Value
@@ -328,9 +335,9 @@ foreach ($p in $pages) {
             if (-not $alt) { Problem "${rel}: screenshot without alt text: $src" }
             $w = Attr $tag 'width="(\d+)"'; $ht = Attr $tag 'height="(\d+)"'
             if (-not $w -or -not $ht) { Problem "${rel}: screenshot without width/height attributes: $src"; continue }
-            $png = Join-Path $Root ($src -replace '/', '\')
+            $png = [IO.Path]::GetFullPath((Join-Path (Split-Path (Join-Path $Root $rel) -Parent) ($src -replace '/', '\')))
             if (-not (Test-Path $png)) { Problem "${rel}: screenshot missing on disk: $src"; continue }
-            if ($src -notin $inventory) { Problem "${rel}: screenshot not tracked: $src"; continue }
+            if ([IO.Path]::GetRelativePath($Root, $png).Replace('\', '/') -notin $inventory) { Problem "${rel}: screenshot not tracked: $src"; continue }
             try {
                 $bmp = [System.Drawing.Bitmap]::new($png)
                 try {
@@ -413,7 +420,7 @@ else {
 if (-not (Test-Path (Join-Path $Root 'topics.html'))) { Problem 'topics.html (the subject index) does not exist' }
 else {
     $tp = Page-Html 'topics.html'
-    foreach ($p in ($pages | Where-Object { $_.File -ne 'topics.html' -and $_.Kind -in 'landing', 'root' })) {
+    foreach ($p in ($pages | Where-Object { $_.File -ne 'topics.html' -and $_.Kind -in 'landing', 'root', 'guide' })) {
         $want = if ($p.File -eq 'index.html') { './' } else { $p.File }
         $linked = [regex]::Matches($tp, [regex]::Escape("href=`"$want`""))
         if ($linked.Count -eq 0) { Problem "topics.html does not link $($p.File)" }
@@ -450,7 +457,7 @@ else {
         $tb = Get-Content $TermFile -Raw -Encoding UTF8 | ConvertFrom-Json
         foreach ($c in $tb.locales) { if ($c -notin $codes) { Problem "termbase names locale '$c', which the site does not declare" } }
         foreach ($c in $codes) { if ($c -notin $tb.locales) { Problem "termbase does not cover locale '$c'" } }
-        $guides = @($pages | Where-Object { $_.File -like 'how-to-*.html' })
+        $guides = @($pages | Where-Object { $_.Kind -eq 'guide' })
         foreach ($t in $tb.terms) {
             if (-not $t.id) { Problem 'termbase has a term without an id'; continue }
             $forbiddenByLocale = @{}
@@ -516,7 +523,7 @@ if ($tb -and $tb.uiNames) {
     . (Join-Path $PSScriptRoot 'lib\UiStrings.ps1')
     $uiSets = Get-UiStrings $Root
     $exempt = @{ any = @($tb.uiNames.any); en = @($tb.uiNames.en); ru = @($tb.uiNames.ru); uk = @($tb.uiNames.uk) }
-    $guidePages = @($pages | Where-Object { $_.Kind -eq 'root' -and ($_.File -like 'how-to-*.html' -or $_.File -eq 'publish-folders-android.html') } | ForEach-Object { $_.File })
+    $guidePages = @($pages | Where-Object { $_.Kind -eq 'guide' -or ($_.Kind -eq 'root' -and $_.File -eq 'publish-folders-android.html') } | ForEach-Object { $_.File })
     foreach ($miss in (Get-GuideUiMisses $Root $guidePages $uiSets $exempt)) {
         $f = $miss -split '\|', 3
         Problem "$($f[0]) ($($f[1])): bold name '$($f[2])' is not a string of the program in that language and is not listed as an exemption in site-termbase.json uiNames (rule 11)"
@@ -572,9 +579,9 @@ foreach ($rel in $widthCorpus) {
 # --- rule 10 / rule 9: the in-page locale floor (specification 151) ---------------
 # A page that switches language in-page (data-l spans or blocks) carries the core three, in the same number, and its
 # language control offers exactly the languages the page has. The landing and the trust page are generated per
-# locale and are held by Build-SitePages -Check, so only the root guides, the reference pages, the edition page and
+# locale and are held by Build-SitePages -Check, so only the guides, the reference pages, the edition page and
 # the privacy page are read here.
-foreach ($p in ($pages | Where-Object { $_.Lang -eq 'en' -and $_.Kind -in 'root', 'privacy' })) {
+foreach ($p in ($pages | Where-Object { $_.Lang -eq 'en' -and $_.Kind -in 'root', 'guide', 'privacy' })) {
     $h = Page-Html $p.File
     $n = @{}
     foreach ($code in 'en', 'ru', 'ua') { $n[$code] = ([regex]::Matches($h, "\sdata-l=`"$code`"")).Count }

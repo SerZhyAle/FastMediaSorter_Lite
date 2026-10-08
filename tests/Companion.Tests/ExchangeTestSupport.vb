@@ -21,6 +21,8 @@ Friend Module ExchangeTestSupport
         ExchangeProcess.ExeDirectoryOverride = Nothing
         ExchangeProcess.DataDirOverride = Nothing
         ExchangeProcess.RunOverride = Nothing
+        ExchangeProcess.ForgetDataDir()
+        ExchangeAdmin.PipeNameOverride = Nothing
         ExchangeElevation.Launcher = AddressOf DefaultLauncherForTests
         ExchangeFirewall.ShowRuleOverride = Nothing
         ExchangeService.QueryStateOverride = Nothing

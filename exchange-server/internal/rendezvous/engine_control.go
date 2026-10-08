@@ -28,6 +28,9 @@ func (e *Engine) Control(cs *ControlStream, first wire.Envelope) {
 	defer func() {
 		e.dropCtl(cs)
 		e.cfg.Dir.Offline(sess.Account, sess.DeviceID, cs)
+		if !e.cfg.Dir.DeviceOnline(sess.Account, sess.DeviceID) {
+			e.castDeviceGone(sess.DeviceID) // a replaced stream leaves the device online: its offers stand
+		}
 		e.cfg.Accounts.Touch(sess.DeviceID)
 		e.cfg.Log.Info("offline", logx.Device(sess.DeviceID))
 	}()
@@ -125,8 +128,14 @@ func (e *Engine) handle(cs *ControlStream, sess *Session, env wire.Envelope) boo
 			e.cfg.Log.Error("revoke-failed", logx.Device(dev), logx.Text("error", err.Error()))
 		}
 		return true
-	case *wire.Cast, *wire.CastAnswer, *wire.CastStop:
-		return true // cast routing is ticket 166's; until it is built these are ignored, never an error
+	case *wire.Cast:
+		return e.handleCast(cs, sess, m)
+	case *wire.CastAnswer:
+		e.handleCastAnswer(sess, m)
+		return true
+	case *wire.CastStop:
+		e.handleCastStop(sess, m)
+		return true
 	}
 	return false // a known envelope that is invalid on a control stream closes it
 }

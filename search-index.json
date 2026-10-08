@@ -6,54 +6,6 @@
     "description": "What Fast Media Sorter & Sharing for Windows means by Share Manager, destination folder, NumPad and its other terms - the same words in every language."
   },
   {
-    "url": "https://serzhyale.github.io/FastMediaSorter_Lite/how-to-archives.html",
-    "lang": "en",
-    "title": "ZIP, CBZ, 7z, RAR as a folder | Fast Media Sorter & Sharing",
-    "description": "Open a ZIP, CBZ, 7z, RAR or CBR archive in Fast Media Sorter & Sharing for Windows and page through the pictures inside without unpacking it first."
-  },
-  {
-    "url": "https://serzhyale.github.io/FastMediaSorter_Lite/how-to-editor.html",
-    "lang": "en",
-    "title": "Draw on a photo and crop it | Fast Media Sorter & Sharing",
-    "description": "Mark up a picture, crop it and write the result back to disk with the built-in image editor of Fast Media Sorter & Sharing for Windows."
-  },
-  {
-    "url": "https://serzhyale.github.io/FastMediaSorter_Lite/how-to-filedo-disks.html",
-    "lang": "en",
-    "title": "Share FileDO .fdd Disks | Fast Media Sorter & Sharing",
-    "description": "How to share FileDO .fdd virtual disks to paired phones over SFTP with Fast Media Sorter & Sharing for Windows, setup, autostart and troubleshooting."
-  },
-  {
-    "url": "https://serzhyale.github.io/FastMediaSorter_Lite/how-to-keys.html",
-    "lang": "en",
-    "title": "Keys, zoom and full screen | Fast Media Sorter & Sharing",
-    "description": "The full keyboard and mouse map of Fast Media Sorter & Sharing for Windows: navigation, sorting, zoom, full screen, slideshow and video keys."
-  },
-  {
-    "url": "https://serzhyale.github.io/FastMediaSorter_Lite/how-to-ocr.html",
-    "lang": "en",
-    "title": "Translate text on a picture | Fast Media Sorter & Sharing",
-    "description": "Recognize the text on a photo or a screenshot and show its translation over the image, with a translator that runs on your own PC."
-  },
-  {
-    "url": "https://serzhyale.github.io/FastMediaSorter_Lite/how-to-resources.html",
-    "lang": "en",
-    "title": "Open a server like a folder | Fast Media Sorter & Sharing",
-    "description": "Open an SFTP server or a network share with a login as an ordinary folder in Fast Media Sorter & Sharing for Windows; the server key is pinned."
-  },
-  {
-    "url": "https://serzhyale.github.io/FastMediaSorter_Lite/how-to-setup.html",
-    "lang": "en",
-    "title": "Setup: viewer, language, rules | Fast Media Sorter & Sharing",
-    "description": "Make Fast Media Sorter the default viewer for your pictures and video, choose the interface language, and set what happens to files as you sort them."
-  },
-  {
-    "url": "https://serzhyale.github.io/FastMediaSorter_Lite/how-to-viewer.html",
-    "lang": "en",
-    "title": "Viewer guide | Fast Media Sorter & Sharing",
-    "description": "A practical guide to reviewing, sorting and managing photos and video with Fast Media Sorter & Sharing for Windows."
-  },
-  {
     "url": "https://serzhyale.github.io/FastMediaSorter_Lite/",
     "lang": "en",
     "title": "Photo & video sorting | Fast Media Sorter & Sharing",
@@ -82,6 +34,54 @@
     "lang": "en",
     "title": "Why Windows warns about this download",
     "description": "What the SmartScreen warning on Fast Media Sorter & Sharing means, why it appears, exactly what to click, and what the program never does."
+  },
+  {
+    "url": "https://serzhyale.github.io/FastMediaSorter_Lite/docs/how-to-archives.html",
+    "lang": "en",
+    "title": "ZIP, CBZ, 7z, RAR as a folder | Fast Media Sorter & Sharing",
+    "description": "Open a ZIP, CBZ, 7z, RAR or CBR archive in Fast Media Sorter & Sharing for Windows and page through the pictures inside without unpacking it first."
+  },
+  {
+    "url": "https://serzhyale.github.io/FastMediaSorter_Lite/docs/how-to-editor.html",
+    "lang": "en",
+    "title": "Draw on a photo and crop it | Fast Media Sorter & Sharing",
+    "description": "Mark up a picture, crop it and write the result back to disk with the built-in image editor of Fast Media Sorter & Sharing for Windows."
+  },
+  {
+    "url": "https://serzhyale.github.io/FastMediaSorter_Lite/docs/how-to-filedo-disks.html",
+    "lang": "en",
+    "title": "Share FileDO .fdd Disks | Fast Media Sorter & Sharing",
+    "description": "How to share FileDO .fdd virtual disks to paired phones over SFTP with Fast Media Sorter & Sharing for Windows, setup, autostart and troubleshooting."
+  },
+  {
+    "url": "https://serzhyale.github.io/FastMediaSorter_Lite/docs/how-to-keys.html",
+    "lang": "en",
+    "title": "Keys, zoom and full screen | Fast Media Sorter & Sharing",
+    "description": "The full keyboard and mouse map of Fast Media Sorter & Sharing for Windows: navigation, sorting, zoom, full screen, slideshow and video keys."
+  },
+  {
+    "url": "https://serzhyale.github.io/FastMediaSorter_Lite/docs/how-to-ocr.html",
+    "lang": "en",
+    "title": "Translate text on a picture | Fast Media Sorter & Sharing",
+    "description": "Recognize the text on a photo or a screenshot and show its translation over the image, with a translator that runs on your own PC."
+  },
+  {
+    "url": "https://serzhyale.github.io/FastMediaSorter_Lite/docs/how-to-resources.html",
+    "lang": "en",
+    "title": "Open a server like a folder | Fast Media Sorter & Sharing",
+    "description": "Open an SFTP server or a network share with a login as an ordinary folder in Fast Media Sorter & Sharing for Windows; the server key is pinned."
+  },
+  {
+    "url": "https://serzhyale.github.io/FastMediaSorter_Lite/docs/how-to-setup.html",
+    "lang": "en",
+    "title": "Setup: viewer, language, rules | Fast Media Sorter & Sharing",
+    "description": "Make Fast Media Sorter the default viewer for your pictures and video, choose the interface language, and set what happens to files as you sort them."
+  },
+  {
+    "url": "https://serzhyale.github.io/FastMediaSorter_Lite/docs/how-to-viewer.html",
+    "lang": "en",
+    "title": "Viewer guide | Fast Media Sorter & Sharing",
+    "description": "A practical guide to reviewing, sorting and managing photos and video with Fast Media Sorter & Sharing for Windows."
   },
   {
     "url": "https://serzhyale.github.io/FastMediaSorter_Lite/docs/privacy.html",

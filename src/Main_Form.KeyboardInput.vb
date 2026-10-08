@@ -44,6 +44,7 @@ Partial Public Class Main_Form
             ' The card is above panel focus mode in the Escape ladder. Its scroll keys also
             ' precede user bindings, so reading help never navigates or sorts the hidden file.
             If Not ChromeMenu.PopupVisible AndAlso help_Card IsNot Nothing AndAlso help_Card.Visible Then
+                If help_Card.TryWelcomeKey(keyData) Then Return True
                 If keyData = Keys.Escape Then
                     If Not last_KeyDown_Was_Repeat Then RunEscapeStep()
                     Return True
@@ -587,6 +588,11 @@ Partial Public Class Main_Form
         If help_Card Is Nothing Then
             help_Card = New HelpCardPanel() With {.Dock = DockStyle.Fill, .AllowDrop = True}
             AddHandler help_Card.CloseRequested, Sub() HideHelpCard()
+            AddHandler help_Card.WelcomeRequested,
+                Sub()
+                    HideHelpCard()
+                    ShowWelcome()
+                End Sub
             ' Like the first-run label: a drop over the card opens the file instead of showing "no-drop".
             AdmitLowerIntegrityMessages(help_Card)
             AddHandler help_Card.DragEnter, AddressOf Form1_DragEnter
@@ -681,6 +687,7 @@ Partial Public Class Main_Form
         If settingsWindow IsNot Nothing AndAlso settingsWindow.ResourcesTouched Then
             ApplyResourceChanges(settingsWindow.SettingsRemovedResourceIds)
         End If
+        HandleResetCloseIfRequested()
         If Not settings_Restart_Requested Then Return
         settings_Restart_Requested = False
         If IsDisposed OrElse Not IsHandleCreated Then Return
@@ -722,7 +729,15 @@ Partial Public Class Main_Form
             Table_Form.ActivateModernSettingsOnOwnerMonitor()
 #End If
         Else
+#If Not NETFRAMEWORK Then
+            ' Before PrepareForDisplay, whose tooltips create the window handle: a handle created at the
+            ' wrong place is moved to the owner's monitor later, changes DPI and scales every control again.
+            Table_Form.PrepareShowBeside(Me)
+#End If
             Table_Form.PrepareForDisplay()
+#If Not NETFRAMEWORK Then
+            Table_Form.PrepareShowBeside(Me)
+#End If
             ' Modal is no protection: an owned window still has to be put
             ' into the pinned band by hand (Main_Form.WindowPinning.vb).
             PinToViewerBand(Table_Form)

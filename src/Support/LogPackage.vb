@@ -825,8 +825,7 @@ Public Module LogPackage
         "Share_LanOnlyExport", "Share_ListenPort", "Share_MaxConnections", "Share_OpenWindowOnStartup",
         "Share_ServerFeaturesEnabled", "Share_WindowHeight", "Share_WindowMaximized", "Share_WindowWidth",
         "Share_WindowX", "Share_WindowY", "Share_WorkerEverStarted", "AppWindowState",
-        "Exchange_ListenPort", "Exchange_KeepRunningOnExit", "Exchange_EverStarted",
-        "Share_ExchangeMode"
+        "Exchange_ListenPort", "Exchange_KeepRunningOnExit", "Exchange_EverStarted"
     }
 
     ''' <summary>"|"-joined path lists: the author learns how many, never which.</summary>

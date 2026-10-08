@@ -1,4 +1,4 @@
-Option Strict On
+﻿Option Strict On
 
 Imports System.Drawing
 Imports System.Threading.Tasks
@@ -20,8 +20,12 @@ Imports System.Windows.Forms
 '''   * a destructive or disruptive action asks YesNo with the default on No;
 '''   * every action runs off the UI thread, behind a busy flag, and ends in one result line;
 '''   * an elevated action is one UAC prompt through the bundled helper, with the trust-page link under it;
-'''   * the password goes to the binary over stdin, the generated one is shown once in its own dialog and
-'''     copied only through SecureClipboard; the fingerprint is not a secret.
+'''   * an account's password is made or typed in a dialog, goes to the server over the admin channel (ticket 168),
+'''     and a generated one is shown once in its own dialog and copied only through SecureClipboard; the
+'''     fingerprint is not a secret.
+'''
+''' The administration rows (the wizard, the public address, the third-party ports, the certificate, the accounts and
+''' devices, the statement) are the partial Share_Settings_Form.ExchangeAdmin.vb.
 ''' </summary>
 Partial Public NotInheritable Class Share_Settings_Form
 
@@ -38,15 +42,14 @@ Partial Public NotInheritable Class Share_Settings_Form
     Private _lblXReach As Label
     Private _lblXWins As Label
     Private _lblXPortNote As Label
-    Private _lblXPw As Label
     Private _lblXFw As Label
     Private _lblXFpNote As Label
     Private _lblXSvcNote As Label
     Private _lblXResult As Label
     Private numXPort As NumericUpDown
     Private _btnXApplyPort As Button
-    Private _btnXSetPw As Button
-    Private _btnXGenPw As Button
+    Private _btnXWizard As Button
+    Private _rowXWizard As FlowLayoutPanel
     Private _btnXCopyFp As Button
     Private _btnXStart As Button
     Private _btnXStop As Button
@@ -72,7 +75,7 @@ Partial Public NotInheritable Class Share_Settings_Form
     End Property
 
     ''' <summary>Every group of the window, in display order, with the exchange group only when it exists.
-    ''' The ONE list the constructor, FitToContent, the persisted expansion/anchor and the summaries all
+    ''' The ONE list the navigation, persisted page/anchor context and the summaries all
     ''' read - a group added to one of those four places and forgotten in another broke silently (R4 section
     ''' 1); a test holds that none of them keeps a list of its own.</summary>
     Private Function AllSections() As CollapsibleSection()
@@ -86,7 +89,7 @@ Partial Public NotInheritable Class Share_Settings_Form
     ''' the hosting group and the help group; returns Nothing (and builds nothing) otherwise.</summary>
     Private Function CreateExchangeSection() As CollapsibleSection
         If Not ExchangeProcess.IsAvailable() Then Return Nothing
-        Dim sec As New CollapsibleSection("exchange", ExchangeText.Title())
+        Dim sec As CollapsibleSection = CreateSettingsSection("exchange", ExchangeText.Title())
         _secExchange = sec   ' before the build: ApplyExchangeState keys off it
         BuildExchangeSection(sec)
         Return sec
@@ -120,43 +123,12 @@ Partial Public NotInheritable Class Share_Settings_Form
         sec.AddBodyRow(_lblXWins)
         sec.AddBodyRow(NoteLabel(ExchangeText.Intro()))
 
-        ' the listen port
-        Dim lblPort As New Label With {.AutoSize = True, .Margin = New Padding(0, 6, 6, 0), .Text = Localization.T("Порт:")}
-        numXPort = New NumericUpDown With {.Minimum = ExchangeSettings.MinPort, .Maximum = ExchangeSettings.MaxPort,
-            .Value = ExchangeSettings.DefaultPort, .Width = 84, .Margin = New Padding(0, 2, 0, 0)}
-        _btnXApplyPort = XButton(Localization.T("Применить порт"), AddressOf OnXApplyPort)
-        _btnXApplyPort.Visible = False
-        AddHandler numXPort.ValueChanged, AddressOf OnXPortValueChanged
-        sec.AddBodyRow(SettingsEditorRow(lblPort, numXPort, New Padding(0, 6, 0, 0)))
-        Dim portRow As FlowLayoutPanel = XFlow()
-        portRow.Controls.Add(_btnXApplyPort)
-        sec.AddBodyRow(portRow)
-        _lblXPortNote = NoteLabel(ExchangeText.PortNote())
-        sec.AddBodyRow(_lblXPortNote)
-
-        ' the password
-        _lblXPw = New Label With {.AutoSize = True, .Margin = New Padding(0, 6, 0, 2), .MaximumSize = New Size(HostingContentWidth, 0)}
-        sec.AddBodyRow(_lblXPw)
-        _btnXSetPw = XButton(ExchangeText.SetPasswordButton(), AddressOf OnXSetPassword)
-        _btnXGenPw = XButton(ExchangeText.GeneratePasswordButton(), AddressOf OnXGeneratePassword)
-        Dim pwRow As FlowLayoutPanel = XFlow()
-        pwRow.Controls.Add(_btnXSetPw)
-        pwRow.Controls.Add(_btnXGenPw)
-        sec.AddBodyRow(pwRow)
-        sec.AddBodyRow(NoteLabel(ExchangeText.PasswordNote()))
-
-        ' the fingerprint - not a secret
-        _rowXFp = New FlowLayoutPanel With {.AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink,
-            .WrapContents = True, .Margin = New Padding(0, 2, 0, 2), .MaximumSize = New Size(HostingContentWidth, 0)}
-        _rowXFp.Controls.Add(New Label With {.AutoSize = True, .Margin = New Padding(0, 6, 6, 0), .Text = ExchangeText.FingerprintLabel()})
-        _txtXFp = New TextBox With {.ReadOnly = True, .Width = 300, .Margin = New Padding(0, 2, 6, 0),
-            .AccessibleName = ExchangeText.FingerprintLabel()}
-        _rowXFp.Controls.Add(_txtXFp)
-        _btnXCopyFp = XButton(ExchangeText.CopyFingerprintButton(), AddressOf OnXCopyFingerprint)
-        _rowXFp.Controls.Add(_btnXCopyFp)
-        sec.AddBodyRow(_rowXFp)
-        _lblXFpNote = NoteLabel("")
-        sec.AddBodyRow(_lblXFpNote)
+        ' "use this PC as my server" (ticket 168 section 3.7): the one-person case in one step; drawn only while nothing exists yet
+        _btnXWizard = XButton(ExchangeAdminText.WizardButton(), AddressOf OnXWizard)
+        _rowXWizard = XFlow()
+        _rowXWizard.Controls.Add(_btnXWizard)
+        _rowXWizard.Visible = False
+        sec.AddBodyRow(_rowXWizard)
 
         ' start / stop - the console server
         _btnXStart = XButton(ExchangeText.StartButton(), AddressOf OnXStart)
@@ -169,6 +141,28 @@ Partial Public NotInheritable Class Share_Settings_Form
             .Text = ExchangeText.KeepRunningCheckbox(), .Checked = _exSettings.KeepRunningOnExit}
         AddHandler _chkXKeep.CheckedChanged, AddressOf OnXKeepRunningChanged
         sec.AddBodyRow(_chkXKeep)
+
+        ' the listen port
+        Dim lblPort As New Label With {.AutoSize = True, .Margin = New Padding(0, 6, 6, 0), .Text = Localization.T("Порт:")}
+        numXPort = New NumericUpDown With {.Minimum = ExchangeSettings.MinPort, .Maximum = ExchangeSettings.MaxPort,
+            .Value = ExchangeSettings.DefaultPort, .Width = 84, .Margin = New Padding(0, 2, 0, 0)}
+        _exBaselinePort = CInt(numXPort.Value)   ' the field starts at the number it shows: nothing is pending until the person edits it
+        _btnXApplyPort = XButton(Localization.T("Применить порт"), AddressOf OnXApplyPort)
+        _btnXApplyPort.Visible = False
+        AddHandler numXPort.ValueChanged, AddressOf OnXPortValueChanged
+        Dim portSetting = DirectCast(SettingsEditorRow(lblPort, numXPort, New Padding(0, 6, 0, 0)), ManagerSettingRow)
+        portSetting.SetHint(ExchangeText.PortNote())
+        _lblXPortNote = portSetting.Hint
+        sec.AddBodyRow(portSetting)
+        Dim portRow As FlowLayoutPanel = XFlow()
+        portRow.Controls.Add(_btnXApplyPort)
+        sec.AddBodyRow(portRow)
+
+        ' ticket 168: the public address, the third-party ports and the certificate with its fingerprint (not a secret)
+        BuildExchangeAdminRows(sec)
+
+        ' ticket 168: the accounts, their devices and the statement of what the operator can see
+        BuildExchangeAccountRows(sec)
 
         ' the firewall (ticket 143)
         _lblXFw = New Label With {.AutoSize = True, .Margin = New Padding(0, 8, 0, 2), .MaximumSize = New Size(HostingContentWidth, 0)}
@@ -201,12 +195,6 @@ Partial Public NotInheritable Class Share_Settings_Form
         AddHandler _lnkXTrust.LinkClicked, Sub() NetworkInfo.OpenInBrowser(ShareText.TrustPageUrl())
         sec.AddBodyRow(_lnkXTrust)
 
-        ' Where a failure of this group is seen, the way to get its log to the author (ticket 182 L-5): the
-        ' same flow as the tray menu and the window's footer, never a second archive format.
-        Dim lnkSendLog As New LinkLabel With {.AutoSize = True, .MaximumSize = New Size(HostingContentWidth, 0),
-            .Margin = New Padding(0, 0, 0, 10), .Text = Localization.T("Отправить журнал автору..")}
-        AddHandler lnkSendLog.LinkClicked, Async Sub() Await SendLogsFlow.RunAsync(Me)
-        sec.AddBodyRow(lnkSendLog)
 
         _lblXResult = New Label With {.AutoSize = True, .Margin = New Padding(0, 6, 0, 0),
             .MaximumSize = New Size(HostingContentWidth, 0), .Text = ""}
@@ -256,59 +244,61 @@ Partial Public NotInheritable Class Share_Settings_Form
     ''' <summary>Paints the group from one snapshot. Which controls EXIST is decided here by visibility, never
     ''' by disabling, from the pure <see cref="ExchangeGroupModel"/>.</summary>
     Private Sub ApplyExchangeState(snap As ExchangeSnapshot)
-        If Not HasExchange Then Return
-        _exReport = snap.Report
-        Dim m As ExchangeGroupModel = ExchangeGroupModel.Build(snap)
-        _exModel = m
+        Using layout = HoldSettingsPage("exchange")
+            _exchangeSnapshot = snap
+            If Not HasExchange Then Return
+            _exReport = snap.Report
+            Dim m As ExchangeGroupModel = ExchangeGroupModel.Build(snap)
+            _exModel = m
 
-        _lblXState.Text = ExchangeText.StateLine(m)
-        _lblXState.ForeColor = If(m.Kind = ExchangeRunKind.RunningConsole OrElse m.Kind = ExchangeRunKind.ServiceRunning,
-                                  Color.ForestGreen,
-                                  If(m.Kind = ExchangeRunKind.NotConfigured OrElse m.Kind = ExchangeRunKind.Unreadable,
-                                     CollapsibleSection.AttentionColor, SystemColors.ControlText))
-        _lblXReach.Text = If(m.ShowReachabilityNote, ExchangeText.ReachabilityNote(), "")
-        _lblXReach.Visible = m.ShowReachabilityNote
-        _lblXWins.Text = If(m.ShowServiceWinsNote, ExchangeText.ServiceWinsNote(), "")
-        _lblXWins.Visible = m.ShowServiceWinsNote
+            _lblXState.Text = ExchangeText.StateLine(m)
+            _lblXState.ForeColor = If(m.Kind = ExchangeRunKind.RunningConsole OrElse m.Kind = ExchangeRunKind.ServiceRunning,
+                                      ThemeService.Palette.Success,
+                                      If(m.Kind = ExchangeRunKind.NotConfigured OrElse m.Kind = ExchangeRunKind.Unreadable,
+                                         CollapsibleSection.AttentionColor, ThemeService.Palette.TextPrimary))
+            _lblXReach.Text = If(m.ShowReachabilityNote, ExchangeText.ReachabilityNote(), "")
+            _lblXReach.Visible = m.ShowReachabilityNote
+            _lblXWins.Text = If(m.ShowServiceWinsNote, ExchangeText.ServiceWinsNote(), "")
+            _lblXWins.Visible = m.ShowServiceWinsNote
 
-        ' The port: the binary's own number, unless the person is mid-edit.
-        Dim shown As Integer = If(m.Port >= ExchangeSettings.MinPort, m.Port,
-                                  If(_exSettings.ListenPort >= ExchangeSettings.MinPort, _exSettings.ListenPort, ExchangeSettings.DefaultPort))
-        If Not PortPendingX() Then
-            _exLoadingPort = True
-            Try
-                numXPort.Value = Math.Max(numXPort.Minimum, Math.Min(numXPort.Maximum, shown))
-            Finally
-                _exLoadingPort = False
-            End Try
-            _exBaselinePort = CInt(numXPort.Value)
-        End If
-        UpdateXPortApply()
+            ' The port: the binary's own number, unless the person is mid-edit.
+            Dim shown As Integer = If(m.Port >= ExchangeSettings.MinPort, m.Port,
+                                      If(_exSettings.ListenPort >= ExchangeSettings.MinPort, _exSettings.ListenPort, ExchangeSettings.DefaultPort))
+            If Not PortPendingX() Then
+                _exLoadingPort = True
+                Try
+                    numXPort.Value = Math.Max(numXPort.Minimum, Math.Min(numXPort.Maximum, shown))
+                Finally
+                    _exLoadingPort = False
+                End Try
+                _exBaselinePort = CInt(numXPort.Value)
+            End If
+            UpdateXPortApply()
 
-        _lblXPw.Text = ExchangeText.PasswordState(m)
-        _lblXPw.ForeColor = If(m.PasswordSet AndAlso Not m.PasswordBroken, SystemColors.ControlText, CollapsibleSection.AttentionColor)
+            _rowXFp.Visible = m.ShowFingerprint
+            _txtXFp.Text = m.Fingerprint
+            _lblXFpNote.Text = If(m.ShowFingerprint, ExchangeText.FingerprintNote(), ExchangeText.FingerprintMissing())
 
-        _rowXFp.Visible = m.ShowFingerprint
-        _txtXFp.Text = m.Fingerprint
-        _lblXFpNote.Text = If(m.ShowFingerprint, ExchangeText.FingerprintNote(), ExchangeText.FingerprintMissing())
+            _btnXStart.Visible = m.ShowStart
+            _btnXStop.Visible = m.ShowStop
+            _chkXKeep.Visible = m.ShowKeepRunning
 
-        _btnXStart.Visible = m.ShowStart
-        _btnXStop.Visible = m.ShowStop
-        _chkXKeep.Visible = m.ShowKeepRunning
+            _lblXFw.Text = ExchangeText.FirewallState(snap.Firewall)
+            _btnXFwEnable.Visible = m.ShowFirewallEnable
+            _btnXFwRemove.Visible = m.ShowFirewallRemove
+            _rowXFw.Visible = m.ShowFirewallEnable OrElse m.ShowFirewallRemove
 
-        _lblXFw.Text = ExchangeText.FirewallState(snap.Firewall)
-        _btnXFwEnable.Visible = m.ShowFirewallEnable
-        _btnXFwRemove.Visible = m.ShowFirewallRemove
-        _rowXFw.Visible = m.ShowFirewallEnable OrElse m.ShowFirewallRemove
+            _btnXSvcStart.Visible = m.ShowServiceStart
+            _btnXSvcStop.Visible = m.ShowServiceStop
+            _btnXRegister.Visible = m.ShowRegisterService
+            _btnXRemove.Visible = m.ShowRemoveService
+            _rowXSvc.Visible = m.ShowServiceRows
+            _lblXSvcNote.Text = If(m.ShowServiceRows, ExchangeText.ServiceNote(snap.ServiceExists), "")
+            _lblXSvcNote.Visible = m.ShowServiceRows
+            _lnkXTrust.Visible = m.ShowFirewallEnable OrElse m.ShowFirewallRemove OrElse m.ShowRegisterService OrElse m.ShowRemoveService
 
-        _btnXSvcStart.Visible = m.ShowServiceStart
-        _btnXSvcStop.Visible = m.ShowServiceStop
-        _btnXRegister.Visible = m.ShowRegisterService
-        _btnXRemove.Visible = m.ShowRemoveService
-        _rowXSvc.Visible = m.ShowServiceRows
-        _lblXSvcNote.Text = If(m.ShowServiceRows, ExchangeText.ServiceNote(snap.ServiceExists), "")
-        _lblXSvcNote.Visible = m.ShowServiceRows
-        _lnkXTrust.Visible = m.ShowFirewallEnable OrElse m.ShowFirewallRemove OrElse m.ShowRegisterService OrElse m.ShowRemoveService
+            ApplyExchangeAdminState(snap, m)
+        End Using
     End Sub
 
     ' --- the port -----------------------------------------------------------------------
@@ -363,62 +353,6 @@ Partial Public NotInheritable Class Share_Settings_Form
         Catch ex As Exception
             AppFileLogger.LogException("Exchange: applying the port", ex)
             If Not (IsDisposed OrElse Disposing) Then ShowXResult(ExchangeText.PortResult(ExchangeProcess.ListenOutcome.Failed, False), False)
-        Finally
-            If Not (IsDisposed OrElse Disposing) Then SetXBusy(False)
-        End Try
-    End Sub
-
-    ' --- password -------------------------------------------------------------------------
-
-    Private Async Sub OnXSetPassword()
-        If _exBusy Then Return
-        Dim pwd As String
-        Using dlg As New Exchange_Password_Form(Exchange_Password_Form.DialogMode.Enter)
-            If dlg.ShowDialog(Me) <> DialogResult.OK Then Return
-            pwd = dlg.EnteredPassword
-        End Using
-        SetXBusy(True)
-        Try
-            Dim result As ExchangeProcess.PasswordResult = Await Task.Run(Function() ExchangeProcess.SetPassword(pwd))
-            pwd = Nothing
-            If IsDisposed OrElse Disposing Then Return
-            Dim running As Boolean = _exModel IsNot Nothing AndAlso _exModel.Kind = ExchangeRunKind.RunningConsole
-            ShowXResult(ExchangeText.PasswordResult(result.Outcome, running), result.Outcome = ExchangeProcess.PasswordOutcome.Saved)
-            Await RefreshExchangeAsync()
-        Catch ex As Exception
-            AppFileLogger.LogException("Exchange: setting the password", ex)
-        Finally
-            If Not (IsDisposed OrElse Disposing) Then SetXBusy(False)
-        End Try
-    End Sub
-
-
-    Private Async Sub OnXGeneratePassword()
-        If _exBusy Then Return
-        If _exModel IsNot Nothing AndAlso _exModel.PasswordSet Then
-            If MessageBox.Show(Me, ExchangeText.GenerateQuestion(), Me.Text, MessageBoxButtons.YesNo,
-                               MessageBoxIcon.Warning, MessageBoxDefaultButton.Button2) <> DialogResult.Yes Then Return
-        End If
-        SetXBusy(True)
-        Try
-            Dim result As ExchangeProcess.PasswordResult = Await Task.Run(Function() ExchangeProcess.GeneratePassword())
-            If IsDisposed OrElse Disposing Then Return
-            If result.Outcome = ExchangeProcess.PasswordOutcome.Saved Then
-                Dim running As Boolean = _exModel IsNot Nothing AndAlso _exModel.Kind = ExchangeRunKind.RunningConsole
-                ' Shown ONCE; the reference is dropped the moment the dialog is up.
-                Dim shownOnce As String = result.Plaintext
-                result.Plaintext = ""
-                Using dlg As New Exchange_Password_Form(Exchange_Password_Form.DialogMode.Generated, shownOnce)
-                    shownOnce = Nothing
-                    dlg.ShowDialog(Me)
-                End Using
-                ShowXResult(ExchangeText.PasswordResult(result.Outcome, running), True)
-            Else
-                ShowXResult(ExchangeText.PasswordResult(result.Outcome, False), False)
-            End If
-            Await RefreshExchangeAsync()
-        Catch ex As Exception
-            AppFileLogger.LogException("Exchange: generating the password", ex)
         Finally
             If Not (IsDisposed OrElse Disposing) Then SetXBusy(False)
         End Try
@@ -560,7 +494,7 @@ Partial Public NotInheritable Class Share_Settings_Form
     ' --- plumbing --------------------------------------------------------------------------
 
     Private Sub ShowXResult(text As String, ok As Boolean, Optional neutral As Boolean = False)
-        _lblXResult.ForeColor = If(neutral, ThemeService.Palette.TextMuted, If(ok, Color.ForestGreen, CollapsibleSection.AttentionColor))
+        _lblXResult.ForeColor = If(neutral, ThemeService.Palette.TextMuted, If(ok, ThemeService.Palette.Success, CollapsibleSection.AttentionColor))
         _lblXResult.Text = text
     End Sub
 
@@ -568,8 +502,7 @@ Partial Public NotInheritable Class Share_Settings_Form
     ''' state (disabled only while an action is out - the Hosting precedent), and the cursor says so.</summary>
     Private Sub SetXBusy(value As Boolean)
         _exBusy = value
-        For Each b As Button In New Button() {_btnXApplyPort, _btnXSetPw, _btnXGenPw, _btnXCopyFp, _btnXStart, _btnXStop,
-                                              _btnXFwEnable, _btnXFwRemove, _btnXSvcStart, _btnXSvcStop, _btnXRegister, _btnXRemove}
+        For Each b As Button In ExchangeBusyButtons()
             If b IsNot Nothing Then b.Enabled = Not value
         Next
         Me.UseWaitCursor = value
@@ -579,6 +512,7 @@ Partial Public NotInheritable Class Share_Settings_Form
     Private Sub DisposeExchangeResources()
         Try : RemoveHandler ExchangeProcess.ConsoleExited, AddressOf OnXConsoleExited : Catch : End Try
         Try : _lblXState?.Font?.Dispose() : Catch : End Try
+        DisposeExchangeAdminResources()
     End Sub
 
     ''' <summary>The folded summary: the same facts the body states.</summary>

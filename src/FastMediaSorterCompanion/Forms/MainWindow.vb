@@ -1,4 +1,4 @@
-Option Strict On
+﻿Option Strict On
 
 Imports System.Collections.Generic
 Imports System.Diagnostics
@@ -241,6 +241,15 @@ Partial Public NotInheritable Class MainWindow
         _entered = True
         Try
             Await EnterAsync()
+            ' Spec 185: the server welcome, once the window is on screen. It may enable the share server or write the
+            ' port, so the settings are read again and the window re-enters - the same steps as after OnEnableServer.
+            If Server_Welcome_Form.OpenDueHalves(Me) Then
+                _settings.Load()
+                ApplyGate()
+                _entered = False
+                _listPopulated = False
+                Await EnterAsync()
+            End If
             wake_Ready.TrySetResult(True)
         Catch ex As Exception
             wake_Ready.TrySetResult(False)
@@ -428,7 +437,11 @@ Partial Public NotInheritable Class MainWindow
         _wizardOpen = True
         Try
             Using dlg As New PackageWizardForm(preselect)
+                Try
                 dlg.ShowDialog(Me)
+            Finally
+                _settingsWindow = Nothing
+            End Try
             End Using
         Finally
             _wizardOpen = False
@@ -439,9 +452,27 @@ Partial Public NotInheritable Class MainWindow
     ''' <summary>Opens the manager settings (autostart, connection cap, hosting). Re-reads
     ''' status afterwards only when an elevated hosting action actually changed the machine
     ''' - the service may have just been installed, started or removed under us.</summary>
+    Friend Sub RefreshInterfaceLanguage()
+        If IsDisposed Then Return
+        SuspendLayout()
+        Try
+            LoadLocalState()
+            ApplyStatusToUi()
+        Finally
+            ResumeLayout(True)
+        End Try
+    End Sub
+
+    Private _settingsWindow As Share_Settings_Form
+
     Private Async Sub OnSettingsClicked(sender As Object, e As EventArgs)
+        If _settingsWindow IsNot Nothing AndAlso Not _settingsWindow.IsDisposed Then
+            _settingsWindow.Activate()
+            Return
+        End If
         Dim changed As Boolean
         Using dlg As New Share_Settings_Form(_status)
+            _settingsWindow = dlg
             dlg.ShowDialog(Me)
             ' Either an elevated hosting action changed the machine, or a pinned port moved
             ' the running server - both leave the status snapshot here stale.

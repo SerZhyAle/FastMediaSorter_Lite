@@ -100,16 +100,23 @@ Partial Public NotInheritable Class Localization
 
         ' --- what happens when a video ends ---------------------------------------
 
-        Add("Оставить последний кадр",
-            "Keep the last frame", "Залишити останній кадр", "Letztes Bild stehen lassen",
-            "Lascia l'ultimo fotogramma", "Dejar el último fotograma",
-            "Laisser la dernière image", "Manter o último fotograma",
-            "إبقاء الإطار الأخير", "अंतिम फ़्रेम रखें", "শেষ ফ্রেম রাখুন",
-            "آخری فریم رکھیں", "停在最后一帧")
+        ' The three ends the video menu and the Settings window both offer (the menu's group is "Режим воспроизведения").
 
-        Add("Повторить",
-            "Repeat", "Повторити", "Wiederholen", "Ripeti", "Repetir", "Répéter", "Repetir",
-            "تكرار", "दोहराएँ", "পুনরাবৃত্তি", "دہرائیں", "重复")
+        Add("Проиграть и стоп",
+            "Play and stop", "Відтворити і зупинити", "Abspielen und anhalten", "Riproduci e ferma",
+            "Reproducir y detener", "Lire puis arrêter", "Reproduzir e parar",
+            "تشغيل ثم إيقاف", "चलाएँ और रोकें", "চালিয়ে থামান", "چلائیں اور روکیں", "播放后停止")
+
+        Add("Автопереход к следующему",
+            "Advance to the next file", "Автоперехід до наступного файлу", "Automatisch zur nächsten Datei",
+            "Passa automaticamente al file successivo", "Pasar automáticamente al archivo siguiente",
+            "Passer automatiquement au fichier suivant", "Avançar automaticamente para o ficheiro seguinte",
+            "الانتقال تلقائيًا إلى الملف التالي", "अगली फ़ाइल पर अपने-आप जाएँ", "পরবর্তী ফাইলে স্বয়ংক্রিয়ভাবে যান",
+            "خود بخود اگلی فائل پر جائیں", "自动播放下一个文件")
+
+        Add("По кругу",
+            "Loop", "По колу", "In Schleife", "In ciclo", "En bucle", "En boucle", "Em ciclo",
+            "في حلقة", "लूप में", "লুপে", "لوپ میں", "循环播放")
 
         ' --- name collision on copy/move ------------------------------------------
 

@@ -99,3 +99,51 @@ func TestEveryReasonConstantIsInTheList(t *testing.T) {
 		t.Fatalf("reason.go declares %d reason constants, AllReasons lists %d", len(consts), len(AllReasons))
 	}
 }
+
+// TestTheReasonsTheServerCanEmitAreExactlyTheNineOfTheContract is ticket 167 rule 7: the set of
+// reasons the server can emit is built by scanning the sources for every Reason constant a non-test
+// file names, and it must be inside the list of DEVICE-EXCHANGE 7.10 - and every one of the nine must
+// be emitted somewhere (a reason nothing can produce would be a promise the server cannot keep).
+func TestTheReasonsTheServerCanEmitAreExactlyTheNineOfTheContract(t *testing.T) {
+	ident := regexp.MustCompile(`\b(?:wire\.)?(Reason[A-Z]\w*)\b`)
+	declared := map[string]bool{}
+	for _, m := range regexp.MustCompile(`(?m)^\s*(Reason[A-Z]\w*)\s+Reason\s*=`).FindAllStringSubmatch(moduleGoFiles(t, false)["internal/wire/reason.go"], -1) {
+		declared[m[1]] = true
+	}
+	if len(declared) != 9 || len(AllReasons) != 9 {
+		t.Fatalf("%d declared, %d listed: the contract has nine reasons", len(declared), len(AllReasons))
+	}
+	emitted := map[string]bool{}
+	for name, src := range moduleGoFiles(t, false) {
+		if strings.HasPrefix(name, "internal/wire/") || strings.HasPrefix(name, "internal/testkit/") {
+			continue // the declaration, the Valid method and the harness are not emissions
+		}
+		for _, m := range ident.FindAllStringSubmatch(src, -1) {
+			if !declared[m[1]] {
+				t.Errorf("%s names %s, which is not one of the nine reasons of 7.10", name, m[1])
+			}
+			emitted[m[1]] = true
+		}
+	}
+	for r := range declared {
+		if !emitted[r] {
+			t.Errorf("%s is in the list but nothing in the server emits it", r)
+		}
+	}
+	// the scan can fail: a tenth constant, and a reason used but not declared, are seen
+	if declared["ReasonTeapot"] || !ident.MatchString("wire.ReasonTeapot") {
+		t.Error("the pattern must see a reason constant that is not declared")
+	}
+}
+
+// the same list is what the code says: every Reason value is kebab-case and unique
+func TestReasonValuesAreKebabCaseAndUnique(t *testing.T) {
+	seen := map[Reason]bool{}
+	kebab := regexp.MustCompile(`^[a-z]+(-[a-z]+)*$`)
+	for _, r := range AllReasons {
+		if !kebab.MatchString(string(r)) || seen[r] {
+			t.Errorf("%q", r)
+		}
+		seen[r] = true
+	}
+}

@@ -23,6 +23,7 @@ plain text so maintained documentation works in a fresh clone.
 | [dev-notes/](dev-notes/) | throwaway diagnostics/captures (not authoritative) | *(none)* |
 | assets/, images/ | doc & site images | - |
 | privacy.html | hosted privacy policy (Store-required) | - |
+| how-to-*.html | the hosted task guides (published pages; the old root addresses are forwarders, see [guides/SITE_ADDRESSES.md](guides/SITE_ADDRESSES.md)) | - |
 
 ## The meta docs (read these first for process)
 

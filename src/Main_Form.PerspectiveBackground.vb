@@ -183,8 +183,10 @@ Partial Public Class Main_Form
 
     Private Function GetZoomedImageRectangle(sourceWidth As Integer, sourceHeight As Integer, targetWidth As Integer, targetHeight As Integer) As Rectangle
 #If Not NETFRAMEWORK Then
-        ' One definition of the letterbox math, proven in ZoomMathTests (spec 012 §5).
-        Return ZoomMath.FitBounds(sourceWidth, sourceHeight, New Size(targetWidth, targetHeight))
+        ' The PictureBox still uses SizeMode.Zoom at Fit. The viewport's FitBounds
+        ' deliberately does not enlarge small photos, but PictureBox does; sampling
+        ' its bars from FitBounds put their edges inside those photos.
+        Return ZoomMath.PictureBoxZoomBounds(sourceWidth, sourceHeight, New Size(targetWidth, targetHeight))
 #Else
         If sourceWidth <= 0 OrElse
             sourceHeight <= 0 OrElse

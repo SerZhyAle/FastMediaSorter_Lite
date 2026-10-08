@@ -5,6 +5,7 @@ $ErrorActionPreference = 'Stop'
 $repo = Split-Path (Split-Path $PSScriptRoot -Parent) -Parent
 . (Join-Path $repo 'tools/lib/Verdict.ps1')
 trap { Exit-Verdict 'VideoTransportScenes' 2 $_.Exception.Message }
+Write-Subject 'VideoTransportScenes' 'the lower video bar of the modern viewer: real LibVLC playback of a generated clip, pause, resume and replay by pointer clicks'
 if (-not (Get-Command ffmpeg -ErrorAction SilentlyContinue)) {
     Exit-Verdict 'VideoTransportScenes' 2 'ffmpeg is needed to generate the test clip'
 }

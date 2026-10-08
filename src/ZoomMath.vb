@@ -131,6 +131,22 @@ Friend Module ZoomMath
     End Function
 
     ''' <summary>
+    ''' The rectangle PictureBoxSizeMode.Zoom actually paints. Unlike the viewport's
+    ''' FitBounds, PictureBox also enlarges images smaller than its client area. The
+    ''' perspective background samples the displayed edge, so it needs these bounds.
+    ''' </summary>
+    Friend Function PictureBoxZoomBounds(imageWidth As Integer, imageHeight As Integer, boxSize As Size) As Rectangle
+        If imageWidth <= 0 OrElse imageHeight <= 0 OrElse boxSize.Width <= 0 OrElse boxSize.Height <= 0 Then
+            Return Rectangle.Empty
+        End If
+
+        Dim scale As Double = Math.Min(boxSize.Width / CDbl(imageWidth), boxSize.Height / CDbl(imageHeight))
+        Dim width As Integer = Math.Max(1, Math.Min(boxSize.Width, CInt(Math.Round(imageWidth * scale))))
+        Dim height As Integer = Math.Max(1, Math.Min(boxSize.Height, CInt(Math.Round(imageHeight * scale))))
+        Return New Rectangle((boxSize.Width - width) \ 2, (boxSize.Height - height) \ 2, width, height)
+    End Function
+
+    ''' <summary>
     ''' The paint pair for the viewport (spec 012 §5): which part of the native image
     ''' (<paramref name="srcRect"/>) is visible through the panel, drawn into which part
     ''' of the panel (<paramref name="destRect"/>). <paramref name="imageBounds"/> is the

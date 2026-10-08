@@ -23,8 +23,10 @@ never by `FMSSFTP2`) and the backward-compatibility rules of section 8.
    tunnel path is written last with a valid host and port (`FMSCFG` rule 7). Its share-id member is named
    `shareId`, as `FMSCFG` 2.4 registers it (renamed from the provisional `sid` on 2026-10-07).
 3. **The server and the producer are local specifications 161-168 and 170-180**, under the umbrella 160: the
-   dev-tree server built to the superseded wire is migrated, not kept, and nothing ships before the server wire's
-   rung 2. The producer no longer asks the worker to register anything: the Share Manager's device agent publishes
+   dev-tree server was built to the superseded wire and its core was replaced on 2026-10-07 by 161-164 (the third
+   party port is now a lease tied to a published resource through `publish.publicPort`, section 5.5 as corrected
+   by 0.12, never to a register request; the wire is `DEVICE-EXCHANGE`'s). No client has spoken to it, the
+   descriptor codec of section 4 still does not exist, and nothing ships before the server wire's rung 2. The producer no longer asks the worker to register anything: the Share Manager's device agent publishes
    what the worker serves.
 4. **Section 8 rule 5 (dual mode)** is held by the byte-identical export tests today and by the baseline of local
    specification 177 once the clients exist: with no account and no server a share is served and exported exactly

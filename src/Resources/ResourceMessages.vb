@@ -20,6 +20,10 @@ Friend Module ResourceMessages
             Case ResourceFailureKind.Auth
                 Return Localization.T("Сервер не принял логин или пароль")
             Case ResourceFailureKind.KeyMismatch
+                ' the tunnel's own stop (ticket 171): the EXCHANGE server's certificate, not the SSH key of the share
+                If String.Equals(failure.Detail, ExchangeTunnelRules.CertificateDetail, StringComparison.Ordinal) Then
+                    Return Localization.T("Сертификат сервера обмена изменился - подключение через сервер отменено")
+                End If
                 Return Localization.T("Ключ сервера не совпал с запомненным - подключение отменено")
             Case ResourceFailureKind.Transport
                 Return Localization.T("Сервер не отвечает или связь оборвалась")

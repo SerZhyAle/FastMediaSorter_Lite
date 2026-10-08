@@ -102,7 +102,7 @@ Partial Public Class Main_Form
         ' and a one-key path to a permanent delete is not something to add quietly (§11).
         If IsCurrentAnimation() Then
             ' The original is deleted once the video exists: the row says what it does and looks like it (125 UX-312).
-            AddMenuItem(image_Menu.Items, Localization.T("Анимацию - в видео.."),
+            AddMenuItem(image_Menu.Items, Localization.T("Преобразовать в видео.."),
                         Sub() StartReplaceAnimationWithVideo(), destructive:=True)
             image_Menu.Items.Add(New ToolStripSeparator())
         End If

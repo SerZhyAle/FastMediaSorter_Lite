@@ -229,9 +229,13 @@ func (s *Server) envelopes(raw *trackedConn, conn net.Conn, secure bool, key str
 		return
 	}
 	st.t0 = time.Now()
-	leave() // a first known envelope has arrived: the pre-auth slot is given back
 	_ = conn.SetReadDeadline(time.Time{})
 
+	// The pre-auth slot (161 rule 3) is held until the stream AUTHENTICATES - that is, until the
+	// backend has answered its enroll or hello - not merely until its first envelope has arrived: a
+	// stream that sent a frame and then stalls (or is slow to be judged) is still unauthenticated.
+	// An outsider connect never authenticates, so it gives the slot back as it is handed over;
+	// every refusal path closes the stream, which gives it back too.
 	var res Result
 	switch e := first.(type) {
 	case *wire.Enroll:
@@ -254,6 +258,7 @@ func (s *Server) envelopes(raw *trackedConn, conn net.Conn, secure bool, key str
 		if e.ResourceID != "" { // a resourceId is never a capability: it needs a hello
 			return
 		}
+		leave() // an outsider's stream waits for its producer for up to the pending window: not a pre-auth wait
 		owned = true
 		s.cfg.Backend.Connect(st, nil, e)
 		return
@@ -261,6 +266,9 @@ func (s *Server) envelopes(raw *trackedConn, conn net.Conn, secure bool, key str
 		return // known, but invalid in the opening state
 	}
 
+	if res.Session != nil && res.Reply != nil && res.Refuse == "" && !res.Silent {
+		leave() // authenticated: from here the stream counts against its device, not the pre-auth pool
+	}
 	switch {
 	case res.Silent:
 		return

@@ -221,7 +221,8 @@ func isASCIILetter(b byte) bool { return b >= 'A' && b <= 'Z' || b >= 'a' && b <
 // the first byte of a plain frame (a frame is at most 16 KiB before authentication, so its 4-byte
 // big-endian length starts with a zero byte), anything else is closed without a word. Inside TLS
 // the first byte decides again: 0x00 an envelope stream, an ASCII letter an HTTP request, anything
-// else closes. Every connection holds a pre-auth slot until its first envelope arrives.
+// else closes. Every connection holds a pre-auth slot until it authenticates (the backend has answered
+// its enroll or hello), or hands itself over as an outsider connect or an HTTP listen, or ends.
 func (s *Server) handle(raw *trackedConn) {
 	leave := s.cfg.PreAuth.Enter(raw)
 	defer leave()
@@ -293,6 +294,8 @@ func (s *Server) httpOpening(raw *trackedConn, conn net.Conn, br *bufio.Reader, 
 		_ = st.WriteRaw(wire.HTTPResponse(404, 0))
 	case req.Method != "GET":
 		_ = st.WriteRaw(wire.HTTPResponse(405, 0))
+	case req.Version != "HTTP/1.1": // the body is chunked: HTTP/1.1 only (7.6)
+		_ = st.WriteRaw(wire.HTTPResponse(505, 0))
 	default:
 		owned = true
 		s.cfg.Backend.Listen(st, id)

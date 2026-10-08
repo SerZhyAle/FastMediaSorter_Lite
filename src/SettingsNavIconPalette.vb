@@ -68,6 +68,14 @@ Public Module SettingsNavIconPalette
     Public Function TryGetInk(controlName As String, darkTheme As Boolean, ByRef ink As Color) As Boolean
         ink = Color.Empty
         If String.IsNullOrEmpty(controlName) Then Return False
+        Select Case controlName
+            Case "managerSettingsNav_startup" : controlName = "settingsNavGeneral"
+            Case "managerSettingsNav_network" : controlName = "settingsNavResources"
+            Case "managerSettingsNav_hosting" : controlName = "settingsNavStorage"
+            Case "managerSettingsNav_exchange" : controlName = "settingsNavTranslation"
+            Case "managerSettingsNav_exchange-account" : controlName = "settingsNavRecipients"
+            Case "managerSettingsNav_help" : controlName = "settingsNavAudio"
+        End Select
         For Each entry As NavInk In table
             If entry.ControlName = controlName Then
                 ink = entry.Ink(darkTheme)
@@ -93,7 +101,7 @@ Public Module SettingsNavIconPalette
                 CInt(Math.Round(ink.B + (CInt(endpoint.B) - CInt(ink.B)) * amount)))
             Dim passes As Boolean = True
             For Each surface As Color In surfaces
-                If Utils.ContrastRatio(candidate, surface) < 3.0 Then passes = False
+                If AccentColors.Contrast(candidate, surface) < 3.0 Then passes = False
             Next
             If passes Then Return candidate
         Next

@@ -360,7 +360,7 @@ Public Module ServiceControl
             .Verb = "runas",
             .WindowStyle = ProcessWindowStyle.Hidden}
         Try
-            Using p As Process = Process.Start(psi)
+            Using p As System.Diagnostics.Process = System.Diagnostics.Process.Start(psi)
                 If p Is Nothing Then Return ManageResult.Failed
                 p.WaitForExit()
                 If p.ExitCode <> 0 Then
@@ -378,6 +378,67 @@ Public Module ServiceControl
             AppFileLogger.LogException("Share service: manage", ex)
             Return ManageResult.Failed
         End Try
+    End Function
+
+    ''' <summary>Restarts the Windows service WITHOUT a UAC prompt. It works only where the install
+    ''' granted the enrolled management user start and stop on the service (install-share-service.ps1,
+    ''' Set-ServiceSecurity). Returns False when that grant is absent or the call is refused, so the
+    ''' caller can fall back to the one elevated helper. Never throws.</summary>
+    Public Function TryRestartWithoutElevation(timeout As TimeSpan) As Boolean
+        Dim deadline As DateTime = DateTime.UtcNow.Add(timeout)
+        If QueryState() <> ServiceState.Stopped Then
+            Dim stopCode As Integer = RunSc("stop " & ServiceName)
+            ' 1062 = the service has not been started: already stopped, nothing to do.
+            If stopCode <> 0 AndAlso stopCode <> 1062 Then
+                AppFileLogger.WriteLine("Share service: restart without elevation refused at stop (sc exit " & stopCode.ToString() & ")")
+                Return False
+            End If
+            If Not WaitForState(ServiceState.Stopped, deadline) Then
+                AppFileLogger.WriteLine("Share service: did not stop in time (restart without elevation)")
+                Return False
+            End If
+        End If
+        Dim start As Integer = RunSc("start " & ServiceName)
+        If start <> 0 Then
+            AppFileLogger.WriteLine("Share service: restart without elevation refused at start (sc exit " & start.ToString() & ")")
+            Return False
+        End If
+        If Not WaitForState(ServiceState.Running, deadline) Then
+            AppFileLogger.WriteLine("Share service: did not reach Running in time (restart without elevation)")
+            Return False
+        End If
+        AppFileLogger.WriteLine("Share service: restarted without elevation")
+        Return True
+    End Function
+
+    ''' <summary>Runs <c>sc.exe</c> with the given arguments and returns its exit code. Plain
+    ''' process start, no verb: the right to start or stop comes from the service's security
+    ''' descriptor, not from elevation. Never throws; a failure to start the tool returns -1.</summary>
+    Private Function RunSc(arguments As String) As Integer
+        Try
+            Dim psi As New System.Diagnostics.ProcessStartInfo("sc.exe", arguments) With {
+                .UseShellExecute = False, .CreateNoWindow = True,
+                .RedirectStandardOutput = True, .RedirectStandardError = True}
+            Using p As System.Diagnostics.Process = System.Diagnostics.Process.Start(psi)
+                p.StandardOutput.ReadToEnd()
+                p.StandardError.ReadToEnd()
+                p.WaitForExit()
+                Return p.ExitCode
+            End Using
+        Catch ex As Exception
+            AppFileLogger.LogException("Share service: sc.exe", ex)
+            Return -1
+        End Try
+    End Function
+
+    ''' <summary>Polls <c>sc.exe query</c> until the service reports <paramref name="wanted"/>, or the
+    ''' deadline passes. The state is read from the same tool, so the wait needs no extra rights.</summary>
+    Private Function WaitForState(wanted As ServiceState, deadline As DateTime) As Boolean
+        Do
+            If QueryState() = wanted Then Return True
+            If DateTime.UtcNow >= deadline Then Return False
+            System.Threading.Thread.Sleep(500)
+        Loop
     End Function
 
     Private Function VerbOf(action As ManageAction) As String

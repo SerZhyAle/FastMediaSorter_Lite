@@ -186,6 +186,10 @@ Friend Module ResourceCommit
         If Not String.IsNullOrEmpty(target.SecretHandle) AndAlso Not IsReferenced(remaining, target.SecretHandle) Then
             SafeDelete(secrets, target.SecretHandle)
         End If
+        ' a link's share id (ticket 171) is a second secret of the same resource and goes with it
+        If Not String.IsNullOrEmpty(target.TunnelSecretHandle) AndAlso Not IsReferenced(remaining, target.TunnelSecretHandle) Then
+            SafeDelete(secrets, target.TunnelSecretHandle)
+        End If
         Return New ResourceCommitResult(ResourceCommitOutcome.Committed)
     End Function
 
@@ -217,7 +221,8 @@ Friend Module ResourceCommit
     End Function
 
     Private Function IsReferenced(resources As IEnumerable(Of ResourceDescriptor), handle As String) As Boolean
-        Return resources.Any(Function(r) String.Equals(r.SecretHandle, handle, StringComparison.Ordinal))
+        Return resources.Any(Function(r) String.Equals(r.SecretHandle, handle, StringComparison.Ordinal) OrElse
+                                         String.Equals(r.TunnelSecretHandle, handle, StringComparison.Ordinal))
     End Function
 
     Private Sub SafeDelete(secrets As IResourceSecretStore, handle As String)

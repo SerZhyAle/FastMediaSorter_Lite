@@ -2,7 +2,9 @@ package testkit
 
 import (
 	"crypto/tls"
+	"io"
 	"net"
+	"os"
 	"path/filepath"
 	"sync"
 	"time"
@@ -45,9 +47,23 @@ type Options struct {
 	// DataDir reuses an existing data directory (and so its TLS identity, accounts and directory):
 	// a restart.
 	DataDir string
-	// Relay plugs ticket 165's handler.
-	Relay rendezvous.RelayHandler
-	Cast  bool
+	// Relay plugs a custom RelayHandler; WithRelay builds the real one (ticket 165) over the started
+	// server, with test-sized timers, and RelayConfig adjusts it.
+	Relay       rendezvous.RelayHandler
+	WithRelay   bool
+	RelayConfig func(*rendezvous.RelayConfig)
+	Cast        bool
+	// LogFile also writes every log line to <DataDir>/logs/exchange.log (the real layout of ticket 182
+	// L-1), so a test can scan the directory the way the manifest test of ticket 167 does.
+	LogFile bool
+	// Pool replaces the port pool PortRange would build (the vector generator gives it a pool whose
+	// binds are not real sockets, so a granted port is the same on every machine).
+	Pool *ports.Pool
+	// AccountsRand and EngineRand are injected random sources for tokens and pairing codes, and for
+	// tunnel ids (ticket 178: stable bytes). ServerVersion is announced in `welcome` (default "test").
+	AccountsRand  io.Reader
+	EngineRand    io.Reader
+	ServerVersion string
 }
 
 // Env is a running server with everything a test may look at.
@@ -67,6 +83,8 @@ type Env struct {
 	Verifier     *limits.Verifier
 	Pool         *ports.Pool
 	Params       rendezvous.Params
+	// Relay is the real relay when Options.WithRelay was set.
+	Relay *rendezvous.Relay
 
 	secretMu sync.Mutex
 	secrets  []string
@@ -97,7 +115,20 @@ func StartServer(t TB, opt Options) *Env {
 	if err != nil {
 		t.Fatalf("identity: %v", err)
 	}
-	env := &Env{Params: TestParams(), Fingerprint: id.Fingerprint, Log: logx.NewCapture(), DataDir: dir, t: t}
+	log := logx.NewCapture()
+	if opt.LogFile {
+		logsDir := filepath.Join(dir, "logs")
+		if err := os.MkdirAll(logsDir, 0o700); err != nil {
+			t.Fatalf("logs dir: %v", err)
+		}
+		f, err := os.OpenFile(filepath.Join(logsDir, "exchange.log"), os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o600)
+		if err != nil {
+			t.Fatalf("log file: %v", err)
+		}
+		t.Cleanup(func() { _ = f.Close() }) // registered first: it runs after the server has closed
+		log = logx.NewCaptureAlso(f)
+	}
+	env := &Env{Params: TestParams(), Fingerprint: id.Fingerprint, Log: log, DataDir: dir, t: t}
 	if opt.Params != nil {
 		env.Params = *opt.Params
 	}
@@ -107,7 +138,7 @@ func StartServer(t TB, opt Options) *Env {
 	}
 	env.Accounts, err = accounts.Open(accounts.Options{Dir: dir, Now: now, Params: cheap,
 		DevicesPerAccount: env.Params.DevicesPerAccount, CodesPerAccount: env.Params.CodesPerAccount, CodeLifetime: env.Params.CodeLifetime,
-		TombstoneLifetime: env.Params.TombstoneLifetime})
+		TombstoneLifetime: env.Params.TombstoneLifetime, Rand: opt.AccountsRand})
 	if err != nil {
 		t.Fatalf("accounts: %v", err)
 	}
@@ -162,13 +193,26 @@ func StartServer(t TB, opt Options) *Env {
 	if slots == 0 {
 		slots = 16
 	}
-	if opt.PortRange[0] != 0 {
+	if opt.Pool != nil {
+		env.Pool = opt.Pool
+	} else if opt.PortRange[0] != 0 {
 		env.Pool = ports.NewPool(opt.PortRange[0], opt.PortRange[1], "127.0.0.1", nil, opt.Now)
+	}
+	relayHandler := opt.Relay
+	if opt.WithRelay && relayHandler == nil {
+		rc := rendezvous.RelayConfig{Dir: env.Dir, Log: env.Log.Logger, Limiter: env.Limiter, Now: opt.Now,
+			Grace: 400 * time.Millisecond, UploadIdle: 5 * time.Second, WriteTimeout: time.Second, MaxUploadBitsPerSec: -1}
+		if opt.RelayConfig != nil {
+			opt.RelayConfig(&rc)
+		}
+		env.Relay = rendezvous.NewRelay(rc)
+		relayHandler = env.Relay
 	}
 	env.Engine = rendezvous.NewEngine(rendezvous.EngineConfig{
 		Params: env.Params, Accounts: env.Accounts, Dir: env.Dir, Pool: env.Pool, Verifier: env.Verifier,
 		Limiter: env.Limiter, LoginLimiter: env.LoginLimiter, Log: env.Log.Logger, Now: opt.Now,
-		PublicEndpoint: opt.PublicEndpoint, ServerVersion: "test", Features: rendezvous.Features{Cast: opt.Cast}, Relay: opt.Relay,
+		PublicEndpoint: opt.PublicEndpoint, ServerVersion: serverVersion(opt), Features: rendezvous.Features{Cast: opt.Cast}, Relay: relayHandler,
+		Rand: opt.EngineRand,
 	})
 	env.Ops = env.Engine.Ops()
 	ln, err := net.Listen("tcp", "127.0.0.1:0")
@@ -217,4 +261,11 @@ func (e *Env) Secrets() []string {
 	e.secretMu.Lock()
 	defer e.secretMu.Unlock()
 	return append([]string{TestPassword}, e.secrets...)
+}
+
+func serverVersion(opt Options) string {
+	if opt.ServerVersion != "" {
+		return opt.ServerVersion
+	}
+	return "test"
 }

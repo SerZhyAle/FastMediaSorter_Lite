@@ -92,6 +92,10 @@ Friend NotInheritable Class FmsEndpoint
     Friend Property Kind As String = ""
     Friend Property Host As String = ""
     Friend Property Port As Integer
+    ''' <summary>A head start the earlier candidates get (ticket 171 rule 6: the tunnel is the last resort, so it waits). The resolver does not
+    ''' dial this candidate before that many milliseconds of the round have passed - or before every earlier candidate has already failed,
+    ''' since waiting then helps nobody. 0 (the default) is no stagger: every candidate of a document read from a file is dialled as before.</summary>
+    Friend Property StartAfterMs As Integer
     Friend Function Key() As String
         Return Host.ToLowerInvariant() & ":" & Port.ToString(CultureInfo.InvariantCulture)
     End Function
@@ -119,6 +123,10 @@ Friend NotInheritable Class FmsConfigPlan
         End Get
     End Property
     Friend Property AccessNote As String = ""
+    ''' <summary>The exchange tunnel of the document (ticket 171, phase C4): read only where the exchange client features are offered, kept
+    ''' beside the endpoints and NEVER among them (it is not an SSH address). Nothing for a document without one - which is every document
+    ''' while the features are not offered.</summary>
+    Friend Property Tunnel As FmsTunnelPath
     Friend ReadOnly Property Roots As New List(Of FmsRootPlan)()
     Friend Property Transport As FmsTransport
 
@@ -416,6 +424,8 @@ Friend Module FmsConfigReader
             Dim kindElement As JsonElement
             Dim kind As String = ""
             If entry.TryGetProperty("kind", kindElement) AndAlso kindElement.ValueKind = JsonValueKind.String Then kind = kindElement.GetString()
+            ' The exchange's own kind (ticket 171 C4) is taken - or skipped, never dialled - by the one module that knows it.
+            If FmsTunnelPaths.TryTake(entry, kind, plan) Then Continue For
             ' An unknown (or missing) kind is skipped without being dialled or even validated.
             If Not KnownAccessKinds.Contains(kind) Then Continue For
 

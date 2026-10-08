@@ -691,6 +691,41 @@ function Set-ServiceOptions {
     if ($LASTEXITCODE -ne 0) { Write-Log "WARNING: setting the failure flag returned $LASTEXITCODE" }
 }
 
+# The SCM security descriptor: the enrolled management user may start, stop and query the service
+# without UAC. That is what lets the Share Manager apply a new port (a restart) with no prompt. The
+# same grant as the Exchange service (install-exchange-service.ps1, Set-ServiceSecurity). Built only
+# from validated SIDs and read back: the install fails when the grant did not take, rather than
+# leaving a port change that silently needs an administrator.
+function Set-ServiceSecurity {
+    $sids = @(Split-Sids $ManageSid | Select-Object -Unique)
+    if ($sids.Count -eq 0) {
+        Write-Log 'no management SID - the service keeps its default descriptor (a port change will ask for administrator rights)'
+        return
+    }
+    foreach ($sid in $sids) {
+        if ($sid -notmatch '^(?i:S-1-[0-9]+(-[0-9]+)+)\z') {
+            Fail "'$sid' is not a string SID - the service security descriptor was not changed" 17
+        }
+    }
+    $defaultDacl = '(A;;CCLCSWRPWPDTLOCRRC;;;SY)(A;;CCDCLCSWRPWPDTLOCRSDRCWDWO;;;BA)(A;;CCLCSWLOCRRC;;;IU)(A;;CCLCSWLOCRRC;;;SU)'
+    $aces = ($sids | ForEach-Object { '(A;;RPWPLCLO;;;{0})' -f $_ }) -join ''
+    Write-Log "setting the service security descriptor for $($sids.Count) management user(s)"
+    & sc.exe sdset $ServiceName ('D:' + $defaultDacl + $aces) | Out-Null
+    if ($LASTEXITCODE -ne 0) { Fail "could not set the service security descriptor (sc sdset exit $LASTEXITCODE)" 17 }
+    # Windows reads the rights back in its canonical order (RPWPLCLO comes back as LCRPWPLO), so
+    # the check compares the SET of rights, not the spelling - a spelling check fails a good grant.
+    $want = -join (('RPWPLCLO').ToCharArray() | Sort-Object)
+    $shown = (@(& sc.exe sdshow $ServiceName) -join '')
+    $have = 0
+    foreach ($m in [regex]::Matches($shown, '\(A;;([A-Z]+);;;')) {
+        if ((-join ($m.Groups[1].Value.ToCharArray() | Sort-Object)) -ceq $want) { $have++ }
+    }
+    if ($have -ne $sids.Count) {
+        Fail "the service security descriptor did not take (expected $($sids.Count) start/stop entries, read $have)" 17
+    }
+    Write-Log 'management user(s) may start and stop the service without UAC'
+}
+
 # The account is read back, never assumed (ticket 054 H-14). A registration that would
 # run the SFTP server as anything but the wanted account - LocalSystem above all when the
 # FileDO component is absent, New-Service's default - is removed rather than started: every
@@ -728,6 +763,7 @@ function Register-Service {
         New-ServiceRegistration
     }
     Assert-ServiceAccount
+    Set-ServiceSecurity
 }
 
 function Start-ServiceAndVerify {

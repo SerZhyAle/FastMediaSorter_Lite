@@ -131,6 +131,9 @@ $p = $fileVer.Split('.')
 if ($p.Count -lt 4) { throw "Unexpected exe version '$fileVer' (want YY.M.D.HHmm)." }
 $yy = [int]$p[0]; $m = [int]$p[1]; $d = [int]$p[2]; $hhmm = [int]$p[3]
 $MsixVersion = "$yy.$($m*100+$d).$hhmm.0"
+# The stamp the package must read back as: the release tag's when one was pinned, else the exe's own, with
+# HHmm padded to the four digits the checks expect (the resource keeps 0108 as 108).
+$PackageStamp = if ($ReleaseVersion) { $ReleaseVersion } else { '{0}.{1}.{2}.{3:0000}' -f $yy, $m, $d, $hhmm }
 Write-Host "Exe version $fileVer  ->  MSIX version $MsixVersion" -ForegroundColor Green
 
 # --- 3. Stage the offline payload ------------------------------------------
@@ -264,6 +267,22 @@ $makeappx = Find-SdkTool 'makeappx.exe'
 & $makeappx pack /d $Stage /p $MsixPath /o
 if ($LASTEXITCODE -ne 0) { throw "makeappx failed (exit $LASTEXITCODE)." }
 Write-Host "Packed: $MsixPath" -ForegroundColor Green
+
+# --- 5b. Read the package back (WINDOWS-STORE rung 3, BUILD-EVIDENCE rule 2) ------------------
+# The identity, the unsigned state, the notices, the container declarations and the version are read out
+# of the PACKED archive - not out of the sources that made it - before it is signed (a -SelfSign package
+# carries a signature on purpose) and before it is offered. A package that breaks a rule is deleted: a bad
+# file left in dist\ is the one that gets uploaded.
+$packageReadBack = $true
+& (Join-Path $RepoRoot 'tools\Test-ArtifactVersion.ps1') -Expect $PackageStamp -Msix -Path $MsixPath
+if ($LASTEXITCODE -ne 0) { $packageReadBack = $false }
+& (Join-Path $RepoRoot 'tools\Test-WindowsStoreConformance.ps1') -MsixPath $MsixPath -ExpectedVersion $MsixVersion `
+    -ExpectedIdentityName $IdentityName -ExpectedPublisher $Publisher -ExpectedPublisherDisplayName $PublisherDisplayName
+if ($LASTEXITCODE -ne 0) { $packageReadBack = $false }
+if (-not $packageReadBack) {
+    Remove-Item -LiteralPath $MsixPath -Force -ErrorAction SilentlyContinue
+    throw "The packed MSIX does not read back as the package this build meant to make; it was deleted and nothing is offered."
+}
 
 # --- 6. Optional self-sign for local sideload testing -----------------------
 if ($SelfSign) {

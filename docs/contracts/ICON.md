@@ -28,8 +28,11 @@ fails until its inline copies follow.
 
 - **`action.convert-to-video` (0.21)** is the picture of the animation-to-video button: `IconMap` row
   `btn_ToVideo` now names it, the glyph is vendored, and the chrome draws it instead of an icon-font code
-  point. The button's words ("Animation - to video", in 13 languages) are not the record's canonical name
-  ("Convert to video"); that gap is a dated exception, not a rename done here. `app.language` (0.21), `view.table`
+  point. The button's words follow the record's canonical name since 2026-10-07 (specification 183): the
+  localization key is «Преобразовать в видео», English "Convert to video", Ukrainian «Перетворити на відео»
+  (`IconographyContractTests` holds all three to the vendored record), the same wording is the toolbar caption, the
+  accessible name, the overflow line and the middle-click menu row; the other ten languages are this product's own
+  wording until a proposal names them (rule 3). `app.language` (0.21), `view.table`
   (0.25) and `feature.drawing` (0.28) exist as records with drawings, but no control of this product draws
   them (the language is picked from a list of endonyms, there is no table view, the editor is entered with
   `action.edit`), so they are neither mapped nor vendored; the day a control needs one it takes a row in

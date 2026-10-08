@@ -93,11 +93,12 @@ Friend Module ResourceConnect
                                        persistPin As Func(Of String, Boolean),
                                        includeSubfolders As Func(Of Boolean),
                                        ct As CancellationToken,
-                                       Optional dialerOverride As IEndpointDialer = Nothing) As Task(Of ConnectOutcome)
+                                       Optional dialerOverride As IEndpointDialer = Nothing,
+                                       Optional tunnelSource As IExchangeTunnelSource = Nothing) As Task(Of ConnectOutcome)
         If descriptor Is Nothing Then Throw New ArgumentNullException(NameOf(descriptor))
         Select Case descriptor.Kind
             Case ResourceKind.Sftp
-                Return Await ConnectSftpAsync(descriptor, password, consent, persistPin, includeSubfolders, ct, dialerOverride).ConfigureAwait(False)
+                Return Await ConnectSftpAsync(descriptor, password, consent, persistPin, includeSubfolders, ct, dialerOverride, tunnelSource).ConfigureAwait(False)
             Case ResourceKind.Smb
                 Return Await Task.Run(Function() ConnectSmb(descriptor, password, includeSubfolders)).ConfigureAwait(False)
             Case Else
@@ -110,12 +111,19 @@ Friend Module ResourceConnect
                                             persistPin As Func(Of String, Boolean),
                                             includeSubfolders As Func(Of Boolean),
                                             ct As CancellationToken,
-                                            dialerOverride As IEndpointDialer) As Task(Of ConnectOutcome)
+                                            dialerOverride As IEndpointDialer,
+                                            tunnelSource As IExchangeTunnelSource) As Task(Of ConnectOutcome)
         Dim clock As New SystemResolutionClock()
         Dim gate As New HostKeyGate(descriptor.PinnedFingerprint, consent, persistPin, Function() clock.NowMs)
         Dim dialer As IEndpointDialer = If(dialerOverride, New SftpEndpointDialer(descriptor, password, gate, includeSubfolders))
 
         Dim candidates As List(Of FmsEndpoint) = EndpointResolver.PlanCandidates(CandidatesOf(descriptor))
+        If tunnelSource IsNot Nothing Then
+            ' ticket 171 rule 6: the tunnel is one more candidate, LAST, with the longest head-start for the direct ones; dialling it is what
+            ' creates the forwarder and asks the exchange for a stream, so a round that a direct address wins never touches the exchange
+            candidates.Add(ExchangeTunnelRules.Candidate())
+            dialer = New ExchangeTunnelDialer(dialer, tunnelSource)
+        End If
         ' One handshake at a time while the server is unpinned: one trust prompt, never two.
         Dim lanes As Integer = If(String.IsNullOrEmpty(descriptor.PinnedFingerprint), 1, ResolutionLimits.MaxLanes)
         Dim outcome As ResolutionOutcome = Await EndpointResolver.ResolveAsync(

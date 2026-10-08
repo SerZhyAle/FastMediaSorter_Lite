@@ -37,11 +37,32 @@ Public Class PlaybackRulesTests
     End Sub
 
     <Fact>
-    Public Sub Turning_repeat_off_clears_a_repeat_end_action_and_nothing_else()
-        Assert.Equal("stay", PlaybackRules.EndActionAfterRepeatOff("repeat"))
-        Assert.Equal("nextFile", PlaybackRules.EndActionAfterRepeatOff("nextFile"))
-        Assert.Equal("next", PlaybackRules.EndActionAfterRepeatOff("next"))
-        Assert.Equal("stay", PlaybackRules.EndActionAfterRepeatOff("stay"))
+    Public Sub The_menu_ticks_the_mode_that_the_stored_end_action_names()
+        Assert.Equal(PlaybackRules.End_Mode_Stay, PlaybackRules.EndModeOf("stay", False, False))
+        Assert.Equal(PlaybackRules.End_Mode_Advance, PlaybackRules.EndModeOf("nextFile", False, False))
+        Assert.Equal(PlaybackRules.End_Mode_Advance, PlaybackRules.EndModeOf("next", True, False))
+        Assert.Equal(PlaybackRules.End_Mode_Repeat, PlaybackRules.EndModeOf("repeat", False, False))
+        Assert.Equal(PlaybackRules.End_Mode_Repeat, PlaybackRules.EndModeOf("repeat", True, False))
+        ' The Settings checkbox "repeat" wins over whatever the end action says.
+        Assert.Equal(PlaybackRules.End_Mode_Repeat, PlaybackRules.EndModeOf("stay", False, True))
+        ' A track's "next" is not a video's, and an unknown value is never shown as an advance.
+        Assert.Equal(PlaybackRules.End_Mode_Stay, PlaybackRules.EndModeOf("next", False, False))
+        Assert.Equal(PlaybackRules.End_Mode_Stay, PlaybackRules.EndModeOf("", False, False))
+    End Sub
+
+    <Fact>
+    Public Sub Each_mode_stores_the_value_its_kind_reads_back()
+        Assert.Equal("stay", PlaybackRules.StoredEndAction(PlaybackRules.End_Mode_Stay, False))
+        Assert.Equal("stay", PlaybackRules.StoredEndAction(PlaybackRules.End_Mode_Stay, True))
+        Assert.Equal("nextFile", PlaybackRules.StoredEndAction(PlaybackRules.End_Mode_Advance, False))
+        Assert.Equal("next", PlaybackRules.StoredEndAction(PlaybackRules.End_Mode_Advance, True))
+        Assert.Equal("repeat", PlaybackRules.StoredEndAction(PlaybackRules.End_Mode_Repeat, False))
+        Assert.Equal("repeat", PlaybackRules.StoredEndAction(PlaybackRules.End_Mode_Repeat, True))
+        For Each mode As String In {PlaybackRules.End_Mode_Stay, PlaybackRules.End_Mode_Advance, PlaybackRules.End_Mode_Repeat}
+            For Each isAudio As Boolean In {False, True}
+                Assert.Equal(mode, PlaybackRules.EndModeOf(PlaybackRules.StoredEndAction(mode, isAudio), isAudio, False))
+            Next
+        Next
     End Sub
 
     ' --- D-16: is there a cycle -------------------------------------------------------

@@ -565,12 +565,19 @@ Friend NotInheritable Class SftpProvider
         If Not allowed Then Throw New ResourceFailureException(New ResourceFailure(ResourceFailureKind.Unsupported))
     End Sub
 
+    ''' <summary>Something that must live exactly as long as this session and be closed with it: the loopback forwarder of an exchange tunnel
+    ''' (ticket 171), so a session that came through a tunnel never leaves its listener behind.</summary>
+    Friend Property OwnedResource As IDisposable
+
     Public Sub Dispose() Implements IDisposable.Dispose
         If Not is_Disposed Then
             is_Disposed = True
             SyncLock gate
                 DisposeClientLocked()
             End SyncLock
+            Dim owned As IDisposable = OwnedResource
+            OwnedResource = Nothing
+            Try : owned?.Dispose() : Catch : End Try
         End If
     End Sub
 

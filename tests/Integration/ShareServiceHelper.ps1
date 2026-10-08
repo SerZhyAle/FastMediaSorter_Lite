@@ -56,6 +56,7 @@ $worker = Join-Path $repo 'payload\companion\fms-share-worker.exe'
 $shell  = if ($HelperShell) { $HelperShell } else { (Get-Process -Id $PID).Path }
 $SidLocalService = 'S-1-5-19'
 $SidAdmins = 'S-1-5-32-544'
+Write-Subject 'ShareServiceHelper' "the elevated Share-service helper $helper against the vendored worker $worker (a throw-away service - a VM only)"
 
 $principal = New-Object Security.Principal.WindowsPrincipal([Security.Principal.WindowsIdentity]::GetCurrent())
 if (-not $principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) {

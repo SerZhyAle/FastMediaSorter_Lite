@@ -14,7 +14,12 @@ Imports System.Windows.Forms
 '''     until the person reveals it (per dialog, never remembered), copied only through
 '''     <see cref="SecureClipboard.SetSecret"/> (the CLIPBOARD-GUARD privacy markers), and wiped from the
 '''     field when the window closes. Closing without having copied or revealed it asks first - there is no
-'''     second chance to read it.
+'''     second chance to read it, UNLESS the caller kept it (<paramref name="retrievable"/>): then the account's
+'''     own "show password" button brings it back and nothing is asked. The button "set my own password" closes
+'''     the dialog with <see cref="ChoseOwnPassword"/> set, and the caller opens the reset with a typed password.
+'''   * <see cref="DialogMode.Kept"/> - the password the Share Manager kept on this PC (the person turned keeping
+'''     on): the same masked, revealable, copyable field, read-only, with the login in the title. Nothing is
+'''     asked when it closes, because it can be shown again.
 '''
 ''' Where the plaintext lives: in memory, in this dialog, until it closes. Never the registry, never a log,
 ''' never a command line. A .NET string cannot be zeroed, so what is wiped is the control's copy; the
@@ -29,9 +34,12 @@ Friend NotInheritable Class Exchange_Password_Form
     Friend Enum DialogMode
         Enter
         Generated
+        Kept
     End Enum
 
     Private ReadOnly _mode As DialogMode
+    Private ReadOnly _login As String
+    Private ReadOnly _retrievable As Boolean
     Private _iconHandle As IntPtr
     Private _txt As TextBox
     Private _chkShow As CheckBox
@@ -39,8 +47,10 @@ Friend NotInheritable Class Exchange_Password_Form
     Private _lblStatus As Label
     Private _btnOk As Button
     Private _btnCopy As Button
+    Private _btnOwn As Button
     Private _copied As Boolean
     Private _revealed As Boolean
+    Private _choseOwn As Boolean
 
     Private Const ContentWidth As Integer = 420
 
@@ -58,14 +68,26 @@ Friend NotInheritable Class Exchange_Password_Form
         End Get
     End Property
 
-    Friend Sub New(mode As DialogMode, Optional generatedPassword As String = "")
+    ''' <summary>The person chose "set my own password" instead: the caller opens the reset with a typed password. Valid after the dialog closed.</summary>
+    Friend ReadOnly Property ChoseOwnPassword As Boolean
+        Get
+            Return _choseOwn
+        End Get
+    End Property
+
+    ''' <param name="login">The account the password belongs to (the title of a kept password).</param>
+    ''' <param name="retrievable">The password is kept on this PC, so closing it unseen-and-uncopied is not a loss.</param>
+    Friend Sub New(mode As DialogMode, Optional generatedPassword As String = "", Optional login As String = "", Optional retrievable As Boolean = False)
         _mode = mode
+        _login = If(login, "")
+        _retrievable = retrievable
         BuildUi(generatedPassword)
     End Sub
 
     Private Sub BuildUi(generatedPassword As String)
         UiLanguage.ApplyTo(Me)
-        Me.Text = If(_mode = DialogMode.Enter, ExchangeText.SetPasswordTitle(), ExchangeText.GenerateTitle())
+        Me.Text = If(_mode = DialogMode.Enter, ExchangeText.SetPasswordTitle(),
+                     If(_mode = DialogMode.Kept, ExchangeAdminText.KeptTitle(_login), ExchangeText.GenerateTitle()))
         Me.Icon = ShareIcons.CreateIcon(_iconHandle)
         AddHandler Me.FormClosed,
             Sub()
@@ -86,16 +108,18 @@ Friend NotInheritable Class Exchange_Password_Form
             .AutoSizeMode = AutoSizeMode.GrowAndShrink, .Padding = New Padding(14, 12, 14, 6)}
         body.ColumnStyles.Add(New ColumnStyle(SizeType.Percent, 100.0F))
 
-        If _mode = DialogMode.Generated Then
+        If _mode <> DialogMode.Enter Then
+            Dim intro As String = If(_mode = DialogMode.Kept, ExchangeAdminText.KeptIntro(),
+                                     If(_retrievable, ExchangeText.GenerateIntroKept(), ExchangeText.GenerateIntro()))
             body.Controls.Add(New Label With {.AutoSize = True, .MaximumSize = New Size(ContentWidth, 0),
-                .Margin = New Padding(0, 0, 0, 8), .Text = ExchangeText.GenerateIntro()})
+                .Margin = New Padding(0, 0, 0, 8), .Text = intro})
         Else
             body.Controls.Add(New Label With {.AutoSize = True, .Margin = New Padding(0, 0, 0, 2),
                 .Text = Localization.T("Пароль:")})
         End If
 
         _txt = New TextBox With {.Width = ContentWidth, .UseSystemPasswordChar = True, .Margin = New Padding(0, 0, 0, 4)}
-        If _mode = DialogMode.Generated Then
+        If _mode <> DialogMode.Enter Then
             _txt.ReadOnly = True
             _txt.Text = If(generatedPassword, "")
         Else
@@ -142,6 +166,13 @@ Friend NotInheritable Class Exchange_Password_Form
             Dim btnClose As New Button With {.AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink,
                 .Padding = New Padding(12, 4, 12, 4), .Text = Localization.T("Закрыть"), .DialogResult = DialogResult.OK}
             buttons.Controls.Add(_btnCopy)
+            If _mode = DialogMode.Generated Then
+                ' the one way to a password of the person's own choosing, from the same screen as the generated one
+                _btnOwn = New Button With {.AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink,
+                    .Padding = New Padding(12, 4, 12, 4), .Text = ExchangeAdminText.OwnPasswordButton()}
+                AddHandler _btnOwn.Click, AddressOf OnOwnClicked
+                buttons.Controls.Add(_btnOwn)
+            End If
             buttons.Controls.Add(btnClose)
             Me.AcceptButton = _btnCopy
             Me.CancelButton = btnClose
@@ -193,6 +224,12 @@ Friend NotInheritable Class Exchange_Password_Form
         Me.DialogResult = DialogResult.OK
     End Sub
 
+    ''' <summary>Closes the generated dialog and says so: the password it shows is then not used, the reset takes a typed one.</summary>
+    Private Sub OnOwnClicked(sender As Object, e As EventArgs)
+        _choseOwn = True
+        Me.DialogResult = DialogResult.Retry
+    End Sub
+
     Private Sub OnCopyClicked(sender As Object, e As EventArgs)
         ' ONLY through the guarded door: the privacy markers keep it out of Win+V history and the cloud
         ' clipboard (CLIPBOARD-GUARD rules 2 and 6).
@@ -211,7 +248,7 @@ Friend NotInheritable Class Exchange_Password_Form
     ''' closing then is asked about (the safe answer is the default).</summary>
     Protected Overrides Sub OnFormClosing(e As FormClosingEventArgs)
         If _mode = DialogMode.Generated AndAlso Not e.Cancel AndAlso Not _copied AndAlso Not _revealed AndAlso
-           e.CloseReason = CloseReason.UserClosing Then
+           Not _retrievable AndAlso e.CloseReason = CloseReason.UserClosing Then
             If MessageBox.Show(Me, ExchangeText.CloseWithoutCopyQuestion(), Me.Text, MessageBoxButtons.YesNo,
                                MessageBoxIcon.Warning, MessageBoxDefaultButton.Button2) <> DialogResult.Yes Then
                 e.Cancel = True

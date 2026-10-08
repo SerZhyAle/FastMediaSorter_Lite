@@ -147,9 +147,10 @@ Partial Public NotInheritable Class Localization
             "Mute", "Без звуку", "Stumm", "Muto", "Silenciar", "Muet", "Sem som",
             "كتم الصوت", "मौन", "নিঃশব্দ", "خاموش", "静音")
 
-        Add("Повторять",
-            "Repeat", "Повторювати", "Wiederholen", "Ripeti", "Repetir", "Répéter", "Repetir",
-            "تكرار", "दोहराएँ", "পুনরাবৃত্তি", "دہرائیں", "循环")
+        Add("Режим воспроизведения",
+            "Playback mode", "Режим відтворення", "Wiedergabemodus", "Modalità di riproduzione",
+            "Modo de reproducción", "Mode de lecture", "Modo de reprodução",
+            "وضع التشغيل", "प्लेबैक मोड", "প্লেব্যাক মোড", "پلے بیک موڈ", "播放模式")
 
         Add("Открыть во внешнем плеере",
             "Open in the default player", "Відкрити у зовнішньому плеєрі",
@@ -163,16 +164,6 @@ Partial Public NotInheritable Class Localization
             "Open URL..", "Відкрити URL..", "URL öffnen..", "Apri URL..", "Abrir URL..",
             "Ouvrir une URL..", "Abrir URL..", "فتح رابط..", "URL खोलें..",
             "URL খুলুন..", "URL کھولیں..", "打开 URL..")
-
-        Add("Повтор включён",
-            "Repeat on", "Повтор увімкнено", "Wiederholung ein", "Ripetizione attiva",
-            "Repetición activada", "Répétition activée", "Repetição ligada",
-            "التكرار مفعّل", "दोहराव चालू", "পুনরাবৃত্তি চালু", "دہرانا آن", "循环已开启")
-
-        Add("Повтор выключен",
-            "Repeat off", "Повтор вимкнено", "Wiederholung aus", "Ripetizione disattivata",
-            "Repetición desactivada", "Répétition désactivée", "Repetição desligada",
-            "التكرار متوقف", "दोहराव बंद", "পুনরাবৃত্তি বন্ধ", "دہرانا بند", "循环已关闭")
 
         ' --- toolbar overflow ("»") -------------------------------------------------
 
@@ -681,17 +672,18 @@ Partial Public NotInheritable Class Localization
             "Indisponível para áudio e transmissões em direto", "غير متاح للصوت والبث المباشر", "ऑडियो और लाइव स्ट्रीम के लिए उपलब्ध नहीं",
             "অডিও এবং লাইভ স্ট্রিমের জন্য উপলব্ধ নয়", "آڈیو اور لائیو سٹریمز کے لیے دستیاب نہیں", "不适用于音频和直播流")
 
-        ' The animation-to-video action: named for what it does (125 UX-312). The original goes away once
-        ' the video exists - the tooltip says so; the row and the button look destructive.
-        Add("Анимацию - в видео",
-            "Animation to video", "Анімацію - у відео", "Animation in Video umwandeln", "Da animazione a video", "Animación a vídeo", "Animation en vidéo",
-            "Animação para vídeo", "تحويل الصورة المتحركة إلى فيديو", "एनिमेशन को वीडियो में बदलें", "অ্যানিমেশন থেকে ভিডিও", "اینیمیشن سے ویڈیو", "动画转视频")
-        Add("Анимацию - в видео..",
-            "Animation to video..", "Анімацію - у відео..", "Animation in Video umwandeln..", "Da animazione a video..", "Animación a vídeo..", "Animation en vidéo..",
-            "Animação para vídeo..", "تحويل الصورة المتحركة إلى فيديو..", "एनिमेशन को वीडियो में बदलें..", "অ্যানিমেশন থেকে ভিডিও..", "اینیمیشن سے ویڈیو..", "动画转视频..")
-        Add("В видео",
-            "To video", "У відео", "In Video", "In video", "A vídeo", "En vidéo",
-            "Para vídeo", "إلى فيديو", "वीडियो में", "ভিডিওতে", "ویڈیو میں", "转视频")
+        ' The animation-to-video action: named by the catalog's canonical name of action.convert-to-video
+        ' (ICON-SET rule 3, specification 183): «Преобразовать в видео» / "Convert to video" /
+        ' «Перетворити на відео». English and Ukrainian are the record's own words; the other ten are this
+        ' product's, until a proposal names them (rule 3, languages beyond the three authored ones). The
+        ' tooltip says what it converts and that the original goes away (125 UX-312); the row and the
+        ' button look destructive. The same wording is the button's caption, accessible name and overflow line.
+        Add("Преобразовать в видео",
+            "Convert to video", "Перетворити на відео", "In Video umwandeln", "Converti in video", "Convertir a vídeo", "Convertir en vidéo",
+            "Converter em vídeo", "تحويل إلى فيديو", "वीडियो में बदलें", "ভিডিওতে রূপান্তর করুন", "ویڈیو میں تبدیل کریں", "转换为视频")
+        Add("Преобразовать в видео..",
+            "Convert to video..", "Перетворити на відео..", "In Video umwandeln..", "Converti in video..", "Convertir a vídeo..", "Convertir en vidéo..",
+            "Converter em vídeo..", "تحويل إلى فيديو..", "वीडियो में बदलें..", "ভিডিওতে রূপান্তর করুন..", "ویڈیو میں تبدیل کریں..", "转换为视频..")
 
         ' The folder box's tooltip: what its right button opens (125 UX-306).
         Add("Правая кнопка - меню: папка, файл, архив, ресурсы, раздача",

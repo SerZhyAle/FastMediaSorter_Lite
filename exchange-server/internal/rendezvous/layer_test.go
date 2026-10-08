@@ -48,6 +48,9 @@ type fakeBackend struct {
 
 	// pushBig makes Control send this many bytes of directory to the client.
 	pushBig int
+
+	// helloGate, when set, holds every Hello until it is closed: a stream that is being judged.
+	helloGate chan struct{}
 }
 
 type fakeCall struct {
@@ -84,6 +87,9 @@ func (f *fakeBackend) Hello(st *rendezvous.Stream, e *wire.Hello) rendezvous.Res
 	f.mu.Lock()
 	f.hellos++
 	f.mu.Unlock()
+	if f.helloGate != nil {
+		<-f.helloGate
+	}
 	if e.DeviceToken != fakeToken {
 		return rendezvous.Result{Refuse: wire.ReasonBadCredentials}
 	}

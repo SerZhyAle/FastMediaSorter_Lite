@@ -1,4 +1,4 @@
-Option Strict On
+﻿Option Strict On
 
 Imports System.Collections.Generic
 Imports System.IO
@@ -46,11 +46,11 @@ Public Class SendLogsHostingTests
         Dim status As New WorkerStatus With {
             .Running = True, .ListenPort = 22023, .Fingerprint = "SHA256:FINGERPRINT-NEEDLE", .Username = "alice-login", .Password = "pw-needle",
             .Reachability = New WorkerReachability With {
-                .LanAddress = "192.168.1.5", .ExternalHost = "193.178.50.43", .ExternalPort = 22023,
+                .LanAddress = "192.168.1.5", .ExternalHost = "203.0.113.43", .ExternalPort = 22023,
                 .ExternalPortChecked = True, .ExternalPortOpen = False, .IsCgnat = False, .PortMapMethod = "upnp", .Ipv6Address = "2001:db8::1"}}
         Dim line As String = HostingContext.ReachabilityLine(status)
         Assert.Equal("server running; external port checked yes; external port open no; CGNAT no; port mapping upnp", line)
-        For Each forbidden As String In {"193.178.50.43", "192.168.1.5", "2001:db8", "22023", "FINGERPRINT", "alice-login", "pw-needle"}
+        For Each forbidden As String In {"203.0.113.43", "192.168.1.5", "2001:db8", "22023", "FINGERPRINT", "alice-login", "pw-needle"}
             Assert.DoesNotContain(forbidden, line)
         Next
         Assert.Equal("", HostingContext.ReachabilityLine(Nothing))
@@ -62,23 +62,20 @@ Public Class SendLogsHostingTests
         Assert.DoesNotContain("external port open", unchecked)
     End Sub
 
-    ' ------------------------------------------------------------------ one flow, four entries -----------
+    ' ------------------------------------------------------------------ one flow, tray and About entries -----------
 
     <Fact>
     Public Sub Every_entry_point_opens_the_same_flow()
         Dim forms As String = Path.Combine(ExchangeTestSupport.RepoRoot(), "src", "FastMediaSorterCompanion", "Forms")
         Dim entries As String() = {
             Path.Combine(ExchangeTestSupport.RepoRoot(), "src", "FastMediaSorterCompanion", "TrayContext.vb"),
-            Path.Combine(forms, "Share_Settings_Form.vb"),
-            Path.Combine(forms, "Share_Settings_Form.Exchange.vb"),
-            Path.Combine(forms, "Share_Settings_Form.Hosting.vb")}
+            Path.Combine(forms, "Share_Settings_Form.Contract.vb")}
         For Each entryFile As String In entries
             Dim text As String = File.ReadAllText(entryFile)
             Assert.True(text.Contains("SendLogsFlow.RunAsync("), Path.GetFileName(entryFile) & " does not open SendLogsFlow")
         Next
-        ' The two groups carry the same link text as the footer (one key, 13 languages).
-        For Each group As String In {"Share_Settings_Form.Exchange.vb", "Share_Settings_Form.Hosting.vb"}
-            Assert.Contains("Localization.T(""Отправить журнал автору..""", File.ReadAllText(Path.Combine(forms, group)))
+        For Each group As String In {"Share_Settings_Form.vb", "Share_Settings_Form.Exchange.vb", "Share_Settings_Form.Hosting.vb"}
+            Assert.DoesNotContain("SendLogsFlow.RunAsync(", File.ReadAllText(Path.Combine(forms, group)))
         Next
     End Sub
 

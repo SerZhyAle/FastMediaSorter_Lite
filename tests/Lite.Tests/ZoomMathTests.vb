@@ -287,6 +287,12 @@ Public Class ZoomMathTests
         Assert.Equal(New Rectangle(200, 150, 400, 300), r)
     End Sub
 
+    <Fact>
+    Public Sub PictureBoxZoomBounds_SmallPortrait_EnlargesToTheDisplayedEdges()
+        Dim r As Rectangle = ZoomMath.PictureBoxZoomBounds(400, 500, New Size(1200, 800))
+        Assert.Equal(New Rectangle(280, 0, 640, 800), r)
+    End Sub
+
     <Theory>
     <InlineData(0, 100, 800, 600)>
     <InlineData(100, 100, 0, 600)>

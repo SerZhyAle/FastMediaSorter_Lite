@@ -50,7 +50,7 @@ End Class
 Friend Enum ExchangeRunKind
     ''' <summary>The binary could not be asked.</summary>
     Unreadable
-    ''' <summary>No usable password: the server never runs password-less (133 section 5).</summary>
+    ''' <summary>No account: the server refuses to serve nobody (162), so there is nothing to start yet.</summary>
     NotConfigured
     Stopped
     RunningConsole
@@ -71,8 +71,22 @@ Friend NotInheritable Class ExchangeGroupModel
     ''' <summary>The port to show, or 0.</summary>
     Public Property Port As Integer
     Public Property Fingerprint As String = ""
-    Public Property PasswordSet As Boolean
-    Public Property PasswordBroken As Boolean
+    ''' <summary>How many accounts and devices the server's stores hold (counts only - never a login).</summary>
+    Public Property Accounts As Integer
+    Public Property Devices As Integer
+    ''' <summary>The address announced in every welcome, "" while none is set.</summary>
+    Public Property PublicEndpoint As String = ""
+    ''' <summary>The server serves a certificate that was imported, not the generated self-signed identity.</summary>
+    Public Property CertImported As Boolean
+    ''' <summary>The one-click "use this PC as my server" flow: nothing exists yet, nothing runs, no service owns the server.</summary>
+    Public Property ShowWizard As Boolean
+    ''' <summary>The server's configuration rows (public address, third-party ports, certificate) - whenever the binary answered.</summary>
+    Public Property ShowConfigRows As Boolean
+    ''' <summary>Replace or import a certificate: only for a server run from here. A registered service keeps its own store, which this user cannot write (144), and no new elevation is added for it (168 rule 3).</summary>
+    Public Property ShowCertificateActions As Boolean
+    Public Property ShowCertificateServiceNote As Boolean
+    ''' <summary>The accounts part: shown whenever the binary answered; the lists fill in from the admin channel.</summary>
+    Public Property ShowAccounts As Boolean
 
     ''' <summary>Console Start: no service (the service wins), nothing running, a usable password.</summary>
     Public Property ShowStart As Boolean
@@ -97,8 +111,10 @@ Friend NotInheritable Class ExchangeGroupModel
         Dim m As New ExchangeGroupModel()
         Dim r As ExchangeProcess.InspectReport = s.Report
         Dim answered As Boolean = r IsNot Nothing AndAlso r.Answered
-        m.PasswordSet = answered AndAlso r.PasswordSet
-        m.PasswordBroken = answered AndAlso r.PasswordSet AndAlso Not r.PasswordHashValid
+        m.Accounts = If(answered, r.Accounts, 0)
+        m.Devices = If(answered, r.Devices, 0)
+        m.PublicEndpoint = If(answered, r.PublicEndpoint, "")
+        m.CertImported = answered AndAlso r.CertImported
         m.Port = If(answered, r.Port, 0)
         m.Fingerprint = If(answered AndAlso r.CertPresent, r.Fingerprint, "")
         m.Pid = s.ConsolePid
@@ -137,6 +153,11 @@ Friend NotInheritable Class ExchangeGroupModel
         m.ShowFirewallEnable = s.CanChangeFirewall AndAlso s.Firewall <> ExchangeFirewall.RuleState.ThisProgram
         m.ShowFirewallRemove = s.CanChangeFirewall AndAlso s.Firewall = ExchangeFirewall.RuleState.ThisProgram
         m.ShowFingerprint = m.Fingerprint.Length > 0
+        m.ShowWizard = answered AndAlso Not r.Configured AndAlso Not s.ServiceExists AndAlso s.ConsolePid = 0
+        m.ShowConfigRows = answered
+        m.ShowCertificateActions = answered AndAlso Not s.ServiceExists
+        m.ShowCertificateServiceNote = answered AndAlso s.ServiceExists
+        m.ShowAccounts = answered
         Return m
     End Function
 
@@ -156,7 +177,7 @@ Friend NotInheritable Class ExchangeGroupModel
             Case ExchangeRunKind.ServiceStopped, ExchangeRunKind.ServiceStopping
                 Return Localization.TF("Служба остановлена, порт {0}", ShownPort())
             Case ExchangeRunKind.NotConfigured
-                Return Localization.T("Пароль не задан")
+                Return Localization.T("Нет учётных записей")
             Case ExchangeRunKind.Unreadable
                 Return Localization.T("Состояние не прочитано")
             Case Else

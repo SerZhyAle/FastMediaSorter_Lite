@@ -21,6 +21,7 @@ type inspectReport struct {
 	Accounts       int    `json:"accounts"`
 	Devices        int    `json:"devices"`
 	CertPresent    bool   `json:"certPresent"`
+	CertImported   bool   `json:"certImported"` // exchange.json names a certificate and key to serve instead of the generated identity
 	Fingerprint    string `json:"fingerprint"`
 	Listen         string `json:"listen"`
 	PortRange      string `json:"portRange"`
@@ -65,6 +66,7 @@ func runInspect(cmd command, stdout, stderr io.Writer) int {
 	certPath, keyPath := paths.Cert, paths.Key
 	if cfg.TLS.CertFile != "" {
 		certPath, keyPath = cfg.TLS.CertFile, cfg.TLS.KeyFile
+		rep.CertImported = true
 	}
 	if cmd.init && cfg.TLS.CertFile == "" {
 		if id, err := tlsid.LoadOrCreate(certPath, keyPath, deploy.ProtectDir); err != nil {

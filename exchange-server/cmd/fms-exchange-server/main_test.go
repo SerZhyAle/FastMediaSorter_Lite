@@ -53,6 +53,9 @@ func TestParseArgs(t *testing.T) {
 		{[]string{"device", "list", "alice"}, command{name: "device", sub: "list", login: "alice"}},
 		{[]string{"device", "list", "alice", "--json"}, command{name: "device", sub: "list", login: "alice", json: true}},
 		{[]string{"device", "revoke", "alice", "AAAAAAAAAAAAAAAAAAAAAA"}, command{name: "device", sub: "revoke", login: "alice", deviceID: "AAAAAAAAAAAAAAAAAAAAAA"}},
+		// a deviceId is base64url and may begin with a hyphen
+		{[]string{"device", "revoke", "alice", "-pjgKQFygDW5ohQ4zk4Isw"}, command{name: "device", sub: "revoke", login: "alice", deviceID: "-pjgKQFygDW5ohQ4zk4Isw"}},
+		{[]string{"device", "revoke", "--", "alice", "--x"}, command{name: "device", sub: "revoke", login: "alice", deviceID: "--x"}},
 		{[]string{"set-endpoint", "exchange.example.org:22022"}, command{name: "set-endpoint", value: "exchange.example.org:22022"}},
 		{[]string{"set-endpoint", "-"}, command{name: "set-endpoint", value: "-"}},
 		{[]string{"set-listen", ":23456", "--config", "x"}, command{name: "set-listen", value: ":23456", config: "x"}},
@@ -749,10 +752,10 @@ func TestSetEndpointValidatesAndClears(t *testing.T) {
 	if _, err := os.Stat(p); err == nil {
 		t.Fatal("a refused endpoint must not create the file")
 	}
-	if code, _, _ := execute(t, []string{"set-endpoint", "--config", p, "193.178.50.43:22022"}, ""); code != 0 {
+	if code, _, _ := execute(t, []string{"set-endpoint", "--config", p, "203.0.113.43:22022"}, ""); code != 0 {
 		t.Fatal("a good endpoint")
 	}
-	if c, _ := config.Load(p); c.PublicEndpoint != "193.178.50.43:22022" {
+	if c, _ := config.Load(p); c.PublicEndpoint != "203.0.113.43:22022" {
 		t.Fatalf("%q", c.PublicEndpoint)
 	}
 	if code, _, _ := execute(t, []string{"set-endpoint", "--config", p, "-"}, ""); code != 0 {

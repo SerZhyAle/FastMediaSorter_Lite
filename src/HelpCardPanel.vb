@@ -14,7 +14,8 @@ Imports System.Windows.Forms
 ''' language (<c>Localization.FontFamily()</c>), laid out for the current width, mirrored for right-to-left text
 ''' (the key column goes to the right; never RightToLeftLayout, which would mirror the device context) and
 ''' scaled by the monitor's DPI. It never takes the keyboard focus - the viewer's keys keep working, and
-''' Esc closes it through the Escape ladder - and a click anywhere on it closes it too. The wheel and the
+''' Esc closes it through the Escape ladder - and a click on its reference text closes it too. The welcome
+''' link is a native keyboard-accessible control; activating it requests the wizard. The wheel and the
 ''' scroll bar scroll; the wheel event is consumed so it cannot flip a file behind the card.
 ''' </summary>
 Friend NotInheritable Class HelpCardPanel
@@ -22,6 +23,7 @@ Friend NotInheritable Class HelpCardPanel
 
     ''' <summary>Raised by a click on the card: the host hides it.</summary>
     Public Event CloseRequested As EventHandler
+    Public Event WelcomeRequested As EventHandler
 
     Private Enum ItemKind
         Title
@@ -40,6 +42,9 @@ Friend NotInheritable Class HelpCardPanel
     End Structure
 
     Private ReadOnly bar As New VScrollBar()
+    Private ReadOnly welcomeLink As New LinkLabel With {
+        .Dock = DockStyle.Top, .TabStop = True, .TextAlign = ContentAlignment.MiddleLeft,
+        .UseMnemonic = False, .Padding = New Padding(16, 0, 16, 0)}
     Private ReadOnly items As New List(Of DrawItem)()
     Private groups As List(Of HelpCardGroup)
     Private contentHeight As Integer
@@ -63,12 +68,18 @@ Friend NotInheritable Class HelpCardPanel
         bar.TabStop = False
         AddHandler bar.ValueChanged, Sub() Invalidate()
         Controls.Add(bar)
+        AddHandler welcomeLink.LinkClicked, Sub() RaiseEvent WelcomeRequested(Me, EventArgs.Empty)
+        Controls.Add(welcomeLink)
         AddHandler ThemeService.Changed, AddressOf OnThemeChanged
     End Sub
 
     ''' <summary>Fills the card from fresh rows (the live shortcut map) and re-lays it out at the current width.</summary>
     Public Sub SetContent(rows As List(Of HelpCardGroup))
         groups = rows
+        welcomeLink.Text = Localization.T("Показать приветственные шаги снова")
+        welcomeLink.TabStop = True
+        welcomeLink.AccessibleName = welcomeLink.Text
+        welcomeLink.RightToLeft = If(Localization.IsRightToLeft(), RightToLeft.Yes, RightToLeft.No)
         ' Fresh fonts every time: the script font follows the UI language, which may have changed since.
         DisposeFonts()
         Relayout()
@@ -109,6 +120,13 @@ Friend NotInheritable Class HelpCardPanel
     Public Sub ScrollByWheel(delta As Integer)
         If delta <> 0 AndAlso barNeeded Then ScrollBy(-Math.Sign(delta) * SmallStep() * 3)
     End Sub
+
+    ''' <summary>Keep Enter on the focused link ahead of the viewer's custom media shortcuts.</summary>
+    Public Function TryWelcomeKey(keyData As Keys) As Boolean
+        If keyData <> Keys.Enter OrElse Not welcomeLink.Focused Then Return False
+        RaiseEvent WelcomeRequested(Me, EventArgs.Empty)
+        Return True
+    End Function
 
     ''' <summary>The keys a card that is up takes for itself while the viewer's own keys stay live for everything
     ''' else: the six that scroll. True = consumed.</summary>
@@ -176,6 +194,7 @@ Friend NotInheritable Class HelpCardPanel
     End Function
 
     Private Sub DisposeFonts()
+        welcomeLink.Font = Control.DefaultFont
         For Each f As Font In {bodyFont, keyFont, headerFont, titleFont}
             If f IsNot Nothing Then f.Dispose()
         Next
@@ -188,6 +207,11 @@ Friend NotInheritable Class HelpCardPanel
     Private Sub Relayout()
         If groups Is Nothing OrElse ClientSize.Width <= 0 Then Return
         EnsureFonts()
+        welcomeLink.Font = bodyFont
+        welcomeLink.Height = Math.Max(Px(44), TextRenderer.MeasureText(welcomeLink.Text, bodyFont,
+            New Size(Math.Max(1, ClientSize.Width - Px(32) - SystemInformation.VerticalScrollBarWidth), 0),
+            TextFormatFlags.WordBreak).Height)
+        ApplyLinkTheme()
         Dim barWidth As Integer = SystemInformation.VerticalScrollBarWidth
         Build(ClientSize.Width)
         barNeeded = contentHeight > ClientSize.Height
@@ -196,8 +220,10 @@ Friend NotInheritable Class HelpCardPanel
         bar.Visible = barNeeded
         If barNeeded Then
             bar.Minimum = 0
-            bar.Maximum = Math.Max(0, contentHeight - 1)
-            bar.LargeChange = Math.Max(1, Math.Min(ClientSize.Height, contentHeight))
+            ' The pinned link is outside the scrolling reference text. Page by that viewport,
+            ' and exclude the same height from the range so End still lands on the final row.
+            bar.Maximum = Math.Max(0, contentHeight - welcomeLink.Height - 1)
+            bar.LargeChange = Math.Max(1, Math.Min(ClientSize.Height - welcomeLink.Height, contentHeight - welcomeLink.Height))
             bar.SmallChange = Math.Max(1, bodyFont.Height)
             If bar.Value > MaxScroll() Then bar.Value = MaxScroll()
         End If
@@ -218,7 +244,7 @@ Friend NotInheritable Class HelpCardPanel
         Dim descWidth As Integer = Math.Max(1, inner - keyWidth - gap)
         Dim keyLeft As Integer = If(rtl, pad + descWidth + gap, pad)
         Dim descLeft As Integer = If(rtl, pad, pad + keyWidth + gap)
-        Dim y As Integer = pad
+        Dim y As Integer = welcomeLink.Height + pad
 
         y = AddBlock(ItemKind.Title, Localization.T("Клавиши и мышь"), titleFont, pad, y, inner, False) + Px(10)
 
@@ -310,6 +336,7 @@ Friend NotInheritable Class HelpCardPanel
         Dim offset As Integer = If(barNeeded, bar.Value, 0)
         Dim visibleTop As Integer = offset
         Dim visibleBottom As Integer = offset + ClientSize.Height
+        e.Graphics.SetClip(New Rectangle(0, welcomeLink.Height, ClientSize.Width, Math.Max(0, ClientSize.Height - welcomeLink.Height)))
         For Each item As DrawItem In items
             If item.Bounds.Bottom < visibleTop OrElse item.Bounds.Top > visibleBottom Then Continue For
             Dim r As Rectangle = item.Bounds
@@ -340,7 +367,15 @@ Friend NotInheritable Class HelpCardPanel
 
     Private Sub OnThemeChanged(sender As Object, e As EventArgs)
         If IsDisposed Then Return
+        ApplyLinkTheme()
         Invalidate()
+    End Sub
+
+    Private Sub ApplyLinkTheme()
+        welcomeLink.BackColor = ThemeService.Palette.SurfaceWindow
+        welcomeLink.LinkColor = ThemeService.Palette.Link
+        welcomeLink.ActiveLinkColor = ThemeService.Palette.Link
+        welcomeLink.VisitedLinkColor = ThemeService.Palette.Link
     End Sub
 
     Protected Overrides Sub Dispose(disposing As Boolean)

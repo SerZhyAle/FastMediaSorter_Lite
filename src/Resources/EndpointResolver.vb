@@ -140,11 +140,39 @@ Friend Module EndpointResolver
         Friend WinnerSession As IDisposable
         Friend WinnerEndpoint As FmsEndpoint
         Friend FailureOfRound As ResourceFailure
+        ''' <summary>When the round began, on the resolver's clock (for the stagger of <see cref="FmsEndpoint.StartAfterMs"/>).</summary>
+        Friend StartMs As Long
 
         Friend Sub New(candidates As IReadOnlyList(Of FmsEndpoint), cts As CancellationTokenSource)
             Me.Candidates = candidates
             Me.Cts = cts
         End Sub
+
+        ''' <summary>True when every candidate before <paramref name="endpoint"/> has already failed: a staggered candidate then has nothing to
+        ''' wait for.</summary>
+        Friend Function EveryEarlierFailed(endpoint As FmsEndpoint) As Boolean
+            SyncLock Gate
+                Dim index As Integer = -1
+                For i As Integer = 0 To Candidates.Count - 1
+                    If ReferenceEquals(Candidates(i), endpoint) Then
+                        index = i
+                        Exit For
+                    End If
+                Next
+                If index <= 0 Then Return True
+                For i As Integer = 0 To index - 1
+                    Dim failed As Boolean = False
+                    For Each a As EndpointAttempt In Attempts
+                        If ReferenceEquals(a.Endpoint, Candidates(i)) AndAlso a.Failure IsNot Nothing Then
+                            failed = True
+                            Exit For
+                        End If
+                    Next
+                    If Not failed Then Return False
+                Next
+                Return True
+            End SyncLock
+        End Function
 
         Friend Function TakeNext() As FmsEndpoint
             SyncLock Gate
@@ -277,7 +305,27 @@ Friend Module EndpointResolver
         Do
             Dim endpoint As FmsEndpoint = round.TakeNext()
             If endpoint Is Nothing Then Return
+            If endpoint.StartAfterMs > 0 Then
+                Await WaitForStaggerAsync(round, endpoint, clock).ConfigureAwait(False)
+                If round.Decided OrElse round.Cts.IsCancellationRequested Then Return
+            End If
             Await AttemptAsync(round, endpoint, dialer, clock, consentMs).ConfigureAwait(False)
+        Loop
+    End Function
+
+    ''' <summary>A staggered candidate (the tunnel of ticket 171) waits for its head-start to pass, and stops waiting early when every earlier
+    ''' candidate has failed or the round was decided. Nothing is dialled - and so nothing is opened on the exchange - while a direct address
+    ''' is still answering.</summary>
+    Private Async Function WaitForStaggerAsync(round As Round, endpoint As FmsEndpoint, clock As IResolutionClock) As Task
+        Do
+            If round.Decided OrElse round.Cts.IsCancellationRequested Then Return
+            Dim remaining As Long = endpoint.StartAfterMs - (clock.NowMs - round.StartMs)
+            If remaining <= 0 OrElse round.EveryEarlierFailed(endpoint) Then Return
+            Try
+                Await clock.Delay(CInt(Math.Min(remaining, 50)), round.Cts.Token).ConfigureAwait(False)
+            Catch ex As OperationCanceledException
+                Return
+            End Try
         Loop
     End Function
 
@@ -293,6 +341,7 @@ Friend Module EndpointResolver
         If list.Count > ResolutionLimits.MaxCandidates Then list = list.Take(ResolutionLimits.MaxCandidates).ToList()
         Dim consent As Func(Of Long) = If(consentMs, Function() 0L)
         Dim round As New Round(list, New CancellationTokenSource())
+        round.StartMs = clock.NowMs
 
         If list.Count = 0 Then
             Return New ResolutionOutcome(Nothing, Nothing, New ResourceFailure(ResourceFailureKind.Transport, Nothing, "no endpoint"), New List(Of EndpointAttempt)())

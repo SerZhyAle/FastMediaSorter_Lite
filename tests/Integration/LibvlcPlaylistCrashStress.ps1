@@ -93,6 +93,7 @@ trap {
     try { Restore-Registry } catch {}
     Exit-Verdict 'LibvlcPlaylistCrashStress' 2 'the harness itself failed'
 }
+Write-Subject 'LibvlcPlaylistCrashStress' "the built modern viewer ${exe} - rapid next/previous and mid-parse closes over a scratch copy of MP3 files, looking for native crash dumps in ${dumpDir}"
 
 $WM_KEYDOWN = 0x0100; $WM_KEYUP = 0x0101
 $VK_SPACE = 0x20; $VK_B = 0x42

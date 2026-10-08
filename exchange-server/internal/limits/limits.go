@@ -33,6 +33,8 @@ const (
 	PairingRequest
 	// BroadcastStart counts broadcast-start, per device (ticket 167 rule 6).
 	BroadcastStart
+	// Cast counts `cast`, per device (ticket 166 rule 6, ticket 167 rule 6).
+	Cast
 	classCount
 )
 
@@ -63,6 +65,7 @@ func DefaultConfig() Config {
 	c.Rates[FailedHello] = Rate{PerMinute: 10, Burst: 5}
 	c.Rates[PairingRequest] = Rate{PerMinute: 6, Burst: 6}
 	c.Rates[BroadcastStart] = Rate{PerMinute: 6, Burst: 6}
+	c.Rates[Cast] = Rate{PerMinute: 10, Burst: 10}
 	c.MaxAddrs = 4096
 	return c
 }

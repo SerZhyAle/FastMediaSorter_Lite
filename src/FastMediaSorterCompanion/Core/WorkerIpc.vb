@@ -464,22 +464,10 @@ Public Class WorkerRequest
     ''' <summary>RefreshBroadcast / RevokeBroadcast: ID of target broadcast.</summary>
     Public Property id As String
 
-    ' --- SetExchange (ticket 148; catalog proposal sidecar-control/PROPOSAL-2026-10-06-exchange-registration) ---
-    ' Every member is nullable or a reference so that an unset one is OMITTED (WhenWritingNull): on this request
-    ' "absent" means "unchanged" (WORKER-IPC rule 4). `password` above is the same member SetExchange uses: an
-    ' EMPTY string clears it, an absent one leaves it, and it is never part of any response.
-
-    ''' <summary>SetExchange: true registers every share (and every later-added one) on the exchange server;
-    ''' false unregisters all and KEEPS the share ids. Not to be confused with <c>enable</c>.</summary>
-    Public Property enabled As Boolean?
-    ''' <summary>SetExchange: the endpoint the WORKER dials (not necessarily what a phone dials).</summary>
-    Public Property registerHost As String
-    Public Property registerPort As Integer?
-    ''' <summary>SetExchange: the certificate to pin, <c>SHA256:</c> + unpadded base64. Absent = pin on first
-    ''' registration; only an explicit value replaces an existing pin.</summary>
-    Public Property certFingerprint As String
-    ''' <summary>SetExchange: names of shares whose exchange id is rotated now - the only time one changes.</summary>
-    Public Property reissue As List(Of String)
+    ' There is NO exchange member on this request (ticket 170 section 5: SetExchange, registerHost, registerPort, certFingerprint, reissue
+    ' retired). The worker is not told about an exchange server, and no exchange secret can be carried to it: the device agent publishes
+    ' what the worker serves and splices tunnels to its loopback listener (ExchangePublisher), which is a structural property that
+    ' WorkerRequestHasNoExchangeMemberTests holds by reflection.
 End Class
 
 ''' <summary>A shared root. Used both in requests (folders) and status (roots).</summary>
@@ -615,38 +603,11 @@ Public Class WorkerStatus
     Public Property BroadcastCount As Integer
     ''' <summary>This worker serves all five broadcast verbs of 016 section 3.4 (spec 159 section 3.1), so none
     ''' of them is answered with "unsupported request type". Additive and top level, the exact shape of
-    ''' <see cref="PortSupported"/> and <see cref="ExchangeSupported"/>: a worker that predates the verbs omits
-    ''' it, so absent is False. The host never infers support from a refusal's wording.</summary>
+    ''' <see cref="PortSupported"/>: a worker that predates the verbs omits it, so absent is False. The host never infers support
+    ''' from a refusal's wording.</summary>
     Public Property BroadcastSupported As Boolean
-    ''' <summary>This worker understands <c>SetExchange</c>. Additive and top level, the exact shape of
-    ''' <see cref="PortSupported"/>: an older worker omits it, so False after the host wanted an exchange
-    ''' identifies a stale worker. The server password is sent ONLY once this is True (proposal rule 5).</summary>
-    Public Property ExchangeSupported As Boolean
-    ''' <summary>Absent when the worker was never configured for an exchange: absent is "no data yet", never an
-    ''' error (WORKER-IPC section 6 rule 2).</summary>
-    Public Property Exchange As WorkerExchange
-End Class
-
-''' <summary>The worker's exchange registration, as <c>status.exchange</c> reports it. Nothing here is a
-''' password; <see cref="WorkerExchangeShare.ShareId"/> is a bearer capability and is never shown or logged
-''' (only <see cref="ExchangeShareIds.LogName"/> of it).</summary>
-Public Class WorkerExchange
-    Public Property Enabled As Boolean
-    ''' <summary>The pinned server certificate, "" before the first registration.</summary>
-    Public Property CertFingerprint As String
-    ''' <summary>Always present, may be empty; not the same as <see cref="WorkerStatus.LastError"/>.</summary>
-    Public Property LastError As String
-    Public Property Shares As List(Of WorkerExchangeShare)
-End Class
-
-Public Class WorkerExchangeShare
-    ''' <summary>The share's name - the key the host already uses in <c>folders[]</c>.</summary>
-    Public Property Name As String
-    Public Property ShareId As String
-    ''' <summary>The third-party port the exchange granted, 0 when none.</summary>
-    Public Property RelayPort As Integer
-    ''' <summary>One of the names <see cref="ExchangeShareStates"/> knows; anything else reads as not registered.</summary>
-    Public Property State As String
+    ' No `exchange` / `exchangeSupported` member (ticket 170 section 5): the worker is not told about an exchange server, so its status
+    ' has nothing to say about one. A worker that still reports such a member has it ignored (an unknown member is never an error).
 End Class
 
 ''' <summary>Local-only SFTP usage counters kept by the worker in <c>stats.json</c> and

@@ -1,6 +1,7 @@
 package wire
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
 	"unicode/utf8"
@@ -83,6 +84,10 @@ func (e *Enroll) validate() error {
 		if !textOK(r, 32) {
 			return errors.New("a role is out of bounds")
 		}
+	}
+	// "receiver":null is a member that says nothing: it is absent, never a malformed block.
+	if t := bytes.TrimSpace(e.Receiver); string(t) == "null" {
+		e.Receiver = nil
 	}
 	if len(e.Receiver) > 0 {
 		if err := CheckReceiver(e.Receiver); err != nil {
@@ -183,7 +188,14 @@ func (e *Upload) validate() error {
 	if err := required("broadcastId", e.BroadcastID, maxTunnelID); err != nil {
 		return err
 	}
-	return required("contentType", e.ContentType, maxContentType)
+	if err := required("contentType", e.ContentType, maxContentType); err != nil {
+		return err
+	}
+	// The content type is copied into a response header and nothing else (ticket 165 rule 1).
+	if !ValidContentType(e.ContentType) {
+		return errors.New("contentType is not a media type")
+	}
+	return nil
 }
 
 func (e *Cast) validate() error {

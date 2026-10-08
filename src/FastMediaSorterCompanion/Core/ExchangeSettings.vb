@@ -6,9 +6,11 @@ Option Strict On
 ''' <c>Exchange_*</c>).
 '''
 ''' What is NOT here, on purpose: the password and its hash (the hash lives only in the server's own
-''' config file, the plaintext only in the dialog that shows it once), the certificate fingerprint (read
-''' from the binary on demand), and the server's configuration as such - this POCO is UX state, not the
-''' server's. The three values are all safe to send in a log package (LogPackage.SafeSettingNames).
+''' config file; the plaintext only in the dialog that shows it, and - when the person turned keeping on -
+''' in the DPAPI file of <see cref="ExchangeAccountPasswordStore"/>, never in this registry), the certificate
+''' fingerprint (read from the binary on demand), and the server's configuration as such - this POCO is UX state,
+''' not the server's. The values here are all safe to send in a log package (LogPackage.SafeSettingNames), and the
+''' keeping switch is not on that list, so a log package withholds it.
 ''' </summary>
 Public Class ExchangeSettings
 
@@ -20,6 +22,11 @@ Public Class ExchangeSettings
     ''' <summary>UX hint: the user has started the server at least once from here. Decides whether the
     ''' state line says "not started yet" or "stopped".</summary>
     Public Property EverStarted As Boolean = False         ' Exchange_EverStarted
+
+    ''' <summary>Keep the account passwords on this PC, so they can be read again (<see cref="ExchangeAccountPasswordStore"/>).
+    ''' Default off: a password is shown once and can only be reset - the rule the Share Manager has always had. Turning it on
+    ''' is a question the person answers with a warning in front of them (the form does that, not this class).</summary>
+    Public Property KeepAccountPasswords As Boolean = False   ' Exchange_KeepAccountPasswords
 
     ''' <summary>The listen port last written through the Share Manager, or <see cref="UnsetPort"/>. A
     ''' MIRROR for display when the binary cannot be asked: the server's own config file is the only
@@ -41,17 +48,20 @@ Public Class ExchangeSettings
     Friend Const KeepRunningName As String = "Exchange_KeepRunningOnExit"
     Friend Const EverStartedName As String = "Exchange_EverStarted"
     Friend Const ListenPortName As String = "Exchange_ListenPort"
+    Friend Const KeepAccountPasswordsName As String = "Exchange_KeepAccountPasswords"
 
     Public Sub Load()
         KeepRunningOnExit = ReadBool(KeepRunningName, False)
         EverStarted = ReadBool(EverStartedName, False)
         ListenPort = ClampPort(ReadInt(ListenPortName, UnsetPort))
+        KeepAccountPasswords = ReadBool(KeepAccountPasswordsName, False)
     End Sub
 
     Public Sub Save()
         WriteBool(KeepRunningName, KeepRunningOnExit)
         WriteBool(EverStartedName, EverStarted)
         WriteInt(ListenPortName, ClampPort(ListenPort))
+        WriteBool(KeepAccountPasswordsName, KeepAccountPasswords)
     End Sub
 
     ''' <summary>0 and below mean "not recorded"; a chosen port stays inside [MinPort, MaxPort]. Every

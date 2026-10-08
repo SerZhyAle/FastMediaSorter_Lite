@@ -290,6 +290,13 @@ Friend NotInheritable Class Resource_Edit_Form
         built.DisplayName = If(nameBox.Text.Trim().Length > 0, nameBox.Text.Trim(),
                                If(IsSmb, built.RootPath, built.Host))
 
+        ' Ticket 171: an attached resource stays attached and a link keeps its tunnel, unless the edit moved it elsewhere - then it is the
+        ' user's own and the exchange lets go of it (a producer's access never overwrites a typed address).
+        If source IsNot Nothing Then
+            ResourceOrigin.CarryOver(source, built)
+            If ResourceOrigin.PointsElsewhere(source, built) Then ResourceOrigin.Detach(built)
+        End If
+
         Result = built
         NewPassword = If(typed.Length = 0, Nothing, typed)
         Me.DialogResult = DialogResult.OK

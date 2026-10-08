@@ -28,6 +28,9 @@ type Device struct {
 	Token   string
 	// Password is what Enroll presents (default testkit.TestPassword).
 	Password string
+	// Roles are the roles the device declares (default: producer, consumer and receiver); an empty
+	// non-nil slice declares none.
+	Roles []string
 
 	mu      sync.Mutex
 	control *Control
@@ -41,8 +44,12 @@ func (e *Env) NewDevice(login string) *Device {
 }
 
 func (d *Device) enrollFrame() *wire.Enroll {
+	roles := d.Roles
+	if roles == nil {
+		roles = []string{"resource-producer", "resource-consumer", "receiver"}
+	}
 	return &wire.Enroll{Login: d.Login, DeviceID: d.ID, DeviceName: d.Name, Product: d.Product,
-		ProductVersion: "1.0", Platform: "test", Roles: []string{"resource-producer", "resource-consumer", "receiver"},
+		ProductVersion: "1.0", Platform: "test", Roles: roles,
 		Receiver: json.RawMessage(`{"modes":["AUDIO_ONLY"],"transports":["HTTP_ADTS"]}`)}
 }
 

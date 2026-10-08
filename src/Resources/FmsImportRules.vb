@@ -58,7 +58,7 @@ Friend Module FmsFieldSupport
         New FmsFieldRule("schemaVersion", 1, FmsFieldHandling.EnvelopeGate, "invalid", False, "Judged first; above 2 asks to update the app and nothing else is read."),
         New FmsFieldRule("protocol", 1, FmsFieldHandling.EnvelopeGate, "invalid", False, "Exactly ""sftp"", case-sensitive."),
         New FmsFieldRule("resourceName", 1, FmsFieldHandling.Mapped, "empty name", True, "Display name of the saved resource, with the root's label; never an identity."),
-        New FmsFieldRule("accessPaths[].kind", 1, FmsFieldHandling.Mapped, "entry skipped", True, "lan, ipv6, portforward; an unknown kind (rendezvousTunnel included) is skipped without being dialled."),
+        New FmsFieldRule("accessPaths[].kind", 1, FmsFieldHandling.Mapped, "entry skipped", True, "lan, ipv6, portforward; an unknown kind is skipped without being dialled. The exchange's rendezvousTunnel is read only where the exchange client features are offered (FmsTunnelPaths), kept beside the endpoints as a tunnel and never as an address."),
         New FmsFieldRule("accessPaths[].host", 1, FmsFieldHandling.Mapped, "entry refused", True, "Plain host or literal; no blanks, slashes or user-info."),
         New FmsFieldRule("accessPaths[].port", 1, FmsFieldHandling.Mapped, "entry refused", True, "Integer 1..65535."),
         New FmsFieldRule("username", 1, FmsFieldHandling.Mapped, "invalid", True, "Required, not blank."),

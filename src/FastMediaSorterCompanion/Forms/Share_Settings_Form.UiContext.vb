@@ -1,10 +1,11 @@
-Option Explicit On
+﻿Option Explicit On
 Option Strict On
 Option Infer On
 Option Compare Binary
 
 Imports System.Drawing
 Imports System.Linq
+Imports System.Reflection
 Imports System.Text.Json
 Imports System.Windows.Forms
 
@@ -13,7 +14,7 @@ Partial Public NotInheritable Class Share_Settings_Form
     Private settingsWasPresented As Boolean
 
     Private Function SettingsSections() As CollapsibleSection()
-        Return AllSections()
+        Return AllSettingsSections()
     End Function
 
     Private Sub RestoreSettingsUiContext()
@@ -21,13 +22,22 @@ Partial Public NotInheritable Class Share_Settings_Form
             Dim invalid As Boolean
             managerSettingsContext = SettingsUiContext.Read(GetSetting(App_name, Second_App_Name,
                 "Share_SettingsContext", String.Empty), invalid)
-            Dim page = managerSettingsContext.Page("manager")
-            For Each section In SettingsSections()
-                section.Expanded = page.Expanded(section.Key, section.Expanded)
+            ' The retired single-page anchor identifies a useful destination on migration.
+            If Not _pages.ContainsKey(managerSettingsContext.LastPageId) Then
+                Dim previous = managerSettingsContext.Page("manager").AnchorId
+                managerSettingsContext.LastPageId = If(_pages.ContainsKey(previous), previous, "startup")
+            End If
+            For Each pair In _pageGroups
+                Dim page = managerSettingsContext.Page(pair.Key)
+                For Each group In pair.Value
+                    group.Expanded = page.Expanded(group.Key, group.Expanded)
+                Next
             Next
+            SelectSettingsPage(managerSettingsContext.ResolvePage(_pages.Keys))
         Catch ex As Exception
             AppFileLogger.LogException("Share settings: restoring UI context", ex)
         End Try
+        If _selectedPage.Length = 0 Then SelectSettingsPage("startup")
     End Sub
 
     Private Function RestoreSettingsWindowBounds() As Boolean
@@ -40,6 +50,9 @@ Partial Public NotInheritable Class Share_Settings_Form
             Dim factor = DeviceDpi / 96.0R
             Size = New Size(CInt(values(2) * factor), CInt(values(3) * factor))
             Location = New Point(values(0), values(1))
+            If Owner IsNot Nothing AndAlso Screen.FromRectangle(Bounds).DeviceName <> Screen.FromControl(Owner).DeviceName Then
+                DpiLayout.CenterOnOwner(Me)
+            End If
             DpiLayout.ClampToWorkingArea(Me)
             Return True
         Catch ex As Exception
@@ -51,32 +64,87 @@ Partial Public NotInheritable Class Share_Settings_Form
     Protected Overrides Sub OnShown(e As EventArgs)
         MyBase.OnShown(e)
         settingsWasPresented = True
-        Dim page = managerSettingsContext.Page("manager")
-        Dim section = SettingsSections().FirstOrDefault(Function(item) item.Key = page.AnchorId)
-        If section IsNot Nothing Then
-            Dim target = Math.Max(0, section.Top + _root.AutoScrollPosition.Y -
-                                 CInt(page.AnchorOffsetLogical * DeviceDpi / 96.0R))
-            _root.AutoScrollPosition = New Point(0, target)
+        LoadSelectedSettingsPage()
+        _pages(_selectedPage).PerformLayout()
+        RestoreSettingsViewport()
+
+    End Sub
+
+    Private Function PageRows() As Control()
+        Dim section = SettingsSections().First(Function(item) item.Key = _selectedPage)
+        Return section.Body.Controls.Cast(Of Control)().ToArray()
+    End Function
+
+    Private Function ViewportTop(row As Control) As Integer
+        Dim top = row.Top
+        Dim parent = row.Parent
+        While parent IsNot Nothing AndAlso parent IsNot _pages(_selectedPage)
+            top += parent.Top
+            parent = parent.Parent
+        End While
+        Return top
+    End Function
+
+    Private Function RowAnchor(row As Control) As String
+        If row.Name.Length > 0 Then Return _selectedPage & "/" & row.Name
+        ' Field names survive translations and inserted/reordered rows. Anonymous prose
+        ' uses the next named editor/status row rather than an ordinal pixel anchor.
+        For Each field In GetType(Share_Settings_Form).GetFields(BindingFlags.Instance Or BindingFlags.NonPublic).
+            Where(Function(item) GetType(Control).IsAssignableFrom(item.FieldType)).OrderBy(Function(item) item.Name, StringComparer.Ordinal)
+            Dim control = TryCast(field.GetValue(Me), Control)
+            If control IsNot Nothing AndAlso (control Is row OrElse row.Contains(control)) Then
+                Return _selectedPage & "/" & field.Name
+            End If
+        Next
+        Return String.Empty
+    End Function
+
+    Private Sub CaptureSettingsViewport()
+        If _selectedPage.Length = 0 Then Return
+        Dim page = managerSettingsContext.Page(_selectedPage)
+        Dim section = SettingsSections().First(Function(item) item.Key = _selectedPage)
+        page.AnchorId = _selectedPage
+        page.AnchorOffsetLogical = CInt(ViewportTop(section.Body) * 96.0R / DeviceDpi)
+        Dim rows = PageRows()
+        For index = 0 To rows.Length - 1
+            Dim row = rows(index)
+            Dim anchor = RowAnchor(row)
+            If anchor.Length > 0 AndAlso row.Visible AndAlso ViewportTop(row) + row.Height >= 0 Then
+                page.AnchorId = anchor
+                page.AnchorOffsetLogical = CInt(ViewportTop(row) * 96.0R / DeviceDpi)
+                Exit For
+            End If
+        Next
+    End Sub
+
+    Private Sub RestoreSettingsViewport()
+        If Not settingsWasPresented OrElse _selectedPage.Length = 0 Then Return
+        Dim page = managerSettingsContext.Page(_selectedPage)
+        Dim viewport = _pages(_selectedPage)
+        viewport.AutoScrollPosition = Point.Empty
+        viewport.PerformLayout()
+        If page.AnchorId = _selectedPage Then
+            Dim section = SettingsSections().First(Function(item) item.Key = _selectedPage)
+            viewport.AutoScrollPosition = New Point(0, Math.Max(0,
+                ViewportTop(section.Body) - CInt(page.AnchorOffsetLogical * DeviceDpi / 96.0R)))
+            Return
         End If
-        If _secHosting.Expanded Then EnsureHostingLoaded()
-        ' Not only when unfolded: the folded summary ("Running on port N") must be true too, and the
-        ' live read is one short run of the binary's inspect, off the UI thread.
-        EnsureExchangeLoaded()
+        Dim rows = PageRows()
+        For index = 0 To rows.Length - 1
+            Dim row = rows(index)
+            If page.AnchorId.Length > 0 AndAlso RowAnchor(row) = page.AnchorId AndAlso row.Visible Then
+                viewport.AutoScrollPosition = New Point(0, Math.Max(0,
+                    ViewportTop(row) - CInt(page.AnchorOffsetLogical * DeviceDpi / 96.0R)))
+                Exit For
+            End If
+        Next
     End Sub
 
     Protected Overrides Sub OnFormClosing(e As FormClosingEventArgs)
         MyBase.OnFormClosing(e)
         If e.Cancel OrElse Not settingsWasPresented Then Return
         Try
-            Dim page = managerSettingsContext.Page("manager")
-            For Each section In SettingsSections()
-                page.Groups(section.Key) = section.Expanded
-            Next
-            Dim anchor = SettingsSections().FirstOrDefault(Function(section) section.Bottom >= 0)
-            If anchor IsNot Nothing Then
-                page.AnchorId = anchor.Key
-                page.AnchorOffsetLogical = CInt(anchor.Top * 96.0R / DeviceDpi)
-            End If
+            CaptureSettingsViewport()
             SaveSetting(App_name, Second_App_Name, "Share_SettingsContext", managerSettingsContext.ToJson())
             Dim savedBounds = If(WindowState = FormWindowState.Normal, Me.Bounds, Me.RestoreBounds)
             SaveSetting(App_name, Second_App_Name, "Share_SettingsBounds", JsonSerializer.Serialize(

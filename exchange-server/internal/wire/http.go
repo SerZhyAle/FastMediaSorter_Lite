@@ -35,8 +35,9 @@ func ParseListenPath(path string) (string, bool) {
 
 // HTTPRequest is the part of a request head the one port needs.
 type HTTPRequest struct {
-	Method string
-	Path   string // the request target without a query
+	Method  string
+	Path    string // the request target without a query
+	Version string // "HTTP/1.1" or another HTTP/1.x
 }
 
 // ReadHTTPRequest reads one request head (the request line and the header lines up to the blank
@@ -60,6 +61,7 @@ func ReadHTTPRequest(r *bufio.Reader) (HTTPRequest, error) {
 			}
 			req.Method = parts[0]
 			req.Path = parts[1]
+			req.Version = parts[2]
 			if i := strings.IndexAny(req.Path, "?#"); i >= 0 {
 				req.Path = req.Path[:i]
 			}
@@ -75,7 +77,8 @@ func ReadHTTPRequest(r *bufio.Reader) (HTTPRequest, error) {
 // HTTPResponse is a body-less response with the given status, closing the connection. retryAfter,
 // when positive, adds the Retry-After header of a 503 (7.6).
 func HTTPResponse(status int, retryAfter int) []byte {
-	text := map[int]string{404: "Not Found", 405: "Method Not Allowed", 503: "Service Unavailable"}[status]
+	text := map[int]string{404: "Not Found", 405: "Method Not Allowed", 503: "Service Unavailable",
+		505: "HTTP Version Not Supported"}[status]
 	if text == "" {
 		text = "Error"
 	}

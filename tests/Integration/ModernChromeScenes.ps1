@@ -5,6 +5,7 @@ $ErrorActionPreference = 'Stop'
 $repo = Split-Path (Split-Path $PSScriptRoot -Parent) -Parent
 . (Join-Path $repo 'tools/lib/Verdict.ps1')
 trap { Exit-Verdict 'ModernChromeScenes' 2 $_.Exception.Message }
+Write-Subject 'ModernChromeScenes' 'the floating chrome of the actual Main_Form of the modern viewer, user settings neither read nor saved'
 New-Item -ItemType Directory -Path $WorkDir -Force | Out-Null
 $project = [System.Security.SecurityElement]::Escape((Join-Path $repo 'src/Modern/FastMediaSorter.Modern.vbproj'))
 @"

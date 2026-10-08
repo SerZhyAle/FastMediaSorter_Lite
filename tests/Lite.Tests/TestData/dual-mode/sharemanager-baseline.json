@@ -1,0 +1,44 @@
+{
+  "program": "sharemanager",
+  "captured": true,
+  "exeFileVersion": "26.10.8.1246",
+  "profile": "clean (the settings key was absent for the run)",
+  "secondsObserved": 12,
+  "closedGracefully": false,
+  "registry": {
+    "key": "HKCU\\Software\\VB and VBA Program Settings\\SZA\\FastMediaSorter",
+    "valueNamesBefore": [],
+    "valueNamesWhileRunning": [
+      "Share_AutostartEnabled",
+      "Share_AutostartOffered"
+    ],
+    "valueNamesAfterClose": [
+      "Share_AutostartEnabled",
+      "Share_AutostartOffered"
+    ],
+    "added": [
+      "Share_AutostartEnabled",
+      "Share_AutostartOffered"
+    ],
+    "runKeyAdded": [
+      "FastMediaSorterShare"
+    ],
+    "forbiddenValueNames": []
+  },
+  "files": {
+    "root": "%LOCALAPPDATA%\\SZA",
+    "created": []
+  },
+  "network": {
+    "maxListeningOrUdpEndpoints": 0,
+    "maxConnections": 0,
+    "endpointKinds": []
+  },
+  "childProcesses": [],
+  "log": {
+    "file": "companion.log",
+    "present": true,
+    "lines": 2,
+    "mentionsExchange": false
+  }
+}

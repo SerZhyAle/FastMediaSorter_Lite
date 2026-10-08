@@ -1,9 +1,9 @@
-# Pointer - desktop UX and `WINDOWS-UI`
+﻿# Pointer - desktop UX and `WINDOWS-UI`
 
 | | |
 | --- | --- |
 | **Ids** | `APP-BEHAVIOUR`, `APP-STYLE`, `APP-SETTINGS`, `WINDOWS-UI` |
-| **Version** | catalog 0.12 / 0.12 / 0.3 / 0.3, draft (read 2026-10-07). Behaviour and style keep their 2026-10-02 audit (`APP-BEHAVIOUR` is unchanged since 0.12, `APP-STYLE` 0.12 section 10 was read 2026-10-05); the 0.2 / 0.3 amendments of `WINDOWS-UI` and `APP-SETTINGS` were read 2026-10-07. Owners: StreamsPlayer (the first two), CyrFlip, and this Windows reference respectively |
+| **Version** | catalog 0.12 / 0.12 / 0.4 / 0.3, draft (settings/profile read 2026-10-08). Behaviour and style keep their 2026-10-02 audit (`APP-BEHAVIOUR` is unchanged since 0.12, `APP-STYLE` 0.12 section 10 was read 2026-10-05); the 0.2 / 0.3 amendments of `WINDOWS-UI` and `APP-SETTINGS` were read 2026-10-07. Owners: StreamsPlayer (the first two), CyrFlip, and this Windows reference respectively |
 | **Home** | `desktop-app-ux/README.md` in the shared contracts catalog |
 | **Role here** | consumer, twice - the viewer (.NET 10 mainline) and the Share Manager each have their own registry row; audit and phases in `specification 028` (local specification) |
 
@@ -72,8 +72,7 @@ What the 2026-10-07 versions ask, and where this product stands (source read, no
 record is in the registry rows and in the addendum of the [Windows UI audit](../guides/WINDOWS_UI_AUDIT.md)):
 
 - `WINDOWS-UI` 0.3 section 2 item 6 (destinations under a navigation group header stand one indent in): not
-  applicable today - the viewer's settings navigation is a flat list of eleven pages and the Share Manager has no
-  navigation list. It binds the day either gets a group header.
+  applicable today - the viewer and Share Manager settings both use flat navigation lists. It binds the day either gets a group header.
 - `WINDOWS-UI` 0.2 section 5 (a page is laid out once; a scroll position is restored only after that layout)
   and section 9 (every page and secondary window is timed): in both settings windows the restore already runs
   after layout and the viewer's window is built under one suspended layout, but a page switch and a group toggle
@@ -82,9 +81,12 @@ record is in the registry rows and in the addendum of the [Windows UI audit](../
 - `APP-SETTINGS` 0.3 section 9 (an irreversible operation on a page of a surface with no Commit): the viewer's
   settings apply on touch and close with Close, so the section applies. Its cache Clear buttons, "restore
   defaults" and the settings import are buttons with their own confirmation (safe answer focused), and no value
-  control starts one. Two gaps are recorded: a Clear asks even when the cache is empty, and the static sweep of
-  rung 3 is not built. Spec 169 (reset all settings, About page) is the planned operation this section makes
-  permissible; it is not built, and it should cite section 9.
+  control starts one. Both gaps recorded on 2026-10-07 are closed (specification 183): a cache measured at 0
+  bytes says "Nothing to clear" and does not ask, and rung 3 is built - `SettingsIrreversibleHandlerTests` reads
+  every value-event handler of the settings window's sources (64 on that date) and what each reaches, two calls
+  deep, and fails on a file, folder, registry or disk-cache deletion; a handler it cannot place is a failure of
+  the sweep, never a pass. Spec 169 (reset all settings, About page) is the planned operation this section makes
+  permissible; it is not built, and it cites section 9.
 
 Full runtime, physical DPI, high-contrast and spoken-accessibility conformance remains separately verified, and
 the net48 maintenance policy is unchanged.
@@ -93,3 +95,26 @@ The [2026-10-05 Windows UI audit](../guides/WINDOWS_UI_AUDIT.md) records a bound
 over all 37 viewer and Share Manager form types, seven rendered dialog types, native numeric checks,
 menu construction and corrected shared defects. Full interaction, physical DPI, live high contrast and
 spoken accessibility acceptance remains open; the audit does not declare whole-profile conformity.
+The Share Manager settings implement `WINDOWS-UI` sections 2-5 and `APP-SETTINGS` surface anatomy
+(2026-10-08): General first, About last, glyph/caption navigation, independent groups inside pages,
+visible hints beside trailing editors, pane search and expand/collapse commands. About includes version,
+embedded MIT license, privacy and the existing support-bundle action. Language changes update open windows
+in place. Stable page/group IDs preserve expansion and anchored viewport context; the old single-page
+anchor migrates. Page switches and group changes hold layout and preserve the window rectangle; numeric
+and dropdown wheel messages scroll the pane without changing a value. Stored preference and operation
+semantics are preserved.
+
+`WindowsUiContractTests` exercises page geometry/context, visible hint bounds, About anatomy, native
+accessibility state, live language refresh and native editor theme behavior. Exchange administration UI
+checks exercise the optional server page with its groups expanded. These checks and rendered screenshots
+are bounded acceptance evidence, not physical DPI, mixed-monitor, high-contrast or spoken screen-reader
+acceptance. The dated 2026-10-07 whole-profile audit remains historical; full profile acceptance is open.
+
+
+Owner corrections, 2026-10-09: Share Manager settings have no bottom Close/footer strip; the native
+caption Close and Escape remain. The support-bundle entry inside settings is one button on About.
+Navigation identity inks reuse the centralized light/dark table; pane commands and settings disclosure
+glyphs also use colored ink with contrast resolution and a high-contrast system-color override.
+Theme application holds the complete subtree, including checkbox normalization; asynchronous hosting
+and exchange snapshots hold the owning page. Width fitting caches the last fitted width per viewport.
+Button/checkbox design sizes stay in 96-DPI units until the single form scaling pass.

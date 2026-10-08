@@ -5,8 +5,10 @@
 // port it prints and a folder listing comes through the bridge.
 //
 // It serves a real directory with a fixed login. Use a scratch folder. The account's password is read
-// from stdin, never from the command line. Ticket 178's probe supersedes it as the producer of the
-// third-party proof; it stays until that exists, because the suite's "manual proof" step runs its test.
+// from stdin, never from the command line. Ticket 178's probe (cmd/exchange-probe) runs the automated
+// proofs of the exchange; this tool stays for the one thing it cannot do - serve a REAL SFTP subsystem
+// for WinSCP or FileZilla through a third-party port (pkg/sftp lives in this module only) - and the
+// suite's "manual proof" step still runs its test.
 package main
 
 import (

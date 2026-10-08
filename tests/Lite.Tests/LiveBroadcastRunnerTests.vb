@@ -449,12 +449,24 @@ Public Class LiveBroadcastRunnerTests
         End Using
     End Function
 
+    ''' <summary>
+    ''' For a test whose property is an ORDER and not a timeout: the connect and stall budgets are far above
+    ''' anything a loaded machine produces. <see cref="Quick"/>'s 400 ms stall window is right for the tests that
+    ''' provoke a stall on purpose, and wrong for one that merely needs the stream to be left alone: with the
+    ''' thread pool starved by the rest of a full run (a frame is due every 20 ms and the first one can arrive
+    ''' late), the watchdog took a slow first byte for a dead stream and the run reported Reconnecting where
+    ''' Playing was expected.
+    ''' </summary>
+    Private Shared Function Patient() As LivePlaybackOptions
+        Return New LivePlaybackOptions With {.ConnectTimeoutMs = 30000, .StallTimeoutMs = 30000, .WatchdogPeriodMs = 50}
+    End Function
+
     <Fact>
     Public Async Function States_Are_Reported_In_Order_Connecting_Buffering_Playing() As Task
         Dim events As New ConcurrentQueue(Of String)()
         Using device As New LiveMockDevice(Function(c, t) LiveMockDevice.PhoneChunked(c, 100000, 20, t, endCleanly:=False), events)
             Dim host As New RecordingHost(events)
-            Dim runner As New LiveBroadcastRunner(EndpointOf(device.Url()), New LiveReconnectPolicy(), host, Quick(),
+            Dim runner As New LiveBroadcastRunner(EndpointOf(device.Url()), New LiveReconnectPolicy(), host, Patient(),
                                                   delayAsync:=AddressOf NoDelay)
             Using cts As New CancellationTokenSource()
                 Dim run As Task(Of LiveRunEnd) = runner.RunAsync(cts.Token)
@@ -469,6 +481,5 @@ Public Class LiveBroadcastRunnerTests
             Assert.Equal("state:Ended", list(list.Count - 1))
         End Using
     End Function
-
 End Class
 #End If

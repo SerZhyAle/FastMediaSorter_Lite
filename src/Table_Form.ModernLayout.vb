@@ -1,4 +1,4 @@
-﻿#If Not NETFRAMEWORK Then
+#If Not NETFRAMEWORK Then
 Option Strict On
 
 Imports System.Drawing
@@ -309,6 +309,13 @@ Partial Public Class Table_Form
         If modernSettingsBuilt Then Return
         modernSettingsBuilt = True
 
+        ' This shell sizes and scales everything itself (Sp, Sf, settingsScale, DpiChanged), so WinForms
+        ' must not scale the control tree as well. The Designer's AutoScaleMode.Font re-scaled every
+        ' control on each Font assignment and each DPI change - about 10 s per open on a 175 % display.
+        ' The window is placed by hand before its handle exists (PositionModernSettingsBeside).
+        Me.AutoScaleMode = System.Windows.Forms.AutoScaleMode.None
+        Me.StartPosition = System.Windows.Forms.FormStartPosition.Manual
+
         Dim percent As Integer = Main_Form.GetModernPreferences().InterfaceScalePercent
         Dim dpiFactor As Single = Math.Max(1.0F, CSng(DeviceDpi) / 96.0F)
         Dim relative As Integer = Main_Form.GetModernPreferences().InterfaceScaleRelativePercent
@@ -361,14 +368,16 @@ Partial Public Class Table_Form
 
         ' The full name is longer than the sidebar is wide, so the label wraps to two lines
         ' (UseMnemonic off: the name carries a plain ampersand) and the rows below start lower.
+        ' A fixed height held one line at 225 % and clipped the second: the label sizes itself to its text
+        ' within the sidebar width, so it stays whole at any DPI (the font changes with the monitor).
         modernProductLabel = New Label With {
-            .AutoSize = False,
+            .AutoSize = True,
+            .MaximumSize = New Size(Sp(182), 0),
             .UseMnemonic = False,
             .Text = ProductNames.Full,
             .ForeColor = SettingsText,
             .Font = SettingsFont("Segoe UI", Sf(9.0F), FontStyle.Bold),
-            .Location = New Point(Sp(18), Sp(18)),
-            .Size = New Size(Sp(182), Sp(36))
+            .Location = New Point(Sp(18), Sp(18))
         }
         modernSidebarSectionLabel = New Label With {
             .AutoSize = True,
@@ -636,7 +645,13 @@ Partial Public Class Table_Form
     ''' <summary>Places the settings beside its owner rather than on whichever monitor
     ''' Windows chooses for a not-yet-visible form.</summary>
     Private Sub PositionModernSettingsOnOwnerMonitor()
-        Dim ownerForm As Form = Owner
+        PositionModernSettingsBeside(Owner)
+    End Sub
+
+    ''' <summary>The placement itself, for an owner that is known before ShowDialog sets it. A window
+    ''' moved to another monitor AFTER its handle exists changes DPI, and then every control is scaled
+    ''' again, so the first placement is made while the window is still hidden.</summary>
+    Friend Sub PositionModernSettingsBeside(ownerForm As Form)
         If ownerForm Is Nothing Then Return
 
         Dim workArea As Rectangle = Screen.FromControl(ownerForm).WorkingArea
@@ -651,6 +666,17 @@ Partial Public Class Table_Form
         End If
         Location = New Point(Math.Max(workArea.Left, Math.Min(savedX, workArea.Right - Width)),
             Math.Max(workArea.Top, Math.Min(savedY, workArea.Bottom - Height)))
+    End Sub
+
+    ''' <summary>Everything the window needs before its handle exists: no WinForms auto-scaling (see
+    ''' BuildModernSettingsLayout), no centring on the owner, and the place beside the owner. Called
+    ''' BEFORE PrepareForDisplay, whose tooltips create the handle, and again once the layout has set
+    ''' the size. A window moved to another monitor after it has a handle changes DPI, and then every
+    ''' control is scaled again.</summary>
+    Friend Sub PrepareShowBeside(ownerForm As Form)
+        Me.AutoScaleMode = System.Windows.Forms.AutoScaleMode.None
+        Me.StartPosition = System.Windows.Forms.FormStartPosition.Manual
+        PositionModernSettingsBeside(ownerForm)
     End Sub
 
     Private Sub FitModernSettingsClientSize(workArea As Rectangle, desiredWidth As Integer, desiredHeight As Integer)
@@ -815,6 +841,18 @@ Partial Public Class Table_Form
                 Case "support_send_logs"
                     Dim button As Button = TryCast(row.Editor, Button)
                     If button IsNot Nothing Then button.Text = Localization.T("Собрать и отправить")
+                Case "profile_reset_all"
+                    Dim button As Button = TryCast(row.Editor, Button)
+                    If button IsNot Nothing Then
+                        button.Text = Localization.T("Сбросить настройки")
+                        UpdateResetAllButtonState()
+                        If Not button.Enabled AndAlso toolTip IsNot Nothing AndAlso row.Host IsNot Nothing Then
+                            toolTip.SetToolTip(row.Host, button.AccessibleDescription)
+                        End If
+                    End If
+                    If row.Description IsNot Nothing AndAlso toolTip IsNot Nothing Then
+                        toolTip.SetToolTip(row.Description, Localization.T("Сбрасываются получатели, вид и поведение, видео и звук, OCR и перевод, положение окон. Не затрагиваются: язык и тема (они общие с Share Manager), сохранённые пароли и ключи, список ресурсов, история папок и файлов. Прежние значения записываются в файл, который можно открыть двойным щелчком, закрыв программу. Сброс выполняется при следующем запуске."))
+                    End If
                 Case "ocr_server"
                     Dim buttons As List(Of Button) = FindModernControls(Of Button)(row.Host).ToList()
                     If buttons.Count > 0 Then buttons(0).Text = Localization.T("Установить")
@@ -964,6 +1002,7 @@ Partial Public Class Table_Form
             Case "settings_export" : Return Localization.T("Экспорт дополнительных настроек")
             Case "settings_import" : Return Localization.T("Импорт дополнительных настроек")
             Case "settings_defaults" : Return Localization.T("Восстановить по умолчанию")
+            Case "welcome_replay" : Return Localization.T("Показать приветственные шаги снова")
             Case "remote_cache_limit" : Return Localization.T("Кэш сетевых ресурсов, МБ")
             Case "thumb_cache_clear" : Return Localization.T("Кэш миниатюр")
             Case "allow_new_windows" : Return Localization.T("Разрешать запуск в новых окнах")
@@ -1000,6 +1039,7 @@ Partial Public Class Table_Form
             Case "android_app" : Return Localization.T("Приложение для Android")
             Case "about_intro" : Return ProductNames.FullForLabel
             Case "support_send_logs" : Return Localization.T("Отправить логи автору")
+            Case "profile_reset_all" : Return Localization.T("Сброс настроек")
             Case "doc_html_intro" : Return "Doc HTML Translate"
             Case "doc_html_site" : Return Localization.T("Сайт Doc HTML Translate")
             Case "project_site" : Return Localization.T("Сайт проекта")
@@ -1120,6 +1160,7 @@ Partial Public Class Table_Form
             Case "decode_cache_limit" : Return Localization.T("Ускоряет повторное открытие анимаций и медленных форматов. 0 отключает кэш.")
             Case "decode_cache_clear" : Return Localization.T("Сколько места занимают сохранённые результаты декодирования. Очистка не меняет сами изображения - они декодируются заново.")
             Case "settings_defaults" : Return Localization.T("Файл содержит только дополнительные настройки. Получатели, язык, тема, звук и OCR не включаются.")
+            Case "welcome_replay" : Return Localization.T("Открывает пошаговую настройку: язык, фон, сортировка, удаление и связи файлов.")
             Case "remote_cache_limit" : Return Localization.T("Ограничивает временные копии файлов сетевых ресурсов.")
             Case "thumb_cache_clear" : Return Localization.T("Сколько места занимают сохранённые миниатюры. Очистка не удаляет исходные файлы - миниатюры строятся заново.")
             Case "thumb_cache_limit" : Return Localization.T("Ускоряет повторное открытие панели F3. 0 отключает кэш.")
@@ -1130,6 +1171,7 @@ Partial Public Class Table_Form
             Case "android_app" : Return Localization.T("Страница мобильного приложения для Android.")
             Case "about_intro" : Return Localization.TF("Современный просмотрщик и сортировщик фото и видео." & vbCrLf & "Версия {0}", ShortSettingsVersion())
             Case "support_send_logs" : Return Localization.T("Соберёт журналы работы программы в архив и создаст письмо автору. Ничего не отправляется без вашего подтверждения.")
+            Case "profile_reset_all" : Return Localization.T("Вернёт настройки просмотрщика к значениям по умолчанию. Язык, тема, пароли и история останутся. Прежние значения сохранятся в файл.")
             Case "doc_html_intro" : Return Localization.T("Преобразует EPUB, PDF и другие документы в локальный HTML с оглавлением и переводом в браузере. Для изображений, сканов и комиксов создаёт переводимый OCR-слой.")
             Case "doc_html_site" : Return Localization.T("Описание возможностей, поддерживаемых форматов, установки и работы с документами и изображениями.")
             Case "project_site" : Return Localization.T("Описание возможностей, инструкции и материалы проекта.")
@@ -1155,7 +1197,7 @@ Partial Public Class Table_Form
         ' APP-SETTINGS rule 5: the language selector is on the first page.
         AddUiLanguageRow(destinations)
         AddSettingRow(destinations, "recipients_overlay", SetOnTop, 34)
-        Dim gridHost As New Panel With {.Height = 398, .BackColor = SettingsSurface, .Padding = New Padding(12)}
+        Dim gridHost As New Panel With {.BackColor = SettingsSurface, .Padding = New Padding(Sp(12))}
         ReparentModernSettingsControl(lbl_Grid_Hint, gridHost)
         lbl_Grid_Hint.Dock = DockStyle.Bottom
         ' Two lines' worth: the hint names both actions now (move on a double-click, copy on
@@ -1795,6 +1837,8 @@ Partial Public Class Table_Form
         ' links out of curiosity (SPECIFICATION_SEND_LOGS_TO_AUTHOR.md §2).
         EnsureSendLogsButton()
         AddSettingRow(flow, "support_send_logs", btn_Send_Logs, 230, True)
+        EnsureResetAllButton()
+        AddSettingRow(flow, "profile_reset_all", btn_Reset_All_Settings, 230, True)
         AddInformationBlock(flow, "doc_html_intro")
         AddProjectLinkRow(flow, "doc_html_site", SitePages.DocHtmlTranslateSiteUrl(Localization.CurrentCode))
         AddProjectLinkRow(flow, "project_site", SitePages.ForLanguage("https://serzhyale.github.io/FastMediaSorter_Lite/", Localization.CurrentCode))
@@ -2157,7 +2201,22 @@ Partial Public Class Table_Form
         Data_Grid_View.DefaultCellStyle.ForeColor = SettingsText
         Data_Grid_View.DefaultCellStyle.SelectionBackColor = BlendSettingsColor(SettingsAccent, SettingsSurface, 0.72F)
         Data_Grid_View.DefaultCellStyle.SelectionForeColor = SettingsText
-        Data_Grid_View.RowTemplate.Height = 30
+        Data_Grid_View.Font = SettingsPixelFont("Segoe UI", 12)
+        Dim rowHeight As Integer = Math.Max(Sp(30), Data_Grid_View.Font.Height + Sp(10))
+        Data_Grid_View.RowTemplate.Height = rowHeight
+        For Each row As DataGridViewRow In Data_Grid_View.Rows
+            row.Height = rowHeight
+        Next
+        Dim gridHost As Panel = TryCast(Data_Grid_View.Parent, Panel)
+        If gridHost IsNot Nothing Then
+            Dim gridHeight As Integer = Data_Grid_View.ColumnHeadersHeight + Data_Grid_View.Rows.Count * rowHeight + Sp(4)
+            Dim otherHeight As Integer = gridHost.Padding.Vertical
+            For Each child As Control In gridHost.Controls
+                If child Is Data_Grid_View Then Continue For
+                otherHeight += Math.Max(child.Height, If(TypeOf child Is FlowLayoutPanel, Sp(44), 0))
+            Next
+            gridHost.Height = gridHeight + otherHeight + Sp(8)
+        End If
         Data_Grid_View.Anchor = AnchorStyles.Top Or AnchorStyles.Left Or AnchorStyles.Right
 
         ' Placement can move rows to new pages. Style the actual tab collection so

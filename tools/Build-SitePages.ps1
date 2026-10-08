@@ -874,6 +874,15 @@ function RootPages {
         Sort-Object Name | ForEach-Object { $_.Name }
 }
 
+# The task guides live under docs/ (docs/how-to-*.html); the same address kept at the root is a redirect stub, never a page.
+function GuidePages {
+    $dir = Join-Path $Root 'docs'
+    if (-not (Test-Path -LiteralPath $dir)) { return }
+    Get-ChildItem -LiteralPath $dir -Filter 'how-to-*.html' -File |
+        Where-Object { -not (Test-RedirectStub $_.FullName) } |
+        Sort-Object Name | ForEach-Object { "docs/$($_.Name)" }
+}
+
 function RenderRobots {
     @"
 User-agent: *
@@ -916,6 +925,13 @@ function SiteEntries {
         $desc  = if ($html -match '(?s)<meta\s+name="description"\s+content="(.*?)"') { [Net.WebUtility]::HtmlDecode($Matches[1]) } else { '' }
         if (-not $title -or -not $desc) { throw "root page $f carries no title or description for the search index" }
         $entries += [pscustomobject]@{ url = $url; lang = 'en'; title = $title; description = $desc }
+    }
+    foreach ($f in (GuidePages)) {
+        $html = Get-Content (Join-Path $Root $f) -Raw -Encoding UTF8
+        $title = if ($html -match '(?s)<title>(.*?)</title>') { [Net.WebUtility]::HtmlDecode($Matches[1]) } else { '' }
+        $desc  = if ($html -match '(?s)<meta\s+name="description"\s+content="(.*?)"') { [Net.WebUtility]::HtmlDecode($Matches[1]) } else { '' }
+        if (-not $title -or -not $desc) { throw "guide page $f carries no title or description for the search index" }
+        $entries += [pscustomobject]@{ url = "$BaseUrl/$f"; lang = 'en'; title = $title; description = $desc }
     }
     # The privacy policy is a required page type (SITE-STRUCTURE section 2) and lives under docs/, so it is not a root page;
     # it carries the same title/description SEO block and is listed explicitly (specification 151, T-3).
@@ -1123,11 +1139,13 @@ if ($Check) {
     }
 
     # 13-14. The served pages' presentation (SITE-EXPERIENCE rules 4 and 7, specification 154). The set is the root pages and
-    # lang/ - the product site; docs/ is the older redesign copy and is not part of it.
+    # lang/ and the task guides under docs/how-to-*.html - the product site; the rest of docs/ is the older redesign copy
+    # and is not part of it.
     $sitePages = @(Get-ChildItem -LiteralPath $Root -Filter '*.html' -File | ForEach-Object { $_.FullName })
     if (Test-Path (Join-Path $Root 'lang')) {
         $sitePages += @(Get-ChildItem -LiteralPath (Join-Path $Root 'lang') -Filter '*.html' -Recurse -File | ForEach-Object { $_.FullName })
     }
+    $sitePages += @(GuidePages | ForEach-Object { Join-Path $Root ($_ -replace '/', '\') })
     $fold = { param([string]$s) ($s -replace '\s+', ' ').Trim() }
     $canon = & $fold $ThemeResolver
     $layoutProps = '(?i)(^|;)\s*(color|background[a-z-]*|margin[a-z-]*|padding[a-z-]*|display|flex[a-z-]*|gap|grid[a-z-]*|width|height|min-[a-z]+|max-[a-z]+|font[a-z-]*|border[a-z-]*|position|top|left|right|bottom|align[a-z-]*|justify[a-z-]*|text-[a-z]+|float|overflow[a-z-]*|opacity|line-height|letter-spacing|z-index|transform|visibility)\s*:'

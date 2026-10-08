@@ -833,10 +833,16 @@ function Set-ServiceSecurity {
     Write-Log "setting the service security descriptor for $($sids.Count) enrolled user(s)"
     & sc.exe sdset $ServiceName $sddl | Out-Null
     if ($LASTEXITCODE -ne 0) { Fail "could not set the service security descriptor (sc sdset exit $LASTEXITCODE)" 4 }
-    # SDDL read back shortens well-known SIDs to aliases, so the check counts the entries rather
-    # than matching each SID's text.
+    # SDDL read back shortens well-known SIDs to aliases AND re-emits the rights in Windows' canonical
+    # order (RPWPLCLO is read back as LCRPWPLO), so the check counts the entries whose rights are the
+    # same set rather than matching each SID's text or the written spelling.
     $shown = (@(& sc.exe sdshow $ServiceName) -join '')
-    $have = ([regex]::Matches($shown, '\(A;;RPWPLCLO;;;')).Count
+    $want = (('RPWPLCLO' -split '(?<=\G..)' | Where-Object { $_ } | Sort-Object) -join '')
+    $have = 0
+    foreach ($m in [regex]::Matches($shown, '\(A;;([A-Z]+);;;')) {
+        $got = (($m.Groups[1].Value -split '(?<=\G..)' | Where-Object { $_ } | Sort-Object) -join '')
+        if ($got -ceq $want) { $have++ }
+    }
     if ($have -ne @($sids | Select-Object -Unique).Count) {
         Fail "the service security descriptor did not take (expected $(@($sids | Select-Object -Unique).Count) start/stop entries, read $have)" 4
     }
@@ -886,8 +892,11 @@ function Start-ServiceAndVerify {
 # until a password is set - which is a normal state, not a failure of the registration.
 function Start-ServiceIfConfigured {
     $info = Get-StateInfo $DataDir
-    if (-not ($info.passwordSet -and $info.passwordHashValid)) {
-        Write-Log "WARNING: $ServiceName is registered but NOT started: no usable server password is set in '$(Join-Path $DataDir $ConfigName)'. Set one, then start the service."
+    # The server serves with at least one account (ticket 162; inspect reports the count as
+    # `accounts`). The superseded password fields are no longer reported, so reading them here left
+    # every install with a registered but stopped service.
+    if ([int]$info.accounts -lt 1) {
+        Write-Log "WARNING: $ServiceName is registered but NOT started: no account exists yet in '$DataDir'. Create one in the Share Manager (Media Exchange Server), then start the service."
         return
     }
     Start-ServiceAndVerify

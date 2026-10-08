@@ -42,6 +42,10 @@
 .PARAMETER ShareManagerExe
     The Share Manager to run (started with --tray, closed by killing it: it has no window to close).
     Default: a scratch Debug build of src\FastMediaSorterCompanion.
+.PARAMETER X86ViewerExe
+    The net48 x86 fallback viewer to run as a third program ('viewer-x86', file viewer-x86-baseline.json); not
+    built here (build src\FastMediaSorter.vbproj with the real VS MSBuild into a scratch folder, never bin\Release).
+    Optional: without it the x86 half is not run. It shares the viewer's mutex and settings key.
 .PARAMETER Seconds
     How long each program runs before it is closed. Default 12.
 .PARAMETER OutDir
@@ -61,6 +65,7 @@ param(
     [ValidateSet('Capture', 'Compare', 'Provenance')][string]$Mode = 'Capture',
     [string]$ViewerExe = '',
     [string]$ShareManagerExe = '',
+    [string]$X86ViewerExe = '',
     [int]$Seconds = 12,
     [string]$OutDir = '',
     [string]$BaselineDir = '',
@@ -101,6 +106,7 @@ $forbiddenNames = '(?i)(^|\\)(Exchange_(DeviceId|Account|Login|Server|Endpoint|P
 $viewerNames = @('FastMediaSorter_LITE', 'FastMediaSorter_x86')
 $blockedBy = @{
     viewer       = $viewerNames
+    'viewer-x86' = $viewerNames
     sharemanager = ($viewerNames + @('FastMediaSorterCompanion'))
 }
 
@@ -238,6 +244,7 @@ function Invoke-Capture([string]$Name, [string]$Exe, [string[]]$ProgramArgs, [bo
 
         $endpoints = New-Object 'System.Collections.Generic.HashSet[string]'
         $children  = New-Object 'System.Collections.Generic.HashSet[string]'
+        $rawSeen   = New-Object 'System.Collections.Generic.HashSet[string]'   # console diagnosis only, never written to the capture
         $maxListen = 0; $maxConn = 0
         $deadline = [DateTime]::UtcNow.AddSeconds($Seconds)
         while ([DateTime]::UtcNow -lt $deadline -and -not $proc.HasExited) {
@@ -246,10 +253,11 @@ function Invoke-Capture([string]$Name, [string]$Exe, [string[]]$ProgramArgs, [bo
             $conn = @($now | Where-Object { $_ -match '^tcp (?!Listen)' }).Count
             if ($listen -gt $maxListen) { $maxListen = $listen }
             if ($conn -gt $maxConn) { $maxConn = $conn }
-            foreach ($e in $now) { [void]$endpoints.Add((ConvertTo-EndpointKind $e)) }
+            foreach ($e in $now) { [void]$endpoints.Add((ConvertTo-EndpointKind $e)); [void]$rawSeen.Add($e) }
             foreach ($c in (Get-Descendants $proc.Id)) { [void]$children.Add($c.Name) }
             Start-Sleep -Milliseconds 500
         }
+        foreach ($r in @($rawSeen | Select-Object -First 6)) { Write-Host "    endpoint seen ($Name): $r" -ForegroundColor DarkGray }
         if ($proc.HasExited) { throw "$Name exited by itself after $([int]((Get-Date) - $proc.StartTime).TotalSeconds) s (code $($proc.ExitCode))" }
 
         $namesRunning = Get-ValueNames $hivePs
@@ -266,7 +274,7 @@ function Invoke-Capture([string]$Name, [string]$Exe, [string[]]$ProgramArgs, [bo
         $runAfter = Get-ValueNames $runPs
         $filesAfter = Get-FileNames $szaLocal
         $logText = ''
-        $logPath = Join-Path (Split-Path -Parent $Exe) $(if ($Name -eq 'viewer') { 'current.log' } else { 'companion.log' })
+        $logPath = Join-Path (Split-Path -Parent $Exe) $(if ($Name -like 'viewer*') { 'current.log' } else { 'companion.log' })
         if (Test-Path -LiteralPath $logPath) { $logText = Get-Content -LiteralPath $logPath -Raw -ErrorAction SilentlyContinue }
         if ($null -eq $logText) { $logText = '' }
 
@@ -300,7 +308,10 @@ function Invoke-Capture([string]$Name, [string]$Exe, [string[]]$ProgramArgs, [bo
                 file           = (Split-Path -Leaf $logPath)
                 present        = (Test-Path -LiteralPath $logPath)
                 lines          = @($logText -split "`n" | Where-Object { $_.Trim().Length -gt 0 }).Count
-                mentionsExchange = [bool]($logText -match '(?i)exchange|fmsx|deviceToken|pairing')
+                # The Share Manager's "State:" header (HostingReport, ticket 182 L-3) always names the exchange SERVER service
+                # (`exchangeService=absent`); it reads the service manager and is not the device client, so that one field
+                # is cut before the match. Any other mention still counts.
+                mentionsExchange = [bool](($logText -replace '(?i)\bexchangeService=\S+', '') -match '(?i)exchange|fmsx|deviceToken|pairing')
             }
         }
         $badNames = @($added + $namesRunning | Where-Object { $_ -match $forbiddenNames } | Sort-Object -Unique)
@@ -364,6 +375,10 @@ if (-not $ShareManagerExe -and (Get-RunningOf $blockedBy['sharemanager']).Count 
 $captures = [ordered]@{}
 Write-Host "  running the modern viewer on a clean profile for $Seconds s .." -ForegroundColor Cyan
 $captures['viewer'] = Invoke-Capture 'viewer' $ViewerExe @() $true
+if ($X86ViewerExe) {
+    Write-Host "  running the x86 fallback viewer on a clean profile for $Seconds s .." -ForegroundColor Cyan
+    $captures['viewer-x86'] = Invoke-Capture 'viewer-x86' $X86ViewerExe @() $true
+}
 Write-Host "  running the Share Manager (--tray) on a clean profile for $Seconds s .." -ForegroundColor Cyan
 $captures['sharemanager'] = Invoke-Capture 'sharemanager' $ShareManagerExe @('--tray') $false
 
@@ -374,7 +389,7 @@ function Write-Json([string]$Path, $Object) {
     [IO.File]::WriteAllText($Path, $text + "`n", (New-Object Text.UTF8Encoding($false)))
 }
 
-$fileFor = @{ viewer = 'viewer-baseline.json'; sharemanager = 'sharemanager-baseline.json' }
+$fileFor = @{ viewer = 'viewer-baseline.json'; 'viewer-x86' = 'viewer-x86-baseline.json'; sharemanager = 'sharemanager-baseline.json' }
 
 if ($Mode -eq 'Capture') {
     New-Item -ItemType Directory -Force -Path $OutDir | Out-Null

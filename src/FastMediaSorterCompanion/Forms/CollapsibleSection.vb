@@ -1,5 +1,6 @@
-Option Strict On
+﻿Option Strict On
 
+Imports System.Collections.Generic
 Imports System.ComponentModel
 Imports System.Drawing
 Imports System.Drawing.Drawing2D
@@ -61,6 +62,24 @@ Public NotInheritable Class CollapsibleSection
         Me.Controls.Add(_header)
     End Sub
 
+    Friend Sub ConfigureSettingsHeader()
+        _header.WrapSettingsTitle = True
+        _header.MinimumSize = New Size(0, 44)
+        _header.Height = 44
+        _body.Padding = New Padding(12, 4, 12, 12)
+        Dock = DockStyle.Top
+    End Sub
+
+    ' Reuse the existing editors and state paths as a settings page, without a disclosure header.
+    Friend Sub PresentAsPage()
+        SuspendLayout()
+        _header.Visible = False
+        _header.TabStop = False
+        _body.Padding = New Padding(0, 2, 0, 8)
+        Expanded = True
+        ResumeLayout(True)
+    End Sub
+
     ''' <summary>The token stored in Share_ExpandedSections.</summary>
     Public ReadOnly Property Key As String
         Get
@@ -107,20 +126,48 @@ Public NotInheritable Class CollapsibleSection
         End Get
         Set(value As Boolean)
             If _expanded = value Then Return
-            If Not value AndAlso _body.ContainsFocus Then _header.Focus()
-            _expanded = value
-            _header.Expanded = value
-            _body.Visible = value
-            ' Not optional. AutoSize caches the preferred size, and HIDING a docked child
-            ' does not clear that cache: the section then reports the height of the body it
-            ' has just folded away - measured, 398 px for a 26 px header - which is the one
-            ' thing a collapsible control must not do. Growing works without this because
-            ' showing a child invalidates the cache on its own; only the shrink is affected,
-            ' so the defect shows up as "collapsing gives nothing back".
-            Me.PerformLayout()
-            RaiseEvent ExpandedChanged(Me, EventArgs.Empty)
+            Dim held As New List(Of Control)()
+            Dim children As New List(Of Control)()
+            If _header.WrapSettingsTitle Then
+                HoldChildren(_body, children)
+                Dim ancestor As Control = Me
+                While ancestor IsNot Nothing AndAlso Not TypeOf ancestor Is Form
+                    ancestor.SuspendLayout()
+                    held.Add(ancestor)
+                    ancestor = ancestor.Parent
+                End While
+            End If
+            Try
+                If Not value AndAlso _body.ContainsFocus Then _header.Focus()
+                _expanded = value
+                _header.Expanded = value
+                _body.Visible = value
+                ' Not optional. AutoSize caches the preferred size, and HIDING a docked child
+                ' does not clear that cache: the section then reports the height of the body it
+                ' has just folded away - measured, 398 px for a 26 px header - which is the one
+                ' thing a collapsible control must not do. Growing works without this because
+                ' showing a child invalidates the cache on its own; only the shrink is affected,
+                ' so the defect shows up as "collapsing gives nothing back".
+                Me.PerformLayout()
+                RaiseEvent ExpandedChanged(Me, EventArgs.Empty)
+            Finally
+                For i = children.Count - 1 To 0 Step -1
+                    children(i).ResumeLayout(value AndAlso i = 0)
+                Next
+                For i = 0 To held.Count - 1
+                    held(i).ResumeLayout(True)
+                Next
+            End Try
         End Set
     End Property
+
+    Private Shared Sub HoldChildren(parent As Control, held As List(Of Control))
+        parent.SuspendLayout()
+        held.Add(parent)
+        For Each child As Control In parent.Controls
+            HoldChildren(child, held)
+        Next
+    End Sub
 
     ''' <summary>Host for this section's controls - a single-column auto-height panel;
     ''' append rows with <see cref="AddBodyRow"/>.</summary>
@@ -182,6 +229,8 @@ Public NotInheritable Class CollapsibleSection
         Private _summaryColor As Color = SystemColors.GrayText
         Private _expanded As Boolean
         Private _hot As Boolean
+        <DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)>
+        Friend Property WrapSettingsTitle As Boolean
 
         Public Event Toggled As EventHandler
 
@@ -206,6 +255,7 @@ Public NotInheritable Class CollapsibleSection
             Set(value As String)
                 _title = If(value, "")
                 UpdateAccessibleName()
+                FitHeaderTitle()
                 Invalidate()
             End Set
         End Property
@@ -290,6 +340,21 @@ Public NotInheritable Class CollapsibleSection
             ' One line of text plus breathing room; follows the script font, which is taller
             ' for hi/bn than for Latin.
             Me.Height = Math.Max(24, Me.Font.Height + 10)
+            FitHeaderTitle()
+        End Sub
+
+        Protected Overrides Sub OnSizeChanged(e As EventArgs)
+            MyBase.OnSizeChanged(e)
+            FitHeaderTitle()
+        End Sub
+
+        Private Sub FitHeaderTitle()
+            If Not WrapSettingsTitle OrElse Width < LogicalToDeviceUnits(200) Then Return
+            Using bold As New Font(Font, FontStyle.Bold)
+                Dim measured = TextRenderer.MeasureText(_title, bold, New Size(Math.Max(1, Width - LogicalToDeviceUnits(48)), Integer.MaxValue), TextFormatFlags.WordBreak)
+                Dim desired = Math.Max(LogicalToDeviceUnits(44), measured.Height + LogicalToDeviceUnits(16))
+                If Height <> desired Then Height = desired
+            End Using
         End Sub
 
         Protected Overrides Sub OnMouseEnter(e As EventArgs)
@@ -371,9 +436,11 @@ Public NotInheritable Class CollapsibleSection
             Dim glyph As Integer = Math.Min(Math.Max(12, Me.Font.Height), Math.Max(1, h - 4))
             Dim pad As Integer = 6
             Dim chevronX As Integer = If(rtl, w - pad - glyph, pad)
-            DrawChevron(g, New Rectangle(chevronX, (h - glyph) \ 2, glyph, glyph), _expanded)
+            DrawChevron(g, New Rectangle(chevronX, (h - glyph) \ 2, glyph, glyph), _expanded, If(WrapSettingsTitle, SettingsNavIconPalette.ResolveInk("settingsNavGeneral", theme.IsDark,
+                {BackColor, theme.ControlHover}, theme.TextMuted, SystemInformation.HighContrast), theme.TextMuted))
 
             Dim textFlags As TextFormatFlags = TextFormatFlags.VerticalCenter Or TextFormatFlags.SingleLine Or TextFormatFlags.NoPadding
+            If WrapSettingsTitle Then textFlags = (textFlags And Not TextFormatFlags.SingleLine) Or TextFormatFlags.WordBreak
             If rtl Then textFlags = textFlags Or TextFormatFlags.RightToLeft
 
             Dim left As Integer = pad + glyph + 8
@@ -409,9 +476,9 @@ Public NotInheritable Class CollapsibleSection
         ''' action a click performs. Both are rtl "fixed", so nothing mirrors here. It was a
         ''' solid triangle in a baked grey, and a solid down triangle is nav.dropdown's
         ''' shape (ICON-SET rule 2, spec 027 phase 7).</summary>
-        Private Shared Sub DrawChevron(g As Graphics, r As Rectangle, expanded As Boolean)
+        Private Shared Sub DrawChevron(g As Graphics, r As Rectangle, expanded As Boolean, ink As Color)
             Dim meaning As IconMeaning = IconMap.GetMeaning(If(expanded, "collapsibleSectionOpen", "collapsibleSection"))
-            Using glyph As Bitmap = GlyphRenderer.Render(meaning.GlyphId, Math.Max(1, r.Width), ThemeService.Palette.TextMuted,
+            Using glyph As Bitmap = GlyphRenderer.Render(meaning.GlyphId, Math.Max(1, r.Width), ink,
                                                          AddressOf CompanionAssets.OpenBundledAsset)
                 g.DrawImage(glyph, r.Left, r.Top, r.Width, r.Height)
             End Using

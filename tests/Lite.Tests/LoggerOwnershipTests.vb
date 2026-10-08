@@ -295,15 +295,22 @@ Public Class LoggerOwnershipTests
             Next
             Task.WaitAll(tasks.ToArray())
 
-            ' At most one caller reports the roll-over. Zero is legitimate too: a racer's
-            ' CompleteStrandedRotations may finish the winner's staging file into previous.log
-            ' before the winner reaches Publish, which then finds nothing left to publish.
-            ' What must hold either way is that the data exists exactly once.
-            Dim successCount As Integer = tasks.Where(Function(t) t.Result).Count()
-            Assert.InRange(successCount, 0, 1)
-            Assert.True(File.Exists(Path.Combine(dir, "previous.log")))
+            ' HOW MANY callers report the roll-over is not a property of the rotation, and is not asserted:
+            ' zero is legitimate (a racer's CompleteStrandedRotations may finish the winner's staging file
+            ' into previous.log before the winner reaches Publish, which then finds nothing left to
+            ' publish), and so is more than one - a rename on Windows finds its source by name and then
+            ' renames by handle, so two racers that both found current.log can both succeed, the second
+            ' renaming the same file object wherever the first left it. Under CPU load that was seen
+            ' reporting 2 and 3 with one file in the folder and every byte in it once.
+            ' What must hold whatever the interleaving is that the data exists exactly once ...
             Dim totalBytes As Long = Directory.GetFiles(dir).Sum(Function(f) New FileInfo(f).Length)
             Assert.Equal(oversizedContent.LongLength, totalBytes)
+
+            ' ... and that one quiet call afterwards leaves it where the rotation is meant to put it,
+            ' whatever the race stranded (a staging file, or a log restored over a transient failure).
+            AppFileLogger.RotateIfOversized(logFile)
+            Assert.Equal(New String() {"previous.log"}, Directory.GetFiles(dir).Select(Function(f) Path.GetFileName(f)).ToArray())
+            Assert.Equal(oversizedContent.LongLength, New FileInfo(Path.Combine(dir, "previous.log")).Length)
         Finally
             Try : Directory.Delete(dir, True) : Catch : End Try
         End Try

@@ -22,7 +22,8 @@
       1 - -Check: drift - a vendored file differs from the catalog, is missing, is not declared, or a
           provenance record disagrees with the files or the catalog.
       2 - could not verify / could not import: no catalog root, or the catalog is unreachable or lacks
-          a declared glyph or the vocabulary.
+          a declared glyph or the vocabulary, or its vocabulary.version carrier is malformed or names
+          a MAJOR higher than the one this tool was built against (ICON-SET section 5).
 #>
 [CmdletBinding()]
 param(
@@ -32,6 +33,7 @@ param(
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
+. (Join-Path $PSScriptRoot 'lib\Verdict.ps1')
 
 # An unexpected terminating error must not surface as exit 1, which reads as drift.
 trap {
@@ -69,6 +71,10 @@ function Get-Sha256([string]$Path) {
 
 if (-not $CatalogRoot) { $CatalogRoot = $env:FMS_CONTRACTS_ROOT }
 if (-not $CatalogRoot) { $CatalogRoot = [Environment]::GetEnvironmentVariable('FMS_CONTRACTS_ROOT', 'User') }
+
+# BUILD-EVIDENCE rule 1: say what this run judges before it judges anything.
+Write-Subject $subject "$(if ($Check) { '-Check: the vendored glyphs and the test vocabulary against' } else { 'import: the glyphs and the vocabulary from' }) the catalog at '$(if ($CatalogRoot) { $CatalogRoot } else { 'no root given' })'"
+
 if (-not $CatalogRoot) {
     Stop-Verdict 2 'COULD NOT VERIFY' @('no catalog root: pass -CatalogRoot or set FMS_CONTRACTS_ROOT (CLAUDE.md names the location)')
 }
@@ -76,11 +82,25 @@ if (-not $CatalogRoot) {
 $iconography = Join-Path $CatalogRoot 'iconography'
 $sourceGlyphs = Join-Path $iconography 'glyphs'
 $sourceVocabulary = Join-Path $iconography 'vocabulary.jsonl'
+$sourceVersion = Join-Path $iconography 'vocabulary.version'
 $sourceReadme = Join-Path $iconography 'README.md'
-foreach ($required in @($sourceGlyphs, $sourceVocabulary, $sourceReadme)) {
+foreach ($required in @($sourceGlyphs, $sourceVocabulary, $sourceVersion, $sourceReadme)) {
     if (-not (Test-Path -LiteralPath $required)) {
         Stop-Verdict 2 'COULD NOT VERIFY' @("the iconography catalog is unreachable: '$required' was not found")
     }
+}
+
+# ICON-SET section 5: the carrier is one line, "ICON-SET <MAJOR>.<MINOR>". A build-time reader refuses a
+# MAJOR higher than the one it was built against (a MAJOR re-learns meanings: a glyph changing shape, a
+# meaning split or merged, a canonical name replaced) and accepts a higher MINOR. This tool and the code
+# that reads what it vendors were last read against MAJOR 0.
+$builtAgainstMajor = 0
+$carrier = (Get-Content -LiteralPath $sourceVersion -TotalCount 1).Trim()
+if ($carrier -notmatch '^ICON-SET (\d+)\.(\d+)$') {
+    Stop-Verdict 2 'COULD NOT VERIFY' @("vocabulary.version holds '$carrier', not 'ICON-SET <MAJOR>.<MINOR>' (ICON-SET section 5)")
+}
+if ([int]$Matches[1] -gt $builtAgainstMajor) {
+    Stop-Verdict 2 'COULD NOT VERIFY' @("the catalog is at $carrier, a higher MAJOR than this tool was built against (ICON-SET $builtAgainstMajor.x): a MAJOR amendment re-learns meanings, so read the amendment and the code that uses the vendored glyphs and vocabulary against it, then raise `$builtAgainstMajor here (ICON-SET section 5)")
 }
 $missingInCatalog = @($glyphIds | Where-Object { -not (Test-Path -LiteralPath (Join-Path $sourceGlyphs ($_ + '.svg'))) })
 if ($missingInCatalog.Count -gt 0) {

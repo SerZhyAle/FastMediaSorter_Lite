@@ -31,6 +31,9 @@ reads `STREAM-BANK 2.2`.
 - No real consumer (StreamsPlayer, the Android app) has imported a ZIP built here; the evidence is this
   product's own validator and unit suite, not a cross-product run.
 - The producer derives `media_kind` from the playlist's own `type`/`group-title`/`radio` attributes before the
-  URL classifier, by substring (`M3uPlaylistReader.ClassifyMediaKind`); `03` section 4 specifies only the URL
-  classifier, so a group title that merely contains `tv` (for example `Latvia`) is read as VIDEO (from the
-  code; not run). A producer choice outside the contract, recorded as a follow-up of specification 022.
+  URL classifier (`M3uPlaylistReader.ClassifyMediaKind`); `03` section 4 specifies only the URL classifier, so
+  this is a producer choice outside the contract. It reads the attribute by WORDS since 2026-10-07
+  (specification 183): a word that is `tv` / `tvs` or ends in `tv` (`IPTV`, `HDTV`), or is `radio` / `radios` or
+  ends in `radio` (`Webradio`), declares the kind; a group title that merely contains the letters
+  (`Latvia`, `Radiohead`) declares nothing, is recorded as an unrecognized declared kind and leaves the URL
+  classifier to decide. Held by `UserPlaylistConformanceTests`; the earlier substring reading is gone.

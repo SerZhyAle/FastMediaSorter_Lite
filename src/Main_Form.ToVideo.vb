@@ -47,7 +47,7 @@ Partial Public Class Main_Form
             .AutoSize = True,
             .TabStop = False,
             .Visible = False,
-            .AccessibleName = Localization.T("Анимацию - в видео")
+            .AccessibleName = Localization.T("Преобразовать в видео")
         }
         host.Controls.Add(btn_ToVideo)
         ' Collapsed until an animation is actually playing. Visible = False alone would not
@@ -59,7 +59,7 @@ Partial Public Class Main_Form
     ''' InitializeTooltips and LngCh, exactly like LocalizeImageEditor.</summary>
     Friend Sub LocalizeToVideo()
         If btn_ToVideo Is Nothing Then Return
-        btn_ToVideo.AccessibleName = Localization.T("Анимацию - в видео")
+        btn_ToVideo.AccessibleName = Localization.T("Преобразовать в видео")
         ' The name is the menu's name for the action; the tooltip's longer wording is its
         ' description, so a screen reader hears both and they never contradict (spec 027).
         Dim hint As String = Localization.T("Преобразовать анимацию в видео и удалить оригинал")
@@ -294,13 +294,13 @@ Partial Public Class Main_Form
                 ' доступность..", then the VLC line - before this sentence is ever
                 ' painted, and the user is never told the original stayed, nor why.
                 ' A box survives the reopen (057.S09-2).
-                ViewerBox.Show(Me, lbl_Status.Text, Localization.T("Анимацию - в видео"),
+                ViewerBox.Show(Me, lbl_Status.Text, Localization.T("Преобразовать в видео"),
                                 MessageBoxButtons.OK, MessageBoxIcon.Warning)
             Case VideoReplaceOutcome.OriginalKeptUnverified
                 Notify(Localization.TF("Видео создано, но его полноту не удалось проверить - оригинал сохранён: {0}", Path.GetFileName(targetPath)), NotifyLevel.Info)
                 ' Same reopen (057.S09-2). Information, not Warning: nothing failed -
                 ' the original is kept only because the video could not be proven whole.
-                ViewerBox.Show(Me, lbl_Status.Text, Localization.T("Анимацию - в видео"),
+                ViewerBox.Show(Me, lbl_Status.Text, Localization.T("Преобразовать в видео"),
                                 MessageBoxButtons.OK, MessageBoxIcon.Information)
             Case VideoReplaceOutcome.Cancelled
                 Notify(Localization.T("Преобразование отменено"), NotifyLevel.Info)

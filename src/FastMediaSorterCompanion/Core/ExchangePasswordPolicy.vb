@@ -60,4 +60,35 @@ Friend NotInheritable Class ExchangePasswordPolicy
         Return Check(password) = Verdict.Accepted
     End Function
 
+    ''' <summary>The length of a generated password: well above the floor.</summary>
+    Friend Const GeneratedLength As Integer = 16
+
+    ' No look-alikes (I l 1 O 0): a generated password is read out or retyped by a person.
+    Private Const Upper As String = "ABCDEFGHJKLMNPQRSTUVWXYZ"
+    Private Const Lower As String = "abcdefghijkmnopqrstuvwxyz"
+    Private Const Digits As String = "23456789"
+
+    ''' <summary>A password that meets the floor, from the operating system's random source: one character of each
+    ''' class guaranteed, the rest drawn from all three, then shuffled so the guaranteed ones are not in front.
+    ''' It exists in memory only - the caller shows it once and lets go of it (ticket 168 section 3.1).</summary>
+    Friend Shared Function Generate() As String
+        Dim all As String = Upper & Lower & Digits
+        Dim chars(GeneratedLength - 1) As Char
+        chars(0) = Upper(Security.Cryptography.RandomNumberGenerator.GetInt32(Upper.Length))
+        chars(1) = Lower(Security.Cryptography.RandomNumberGenerator.GetInt32(Lower.Length))
+        chars(2) = Digits(Security.Cryptography.RandomNumberGenerator.GetInt32(Digits.Length))
+        For i As Integer = 3 To GeneratedLength - 1
+            chars(i) = all(Security.Cryptography.RandomNumberGenerator.GetInt32(all.Length))
+        Next
+        For i As Integer = chars.Length - 1 To 1 Step -1
+            Dim j As Integer = Security.Cryptography.RandomNumberGenerator.GetInt32(i + 1)
+            Dim tmp As Char = chars(i)
+            chars(i) = chars(j)
+            chars(j) = tmp
+        Next
+        Dim result As New String(chars)
+        Array.Clear(chars, 0, chars.Length)
+        Return result
+    End Function
+
 End Class

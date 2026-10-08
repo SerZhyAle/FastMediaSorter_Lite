@@ -116,6 +116,10 @@ Friend NotInheritable Class ResourceImportFlow
         Else
             sb.Append(Localization.T("Ключа сервера в файле нет: при первом подключении вы увидите его отпечаток и решите, доверять ли ему."))
         End If
+        ' ticket 171 C4: an outsider link also names an exchange server; the person is told it is a second way in, never a way around the key
+        If plan.Tunnel IsNot Nothing Then
+            sb.Append(vbLf).Append(vbLf).Append(Localization.TF("Если адреса недоступны, ресурс откроется через сервер обмена {0}. Ключ сервера проверяется и там.", plan.Tunnel.Host))
+        End If
         Return sb.ToString()
     End Function
 

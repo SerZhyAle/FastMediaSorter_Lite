@@ -7,6 +7,7 @@ import (
 
 	"fms/exchange-server/internal/accounts"
 	"fms/exchange-server/internal/admin"
+	"fms/exchange-server/internal/cast"
 	"fms/exchange-server/internal/directory"
 	"fms/exchange-server/internal/limits"
 	"fms/exchange-server/internal/logx"
@@ -44,7 +45,9 @@ type EngineConfig struct {
 	Features       Features
 	// Relay is ticket 165's handler; nil until it is built.
 	Relay RelayHandler
-	Rand  io.Reader
+	// Rand is the source of tunnel ids; nil is the system's generator (the vector generator of
+	// ticket 178 injects a seeded one).
+	Rand io.Reader
 }
 
 // Engine is the real Backend: accounts and enrollment (162), the directory and presence (163),
@@ -56,6 +59,7 @@ type Engine struct {
 	ops *admin.Ops
 
 	tunnels *tunnel.Table
+	cast    *cast.Table
 	book    *portBook
 	closing chan struct{}
 
@@ -77,8 +81,15 @@ func NewEngine(cfg EngineConfig) *Engine {
 		cfg.Now = time.Now
 	}
 	e := &Engine{cfg: cfg, p: cfg.Params, now: cfg.Now, tunnels: tunnel.NewTable(), closing: make(chan struct{}),
-		ctl: map[string]*ctlEntry{}, streams: map[string]map[*Stream]struct{}{}}
+		cast: cast.New(cfg.Now, cfg.Params.CastTimeout, cfg.Params.CastPerAccount),
+		ctl:  map[string]*ctlEntry{}, streams: map[string]map[*Stream]struct{}{}}
 	e.ops = &admin.Ops{Accounts: cfg.Accounts, Dir: cfg.Dir, Log: cfg.Log}
+	if cfg.Rand != nil {
+		e.tunnels.SetRand(cfg.Rand)
+	}
+	if b, ok := cfg.Relay.(interface{ bind(*Engine) }); ok {
+		b.bind(e)
+	}
 	e.book = newPortBook(e)
 	if cfg.Pool != nil {
 		cfg.Dir.SetPorts(e.book)
@@ -123,6 +134,10 @@ func (e *Engine) resourceGone(account, resourceID, deviceID string) {
 
 func (e *Engine) broadcastGone(account, broadcastID, deviceID string) {
 	e.tunnels.AbortKey(tunnel.BroadcastKey(broadcastID))
+	if e.cfg.Relay != nil {
+		e.cfg.Relay.End(broadcastID) // every listener's body ends cleanly, the ring is dropped
+	}
+	e.cast.DropBroadcast(broadcastID)
 	e.cfg.Log.Info("broadcast-ended", logx.Broadcast(broadcastID), logx.Device(deviceID))
 }
 
@@ -193,6 +208,7 @@ func (e *Engine) dropCtl(cs *ControlStream) {
 // and the loop that was reading it does the rest), forgets expired tombstones and pairing codes, and
 // writes what is due to disk.
 func (e *Engine) Sweep(now time.Time) {
+	e.expireCasts()
 	var dead []*ControlStream
 	e.mu.Lock()
 	for id, en := range e.ctl {
@@ -224,6 +240,9 @@ func (e *Engine) Close() {
 	e.closed = true
 	close(e.closing)
 	e.mu.Unlock()
+	if e.cfg.Relay != nil {
+		e.cfg.Relay.Close()
+	}
 	e.tunnels.AbortAll()
 	e.book.releaseAll()
 	if err := e.cfg.Dir.Flush(); err != nil {

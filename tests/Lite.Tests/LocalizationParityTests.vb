@@ -152,6 +152,11 @@ Public Class LocalizationParityTests
             If srcPath.IndexOf("\Localization\", StringComparison.OrdinalIgnoreCase) >= 0 Then Continue For
 
             Dim text = File.ReadAllText(srcPath)
+#If NETFRAMEWORK Then
+            ' A whole-file modern-only source (the exchange client, ticket 171) is not part of this leg's program: its strings are
+            ' registered by a table only the modern build compiles (the net48 project lists no exchange file).
+            If text.TrimStart(ChrW(&HFEFF), " "c, ChrW(13), ChrW(10)).StartsWith("#If Not NETFRAMEWORK Then", StringComparison.Ordinal) Then Continue For
+#End If
             For Each m As Match In callSite.Matches(text)
                 Dim key = RebuildKey(m.Groups("key").Value, token)
                 If key.Length = 0 Then Continue For

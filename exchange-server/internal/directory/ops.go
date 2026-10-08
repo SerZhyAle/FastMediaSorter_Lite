@@ -700,6 +700,62 @@ func (d *Dir) ResolveBroadcast(broadcastID string) (Target, bool) {
 	return Target{Account: r.account, DeviceID: b.device, BroadcastID: b.id, Ctrl: dev.sink, MaxListeners: b.maxListeners}, true
 }
 
+// --- lookups for cast (7.8, ticket 166) ---
+
+// LiveBroadcast returns a live broadcast of ONE account as the directory lists it (the record, for a
+// cast offer) and the device that owns it. A broadcast of another account is not found: the id is a
+// capability, but a cast never crosses an account.
+func (d *Dir) LiveBroadcast(account, broadcastID string) (record json.RawMessage, ownerDeviceID string, ok bool) {
+	d.mu.Lock()
+	defer d.mu.Unlock()
+	h := d.hubs[account]
+	if h == nil {
+		return nil, "", false
+	}
+	b := h.broadcasts[broadcastID]
+	if b == nil {
+		return nil, "", false
+	}
+	return append(json.RawMessage(nil), b.raw...), b.device, true
+}
+
+// Peer returns the control stream of a device of the account that is online. An unknown device, a
+// device of another account and an offline one are all "not found" - one answer.
+func (d *Dir) Peer(account, deviceID string) (Sink, bool) {
+	d.mu.Lock()
+	defer d.mu.Unlock()
+	h := d.hubs[account]
+	if h == nil {
+		return nil, false
+	}
+	s := h.devices[deviceID]
+	if s == nil || s.sink == nil {
+		return nil, false
+	}
+	return s.sink, true
+}
+
+// Receiver is Peer for a device that declared the `receiver` role (6.1): a device that did not is
+// never asked to play anything.
+func (d *Dir) Receiver(account, deviceID string) (Sink, bool) {
+	d.mu.Lock()
+	defer d.mu.Unlock()
+	h := d.hubs[account]
+	if h == nil {
+		return nil, false
+	}
+	s := h.devices[deviceID]
+	if s == nil || s.sink == nil {
+		return nil, false
+	}
+	for _, r := range s.info.Roles {
+		if r == "receiver" {
+			return s.sink, true
+		}
+	}
+	return nil, false
+}
+
 // --- counts (never a list) ---
 
 // Counts are what a status may show.

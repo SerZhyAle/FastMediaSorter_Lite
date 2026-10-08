@@ -1,4 +1,4 @@
-#If Not NETFRAMEWORK Then
+﻿#If Not NETFRAMEWORK Then
 Option Strict On
 
 Imports System.Collections.Generic
@@ -167,31 +167,42 @@ Public NotInheritable Class ThemeService
         End If
     End Sub
 
+    Private Shared Iterator Function ThemeSubtree(root As Control) As IEnumerable(Of Control)
+        Yield root
+        For Each child As Control In root.Controls
+            For Each descendant In ThemeSubtree(child)
+                Yield descendant
+            Next
+        Next
+    End Function
+
     Private Shared Sub ApplyForm(form As Form)
         If form.IsDisposed Then Return
-        CheckBoxLayout.ApplyTree(form)
+        ' Ambient color/font changes otherwise remeasure every nested AutoSize parent per control.
+        Dim held As New List(Of Control)(ThemeSubtree(form))
+        For Each control In held
+            control.SuspendLayout()
+        Next
         Themed.AddOrUpdate(form, New AppliedTheme(_palette, _revision))
         Dim aware As IThemeAware = TryCast(form, IThemeAware)
         Try
+            CheckBoxLayout.ApplyTree(form)
             If aware IsNot Nothing AndAlso aware.ThemesItself Then
                 aware.ApplyTheme(_palette)
-                ThemeApplier.ApplyButtonCaptions(form, _palette)
-                Return
-            End If
-            form.SuspendLayout()
-            Try
+            Else
                 ThemeApplier.ApplyTree(form, _palette)
-            Finally
-                form.ResumeLayout(False)
-            End Try
-            ThemeApplier.ApplyTitleBar(form, _palette.IsDark)
-            If aware IsNot Nothing Then aware.ApplyTheme(_palette)
+                ThemeApplier.ApplyTitleBar(form, _palette.IsDark)
+                If aware IsNot Nothing Then aware.ApplyTheme(_palette)
+            End If
             ThemeApplier.ApplyButtonCaptions(form, _palette)
-            form.Invalidate(True)
         Catch ex As Exception
-            ' The theme is decoration: a window it cannot paint still has to work.
             AppFileLogger.LogException("Theme: applying to " & form.GetType().Name, ex)
+        Finally
+            For index = held.Count - 1 To 0 Step -1
+                held(index).ResumeLayout(index = 0)
+            Next
         End Try
+        form.Invalidate(True)
     End Sub
 
     ' --- the three triggers -------------------------------------------------------------

@@ -9,9 +9,9 @@ freezes it (133 section 8), and the installers, the Share Manager entry and the 
 
 The wire is `schemaVersion` 2. The superseded `ANYWHERE-ACCESS` 0.10 wire (`schemaVersion` 1: one server
 password, `register`/`registered`) is **not** kept alive anywhere: the number 1 appears in the code in exactly
-one place, the refusal that recognises it (`wire/codec.go`, held by a source scan). Not built yet: the
-fan-out relay (165), cast routing (166), the disk/limit guards of ticket 167 beyond what 162-164 needed, and
-the vector generator and probe (178) - see the "Implementation record" of tickets 161-164.
+one place, the refusal that recognises it (`wire/codec.go`, held by a source scan). Built since: the
+fan-out relay (165), cast routing (166), the disk, log and limit guards of ticket 167, and the vector
+generator and the probe (178, T-1 and T-2) - see the implementation records of those tickets.
 
 One Go program, `fms-exchange-server.exe`, windows/amd64 first. It is pure Go with no cgo and a
 `GOOS=linux` build that must keep working (a future Linux microservice replaces `internal/deploy`,
@@ -22,14 +22,18 @@ never the protocol core).
 | Path | What it is |
 | --- | --- |
 | `cmd/fms-exchange-server` | the program: `serve` (console, or `--service` under the SCM), `stop`, `account add/passwd/remove/list`, `device list/revoke`, `set-listen`, `set-endpoint`, `inspect`, `--version` |
-| `cmd/exchange-fakeproducer` | **manual-proof tool, its own module** (enrolls into an account, publishes a share and serves a real SFTP subsystem through the bridge); see `testdata/manual-winscp.md`; ticket 178's probe will supersede it |
+| `cmd/exchange-fakeproducer` | **manual-proof tool, its own module** (enrolls into an account, publishes a share and serves a real SFTP subsystem through the bridge); see `testdata/manual-winscp.md`. Kept for the one thing the probe cannot do - serve a real SFTP subsystem for WinSCP or FileZilla (that needs `pkg/sftp`, which stays out of this module) |
+| `cmd/exchange-vectors` | the conformance vector generator (ticket 178 T-1): runs the real server against a scripted client with an injected clock, seeded ids and tokens, and writes `testdata/vectors/frames-v2.json`, `records-v1.json` and `PROVENANCE.txt`. `go run ./cmd/exchange-vectors -out testdata/vectors` writes, `-check` regenerates and compares (one verdict line). Developer tool, never installed |
+| `cmd/exchange-probe` | the self-test client (ticket 178 T-2): `exchange-probe --server host:port --fingerprint SHA256:.. --login x --password-stdin` runs enroll, hello, publish, list, pairing, subscribe, tunnels by resourceId and shareId, relay upload and listen, cast and revoke, leaves the account as it found it and prints one verdict line. Developer and joint-test tool, never installed |
 | `internal/wire` | the typed envelopes of `schemaVersion` 2, the codec, the 4-byte length framing (`MaxFrame` 16384 before `welcome`, `MaxFrameAuth` 262144 after), the verbatim records, the nine reasons, the HTTP-opening reader - the only place that builds or parses a wire byte |
 | `internal/accounts` | accounts, enrolled devices, token hashes, tombstones (`accounts.json`, `devices.json`) and the in-memory pairing codes |
 | `internal/directory` | the per-account directory: presence, `list`/`changed` with a revision per transaction, resources (on disk without `access`, `shareId`, `publicPort`) and broadcasts (memory only), `directory.json` |
 | `internal/tunnel` | the table of pending and bridged tunnels, the per-resource and per-broadcast caps, abort by resource, broadcast or device |
 | `internal/admin` | the operator's operations (shared by the running server and the offline commands) and the local admin channel protocol |
 | `internal/rendezvous` | the connection layer and the stream state machine (`conn.go`, `stream.go`: three openings on one port, TLS-only envelopes, the role of a stream) and the real `Backend` (`engine*.go`: enroll/hello, control stream, tunnels, the third-party port) |
-| `internal/relay` | the splice: opaque bytes both ways, half-close, idle timeout |
+| `internal/relay` | the splice (opaque bytes both ways, half-close, idle timeout) and the fan-out ring of ticket 165: one ring per broadcast, a cursor per listener, a 2 s / 8 MiB window, a listener that falls behind skips to a joinable chunk and never stalls the upload |
+| `internal/cast` | the table of pending cast offers (ticket 166): memory only, three ids and a deadline, 16 per account, a 60 s answer window |
+| `internal/statement` | the operator statement of `DEVICE-EXCHANGE` 7.9 (what the operator of a server can see), as keyed points the administration surface translates |
 | `internal/ports` | the TCP port pool of published resources (third-party SFTP clients) |
 | `internal/limits` | token buckets per address and class, the Argon2id verification bound, the pre-auth stream pool |
 | `internal/logx` | the only logger: sessions are named by 8 hex characters of SHA-256, never by id |

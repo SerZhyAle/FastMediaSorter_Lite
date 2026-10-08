@@ -272,6 +272,12 @@ Namespace My
                 AppFileLogger.WriteLine("Single instance: the mutex belongs to an elevated viewer - forwarding to it")
             End If
 
+#If Not NETFRAMEWORK Then
+            If created_New Then
+                ProfileResetRunner.ApplyPending()
+            End If
+#End If
+
             If Not created_New AndAlso Not MultiWindowPolicy.AllowNewWindows() Then
                 Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " n00-2: Another instance detected via mutex, forwarding args")
 

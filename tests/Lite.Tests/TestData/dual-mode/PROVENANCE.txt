@@ -1,6 +1,13 @@
 # Provenance of the dual-mode baseline (ticket 177). The suites check these hashes FIRST: a hand edit of a
-# fixture fails them. Regenerate by running tests\Integration\ExchangeBaseline.ps1 -WriteProvenance (the two
-# JSON captures) and the Companion test DualModeBaselineGenerator (the two reference-share files).
-# written: 2026-10-07 12:22 UTC
+# fixture fails them. Regenerate: tests\Integration\ExchangeBaseline.ps1 -Mode Capture (the JSON captures),
+# the Companion test DualModeBaselineGenerator with FMS_WRITE_DUAL_MODE_BASELINE=<this folder> (the
+# reference-share files), then tests\Integration\ExchangeBaseline.ps1 -Mode Provenance (this file).
+# written: 2026-10-08 10:46 UTC
 # FILE<TAB>SHA-256
+reference-share-full-qr.png	3facbae235a4ff55d9835b6f77c3c2ce00a2a54de9628d8c568df18ab586f245
+reference-share-full.fmscfg	68f76382f42f1b3dfd14d99178727a0b2951c6b89e687ded2f3842edb0322cd8
+reference-share-lan-qr.png	d709744ae72c9ee0f00947b4030a61a09312d19216cf45bc53a7ab610bfad80c
+reference-share-lan.fmscfg	a20cd95de31ec5a3c14085355d1c84e71f65d6b31995fa3fe07b34df8b6c7603
+sharemanager-baseline.json	24d3e470d38243ae615f683bbce841524c7fd4ae72083a04ea2462d6fcbc7506
 viewer-baseline.json	7bf8ef8a0d185bad29984eafb5b591145069801697c0587d600e7bc76bb015e9
+viewer-x86-baseline.json	72231c9eb6ace7987500499a08c887a0638778f1981e5ea832c86e5c0d450451

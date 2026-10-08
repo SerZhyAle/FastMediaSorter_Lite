@@ -132,6 +132,12 @@ Public Class ShareSettings
     ''' clobber a consent the runtime opt-in just recorded.</summary>
     Public Property ServerFeaturesEnabled As Boolean = False ' Share_ServerFeaturesEnabled (read-only mirror)
 
+    ''' <summary>The server welcome's "Later" for the share half (spec 185 section 3.1). Written here with the rest of the hive.</summary>
+    Public Property WelcomeShareDismissed As Boolean = False ' Welcome_ShareDismissed
+
+    ''' <summary>The server welcome's "Later" for the Media Exchange Server half (spec 185 section 3.1).</summary>
+    Public Property WelcomeExchangeDismissed As Boolean = False ' Welcome_ExchangeDismissed
+
     Public Sub Load()
         AutostartEnabled = ReadBool("Share_AutostartEnabled", False)
         OpenWindowOnStartup = ReadBool("Share_OpenWindowOnStartup", False)
@@ -149,6 +155,8 @@ Public Class ShareSettings
         WindowMaximized = ReadBool("Share_WindowMaximized", False)
         ExpandedSections = ReadString("Share_ExpandedSections", "")
         ServerFeaturesEnabled = ReadBool(ServerFeatures.EnabledRegValue, False)
+        WelcomeShareDismissed = ReadBool(ServerWelcomeModel.DismissShareValue, False)
+        WelcomeExchangeDismissed = ReadBool(ServerWelcomeModel.DismissExchangeValue, False)
     End Sub
 
     Public Sub Save()
@@ -167,6 +175,8 @@ Public Class ShareSettings
         WriteInt("Share_WindowHeight", WindowHeight)
         WriteBool("Share_WindowMaximized", WindowMaximized)
         WriteString("Share_ExpandedSections", If(ExpandedSections, ""))
+        WriteBool(ServerWelcomeModel.DismissShareValue, WelcomeShareDismissed)
+        WriteBool(ServerWelcomeModel.DismissExchangeValue, WelcomeExchangeDismissed)
         ' ServerFeaturesEnabled is intentionally NOT written here - ServerFeatures
         ' owns that flag (see the property remark).
     End Sub

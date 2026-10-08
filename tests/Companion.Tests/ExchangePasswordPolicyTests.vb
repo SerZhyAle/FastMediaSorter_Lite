@@ -89,4 +89,40 @@ Public Class ExchangePasswordPolicyTests
         End Try
     End Sub
 
+    ' --- the generator (ticket 168: a password made for an account, shown once) ------------------------------
+
+    <Fact>
+    Public Sub A_generated_password_always_meets_the_floor_has_the_fixed_length_and_avoids_look_alikes()
+        For i As Integer = 1 To 500
+            Dim p As String = ExchangePasswordPolicy.Generate()
+            Assert.True(ExchangePasswordPolicy.IsAccepted(p), p.Length.ToString())
+            Assert.Equal(ExchangePasswordPolicy.GeneratedLength, p.Length)
+            Assert.True(p.IndexOfAny("Il1O0".ToCharArray()) < 0, "a look-alike character in a password that is read out or retyped")
+            Assert.True(p.All(Function(c) (c >= "a"c AndAlso c <= "z"c) OrElse (c >= "A"c AndAlso c <= "Z"c) OrElse (c >= "0"c AndAlso c <= "9"c)))
+        Next
+    End Sub
+
+    <Fact>
+    Public Sub Generated_passwords_differ_and_do_not_keep_their_guaranteed_characters_in_front()
+        Dim seen As New HashSet(Of String)(StringComparer.Ordinal)
+        Dim startsWithUpper As Integer = 0
+        For i As Integer = 1 To 300
+            Dim p As String = ExchangePasswordPolicy.Generate()
+            seen.Add(p)
+            If Char.IsUpper(p(0)) Then startsWithUpper += 1
+        Next
+        Assert.Equal(300, seen.Count)
+        ' the three guaranteed characters are shuffled in: the first character is an upper-case letter well short of every time
+        Assert.InRange(startsWithUpper, 40, 240)
+    End Sub
+
+    <Fact>
+    Public Sub The_generator_uses_the_operating_system_random_source_and_no_clock_or_seed()
+        Dim code As String = ExchangeTestSupport.CodeOnly(ExchangeTestSupport.ReadSource("Core\ExchangePasswordPolicy.vb"))
+        Assert.Contains("RandomNumberGenerator.GetInt32", code)
+        Assert.DoesNotContain("New Random", code)
+        Assert.DoesNotContain("Rnd(", code)
+        Assert.DoesNotContain("DateTime", code)
+    End Sub
+
 End Class

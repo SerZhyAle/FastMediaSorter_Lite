@@ -52,7 +52,7 @@ It supports a wide range of media formats and provides features such as:
 
 ## Mobile Version
 
-Want to sort media from the comfort of the couch? Check out **FastMediaSorter v2** - a powerful Android application with support for local files, network drives (SMB, SFTP, FTP), and cloud storage (Google Drive, OneDrive, Dropbox):
+Want to sort media from the comfort of the couch? Check out **Fast Media Sorter & Organizer** - a powerful Android application with support for local files, network drives (SMB, SFTP, FTP), and cloud storage (Google Drive, OneDrive, Dropbox):
 
 **[FastMediaSorter for Android website](https://serzhyale.github.io/FastMediaSorter_mob_v2/)** · **[GitHub](https://github.com/SerZhyAle/FastMediaSorter_mob_v2)**
 
@@ -70,7 +70,7 @@ Features include:
 
 ## Your folders over SFTP
 
-**FileDO disks:** with the optional FileDO disk component installed, start Share Manager, then register a file-backed disk from FileDO's Disk Manager using Share with Fast Media Sorter & Sharing.. (`Ctrl+Shift+S`). Choose a root name and read-only or read/write access; sealed disks are read-only. FileDO confirms a clean transfer of an already mounted disk and explicitly asks before disabling its local automatic mounting. Registration, opening, and FMS autostart are separate choices. In Share Manager, open **.fdd disks.. -> Connect .fdd..** to select a container, root name and read-only access. Choose **No letter - sharing only** or a free Windows drive letter; that letter is a local alias for the current Windows session and is removed when the disk closes. The disk list shows state, holder, open files and autostart, with open, clean close, explicit force close and remove actions. FileDO registrations appear here too. **Mounted drive..** publishes an existing drive through the ordinary folder flow; its mounting remains your responsibility. If FileDO already holds a container, save and close it there before connecting. Disk control requires a compatible FileDO component and an administrator-capable worker; the ordinary LocalService host cannot mount containers. Updating the UI alone does not change that service account. Never add the worker's temporary mount path as an ordinary folder. Closing retains registration; stopping sharing also deletes the disk's saved autostart key. Pair clients with the existing QR or `.fmscfg` flow: they see the open disk as an SFTP folder, not a Windows SMB share. Encrypted disks are unlocked on the PC; autostart stores their credential in the host's protected store only after explicit consent. Session mode requires sign-in; the service host works without sign-in. If a transfer fails, refresh FileDO's state before retrying or restoring local mounting. Partition disks and the unverified FileDO Store control path are unavailable in this workflow. [FileDO disk guide](how-to-filedo-disks.html) · [FileDO documentation](https://serzhyale.github.io/FileDO/guides/virtual-disks.html#sharing).
+**FileDO disks:** with the optional FileDO disk component installed, start Share Manager, then register a file-backed disk from FileDO's Disk Manager using Share with Fast Media Sorter & Sharing.. (`Ctrl+Shift+S`). Choose a root name and read-only or read/write access; sealed disks are read-only. FileDO confirms a clean transfer of an already mounted disk and explicitly asks before disabling its local automatic mounting. Registration, opening, and FMS autostart are separate choices. In Share Manager, open **.fdd disks.. -> Connect .fdd..** to select a container, root name and read-only access. Choose **No letter - sharing only** or a free Windows drive letter; that letter is a local alias for the current Windows session and is removed when the disk closes. The disk list shows state, holder, open files and autostart, with open, clean close, explicit force close and remove actions. FileDO registrations appear here too. **Mounted drive..** publishes an existing drive through the ordinary folder flow; its mounting remains your responsibility. If FileDO already holds a container, save and close it there before connecting. Disk control requires a compatible FileDO component and an administrator-capable worker; the ordinary LocalService host cannot mount containers. Updating the UI alone does not change that service account. Never add the worker's temporary mount path as an ordinary folder. Closing retains registration; stopping sharing also deletes the disk's saved autostart key. Pair clients with the existing QR or `.fmscfg` flow: they see the open disk as an SFTP folder, not a Windows SMB share. Encrypted disks are unlocked on the PC; autostart stores their credential in the host's protected store only after explicit consent. Session mode requires sign-in; the service host works without sign-in. If a transfer fails, refresh FileDO's state before retrying or restoring local mounting. Partition disks and the unverified FileDO Store control path are unavailable in this workflow. [FileDO disk guide](docs/how-to-filedo-disks.html) · [FileDO documentation](https://serzhyale.github.io/FileDO/guides/virtual-disks.html#sharing).
 
 Sorting media does not have to mean copying it somewhere first. **Android Folder Share** turns this PC
 into an SFTP server for the folders you choose, so a sorter running somewhere else works on the
@@ -120,13 +120,13 @@ Short, practical walkthroughs on the site - one per task (English and Russian):
 
 | Guide | What it covers |
 | --- | --- |
-| [Viewer](https://serzhyale.github.io/FastMediaSorter_Lite/how-to-viewer.html) | Review and sort a media folder without losing your flow |
-| [Keys](https://serzhyale.github.io/FastMediaSorter_Lite/how-to-keys.html) | The whole key map, zoom, full screen and the slideshow |
-| [Setup](https://serzhyale.github.io/FastMediaSorter_Lite/how-to-setup.html) | Default viewer, interface language, and what happens to a file |
-| [OCR](https://serzhyale.github.io/FastMediaSorter_Lite/how-to-ocr.html) | Recognize text on a picture and read it in your language |
-| [Editor](https://serzhyale.github.io/FastMediaSorter_Lite/how-to-editor.html) | Draw on a photo, crop it, and write the result back |
-| [Archives](https://serzhyale.github.io/FastMediaSorter_Lite/how-to-archives.html) | Page through a ZIP or CBZ as if it were a folder |
-| [Resources](https://serzhyale.github.io/FastMediaSorter_Lite/how-to-resources.html) | Open an SFTP server or a network share that needs a login like a folder |
+| [Viewer](https://serzhyale.github.io/FastMediaSorter_Lite/docs/how-to-viewer.html) | Review and sort a media folder without losing your flow |
+| [Keys](https://serzhyale.github.io/FastMediaSorter_Lite/docs/how-to-keys.html) | The whole key map, zoom, full screen and the slideshow |
+| [Setup](https://serzhyale.github.io/FastMediaSorter_Lite/docs/how-to-setup.html) | Default viewer, interface language, and what happens to a file |
+| [OCR](https://serzhyale.github.io/FastMediaSorter_Lite/docs/how-to-ocr.html) | Recognize text on a picture and read it in your language |
+| [Editor](https://serzhyale.github.io/FastMediaSorter_Lite/docs/how-to-editor.html) | Draw on a photo, crop it, and write the result back |
+| [Archives](https://serzhyale.github.io/FastMediaSorter_Lite/docs/how-to-archives.html) | Page through a ZIP or CBZ as if it were a folder |
+| [Resources](https://serzhyale.github.io/FastMediaSorter_Lite/docs/how-to-resources.html) | Open an SFTP server or a network share that needs a login like a folder |
 | [Android and SFTP](https://serzhyale.github.io/FastMediaSorter_Lite/publish-folders-android.html) | Publish selected PC folders to your Android device: the first run, the router and the internet path, step by step |
 
 ## Two programs, one app

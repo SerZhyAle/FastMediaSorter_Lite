@@ -42,9 +42,113 @@ Friend NotInheritable Class ResourceDescriptor
     Public Property IncludeSubfolders As Boolean?
     ''' <summary>When this resource was last opened, for the manager's list and its ordering.</summary>
     Public Property LastUsedUtc As DateTime?
+
+    ' --- the device exchange (tickets 171, DEVICE-EXCHANGE 9). Every member below is NULL on a resource that has nothing to do with the
+    ' exchange, and a null member is not written, so a resource made or imported by hand serializes exactly as it did before (and an older
+    ' build keeps the members it does not know in AdditionalFields). Nothing here is a secret: the tunnel's share id is a bearer capability,
+    ' so like the password it is kept only as a DPAPI blob under a handle. ---
+
+    ''' <summary>Where the resource came from: <see cref="ResourceOrigin.Exchange"/> (the user ticked it under "My devices") or
+    ''' <see cref="ResourceOrigin.Link"/> (a code or file that carries a tunnel path). Nothing = made or imported by hand: such a resource
+    ''' is NEVER touched by anything the exchange does.</summary>
+    <JsonIgnore(Condition:=JsonIgnoreCondition.WhenWritingNull)>
+    Public Property Origin As String
+    ''' <summary>The producer's resource id: what an attached resource is bound to (it survives the producer's restarts).</summary>
+    <JsonIgnore(Condition:=JsonIgnoreCondition.WhenWritingNull)>
+    Public Property ExchangeResourceId As String
+    <JsonIgnore(Condition:=JsonIgnoreCondition.WhenWritingNull)>
+    Public Property ExchangeDeviceId As String
+    ''' <summary>The producing device's name as the directory last said it (for the list's type column).</summary>
+    <JsonIgnore(Condition:=JsonIgnoreCondition.WhenWritingNull)>
+    Public Property ExchangeDeviceName As String
+    ''' <summary>True after the producer's access changed and the user has not seen the notice yet (told once, on the row).</summary>
+    <JsonIgnore(Condition:=JsonIgnoreCondition.WhenWritingNull)>
+    Public Property ExchangeNotice As Boolean?
+    ''' <summary>The exchange server an outsider link tunnels through (`host:port` of its `x`, or a `.fmscfg` tunnel path).</summary>
+    <JsonIgnore(Condition:=JsonIgnoreCondition.WhenWritingNull)>
+    Public Property TunnelHost As String
+    <JsonIgnore(Condition:=JsonIgnoreCondition.WhenWritingNull)>
+    Public Property TunnelPort As Integer?
+    ''' <summary>Names the DPAPI blob of the link's share id (<see cref="IResourceSecretStore"/>); never the id itself.</summary>
+    <JsonIgnore(Condition:=JsonIgnoreCondition.WhenWritingNull)>
+    Public Property TunnelSecretHandle As String
+    ''' <summary>The exchange server's certificate fingerprint the user accepted for this link (item D: only a leaf the platform did not
+    ''' validate is pinned, and only after the user saw it). A fingerprint is public information.</summary>
+    <JsonIgnore(Condition:=JsonIgnoreCondition.WhenWritingNull)>
+    Public Property TunnelPin As String
+
     <JsonExtensionData>
     Public Property AdditionalFields As Dictionary(Of String, JsonElement)
 End Class
+
+''' <summary>The values of <see cref="ResourceDescriptor.Origin"/> and the one place that says what they mean.</summary>
+Friend Module ResourceOrigin
+
+    ''' <summary>Attached from "My devices": bound to a producer's resource id, followed when its access changes, never deleted because
+    ''' its producer went away.</summary>
+    Friend Const Exchange As String = "exchange"
+    ''' <summary>Imported from an FMSSFTP2 code or a .fmscfg whose tunnel path names an exchange server: no account, the share id is
+    ''' the capability.</summary>
+    Friend Const Link As String = "link"
+
+    Friend Function IsExchange(resource As ResourceDescriptor) As Boolean
+        Return resource IsNot Nothing AndAlso String.Equals(resource.Origin, Exchange, StringComparison.Ordinal)
+    End Function
+
+    Friend Function IsLink(resource As ResourceDescriptor) As Boolean
+        Return resource IsNot Nothing AndAlso String.Equals(resource.Origin, Link, StringComparison.Ordinal)
+    End Function
+
+    ''' <summary>Anything the exchange added to this resource - the only resources its sync may ever touch.</summary>
+    Friend Function IsOfTheExchange(resource As ResourceDescriptor) As Boolean
+        Return IsExchange(resource) OrElse IsLink(resource)
+    End Function
+
+    ''' <summary>What an edit keeps of the exchange's members. A resource the user edits stays what it was (an attached one stays attached, a
+    ''' link keeps its tunnel) UNLESS the edit changed where it points (host, port, user or root): then it is the user's own resource and the
+    ''' exchange lets go of it - a producer's access must never overwrite an address somebody typed.</summary>
+    Friend Sub CarryOver(source As ResourceDescriptor, built As ResourceDescriptor)
+        If source Is Nothing OrElse built Is Nothing Then Return
+        built.Origin = source.Origin
+        built.ExchangeResourceId = source.ExchangeResourceId
+        built.ExchangeDeviceId = source.ExchangeDeviceId
+        built.ExchangeDeviceName = source.ExchangeDeviceName
+        built.ExchangeNotice = source.ExchangeNotice
+        built.TunnelHost = source.TunnelHost
+        built.TunnelPort = source.TunnelPort
+        built.TunnelSecretHandle = source.TunnelSecretHandle
+        built.TunnelPin = source.TunnelPin
+    End Sub
+
+    ''' <summary>True when an edit moved the resource: the same test <see cref="CarryOver"/> callers use to let go of it.</summary>
+    Friend Function PointsElsewhere(source As ResourceDescriptor, built As ResourceDescriptor) As Boolean
+        If source Is Nothing OrElse built Is Nothing Then Return False
+        Return Not String.Equals(source.Host, built.Host, StringComparison.OrdinalIgnoreCase) OrElse source.Port <> built.Port OrElse
+               Not String.Equals(source.UserName, built.UserName, StringComparison.Ordinal) OrElse
+               Not String.Equals(source.RootPath, built.RootPath, StringComparison.Ordinal)
+    End Function
+
+    ''' <summary>The exchange lets go of this resource: it is an ordinary one from now on (its tunnel's secret is left to the orphan sweep).</summary>
+    Friend Sub Detach(resource As ResourceDescriptor)
+        If resource Is Nothing Then Return
+        resource.Origin = Nothing
+        resource.ExchangeResourceId = Nothing
+        resource.ExchangeDeviceId = Nothing
+        resource.ExchangeDeviceName = Nothing
+        resource.ExchangeNotice = Nothing
+        resource.TunnelHost = Nothing
+        resource.TunnelPort = Nothing
+        resource.TunnelSecretHandle = Nothing
+        resource.TunnelPin = Nothing
+    End Sub
+
+    ''' <summary>The attached resource bound to this producer's resource id, or Nothing. Ordinal: an id is case-sensitive.</summary>
+    Friend Function FindByExchangeId(resources As IEnumerable(Of ResourceDescriptor), resourceId As String) As ResourceDescriptor
+        If String.IsNullOrEmpty(resourceId) Then Return Nothing
+        Return resources.FirstOrDefault(Function(r) IsExchange(r) AndAlso String.Equals(r.ExchangeResourceId, resourceId, StringComparison.Ordinal))
+    End Function
+
+End Module
 
 ''' <summary>One address of a resource: what kind of path it is, and where.</summary>
 Friend NotInheritable Class ResourceEndpoint

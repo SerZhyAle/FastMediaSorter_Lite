@@ -227,7 +227,7 @@ Partial Public Class Main_Form
         Localization.CurrentCode = code
         If Not MultiWindowPolicy.IsSecondaryInstance() Then Localization.SaveToSettings()
         LngCh()
-        Table_Form.LngCh()
+        If Table_Form IsNot Nothing Then Table_Form.LngCh()
         RepaintMedia()
     End Sub
 

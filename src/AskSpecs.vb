@@ -152,6 +152,22 @@ Friend NotInheritable Class AskSpecs
             defaultIndex:=1, cancelIndex:=1)
     End Function
 
+    Friend Const ProfileResetExecute As Integer = 0
+    Friend Const ProfileResetCancel As Integer = 1
+
+    ''' <summary>169: Reset all viewer settings on the About page. Destructive button with Cancel as safe default.</summary>
+    Friend Shared Function ProfileResetConfirm() As AskSpec
+        Return New AskSpec(
+            Localization.T("Сброс настроек"),
+            Localization.T("Сбросить все настройки просмотрщика к значениям по умолчанию?"),
+            AskIcon.Warning,
+            New List(Of AskButton) From {
+                New AskButton(Localization.T("Сбросить и закрыть"), destructive:=True),
+                New AskButton(Localization.T("Отмена"))},
+            defaultIndex:=ProfileResetCancel, cancelIndex:=ProfileResetCancel,
+            detail:=Localization.T("Программа закроется, а настройки вернутся к умолчаниям при следующем запуске. Получатели (клавиши 0-9 и Delete), вид, видео, OCR и положение окон будут сброшены. Язык, тема, пароли, список ресурсов и история останутся. Прежние значения сохранятся в файл."))
+    End Function
+
     ' --- prompts ---------------------------------------------------------------------------
 
     ''' <summary>Rename. Every refusal that used to be a bare status line after the window had closed - and had
@@ -221,6 +237,7 @@ Friend NotInheritable Class AskSpecs
             SettingsImport("1"),
             HotkeyConflict("Ctrl+K", "Action"),
             ResetHotkeys(),
+            ProfileResetConfirm(),
             EditorUnsavedClose()}
     End Function
 

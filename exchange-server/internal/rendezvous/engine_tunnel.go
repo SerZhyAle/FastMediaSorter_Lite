@@ -21,12 +21,16 @@ import (
 const broadcastTunnelCeiling = 500
 
 // RelayHandler is what ticket 165 plugs in: the broadcaster's upload, the listeners' GET, and the
-// count of relay listeners the tunnels of a broadcast share its `maxListeners` with. Until it is
-// set an upload closes the stream, a listen is a 404 and the listener count is zero.
+// count of relay listeners the tunnels of a broadcast share its `maxListeners` with. End is the
+// directory hook's teardown of a broadcast that ended for any reason, Close the server's. Until a
+// handler is set an upload closes the stream, a listen is a 404 and the listener count is zero.
+// *Relay is the real one.
 type RelayHandler interface {
 	Upload(st *Stream, sess *Session, m *wire.Upload)
 	Listen(st *Stream, broadcastID string)
 	Listeners(broadcastID string) int
+	End(broadcastID string)
+	Close()
 }
 
 // unavailable is the ONE refusal of every connect that cannot be served - an unknown id, an ended
@@ -42,6 +46,18 @@ func (e *Engine) unavailable(st *Stream, t0 time.Time) {
 		}
 	}
 	st.Refuse(wire.ReasonUnavailable)
+}
+
+// notFound is `unavailable` for the relay's listen URL: a 404 after the same minimum delay, from the
+// same moment, so the answer to an unknown id and to an ended one cannot be told apart by timing.
+func (e *Engine) notFound(st *Stream, t0 time.Time) {
+	if d := e.p.UnavailableDelay - time.Since(t0); d > 0 {
+		select {
+		case <-time.After(d):
+		case <-e.closing:
+		}
+	}
+	_ = st.WriteRaw(wire.HTTPResponse(404, 0))
 }
 
 func (e *Engine) relayListeners(broadcastID string) int {
@@ -175,8 +191,8 @@ func (e *Engine) Attach(st *Stream, sess *Session, m *wire.Attach) {
 	tun.Deliver(st.Conn()) // the consumer's bridge owns the stream from here
 }
 
-// Upload and Listen are the relay's (ticket 165); without a handler an upload closes the stream and
-// a listen is a 404.
+// Upload and Listen are the relay's (ticket 165, relay_handler.go); without a handler an upload
+// closes the stream and a listen is a 404.
 func (e *Engine) Upload(st *Stream, sess *Session, m *wire.Upload) {
 	if e.cfg.Relay == nil {
 		st.Close()

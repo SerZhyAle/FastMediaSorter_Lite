@@ -11,6 +11,7 @@ package tunnel
 
 import (
 	"errors"
+	"io"
 	"net"
 	"sync"
 	"time"
@@ -36,11 +37,20 @@ type Table struct {
 	pending  map[string]*Tunnel            // by tunnel id: waiting for their attach
 	byKey    map[Key]map[string]*Tunnel    // every tunnel of a capped entity
 	byDevice map[string]map[string]*Tunnel // every tunnel of a producing device
+	rand     io.Reader                     // the tunnel-id source; nil means wire.NewID's own
 }
 
 // NewTable returns an empty table.
 func NewTable() *Table {
 	return &Table{pending: map[string]*Tunnel{}, byKey: map[Key]map[string]*Tunnel{}, byDevice: map[string]map[string]*Tunnel{}}
+}
+
+// SetRand makes tunnel ids come from r (the vector generator of ticket 178 and tests); nil restores
+// wire.NewID's source. Call it before the first Open.
+func (t *Table) SetRand(r io.Reader) {
+	t.mu.Lock()
+	t.rand = r
+	t.mu.Unlock()
 }
 
 // Tunnel is one consumer waiting for, or bridged to, a producer's data stream.
@@ -67,7 +77,11 @@ func (t *Table) Open(key Key, producerDevice string, consumer net.Conn, max int)
 	if len(t.byKey[key]) >= max {
 		return nil, ErrFull
 	}
-	tn := &Tunnel{ID: wire.NewID(), Key: key, Device: producerDevice, table: t, consumer: consumer,
+	id := wire.NewID()
+	if t.rand != nil {
+		id = wire.NewIDFrom(t.rand)
+	}
+	tn := &Tunnel{ID: id, Key: key, Device: producerDevice, table: t, consumer: consumer,
 		attached: make(chan net.Conn, 1), done: make(chan struct{})}
 	t.pending[tn.ID] = tn
 	if t.byKey[key] == nil {

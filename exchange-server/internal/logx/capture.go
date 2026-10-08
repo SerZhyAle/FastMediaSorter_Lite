@@ -1,6 +1,7 @@
 package logx
 
 import (
+	"io"
 	"strings"
 	"sync"
 )
@@ -17,6 +18,7 @@ type Capture struct {
 	*Logger
 	mu    sync.Mutex
 	lines []string
+	also  io.Writer // every line is also written here (a log file the test will scan), or nil
 }
 
 type captureWriter struct{ c *Capture }
@@ -24,7 +26,11 @@ type captureWriter struct{ c *Capture }
 func (w captureWriter) Write(p []byte) (int, error) {
 	w.c.mu.Lock()
 	w.c.lines = append(w.c.lines, strings.Split(strings.TrimRight(string(p), "\n"), "\n")...)
+	also := w.c.also
 	w.c.mu.Unlock()
+	if also != nil {
+		_, _ = also.Write(p)
+	}
 	return len(p), nil
 }
 
@@ -32,6 +38,14 @@ func (w captureWriter) Write(p []byte) (int, error) {
 func NewCapture() *Capture {
 	c := &Capture{}
 	c.Logger = New(captureWriter{c})
+	return c
+}
+
+// NewCaptureAlso is NewCapture that also writes every line to w: a test that runs a scenario against a
+// log FILE keeps the in-memory lines for its assertions and the file for the data-directory scan.
+func NewCaptureAlso(w io.Writer) *Capture {
+	c := NewCapture()
+	c.also = w
 	return c
 }
 

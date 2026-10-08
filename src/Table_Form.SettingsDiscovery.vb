@@ -50,7 +50,6 @@ Partial Public Class Table_Form
         actions.Controls.AddRange({browse, resources, clear})
         host.Controls.Add(slotHealthDetails)
         host.Controls.Add(actions)
-        host.Height += Sp(130)
         Dim selection As Action = Sub()
                                       Dim slot = SelectedRecipientSlot()
                                       browse.Enabled = slot > 0
@@ -59,6 +58,10 @@ Partial Public Class Table_Form
                                       RefreshSlotHealthDetails()
                                   End Sub
         AddHandler Data_Grid_View.SelectionChanged, Sub() selection()
+        Data_Grid_View.SelectionMode = DataGridViewSelectionMode.FullRowSelect
+        If Data_Grid_View.Rows.Count > 1 AndAlso SelectedRecipientSlot() = 0 Then
+            Data_Grid_View.CurrentCell = Data_Grid_View.Item(1, 1)
+        End If
         selection()
         ' Identity fills plus the leading health glyph are painted, not styled (129 §3.2).
         AddHandler Data_Grid_View.CellPainting, AddressOf Data_Grid_View_CellPainting

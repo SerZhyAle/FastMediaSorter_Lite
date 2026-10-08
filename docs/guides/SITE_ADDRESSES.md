@@ -37,6 +37,12 @@ winget manifests, the Store listing, the READMEs), keeps meaning what it meant.
 - **A page that is retired with no successor** leaves a page that says so, in the core three languages, and links
   the landing.
 - **A section anchor** that an outside surface links is never renamed.
+- **Applied 2026-10-08:** the eight task guides (`viewer`, `keys`, `setup`, `ocr`, `editor`, `archives`, `resources`,
+  `filedo-disks`) moved from the root to `docs/how-to-<name>.html`, and each old root address
+  `how-to-<name>.html` is now a forwarder (`noindex`, `<meta http-equiv="refresh">`, canonical at the new address).
+  `how-to-sftp.html` was already a forwarder (to `publish-folders-android.html`) and stays where it is. A forwarder is
+  not a page of the set: it is in neither `sitemap.xml` nor `search-index.json`, and `Test-SiteQuality.ps1` checks only
+  that its refresh target exists.
 - The addresses held outside the site are listed in `tools/site-addresses.jsonl` and resolved by
   `tools/Test-SiteAddresses.ps1` (next section). A new address in a program, listing or README is not accepted
   until it has its line there.
@@ -69,7 +75,7 @@ Manager's `ShareLinks` and `HostingText`).
 | `trust` | `trust.html` | `lang/<code>/trust.html` | yes |
 | `privacy` | `docs/privacy.html` | none (one page, en/ru/uk switched in-page; the page the Store listing names) | yes |
 | `edition` | `server.html` | none | yes |
-| `guide` | `how-to-*.html`, `publish-folders-android.html` | none (en/ru/uk switched in-page) | yes |
+| `guide` | `docs/how-to-*.html`, `publish-folders-android.html` | none (en/ru/uk switched in-page) | yes |
 
 `tools/Test-SiteAddresses.ps1` runs offline in `Run-AllTests.ps1` and judges: the list's own shape; that every
 address is on the site and resolves to a file the Pages build serves, is in the sitemap when its group says so and

@@ -26,6 +26,8 @@ type Params struct {
 	CodesPerAccount      int           // outstanding pairing codes (ticket 162 rule 6)
 	CodeLifetime         time.Duration // a pairing code lives this long
 	TombstoneLifetime    time.Duration // a revoked token's hash is kept this long (item I)
+	CastTimeout          time.Duration // a receiver has this long to answer a cast-offer (item R)
+	CastPerAccount       int           // pending cast offers per account (ticket 166 rule 6)
 }
 
 // DefaultParams returns the working defaults.
@@ -49,6 +51,8 @@ func DefaultParams() Params {
 		CodesPerAccount:      5,
 		CodeLifetime:         10 * time.Minute,
 		TombstoneLifetime:    30 * 24 * time.Hour,
+		CastTimeout:          60 * time.Second,
+		CastPerAccount:       16,
 	}
 }
 

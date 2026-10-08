@@ -1,0 +1,266 @@
+Option Strict On
+
+Imports System.Collections.Generic
+Imports System.Globalization
+Imports System.Linq
+Imports System.Net
+Imports System.Net.Sockets
+Imports System.Threading.Tasks
+
+''' <summary>
+''' The operator's rules of ticket 168, all pure (no window, no process, no pipe), so the tests drive each one:
+''' the login an account may have, the public address clients are told, the third-party port range, what the
+''' accounts and devices lists show in a state, and the six points of the statement of what the operator can see.
+'''
+''' The rules here mirror the Go module's (<c>accounts.NormalizeLogin</c>, <c>config.CheckPublicEndpoint</c>,
+''' <c>config.ParsePortRange</c>) for IMMEDIATE feedback beside a field only; the binary still has the last word and
+''' a value it refuses is reported, never written.
+''' </summary>
+Friend NotInheritable Class ExchangeLoginRules
+    Private Sub New()
+    End Sub
+
+    Friend Const MinLength As Integer = 3
+    Friend Const MaxLength As Integer = 64
+
+    Friend Enum Verdict
+        Accepted
+        TooShort
+        TooLong
+        BadCharacter
+    End Enum
+
+    ''' <summary>A login is 3-64 characters of a-z, 0-9, dot, underscore and hyphen, folded to lower case on every
+    ''' entry (162 rule 1).</summary>
+    Friend Shared Function Normalize(text As String) As String
+        Return If(text, "").Trim().ToLowerInvariant()
+    End Function
+
+    Friend Shared Function Check(text As String) As Verdict
+        Dim s As String = Normalize(text)
+        If s.Length < MinLength Then Return Verdict.TooShort
+        If s.Length > MaxLength Then Return Verdict.TooLong
+        For Each c As Char In s
+            Dim ok As Boolean = (c >= "a"c AndAlso c <= "z"c) OrElse (c >= "0"c AndAlso c <= "9"c) OrElse c = "."c OrElse c = "_"c OrElse c = "-"c
+            If Not ok Then Return Verdict.BadCharacter
+        Next
+        Return Verdict.Accepted
+    End Function
+
+    ''' <summary>A first guess for the wizard's login: the Windows user name, made to fit the rule; "" when nothing
+    ''' of it survives.</summary>
+    Friend Shared Function SuggestFrom(userName As String) As String
+        Dim sb As New Text.StringBuilder()
+        For Each c As Char In Normalize(userName)
+            If (c >= "a"c AndAlso c <= "z"c) OrElse (c >= "0"c AndAlso c <= "9"c) OrElse c = "."c OrElse c = "_"c OrElse c = "-"c Then sb.Append(c)
+        Next
+        Dim s As String = sb.ToString()
+        If s.Length > MaxLength Then s = s.Substring(0, MaxLength)
+        Return If(s.Length >= MinLength, s, "")
+    End Function
+End Class
+
+Friend NotInheritable Class ExchangeOperatorEndpoint
+    Private Sub New()
+    End Sub
+
+    Friend Enum Verdict
+        ''' <summary>A usable host:port.</summary>
+        Accepted
+        ''' <summary>Empty: allowed - the server then hides the relay and tunnel endpoints.</summary>
+        Empty
+        NotHostPort
+        BadPort
+        NoHost
+        ''' <summary>Loopback, localhost or a wildcard: no other device could reach it (168 section 3.3).</summary>
+        Loopback
+    End Enum
+
+    Friend Shared Function Check(text As String) As Verdict
+        Dim s As String = If(text, "").Trim()
+        If s.Length = 0 Then Return Verdict.Empty
+        Dim colon As Integer = s.LastIndexOf(":"c)
+        If colon <= 0 Then Return Verdict.NotHostPort
+        Dim host As String = s.Substring(0, colon)
+        Dim portText As String = s.Substring(colon + 1)
+        ' a bare IPv6 address has colons of its own and must be bracketed (net.SplitHostPort does the same)
+        If host.Contains(":") AndAlso Not (host.StartsWith("[", StringComparison.Ordinal) AndAlso host.EndsWith("]", StringComparison.Ordinal)) Then Return Verdict.NotHostPort
+        Dim port As Integer
+        If Not Integer.TryParse(portText, NumberStyles.None, CultureInfo.InvariantCulture, port) OrElse port < 1 OrElse port > 65535 Then Return Verdict.BadPort
+        Dim bare As String = host.Trim("["c, "]"c)
+        If bare.Length = 0 OrElse bare.IndexOfAny({" "c, ControlChars.Tab, "/"c, "\"c, "@"c}) >= 0 Then Return Verdict.NoHost
+        If String.Equals(bare, "localhost", StringComparison.OrdinalIgnoreCase) OrElse bare.EndsWith(".localhost", StringComparison.OrdinalIgnoreCase) Then Return Verdict.Loopback
+        Dim ip As IPAddress = Nothing
+        If IPAddress.TryParse(bare, ip) AndAlso (IPAddress.IsLoopback(ip) OrElse ip.Equals(IPAddress.Any) OrElse ip.Equals(IPAddress.IPv6Any)) Then Return Verdict.Loopback
+        Return Verdict.Accepted
+    End Function
+
+    ''' <summary>The suggestion a link offers beside an empty field, from facts the Share Manager already has and NO
+    ''' external lookup (142 Q142-3): the worker's known public host, else this PC's LAN address; "" when it has
+    ''' neither. A suggestion is only ever offered, never written.</summary>
+    Friend Shared Function Suggest(knownPublicHost As String, lanAddress As String, port As Integer) As String
+        Dim p As Integer = If(port >= 1 AndAlso port <= 65535, port, ExchangeSettings.DefaultPort)
+        For Each candidate As String In {knownPublicHost, lanAddress}
+            Dim host As String = If(candidate, "").Trim()
+            If host.Length = 0 Then Continue For
+            Dim shown As String = If(host.Contains(":") AndAlso Not host.StartsWith("[", StringComparison.Ordinal), "[" & host & "]", host)
+            Dim text As String = shown & ":" & p.ToString(CultureInfo.InvariantCulture)
+            If Check(text) = Verdict.Accepted Then Return text
+        Next
+        Return ""
+    End Function
+End Class
+
+Friend NotInheritable Class ExchangePortRangeRules
+    Private Sub New()
+    End Sub
+
+    Friend Enum Verdict
+        Accepted
+        ''' <summary>Low is above high.</summary>
+        Order
+        ''' <summary>Outside the allowed ports.</summary>
+        Bounds
+        ''' <summary>The range contains the rendezvous listen port: a third-party tunnel could never be granted it.</summary>
+        ContainsListenPort
+    End Enum
+
+    Friend Shared Function Check(low As Integer, high As Integer, listenPort As Integer) As Verdict
+        If low > high Then Return Verdict.Order
+        If low < ExchangeSettings.MinPort OrElse high > ExchangeSettings.MaxPort Then Return Verdict.Bounds
+        If listenPort >= low AndAlso listenPort <= high Then Return Verdict.ContainsListenPort
+        Return Verdict.Accepted
+    End Function
+
+    ''' <summary>"lo-hi", the form the binary takes.</summary>
+    Friend Shared Function Format(low As Integer, high As Integer) As String
+        Return low.ToString(CultureInfo.InvariantCulture) & "-" & high.ToString(CultureInfo.InvariantCulture)
+    End Function
+
+    ''' <summary>Reads "lo-hi" back; False for anything else.</summary>
+    Friend Shared Function TryParse(text As String, ByRef low As Integer, ByRef high As Integer) As Boolean
+        low = 0
+        high = 0
+        Dim parts As String() = If(text, "").Split("-"c)
+        If parts.Length <> 2 Then Return False
+        Return Integer.TryParse(parts(0).Trim(), NumberStyles.None, CultureInfo.InvariantCulture, low) AndAlso
+               Integer.TryParse(parts(1).Trim(), NumberStyles.None, CultureInfo.InvariantCulture, high)
+    End Function
+
+    ''' <summary>How many ports the range holds (the numbers a person can forward on a router).</summary>
+    Friend Shared Function Count(low As Integer, high As Integer) As Integer
+        Return If(high >= low, high - low + 1, 0)
+    End Function
+End Class
+
+''' <summary>What one refresh of the accounts and devices read from the server (or its stores).</summary>
+Friend NotInheritable Class ExchangeAccountsView
+    ''' <summary>The admin channel or the offline path answered.</summary>
+    Public Property Reached As Boolean
+    Public Property Route As ExchangeAdminRoute = ExchangeAdminRoute.NotReached
+    Public Property Accounts As IReadOnlyList(Of ExchangeAdminAccount) = Array.Empty(Of ExchangeAdminAccount)()
+    ''' <summary>The devices of the account the list was read for ("" when none was asked).</summary>
+    Public Property DevicesOf As String = ""
+    Public Property Devices As IReadOnlyList(Of ExchangeAdminDevice) = Array.Empty(Of ExchangeAdminDevice)()
+
+    ''' <summary>Reads the accounts and, for <paramref name="devicesOf"/>, its devices. Blocks nothing: awaited.</summary>
+    Friend Shared Async Function ReadAsync(devicesOf As String, ct As Threading.CancellationToken) As Task(Of ExchangeAccountsView)
+        Dim view As New ExchangeAccountsView()
+        Dim accounts As ExchangeAdminReply = Await ExchangeAdmin.ListAccountsAsync(ct).ConfigureAwait(False)
+        view.Route = accounts.Route
+        If Not accounts.Ok Then Return view
+        view.Reached = True
+        view.Accounts = ExchangeAdminParser.Accounts(accounts.DataJson)
+        Dim wanted As String = ExchangeLoginRules.Normalize(devicesOf)
+        If wanted.Length > 0 AndAlso view.Accounts.Any(Function(a) String.Equals(a.Login, wanted, StringComparison.Ordinal)) Then
+            Dim devices As ExchangeAdminReply = Await ExchangeAdmin.ListDevicesAsync(wanted, ct).ConfigureAwait(False)
+            If devices.Ok Then
+                view.DevicesOf = wanted
+                view.Devices = ExchangeAdminParser.Devices(devices.DataJson)
+            End If
+        End If
+        Return view
+    End Function
+End Class
+
+''' <summary>
+''' What the "Accounts" part of the group draws in a state (ticket 168 section 3.1-3.2): which rows exist. Pure.
+''' Buttons are shown or hidden by state, never disabled - the Hosting rule.
+''' </summary>
+Friend NotInheritable Class ExchangeAccountsModel
+    Public Property Reached As Boolean
+    Public Property AccountCount As Integer
+    Public Property DeviceTotal As Integer
+    ''' <summary>The server is not reached at all: nothing below can be listed.</summary>
+    Public Property ShowNotReached As Boolean
+    ''' <summary>No account exists yet: the hint that the server will not start without one.</summary>
+    Public Property ShowFirstAccountHint As Boolean
+    ''' <summary>The lists were read from the stores because no server runs: a change applies when it starts.</summary>
+    Public Property ShowOfflineNote As Boolean
+    Public Property ShowAccountsList As Boolean
+    Public Property ShowAdd As Boolean
+    Public Property ShowReset As Boolean
+    Public Property ShowRemove As Boolean
+    Public Property ShowDevices As Boolean
+    Public Property ShowRevoke As Boolean
+
+    Friend Shared Function Build(view As ExchangeAccountsView, selectedLogin As String, selectedDeviceId As String) As ExchangeAccountsModel
+        Dim m As New ExchangeAccountsModel()
+        If view Is Nothing OrElse Not view.Reached Then
+            m.ShowNotReached = view IsNot Nothing
+            Return m
+        End If
+        m.Reached = True
+        m.AccountCount = view.Accounts.Count
+        m.DeviceTotal = view.Accounts.Sum(Function(a) a.Devices)
+        m.ShowFirstAccountHint = view.Accounts.Count = 0
+        m.ShowOfflineNote = view.Route = ExchangeAdminRoute.Offline
+        m.ShowAccountsList = view.Accounts.Count > 0
+        m.ShowAdd = True
+        Dim login As String = ExchangeLoginRules.Normalize(selectedLogin)
+        Dim selected As Boolean = login.Length > 0 AndAlso view.Accounts.Any(Function(a) String.Equals(a.Login, login, StringComparison.Ordinal))
+        m.ShowReset = selected
+        m.ShowRemove = selected
+        m.ShowDevices = selected AndAlso String.Equals(view.DevicesOf, login, StringComparison.Ordinal) AndAlso view.Devices.Count > 0
+        m.ShowRevoke = m.ShowDevices AndAlso Not String.IsNullOrEmpty(selectedDeviceId) AndAlso
+                       view.Devices.Any(Function(d) String.Equals(d.DeviceId, selectedDeviceId, StringComparison.Ordinal))
+        Return m
+    End Function
+End Class
+
+''' <summary>
+''' The statement of what the operator can see (DEVICE-EXCHANGE 7.9, ticket 167 rule 8, shown by 168 section 3.6): six
+''' points, each a fact of its own. The ids are the Go module's (<c>internal/statement</c>) and never change meaning;
+''' a point is added, never reworded in place. The text is the Russian source of the 13-language layer, one key per
+''' point, so a language never shows a different set of limits.
+''' </summary>
+Friend NotInheritable Class ExchangeStatement
+    Private Sub New()
+    End Sub
+
+    Friend Shared ReadOnly Ids As String() = {"relay-visible", "tunnel-broadcast-plain", "access-visible", "sftp-opaque", "multi-user-limit", "flat-trust"}
+
+    Friend Shared Function Text(id As String) As String
+        Select Case id
+            Case "relay-visible"
+                Return Localization.T("Трансляция, идущая через ретранслятор этого сервера, видна оператору сервера: соединение заканчивается на сервере, и он обрабатывает трансляцию в открытом виде. На диск она не пишется и в памяти держится не дольше пары секунд.")
+            Case "tunnel-broadcast-plain"
+                Return Localization.T("Прямая трансляция через туннель - это обычный RTSP или HTTP внутри соединения с этим сервером, поэтому оператор видит её байты, пока они проходят.")
+            Case "access-visible"
+                Return Localization.T("Данные доступа к общей папке (адрес, имя пользователя и пароль) хранятся в памяти, пока устройство, которое её раздаёт, в сети, и оператор может их прочитать. На диск они не пишутся и в журнал не попадают.")
+            Case "sftp-opaque"
+                Return Localization.T("Общая папка, к которой подключаются через туннель, остаётся защищённой собственным SSH-соединением: сервер переносит байты, которые не может прочитать.")
+            Case "multi-user-limit"
+                Return Localization.T("На сервере, где живут чужие учётные записи, это известное ограничение данной версии: оператор видит то, что описано выше. Сквозное шифрование данных доступа, при котором их не прочитает даже оператор, - работа впереди.")
+            Case "flat-trust"
+                Return Localization.T("Каждое устройство учётной записи полностью доверяет каждому другому устройству этой записи: любое устройство может удалить другое, запросить коды сопряжения и прочитать данные доступа всех общих папок записи. Удалить себя может любое устройство.")
+            Case Else
+                Return ""
+        End Select
+    End Function
+
+    ''' <summary>The whole statement as paragraphs, in the order it is shown.</summary>
+    Friend Shared Function Paragraphs() As List(Of String)
+        Return Ids.Select(Function(id) Text(id)).ToList()
+    End Function
+End Class

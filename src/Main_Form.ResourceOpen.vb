@@ -214,6 +214,19 @@ Partial Public Class Main_Form
             ' Says how to stop it: a dial to a server can wait a long time, and Esc reads as "close the program" (124 UX-211).
             lbl_Status.Text = Localization.TF("Подключение к «{0}».. Esc - отмена", descriptor.DisplayName)
 
+            ' Ticket 171 rule 4: a resource attached from "My devices" follows its producer - the agent is asked for the current access first, and
+            ' when it differs the kept one is replaced and the user told once. Without the agent the kept access simply stays and the resource opens
+            ' by its direct addresses as before (rule 8). Nothing happens for a resource of any other origin, nor while the features are not offered.
+            If ResourceOrigin.IsExchange(descriptor) AndAlso ExchangeFeatures.IsEnabled() Then
+                Dim followed As ExchangeFollowOutcome = Await ExchangeSync.CreateDefault().FollowOneAsync(descriptor, descriptor.ExchangeDeviceName, cancel.Token)
+                If cancel.IsCancellationRequested OrElse IsDisposed Then Return
+                descriptor = followed.Descriptor
+                If followed.Changed Then
+                    ClearExchangeNotice(descriptor)
+                    Notify(ExchangeResourceText.NoticeLine(descriptor.DisplayName), NotifyLevel.Info)
+                End If
+            End If
+
             Dim password As String = StoredPassword(descriptor)
             Dim typed As Boolean
             Dim remember As Boolean
@@ -234,11 +247,16 @@ Partial Public Class Main_Form
                 If cancel.IsCancellationRequested OrElse IsDisposed Then Return
 
                 Dim chosen As ResourceDescriptor = descriptor
+                ' Ticket 171 rule 6: the tunnel is one more candidate of the race, last; Nothing for a resource of any other origin or while the
+                ' exchange client features are not offered
+                Dim tunnel As IExchangeTunnelSource = ExchangeTunnelSources.For(chosen, resource_Secrets,
+                    Function(fingerprint As String, ct As CancellationToken) AskExchangeTrust(chosen, fingerprint),
+                    Function(fingerprint As String) PersistTunnelPin(chosen, fingerprint))
                 outcome = Await ResourceConnect.ConnectAsync(chosen, password,
                     Function(fingerprint As String, ct As CancellationToken) AskTrust(chosen, fingerprint),
                     Function(fingerprint As String) ResourcePins.Persist(chosen, fingerprint, AddressOf ResourceRegistry.HiveRead, AddressOf ResourceRegistry.HiveWrite),
                     Function() If(chosen.IncludeSubfolders.HasValue, chosen.IncludeSubfolders.Value, modern_Preferences IsNot Nothing AndAlso modern_Preferences.IncludeSubfolders),
-                    cancel.Token)
+                    cancel.Token, Nothing, tunnel)
                 If cancel.IsCancellationRequested OrElse IsDisposed Then
                     DirectCast(outcome.Provider, IDisposable)?.Dispose()
                     Return
@@ -363,6 +381,48 @@ Partial Public Class Main_Form
                 Localization.T("Новый сервер"), MessageBoxButtons.YesNo, MessageBoxIcon.Question, MessageBoxDefaultButton.Button2))))
         Return CType(answer, DialogResult) = DialogResult.Yes
     End Function
+
+    ''' <summary>The trust prompt for the EXCHANGE server of an outsider link (ticket 171 C4, DEVICE-EXCHANGE item D): asked only for a certificate the
+    ''' platform does not trust, with its fingerprint; Cancel is the default and anything but an explicit Yes is a No. Runs on the pool thread that is
+    ''' dialling and marshals to the UI thread.</summary>
+    Private Function AskExchangeTrust(descriptor As ResourceDescriptor, fingerprint As String) As Boolean
+        If IsDisposed OrElse Not IsHandleCreated Then Return False
+        Dim answer As Object = Me.Invoke(New Func(Of Object)(
+            Function() CObj(ViewerBox.Show(Me, ExchangeResourceText.CertificateQuestion(If(descriptor.TunnelHost, ""), fingerprint),
+                                           ExchangeResourceText.CertificateTitle(), MessageBoxButtons.YesNo, MessageBoxIcon.Question, MessageBoxDefaultButton.Button2))))
+        Return CType(answer, DialogResult) = DialogResult.Yes
+    End Function
+
+    ''' <summary>Stores the exchange certificate the user accepted for this link, BEFORE the tunnel connects. False means it was not stored, and the
+    ''' tunnel does not open - there is no "accept any certificate".</summary>
+    Private Shared Function PersistTunnelPin(descriptor As ResourceDescriptor, fingerprint As String) As Boolean
+        If descriptor Is Nothing OrElse Not ExchangeTrust.IsFingerprint(fingerprint) Then Return False
+        Try
+            Dim all As List(Of ResourceDescriptor) = ResourceRegistry.Load()
+            Dim saved As ResourceDescriptor = all.FirstOrDefault(Function(r) String.Equals(r.Id, descriptor.Id, StringComparison.OrdinalIgnoreCase))
+            If saved Is Nothing Then Return False
+            saved.TunnelPin = fingerprint
+            ResourceRegistry.Save(all)
+            descriptor.TunnelPin = fingerprint
+            Return True
+        Catch ex As Exception When TypeOf ex Is IOException OrElse TypeOf ex Is InvalidOperationException
+            Return False
+        End Try
+    End Function
+
+    ''' <summary>The notice that an attached resource's access was updated has been said (in the status line), so the flag goes: told once.</summary>
+    Private Shared Sub ClearExchangeNotice(descriptor As ResourceDescriptor)
+        Try
+            Dim all As List(Of ResourceDescriptor) = ResourceRegistry.Load()
+            Dim saved As ResourceDescriptor = all.FirstOrDefault(Function(r) String.Equals(r.Id, descriptor.Id, StringComparison.OrdinalIgnoreCase))
+            If saved Is Nothing OrElse saved.ExchangeNotice Is Nothing Then Return
+            saved.ExchangeNotice = Nothing
+            ResourceRegistry.Save(all)
+            descriptor.ExchangeNotice = Nothing
+        Catch ex As Exception When TypeOf ex Is IOException OrElse TypeOf ex Is InvalidOperationException
+            AppFileLogger.WriteLine("Resource: a notice could not be cleared - " & ex.GetType().Name)
+        End Try
+    End Sub
 
     ''' <summary>Says why it did not open. A host key that is not the pinned one gets a dialog with BOTH
     ''' fingerprints - it is the one failure that may be an attack and must not scroll past in a status line;

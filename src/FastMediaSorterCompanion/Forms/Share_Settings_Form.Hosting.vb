@@ -1,4 +1,4 @@
-Option Strict On
+﻿Option Strict On
 
 Imports System.Collections.Generic
 Imports System.Drawing
@@ -121,16 +121,10 @@ Partial Public NotInheritable Class Share_Settings_Form
         AddHandler lnkTrust.LinkClicked, Sub() NetworkInfo.OpenInBrowser(ShareText.TrustPageUrl())
         sec.AddBodyRow(lnkTrust)
 
-        ' A service that did not start or a repair that failed is seen here: the way to send its log
-        ' (ticket 182 L-5) is one click away, through the same flow as the tray menu and the footer.
-        Dim lnkSendLog As New LinkLabel With {.AutoSize = True, .MaximumSize = New Size(HostingContentWidth, 0),
-            .Margin = New Padding(0, 0, 0, 10), .Text = Localization.T("Отправить журнал автору..")}
-        AddHandler lnkSendLog.LinkClicked, Async Sub() Await SendLogsFlow.RunAsync(Me)
-        sec.AddBodyRow(lnkSendLog)
 
         _lblResult = New Label With {.AutoSize = True, .Margin = New Padding(0, 8, 0, 0),
             .MaximumSize = New Size(HostingContentWidth, 0),
-            .ForeColor = Color.DimGray, .Text = ""}
+            .ForeColor = ThemeService.Palette.TextMuted, .Text = ""}
         sec.AddBodyRow(_lblResult)
     End Sub
 
@@ -173,7 +167,7 @@ Partial Public NotInheritable Class Share_Settings_Form
         If IsDisposed OrElse Disposing Then Return
         ApplyHostingState(live)
         UpdateSummaries()
-        FitToContent()
+        _pageHost.PerformLayout()
     End Function
 
     ''' <summary>
@@ -192,74 +186,77 @@ Partial Public NotInheritable Class Share_Settings_Form
     ''' the moment the tab is opened.
     ''' </summary>
     Private Sub ApplyHostingState(live As WorkerResponse)
-        Dim mode As ServerFeatures.ServerHostMode = ServerFeatures.HostMode()
-        Dim state As ServiceControl.ServiceState = ServiceControl.QueryState()
-        Dim installed As Boolean = state <> ServiceControl.ServiceState.NotInstalled
-        Dim serviceServing As Boolean = state = ServiceControl.ServiceState.Running OrElse
-                                        state = ServiceControl.ServiceState.Starting
+        Using layout = HoldSettingsPage("hosting")
+            _hostingSnapshot = live
+            Dim mode As ServerFeatures.ServerHostMode = ServerFeatures.HostMode()
+            Dim state As ServiceControl.ServiceState = ServiceControl.QueryState()
+            Dim installed As Boolean = state <> ServiceControl.ServiceState.NotInstalled
+            Dim serviceServing As Boolean = state = ServiceControl.ServiceState.Running OrElse
+                                            state = ServiceControl.ServiceState.Starting
 
-        _lblHost.Text = HostingText.HostModeLine(mode)
-        _lblIntro.Text = HostingText.Intro(mode)
+            _lblHost.Text = HostingText.HostModeLine(mode)
+            _lblIntro.Text = HostingText.Intro(mode)
 
-        Dim answering As Boolean = If(live IsNot Nothing, True, _status IsNot Nothing)
-        Dim st As WorkerStatus = If(live IsNot Nothing, live.Status, _status)
-        _lblLive.Text = HostingText.LiveHostLine(serviceServing, answering)
-        _lblLive.ForeColor = If(answering, Color.ForestGreen, Color.Firebrick)
+            Dim answering As Boolean = If(live IsNot Nothing, True, _status IsNot Nothing)
+            Dim st As WorkerStatus = If(live IsNot Nothing, live.Status, _status)
+            _lblLive.Text = HostingText.LiveHostLine(serviceServing, answering)
+            _lblLive.ForeColor = If(answering, ThemeService.Palette.Success, ThemeService.Palette.Danger)
 
-        _lblService.Text = HostingText.ServiceStateLine(state)
-        _lblService.ForeColor = If(state = ServiceControl.ServiceState.Running, Color.ForestGreen, SystemColors.ControlText)
+            _lblService.Text = HostingText.ServiceStateLine(state)
+            _lblService.ForeColor = If(state = ServiceControl.ServiceState.Running, ThemeService.Palette.Success, ThemeService.Palette.TextPrimary)
 
-        Dim running As Boolean = st IsNot Nothing AndAlso st.Running
-        Dim roots As Integer = If(st IsNot Nothing AndAlso st.Roots IsNot Nothing, st.Roots.Count, 0)
-        _lblServing.Text = HostingText.ServingLine(running, roots)
-        _lblStore.Text = HostingText.StateStoreLine(ServiceControl.ActiveDataDir())
+            Dim running As Boolean = st IsNot Nothing AndAlso st.Running
+            Dim roots As Integer = If(st IsNot Nothing AndAlso st.Roots IsNot Nothing, st.Roots.Count, 0)
+            _lblServing.Text = HostingText.ServingLine(running, roots)
+            _lblStore.Text = HostingText.StateStoreLine(ServiceControl.ActiveDataDir())
 
-        ' Two ways to reach always-on hosting, and only one of them is offered at a
-        ' time. An ordinary installation now carries the elevated helper and can take
-        ' the role on itself (one UAC prompt, no second download); a Store package
-        ' cannot register a service at all, so there the honest offer is still the page.
-        Dim canSwitch As Boolean = ServiceControl.CanSwitchToService()
-        _btnSwitchToService.Visible = canSwitch
-        _btnInstallServer.Visible = (Not installed) AndAlso (Not canSwitch)
-        If _noteDownload IsNot Nothing Then
-            _noteDownload.Visible = _btnInstallServer.Visible
-            _noteDownload.Text = If(AutostartManager.IsPackaged(),
-                                    HostingText.SwitchUnavailablePackagedHint(),
-                                    HostingText.DownloadNote())
-        End If
-        _btnReturnToUser.Visible = installed
+            ' Two ways to reach always-on hosting, and only one of them is offered at a
+            ' time. An ordinary installation now carries the elevated helper and can take
+            ' the role on itself (one UAC prompt, no second download); a Store package
+            ' cannot register a service at all, so there the honest offer is still the page.
+            Dim canSwitch As Boolean = ServiceControl.CanSwitchToService()
+            _btnSwitchToService.Visible = canSwitch
+            _btnInstallServer.Visible = (Not installed) AndAlso (Not canSwitch)
+            If _noteDownload IsNot Nothing Then
+                _noteDownload.Visible = _btnInstallServer.Visible
+                _noteDownload.Text = If(AutostartManager.IsPackaged(),
+                                        HostingText.SwitchUnavailablePackagedHint(),
+                                        HostingText.DownloadNote())
+            End If
+            _btnReturnToUser.Visible = installed
 
-        ' Lifecycle controls need the elevated helper, which only the Server installer
-        ' lays down. They key off "installed", not off "running": a stopped or broken
-        ' service is precisely when Start / Restart / Repair are needed, and hiding
-        ' them there would leave it unfixable from here.
-        Dim canManage As Boolean = installed AndAlso ServiceControl.CanManage()
-        _btnStart.Visible = canManage AndAlso Not serviceServing
-        _btnStop.Visible = canManage AndAlso serviceServing
-        _btnRestart.Visible = canManage
-        _btnRepair.Visible = canManage
-        _btnRemove.Visible = canManage
-        ' Granting the roots is only meaningful for the service account; in User mode
-        ' the worker already runs as the person who picked the folders.
-        _btnGrantRoots.Visible = canManage AndAlso roots > 0
-        _grantRoots = New List(Of String)()
-        _grantReadOnlyRoots = New List(Of String)()
-        If st IsNot Nothing AndAlso st.Roots IsNot Nothing Then
-            For Each r As ShareFolder In st.Roots
-                If Not String.IsNullOrEmpty(r.hostPath) Then
-                    _grantRoots.Add(r.hostPath)
-                    ' A writable root needs write access for the account that actually
-                    ' serves it, so the two lists must come from the SAME status the
-                    ' folder list is showing - not from a default.
-                    If r.readOnly Then _grantReadOnlyRoots.Add(r.hostPath)
-                End If
-            Next
-        End If
+            ' Lifecycle controls need the elevated helper, which only the Server installer
+            ' lays down. They key off "installed", not off "running": a stopped or broken
+            ' service is precisely when Start / Restart / Repair are needed, and hiding
+            ' them there would leave it unfixable from here.
+            Dim canManage As Boolean = installed AndAlso ServiceControl.CanManage()
+            _btnStart.Visible = canManage AndAlso Not serviceServing
+            _btnStop.Visible = canManage AndAlso serviceServing
+            _btnRestart.Visible = canManage
+            _btnRepair.Visible = canManage
+            _btnRemove.Visible = canManage
+            ' Granting the roots is only meaningful for the service account; in User mode
+            ' the worker already runs as the person who picked the folders.
+            _btnGrantRoots.Visible = canManage AndAlso roots > 0
+            _grantRoots = New List(Of String)()
+            _grantReadOnlyRoots = New List(Of String)()
+            If st IsNot Nothing AndAlso st.Roots IsNot Nothing Then
+                For Each r As ShareFolder In st.Roots
+                    If Not String.IsNullOrEmpty(r.hostPath) Then
+                        _grantRoots.Add(r.hostPath)
+                        ' A writable root needs write access for the account that actually
+                        ' serves it, so the two lists must come from the SAME status the
+                        ' folder list is showing - not from a default.
+                        If r.readOnly Then _grantReadOnlyRoots.Add(r.hostPath)
+                    End If
+                Next
+            End If
 
-        If installed AndAlso Not ServiceControl.CanManage() Then
-            _lblResult.ForeColor = Color.DimGray
-            _lblResult.Text = HostingText.ManageUnavailable()
-        End If
+            If installed AndAlso Not ServiceControl.CanManage() Then
+                _lblResult.ForeColor = ThemeService.Palette.TextMuted
+                _lblResult.Text = HostingText.ManageUnavailable()
+            End If
+        End Using
     End Sub
 
     ''' <summary>
@@ -331,7 +328,7 @@ Partial Public NotInheritable Class Share_Settings_Form
                                 Optional roots As List(Of String) = Nothing,
                                 Optional readOnlyRoots As List(Of String) = Nothing)
         SetHostingActionsEnabled(False)
-        _lblResult.ForeColor = Color.DimGray
+        _lblResult.ForeColor = ThemeService.Palette.TextMuted
         _lblResult.Text = HostingText.ManageWorking()
         Me.Refresh()
 
@@ -347,13 +344,13 @@ Partial Public NotInheritable Class Share_Settings_Form
                 _changed = True
                 ServerFeatures.RefreshHostMode()
             End If
-            _lblResult.ForeColor = If(res = ServiceControl.ManageResult.Succeeded, Color.ForestGreen, Color.Firebrick)
+            _lblResult.ForeColor = If(res = ServiceControl.ManageResult.Succeeded, ThemeService.Palette.Success, ThemeService.Palette.Danger)
             _lblResult.Text = HostingText.ManageResultLine(res)
             Await RefreshHostingStateAsync()
         Catch ex As Exception
             AppFileLogger.LogException("Hosting: manage action", ex)
             If Not (IsDisposed OrElse Disposing) Then
-                _lblResult.ForeColor = Color.Firebrick
+                _lblResult.ForeColor = ThemeService.Palette.Danger
                 _lblResult.Text = HostingText.ManageResultLine(ServiceControl.ManageResult.Failed)
             End If
         Finally

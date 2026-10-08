@@ -1,4 +1,4 @@
-﻿Option Strict On
+Option Strict On
 
 Imports System.Collections.ObjectModel
 Imports System.ComponentModel
@@ -193,7 +193,12 @@ Partial Public Class Main_Form
 
         ' Through the one factory, so this first instance gets the same close hook as every
         ' later one - without it "restart now" after a scale change did nothing (053 F-09).
+        ' The modern build creates the window on first use instead (its handle made here would sit on the
+        ' launch monitor, and moving it to the owner's monitor later re-scales every control - see
+        ' Table_Form.ModernLayout.vb). The x86 build keeps the early creation.
+#If NETFRAMEWORK Then
         EnsureSettingsWindow()
+#End If
 
         ResizeDebounceTimer.Interval = 200
         ResizeDebounceTimer.Enabled = False
@@ -408,6 +413,12 @@ Partial Public Class Main_Form
         End If
 
 #If Not NETFRAMEWORK Then
+        ' A file forwarded by another process can arrive before the deferred first-launch wizard.
+        ' Keep that open request ahead of setup just like an argument on this process's command line.
+        welcome_File_Argument = True
+        If WelcomeRules.DeferToNextLaunch(WelcomeDoneStored(), welcome_Fresh_Profile, welcome_File_Argument) Then
+            SaveSetting(App_name, Second_App_Name, WelcomeRules.PendingValue, "1")
+        End If
         ' Live broadcast descriptor, .fmsbcast file, barcode text, or intent link (spec 023 §4)
         If TryHandleLiveBroadcastArgument(argument_For_Path) Then Return
 
@@ -756,6 +767,12 @@ Partial Public Class Main_Form
         Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " n0000: Form started")
         Me.AllowDrop = True
 
+#If Not NETFRAMEWORK Then
+        ' Spec 184: is this a fresh profile? Read before this launch writes anything, because the association
+        ' marker below is written on every start and would make every profile look used.
+        CaptureWelcomeStartState()
+#End If
+
         ' An exception that escapes a UI handler is logged by AppFileLogger and would
         ' otherwise leave no visible trace at all (053 F-15).
         AppFileLogger.UiFaultReporter = AddressOf ReportUiFault
@@ -888,7 +905,7 @@ Partial Public Class Main_Form
         UpdateLanguageButtonCaption()
         LngCh()
         lbl_Info.Text = Application.ProductVersion & " sza@ukr.net"
-        Table_Form.LngCh()
+        If Table_Form IsNot Nothing Then Table_Form.LngCh()
 
         lbl_Help_Info.Visible = GetSetting(App_name, Second_App_Name, "FirstRun", "1") = "1"
 
@@ -1002,11 +1019,16 @@ Partial Public Class Main_Form
         End If
 
         If is_Table_Form_Open Then
+            EnsureSettingsWindow()
             ' chkbox_Top_Most was restored above, so the viewer may already be pinned -
             ' the restored settings window has to join that band, not hide behind it.
             PinToViewerBand(Table_Form)
             ' TopMost puts it into the right band; the explicit owner also keeps it
             ' above the viewer within that band.
+#If Not NETFRAMEWORK Then
+            ' Placed before the window gets its handle (see Main_Form.KeyboardInput.vb ShowSettingsWindow).
+            Table_Form.PrepareShowBeside(Me)
+#End If
             Table_Form.Show(Me)
         End If
         is_TextBox_Editing = False
@@ -1115,6 +1137,11 @@ Partial Public Class Main_Form
         ' it. Nothing waits for the answers - they only fill the cache, so the first press
         ' of a slot is usually free.
         PrewarmSlotHealth()
+
+        ShowProfileResetOutcome()
+
+        ' Spec 184: the welcome wizard, after the window and its first picture are on screen (never on top of them).
+        BeginInvoke(New Action(AddressOf ShowWelcomeIfDue))
 #End If
     End Sub
 
@@ -1539,7 +1566,7 @@ Partial Public Class Main_Form
             add("DynamicPerspective", If(Is_Dynamic_Perspective, "1", "0"))
             add("AnimatedPerspective", If(Is_Animated_Perspective, "1", "0"))
             add("AnimatedPerspectiveSpeed", HaloSpeedToSetting(Halo_Animation_Speed))
-            add("TableOpened", If(Table_Form.Visible, "1", "0"))
+            add("TableOpened", If(Table_Form IsNot Nothing AndAlso Table_Form.Visible, "1", "0"))
             add("RunsCount", (app_Run_Count + 1).ToString)
             add("mediaViewedCount", (media_View_Count).ToString)
             add("SortDir", (cmbox_Sort.SelectedIndex).ToString)

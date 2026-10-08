@@ -75,6 +75,20 @@ Public Class IconographyContractTests
     End Sub
 
     <Fact>
+    Public Sub The_animation_to_video_button_is_worded_by_the_catalogs_canonical_name()
+        ' ICON-SET rule 3 (specification 183): one name per meaning, in every surface. The key of the
+        ' button's name is the record's Russian name, and its English and Ukrainian translations are
+        ' the record's own words; the other ten languages are this product's until a proposal names them.
+        Dim line As String = VocabularyIds()("action.convert-to-video")
+        Dim names As System.Text.Json.JsonElement = System.Text.Json.JsonDocument.Parse(line).RootElement.GetProperty("name")
+        Dim key As String = IconMap.GetMeaning("btn_ToVideo").LocalizationKey
+        Assert.Equal(names.GetProperty("ru").GetString(), key)
+        Dim translations As String() = Localization.All.Single(Function(kv) kv.Key = key).Value
+        Assert.Equal(names.GetProperty("en").GetString(), translations(0))
+        Assert.Equal(names.GetProperty("uk").GetString(), translations(1))
+    End Sub
+
+    <Fact>
     Public Sub The_brush_tool_is_not_drawn_as_the_edit_pencil()
         ' ICON-SET 0.28 item A: tool.brush is the Material brush, never the pencil that
         ' action.edit and action.rename share; the editor's brush button and the toolbar's edit
@@ -274,7 +288,7 @@ Public Class IconographyContractTests
         Dim root As String = FindRepoRoot()
         Dim ids = VocabularyIds()
         Dim reference As New Regex("assets/glyphs/([A-Za-z0-9.\-]+)\.svg")
-        For Each f As String In Directory.GetFiles(root, "*.html")
+        For Each f As String In Directory.GetFiles(root, "*.html").Concat(Directory.GetFiles(Path.Combine(root, "docs"), "*.html"))
             For Each m As Match In reference.Matches(File.ReadAllText(f))
                 Dim id As String = m.Groups(1).Value
                 Assert.True(ids.ContainsKey(id), Path.GetFileName(f) & " references " & id & ", which is no vocabulary id")
@@ -291,7 +305,7 @@ Public Class IconographyContractTests
         Dim ids = VocabularyIds()
         Dim inline As New Regex("<svg\b[^>]*\bdata-glyph=""([^""]+)""[^>]*>(.*?)</svg>", RegexOptions.Singleline)
         Dim geometry As New Regex("\b(?:d|transform)=""[^""]*""")
-        For Each f As String In Directory.GetFiles(root, "*.html")
+        For Each f As String In Directory.GetFiles(root, "*.html").Concat(Directory.GetFiles(Path.Combine(root, "docs"), "*.html"))
             For Each m As Match In inline.Matches(File.ReadAllText(f))
                 Dim id As String = m.Groups(1).Value
                 Dim where As String = Path.GetFileName(f) & " inline " & id

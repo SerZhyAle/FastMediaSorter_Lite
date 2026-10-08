@@ -1,4 +1,4 @@
-#If Not NETFRAMEWORK Then
+﻿#If Not NETFRAMEWORK Then
 Option Strict On
 
 Imports System.Collections.Generic
@@ -80,7 +80,7 @@ Public Module IconMap
         {"btn_Image_Menu", New IconMeaning("btn_Image_Menu", "nav.more", "Ещё", IconRole.Content)},
         {"btn_Translate", New IconMeaning("btn_Translate", "action.translate", "Перевод", IconRole.Content)},
         {"btn_Edit", New IconMeaning("btn_Edit", "action.edit", "Редактировать", IconRole.Content)},
-        {"btn_ToVideo", New IconMeaning("btn_ToVideo", "action.convert-to-video", "Анимацию - в видео", IconRole.Content)},
+        {"btn_ToVideo", New IconMeaning("btn_ToVideo", "action.convert-to-video", "Преобразовать в видео", IconRole.Content)},
         {"btn_Video_Play", New IconMeaning("btn_Video_Play", "media.play", "Воспроизвести", IconRole.Content)},
         {"btn_Video_Mute", New IconMeaning("btn_Video_Mute", "media.volume", "Громкость", IconRole.Content)},
         {"editor_Tool_Crop", New IconMeaning("editor_Tool_Crop", "action.crop", "Обрезка", IconRole.Content)},
@@ -105,6 +105,15 @@ Public Module IconMap
         {"settingsNavAbout", New IconMeaning("settingsNavAbout", "app.info", "О программе", IconRole.Content)},
         {"settingsNavStorage", New IconMeaning("settingsNavStorage", "content.disk-container", "Диски .fdd..", IconRole.Content)},
         {"settingsSearch", New IconMeaning("settingsSearch", "action.search", "Поиск настроек", IconRole.Content)},
+        {"managerSettingsNav_startup", New IconMeaning("managerSettingsNav_startup", "app.settings", "Настройки менеджера..", IconRole.Content, surface:=SM)},
+        {"managerSettingsNav_network", New IconMeaning("managerSettingsNav_network", "system.wifi", "Сеть", IconRole.Content, surface:=SM)},
+        {"managerSettingsNav_hosting", New IconMeaning("managerSettingsNav_hosting", "system.internet", "Сеть", IconRole.Content, surface:=SM)},
+        {"managerSettingsNav_exchange", New IconMeaning("managerSettingsNav_exchange", "system.internet", "Сеть", IconRole.Content, surface:=SM)},
+        {"managerSettingsNav_exchange-account", New IconMeaning("managerSettingsNav_exchange-account", "device.phone", "Android / SFTP", IconRole.Content, surface:=SM)},
+        {"managerSettingsNav_help", New IconMeaning("managerSettingsNav_help", "app.info", "О программе", IconRole.Content, surface:=SM)},
+        {"managerSettingsSearch", New IconMeaning("managerSettingsSearch", "action.search", "Поиск настроек", IconRole.Content, surface:=SM)},
+        {"managerSettingsExpandAll", New IconMeaning("managerSettingsExpandAll", "nav.expand", "Развернуть", IconRole.Content, surface:=SM)},
+        {"managerSettingsCollapseAll", New IconMeaning("managerSettingsCollapseAll", "nav.collapse", "Свернуть", IconRole.Content, surface:=SM)},
         {"btnShare", New IconMeaning("btnShare", "action.share", "Поделиться", IconRole.Content, surface:=SM)},
         {"btnAdd", New IconMeaning("btnAdd", "action.add", "Добавить папку..", IconRole.Content, surface:=SM)},
         {"btnDisks", New IconMeaning("btnDisks", "content.disk-container", "Диски .fdd..", IconRole.Content, surface:=SM)},

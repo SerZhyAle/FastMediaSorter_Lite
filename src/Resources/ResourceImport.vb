@@ -134,6 +134,13 @@ Friend Module ResourceImport
             descriptor.Endpoints = plan.Endpoints.Select(Function(e) New ResourceEndpoint With {.Kind = e.Kind, .Host = e.Host, .Port = e.Port}).ToList()
             ' Without an explicit yes a changed pin is never taken, and absence never clears one.
             descriptor.PinnedFingerprint = decision.PinToPersist(confirmed:=False)
+            ' Ticket 171 C4: a document that carries an exchange tunnel makes the resource a LINK (no account; the share id opens it). An
+            ' attached resource of the account keeps its own, better tunnel. The share id itself is staged as a DPAPI blob by Apply.
+            If plan.Tunnel IsNot Nothing AndAlso Not ResourceOrigin.IsExchange(descriptor) Then
+                descriptor.Origin = ResourceOrigin.Link
+                descriptor.TunnelHost = plan.Tunnel.Host
+                descriptor.TunnelPort = plan.Tunnel.Port
+            End If
             items.Add(New ImportItem(descriptor, root, matched IsNot Nothing, decision))
         Next
         Return New ImportPreview(plan, items, ImportRefusal.None)
@@ -161,9 +168,34 @@ Friend Module ResourceImport
             Dim descriptor As ResourceDescriptor = item.Descriptor
             descriptor.PinnedFingerprint = item.Pin.PinToPersist(confirmedPinChange)
             Dim plain As String = If(String.IsNullOrEmpty(secret), Nothing, secret)
+
+            ' the link's share id is a second secret of the resource: staged under its own handle BEFORE the registry reference is
+            ' committed, and cleaned up again if the commit does not happen (the order of ResourceCommit, held for both secrets)
+            Dim previousTunnelHandle As String = descriptor.TunnelSecretHandle
+            Dim stagedTunnelHandle As String = ""
+            If preview.Plan.Tunnel IsNot Nothing AndAlso ResourceOrigin.IsLink(descriptor) Then
+                Dim protector As Func(Of String, SecretProtectionResult) = If(protect, Function(s As String) DpapiSecretChecks.ProtectChecked(s))
+                Dim sealed As SecretProtectionResult = protector(preview.Plan.Tunnel.ShareId)
+                If Not sealed.Succeeded Then Return New ImportApplyResult(ImportApplyOutcome.Failed, committed, ResourceCommitOutcome.ProtectionFailed, ids)
+                stagedTunnelHandle = "cred:" & Guid.NewGuid().ToString("N", CultureInfo.InvariantCulture)
+                Try
+                    secrets.PutBlob(stagedTunnelHandle, sealed.Value)
+                Catch ex As Exception
+                    Return New ImportApplyResult(ImportApplyOutcome.Failed, committed, ResourceCommitOutcome.StageFailed, ids)
+                End Try
+                descriptor.TunnelSecretHandle = stagedTunnelHandle
+            End If
+
             Dim result As ResourceCommitResult = ResourceCommit.Commit(descriptor, plain, readValue, writeValue, secrets, protect)
             If Not result.Succeeded Then
+                If stagedTunnelHandle.Length > 0 Then
+                    Try : secrets.DeleteBlob(stagedTunnelHandle) : Catch : End Try
+                End If
                 Return New ImportApplyResult(ImportApplyOutcome.Failed, committed, result.Outcome, ids)
+            End If
+            If stagedTunnelHandle.Length > 0 AndAlso Not String.IsNullOrEmpty(previousTunnelHandle) AndAlso
+               Not String.Equals(previousTunnelHandle, stagedTunnelHandle, StringComparison.Ordinal) Then
+                Try : secrets.DeleteBlob(previousTunnelHandle) : Catch : End Try   ' the superseded share id goes only after the registry holds the new reference
             End If
             committed += 1
             ids.Add(descriptor.Id)

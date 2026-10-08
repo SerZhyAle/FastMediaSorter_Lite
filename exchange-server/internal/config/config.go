@@ -61,6 +61,12 @@ type Limits struct {
 	FailedHello          Rate   `json:"failedHelloRate"`    // failed hello, per account
 	PairingRequest       Rate   `json:"pairingRequestRate"` // pairing-request, per account
 	BroadcastStart       Rate   `json:"broadcastStartRate"` // broadcast-start, per device
+	Cast                 Rate   `json:"castRate"`           // cast, per device (ticket 166)
+	// The relay (ticket 165): what a hostile or mislabelled stream can cost a deployment.
+	RelayUploadMbit        int `json:"relayUploadMbit"`            // sustained upload ceiling, Mbit/s over 5 s
+	RelayListenersPerBcast int `json:"relayListenersPerBroadcast"` // relay listeners and tunnels of one broadcast
+	RelayListenersTotal    int `json:"relayListenersTotal"`        // relay listeners of the whole deployment
+	CastPendingPerAccount  int `json:"castPendingPerAccount"`      // offers waiting for an answer, per account
 }
 
 // Keepalive is the presence lifetime (DEVICE-EXCHANGE 7.3).
@@ -140,6 +146,12 @@ func Default() Config {
 			FailedHello:          Rate{PerMinute: 10, Burst: 5},
 			PairingRequest:       Rate{PerMinute: 6, Burst: 6},
 			BroadcastStart:       Rate{PerMinute: 6, Burst: 6},
+			Cast:                 Rate{PerMinute: 10, Burst: 10},
+
+			RelayUploadMbit:        16,
+			RelayListenersPerBcast: 500,
+			RelayListenersTotal:    1000,
+			CastPendingPerAccount:  16,
 		},
 		Keepalive: Keepalive{
 			Comment:          "A device proposes an interval; the server clamps it to min..max and takes it offline after windowMultiplier missed intervals.",
@@ -222,7 +234,9 @@ func (c Config) Validate() error {
 	}{{"maxConnections", l.MaxConnections}, {"tunnelsPerResource", l.TunnelsPerResource}, {"preAuthSlots", l.PreAuthSlots},
 		{"verifierConcurrency", l.VerifierConcurrency}, {"devicesPerAccount", l.DevicesPerAccount},
 		{"resourcesPerAccount", l.ResourcesPerAccount}, {"broadcastsPerAccount", l.BroadcastsPerAccount},
-		{"broadcastsPerDevice", l.BroadcastsPerDevice}, {"codesPerAccount", l.CodesPerAccount}}
+		{"broadcastsPerDevice", l.BroadcastsPerDevice}, {"codesPerAccount", l.CodesPerAccount},
+		{"relayUploadMbit", l.RelayUploadMbit}, {"relayListenersPerBroadcast", l.RelayListenersPerBcast},
+		{"relayListenersTotal", l.RelayListenersTotal}, {"castPendingPerAccount", l.CastPendingPerAccount}}
 	for _, c := range caps {
 		if c.n < 1 {
 			return fmt.Errorf("limits.%s: every cap must be at least 1", c.name)
@@ -233,7 +247,7 @@ func (c Config) Validate() error {
 		r    Rate
 	}{{"connectionRate", l.Connection}, {"unknownIdRate", l.UnknownID}, {"failedAuthRate", l.FailedAuth},
 		{"attachMissRate", l.AttachMiss}, {"failedEnrollRate", l.FailedEnroll}, {"failedHelloRate", l.FailedHello},
-		{"pairingRequestRate", l.PairingRequest}, {"broadcastStartRate", l.BroadcastStart}}
+		{"pairingRequestRate", l.PairingRequest}, {"broadcastStartRate", l.BroadcastStart}, {"castRate", l.Cast}}
 	for _, c := range rates {
 		if c.r.PerMinute <= 0 || c.r.Burst < 1 {
 			return fmt.Errorf("limits.%s: perMinute must be positive and burst at least 1", c.name)

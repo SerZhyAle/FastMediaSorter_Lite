@@ -1,7 +1,7 @@
 ICONOGRAPHY VENDORED ARTIFACT
 Do not hand-edit SVG files in this folder. Regenerate with tools/Sync-IconGlyphs.ps1.
 Catalog versions: ICON-SET 0.28; ICON-RENDER 0.18; ICON-EXTERNAL 0.12
-Vocabulary SHA-256: a1b943b7bfad0b93180a1a6fc663404169e6ee77e0636ccd2757cc1e15a85c30
+Vocabulary SHA-256: 7da057c84047d5b8e72a06fcfc6a41546cf7a0a7a7e5d6d8defe319470d3b6a5
 
 action.add.svg  98cece8c14e972a3a5b6b440d667a1caff32da7f75c0bee2a896a1d8da5ac011
 action.choose-file.svg  88a2296da6880558fae00528dc048dd15809ffcf4d60f506a6eaffbae4542647

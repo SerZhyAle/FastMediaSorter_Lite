@@ -56,11 +56,29 @@ Friend Module PlaybackRules
         Return CInt(timeoutMs)
     End Function
 
-    ''' <summary>The end action to keep once the user turns repeat OFF from the menu: a
-    ''' "repeat" end action would otherwise switch it straight back on for the next file.
-    ''' "stay" is the value of both lists that means "do nothing at the end".</summary>
-    Friend Function EndActionAfterRepeatOff(endAction As String) As String
-        Return If(String.Equals(endAction, "repeat", StringComparison.Ordinal), "stay", endAction)
+    ''' <summary>What a finished file does next, as the video menu and the Settings window name it: play and
+    ''' stop (<c>stay</c>), the next file (<c>advance</c>), this file again (<c>repeat</c>). The stored values
+    ''' differ by kind - a video calls the advance <c>nextFile</c>, a track calls it <c>next</c> - so the menu
+    ''' asks through <see cref="EndModeOf"/> and <see cref="StoredEndAction"/> and never spells them itself.</summary>
+    Friend Const End_Mode_Stay As String = "stay"
+    Friend Const End_Mode_Advance As String = "advance"
+    Friend Const End_Mode_Repeat As String = "repeat"
+
+    ''' <summary>The mode the menu ticks for what is stored. A repeat is a repeat whatever the loop flag of the
+    ''' Settings checkbox says; anything that is neither an advance nor a repeat is "play and stop".</summary>
+    Friend Function EndModeOf(endAction As String, isAudio As Boolean, loopFlagOn As Boolean) As String
+        If loopFlagOn OrElse String.Equals(endAction, "repeat", StringComparison.Ordinal) Then Return End_Mode_Repeat
+        If String.Equals(endAction, If(isAudio, "next", "nextFile"), StringComparison.Ordinal) Then Return End_Mode_Advance
+        Return End_Mode_Stay
+    End Function
+
+    ''' <summary>The value a chosen mode stores for the kind on screen - the one the Settings choices carry.</summary>
+    Friend Function StoredEndAction(mode As String, isAudio As Boolean) As String
+        Select Case mode
+            Case End_Mode_Advance : Return If(isAudio, "next", "nextFile")
+            Case End_Mode_Repeat : Return "repeat"
+            Case Else : Return "stay"
+        End Select
     End Function
 
     ''' <summary>

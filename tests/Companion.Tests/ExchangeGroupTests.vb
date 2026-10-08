@@ -1,4 +1,4 @@
-Option Strict On
+﻿Option Strict On
 
 Imports System.Collections.Generic
 Imports System.Drawing
@@ -38,34 +38,55 @@ Public Class ExchangeGroupTests
         Return d
     End Function
 
-    Private Shared Function Report(passwordSet As Boolean, valid As Boolean, Optional listen As String = ":22022", Optional cert As Boolean = False) As ExchangeProcess.InspectReport
-        Return New ExchangeProcess.InspectReport With {.Answered = True, .PasswordSet = passwordSet, .PasswordHashValid = valid,
-            .Listen = listen, .CertPresent = cert, .Fingerprint = If(cert, "SHA256:abc", ""), .ConfigPresent = passwordSet}
+    ''' <summary>An inspect answer of the accounts model (162): <paramref name="accounts"/> accounts, a listen address, optionally a certificate.</summary>
+    Private Shared Function Report(accounts As Integer, Optional listen As String = ":22022", Optional cert As Boolean = False) As ExchangeProcess.InspectReport
+        Return New ExchangeProcess.InspectReport With {.Answered = True, .Accounts = accounts, .Devices = accounts * 2,
+            .Listen = listen, .CertPresent = cert, .Fingerprint = If(cert, "SHA256:abc", ""), .ConfigPresent = accounts > 0}
     End Function
 
     ' --- the model ----------------------------------------------------------------------------------
 
     <Fact>
-    Public Sub No_password_is_not_configured_and_offers_no_start()
-        Dim m As ExchangeGroupModel = ExchangeGroupModel.Build(New ExchangeSnapshot With {.Report = Report(False, False)})
+    Public Sub No_account_is_not_configured_offers_no_start_and_offers_the_wizard()
+        Dim m As ExchangeGroupModel = ExchangeGroupModel.Build(New ExchangeSnapshot With {.Report = Report(0)})
         Assert.Equal(ExchangeRunKind.NotConfigured, m.Kind)
         Assert.False(m.ShowStart)
         Assert.False(m.ShowStop)
         Assert.False(m.ShowReachabilityNote)
-        Assert.False(m.PasswordSet)
+        Assert.Equal(0, m.Accounts)
+        ' the one-person case: one button, because the manual path is a dozen steps (168 Q168-1)
+        Assert.True(m.ShowWizard)
+        Assert.True(m.ShowAccounts)
+        Assert.True(m.ShowConfigRows)
     End Sub
 
     <Fact>
-    Public Sub A_broken_hash_is_flagged_and_still_not_startable()
-        Dim m As ExchangeGroupModel = ExchangeGroupModel.Build(New ExchangeSnapshot With {.Report = Report(True, False)})
-        Assert.True(m.PasswordBroken)
-        Assert.Equal(ExchangeRunKind.NotConfigured, m.Kind)
-        Assert.False(m.ShowStart)
+    Public Sub The_wizard_is_offered_only_while_nothing_exists_nothing_runs_and_no_service_owns_the_server()
+        Assert.False(ExchangeGroupModel.Build(New ExchangeSnapshot With {.Report = Report(1)}).ShowWizard, "an account exists")
+        Assert.False(ExchangeGroupModel.Build(New ExchangeSnapshot With {.Report = Report(0), .ConsolePid = 7}).ShowWizard, "a server runs")
+        Assert.False(ExchangeGroupModel.Build(New ExchangeSnapshot With {.Report = Report(0), .ServiceExists = True}).ShowWizard, "a service owns the server")
+        Assert.False(ExchangeGroupModel.Build(New ExchangeSnapshot()).ShowWizard, "the binary was not asked")
+    End Sub
+
+    <Fact>
+    Public Sub The_configuration_rows_exist_only_when_the_binary_answered_and_the_certificate_rows_never_for_a_service()
+        Dim unread As ExchangeGroupModel = ExchangeGroupModel.Build(New ExchangeSnapshot())
+        Assert.False(unread.ShowConfigRows)
+        Assert.False(unread.ShowAccounts)
+        Assert.False(unread.ShowCertificateActions)
+        Dim console As ExchangeGroupModel = ExchangeGroupModel.Build(New ExchangeSnapshot With {.Report = Report(1, ":22022", True)})
+        Assert.True(console.ShowCertificateActions)
+        Assert.False(console.ShowCertificateServiceNote)
+        ' a registered service keeps its own store, which this user cannot write - no new elevation is added for it (168 rule 3)
+        Dim service As ExchangeGroupModel = ExchangeGroupModel.Build(New ExchangeSnapshot With {.Report = Report(1, ":22022", True), .ServiceExists = True})
+        Assert.False(service.ShowCertificateActions)
+        Assert.True(service.ShowCertificateServiceNote)
+        Assert.True(service.ShowConfigRows)
     End Sub
 
     <Fact>
     Public Sub A_configured_stopped_server_offers_start_and_the_port()
-        Dim m As ExchangeGroupModel = ExchangeGroupModel.Build(New ExchangeSnapshot With {.Report = Report(True, True, "127.0.0.1:2222")})
+        Dim m As ExchangeGroupModel = ExchangeGroupModel.Build(New ExchangeSnapshot With {.Report = Report(1, "127.0.0.1:2222")})
         Assert.Equal(ExchangeRunKind.Stopped, m.Kind)
         Assert.True(m.ShowStart)
         Assert.False(m.ShowStop)
@@ -75,7 +96,7 @@ Public Class ExchangeGroupTests
 
     <Fact>
     Public Sub A_running_console_server_offers_stop_says_reachability_is_not_verified_and_shows_the_fingerprint()
-        Dim m As ExchangeGroupModel = ExchangeGroupModel.Build(New ExchangeSnapshot With {.Report = Report(True, True, ":22022", True), .ConsolePid = 4242})
+        Dim m As ExchangeGroupModel = ExchangeGroupModel.Build(New ExchangeSnapshot With {.Report = Report(1, ":22022", True), .ConsolePid = 4242})
         Assert.Equal(ExchangeRunKind.RunningConsole, m.Kind)
         Assert.True(m.ShowStop)
         Assert.False(m.ShowStart)
@@ -89,7 +110,7 @@ Public Class ExchangeGroupTests
         For Each state As ServiceControl.ServiceState In {ServiceControl.ServiceState.Stopped, ServiceControl.ServiceState.Running,
                                                           ServiceControl.ServiceState.Starting, ServiceControl.ServiceState.Stopping}
             Dim m As ExchangeGroupModel = ExchangeGroupModel.Build(New ExchangeSnapshot With {
-                .Report = Report(True, True), .ServiceExists = True, .ServiceState = state, .CanRemoveService = True})
+                .Report = Report(1), .ServiceExists = True, .ServiceState = state, .CanRemoveService = True})
             Assert.False(m.ShowStart, "console Start must be hidden while the service exists (" & state.ToString() & ")")
             Assert.True(m.ShowServiceWinsNote)
             Assert.False(m.ShowKeepRunning)
@@ -102,28 +123,28 @@ Public Class ExchangeGroupTests
 
     <Fact>
     Public Sub Register_is_offered_only_when_the_snapshot_allows_it_and_no_service_exists()
-        Dim without As ExchangeGroupModel = ExchangeGroupModel.Build(New ExchangeSnapshot With {.Report = Report(True, True)})
+        Dim without As ExchangeGroupModel = ExchangeGroupModel.Build(New ExchangeSnapshot With {.Report = Report(1)})
         Assert.False(without.ShowRegisterService)
         Assert.False(without.ShowServiceRows)
-        Dim withHelper As ExchangeGroupModel = ExchangeGroupModel.Build(New ExchangeSnapshot With {.Report = Report(True, True), .CanRegisterService = True})
+        Dim withHelper As ExchangeGroupModel = ExchangeGroupModel.Build(New ExchangeSnapshot With {.Report = Report(1), .CanRegisterService = True})
         Assert.True(withHelper.ShowRegisterService)
         Assert.True(withHelper.ShowServiceRows)
     End Sub
 
     <Fact>
     Public Sub The_firewall_buttons_follow_the_real_rule_state()
-        Dim none As ExchangeGroupModel = ExchangeGroupModel.Build(New ExchangeSnapshot With {.Report = Report(True, True), .CanChangeFirewall = True, .Firewall = ExchangeFirewall.RuleState.None})
+        Dim none As ExchangeGroupModel = ExchangeGroupModel.Build(New ExchangeSnapshot With {.Report = Report(1), .CanChangeFirewall = True, .Firewall = ExchangeFirewall.RuleState.None})
         Assert.True(none.ShowFirewallEnable)
         Assert.False(none.ShowFirewallRemove)
-        Dim present As ExchangeGroupModel = ExchangeGroupModel.Build(New ExchangeSnapshot With {.Report = Report(True, True), .CanChangeFirewall = True, .Firewall = ExchangeFirewall.RuleState.ThisProgram})
+        Dim present As ExchangeGroupModel = ExchangeGroupModel.Build(New ExchangeSnapshot With {.Report = Report(1), .CanChangeFirewall = True, .Firewall = ExchangeFirewall.RuleState.ThisProgram})
         Assert.False(present.ShowFirewallEnable)
         Assert.True(present.ShowFirewallRemove)
-        Dim noHelper As ExchangeGroupModel = ExchangeGroupModel.Build(New ExchangeSnapshot With {.Report = Report(True, True), .CanChangeFirewall = False, .Firewall = ExchangeFirewall.RuleState.None})
+        Dim noHelper As ExchangeGroupModel = ExchangeGroupModel.Build(New ExchangeSnapshot With {.Report = Report(1), .CanChangeFirewall = False, .Firewall = ExchangeFirewall.RuleState.None})
         Assert.False(noHelper.ShowFirewallEnable OrElse noHelper.ShowFirewallRemove)
     End Sub
 
     <Fact>
-    Public Sub An_unanswered_inspect_is_unreadable_never_no_password()
+    Public Sub An_unanswered_inspect_is_unreadable_never_no_account()
         Assert.Equal(ExchangeRunKind.Unreadable, ExchangeGroupModel.Build(New ExchangeSnapshot()).Kind)
         Assert.Equal(ExchangeRunKind.Unreadable, ExchangeGroupModel.Build(New ExchangeSnapshot With {.Report = New ExchangeProcess.InspectReport()}).Kind)
     End Sub
@@ -158,7 +179,8 @@ Public Class ExchangeGroupTests
     ' --- the group exists only with the component ---------------------------------------------------
 
     Private Shared Function Sections(form As Share_Settings_Form) As CollapsibleSection()
-        Return DirectCast(GetType(Share_Settings_Form).GetMethod("AllSections", BindingFlags.Instance Or BindingFlags.NonPublic).Invoke(form, Nothing), CollapsibleSection())
+        ' AllSettingsSections is the ONE list (ticket 180): AllSections() plus the client account group, which exists only while the client gate is open
+        Return DirectCast(GetType(Share_Settings_Form).GetMethod("AllSettingsSections", BindingFlags.Instance Or BindingFlags.NonPublic).Invoke(form, Nothing), CollapsibleSection())
     End Function
 
     Private Shared Function SettingsSections(form As Share_Settings_Form) As CollapsibleSection()
@@ -227,9 +249,11 @@ Public Class ExchangeGroupTests
             Assert.False(Regex.IsMatch(code, "\{\s*_secStartup\s*,"), file & " lists the groups by hand")
         Next
         Dim main As String = ExchangeTestSupport.CodeOnly(ExchangeTestSupport.ReadSource("Forms\Share_Settings_Form.vb"))
-        Assert.Contains("For Each sec As CollapsibleSection In AllSections()", main)
-        Assert.Equal(2, Regex.Matches(main, "In AllSections\(\)").Count)    ' the constructor and FitToContent
-        Assert.Contains("Return AllSections()", ExchangeTestSupport.ReadSource("Forms\Share_Settings_Form.UiContext.vb"))
+        ' the one list is AllSettingsSections() (ticket 180): AllSections() with the client account group inserted before Help
+        Dim navigation = ExchangeTestSupport.CodeOnly(ExchangeTestSupport.ReadSource("Forms\Share_Settings_Form.Navigation.vb"))
+        Assert.Contains("For Each sec As CollapsibleSection In AllSettingsSections()", navigation)
+        Assert.Equal(1, Regex.Matches(navigation, "In AllSettingsSections\(\)").Count)
+        Assert.Contains("Return AllSettingsSections()", ExchangeTestSupport.ReadSource("Forms\Share_Settings_Form.UiContext.vb"))
         Assert.Contains("UpdateExchangeSummary()", main)
     End Sub
 
@@ -242,7 +266,14 @@ Public Class ExchangeGroupTests
             Dim code As String = ExchangeTestSupport.CodeOnly(File.ReadAllText(p))
             If Regex.IsMatch(code, "ExchangeProcess\.Start\(") Then callers.Add(Path.GetFileName(p))
         Next
-        Assert.Equal({"Share_Settings_Form.Exchange.vb"}, callers.ToArray())
+        ' the group's own handlers, and the one-click wizard (ticket 168 section 3.7: a dialog the person opened and a Start button they pressed)
+        Assert.Equal({"ExchangeServerWizard.vb", "Share_Settings_Form.Exchange.vb"}, callers.OrderBy(Function(c) c, StringComparer.Ordinal).ToArray())
+        Dim wizardCallers As New List(Of String)()
+        For Each wp As String In ExchangeTestSupport.CompanionSources()
+            If Regex.IsMatch(ExchangeTestSupport.CodeOnly(File.ReadAllText(wp)), "ExchangeServerWizard\.RunAsync\(") Then wizardCallers.Add(Path.GetFileName(wp))
+        Next
+        Assert.Equal({"Exchange_Server_Wizard_Form.vb"}, wizardCallers.ToArray())
+        Assert.Contains("ExchangeServerWizard.RunAsync(", ExchangeTestSupport.MethodBody(ExchangeTestSupport.CodeOnly(ExchangeTestSupport.ReadSource("Forms\Exchange_Server_Wizard_Form.vb")), "Private Async Sub OnStartClicked("))
         Dim form As String = ExchangeTestSupport.CodeOnly(ExchangeTestSupport.ReadSource("Forms\Share_Settings_Form.Exchange.vb"))
         ' Exactly two callers inside it: the Start button and the restart after a port change.
         Assert.Equal(2, Regex.Matches(form, "ExchangeProcess\.Start\(").Count)
@@ -270,7 +301,13 @@ Public Class ExchangeGroupTests
         Assert.Contains("MessageBoxDefaultButton.Button2", ExchangeTestSupport.MethodBody(form, "Private Async Sub OnXFirewallRemove()"))
         Assert.Contains("MessageBoxDefaultButton.Button2", ExchangeTestSupport.MethodBody(form, "Private Async Sub OnXRegister()"))
         Assert.Contains("MessageBoxDefaultButton.Button2", ExchangeTestSupport.MethodBody(form, "Private Async Sub OnXRemoveService()"))
-        Assert.Contains("MessageBoxDefaultButton.Button2", ExchangeTestSupport.MethodBody(form, "Private Async Sub OnXGeneratePassword()"))
+        ' ticket 168: every destructive or disruptive act of the administration rows asks first, naming the consequence, default No
+        Dim admin As String = ExchangeTestSupport.CodeOnly(ExchangeTestSupport.ReadSource("Forms\Share_Settings_Form.ExchangeAdmin.vb"))
+        For Each handler As String In {"Private Async Sub OnXRemoveAccount()", "Private Async Sub OnXRevokeDevice()", "Private Async Sub OnXReplaceCertificate()", "Private Async Sub OnXImportCertificate()"}
+            Assert.Contains("MessageBoxDefaultButton.Button2", ExchangeTestSupport.MethodBody(admin, handler))
+        Next
+        ' replacing the identity asks TWICE
+        Assert.Equal(2, Regex.Matches(ExchangeTestSupport.MethodBody(admin, "Private Async Sub OnXReplaceCertificate()"), "MessageBoxDefaultButton\.Button2").Count)
     End Sub
 
     <Fact>
@@ -281,7 +318,11 @@ Public Class ExchangeGroupTests
                                    "ExchangeProducerText.vb",       ' ticket 148: the producer's words reuse the server group's password-floor sentences
                                    "Share_Settings_Form.ExchangeProducer.vb",   ' ticket 148: the producer rows read this PC's server (port, pin, run state)
                                    "Exchange_Password_Form.vb", "Share_Settings_Form.Exchange.vb", "Share_Settings_Form.vb",
-                                   "Share_Settings_Form.UiContext.vb", "TrayContext.vb"}
+                                   "Share_Settings_Form.UiContext.vb", "Share_Settings_Form.Navigation.vb", "Share_Settings_Form.Contract.vb", "Share_Settings_Form.Discovery.vb", "TrayContext.vb"}
+        ' ticket 168: the administration files are part of the group
+        allowed = allowed.Concat({"ExchangeAdmin.vb", "ExchangeAdminModel.vb", "ExchangeAdminText.vb", "ExchangeServerWizard.vb", "Exchange_Account_Admin_Form.vb",
+                                  "Exchange_Server_Wizard_Form.vb", "Share_Settings_Form.ExchangeAdmin.vb",
+                                  "Server_Welcome_Form.vb"}).ToArray()   ' ticket 185: a second entry to the same acts (the wizard), explaining them - spec 185 section 2
         For Each p As String In ExchangeTestSupport.CompanionSources()
             Dim name As String = Path.GetFileName(p)
             If name.StartsWith("Localization.", StringComparison.Ordinal) OrElse allowed.Contains(name) Then Continue For
@@ -316,13 +357,17 @@ Public Class ExchangeGroupTests
 
     <Fact>
     Public Sub The_clipboard_is_reached_only_through_the_one_door()
-        For Each file As String In {"Forms\Exchange_Password_Form.vb", "Forms\Share_Settings_Form.Exchange.vb"}
+        For Each file As String In {"Forms\Exchange_Password_Form.vb", "Forms\Share_Settings_Form.Exchange.vb", "Forms\Share_Settings_Form.ExchangeAdmin.vb", "Forms\Exchange_Server_Wizard_Form.vb", "Forms\Exchange_Account_Admin_Form.vb"}
             Dim code As String = ExchangeTestSupport.CodeOnly(ExchangeTestSupport.ReadSource(file))
             Assert.DoesNotContain("Clipboard.", code.Replace("SecureClipboard.", ""))
         Next
         Assert.Contains("SecureClipboard.SetSecret(_txt.Text)", ExchangeTestSupport.ReadSource("Forms\Exchange_Password_Form.vb"))
         Assert.Contains("SecureClipboard.TrySetDataObject", ExchangeTestSupport.ReadSource("Forms\Share_Settings_Form.Exchange.vb"))
         Assert.DoesNotContain("SetSecret", ExchangeTestSupport.CodeOnly(ExchangeTestSupport.ReadSource("Forms\Share_Settings_Form.Exchange.vb")))
+        ' the wizard's password is a secret: only through SetSecret; its fingerprint is not, and goes through the plain door
+        Dim wizard As String = ExchangeTestSupport.ReadSource("Forms\Exchange_Server_Wizard_Form.vb")
+        Assert.Contains("SecureClipboard.SetSecret(_txtPassword.Text)", wizard)
+        Assert.Contains("SecureClipboard.TrySetDataObject", wizard)
     End Sub
 
     ''' <summary>The name is Latin and comes from ProductNames only: no table row, no code literal spells it
@@ -471,10 +516,15 @@ Public Class ExchangeGroupTests
                                                  Dim exchange As CollapsibleSection = SectionField(form, "_secExchange")
                                                  exchange.Expanded = True
                                                  form.PerformLayout()
-                                                 Assert.True(exchange.PreferredSize.Height > 100, code & ": the unfolded group has no height")
+                                                 Assert.True(exchange.Body.PreferredSize.Height > 100, code & ": the unfolded group has no height")
                                                  Dim limit As Integer = 560 + 40
-                                                 For Each c As Control In AllControls(exchange)
+                                                 For Each c As Control In AllControls(exchange.Body)
                                                      If Not c.Visible AndAlso c.Parent IsNot Nothing AndAlso c.Parent.Visible Then Continue For
+                                                     ' a multi-line text box (the statement of ticket 168) has a fixed size and scrolls; its "preferred" width is the unwrapped text
+                                                     If TypeOf c Is TextBox AndAlso DirectCast(c, TextBox).Multiline Then
+                                                         Assert.True(c.Width <= limit, code & ": the statement box is " & c.Width & " px wide")
+                                                         Continue For
+                                                     End If
                                                      Assert.True(c.PreferredSize.Width <= limit, code & ": " & c.GetType().Name & " '" & c.Text & "' wants " & c.PreferredSize.Width & " px")
                                                  Next
                                              End Using

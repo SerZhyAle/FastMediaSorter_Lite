@@ -52,7 +52,9 @@ if (-not (Test-Path -LiteralPath (Join-Path $UserStage $mainline))) {
 New-Item -ItemType Directory -Path $target -Force | Out-Null
 
 # Robocopy: exit codes 0-7 are success (1 = files copied), 8 and above are failures.
-$excludeDirs = @('libvlc', 'tessdata', 'tessdata-best', 'companion', 'filedo')
+# exchange: a User stage built with -IncludeExchange carries the tree, and the viewer\* wildcard of the Server
+# .iss would then install it with the VIEWER component alone, past the `exchange` component and its gate.
+$excludeDirs = @('libvlc', 'tessdata', 'tessdata-best', 'companion', 'filedo', 'exchange')
 $excludeFiles = @('FastMediaSorterCompanion.exe', 'pdfium.dll', '*.log', '*.previous-*.exe')
 & robocopy $UserStage $target /E /NFL /NDL /NJH /NJS /NP /XD @excludeDirs /XF @excludeFiles | Out-Null
 if ($LASTEXITCODE -ge 8) { throw "robocopy failed staging the viewer payload (exit code $LASTEXITCODE)." }

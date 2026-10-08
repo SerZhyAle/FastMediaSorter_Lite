@@ -1,4 +1,4 @@
-Option Strict On
+﻿Option Strict On
 
 ' <summary>
 ' The Share Manager's list of string tables.
@@ -15,6 +15,7 @@ Partial Public NotInheritable Class Localization
 
     Private Shared Sub RegisterStrings()
         AddShareStrings()       ' tray menu + the shared ShareText prose
+        AddManagerContractStrings()
         AddManagerStrings()     ' the Share Manager main window
         AddWizardStrings()      ' the one-shot package wizard + QR zoom
         AddInternetStrings()    ' the internet-access tab
@@ -26,7 +27,10 @@ Partial Public NotInheritable Class Localization
         AddBroadcastStrings()   ' spec 016: streamsplayer broadcast resource management
         AddDiskStrings()        ' DISK-SHARE: file-backed containers and local drive aliases
         AddExchangeStrings()    ' tickets 142-144: the Media Exchange Server group and tray item
-        AddExchangeProducerStrings()   ' ticket 148: the share service registering on an exchange server
+        AddServerWelcomeStrings()      ' spec 185: the server welcome - the steps of the share server and the exchange server
+        AddExchangePublishStrings()    ' ticket 170: the producer rows - publishing the shares, the third-party port, outsider links (replaces 148's)
+        AddExchangeDeviceStrings()     ' ticket 180: the device agent - the "Exchange account" group and its sign-in dialog
+        AddExchangeAdminStrings()      ' ticket 168: the exchange server administration - accounts, devices, address, ports, certificate, statement, wizard
         AddSendLogsStrings()    ' ticket 182 L-3/L-6: a log that cannot be included, no mail program (table linked from the viewer)
     End Sub
 

@@ -5,19 +5,15 @@
     # Skip building the .NET 10 Companion (the Share Manager). By
     # default this script now builds BOTH exes so you can build everything locally.
     [switch]$SkipCompanion,
-    # Skip building the exchange server (exchange-server\, a Go module - specification 133).
-    # A clone without a 64-bit Go skips it by itself and says so; it is never reported as
-    # built. The installers do not carry it unless -IncludeExchange is also given (below), so
-    # this switch only decides whether bin\Release\exchange\ and the work folders get a
-    # development copy. -SkipExchange means "do not even build it" and cannot be combined
-    # with -IncludeExchange.
+    # Leave the exchange server (exchange-server\, a Go module - specification 133) out of this
+    # build entirely: no Go build, no exchange\ folder in bin\Release or the work folders, no
+    # `exchange` component in either setup. The exchange server is IN by default, so a plain
+    # .\build.ps1 builds and packages everything; a machine without a 64-bit Go then stops here
+    # rather than quietly packaging setups without it.
+    # This switch is NOT the shipping gate. tools\Build-OfflineRelease.ps1 (Release.ps1) and
+    # release.yml keep INCLUDE_EXCHANGE off until rung 2 freezes the wire (specification 133
+    # section 8, ticket 141). A local build never creates a tag or uploads anything.
     [switch]$SkipExchange,
-    # THE SHIPPING GATE (specification 133 section 8, ticket 141): forwarded to both installer
-    # builds (tools\Build-Installer.ps1, tools\Build-ServerInstaller.ps1). Off by default - the
-    # setups then carry no exchange\ folder and compile without the `exchange` component. On,
-    # the build fails unless the exchange server was built by THIS run (no Go = failure, not a
-    # quiet skip) and both setups carry the unchecked component. Flip only after rung 2.
-    [switch]$IncludeExchange,
     # Skip publishing the .NET 10 modern viewer (SPECIFICATION_DOTNET10_MODERN_BUILD).
     # By default it is published to bin\ModernPublish and mirrored into a "modern\"
     # subfolder of each deploy target for side-by-side testing with the net48 exe.
@@ -49,10 +45,8 @@
 )
 
 $SolutionDir = $PSScriptRoot
-if ($IncludeExchange -and $SkipExchange) {
-    Write-Error "-IncludeExchange and -SkipExchange contradict each other: one packages the exchange server, the other does not even build it."
-    exit 1
-}
+# Derived, not a switch: every local build carries the exchange server unless -SkipExchange leaves it out.
+$IncludeExchange = -not $SkipExchange
 $SolutionFile = Join-Path $SolutionDir "FastMediaSorter.sln"
 $OutputDir    = Join-Path $SolutionDir "bin\Release"
 $SingleFileDir = Join-Path $SolutionDir "bin\SingleFile"
@@ -368,12 +362,10 @@ if (-not $SkipExchange) {
     switch ($LASTEXITCODE) {
         0 { $ExchangeBuilt = $true }
         2 {
-            if ($IncludeExchange) {
-                # The gate is open: a package must not claim a component it lacks.
-                Write-Error "exchange server: no 64-bit Go - -IncludeExchange cannot package it. Install Go, or drop -IncludeExchange."
-                exit 2
-            }
-            Write-Warning "exchange server: SKIPPED (no Go) - the rest of the package is built without it."
+            # No 64-bit Go means no exchange server, and the setups below carry it: stop, do not
+            # package without it. -SkipExchange is the deliberate way to build without it.
+            Write-Error "exchange server: no 64-bit Go - install Go, or build without the exchange server with -SkipExchange."
+            exit 2
         }
         default {
             Write-Error "Exchange server build failed (exit code $LASTEXITCODE)."
@@ -541,7 +533,7 @@ if (-not $SkipInstaller) {
     if ($NoClean)              { $installerArgs.NoClean     = $true }
     if ($InstallerIncludeBest) { $installerArgs.IncludeBest = $true }
     if ($InstallerSkipOcr)     { $installerArgs.SkipOcr     = $true }
-    if ($IncludeExchange)      { $installerArgs.IncludeExchange = $true }   # the shipping gate, forwarded as-is
+    if ($IncludeExchange)      { $installerArgs.IncludeExchange = $true }   # in by default; -SkipExchange leaves it out
 
     Write-Host ""
     Write-Host "Packaging the offline installer (version $installerVersion).."
@@ -587,7 +579,7 @@ if (-not $SkipServerInstaller) {
         # bound positionally, not a splat, so it would land in -Version.
         $serverArgs = @{ Version = $serverVersion }
         if (-not ($SkipCompanion -and $SkipInstaller)) { $serverArgs.SkipBuild = $true }
-        if ($IncludeExchange) { $serverArgs.IncludeExchange = $true }   # the shipping gate, forwarded as-is
+        if ($IncludeExchange) { $serverArgs.IncludeExchange = $true }   # in by default; -SkipExchange leaves it out
         & (Join-Path $SolutionDir "tools\Build-ServerInstaller.ps1") @serverArgs
         if ($LASTEXITCODE -ne 0) { throw "tools\Build-ServerInstaller.ps1 exited with code $LASTEXITCODE." }
     } catch {

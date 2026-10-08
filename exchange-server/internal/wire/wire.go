@@ -13,6 +13,7 @@ import (
 	"encoding/base64"
 	"errors"
 	"io"
+	"sync/atomic"
 )
 
 const (
@@ -59,12 +60,30 @@ var (
 
 var idEncoding = base64.RawURLEncoding.Strict()
 
-// idRand is the id source; a test or the vector generator replaces it through NewIDFrom.
-var idRand io.Reader = rand.Reader
+// randSource boxes the package's id source so it can be swapped atomically.
+type randSource struct{ r io.Reader }
+
+var idRand atomic.Pointer[randSource]
+
+func init() { idRand.Store(&randSource{rand.Reader}) }
+
+// SetRandom replaces the source NewID and NewToken draw from (ticket 161 T-5: the vector generator of
+// ticket 178 and tests that need stable ids). nil restores the system's cryptographic generator. It
+// is NOT for production use - nothing outside tests and cmd/exchange-vectors calls it - and a
+// replacement source must itself be safe for concurrent use, or only be drawn from by one goroutine
+// at a time, as a scripted generator run is.
+func SetRandom(r io.Reader) {
+	if r == nil {
+		r = rand.Reader
+	}
+	idRand.Store(&randSource{r})
+}
+
+func currentRandom() io.Reader { return idRand.Load().r }
 
 // NewID returns 16 bytes from the system's cryptographic generator as base64url without padding:
 // the id form of a deviceId, resourceId, shareId, broadcastId and tunnelId (DEVICE-EXCHANGE 2).
-func NewID() string { return NewIDFrom(idRand) }
+func NewID() string { return NewIDFrom(currentRandom()) }
 
 // NewIDFrom is NewID over an injected source (ticket 178: a generated vector draws its ids from a
 // seeded source so the bytes are stable).
@@ -77,7 +96,7 @@ func NewIDFrom(r io.Reader) string {
 }
 
 // NewToken returns 32 random bytes as base64url without padding: a device token (5.2).
-func NewToken() string { return NewTokenFrom(idRand) }
+func NewToken() string { return NewTokenFrom(currentRandom()) }
 
 // NewTokenFrom is NewToken over an injected source.
 func NewTokenFrom(r io.Reader) string {

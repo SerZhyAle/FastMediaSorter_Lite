@@ -37,6 +37,19 @@
          link the same LogPackage / HostingReport / MailSender and must come out with the same sources. -->
     <Compile Include="..\Lite.Tests\LogPackageSourcesTests.vb" Link="Linked\LogPackageSourcesTests.vb" />
     <Compile Include="..\Lite.Tests\HostingReportTests.vb" Link="Linked\HostingReportTests.vb" />
+    <!-- Ticket 180: the TLS stub server and the scripted connection of the exchange client tests, one kit for the library
+         (Lite.Tests) and the device agent (here). Whole-file "#If Not NETFRAMEWORK". -->
+    <Compile Include="..\Lite.Tests\ExchangeWireTestKit.vb" Link="Linked\ExchangeWireTestKit.vb" />
+  </ItemGroup>
+
+  <!-- Ticket 177 (dual mode): the committed "today" baseline and its helper are shared with Lite.Tests. The reference
+       share's .fmscfg and QR are produced by the real ShareConfigBuilder here (DualModeShareBaselineTests); the folder
+       also holds the viewer's capture, so one PROVENANCE.txt covers it all and both suites check it first. -->
+  <ItemGroup>
+    <Compile Include="..\Lite.Tests\DualModeFixtures.vb" Link="Linked\DualModeFixtures.vb" />
+    <None Include="..\Lite.Tests\TestData\dual-mode\**" Link="TestData\dual-mode\%(RecursiveDir)%(Filename)%(Extension)">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
   </ItemGroup>
 
   <!-- WORKER-IPC section 7 fixtures (WorkerIpcConformanceTests): the request half is generated

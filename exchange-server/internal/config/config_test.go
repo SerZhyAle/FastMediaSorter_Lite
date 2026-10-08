@@ -75,6 +75,11 @@ func TestEveryRefusal(t *testing.T) {
 		"rate zero":               func(c *Config) { c.Limits.UnknownID.PerMinute = 0 },
 		"tls half set":            func(c *Config) { c.TLS.CertFile = "x.pem" },
 		"log bound tiny":          func(c *Config) { c.Log.MaxBytes = 10 },
+		"cast rate zero":          func(c *Config) { c.Limits.Cast.PerMinute = 0 },
+		"relay upload zero":       func(c *Config) { c.Limits.RelayUploadMbit = 0 },
+		"relay listeners zero":    func(c *Config) { c.Limits.RelayListenersPerBcast = 0 },
+		"relay total zero":        func(c *Config) { c.Limits.RelayListenersTotal = 0 },
+		"cast pending zero":       func(c *Config) { c.Limits.CastPendingPerAccount = 0 },
 	}
 	for name, f := range mutate {
 		c := good
@@ -191,7 +196,7 @@ func TestSaveRewritesInPlaceWhenTheTemporaryFileIsRefused(t *testing.T) {
 }
 
 func TestPublicEndpointIsValidatedLikeAnAddressAndNeverLoopback(t *testing.T) {
-	for _, ok := range []string{"", "193.178.50.43:22022", "exchange.example.org:443", "[2001:db8::1]:22022", "host:1"} {
+	for _, ok := range []string{"", "203.0.113.43:22022", "exchange.example.org:443", "[2001:db8::1]:22022", "host:1"} {
 		if err := CheckPublicEndpoint(ok); err != nil {
 			t.Errorf("%q refused: %v", ok, err)
 		}
@@ -245,5 +250,35 @@ func TestTheNewLimitNamesReplaceTheOldOnes(t *testing.T) {
 		if !strings.Contains(s, want) {
 			t.Errorf("the member %q is missing from the defaults", want)
 		}
+	}
+}
+
+// TestEveryLogLivesUnderTheLogsDirectory is ticket 182 L-1 / ticket 167 T-5: the server's log, its
+// one rotation and the service log are all inside <data dir>\logs, whichever way the directory was
+// chosen; nothing else about the data directory changes (the enrolled user reads logs\ and nothing
+// above it).
+func TestEveryLogLivesUnderTheLogsDirectory(t *testing.T) {
+	dir := t.TempDir()
+	byEnv := Resolve("", func(k string) string {
+		if k == EnvDataDir {
+			return dir
+		}
+		return ""
+	})
+	byFlag := Resolve(filepath.Join(dir, FileName), func(string) string { return "" })
+	for name, p := range map[string]Paths{"env": byEnv, "flag": byFlag} {
+		logs := filepath.Join(dir, LogsDir)
+		if p.LogsDir != logs || p.Log != filepath.Join(logs, LogName) || p.ServiceLog != filepath.Join(logs, ServiceLogName) {
+			t.Errorf("%s: %+v", name, p)
+		}
+		if filepath.Dir(p.Log+".1") != logs {
+			t.Errorf("%s: the rotation must stay inside logs\\", name)
+		}
+		if p.Config != filepath.Join(dir, FileName) || filepath.Dir(p.Cert) != filepath.Join(dir, TLSDir) {
+			t.Errorf("%s: the config and the identity keep their places: %+v", name, p)
+		}
+	}
+	if LogName != "exchange.log" || ServiceLogName != "service.log" || LogsDir != "logs" {
+		t.Fatal("the names the Share Manager and the helper read are frozen")
 	}
 }

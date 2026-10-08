@@ -758,6 +758,8 @@
     <Compile Include="Localization\Localization.HelpCard.vb" />
     <!-- Ticket 124: the dialog layer's strings (shared registry). -->
     <Compile Include="Localization\Localization.Dialogs.vb" />
+    <!-- Spec 184: the welcome wizard's strings (shared registry, compiled here too). -->
+    <Compile Include="Localization\Localization.Welcome.vb" />
     <!-- Ticket 028 (APP-BEHAVIOUR contract sync). Registered by both builds for the same
          reason as the table above. -->
     <Compile Include="Localization\Localization.AppUx.vb" />
@@ -831,6 +833,7 @@
     <Compile Include="Icons\IconMap.vb" />
     <Compile Include="Icons\SvgPathData.vb" />
     <Compile Include="Icons\GlyphRenderer.vb" />
+    <Compile Include="Icons\StepArt.vb" />
     <!-- The floating chrome of the main window (002): whole-file "#If Not NETFRAMEWORK", so they compile to
          nothing here - listed anyway so the two projects keep one source tree and a reference cannot break. -->
     <Compile Include="Chrome\ChromeMetrics.vb" />
@@ -852,6 +855,13 @@
     <Compile Include="AskModel.vb" />
     <Compile Include="AskSpecs.vb" />
     <Compile Include="Ask_Dialog.vb" />
+    <!-- Spec 184: the welcome wizard. Whole files are #If Not NETFRAMEWORK, so they compile to nothing here;
+         listed anyway like the other modern-only files above. -->
+    <Compile Include="Welcome\WelcomeRules.vb" />
+    <Compile Include="Welcome\Welcome_Form.vb" />
+    <Compile Include="Main_Form.Welcome.vb">
+      <DependentUpon>Main_Form.vb</DependentUpon>
+    </Compile>
     <Compile Include="Chrome\UiScale.vb" />
     <Compile Include="Chrome\ChromeLayout.vb" />
     <Compile Include="Chrome\ChromeTheme.vb" />
@@ -864,6 +874,19 @@
     <Compile Include="Chrome\ChromePathBox.vb" />
     <Compile Include="Main_Form.ChromeMenus.vb" />
     <Compile Include="Main_Form.Chrome.vb">
+      <DependentUpon>Main_Form.vb</DependentUpon>
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Localization\Localization.ProfileReset.vb" />
+    <Compile Include="ProfileReset\ProfileResetScope.vb" />
+    <Compile Include="ProfileReset\ProfileResetStore.vb" />
+    <Compile Include="ProfileReset\RegBackup.vb" />
+    <Compile Include="ProfileReset\ProfileResetRunner.vb" />
+    <Compile Include="Table_Form.ProfileReset.vb">
+      <DependentUpon>Table_Form.vb</DependentUpon>
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Main_Form.ProfileReset.vb">
       <DependentUpon>Main_Form.vb</DependentUpon>
       <SubType>Form</SubType>
     </Compile>

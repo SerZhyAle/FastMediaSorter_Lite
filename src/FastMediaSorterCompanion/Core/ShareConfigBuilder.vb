@@ -172,9 +172,9 @@ Public Module ShareConfigBuilder
             hasExt = True
         End If
 
-        ' Ticket 148 T-5: with `exchange` = Nothing this block does not run and the bytes are exactly what they were
-        ' (ANYWHERE-ACCESS 8.5). The package wizard passes what ExchangeProducerRules.ExportFor returns, which is
-        ' Nothing unless the producer is on AND the worker reports a registered share. When a tunnel path is written
+        ' Tickets 148 and 170: with `exchange` = Nothing this block does not run and the bytes are exactly what they were
+        ' (ANYWHERE-ACCESS 8.5). The package wizard passes what ExchangePublisher.ExportFor returns, which is
+        ' Nothing unless the device agent published a share with a LIVE outsider link. When a tunnel path is written
         ' it follows FMSCFG 2.4 rule 7: a valid host and port, after every other path, never in the LAN-only export.
         Dim hasRelay As Boolean = AppendExchangePaths(paths, exchange, includeExternal)
         If paths.Length = 0 Then Return Nothing
@@ -483,6 +483,16 @@ Public Module ShareConfigBuilder
             End Using
             Return QrPrefix & Convert.ToBase64String(ms.ToArray())
         End Using
+    End Function
+
+    ''' <summary>The QR of an arbitrary text (ticket 170 rule 8: the FMSSFTP2 code of an outsider link). Nothing when it does not fit.</summary>
+    Public Function QrPngForText(text As String) As Byte()
+        If String.IsNullOrEmpty(text) OrElse Encoding.UTF8.GetByteCount(text) > QrHardLimit Then Return Nothing
+        Try
+            Return RenderQr(text)
+        Catch
+            Return Nothing
+        End Try
     End Function
 
     Private Function RenderQr(payload As String) As Byte()

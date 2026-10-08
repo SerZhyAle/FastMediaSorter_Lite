@@ -683,7 +683,7 @@ Partial Public Class Main_Form
             item.GlyphId = ""
         ElseIf carrier Is btn_ToVideo Then
             ' The carrier's own text is a private-use code point of an icon font - a box in the panel's font.
-            caption = Localization.T("В видео")
+            caption = Localization.T("Преобразовать в видео")
         ElseIf carrier Is btn_choose_file Then
             caption = Localization.T("Выбрать файл..")
         ElseIf carrier Is btn_Select_Folder Then
@@ -731,7 +731,7 @@ Partial Public Class Main_Form
         ' The folder box has a menu on the right button that nothing on screen announced (125 UX-306).
         If carrier Is cmbox_Media_Folder Then tip &= vbLf & Localization.T("Правая кнопка - меню: папка, файл, архив, ресурсы, раздача")
         If carrier Is cmbox_Sort Then tip = Localization.TF("Порядок сортировки файлов: {0}", caption)
-        If carrier Is btn_ToVideo Then name = Localization.T("Анимацию - в видео")
+        If carrier Is btn_ToVideo Then name = Localization.T("Преобразовать в видео")
         ' A counter or a zoom value keeps its slot while its text changes length (125 UX-313b).
         If carrier Is lbl_File_Number Then item.ReservedText = Localization.TF("{0} из {1}", 9999, 9999)
         If carrier Is lbl_Zoom Then item.ReservedText = "1600 %"

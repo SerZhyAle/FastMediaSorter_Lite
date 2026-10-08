@@ -63,7 +63,7 @@ Partial Public Class Table_Form
         AddSettingsGroup("general", "interface", "Оформление", True,
                          "interface_scale", "reduce_motion", "chrome_pinned", "chrome_size", "chrome_opacity", "chrome_corners",
                          "show_info_overlay", "video_hide_cursor")
-        AddSettingsGroup("general", "startup", "Запуск", True, "startup_open", "resume_last_playback", "allow_new_windows", "secondary_instance_warning")
+        AddSettingsGroup("general", "startup", "Запуск", True, "startup_open", "resume_last_playback", "allow_new_windows", "secondary_instance_warning", "welcome_replay")
         AddSettingsGroup("general", "advanced", "Дополнительные настройки", False, "settings_export_personal", "settings_export", "settings_import", "settings_defaults")
         AddSettingsGroup("recipients", "basic", "Основные настройки", True, "recipients_overlay")
         AddSettingsGroup("recipients", "overlay", "Вид таблицы получателей", False,

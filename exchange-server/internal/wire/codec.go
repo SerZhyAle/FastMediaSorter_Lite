@@ -15,6 +15,17 @@ import (
 // to exactly this occurrence.
 const legacySchemaVersion = 1
 
+// LegacyProbeFrame is the frame a peer of the superseded wire would send first: a `hello` carrying the
+// legacy schemaVersion. It exists for the conformance vectors and the probe of ticket 178, which show
+// the server's `version-unsupported` answer; nothing in the server reads or writes that version.
+func LegacyProbeFrame() []byte {
+	body := fmt.Sprintf("{\"schemaVersion\":%d,\"type\":\"hello\",\"deviceId\":\"AAAAAAAAAAAAAAAAAAAAAA\",\"deviceToken\":\"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\"}", legacySchemaVersion)
+	frame := make([]byte, 4+len(body))
+	binary.BigEndian.PutUint32(frame, uint32(len(body)))
+	copy(frame[4:], body)
+	return frame
+}
+
 // registry maps a `type` to a constructor of its typed envelope.
 var registry = map[string]func() Envelope{
 	TypeEnroll:           func() Envelope { return new(Enroll) },

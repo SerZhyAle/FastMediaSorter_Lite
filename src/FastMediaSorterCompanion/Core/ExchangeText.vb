@@ -19,7 +19,7 @@ Friend Module ExchangeText
     End Function
 
     Friend Function Intro() As String
-        Return Localization.T("Сервер обмена - посредник для серверов раздачи, у которых нет ни доступного адреса, ни проброса порта. Он запускается только по вашей команде и сам не стартует.")
+        Return Localization.T("Сервер обмена хранит учётные записи ваших устройств и помогает им находить друг друга и соединяться, даже без проброса портов. Он запускается только по вашей команде и сам не стартует.")
     End Function
 
     Friend Function StateLine(m As ExchangeGroupModel) As String
@@ -35,7 +35,7 @@ Friend Module ExchangeText
             Case ExchangeRunKind.ServiceStopped
                 Return Localization.T("Служба сервера обмена остановлена.")
             Case ExchangeRunKind.NotConfigured
-                Return Localization.T("Сервер обмена не настроен: пароль не задан.")
+                Return Localization.T("Сервер обмена не настроен: нет ни одной учётной записи.")
             Case ExchangeRunKind.Unreadable
                 Return Localization.T("Состояние сервера обмена не удалось прочитать.")
             Case Else
@@ -86,26 +86,8 @@ Friend Module ExchangeText
 
     ' --- the password -----------------------------------------------------------------------
 
-    Friend Function PasswordNote() As String
-        Return Localization.T("Пароль нужен серверу обмена, чтобы принимать подключения. В файле настроек хранится только его хеш, а не сам пароль.")
-    End Function
-
-    Friend Function PasswordState(m As ExchangeGroupModel) As String
-        If m.PasswordBroken Then Return Localization.T("Запись пароля в настройках повреждена - задайте пароль заново.")
-        If m.PasswordSet Then Return Localization.T("Пароль задан.")
-        Return Localization.T("Пароль не задан.")
-    End Function
-
-    Friend Function SetPasswordButton() As String
-        Return Localization.T("Задать пароль..")
-    End Function
-
-    Friend Function GeneratePasswordButton() As String
-        Return Localization.T("Создать пароль..")
-    End Function
-
     Friend Function SetPasswordTitle() As String
-        Return Localization.T("Пароль сервера обмена")
+        Return Localization.T("Пароль учётной записи")
     End Function
 
     Friend Function PolicyHint() As String
@@ -133,16 +115,16 @@ Friend Module ExchangeText
     End Function
 
     Friend Function GenerateTitle() As String
-        Return Localization.T("Новый пароль сервера обмена")
+        Return Localization.T("Новый пароль учётной записи")
     End Function
 
     Friend Function GenerateIntro() As String
-        Return Localization.T("Это единственный раз, когда пароль показан. Скопируйте его и передайте владельцам серверов раздачи, которые будут подключаться.")
+        Return Localization.T("Это единственный раз, когда пароль показан. Скопируйте его и передайте владельцу учётной записи: с ним он войдёт со всех своих устройств.")
     End Function
 
-    Friend Function GenerateQuestion() As String
-        Return Localization.T("Создать новый пароль?" & vbCrLf & vbCrLf &
-                              "Прежний пароль перестанет работать: серверы раздачи, которые его используют, придётся перенастроить.")
+    ''' <summary>The same password, kept on this PC: it is shown again by the account's own button, so the one-time sentence would be false.</summary>
+    Friend Function GenerateIntroKept() As String
+        Return Localization.T("Пароль создан и сохранён на этом ПК. Скопируйте его сейчас или откройте позже кнопкой «Показать пароль..».")
     End Function
 
     Friend Function CopyPasswordButton() As String
@@ -159,21 +141,7 @@ Friend Module ExchangeText
 
     Friend Function CloseWithoutCopyQuestion() As String
         Return Localization.T("Закрыть, не скопировав пароль?" & vbCrLf & vbCrLf &
-                              "Показать его снова нельзя - придётся создать новый.")
-    End Function
-
-    Friend Function PasswordResult(outcome As ExchangeProcess.PasswordOutcome, serverRunning As Boolean) As String
-        Select Case outcome
-            Case ExchangeProcess.PasswordOutcome.Saved
-                Return If(serverRunning, Localization.T("Пароль сохранён. Он вступит в силу после перезапуска сервера обмена."),
-                                         Localization.T("Пароль сохранён."))
-            Case ExchangeProcess.PasswordOutcome.PolicyRefused
-                Return Localization.T("Пароль не принят: он не соответствует правилам.")
-            Case ExchangeProcess.PasswordOutcome.ConfigProblem
-                Return Localization.T("Не удалось сохранить пароль: файл настроек сервера обмена не читается или не записывается.")
-            Case Else
-                Return Localization.T("Не удалось сохранить пароль.")
-        End Select
+                              "Показать его снова нельзя - потом его можно будет только сбросить.")
     End Function
 
     ' --- the fingerprint ----------------------------------------------------------------------
@@ -218,8 +186,8 @@ Friend Module ExchangeText
                 Return Localization.T("Сервер обмена запущен.")
             Case ExchangeProcess.StartOutcome.AlreadyRunning
                 Return Localization.T("Сервер обмена уже работает.")
-            Case ExchangeProcess.StartOutcome.NoPassword
-                Return Localization.T("Не запущен: пароль не задан или его запись повреждена.")
+            Case ExchangeProcess.StartOutcome.NoAccount
+                Return Localization.T("Не запущен: нет ни одной учётной записи - добавьте её ниже.")
             Case ExchangeProcess.StartOutcome.ConfigProblem
                 Return Localization.T("Не запущен: файл настроек сервера обмена не читается.")
             Case ExchangeProcess.StartOutcome.BesideService

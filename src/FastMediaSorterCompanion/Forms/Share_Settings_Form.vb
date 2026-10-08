@@ -1,43 +1,15 @@
+﻿Option Explicit On
 Option Strict On
+Option Infer On
+Option Compare Binary
 
 Imports System.Drawing
 Imports System.Threading.Tasks
 Imports System.Windows.Forms
 
-''' <summary>
-''' "Настройки менеджера" - one page, three collapsible groups: Запуск, Сеть, Хостинг.
-''' Same control and the same rules as the main window's sections
-''' (SPECIFICATION_SHARE_MANAGER_COMPACT_WINDOW.md §3.2), so the two windows read as one
-''' program: a folded group still answers its own question through a live summary, and
-''' nothing is hidden - only folded.
-'''
-''' The first two groups hold what the main window used to carry between two consumer
-''' checkboxes and a connection spinner (§3.5). The rule that puts them here is §2 rule 8:
-''' nothing that is only interesting ONCE belongs on the window a user looks at every
-''' session. Autostart is decided on the first run, the connection cap is a knob almost
-''' nobody moves, and neither is read while answering "is anything being shared right now".
-'''
-''' The third group IS the former Hosting console (see Share_Settings_Form.Hosting.vb).
-''' It was its own window until 2026-08-15, which made the path to an elevated action four
-''' levels deep - main window, settings, console, UAC. Since the compact-window work left
-''' the settings window as its ONLY caller, the console did not have to be a window at all.
-''' It is the big one - four state lines, up to nine buttons, three paragraphs of notes,
-''' against two checkboxes and a spinner - which is exactly why it starts folded: the
-''' dialog initially fits the small groups; additional content scrolls within the user's window size.
-'''
-''' The handlers moved verbatim, split semantics included: the connection cap persists on
-''' every change (cheap, local) but is pushed to the worker on Leave, so holding the spinner
-''' does not restart a running server on each intermediate value. The _loading guard came
-''' with them.
-'''
-''' NOT here, on purpose: anything about a SPECIFIC share (Share_Root_Params_Form), the
-''' server-features gate (Share_Enable_Form).
-'''
-''' Since 2026-10-03 the page also owns the UI language (beside the theme combo) and the Help
-''' links (their own folded group) - both moved here from the main window's status strip. The
-''' tray menu keeps its own language item, so someone who cannot read the UI still reaches a
-''' picker without opening any window.
-''' </summary>
+''' <summary>Manager settings with a vertical task navigation and independently scrolling pages.
+''' Reversible preferences retain their existing immediate-apply behavior; server operations
+''' remain explicit commands. WINDOWS-UI sections 2, 3 and 5.</summary>
 Partial Public NotInheritable Class Share_Settings_Form
     Inherits Form
 
@@ -45,8 +17,10 @@ Partial Public NotInheritable Class Share_Settings_Form
     Private _loading As Boolean
     Private _changed As Boolean
     Private _built As Boolean
+    Friend ReadOnly SettingsBuildTimings As New Dictionary(Of String, Long)()
+    Private ReadOnly settingsBuildWatch As Stopwatch = Stopwatch.StartNew()
     Private ReadOnly _settings As New ShareSettings()
-    Private ReadOnly _status As WorkerStatus
+    Private _status As WorkerStatus
 
     Private chkAutostart As CheckBox
     Private chkOpenOnStart As CheckBox
@@ -68,20 +42,19 @@ Partial Public NotInheritable Class Share_Settings_Form
     Private toolTip As ToolTip
 
     Private _root As TableLayoutPanel
-    Private _strip As Panel
     Private _secStartup As CollapsibleSection
     Private _secNetwork As CollapsibleSection
     Private _secHosting As CollapsibleSection
     Private _secHelp As CollapsibleSection
     ''' <summary>The hosting group runs a blocking worker probe, so it is refreshed the
-    ''' first time it is actually unfolded rather than on every open of a dialog most people
+    ''' first time its page is selected rather than on every open of a dialog most people
     ''' use to tick one checkbox.</summary>
     Private _hostingLoaded As Boolean
 
     ''' <summary>Design width of the page, 96-DPI units. Set by the hosting group's prose,
     ''' which wraps at <see cref="HostingContentWidth"/>; the other two are far narrower and
     ''' a settings dialog that changed width per group would be worse than a little air.</summary>
-    Private Const PageWidth As Integer = 560
+    Private Const PageWidth As Integer = 820
 
     ''' <summary>True when an elevated action actually changed the machine - the caller
     ''' re-reads status then, exactly as the main window did when it owned the Hosting
@@ -118,6 +91,7 @@ Partial Public NotInheritable Class Share_Settings_Form
     Private Sub BuildUi()
         ' Script font + text direction for the active language, before any control
         ' exists - children inherit both (013_SPECIFICATION_THIRTEEN_UI_LANGUAGES.md block A').
+        Me.SuspendLayout()
         UiLanguage.ApplyTo(Me)
         Me.Text = Localization.T("Настройки менеджера")
         Me.Icon = ShareIcons.CreateIcon(_iconHandle)
@@ -131,79 +105,69 @@ Partial Public NotInheritable Class Share_Settings_Form
                 Try : _lblLive?.Font?.Dispose() : Catch : End Try
                 DisposeExchangeResources()
                 DisposeProducerResources()
+                DisposeAccountResources()
                 ShareIcons.FreeIcon(Me.Icon, _iconHandle)
             End Sub
-        ' Sizable rather than the usual FixedDialog: an accordion changes height by design,
-        ' and a fixed dialog that outgrows the screen has no way to give the user the rest.
-        ' The root panel AutoScrolls, so the worst case is a scrollbar, never a lost button.
+        ' WINDOWS-UI section 5: pages scroll inside a stable, user-resizable window.
         Me.FormBorderStyle = FormBorderStyle.Sizable
         Me.MaximizeBox = False
         Me.MinimizeBox = False
         Me.ShowInTaskbar = False
         Me.StartPosition = FormStartPosition.CenterParent
-        Me.MinimumSize = New Size(420, 220)
-        Me.ClientSize = New Size(PageWidth, 320)
+        Me.MinimumSize = New Size(640, 360)
+        Me.ClientSize = New Size(PageWidth, 480)
         toolTip = New ToolTip()
 
-        _root = New TableLayoutPanel With {.Dock = DockStyle.Fill, .ColumnCount = 1,
-            .AutoScroll = True, .Padding = New Padding(12, 10, 12, 6)}
-        _root.ColumnStyles.Add(New ColumnStyle(SizeType.Percent, 100.0F))
-
-        _secStartup = New CollapsibleSection("startup", Localization.T("Запуск"))
-        _secNetwork = New CollapsibleSection("network", Localization.T("Сеть"))
-        _secHosting = New CollapsibleSection("hosting", Localization.T("Хостинг"))
-        _secHelp = New CollapsibleSection("help", Localization.T("Справка"))
+        _secStartup = CreateSettingsSection("startup", Localization.T("Запуск"))
+        _secNetwork = CreateSettingsSection("network", Localization.T("Сеть"))
+        _secHosting = CreateSettingsSection("hosting", Localization.T("Хостинг"))
+        _secHelp = CreateSettingsSection("help", Localization.T("Справка"))
         BuildStartupSection(_secStartup)
+        SettingsBuildTimings("startup") = settingsBuildWatch.ElapsedMilliseconds
         BuildNetworkSection(_secNetwork)
+        SettingsBuildTimings("network") = settingsBuildWatch.ElapsedMilliseconds
         BuildHostingSection(_secHosting)
+        SettingsBuildTimings("hosting") = settingsBuildWatch.ElapsedMilliseconds
         ' Between Hosting and Help, and ONLY when the exchange server component is installed: without
         ' it there is no group at all (ticket 142), so the window is exactly what it was.
         _secExchange = CreateExchangeSection()
+        SettingsBuildTimings("exchange") = settingsBuildWatch.ElapsedMilliseconds
+        ' The client side of the device exchange (ticket 180): the account group, only while the client gate is open. It sits after the
+        ' server-administration group and before Help (AllSettingsSections), and is a partial of its own.
+        _secAccount = CreateAccountSection()
+        SettingsBuildTimings("account") = settingsBuildWatch.ElapsedMilliseconds
         BuildHelpSection(_secHelp)
-        For Each sec As CollapsibleSection In AllSections()
-            sec.Dock = DockStyle.Fill
-            AddHandler sec.ExpandedChanged, AddressOf OnSectionExpandedChanged
-            AddRow(_root, sec)
-        Next
+        BuildAboutRows(_secHelp)
+        BuildSettingsPages()
+        SettingsBuildTimings("pages") = settingsBuildWatch.ElapsedMilliseconds
 
-        _strip = New Panel With {.Dock = DockStyle.Bottom, .Height = 44, .Padding = New Padding(12, 6, 12, 8)}
-        Dim btnClose As New Button With {.Dock = DockStyle.Right, .AutoSize = True,
-            .AutoSizeMode = AutoSizeMode.GrowAndShrink, .Padding = New Padding(16, 5, 16, 5),
-            .Text = Localization.T("Закрыть"), .DialogResult = DialogResult.OK}
-        _strip.Controls.Add(btnClose)
-        ' The Share Manager's own "send the log" (ticket 028 Ф-3), on the left of the strip:
-        ' it opens a dialog and changes nothing here, so it is not a setting.
-        Dim lnkSendLog As New LinkLabel With {.Dock = DockStyle.Left, .AutoSize = True,
-            .Padding = New Padding(0, 8, 0, 0), .Text = Localization.T("Отправить журнал автору..")}
-        AddHandler lnkSendLog.LinkClicked, Async Sub() Await SendLogsFlow.RunAsync(Me)
-        _strip.Controls.Add(lnkSendLog)
-
-        ' Fill first, docked strip second - WinForms docks from the END of the collection.
         Me.Controls.Add(_root)
-        Me.Controls.Add(_strip)
-        Me.AcceptButton = btnClose
-        Me.CancelButton = btnClose
 
+        HoldSettingsLayout()
+        ConfigureSettingsContract()
+        SettingsBuildTimings("editors") = settingsBuildWatch.ElapsedMilliseconds
         LoadState()
-        ' Before the sizing below, and deliberately probe-free: the hosting group shows at
-        ' most half of its nine actions in any given state, and measuring it with all of
-        ' them visible sizes the dialog for a state it will never draw.
+        SettingsBuildTimings("state") = settingsBuildWatch.ElapsedMilliseconds
+        ' Initialize the hosting page without a worker probe; the first visit reads live state.
         ApplyHostingState(Nothing)
+        SettingsBuildTimings("hosting-state") = settingsBuildWatch.ElapsedMilliseconds
         UpdateSummaries()
-        ' The two small groups open, the big one folded (see the class remark).
-        _secStartup.Expanded = True
-        _secNetwork.Expanded = True
         RestoreSettingsUiContext()
         _built = True
 
-        DpiLayout.ApplyAutoScale(Me)   ' last, once every child exists - see DpiLayout
+        DpiLayout.ApplyAutoScale(Me)
+        ReleaseSettingsLayout()
+        Me.ResumeLayout(True)
+        SettingsBuildTimings("layout") = settingsBuildWatch.ElapsedMilliseconds
     End Sub
 
     Protected Overrides Sub OnLoad(e As EventArgs)
         MyBase.OnLoad(e)
-        FitToContent()
         DpiLayout.ClampToWorkingArea(Me)
-        If Not RestoreSettingsWindowBounds() Then DpiLayout.CenterOnOwner(Me)
+        If Not RestoreSettingsWindowBounds() Then
+            FitInitialSettingsBounds()
+            DpiLayout.CenterOnOwner(Me)
+        End If
     End Sub
 
     ''' <summary>The Запуск group: whether the program starts, and whether it shows itself
@@ -251,9 +215,7 @@ Partial Public NotInheritable Class Share_Settings_Form
         ' The UI language, beside the theme - the two things that change how every window of
         ' the program reads. Moved here from the main window's status strip (owner decision,
         ' 2026-10-03). The combo lists endonyms, so it stays legible in the language being
-        ' left; a switch rebuilds the main window and the tray at once - this dialog resolves
-        ' its captions once, at construction, so it cannot re-caption itself: it closes, and
-        ' the next open reads the new language.
+        ' left. A switch updates open windows and the tray without closing this dialog.
         Dim langRow As New FlowLayoutPanel With {.AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink,
             .WrapContents = False, .Margin = New Padding(0, 6, 0, 2)}
         Dim lblLanguage As New Label With {.AutoSize = True, .Margin = New Padding(0, 6, 8, 0),
@@ -265,17 +227,13 @@ Partial Public NotInheritable Class Share_Settings_Form
         sec.AddBodyRow(SettingsEditorRow(lblLanguage, cmbLanguage, langRow.Margin))
     End Sub
 
-    ''' <summary>The combo's index IS the language's index in Localization.Codes. A choice
-    ''' switches at once - UiLanguage.Changed rebuilds the tray menu and the main window -
-    ''' and closes this dialog: its captions resolved once, at construction, so it cannot
-    ''' re-caption itself; reopening shows the new language.</summary>
+    ''' <summary>The combo index maps to Localization.Codes; captions update in place.</summary>
     Private Sub OnUiLanguageChanged(sender As Object, e As EventArgs)
         If cmbLanguage.SelectedIndex < 0 Then Return
         Dim code As String = Localization.Codes(cmbLanguage.SelectedIndex)
         If String.Equals(code, Localization.CurrentCode, StringComparison.OrdinalIgnoreCase) Then Return
         UiLanguage.Switch(code)
-        DialogResult = DialogResult.OK
-        Close()
+
     End Sub
 
     ''' <summary>The four Help links the main window's status strip used to fold into its
@@ -464,16 +422,7 @@ Partial Public NotInheritable Class Share_Settings_Form
     ' --- layout helpers ---------------------------------------------------------
 
     Private Shared Function SettingsEditorRow(caption As Label, editor As Control, margin As Padding) As Control
-        Dim row As New TableLayoutPanel With {.AutoSize = True, .ColumnCount = 2,
-            .Dock = DockStyle.Top, .Margin = margin, .Padding = Padding.Empty}
-        row.ColumnStyles.Add(New ColumnStyle(SizeType.Percent, 100.0F))
-        row.ColumnStyles.Add(New ColumnStyle(SizeType.Absolute, 180))
-        caption.MaximumSize = New Size(PageWidth - 260, 0)
-        caption.Anchor = AnchorStyles.Left
-        editor.Anchor = AnchorStyles.Right
-        row.Controls.Add(caption, 0, 0)
-        row.Controls.Add(editor, 1, 0)
-        Return row
+        Return New ManagerSettingRow(caption, editor, margin)
     End Function
 
     Private Shared Sub AddRow(tlp As TableLayoutPanel, c As Control)
@@ -481,38 +430,6 @@ Partial Public NotInheritable Class Share_Settings_Form
         tlp.RowCount = row + 1
         tlp.RowStyles.Add(New RowStyle(SizeType.AutoSize))
         tlp.Controls.Add(c, 0, row)
-    End Sub
-
-    ''' <summary>
-    ''' Fits the initial dialog to content, capped by the screen. Called only on load;
-    ''' subsequent group changes preserve user geometry and scroll the content instead.
-    ''' </summary>
-    Private Sub FitToContent()
-        If _root Is Nothing Then Return
-        ' PreferredSize, and never Control.Visible: this runs from OnLoad, where the form is
-        ' not on screen yet and EVERY child therefore reports Visible = False (it is an
-        ' ancestor-aware property). Reading it there measured the page as empty and the
-        ' dialog opened at its 220 px minimum with a scrollbar over content that fits.
-        Dim content As Integer = 0
-        For Each sec As CollapsibleSection In AllSections()
-            content += sec.PreferredSize.Height + sec.Margin.Vertical
-        Next
-        Dim needed As Integer = content + _root.Padding.Vertical + _strip.Height +
-                                (Me.Height - Me.ClientSize.Height)
-        Dim wa As Rectangle = DpiLayout.WorkingAreaFor(Me)
-        Dim h As Integer = Math.Max(Me.MinimumSize.Height, Math.Min(needed, wa.Height))
-        If h <> Me.Height Then Me.Height = h
-        DpiLayout.NudgeOnScreen(Me, wa)
-    End Sub
-
-    ''' <summary>Unfolding the hosting group is the moment its live probe is worth paying
-    ''' for. The content pane makes room without resizing the window.</summary>
-    Private Sub OnSectionExpandedChanged(sender As Object, e As EventArgs)
-        If Not _built Then Return
-        If _secHosting IsNot Nothing AndAlso _secHosting.Expanded Then EnsureHostingLoaded()
-        If _secExchange IsNot Nothing AndAlso _secExchange.Expanded Then EnsureExchangeLoaded()
-        ' WINDOWS-UI section 5: preserve user geometry; the content pane scrolls.
-        _root.PerformLayout()
     End Sub
 
     ' --- state ------------------------------------------------------------------
@@ -572,6 +489,7 @@ Partial Public NotInheritable Class Share_Settings_Form
         _secHosting.Summary = HostingText.HostModeLine(ServerFeatures.HostMode())
         _secHosting.SummaryColor = ThemeService.Palette.TextMuted
         UpdateExchangeSummary()
+        UpdateAccountSummary()
     End Sub
 
     ' --- the pinned listen port -------------------------------------------------
@@ -719,10 +637,57 @@ Partial Public NotInheritable Class Share_Settings_Form
         UpdateSummaries()
         Try
             Await ShareController.PushNetworkPolicyAsync()
-        Catch
+        Catch ex As Exception
+            AppFileLogger.LogException("Share settings: push the port", ex)
         End Try
+        Await EnsurePortServedAsync(newPort)
         UpdatePortNote()
+        UpdateSummaries()
     End Sub
+
+    ''' <summary>Makes the new port the one being served, without a second step the user has to know
+    ''' about. The worker is asked to rebind by the policy push; when it has not come up on the number
+    ''' within 10 s, the Windows service is restarted - without UAC where the install granted the
+    ''' management user that right, otherwise through the one elevated helper. The verdict is read back
+    ''' from the worker each time, never assumed. Only the service host needs this: a user-session
+    ''' worker is restarted by the push itself.</summary>
+    Private Async Function EnsurePortServedAsync(newPort As Integer) As Task
+        If ServerFeatures.HostMode() <> ServerFeatures.ServerHostMode.SystemService Then Return
+        If Await WaitForServedPortAsync(newPort, TimeSpan.FromSeconds(10)) Then
+            AppFileLogger.WriteLine("Share settings: port " & newPort.ToString() & " is served")
+            Return
+        End If
+        AppFileLogger.WriteLine("Share settings: port " & newPort.ToString() & " not served after the push - restarting the service")
+        ' The sc.exe calls and the UAC wait both block, so they run off the UI thread.
+        If Not Await Task.Run(Function() ServiceControl.TryRestartWithoutElevation(TimeSpan.FromSeconds(30))) Then
+            ' No grant on this install (or the service refused): the elevated helper, one UAC prompt.
+            Dim outcome As ManageResult = Await Task.Run(Function() ServiceControl.Manage(ManageAction.RestartService))
+            If outcome <> ManageResult.Succeeded Then
+                AppFileLogger.WriteLine("Share settings: service restart did not happen (" & outcome.ToString() & ")")
+            End If
+        End If
+        If Await WaitForServedPortAsync(newPort, TimeSpan.FromSeconds(20)) Then
+            AppFileLogger.WriteLine("Share settings: port " & newPort.ToString() & " is served after the restart")
+        Else
+            AppFileLogger.WriteLine("Share settings: port " & newPort.ToString() & " still not served after the restart")
+        End If
+    End Function
+
+    ''' <summary>Polls the worker until it reports Running on <paramref name="port"/>, or the time runs out.
+    ''' Every poll refreshes the status the port note reads, so the note tells the same story.</summary>
+    Private Async Function WaitForServedPortAsync(port As Integer, within As TimeSpan) As Task(Of Boolean)
+        Dim deadline As DateTime = DateTime.UtcNow.Add(within)
+        Do
+            Try
+                _status = Await ShareController.GetStatusAsync()
+            Catch ex As Exception
+                AppFileLogger.LogException("Share settings: read the status", ex)
+            End Try
+            If _status IsNot Nothing AndAlso _status.Running AndAlso _status.ListenPort = port Then Return True
+            If DateTime.UtcNow >= deadline Then Return False
+            Await Task.Delay(500)
+        Loop
+    End Function
 
     ' --- handlers (moved verbatim from MainWindow) ------------------------------
 
@@ -822,7 +787,7 @@ Partial Public NotInheritable Class Share_Settings_Form
         UpdateSummaries()
         ' The note is two wrapped lines tall when it is there and nothing when it is not,
         ' so repairing the veto has to give the height back.
-        If _built Then FitToContent()
+        If _built Then _pageHost.PerformLayout()
     End Sub
 
     ''' <summary>Persists the "open the window at startup" sub-option. Read back by

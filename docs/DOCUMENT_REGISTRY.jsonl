@@ -56,6 +56,14 @@
 {"path": "docs/guides/POSITIONING.md", "topic": "POSITIONING", "area": "website", "triggers": ["Changes to what the product says it is: the family sentence, the pillars and their order, the public editions, the reserved door, the language count or the platform floor"], "role": "source"}
 {"path": "docs/guides/STORE_PUBLISHING.md", "topic": "STORE PUBLISHING", "area": "engineering", "triggers": ["Changes to engineering behavior, structure or workflow"], "role": "source"}
 {"path": "docs/guides/TESTING.md", "topic": "TESTING", "area": "engineering", "triggers": ["Changes to engineering behavior, structure or workflow"], "role": "source"}
+{"path": "docs/how-to-archives.html", "topic": "how-to-archives", "area": "website", "triggers": ["Changes to website behavior, structure or workflow"], "role": "source"}
+{"path": "docs/how-to-editor.html", "topic": "how-to-editor", "area": "website", "triggers": ["Changes to website behavior, structure or workflow"], "role": "source"}
+{"path": "docs/how-to-filedo-disks.html", "topic": "how-to-filedo-disks", "area": "website", "triggers": ["Changes to website behavior, structure or workflow"], "role": "source"}
+{"path": "docs/how-to-keys.html", "topic": "how-to-keys", "area": "website", "triggers": ["Changes to website behavior, structure or workflow"], "role": "source"}
+{"path": "docs/how-to-ocr.html", "topic": "how-to-ocr", "area": "website", "triggers": ["Changes to website behavior, structure or workflow"], "role": "source"}
+{"path": "docs/how-to-resources.html", "topic": "how-to-resources", "area": "website", "triggers": ["Changes to website behavior, structure or workflow"], "role": "source"}
+{"path": "docs/how-to-setup.html", "topic": "how-to-setup", "area": "website", "triggers": ["Changes to website behavior, structure or workflow"], "role": "source"}
+{"path": "docs/how-to-viewer.html", "topic": "how-to-viewer", "area": "website", "triggers": ["Changes to website behavior, structure or workflow"], "role": "source"}
 {"path": "docs/index.html", "topic": "index", "area": "website", "triggers": ["Changes to website behavior, structure or workflow"], "role": "source"}
 {"path": "docs/privacy.html", "topic": "privacy", "area": "website", "triggers": ["Changes to website behavior, structure or workflow"], "role": "source"}
 {"path": "docs/publish-folders-android.html", "topic": "publish-folders-android", "area": "website", "triggers": ["Changes to website behavior, structure or workflow"], "role": "source"}

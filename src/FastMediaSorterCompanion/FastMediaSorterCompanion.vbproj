@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <!--
     Share Manager - Fast Media Sorter & Sharing - the Android Folder Share controller,
@@ -56,6 +56,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <EmbeddedResource Include="..\..\LICENSE" LogicalName="LICENSE" />
     <!-- QR rendering for the .fmscfg export (ShareConfigBuilder), same version as the viewer. -->
     <PackageReference Include="QRCoder" Version="1.4.3" />
   </ItemGroup>
@@ -126,9 +127,11 @@
       moves is corrected once.
     -->
     <Compile Include="..\Support\SitePages.vb" Link="Core\SitePages.vb" />
+    <Compile Include="..\SettingsNavIconPalette.vb" Link="Theming\SettingsNavIconPalette.vb" />
     <Compile Include="..\Icons\IconMap.vb" Link="Core\IconMap.vb" />
     <Compile Include="..\Icons\SvgPathData.vb" Link="Core\SvgPathData.vb" />
     <Compile Include="..\Icons\GlyphRenderer.vb" Link="Core\GlyphRenderer.vb" />
+    <Compile Include="..\Icons\StepArt.vb" Link="Core\StepArt.vb" />
     <!--
       The application theme (spec 060): one stored mode, one palette, one applier for both
       programs, so a window of either follows the same system / light / dark choice. The
@@ -146,6 +149,13 @@
     <Compile Include="..\Localization\Localization.Theme.vb" Link="Localization\Localization.Theme.vb" />
     <!-- Ticket 182 L-3/L-6: the strings of the shared LogPackage / MailSender, registered by both programs. -->
     <Compile Include="..\Localization\Localization.SendLogs.vb" Link="Localization\Localization.SendLogs.vb" />
+    <!--
+      Ticket 180 T-1: the client library of the device exchange (DEVICE-EXCHANGE): codec, frames, the pin-checking
+      TLS stream, data streams, the loopback forwarder, the credential store, the directory model and the
+      local-channel client. Whole-file "#If Not NETFRAMEWORK", linked here and compiled into the modern viewer by
+      its ..\**\*.vb glob; the net48 project lists none of it (a source scan holds that).
+    -->
+    <Compile Include="..\Exchange\*.vb" Link="Exchange\%(Filename)%(Extension)" />
   </ItemGroup>
 
 </Project>

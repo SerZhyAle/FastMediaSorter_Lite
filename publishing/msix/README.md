@@ -92,6 +92,12 @@ What the script packages (order matters - see [BUILD_AND_RELEASE.md](../../docs/
 3. `dotnet publish` of the Companion, plus the committed Go SFTP worker into `companion\`.
 4. `Prepare-OcrOfflinePayload.ps1` (the OCR models, pinned and hash-checked against
    `tools/tessdata.sha256`), logos, manifest, `makeappx`.
+5. **Read-back, before the package is signed or offered** (WINDOWS-STORE rung 3, `BUILD-EVIDENCE` rule 2):
+   `tools/Test-ArtifactVersion.ps1 -Msix` reads the Identity Version out of the packed archive and compares it
+   numerically with the remap of the release stamp, and `tools/Test-WindowsStoreConformance.ps1` holds
+   rules 1-5 and 17 (identity, no `AppxSignature.p7x`, notices, the container declarations, `runFullTrust`).
+   Either one failing deletes the package and stops the build. Run them by hand on any package with
+   `pwsh -File tools/Test-ArtifactVersion.ps1 -Expect <YY.M.D.HHmm> -Msix -Path <msix>`.
 
 Output: `publishing/msix/dist/FastMediaSorter_LITE-<version>-x64.msix`, **unsigned** - that's correct, upload it
 as-is. The package version is read from **the published mainline exe** (not the MSBuild output): its

@@ -445,11 +445,6 @@ Public Class Table_Form
             Main_Form.DoKey(e.RowIndex)
         Else
             If e.RowIndex > 0 Then
-#If Not NETFRAMEWORK Then
-                ' "..or a resource" (007 §4.2): with a server or a share saved, the slot may be a
-                ' folder of it instead of a folder on this PC.
-                If OfferResourceForSlot(e.RowIndex) Then Return
-#End If
                 BrowseLocalSlotFolder(e.RowIndex)
             End If
         End If
@@ -458,15 +453,16 @@ Public Class Table_Form
     ''' <summary>The folder picker for a slot - a folder on this PC.</summary>
     Private Sub BrowseLocalSlotFolder(rowIndex As Integer)
         Using folderBrowse As New FolderBrowserDialog()
-            folderBrowse.SelectedPath = Hardkeys_to_move_mediafile(rowIndex)
+            Dim currentPath As String = Hardkeys_to_move_mediafile(rowIndex)
+            If Not String.IsNullOrWhiteSpace(currentPath) AndAlso IO.Directory.Exists(currentPath) Then
+                folderBrowse.SelectedPath = currentPath
+            End If
             Dim textKey As String = rowIndex.ToString
             If textKey = "10" Then textKey = "0"
             folderBrowse.Description = Localization.TF("Укажите каталог переноса/копирования для клавиши {0}", textKey)
 #If Not NETFRAMEWORK Then
             ' The Vista-style dialog .NET uses shows Description only as the title.
             folderBrowse.UseDescriptionForTitle = True
-            ' A slot that names a server folder is not a path this dialog can open at.
-            If ResourceLocator.IsLocator(folderBrowse.SelectedPath) Then folderBrowse.SelectedPath = ""
 #End If
             ' Explicit owner: this window rides the viewer's always-on-top band,
             ' and an ownerless native dialog would open behind it.

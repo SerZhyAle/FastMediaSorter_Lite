@@ -129,7 +129,7 @@ Partial Public Class Table_Form
                             Function() Main_Form.GetModernPreferences().VideoSingleClickAction,
                             Sub(v) Main_Form.GetModernPreferences().VideoSingleClickAction = v)
         AddPreferenceChoice(video, "video_end_action",
-                            Function() {Choice("stay", "Оставить последний кадр"), Choice("nextFile", "Следующий файл"), Choice("repeat", "Повторить")},
+                            Function() {Choice("stay", "Проиграть и стоп"), Choice("nextFile", "Автопереход к следующему"), Choice("repeat", "По кругу")},
                             Function() Main_Form.GetModernPreferences().VideoEndAction,
                             Sub(v) Main_Form.GetModernPreferences().VideoEndAction = v)
         ' The three keyboard seek steps of 119 Ф-2: Shift+arrows / Alt+arrows / Ctrl+arrows.
@@ -147,7 +147,7 @@ Partial Public Class Table_Form
                                Function() Main_Form.GetModernPreferences().IncludeAudioInNavigation,
                                Sub(v) Main_Form.GetModernPreferences().IncludeAudioInNavigation = v)
         AddPreferenceChoice(audio, "audio_end_action",
-                            Function() {Choice("next", "Следующий файл"), Choice("stay", "Остановиться"), Choice("repeat", "Повторить")},
+                            Function() {Choice("next", "Автопереход к следующему"), Choice("stay", "Проиграть и стоп"), Choice("repeat", "По кругу")},
                             Function() Main_Form.GetModernPreferences().AudioEndAction,
                             Sub(v) Main_Form.GetModernPreferences().AudioEndAction = v)
         AddPreferenceCheck(audio, "audio_controls_visible",
@@ -325,16 +325,21 @@ Partial Public Class Table_Form
         cacheUsageGates.Add(gate)
         Dim unknownText As String = Localization.T("Неизвестно")
         Dim clearing As Boolean = False
+        ' The last measurement that landed, in bytes; -1 while it is unknown (measuring, or it failed).
+        ' Only a measured 0 means "nothing to clear" - an unknown size still asks, as it always did.
+        Dim measuredBytes As Long = -1
 
         Dim refresh As Action =
             Async Sub()
                 If clearing OrElse Not CacheUsageRowAlive(usage) Then Return
                 Dim ticket As Integer = gate.Begin()
+                measuredBytes = -1
                 usage.Text = unknownText
                 If toolTip IsNot Nothing Then toolTip.SetToolTip(usage, String.Empty)
                 Try
                     Dim bytes As Long = Await Task.Run(measure)
                     If Not CacheUsageRowAlive(usage) OrElse Not gate.IsLatest(ticket) Then Return
+                    measuredBytes = bytes
                     usage.Text = Localization.TF("{0} МБ", Megabytes(bytes))
                     If toolTip IsNot Nothing Then toolTip.SetToolTip(usage, String.Empty)
                 Catch ex As Exception
@@ -362,6 +367,11 @@ Partial Public Class Table_Form
         AddHandler clearButton.Click,
             Async Sub()
                 If clearing OrElse Not CacheUsageRowAlive(usage) Then Return
+                ' APP-SETTINGS section 9: an empty cache has nothing to clear - say so instead of asking.
+                If measuredBytes = 0 Then
+                    Main_Form.Notify(Localization.T("Очищать нечего: кэш пуст."), NotifyLevel.Info)
+                    Return
+                End If
                 If ViewerBox.Show(Me, Localization.T(confirmText), Localization.T("Настройки"),
                     MessageBoxButtons.YesNo, MessageBoxIcon.Question, MessageBoxDefaultButton.Button2) <> DialogResult.Yes Then Return
                 clearing = True
@@ -731,6 +741,13 @@ Partial Public Class Table_Form
                 ApplyImportedPreferencesWithBackup(current, defaults)
             End Sub
         AddSettingRow(files, "settings_defaults", reset, 230, True)
+
+        ' Spec 184: the welcome wizard, opened again on request. It opens at once and records its own exit.
+        Dim welcome As New Button With {.AutoSize = True}
+        expandedRefreshActions.Add(Sub() welcome.Text = Localization.T("Показать приветственные шаги снова"))
+        welcome.Text = Localization.T("Показать приветственные шаги снова")
+        AddHandler welcome.Click, Sub() Main_Form.ShowWelcome()
+        AddSettingRow(files, "welcome_replay", welcome, 230, True)
     End Sub
 
     ''' <summary>

@@ -1,0 +1,212 @@
+<!doctype html>
+<html lang="en" data-theme="dark" data-lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<script>
+(function(){try{
+  var t=localStorage.getItem('sza-theme');
+  if(t!=='dark'&&t!=='light')t=matchMedia('(prefers-color-scheme: light)').matches?'light':'dark';
+  document.documentElement.setAttribute('data-theme',t);
+  var l=localStorage.getItem('sza-lang');
+  if(l==='uk')l='ua';
+  if(l!=='ru'&&l!=='en'&&l!=='ua'){var n=(navigator.language||'en').toLowerCase();l=n.indexOf('ru')==0?'ru':n.indexOf('uk')==0?'ua':'en';}
+  document.documentElement.setAttribute('data-lang',l);
+}catch(e){}})();
+</script>
+<title>Share FileDO .fdd Disks | Fast Media Sorter &amp; Sharing</title>
+<meta name="description" content="How to share FileDO .fdd virtual disks to paired phones over SFTP with Fast Media Sorter &amp; Sharing for Windows, setup, autostart and troubleshooting.">
+<link rel="canonical" href="https://serzhyale.github.io/FastMediaSorter_Lite/docs/how-to-filedo-disks.html">
+<link rel="alternate" hreflang="x-default" href="https://serzhyale.github.io/FastMediaSorter_Lite/docs/how-to-filedo-disks.html">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="Fast Media Sorter &amp; Sharing">
+<meta property="og:title" content="Share FileDO .fdd Disks | Fast Media Sorter &amp; Sharing">
+<meta property="og:description" content="How to share FileDO .fdd virtual disks to paired phones over SFTP with Fast Media Sorter &amp; Sharing for Windows, setup, autostart and troubleshooting.">
+<meta property="og:url" content="https://serzhyale.github.io/FastMediaSorter_Lite/docs/how-to-filedo-disks.html">
+<meta property="og:image" content="https://serzhyale.github.io/FastMediaSorter_Lite/assets/social-preview-1280x640.png">
+<meta property="og:locale" content="en">
+<meta property="og:locale:alternate" content="ru">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Share FileDO .fdd Disks | Fast Media Sorter &amp; Sharing">
+<meta name="twitter:description" content="How to share FileDO .fdd virtual disks to paired phones over SFTP with Fast Media Sorter &amp; Sharing for Windows, setup, autostart and troubleshooting.">
+<meta name="twitter:image" content="https://serzhyale.github.io/FastMediaSorter_Lite/assets/social-preview-1280x640.png">
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"TechArticle","headline":"Share FileDO .fdd Disks | Fast Media Sorter & Sharing","description":"How to share FileDO .fdd virtual disks to paired phones over SFTP with Fast Media Sorter & Sharing for Windows, setup, autostart and troubleshooting.","url":"https://serzhyale.github.io/FastMediaSorter_Lite/docs/how-to-filedo-disks.html","inLanguage":["en","ru","uk"],"image":"https://serzhyale.github.io/FastMediaSorter_Lite/assets/social-preview-1280x640.png","isPartOf":{"@type":"WebSite","name":"Fast Media Sorter & Sharing for Windows","url":"https://serzhyale.github.io/FastMediaSorter_Lite/"},"author":{"@type":"Person","name":"SerZhyAle"}}</script>
+<link rel="icon" href="../assets/icons/Fast_Media_Sorter.ico" sizes="any">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/sza-kit.css">
+<link rel="stylesheet" href="../assets/fms-site.css">
+<style>
+html[data-lang="ru"] [data-l]:not([data-l="ru"]){display:none}
+html[data-lang="en"] [data-l]:not([data-l="en"]){display:none}
+html[data-lang="ua"] [data-l]:not([data-l="ua"]){display:none}
+.site-header>.brand{margin-right:auto}
+.hero{text-align:left;padding:1.5rem 0 .8rem}
+
+.hero .lead{margin:0}
+.steps{counter-reset:step;display:grid;gap:1rem}
+.step{position:relative;padding:1.2rem 1.3rem 1.2rem 4rem;background:var(--card);border:1px solid var(--border);border-radius:var(--radius)}
+.step:before{counter-increment:step;content:counter(step);position:absolute;left:1.15rem;top:1.15rem;width:2rem;height:2rem;display:grid;place-items:center;border-radius:50%;background:var(--acc);color:var(--acc-ink);font-family:var(--font-heading);font-weight:800}
+.step h2{font-size:1.15rem;margin:0 0 .35rem}
+.step p,.step li{color:var(--text-2)}
+.step ul{margin:.55rem 0 0;padding-left:1.2rem}
+.callout{border-left:3px solid var(--gold);padding:.9rem 1rem;background:var(--card);border-radius:0 var(--radius-sm) var(--radius-sm) 0;color:var(--text-2)}
+.two{display:grid;gap:1rem}
+@media(min-width:860px){.two{grid-template-columns:1fr 1fr}}
+.cards-grid{display:grid;gap:1rem}
+@media(min-width:860px){.cards-grid{grid-template-columns:1fr 1fr}}
+.card-box{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:1.2rem}
+.card-box h3{font-size:1.08rem;margin:0 0 .4rem}
+.card-box p{color:var(--text-2);margin:0;font-size:.94rem}
+
+</style>
+</head>
+<body>
+<a class="skip-link" href="#main"><span data-l="en">Skip to main content</span><span data-l="ru">Перейти к основному содержимому</span><span data-l="ua">Перейти до основного вмісту</span></a><div class="bg-blobs" aria-hidden="true"><div class="blob blob-1"></div><div class="blob blob-2"></div><div class="blob blob-3"></div></div>
+<header class="site-header"><span id="site-nav-label" class="sr-only"><span data-l="en">Main navigation</span><span data-l="ru">Основная навигация</span><span data-l="ua">Основна навігація</span></span><nav class="site-nav" aria-labelledby="site-nav-label">
+<a class="brand" href="../" aria-label="Fast Media Sorter &amp; Sharing for Windows">Fast Media Sorter &amp; Sharing for Windows<span class="dot">.</span></a>
+<div class="seg" role="group" aria-label="Language"><button data-setlang="ru">RU</button><button data-setlang="en">EN</button><button data-setlang="ua">UA</button></div>
+<button class="theme-btn" id="themeBtn" aria-label="Switch theme">◐</button>
+<a class="btn btn-primary btn-sm" href="../#get"><span data-l="en">Download</span><span data-l="ru">Скачать</span><span data-l="ua">Завантажити</span></a>
+</nav></header>
+
+<main class="container" id="main" tabindex="-1">
+<section class="hero">
+<span class="kicker"><span data-l="en">HOW TO · FILEDO DISK SHARING</span><span data-l="ru">ИНСТРУКЦИЯ · ДИСКИ FILEDO</span><span data-l="ua">ПОСІБНИК · ДИСКИ FILEDO</span></span>
+<h1>
+<span data-l="en">Share FileDO .fdd virtual disks with your phone</span>
+<span data-l="ru">Общий доступ к виртуальным дискам FileDO .fdd на телефоне</span>
+<span data-l="ua">Спільний доступ до віртуальних дисків FileDO .fdd на телефоні</span>
+</h1>
+<p class="lead">
+<span data-l="en">Fast Media Sorter &amp; Sharing for Windows can publish your FileDO <code>.fdd</code> virtual disk containers directly to paired Android devices and SFTP clients. FileDO registers the disk via a local named pipe, and Fast Media Sorter handles container mounting and encrypted SFTP delivery without creating SMB network shares or opening network sockets in FileDO itself. It needs the Share Manager - the Full install type, 64-bit Windows 10 version 1607 or newer - and the optional <b>FileDO virtual disk host</b> component, which no install type ticks for you.</span>
+<span data-l="ru">Fast Media Sorter &amp; Sharing for Windows умеет открывать ваши виртуальные диски <code>.fdd</code> программы FileDO для сопряжённых Android-устройств и SFTP-клиентов. FileDO регистрирует диск через локальный именованный канал, а Fast Media Sorter берёт на себя монтирование контейнера и безопасную передачу по SFTP без создания общих папок SMB и без открытия сетевых портов в самом FileDO. Нужен Share Manager - тип установки Полная, 64-битная Windows 10 версии 1607 или новее - и необязательный компонент <b>Хост виртуальных дисков FileDO</b>, который не отмечен ни в одном типе установки.</span>
+<span data-l="ua">Fast Media Sorter &amp; Sharing for Windows уміє відкривати ваші віртуальні диски <code>.fdd</code> програми FileDO для сполучених Android-пристроїв та SFTP-клієнтів. FileDO реєструє диск через локальний іменований канал, а Fast Media Sorter бере на себе монтування контейнера та безпечну передачу через SFTP без створення спільних тек SMB і без відкриття мережевих портів у самому FileDO. Потрібен Share Manager - тип встановлення Повна, 64-бітна Windows 10 версії 1607 або новіша - і необов'язковий компонент <b>Хост віртуальних дисків FileDO</b>, який не позначений в жодному типі встановлення.</span>
+</p>
+</section>
+
+<section class="section">
+<div class="callout">
+<b><span data-l="en">Complete client transparency (DISK-SHARE contract)</span><span data-l="ru">Полная прозрачность для клиентов (контракт DISK-SHARE)</span><span data-l="ua">Повна прозорість для клієнтів (контракт DISK-SHARE)</span></b>
+<p>
+<span data-l="en">To paired phones and SFTP clients, a shared FileDO virtual disk looks exactly like a standard shared folder. No new status text, hidden virtual disk markers, or unique error codes exist for disk roots (rules 25-28). If a disk is closed or locked, it appears to clients identically to an ordinary folder whose path is temporarily unavailable.</span>
+<span data-l="ru">Для сопряжённых телефонов и SFTP-клиентов общий диск FileDO выглядит точно так же, как обычная общая папка. Для дисковых корней не существует никаких новых статусов, скрытых служебных меток или новых кодов ошибок (правила 25-28). Закрытый или заблокированный диск выглядит для клиента точно так же, как обычная папка, путь к которой временно недоступен.</span>
+<span data-l="ua">Для сполучених телефонів та SFTP-клієнтів спільний диск FileDO виглядає точнісінько як звичайна спільна тека. Для дискових коренів не існує жодних нових статусів, прихованих службових позначок чи нових кодів помилок (правила 25-28). Закритий або заблокований диск виглядає для клієнта точно так само, як звичайна тека, шлях до якої тимчасово недоступний.</span>
+</p>
+</div>
+</section>
+
+<section class="section">
+<h2><span data-l="en">Step-by-step setup and sharing</span><span data-l="ru">Пошаговая настройка и открытие диска</span><span data-l="ua">Покрокове налаштування та відкриття диска</span></h2>
+<div class="steps">
+<article class="step">
+<h2><span data-l="en">Tick the optional FileDO virtual disk host</span><span data-l="ru">Отметьте дополнительный компонент «Хост виртуальных дисков FileDO»</span><span data-l="ua">Позначте додатковий компонент «Хост віртуальних дисків FileDO»</span></h2>
+<p>
+<span data-l="en">When installing Fast Media Sorter &amp; Sharing for Windows, check the optional <b>FileDO virtual disk host</b>. Without it, the worker reports that disk sharing is unavailable, and FileDO&#39;s dialog will notify you that disk sharing cannot proceed. The bundled <code>filedo.exe</code> is taken strictly from the latest FileDO GitHub release (GitHub/winget desktop build, never the Microsoft Store MSIX package, which cannot mount containers) and verified with SHA256 (in <code>payload/filedo/filedo.exe</code>, <code>filedo.sha256</code>, and <code>release.json</code>, rules 2-5).</span>
+<span data-l="ru">При установке Fast Media Sorter &amp; Sharing for Windows отметьте дополнительный компонент <b>Хост виртуальных дисков FileDO</b>. Без него воркер сообщает, что поддержка дисков выключена, и диалог FileDO покажет предупреждение «шаринг дисков недоступен». Встроенный <code>filedo.exe</code> берётся строго из последнего релиза FileDO на GitHub (настольная сборка GitHub/winget, ни в коем случае не пакет Microsoft Store MSIX, который не умеет монтировать контейнеры) и проверяется по SHA256 (файлы <code>payload/filedo/filedo.exe</code>, <code>filedo.sha256</code> и <code>release.json</code>, правила 2-5).</span>
+<span data-l="ua">Під час встановлення Fast Media Sorter &amp; Sharing for Windows позначте додатковий компонент <b>Хост віртуальних дисків FileDO</b>. Без нього воркер повідомляє, що підтримка дисків вимкнена, і діалог FileDO попередить, що «спільний доступ до дисків недоступний». Вбудований <code>filedo.exe</code> береться суворо з останнього релізу FileDO на GitHub (настільна збірка GitHub/winget, у жодному разі не пакет Microsoft Store MSIX, який не вміє монтувати контейнери) і перевіряється за SHA256 (файли <code>payload/filedo/filedo.exe</code>, <code>filedo.sha256</code> та <code>release.json</code>, правила 2-5).</span>
+</p>
+</article>
+
+<article class="step">
+<h2><span data-l="en">Start Share Manager</span><span data-l="ru">Запустите Share Manager</span><span data-l="ua">Запустіть Share Manager</span></h2>
+<p>
+<span data-l="en">Launch Fast Media Sorter &amp; Sharing and open <b>Share Manager - Fast Media Sorter &amp; Sharing</b> from the viewer or tray icon. Fast Media Sorter acts as the host and holder for shared disks, so its worker must be running and ready to answer local named pipe requests before FileDO can register containers. The first time, press <b>Enable server features..</b> there (it asks for administrator approval once - <a href="../publish-folders-android.html">see the Android guide</a>).</span>
+<span data-l="ru">Запустите Fast Media Sorter &amp; Sharing и откройте <b>Share Manager</b> (Менеджер общего доступа) из просмотрщика или значка в трее. Fast Media Sorter выступает хостом и владельцем общих дисков, поэтому его воркер должен работать и отвечать по локальному именованному каналу, прежде чем FileDO сможет зарегистрировать контейнер. В первый раз нажмите там <b>Включить функции сервера..</b> (один раз потребуется подтверждение администратора - <a href="../publish-folders-android.html">см. инструкцию для Android</a>).</span>
+<span data-l="ua">Запустіть Fast Media Sorter &amp; Sharing та відкрийте <b>Share Manager</b> (Менеджер спільного доступу) з переглядача або піктограми в треї. Fast Media Sorter виступає хостом і власником спільних дисків, тому його воркер повинен працювати й відповідати через локальний іменований канал, перш ніж FileDO зможе зареєструвати контейнер. Уперше натисніть там <b>Увімкнути функції сервера..</b> (один раз знадобиться підтвердження адміністратора - <a href="../publish-folders-android.html">див. посібник для Android</a>).</span>
+</p>
+</article>
+
+<article class="step">
+<h2><span data-l="en">Register a disk from FileDO or Share Manager</span><span data-l="ru">Зарегистрируйте диск в FileDO или Share Manager</span><span data-l="ua">Зареєструйте диск у FileDO або Share Manager</span></h2>
+<p>
+<span data-l="en">In FileDO&#39;s Disk Manager, select a registered <code>.fdd</code> container and choose <b>Share with Fast Media Sorter &amp; Sharing..</b> (<code>Ctrl+Shift+S</code>). Alternatively, open Share Manager &rarr; <b><svg class="glyph" data-glyph="content.disk-container" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" focusable="false"><path d="M6 2c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6H6zm7 7V3.5L18.5 9H13zM7.5 13h9v6h-9zM13.5 16a1 1 0 1 0 2 0a1 1 0 1 0-2 0z" fill="currentColor" fill-rule="evenodd"/></svg>.fdd disks.. &rarr; Connect .fdd..</b> to choose a container directly. Specify the root name seen by phones. Access is read and write unless you tick <b>Read-only</b>; sealed containers are always enforced as read-only.</span>
+<span data-l="ru">В Диспетчере дисков FileDO выберите зарегистрированный контейнер <code>.fdd</code> и нажмите <b>«Поделиться через Fast Media Sorter &amp; Sharing..»</b> (<code>Ctrl+Shift+S</code>). Либо откройте Share Manager &rarr; <b><svg class="glyph" data-glyph="content.disk-container" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" focusable="false"><path d="M6 2c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6H6zm7 7V3.5L18.5 9H13zM7.5 13h9v6h-9zM13.5 16a1 1 0 1 0 2 0a1 1 0 1 0-2 0z" fill="currentColor" fill-rule="evenodd"/></svg>Диски .fdd.. &rarr; Подключить .fdd..</b>, чтобы выбрать контейнер напрямую. Задайте имя корня, которое увидят телефоны. Доступ - чтение и запись, пока вы не отметите <b>Только чтение</b>; sealed-контейнеры всегда строго только чтение.</span>
+<span data-l="ua">У Диспетчері дисків FileDO виберіть зареєстрований контейнер <code>.fdd</code> і натисніть <b>«Поділитися через Fast Media Sorter &amp; Sharing..»</b> (<code>Ctrl+Shift+S</code>). Або відкрийте Share Manager &rarr; <b><svg class="glyph" data-glyph="content.disk-container" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" focusable="false"><path d="M6 2c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6H6zm7 7V3.5L18.5 9H13zM7.5 13h9v6h-9zM13.5 16a1 1 0 1 0 2 0a1 1 0 1 0-2 0z" fill="currentColor" fill-rule="evenodd"/></svg>Диски .fdd.. &rarr; Підключити .fdd..</b>, щоб вибрати контейнер безпосередньо. Вкажіть назву кореня, яку побачать телефони. Доступ - читання та запис, доки ви не позначите <b>Лише читання</b>; sealed-контейнери завжди суворо лише для читання.</span>
+</p>
+</article>
+
+<article class="step">
+<h2><span data-l="en">Observe the single holder rule</span><span data-l="ru">Правило одного владельца (Holder)</span><span data-l="ua">Правило одного власника (Holder)</span></h2>
+<p>
+<span data-l="en">Only one holder can control a container at any moment: <code>none</code>, <code>FileDO</code>, <code>FMS Service</code> (Server edition service), or <code>FMS Session</code> (User edition session worker). If the disk is already mounted locally in FileDO, FileDO cleanly disconnects it upon confirmation before handing it to FMS. If a disk is held by FMS, FileDO will refuse local mount attempts and show who holds it.</span>
+<span data-l="ru">У контейнера может быть только один владелец одновременно: <code>none</code> (никто), <code>FileDO</code>, <code>FMS Service</code> (служба Windows в серверной редакции) или <code>FMS Session</code> (воркер в пользовательском сеансе). Если диск уже смонтирован локально в FileDO, FileDO запросит подтверждение и корректно отключит его перед передачей в FMS. Если диск держит FMS, попытка смонтировать его в FileDO будет отклонена с указанием текущего владельца.</span>
+<span data-l="ua">У контейнера може бути лише один власник одночасно: <code>none</code> (ніхто), <code>FileDO</code>, <code>FMS Service</code> (служба Windows у серверній редакції) або <code>FMS Session</code> (воркер у сеансі користувача). Якщо диск уже змонтовано локально у FileDO, FileDO запитає підтвердження і коректно відключить його перед передачею в FMS. Якщо диск тримає FMS, спроба змонтувати його у FileDO буде відхилена із зазначенням поточного власника.</span>
+</p>
+</article>
+
+<article class="step">
+<h2><span data-l="en">Autostart and protected encryption keys</span><span data-l="ru">Автозапуск и безопасное хранение ключей</span><span data-l="ua">Автозапуск та безпечне зберігання ключів</span></h2>
+<p>
+<span data-l="en">Autostart is an explicit opt-in for each disk. For encrypted disks, entering the password enables automatic reopening after reboots without transmitting credentials to phones. The key is encrypted via Windows DPAPI: machine-protected under Server edition (<code>FastMediaSorterCompanionSFTP</code>) or user-protected under User edition. It is never stored in the container, never written to log files, and is destroyed immediately if autostart is toggled off, sharing is stopped, or the container password changes.</span>
+<span data-l="ru">Автозапуск настраивается отдельно для каждого диска с явного согласия пользователя. Для зашифрованного диска ввод пароля позволяет автоматически открывать его после перезагрузки без передачи секретов на телефон. Ключ защищается Windows DPAPI: машинным хранилищем под службой Server edition (<code>FastMediaSorterCompanionSFTP</code>) или пользовательским хранилищем под User edition. Ключ никогда не пишется в сам контейнер или в логи и немедленно уничтожается при отключении автозапуска, прекращении шаринга или смене пароля.</span>
+<span data-l="ua">Автозапуск налаштовується окремо для кожного диска за явної згоди користувача. Для зашифрованого диска введення пароля дозволяє автоматично відкривати його після перезавантаження без передачі секретів на телефон. Ключ захищається Windows DPAPI: машинним сховищем під службою Server edition (<code>FastMediaSorterCompanionSFTP</code>) або сховищем користувача під User edition. Ключ ніколи не записується в сам контейнер чи в журнали і негайно знищується у разі вимкнення автозапуску, припинення спільного доступу чи зміни пароля.</span>
+</p>
+</article>
+
+<article class="step">
+<h2><span data-l="en">Pair your phone over SFTP</span><span data-l="ru">Подключите телефон по SFTP</span><span data-l="ua">Підключіть телефон через SFTP</span></h2>
+<p>
+<span data-l="en">Open the Android FastMediaSorter app, select <b>Add resource &rarr; SFTP/FTP &rarr; Import from companion</b>, and scan the QR code from Share Manager. The open FileDO disk appears alongside standard shared folders, allowing smooth browsing and media playback. Closing the disk keeps its registration for easy one-click reopening later; stopping sharing removes it completely.</span>
+<span data-l="ru">В приложении FastMediaSorter на Android выберите <b>Добавить ресурс &rarr; SFTP/FTP &rarr; Импорт из компаньона</b> и отсканируйте QR-код из Share Manager. Открытый диск FileDO появится рядом с обычными общими папками, позволяя просматривать и открывать медиафайлы. Закрытие диска сохраняет его регистрацию для быстрого повторного открытия в один клик; прекращение шаринга удаляет его полностью.</span>
+<span data-l="ua">У застосунку FastMediaSorter на Android виберіть <b>Додати ресурс &rarr; SFTP/FTP &rarr; Імпорт із компаньйона</b> та відскануйте QR-код із Share Manager. Відкритий диск FileDO з&#39;явиться поруч зі звичайними спільними теками, дозволяючи переглядати та відкривати медіафайли. Закриття диска зберігає його реєстрацію для швидкого повторного відкриття в один клік; припинення спільного доступу видаляє його повністю.</span>
+</p>
+</article>
+</div>
+</section>
+
+<section class="section">
+<h2><span data-l="en">Troubleshooting worker states</span><span data-l="ru">Устранение неполадок и состояния воркера</span><span data-l="ua">Усунення несправностей та стани воркера</span></h2>
+<div class="cards-grid">
+<div class="card-box">
+<h3><span data-l="en">&ldquo;FMS is running but disk sharing is unavailable&rdquo;</span><span data-l="ru">«FMS работает, но шаринг дисков недоступен»</span><span data-l="ua">«FMS працює, але спільний доступ до дисків недоступний»</span></h3>
+<p><span data-l="en">Update Fast Media Sorter &amp; Sharing for Windows and ensure the optional FileDO virtual disk host was ticked in setup. Then recheck the disk in FileDO&#39;s Disk Manager.</span><span data-l="ru">Обновите Fast Media Sorter &amp; Sharing for Windows и убедитесь, что в установщике был отмечен дополнительный компонент «Хост виртуальных дисков FileDO». Затем повторите проверку в Диспетчере дисков FileDO.</span><span data-l="ua">Оновіть Fast Media Sorter &amp; Sharing for Windows і переконайтеся, що в інсталяторі було позначено додатковий компонент «Хост віртуальних дисків FileDO». Потім повторіть перевірку в Диспетчері дисків FileDO.</span></p>
+</div>
+<div class="card-box">
+<h3><span data-l="en">&ldquo;The FMS worker is unavailable&rdquo;</span><span data-l="ru">«Worker FMS недоступен»</span><span data-l="ua">«Worker FMS недоступний»</span></h3>
+<p><span data-l="en">Launch Fast Media Sorter &amp; Sharing and open Share Manager. If the program is not installed on this PC, visit the installation page to set it up.</span><span data-l="ru">Запустите Fast Media Sorter &amp; Sharing и откройте Share Manager. Если программа ещё не установлена на этом компьютере, загрузите и установите её со страницы загрузки.</span><span data-l="ua">Запустіть Fast Media Sorter &amp; Sharing та відкрийте Share Manager. Якщо програму ще не встановлено на цьому комп&#39;ютері, завантажте та встановіть її зі сторінки завантаження.</span></p>
+</div>
+<div class="card-box">
+<h3><span data-l="en">&ldquo;Worker identity could not be verified&rdquo;</span><span data-l="ru">«Подлинность worker не подтверждена»</span><span data-l="ua">«Автентичність worker не підтверджена»</span></h3>
+<p><span data-l="en">No credentials were sent across the named pipe. Restart the installed Fast Media Sorter host or service and retry the operation.</span><span data-l="ru">Учётные данные не отправлялись через непроверенный канал. Перезапустите установленный хост или службу Fast Media Sorter и повторите попытку.</span><span data-l="ua">Облікові дані не надсилалися через неперевірений канал. Перезапустіть установлений хост або службу Fast Media Sorter і повторіть спробу.</span></p>
+</div>
+<div class="card-box">
+<h3><span data-l="en">&ldquo;The FMS reply is incomplete or incompatible&rdquo;</span><span data-l="ru">«Ответ FMS неполон или несовместим»</span><span data-l="ua">«Відповідь FMS неповна або несумісна»</span></h3>
+<p><span data-l="en">Version mismatch between components. Update both FileDO and Fast Media Sorter &amp; Sharing to their latest releases and retry.</span><span data-l="ru">Рассогласование версий между компонентами. Обновите обе программы — FileDO и Fast Media Sorter &amp; Sharing — до актуальных версий и повторите попытку.</span><span data-l="ua">Розбіжність версій між компонентами. Оновіть обидва застосунки — FileDO та Fast Media Sorter &amp; Sharing — до актуальних версій і повторіть спробу.</span></p>
+</div>
+</div>
+</section>
+
+<section class="section two">
+<div class="callout">
+<b><span data-l="en">FileDO project and installer trust</span><span data-l="ru">Проект FileDO и доверие к установщику</span><span data-l="ua">Проєкт FileDO та довіра до інсталятора</span></b>
+<p>
+<span data-l="en">Like Fast Media Sorter, the desktop installer for FileDO is unsigned, and Windows SmartScreen may show an unverified publisher dialog on first run. Read <a href="https://serzhyale.github.io/FileDO/guides/install-trust.html">FileDO&#39;s installation trust guide</a> for details, and visit the main <a href="https://serzhyale.github.io/FileDO/">FileDO website</a>. The reciprocal guide from FileDO is published at <a href="https://serzhyale.github.io/FileDO/guides/fms-sharing.html">FileDO FMS Sharing Guide</a>.</span>
+<span data-l="ru">Как и Fast Media Sorter, настольный установщик FileDO не имеет коммерческой цифровой подписи, поэтому SmartScreen Windows может показать предупреждение о неизвестном издателе. Прочитайте <a href="https://serzhyale.github.io/FileDO/guides/install-trust.html">руководство FileDO по доверию к установщику</a> и посетите основной <a href="https://serzhyale.github.io/FileDO/">сайт FileDO</a>. Зеркальное руководство со стороны FileDO опубликовано на странице <a href="https://serzhyale.github.io/FileDO/guides/fms-sharing.html">FileDO: общий доступ через FMS</a>.</span>
+<span data-l="ua">Як і Fast Media Sorter, настільний інсталятор FileDO не має комерційного цифрового підпису, тому SmartScreen Windows може показати попередження про невідомого видавця. Ознайомтеся з <a href="https://serzhyale.github.io/FileDO/guides/install-trust.html">посібником FileDO щодо довіри до інсталятора</a> та відвідайте головний <a href="https://serzhyale.github.io/FileDO/">сайт FileDO</a>. Дзеркальний посібник з боку FileDO опубліковано на сторінці <a href="https://serzhyale.github.io/FileDO/guides/fms-sharing.html">FileDO: спільний доступ через FMS</a>.</span>
+</p>
+</div>
+<div class="callout">
+<b><span data-l="en">Fast Media Sorter guides</span><span data-l="ru">Документация Fast Media Sorter</span><span data-l="ua">Документація Fast Media Sorter</span></b>
+<p>
+<span data-l="en">For general folder publishing and remote network configuration, refer to the <a href="../publish-folders-android.html">guide to publishing folders for Android</a> (first run, network and router), the <a href="../server.html">always-on Server edition</a>, and our <a href="privacy.html">privacy disclosure</a>.</span>
+<span data-l="ru">Для настройки обычных общих папок и доступа через интернет обратитесь к <a href="../publish-folders-android.html">инструкции по публикации папок для Android</a> (первый запуск, сеть и роутер), <a href="../server.html">серверной редакции</a> и <a href="privacy.html">политике приватности</a>.</span>
+<span data-l="ua">Для налаштування звичайних спільних тек та доступу через інтернет перегляньте <a href="../publish-folders-android.html">посібник з публікації тек для Android</a> (перший запуск, мережа та роутер), <a href="../server.html">серверну редакцію</a> та <a href="privacy.html">політику приватності</a>.</span>
+</p>
+</div>
+</section>
+
+<section class="section"><div class="tools-grid">
+<a href="../publish-folders-android.html"><b>HOW TO · Android</b><span data-l="en">Share folders to your Android phone over SFTP</span><span data-l="ru">Раздать папки на телефон Android по SFTP</span><span data-l="ua">Роздати теки на телефон Android через SFTP</span></a>
+<a href="../server.html"><b>SERVER · Always-on</b><span data-l="en">Share folders from boot, with nobody signed in</span><span data-l="ru">Раздача папок с загрузки, без входа в систему</span><span data-l="ua">Роздача тек із завантаження, без входу в систему</span></a>
+<a href="how-to-viewer.html"><b>HOW TO · Viewer</b><span data-l="en">Review and sort a media folder</span><span data-l="ru">Просмотр и сортировка медиафайлов</span><span data-l="ua">Перегляд і сортування медіафайлів</span></a>
+<a href="../topics.html"><b>TOPICS</b><span data-l="en">Every page on this site by subject</span><span data-l="ru">Все страницы сайта по темам</span><span data-l="ua">Усі сторінки сайту за темами</span></a>
+<a href="../glossary.html"><b>GLOSSARY</b><span data-l="en">What the site's terms mean</span><span data-l="ru">Что значат термины сайта</span><span data-l="ua">Що означають терміни сайту</span></a>
+</div></section>
+</main>
+
+<footer class="site-footer"><div class="container"><div class="footer-bottom">
+<span><a href="../">Fast Media Sorter &amp; Sharing for Windows</a> · <a href="../publish-folders-android.html"><span data-l="en">Detailed Android guide</span><span data-l="ru">Подробная инструкция для Android</span><span data-l="ua">Детальний посібник для Android</span></a></span>
+<span>© 2026 Serhii Zhyhunenko · <a href="mailto:sza@ukr.net">sza@ukr.net</a></span>
+</div></div></footer>
+<script>(function(){var d=document.documentElement;function lang(v){d.dataset.lang=v;d.lang=v==='ua'?'uk':v;document.querySelectorAll('[data-setlang]').forEach(function(b){b.setAttribute('aria-pressed',String(b.dataset.setlang===v))});try{localStorage.setItem('sza-lang',v)}catch(e){}}document.querySelectorAll('[data-setlang]').forEach(function(b){b.onclick=function(){lang(b.dataset.setlang)}});lang(d.dataset.lang==='ru'?'ru':d.dataset.lang==='ua'?'ua':'en');document.getElementById('themeBtn').onclick=function(){var v=d.dataset.theme==='light'?'dark':'light';d.dataset.theme=v;try{localStorage.setItem('sza-theme',v)}catch(e){}}})();</script>
+</body></html>

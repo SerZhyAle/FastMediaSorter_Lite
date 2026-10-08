@@ -35,11 +35,16 @@ Partial Public NotInheritable Class Localization
         AddSettingsImportStrings()  ' 103/105: the import preview names merge as well as replace; unsaved import
         AddStreamStrings()          ' 022: the stream catalog producer and validator
         AddResourceStrings()        ' 007: remote resources - the manager, the trust and password prompts, import, honest failures
+#If Not NETFRAMEWORK Then
+        AddExchangeResourceStrings()    ' 171: "My devices" in Resources, the exchange tunnel and the outsider link (modern only: the net48 project lists no exchange file)
+#End If
+        AddProfileResetStrings()        ' 169: Reset all viewer settings on the About page
         AddLiveBroadcastStrings()   ' 023: live broadcast consumer
         AddBroadcastStrings()       ' 016: streamsplayer broadcast resource
         AddHelpCardStrings()        ' 123: the F1 reference card - groups, fixed rows, mouse chords
         AddDialogStrings()          ' 124: named-button questions, prompts, notifications, empty and first-run states
         AddSendLogsStrings()        ' 182 L-3/L-6: a log that cannot be included, no mail program (table shared with the Share Manager)
+        AddWelcomeStrings()         ' 184: the welcome wizard - six steps, the settings row, the vanished-folder message
     End Sub
 
 End Class

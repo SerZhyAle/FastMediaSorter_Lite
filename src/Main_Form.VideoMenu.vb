@@ -28,7 +28,7 @@ Partial Public Class Main_Form
     Private video_Menu As ContextMenuStrip
 
     ''' <summary>Set while a reopened video is on its way back to where it was - see
-    ''' ToggleVideoLoop. -1 = nothing pending.</summary>
+    ''' RestartCurrentVideoPreservingPosition. -1 = nothing pending.</summary>
     Private pending_Video_Seek As Single = -1.0F
     Private pending_Video_Pause As Boolean = False
 
@@ -76,9 +76,10 @@ Partial Public Class Main_Form
                     End Sub,
                     checked:=is_Video_Muted, actionId:="mute")
 
-        AddMenuItem(video_Menu.Items, Localization.T("Повторять"), AddressOf ToggleVideoLoop, checked:=CurrentEffectiveRepeat())
+        ' What happens when the file ends, as one group - "repeat" is one of its three modes, not a switch of its own.
+        video_Menu.Items.Add(CreateEndModeSubmenu())
 
-        ' --- the playback extras of 119, in the playback group after "Repeat" --------
+        ' --- the playback extras of 119, in the playback group after the end mode --------
         AddSpeedMenuItems(video_Menu.Items)
         AddAbLoopMenuItem(video_Menu.Items)
         ' Both rows are drawn disabled, with the reason, where the keys' own gate says no: an audio file has no
@@ -110,10 +111,12 @@ Partial Public Class Main_Form
             AddMenuItem(video_Menu.Items, Localization.T("Случайный файл (Y)"), Sub() ReadShowMediaFile(Mode_ForRandom), actionId:="randomFile")
         End If
 
-        ' --- the file itself: the same block as the picture menu (125 UX-330)
+        ' --- the file itself: the same block as the picture menu (125 UX-330), gathered under one submenu
         If is_Local_File Then
             video_Menu.Items.Add(New ToolStripSeparator())
-            AddFileBlock(video_Menu.Items)
+            Dim file_Menu As New ToolStripMenuItem(Localization.T("Операции с файлами"))
+            AddFileBlock(file_Menu.DropDownItems)
+            video_Menu.Items.Add(file_Menu)
         End If
 
         ' --- hand it elsewhere
@@ -127,42 +130,47 @@ Partial Public Class Main_Form
         AddMenuItem(video_Menu.Items, Localization.T("Открыть URL.."), Sub() ShowOpenUrlPrompt())
     End Sub
 
-    ''' <summary>
-    ''' Repeat is a MEDIA option (":input-repeat"), baked in when Play() is called - so
-    ''' flipping the flag alone would leave the video playing right now on the old setting
-    ''' until it was reopened, and a tick that only takes effect on the NEXT file reads as
-    ''' broken. Turning it OFF therefore reopens the video here, at the same second; turning it ON does not
-    ''' (121 UX-413): the end of the pass reopens it once (Vlc_Media_Player_EndReached). The Settings checkbox
-    ''' keeps the choice from then on (it is the same global).
-    ''' </summary>
-    Private Sub ToggleVideoLoop()
-        ' One answer for the checkmark, the reopen and the next file (audit 050 D-14): the
-        ' item used to show and flip only the loop flag, while an end action of "repeat"
-        ' kept repeating - unchecked while it repeated, "on" when it already was, and "off"
-        ' only until the next file. Turning it off now clears whichever setting asked.
-        If CurrentEffectiveRepeat() Then
-            Is_Video_Loop = False
-            If modern_Preferences IsNot Nothing Then
-                If IsAudioNowPlaying() Then
-                    modern_Preferences.AudioEndAction = PlaybackRules.EndActionAfterRepeatOff(modern_Preferences.AudioEndAction)
-                Else
-                    modern_Preferences.VideoEndAction = PlaybackRules.EndActionAfterRepeatOff(modern_Preferences.VideoEndAction)
-                End If
-                MarkSettingsDirty()
-            End If
+    ''' <summary>The end-of-file modes as ONE radio-style group: the row that is ticked is what happens when the file
+    ''' on screen ends. Rebuilt on every opening, so the tick is always what is stored now. The rows are the same
+    ''' three the Settings window offers, in the same order.</summary>
+    Private Function CreateEndModeSubmenu() As ToolStripMenuItem
+        Dim is_Audio As Boolean = IsAudioNowPlaying()
+        Dim current As String = PlaybackRules.EndModeOf(If(is_Audio, AudioEndAction(), VideoEndAction()), is_Audio, Is_Video_Loop)
+
+        Dim root As New ToolStripMenuItem(Localization.T("Режим воспроизведения"))
+        For Each mode As String In {PlaybackRules.End_Mode_Stay, PlaybackRules.End_Mode_Advance, PlaybackRules.End_Mode_Repeat}
+            Dim picked As String = mode
+            Dim item As New ToolStripMenuItem(EndModeCaption(picked)) With {.Checked = (picked = current)}
+            AddHandler item.Click, Sub() SetEndMode(picked)
+            root.DropDownItems.Add(item)
+        Next
+        Return root
+    End Function
+
+    Private Shared Function EndModeCaption(mode As String) As String
+        Select Case mode
+            Case PlaybackRules.End_Mode_Advance : Return Localization.T("Автопереход к следующему")
+            Case PlaybackRules.End_Mode_Repeat : Return Localization.T("По кругу")
+            Case Else : Return Localization.T("Проиграть и стоп")
+        End Select
+    End Function
+
+    ''' <summary>Makes <paramref name="mode"/> what happens when the file on screen ends - the one place the menu writes
+    ''' the end action. Repeat is a MEDIA option (":input-repeat"), baked in when Play() is called, so the stored value
+    ''' alone would leave the video playing on the old setting until it was reopened. Leaving repeat therefore reopens
+    ''' the video here, at the same second (121 UX-413); going TO repeat does not - the end of the pass reopens it once
+    ''' (Vlc_Media_Player_EndReached). The loop flag of the Settings checkbox is cleared, or it would keep repeating
+    ''' whatever the menu chose.</summary>
+    Private Sub SetEndMode(mode As String)
+        Dim is_Audio As Boolean = IsAudioNowPlaying()
+        Is_Video_Loop = False
+        If is_Audio Then
+            GetModernPreferences().AudioEndAction = PlaybackRules.StoredEndAction(mode, True)
         Else
-            Is_Video_Loop = False
-            If IsAudioNowPlaying() Then
-                GetModernPreferences().AudioEndAction = "repeat"
-            Else
-                GetModernPreferences().VideoEndAction = "repeat"
-            End If
+            GetModernPreferences().VideoEndAction = PlaybackRules.StoredEndAction(mode, False)
         End If
         MarkSettingsDirty()
-        lbl_Status.Text = Localization.T(If(CurrentEffectiveRepeat(), "Повтор включён", "Повтор выключен"))
-        ' Only turning it OFF under a media that was started with the native loop needs the reopen (121 UX-413):
-        ' turning it ON no longer restarts the video - the end of the pass is caught by Vlc_Media_Player_EndReached,
-        ' which reopens the file once and from then on the native loop runs.
+        lbl_Status.Text = EndModeCaption(mode)
         If TransportRules.RepeatToggleNeedsReopen(video_Started_With_Repeat, CurrentEffectiveRepeat()) Then RestartCurrentVideoPreservingPosition()
         ShowVideoControls()
     End Sub

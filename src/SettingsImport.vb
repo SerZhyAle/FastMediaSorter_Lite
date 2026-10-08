@@ -156,7 +156,7 @@ Friend Module SettingsImportBackupStore
         End Try
     End Function
 
-    Private Function OpenExclusive(path As String) As Stream
+    Friend Function OpenExclusive(path As String) As Stream
         Using identity As WindowsIdentity = WindowsIdentity.GetCurrent()
             Dim owner As SecurityIdentifier = identity.User
             If owner Is Nothing Then Throw New UnauthorizedAccessException("No backup owner.")
@@ -171,7 +171,7 @@ Friend Module SettingsImportBackupStore
 
     ''' <summary>Protect before writing personal data; refuse existing permissive or redirected
     ''' directories rather than modifying their owners' access policy.</summary>
-    Private Sub EnsurePrivateDirectory(path As String)
+    Friend Sub EnsurePrivateDirectory(path As String)
         Dim fullPath As String = System.IO.Path.GetFullPath(path)
         Dim root As String = System.IO.Path.GetPathRoot(fullPath)
         Dim format As String = New DriveInfo(root).DriveFormat

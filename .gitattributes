@@ -23,3 +23,7 @@ tests/Companion.Tests/TestData/worker-ipc/** -text
 # FDSEC conformance vectors are pinned byte-for-byte in PROVENANCE.txt.  In particular,
 # vectors.json is deliberately LF-only, so a Windows checkout must not rewrite it to CRLF.
 tests/Lite.Tests/TestData/fdsec-vectors/** -text
+
+# Dual-mode baseline (ticket 177): captures and reference-share exports pinned byte for byte by PROVENANCE.txt;
+# a CRLF rewrite on checkout would break every hash.
+tests/Lite.Tests/TestData/dual-mode/** -text

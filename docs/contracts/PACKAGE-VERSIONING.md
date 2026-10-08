@@ -32,12 +32,13 @@ to four digits (`26.7.30.0108`, `26.10.2.1556`). The release tag is `v` + the st
 - **winget.** `PackageVersion` is the stamp as text, the tag without the `v` (`publishing/winget/*.yaml`, both editions,
   `26.9.20.1206` today).
 - **Store MSIX (W2).** The remap is `YY.(M*100+D).HHmm.0`, each part an integer (so `0108` is `108`), the revision
-  forced to 0: `publishing/msix/build-msix.ps1:127-133`, mirrored for the check at `tools/Test-ArtifactVersion.ps1:69-76` (`Resolve-ExpectedMsixVersion`).
+  forced to 0: `publishing/msix/build-msix.ps1:127-133`, mirrored for the check at `tools/Test-ArtifactVersion.ps1:70-73` (`Resolve-ExpectedMsixVersion`).
   Every part is far below 65535 (`M*100+D` at most 1231, `HHmm` at most 2359), and the remap orders releases the way
   the stamp does: year, then date, then time of day. A package of this product reads `26.920.1206.0`.
 - **Proof (P5, W4).** `tools/Test-ArtifactVersion.ps1` reads the version resource of every exe and both setup.exe
-  files, and the Identity `Version` of an MSIX, back out of the produced artifact (`BUILD-EVIDENCE` rule 2); the release
-  preflight runs it for the staged package and the setups.
+  files, and (`-Msix`) the Identity `Version` of an MSIX, back out of the produced artifact (`BUILD-EVIDENCE` rule 2),
+  comparing numeric parts; the release preflight runs it for the staged package and the setups, `build.ps1` for the exes
+  it built and `build-msix.ps1` for the package it packed.
 
 ## What this repository must do to stay conformant
 

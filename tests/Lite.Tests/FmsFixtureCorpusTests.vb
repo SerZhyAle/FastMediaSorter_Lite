@@ -361,7 +361,7 @@ Public Class FmsEntrySurfaceTests
         For Each path As String In Directory.GetFiles(srcRoot, "*.vb", SearchOption.AllDirectories)
             Dim relative As String = path.Substring(srcRoot.Length + 1).Replace("\", "/")
             Dim code As String = CodeOf(path)
-            If code.Contains("New FmsConfigPlan") AndAlso relative <> "Resources/FmsConfigReader.vb" Then offenders.Add(relative & " builds a plan")
+            If code.Contains("New FmsConfigPlan") AndAlso relative <> "Resources/FmsConfigReader.vb" AndAlso relative <> "Resources/FmsTunnelPaths.vb" Then offenders.Add(relative & " builds a plan")
             If (code.Contains("ResourceImport.Preview(") OrElse code.Contains("ResourceImport.Apply(")) AndAlso relative <> "ResourceImportFlow.vb" Then offenders.Add(relative & " previews or stores outside the flow")
         Next
         Assert.True(offenders.Count = 0, String.Join("; ", offenders))
@@ -377,7 +377,8 @@ Public Class FmsEntrySurfaceTests
             If relative <> "ResourceImportFlow.vb" AndAlso code.Contains("ResourceImportFlow.Run(") Then callers.Add(relative)
             ' A surface obtains its read only from the flow's ReadFile or the reader's ReadText/ReadBytes.
             If code.Contains("FmsConfigReadResult") AndAlso relative <> "Resources/FmsConfigReader.vb" AndAlso relative <> "ResourceImportFlow.vb" AndAlso
-               relative <> "Resources/FmsConfigExport.vb" AndAlso relative <> "Resource_List_Panel.vb" AndAlso relative <> "Resources/ResourceMessages.vb" Then
+               relative <> "Resources/FmsConfigExport.vb" AndAlso relative <> "Resource_List_Panel.vb" AndAlso relative <> "Resources/ResourceMessages.vb" AndAlso
+               relative <> "Resources/FmsTunnelPaths.vb" Then      ' 171 C1: the pasted-code reader is the reader's second front end (it makes the plan the flow then previews)
                 Assert.Fail(relative & " handles a read result but is not a known entry surface; route it through ResourceImportFlow and add it here on purpose")
             End If
         Next

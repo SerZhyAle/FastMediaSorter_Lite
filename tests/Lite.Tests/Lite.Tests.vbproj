@@ -205,6 +205,7 @@
     <Compile Include="..\..\src\DialogLayer.vb"><Link>Linked\DialogLayer.vb</Link></Compile>
     <Compile Include="..\..\src\ViewerBox.vb"><Link>Linked\ViewerBox.vb</Link></Compile>
     <Compile Include="..\..\src\AskModel.vb"><Link>Linked\AskModel.vb</Link></Compile>
+    <Compile Include="..\..\src\Welcome\WelcomeRules.vb"><Link>Linked\WelcomeRules.vb</Link></Compile>
     <Compile Include="..\..\src\AskSpecs.vb"><Link>Linked\AskSpecs.vb</Link></Compile>
     <Compile Include="..\..\src\Ask_Dialog.vb"><Link>Linked\Ask_Dialog.vb</Link></Compile>
     <!-- The secondary windows whose layout the dialog-layer tests drive at 100/150/175 % (124 UX-202/UX-203):
@@ -504,6 +505,13 @@
     <Compile Include="..\..\src\Resources\ResourceProbe.vb">
       <Link>Linked\Resources\ResourceProbe.vb</Link>
     </Compile>
+    <!-- Ticket 171: the consumer half of the device exchange (My devices, attach, the tunnel candidate, the FMSSFTP link path).
+         Whole-file "#If Not NETFRAMEWORK"; the net48 viewer project lists none of them (DualModeGateGuardTests). -->    <Compile Include="..\..\src\Resources\ExchangeAttach.vb"><Link>Linked\Resources\ExchangeAttach.vb</Link></Compile>
+    <Compile Include="..\..\src\Resources\ExchangeDevices.vb"><Link>Linked\Resources\ExchangeDevices.vb</Link></Compile>
+    <Compile Include="..\..\src\Resources\ExchangeResourceText.vb"><Link>Linked\Resources\ExchangeResourceText.vb</Link></Compile>
+    <Compile Include="..\..\src\Resources\ExchangeTunnel.vb"><Link>Linked\Resources\ExchangeTunnel.vb</Link></Compile>
+    <Compile Include="..\..\src\Resources\FmsTunnelPaths.vb"><Link>Linked\Resources\FmsTunnelPaths.vb</Link></Compile>
+    <Compile Include="..\..\src\Exchange_Devices_Panel.vb"><Link>Linked\Exchange_Devices_Panel.vb</Link></Compile>
     <Compile Include="..\..\src\Resource_Credential_Form.vb">
       <Link>Linked\Resource_Credential_Form.vb</Link>
     </Compile>
@@ -958,6 +966,15 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <Link>TestData\icon-vocabulary\%(Filename)%(Extension)</Link>
     </None>
+    <None Include="TestData\user-playlist-vectors\**">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <Link>TestData\user-playlist-vectors\%(Filename)%(Extension)</Link>
+    </None>
+    <!-- Ticket 170 T-1: the ANYWHERE-ACCESS rung 1 vectors (the FMSSFTP1/2 code), beside their PROVENANCE.txt. -->
+    <None Include="TestData\anywhere-descriptor-vectors\**">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <Link>TestData\anywhere-descriptor-vectors\%(Filename)%(Extension)</Link>
+    </None>
     <!-- Ticket 177: the committed "today" baseline of the exchange dual-mode regression (a capture of the
          viewer started on a clean profile before any exchange client code existed, and its PROVENANCE.txt,
          which DualModeFixtures checks first). Captured by tests\Integration\ExchangeBaseline.ps1. -->
@@ -973,6 +990,17 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <Link>TestData\glyphs\PROVENANCE.txt</Link>
     </None>
+  </ItemGroup>
+
+  <!-- Ticket 180 T-1: the client library of the device exchange. Every file is whole-file "#If Not NETFRAMEWORK", so on the
+       net48 leg they compile to nothing (and the net48 viewer project lists none of them - ExchangeClientGuardTests). -->
+  <ItemGroup>
+    <Compile Include="..\..\src\Exchange\*.vb" Link="Linked\Exchange\%(Filename)%(Extension)" />
+  </ItemGroup>
+
+  <!-- Specification 169: profile reset pure models and runner. Whole-file "#If Not NETFRAMEWORK". -->
+  <ItemGroup>
+    <Compile Include="..\..\src\ProfileReset\*.vb" Link="Linked\ProfileReset\%(Filename)%(Extension)" />
   </ItemGroup>
 
   <!-- Each leg gets the SAME ImageSharp its viewer ships with, so the tests exercise

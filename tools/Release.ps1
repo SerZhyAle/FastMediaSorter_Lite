@@ -132,7 +132,10 @@ function Add-Step([string]$name, $code, [string]$state, [string]$verdict) {
 function Invoke-Step([string]$title, [string]$script, [string[]]$arguments = @()) {
     Step $title
     $r = Invoke-ChildCheck (Join-Path $PSScriptRoot $script) $arguments
-    Add-Step $r.Name $r.Code 'ran' $r.Verdict
+    # A step that answered NOT APPLICABLE inspected nothing: for a release gate that is a step that did
+    # not run, so it reads like a skipped one (it never counts as passed, and the preflight cannot pass).
+    if ($r.NotApplicable) { Add-Step $r.Name $null 'not applicable' $r.Verdict }
+    else { Add-Step $r.Name $r.Code 'ran' $r.Verdict }
 }
 
 # 1. Tests (free; a red run must stop the release before it is paid for).
@@ -197,7 +200,7 @@ $failed  = @($ran | Where-Object { $_.Code -eq 1 })
 $unknown = @($ran | Where-Object { $_.Code -eq 2 })
 if ($failed.Count)  { $parts += 'failed: ' + (($failed | ForEach-Object Name) -join ', ') }
 if ($unknown.Count) { $parts += 'not verified: ' + (($unknown | ForEach-Object Name) -join ', ') }
-foreach ($state in 'skipped', 'not run') {
+foreach ($state in 'skipped', 'not run', 'not applicable') {
     $these = @($missing | Where-Object { $_.State -eq $state })
     if ($these.Count) { $parts += "${state}: " + (($these | ForEach-Object Name) -join ', ') }
 }

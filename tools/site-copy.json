@@ -19,14 +19,14 @@
     "title": "HOW TO",
     "note": "Step-by-step guides. The guide pages themselves are in English and Russian.",
     "items": [
-      ["how-to-viewer.html",            "Review and sort a media folder"],
-      ["how-to-keys.html",              "Keys, zoom and full screen"],
-      ["how-to-setup.html",             "Default viewer, language, file rules"],
-      ["how-to-ocr.html",               "Read and translate text on a picture"],
-      ["how-to-editor.html",            "Draw on a photo and crop it"],
-      ["how-to-archives.html",          "Read a ZIP or CBZ like a folder"],
-      ["how-to-resources.html",         "Open a server or a network share like a folder"],
-      ["how-to-filedo-disks.html",      "Share FileDO .fdd virtual disks"],
+      ["docs/how-to-viewer.html",            "Review and sort a media folder"],
+      ["docs/how-to-keys.html",              "Keys, zoom and full screen"],
+      ["docs/how-to-setup.html",             "Default viewer, language, file rules"],
+      ["docs/how-to-ocr.html",               "Read and translate text on a picture"],
+      ["docs/how-to-editor.html",            "Draw on a photo and crop it"],
+      ["docs/how-to-archives.html",          "Read a ZIP or CBZ like a folder"],
+      ["docs/how-to-resources.html",         "Open a server or a network share like a folder"],
+      ["docs/how-to-filedo-disks.html",      "Share FileDO .fdd virtual disks"],
       ["publish-folders-android.html",  "Share folders to Android over SFTP"]
     ]
   },

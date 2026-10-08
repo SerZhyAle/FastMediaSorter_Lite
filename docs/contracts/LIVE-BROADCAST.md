@@ -46,6 +46,11 @@ again.
   `TUNNEL` - audio and video, with certificate checking never switched off, and accepts a cast. It widens the
   endpoint model and the store together, because both drop the members they do not model today (`inner`,
   `certFingerprint`, `channels`).
+- **One proposal is drafted and not filed** (the catalog is sealed): what the required top-level `url` carries when a
+  descriptor has no LAN endpoint, and which of two timestamp-less descriptors of one `sourceId` wins - kept in this
+  repository's `docs/specifications/183_contract_proposals/`, for the owner to place. 173 (the producer) is
+  the ticket that has to choose a value until the owner answers; item J and producer rule 1 already exclude the
+  documentation host and loopback.
 - **The registry row** is role P/C: `Implements` `partial 0.18` for the consumer's audio path, producer and receiver
   not built; the open points (the first sound measured at 1.0-1.1 s against "within 1 s", the section 6
   handshake not run on a real phone or watch) are in its notes and in a dated exception.

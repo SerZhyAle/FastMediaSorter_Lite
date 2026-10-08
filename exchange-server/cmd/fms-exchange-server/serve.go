@@ -203,6 +203,7 @@ func serveCore(ctx context.Context, cmd command, console bool, stdout, stderr io
 	llc.Rates[limits.FailedHello] = rate(l.FailedHello)
 	llc.Rates[limits.PairingRequest] = rate(l.PairingRequest)
 	llc.Rates[limits.BroadcastStart] = rate(l.BroadcastStart)
+	llc.Rates[limits.Cast] = rate(l.Cast)
 	limiter, loginLimiter := limits.NewLimiter(lc, nil), limits.NewLimiter(llc, nil)
 
 	params := rendezvous.DefaultParams()
@@ -211,12 +212,18 @@ func serveCore(ctx context.Context, cmd command, console bool, stdout, stderr io
 	params.TunnelCap, params.MaxConns = l.TunnelsPerResource, l.MaxConnections
 	params.DevicesPerAccount, params.ResourcesPerAccount = l.DevicesPerAccount, l.ResourcesPerAccount
 	params.BroadcastsPerAccount, params.BroadcastsPerDevice, params.CodesPerAccount = l.BroadcastsPerAccount, l.BroadcastsPerDevice, l.CodesPerAccount
+	params.CastPerAccount = l.CastPendingPerAccount
 
+	// the relay of ticket 165: it shares the engine's per-address limiter and the directory
+	relayHandler := rendezvous.NewRelay(rendezvous.RelayConfig{Dir: dir, Log: logger, Limiter: limiter,
+		MaxUploadBitsPerSec: int64(l.RelayUploadMbit) * 1_000_000,
+		ListenersPerBcast:   l.RelayListenersPerBcast, ListenersTotal: l.RelayListenersTotal})
 	engine := rendezvous.NewEngine(rendezvous.EngineConfig{
 		Params: params, Accounts: store, Dir: dir, Pool: pool,
 		Verifier: limits.NewVerifier(nil, l.VerifierConcurrency, 2*time.Second),
 		Limiter:  limiter, LoginLimiter: loginLimiter, Log: logger,
 		PublicEndpoint: cfg.PublicEndpoint, ServerVersion: version,
+		Features: rendezvous.Features{Cast: true}, Relay: relayHandler,
 	})
 	srv := rendezvous.New(rendezvous.Config{
 		Params:  params,

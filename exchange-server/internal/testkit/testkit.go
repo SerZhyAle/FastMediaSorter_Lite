@@ -222,3 +222,27 @@ func FreeRange(n int) (lo, hi int) {
 	}
 	panic("testkit: no free port range")
 }
+
+// DialTLSFrom is DialTLS from a chosen local address (127.0.0.2 is "another client address" on
+// loopback): the tests of the per-address limits need a second source.
+func DialTLSFrom(addr, pin string, local net.IP) (*Conn, error) {
+	cfg := &tls.Config{
+		InsecureSkipVerify: true, // trust on first use: the pin below is the check
+		MinVersion:         tls.VersionTLS12,
+		VerifyPeerCertificate: func(raw [][]byte, _ [][]*x509.Certificate) error {
+			if pin == "" {
+				return nil
+			}
+			if len(raw) == 0 || tlsid.Fingerprint(raw[0]) != pin {
+				return errors.New("testkit: the server's certificate is not the pinned one")
+			}
+			return nil
+		},
+	}
+	d := net.Dialer{Timeout: 5 * time.Second, LocalAddr: &net.TCPAddr{IP: local}}
+	c, err := tls.DialWithDialer(&d, "tcp", addr, cfg)
+	if err != nil {
+		return nil, err
+	}
+	return NewConn(c), nil
+}

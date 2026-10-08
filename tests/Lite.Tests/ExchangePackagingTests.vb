@@ -29,11 +29,11 @@ Public Class ExchangePackagingTests
 
     <Fact>
     Public Sub EveryPackagerHasTheGateSwitchOffByDefault()
+        ' build.ps1 is not a packager of the release: it carries the exchange server by default (see below).
         For Each rel As String() In {
                 New String() {"tools", "Build-Installer.ps1"},
                 New String() {"tools", "Build-ServerInstaller.ps1"},
-                New String() {"tools", "Build-OfflineRelease.ps1"},
-                New String() {"build.ps1"}}
+                New String() {"tools", "Build-OfflineRelease.ps1"}}
             Dim text As String = ReadText(rel)
             Assert.True(Regex.IsMatch(text, "\[switch\]\$IncludeExchange\b"),
                         $"{String.Join("/", rel)} has no [switch]$IncludeExchange (a switch is off unless given)")
@@ -55,11 +55,23 @@ Public Class ExchangePackagingTests
     End Sub
 
     <Fact>
-    Public Sub TheRootBuildForwardsTheGateAndRefusesToSkipItSilently()
+    Public Sub TheServerViewerComponentNeverCarriesTheExchangeTree()
+        ' The Server .iss installs viewer\* with the viewer component alone. A User stage built with -IncludeExchange holds
+        ' exchange\, so without this exclusion ticking only "viewer" would write the exchange tree past its own component.
+        Assert.Matches("(?m)^\$excludeDirs\s*=\s*@\([^)]*'exchange'", ReadText("tools", "Stage-ServerViewerPayload.ps1"))
+    End Sub
+
+    <Fact>
+    Public Sub TheRootBuildIncludesTheExchangeServerUnlessToldNotTo()
+        ' A local build carries the exchange server by default; -SkipExchange is the only way out, and a
+        ' machine without a 64-bit Go stops rather than packaging setups without it. This is NOT the
+        ' shipping gate - release.yml and Build-OfflineRelease.ps1 are held shut by the tests above.
         Dim text As String = ReadText("build.ps1")
+        Assert.Contains("$IncludeExchange = -not $SkipExchange", text)
+        Assert.DoesNotMatch("\[switch\]\$IncludeExchange\b", text)
         Assert.Contains("$installerArgs.IncludeExchange", text)
         Assert.Contains("$serverArgs.IncludeExchange", text)
-        Assert.Matches("-IncludeExchange and -SkipExchange", text)
+        Assert.Contains("build without the exchange server with -SkipExchange", text)
     End Sub
 
     <Fact>
