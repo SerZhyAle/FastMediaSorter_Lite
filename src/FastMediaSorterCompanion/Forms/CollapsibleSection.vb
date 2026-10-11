@@ -70,6 +70,13 @@ Public NotInheritable Class CollapsibleSection
         Dock = DockStyle.Top
     End Sub
 
+    Public Overrides Function GetPreferredSize(proposedSize As Size) As Size
+        If _header Is Nothing OrElse Not _header.WrapSettingsTitle Then Return MyBase.GetPreferredSize(proposedSize)
+        ' The body is already auto-sized inside the held subtree. Parent tables need its resulting
+        ' height, not another recursive measurement of every editor for each preferred-size probe.
+        Return New Size(0, Padding.Vertical + _header.Height + If(_expanded, _body.Height, 0))
+    End Function
+
     ' Reuse the existing editors and state paths as a settings page, without a disclosure header.
     Friend Sub PresentAsPage()
         SuspendLayout()
@@ -134,6 +141,9 @@ Public NotInheritable Class CollapsibleSection
                 While ancestor IsNot Nothing AndAlso Not TypeOf ancestor Is Form
                     ancestor.SuspendLayout()
                     held.Add(ancestor)
+                    ' The fixed viewport owns scrolling. Its outer dock/rail geometry does not change.
+                    Dim viewport = TryCast(ancestor, ScrollableControl)
+                    If viewport IsNot Nothing AndAlso viewport.AutoScroll Then Exit While
                     ancestor = ancestor.Parent
                 End While
             End If

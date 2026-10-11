@@ -167,24 +167,26 @@ Partial Public NotInheritable Class MainWindow
         ' someone who hovers it, and this one is the way into every machine-level setting
         ' the window does not show.
         btnSettings = New Button With {.AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink,
-            .Padding = New Padding(8, 5, 10, 5), .Margin = New Padding(0, 0, 8, 0), .Image = _gearGlyph,
+            .Padding = New Padding(8, 5, 10, 5), .Margin = New Padding(0, 0, 8, 0),
             .Text = Localization.T("Настройки"),
-            .ImageAlign = ContentAlignment.MiddleLeft, .TextImageRelation = TextImageRelation.ImageBeforeText,
             .TextAlign = ContentAlignment.MiddleCenter, .AccessibleName = Localization.T("Настройки менеджера..")}
+        ButtonGlyphs.Apply(btnSettings, "app.settings")
         AddHandler btnSettings.Click, AddressOf OnSettingsClicked
         toolTip.SetToolTip(btnSettings, Localization.T("Настройки менеджера.."))
 
         btnToggle = New Button With {.AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink,
             .Padding = New Padding(12, 5, 12, 5), .Margin = New Padding(0, 0, 8, 0),
             .Text = Localization.T("Начать раздачу")}
+        ' The glyph follows the caption: ApplyStatusToUi re-applies it when the share starts or stops.
+        ButtonGlyphs.Apply(btnToggle, "action.run")
         AddHandler btnToggle.Click, AddressOf OnToggle
 
         btnShare = New Button With {.AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink,
             .Padding = New Padding(14, 5, 14, 5), .Margin = New Padding(0),
             .Font = _fontShare,
-            .Text = Localization.T("Поделиться"), .Image = _shareGlyph,
-            .ImageAlign = ContentAlignment.MiddleLeft, .TextImageRelation = TextImageRelation.ImageBeforeText,
+            .Text = Localization.T("Поделиться"),
             .TextAlign = ContentAlignment.MiddleCenter}
+        ButtonGlyphs.Apply(btnShare, "action.share")
         AddHandler btnShare.Click, AddressOf OnShareClicked
 
         actions.Controls.AddRange(New Control() {btnSettings, btnToggle, btnShare})
@@ -203,8 +205,8 @@ Partial Public NotInheritable Class MainWindow
         _pnlListButtons = New FlowLayoutPanel With {.Dock = DockStyle.Top, .AutoSize = True,
             .AutoSizeMode = AutoSizeMode.GrowAndShrink, .Padding = New Padding(0, 0, 0, 6)}
         btnAdd = New Button With {.AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink, .Padding = New Padding(10, 5, 12, 5), .Text = Localization.T("Добавить папку.."),
-            .Image = _addGlyph, .ImageAlign = ContentAlignment.MiddleLeft, .TextImageRelation = TextImageRelation.ImageBeforeText,
             .TextAlign = ContentAlignment.MiddleCenter, .Font = _fontBold}
+        ButtonGlyphs.Apply(btnAdd, "action.add")
         btnAddCurrent = New Button With {.AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink, .Padding = New Padding(8, 5, 8, 5), .Text = Localization.T("+ Текущая"), .Visible = _initialFolder.Length > 0}
         btnRemove = New Button With {.AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink, .Padding = New Padding(10, 5, 10, 5), .Text = Localization.T("Убрать")}
         ' Disabled until a row is selected: it edits THE selected folder, and a button that
@@ -215,15 +217,19 @@ Partial Public NotInheritable Class MainWindow
         ' ApplyStatusToUi is the one place that shows it.
         btnBroadcasts = New Button With {.AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink, .Padding = New Padding(10, 5, 10, 5),
             .Text = Localization.T("Трансляции.."), .Visible = False}
+        ButtonGlyphs.Apply(btnAddCurrent, "action.add")
+        ButtonGlyphs.Apply(btnRemove, "action.remove")
+        ButtonGlyphs.Apply(btnParams, "action.edit")
+        ButtonGlyphs.Apply(btnBroadcasts, "media.cast")
         AddHandler btnAdd.Click, AddressOf OnAddFolder
         AddHandler btnAddCurrent.Click, AddressOf OnAddCurrentFolder
         AddHandler btnRemove.Click, AddressOf OnRemoveFolder
         AddHandler btnParams.Click, AddressOf OnConfigureFolder
         AddHandler btnBroadcasts.Click, AddressOf OnBroadcastsClicked
         btnDisks = New Button With {.AutoSize = True, .Padding = New Padding(10, 5, 12, 5),
-            .Text = Localization.T("Диски .fdd.."), .Image = _disksGlyph,
-            .ImageAlign = ContentAlignment.MiddleLeft, .TextImageRelation = TextImageRelation.ImageBeforeText,
+            .Text = Localization.T("Диски .fdd.."),
             .TextAlign = ContentAlignment.MiddleCenter}
+        ButtonGlyphs.Apply(btnDisks, "content.disk-container")
         AddHandler btnDisks.Click, AddressOf OnDisksClicked
         _pnlListButtons.Controls.AddRange(New Control() {btnAdd, btnAddCurrent, btnDisks, btnRemove, btnParams, btnBroadcasts})
 
@@ -308,8 +314,11 @@ Partial Public NotInheritable Class MainWindow
         Dim lblEnableTitle As New Label With {.Dock = DockStyle.Top, .Height = 36, .Font = _fontEnableTitle,
             .Text = Localization.T("Функции сервера выключены")}
         Dim lblEnableIntro As New Label With {.Dock = DockStyle.Top, .Height = 120, .Text = Localization.T("Общий доступ к папкам поднимает локальный SFTP-сервер и требует одного исключения в брандмауэре Windows (один раз, с правами администратора). Пока это не включено, программа ничего не раздаёт.")}
-        btnEnable = New Button With {.Top = 168, .Left = 28, .Width = 300, .Height = 38, .Font = _fontBold,
+        ' AutoSize with a 300x38 floor: the caption plus the glyph can outgrow 300 px in a long language.
+        btnEnable = New Button With {.Top = 168, .Left = 28, .AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink,
+            .MinimumSize = New Size(300, 38), .Font = _fontBold,
             .Text = Localization.T("Включить функции сервера..")}
+        ButtonGlyphs.Apply(btnEnable, "action.run")
         AddHandler btnEnable.Click, AddressOf OnEnableServer
         pnlEnable.Controls.Add(btnEnable)
         pnlEnable.Controls.Add(lblEnableIntro)
@@ -551,22 +560,13 @@ Partial Public NotInheritable Class MainWindow
     ''' to the buttons that show them. On the first call (from BuildUi) those buttons do not exist
     ''' yet and pick the images up as they are created.</summary>
     Private Sub BuildGlyphs()
-        Dim oldShare As Image = _shareGlyph
+        ' The captioned buttons (settings, share, add, disks ...) take their glyph from
+        ' ButtonGlyphs, which follows theme and DPI by itself; only the glyph-only copy
+        ' buttons and the hand-made eye are drawn here.
         Dim oldCopy As Image = _copyGlyph
-        Dim oldAdd As Image = _addGlyph
-        Dim oldDisks As Image = _disksGlyph
-        Dim oldGear As Image = _gearGlyph
         Dim oldEye As Image = _eyeGlyph
-        _shareGlyph = CatalogGlyph("action.share", 22)
         _copyGlyph = CatalogGlyph("action.copy", 16)
-        _addGlyph = CatalogGlyph("action.add", 18)
-        _disksGlyph = CatalogGlyph("content.disk-container", 18)
-        _gearGlyph = CatalogGlyph("app.settings", 18)
         _eyeGlyph = BuildEyeGlyph(LogicalToDeviceUnits(16))
-        If btnShare IsNot Nothing Then btnShare.Image = _shareGlyph
-        If btnAdd IsNot Nothing Then btnAdd.Image = _addGlyph
-        If btnDisks IsNot Nothing Then btnDisks.Image = _disksGlyph
-        If btnSettings IsNot Nothing Then btnSettings.Image = _gearGlyph
         If btnRevealPassword IsNot Nothing Then btnRevealPassword.Image = _eyeGlyph
         For Each sr As ServerRow In _serverRows
             sr.Copy.Image = _copyGlyph
@@ -578,11 +578,7 @@ Partial Public NotInheritable Class MainWindow
             SetStateGlyph(stateEntry)
         End If
         ' Only now that nothing points at them any more.
-        DisposeImage(oldShare)
         DisposeImage(oldCopy)
-        DisposeImage(oldAdd)
-        DisposeImage(oldDisks)
-        DisposeImage(oldGear)
         DisposeImage(oldEye)
     End Sub
 

@@ -301,6 +301,57 @@ Friend Module ExchangeProcess
         Return ConfigOutcomeOf(r)
     End Function
 
+    ' --- the connection string (ticket 187 T-2) ---------------------------------------------
+
+    Friend Enum ConnectionStringOutcome
+        ''' <summary>The string was made; <see cref="ConnectionStringResult.Text"/> holds it.</summary>
+        Made
+        ''' <summary>Exit 2: no address for clients is set, or the name or login cannot be carried in the string.</summary>
+        Refused
+        ''' <summary>Exit 4: the configuration or the certificate cannot be read (the server never started).</summary>
+        ConfigProblem
+        Failed
+        Unavailable
+    End Enum
+
+    Friend NotInheritable Class ConnectionStringResult
+        Public Property Outcome As ConnectionStringOutcome = ConnectionStringOutcome.Failed
+        ''' <summary>The one line the binary printed. Not a secret: it carries no password, token or code.</summary>
+        Public Property Text As String = ""
+    End Class
+
+    ''' <summary>The connection string clients use (<c>connection-string</c>): built by the binary from the
+    ''' configured public endpoint and the real certificate - this program never assembles it, so what a button
+    ''' shows is what the command prints, byte for byte. A blank name or login is left out.</summary>
+    Friend Function ConnectionString(name As String, login As String) As ConnectionStringResult
+        Dim result As New ConnectionStringResult
+        If Not IsAvailable() Then
+            result.Outcome = ConnectionStringOutcome.Unavailable
+            Return result
+        End If
+        Dim args As New List(Of String) From {"connection-string"}
+        If Not String.IsNullOrWhiteSpace(name) Then
+            args.Add("--name")
+            args.Add(name.Trim())
+        End If
+        If Not String.IsNullOrWhiteSpace(login) Then
+            args.Add("--login")
+            args.Add(login.Trim())
+        End If
+        Dim r As RunResult = Run(args.ToArray(), Nothing, CommandTimeoutMs)
+        ' the verb and the exit code only: the string, the name and the login are not written to the log (187 rule 11)
+        Log("connection-string", r)
+        If Not r.Started OrElse r.TimedOut Then Return result
+        Select Case r.ExitCode
+            Case ExitOk
+                result.Text = r.StdOut.Trim()
+                result.Outcome = If(result.Text.StartsWith("FMSEXCH1:", StringComparison.Ordinal), ConnectionStringOutcome.Made, ConnectionStringOutcome.Failed)
+            Case ExitUsage : result.Outcome = ConnectionStringOutcome.Refused
+            Case ExitConfig : result.Outcome = ConnectionStringOutcome.ConfigProblem
+        End Select
+        Return result
+    End Function
+
     ''' <summary>Stores the third-party port range as "lo-hi" (<c>set-port-range</c>).</summary>
     Friend Function SetPortRange(range As String) As ConfigOutcome
         If Not IsAvailable() Then Return ConfigOutcome.Unavailable

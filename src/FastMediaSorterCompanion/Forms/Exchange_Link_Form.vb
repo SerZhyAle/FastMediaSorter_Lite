@@ -33,10 +33,11 @@ Friend NotInheritable Class Exchange_Link_Form
         BuildUi()
     End Sub
 
-    Private Function NewButton(text As String, onClick As Action) As Button
+    Private Function NewButton(text As String, onClick As Action, Optional glyph As String = "", Optional role As ButtonGlyphRole = ButtonGlyphRole.Neutral) As Button
         Dim b As New Button With {.AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink, .Padding = New Padding(12, 4, 12, 4),
             .Margin = New Padding(0, 4, 8, 4), .Text = text}
         AddHandler b.Click, Sub() onClick()
+        If glyph.Length > 0 Then ButtonGlyphs.Apply(b, glyph, role)
         Return b
     End Function
 
@@ -66,16 +67,16 @@ Friend NotInheritable Class Exchange_Link_Form
 
         Dim buttons As New FlowLayoutPanel With {.AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink, .WrapContents = True,
             .MaximumSize = New Size(ContentWidth, 0), .Margin = New Padding(0, 2, 0, 2)}
-        If _qrPng IsNot Nothing Then buttons.Controls.Add(NewButton(ExchangePublishText.ShowQrButton(), AddressOf OnShowQr))
-        If _codeText.Length > 0 Then buttons.Controls.Add(NewButton(ExchangePublishText.CopyLinkTextButton(), AddressOf OnCopyText))
-        If _configJson.Length > 0 Then buttons.Controls.Add(NewButton(ExchangePublishText.SaveFileButton(), AddressOf OnSaveFile))
+        If _qrPng IsNot Nothing Then buttons.Controls.Add(NewButton(ExchangePublishText.ShowQrButton(), AddressOf OnShowQr, "action.show-code"))
+        If _codeText.Length > 0 Then buttons.Controls.Add(NewButton(ExchangePublishText.CopyLinkTextButton(), AddressOf OnCopyText, "action.copy"))
+        If _configJson.Length > 0 Then buttons.Controls.Add(NewButton(ExchangePublishText.SaveFileButton(), AddressOf OnSaveFile, "action.export"))
         body.Controls.Add(buttons)
 
         _lblResult = New Label With {.AutoSize = True, .MaximumSize = New Size(ContentWidth, 0), .ForeColor = ThemeService.Palette.TextMuted,
             .Margin = New Padding(0, 4, 0, 4), .Visible = False}
         body.Controls.Add(_lblResult)
 
-        Dim close As Button = NewButton(Localization.T("Закрыть"), Sub() Me.Close())
+        Dim close As Button = NewButton(Localization.T("Закрыть"), Sub() Me.Close(), "nav.close", ButtonGlyphRole.Dismissing)
         close.DialogResult = DialogResult.OK
         Dim closeRow As New FlowLayoutPanel With {.AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink, .Margin = New Padding(0, 6, 0, 2)}
         closeRow.Controls.Add(close)

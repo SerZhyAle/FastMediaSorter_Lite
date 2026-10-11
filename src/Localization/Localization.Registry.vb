@@ -37,6 +37,7 @@ Partial Public NotInheritable Class Localization
         AddResourceStrings()        ' 007: remote resources - the manager, the trust and password prompts, import, honest failures
 #If Not NETFRAMEWORK Then
         AddExchangeResourceStrings()    ' 171: "My devices" in Resources, the exchange tunnel and the outsider link (modern only: the net48 project lists no exchange file)
+        AddExchangeEntryStrings()       ' 187 T-4: the viewer's own exchange entries - the add dialog, the groups per server, signing out
 #End If
         AddProfileResetStrings()        ' 169: Reset all viewer settings on the About page
         AddLiveBroadcastStrings()   ' 023: live broadcast consumer

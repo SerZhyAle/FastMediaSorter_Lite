@@ -165,14 +165,17 @@ Friend NotInheritable Class Server_Welcome_Form
 
         _later = New Button With {.Text = Localization.T("Позже")}
         StyleButton(_later)
+        ButtonGlyphs.Apply(_later, "action.cancel", ButtonGlyphRole.Dismissing)
         AddHandler _later.Click, AddressOf OnLater
 
         _back = New Button With {.Text = Localization.T("Назад")}
         StyleButton(_back)
+        ButtonGlyphs.Apply(_back, "nav.back")
         AddHandler _back.Click, Sub() ShowStep(_position - 1)
 
         _next = New Button With {.Text = Localization.T("Далее")}
         StyleButton(_next)
+        ButtonGlyphs.Apply(_next, "nav.forward", ButtonGlyphRole.Affirmative)
         AddHandler _next.Click, AddressOf OnNext
 
         Dim navigation As New FlowLayoutPanel With {.AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink,
@@ -219,6 +222,7 @@ Friend NotInheritable Class Server_Welcome_Form
         _enableStatus = AddText(panel, String.Empty, New Padding(0, 12, 0, 0))
         _enableButton = New Button With {.Text = Localization.T("Включить сервер")}
         StyleButton(_enableButton)
+        ButtonGlyphs.Apply(_enableButton, "action.run", ButtonGlyphRole.Caution)
         AddHandler _enableButton.Click, AddressOf OnEnableServer
         panel.Controls.Add(_enableButton)
         AddText(panel, Localization.T("Этот шаг можно пропустить: сервер останется выключенным."), New Padding(0, 12, 0, 0))
@@ -281,6 +285,7 @@ Friend NotInheritable Class Server_Welcome_Form
             Localization.T("Откроется мастер: он создаст учётную запись, запустит сервер, покажет отпечаток сертификата и, если нужно, подключит агент этого компьютера. Пароль показывается один раз; «Скопировать» кладёт его в буфер обмена, который очищается сам."))
         _wizardButton = New Button With {.Text = Localization.T("Открыть мастер")}
         StyleButton(_wizardButton)
+        ButtonGlyphs.Apply(_wizardButton, "action.run", ButtonGlyphRole.Affirmative)
         AddHandler _wizardButton.Click, AddressOf OnOpenWizard
         panel.Controls.Add(_wizardButton)
         _wizardStatus = AddText(panel, String.Empty, New Padding(0, 12, 0, 0))
@@ -353,6 +358,9 @@ Friend NotInheritable Class Server_Welcome_Form
         _counter.Text = Localization.TF("Шаг {0} из {1}", index + 1, _steps.Count)
         _back.Enabled = index > 0
         _next.Text = If(index = _steps.Count - 1, Localization.T("Готово"), Localization.T("Далее"))
+        ' The answer on the last step is a plain confirmation, on the others it moves on: the glyph follows the caption.
+        Dim nextGlyph As String = If(index = _steps.Count - 1, "action.confirm", "nav.forward")
+        If ButtonGlyphs.GlyphOf(_next) <> nextGlyph Then ButtonGlyphs.Apply(_next, nextGlyph, ButtonGlyphRole.Affirmative)
         RefreshStep(kind)
     End Sub
 

@@ -98,6 +98,7 @@ Public NotInheritable Class Share_Access_Test_Form
         _btnClose = New Button With {.AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink,
             .Padding = New Padding(12, 6, 12, 6), .Margin = New Padding(0),
             .Text = Localization.T("Закрыть"), .DialogResult = DialogResult.OK}
+        ButtonGlyphs.Apply(_btnClose, "nav.close", ButtonGlyphRole.Dismissing)
         btnFlow.Controls.Add(_btnClose)
 
         tlp.Controls.Add(_headline)

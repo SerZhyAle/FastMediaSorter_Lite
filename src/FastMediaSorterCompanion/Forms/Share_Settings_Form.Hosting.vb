@@ -87,15 +87,15 @@ Partial Public NotInheritable Class Share_Settings_Form
         sec.AddBodyRow(_lblServing)
         sec.AddBodyRow(_lblStore)
 
-        _btnSwitchToService = MakeAction(HostingText.SwitchToServiceButton(), AddressOf OnSwitchToService)
-        _btnInstallServer = MakeAction(HostingText.InstallServerButton(), AddressOf OnOpenServerPage)
-        _btnReturnToUser = MakeAction(HostingText.ReturnToUserButton(), AddressOf OnReturnToUser)
-        _btnStart = MakeAction(HostingText.StartServiceButton(), Sub() RunManage(ServiceControl.ManageAction.StartService))
-        _btnStop = MakeAction(HostingText.StopServiceButton(), Sub() RunManage(ServiceControl.ManageAction.StopService))
-        _btnRestart = MakeAction(HostingText.RestartServiceButton(), Sub() RunManage(ServiceControl.ManageAction.RestartService))
-        _btnRepair = MakeAction(HostingText.RepairServiceButton(), Sub() RunManage(ServiceControl.ManageAction.Repair))
-        _btnGrantRoots = MakeAction(HostingText.GrantRootsButton(), AddressOf OnGrantRoots)
-        _btnRemove = MakeAction(HostingText.RemoveRoleButton(), AddressOf OnRemoveRole)
+        _btnSwitchToService = MakeAction(HostingText.SwitchToServiceButton(), AddressOf OnSwitchToService, "action.convert")
+        _btnInstallServer = MakeAction(HostingText.InstallServerButton(), AddressOf OnOpenServerPage, "action.install")
+        _btnReturnToUser = MakeAction(HostingText.ReturnToUserButton(), AddressOf OnReturnToUser, "nav.back")
+        _btnStart = MakeAction(HostingText.StartServiceButton(), Sub() RunManage(ServiceControl.ManageAction.StartService), "action.run")
+        _btnStop = MakeAction(HostingText.StopServiceButton(), Sub() RunManage(ServiceControl.ManageAction.StopService), "media.stop")
+        _btnRestart = MakeAction(HostingText.RestartServiceButton(), Sub() RunManage(ServiceControl.ManageAction.RestartService), "action.refresh")
+        _btnRepair = MakeAction(HostingText.RepairServiceButton(), Sub() RunManage(ServiceControl.ManageAction.Repair), "action.reconnect")
+        _btnGrantRoots = MakeAction(HostingText.GrantRootsButton(), AddressOf OnGrantRoots, "action.share")
+        _btnRemove = MakeAction(HostingText.RemoveRoleButton(), AddressOf OnRemoveRole, "action.delete")
 
         sec.AddBodyRow(_btnSwitchToService)
         sec.AddBodyRow(_btnInstallServer)
@@ -120,7 +120,12 @@ Partial Public NotInheritable Class Share_Settings_Form
             .Margin = New Padding(0, 0, 0, 10), .Text = ShareText.TrustLinkText()}
         AddHandler lnkTrust.LinkClicked, Sub() NetworkInfo.OpenInBrowser(ShareText.TrustPageUrl())
         sec.AddBodyRow(lnkTrust)
-
+        ' Beside the Server edition's page: how a PC that serves around the clock is meant to be
+        ' run, on the shared media exchange portal.
+        Dim lnkServers As New LinkLabel With {.AutoSize = True, .MaximumSize = New Size(HostingContentWidth, 0),
+            .Margin = New Padding(0, 0, 0, 10), .Text = Localization.T("ПК как постоянный сервер (портал)")}
+        AddHandler lnkServers.LinkClicked, Sub() NetworkInfo.OpenInBrowser(ShareLinks.ExchangePortalUrl("windows-servers"))
+        sec.AddBodyRow(lnkServers)
 
         _lblResult = New Label With {.AutoSize = True, .Margin = New Padding(0, 8, 0, 0),
             .MaximumSize = New Size(HostingContentWidth, 0),
@@ -128,11 +133,12 @@ Partial Public NotInheritable Class Share_Settings_Form
         sec.AddBodyRow(_lblResult)
     End Sub
 
-    Private Function MakeAction(text As String, onClick As Action) As Button
+    Private Function MakeAction(text As String, onClick As Action, Optional glyph As String = "") As Button
         Dim b As New Button With {.AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink,
             .Dock = DockStyle.Fill, .Padding = New Padding(12, 6, 12, 6),
             .Margin = New Padding(0, 2, 0, 2), .Text = text}
         AddHandler b.Click, Sub() onClick()
+        If glyph.Length > 0 Then ButtonGlyphs.Apply(b, glyph)
         Return b
     End Function
 
@@ -165,9 +171,12 @@ Partial Public NotInheritable Class Share_Settings_Form
         Dim live As WorkerResponse = Await Task.Run(Function() WorkerProcess.TryGetStatus(1200))
         ' The dialog may have closed while the probe was out.
         If IsDisposed OrElse Disposing Then Return
-        ApplyHostingState(live)
-        UpdateSummaries()
-        _pageHost.PerformLayout()
+        Await InvokeAsync(Sub()
+                              If IsDisposed OrElse Disposing Then Return
+                              ApplyHostingState(live)
+                              UpdateSummaries()
+                              _pageHost.PerformLayout()
+                          End Sub)
     End Function
 
     ''' <summary>

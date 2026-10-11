@@ -16,6 +16,7 @@ Friend NotInheritable Class ManagerSettingRow
     Friend ReadOnly Editor As Control
     Private arranging As Boolean
     Private ReadOnly declaredWidth As Integer
+    Private ReadOnly textMeasurements As New Dictionary(Of Integer, Size)()
 
     Friend Sub New(caption As Label, editor As Control, margin As Padding, Optional hintText As String = "")
         Me.Caption = caption
@@ -35,6 +36,11 @@ Friend NotInheritable Class ManagerSettingRow
         editor.AccessibleName = caption.Text
         editor.Anchor = AnchorStyles.Top Or AnchorStyles.Left
         Controls.AddRange({caption, Hint, editor})
+        For Each label In {caption, Hint}
+            AddHandler label.TextChanged, Sub() textMeasurements.Clear()
+            AddHandler label.FontChanged, Sub() textMeasurements.Clear()
+            AddHandler label.MarginChanged, Sub() textMeasurements.Clear()
+        Next
         ResumeLayout(False)
     End Sub
 
@@ -52,10 +58,20 @@ Friend NotInheritable Class ManagerSettingRow
         If Caption Is Nothing OrElse Editor Is Nothing OrElse Hint Is Nothing Then Return MyBase.GetPreferredSize(proposedSize)
         Dim width = If(proposedSize.Width > 0 AndAlso proposedSize.Width < 8192, proposedSize.Width, Me.Width)
         Dim textWidth = Math.Max(1, width - ValueWidth(width) - Caption.Margin.Horizontal - Padding.Horizontal)
-        Dim textHeight = Caption.GetPreferredSize(New Size(textWidth, 0)).Height + Caption.Margin.Vertical
-        If Hint.Text.Length > 0 Then textHeight += Hint.GetPreferredSize(New Size(textWidth, 0)).Height + Hint.Margin.Vertical
+        Dim measured = MeasureTextColumns(textWidth)
+        Dim textHeight = measured.Width + measured.Height
         Dim valueHeight = Editor.GetPreferredSize(New Size(ValueWidth(width), 0)).Height + Editor.Margin.Vertical
         Return New Size(width, Math.Max(textHeight, valueHeight) + Padding.Vertical)
+    End Function
+
+    Private Function MeasureTextColumns(width As Integer) As Size
+        Dim measured As Size
+        If textMeasurements.TryGetValue(width, measured) Then Return measured
+        measured = New Size(Caption.GetPreferredSize(New Size(width, 0)).Height + Caption.Margin.Vertical,
+            If(Hint.Text.Length > 0, Hint.GetPreferredSize(New Size(width, 0)).Height + Hint.Margin.Vertical, 0))
+        If textMeasurements.Count >= 16 Then textMeasurements.Clear()
+        textMeasurements(width) = measured
+        Return measured
     End Function
 
     Protected Overrides Sub OnLayout(e As LayoutEventArgs)
@@ -69,10 +85,14 @@ Friend NotInheritable Class ManagerSettingRow
         Try
             Dim value = ValueWidth(ClientSize.Width)
             Dim maximum As New Size(Math.Max(1, ClientSize.Width - value - Caption.Margin.Horizontal - Padding.Horizontal), 0)
-            If Caption.MaximumSize <> maximum Then Caption.MaximumSize = maximum
-            If Hint.MaximumSize <> maximum Then Hint.MaximumSize = maximum
-            Dim captionHeight = Caption.GetPreferredSize(New Size(maximum.Width, 0)).Height + Caption.Margin.Vertical
-            Dim hintHeight = If(Hint.Text.Length > 0, Hint.GetPreferredSize(New Size(maximum.Width, 0)).Height + Hint.Margin.Vertical, 0)
+            If Caption.MaximumSize <> maximum OrElse Hint.MaximumSize <> maximum Then
+                textMeasurements.Clear()
+                Caption.MaximumSize = maximum
+                Hint.MaximumSize = maximum
+            End If
+            Dim measured = MeasureTextColumns(maximum.Width)
+            Dim captionHeight = measured.Width
+            Dim hintHeight = measured.Height
             Dim fill = TypeOf Editor Is TextBox OrElse TypeOf Editor Is ComboBox OrElse TypeOf Editor Is FlowLayoutPanel
             Dim editorWidth = Math.Max(1, If(fill, value - Editor.Margin.Horizontal, Math.Min(declaredWidth, value - Editor.Margin.Horizontal)))
             If TypeOf Editor Is NumericUpDown Then editorWidth = Math.Min(value, LogicalToDeviceUnits(110))

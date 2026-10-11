@@ -139,6 +139,17 @@ Public Class Table_Form
     Private Sub Form2_Load(sender As Object, e As EventArgs) Handles MyBase.Load
         PrepareForDisplay()
     End Sub
+
+    Protected Overrides Sub OnShown(e As EventArgs)
+        MyBase.OnShown(e)
+        ' Load/layout can recreate the handle. Apply the viewer's band to the
+        ' final window, then activate settings opened from a non-activating toolbar.
+        Dim viewer As Main_Form = TryCast(Owner, Main_Form)
+        If viewer IsNot Nothing Then viewer.PinToViewerBand(Me)
+        BringToFront()
+        Activate()
+    End Sub
+
     Public Sub PrepareForDisplay()
 #If Not NETFRAMEWORK Then
         CaptureSettingsPage(Tab_Control.SelectedTab)

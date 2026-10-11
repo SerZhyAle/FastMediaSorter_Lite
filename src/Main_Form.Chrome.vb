@@ -193,15 +193,18 @@ Partial Public Class Main_Form
             If carrier Is cmbox_Sort OrElse carrier Is btn_RecentFiles OrElse carrier Is btn_Resource Then kind = ChromeItemKind.MenuButton
             Dim item As New ChromeItem(carrier.Name, kind) With {
                 .Destructive = carrier Is bt_Delete OrElse carrier Is btn_ToVideo,
-                .ShowCaptionWithGlyph = carrier Is btn_Prev_File OrElse carrier Is btn_Next_File OrElse carrier Is bt_Delete,
+                .ShowCaptionWithGlyph = carrier Is btn_Prev_File OrElse carrier Is btn_Next_File OrElse carrier Is bt_Delete OrElse carrier Is btn_Tracks,
                 .MirrorInRtl = carrier Is btn_Prev_File OrElse carrier Is btn_Next_File}
             Dim meaning As IconMeaning = IconMap.GetMeaning(carrier.Name)
             If meaning IsNot Nothing Then item.GlyphId = meaning.GlyphId
             If carrier Is btn_Move_Table Then item.GlyphId = "app.settings"
+            ' The tracks command and the file-information command each had only a word or a bare letter on the panel; both
+            ' now carry the catalogue's own picture (WINDOWS-UI 0.4 section 11 item 1).
+            If carrier Is btn_Tracks Then item.GlyphId = "media.audio-track"
+            If carrier Is lbl_Info Then item.GlyphId = "app.info"
             ' "On top" was a bare check box that meant something only in its tooltip; the catalogue has no glyph for
             ' it yet, so the surface paints one from lines (125 UX-311).
             If carrier Is chkbox_Top_Most Then item.CustomGlyph = ChromeCustomGlyph.OnTop
-            If carrier Is lbl_Info Then item.Caption = "i" : item.CaptionIsSymbol = True
             Dim source As Control = carrier
             item.Action = Sub() InvokeOnClick(source, EventArgs.Empty)
             If carrier Is chkbox_Top_Most Then
@@ -675,7 +678,7 @@ Partial Public Class Main_Form
         Dim caption As String = item.Caption
         Dim visible As Boolean = True
         If TypeOf carrier Is Label Then
-            caption = If(carrier Is lbl_Info, "i", If(carrier Is lbl_Status, StatusMessage.Text, carrier.Text))
+            caption = If(carrier Is lbl_Info, "", If(carrier Is lbl_Status, StatusMessage.Text, carrier.Text))
             If carrier Is lbl_Zoom Then visible = caption.Length > 0
             If carrier Is lbl_Slideshow_Time Then visible = Is_slide_show_mode AndAlso caption.Length > 0
         ElseIf carrier Is cmbox_Sort Then
@@ -694,6 +697,8 @@ Partial Public Class Main_Form
                       Not String.IsNullOrEmpty(Current_File_Name)
         ElseIf carrier Is btn_Prev_File OrElse carrier Is btn_Next_File OrElse carrier Is bt_Delete Then
             caption = Localization.T(IconMap.GetMeaning(carrier.Name).LocalizationKey)
+        ElseIf carrier Is btn_Tracks Then
+            caption = carrier.Text
         ElseIf TypeOf carrier Is Button AndAlso item.GlyphId.Length = 0 AndAlso carrier IsNot btn_Random_Slideshow Then
             caption = carrier.Text
         ElseIf carrier Is btn_Random_Slideshow Then

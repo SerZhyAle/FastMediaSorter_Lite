@@ -571,6 +571,48 @@ Public Class ExchangePublisherTests
         End Using
     End Function
 
+    ' ------------------------------------------------------------------------------------------------ ticket 187: leaving
+
+    <Fact>
+    Public Async Function Leaving_unpublishes_every_resource_then_revokes_itself_and_forgets_everything() As Task
+        Using acc As New ExchangeStubAccount()
+            Using kit As New Kit()
+                kit.Settings.SetPublishShares(True)
+                Using agent As ExchangeDeviceAgent = Await EnrollOnlineAsync(kit, acc)
+                    Assert.True(Await ExchangeStubAccount.WaitUntilAsync(Function() acc.PublishedNow().Count = 2))
+                    Dim id As String = agent.GetStatus().DeviceId
+                    Dim told As Boolean = Await agent.LeaveAccountAsync(CancellationToken.None)
+                    Assert.True(told)
+                    Assert.True(Await ExchangeStubAccount.WaitUntilAsync(Function() acc.Unpublished().Count = 2), "every resource is unpublished before the device goes")
+                    Assert.Contains(id, acc.RevokedDevices())
+                    Assert.False(agent.GetStatus().Configured)
+                    Assert.False(kit.Settings.PublishShares())                      ' a later join publishes nothing until asked (170 rule 1)
+                    Assert.False(kit.Rig.Ports.Credentials.Exists())
+                End Using
+            End Using
+        End Using
+    End Function
+
+    <Fact>
+    Public Async Function Leaving_with_the_server_gone_still_forgets_locally_and_does_not_hang() As Task
+        Dim agent As ExchangeDeviceAgent
+        Using kit As New Kit()
+            kit.Settings.SetPublishShares(True)
+            Using acc As New ExchangeStubAccount()
+                agent = Await EnrollOnlineAsync(kit, acc)
+                Assert.True(Await ExchangeStubAccount.WaitUntilAsync(Function() acc.PublishedNow().Count = 2))
+            End Using                                                               ' the server is gone
+            Using agent
+                Dim started As DateTime = DateTime.UtcNow
+                Dim told As Boolean = Await agent.LeaveAccountAsync(CancellationToken.None)
+                Assert.False(told)                                                  ' the server could not be told
+                Assert.True(DateTime.UtcNow - started < TimeSpan.FromSeconds(8), "leaving is bounded, not a hang")
+                Assert.False(agent.GetStatus().Configured)
+                Assert.False(kit.Rig.Ports.Credentials.Exists())
+                Assert.False(kit.Settings.PublishShares())
+            End Using
+        End Using
+    End Function
     <Fact>
     Public Async Function At_most_the_cap_of_tunnels_per_resource_is_served_at_once_and_a_slot_is_freed_when_one_ends() As Task
         Using acc As New ExchangeStubAccount()

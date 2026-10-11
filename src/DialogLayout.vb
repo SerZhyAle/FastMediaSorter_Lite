@@ -186,7 +186,10 @@ Friend NotInheritable Class DialogLayout
         Dim any As Boolean = False
         For Each c As Control In buttons
             Dim textWidth As Integer = TextRenderer.MeasureText(c.Text, c.Font).Width
-            Dim padded As Integer = textWidth + CInt(Math.Round(2 * 12 * scale))
+            ' A glyph before the caption (ButtonGlyphs) is part of what the button must hold: its bitmap
+            ' already carries the 6 px gap, so the caption is never clipped to make room for it.
+            Dim glyphWidth As Integer = If(TypeOf c Is Button, ButtonGlyphs.ExtraWidth(DirectCast(c, Button)), 0)
+            Dim padded As Integer = textWidth + glyphWidth + CInt(Math.Round(2 * 12 * scale))
             Dim need As Integer = If(padded > c.Width, padded, 0)
             If need > 0 Then any = True
             Dim rightHalf As Boolean = c.Left + c.Width \ 2 > half

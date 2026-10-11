@@ -51,13 +51,17 @@ Friend NotInheritable Class Batch_Report_Form
         close_Button.DialogResult = DialogResult.OK
         AcceptButton = close_Button
         CancelButton = close_Button
+        ' Accept and Cancel at once: the one way out of the report, so it is the dismissing answer.
+        ButtonGlyphs.Apply(close_Button, "nav.close", ButtonGlyphRole.Dismissing)
 
         copy_Button.Text = Localization.T("Копировать")
         AddHandler copy_Button.Click, Sub(s, e) CopyRows()
+        ButtonGlyphs.Apply(copy_Button, "action.copy")
 
         folder_Button.Text = Localization.T("Показать в проводнике")
         folder_Button.Enabled = False
         AddHandler folder_Button.Click, Sub(s, e) ShowFirstSelectedInFolder()
+        ButtonGlyphs.Apply(folder_Button, "content.folder")
 
         ' The buttons ride one bottom band, way out on the right like the panel's own strip.
         ' Reverse add order, reverse dock order: the LAST control added docks first, so
@@ -166,6 +170,19 @@ Friend NotInheritable Class Batch_Report_Form
         list.Columns(0).Width = DialogLayout.Device(list, 280)
         list.Columns(1).Width = DialogLayout.Device(list, 100)
         list.Columns(2).Width = DialogLayout.Device(list, 300)
+        FitStripCaptions()
+    End Sub
+
+    ''' <summary>The strip's buttons are docked at fixed logical widths (110 / 120 / 190), which a caption with a
+    ''' glyph in front of it - or a longer language - can outgrow. Each is widened to what its caption and glyph
+    ''' need, never narrower than it was; the strip keeps its height and every button its one height.</summary>
+    Private Sub FitStripCaptions()
+        PerformAutoScale()
+        Dim padding As Integer = DialogLayout.Device(Me, 24)
+        For Each button As Button In New Button() {close_Button, copy_Button, folder_Button}
+            Dim needed As Integer = TextRenderer.MeasureText(button.Text, button.Font).Width + ButtonGlyphs.ExtraWidth(button) + padding
+            If needed > button.Width Then button.Width = needed
+        Next
     End Sub
 
     ''' <summary>The order of the groups. OrderBy is stable, so inside a group the files keep the

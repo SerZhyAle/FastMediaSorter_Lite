@@ -218,6 +218,8 @@ Public NotInheritable Class Broadcast_Create_Form
             .Text = Localization.T("Отмена"),
             .DialogResult = DialogResult.Cancel
         }
+        ButtonGlyphs.Apply(btnBroadcast, "media.cast", ButtonGlyphRole.Affirmative)
+        ButtonGlyphs.Apply(btnCancel, "action.cancel", ButtonGlyphRole.Dismissing)
         AddHandler btnBroadcast.Click, AddressOf OnAccept
         btnRow.Controls.AddRange(New Control() {btnBroadcast, btnCancel})
         tlp.Controls.Add(btnRow, 0, r)

@@ -1,5 +1,5 @@
 ICONOGRAPHY VOCABULARY ARTIFACT
-Catalog version: 0.28
-Source SHA-256: 7da057c84047d5b8e72a06fcfc6a41546cf7a0a7a7e5d6d8defe319470d3b6a5
+Catalog version: 0.30
+Source SHA-256: 2ee1c3c79155bd3d9fdeed70ddbe34a475fbbfdd0c3a5c7566ab6d15aa18f48b
 Source: iconography/vocabulary.jsonl
-Taken: 2026-10-07
+Taken: 2026-10-11

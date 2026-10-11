@@ -494,6 +494,7 @@ Actions are entry points, not preferences: no stored default/range, and opening 
 | `sftp_manager` | resources / server | Action/information; matching row constructor (no preference default) | Matching row constructor |
 | `sftp_guide` | resources / server | Action/information; matching row constructor (no preference default) | Matching row constructor |
 | `android_app` | resources / server | Action/information; matching row constructor (no preference default) | Matching row constructor |
+| `exchange_portal` | resources / server | Action/information; matching row constructor (no preference default) | Matching row constructor |
 
 Recipients additionally persist the grid slots under `MoveOn1` through `MoveOn9` and `MoveOn0`;
 DEL is an action. Resources use the shared resource registry and dedicated editors (ticket 118). About

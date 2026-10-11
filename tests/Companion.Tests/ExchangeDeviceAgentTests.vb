@@ -432,6 +432,44 @@ Public Class ExchangeDeviceAgentTests
         End Using
     End Function
 
+    ' ---------------------------------------------------------------- a welcome that names another address (187, the entries proposal's ask 2)
+
+    <Fact>
+    Public Async Function A_replaced_server_address_keeps_the_device_the_pin_and_the_token() As Task
+        Using acc As New ExchangeStubAccount()
+            Using rig As New Rig()
+                Using agent As ExchangeDeviceAgent = rig.NewAgent()
+                    Await agent.EnrollAsync(rig.Request(acc), CancellationToken.None)
+                    Assert.True(Await WaitStateAsync(agent, ExchangeAgentState.Online))
+                    Dim before As ExchangeDeviceStatus = agent.GetStatus()
+                    ' the stub's welcome announces a different address than the loopback one the entry holds: it is carried, shown
+                    Assert.Equal("203.0.113.5:22022", before.PublicEndpoint)
+                    Assert.Equal("203.0.113.5:22022", ExchangeEntryMove.Announced(before.Server, before.PublicEndpoint))
+                    Dim tokenBefore As String = ""
+                    Assert.True(rig.Ports.Credentials.TryLoad(before.DeviceId, tokenBefore))
+
+                    agent.ReplaceServerAndRestart("203.0.113.5:22022")
+                    ' only the address changed: the device id, the pin decision and the token are the entry's and stay
+                    Assert.Equal("203.0.113.5:22022", rig.Port.GetValue(ExchangeAccountStore.ServerName))
+                    Assert.Equal(before.DeviceId, rig.Port.GetValue(ExchangeAccountStore.DeviceIdName))
+                    Assert.Equal(before.Fingerprint, rig.Port.GetValue(ExchangeAccountStore.PinName))
+                    Dim tokenAfter As String = ""
+                    Assert.True(rig.Ports.Credentials.TryLoad(before.DeviceId, tokenAfter))
+                    Assert.Equal(tokenBefore, tokenAfter)
+                    Dim after As ExchangeDeviceStatus = agent.GetStatus()
+                    Assert.Equal("203.0.113.5:22022", after.Server)
+                    Assert.Equal(before.DeviceId, after.DeviceId)
+                    Assert.Equal(before.Login, after.Login)
+                    Assert.Equal(before.Fingerprint, after.Fingerprint)
+
+                    ' a value that is not an address changes nothing
+                    agent.ReplaceServerAndRestart("not an address")
+                    Assert.Equal("203.0.113.5:22022", rig.Port.GetValue(ExchangeAccountStore.ServerName))
+                End Using
+            End Using
+        End Using
+    End Function
+
     ' ---------------------------------------------------------------- the account: pairing, revoke, leave, disconnect
 
     <Fact>

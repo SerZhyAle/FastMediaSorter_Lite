@@ -134,6 +134,7 @@ Public NotInheritable Class Share_Broadcasts_Form
             .Margin = New Padding(0, 0, 6, 0),
             .Text = Localization.T("Создать трансляцию..")
         }
+        ButtonGlyphs.Apply(btnCreate, "action.add")
         AddHandler btnCreate.Click, AddressOf OnCreateClick
 
         btnCopyLink = New Button With {
@@ -143,6 +144,7 @@ Public NotInheritable Class Share_Broadcasts_Form
             .Text = Localization.T("Копировать ссылку"),
             .Enabled = False
         }
+        ButtonGlyphs.Apply(btnCopyLink, "action.copy")
         AddHandler btnCopyLink.Click, AddressOf OnCopyLinkClick
 
         btnSaveSpres = New Button With {
@@ -152,6 +154,7 @@ Public NotInheritable Class Share_Broadcasts_Form
             .Text = Localization.T("Сохранить .spres.."),
             .Enabled = False
         }
+        ButtonGlyphs.Apply(btnSaveSpres, "action.export")
         AddHandler btnSaveSpres.Click, AddressOf OnSaveSpresClick
 
         btnShowQr = New Button With {
@@ -161,6 +164,7 @@ Public NotInheritable Class Share_Broadcasts_Form
             .Text = Localization.T("Показать QR"),
             .Enabled = False
         }
+        ButtonGlyphs.Apply(btnShowQr, "action.show-code")
         AddHandler btnShowQr.Click, AddressOf OnShowQrClick
 
         btnRefresh = New Button With {
@@ -170,6 +174,7 @@ Public NotInheritable Class Share_Broadcasts_Form
             .Text = Localization.T("Обновить"),
             .Enabled = False
         }
+        ButtonGlyphs.Apply(btnRefresh, "action.refresh")
         AddHandler btnRefresh.Click, AddressOf OnRefreshClick
 
         btnRevoke = New Button With {
@@ -180,6 +185,7 @@ Public NotInheritable Class Share_Broadcasts_Form
             .Text = Localization.T("Отозвать"),
             .Enabled = False
         }
+        ButtonGlyphs.Apply(btnRevoke, "action.remove")
         AddHandler btnRevoke.Click, AddressOf OnRevokeClick
 
         pnlActions.Controls.AddRange(New Control() {btnCreate, btnCopyLink, btnSaveSpres, btnShowQr, btnRefresh, btnRevoke})
@@ -198,6 +204,7 @@ Public NotInheritable Class Share_Broadcasts_Form
             .Text = Localization.T("Закрыть"),
             .DialogResult = DialogResult.OK
         }
+        ButtonGlyphs.Apply(btnClose, "nav.close", ButtonGlyphRole.Dismissing)
         AddHandler btnClose.Click, Sub() Me.Close()
         pnlBottom.Controls.Add(btnClose)
         pnlMain.Controls.Add(pnlBottom, 0, 4)

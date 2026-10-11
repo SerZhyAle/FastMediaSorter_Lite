@@ -331,6 +331,9 @@ Namespace My
             ' and menu of this process is themed from its first paint. After the forwarding
             ' above - a launch that only hands its file on never shows a window.
             ThemeService.Initialize()
+            ' The glyph before a dialog button's caption (WINDOWS-UI section 11) reads the same bundled
+            ' catalog files the toolbars do.
+            ButtonGlyphs.AssetOpener = AddressOf RuntimeBootstrap.OpenBundledAsset
 #End If
         End Sub
 

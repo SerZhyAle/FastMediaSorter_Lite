@@ -26,7 +26,8 @@
 
     State layout (all under -DataDir, %ProgramData%\FastMediaSorterExchange by default):
       exchange.json   enrolled user: Modify on this FILE only; LocalService, SYSTEM, Admins from
-                      the directory
+                      the directory. `admin.manageSids` in it is written by this helper from
+                      -ManageSid (the server builds the admin pipe's descriptor from that member)
       tls\cert.pem    enrolled user: Read (the certificate is public)
       tls\key.pem     LocalService + SYSTEM + Administrators ONLY, owner Administrators,
                       inheritance off - the enrolled user is excluded
@@ -1001,6 +1002,95 @@ function Initialize-ConfigFile {
     }
 }
 
+# The pure half of Set-AdminManageSids (extracted and run by tests\Companion.Tests\ExchangeHelperTests.vb).
+# Takes the text of exchange.json and the SID(s) of the enrolled user(s) and returns the text with
+# `admin.manageSids` set to exactly those SIDs - or $null when the file already says that, so a
+# repair of a healthy install rewrites nothing. Every other member (limits, endpoint, comments, the
+# admin `_comment`) is carried over untouched. SIDs are written upper-case: the server accepts only
+# the "S-1-" prefix (config.Validate), and a value it refuses leaves a registered service that never
+# comes up. Throws on a value that is not a SID and on text that is not a JSON object.
+function Merge-AdminManageSids([string]$json, [string[]]$sids) {
+    $want = New-Object System.Collections.Generic.List[string]
+    $seen = @{}
+    foreach ($sid in @($sids)) {
+        if (-not (Test-ManageSid $sid)) { throw "refusing to write '$sid' into admin.manageSids: it is not a string SID" }
+        $canon = $sid.ToUpperInvariant()
+        if ($seen.ContainsKey($canon)) { continue }
+        $seen[$canon] = $true
+        $want.Add($canon)
+    }
+
+    $root = $null
+    try { $root = $json | ConvertFrom-Json } catch { throw "exchange.json is not valid JSON: $($_.Exception.Message)" }
+    if ($root -isnot [System.Management.Automation.PSCustomObject]) { throw 'exchange.json is not a JSON object' }
+
+    $adminProp = $root.PSObject.Properties['admin']
+    if ($null -eq $adminProp) {
+        Add-Member -InputObject $root -NotePropertyName 'admin' -NotePropertyValue ([PSCustomObject]@{})
+    } elseif ($null -eq $adminProp.Value) {
+        $adminProp.Value = [PSCustomObject]@{}
+    } elseif ($adminProp.Value -isnot [System.Management.Automation.PSCustomObject]) {
+        throw 'exchange.json: "admin" is not an object'
+    }
+    $admin = $root.admin
+
+    $sidsProp = $admin.PSObject.Properties['manageSids']
+    if ($null -ne $sidsProp -and $null -ne $sidsProp.Value) {
+        $have = @($sidsProp.Value | ForEach-Object { [string]$_ })
+        if ($have.Count -eq $want.Count) {
+            $same = $true
+            foreach ($h in $have) { if ($want -cnotcontains $h) { $same = $false; break } }
+            if ($same) { return $null }
+        }
+    }
+
+    $value = [string[]]$want.ToArray()
+    if ($null -eq $sidsProp) {
+        Add-Member -InputObject $admin -NotePropertyName 'manageSids' -NotePropertyValue $value
+    } else {
+        $sidsProp.Value = $value
+    }
+    return (($root | ConvertTo-Json -Depth 20) + "`n")
+}
+
+# Writes the enrolled user(s) into `admin.manageSids` of exchange.json (ticket 162 section 4). The
+# server builds the admin pipe's security descriptor from that member at start-up, and in service
+# mode the service runs as LocalService: without it the user who enrolled is not admitted to the
+# channel the Share Manager's account and device commands travel on. The set is REPLACED, not
+# merged - exactly like the file's own ACL, so a changed -ManageSid leaves no stale user behind.
+# Atomic (temporary file, then replace, which keeps the file's access list), written without a BOM.
+function Set-AdminManageSids {
+    $manage = @(Split-Sids $ManageSid)
+    if ($manage.Count -eq 0) {
+        Write-Log 'no management SID - admin.manageSids left as it is'
+        return
+    }
+    $path = Join-Path $DataDir $ConfigName
+    if (Test-ReparsePoint $path) { Fail "'$path' is a link - refused" 11 }
+    if (-not (Test-Path -LiteralPath $path -PathType Leaf)) { Fail "'$path' does not exist - admin.manageSids was not written" 6 }
+
+    $merged = $null
+    try {
+        $merged = Merge-AdminManageSids ([System.IO.File]::ReadAllText($path)) $manage
+    } catch {
+        Fail "$($_.Exception.Message) - '$path' was not changed" 6
+    }
+    if ($null -eq $merged) {
+        Write-Log "admin.manageSids already names: $($manage -join ', ')"
+        return
+    }
+
+    $tmp = $path + '.fms-helper.tmp'
+    if (Test-ReparsePoint $tmp) { Remove-LinkOnly $tmp }
+    try {
+        [System.IO.File]::WriteAllText($tmp, $merged, (New-Object System.Text.UTF8Encoding($false)))
+        [System.IO.File]::Replace($tmp, $path, $null)
+    } finally {
+        if ($null -ne (Get-RawAttributes $tmp)) { Remove-LinkOnly $tmp }
+    }
+    Write-Log "admin.manageSids set to: $($manage -join ', ')"
+}
+
 # The ACLs of the three files that matter, rebuilt every run so a changed -ManageSid leaves no
 # stale entry behind, and verified after.
 function Set-StateFileAcls {
@@ -1337,6 +1427,7 @@ switch ($Action) {
             Write-Log "WARNING: '$UserDataDir' holds a certificate and '$DataDir' does not yet. 'install' does not migrate it - run 'migrate-to-service' instead, or producers that pinned that certificate will have to re-pin."
         }
         Initialize-ConfigFile
+        Set-AdminManageSids
         Set-StateFileAcls
         Register-Service
         Set-FirewallRule $true
@@ -1358,6 +1449,7 @@ switch ($Action) {
         # service is still running the old copy" repair as well as a registration one.
         Sync-ServiceBinaries
         Initialize-ConfigFile
+        Set-AdminManageSids
         Set-StateFileAcls
         Register-Service
         Set-FirewallRule $true
@@ -1415,6 +1507,7 @@ switch ($Action) {
         # directory is the live state and must win. Aborts with 7 before registration on a mismatch.
         Copy-State $sourceDir $DataDir -OnlyWhenTargetIsFresh
         Initialize-ConfigFile
+        Set-AdminManageSids
         Set-StateFileAcls
         Register-Service
         Set-FirewallRule $true

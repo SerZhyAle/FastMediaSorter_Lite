@@ -113,9 +113,11 @@ Public NotInheritable Class Hotkeys_Form
 
         LayoutButton(btnReset, Localization.T("Сбросить"), captureBox.Right + 8, captureBox.Top, 130)
         AddHandler btnReset.Click, Sub() ApplyToSelection(Nothing)
+        ButtonGlyphs.Apply(btnReset, "action.reset")
 
         LayoutButton(btnClear, Localization.T("Снять сочетание"), btnReset.Right + 8, captureBox.Top, 150)
         AddHandler btnClear.Click, Sub() ApplyToSelection(CustomHotkeys.NoShortcut)
+        ButtonGlyphs.Apply(btnClear, "action.remove")
 
         ' On the OK / Cancel row, at the start edge: on the capture row it started at x = 488 while "Снять сочетание"
         ' ends at x = 518, so the two overlapped by 30 px and one hid part of the other's caption at every scale
@@ -123,14 +125,17 @@ Public NotInheritable Class Hotkeys_Form
         LayoutButton(btnResetAll, Localization.T("Сбросить всё"), 12, ClientSize.Height - 42, 140)
         btnResetAll.Anchor = AnchorStyles.Left Or AnchorStyles.Bottom
         AddHandler btnResetAll.Click, AddressOf ResetAll
+        ButtonGlyphs.Apply(btnResetAll, "action.reset")
 
         LayoutButton(btnOk, Localization.T("ОК"), ClientSize.Width - 24 - 220, ClientSize.Height - 42, 105)
         btnOk.Anchor = AnchorStyles.Right Or AnchorStyles.Bottom
         btnOk.DialogResult = DialogResult.OK
+        ButtonGlyphs.Apply(btnOk, "action.confirm", ButtonGlyphRole.Affirmative)
 
         LayoutButton(btnCancel, Localization.T("Отмена"), ClientSize.Width - 12 - 105, ClientSize.Height - 42, 105)
         btnCancel.Anchor = AnchorStyles.Right Or AnchorStyles.Bottom
         btnCancel.DialogResult = DialogResult.Cancel
+        ButtonGlyphs.Apply(btnCancel, "action.cancel", ButtonGlyphRole.Dismissing)
 
         AcceptButton = btnOk
         CancelButton = btnCancel
@@ -159,6 +164,33 @@ Public NotInheritable Class Hotkeys_Form
         btnClear.Top = captureTop
         hint.Top = captureTop - hint.Height - DialogLayout.Device(Me, 4)
         grid.Height = Math.Max(1, hint.Top - grid.Top - DialogLayout.Device(Me, 8))
+        FitCommandCaptions()
+    End Sub
+
+    ''' <summary>The width a button needs for its caption and the glyph before it (the glyph bitmap carries its own
+    ''' gap), with the same 12 px side padding DialogLayout.FitContent uses; never narrower than it already is.</summary>
+    Private Function NeededWidth(button As Button) As Integer
+        Dim caption As Integer = TextRenderer.MeasureText(button.Text, button.Font).Width
+        Return Math.Max(button.Width, caption + ButtonGlyphs.ExtraWidth(button) + DialogLayout.Device(Me, 24))
+    End Function
+
+    ''' <summary>This window does not run DialogLayout.FitContent (its rows are chained and anchored by hand), so a
+    ''' caption that grew by a glyph is made to fit here: the capture row grows towards the end, the OK / Cancel pair
+    ''' keeps its end edge and grows towards the start, with the gap it had.</summary>
+    Private Sub FitCommandCaptions()
+        PerformAutoScale()
+        Dim gap As Integer = DialogLayout.Device(Me, 8)
+
+        btnReset.SetBounds(btnReset.Left, btnReset.Top, NeededWidth(btnReset), btnReset.Height)
+        btnClear.SetBounds(btnReset.Right + gap, btnClear.Top, NeededWidth(btnClear), btnClear.Height)
+
+        btnResetAll.SetBounds(btnResetAll.Left, btnResetAll.Top, NeededWidth(btnResetAll), btnResetAll.Height)
+
+        Dim between As Integer = btnCancel.Left - btnOk.Right
+        Dim cancelWidth As Integer = NeededWidth(btnCancel)
+        btnCancel.SetBounds(btnCancel.Right - cancelWidth, btnCancel.Top, cancelWidth, btnCancel.Height)
+        Dim okWidth As Integer = NeededWidth(btnOk)
+        btnOk.SetBounds(btnCancel.Left - between - okWidth, btnOk.Top, okWidth, btnOk.Height)
     End Sub
 
     Private Sub LayoutButton(button As Button, caption As String, left As Integer, top As Integer, width As Integer)

@@ -53,12 +53,12 @@ Public NotInheritable Class Share_Disks_Form
         layout.RowStyles.Add(New RowStyle(SizeType.AutoSize))
         layout.RowStyles.Add(New RowStyle(SizeType.AutoSize))
         Dim top As New FlowLayoutPanel With {.AutoSize = True, .Dock = DockStyle.Fill}
-        _add = AddButton(top, Localization.T("Подключить .fdd.."), AddressOf OnAdd)
-        _mounted = AddButton(top, Localization.T("Смонтированный диск.."), AddressOf OnMounted)
-        _refresh = AddButton(top, Localization.T("Обновить"), AddressOf OnRefresh)
+        _add = AddButton(top, Localization.T("Подключить .fdd.."), AddressOf OnAdd, "action.mount-disk")
+        _mounted = AddButton(top, Localization.T("Смонтированный диск.."), AddressOf OnMounted, "content.disk-container")
+        _refresh = AddButton(top, Localization.T("Обновить"), AddressOf OnRefresh, "action.refresh")
         ' Always offered, also while disk sharing is unavailable: that is when a disk held by FileDO
         ' has to be unmounted there before anything here can work.
-        _manager = AddButton(top, Localization.T("Открыть менеджер дисков FileDO"), AddressOf OnOpenManager)
+        _manager = AddButton(top, Localization.T("Открыть менеджер дисков FileDO"), AddressOf OnOpenManager, "content.disk-container")
         _managerHint.Text = Localization.T("Открыть менеджер дисков FileDO")
         AddHandler _managerHint.LinkClicked, AddressOf OnOpenManager
         _list.Columns.Add(Localization.T("Название"), 170)
@@ -69,11 +69,11 @@ Public NotInheritable Class Share_Disks_Form
                                                   UpdateActions()
                                                   UpdateDiskDetails()
                                               End Sub
-        _open = AddButton(_actions, Localization.T("Открыть.."), AddressOf OnOpen)
-        _close = AddButton(_actions, Localization.T("Закрыть диск"), AddressOf OnCloseDisk)
-        _force = AddButton(_actions, Localization.T("Принудительно закрыть.."), AddressOf OnForceClose)
-        _remove = AddButton(_actions, Localization.T("Убрать"), AddressOf OnRemove)
-        _auto = AddButton(_actions, Localization.T("Автозапуск.."), AddressOf OnAutostart)
+        _open = AddButton(_actions, Localization.T("Открыть.."), AddressOf OnOpen, "nav.open-external")
+        _close = AddButton(_actions, Localization.T("Закрыть диск"), AddressOf OnCloseDisk, "action.unmount-disk")
+        _force = AddButton(_actions, Localization.T("Принудительно закрыть.."), AddressOf OnForceClose, "nav.close")
+        _remove = AddButton(_actions, Localization.T("Убрать"), AddressOf OnRemove, "action.remove")
+        _auto = AddButton(_actions, Localization.T("Автозапуск.."), AddressOf OnAutostart, "action.auto-mount")
         Dim linksFlow As New FlowLayoutPanel With {
             .AutoSize = True,
             .Dock = DockStyle.Fill,
@@ -99,6 +99,7 @@ Public NotInheritable Class Share_Disks_Form
         ' same path. Busy work cannot be cancelled here, so FormClosing below refuses all three alike.
         _exit = New Button With {.AutoSize = True, .Text = Localization.T("Закрыть"), .Padding = New Padding(6),
             .DialogResult = DialogResult.Cancel, .Anchor = AnchorStyles.Right}
+        ButtonGlyphs.Apply(_exit, "nav.close", ButtonGlyphRole.Dismissing)
         CancelButton = _exit
         Dim footer As New TableLayoutPanel With {.Dock = DockStyle.Fill, .ColumnCount = 2, .RowCount = 1, .AutoSize = True,
             .Margin = New Padding(0, 6, 0, 0)}
@@ -127,8 +128,9 @@ Public NotInheritable Class Share_Disks_Form
         _timer.Start()
     End Sub
 
-    Private Shared Function AddButton(panel As FlowLayoutPanel, caption As String, handler As EventHandler) As Button
+    Private Shared Function AddButton(panel As FlowLayoutPanel, caption As String, handler As EventHandler, Optional glyph As String = "") As Button
         Dim button As New Button With {.AutoSize = True, .Text = caption, .Padding = New Padding(6)}
+        If glyph.Length > 0 Then ButtonGlyphs.Apply(button, glyph)
         AddHandler button.Click, handler
         panel.Controls.Add(button)
         Return button
@@ -377,6 +379,8 @@ Public NotInheritable Class Share_Disks_Form
             Dim ok As New Button With {.AutoSize = True, .Text = Localization.T("ОК"), .Padding = New Padding(6), .DialogResult = DialogResult.OK}
             Dim cancel As New Button With {.AutoSize = True, .Text = Localization.T("Отмена"), .Padding = New Padding(6), .DialogResult = DialogResult.Cancel}
             Dim row As New FlowLayoutPanel With {.Dock = DockStyle.Bottom, .AutoSize = True, .FlowDirection = FlowDirection.LeftToRight}
+            ButtonGlyphs.Apply(ok, "action.confirm", ButtonGlyphRole.Affirmative)
+            ButtonGlyphs.Apply(cancel, "action.cancel", ButtonGlyphRole.Dismissing)
             row.Controls.AddRange(New Control() {ok, cancel})
             picker.Controls.Add(drives)
             picker.Controls.Add(row)
@@ -469,6 +473,8 @@ Friend NotInheritable Class DiskOptionsForm
         Dim buttons As New FlowLayoutPanel With {.AutoSize = True}
         Dim ok As New Button With {.AutoSize = True, .Text = Localization.T("ОК"), .DialogResult = DialogResult.OK}
         Dim cancel As New Button With {.AutoSize = True, .Text = Localization.T("Отмена"), .DialogResult = DialogResult.Cancel}
+        ButtonGlyphs.Apply(ok, "action.confirm", ButtonGlyphRole.Affirmative)
+        ButtonGlyphs.Apply(cancel, "action.cancel", ButtonGlyphRole.Dismissing)
         buttons.Controls.AddRange(New Control() {ok, cancel})
         layout.Controls.Add(buttons)
         Controls.Add(layout)

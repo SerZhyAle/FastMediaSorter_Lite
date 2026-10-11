@@ -280,15 +280,31 @@ Friend NotInheritable Class ExchangeSync
     Private ReadOnly _commit As Func(Of ResourceDescriptor, String, ResourceCommitResult)
     Private ReadOnly _readPassword As Func(Of ResourceDescriptor, String)
     Private ReadOnly _newId As Func(Of String)
+    Private ReadOnly _entryId As String
 
+    ''' <param name="entryId">Ticket 187: the entry this sync serves. An attached resource is bound to the entry AND the producer's resource
+    ''' id; only resources carrying this entry's id are looked up, followed or created. Nothing = the Share Manager's older account.</param>
     Friend Sub New(api As IExchangeAgentApi, load As Func(Of List(Of ResourceDescriptor)), commit As Func(Of ResourceDescriptor, String, ResourceCommitResult),
-                   readPassword As Func(Of ResourceDescriptor, String), newId As Func(Of String))
+                   readPassword As Func(Of ResourceDescriptor, String), newId As Func(Of String), Optional entryId As String = Nothing)
         _api = api
         _load = load
         _commit = commit
         _readPassword = readPassword
         _newId = newId
+        _entryId = If(String.IsNullOrEmpty(entryId), Nothing, entryId)
     End Sub
+
+    ''' <summary>The sync of one of the viewer's own entries, over its own session (no Share Manager).</summary>
+    Friend Shared Function CreateFor(entry As ExchangeEntry, api As IExchangeAgentApi) As ExchangeSync
+        Dim secrets As IResourceSecretStore = New RegistryResourceSecretStore()
+        Return New ExchangeSync(api, AddressOf ResourceRegistry.Load,
+            Function(d, pw) ResourceCommit.Commit(d, pw, AddressOf ResourceRegistry.HiveRead, AddressOf ResourceRegistry.HiveWrite, secrets),
+            Function(d)
+                Dim read As CredentialReadResult = ResourceCommit.ReadCredential(d, secrets)
+                Return If(read.Outcome = CredentialReadOutcome.Ok, read.Secret, "")
+            End Function,
+            AddressOf ResourceImport.NewResourceId, entry.Id)
+    End Function
 
     ''' <summary>The production sync over the real registry and the real credential store.</summary>
     Friend Shared Function CreateDefault() As ExchangeSync
@@ -305,7 +321,7 @@ Friend NotInheritable Class ExchangeSync
     ''' <summary>The user ticked a resource: ask the agent for its access, build the resource, store it (the credential through the DPAPI blob).</summary>
     Friend Async Function AttachAsync(record As ExchangeResourceRecord, deviceName As String, ct As CancellationToken) As Task(Of ExchangeAttachOutcome)
         If record Is Nothing OrElse Not record.IsSupportedKind Then Return ExchangeAttachOutcome.Unusable
-        If ResourceOrigin.FindByExchangeId(_load.Invoke(), record.ResourceId) IsNot Nothing Then Return ExchangeAttachOutcome.AlreadyAttached
+        If ResourceOrigin.FindByExchangeId(_load.Invoke(), record.ResourceId, _entryId) IsNot Nothing Then Return ExchangeAttachOutcome.AlreadyAttached
         Dim access As ExchangeAgentAccessResult = Await _api.GetAccessAsync(record.ResourceId, ct).ConfigureAwait(False)
         If Not access.Reply.IsOk Then
             Select Case access.Reply.Error
@@ -314,10 +330,25 @@ Friend NotInheritable Class ExchangeSync
                 Case Else : Return If(access.Reply.Kind = ExchangeAgentReplyKind.Refused, ExchangeAttachOutcome.Unusable, ExchangeAttachOutcome.AgentUnavailable)
             End Select
         End If
-        Dim draft As ExchangeAttachDraft = ExchangeAttach.BuildDraft(record.ResourceId, record.DeviceId, deviceName, record.Name, access.AccessJson, _newId)
+        Dim draft As ExchangeAttachDraft = ExchangeAttach.BuildDraft(record.ResourceId, record.DeviceId, deviceName, record.Name, access.AccessJson, _newId, _entryId)
         If draft Is Nothing Then Return ExchangeAttachOutcome.Unusable
         Dim result As ResourceCommitResult = _commit.Invoke(draft.Descriptor, draft.Password)
         Return If(result.Succeeded, ExchangeAttachOutcome.Attached, ExchangeAttachOutcome.NotStored)
+    End Function
+
+    ''' <summary>Ticket 187 rule 7: attaches the listed resources that can be attached now - supported kind, the producer online with an `access`.
+    ''' The user's act ("Attach everything listed") or, per entry and off by default, the setting that attaches NEW ones (the caller passes only
+    ''' the ids that were not seen before). Returns how many were attached; one that is already attached, offline or unusable is skipped.</summary>
+    Friend Async Function AttachListedAsync(state As ExchangeDevicesState, only As ISet(Of String), ct As CancellationToken) As Task(Of Integer)
+        Dim attached As Integer = 0
+        If state Is Nothing OrElse state.Snapshot Is Nothing Then Return 0
+        For Each record As ExchangeResourceRecord In state.Snapshot.Resources
+            If only IsNot Nothing AndAlso Not only.Contains(record.ResourceId) Then Continue For
+            If Not record.IsSupportedKind OrElse Not record.HasAccess Then Continue For
+            Dim outcome As ExchangeAttachOutcome = Await AttachAsync(record, DeviceNameOf(state.Snapshot, record.ResourceId), ct).ConfigureAwait(False)
+            If outcome = ExchangeAttachOutcome.Attached Then attached += 1
+        Next
+        Return attached
     End Function
 
     ''' <summary>Follows the producer for one attached resource: asks for its current `access`, and replaces the kept one when it differs
@@ -335,7 +366,7 @@ Friend NotInheritable Class ExchangeSync
         If Not access.Reply.IsOk Then Return New ExchangeFollowOutcome(resource, False)     ' no access now (offline) or no agent: nothing to follow
         ' a producer whose access names no root keeps the root the resource already has: the name that would rebuild "/" + name is that root's
         Dim draft As ExchangeAttachDraft = ExchangeAttach.BuildDraft(resource.ExchangeResourceId, resource.ExchangeDeviceId, deviceName,
-                                                                     If(resource.RootPath, "").Trim("/"c), access.AccessJson, _newId)
+                                                                     If(resource.RootPath, "").Trim("/"c), access.AccessJson, _newId, _entryId)
         If draft Is Nothing Then Return New ExchangeFollowOutcome(resource, False)
         Dim followed As ExchangeFollowResult = ExchangeAttach.Follow(resource, _readPassword.Invoke(resource), draft, deviceName)
         If Object.ReferenceEquals(followed.Descriptor, resource) Then Return New ExchangeFollowOutcome(resource, False)
@@ -351,6 +382,8 @@ Friend NotInheritable Class ExchangeSync
         If state Is Nothing OrElse state.Snapshot Is Nothing Then Return changed      ' no full list: nothing is known, so nothing changes
         For Each resource As ResourceDescriptor In _load.Invoke()
             If Not ResourceOrigin.IsExchange(resource) Then Continue For
+            ' only what was attached through THIS entry: another entry's resource of the same id is another account's
+            If Not String.Equals(If(resource.ExchangeEntryId, ""), If(_entryId, ""), StringComparison.Ordinal) Then Continue For
             If ExchangeAttach.StateOf(resource.ExchangeResourceId, state.Snapshot, True) <> ExchangeResourceState.Available Then Continue For
             Dim deviceName As String = DeviceNameOf(state.Snapshot, resource.ExchangeResourceId)
             Dim outcome As ExchangeFollowOutcome = Await FollowOneAsync(resource, deviceName, ct).ConfigureAwait(False)

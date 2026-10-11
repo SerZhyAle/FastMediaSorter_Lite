@@ -29,9 +29,13 @@ Partial Public NotInheritable Class Share_Settings_Form
     Private _secAccount As CollapsibleSection
     Private _accState As Label
     Private _accDetail As Label
+    Private _accMoved As Label
+    Private _accMovedRow As FlowLayoutPanel
+    Private _btnAccUpdate As Button
     Private _accResult As Label
     Private _accSignInRow As FlowLayoutPanel
     Private _btnAccSignIn As Button
+    Private _btnAccPublish As Button
     Private _btnAccAccept As Button
     Private _btnAccAdd As Button
     Private _accPairing As FlowLayoutPanel
@@ -82,10 +86,11 @@ Partial Public NotInheritable Class Share_Settings_Form
             .Margin = New Padding(0, 2, 0, 2), .MaximumSize = New Size(AccountContentWidth, 0)}
     End Function
 
-    Private Function AccButton(text As String, onClick As Action) As Button
+    Private Function AccButton(text As String, onClick As Action, Optional glyph As String = "") As Button
         Dim b As New Button With {.AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink, .Padding = New Padding(12, 5, 12, 5),
             .Margin = New Padding(0, 2, 8, 2), .Text = text}
         AddHandler b.Click, Sub() onClick()
+        If glyph.Length > 0 Then ButtonGlyphs.Apply(b, glyph)
         Return b
     End Function
 
@@ -96,15 +101,28 @@ Partial Public NotInheritable Class Share_Settings_Form
         sec.AddBodyRow(_accState)
         sec.AddBodyRow(_accDetail)
 
+        ' a welcome that names another address (the entries proposal's ask 2): the announced address is shown and the edit offered, never taken silently
+        _accMoved = AccNote("")
+        _accMoved.Visible = False
+        sec.AddBodyRow(_accMoved)
+        _btnAccUpdate = AccButton(Localization.T("Обновить адрес"), AddressOf OnAccountUpdateAddress, "action.refresh")
+        _accMovedRow = AccFlow()
+        _accMovedRow.Controls.Add(_btnAccUpdate)
+        _accMovedRow.Visible = False
+        sec.AddBodyRow(_accMovedRow)
+
         _accSignInRow = AccFlow()
-        _btnAccSignIn = AccButton(Localization.T("Войти.."), AddressOf OnAccountSignIn)
-        _btnAccAccept = AccButton(Localization.T("Принять новый сертификат.."), AddressOf OnAccountAcceptCertificate)
+        _btnAccSignIn = AccButton(Localization.T("Войти.."), AddressOf OnAccountSignIn, "action.confirm")
+        _btnAccAccept = AccButton(Localization.T("Принять новый сертификат.."), AddressOf OnAccountAcceptCertificate, "action.confirm")
         _accSignInRow.Controls.Add(_btnAccSignIn)
+        ' ticket 187 T-5: the same dialog, opened to publish - its "publish now" box is ticked
+        _btnAccPublish = AccButton(ExchangeJoinText.PublishButton(), AddressOf OnAccountPublish, "action.confirm")
+        _accSignInRow.Controls.Add(_btnAccPublish)
         _accSignInRow.Controls.Add(_btnAccAccept)
         sec.AddBodyRow(_accSignInRow)
 
         ' pairing: the button, and (while a code is valid) the code, its countdown, the copy button and the one-line how-to
-        _btnAccAdd = AccButton(Localization.T("Добавить устройство"), AddressOf OnAccountAddDevice)
+        _btnAccAdd = AccButton(Localization.T("Добавить устройство"), AddressOf OnAccountAddDevice, "action.add")
         Dim addRow As FlowLayoutPanel = AccFlow()
         addRow.Controls.Add(_btnAccAdd)
         sec.AddBodyRow(addRow)
@@ -113,7 +131,7 @@ Partial Public NotInheritable Class Share_Settings_Form
         _accPairing.WrapContents = False
         _accCode = New Label With {.AutoSize = True, .Margin = New Padding(0, 2, 0, 0), .Font = _accBoldFont}
         _accValid = AccNote("")
-        _btnAccCopy = AccButton(Localization.T("Копировать код"), AddressOf OnAccountCopyCode)
+        _btnAccCopy = AccButton(Localization.T("Копировать код"), AddressOf OnAccountCopyCode, "action.copy")
         _accPairNote = AccNote(Localization.T("Введите этот код на новом устройстве вместо пароля. Он одноразовый."))
         _accPairing.Controls.Add(_accCode)
         _accPairing.Controls.Add(_accValid)
@@ -134,12 +152,12 @@ Partial Public NotInheritable Class Share_Settings_Form
         _accDevices.Columns.Add(Localization.T("Последний раз в сети"), Me.LogicalToDeviceUnits(170))
         AddHandler _accDevices.SelectedIndexChanged, Sub() UpdateAccountRevokeVisibility()
         sec.AddBodyRow(_accDevices)
-        _btnAccRevoke = AccButton(Localization.T("Отозвать"), AddressOf OnAccountRevoke)
+        _btnAccRevoke = AccButton(Localization.T("Отозвать"), AddressOf OnAccountRevoke, "action.remove")
         Dim revokeRow As FlowLayoutPanel = AccFlow()
         revokeRow.Controls.Add(_btnAccRevoke)
         sec.AddBodyRow(revokeRow)
 
-        _btnAccDisconnect = AccButton(Localization.T("Отключиться"), AddressOf OnAccountDisconnect)
+        _btnAccDisconnect = AccButton(Localization.T("Отключиться"), AddressOf OnAccountDisconnect, "system.network-off")
         Dim disconnectRow As FlowLayoutPanel = AccFlow()
         disconnectRow.Controls.Add(_btnAccDisconnect)
         sec.AddBodyRow(disconnectRow)
@@ -213,7 +231,14 @@ Partial Public NotInheritable Class Share_Settings_Form
         _accDetail.Text = detail
         _accDetail.Visible = detail.Length > 0
 
+        ' ask 2 of the entries proposal: the announced address is shown and the edit offered - never a silent switch
+        Dim moved As String = If(status Is Nothing OrElse Not status.Configured, "", ExchangeEntryMove.Announced(status.Server, status.PublicEndpoint))
+        _accMoved.Text = If(moved.Length = 0, "", ExchangeDeviceText.MovedAddress(moved))
+        _accMoved.Visible = moved.Length > 0
+        _accMovedRow.Visible = moved.Length > 0
+
         _btnAccSignIn.Visible = model.ShowSignIn
+        _btnAccPublish.Visible = model.ShowSignIn AndAlso Not (status IsNot Nothing AndAlso status.Configured)
         _btnAccAccept.Visible = model.ShowAcceptCertificate
         _accSignInRow.Visible = model.ShowSignIn OrElse model.ShowAcceptCertificate
         _btnAccAdd.Parent.Visible = model.ShowAddDevice
@@ -303,6 +328,18 @@ Partial Public NotInheritable Class Share_Settings_Form
         ApplyAccountState()
     End Sub
 
+    ''' <summary>"Publish through an exchange server..": the sign-in dialog with the connection-string input and its "publish my shared folders now"
+    ''' box ticked. Publishing stays an explicit choice either way (170 rule 1).</summary>
+    Private Sub OnAccountPublish()
+        Dim agent As ExchangeDeviceAgent = ExchangeDeviceHost.GetOrCreate()
+        If agent Is Nothing Then Return
+        Using dlg As New Exchange_Account_Form(agent, "", "", publishNow:=True)
+            dlg.ShowDialog(Me)
+        End Using
+        ShowAccountResult("")
+        ApplyAccountState()
+    End Sub
+
     ''' <summary>The one explicit act that lets a changed certificate in: the new fingerprint is fetched, shown beside the old one, and accepted only on
     ''' a Yes (the default is No).</summary>
     Private Async Sub OnAccountAcceptCertificate()
@@ -327,6 +364,25 @@ Partial Public NotInheritable Class Share_Settings_Form
             _accBusy = False
         End Try
         If Not IsDisposed Then ApplyAccountState()
+    End Sub
+
+    ''' <summary>Ask 2 of the entries proposal: the welcome announced another address and the user takes it. The edit is in place -
+    ''' the device id, the token, the pin decision and the published shares are kept; only the stored address changes and the stream
+    ''' restarts with it (a different leaf at the new address is item D's explicit replacement, as everywhere).</summary>
+    Private Sub OnAccountUpdateAddress()
+        Dim agent As ExchangeDeviceAgent = ExchangeDeviceHost.Current
+        If agent Is Nothing OrElse _accBusy Then Return
+        Dim status As ExchangeDeviceStatus = agent.GetStatus()
+        Dim moved As String = ExchangeEntryMove.Announced(status.Server, status.PublicEndpoint)
+        If moved.Length = 0 Then
+            ApplyAccountState()
+            Return
+        End If
+        If MessageBox.Show(Me, ExchangeDeviceText.UpdateAddressQuestion(status.Server, moved), ExchangeDeviceText.GroupTitle(),
+                           MessageBoxButtons.YesNo, MessageBoxIcon.Question, MessageBoxDefaultButton.Button1) <> DialogResult.Yes Then Return
+        agent.ReplaceServerAndRestart(moved)
+        ShowAccountResult(ExchangeDeviceText.AddressUpdated())
+        ApplyAccountState()
     End Sub
 
     Private Async Sub OnAccountAddDevice()
@@ -421,13 +477,16 @@ Partial Public NotInheritable Class Share_Settings_Form
     Private Async Sub OnAccountDisconnect()
         Dim agent As ExchangeDeviceAgent = ExchangeDeviceHost.Current
         If agent Is Nothing OrElse _accBusy Then Return
-        If MessageBox.Show(Me, Localization.T("Забыть учётную запись на этом ПК? Токен и настройки будут удалены. Устройство останется в списке сервера, пока другое устройство его не отзовёт."),
+        ' ticket 187 rule 9: the clean leave - every resource unpublished, the device revokes itself, then it forgets locally - and it never
+        ' depends on the server being reachable (with it down: forgotten here, and the window says the old record stays until another device
+        ' revokes it)
+        If MessageBox.Show(Me, ExchangeJoinText.DisconnectQuestion(),
                            ExchangeDeviceText.GroupTitle(), MessageBoxButtons.YesNo, MessageBoxIcon.Warning, MessageBoxDefaultButton.Button2) <> DialogResult.Yes Then Return
         _accBusy = True
         Try
             ClearPairingCode()
-            Await agent.DisconnectAsync()
-            ShowAccountResult("")
+            Dim told As Boolean = Await agent.LeaveAccountAsync(Threading.CancellationToken.None)
+            ShowAccountResult(If(told, ExchangeJoinText.LeftCleanly(), ExchangeJoinText.LeftLocally()))
         Finally
             _accBusy = False
         End Try

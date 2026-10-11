@@ -78,6 +78,38 @@ Public Module SitePages
         End Select
     End Function
 
+    ''' <summary>The media exchange portal - the shared "media exchange and live broadcast" section of the
+    ''' product family. It is published on the Android app's site, so it is deliberately NOT on
+    ''' tools/site-addresses.jsonl (that list holds only addresses under <see cref="SiteRoot"/>, and
+    ''' tools/Test-SiteAddresses.ps1 resolves them against this repository's page set). The pages are the
+    ''' start page (the root itself) and the six of <c>ExchangePortalPages</c>.</summary>
+    Public Const ExchangePortalRoot As String = AndroidAppSiteRoot & "docs/media-exchange-portal/"
+
+    ''' <summary>The portal pages a program may link to, besides the start page ("").</summary>
+    Private ReadOnly ExchangePortalPages As String() = {"home-network", "windows-servers", "live-broadcast", "exchange-server", "clouds", "editions"}
+
+    ''' <summary>
+    ''' A page of the media exchange portal in <paramref name="languageCode"/>. <paramref name="page"/> is ""
+    ''' (the start page), <c>home-network</c>, <c>windows-servers</c>, <c>live-broadcast</c>,
+    ''' <c>exchange-server</c>, <c>clouds</c> or <c>editions</c>; anything else opens the start page, never
+    ''' a page that does not exist. The portal has a Russian (<c>-ru</c>) and a Ukrainian (<c>-uk</c>) copy of
+    ''' every page; every other language reads the English one - the root itself for the start page,
+    ''' <c>&lt;page&gt;.html</c> for the rest.
+    ''' </summary>
+    Public Function ExchangePortalUrl(page As String, languageCode As String) As String
+        Dim name As String = If(page, "").Trim().ToLowerInvariant()
+        If Array.IndexOf(ExchangePortalPages, name) < 0 Then name = ""
+        Dim suffix As String = ""
+        Select Case If(languageCode, "").Trim().ToLowerInvariant()
+            Case "ru" : suffix = "-ru"
+            Case "uk" : suffix = "-uk"
+        End Select
+        If name.Length = 0 Then
+            Return If(suffix.Length = 0, ExchangePortalRoot, ExchangePortalRoot & "index" & suffix & ".html")
+        End If
+        Return ExchangePortalRoot & name & suffix & ".html"
+    End Function
+
     ''' <summary>The document-translation project's site: Russian and Ukrainian are a query on the root page, the
     ''' other eleven languages a folder.</summary>
     Public Const DocHtmlTranslateSiteRoot As String = "https://serzhyale.github.io/doc-html-translate/"

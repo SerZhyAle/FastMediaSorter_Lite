@@ -3,7 +3,7 @@
 | | |
 | --- | --- |
 | **Ids** | `ICON-SET`, `ICON-RENDER`, `ICON-EXTERNAL` |
-| **Version** | catalog 0.28 / 0.18 / 0.12, all draft (read 2026-10-07). **Implemented: 0.28 / partial 0.18 / 0.12** - the vendored vocabulary and the 53 glyphs this product renders were re-imported at 0.28 on 2026-10-07 (`assets/glyphs/PROVENANCE.txt`, `tools/Sync-IconGlyphs.ps1 -Check` exit 0); `ICON-RENDER` stays partial under the dated exceptions in the registry |
+| **Version** | catalog 0.30 / 0.19 / 0.12, all draft (read 2026-10-11). **Implemented: 0.30 / partial 0.19 / 0.12** - the vendored vocabulary and the 95 catalog glyphs (plus one product-drawn, `action.replace`) this product renders were re-imported at 0.30 on 2026-10-11 (`assets/glyphs/PROVENANCE.txt`, `tools/Sync-IconGlyphs.ps1 -Check` exit 0); `ICON-RENDER` stays partial under the dated exceptions in the registry |
 | **Home** | `iconography/README.md` in the shared contracts catalog |
 | **Role here** | consumer - viewer, Share Manager and product site; `specification 027` (local specification) |
 

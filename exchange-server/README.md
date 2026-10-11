@@ -3,7 +3,7 @@
 The exchange server of the Fast Media Sorter package: accounts, enrolled devices, the directory of
 resources and broadcasts, tunnels and the third-party port (contract `DEVICE-EXCHANGE` 0.17, with
 `ANYWHERE-ACCESS` 5.5 for the port; specifications 160-164). Developer notes only - the user-facing guide
-arrives with ticket 145/179. **Nothing here ships in any package yet**: the wire is a proposal until rung 2
+arrives with ticket 145/179. The reader-facing description is the portal page [Exchange server](https://serzhyale.github.io/FastMediaSorter_mob_v2/docs/media-exchange-portal/exchange-server.html) of the shared "Media exchange between your devices" portal (not published until the Android site publishes it; it describes the contract, not a shipped product). **Nothing here ships in any package yet**: the wire is a proposal until rung 2
 freezes it (133 section 8), and the installers, the Share Manager entry and the firewall opt-in are tickets
 141-144.
 
@@ -21,7 +21,7 @@ never the protocol core).
 
 | Path | What it is |
 | --- | --- |
-| `cmd/fms-exchange-server` | the program: `serve` (console, or `--service` under the SCM), `stop`, `account add/passwd/remove/list`, `device list/revoke`, `set-listen`, `set-endpoint`, `inspect`, `--version` |
+| `cmd/fms-exchange-server` | the program: `serve` (console, or `--service` under the SCM), `stop`, `account add/passwd/remove/list`, `device list/revoke`, `set-listen`, `set-endpoint`, `connection-string`, `inspect`, `--version` |
 | `cmd/exchange-fakeproducer` | **manual-proof tool, its own module** (enrolls into an account, publishes a share and serves a real SFTP subsystem through the bridge); see `testdata/manual-winscp.md`. Kept for the one thing the probe cannot do - serve a real SFTP subsystem for WinSCP or FileZilla (that needs `pkg/sftp`, which stays out of this module) |
 | `cmd/exchange-vectors` | the conformance vector generator (ticket 178 T-1): runs the real server against a scripted client with an injected clock, seeded ids and tokens, and writes `testdata/vectors/frames-v2.json`, `records-v1.json` and `PROVENANCE.txt`. `go run ./cmd/exchange-vectors -out testdata/vectors` writes, `-check` regenerates and compares (one verdict line). Developer tool, never installed |
 | `cmd/exchange-probe` | the self-test client (ticket 178 T-2): `exchange-probe --server host:port --fingerprint SHA256:.. --login x --password-stdin` runs enroll, hello, publish, list, pairing, subscribe, tunnels by resourceId and shareId, relay upload and listen, cast and revoke, leaves the account as it found it and prints one verdict line. Developer and joint-test tool, never installed |
@@ -146,6 +146,21 @@ to `<data dir>\service.log`, which exists only once there is something to say.
 the configured port (a stopping service no longer says Running but still holds it; the owner of the
 port comes from the TCP table). A probe that cannot answer (no SCM access) never refuses on its own:
 it prints a warning and the listen decides. The probe is `deploy.Probe`, replaceable in tests.
+## Conformance evidence (ticket 178)
+
+`tools/Test-ExchangeConformance.ps1` regenerates the three JSON corpora and checks their provenance,
+then builds and probes a fresh server on loopback. The generated files and `PROVENANCE.txt` are vendored
+into `tests/Lite.Tests/TestData/exchange-vectors/`; `ExchangeVectorReplayTests` and
+`ExchangeRecordReplayTests` run in both modern viewer and Share Manager test assemblies. Missing, changed
+or stale vendored transcripts fail. Regenerate at the Go source, then copy all four files together.
+
+The record replay preserves nested unknown members, lists unsupported kinds, reads Drive-wrapped records
+without `access`, and enforces the reader's 16 KiB bound. One generated boundary case is accepted by the
+server at 16384 input bytes but listed at 16475 after server-owned fields are added; the client skips it.
+`PROPOSAL-2026-10-11-fmsw-vectors.md` records this finding with the artifacts in the contract catalog.
+No joint rung is claimed: phone/WinSCP or FileZilla runs, Drive parity, relay latency and cross-product cast
+remain pending. Developer tools are not installed; the feature gates remain shut.
+
 ## Settled behaviour worth knowing before changing it
 
 * **One answer for unknown, ended, foreign, offline and full.** `refused {reason:"unavailable"}` after a fixed minimum
@@ -174,3 +189,7 @@ it prints a warning and the listen decides. The probe is `deploy.Probe`, replace
 ### set-endpoint
 
 `fms-exchange-server set-endpoint [--config <file>] <host:port>` stores the public address announced in `welcome.publicEndpoint` (validated like any address, never loopback or a wildcard); `-` clears it. Like `set-listen`, a running server reads it only at start.
+
+### connection-string
+
+`fms-exchange-server connection-string [--config <file>] [--name <server name>] [--login <login>]` prints, on one line, the **connection string** clients paste into "Add from an exchange server.." (ticket 187, `DEVICE-EXCHANGE` proposal 5.5): `FMSEXCH1:x=<host:port>[&fp=SHA256:..][&n=..][&u=..]`. It is built from the configured `publicEndpoint` and the certificate the server really presents - never from a bind address or a guess - and `fp` is written only when that leaf is not validated by the platform trust store (a CA-signed deployment renews its leaf and writes none). It is not a secret and carries none: no password, token or pairing code. Exit codes: `0` the string on stdout; `2` no public endpoint is set (say to set the address for clients first) or the name or login cannot be carried in a string; `4` the config or the certificate cannot be read (the server never started). The codec is `internal/connstr`; its generated conformance file is `testdata/vectors/connection-string-v1.json` (`go run ./cmd/exchange-vectors -out testdata/vectors`), which the Windows viewer's VB codec replays.

@@ -202,3 +202,84 @@ widths; this remains distinct from physical mixed-monitor, high-contrast or scre
 The executable audit also found that the prior settings changes had only been built in the project
 output. The two work-folder copies and the CompanionPublish copy still reported 26.10.9.0016; a newly
 running installed Server copy reported 26.10.8.2354. Building source alone did not update those copies.
+
+The initial aggregate reruns caught additional timing failures (167-196 ms, and one 753 ms sample)
+while geometry checks passed. The 150 ms threshold was retained. Disclosure now stops layout holding
+at the fixed scroll viewport, reserves scrollbar width so its appearance does not refit all descendants,
+and reports the already-sized body's height to ancestor tables instead of recursively remeasuring it.
+Setting-row text measurements are cached by width and invalidated for text, font and margin changes.
+After these changes the focused Debug UI/wizard/admin run passed all 67 tests in 23 seconds (exit 0),
+including the same repeated-transition budget assertions. The final aggregate run is recorded below.
+
+Final aggregate validation: `Run-AllTests.ps1 -SkipGo -SkipExchangeGo`, with serialized xUnit
+collections via a scratch RunSettingsFilePath, returned exit 0 and `Run-AllTests: PASS (9 passed)`.
+Viewer: 803 net48 and 3,817 modern tests passed. Share Manager: 1,342 passed, 2 skipped. Together
+29 tests were skipped; the Go worker, Go exchange and exchange-conformance steps were explicitly
+excluded. All documentation, naming, check-placement and site gates passed. The earlier failing
+performance runs remain recorded above; the threshold was not loosened or removed.
+
+A final standalone probe with asynchronous state reads enabled reproduced a separate 20-second stall
+twice (20,014 and 20,027 ms). The budget tests had disabled these reads and therefore did not cover it.
+A dotnet-stack capture located the UI thread in GetWindowText during TableLayout preferred-size
+measurement; native HWND ownership showed the wizard row and button belonged to a pool thread.
+When no synchronization context was captured, the exchange read continuation changed hidden controls
+on that pool thread, creating their native windows there. A later expansion then synchronously queried
+windows whose owner had no UI message loop.
+
+Exchange and hosting read results now always pass through Control.InvokeAsync before changing UI.
+The new regression check clears the synchronization context before refreshing, enables illegal
+cross-thread checks and asserts every created child HWND belongs to the form's thread. All 68 focused
+UI/wizard/admin tests passed (exit 0, 20 seconds). The standalone 175% probe then measured a maximum
+transition of 50.2 ms across six toggles of every group, opening 521.5 ms and reopening 279.2 ms.
+Cold opening remains just above the profile's 500 ms budget in this sample; no claim of complete
+performance-profile acceptance is made. The former 20-second sample is retained as evidence, not
+excluded from the audit. No live backend mutation was used in these probes.
+
+Validation after the UI-thread correction: `Run-AllTests.ps1 -SkipGo -SkipExchangeGo` with the same
+serialized collection settings returned exit 0 and `Run-AllTests: PASS (9 passed)`: 803 net48,
+3,817 modern viewer and 1,343 Share Manager tests passed; 29 tests and the three named Go steps
+were skipped. The delayed-inspect regression was rerun separately after strengthening its asynchronous
+setup and passed (exit 0). The final standalone geometry/wizard captures were regenerated at 175%.
+
+Self-contained win-x64 publication returned exit 0. Version 26.10.9.0133 was copied to both work folders
+and the CompanionPublish/Release outputs; all four copies have SHA256
+B17EB7A01EA8593BF0E0DF5B0BD51123BA138C0138FEC68DB3ABAF33E72D927C.
+The prior binaries were backed up in a scratch directory. The installed Server copy in Program Files
+was not replaced: this session lacks administrator rights. No worker/exchange payload or service
+configuration was replaced, and no service was stopped to deliver the manager update.
+
+## Addendum 2026-10-11 - a glyph on every command button (WINDOWS-UI 0.4 section 11, ICON-RENDER 0.19 section 14)
+
+The owner asked for simple recognizable icons on the interface buttons, before the caption, and for the
+answers of a dialog to draw the eye (OK green, Cancel red). The recommendation was adopted as written; the
+decisions that were the product's to make are listed here, the numbers are in the registry rows.
+
+- **One module owns it.** `src/Icons/ButtonGlyphs.vb` (linked into both programs; whole-file modern):
+  `ButtonGlyphs.Apply(button, glyphId, role)` renders the catalog path at 16 logical px of the button's DPI in one
+  colour with the 6 px gap inside the bitmap (so the gap scales and mirrors with the reading direction), and keeps it
+  current through the theme (`ThemeService` hands over the palette), DPI, direction, Enabled and system colours.
+  No dialog draws, tints or re-themes a picture of its own. `DialogLayout.WidenButtons` counts the glyph, so a
+  fixed-width button grows for its caption instead of clipping it.
+- **Roles.** Colour is spent on the answers of a dialog and nowhere else: the accept answer is green
+  (`Affirmative`), the cancel path red (`Dismissing`), a continue-anyway answer amber (`Caution`); the acting
+  button of an irreversible confirmation takes the danger face with its own ink and its dismissing neighbour keeps a red
+  glyph and no tint; everything else is the mono look. The hue is the theme's own Success / Danger / Warning pair,
+  moved along lightness only as far as 3 : 1 against the tinted face needs (`ButtonGlyphs.Readable`).
+- **Not taken, and why** (dated exceptions in the registry): the operating system's message boxes and the one
+  `TaskDialog` (their buttons are drawn by Windows); the random-slideshow mark, the Translate button's language
+  text, the speed readout, the recipients overlay rows in right-to-left, the editor's swatches and hand-drawn tools.
+  Left for the owner (a contract-boundary change): `Video_Replace_Confirm_Form` does not hold the default focus on
+  its safe answer.
+- **A bug found on the way.** MSBuild reads the penultimate extension of a resource file name as a culture:
+  `action.run.svg` is Rundi (`run`), so that glyph was silently moved to a satellite assembly and left out of both
+  executables. Both projects now say `WithCulture=false` on the glyph item (`The_glyph_resources_are_not_read_as_cultures`).
+  `media.stop`, which the transport bar names, was not vendored at all; it is now.
+- **Evidence.** `tests/Lite.Tests/AnswerButtonGlyphTests.vb` and `tests/Companion.Tests/ButtonGlyphCoverageTests.vb`:
+  roles per answer, 3 : 1 and 4.5 : 1 in both themes (figures written to `answer-glyph-contrast.csv`), live theme
+  change, the unavailable state, the gap per direction, the sizes at 144 and 192 dpi, the widest answer row in the 13
+  languages (`answer-row-widths.csv`, 356 to 471 px, nothing clipped), the tint, a source scan that every glyph id a
+  button names is vendored, and a walk of the Share Manager's windows that fails on a captioned button without a
+  picture. `FMS_SHOT_DIR=<folder>` renders the windows light and dark to PNG.
+- **Not driven:** the live Windows high-contrast switch, a physical 150 / 200 percent monitor, right-to-left by
+  eye, and the viewer's own settings window and image editor on screen (their buttons are exercised through the
+  shared module and the width rules, not rendered).

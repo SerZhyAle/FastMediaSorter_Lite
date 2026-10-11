@@ -24,10 +24,17 @@ End Enum
 Friend NotInheritable Class AskButton
     Friend ReadOnly Caption As String
     Friend ReadOnly Destructive As Boolean
+    ''' <summary>The polarity of the answer, which decides the hue of its glyph (WINDOWS-UI section 11 item 4).</summary>
+    Friend ReadOnly Role As ButtonGlyphRole
+    ''' <summary>The vocabulary id of the verb's own meaning; empty takes the bare answer's glyph for its role.</summary>
+    Friend ReadOnly GlyphId As String
 
-    Friend Sub New(caption As String, Optional destructive As Boolean = False)
+    Friend Sub New(caption As String, Optional destructive As Boolean = False,
+                   Optional role As ButtonGlyphRole = ButtonGlyphRole.Neutral, Optional glyphId As String = "")
         Me.Caption = If(caption, String.Empty)
         Me.Destructive = destructive
+        Me.Role = role
+        Me.GlyphId = If(glyphId, String.Empty)
     End Sub
 End Class
 

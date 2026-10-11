@@ -45,6 +45,14 @@ trap {
 # This is deliberately a small, declared product subset.  The catalog remains the
 # source of truth; adding a mapped meaning means adding it here as well.
 $glyphIds = @(
+    # Dialog answers and command verbs (WINDOWS-UI 0.4 section 11: a glyph on every command button).
+    'action.confirm', 'action.cancel', 'nav.close', 'action.save', 'action.remove', 'action.reset', 'action.clear-all', 'action.clear-input',
+    'action.import', 'action.export', 'action.swap', 'action.revert', 'action.test-connection', 'action.install',
+    'action.reconnect', 'action.verify', 'action.show-code', 'action.paste', 'action.move', 'action.run', 'action.undo',
+    'action.redo', 'action.adjust', 'action.filter', 'action.email', 'action.change-password', 'action.mount-disk',
+    'action.unmount-disk', 'action.auto-mount', 'action.convert', 'action.upload', 'action.secure',
+    'nav.back', 'nav.forward', 'nav.open-external', 'nav.exit', 'media.stop', 'media.cast', 'media.audio-track', 'app.help',
+    'system.network-off', 'system.power',
     'action.add', 'action.choose-file', 'action.choose-folder', 'action.convert-to-video', 'action.copy', 'action.crop', 'action.delete', 'action.download', 'action.edit',
     'action.extract-text', 'action.refresh', 'action.rename', 'action.search', 'action.send-to',
     'action.share', 'action.translate',
@@ -55,6 +63,14 @@ $glyphIds = @(
     'nav.collapse', 'nav.expand', 'nav.more', 'nav.scroll-top', 'source.recent', 'source.resource',
     'status.error', 'status.locked', 'status.ok', 'status.unknown', 'status.warning',
     'system.internet', 'system.wifi', 'tool.brush', 'tool.oval', 'tool.rectangle', 'view.grid'
+)
+
+# ICON-SET section 15 (0.30): a meaning the catalog has no record for is drawn by the product, shipped under the
+# id it proposes, and proposed in the same change. These files are NOT compared with the catalog - they are the
+# product's own drawings, held by a provenance line - and the script fails the day the catalog holds the id, so the
+# product converges on the catalog's drawing (section 15, "What the owner does").
+$productGlyphs = @(
+    'action.replace'   # PROPOSAL-2026-10-11-fms-action-replace.md - overwrite an existing item with the incoming one
 )
 
 $subject = 'Sync-IconGlyphs'
@@ -102,6 +118,10 @@ if ($carrier -notmatch '^ICON-SET (\d+)\.(\d+)$') {
 if ([int]$Matches[1] -gt $builtAgainstMajor) {
     Stop-Verdict 2 'COULD NOT VERIFY' @("the catalog is at $carrier, a higher MAJOR than this tool was built against (ICON-SET $builtAgainstMajor.x): a MAJOR amendment re-learns meanings, so read the amendment and the code that uses the vendored glyphs and vocabulary against it, then raise `$builtAgainstMajor here (ICON-SET section 5)")
 }
+$nowInCatalog = @($productGlyphs | Where-Object { Test-Path -LiteralPath (Join-Path $sourceGlyphs ($_ + '.svg')) })
+if ($nowInCatalog.Count -gt 0) {
+    Stop-Verdict 1 'FAIL (a product-drawn glyph is now in the catalog)' @($nowInCatalog | ForEach-Object { "'$_' is in the catalog now: move it from \ to \ and take the catalog drawing (ICON-SET section 15)" })
+}
 $missingInCatalog = @($glyphIds | Where-Object { -not (Test-Path -LiteralPath (Join-Path $sourceGlyphs ($_ + '.svg'))) })
 if ($missingInCatalog.Count -gt 0) {
     Stop-Verdict 2 'COULD NOT VERIFY' @($missingInCatalog | ForEach-Object { "declared glyph '$_' is missing from the catalog" })
@@ -144,6 +164,14 @@ if ($Check) {
         $drift.Add('assets/glyphs/PROVENANCE.txt is missing')
     }
 
+    foreach ($id in $productGlyphs) {
+        $name = $id + '.svg'
+        $target = Join-Path $destination $name
+        if (-not (Test-Path -LiteralPath $target)) { $drift.Add("$name is declared as product-drawn but the file is missing"); continue }
+        if (-not $recorded.ContainsKey($name)) { $drift.Add("$name has no line in PROVENANCE.txt") }
+        elseif ($recorded[$name] -ne (Get-Sha256 $target)) { $drift.Add("$name does not match its PROVENANCE.txt line") }
+    }
+
     foreach ($id in $glyphIds) {
         $name = $id + '.svg'
         $target = Join-Path $destination $name
@@ -155,7 +183,7 @@ if ($Check) {
     }
     if (Test-Path -LiteralPath $destination) {
         foreach ($file in Get-ChildItem -LiteralPath $destination -Filter '*.svg') {
-            if ($glyphIds -notcontains $file.BaseName) { $drift.Add("$($file.Name) is vendored but not declared in this script") }
+            if (($glyphIds -notcontains $file.BaseName) -and ($productGlyphs -notcontains $file.BaseName)) { $drift.Add("$($file.Name) is vendored but not declared in this script") }
         }
     }
 
@@ -180,7 +208,7 @@ New-Item -ItemType Directory -Force -Path $vocabularyDir | Out-Null
 
 # A vendored glyph the list no longer declares would otherwise linger with no provenance line.
 foreach ($file in Get-ChildItem -LiteralPath $destination -Filter '*.svg') {
-    if ($glyphIds -notcontains $file.BaseName) { Remove-Item -LiteralPath $file.FullName }
+    if (($glyphIds -notcontains $file.BaseName) -and ($productGlyphs -notcontains $file.BaseName)) { Remove-Item -LiteralPath $file.FullName }
 }
 
 $provenance = [System.Collections.Generic.List[string]]::new()
@@ -193,6 +221,18 @@ $provenance.Add('')
 foreach ($id in $glyphIds) {
     $target = Join-Path $destination ($id + '.svg')
     Copy-Item -LiteralPath (Join-Path $sourceGlyphs ($id + '.svg')) -Destination $target -Force
+    # Catalog timestamps can predate the last build output: stamp the imported copy so an incremental build of
+    # the embedded-resource projects (the Share Manager and the viewer) notices the file (a glyph whose catalog
+    # file is older than the last build was silently left out of the assembly).
+    (Get-Item -LiteralPath $target).LastWriteTimeUtc = [DateTime]::UtcNow
+    $provenance.Add("$id.svg  $(Get-Sha256 $target)")
+}
+
+$provenance.Add('')
+$provenance.Add('Product-drawn (not from the catalog; compared with the catalog only to notice that it now holds the id):')
+foreach ($id in $productGlyphs) {
+    $target = Join-Path $destination ($id + '.svg')
+    if (-not (Test-Path -LiteralPath $target)) { Stop-Verdict 2 'COULD NOT IMPORT' @("the product-drawn glyph '$id' has no file in assets/glyphs") }
     $provenance.Add("$id.svg  $(Get-Sha256 $target)")
 }
 

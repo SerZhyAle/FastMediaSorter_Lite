@@ -27,6 +27,37 @@ Friend NotInheritable Class ExchangeStubAccount
     Private ReadOnly _helloRefusals As New ConcurrentQueue(Of String)
     Private ReadOnly _enrollPasswords As New List(Of String)
     Private ReadOnly _revoked As New HashSet(Of String)(StringComparer.Ordinal)
+    Private ReadOnly _enrollRefusals As New ConcurrentQueue(Of String)
+    Private ReadOnly _enrollRoles As New List(Of String)
+    Private ReadOnly _enrollNames As New List(Of String)
+    Private ReadOnly _enrollDeviceIds As New List(Of String)
+
+    ''' <summary>Further logins that share the account password (ticket 187: two logins on one server).</summary>
+    Public ReadOnly ExtraLogins As New HashSet(Of String)(StringComparer.OrdinalIgnoreCase)
+
+    ''' <summary>The next `enroll` is refused with this reason (queued: one per enroll), before the credentials are looked at.</summary>
+    Public Sub RefuseNextEnroll(reason As String)
+        _enrollRefusals.Enqueue(reason)
+    End Sub
+
+    ''' <summary>The roles every `enroll` declared, as "role,role" per enroll, in arrival order.</summary>
+    Public Function EnrollRolesSeen() As List(Of String)
+        SyncLock _gate
+            Return New List(Of String)(_enrollRoles)
+        End SyncLock
+    End Function
+
+    Public Function EnrollNamesSeen() As List(Of String)
+        SyncLock _gate
+            Return New List(Of String)(_enrollNames)
+        End SyncLock
+    End Function
+
+    Public Function EnrollDeviceIdsSeen() As List(Of String)
+        SyncLock _gate
+            Return New List(Of String)(_enrollDeviceIds)
+        End SyncLock
+    End Function
 
     Public ReadOnly Server As ExchangeStubTlsServer
 
@@ -191,8 +222,16 @@ Friend NotInheritable Class ExchangeStubAccount
             Case "enroll"
                 SyncLock _gate
                     _enrollPasswords.Add(first.Text("password"))
+                    _enrollRoles.Add(String.Join(",", first.TextList("roles")))
+                    _enrollNames.Add(first.Text("deviceName"))
+                    _enrollDeviceIds.Add(first.Text("deviceId"))
                 End SyncLock
-                Dim ok As Boolean = String.Equals(first.Text("login"), Login, StringComparison.OrdinalIgnoreCase) AndAlso
+                Dim enrollRefusal As String = Nothing
+                If _enrollRefusals.TryDequeue(enrollRefusal) Then
+                    Await c.Refuse(enrollRefusal)
+                    Return
+                End If
+                Dim ok As Boolean = (String.Equals(first.Text("login"), Login, StringComparison.OrdinalIgnoreCase) OrElse ExtraLogins.Contains(first.Text("login"))) AndAlso
                     (first.Text("password") = Password OrElse (first.Text("pairingCode").Length > 0 AndAlso first.Text("pairingCode") = PairingCode))
                 If Not ok Then
                     Await c.Refuse("bad-credentials")

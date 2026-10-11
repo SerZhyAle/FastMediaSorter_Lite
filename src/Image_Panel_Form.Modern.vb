@@ -195,6 +195,15 @@ Partial Public Class Image_Panel_Form
             .Visible = False,
             .TabStop = False}
         AddHandler btn_Cancel.Click, AddressOf OnCancelClicked
+        ' WINDOWS-UI section 11: stopping a running batch is the dismissing answer. 96 logical px stays while
+        ' caption and glyph fit; a longer caption widens it. The caption is measured at this window's DPI and
+        ' turned back into 96-dpi pixels, because ApplyAutoScale (the builder's last line) multiplies again.
+        ButtonGlyphs.Apply(btn_Cancel, "action.cancel", ButtonGlyphRole.Dismissing)
+        Dim cancelMeasured As Integer = TextRenderer.MeasureText(btn_Cancel.Text, Me.Font,
+            New Size(Integer.MaxValue, Integer.MaxValue), TextFormatFlags.NoPadding Or TextFormatFlags.SingleLine).Width
+        Dim cancelNeeded As Integer = CInt(Math.Ceiling(cancelMeasured * 96.0R / Math.Max(96, Me.DeviceDpi))) +
+            ButtonGlyphs.GlyphLogicalSize + ButtonGlyphs.GapLogicalSize + 2 * 12
+        If cancelNeeded > btn_Cancel.Width Then btn_Cancel.Width = cancelNeeded
 
         lbl_Strip = New Label With {
             .Dock = DockStyle.Fill,

@@ -13,7 +13,7 @@ import (
 // flag is an error, never silently ignored. Every field is comparable so a test can compare whole
 // commands.
 type command struct {
-	name     string // version | serve | stop | set-listen | set-endpoint | set-port-range | inspect | account | device | tls
+	name     string // version | serve | stop | set-listen | set-endpoint | set-port-range | inspect | account | device | tls | connection-string
 	sub      string // account: add|passwd|remove|list; device: list|revoke; tls: replace|import
 	config   string
 	generate bool   // account add / passwd --generate
@@ -26,6 +26,7 @@ type command struct {
 	deviceID string // device revoke
 	cert     string // tls import: the PEM certificate chain to import
 	key      string // tls import: its PEM private key
+	label    string // connection-string --name: the display name of the server (optional)
 }
 
 const (
@@ -46,7 +47,7 @@ func parseArgs(args []string) (command, error) {
 		}
 		c.name = "version"
 		return c, nil
-	case "serve", "stop", "set-listen", "set-endpoint", "set-port-range", "inspect", "account", "device", "tls":
+	case "serve", "stop", "set-listen", "set-endpoint", "set-port-range", "inspect", "account", "device", "tls", "connection-string":
 		c.name = args[0]
 	default:
 		return c, fmt.Errorf("unknown command %q", args[0])
@@ -73,6 +74,25 @@ func parseArgs(args []string) (command, error) {
 				return c, errors.New("--config needs a path")
 			}
 			c.config = val
+		case "--name", "--login":
+			if c.name != "connection-string" {
+				return c, fmt.Errorf("unknown option %q for %s", name, c.name)
+			}
+			if !hasVal {
+				if i+1 >= len(rest) {
+					return c, fmt.Errorf("%s needs a value", name)
+				}
+				i++
+				val = rest[i]
+			}
+			if val == "" {
+				return c, fmt.Errorf("%s needs a value", name)
+			}
+			if name == "--name" {
+				c.label = val
+			} else {
+				c.login = val
+			}
 		case "--generate":
 			if c.name != "account" || hasVal {
 				return c, fmt.Errorf("unknown option %q for %s", a, c.name)

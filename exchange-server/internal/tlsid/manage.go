@@ -3,6 +3,7 @@ package tlsid
 import (
 	"crypto/tls"
 	"crypto/x509"
+	"encoding/pem"
 	"errors"
 	"fmt"
 	"os"
@@ -137,4 +138,43 @@ func Replace(certPath, keyPath string, protect func(dir string) error) (*Identit
 	_ = os.Remove(oldCert)
 	_ = os.Remove(oldKey)
 	return id, nil
+}
+
+// PubliclyTrusted reports whether the leaf in certPath validates for host against the platform trust
+// store (roots nil) or the given pool, at now, with the rest of the file's certificates as
+// intermediates. It decides whether a connection string carries the leaf's pin (ticket 187 rule 2):
+// a CA-signed deployment renews its leaf on the CA's schedule, so it writes no `fp`. It reads and never
+// writes, and says false (never an error) for a leaf that simply does not validate.
+func PubliclyTrusted(certPath, host string, now time.Time, roots *x509.CertPool) (bool, error) {
+	data, err := os.ReadFile(certPath)
+	if err != nil {
+		return false, ErrUnreadable
+	}
+	var leaf *x509.Certificate
+	inter := x509.NewCertPool()
+	for len(data) > 0 {
+		var block *pem.Block
+		block, data = pem.Decode(data)
+		if block == nil {
+			break
+		}
+		if block.Type != "CERTIFICATE" {
+			continue
+		}
+		c, err := x509.ParseCertificate(block.Bytes)
+		if err != nil {
+			return false, ErrUnreadable
+		}
+		if leaf == nil {
+			leaf = c
+		} else {
+			inter.AddCert(c)
+		}
+	}
+	if leaf == nil {
+		return false, ErrUnreadable
+	}
+	_, err = leaf.Verify(x509.VerifyOptions{DNSName: host, Roots: roots, Intermediates: inter, CurrentTime: now,
+		KeyUsages: []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth}})
+	return err == nil, nil
 }

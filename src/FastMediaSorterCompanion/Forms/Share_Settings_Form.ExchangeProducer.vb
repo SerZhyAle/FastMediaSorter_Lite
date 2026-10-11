@@ -62,10 +62,11 @@ Partial Public NotInheritable Class Share_Settings_Form
             .Margin = New Padding(0, 2, 0, 2), .MaximumSize = New Size(ProducerContentWidth, 0)}
     End Function
 
-    Private Shared Function PxButton(text As String, onClick As Action) As Button
+    Private Shared Function PxButton(text As String, onClick As Action, Optional glyph As String = "") As Button
         Dim b As New Button With {.AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink, .Padding = New Padding(12, 5, 12, 5),
             .Margin = New Padding(0, 2, 8, 2), .Text = text}
         AddHandler b.Click, Sub() onClick()
+        If glyph.Length > 0 Then ButtonGlyphs.Apply(b, glyph)
         Return b
     End Function
 
@@ -104,7 +105,7 @@ Partial Public NotInheritable Class Share_Settings_Form
         _pxThirdBlock.Controls.Add(_lblPxThirdNote)
         _pxEndpointRow = PxFlow()
         _lblPxEndpoint = New Label With {.AutoSize = True, .Margin = New Padding(0, 6, 8, 0)}
-        _btnPxCopy = PxButton(ExchangePublishText.CopyEndpointButton(), AddressOf OnPxCopyEndpoint)
+        _btnPxCopy = PxButton(ExchangePublishText.CopyEndpointButton(), AddressOf OnPxCopyEndpoint, "action.copy")
         _pxEndpointRow.Controls.Add(_lblPxEndpoint)
         _pxEndpointRow.Controls.Add(_btnPxCopy)
         _pxThirdBlock.Controls.Add(_pxEndpointRow)
@@ -128,9 +129,9 @@ Partial Public NotInheritable Class Share_Settings_Form
         _pxSharesBlock.Controls.Add(New Label With {.AutoSize = True, .Margin = New Padding(0, 6, 0, 0), .Font = _pxBoldFont, .Text = ExchangePublishText.LinkTitle()})
         _pxSharesBlock.Controls.Add(_lblPxLinkNote)
         _pxLinkRow = PxFlow()
-        _btnPxCreate = PxButton(ExchangePublishText.CreateLinkButton(), AddressOf OnPxCreateLink)
-        _btnPxRotate = PxButton(ExchangePublishText.NewLinkButton(), AddressOf OnPxRotateLink)
-        _btnPxRemoveLink = PxButton(ExchangePublishText.RemoveLinkButton(), AddressOf OnPxRemoveLink)
+        _btnPxCreate = PxButton(ExchangePublishText.CreateLinkButton(), AddressOf OnPxCreateLink, "action.add")
+        _btnPxRotate = PxButton(ExchangePublishText.NewLinkButton(), AddressOf OnPxRotateLink, "action.refresh")
+        _btnPxRemoveLink = PxButton(ExchangePublishText.RemoveLinkButton(), AddressOf OnPxRemoveLink, "action.delete")
         _pxLinkRow.Controls.Add(_btnPxCreate)
         _pxLinkRow.Controls.Add(_btnPxRotate)
         _pxLinkRow.Controls.Add(_btnPxRemoveLink)

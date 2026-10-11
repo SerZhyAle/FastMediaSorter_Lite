@@ -79,6 +79,8 @@ Public Class Share_Enable_Form
             .Margin = New Padding(0, 0, 8, 0), .Text = ShareText.ServerEnableButton()}
         _btnCancel = New Button With {.AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink, .Padding = New Padding(12, 6, 12, 6),
             .Margin = New Padding(0), .Text = ShareText.ServerEnableCancel(), .DialogResult = DialogResult.Cancel}
+        ButtonGlyphs.Apply(_btnEnable, "action.install", ButtonGlyphRole.Caution)
+        ButtonGlyphs.Apply(_btnCancel, "action.cancel", ButtonGlyphRole.Dismissing)
         AddHandler _btnEnable.Click, AddressOf OnEnableClicked
         btnFlow.Controls.Add(_btnEnable)
         btnFlow.Controls.Add(_btnCancel)

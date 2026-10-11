@@ -79,7 +79,6 @@ Friend NotInheritable Class Welcome_Form
 
     Private ReadOnly stepLabel As New Label()
     Private keyOneValueLabel As Label
-    Private pickButton As Button
     Private ReadOnly dots As New StepDots()
     Private ReadOnly badge As New StepBadge(AddressOf RuntimeBootstrap.OpenBundledAsset, BadgeSize)
     Private ReadOnly titleLabel As New Label()
@@ -190,6 +189,17 @@ Friend NotInheritable Class Welcome_Form
         Localize(Sub() skipButton.Text = Localization.T("Пропустить настройку"))
         Localize(Sub() backButton.Text = Localization.T("Назад"))
         Localize(Sub() nextButton.Text = If(position = finishIndex, Localization.T("Готово"), Localization.T("Далее")))
+
+        ' A glyph before each caption (WINDOWS-UI 0.4 section 11): the answers are hued, navigation is mono.
+        ' Next and Done are one button whose caption flips on the last step, so its glyph flips with it.
+        ButtonGlyphs.Apply(skipButton, "media.next", ButtonGlyphRole.Caution)
+        ButtonGlyphs.Apply(backButton, "nav.back")
+        Localize(Sub()
+                     Dim wanted As String = If(position = finishIndex, "action.confirm", "nav.forward")
+                     If Not String.Equals(ButtonGlyphs.GlyphOf(nextButton), wanted, StringComparison.Ordinal) Then
+                         ButtonGlyphs.Apply(nextButton, wanted, ButtonGlyphRole.Affirmative)
+                     End If
+                 End Sub)
 
         AcceptButton = nextButton
     End Sub
@@ -383,15 +393,15 @@ Friend NotInheritable Class Welcome_Form
         panel.Controls.Add(keyOneValueLabel)
 
         Dim pick As New Button()
-        pickButton = pick
-        pick.TextImageRelation = TextImageRelation.ImageBeforeText
         StyleButton(pick)
         Localize(Sub() pick.Text = Localization.T("Выбрать папку.."))
+        ButtonGlyphs.Apply(pick, IconMap.GetMeaning("btn_Select_Folder").GlyphId)
         AddHandler pick.Click, AddressOf PickKeyOneFolder
 
         Dim clear As New Button()
         StyleButton(clear)
         Localize(Sub() clear.Text = Localization.T("Очистить"))
+        ButtonGlyphs.Apply(clear, "action.clear-all")
         AddHandler clear.Click,
             Sub()
                 draftKeyOne = String.Empty
@@ -691,21 +701,7 @@ Friend NotInheritable Class Welcome_Form
         DialogLayout.ClampToWorkingArea(Me)
     End Sub
 
-    ''' <summary>The folder button wears the catalog's choose-folder glyph, inked in the theme's text colour at the device size.</summary>
-    Private Sub RefreshButtonGlyph()
-        If pickButton Is Nothing Then Return
-        Dim old As Image = pickButton.Image
-        Try
-            pickButton.Image = GlyphRenderer.Render(IconMap.GetMeaning("btn_Select_Folder").GlyphId, LogicalToDeviceUnits(20),
-                                                    ThemeService.Palette.TextPrimary, AddressOf RuntimeBootstrap.OpenBundledAsset)
-        Catch
-            pickButton.Image = Nothing
-        End Try
-        If old IsNot Nothing Then old.Dispose()
-    End Sub
-
     Private Sub ApplyTargetSizes()
-        RefreshButtonGlyph()
         For Each panel As FlowLayoutPanel In panels
             For Each child As Control In panel.Controls
                 Dim combo As ComboBox = TryCast(child, ComboBox)
@@ -749,7 +745,6 @@ Friend NotInheritable Class Welcome_Form
     Protected Overrides Sub Dispose(disposing As Boolean)
         If disposing Then
             RemoveHandler ThemeService.Changed, AddressOf OnThemeChanged
-            If pickButton IsNot Nothing AndAlso pickButton.Image IsNot Nothing Then pickButton.Image.Dispose()
         End If
         MyBase.Dispose(disposing)
         If disposing Then

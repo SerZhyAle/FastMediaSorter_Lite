@@ -10,6 +10,7 @@ import (
 	"sync"
 	"testing"
 
+	"fms/exchange-server/internal/connstr"
 	"fms/exchange-server/internal/wire"
 )
 
@@ -47,7 +48,7 @@ func TestRegeneratingGivesTheSameBytes(t *testing.T) {
 			t.Errorf("%s differs between two runs: a generated vector must be a function of the code alone", name)
 		}
 	}
-	if len(first) != 3 {
+	if len(first) != 4 {
 		t.Fatalf("%d files", len(first))
 	}
 }
@@ -55,7 +56,7 @@ func TestRegeneratingGivesTheSameBytes(t *testing.T) {
 func committed(t *testing.T) map[string][]byte {
 	t.Helper()
 	out := map[string][]byte{}
-	for _, name := range []string{framesFileName, recordsFileName, provenanceFileName} {
+	for _, name := range append(append([]string(nil), hashedFiles...), provenanceFileName) {
 		b, err := os.ReadFile(filepath.Join("..", "..", "testdata", "vectors", name))
 		if err != nil {
 			t.Fatalf("the committed vectors are missing (run: go run ./cmd/exchange-vectors -out testdata/vectors): %v", err)
@@ -67,7 +68,7 @@ func committed(t *testing.T) map[string][]byte {
 
 func TestTheCommittedVectorsAreWhatTheGeneratorProducesAndMatchTheirProvenance(t *testing.T) {
 	disk, now := committed(t), generated(t)
-	for _, name := range []string{framesFileName, recordsFileName} {
+	for _, name := range hashedFiles {
 		if !bytes.Equal(disk[name], now[name]) {
 			t.Errorf("%s is not what the generator produces now: regenerate it (go run ./cmd/exchange-vectors -out testdata/vectors)", name)
 		}
@@ -346,6 +347,77 @@ func TestTheRecordCasesHaveTheVerdictsTheContractSays(t *testing.T) {
 	for name := range expect {
 		if !seen[name] {
 			t.Errorf("the case %s is missing", name)
+		}
+	}
+}
+
+// Ticket 187 T-1: the connection-string file is replayed from its JSON, the way a second implementation
+// reads it - input bytes, then verdict, reason, the members and the canonical text a writer produces.
+func TestConnectionStringVectorsReplayThroughTheCodec(t *testing.T) {
+	var doc connFile
+	if err := json.Unmarshal(generated(t)[connFileName], &doc); err != nil {
+		t.Fatal(err)
+	}
+	if len(doc.Cases) < 100 {
+		t.Fatalf("%d cases: the file is meant to be broad", len(doc.Cases))
+	}
+	seen := map[string]bool{}
+	counts := map[string]int{}
+	for _, c := range doc.Cases {
+		if seen[c.Name] {
+			t.Errorf("two cases are called %s", c.Name)
+		}
+		seen[c.Name] = true
+		counts[c.Verdict]++
+		raw := []byte(c.Input)
+		if c.InputHex != "" {
+			b, err := hex.DecodeString(c.InputHex)
+			if err != nil {
+				t.Fatalf("%s: %v", c.Name, err)
+			}
+			raw = b
+		}
+		var got connstr.Conn
+		var err error
+		if c.Kind == "file" {
+			got, err = connstr.ParseFile(raw)
+		} else {
+			got, err = connstr.Parse(string(raw))
+		}
+		if c.Verdict == "refused" {
+			e, ok := err.(*connstr.Error)
+			if !ok || e.Reason != c.Reason || e.Looks != c.Looks {
+				t.Errorf("%s: want refusal %s/%s, got %v", c.Name, c.Reason, c.Looks, err)
+			}
+			continue
+		}
+		if err != nil {
+			t.Errorf("%s: %v", c.Name, err)
+			continue
+		}
+		if c.Fields == nil || got.Endpoint() != c.Fields.X || got.Host != c.Fields.Host || got.Port != c.Fields.Port ||
+			got.Fingerprint != c.Fields.FP || got.Name != c.Fields.N || got.Login != c.Fields.U {
+			t.Errorf("%s: members differ: %+v vs %+v", c.Name, got, c.Fields)
+		}
+		text, err := got.String()
+		if err != nil || text != c.Canonical {
+			t.Errorf("%s: a writer produces %q (%v), the vector says %q", c.Name, text, err, c.Canonical)
+		}
+		if c.Verdict == "valid" && c.Kind == "text" && text != string(raw) {
+			t.Errorf("%s: a valid case is its own canonical text", c.Name)
+		}
+	}
+	for _, v := range []string{"valid", "tolerated", "refused"} {
+		if counts[v] < 10 {
+			t.Errorf("only %d %s cases", counts[v], v)
+		}
+	}
+	// the cases the proposals of 2026-10-10 asked for are all there
+	for _, n := range []string{"with-fp-plus-slash", "name-escapes", "ipv6-literal", "port-leading-zero", "login-upper-case",
+		"lower-case-hex", "fp-url-safe-alphabet", "fp-padded", "fp-lower-prefix", "raw-non-ascii", "name-empty",
+		"field-without-equals", "file-bom", "file-two-lines", "file-4097", "share-code", "newer-major", "length-512"} {
+		if !seen[n] {
+			t.Errorf("the vector %s is missing", n)
 		}
 	}
 }

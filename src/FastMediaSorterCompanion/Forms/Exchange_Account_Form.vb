@@ -17,6 +17,12 @@ Imports System.Windows.Forms
 '''     wipes its copy. The device keeps only a token.
 '''   * Every refusal is one localized sentence (ExchangeDeviceText.EnrollFailure) - never the server's raw reason.
 '''
+''' Ticket 187 T-5: the dialog also takes a CONNECTION STRING (pasted, or opened from a .fmsexch file). The string fills the server and the
+''' login hint, and its `fp` is the trust anchor - no manual comparison, a different leaf is refused with both fingerprints and nothing sent
+''' (rule 3). It FILLS the form and stops: nothing connects until the person pressed Sign in. The share service is at most ONE producer: a join
+''' while another server is held asks to replace it, and replacing leaves the first one cleanly. "Publish my shared folders now" is an explicit
+''' choice (ticked when the dialog was opened as "Publish through an exchange server..", unticked otherwise), with the words of 170 rule 1.
+'''
 ''' Offers "Start the Share Manager when I sign in to Windows" (default off): a cast can only reach a PC whose agent runs.
 '''
 ''' Hand-built, so it follows the Companion recipe: language direction first, DPI scaling as the LAST line of the builder, the clamp to the
@@ -43,6 +49,12 @@ Friend NotInheritable Class Exchange_Account_Form
     Private _lblCertNote As Label
     Private _btnTrust As Button
     Private _chkStart As CheckBox
+    Private _txtString As TextBox
+    Private _lblString As Label
+    Private _chkPublish As CheckBox
+    ''' <summary>The fingerprint the pasted string named: the trust anchor, no prompt. "" when the string had none (or there was none).</summary>
+    Private _pinnedFromString As String = ""
+    Private ReadOnly _publishNow As Boolean
     Private _lblResult As Label
     Private _btnSignIn As Button
     Private _btnCancel As Button
@@ -52,8 +64,9 @@ Friend NotInheritable Class Exchange_Account_Form
     Private _busy As Boolean
     Private ReadOnly _cts As New CancellationTokenSource()
 
-    Friend Sub New(agent As ExchangeDeviceAgent, Optional presetServer As String = "", Optional presetLogin As String = "")
+    Friend Sub New(agent As ExchangeDeviceAgent, Optional presetServer As String = "", Optional presetLogin As String = "", Optional publishNow As Boolean = False)
         _agent = agent
+        _publishNow = publishNow
         BuildUi(presetServer, presetLogin)
     End Sub
 
@@ -66,9 +79,11 @@ Friend NotInheritable Class Exchange_Account_Form
         Return New Label With {.AutoSize = True, .Margin = New Padding(0, 8, 0, 2), .Text = text}
     End Function
 
-    Private Function NewButton(text As String) As Button
-        Return New Button With {.AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink, .Padding = New Padding(12, 4, 12, 4),
+    Private Function NewButton(text As String, Optional glyph As String = "", Optional role As ButtonGlyphRole = ButtonGlyphRole.Neutral) As Button
+        Dim b As New Button With {.AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink, .Padding = New Padding(12, 4, 12, 4),
             .Margin = New Padding(0, 4, 8, 4), .Text = text}
+        If glyph.Length > 0 Then ButtonGlyphs.Apply(b, glyph, role)
+        Return b
     End Function
 
     Private Sub BuildUi(presetServer As String, presetLogin As String)
@@ -96,13 +111,31 @@ Friend NotInheritable Class Exchange_Account_Form
             .AutoSizeMode = AutoSizeMode.GrowAndShrink, .Padding = New Padding(14, 8, 14, 6)}
         body.ColumnStyles.Add(New ColumnStyle(SizeType.Percent, 100.0F))
 
+        ' the connection string (187): optional, fills the form and stops
+        body.Controls.Add(Caption(ExchangeJoinText.StringLabel()))
+        _txtString = New TextBox With {.Width = ContentWidth, .Margin = New Padding(0, 0, 0, 2), .AccessibleName = ExchangeJoinText.StringLabel()}
+        AddHandler _txtString.TextChanged, AddressOf OnStringChanged
+        body.Controls.Add(_txtString)
+        Dim stringButtons As New FlowLayoutPanel With {.AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink, .FlowDirection = FlowDirection.LeftToRight,
+            .WrapContents = False, .Margin = New Padding(0)}
+        Dim paste As Button = NewButton(ExchangeJoinText.PasteButton(), "action.paste")
+        AddHandler paste.Click, AddressOf OnPasteString
+        Dim openFile As Button = NewButton(ExchangeJoinText.OpenFileButton(), "action.choose-file")
+        AddHandler openFile.Click, AddressOf OnOpenStringFile
+        stringButtons.Controls.Add(paste)
+        stringButtons.Controls.Add(openFile)
+        body.Controls.Add(stringButtons)
+        _lblString = Note("")
+        _lblString.Visible = False
+        body.Controls.Add(_lblString)
+
         ' the server and the first-contact check
         body.Controls.Add(Caption(Localization.T("Сервер (хост:порт):")))
         _txtServer = New TextBox With {.Width = ContentWidth, .Text = presetServer, .Margin = New Padding(0, 0, 0, 2)}
         AddHandler _txtServer.TextChanged, AddressOf OnServerChanged
         body.Controls.Add(_txtServer)
 
-        _btnCheck = NewButton(Localization.T("Проверить сертификат"))
+        _btnCheck = NewButton(Localization.T("Проверить сертификат"), "action.verify")
         AddHandler _btnCheck.Click, AddressOf OnCheckClicked
         body.Controls.Add(_btnCheck)
 
@@ -113,7 +146,7 @@ Friend NotInheritable Class Exchange_Account_Form
         _pnlCert.Controls.Add(_txtFingerprint)
         _lblCertNote = Note("")
         _pnlCert.Controls.Add(_lblCertNote)
-        _btnTrust = NewButton(Localization.T("Доверять этому сертификату"))
+        _btnTrust = NewButton(Localization.T("Доверять этому сертификату"), "action.confirm", ButtonGlyphRole.Caution)
         AddHandler _btnTrust.Click, AddressOf OnTrustClicked
         _pnlCert.Controls.Add(_btnTrust)
         body.Controls.Add(_pnlCert)
@@ -141,6 +174,11 @@ Friend NotInheritable Class Exchange_Account_Form
         _txtName = New TextBox With {.Width = ContentWidth, .Text = Environment.MachineName, .MaxLength = 64, .Margin = New Padding(0, 0, 0, 2)}
         body.Controls.Add(_txtName)
 
+        ' publishing is an explicit choice (170 rule 1): in words that say what it does, unticked unless the dialog was opened to publish
+        _chkPublish = New CheckBox With {.AutoSize = True, .Margin = New Padding(0, 10, 0, 0), .Checked = _publishNow, .Text = ExchangeJoinText.PublishCheckbox()}
+        body.Controls.Add(_chkPublish)
+        body.Controls.Add(Note(ExchangePublishText.PublishNote()))
+
         ' the autostart offer: default off
         _chkStart = New CheckBox With {.AutoSize = True, .Margin = New Padding(0, 10, 0, 0), .Checked = False,
             .Text = Localization.TF("Запускать {0} при входе в Windows", ProductNames.ShareManager)}
@@ -153,10 +191,10 @@ Friend NotInheritable Class Exchange_Account_Form
 
         Dim buttons As New FlowLayoutPanel With {.AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink, .FlowDirection = FlowDirection.LeftToRight,
             .WrapContents = False, .Margin = New Padding(0, 8, 0, 4)}
-        _btnSignIn = NewButton(Localization.T("Войти"))
+        _btnSignIn = NewButton(Localization.T("Войти"), "action.confirm", ButtonGlyphRole.Affirmative)
         _btnSignIn.Visible = False   ' hidden until a certificate has been shown and accepted (or the system trusts it)
         AddHandler _btnSignIn.Click, AddressOf OnSignInClicked
-        _btnCancel = NewButton(Localization.T("Отмена"))
+        _btnCancel = NewButton(Localization.T("Отмена"), "action.cancel", ButtonGlyphRole.Dismissing)
         _btnCancel.DialogResult = DialogResult.Cancel
         buttons.Controls.Add(_btnSignIn)
         buttons.Controls.Add(_btnCancel)
@@ -201,6 +239,79 @@ Friend NotInheritable Class Exchange_Account_Form
         _btnSignIn.Visible = False
         _btnCheck.Visible = True
         ShowResult("")
+    End Sub
+
+    ' --- the connection string ---
+
+    Private Sub OnStringChanged(sender As Object, e As EventArgs)
+        Dim input As ExchangeConnectInput = ExchangeConnectInput.Classify(_txtString.Text)
+        _pinnedFromString = ""
+        Select Case input.Kind
+            Case ExchangeConnectInputKind.Empty
+                _lblString.Visible = False
+            Case ExchangeConnectInputKind.Refused
+                _lblString.ForeColor = CollapsibleSection.AttentionColor
+                _lblString.Text = ExchangeJoinText.InputRefusal(input.Reason, input.Looks)
+                _lblString.Visible = True
+            Case Else
+                ' it FILLS the form and stops: no connection, no byte sent
+                _txtServer.Text = input.Value.Endpoint
+                If input.Value.Login.Length > 0 AndAlso _txtLogin.Text.Trim().Length = 0 Then _txtLogin.Text = input.Value.Login
+                _lblString.ForeColor = ThemeService.Palette.TextMuted
+                _lblString.Text = ExchangeJoinText.StringRead(input.Value.Endpoint)
+                _lblString.Visible = True
+                If input.HasPin Then
+                    ' the string's fp is the trust anchor: nothing to compare by hand, a different leaf is refused at enrollment
+                    _pinnedFromString = input.Value.Fingerprint
+                    _probe = New ExchangeCertificateInfo(_pinnedFromString, False)
+                    _trusted = True
+                    _pnlCert.Visible = True
+                    _txtFingerprint.Text = _pinnedFromString
+                    _lblCertNote.Text = ExchangeJoinText.PinNote()
+                    _btnTrust.Visible = False
+                    _btnCheck.Visible = False
+                    _btnSignIn.Visible = True
+                End If
+        End Select
+        DpiLayout.ClampToWorkingArea(Me)
+    End Sub
+
+    Private Sub OnPasteString(sender As Object, e As EventArgs)
+        Try
+            If Clipboard.ContainsText() Then _txtString.Text = Clipboard.GetText().Trim()
+        Catch ex As Exception When TypeOf ex Is System.Runtime.InteropServices.ExternalException OrElse TypeOf ex Is Threading.ThreadStateException
+            AppFileLogger.WriteLine("Exchange sign-in: the clipboard could not be read")
+        End Try
+    End Sub
+
+    Private Sub OnOpenStringFile(sender As Object, e As EventArgs)
+        Using dlg As New OpenFileDialog With {.Filter = ExchangeJoinText.OpenFileFilter(), .CheckFileExists = True, .Multiselect = False}
+            If dlg.ShowDialog(Me) <> DialogResult.OK Then Return
+            Dim bytes As Byte()
+            Try
+                Using fs As New IO.FileStream(dlg.FileName, IO.FileMode.Open, IO.FileAccess.Read, IO.FileShare.ReadWrite)
+                    Dim buffer(ExchangeConnectionString.MaxFile) As Byte
+                    Dim total As Integer = 0
+                    While total < buffer.Length
+                        Dim n As Integer = fs.Read(buffer, total, buffer.Length - total)
+                        If n <= 0 Then Exit While
+                        total += n
+                    End While
+                    bytes = New Byte(total - 1) {}
+                    Array.Copy(buffer, bytes, total)
+                End Using
+            Catch ex As Exception When TypeOf ex Is IO.IOException OrElse TypeOf ex Is UnauthorizedAccessException
+                bytes = New Byte() {}
+            End Try
+            Dim input As ExchangeConnectInput = ExchangeConnectInput.ClassifyFile(bytes)
+            If input.Kind = ExchangeConnectInputKind.Refused Then
+                _lblString.ForeColor = CollapsibleSection.AttentionColor
+                _lblString.Text = ExchangeJoinText.InputRefusal(input.Reason, input.Looks)
+                _lblString.Visible = True
+                Return
+            End If
+            _txtString.Text = System.Text.Encoding.UTF8.GetString(bytes).Trim().TrimStart(ChrW(65279)).Trim()
+        End Using
     End Sub
 
     Private Sub OnModeChanged(sender As Object, e As EventArgs)
@@ -279,6 +390,23 @@ Friend NotInheritable Class Exchange_Account_Form
 
     Private Async Sub OnSignInClicked(sender As Object, e As EventArgs)
         If _busy OrElse _probe Is Nothing OrElse Not _trusted Then Return
+
+        ' one publisher (rule 9): a join while another server is held asks to replace it, and replacing leaves the first one cleanly
+        Dim held As ExchangeDeviceStatus = _agent.GetStatus()
+        If held.Configured AndAlso Not (String.Equals(held.Server, _txtServer.Text.Trim(), StringComparison.OrdinalIgnoreCase) AndAlso
+                                        String.Equals(held.Login, _txtLogin.Text.Trim(), StringComparison.OrdinalIgnoreCase)) Then
+            If MessageBox.Show(Me, ExchangeJoinText.ReplaceQuestion(held.Server, held.Login, _txtServer.Text.Trim()), ExchangeDeviceText.GroupTitle(),
+                               MessageBoxButtons.YesNo, MessageBoxIcon.Warning, MessageBoxDefaultButton.Button2) <> DialogResult.Yes Then Return
+            SetBusy(True)
+            Try
+                Await _agent.LeaveAccountAsync(_cts.Token)
+            Catch ex As OperationCanceledException
+                Return
+            Finally
+                If Not IsDisposed Then SetBusy(False)
+            End Try
+        End If
+
         Dim request As New ExchangeEnrollRequest With {
             .Server = _txtServer.Text.Trim(), .Login = _txtLogin.Text.Trim(), .DeviceName = _txtName.Text,
             .PlatformValid = _probe.PlatformValid, .AcceptedFingerprint = _probe.Fingerprint}
@@ -299,6 +427,11 @@ Friend NotInheritable Class Exchange_Account_Form
         End Try
 
         If result.Outcome = ExchangeEnrollOutcome.Enrolled Then
+            ' publishing is the person's explicit choice, made in this dialog; it is recorded only now that there is an account
+            If _chkPublish.Checked AndAlso _agent.Publisher IsNot Nothing Then
+                _agent.Publisher.Settings.SetPublishShares(True)
+                _agent.Publisher.Notify()
+            End If
             If _chkStart.Checked Then
                 Try
                     AutostartManager.SetEnabled(True)
@@ -310,8 +443,13 @@ Friend NotInheritable Class Exchange_Account_Form
             Return
         End If
 
+        ' the string named a leaf and the server presented another: both fingerprints, nothing pinned, no password sent (rule 3)
+        If result.Outcome = ExchangeEnrollOutcome.PinMismatch AndAlso _pinnedFromString.Length > 0 Then
+            MessageBox.Show(Me, ExchangeJoinText.PinMismatch(_pinnedFromString, result.Fingerprint), ExchangeDeviceText.GroupTitle(), MessageBoxButtons.OK, MessageBoxIcon.Warning)
+        End If
         ' a certificate that changed between the check and the sign-in is a new first contact
         If result.Outcome = ExchangeEnrollOutcome.PinMismatch OrElse result.Outcome = ExchangeEnrollOutcome.Untrusted Then
+            _pinnedFromString = ""
             _probe = Nothing
             _trusted = False
             _pnlCert.Visible = False

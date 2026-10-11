@@ -111,6 +111,9 @@ Friend Module SendLogsFlow
                                          .DialogResult = DialogResult.OK}
             Dim reveal As New Button With {.AutoSize = True, .MinimumSize = New Size(110, 30),
                                            .Text = Localization.T("Открыть архив")}
+            ButtonGlyphs.Apply(cancel, "action.cancel", ButtonGlyphRole.Dismissing)
+            ButtonGlyphs.Apply(send, "action.email", ButtonGlyphRole.Affirmative)
+            ButtonGlyphs.Apply(reveal, "nav.open-external")
             AddHandler reveal.Click, Sub() RevealPackage(package.Path)
             buttons.Controls.Add(cancel)
             buttons.Controls.Add(send)

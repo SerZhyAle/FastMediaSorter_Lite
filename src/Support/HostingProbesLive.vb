@@ -40,6 +40,7 @@ Friend Module HostingProbesLive
             .FileStamp = AddressOf FileStampOf,
             .FirewallRules = Function(path) RuleNamesFor(rules.Value, path),
             .Ports = AddressOf ReadPorts,
+            .Clients = AddressOf ReadClients,
             .Sockets = AddressOf ReadSockets,
             .Components = AddressOf ReadComponents,
             .Directories = AddressOf ReadDirectories,
@@ -365,6 +366,21 @@ Friend Module HostingProbesLive
     End Function
 
     ' --- ports -------------------------------------------------------------------------------------
+
+    ''' <summary>Ticket 187 rule 11: how many exchange entries this Windows user holds in the viewer and how many of them hold a token - from the
+    ''' entries' own registry value and token folders, read only, with no server, login or fingerprint ever leaving this method.</summary>
+    Friend Function ReadClients() As ClientFacts
+        Dim facts As New ClientFacts()
+#If Not NETFRAMEWORK Then
+        Dim store As ExchangeEntryStore = ExchangeEntryStore.CreateDefault()
+        For Each entry As ExchangeEntry In store.Load()
+            facts.Entries += 1
+            If entry.AutoAttach Then facts.AutoAttach += 1
+            If store.TokenStoreFor(entry.Id).Exists() Then facts.WithToken += 1
+        Next
+#End If
+        Return facts
+    End Function
 
     Private Const ExchangeDefaultPort As Integer = 22022
 

@@ -46,6 +46,7 @@
 {"path": "docs/guides/BUILD_AND_RELEASE.md", "topic": "BUILD AND RELEASE", "area": "engineering", "triggers": ["Changes to engineering behavior, structure or workflow"], "role": "source"}
 {"path": "docs/guides/COMPANION_TEST_PLAN.md", "topic": "COMPANION TEST PLAN", "area": "engineering", "triggers": ["Changes to engineering behavior, structure or workflow"], "role": "source"}
 {"path": "docs/guides/DOCUMENTATION_CONCEPT.md", "topic": "DOCUMENTATION CONCEPT", "area": "engineering", "triggers": ["Changes to engineering behavior, structure or workflow"], "role": "source"}
+{"path": "docs/guides/NETWORK_ARCHITECTURE_AND_SCHEMES.md", "topic": "WAYS TO CONNECT YOUR DEVICES", "area": "engineering", "triggers": ["Changes to how devices connect (home network, exchange server, live broadcast), the state of any of them, or the portal links that explain them"], "role": "source"}
 {"path": "docs/guides/PRODUCT_NAMING.md", "topic": "PRODUCT NAMING", "area": "engineering", "triggers": ["Changes to engineering behavior, structure or workflow"], "role": "source"}
 {"path": "docs/guides/PROGRESS_DOTNET10_MODERN_BUILD.md", "topic": "PROGRESS DOTNET10 MODERN BUILD", "area": "engineering", "triggers": ["Changes to engineering behavior, structure or workflow"], "role": "source"}
 {"path": "docs/guides/REPOSITORY_LAYOUT.md", "topic": "REPOSITORY LAYOUT", "area": "engineering", "triggers": ["Changes to engineering behavior, structure or workflow"], "role": "source"}

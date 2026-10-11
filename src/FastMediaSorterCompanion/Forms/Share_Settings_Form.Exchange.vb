@@ -44,6 +44,8 @@ Partial Public NotInheritable Class Share_Settings_Form
     Private _lblXPortNote As Label
     Private _lblXFw As Label
     Private _lblXFpNote As Label
+    Private _btnXConnString As Button
+    Private _lblXConnNote As Label
     Private _lblXSvcNote As Label
     Private _lblXResult As Label
     Private numXPort As NumericUpDown
@@ -95,10 +97,11 @@ Partial Public NotInheritable Class Share_Settings_Form
         Return sec
     End Function
 
-    Private Function XButton(text As String, onClick As Action) As Button
+    Private Function XButton(text As String, onClick As Action, Optional glyph As String = "") As Button
         Dim b As New Button With {.AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink,
             .Padding = New Padding(12, 5, 12, 5), .Margin = New Padding(0, 2, 8, 2), .Text = text}
         AddHandler b.Click, Sub() onClick()
+        If glyph.Length > 0 Then ButtonGlyphs.Apply(b, glyph)
         Return b
     End Function
 
@@ -122,17 +125,23 @@ Partial Public NotInheritable Class Share_Settings_Form
         sec.AddBodyRow(_lblXReach)
         sec.AddBodyRow(_lblXWins)
         sec.AddBodyRow(NoteLabel(ExchangeText.Intro()))
+        ' Only here, inside the group that exists only with the component: the portal page that explains the
+        ' server (the program's other surfaces never name it).
+        Dim lnkXPortal As New LinkLabel With {.AutoSize = True, .MaximumSize = New Size(HostingContentWidth, 0),
+            .Margin = New Padding(0, 0, 0, 8), .Text = Localization.T("Как устроен сервер обмена (портал)")}
+        AddHandler lnkXPortal.LinkClicked, Sub() NetworkInfo.OpenInBrowser(ShareLinks.ExchangePortalUrl("exchange-server"))
+        sec.AddBodyRow(lnkXPortal)
 
         ' "use this PC as my server" (ticket 168 section 3.7): the one-person case in one step; drawn only while nothing exists yet
-        _btnXWizard = XButton(ExchangeAdminText.WizardButton(), AddressOf OnXWizard)
+        _btnXWizard = XButton(ExchangeAdminText.WizardButton(), AddressOf OnXWizard, "action.adjust")
         _rowXWizard = XFlow()
         _rowXWizard.Controls.Add(_btnXWizard)
         _rowXWizard.Visible = False
         sec.AddBodyRow(_rowXWizard)
 
         ' start / stop - the console server
-        _btnXStart = XButton(ExchangeText.StartButton(), AddressOf OnXStart)
-        _btnXStop = XButton(ExchangeText.StopButton(), AddressOf OnXStop)
+        _btnXStart = XButton(ExchangeText.StartButton(), AddressOf OnXStart, "action.run")
+        _btnXStop = XButton(ExchangeText.StopButton(), AddressOf OnXStop, "media.stop")
         Dim runRow As FlowLayoutPanel = XFlow()
         runRow.Controls.Add(_btnXStart)
         runRow.Controls.Add(_btnXStop)
@@ -147,7 +156,7 @@ Partial Public NotInheritable Class Share_Settings_Form
         numXPort = New NumericUpDown With {.Minimum = ExchangeSettings.MinPort, .Maximum = ExchangeSettings.MaxPort,
             .Value = ExchangeSettings.DefaultPort, .Width = 84, .Margin = New Padding(0, 2, 0, 0)}
         _exBaselinePort = CInt(numXPort.Value)   ' the field starts at the number it shows: nothing is pending until the person edits it
-        _btnXApplyPort = XButton(Localization.T("Применить порт"), AddressOf OnXApplyPort)
+        _btnXApplyPort = XButton(Localization.T("Применить порт"), AddressOf OnXApplyPort, "action.confirm")
         _btnXApplyPort.Visible = False
         AddHandler numXPort.ValueChanged, AddressOf OnXPortValueChanged
         Dim portSetting = DirectCast(SettingsEditorRow(lblPort, numXPort, New Padding(0, 6, 0, 0)), ManagerSettingRow)
@@ -167,8 +176,8 @@ Partial Public NotInheritable Class Share_Settings_Form
         ' the firewall (ticket 143)
         _lblXFw = New Label With {.AutoSize = True, .Margin = New Padding(0, 8, 0, 2), .MaximumSize = New Size(HostingContentWidth, 0)}
         sec.AddBodyRow(_lblXFw)
-        _btnXFwEnable = XButton(ExchangeText.FirewallEnableButton(), AddressOf OnXFirewallEnable)
-        _btnXFwRemove = XButton(ExchangeText.FirewallRemoveButton(), AddressOf OnXFirewallRemove)
+        _btnXFwEnable = XButton(ExchangeText.FirewallEnableButton(), AddressOf OnXFirewallEnable, "action.share")
+        _btnXFwRemove = XButton(ExchangeText.FirewallRemoveButton(), AddressOf OnXFirewallRemove, "action.remove")
         _rowXFw = XFlow()
         _rowXFw.Controls.Add(_btnXFwEnable)
         _rowXFw.Controls.Add(_btnXFwRemove)
@@ -176,10 +185,10 @@ Partial Public NotInheritable Class Share_Settings_Form
         sec.AddBodyRow(NoteLabel(ExchangeText.FirewallNote()))
 
         ' the service (ticket 144) - rows exist only where they can act
-        _btnXSvcStart = XButton(Localization.T("Запустить службу"), Sub() OnXServiceControl(True))
-        _btnXSvcStop = XButton(Localization.T("Остановить службу"), Sub() OnXServiceControl(False))
-        _btnXRegister = XButton(ExchangeText.RegisterButton(), AddressOf OnXRegister)
-        _btnXRemove = XButton(ExchangeText.RemoveServiceButton(), AddressOf OnXRemoveService)
+        _btnXSvcStart = XButton(Localization.T("Запустить службу"), Sub() OnXServiceControl(True), "action.run")
+        _btnXSvcStop = XButton(Localization.T("Остановить службу"), Sub() OnXServiceControl(False), "media.stop")
+        _btnXRegister = XButton(ExchangeText.RegisterButton(), AddressOf OnXRegister, "action.install")
+        _btnXRemove = XButton(ExchangeText.RemoveServiceButton(), AddressOf OnXRemoveService, "action.delete")
         _rowXSvc = XFlow()
         _rowXSvc.Controls.Add(_btnXSvcStart)
         _rowXSvc.Controls.Add(_btnXSvcStop)
@@ -224,8 +233,11 @@ Partial Public NotInheritable Class Share_Settings_Form
         If Not HasExchange Then Return
         Dim snap As ExchangeSnapshot = Await Task.Run(Function() ExchangeSnapshot.Read())
         If IsDisposed OrElse Disposing Then Return
-        ApplyExchangeState(snap)
-        UpdateSummaries()
+        Await InvokeAsync(Sub()
+                              If IsDisposed OrElse Disposing Then Return
+                              ApplyExchangeState(snap)
+                              UpdateSummaries()
+                          End Sub)
     End Function
 
     ''' <summary>The server this window started (or one found) ended by itself or was stopped: refresh, on
@@ -278,6 +290,8 @@ Partial Public NotInheritable Class Share_Settings_Form
             _rowXFp.Visible = m.ShowFingerprint
             _txtXFp.Text = m.Fingerprint
             _lblXFpNote.Text = If(m.ShowFingerprint, ExchangeText.FingerprintNote(), ExchangeText.FingerprintMissing())
+            _btnXConnString.Enabled = Not _exBusy AndAlso ConnectionStringAvailable()
+            _lblXConnNote.Visible = m.ShowFingerprint AndAlso m.PublicEndpoint.Length = 0
 
             _btnXStart.Visible = m.ShowStart
             _btnXStop.Visible = m.ShowStop
@@ -371,6 +385,21 @@ Partial Public NotInheritable Class Share_Settings_Form
         Else
             ShowXResult(ExchangeText.CopyFailed(), False)
         End If
+    End Sub
+
+    ' --- connection string (ticket 187 T-2) --------------------------------------------------
+
+    ''' <summary>The string can be made: the server has a certificate to name and the address for clients is set. It is never
+    ''' built from a bind address, so with the address empty the button is disabled and the hint says why.</summary>
+    Private Function ConnectionStringAvailable() As Boolean
+        Return _exModel IsNot Nothing AndAlso _exModel.ShowFingerprint AndAlso _exModel.PublicEndpoint.Length > 0
+    End Function
+
+    Private Sub OnXGetConnectionString()
+        If _exBusy OrElse Not ConnectionStringAvailable() Then Return
+        Using dlg As New Exchange_Connection_String_Form()
+            dlg.ShowDialog(Me)
+        End Using
     End Sub
 
     ' --- start / stop -----------------------------------------------------------------------
@@ -505,6 +534,7 @@ Partial Public NotInheritable Class Share_Settings_Form
         For Each b As Button In ExchangeBusyButtons()
             If b IsNot Nothing Then b.Enabled = Not value
         Next
+        If _btnXConnString IsNot Nothing Then _btnXConnString.Enabled = Not value AndAlso ConnectionStringAvailable()
         Me.UseWaitCursor = value
     End Sub
 

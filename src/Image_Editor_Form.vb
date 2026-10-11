@@ -246,12 +246,15 @@ Partial Friend NotInheritable Class Image_Editor_Form
             .Padding = New Padding(8, 6, 8, 6)
         }
 
-        btn_Close = NewFooterButton("btn_Editor_Close", Localization.T("Закрыть"))
-        btn_Save_As = NewFooterButton("btn_Editor_Save_As", Localization.T("Сохранить как.."))
-        btn_Save = NewFooterButton("btn_Editor_Save", Localization.T("Сохранить"))
-        btn_Undo = NewFooterButton("btn_Editor_Undo", Localization.T("Отменить"))
+        ' WINDOWS-UI section 11: every command carries its verb's glyph. Colour is for the answer of a dialog;
+        ' this window's footer is a command strip, so only the one that keeps the work (Save) is the
+        ' affirmative and only the way out (Close) is the dismissing one - Undo, Redo and Save as stay mono.
+        btn_Close = NewFooterButton("btn_Editor_Close", Localization.T("Закрыть"), "nav.close", ButtonGlyphRole.Dismissing)
+        btn_Save_As = NewFooterButton("btn_Editor_Save_As", Localization.T("Сохранить как.."), "action.save", ButtonGlyphRole.Neutral)
+        btn_Save = NewFooterButton("btn_Editor_Save", Localization.T("Сохранить"), "action.save", ButtonGlyphRole.Affirmative)
+        btn_Undo = NewFooterButton("btn_Editor_Undo", Localization.T("Отменить"), "action.undo", ButtonGlyphRole.Neutral)
         btn_Undo.Enabled = False
-        btn_Redo = NewFooterButton("btn_Editor_Redo", Localization.T("Вернуть"))
+        btn_Redo = NewFooterButton("btn_Editor_Redo", Localization.T("Вернуть"), "action.redo", ButtonGlyphRole.Neutral)
         btn_Redo.Enabled = False
 
         lbl_Editor_Status = New Label With {
@@ -307,14 +310,24 @@ Partial Friend NotInheritable Class Image_Editor_Form
         DialogLayout.ClampToWorkingArea(Me)
     End Sub
 
-    Private Function NewFooterButton(name As String, caption As String) As Button
-        Return New Button With {
+    Private Function NewFooterButton(name As String, caption As String, glyphId As String, role As ButtonGlyphRole) As Button
+        Dim button As New Button With {
             .Name = name,
             .Text = caption,
             .AutoSize = False,
             .Width = Localization.Scaled(130),
             .Margin = New Padding(6, 0, 0, 0)
         }
+        ButtonGlyphs.Apply(button, glyphId, role)
+        ' 130 logical px stays while the caption and the glyph fit; a longer caption (another language, a
+        ' script font) widens the button instead of clipping it. The caption is measured at the DPI this
+        ' window has now and turned back into 96-dpi pixels, because ApplyAutoScale multiplies the width again.
+        Dim measured As Integer = TextRenderer.MeasureText(caption, Me.Font, New Size(Integer.MaxValue, Integer.MaxValue),
+                                                           TextFormatFlags.NoPadding Or TextFormatFlags.SingleLine).Width
+        Dim logicalText As Integer = CInt(Math.Ceiling(measured * 96.0R / Math.Max(96, Me.DeviceDpi)))
+        Dim needed As Integer = logicalText + ButtonGlyphs.GlyphLogicalSize + ButtonGlyphs.GapLogicalSize + 2 * 12
+        If needed > button.Width Then button.Width = needed
+        Return button
     End Function
 
     ''' <summary>

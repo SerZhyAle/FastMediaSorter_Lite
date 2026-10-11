@@ -135,9 +135,15 @@ Friend NotInheritable Class Exchange_Account_Admin_Form
             .WrapContents = False, .Margin = New Padding(0, 10, 0, 6)}
         _btnOk = New Button With {.AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink, .Padding = New Padding(12, 4, 12, 4),
             .Text = If(_mode = DialogMode.Add, ExchangeAdminText.CreateButton(), ExchangeAdminText.ResetButton())}
+        If _mode = DialogMode.Add Then
+            ButtonGlyphs.Apply(_btnOk, "action.confirm", ButtonGlyphRole.Affirmative)
+        Else
+            ButtonGlyphs.Apply(_btnOk, "action.change-password", ButtonGlyphRole.Caution)
+        End If
         AddHandler _btnOk.Click, AddressOf OnOkClicked
         Dim btnCancel As New Button With {.AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink, .Padding = New Padding(12, 4, 12, 4),
             .Text = Localization.T("Отмена"), .DialogResult = DialogResult.Cancel}
+        ButtonGlyphs.Apply(btnCancel, "action.cancel", ButtonGlyphRole.Dismissing)
         buttons.Controls.Add(_btnOk)
         buttons.Controls.Add(btnCancel)
         body.Controls.Add(buttons)

@@ -62,6 +62,8 @@ func run(ctx context.Context, args []string, stdin io.Reader, stdout, stderr io.
 		return runTLS(cmd, stdout, stderr)
 	case "inspect":
 		return runInspect(cmd, stdout, stderr)
+	case "connection-string":
+		return runConnectionString(cmd, stdout, stderr)
 	case "stop":
 		return runStop(cmd, stdout, stderr)
 	}

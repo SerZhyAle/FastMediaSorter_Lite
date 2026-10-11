@@ -201,10 +201,38 @@ Friend NotInheritable Class ExchangeServerWizard
             End If
         End If
 
-        ' 3. what answers is the server whose fingerprint the binary reports (the certificate exists after the first start)
+        ' 3. and 4. what answers is the server whose fingerprint the binary reports (the certificate exists after the first start),
+        ' then this PC's own agent, with that password
         ct.ThrowIfCancellationRequested()
         Notify(progress, ExchangeWizardStep.CheckingCertificate)
         report = ports.Inspect()
+        Await ProbeAndEnrollAsync(result, report, password, ports, progress, ct).ConfigureAwait(False)
+        Return result
+    End Function
+
+    ''' <summary>
+    ''' This PC as the FIRST device of an account that already exists - the account was just added (or its password just reset) in the
+    ''' administration page, so its password is in hand for exactly this call. Steps 3 and 4 of <see cref="RunAsync"/> and nothing else:
+    ''' no account is created, no server started, no service touched, so it is valid for a registered Windows service too. The caller
+    ''' decides that this PC is in no account yet and that the client features are offered; the password is never kept here.
+    ''' </summary>
+    Friend Shared Async Function EnrollThisPcAsync(login As String, password As String, ports As IExchangeWizardPorts,
+                                                   progress As Action(Of ExchangeWizardStep), ct As CancellationToken) As Task(Of ExchangeWizardResult)
+        Dim result As New ExchangeWizardResult With {.Login = ExchangeLoginRules.Normalize(login)}
+        Notify(progress, ExchangeWizardStep.CheckingCertificate)
+        Dim report As ExchangeProcess.InspectReport = ports.Inspect()
+        If Not report.Answered Then
+            result.Outcome = ExchangeWizardOutcome.NotAvailable
+            Return result
+        End If
+        Await ProbeAndEnrollAsync(result, report, password, ports, progress, ct).ConfigureAwait(False)
+        Return result
+    End Function
+
+    ''' <summary>The shared tail: the address, the certificate compared with the one the binary reports, then the enrolment. Sets
+    ''' <see cref="ExchangeWizardResult.Outcome"/>; nothing secret is sent before the fingerprints agree.</summary>
+    Private Shared Async Function ProbeAndEnrollAsync(result As ExchangeWizardResult, report As ExchangeProcess.InspectReport, password As String,
+                                                      ports As IExchangeWizardPorts, progress As Action(Of ExchangeWizardStep), ct As CancellationToken) As Task
         result.LocalAddress = LocalAddressOf(report.Listen)
         result.PublicEndpoint = report.PublicEndpoint
         result.Fingerprint = report.Fingerprint
@@ -213,18 +241,17 @@ Friend NotInheritable Class ExchangeServerWizard
             probe = Await ProbeWithRetriesAsync(ports, result.LocalAddress, ct).ConfigureAwait(False)
             If probe Is Nothing Then
                 result.Outcome = ExchangeWizardOutcome.ServerNotAnswering
-                Return result
+                Return
             End If
             If report.Fingerprint.Length = 0 OrElse Not String.Equals(probe.Fingerprint, report.Fingerprint, StringComparison.Ordinal) Then
                 result.Outcome = ExchangeWizardOutcome.CertificateMismatch
-                Return result
+                Return
             End If
         End If
 
-        ' 4. this PC's own agent, with that password
         If probe Is Nothing Then
             result.Outcome = ExchangeWizardOutcome.DoneNoAgent
-            Return result
+            Return
         End If
         ct.ThrowIfCancellationRequested()
         Notify(progress, ExchangeWizardStep.EnrollingThisPc)
@@ -236,7 +263,6 @@ Friend NotInheritable Class ExchangeServerWizard
             request.Wipe()
         End Try
         result.Outcome = If(result.EnrollResult.Outcome = ExchangeEnrollOutcome.Enrolled, ExchangeWizardOutcome.Done, ExchangeWizardOutcome.EnrollFailed)
-        Return result
     End Function
 
     Private Shared Sub Notify(progress As Action(Of ExchangeWizardStep), value As ExchangeWizardStep)

@@ -62,6 +62,7 @@ Partial Public NotInheritable Class Share_Settings_Form
             Sub() NetworkInfo.OpenInBrowser(ShareLinks.Localized(SitePages.PrivacyPageUrl)))
         Dim support As New Button With {.Text = Localization.T("Отправить журнал автору.."), .AutoSize = True,
             .Name = "managerSupportBundle", .Margin = New Padding(0, 8, 0, 0)}
+        ButtonGlyphs.Apply(support, "action.email")
         AddHandler support.Click, Async Sub() Await SendLogsFlow.RunAsync(Me)
         section.AddBodyRow(support)
     End Sub
@@ -229,6 +230,8 @@ Partial Public NotInheritable Class Share_Settings_Form
         CheckBoxLayout.BindHint(check, hint)
         AddHandler check.VisibleChanged, Sub() hint.Visible = check.Visible
         AddHandler check.EnabledChanged, Sub() hint.Enabled = check.Enabled
+        hint.Visible = check.Visible
+        hint.Enabled = check.Enabled
         check.AccessibleDescription = text
         table.ResumeLayout(False)
     End Sub
@@ -273,8 +276,10 @@ Partial Public NotInheritable Class Share_Settings_Form
         Try
             For Each viewport In _pages.Values
                 If changedViewport IsNot Nothing AndAlso viewport IsNot changedViewport Then Continue For
-                ' ClientSize already excludes the native scrollbar; content/group padding is subtracted below.
-                Dim width = Math.Max(1, viewport.ClientSize.Width - viewport.Padding.Horizontal)
+                ' Reserve the scrollbar even while hidden, so disclosure does not refit the whole subtree twice.
+                ' ClientSize already excludes it when visible; content/group padding is subtracted below.
+                Dim width = Math.Max(1, viewport.ClientSize.Width - viewport.Padding.Horizontal -
+                    If(viewport.VerticalScroll.Visible, 0, SystemInformation.VerticalScrollBarWidth))
                 Dim previousWidth As Integer
                 If _fittedSettingsWidths.TryGetValue(viewport, previousWidth) AndAlso previousWidth = width Then Continue For
                 _fittedSettingsWidths(viewport) = width

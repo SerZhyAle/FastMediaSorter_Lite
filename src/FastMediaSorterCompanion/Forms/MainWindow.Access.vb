@@ -70,6 +70,7 @@ Partial Public NotInheritable Class MainWindow
         btnTest = New Button With {.AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink,
             .Anchor = AnchorStyles.Left, .Padding = New Padding(12, 5, 12, 5), .Margin = New Padding(0, 8, 0, 2),
             .Text = Localization.T("Проверить доступ из интернета"), .Visible = False}
+        ButtonGlyphs.Apply(btnTest, "action.test-connection")
         AddHandler btnTest.Click, AddressOf OnTestClicked
         sec.AddBodyRow(btnTest)
 
@@ -80,6 +81,7 @@ Partial Public NotInheritable Class MainWindow
         btnGuide = New Button With {.AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink,
             .Anchor = AnchorStyles.Left, .Padding = New Padding(12, 5, 12, 5), .Margin = New Padding(0, 2, 0, 4),
             .Text = Localization.T("Как настроить доступ через интернет")}
+        ButtonGlyphs.Apply(btnGuide, "app.help")
         AddHandler btnGuide.Click, AddressOf OnInternetAccess
         sec.AddBodyRow(btnGuide)
     End Sub
@@ -104,6 +106,7 @@ Partial Public NotInheritable Class MainWindow
         btnStatsDetails = New Button With {.AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink,
             .Anchor = AnchorStyles.Left, .Padding = New Padding(12, 4, 12, 4), .Margin = New Padding(0, 8, 0, 2),
             .Text = Localization.T("Подробнее..")}
+        ButtonGlyphs.Apply(btnStatsDetails, "app.info")
         AddHandler btnStatsDetails.Click, AddressOf OnStatsDetailsClicked
         sec.AddBodyRow(btnStatsDetails)
     End Sub
@@ -270,6 +273,8 @@ Partial Public NotInheritable Class MainWindow
         Dim t As Task = RefreshFolderAccessAsync()
 
         btnToggle.Text = If(running, Localization.T("Остановить раздачу"), Localization.T("Начать раздачу"))
+        Dim toggleGlyph As String = If(running, "media.stop", "action.run")
+        If ButtonGlyphs.GlyphOf(btnToggle) <> toggleGlyph Then ButtonGlyphs.Apply(btnToggle, toggleGlyph)
         UpdateStateLine(running)
 
         For Each sr As ServerRow In _serverRows

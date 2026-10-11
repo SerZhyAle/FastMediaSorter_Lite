@@ -315,6 +315,14 @@ Partial Friend NotInheritable Class Image_Editor_Form
             .TabStop = False,
             .Visible = False
         }
+        ' WINDOWS-UI section 11: the confirming answer of the crop frame is the affirmative one. 170 logical
+        ' px stays while caption and glyph fit; a longer caption widens it (it is the last item of the strip).
+        ButtonGlyphs.Apply(btn_Apply_Crop, "action.confirm", ButtonGlyphRole.Affirmative)
+        Dim cropMeasured As Integer = TextRenderer.MeasureText(btn_Apply_Crop.Text, Me.Font,
+            New Size(Integer.MaxValue, Integer.MaxValue), TextFormatFlags.NoPadding Or TextFormatFlags.SingleLine).Width
+        Dim cropNeeded As Integer = CInt(Math.Ceiling(cropMeasured * 96.0R / Math.Max(96, Me.DeviceDpi))) +
+            ButtonGlyphs.GlyphLogicalSize + ButtonGlyphs.GapLogicalSize + 2 * 12
+        If cropNeeded > btn_Apply_Crop.Width Then btn_Apply_Crop.Width = cropNeeded
         tool_Bar.Controls.Add(btn_Apply_Crop)
 
         ApplyToolSelection()

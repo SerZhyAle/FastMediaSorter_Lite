@@ -89,6 +89,11 @@ Friend NotInheritable Class Resource_Export_Form
         For Each b As Button In {saveButton, copyTextButton, copyCodeButton}
             b.Anchor = AnchorStyles.Bottom Or AnchorStyles.Left
         Next
+        ' The three actions are not the window's answer (it has none: Close is its one way out) - mono glyphs.
+        ButtonGlyphs.Apply(saveButton, "action.export")
+        ButtonGlyphs.Apply(copyTextButton, "action.copy")
+        ButtonGlyphs.Apply(copyCodeButton, "action.copy")
+        ButtonGlyphs.Apply(closeButton, "nav.close", ButtonGlyphRole.Dismissing)
         saveButton.Location = New Point(12, 228)
         copyTextButton.Location = New Point(130, 228)
         copyCodeButton.Location = New Point(248, 228)

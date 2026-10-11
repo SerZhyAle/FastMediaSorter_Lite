@@ -293,6 +293,14 @@ function Render([string]$code) {
     $howto = ($copy._howto.items | ForEach-Object {
         '      <li><a href="{0}/{1}">{2}</a></li>' -f $BaseUrl, $_[0], (Esc $_[1])
     }) -join "`n"
+    # The shared media-exchange portal lives on another origin (the Android site), so it is one extra entry after the
+    # repository's own guides, opening in a new tab - not an item of the list, which is checked on disk.
+    $portal = $copy._howto.portal
+    $portalFooter = ''
+    if ($portal) {
+        $howto += "`n" + ('      <li><a href="{0}" target="_blank" rel="noopener">{1}</a></li>' -f $portal.url, (Esc $portal.label))
+        $portalFooter = "`n" + ('    <a href="{0}" target="_blank" rel="noopener">{1}</a>' -f $portal.url, (Esc $portal.footer))
+    }
 
     # The three doors (ticket 132 section 3.2): viewer, share to Android, and the reserved exchange-server slot.
     # Door 3 is future-tense text only - no link, no download, no capability claim.
@@ -459,7 +467,7 @@ $howto
   <div class="link-row" lang="en" dir="ltr">
     <a href="#howto">$(Esc $copy._howto.title)</a>
     <a href="$BaseUrl/topics.html">Topics</a>
-    <a href="$BaseUrl/glossary.html">Glossary</a>
+    <a href="$BaseUrl/glossary.html">Glossary</a>$portalFooter
     <a href="$(TrustUrl $code)">$(Esc $trust.$code.title)</a>
     <a href="$BaseUrl/docs/privacy.html">Privacy</a>
     <a href="$Repo#readme">README</a>

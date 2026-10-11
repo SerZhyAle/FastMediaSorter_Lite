@@ -13,6 +13,10 @@ Imports Xunit
 
 <Collection(UiLanguageCollection.Name)>
 Public Class WindowsUiContractTests
+    <Runtime.InteropServices.DllImport("user32.dll")>
+    Private Shared Function GetWindowThreadProcessId(handle As IntPtr, ByRef processId As UInteger) As UInteger
+    End Function
+
     Private Shared Sub OnUi(test As Action)
         Dim failure As Exception = Nothing
         Dim thread As New Thread(Sub()
@@ -217,9 +221,10 @@ Public Class WindowsUiContractTests
                                  For Each expanded In {True, False, True, False}
                                      Dim clock = Diagnostics.Stopwatch.StartNew()
                                      group.Expanded = expanded
+                                     Dim layoutMilliseconds = clock.ElapsedMilliseconds
                                      Application.DoEvents()
                                      Assert.True(clock.ElapsedMilliseconds < 150,
-                                         group.Key & " at scale " & scale.ToString() & ": " & clock.ElapsedMilliseconds.ToString() & " ms")
+                                         group.Key & " at scale " & scale.ToString() & ": " & clock.ElapsedMilliseconds.ToString() & " ms (layout " & layoutMilliseconds.ToString() & " ms)")
                                      Assert.Equal(before, window.Bounds)
                                  Next
                              Next
@@ -253,6 +258,64 @@ Public Class WindowsUiContractTests
         Next
     End Sub
 
+    <Fact>
+    Public Sub Async_server_refresh_without_a_synchronization_context_creates_controls_on_the_window_thread()
+        OnUi(Sub()
+                 ExchangeTestSupport.Reset()
+                 Dim component = ExchangeTestSupport.MakeFakeComponent(True, False, False)
+                 ExchangeProcess.ExeDirectoryOverride = component
+                 ExchangeProcess.RunOverride = Function(args, input)
+                                                   If args(0) = "inspect" Then Thread.Sleep(30)
+                                                   Return New ExchangeProcess.RunResult With {.Started = True,
+                                                       .StdOut = If(args(0) = "inspect", "{""configPresent"":true,""accounts"":0,""devices"":0,""certPresent"":true,""listen"":"":22022""}", "[]")}
+                                               End Function
+                 ExchangeFirewall.ShowRuleOverride = Function() Tuple.Create(0, "No rules match")
+                 ExchangeService.ImagePathOverride = Function() ""
+                 ExchangeService.QueryStateOverride = Function() ServiceControl.ServiceState.NotInstalled
+                 Dim previousChecks = Control.CheckForIllegalCrossThreadCalls
+                 Try
+                     Control.CheckForIllegalCrossThreadCalls = True
+                     Using window As New Share_Settings_Form()
+                         Dim flags = BindingFlags.Instance Or BindingFlags.NonPublic
+                         GetType(Share_Settings_Form).GetField("_exLoaded", flags).SetValue(window, True)
+                         GetType(Share_Settings_Form).GetField("_hostingLoaded", flags).SetValue(window, True)
+                         window.Show()
+                         GetType(Share_Settings_Form).GetMethod("SelectSettingsPage", flags).Invoke(window, New Object() {"exchange"})
+                         Dim groups = DirectCast(GetType(Share_Settings_Form).GetField("_pageGroups", flags).GetValue(window), Dictionary(Of String, List(Of CollapsibleSection)))
+                         groups("exchange")(0).Expanded = True
+                         Dim previousContext = SynchronizationContext.Current
+                         Dim refresh As Threading.Tasks.Task
+                         Try
+                             SynchronizationContext.SetSynchronizationContext(Nothing)
+                             refresh = DirectCast(GetType(Share_Settings_Form).GetMethod("RefreshExchangeAsync", flags).Invoke(window, Nothing), Threading.Tasks.Task)
+                         Finally
+                             SynchronizationContext.SetSynchronizationContext(previousContext)
+                         End Try
+                         Dim clock = Diagnostics.Stopwatch.StartNew()
+                         While Not refresh.IsCompleted AndAlso clock.ElapsedMilliseconds < 5000
+                             Application.DoEvents()
+                             Thread.Sleep(5)
+                         End While
+                         Assert.True(refresh.IsCompleted, "Refresh failed to return to the UI thread")
+                         refresh.GetAwaiter().GetResult()
+                         Dim processId As UInteger
+                         Dim ownerThread = GetWindowThreadProcessId(window.Handle, processId)
+                         Dim wizard = DirectCast(GetType(Share_Settings_Form).GetField("_btnXWizard", flags).GetValue(window), Button)
+                         Assert.True(wizard.Visible)
+                         Assert.True(wizard.IsHandleCreated)
+                         For Each control In ControlsBelow(window).Where(Function(c) c.IsHandleCreated)
+                             Assert.Equal(ownerThread, GetWindowThreadProcessId(control.Handle, processId))
+                         Next
+                         window.Hide()
+                     End Using
+                 Finally
+                     Control.CheckForIllegalCrossThreadCalls = previousChecks
+                     ExchangeTestSupport.Reset()
+                     ExchangeTestSupport.DeleteQuietly(component)
+                 End Try
+             End Sub)
+    End Sub
+
     <Theory>
     <InlineData(640)>
     <InlineData(820)>
@@ -269,11 +332,12 @@ Public Class WindowsUiContractTests
                          Dim flags = BindingFlags.Instance Or BindingFlags.NonPublic
                          GetType(Share_Settings_Form).GetField("_exLoaded", flags).SetValue(window, True)
                          GetType(Share_Settings_Form).GetField("_hostingLoaded", flags).SetValue(window, True)
+                         GetType(Share_Settings_Form).GetMethod("SelectSettingsPage", flags).Invoke(window, New Object() {"startup"})
                          window.Show()
                          window.ClientSize = New Size(window.LogicalToDeviceUnits(width), window.LogicalToDeviceUnits(480))
                          Dim groups = DirectCast(GetType(Share_Settings_Form).GetField("_pageGroups", flags).GetValue(window), Dictionary(Of String, List(Of CollapsibleSection)))
                          Dim selectPage = GetType(Share_Settings_Form).GetMethod("SelectSettingsPage", flags)
-                         For Each state As Integer In {0, 1, 2, 3}
+                         For Each state As Integer In {2, 0, 1, 3}
                              Dim snapshot As New ExchangeSnapshot With {.ServiceExists = state = 2,
                                  .ServiceState = If(state = 2, ServiceControl.ServiceState.Stopped, ServiceControl.ServiceState.NotInstalled),
                                  .ConsolePid = If(state = 3, 42, 0), .CanChangeFirewall = True, .CanRegisterService = state <> 2,

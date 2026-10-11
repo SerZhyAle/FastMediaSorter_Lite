@@ -7,6 +7,8 @@
 | **Home** | `anywhere-access/README.md` in the shared contracts catalog |
 | **Role here** | exchange-server implementer (now through `DEVICE-EXCHANGE`, see its pointer) and, for what stays here, **producer and consumer of the share descriptor** `FMSSFTP1`/`FMSSFTP2` and of the third-party port (local specifications 170 and 171). The server specification 133 is re-scoped by local specification 160 |
 
+**Reader-facing description:** the portal page [Home network](https://serzhyale.github.io/FastMediaSorter_mob_v2/docs/media-exchange-portal/home-network.html) of the shared "Media exchange between your devices" portal (not published until the Android site publishes it). Nothing there binds this contract.
+
 What this pointer still covers is the descriptor (`FMSSFTP2` and `vectors/descriptor-v2.json`, rung 1), the
 `.fmscfg` additive kind `rendezvousTunnel` (registered by `FMSCFG` 2.4, see its pointer), the third-party TCP port
 (section 5.5, requested by `publish.publicPort` and carried by the resource record and a `.fmscfg` access path,

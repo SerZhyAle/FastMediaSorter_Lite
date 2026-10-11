@@ -180,3 +180,51 @@ func TestReplaceWithNoIdentityJustMakesOne(t *testing.T) {
 		t.Fatalf("%v %v", id, err)
 	}
 }
+
+// Ticket 187 T-2: whether a leaf is publicly trusted decides whether a connection string carries its pin.
+func TestPubliclyTrustedIsTrueOnlyForALeafARootValidates(t *testing.T) {
+	dir := t.TempDir()
+	now := time.Now()
+
+	// a self-signed leaf is trusted by nobody's store
+	selfCert, _ := writePair(t, dir, "self", now.Add(-time.Hour), now.Add(24*time.Hour))
+	if ok, err := PubliclyTrusted(selfCert, "exchange.example.org", now, nil); err != nil || ok {
+		t.Fatalf("a self-signed leaf: %v %v", ok, err)
+	}
+
+	// a leaf signed by a CA the pool trusts is, for the name it was issued to and not for another
+	caKey, _ := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+	caTmpl := &x509.Certificate{SerialNumber: big.NewInt(1), Subject: pkix.Name{CommonName: "test ca"}, NotBefore: now.Add(-time.Hour),
+		NotAfter: now.Add(48 * time.Hour), IsCA: true, BasicConstraintsValid: true, KeyUsage: x509.KeyUsageCertSign}
+	caDER, err := x509.CreateCertificate(rand.Reader, caTmpl, caTmpl, &caKey.PublicKey, caKey)
+	if err != nil {
+		t.Fatal(err)
+	}
+	caCert, _ := x509.ParseCertificate(caDER)
+	leafKey, _ := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+	leafTmpl := &x509.Certificate{SerialNumber: big.NewInt(2), Subject: pkix.Name{CommonName: "exchange.example.org"},
+		DNSNames: []string{"exchange.example.org"}, NotBefore: now.Add(-time.Hour), NotAfter: now.Add(24 * time.Hour),
+		KeyUsage: x509.KeyUsageDigitalSignature, ExtKeyUsage: []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth}}
+	leafDER, err := x509.CreateCertificate(rand.Reader, leafTmpl, caCert, &leafKey.PublicKey, caKey)
+	if err != nil {
+		t.Fatal(err)
+	}
+	path := filepath.Join(dir, "signed.crt")
+	if err := os.WriteFile(path, pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: leafDER}), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	pool := x509.NewCertPool()
+	pool.AddCert(caCert)
+	if ok, err := PubliclyTrusted(path, "exchange.example.org", now, pool); err != nil || !ok {
+		t.Fatalf("a leaf of a trusted CA: %v %v", ok, err)
+	}
+	if ok, _ := PubliclyTrusted(path, "other.example.org", now, pool); ok {
+		t.Fatal("a leaf issued to another name is not trusted for this one")
+	}
+	if ok, _ := PubliclyTrusted(path, "exchange.example.org", now.Add(72*time.Hour), pool); ok {
+		t.Fatal("an expired leaf is not trusted")
+	}
+	if _, err := PubliclyTrusted(filepath.Join(dir, "absent.crt"), "x", now, nil); !errors.Is(err, ErrUnreadable) {
+		t.Fatalf("a missing file: %v", err)
+	}
+}

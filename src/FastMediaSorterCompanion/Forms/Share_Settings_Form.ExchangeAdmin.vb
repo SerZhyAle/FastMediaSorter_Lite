@@ -135,7 +135,7 @@ Partial Public NotInheritable Class Share_Settings_Form
             New Padding(0, 2, 0, 2)), ManagerSettingRow)
         endpointSetting.SetHint(ExchangeAdminText.EndpointNote())
         _pnlXConfig.Controls.Add(endpointSetting)
-        _btnXApplyEndpoint = XButton(ExchangeAdminText.EndpointApply(), AddressOf OnXApplyEndpoint)
+        _btnXApplyEndpoint = XButton(ExchangeAdminText.EndpointApply(), AddressOf OnXApplyEndpoint, "action.confirm")
         _btnXApplyEndpoint.Visible = False
         endpointRow.Controls.Add(_btnXApplyEndpoint)
         _pnlXConfig.Controls.Add(endpointRow)
@@ -163,7 +163,7 @@ Partial Public NotInheritable Class Share_Settings_Form
         Next
         _exBaselineLow = CInt(numXRangeLow.Value)
         _exBaselineHigh = CInt(numXRangeHigh.Value)
-        _btnXApplyRange = XButton(ExchangeAdminText.RangeApply(), AddressOf OnXApplyRange)
+        _btnXApplyRange = XButton(ExchangeAdminText.RangeApply(), AddressOf OnXApplyRange, "action.confirm")
         _btnXApplyRange.Visible = False
         Dim rangeSetting = DirectCast(SettingsEditorRow(XBold(ExchangeAdminText.RangeLabel()), rangeRow,
             New Padding(0, 8, 0, 2)), ManagerSettingRow)
@@ -189,13 +189,20 @@ Partial Public NotInheritable Class Share_Settings_Form
             _txtXFp, New Padding(0, 2, 0, 2)), ManagerSettingRow)
         fingerprintSetting.SetHint(ExchangeText.FingerprintNote())
         _rowXFp.Controls.Add(fingerprintSetting)
-        _btnXCopyFp = XButton(ExchangeText.CopyFingerprintButton(), AddressOf OnXCopyFingerprint)
+        _btnXCopyFp = XButton(ExchangeText.CopyFingerprintButton(), AddressOf OnXCopyFingerprint, "action.copy")
         _rowXFp.Controls.Add(_btnXCopyFp)
+        ' the connection string (ticket 187 T-2): built by the binary from the configured address and the real certificate
+        _btnXConnString = XButton(ExchangeConnectionStringText.GetButton(), AddressOf OnXGetConnectionString, "action.export")
+        _btnXConnString.Enabled = False
+        _rowXFp.Controls.Add(_btnXConnString)
         _pnlXConfig.Controls.Add(_rowXFp)
         _lblXFpNote = AdminNote("")
         _pnlXConfig.Controls.Add(_lblXFpNote)
-        _btnXReplaceCert = XButton(ExchangeAdminText.ReplaceCertificateButton(), AddressOf OnXReplaceCertificate)
-        _btnXImportCert = XButton(ExchangeAdminText.ImportCertificateButton(), AddressOf OnXImportCertificate)
+        _lblXConnNote = AdminNote(ExchangeConnectionStringText.NoEndpoint())
+        _lblXConnNote.Visible = False
+        _pnlXConfig.Controls.Add(_lblXConnNote)
+        _btnXReplaceCert = XButton(ExchangeAdminText.ReplaceCertificateButton(), AddressOf OnXReplaceCertificate, "action.replace")
+        _btnXImportCert = XButton(ExchangeAdminText.ImportCertificateButton(), AddressOf OnXImportCertificate, "action.import")
         _rowXCert = AdminFlow()
         _rowXCert.Controls.Add(_btnXImportCert)
         _rowXCert.Controls.Add(_btnXReplaceCert)
@@ -232,10 +239,10 @@ Partial Public NotInheritable Class Share_Settings_Form
         AddHandler _lvXAccounts.SelectedIndexChanged, AddressOf OnXAccountSelected
         _pnlXAccounts.Controls.Add(_lvXAccounts)
 
-        _btnXAddAccount = XButton(ExchangeAdminText.AddAccountButton(), AddressOf OnXAddAccount)
-        _btnXResetPw = XButton(ExchangeAdminText.ResetPasswordButton(), AddressOf OnXResetPassword)
-        _btnXRemoveAccount = XButton(ExchangeAdminText.RemoveAccountButton(), AddressOf OnXRemoveAccount)
-        _btnXShowPw = XButton(ExchangeAdminText.ShowPasswordButton(), AddressOf OnXShowPassword)
+        _btnXAddAccount = XButton(ExchangeAdminText.AddAccountButton(), AddressOf OnXAddAccount, "action.add")
+        _btnXResetPw = XButton(ExchangeAdminText.ResetPasswordButton(), AddressOf OnXResetPassword, "action.change-password")
+        _btnXRemoveAccount = XButton(ExchangeAdminText.RemoveAccountButton(), AddressOf OnXRemoveAccount, "action.delete")
+        _btnXShowPw = XButton(ExchangeAdminText.ShowPasswordButton(), AddressOf OnXShowPassword, "action.secure")
         _btnXShowPw.Visible = False
         _rowXAccButtons = AdminFlow()
         _rowXAccButtons.Controls.Add(_btnXAddAccount)
@@ -265,7 +272,7 @@ Partial Public NotInheritable Class Share_Settings_Form
         _lvXDevices.Columns.Add(Localization.T("Последний раз в сети"), Me.LogicalToDeviceUnits(110))
         AddHandler _lvXDevices.SelectedIndexChanged, Sub() ApplyAccountsView(refill:=False)
         _pnlXAccounts.Controls.Add(_lvXDevices)
-        _btnXRevoke = XButton(Localization.T("Отозвать"), AddressOf OnXRevokeDevice)
+        _btnXRevoke = XButton(Localization.T("Отозвать"), AddressOf OnXRevokeDevice, "action.remove")
         _rowXRevoke = AdminFlow()
         _rowXRevoke.Controls.Add(_btnXRevoke)
         _pnlXAccounts.Controls.Add(_rowXRevoke)
@@ -738,7 +745,10 @@ Partial Public NotInheritable Class Share_Settings_Form
             If reply.Ok Then
                 Dim kept As Boolean = KeepAccountPassword(login, password)
                 Dim keepFailed As Boolean = _exSettings.KeepAccountPasswords AndAlso Not kept
-                ShowXResult(ExchangeAdminText.AccountAdded(login) & If(keepFailed, " " & ExchangeAdminText.KeepFailed(), ""), Not keepFailed)
+                Dim thisPc As (Text As String, Ok As Boolean) = Await EnrollThisPcAsFirstDeviceAsync(login, password)
+                If IsDisposed OrElse Disposing Then Return
+                ShowXResult(ExchangeAdminText.AccountAdded(login) & If(keepFailed, " " & ExchangeAdminText.KeepFailed(), "") &
+                            If(thisPc.Text.Length > 0, " " & thisPc.Text, ""), Not keepFailed AndAlso thisPc.Ok)
                 If generated Then
                     Dim shownOnce As String = password
                     password = Nothing
@@ -786,7 +796,10 @@ Partial Public NotInheritable Class Share_Settings_Form
             If reply.Ok Then
                 Dim kept As Boolean = KeepAccountPassword(login, password)
                 Dim keepFailed As Boolean = _exSettings.KeepAccountPasswords AndAlso Not kept
-                ShowXResult(ExchangeAdminText.PasswordReset(login, signOut) & If(keepFailed, " " & ExchangeAdminText.KeepFailed(), ""), Not keepFailed)
+                Dim thisPc As (Text As String, Ok As Boolean) = Await EnrollThisPcAsFirstDeviceAsync(login, password)
+                If IsDisposed OrElse Disposing Then Exit Function
+                ShowXResult(ExchangeAdminText.PasswordReset(login, signOut) & If(keepFailed, " " & ExchangeAdminText.KeepFailed(), "") &
+                            If(thisPc.Text.Length > 0, " " & thisPc.Text, ""), Not keepFailed AndAlso thisPc.Ok)
                 If generated Then
                     Dim shownOnce As String = password
                     password = Nothing
@@ -815,6 +828,24 @@ Partial Public NotInheritable Class Share_Settings_Form
             ownChosen = dlg.ChoseOwnPassword
         End Using
         Return ownChosen
+    End Function
+
+    ''' <summary>
+    ''' The first device: an account was just added (or its password reset) HERE, on the PC that serves it, so the password is in hand and
+    ''' this PC can sign in with it at once - the same steps as the "use this PC as my server" wizard, without creating anything.
+    ''' Only when the client features are offered and this PC is in no account yet (an account it already belongs to is never replaced).
+    ''' Text is "" when nothing applied; Ok is False when it applied and failed. The password is not kept: the request wipes it.
+    ''' </summary>
+    Private Async Function EnrollThisPcAsFirstDeviceAsync(login As String, password As String) As Task(Of (Text As String, Ok As Boolean))
+        Try
+            If Not ExchangeFeatures.IsEnabled() Then Return ("", True)
+            If ExchangeDeviceHost.ProductionPorts().Accounts.IsConfigured() Then Return ("", True)
+            Dim result As ExchangeWizardResult = Await ExchangeServerWizard.EnrollThisPcAsync(login, password, New ExchangeWizardPorts(), Nothing, CancellationToken.None)
+            Return (ExchangeAdminText.ThisPcEnrolment(result), result.Outcome = ExchangeWizardOutcome.Done OrElse result.Outcome = ExchangeWizardOutcome.DoneNoAgent)
+        Catch ex As Exception When TypeOf ex Is InvalidOperationException OrElse TypeOf ex Is IO.IOException OrElse TypeOf ex Is OperationCanceledException
+            AppFileLogger.LogException("Exchange: enrolling this PC as the first device", ex)
+            Return ("", True)
+        End Try
     End Function
 
     ''' <summary>Keeps the password on this PC, but only when the person turned keeping on. True only when it was kept.</summary>

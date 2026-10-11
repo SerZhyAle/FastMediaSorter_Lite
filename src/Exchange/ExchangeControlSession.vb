@@ -1,3 +1,4 @@
+#If Not NETFRAMEWORK Then
 Option Strict On
 
 Imports System.IO
@@ -425,3 +426,5 @@ Friend NotInheritable Class ExchangeControlSession
     End Function
 
 End Class
+
+#End If

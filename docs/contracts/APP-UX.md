@@ -3,7 +3,7 @@
 | | |
 | --- | --- |
 | **Ids** | `APP-BEHAVIOUR`, `APP-STYLE`, `APP-SETTINGS`, `WINDOWS-UI` |
-| **Version** | catalog 0.12 / 0.12 / 0.4 / 0.3, draft (settings/profile read 2026-10-08). Behaviour and style keep their 2026-10-02 audit (`APP-BEHAVIOUR` is unchanged since 0.12, `APP-STYLE` 0.12 section 10 was read 2026-10-05); the 0.2 / 0.3 amendments of `WINDOWS-UI` and `APP-SETTINGS` were read 2026-10-07. Owners: StreamsPlayer (the first two), CyrFlip, and this Windows reference respectively |
+| **Version** | catalog 0.12 / 0.12 / 0.4 / 0.4, draft (settings/profile read 2026-10-08; `WINDOWS-UI` 0.4 section 11 read 2026-10-11). Behaviour and style keep their 2026-10-02 audit (`APP-BEHAVIOUR` is unchanged since 0.12, `APP-STYLE` 0.12 section 10 was read 2026-10-05); the 0.2 / 0.3 amendments of `WINDOWS-UI` and `APP-SETTINGS` were read 2026-10-07. Owners: StreamsPlayer (the first two), CyrFlip, and this Windows reference respectively |
 | **Home** | `desktop-app-ux/README.md` in the shared contracts catalog |
 | **Role here** | consumer, twice - the viewer (.NET 10 mainline) and the Share Manager each have their own registry row; audit and phases in `specification 028` (local specification) |
 

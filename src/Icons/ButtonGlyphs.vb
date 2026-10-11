@@ -1,0 +1,446 @@
+#If Not NETFRAMEWORK Then
+Option Strict On
+
+Imports System.Collections.Generic
+Imports System.Drawing
+Imports System.IO
+Imports System.Runtime.CompilerServices
+Imports System.Windows.Forms
+
+''' <summary>What a command button's answer means, which decides its hue (WINDOWS-UI 0.4 section 11
+''' item 4). Only <see cref="Affirmative"/>, <see cref="Dismissing"/> and <see cref="Caution"/> are
+''' coloured, and only on the answer buttons of a dialog; everything else is <see cref="Neutral"/>,
+''' the mono look (item 5).</summary>
+Public Enum ButtonGlyphRole
+    ''' <summary>Browse, Refresh, Add, Open - the glyph in the caption's own colour.</summary>
+    Neutral
+    ''' <summary>OK, Yes, Apply, Save, Done - <c>state.ok</c>, the product's success pair.</summary>
+    Affirmative
+    ''' <summary>Cancel, No, Close without applying - <c>state.error</c>, the product's danger pair.</summary>
+    Dismissing
+    ''' <summary>Continue anyway, Skip, Overwrite a copy - <c>state.warning</c>.</summary>
+    Caution
+    ''' <summary>The acting button of a confirmation of an irreversible act: the <c>danger</c> face with
+    ''' its own ink (APP-STYLE section 4), never a tint, and never the default focus.</summary>
+    Irreversible
+End Enum
+
+''' <summary>
+''' One glyph in front of the caption of a WinForms <see cref="Button"/> (WINDOWS-UI 0.4 section 11 items 1,
+''' 2, 4, 5, 6; ICON-RENDER 0.19 section 14), from the same catalog renderer the toolbars use - never a
+''' bitmap of its own drawing.
+'''
+''' What it owns, so that no dialog does:
+''' <list type="bullet">
+''' <item>the bitmap: 16 logical px at the button's current DPI, the catalog path in ONE colour, plus a
+''' 6 logical px gap on the caption's side so the pair is one picture and the gap scales with DPI;</item>
+''' <item>the hue: <c>state.ok</c> / <c>state.error</c> / <c>state.warning</c> are the palette's
+''' Success / Danger / Warning pair of the theme in force, moved along the lightness axis only as far as
+''' the 3 : 1 against the face it is drawn on needs;</item>
+''' <item>the tint: the reference 12 percent of the same hue over the face, painted after the button;</item>
+''' <item>liveness: a theme change, a DPI change, the reading direction and Enabled re-render the picture,
+''' so no value is resolved once at load;</item>
+''' <item>the disabled state: no hue, no tint - the framework (light) or the theme's own disabled paint (dark)
+''' dims the picture together with the caption (item 6);</item>
+''' <item>high contrast: system colours for glyph and caption, no tint, no danger face.</item>
+''' </list>
+''' It never touches Escape, Enter, focus or button order (item 7).
+''' </summary>
+Public NotInheritable Class ButtonGlyphs
+
+    Private Sub New()
+    End Sub
+
+    ''' <summary>The glyph's size, in logical (96-dpi) pixels - the 16 px tier beside a caption
+    ''' (ICON-RENDER section 3 rule 5). A reference value awaiting measurement.</summary>
+    Public Const GlyphLogicalSize As Integer = 16
+
+    ''' <summary>The gap between glyph and caption, in logical pixels (WINDOWS-UI section 11 item 2).</summary>
+    Public Const GapLogicalSize As Integer = 6
+
+    ''' <summary>The face tint of an answer button, in percent of the hue (item 4, reference value).</summary>
+    Public Const TintPercent As Integer = 12
+
+    ''' <summary>The contrast a meaningful glyph holds against its face (WINDOWS-UI section 6 item 4).</summary>
+    Public Const GlyphContrast As Double = 3.0R
+
+    ''' <summary>The face a light visual-style button is measured against: the darkest one a Windows
+    ''' version draws for a normal push button (Windows 10 Aero is #E1E1E1, Windows 11 is lighter), so a
+    ''' glyph that holds 3 : 1 on it holds on both.</summary>
+    Private Shared ReadOnly LightVisualStyleFace As Color = Color.FromArgb(225, 225, 225)
+
+    ''' <summary>The program's way into its bundled glyph files: the viewer's
+    ''' <c>RuntimeBootstrap.OpenBundledAsset</c>, the Share Manager's <c>CompanionAssets.OpenBundledAsset</c>.
+    ''' Set once at start-up; until it is set a button simply shows no glyph.</summary>
+    Public Shared Property AssetOpener As Func(Of String, Stream)
+
+    Private NotInheritable Class GlyphState
+        Public GlyphId As String = ""
+        Public Role As ButtonGlyphRole = ButtonGlyphRole.Neutral
+        Public Hooked As Boolean
+        Public Rendering As Boolean
+        Public Carries As Boolean
+        ''' <summary>The BackColor / ForeColor / flat settings the button had before the danger face.</summary>
+        Public FaceSaved As Boolean
+        Public SavedBack As Color
+        Public SavedFore As Color
+        Public SavedUseVisualStyle As Boolean
+        Public SavedFlatStyle As FlatStyle
+        Public SavedBorder As Color
+        Public SavedBorderSize As Integer
+    End Class
+
+    Private Shared ReadOnly states As New ConditionalWeakTable(Of Button, GlyphState)()
+    Private Shared ReadOnly live As New List(Of WeakReference(Of Button))()
+    Private Shared paletteInForce As ThemePalette = ThemePalette.Light
+
+    ''' <summary>The palette in force. <c>ThemeService</c> hands it over with <see cref="UsePalette"/> every time
+    ''' the theme is resolved; until then (a test, a tool) it is the light one. The module names no service,
+    ''' so the dialog layout that asks it for a width links into the test project without the theme stack.</summary>
+    Public Shared ReadOnly Property ActivePalette As ThemePalette
+        Get
+            Return paletteInForce
+        End Get
+    End Property
+
+    ''' <summary>The theme changed: remember the palette and re-render every live button. Called by
+    ''' <c>ThemeService</c> after it has re-themed the open windows, so each button's face is already final.</summary>
+    Public Shared Sub UsePalette(newPalette As ThemePalette)
+        If newPalette Is Nothing Then Return
+        paletteInForce = newPalette
+        RefreshAll()
+    End Sub
+
+    ' --- the public surface ---------------------------------------------------------------
+
+    ''' <summary>Puts <paramref name="glyphId"/> before the caption of <paramref name="button"/>. Call it once
+    ''' per button, after its caption is set; the rest (theme, DPI, direction, Enabled) follows by itself.</summary>
+    Public Shared Sub Apply(button As Button, glyphId As String, Optional role As ButtonGlyphRole = ButtonGlyphRole.Neutral)
+        If button Is Nothing OrElse button.IsDisposed Then Return
+        If String.IsNullOrEmpty(glyphId) Then Return
+        Dim st As GlyphState = states.GetValue(button, Function(b) New GlyphState())
+        st.GlyphId = glyphId
+        st.Role = role
+        st.Carries = True
+        If Not st.Hooked Then
+            st.Hooked = True
+            AddHandler button.HandleCreated, AddressOf OnRefreshEvent
+            AddHandler button.DpiChangedAfterParent, AddressOf OnRefreshEvent
+            AddHandler button.EnabledChanged, AddressOf OnRefreshEvent
+            AddHandler button.RightToLeftChanged, AddressOf OnRefreshEvent
+            AddHandler button.ParentChanged, AddressOf OnRefreshEvent
+            AddHandler button.SystemColorsChanged, AddressOf OnRefreshEvent
+            ' A neutral glyph takes the caption's colour, and a window that themes itself (the settings
+            ' window) sets that colour after the application palette has been handed over.
+            AddHandler button.ForeColorChanged, AddressOf OnRefreshEvent
+            AddHandler button.Paint, AddressOf OnPaintTint
+            AddHandler button.Disposed, AddressOf OnDisposed
+            SyncLock live
+                live.Add(New WeakReference(Of Button)(button))
+            End SyncLock
+        End If
+        Refresh(button)
+    End Sub
+
+    ''' <summary>The glyph a bare answer carries when its verb has no meaning of its own: the check of a
+    ''' choice for the affirmative, the cross for the dismissing answer (item 4).</summary>
+    Public Shared Function DefaultGlyph(role As ButtonGlyphRole) As String
+        Select Case role
+            Case ButtonGlyphRole.Affirmative : Return "action.confirm"
+            Case ButtonGlyphRole.Dismissing : Return "action.cancel"
+            Case Else : Return ""
+        End Select
+    End Function
+
+    ''' <summary>True when the button was given a glyph by this module.</summary>
+    Public Shared Function CarriesGlyph(button As Button) As Boolean
+        Dim st As GlyphState = Nothing
+        Return button IsNot Nothing AndAlso states.TryGetValue(button, st) AndAlso st.Carries AndAlso button.Image IsNot Nothing
+    End Function
+
+    ''' <summary>True when the picture already holds its own gap to the caption, so a painter that adds one of its
+    ''' own (the theme's disabled paint) must add none.</summary>
+    Public Shared Function PictureHoldsGap(button As Button) As Boolean
+        Return CarriesGlyph(button)
+    End Function
+
+    ''' <summary>The width a button needs for its caption with the glyph: what a fixed-size dialog row
+    ''' (DialogLayout) must grow to so no caption is clipped (item 3).</summary>
+    Public Shared Function ExtraWidth(button As Button) As Integer
+        If Not CarriesGlyph(button) Then Return 0
+        Return button.Image.Width
+    End Function
+
+    ''' <summary>The role currently set on a button, or Neutral.</summary>
+    Public Shared Function RoleOf(button As Button) As ButtonGlyphRole
+        Dim st As GlyphState = Nothing
+        If button IsNot Nothing AndAlso states.TryGetValue(button, st) Then Return st.Role
+        Return ButtonGlyphRole.Neutral
+    End Function
+
+    ''' <summary>The id of the glyph a button carries, or an empty string.</summary>
+    Public Shared Function GlyphOf(button As Button) As String
+        Dim st As GlyphState = Nothing
+        If button IsNot Nothing AndAlso states.TryGetValue(button, st) Then Return st.GlyphId
+        Return ""
+    End Function
+
+    ''' <summary>The colour the glyph of <paramref name="button"/> is drawn in right now - what the tests and the
+    ''' acceptance numbers measure.</summary>
+    Public Shared Function CurrentInk(button As Button) As Color
+        Dim st As GlyphState = Nothing
+        If button Is Nothing OrElse Not states.TryGetValue(button, st) Then Return Color.Empty
+        Return InkOf(button, st, paletteInForce)
+    End Function
+
+    ''' <summary>The face the glyph of <paramref name="button"/> is measured against: the control face, with
+    ''' the tint of its hue over it when it has one.</summary>
+    Public Shared Function CurrentFace(button As Button) As Color
+        Dim st As GlyphState = Nothing
+        If button Is Nothing OrElse Not states.TryGetValue(button, st) Then Return Color.Empty
+        Return FaceOf(button, st, paletteInForce, withTint:=True)
+    End Function
+
+    ''' <summary>The hue (before the contrast adjustment) a role stands for in a palette.</summary>
+    Public Shared Function HueOf(role As ButtonGlyphRole, palette As ThemePalette) As Color
+        Select Case role
+            Case ButtonGlyphRole.Affirmative : Return palette.Success
+            Case ButtonGlyphRole.Dismissing : Return palette.Danger
+            Case ButtonGlyphRole.Caution : Return palette.Warning
+            Case Else : Return Color.Empty
+        End Select
+    End Function
+
+    ''' <summary>The colour a hue takes on <paramref name="face"/>: the hue itself where it holds
+    ''' <see cref="GlyphContrast"/>, otherwise the same hue moved along lightness only as far as that needs.</summary>
+    Public Shared Function Readable(hue As Color, face As Color, Optional ratio As Double = GlyphContrast) As Color
+        If AccentColors.Contrast(hue, face) >= ratio Then Return hue
+        Dim towards As Color = If(AccentColors.Contrast(Color.Black, face) >= AccentColors.Contrast(Color.White, face), Color.Black, Color.White)
+        For step1 As Integer = 1 To 100
+            Dim amount As Double = step1 / 100.0R
+            Dim candidate As Color = Color.FromArgb(
+                CInt(Math.Round(hue.R + (CInt(towards.R) - CInt(hue.R)) * amount)),
+                CInt(Math.Round(hue.G + (CInt(towards.G) - CInt(hue.G)) * amount)),
+                CInt(Math.Round(hue.B + (CInt(towards.B) - CInt(hue.B)) * amount)))
+            If AccentColors.Contrast(candidate, face) >= ratio Then Return candidate
+        Next
+        Return towards
+    End Function
+
+    ''' <summary>A colour laid over another at <paramref name="percent"/>, the reference tint.</summary>
+    Public Shared Function Over(face As Color, hue As Color, percent As Integer) As Color
+        Dim a As Double = percent / 100.0R
+        Return Color.FromArgb(
+            CInt(Math.Round(face.R * (1 - a) + hue.R * a)),
+            CInt(Math.Round(face.G * (1 - a) + hue.G * a)),
+            CInt(Math.Round(face.B * (1 - a) + hue.B * a)))
+    End Function
+
+    ' --- live refresh ----------------------------------------------------------------------
+
+    Private Shared Sub RefreshAll()
+        Dim snapshot As New List(Of Button)()
+        SyncLock live
+            For i As Integer = live.Count - 1 To 0 Step -1
+                Dim b As Button = Nothing
+                If live(i).TryGetTarget(b) AndAlso Not b.IsDisposed Then
+                    snapshot.Add(b)
+                Else
+                    live.RemoveAt(i)
+                End If
+            Next
+        End SyncLock
+        For Each b As Button In snapshot
+            Refresh(b)
+        Next
+    End Sub
+
+    Private Shared Sub OnRefreshEvent(sender As Object, e As EventArgs)
+        Dim b As Button = TryCast(sender, Button)
+        If b IsNot Nothing Then Refresh(b)
+    End Sub
+
+    Private Shared Sub OnDisposed(sender As Object, e As EventArgs)
+        Dim b As Button = TryCast(sender, Button)
+        If b Is Nothing Then Return
+        Dim picture As Image = b.Image
+        b.Image = Nothing
+        picture?.Dispose()
+    End Sub
+
+    ''' <summary>The one place a button's picture, face and ink are decided. Safe to call at any time.</summary>
+    Private Shared Sub Refresh(b As Button)
+        Dim st As GlyphState = Nothing
+        If b Is Nothing OrElse b.IsDisposed OrElse Not states.TryGetValue(b, st) Then Return
+        If st.Rendering Then Return
+        Dim opener As Func(Of String, Stream) = AssetOpener
+        If opener Is Nothing Then Return
+        st.Rendering = True
+        Try
+            Dim theme As ThemePalette = paletteInForce
+            ApplyFace(b, st, theme)
+
+            Dim pixel As Integer = Math.Max(8, b.LogicalToDeviceUnits(GlyphLogicalSize))
+            Dim gap As Integer = Math.Max(2, b.LogicalToDeviceUnits(GapLogicalSize))
+            Dim rtl As Boolean = b.RightToLeft = RightToLeft.Yes
+            Dim ink As Color = InkOf(b, st, theme)
+
+            Dim composed As New Bitmap(pixel + gap, pixel)
+            Try
+                composed.SetResolution(96.0F, 96.0F)
+                Using glyph As Bitmap = GlyphRenderer.Render(st.GlyphId, pixel, ink, opener)
+                    Using g As Graphics = Graphics.FromImage(composed)
+                        g.Clear(Color.Transparent)
+                        ' The gap sits on the caption's side: right of the glyph in a left-to-right layout,
+                        ' left of it in a right-to-left one, where the framework places the picture at the
+                        ' reading start (the right edge) and the caption to its left.
+                        g.DrawImageUnscaled(glyph, If(rtl, gap, 0), 0)
+                    End Using
+                End Using
+            Catch
+                composed.Dispose()
+                Throw
+            End Try
+
+            Dim old As Image = b.Image
+            b.Image = composed
+            ' The picture and the caption sit together: the picture takes the caption's own horizontal alignment, so a
+            ' left-aligned list button keeps its caption at the start with the glyph in front of it, and a centred one
+            ' centres the pair. The caption's alignment is never changed here.
+            Select Case b.TextAlign
+                Case ContentAlignment.TopLeft, ContentAlignment.MiddleLeft, ContentAlignment.BottomLeft
+                    b.ImageAlign = ContentAlignment.MiddleLeft
+                Case ContentAlignment.TopRight, ContentAlignment.MiddleRight, ContentAlignment.BottomRight
+                    b.ImageAlign = ContentAlignment.MiddleRight
+                Case Else
+                    b.ImageAlign = ContentAlignment.MiddleCenter
+            End Select
+            b.TextImageRelation = TextImageRelation.ImageBeforeText
+            old?.Dispose()
+            b.Invalidate()
+        Catch ex As Exception
+            ' A glyph that cannot be drawn must never stop a dialog from opening: the caption is complete without it.
+            Diagnostics.Debug.WriteLine("ButtonGlyphs: " & st.GlyphId & ": " & ex.Message)
+        Finally
+            st.Rendering = False
+        End Try
+    End Sub
+
+    ' --- ink, face, tint ---------------------------------------------------------------------
+
+    ''' <summary>The face a glyph is judged against: the button's own face colour, the tint over it for a
+    ''' hued answer.</summary>
+    Private Shared Function FaceOf(b As Button, st As GlyphState, palette As ThemePalette, withTint As Boolean) As Color
+        Dim face As Color
+        If SystemInformation.HighContrast Then
+            face = SystemColors.Control
+        ElseIf st.Role = ButtonGlyphRole.Irreversible AndAlso st.FaceSaved Then
+            face = b.BackColor
+        ElseIf palette.IsDark Then
+            face = If(b.FlatStyle = FlatStyle.Flat AndAlso Not b.UseVisualStyleBackColor, b.BackColor, palette.ControlFace)
+        ElseIf b.FlatStyle = FlatStyle.Flat AndAlso Not b.UseVisualStyleBackColor Then
+            face = b.BackColor
+        Else
+            face = LightVisualStyleFace
+        End If
+        If withTint AndAlso b.Enabled AndAlso Not SystemInformation.HighContrast AndAlso Not TintSuppressed(b, st) Then
+            Dim hue As Color = HueOf(st.Role, palette)
+            If Not hue.IsEmpty Then face = Over(face, hue, TintPercent)
+        End If
+        Return face
+    End Function
+
+    ''' <summary>The colour of the glyph: the caption's colour for a neutral or unavailable button, the hue of the
+    ''' answer (held to 3 : 1 against the tinted face) for an available hued one, the danger face's ink for the
+    ''' acting button of an irreversible confirmation.</summary>
+    Private Shared Function InkOf(b As Button, st As GlyphState, palette As ThemePalette) As Color
+        If SystemInformation.HighContrast Then
+            Return If(b.Enabled, SystemColors.ControlText, SystemColors.GrayText)
+        End If
+        If Not b.Enabled Then
+            ' No hue when unavailable; the framework / the theme's disabled paint mutes the picture.
+            Return If(palette.IsDark, palette.TextPrimary, SystemColors.ControlText)
+        End If
+        If st.Role = ButtonGlyphRole.Irreversible AndAlso st.FaceSaved Then Return b.ForeColor
+        Dim hue As Color = HueOf(st.Role, palette)
+        If hue.IsEmpty Then
+            ' The caption's colour as the theme will have it: a system colour a button still carries (ControlText on a
+            ' visual-style button) is the palette's text role, so the glyph is never black on a charcoal face.
+            Dim fore As Color = b.ForeColor
+            Return If(fore.IsEmpty OrElse fore.A = 0, palette.TextPrimary, palette.Restate(fore, False))
+        End If
+        Return Readable(hue, FaceOf(b, st, palette, withTint:=True))
+    End Function
+
+    ''' <summary>The danger face of an irreversible confirmation's acting button: the palette's danger colour
+    ''' with the better of white and black as its ink - set once and restored when the answer stops being
+    ''' irreversible or the window turns high-contrast. Every other role leaves the face alone.</summary>
+    Private Shared Sub ApplyFace(b As Button, st As GlyphState, palette As ThemePalette)
+        Dim wantsDanger As Boolean = st.Role = ButtonGlyphRole.Irreversible AndAlso b.Enabled AndAlso Not SystemInformation.HighContrast
+        If wantsDanger Then
+            If Not st.FaceSaved Then
+                st.FaceSaved = True
+                st.SavedBack = b.BackColor
+                st.SavedFore = b.ForeColor
+                st.SavedUseVisualStyle = b.UseVisualStyleBackColor
+                st.SavedFlatStyle = b.FlatStyle
+                st.SavedBorder = b.FlatAppearance.BorderColor
+                st.SavedBorderSize = b.FlatAppearance.BorderSize
+            End If
+            Dim face As Color = palette.Danger
+            b.FlatStyle = FlatStyle.Flat
+            b.UseVisualStyleBackColor = False
+            b.BackColor = face
+            b.FlatAppearance.BorderColor = face
+            b.FlatAppearance.BorderSize = 1
+            b.FlatAppearance.MouseOverBackColor = Over(face, Color.Black, 8)
+            b.FlatAppearance.MouseDownBackColor = Over(face, Color.Black, 16)
+            b.ForeColor = If(AccentColors.Contrast(Color.White, face) >= AccentColors.Contrast(Color.Black, face), Color.White, Color.Black)
+        ElseIf st.FaceSaved Then
+            st.FaceSaved = False
+            b.FlatStyle = st.SavedFlatStyle
+            b.UseVisualStyleBackColor = st.SavedUseVisualStyle
+            b.BackColor = st.SavedBack
+            b.ForeColor = st.SavedFore
+            b.FlatAppearance.BorderColor = st.SavedBorder
+            b.FlatAppearance.BorderSize = st.SavedBorderSize
+        End If
+    End Sub
+
+    ''' <summary>In a confirmation of an irreversible act the dismissing answer keeps its red glyph and takes no tint,
+    ''' so the only red FACE in the window is the one that cannot be undone (WINDOWS-UI section 11 item 7). Decided at
+    ''' paint time, from the window the button is in.</summary>
+    Private Shared Function TintSuppressed(b As Button, st As GlyphState) As Boolean
+        If st.Role <> ButtonGlyphRole.Dismissing Then Return False
+        Dim host As Control = b.FindForm()
+        If host Is Nothing Then Return False
+        Return HoldsIrreversible(host)
+    End Function
+
+    Private Shared Function HoldsIrreversible(parent As Control) As Boolean
+        For Each child As Control In parent.Controls
+            Dim other As Button = TryCast(child, Button)
+            Dim st As GlyphState = Nothing
+            If other IsNot Nothing AndAlso states.TryGetValue(other, st) AndAlso st.Role = ButtonGlyphRole.Irreversible Then Return True
+            If child.HasChildren AndAlso HoldsIrreversible(child) Then Return True
+        Next
+        Return False
+    End Function
+
+    ''' <summary>The tint: the hue at <see cref="TintPercent"/> over the button's face, inside its border, painted
+    ''' after the button so every visual style and the dark flat paint carry it alike.</summary>
+    Private Shared Sub OnPaintTint(sender As Object, e As PaintEventArgs)
+        Dim b As Button = TryCast(sender, Button)
+        Dim st As GlyphState = Nothing
+        If b Is Nothing OrElse Not states.TryGetValue(b, st) Then Return
+        If Not b.Enabled OrElse SystemInformation.HighContrast OrElse TintSuppressed(b, st) Then Return
+        Dim hue As Color = HueOf(st.Role, paletteInForce)
+        If hue.IsEmpty Then Return
+        Dim inner As Rectangle = Rectangle.Inflate(b.ClientRectangle, -2, -2)
+        If inner.Width <= 0 OrElse inner.Height <= 0 Then Return
+        Using brush As New SolidBrush(Color.FromArgb(CInt(Math.Round(255 * TintPercent / 100.0R)), hue))
+            e.Graphics.FillRectangle(brush, inner)
+        End Using
+    End Sub
+End Class
+#End If

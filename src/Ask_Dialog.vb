@@ -58,7 +58,9 @@ Friend NotInheritable Class Ask_Dialog
     Friend Sub New(question As PromptSpec)
         prompt = question
         field = New TextBox()
-        Dim buttons As New List(Of AskButton) From {New AskButton(question.OkCaption), New AskButton(Localization.T("Отмена"))}
+        Dim buttons As New List(Of AskButton) From {
+            New AskButton(question.OkCaption, role:=ButtonGlyphRole.Affirmative),
+            New AskButton(Localization.T("Отмена"), role:=ButtonGlyphRole.Dismissing)}
         Build(question.Title, question.Body, String.Empty, question.Hint, AskIcon.None, buttons, 0, 1, field)
         field.Text = question.InitialText
     End Sub
@@ -165,6 +167,18 @@ Friend NotInheritable Class Ask_Dialog
                 .Padding = New Padding(6, 0, 6, 0)}
             AddHandler b.Click, Sub() OnAnswer(index)
             answerButtons.Add(b)
+
+            ' The glyph before the caption (WINDOWS-UI 0.4 section 11): the answer's own verb, in the hue of
+            ' its polarity. The cancel answer of a question that has other answers is the dismissing one even
+            ' when its spec did not say so. Escape, Enter and the default focus are decided below, untouched.
+            Dim answer As AskButton = buttons(i)
+            Dim role As ButtonGlyphRole = answer.Role
+            Dim glyph As String = answer.GlyphId
+            If role = ButtonGlyphRole.Neutral AndAlso glyph.Length = 0 AndAlso i = cancelIndex AndAlso buttons.Count > 1 Then
+                role = ButtonGlyphRole.Dismissing
+            End If
+            If glyph.Length = 0 Then glyph = ButtonGlyphs.DefaultGlyph(role)
+            If glyph.Length > 0 Then ButtonGlyphs.Apply(b, glyph, role)
         Next
         ' FlowDirection.RightToLeft places the first control added at the far right: add them last-to-first so
         ' the first answer reads first, and the cancel answer sits at the end.

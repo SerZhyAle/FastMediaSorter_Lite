@@ -181,4 +181,21 @@ Friend Module ExchangeDeviceText
         Return Localization.TF("Действует ещё {0}.", text)
     End Function
 
+    ' --- a welcome that names another address (the entries proposal's ask 2) -----------------------------------
+
+    ''' <summary>The address the server announced, shown beside the entry's own: the user decides, nothing switches silently.</summary>
+    Friend Function MovedAddress(address As String) As String
+        Return Localization.TF("Сервер сообщил новый адрес: {0}", address)
+    End Function
+
+    ''' <summary>The edit keeps the device, the sign-in key, the remembered certificate and the published shares.</summary>
+    Friend Function UpdateAddressQuestion(oldAddress As String, newAddress As String) As String
+        Return Localization.TF("Сервер обмена сменил адрес.{0}Был: {1}{0}Стал: {2}{0}{0}Обновить адрес записи? Устройство, ключ входа, отпечаток и опубликованные папки сохраняются.",
+                               vbLf, oldAddress, newAddress)
+    End Function
+
+    Friend Function AddressUpdated() As String
+        Return Localization.T("Адрес сервера обновлён.")
+    End Function
+
 End Module

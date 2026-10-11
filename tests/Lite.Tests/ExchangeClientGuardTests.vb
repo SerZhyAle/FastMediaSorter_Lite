@@ -55,7 +55,7 @@ Public Class ExchangeClientGuardTests
         ' ticket 168 section 3.7: ExchangeServerWizard.vb is the "use this PC as my server" wizard, which enrols THIS PC's own agent. Its production
         ' ports ask the host (GetOrCreate reads the gate, and the wizard asks ExchangeFeatures.IsEnabled itself before it probes or enrols anything)
         Dim allowed As New HashSet(Of String)(StringComparer.OrdinalIgnoreCase) From {
-            "ExchangeDeviceAgent.vb", "TrayContext.vb", "Share_Settings_Form.ExchangeAccount.vb", "Exchange_Account_Form.vb", "ExchangeServerWizard.vb"}
+            "ExchangeDeviceAgent.vb", "TrayContext.vb", "Share_Settings_Form.ExchangeAccount.vb", "Share_Settings_Form.ExchangeAdmin.vb", "Exchange_Account_Form.vb", "ExchangeServerWizard.vb"}
         ' ticket 170: reading ExchangeDeviceHost.Current (the export and the producer rows) never constructs an agent, so it is not a use of the host
         Dim src As String = Path.Combine(Root(), "src")
         Dim users As New List(Of String)

@@ -160,9 +160,13 @@ Friend NotInheritable Class ExchangeDeviceStatus
     Public ReadOnly Server As String
     Public ReadOnly Certificate As ExchangeCertificateKind
     Public ReadOnly Fingerprint As String
+    ''' <summary>The `publicEndpoint` of the last `welcome` ("" while there is no stream): the address the server says its clients should
+    ''' use - ask 2 of the entries proposal, shown beside the entry's own address when they differ.</summary>
+    Public ReadOnly PublicEndpoint As String
 
     Public Sub New(configured As Boolean, state As ExchangeAgentState, lastReason As String, features As IReadOnlyList(Of String),
-                   deviceId As String, deviceName As String, login As String, server As String, certificate As ExchangeCertificateKind, fingerprint As String)
+                   deviceId As String, deviceName As String, login As String, server As String, certificate As ExchangeCertificateKind, fingerprint As String,
+                   Optional publicEndpoint As String = "")
         Me.Configured = configured
         Me.State = state
         Me.LastReason = lastReason
@@ -173,6 +177,7 @@ Friend NotInheritable Class ExchangeDeviceStatus
         Me.Server = server
         Me.Certificate = certificate
         Me.Fingerprint = fingerprint
+        Me.PublicEndpoint = If(publicEndpoint, "")
     End Sub
 
     Public Function HasFeature(name As String) As Boolean
@@ -408,12 +413,14 @@ Friend NotInheritable Class ExchangeDeviceAgent
         Dim state As ExchangeAgentState = idleState
         Dim reason As String = idleReason
         Dim features As IReadOnlyList(Of String) = Array.Empty(Of String)()
+        Dim announced As String = ""
         If session IsNot Nothing Then
             state = session.State
             reason = session.LastReason
             features = session.Features
+            announced = session.PublicEndpoint
         End If
-        Return New ExchangeDeviceStatus(True, state, reason, features, account.DeviceId, account.DeviceName, account.Login, account.Server, account.Certificate, account.Pin)
+        Return New ExchangeDeviceStatus(True, state, reason, features, account.DeviceId, account.DeviceName, account.Login, account.Server, account.Certificate, account.Pin, announced)
     End Function
 
     ''' <summary>The directory without this device's own records.</summary>
@@ -569,7 +576,19 @@ Friend NotInheritable Class ExchangeDeviceAgent
             session = _session
         End SyncLock
         If account IsNot Nothing AndAlso session IsNot Nothing Then
-            told = Await session.RevokeAsync(account.DeviceId, ct).ConfigureAwait(False)
+            ' ticket 187 rule 9, in this order and each step best effort: every resource is unpublished, then the device revokes ITSELF on the
+            ' live stream (that removes its records and closes its streams, so a `bye` after it has no stream to ride), then it forgets
+            ' locally. Nothing here waits for the server beyond a short, bounded step: a server that is down costs a second or two, not a hang.
+            Dim leave As IExchangeProducerLeave = TryCast(_ports.Producer, IExchangeProducerLeave)
+            Try
+                Using bounded As CancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(ct)
+                    bounded.CancelAfter(3000)
+                    If leave IsNot Nothing Then Await leave.UnpublishAllAsync(session, bounded.Token).ConfigureAwait(False)
+                    told = Await session.RevokeAsync(account.DeviceId, bounded.Token).ConfigureAwait(False)
+                End Using
+            Catch ex As OperationCanceledException
+                ' the time ran out or the caller cancelled: the leaving goes on locally
+            End Try
             ' give the frame a moment to leave before the stream is closed
             Await Task.Delay(150, CancellationToken.None).ConfigureAwait(False)
         End If
@@ -593,6 +612,22 @@ Friend NotInheritable Class ExchangeDeviceAgent
     ''' The stream restarts with the new pin.</summary>
     Public Sub ReplacePinAndRestart(fingerprint As String, platformValid As Boolean)
         _ports.Accounts.ReplacePin(If(platformValid, "", fingerprint), If(platformValid, ExchangeCertificateKind.CaSigned, ExchangeCertificateKind.Pinned))
+        StopSessionOnly()
+        Start()
+    End Sub
+
+    ''' <summary>Ask 2 of the entries proposal: the operator moved the server and the welcome announced the new address. The edit is in
+    ''' place - the device id, the token, the pin decision and the published shares are kept (the producer store is keyed by the device id);
+    ''' only the stored address changes and the stream restarts with it. Nothing happens when the value is not an address or no account is
+    ''' configured. A different leaf at the new address is item D's explicit replacement, as everywhere.</summary>
+    Public Sub ReplaceServerAndRestart(server As String)
+        Dim account As ExchangeAccount = _ports.Accounts.Load()
+        If account Is Nothing Then Return
+        Dim address As ExchangeServerAddress = Nothing
+        If Not ExchangeServerAddress.TryParse(server, address) Then Return
+        _ports.Accounts.Save(New ExchangeAccount(New ExchangeServerAddress(address.Host.ToLowerInvariant(), address.Port).ToString(),
+                                                 account.Login, account.Pin, account.Certificate, account.DeviceId, account.DeviceName))
+        _ports.Log.Invoke("Exchange agent: the stored server address was updated after a welcome named another one")
         StopSessionOnly()
         Start()
     End Sub

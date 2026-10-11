@@ -666,7 +666,7 @@ Public Class ResourceUiTests
                       Assert.Equal(56, add.Height)
                       Dim list As ListView = DirectCast(panel.Controls.Find("res_List", True)(0), ListView)
                       Assert.Equal(CInt(110 * 1.75F), list.Columns(0).Width)
-                      Assert.Equal(CInt(16 * 1.75F), list.SmallImageList.ImageSize.Width)
+                      Assert.Equal(CInt(22 * 1.75F), list.SmallImageList.ImageSize.Height)
                       panel.SetDeviceScale(1.0F)
                       Assert.Equal(32, add.Height)
                       Assert.Equal(110, list.Columns(0).Width)
@@ -794,10 +794,11 @@ Public Class ResourceUiTests
     End Sub
 
     <Fact>
-    Public Sub TheListKeepsTheMinimumWidths_GrowsAddress_AndMarksTheTypeGlyphs()
+    Public Sub TheListKeepsTheMinimumWidths_GrowsAddress_AndCarriesNoLeadingGlyph()
         ' 131 §3.3: the five columns hold their minimums at the window's narrowest, Address
-        ' absorbs what is left and is therefore the widest on a wide host; every row carries
-        ' the catalogue type glyph and the full row text in its tooltip.
+        ' absorbs what is left and is therefore the widest on a wide host; a row carries no
+        ' leading type glyph (the Type column says what the resource is) and keeps the full
+        ' row text in its tooltip.
         OnSta(Sub()
                   Dim hive As MemoryRegistry = SeededRegistry()
                   Using panel As New Resource_List_Panel(1.0F, AddressOf hive.Read, AddressOf hive.Write, New MemoryStore())
@@ -814,8 +815,8 @@ Public Class ResourceUiTests
 
                       Dim sftpRow As ListViewItem = list.Items.OfType(Of ListViewItem)().Single(Function(i) DirectCast(i.Tag, ResourceDescriptor).Id = "sftp1")
                       Dim smbRow As ListViewItem = list.Items.OfType(Of ListViewItem)().Single(Function(i) DirectCast(i.Tag, ResourceDescriptor).Id = "smb1")
-                      Assert.Equal("source.resource", sftpRow.ImageKey)
-                      Assert.Equal("content.folder", smbRow.ImageKey)
+                      Assert.Equal(String.Empty, sftpRow.ImageKey)
+                      Assert.Equal(String.Empty, smbRow.ImageKey)
                       Assert.Contains(ResourceMessages.DisplayAddress(DirectCast(sftpRow.Tag, ResourceDescriptor)), sftpRow.ToolTipText)
                   End Using
               End Sub)

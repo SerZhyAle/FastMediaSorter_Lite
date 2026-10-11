@@ -123,6 +123,14 @@ Friend Module HostingReport
         Public ShareListen As Integer
     End Structure
 
+    ''' <summary>Ticket 187 rule 11: the viewer's own exchange entries as NUMBERS - how many, how many hold a token, how many attach new folders
+    ''' by themselves. Never a server, a login, a fingerprint or a device id; a value read, never created.</summary>
+    Friend Structure ClientFacts
+        Public Entries As Integer
+        Public WithToken As Integer
+        Public AutoAttach As Integer
+    End Structure
+
     Friend NotInheritable Class HostingFacts
         Public Os As OsFacts
         Public Session As SessionFacts
@@ -132,6 +140,7 @@ Friend Module HostingReport
         Public HostMode As String = ""
         Public Programs As New List(Of ProgramFacts)()
         Public Ports As PortFacts
+        Public Clients As ClientFacts
         ''' <summary>Nothing = the socket table could not be read.</summary>
         Public Sockets As List(Of SocketFacts)
         ''' <summary>Component name -> installed.</summary>
@@ -167,6 +176,7 @@ Friend Module HostingReport
         ''' <summary>Names of the firewall rules whose program is exactly this path; Nothing when unreadable.</summary>
         Public FirewallRules As Func(Of String, List(Of String))
         Public Ports As Func(Of PortFacts)
+        Public Clients As Func(Of ClientFacts)
         Public Sockets As Func(Of List(Of SocketFacts))
         Public Components As Func(Of List(Of KeyValuePair(Of String, Boolean)))
         Public Directories As Func(Of List(Of DirectoryFacts))
@@ -193,6 +203,7 @@ Friend Module HostingReport
                 .FileStamp = Function(path) Nothing,
                 .FirewallRules = Function(path) New List(Of String)(),
                 .Ports = Function() New PortFacts(),
+                .Clients = Function() New ClientFacts(),
                 .Sockets = Function() New List(Of SocketFacts)(),
                 .Components = Function() New List(Of KeyValuePair(Of String, Boolean))(),
                 .Directories = Function() New List(Of DirectoryFacts)(),
@@ -255,6 +266,7 @@ Friend Module HostingReport
             facts.Programs.Add(program)
         Next
         facts.Ports = Ask(Of PortFacts)(facts, "ports", probes.Ports, New PortFacts())
+        facts.Clients = Ask(Of ClientFacts)(facts, "exchange client entries", probes.Clients, New ClientFacts())
         facts.Sockets = Ask(Of List(Of SocketFacts))(facts, "sockets", probes.Sockets, Nothing)
         facts.Directories = Ask(Of List(Of DirectoryFacts))(facts, "directories", probes.Directories, New List(Of DirectoryFacts)())
         If probes.MailHandler IsNot Nothing Then
@@ -306,6 +318,7 @@ Friend Module HostingReport
         End If
 
         sb.AppendLine("Ports: " & DescribePorts(facts.Ports))
+        sb.AppendLine("Exchange client entries: " & DescribeClients(facts.Clients))
 
         If facts.Programs.Count = 0 Then
             sb.AppendLine("Programs: none of our program files were found beside this one")
@@ -429,6 +442,13 @@ Friend Module HostingReport
             If String.Equals(trimmed, known, StringComparison.OrdinalIgnoreCase) Then Return known
         Next
         Return "a user account (name withheld)"
+    End Function
+
+    ''' <summary>"none", or the counts: how many entries, how many hold a token, how many attach new folders themselves (rule 11).</summary>
+    Friend Function DescribeClients(clients As ClientFacts) As String
+        If clients.Entries <= 0 Then Return "none"
+        Return clients.Entries.ToString(CultureInfo.InvariantCulture) & " (tokens present: " & clients.WithToken.ToString(CultureInfo.InvariantCulture) &
+               "; attaching new folders by themselves: " & clients.AutoAttach.ToString(CultureInfo.InvariantCulture) & ")"
     End Function
 
     Friend Function DescribePorts(ports As PortFacts) As String

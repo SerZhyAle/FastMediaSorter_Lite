@@ -91,12 +91,14 @@ Public NotInheritable Class File_Types_Form
         btnOk.Bounds = New Rectangle(ClientSize.Width - 24 - 210, ClientSize.Height - 38, 105, 28)
         btnOk.Anchor = AnchorStyles.Right Or AnchorStyles.Bottom
         btnOk.DialogResult = DialogResult.OK
+        ButtonGlyphs.Apply(btnOk, "action.confirm", ButtonGlyphRole.Affirmative)
         Controls.Add(btnOk)
 
         btnCancel.Text = Localization.T("Отмена")
         btnCancel.Bounds = New Rectangle(ClientSize.Width - 12 - 105, ClientSize.Height - 38, 105, 28)
         btnCancel.Anchor = AnchorStyles.Right Or AnchorStyles.Bottom
         btnCancel.DialogResult = DialogResult.Cancel
+        ButtonGlyphs.Apply(btnCancel, "action.cancel", ButtonGlyphRole.Dismissing)
         Controls.Add(btnCancel)
 
         AcceptButton = btnOk
@@ -109,6 +111,13 @@ Public NotInheritable Class File_Types_Form
     Protected Overrides Sub OnLoad(e As EventArgs)
         MyBase.OnLoad(e)
         DialogLayout.ClampToWorkingArea(Me)
+        ' The OK / Cancel pair keeps its end edge; a caption with its glyph that outgrew 105 px grows towards the start.
+        PerformAutoScale()
+        Dim between As Integer = btnCancel.Left - btnOk.Right
+        Dim cancelWidth As Integer = GlyphButtonFit.NeededWidth(btnCancel)
+        btnCancel.SetBounds(btnCancel.Right - cancelWidth, btnCancel.Top, cancelWidth, btnCancel.Height)
+        Dim okWidth As Integer = GlyphButtonFit.NeededWidth(btnOk)
+        btnOk.SetBounds(btnCancel.Left - between - okWidth, btnOk.Top, okWidth, btnOk.Height)
     End Sub
 
     Private Sub Fill(current As IEnumerable(Of String))
@@ -245,11 +254,17 @@ Public NotInheritable Class History_Form
         AddButton(btnOpen, Localization.T("Открыть"), 12, ClientSize.Width, 110, AddressOf OpenSelected)
         AddButton(btnRemove, Localization.T("Удалить"), 128, ClientSize.Width, 110, AddressOf RemoveSelected)
         AddButton(btnClear, Localization.T("Очистить"), 244, ClientSize.Width, 110, AddressOf ClearCurrent)
+        ' The three are actions on the list, not the window's answer (Close is): mono glyphs.
+        ButtonGlyphs.Apply(btnOpen, "nav.open-external")
+        ButtonGlyphs.Apply(btnRemove, "action.delete")
+        ButtonGlyphs.Apply(btnClear, "action.clear-all")
 
         btnClose.Text = Localization.T("Закрыть")
         btnClose.Bounds = New Rectangle(ClientSize.Width - 12 - 110, ClientSize.Height - 40, 110, 28)
         btnClose.Anchor = AnchorStyles.Right Or AnchorStyles.Bottom
         btnClose.DialogResult = DialogResult.OK
+        ' Accept and Cancel at once: the one way out of this list window, so it is the dismissing answer.
+        ButtonGlyphs.Apply(btnClose, "nav.close", ButtonGlyphRole.Dismissing)
         Controls.Add(btnClose)
 
         AcceptButton = btnClose
@@ -265,6 +280,14 @@ Public NotInheritable Class History_Form
     Protected Overrides Sub OnLoad(e As EventArgs)
         MyBase.OnLoad(e)
         DialogLayout.ClampToWorkingArea(Me)
+        ' Three chained buttons at the start edge grow towards the end, keeping the 6 px gap they had; Close keeps its end edge.
+        PerformAutoScale()
+        Dim gap As Integer = btnRemove.Left - btnOpen.Right
+        btnOpen.SetBounds(btnOpen.Left, btnOpen.Top, GlyphButtonFit.NeededWidth(btnOpen), btnOpen.Height)
+        btnRemove.SetBounds(btnOpen.Right + gap, btnRemove.Top, GlyphButtonFit.NeededWidth(btnRemove), btnRemove.Height)
+        btnClear.SetBounds(btnRemove.Right + gap, btnClear.Top, GlyphButtonFit.NeededWidth(btnClear), btnClear.Height)
+        Dim closeWidth As Integer = GlyphButtonFit.NeededWidth(btnClose)
+        btnClose.SetBounds(btnClose.Right - closeWidth, btnClose.Top, closeWidth, btnClose.Height)
     End Sub
 
     Private Function NewPage(caption As String, list As ListBox) As TabPage
@@ -420,4 +443,14 @@ Public NotInheritable Class History_Form
     End Sub
 
 End Class
+
+''' <summary>What a fixed-width command button needs once a glyph sits before its caption: the caption, the glyph
+''' bitmap (it already carries its own gap to the caption) and the 12 px side padding DialogLayout.FitContent uses.
+''' For the windows of this file, which lay their button rows out by hand and do not run FitContent.</summary>
+Friend Module GlyphButtonFit
+    Friend Function NeededWidth(button As Button) As Integer
+        Dim caption As Integer = TextRenderer.MeasureText(button.Text, button.Font).Width
+        Return Math.Max(button.Width, caption + ButtonGlyphs.ExtraWidth(button) + button.LogicalToDeviceUnits(24))
+    End Function
+End Module
 #End If

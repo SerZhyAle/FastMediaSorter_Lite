@@ -68,6 +68,7 @@ Friend NotInheritable Class Video_Convert_Form
             .Text = Localization.T("Отмена")
         }
         AddHandler cancelButton.Click, AddressOf CancelRequested
+        ButtonGlyphs.Apply(cancelButton, "action.cancel", ButtonGlyphRole.Dismissing)
 
         Me.Controls.Add(caption)
         Me.Controls.Add(bar)
@@ -196,6 +197,9 @@ Friend NotInheritable Class Video_Replace_Confirm_Form
             .Text = Localization.T("Отмена"),
             .DialogResult = DialogResult.Cancel
         }
+        ' The acting button deletes the original past the Recycle Bin: the danger face. "Cancel" stays the safe answer.
+        ButtonGlyphs.Apply(accept, "action.convert", ButtonGlyphRole.Irreversible)
+        ButtonGlyphs.Apply(decline, "action.cancel", ButtonGlyphRole.Dismissing)
 
         Me.Controls.Add(text)
         Me.Controls.Add(suppress)

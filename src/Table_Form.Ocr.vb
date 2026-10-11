@@ -208,8 +208,8 @@ Partial Public Class Table_Form
 
         lblOcrServer = MakeOcrLabel(14, y, labelW)
         ocrTabTranslate.Controls.Add(lblOcrServer)
-        btnOcrInstallOllama = New Button With {.Left = LU(ctlX), .Top = LU(y - 1), .Width = LU(205), .Height = LU(25)}
-        btnOcrStartOllama = New Button With {.Left = LU(ctlX + 211), .Top = LU(y - 1), .Width = LU(205), .Height = LU(25)}
+        btnOcrInstallOllama = New Button With {.Name = "btnOcrInstallOllama", .Left = LU(ctlX), .Top = LU(y - 1), .Width = LU(205), .Height = LU(25)}
+        btnOcrStartOllama = New Button With {.Name = "btnOcrStartOllama", .Left = LU(ctlX + 211), .Top = LU(y - 1), .Width = LU(205), .Height = LU(25)}
         AddHandler btnOcrInstallOllama.Click, AddressOf OnInstallOllama
         AddHandler btnOcrStartOllama.Click, AddressOf OnStartOllama
         ocrTabTranslate.Controls.Add(btnOcrInstallOllama)
@@ -219,7 +219,7 @@ Partial Public Class Table_Form
         lblOcrModel = MakeOcrLabel(14, y, labelW)
         ocrTabTranslate.Controls.Add(lblOcrModel)
         cmbOcrModelName = New ComboBox With {.Left = LU(ctlX), .Top = LU(y), .Width = LU(330), .DropDownStyle = ComboBoxStyle.DropDown}
-        btnOcrPullModel = New Button With {.Left = LU(ctlX + ctlW - 84), .Top = LU(y - 1), .Width = LU(84), .Height = LU(25)}
+        btnOcrPullModel = New Button With {.Name = "btnOcrPullModel", .Left = LU(ctlX + ctlW - 84), .Top = LU(y - 1), .Width = LU(84), .Height = LU(25)}
 #If NETFRAMEWORK Then
         AddHandler cmbOcrModelName.TextChanged, AddressOf OcrModelName_TextChanged
 #Else

@@ -59,6 +59,7 @@
 
   <ItemGroup>
     <!-- Link the production source directly (same assembly => Friend members visible). -->
+    <Compile Include="..\..\src\Main_Form.WindowPinning.vb"><Link>Linked\Main_Form.WindowPinning.vb</Link></Compile>
     <Compile Include="..\..\src\SettingsUiContext.vb"><Link>Linked\SettingsUiContext.vb</Link></Compile>
     <Compile Include="..\..\src\SettingsCollapsibleGroup.vb"><Link>Linked\SettingsCollapsibleGroup.vb</Link></Compile>
     <Compile Include="..\..\src\SettingsSearchRules.vb"><Link>Linked\SettingsSearchRules.vb</Link></Compile>
@@ -82,6 +83,9 @@
     </Compile>
     <Compile Include="..\..\src\Icons\GlyphRenderer.vb">
       <Link>Linked\Icons\GlyphRenderer.vb</Link>
+    </Compile>
+    <Compile Include="..\..\src\Icons\ButtonGlyphs.vb">
+      <Link>Linked\Icons\ButtonGlyphs.vb</Link>
     </Compile>
     <!-- Utils.GetImageDimensions probes WEBP through the IImageDecoder seam, so the
          seam has to come along. The modern decoder file compiles to nothing here
@@ -509,6 +513,10 @@
          Whole-file "#If Not NETFRAMEWORK"; the net48 viewer project lists none of them (DualModeGateGuardTests). -->    <Compile Include="..\..\src\Resources\ExchangeAttach.vb"><Link>Linked\Resources\ExchangeAttach.vb</Link></Compile>
     <Compile Include="..\..\src\Resources\ExchangeDevices.vb"><Link>Linked\Resources\ExchangeDevices.vb</Link></Compile>
     <Compile Include="..\..\src\Resources\ExchangeResourceText.vb"><Link>Linked\Resources\ExchangeResourceText.vb</Link></Compile>
+    <Compile Include="..\..\src\Resources\ExchangeEntryText.vb"><Link>Linked\Resources\ExchangeEntryText.vb</Link></Compile>
+    <Compile Include="..\..\src\Resources\ExchangeEntryApi.vb"><Link>Linked\Resources\ExchangeEntryApi.vb</Link></Compile>
+    <Compile Include="..\..\src\Resources\ExchangeViewerEntries.vb"><Link>Linked\Resources\ExchangeViewerEntries.vb</Link></Compile>
+    <Compile Include="..\..\src\Exchange_Connect_Form.vb"><Link>Linked\Exchange_Connect_Form.vb</Link></Compile>
     <Compile Include="..\..\src\Resources\ExchangeTunnel.vb"><Link>Linked\Resources\ExchangeTunnel.vb</Link></Compile>
     <Compile Include="..\..\src\Resources\FmsTunnelPaths.vb"><Link>Linked\Resources\FmsTunnelPaths.vb</Link></Compile>
     <Compile Include="..\..\src\Exchange_Devices_Panel.vb"><Link>Linked\Exchange_Devices_Panel.vb</Link></Compile>
@@ -766,6 +774,11 @@
     <Compile Include="..\..\src\LiveBroadcast\LiveBroadcastRunner.vb">
       <Link>Linked\LiveBroadcast\LiveBroadcastRunner.vb</Link>
     </Compile>
+    <!-- Ticket 172 section 6: the producer's gate, held by LiveBroadcastGateGuardTests (177 section 3
+         item 3). Whole file "#If Not NETFRAMEWORK"; the net48 leg compiles it to nothing. -->
+    <Compile Include="..\..\src\LiveBroadcast\LiveBroadcastFeatures.vb">
+      <Link>Linked\LiveBroadcast\LiveBroadcastFeatures.vb</Link>
+    </Compile>
     <!-- Whole file "#If Not NETFRAMEWORK"; the net48 leg compiles it to nothing (and has no LibVLCSharp). -->
     <Compile Include="..\..\src\LiveBroadcast\LiveVlcMedia.vb">
       <Link>Linked\LiveBroadcast\LiveVlcMedia.vb</Link>
@@ -978,6 +991,7 @@
     <!-- Ticket 177: the committed "today" baseline of the exchange dual-mode regression (a capture of the
          viewer started on a clean profile before any exchange client code existed, and its PROVENANCE.txt,
          which DualModeFixtures checks first). Captured by tests\Integration\ExchangeBaseline.ps1. -->
+    <None Include="TestData\exchange-vectors\**" CopyToOutputDirectory="PreserveNewest" />
     <None Include="TestData\dual-mode\**">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <Link>TestData\dual-mode\%(Filename)%(Extension)</Link>

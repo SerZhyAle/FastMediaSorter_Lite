@@ -68,10 +68,12 @@ Friend NotInheritable Class Resource_Manager_Form
                                       .Location = New Point(12, 6), .Enabled = False,
                                       .Anchor = AnchorStyles.Bottom Or AnchorStyles.Left}
         AddHandler openButton.Click, AddressOf OnOpen
+        ButtonGlyphs.Apply(openButton, "action.confirm", ButtonGlyphRole.Affirmative)
         closeButton = New Button With {.Name = "res_Close", .Text = Localization.T("Закрыть"), .Size = New Size(92, 28),
                                        .Location = New Point(ClientSize.Width - 104, 6),
                                        .DialogResult = DialogResult.Cancel,
                                        .Anchor = AnchorStyles.Bottom Or AnchorStyles.Right}
+        ButtonGlyphs.Apply(closeButton, "nav.close", ButtonGlyphRole.Dismissing)
 
         Dim bottom As New Panel With {.Dock = DockStyle.Bottom, .Height = 40}
         bottom.Controls.Add(openButton)
@@ -93,6 +95,21 @@ Friend NotInheritable Class Resource_Manager_Form
     Protected Overrides Sub OnLoad(e As EventArgs)
         MyBase.OnLoad(e)
         DialogLayout.ClampToWorkingArea(Me)
+        FitStripCaptions()
+    End Sub
+
+    ''' <summary>The bottom strip is docked, so DialogLayout.FitContent leaves it alone: a caption with its glyph
+    ''' must not be clipped by the fixed 92 px, so each button grows to what it needs - Open towards the end, Close
+    ''' keeping its end edge. The strip keeps its height and the buttons their one height.</summary>
+    Private Sub FitStripCaptions()
+        PerformAutoScale()
+        Dim padding As Integer = DialogLayout.Device(Me, 24)
+        Dim openWidth As Integer = Math.Max(openButton.Width,
+            TextRenderer.MeasureText(openButton.Text, openButton.Font).Width + ButtonGlyphs.ExtraWidth(openButton) + padding)
+        openButton.SetBounds(openButton.Left, openButton.Top, openWidth, openButton.Height)
+        Dim closeWidth As Integer = Math.Max(closeButton.Width,
+            TextRenderer.MeasureText(closeButton.Text, closeButton.Font).Width + ButtonGlyphs.ExtraWidth(closeButton) + padding)
+        closeButton.SetBounds(closeButton.Right - closeWidth, closeButton.Top, closeWidth, closeButton.Height)
     End Sub
 
     Private pendingDraft As ResourceDescriptor

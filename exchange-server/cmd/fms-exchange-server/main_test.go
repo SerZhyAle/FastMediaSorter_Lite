@@ -18,6 +18,7 @@ import (
 	"fms/exchange-server/internal/accounts"
 	"fms/exchange-server/internal/admin"
 	"fms/exchange-server/internal/config"
+	"fms/exchange-server/internal/connstr"
 	"fms/exchange-server/internal/deploy"
 	"fms/exchange-server/internal/password"
 	"fms/exchange-server/internal/testkit"
@@ -763,5 +764,76 @@ func TestSetEndpointValidatesAndClears(t *testing.T) {
 	}
 	if c, _ := config.Load(p); c.PublicEndpoint != "" {
 		t.Fatalf("%q", c.PublicEndpoint)
+	}
+}
+
+// Ticket 187 T-2: the operator's connection string.
+func TestConnectionStringRefusesWithNoPublicEndpointAndCreatesNothing(t *testing.T) {
+	p := filepath.Join(t.TempDir(), "data", "exchange.json")
+	code, out, errText := execute(t, []string{"connection-string", "--config", p}, "")
+	if code != exitUsage || out != "" || !strings.Contains(errText, "set it first") {
+		t.Fatalf("exit %d stdout %q stderr %q", code, out, errText)
+	}
+	if _, err := os.Stat(filepath.Dir(p)); err == nil {
+		t.Fatal("a refusal must not create the data directory")
+	}
+}
+
+func TestConnectionStringIsBuiltFromTheEndpointAndTheRealCertificate(t *testing.T) {
+	p := cfgPath(t)
+	if code, _, e := execute(t, []string{"inspect", "--init", "--config", p}, ""); code != 0 {
+		t.Fatalf("init: %d %s", code, e)
+	}
+	// the identity exists but the address for clients is not set yet
+	if code, _, _ := execute(t, []string{"connection-string", "--config", p}, ""); code != exitUsage {
+		t.Fatalf("no endpoint: exit %d", code)
+	}
+	if code, _, e := execute(t, []string{"set-endpoint", "--config", p, "203.0.113.43:22022"}, ""); code != 0 {
+		t.Fatalf("%d %s", code, e)
+	}
+	fp := fingerprintOf(t, p)
+	if !strings.HasPrefix(fp, "SHA256:") {
+		t.Fatalf("fingerprint %q", fp)
+	}
+
+	// the default: no name, no login hint; the generated leaf is self-signed, so its pin travels
+	code, out, _ := execute(t, []string{"connection-string", "--config", p}, "")
+	want, err := connstr.New("203.0.113.43:22022", fp, "", "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	wantText, _ := want.String()
+	if code != 0 || out != wantText+"\n" {
+		t.Fatalf("exit %d, got %q, want %q", code, out, wantText)
+	}
+	back, err := connstr.Parse(strings.TrimSpace(out))
+	if err != nil || back.Fingerprint != fp || back.Name != "" || back.Login != "" {
+		t.Fatalf("%v %+v", err, back)
+	}
+
+	// the optional members
+	code, out, _ = execute(t, []string{"connection-string", "--config", p, "--name", "Home NAS", "--login", "Alice"}, "")
+	back, err = connstr.Parse(strings.TrimSpace(out))
+	if code != 0 || err != nil || back.Name != "Home NAS" || back.Login != "alice" {
+		t.Fatalf("exit %d %q %v %+v", code, out, err, back)
+	}
+	// a login or a name the string cannot carry is refused, not trimmed
+	if code, _, _ := execute(t, []string{"connection-string", "--config", p, "--login", "a"}, ""); code != exitUsage {
+		t.Fatalf("a short login: exit %d", code)
+	}
+	// the options belong to this command alone
+	if code, _, _ := execute(t, []string{"inspect", "--config", p, "--name", "x"}, ""); code != exitUsage {
+		t.Fatalf("--name on inspect: exit %d", code)
+	}
+}
+
+func TestConnectionStringWithNoCertificateIsAConfigurationFailure(t *testing.T) {
+	p := filepath.Join(t.TempDir(), "exchange.json")
+	if code, _, _ := execute(t, []string{"set-endpoint", "--config", p, "203.0.113.43:22022"}, ""); code != 0 {
+		t.Fatal("set-endpoint")
+	}
+	code, out, errText := execute(t, []string{"connection-string", "--config", p}, "")
+	if code != exitConfig || out != "" || errText == "" {
+		t.Fatalf("exit %d stdout %q stderr %q", code, out, errText)
 	}
 }

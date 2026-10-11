@@ -179,6 +179,9 @@ Friend Module Program
             ' The application theme shared with the viewer (spec 060) - after the rendering
             ' defaults above (it creates a control), before the tray menu and the first window.
             ThemeService.Initialize()
+            ' The glyph before a dialog button's caption (WINDOWS-UI section 11) reads the same bundled
+            ' catalog files the main window does.
+            ButtonGlyphs.AssetOpener = AddressOf CompanionAssets.OpenBundledAsset
 
             ' Who decides whether the window shows: an EXPLICIT request always wins (a
             ' folder to share, or --show from the viewer's Share Manager button), and every

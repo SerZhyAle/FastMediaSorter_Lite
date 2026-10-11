@@ -419,6 +419,25 @@ Friend Module ExchangeAdminText
         End Select
     End Function
 
+    ''' <summary>The sentence for this PC being made the first device of an account that was just added or reset (no account is
+    ''' created by that flow, so the wizard's own sentences, which say so, are not used). "" when nothing is to be said.</summary>
+    Friend Function ThisPcEnrolment(r As ExchangeWizardResult) As String
+        Select Case r.Outcome
+            Case ExchangeWizardOutcome.Done
+                Return Localization.TF("Этот ПК подключён к учётной записи «{0}» как первое устройство.", r.Login)
+            Case ExchangeWizardOutcome.NotAvailable
+                Return Localization.T("Этот ПК к учётной записи не подключён: сервер обмена не ответил на запрос.")
+            Case ExchangeWizardOutcome.ServerNotAnswering
+                Return Localization.T("Сервер запущен, но не отвечает на своём порту. Возможно, порт занят другой программой.")
+            Case ExchangeWizardOutcome.CertificateMismatch
+                Return Localization.T("На порту отвечает не этот сервер: сертификат не совпал. Пароль никуда не отправлен.")
+            Case ExchangeWizardOutcome.EnrollFailed
+                Return Localization.TF("Этот ПК не удалось подключить к учётной записи. {0}", ExchangeDeviceText.EnrollFailure(r.EnrollResult))
+            Case Else
+                Return ""
+        End Select
+    End Function
+
     Friend Function FactThisPc() As String
         Return Localization.T("Адрес для этого ПК:")
     End Function

@@ -315,12 +315,13 @@ Partial Public Class Table_Form
                                  clearWork As Action,
                                  successText As String,
                                  Optional afterClear As Action = Nothing)
-        Dim usage As New Label With {.AutoSize = False, .Width = Sp(96),
+        Dim usage As New Label With {.AutoSize = False, .Width = Sp(72),
                                      .Height = Sp(SettingsRowGridRules.ButtonHeight),
                                      .TextAlign = Drawing.ContentAlignment.MiddleLeft,
                                      .BackColor = SettingsSurface}
-        Dim refreshButton As New Button With {.Text = Localization.T("Обновить")}
-        Dim clearButton As New Button With {.Text = Localization.T("Очистить")}
+        ' The names key the glyph table of the settings window (SettingsCommandGlyph): Refresh, Clear a cache.
+        Dim refreshButton As New Button With {.Name = "settingsCacheRefresh", .Text = Localization.T("Обновить")}
+        Dim clearButton As New Button With {.Name = "settingsCacheClear", .Text = Localization.T("Очистить")}
         Dim gate As New RefreshGate()
         cacheUsageGates.Add(gate)
         Dim unknownText As String = Localization.T("Неизвестно")
@@ -517,6 +518,10 @@ Partial Public Class Table_Form
                     layout.Controls.Add(input, 0, 1)
                     layout.Controls.Add(buttons, 0, 2)
                     dialog.Controls.Add(layout)
+                    ' WINDOWS-UI section 11: the answers of this dialog carry their glyph - the affirmative in
+                    ' green, the dismissing one in red. The buttons are AutoSize, so the picture widens them.
+                    ButtonGlyphs.Apply(ok, "action.confirm", ButtonGlyphRole.Affirmative)
+                    ButtonGlyphs.Apply(cancel, "action.cancel", ButtonGlyphRole.Dismissing)
                     AddHandler dialog.FormClosing,
                         Sub(sender, args)
                             If dialog.DialogResult <> DialogResult.OK OrElse SettingsSearchRules.IsExtensionList(input.Text) Then Return
@@ -604,9 +609,12 @@ Partial Public Class Table_Form
         Dim button As New Button With {.AutoSize = True}
         Dim refresh As Action =
             Sub()
-                button.Text = If(Main_Form.IsSecureContainerOpenWithRegistered(),
+                Dim registered As Boolean = Main_Form.IsSecureContainerOpenWithRegistered()
+                button.Text = If(registered,
                                  Localization.T("Убрать из «Открыть с помощью»"),
                                  Localization.T("Добавить в «Открыть с помощью»"))
+                ' The verb flips with the caption, so does the picture (Remove / Add).
+                ButtonGlyphs.Apply(button, If(registered, "action.remove", "action.add"))
             End Sub
         refresh()
         AddHandler button.Click,
@@ -633,9 +641,11 @@ Partial Public Class Table_Form
         Dim button As New Button With {.AutoSize = True}
         Dim refresh As Action =
             Sub()
-                button.Text = If(Main_Form.IsLiveBroadcastOpenWithRegistered(),
+                Dim registered As Boolean = Main_Form.IsLiveBroadcastOpenWithRegistered()
+                button.Text = If(registered,
                                  Localization.T("Убрать из «Открыть с помощью»"),
                                  Localization.T("Добавить в «Открыть с помощью»"))
+                ButtonGlyphs.Apply(button, If(registered, "action.remove", "action.add"))
             End Sub
         refresh()
         AddHandler button.Click,

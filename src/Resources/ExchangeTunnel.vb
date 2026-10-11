@@ -220,6 +220,49 @@ Friend NotInheritable Class ExchangeAccountTunnelSource
 
 End Class
 
+''' <summary>The tunnel of a resource attached through one of the viewer's own ENTRIES (ticket 187): `connect {resourceId}` with the token of
+''' THAT entry, over the entry's own address and pin. The viewer needs no Share Manager and no agent for it. An entry that was removed (or whose
+''' token is gone) is "unavailable" - never another account's token, and never a fallback to the Share Manager's account.</summary>
+Friend NotInheritable Class ExchangeEntryTunnelSource
+    Implements IExchangeTunnelSource
+
+    Private ReadOnly _resourceId As String
+    Private ReadOnly _entryId As String
+    Private ReadOnly _entries As ExchangeEntryStore
+    Private ReadOnly _transport As IExchangeTransport
+    Private ReadOnly _probe As IExchangeCertificateProbe
+    Private ReadOnly _productVersion As String
+    Private ReadOnly _idleCloseMs As Integer
+
+    Friend Sub New(resourceId As String, entryId As String, entries As ExchangeEntryStore, transport As IExchangeTransport,
+                   probe As IExchangeCertificateProbe, productVersion As String, Optional idleCloseMs As Integer = ExchangeTunnelRules.IdleCloseMs)
+        _resourceId = resourceId
+        _entryId = entryId
+        _entries = entries
+        _transport = transport
+        _probe = probe
+        _productVersion = productVersion
+        _idleCloseMs = idleCloseMs
+    End Sub
+
+    Public Async Function OpenAsync(ct As CancellationToken) As Task(Of ExchangeTunnelOpen) Implements IExchangeTunnelSource.OpenAsync
+        Dim entry As ExchangeEntry = _entries.Find(_entryId)
+        If entry Is Nothing Then Return ExchangeTunnelOpen.Failed(ExchangeTunnelFailure.Unavailable)
+        Dim address As ExchangeServerAddress = Nothing
+        Dim token As String = ""
+        If Not entry.TryGetAddress(address) OrElse Not _entries.TokenStoreFor(entry.Id).TryLoad(entry.DeviceId, token) Then Return ExchangeTunnelOpen.Failed(ExchangeTunnelFailure.Unavailable)
+
+        Dim trust As ExchangeTunnelFailure = Await ExchangeTunnelTrust.CheckKnownAsync(_probe, address, entry.Pin, ct).ConfigureAwait(False)
+        If trust <> ExchangeTunnelFailure.None Then Return ExchangeTunnelOpen.Failed(trust)
+
+        Dim opener As New ExchangeConnectOpener(_transport, address, entry.Pin, New ExchangeDeviceCredentials(entry.DeviceId, token), _productVersion,
+                                                ExchangeConnectOpener.Target.Resource, _resourceId, "")
+        Dim lease As New ExchangeTunnelLease(opener, _idleCloseMs)
+        lease.Start()
+        Return New ExchangeTunnelOpen(lease, ExchangeTunnelFailure.None)
+    End Function
+
+End Class
 ''' <summary>The tunnel of an outsider link: `connect {shareId}` on a TLS stream to the `x` of the code or the tunnel path of the file, no
 ''' `hello`, no account. The certificate is judged as item D says: the platform first; a leaf it rejects only after the user accepted its
 ''' fingerprint (asked here, stored on the resource); a changed one where a pin exists is a named stop.</summary>
@@ -396,6 +439,11 @@ Friend NotInheritable Class ExchangeTunnelSources
                           consent As Func(Of String, CancellationToken, Boolean), persistPin As Func(Of String, Boolean)) As IExchangeTunnelSource
         If resource Is Nothing OrElse Not ExchangeFeatures.IsEnabled() Then Return Nothing
         If ResourceOrigin.IsExchange(resource) AndAlso Not String.IsNullOrEmpty(resource.ExchangeResourceId) Then
+            ' attached through one of the viewer's own entries (ticket 187): that entry's token, never the Share Manager's account
+            If Not String.IsNullOrEmpty(resource.ExchangeEntryId) Then
+                Return New ExchangeEntryTunnelSource(resource.ExchangeResourceId, resource.ExchangeEntryId, ExchangeEntryStore.CreateDefault(),
+                                                     ExchangeTlsTransport.Instance, ExchangeTlsCertificateProbe.Instance, ProductVersion())
+            End If
             Return New ExchangeAccountTunnelSource(resource.ExchangeResourceId, ExchangeAccountStore.CreateDefault(), ExchangeCredentialStore.CreateDefault(),
                                                    ExchangeTlsTransport.Instance, ExchangeTlsCertificateProbe.Instance, ProductVersion())
         End If

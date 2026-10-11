@@ -55,7 +55,7 @@ func run(args []string, stdout, stderr io.Writer) int {
 		return 0
 	}
 	disk := map[string][]byte{}
-	for _, name := range []string{framesFileName, recordsFileName, provenanceFileName} {
+	for _, name := range append(append([]string(nil), hashedFiles...), provenanceFileName) {
 		b, err := os.ReadFile(filepath.Join(*out, name))
 		if err != nil {
 			fmt.Fprintf(stdout, "exchange-vectors: COULD NOT VERIFY - %v\n", err)
@@ -63,7 +63,7 @@ func run(args []string, stdout, stderr io.Writer) int {
 		}
 		disk[name] = b
 	}
-	for _, name := range []string{framesFileName, recordsFileName} {
+	for _, name := range hashedFiles {
 		if string(disk[name]) != string(files[name]) {
 			fmt.Fprintf(stdout, "exchange-vectors: FAIL - %s is not what the generator produces now (regenerate with: go run ./cmd/exchange-vectors -out %s)\n", name, *out)
 			return 1
@@ -73,6 +73,6 @@ func run(args []string, stdout, stderr io.Writer) int {
 		fmt.Fprintf(stdout, "exchange-vectors: FAIL - %v\n", err)
 		return 1
 	}
-	fmt.Fprintln(stdout, "exchange-vectors: PASS (2 files, byte for byte, hashes in PROVENANCE.txt)")
+	fmt.Fprintln(stdout, "exchange-vectors: PASS (3 files, byte for byte, hashes in PROVENANCE.txt)")
 	return 0
 }

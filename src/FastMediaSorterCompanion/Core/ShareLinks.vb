@@ -29,6 +29,16 @@ Public Module ShareLinks
     End Function
 
     ''' <summary>
+    ''' A page of the media exchange portal (the product family's shared "media exchange" section, on the
+    ''' Android app's site) in the UI language: <paramref name="page"/> is "" for the start page or one of the
+    ''' names <see cref="SitePages.ExchangePortalUrl"/> documents. The portal is not on this product's address
+    ''' list - see <see cref="SitePages.ExchangePortalRoot"/>.
+    ''' </summary>
+    Public Function ExchangePortalUrl(page As String) As String
+        Return SitePages.ExchangePortalUrl(page, Localization.CurrentCode)
+    End Function
+
+    ''' <summary>
     ''' A page of FileDO's site in the UI language. FileDO has a full copy in German and French (a folder in
     ''' front of the path); its Russian and Ukrainian landing is a stub at ru/ and ua/ that remembers the
     ''' language and opens the root page, which switches in-page. Its guides have no Russian or Ukrainian

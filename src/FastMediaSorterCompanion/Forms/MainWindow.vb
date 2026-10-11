@@ -64,12 +64,9 @@ Partial Public NotInheritable Class MainWindow
     Private _fontBold As Font
     Private _fontShare As Font
     Private _fontEnableTitle As Font
-    ' Code-drawn button glyphs; built in BuildUi at the display's DPI (see _shareGlyph there).
+    ' Glyph-only buttons' pictures, built in BuildGlyphs at the display's DPI. Captioned buttons
+    ' get their glyph from ButtonGlyphs instead.
     Private _copyGlyph As Image
-    Private _addGlyph As Image
-    Private _disksGlyph As Image
-    Private _shareGlyph As Image
-    Private _gearGlyph As Image
     Private _eyeGlyph As Image
 
     ' --- layout state (see MainWindow.Layout.vb) --------------------------------
@@ -301,14 +298,8 @@ Partial Public NotInheritable Class MainWindow
         _fontShare = Nothing
         _fontEnableTitle = Nothing
         DisposeImage(_copyGlyph)
-        DisposeImage(_addGlyph)
-        DisposeImage(_shareGlyph)
-        DisposeImage(_gearGlyph)
         DisposeImage(_eyeGlyph)
         _copyGlyph = Nothing
-        _addGlyph = Nothing
-        _shareGlyph = Nothing
-        _gearGlyph = Nothing
         _eyeGlyph = Nothing
         ShareIcons.FreeIcon(Me.Icon, _iconHandle)
     End Sub

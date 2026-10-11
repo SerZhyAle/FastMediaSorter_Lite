@@ -31,7 +31,10 @@ Partial Public Class Main_Form
     Friend Sub PinToViewerBand(child As Form)
         If child Is Nothing OrElse child.IsDisposed Then Return
         Try
-            If child.TopMost <> Me.TopMost Then child.TopMost = Me.TopMost
+            ' Form.TopMost is cached. Windows can change the native band when an
+            ' owned sibling is demoted without updating that cache. Reapply even
+            ' when the flags match, especially when reopening the settings window.
+            child.TopMost = Me.TopMost
         Catch ex As Exception
             AppFileLogger.LogException("Main_Form pin child window", ex)
         End Try

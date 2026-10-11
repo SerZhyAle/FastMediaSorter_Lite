@@ -7,6 +7,8 @@
 | **Home** | `live-broadcast/README.md`, `11_live_broadcast_contract.md` and `13_contract_amendment_2026-10-07.md` in the shared contracts catalog |
 | **Role here** | **consumer** - local specification 023, built in the working tree on 2026-10-07 (audio over HTTP), real-device acceptance not run; **planned producer** (local specifications 172 and 173) and **planned receiver** over every transport and as a cast target (local specification 174), under the umbrella 160 |
 
+**Reader-facing description:** the portal page [Live broadcast](https://serzhyale.github.io/FastMediaSorter_mob_v2/docs/media-exchange-portal/live-broadcast.html) of the shared "Media exchange between your devices" portal (not published until the Android site publishes it). Nothing there binds this contract.
+
 This file replaces a **copy** of the contract that was taken on 2026-09-13 and had already fallen behind:
 it was missing the no-loopback producer rule, the link `package=` hint and the watch measurements of
 2026-09-17. The copy was deleted rather than refreshed, which is the only thing that stops it drifting

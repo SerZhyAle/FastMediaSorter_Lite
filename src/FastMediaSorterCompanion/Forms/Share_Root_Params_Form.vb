@@ -194,8 +194,10 @@ Public Class Share_Root_Params_Form
         Dim btnFlow As New FlowLayoutPanel With {.AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink,
             .Anchor = AnchorStyles.Right, .Margin = New Padding(0),
             .FlowDirection = FlowDirection.LeftToRight, .WrapContents = False}
-        btnOk = New Button With {.Width = 96, .Height = 34, .Text = "OK", .Margin = New Padding(0, 0, 8, 0)}
-        btnCancel = New Button With {.Width = 96, .Height = 34, .Text = Localization.T("Отмена"), .DialogResult = DialogResult.Cancel}
+        btnOk = New Button With {.AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink, .MinimumSize = New Size(96, 34), .Text = "OK", .Margin = New Padding(0, 0, 8, 0)}
+        btnCancel = New Button With {.AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink, .MinimumSize = New Size(96, 34), .Text = Localization.T("Отмена"), .DialogResult = DialogResult.Cancel}
+        ButtonGlyphs.Apply(btnOk, "action.confirm", ButtonGlyphRole.Affirmative)
+        ButtonGlyphs.Apply(btnCancel, "action.cancel", ButtonGlyphRole.Dismissing)
         AddHandler btnOk.Click, AddressOf OnOk
         btnFlow.Controls.Add(btnOk)
         btnFlow.Controls.Add(btnCancel)

@@ -723,6 +723,8 @@ Partial Public Class Main_Form
         Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1630: F2")
         EnsureSettingsWindow()
         If Table_Form.Visible Then
+            PinToViewerBand(Table_Form)
+            If Table_Form.WindowState = FormWindowState.Minimized Then Table_Form.WindowState = FormWindowState.Normal
 #If NETFRAMEWORK Then
             Table_Form.Activate()
 #Else

@@ -72,6 +72,7 @@ Friend NotInheritable Class LiveBroadcast_Form
             .Text = Localization.T("Файл .fmsbcast..")
         }
         AddHandler btnBrowseFile.Click, AddressOf OnBrowseFileClick
+        ButtonGlyphs.Apply(btnBrowseFile, "action.choose-file")
 
         ' Section 4.3: for an address that is not one of ours the user says it is live. Unticked, it is an ordinary URL.
         chkIsLive = New CheckBox With {
@@ -133,6 +134,7 @@ Friend NotInheritable Class LiveBroadcast_Form
             .DialogResult = DialogResult.None
         }
         AddHandler btnConnect.Click, AddressOf OnConnectClick
+        ButtonGlyphs.Apply(btnConnect, "action.confirm", ButtonGlyphRole.Affirmative)
 
         btnCancel = New Button With {
             .Location = New Point(426, 374),
@@ -140,6 +142,7 @@ Friend NotInheritable Class LiveBroadcast_Form
             .Text = Localization.T("Отмена"),
             .DialogResult = DialogResult.Cancel
         }
+        ButtonGlyphs.Apply(btnCancel, "action.cancel", ButtonGlyphRole.Dismissing)
 
         Me.Controls.AddRange(New Control() {
             lblPrompt, txtInput, btnBrowseFile, chkIsLive, lblLanHint,

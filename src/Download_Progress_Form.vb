@@ -91,6 +91,8 @@ Friend NotInheritable Class Download_Progress_Form
         btn_Cancel = New Button With {.AutoSize = True, .MinimumSize = New Size(90, 28),
                                         .Anchor = AnchorStyles.Right, .Text = Localization.T("Отмена")}
         AddHandler btn_Cancel.Click, AddressOf CancelRequested
+        ' The window's CancelButton: the dismissing answer. The button is AutoSize, so the window grows for the glyph.
+        ButtonGlyphs.Apply(btn_Cancel, "action.cancel", ButtonGlyphRole.Dismissing)
 
         layout.Controls.Add(caption)
         layout.Controls.Add(bar)

@@ -40,6 +40,14 @@ Partial Public Class Table_Form
                                           Dim slot = SelectedRecipientSlot()
                                           If slot > 0 Then SetSlotDestination(slot, String.Empty)
                                       End Sub)
+        ' WINDOWS-UI section 11: each command carries its verb's glyph (Neutral, mono). The buttons are
+        ' AutoSize, so the picture widens them by itself; the names key the settings glyph table.
+        browse.Name = "settingsSlotBrowse"
+        resources.Name = "settingsSlotResources"
+        clear.Name = "settingsSlotClear"
+        ApplySettingsCommandGlyph(browse, browse.Name)
+        ApplySettingsCommandGlyph(resources, resources.Name)
+        ApplySettingsCommandGlyph(clear, clear.Name)
         Dim refresh As Action = Sub()
                                     browse.Text = Localization.T("Папка на этом компьютере..")
                                     resources.Text = Localization.T("Ресурсы")

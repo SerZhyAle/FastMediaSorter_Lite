@@ -1,0 +1,232 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 800" width="100%" height="100%" style="background:#090d16; font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;">
+  <defs>
+    <linearGradient id="bgGlow" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0b1329" />
+      <stop offset="50%" stop-color="#090d16" />
+      <stop offset="100%" stop-color="#050811" />
+    </linearGradient>
+    <linearGradient id="serverGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1e293b" />
+      <stop offset="100%" stop-color="#0f172a" />
+    </linearGradient>
+    <linearGradient id="coreGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0284c7" />
+      <stop offset="100%" stop-color="#0369a1" />
+    </linearGradient>
+    <linearGradient id="accentCyan" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#38bdf8" />
+      <stop offset="100%" stop-color="#818cf8" />
+    </linearGradient>
+    <linearGradient id="accentGreen" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#34d399" />
+      <stop offset="100%" stop-color="#10b981" />
+    </linearGradient>
+    <linearGradient id="accentAmber" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#fbbf24" />
+      <stop offset="100%" stop-color="#f59e0b" />
+    </linearGradient>
+    <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="8" result="blur" />
+      <feComposite in="SourceGraphic" in2="blur" operator="over" />
+    </filter>
+    <filter id="softShadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="8" stdDeviation="6" flood-color="#000000" flood-opacity="0.6"/>
+    </filter>
+    <marker id="arrowCyan" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto">
+      <path d="M 0 0 L 8 4 L 0 8 z" fill="#38bdf8" />
+    </marker>
+    <marker id="arrowGreen" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto">
+      <path d="M 0 0 L 8 4 L 0 8 z" fill="#34d399" />
+    </marker>
+    <marker id="arrowAmber" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto">
+      <path d="M 0 0 L 8 4 L 0 8 z" fill="#fbbf24" />
+    </marker>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1200" height="800" fill="url(#bgGlow)"/>
+
+  <!-- Subtle Network Grid Background -->
+  <g opacity="0.07" stroke="#38bdf8" stroke-width="1">
+    <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+      <path d="M 40 0 L 0 0 0 40"/>
+    </pattern>
+    <rect width="1200" height="800" fill="url(#grid)" />
+  </g>
+
+  <!-- Title & Header -->
+  <g transform="translate(60, 40)">
+    <text x="0" y="0" fill="#38bdf8" font-size="12" font-weight="700" letter-spacing="2">СХЕМА 1 · АРХИТЕКТУРА ЧЕРЕЗ ИНТЕРНЕТ / ANYWHERE ACCESS</text>
+    <text x="0" y="28" fill="#f8fafc" font-size="22" font-weight="700">Сервер обмена (Media Exchange Server), Windows SFTP, Android клиенты и узлы-серверы</text>
+    <text x="0" y="48" fill="#94a3b8" font-size="13">Взаимодействие через интернет: маршрутизация туннелей, логи пользователя, кросс-платформенный доступ</text>
+  </g>
+
+  <!-- Data Flow Connection Lines -->
+  <!-- PC1 Desktop to Exchange -->
+  <path d="M 280 230 C 400 230, 440 330, 480 370" fill="none" stroke="#38bdf8" stroke-width="2.5" stroke-dasharray="6,4" marker-end="url(#arrowCyan)"/>
+  <!-- PC2 Server Service to Exchange -->
+  <path d="M 280 430 C 380 430, 420 400, 480 400" fill="none" stroke="#38bdf8" stroke-width="2.5" marker-end="url(#arrowCyan)"/>
+  <!-- Laptop to Exchange -->
+  <path d="M 280 620 C 400 620, 440 470, 480 430" fill="none" stroke="#38bdf8" stroke-width="2.5" stroke-dasharray="6,4" marker-end="url(#arrowCyan)"/>
+
+  <!-- Exchange to Android Phone 1 (Client) -->
+  <path d="M 720 370 C 760 330, 800 230, 920 230" fill="none" stroke="#34d399" stroke-width="2.5" marker-end="url(#arrowGreen)"/>
+  <!-- Exchange to/from Android Phone 2 (Server/Client) -->
+  <path d="M 720 400 C 780 400, 820 430, 920 430" fill="none" stroke="#fbbf24" stroke-width="2.5" stroke-dasharray="6,4" marker-end="url(#arrowAmber)"/>
+  <path d="M 920 420 C 820 420, 780 390, 720 390" fill="none" stroke="#fbbf24" stroke-width="2" />
+  <!-- Exchange to Smart TV -->
+  <path d="M 720 430 C 760 470, 800 590, 920 590" fill="none" stroke="#34d399" stroke-width="2.5" marker-end="url(#arrowGreen)"/>
+  <!-- Exchange to Watch -->
+  <path d="M 720 440 C 780 500, 810 680, 920 690" fill="none" stroke="#818cf8" stroke-width="2" stroke-dasharray="4,4"/>
+
+  <!-- ============================================================ -->
+  <!-- CENTRAL NODE: EXCHANGE SERVER (СЕРВЕР ОБМЕНА) -->
+  <!-- ============================================================ -->
+  <g transform="translate(480, 260)" filter="url(#softShadow)">
+    <rect width="240" height="280" rx="16" fill="url(#serverGrad)" stroke="#38bdf8" stroke-width="2"/>
+    <rect width="240" height="42" rx="16" fill="url(#coreGrad)" />
+    <rect width="240" height="16" y="26" fill="url(#coreGrad)" />
+    
+    <!-- Header Icon + Title -->
+    <circle cx="28" cy="21" r="10" fill="#ffffff" opacity="0.2"/>
+    <path d="M 23 21 L 33 21 M 28 16 L 28 26" stroke="#ffffff" stroke-width="2" stroke-linecap="round"/>
+    <text x="46" y="26" fill="#ffffff" font-size="14" font-weight="700">СЕРВЕР ОБМЕНА</text>
+
+    <!-- Subtitle / Address -->
+    <text x="120" y="62" fill="#38bdf8" font-size="11" font-weight="600" text-anchor="middle">IP / Домен: 203.0.113.10:443</text>
+    <text x="120" y="78" fill="#94a3b8" font-size="10" text-anchor="middle">DEVICE-EXCHANGE Relay &amp; Broker</text>
+
+    <line x1="16" y1="90" x2="224" y2="90" stroke="#334155" stroke-width="1"/>
+
+    <!-- Module 1: User Logs & Auth -->
+    <rect x="16" y="100" width="208" height="48" rx="8" fill="#0f172a" stroke="#1e293b"/>
+    <text x="26" y="118" fill="#f8fafc" font-size="11" font-weight="600">Логи пользователя и сессий</text>
+    <text x="26" y="132" fill="#64748b" font-size="9.5">Учетные записи · Аудит сессий · Hashed ID</text>
+    <text x="26" y="142" fill="#38bdf8" font-size="8.5">IP, Fingerprints, Rate-limit защитa</text>
+
+    <!-- Module 2: Directory & Presence -->
+    <rect x="16" y="156" width="208" height="48" rx="8" fill="#0f172a" stroke="#1e293b"/>
+    <text x="26" y="174" fill="#f8fafc" font-size="11" font-weight="600">Каталог устройств и ресурсов</text>
+    <text x="26" y="188" fill="#64748b" font-size="9.5">Список открытых SFTP и трансляций</text>
+    <text x="26" y="198" fill="#34d399" font-size="8.5">Статусы Online/Offline · Presence Stream</text>
+
+    <!-- Module 3: Tunnel & Fan-out Relay -->
+    <rect x="16" y="212" width="208" height="52" rx="8" fill="#0f172a" stroke="#1e293b"/>
+    <text x="26" y="230" fill="#f8fafc" font-size="11" font-weight="600">Маршрутизатор туннелей &amp; Relay</text>
+    <text x="26" y="244" fill="#64748b" font-size="9.5">Проброс TLS-туннелей (Rendezvous)</text>
+    <text x="26" y="255" fill="#fbbf24" font-size="8.5">Сквозной шифрованный обмен без NAT-проблем</text>
+  </g>
+
+  <!-- ============================================================ -->
+  <!-- LEFT SIDE: WINDOWS SERVERS & CLIENTS -->
+  <!-- ============================================================ -->
+  <!-- Windows Section Box -->
+  <rect x="40" y="140" width="260" height="580" rx="14" fill="#0f172a" opacity="0.6" stroke="#334155" stroke-width="1"/>
+  <text x="60" y="165" fill="#38bdf8" font-size="12" font-weight="700">WINDOWS УСТРОЙСТВА</text>
+  <text x="60" y="180" fill="#64748b" font-size="10">SFTP-серверы и клиенты просмотра</text>
+
+  <!-- Node 1: Windows PC 1 (Desktop: SFTP Server + Local Client) -->
+  <g transform="translate(60, 195)" filter="url(#softShadow)">
+    <rect width="220" height="140" rx="10" fill="#1e293b" stroke="#38bdf8" stroke-width="1.5"/>
+    <rect width="220" height="26" rx="10" fill="#0284c7" opacity="0.3"/>
+    <text x="12" y="18" fill="#f8fafc" font-size="11" font-weight="700">ПК Windows (SFTP + Клиент)</text>
+    
+    <text x="12" y="44" fill="#38bdf8" font-size="10" font-weight="600">● SFTP Сервер (Share Manager):</text>
+    <text x="20" y="58" fill="#94a3b8" font-size="9">Открытые ресурсы: D:\Photos, D:\Video</text>
+    <text x="20" y="70" fill="#64748b" font-size="8.5">Связан с сервером обмена по учетной записи</text>
+
+    <text x="12" y="92" fill="#34d399" font-size="10" font-weight="600">● Клиент Windows (Просмотрщик):</text>
+    <text x="20" y="106" fill="#94a3b8" font-size="9">Просмотр локальных и удаленных SFTP</text>
+    <text x="20" y="118" fill="#64748b" font-size="8.5">Передача и прием файлов через интернет</text>
+  </g>
+
+  <!-- Node 2: Windows Server Edition (Always-on Service) -->
+  <g transform="translate(60, 365)" filter="url(#softShadow)">
+    <rect width="220" height="120" rx="10" fill="#1e293b" stroke="#38bdf8" stroke-width="1.5"/>
+    <rect width="220" height="26" rx="10" fill="#0369a1" opacity="0.3"/>
+    <text x="12" y="18" fill="#f8fafc" font-size="11" font-weight="700">Windows Server Edition</text>
+
+    <text x="12" y="44" fill="#38bdf8" font-size="10" font-weight="600">● Служба Windows (Always-on):</text>
+    <text x="20" y="58" fill="#94a3b8" font-size="9">Работает с загрузки до входа (LocalService)</text>
+    <text x="20" y="70" fill="#64748b" font-size="8.5">Постоянно доступные ресурсы для сети</text>
+
+    <text x="12" y="92" fill="#f8fafc" font-size="9.5">Связь с сервером обмена:</text>
+    <text x="20" y="106" fill="#38bdf8" font-size="8.5">Исходящий TLS-контроль без белого IP</text>
+  </g>
+
+  <!-- Node 3: Remote Windows Client (Laptop) -->
+  <g transform="translate(60, 515)" filter="url(#softShadow)">
+    <rect width="220" height="110" rx="10" fill="#1e293b" stroke="#38bdf8" stroke-width="1.5"/>
+    <rect width="220" height="26" rx="10" fill="#1e40af" opacity="0.3"/>
+    <text x="12" y="18" fill="#f8fafc" font-size="11" font-weight="700">Удаленный ноутбук (Клиент)</text>
+
+    <text x="12" y="44" fill="#34d399" font-size="10" font-weight="600">● Отдельный клиент вне дома:</text>
+    <text x="20" y="58" fill="#94a3b8" font-size="9">Подключен через интернет к серверу</text>
+    <text x="20" y="70" fill="#64748b" font-size="8.5">Получение медиа с домашних ПК по SFTP</text>
+    <text x="20" y="86" fill="#94a3b8" font-size="9">Загрузка новых фото обратно на сервер</text>
+  </g>
+
+  <!-- ============================================================ -->
+  <!-- RIGHT SIDE: ANDROID CLIENTS & MOBILE SERVERS -->
+  <!-- ============================================================ -->
+  <!-- Android Section Box -->
+  <rect x="900" y="140" width="260" height="580" rx="14" fill="#0f172a" opacity="0.6" stroke="#334155" stroke-width="1"/>
+  <text x="920" y="165" fill="#34d399" font-size="12" font-weight="700">ANDROID УСТРОЙСТВА</text>
+  <text x="920" y="180" fill="#64748b" font-size="10">Смартфоны, ТВ, часы и мобильные SFTP</text>
+
+  <!-- Node 4: Android Phone 1 (Consumer Client) -->
+  <g transform="translate(920, 195)" filter="url(#softShadow)">
+    <rect width="220" height="110" rx="10" fill="#1e293b" stroke="#34d399" stroke-width="1.5"/>
+    <rect width="220" height="26" rx="10" fill="#059669" opacity="0.3"/>
+    <text x="12" y="18" fill="#f8fafc" font-size="11" font-weight="700">Android Смартфон (Клиент)</text>
+
+    <text x="12" y="44" fill="#34d399" font-size="10" font-weight="600">● Читатель медиа через интернет:</text>
+    <text x="20" y="58" fill="#94a3b8" font-size="9">Доступ к любым SFTP-папкам ПК</text>
+    <text x="20" y="70" fill="#64748b" font-size="8.5">Просмотр фото, сортировка, скачивание</text>
+    <text x="20" y="86" fill="#94a3b8" font-size="9">Работает через сервер обмена везде</text>
+  </g>
+
+  <!-- Node 5: Android Phone 2 (Client-Server / Mobile SFTP) -->
+  <g transform="translate(920, 335)" filter="url(#softShadow)">
+    <rect width="220" height="135" rx="10" fill="#1e293b" stroke="#fbbf24" stroke-width="1.5"/>
+    <rect width="220" height="26" rx="10" fill="#d97706" opacity="0.3"/>
+    <text x="12" y="18" fill="#f8fafc" font-size="11" font-weight="700">Android Телефон-Сервер</text>
+
+    <text x="12" y="44" fill="#fbbf24" font-size="10" font-weight="600">● Мобильный SFTP-сервер:</text>
+    <text x="20" y="58" fill="#94a3b8" font-size="9">Раздаёт свои файлы: DCIM, Загрузки</text>
+    <text x="20" y="70" fill="#64748b" font-size="8.5">Регистрируется на сервере обмена</text>
+    <text x="12" y="92" fill="#38bdf8" font-size="10" font-weight="600">● Доступен другим клиентам:</text>
+    <text x="20" y="106" fill="#94a3b8" font-size="9">ПК и другие телефоны качают фото</text>
+    <text x="20" y="118" fill="#64748b" font-size="8.5">напрямую с этого телефона через туннель</text>
+  </g>
+
+  <!-- Node 6: Android TV & Wear OS Watch -->
+  <g transform="translate(920, 500)" filter="url(#softShadow)">
+    <rect width="220" height="150" rx="10" fill="#1e293b" stroke="#34d399" stroke-width="1.5"/>
+    <rect width="220" height="26" rx="10" fill="#047857" opacity="0.3"/>
+    <text x="12" y="18" fill="#f8fafc" font-size="11" font-weight="700">ТВ и Часы (Получатели медиа)</text>
+
+    <text x="12" y="44" fill="#34d399" font-size="10" font-weight="600">● Android TV / Google TV:</text>
+    <text x="20" y="58" fill="#94a3b8" font-size="9">Слайдшоу фото и видео на большом экране</text>
+    <text x="20" y="70" fill="#64748b" font-size="8.5">Подключение к SFTP через сервер обмена</text>
+
+    <text x="12" y="96" fill="#818cf8" font-size="10" font-weight="600">● Android Wear OS Часы:</text>
+    <text x="20" y="110" fill="#94a3b8" font-size="9">Аудиопотоки, превью и уведомления</text>
+    <text x="20" y="122" fill="#64748b" font-size="8.5">Компактный клиент в едином аккаунте</text>
+  </g>
+
+  <!-- Bottom Legend / Notes -->
+  <g transform="translate(60, 740)">
+    <rect width="1080" height="42" rx="8" fill="#0f172a" stroke="#1e293b"/>
+    <circle cx="30" cy="21" r="5" fill="#38bdf8"/>
+    <text x="42" y="25" fill="#cbd5e1" font-size="11">TLS-управление и SFTP-туннели (Windows)</text>
+    
+    <circle cx="340" cy="21" r="5" fill="#34d399"/>
+    <text x="352" y="25" fill="#cbd5e1" font-size="11">Чтение медиа клиентами Android</text>
+
+    <circle cx="620" cy="21" r="5" fill="#fbbf24"/>
+    <text x="632" y="25" fill="#cbd5e1" font-size="11">Раздача мобильного SFTP (Android Phone Server)</text>
+
+    <text x="1050" y="25" fill="#64748b" font-size="10" text-anchor="end">Шифрование End-to-End · Авторизация по учетной записи</text>
+  </g>
+</svg>

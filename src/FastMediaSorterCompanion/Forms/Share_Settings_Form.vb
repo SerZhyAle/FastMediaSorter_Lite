@@ -245,7 +245,11 @@ Partial Public NotInheritable Class Share_Settings_Form
                     Sub() NetworkInfo.OpenInBrowser(ShareGuide.AndroidSite()))
         AddHelpLink(sec, Localization.T("Как публиковать папки (сайт)"),
                     Sub() NetworkInfo.OpenInBrowser(ShareLinks.Localized(ShareGuide.SiteGuideUrl)))
-        lnkRouterSearch = AddHelpLink(sec, Localization.T("Инструкция для моей модели роутера"),
+        ' The start page of the shared media exchange portal; it follows the language at the click,
+        ' so a language switched while this window is open is honoured.
+        AddHelpLink(sec, Localization.T("Портал обмена медиа"),
+                    Sub() NetworkInfo.OpenInBrowser(ShareLinks.ExchangePortalUrl("")))
+        lnkRouterSearch =AddHelpLink(sec, Localization.T("Инструкция для моей модели роутера"),
                                       AddressOf OnRouterSearchClicked)
         ' The search walks the port-forward instructions for the model it finds; without a
         ' running share there is no forwarding to instruct - the status strip disabled the
@@ -328,6 +332,7 @@ Partial Public NotInheritable Class Share_Settings_Form
         ' first and names what stops working.
         btnApplyPort = New Button With {.AutoSize = True, .Margin = New Padding(6, 0, 0, 0),
             .Text = Localization.T("Применить порт"), .Enabled = False}
+        ButtonGlyphs.Apply(btnApplyPort, "action.confirm")
         AddHandler numPort.ValueChanged, AddressOf OnPortValueChanged
         AddHandler btnApplyPort.Click, AddressOf OnApplyPort
         AddHandler lnkFreePort.LinkClicked, AddressOf OnPickFreePort
@@ -382,6 +387,7 @@ Partial Public NotInheritable Class Share_Settings_Form
             Dim btnWithdraw As New Button With {.AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink,
                 .Margin = New Padding(0, 10, 0, 0), .Padding = New Padding(8, 2, 8, 2),
                 .Text = Localization.T("Выключить функции сервера..")}
+            ButtonGlyphs.Apply(btnWithdraw, "system.power")
             AddHandler btnWithdraw.Click, AddressOf OnWithdrawServerFeatures
             sec.AddBodyRow(btnWithdraw)
         End If

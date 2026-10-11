@@ -1,0 +1,237 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 820" width="100%" height="100%" style="background:#070f14; font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;">
+  <defs>
+    <linearGradient id="bgGrad3" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#061a1f" />
+      <stop offset="50%" stop-color="#070f14" />
+      <stop offset="100%" stop-color="#03080a" />
+    </linearGradient>
+    <linearGradient id="routerGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#047857" />
+      <stop offset="100%" stop-color="#064e3b" />
+    </linearGradient>
+    <linearGradient id="nasGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0f766e" />
+      <stop offset="100%" stop-color="#134e4a" />
+    </linearGradient>
+    <linearGradient id="lanZoneGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#064e3b" stop-opacity="0.2"/>
+      <stop offset="100%" stop-color="#022c22" stop-opacity="0.05"/>
+    </linearGradient>
+    <filter id="softShadow3" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="8" stdDeviation="6" flood-color="#000000" flood-opacity="0.6"/>
+    </filter>
+    <marker id="arrowEmerald" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto">
+      <path d="M 0 0 L 8 4 L 0 8 z" fill="#10b981" />
+    </marker>
+    <marker id="arrowCyan3" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto">
+      <path d="M 0 0 L 8 4 L 0 8 z" fill="#38bdf8" />
+    </marker>
+  </defs>
+
+  <rect width="1200" height="820" fill="url(#bgGrad3)"/>
+
+  <!-- Subtle Network Grid -->
+  <g opacity="0.06" stroke="#10b981" stroke-width="1">
+    <pattern id="grid3" width="40" height="40" patternUnits="userSpaceOnUse">
+      <path d="M 40 0 L 0 0 0 40"/>
+    </pattern>
+    <rect width="1200" height="820" fill="url(#grid3)" />
+  </g>
+
+  <!-- Title & Header -->
+  <g transform="translate(60, 40)">
+    <text x="0" y="0" fill="#10b981" font-size="12" font-weight="700" letter-spacing="2">СХЕМА 3 · ВНУТРЕННЯЯ СЕТЬ И АВТОНОМНЫЙ ДОСТУП ЧЕРЕЗ РОУТЕР</text>
+    <text x="0" y="28" fill="#f8fafc" font-size="22" font-weight="700">Домашнее хранилище SFTP: прямой гигабитный LAN + доступ снаружи без сторонних серверов</text>
+    <text x="0" y="48" fill="#94a3b8" font-size="13">Фиксированный IP (DHCP Static Lease), проброс порта на роутере (Port Forwarding / UPnP), максимальная скорость и приватность</text>
+  </g>
+
+  <!-- ============================================================ -->
+  <!-- LEFT: OUTSIDE INTERNET ZONE (СНАРУЖИ, ВНЕ ДОМА) -->
+  <!-- ============================================================ -->
+  <g transform="translate(40, 140)">
+    <rect width="250" height="570" rx="14" fill="#0f172a" opacity="0.6" stroke="#334155" stroke-width="1"/>
+    <text x="20" y="30" fill="#38bdf8" font-size="12" font-weight="700">ВНЕШНИЙ ИНТЕРНЕТ (ВНЕ ДОМА)</text>
+    <text x="20" y="46" fill="#64748b" font-size="10">Удаленные устройства в поездке / 4G / 5G</text>
+
+    <!-- Outside Client 1: Smartphone outside -->
+    <g transform="translate(15, 70)" filter="url(#softShadow3)">
+      <rect width="220" height="150" rx="10" fill="#1e293b" stroke="#38bdf8" stroke-width="1.5"/>
+      <rect width="220" height="26" rx="10" fill="#0284c7" opacity="0.3"/>
+      <text x="12" y="18" fill="#f8fafc" font-size="11" font-weight="700">📱 Смартфон в пути (Мобильная сеть)</text>
+
+      <text x="12" y="44" fill="#38bdf8" font-size="10" font-weight="600">● Подключение снаружи:</text>
+      <text x="20" y="58" fill="#94a3b8" font-size="9">Адрес: myhome.ddns.net:2222</text>
+      <text x="20" y="70" fill="#64748b" font-size="8.5">или Внешний IP провайдера: 93.184.216.34</text>
+      <text x="12" y="92" fill="#34d399" font-size="10" font-weight="600">● Возможности:</text>
+      <text x="20" y="106" fill="#94a3b8" font-size="9">Просмотр домашней коллекции фото</text>
+      <text x="20" y="118" fill="#94a3b8" font-size="9">Бэкап свежих снимков прямо на домашний ПК</text>
+      <text x="20" y="130" fill="#64748b" font-size="8.5">Шифрование SSH/SFTP (ключ или пароль)</text>
+    </g>
+
+    <!-- Outside Client 2: Laptop outside -->
+    <g transform="translate(15, 240)" filter="url(#softShadow3)">
+      <rect width="220" height="135" rx="10" fill="#1e293b" stroke="#38bdf8" stroke-width="1.5"/>
+      <rect width="220" height="26" rx="10" fill="#1e40af" opacity="0.3"/>
+      <text x="12" y="18" fill="#f8fafc" font-size="11" font-weight="700">💻 Ноутбук в командировке / кафе</text>
+
+      <text x="12" y="44" fill="#38bdf8" font-size="10" font-weight="600">● Fast Media Sorter Viewer:</text>
+      <text x="20" y="58" fill="#94a3b8" font-size="9">Подключен к домашнему SFTP</text>
+      <text x="20" y="70" fill="#64748b" font-size="8.5">Прямой доступ к рабочим архивам и RAW</text>
+      <text x="12" y="92" fill="#f8fafc" font-size="9.5">Без промежуточных облаков:</text>
+      <text x="20" y="106" fill="#10b981" font-size="8.5">Файлы читаются напрямую с домашнего диска</text>
+      <text x="20" y="118" fill="#64748b" font-size="8.5">Полная конфиденциальность</text>
+    </g>
+
+    <!-- Security Note -->
+    <g transform="translate(15, 395)">
+      <rect width="220" height="150" rx="8" fill="#0b1726" stroke="#1e3a5f"/>
+      <text x="12" y="22" fill="#38bdf8" font-size="10.5" font-weight="700">🛡️ Безопасность извне:</text>
+      <text x="12" y="40" fill="#cbd5e1" font-size="9">• Роутер открывает только 1 порт (2222)</text>
+      <text x="12" y="56" fill="#cbd5e1" font-size="9">• Доступ строго по SFTP аутентификации</text>
+      <text x="12" y="72" fill="#cbd5e1" font-size="9">• Защита от подбора паролей</text>
+      <text x="12" y="88" fill="#cbd5e1" font-size="9">• Нет зависимости от чужих серверов</text>
+      <text x="12" y="112" fill="#10b981" font-size="9.5" font-weight="600">Собственное частное облако!</text>
+    </g>
+  </g>
+
+  <!-- Outside to Router connection arrow -->
+  <path d="M 290 290 C 340 290, 360 380, 410 400" fill="none" stroke="#38bdf8" stroke-width="3" marker-end="url(#arrowCyan3)"/>
+  <text x="350" y="335" fill="#38bdf8" font-size="9.5" font-weight="600" text-anchor="middle">Вход извне: :2222</text>
+
+  <!-- ============================================================ -->
+  <!-- CENTER: HOME ROUTER & GATEWAY (ДОМАШНИЙ РОУТЕР) -->
+  <!-- ============================================================ -->
+  <g transform="translate(410, 240)" filter="url(#softShadow3)">
+    <rect width="240" height="340" rx="16" fill="#0f291e" stroke="#10b981" stroke-width="2"/>
+    <rect width="240" height="44" rx="16" fill="url(#routerGrad)"/>
+    <rect width="240" height="16" y="28" fill="url(#routerGrad)"/>
+
+    <text x="120" y="27" fill="#ffffff" font-size="13" font-weight="700" text-anchor="middle">ДОМАШНИЙ РОУТЕР</text>
+    <text x="120" y="60" fill="#34d399" font-size="10.5" font-weight="600" text-anchor="middle">ШЛЮЗ СЕТИ &amp; WI-FI 6/7</text>
+    <text x="120" y="76" fill="#94a3b8" font-size="9.5" text-anchor="middle">LAN Gateway · 192.168.1.1</text>
+
+    <line x1="16" y1="88" x2="224" y2="88" stroke="#064e3b" stroke-width="1"/>
+
+    <!-- Router Setting 1: Static IP -->
+    <rect x="14" y="98" width="212" height="52" rx="8" fill="#091e16" stroke="#047857"/>
+    <text x="24" y="116" fill="#f8fafc" font-size="10.5" font-weight="600">Фиксированный IP в сети</text>
+    <text x="24" y="130" fill="#94a3b8" font-size="9">DHCP Static Lease / Привязка MAC:</text>
+    <text x="24" y="142" fill="#34d399" font-size="9" font-family="monospace">192.168.1.100 (ПК-Хранилище)</text>
+
+    <!-- Router Setting 2: Port Forwarding -->
+    <rect x="14" y="158" width="212" height="56" rx="8" fill="#091e16" stroke="#047857"/>
+    <text x="24" y="176" fill="#f8fafc" font-size="10.5" font-weight="600">Проброс порта (Port Forward)</text>
+    <text x="24" y="190" fill="#94a3b8" font-size="9">Внешний порт 2222 (WAN)</text>
+    <text x="24" y="202" fill="#38bdf8" font-size="8.5">➔ 192.168.1.100:2222 (LAN SFTP)</text>
+
+    <!-- Router Setting 3: DDNS -->
+    <rect x="14" y="222" width="212" height="50" rx="8" fill="#091e16" stroke="#047857"/>
+    <text x="24" y="240" fill="#f8fafc" font-size="10.5" font-weight="600">DDNS или Статический IP</text>
+    <text x="24" y="254" fill="#94a3b8" font-size="9">Динамический DNS (напр. No-IP/KeenDNS)</text>
+    <text x="24" y="264" fill="#fbbf24" font-size="8.5">Постоянное имя для входа из интернета</text>
+
+    <!-- Router Setting 4: Wi-Fi High Speed -->
+    <rect x="14" y="280" width="212" height="48" rx="8" fill="#091e16" stroke="#047857"/>
+    <text x="24" y="298" fill="#f8fafc" font-size="10.5" font-weight="600">Высокоскоростной Wi-Fi &amp; LAN</text>
+    <text x="24" y="312" fill="#34d399" font-size="8.5">Гигабитные прямые связи между домашними узлами</text>
+  </g>
+
+  <!-- Router to Storage Arrow -->
+  <path d="M 650 360 C 680 360, 680 320, 710 320" fill="none" stroke="#10b981" stroke-width="3.5" marker-end="url(#arrowEmerald)"/>
+  <text x="680" y="345" fill="#34d399" font-size="9" font-weight="700" text-anchor="middle">Gigabit</text>
+
+  <!-- ============================================================ -->
+  <!-- RIGHT: HOME LAN ZONE (ДОМАШНЯЯ ВНУТРЕННЯЯ СЕТЬ) -->
+  <!-- ============================================================ -->
+  <g transform="translate(690, 140)">
+    <rect width="470" height="570" rx="14" fill="url(#lanZoneGrad)" stroke="#047857" stroke-width="1.5"/>
+    <text x="25" y="30" fill="#10b981" font-size="12" font-weight="700">ДОМАШНЯЯ ВНУТРЕННЯЯ СЕТЬ (LAN / WI-FI)</text>
+    <text x="25" y="46" fill="#64748b" font-size="10">Прямой защищенный обмен без участия интернета на скорости до 1000+ Мбит/с</text>
+
+    <!-- Node: Home Storage PC (Windows SFTP) -->
+    <g transform="translate(20, 65)" filter="url(#softShadow3)">
+      <rect width="430" height="175" rx="12" fill="#0d2621" stroke="#10b981" stroke-width="2"/>
+      <rect width="430" height="28" rx="12" fill="url(#nasGrad)"/>
+      <text x="14" y="19" fill="#ffffff" font-size="12" font-weight="700">🗄️ ДОМАШНЕЕ ХРАНИЛИЩЕ · ПК WINDOWS (SFTP)</text>
+
+      <text x="14" y="46" fill="#34d399" font-size="10.5" font-weight="600">Зафиксированный адрес в локальной сети: 192.168.1.100:2222</text>
+
+      <g transform="translate(14, 55)">
+        <rect width="195" height="48" rx="6" fill="#071b17"/>
+        <text x="10" y="18" fill="#f8fafc" font-size="9.5" font-weight="600">Служба Windows (Server):</text>
+        <text x="10" y="32" fill="#94a3b8" font-size="8.5">Работает с включения ПК</text>
+        <text x="10" y="42" fill="#64748b" font-size="8.5">без входа в учетную запись</text>
+      </g>
+      <g transform="translate(220, 55)">
+        <rect width="195" height="48" rx="6" fill="#071b17"/>
+        <text x="10" y="18" fill="#f8fafc" font-size="9.5" font-weight="600">Менеджер Share Manager:</text>
+        <text x="10" y="32" fill="#94a3b8" font-size="8.5">Управление общими папками</text>
+        <text x="10" y="42" fill="#64748b" font-size="8.5">Генерация QR-кода привязки</text>
+      </g>
+
+      <text x="14" y="124" fill="#f8fafc" font-size="10" font-weight="600">📁 Общие ресурсы:</text>
+      <text x="24" y="140" fill="#94a3b8" font-size="9">D:\PhotoArchive (Архив семейных фото), E:\Video4K (Фильмы и домашнее видео)</text>
+      <text x="24" y="154" fill="#34d399" font-size="8.5">Виртуальные диски FileDO · Доступ на чтение / запись по PIN-коду или без</text>
+    </g>
+
+    <!-- Intra-LAN connection lines -->
+    <!-- Storage to Phone -->
+    <path d="M 235 240 L 110 280" fill="none" stroke="#10b981" stroke-width="2.5" marker-end="url(#arrowEmerald)"/>
+    <!-- Storage to TV -->
+    <path d="M 235 240 L 235 280" fill="none" stroke="#10b981" stroke-width="2.5" marker-end="url(#arrowEmerald)"/>
+    <!-- Storage to Second PC/Laptop -->
+    <path d="M 235 240 L 360 280" fill="none" stroke="#10b981" stroke-width="2.5" marker-end="url(#arrowEmerald)"/>
+
+    <!-- Local Device 1: Android Phone on Wi-Fi -->
+    <g transform="translate(20, 280)" filter="url(#softShadow3)">
+      <rect width="130" height="120" rx="10" fill="#0d2621" stroke="#34d399" stroke-width="1.5"/>
+      <text x="65" y="24" fill="#34d399" font-size="11" font-weight="700" text-anchor="middle">📱 Телефон Дома</text>
+      <text x="65" y="42" fill="#f8fafc" font-size="10" font-weight="600" text-anchor="middle">По Wi-Fi 5/6</text>
+      <text x="65" y="62" fill="#94a3b8" font-size="8.5" text-anchor="middle">Сканирует QR-код</text>
+      <text x="65" y="74" fill="#94a3b8" font-size="8.5" text-anchor="middle">192.168.1.100</text>
+      <text x="65" y="94" fill="#34d399" font-size="8.5" text-anchor="middle">Мгновенный просмотр</text>
+      <text x="65" y="106" fill="#64748b" font-size="8" text-anchor="middle">и бэкап галереи</text>
+    </g>
+
+    <!-- Local Device 2: Smart TV on LAN -->
+    <g transform="translate(170, 280)" filter="url(#softShadow3)">
+      <rect width="130" height="120" rx="10" fill="#0d2621" stroke="#34d399" stroke-width="1.5"/>
+      <text x="65" y="24" fill="#34d399" font-size="11" font-weight="700" text-anchor="middle">📺 Smart TV</text>
+      <text x="65" y="42" fill="#f8fafc" font-size="10" font-weight="600" text-anchor="middle">В гостиной</text>
+      <text x="65" y="62" fill="#94a3b8" font-size="8.5" text-anchor="middle">Кабель или Wi-Fi</text>
+      <text x="65" y="74" fill="#94a3b8" font-size="8.5" text-anchor="middle">Прямой SFTP-клиент</text>
+      <text x="65" y="94" fill="#34d399" font-size="8.5" text-anchor="middle">Слайдшоу в 4K</text>
+      <text x="65" y="106" fill="#64748b" font-size="8" text-anchor="middle">без сжатия и лагов</text>
+    </g>
+
+    <!-- Local Device 3: Other PC or Tablet -->
+    <g transform="translate(320, 280)" filter="url(#softShadow3)">
+      <rect width="130" height="120" rx="10" fill="#0d2621" stroke="#34d399" stroke-width="1.5"/>
+      <text x="65" y="24" fill="#34d399" font-size="11" font-weight="700" text-anchor="middle">💻 Второй ПК / Планшет</text>
+      <text x="65" y="42" fill="#f8fafc" font-size="10" font-weight="600" text-anchor="middle">Домашний ноутбук</text>
+      <text x="65" y="62" fill="#94a3b8" font-size="8.5" text-anchor="middle">Viewer Windows</text>
+      <text x="65" y="74" fill="#94a3b8" font-size="8.5" text-anchor="middle">Монтирование дисков</text>
+      <text x="65" y="94" fill="#34d399" font-size="8.5" text-anchor="middle">Сортировка медиа</text>
+      <text x="65" y="106" fill="#64748b" font-size="8" text-anchor="middle">на общем диске</text>
+    </g>
+
+    <!-- LAN Summary Banner -->
+    <g transform="translate(20, 420)">
+      <rect width="430" height="125" rx="8" fill="#06211a" stroke="#047857"/>
+      <text x="14" y="22" fill="#34d399" font-size="10.5" font-weight="700">⚡ Преимущества автономной внутренней сети:</text>
+      <text x="14" y="40" fill="#cbd5e1" font-size="9">• Работает даже при отключении интернета у провайдера</text>
+      <text x="14" y="56" fill="#cbd5e1" font-size="9">• Скорость передачи ограничена только скоростью Wi-Fi роутера или кабеля</text>
+      <text x="14" y="72" fill="#cbd5e1" font-size="9">• Ни один байт ваших семейных фото не покидает пределы квартиры</text>
+      <text x="14" y="88" fill="#cbd5e1" font-size="9">• Поддержка терабайтных видеоколлекций и тяжелых RAW-файлов без лимитов трафика</text>
+      <text x="14" y="108" fill="#10b981" font-size="9.5" font-weight="600">Надёжность, приватность и максимальная скорость!</text>
+    </g>
+  </g>
+
+  <!-- Bottom Legend -->
+  <g transform="translate(60, 755)">
+    <rect width="1080" height="35" rx="8" fill="#0f172a" stroke="#1e293b"/>
+    <text x="20" y="22" fill="#10b981" font-size="10.5" font-weight="700">АВТОНОМНЫЙ РЕЖИМ:</text>
+    <text x="170" y="22" fill="#cbd5e1" font-size="10">Без стороннего сервера обмена · Напрямую через роутер · Статический IP в LAN + Port Forwarding для доступа снаружи</text>
+    <text x="1060" y="22" fill="#64748b" font-size="10" text-anchor="end">Полный контроль над своими данными</text>
+  </g>
+</svg>

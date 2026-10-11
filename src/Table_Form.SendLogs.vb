@@ -155,6 +155,12 @@ Partial Public Class Table_Form
                 .UseVisualStyleBackColor = True
             }
 
+            ' WINDOWS-UI section 11: the answers carry their verb's glyph - the send in green, the cancel in red;
+            ' opening the archive is a plain command, so it stays mono.
+            ButtonGlyphs.Apply(sendButton, "action.confirm", ButtonGlyphRole.Affirmative)
+            ButtonGlyphs.Apply(openButton, "nav.open-external", ButtonGlyphRole.Neutral)
+            ButtonGlyphs.Apply(cancelButton, "action.cancel", ButtonGlyphRole.Dismissing)
+
             AddHandler openButton.Click, Sub() RevealPackage(package.Path)
             AddHandler sendButton.Click,
                 Sub()
@@ -175,6 +181,10 @@ Partial Public Class Table_Form
                 Next
             End If
             ApplySendLogsScriptFont(dialog, header, ownedFonts)
+            ' The authored 150x32 buttons stay as they are while caption and glyph fit; a longer caption in
+            ' another language, or the glyph's picture at a high DPI, widens the button instead of clipping it
+            ' (WINDOWS-UI section 11 item 3).
+            AddHandler dialog.Load, Sub() DialogLayout.FitContent(dialog)
 
             DialogLayer.ShowViewerDialog(dialog, Me)
         End Using

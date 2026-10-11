@@ -78,6 +78,10 @@ Public Class Qr_Zoom_Form
     ''' "click, click, click".</summary>
     Private Shared _sessionWarned As Boolean
 
+    ''' <summary>False for a code that names a server and nothing more (the exchange connection string, ticket 187): the
+    ''' "carries access to your folders" warning would then be untrue.</summary>
+    Private ReadOnly _carriesAccess As Boolean
+
     ''' <summary>PictureBox that upscales the code with NEAREST-NEIGHBOUR interpolation:
     ''' a QR is hard black-and-white modules, and the default smoothing turns their edges
     ''' into grey gradients exactly when the window is blown up for a distant camera.
@@ -95,8 +99,9 @@ Public Class Qr_Zoom_Form
         End Sub
     End Class
 
-    Private Sub New(img As Image, clientSide As Integer, baseName As String)
+    Private Sub New(img As Image, clientSide As Integer, baseName As String, carriesAccess As Boolean)
         _baseSide = clientSide
+        _carriesAccess = carriesAccess
         _baseName = If(baseName, "")
         _titleText = Localization.T("QR-код - клик увеличивает, сохраняет и копирует; Esc закрывает")
         Me.Text = _titleText
@@ -257,7 +262,7 @@ Public Class Qr_Zoom_Form
             If fallbackDir IsNot Nothing Then
                 lines.Add(Localization.TF("Папка «Изображения» недоступна - сохранено в {0}", fallbackDir))
             End If
-            If saveFile AndAlso Not saveFailed AndAlso Not _sessionWarned Then
+            If _carriesAccess AndAlso saveFile AndAlso Not saveFailed AndAlso Not _sessionWarned Then
                 _sessionWarned = True
                 lines.Add(Localization.T("Изображение содержит доступ к вашим папкам - не публикуйте его."))
             End If
@@ -500,7 +505,7 @@ Public Class Qr_Zoom_Form
         End Try
         If side < 120 Then side = 120
 
-        Using dlg As New Qr_Zoom_Form(img, side, baseName)
+        Using dlg As New Qr_Zoom_Form(img, side, baseName, True)
             dlg.ShowDialog(owner)
         End Using
     End Sub
@@ -513,7 +518,7 @@ Public Class Qr_Zoom_Form
     ''' the caller's image, which the async status poll may rebuild under the modal loop.
     ''' <paramref name="baseName"/> is an optional meaningful name part for the saved PNG
     ''' ("dune" -> fms-qr-dune-20260808-2153.png); empty gives the plain form.</summary>
-    Public Shared Sub ShowImage(owner As Form, img As Image, Optional baseName As String = Nothing)
+    Public Shared Sub ShowImage(owner As Form, img As Image, Optional baseName As String = Nothing, Optional carriesAccess As Boolean = True)
         If img Is Nothing Then Return
         Dim clone As Image
         Try
@@ -531,7 +536,7 @@ Public Class Qr_Zoom_Form
         End Try
         If side < 200 Then side = 200
 
-        Using dlg As New Qr_Zoom_Form(clone, side, baseName)
+        Using dlg As New Qr_Zoom_Form(clone, side, baseName, carriesAccess)
             If owner IsNot Nothing AndAlso owner.Visible AndAlso owner.IsHandleCreated Then
                 dlg.ShowDialog(owner)
             Else

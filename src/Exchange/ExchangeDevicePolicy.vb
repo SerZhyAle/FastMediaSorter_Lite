@@ -1,3 +1,4 @@
+#If Not NETFRAMEWORK Then
 Option Strict On
 
 ' Ticket 180 T-2 (sections 4 and 5): the pure rules of the device agent - what a refusal means, and how long to wait
@@ -84,3 +85,5 @@ Friend NotInheritable Class ExchangeBackoff
     End Function
 
 End Class
+
+#End If

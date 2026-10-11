@@ -1,4 +1,4 @@
-﻿<#
+<#
 .SYNOPSIS
     The RELEASE orchestrator of Fast Media Sorter & Sharing for Windows. See ../docs/guides/BUILD_AND_RELEASE.md.
 
@@ -20,11 +20,14 @@
       3. tools\Test-SiteQuality.ps1        - the published site holds DOC-EXTERNAL-QUALITY rules 1-7
                                              over the whole page set (ticket 059);
       4. tools\Sync-IconGlyphs.ps1 -Check  - the vendored glyphs still match the catalog;
-      5. tools\Build-OfflineRelease.ps1    - builds locally, for free, what release.yml builds: the
+      5. tools\Test-FeatureGates.ps1      - an open exchange or live-broadcast gate names, in a committed
+                                             evidence file, the rung and the date it was opened at (177
+                                             section 3 item 3); a release never opens a gate by itself;
+      6. tools\Build-OfflineRelease.ps1    - builds locally, for free, what release.yml builds: the
                                              ZIP and both installers;
-      6. tools\Test-ArtifactVersion.ps1    - every staged exe and both setup.exe files carry the
+      7. tools\Test-ArtifactVersion.ps1    - every staged exe and both setup.exe files carry the
                                              version being tagged (BUILD-EVIDENCE rule 2).
-    Steps 1-4 all run whatever the one before returned. The build runs only when they all passed:
+    Steps 1-5 all run whatever the one before returned. The build runs only when they all passed:
     a release that is already blocked does not need the slowest step to say so.
 
     The preflight ends in one line, `Release-Preflight: <WORD> (v<version>; ..)`. Only a bare PASS
@@ -151,6 +154,10 @@ if ($SkipTests) {
 Invoke-Step "Site pages match their copy sources" 'Build-SitePages.ps1' @('-Check')
 Invoke-Step "Published site quality" 'Test-SiteQuality.ps1'
 Invoke-Step "Vendored glyphs match the catalog" 'Sync-IconGlyphs.ps1' @('-Check')
+
+# 5. The gates of the exchange and the live broadcast (177 section 3 item 3, the table of 179 section 2):
+#    an open gate needs its evidence file, and the release itself never opens one.
+Invoke-Step "Exchange and live-broadcast gates name their evidence" 'Test-FeatureGates.ps1'
 
 # 4 and 5. The local package build (free; catches a CI failure before it is paid for), and the
 # version inside what it built.

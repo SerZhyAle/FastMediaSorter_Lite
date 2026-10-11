@@ -104,7 +104,7 @@ Partial Public Class Table_Form
         ' One page hosts the resource list and server controls in independent groups.
         ' The Open command remains in the list panel's own action row.
         AddSettingsGroup("resources", "basic", "Ресурсы", True, "resources_intro")
-        AddSettingsGroup("resources", "server", "Android / SFTP", True, "sftp_intro", "sftp_manager", "sftp_guide", "android_app")
+        AddSettingsGroup("resources", "server", "Android / SFTP", True, "sftp_intro", "sftp_manager", "sftp_guide", "android_app", "exchange_portal")
         Dim resourcesFlow As FlowLayoutPanel = PageFlow(modernResourcesPage)
         For Each child As Control In resourcesFlow.Controls.Cast(Of Control)().Where(Function(c) Not TypeOf c Is SettingsCollapsibleGroup).ToArray()
             If modernSettingsRows.Any(Function(row) row.Host Is child) Then Continue For

@@ -833,6 +833,7 @@
     <Compile Include="Icons\IconMap.vb" />
     <Compile Include="Icons\SvgPathData.vb" />
     <Compile Include="Icons\GlyphRenderer.vb" />
+    <Compile Include="Icons\ButtonGlyphs.vb" />
     <Compile Include="Icons\StepArt.vb" />
     <!-- The floating chrome of the main window (002): whole-file "#If Not NETFRAMEWORK", so they compile to
          nothing here - listed anyway so the two projects keep one source tree and a reference cannot break. -->

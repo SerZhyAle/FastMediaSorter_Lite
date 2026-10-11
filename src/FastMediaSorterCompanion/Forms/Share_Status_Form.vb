@@ -76,6 +76,9 @@ Public NotInheritable Class Share_Status_Form
         btnReset = New Button With {.AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink, .Padding = New Padding(10, 5, 10, 5), .Margin = New Padding(0, 0, 8, 0), .Text = Localization.T("Сбросить счётчики")}
         btnRefresh = New Button With {.AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink, .Padding = New Padding(10, 5, 10, 5), .Margin = New Padding(0, 0, 8, 0), .Text = Localization.T("Обновить")}
         Dim btnClose As New Button With {.AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink, .Padding = New Padding(14, 5, 14, 5), .Text = Localization.T("Закрыть"), .DialogResult = DialogResult.Cancel}
+        ButtonGlyphs.Apply(btnReset, "action.reset")
+        ButtonGlyphs.Apply(btnRefresh, "action.refresh")
+        ButtonGlyphs.Apply(btnClose, "nav.close", ButtonGlyphRole.Dismissing)
         AddHandler btnReset.Click, AddressOf OnReset
         AddHandler btnRefresh.Click, AddressOf OnRefresh
         btnRow.Controls.AddRange(New Control() {btnReset, btnRefresh, btnClose})

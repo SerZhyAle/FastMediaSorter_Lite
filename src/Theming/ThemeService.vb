@@ -87,6 +87,7 @@ Public NotInheritable Class ThemeService
         End Try
         _palette = ThemePalette.ForDark(ResolveNow())
         ApplyRenderer()
+        ButtonGlyphs.UsePalette(_palette)
         Application.AddMessageFilter(New ThemeMessageFilter())
         AddHandler SystemEvents.UserPreferenceChanged, AddressOf OnUserPreferenceChanged
     End Sub
@@ -155,6 +156,8 @@ Public NotInheritable Class ThemeService
         For Each f As Form In forms
             ApplyForm(f)
         Next
+        ' Glyphs on answer buttons follow the theme once every face is final (WINDOWS-UI section 11 item 6).
+        ButtonGlyphs.UsePalette(_palette)
         RaiseEvent Changed(Nothing, EventArgs.Empty)
     End Sub
 

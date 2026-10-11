@@ -1,0 +1,95 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 650" width="100%" height="100%" style="background:#091217; font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;">
+  <defs>
+    <linearGradient id="routerGradSimple" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#059669" />
+      <stop offset="100%" stop-color="#0f766e" />
+    </linearGradient>
+    <filter id="shadow3" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="6" stdDeviation="5" flood-color="#000000" flood-opacity="0.5"/>
+    </filter>
+  </defs>
+
+  <!-- Title -->
+  <text x="500" y="45" fill="#10b981" font-size="13" font-weight="700" letter-spacing="1.5" text-anchor="middle">УПРОЩЕННАЯ СХЕМА · ВНУТРЕННЯЯ СЕТЬ И РОУТЕР</text>
+  <text x="500" y="75" fill="#f8fafc" font-size="20" font-weight="700" text-anchor="middle">Домашнее хранилище без сторонних облаков: дома и извне</text>
+
+  <!-- Central Router Element -->
+  <g transform="translate(370, 220)" filter="url(#shadow3)">
+    <rect width="260" height="180" rx="24" fill="url(#routerGradSimple)" stroke="#10b981" stroke-width="2"/>
+    <circle cx="130" cy="65" r="30" fill="#ffffff" opacity="0.15"/>
+    <!-- Router Waves Icon -->
+    <path d="M 116 75 A 20 20 0 0 1 144 75 M 121 80 A 13 13 0 0 1 139 80 M 130 84 A 2 2 0 1 1 130 86" stroke="#ffffff" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+    <rect x="110" y="55" width="40" height="18" rx="4" fill="#ffffff" opacity="0.9"/>
+    <circle cx="118" cy="64" r="2" fill="#047857"/>
+    <circle cx="126" cy="64" r="2" fill="#047857"/>
+    <circle cx="134" cy="64" r="2" fill="#047857"/>
+    <circle cx="142" cy="64" r="2" fill="#047857"/>
+
+    <text x="130" y="115" fill="#ffffff" font-size="15" font-weight="700" text-anchor="middle">ДОМАШНИЙ РОУТЕР</text>
+    <text x="130" y="135" fill="#a7f3d0" font-size="11" text-anchor="middle">Wi-Fi + Проброс порта (2222)</text>
+    <text x="130" y="152" fill="#ffffff" font-size="10" opacity="0.9" text-anchor="middle">Без внешнего сервера обмена!</text>
+    <text x="130" y="168" fill="#d1fae5" font-size="9.5" text-anchor="middle">Прямой гигабитный обмен</text>
+  </g>
+
+  <!-- Connection Lines -->
+  <!-- Outside phone to router -->
+  <path d="M 230 250 L 370 290" fill="none" stroke="#38bdf8" stroke-width="3" stroke-dasharray="6,4"/>
+  <!-- Router to PC Storage -->
+  <path d="M 630 310 L 750 310" fill="none" stroke="#10b981" stroke-width="4"/>
+
+  <!-- Local devices to router / storage -->
+  <path d="M 500 400 L 500 490" fill="none" stroke="#10b981" stroke-width="3"/>
+  <path d="M 230 460 Q 300 370, 370 330" fill="none" stroke="#10b981" stroke-width="3"/>
+  <path d="M 750 460 Q 680 370, 630 330" fill="none" stroke="#10b981" stroke-width="3"/>
+
+  <!-- Outside Device (Internet) -->
+  <g transform="translate(50, 190)" filter="url(#shadow3)">
+    <rect width="180" height="130" rx="14" fill="#1e293b" stroke="#38bdf8" stroke-width="1.5"/>
+    <text x="90" y="30" fill="#38bdf8" font-size="12" font-weight="700" text-anchor="middle">🌍 Снаружи (Интернет)</text>
+    <text x="90" y="52" fill="#f8fafc" font-size="11" font-weight="600" text-anchor="middle">Смартфон или ноутбук</text>
+    <text x="90" y="74" fill="#94a3b8" font-size="9.5" text-anchor="middle">Подключение по DDNS / IP</text>
+    <text x="90" y="90" fill="#94a3b8" font-size="9.5" text-anchor="middle">через порт роутера 2222</text>
+    <text x="90" y="110" fill="#38bdf8" font-size="9" text-anchor="middle">Прямой вход домой!</text>
+  </g>
+
+  <!-- Local Storage Node -->
+  <g transform="translate(750, 240)" filter="url(#shadow3)">
+    <rect width="200" height="145" rx="14" fill="#064e3b" stroke="#10b981" stroke-width="2"/>
+    <text x="100" y="32" fill="#a7f3d0" font-size="12" font-weight="700" text-anchor="middle">🗄️ Домашний ПК (Хранилище)</text>
+    <text x="100" y="55" fill="#f8fafc" font-size="11" font-weight="600" text-anchor="middle">SFTP-сервер (192.168.1.100)</text>
+    <text x="100" y="78" fill="#d1fae5" font-size="9.5" text-anchor="middle">• Фиксированный IP в сети</text>
+    <text x="100" y="94" fill="#d1fae5" font-size="9.5" text-anchor="middle">• Диски с фото и видео</text>
+    <text x="100" y="110" fill="#d1fae5" font-size="9.5" text-anchor="middle">• Служба Windows (всегда он-лайн)</text>
+    <text x="100" y="128" fill="#34d399" font-size="9" font-weight="600" text-anchor="middle">Полная приватность!</text>
+  </g>
+
+  <!-- Local Device 1: Phone on Wi-Fi -->
+  <g transform="translate(50, 420)" filter="url(#shadow3)">
+    <rect width="180" height="110" rx="14" fill="#1e293b" stroke="#10b981" stroke-width="1.5"/>
+    <text x="90" y="30" fill="#10b981" font-size="12" font-weight="700" text-anchor="middle">📱 Телефон Дома</text>
+    <text x="90" y="52" fill="#f8fafc" font-size="11" font-weight="600" text-anchor="middle">По домашнему Wi-Fi</text>
+    <text x="90" y="74" fill="#94a3b8" font-size="9.5" text-anchor="middle">Мгновенный просмотр</text>
+    <text x="90" y="90" fill="#64748b" font-size="8.5" text-anchor="middle">Скорость до 1000 Мбит/с</text>
+  </g>
+
+  <!-- Local Device 2: Smart TV on LAN -->
+  <g transform="translate(410, 490)" filter="url(#shadow3)">
+    <rect width="180" height="100" rx="14" fill="#1e293b" stroke="#10b981" stroke-width="1.5"/>
+    <text x="90" y="28" fill="#10b981" font-size="12" font-weight="700" text-anchor="middle">📺 Телевизор в зале</text>
+    <text x="90" y="48" fill="#f8fafc" font-size="10.5" font-weight="600" text-anchor="middle">По кабелю или Wi-Fi</text>
+    <text x="90" y="70" fill="#94a3b8" font-size="9.5" text-anchor="middle">Смотрит 4K видео прямо</text>
+    <text x="90" y="85" fill="#64748b" font-size="8.5" text-anchor="middle">с дисков ПК без тормозов</text>
+  </g>
+
+  <!-- Local Device 3: Laptop/Tablet on Wi-Fi -->
+  <g transform="translate(750, 420)" filter="url(#shadow3)">
+    <rect width="180" height="110" rx="14" fill="#1e293b" stroke="#10b981" stroke-width="1.5"/>
+    <text x="90" y="30" fill="#10b981" font-size="12" font-weight="700" text-anchor="middle">💻 Домашний Ноутбук</text>
+    <text x="90" y="52" fill="#f8fafc" font-size="11" font-weight="600" text-anchor="middle">Просмотрщик Windows</text>
+    <text x="90" y="74" fill="#94a3b8" font-size="9.5" text-anchor="middle">Монтирует диски хранилища</text>
+    <text x="90" y="90" fill="#64748b" font-size="8.5" text-anchor="middle">Сортирует и чистит файлы</text>
+  </g>
+
+  <!-- Bottom note -->
+  <text x="500" y="625" fill="#64748b" font-size="11" text-anchor="middle">Внутренняя сеть полностью автономна: интернет можно отключить вовсе, и все домашние устройства продолжат работать на полной скорости</text>
+</svg>

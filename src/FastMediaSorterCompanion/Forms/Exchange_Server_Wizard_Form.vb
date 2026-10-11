@@ -1,4 +1,4 @@
-Option Strict On
+﻿Option Strict On
 
 Imports System.Drawing
 Imports System.Threading
@@ -45,6 +45,8 @@ Friend NotInheritable Class Exchange_Server_Wizard_Form
     Private _btnCopyPassword As Button
     Private _txtFingerprint As TextBox
     Private _btnCopyFingerprint As Button
+    Private _txtString As TextBox
+    Private _btnCopyString As Button
     Private _lblCopied As Label
     Private _busy As Boolean
     Private _copied As Boolean
@@ -73,9 +75,11 @@ Friend NotInheritable Class Exchange_Server_Wizard_Form
         Return New TextBox With {.ReadOnly = True, .Width = ContentWidth, .Margin = New Padding(0, 0, 0, 2), .UseSystemPasswordChar = masked}
     End Function
 
-    Private Function NewButton(text As String) As Button
-        Return New Button With {.AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink, .Padding = New Padding(12, 4, 12, 4),
+    Private Function NewButton(text As String, Optional glyph As String = "", Optional role As ButtonGlyphRole = ButtonGlyphRole.Neutral) As Button
+        Dim b As New Button With {.AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink, .Padding = New Padding(12, 4, 12, 4),
             .Margin = New Padding(0, 4, 8, 4), .Text = text}
+        If glyph.Length > 0 Then ButtonGlyphs.Apply(b, glyph, role)
+        Return b
     End Function
 
     Private Sub BuildUi(defaultLogin As String)
@@ -148,15 +152,25 @@ Friend NotInheritable Class Exchange_Server_Wizard_Form
                 If _chkShow.Checked Then _revealed = True
             End Sub
         _pnlFacts.Controls.Add(_chkShow)
-        _btnCopyPassword = NewButton(ExchangeText.CopyPasswordButton())
+        _btnCopyPassword = NewButton(ExchangeText.CopyPasswordButton(), "action.copy")
         AddHandler _btnCopyPassword.Click, AddressOf OnCopyPassword
         _pnlFacts.Controls.Add(_btnCopyPassword)
         _pnlFacts.Controls.Add(Caption(ExchangeText.FingerprintLabel()))
         _txtFingerprint = ReadOnlyBox()
         _pnlFacts.Controls.Add(_txtFingerprint)
-        _btnCopyFingerprint = NewButton(ExchangeText.CopyFingerprintButton())
+        _btnCopyFingerprint = NewButton(ExchangeText.CopyFingerprintButton(), "action.copy")
         AddHandler _btnCopyFingerprint.Click, AddressOf OnCopyFingerprint
         _pnlFacts.Controls.Add(_btnCopyFingerprint)
+        ' ticket 187 (168 section 5): the account is made, so the string the clients paste is offered beside the fingerprint. It is built by the
+        ' server binary from the configured address and the real certificate, and only shown once the address exists.
+        _pnlFacts.Controls.Add(Caption(ExchangeConnectionStringText.StringLabel()))
+        _txtString = ReadOnlyBox()
+        _txtString.Visible = False
+        _pnlFacts.Controls.Add(_txtString)
+        _btnCopyString = NewButton(ExchangeConnectionStringText.CopyButton(), "action.copy")
+        _btnCopyString.Visible = False
+        AddHandler _btnCopyString.Click, AddressOf OnCopyString
+        _pnlFacts.Controls.Add(_btnCopyString)
         _lblCopied = Note("")
         _lblCopied.Visible = False
         _pnlFacts.Controls.Add(_lblCopied)
@@ -165,9 +179,9 @@ Friend NotInheritable Class Exchange_Server_Wizard_Form
 
         Dim buttons As New FlowLayoutPanel With {.AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink, .FlowDirection = FlowDirection.LeftToRight,
             .WrapContents = False, .Margin = New Padding(0, 8, 0, 4)}
-        _btnStart = NewButton(ExchangeAdminText.WizardStart())
+        _btnStart = NewButton(ExchangeAdminText.WizardStart(), "action.confirm", ButtonGlyphRole.Affirmative)
         AddHandler _btnStart.Click, AddressOf OnStartClicked
-        _btnClose = NewButton(Localization.T("Закрыть"))
+        _btnClose = NewButton(Localization.T("Закрыть"), "nav.close", ButtonGlyphRole.Dismissing)
         AddHandler _btnClose.Click, AddressOf OnCloseClicked
         buttons.Controls.Add(_btnStart)
         buttons.Controls.Add(_btnClose)
@@ -267,6 +281,7 @@ Friend NotInheritable Class Exchange_Server_Wizard_Form
                 _pnlFacts.Visible = True
                 r.Wipe()
                 _btnClose.Focus()
+                Dim stringTask As Task = ShowConnectionStringAsync()
             Else
                 ' nothing was created: the person can fix the login and go again
                 _btnStart.Enabled = True
@@ -288,6 +303,29 @@ Friend NotInheritable Class Exchange_Server_Wizard_Form
         If SecureClipboard.SetSecret(_txtPassword.Text) Then
             _copied = True
             ShowCopied(ExchangeText.PasswordCopied(), True)
+        Else
+            ShowCopied(ExchangeText.CopyFailed(), False)
+        End If
+    End Sub
+
+    ''' <summary>Asks the server binary for the string (it refuses while the address for clients is empty - then the row stays hidden).</summary>
+    Private Async Function ShowConnectionStringAsync() As Task
+        Dim made As ExchangeProcess.ConnectionStringResult = Await Task.Run(Function() ExchangeProcess.ConnectionString("", ""))
+        If IsDisposed OrElse made.Outcome <> ExchangeProcess.ConnectionStringOutcome.Made Then Return
+        _txtString.Text = made.Text
+        _txtString.Visible = True
+        _btnCopyString.Visible = True
+        ClientSize = Controls(0).PreferredSize
+        DpiLayout.ClampToWorkingArea(Me)
+    End Function
+
+    Private Sub OnCopyString(sender As Object, e As EventArgs)
+        If _txtString.TextLength = 0 Then Return
+        ' not a secret (no password, token or code is in it): a plain copy through the one clipboard door
+        Dim data As New DataObject()
+        data.SetText(_txtString.Text, TextDataFormat.UnicodeText)
+        If SecureClipboard.TrySetDataObject(data) Then
+            ShowCopied(ExchangeConnectionStringText.Copied(), True)
         Else
             ShowCopied(ExchangeText.CopyFailed(), False)
         End If

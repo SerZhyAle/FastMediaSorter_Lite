@@ -109,6 +109,7 @@ Friend NotInheritable Class Resource_Credential_Form
             .DialogResult = DialogResult.None
         }
         AddHandler okButton.Click, AddressOf Confirm
+        ButtonGlyphs.Apply(okButton, "action.confirm", ButtonGlyphRole.Affirmative)
 
         dismissButton = New Button With {
             .Name = "resource_Cancel",
@@ -117,6 +118,7 @@ Friend NotInheritable Class Resource_Credential_Form
             .Text = Localization.T("Отмена"),
             .DialogResult = DialogResult.Cancel
         }
+        ButtonGlyphs.Apply(dismissButton, "action.cancel", ButtonGlyphRole.Dismissing)
 
         Me.Controls.Add(prompt)
         Me.Controls.Add(field)

@@ -1,4 +1,4 @@
-﻿Option Strict On
+Option Strict On
 
 Imports System.Collections.Generic
 Imports System.Drawing
@@ -323,6 +323,8 @@ Public Class ExchangeGroupTests
         allowed = allowed.Concat({"ExchangeAdmin.vb", "ExchangeAdminModel.vb", "ExchangeAdminText.vb", "ExchangeServerWizard.vb", "Exchange_Account_Admin_Form.vb",
                                   "Exchange_Server_Wizard_Form.vb", "Share_Settings_Form.ExchangeAdmin.vb",
                                   "Server_Welcome_Form.vb"}).ToArray()   ' ticket 185: a second entry to the same acts (the wizard), explaining them - spec 185 section 2
+        ' ticket 187 T-2: the operator's connection string is built by the server binary, shown in its own window beside the fingerprint
+        allowed = allowed.Concat({"ExchangeConnectionStringText.vb", "Exchange_Connection_String_Form.vb"}).ToArray()
         For Each p As String In ExchangeTestSupport.CompanionSources()
             Dim name As String = Path.GetFileName(p)
             If name.StartsWith("Localization.", StringComparison.Ordinal) OrElse allowed.Contains(name) Then Continue For

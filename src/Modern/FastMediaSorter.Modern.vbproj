@@ -124,6 +124,9 @@
       <LogicalName>FmsPayloadicons/doc-html-translate.png</LogicalName>
     </EmbeddedResource>
     <EmbeddedResource Include="..\..\assets\glyphs\*.svg">
+      <!-- MSBuild reads the penultimate extension of a resource file name as a culture: "action.run.svg" is
+           Rundi ("run"), so that glyph was silently moved to a satellite assembly and left out of the exe. -->
+      <WithCulture>false</WithCulture>
       <LogicalName>FmsPayloadglyphs/%(Filename)%(Extension)</LogicalName>
     </EmbeddedResource>
   </ItemGroup>

@@ -78,5 +78,42 @@ Public Class SiteAddressListTests
         Assert.Equal(SitePages.DocHtmlTranslateSiteRoot, SitePages.DocHtmlTranslateSiteUrl("en"))
     End Sub
 
+    <Fact>
+    Public Sub ThePortalLivesOnTheAndroidSiteAndIsNotOnThisProductsAddressList()
+        Assert.Equal(SitePages.AndroidAppSiteRoot & "docs/media-exchange-portal/", SitePages.ExchangePortalRoot)
+        Assert.DoesNotContain(SiteAddressList.Entries(), Function(e) e.Address.StartsWith(SitePages.ExchangePortalRoot, StringComparison.Ordinal))
+        Assert.False(SitePages.ExchangePortalRoot.StartsWith(SitePages.SiteRoot, StringComparison.Ordinal))
+    End Sub
+
+    <Fact>
+    Public Sub ThePortalStartPageFollowsTheUiLanguage()
+        Assert.Equal(SitePages.ExchangePortalRoot, SitePages.ExchangePortalUrl("", "en"))
+        Assert.Equal(SitePages.ExchangePortalRoot, SitePages.ExchangePortalUrl(Nothing, Nothing))
+        Assert.Equal(SitePages.ExchangePortalRoot & "index-ru.html", SitePages.ExchangePortalUrl("", "ru"))
+        Assert.Equal(SitePages.ExchangePortalRoot & "index-uk.html", SitePages.ExchangePortalUrl("", "UK"))
+        For Each code As String In Localization.Codes.Where(Function(c) c <> "ru" AndAlso c <> "uk")
+            Assert.Equal(SitePages.ExchangePortalRoot, SitePages.ExchangePortalUrl("", code))
+        Next
+    End Sub
+
+    <Fact>
+    Public Sub EveryPortalPageHasAnEnglishRussianAndUkrainianAddress()
+        For Each page As String In New String() {"home-network", "windows-servers", "live-broadcast", "exchange-server", "clouds", "editions"}
+            Assert.Equal(SitePages.ExchangePortalRoot & page & ".html", SitePages.ExchangePortalUrl(page, "en"))
+            Assert.Equal(SitePages.ExchangePortalRoot & page & "-ru.html", SitePages.ExchangePortalUrl(page, "ru"))
+            Assert.Equal(SitePages.ExchangePortalRoot & page & "-uk.html", SitePages.ExchangePortalUrl(page, "uk"))
+            For Each code As String In Localization.Codes.Where(Function(c) c <> "ru" AndAlso c <> "uk")
+                Assert.Equal(SitePages.ExchangePortalRoot & page & ".html", SitePages.ExchangePortalUrl(page, code))
+            Next
+        Next
+    End Sub
+
+    <Fact>
+    Public Sub AnUnknownPortalPageOpensTheStartPageNeverAMissingOne()
+        Assert.Equal(SitePages.ExchangePortalRoot, SitePages.ExchangePortalUrl("no-such-page", "en"))
+        Assert.Equal(SitePages.ExchangePortalRoot & "index-ru.html", SitePages.ExchangePortalUrl("../x", "ru"))
+        Assert.Equal(SitePages.ExchangePortalRoot & "home-network.html", SitePages.ExchangePortalUrl(" Home-Network ", "de"))
+    End Sub
+
 End Class
 #End If

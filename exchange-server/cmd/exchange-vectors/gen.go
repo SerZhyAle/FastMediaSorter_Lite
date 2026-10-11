@@ -12,11 +12,12 @@ import (
 	"fms/exchange-server/internal/wire"
 )
 
-// What is generated: two JSON files and the provenance that names them.
+// What is generated: three JSON files and the provenance that names them.
 const (
 	framesFileName     = "frames-v2.json"
 	recordsFileName    = "records-v1.json"
 	provenanceFileName = "PROVENANCE.txt"
+	// connFileName (connection-string-v1.json) is declared in connstr.go
 
 	contractID      = "DEVICE-EXCHANGE"
 	contractVersion = "0.17"
@@ -162,6 +163,9 @@ func generate(commit string) (files map[string][]byte, err error) {
 	if files[recordsFileName], err = render(records); err != nil {
 		return nil, err
 	}
+	if files[connFileName], err = render(connVectors()); err != nil {
+		return nil, err
+	}
 	files[provenanceFileName] = []byte(provenance(files, commit))
 	return files, nil
 }
@@ -185,14 +189,14 @@ func provenance(files map[string][]byte, commit string) string {
 		commit = "not recorded"
 	}
 	var b strings.Builder
-	fmt.Fprintf(&b, "Exchange conformance vectors for %s %s (rungs 1 and 2).\n\n", contractID, contractVersion)
+	fmt.Fprintf(&b, "Exchange conformance vectors for %s %s (rungs 1 and 2, and the connection string of ticket 187).\n\n", contractID, contractVersion)
 	b.WriteString("generator: cmd/exchange-vectors in the exchange-server module of the Fast Media Sorter & Sharing for Windows repository\n")
 	b.WriteString("command:   go run ./cmd/exchange-vectors -out testdata/vectors\n")
 	fmt.Fprintf(&b, "commit:    %s\n\n", commit)
 	b.WriteString("These files are generated, never edited: a hand edit changes a hash below and fails the suite; the only way to change them is to\n")
 	b.WriteString("change the server (or the script) and run the command again. Regenerating without a change gives the same bytes.\n\n")
 	b.WriteString("sha256:\n")
-	names := []string{framesFileName, recordsFileName}
+	names := append([]string(nil), hashedFiles...)
 	sort.Strings(names)
 	for _, n := range names {
 		sum := sha256.Sum256(files[n])
@@ -203,7 +207,7 @@ func provenance(files map[string][]byte, commit string) string {
 
 // checkProvenance verifies that the files carry the hashes PROVENANCE.txt names.
 func checkProvenance(files map[string][]byte, prov string) error {
-	for _, n := range []string{framesFileName, recordsFileName} {
+	for _, n := range hashedFiles {
 		sum := sha256.Sum256(files[n])
 		want := fmt.Sprintf("%x", sum)
 		found := false
@@ -231,3 +235,6 @@ func mustClose(r *rig) {
 		closeErr = err
 	}
 }
+
+// hashedFiles are the generated vector files PROVENANCE.txt names a hash for, in the order it lists them.
+var hashedFiles = []string{framesFileName, recordsFileName, connFileName}

@@ -83,6 +83,10 @@ Public NotInheritable Class File_Details_Form
         AddHandler btnClose.Click, Sub() Close()
 
 #If Not NETFRAMEWORK Then
+        ' A non-modal information window with no answer of its own: both commands are mono. (Close is not a
+        ' CancelButton here - Escape is wired by hand - so it is not the dismissing answer of a question.)
+        ButtonGlyphs.Apply(btnCopy, "action.copy")
+        ButtonGlyphs.Apply(btnClose, "nav.close")
         BuildDockedLayout()
         ' LAST line of the builder: scaling touches only the children that exist by now (124 UX-202).
         DialogLayout.ApplyAutoScale(Me)

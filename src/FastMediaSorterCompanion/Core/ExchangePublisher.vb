@@ -41,6 +41,12 @@ Friend Interface IExchangeProducerHooks
 
 End Interface
 
+''' <summary>Ticket 187 rule 9: what leaving the server asks of the producer, before the device revokes itself: every resource it holds is
+''' unpublished (best effort, bounded by the caller's token). A separate interface so a producer without it is not a defect.</summary>
+Friend Interface IExchangeProducerLeave
+    Function UnpublishAllAsync(session As ExchangeControlSession, ct As CancellationToken) As Task
+End Interface
+
 Friend Enum ExchangePublishState
     ''' <summary>The server has the resource (it answered `published`).</summary>
     Published = 0
@@ -158,7 +164,7 @@ Friend NotInheritable Class ExchangePublisherOptions
 End Class
 
 Friend NotInheritable Class ExchangePublisher
-    Implements IExchangeProducerHooks
+    Implements IExchangeProducerHooks, IExchangeProducerLeave
     Implements IDisposable
 
     Private NotInheritable Class Published
@@ -271,6 +277,24 @@ Friend NotInheritable Class ExchangePublisher
         End SyncLock
         Dim t As Task = Task.Run(Function() HandleOpenAsync(session, tunnelId, resourceId, shareId, ct))
     End Sub
+
+    ''' <summary>Leaving: every resource on the server is unpublished, in turn, each best effort. The local share, its credential, its host
+    ''' key, its `.fmscfg` and its QR are not touched - the share only stops being listed in the account.</summary>
+    Public Async Function UnpublishAllAsync(session As ExchangeControlSession, ct As CancellationToken) As Task Implements IExchangeProducerLeave.UnpublishAllAsync
+        If session Is Nothing Then Return
+        Dim all As List(Of Published)
+        SyncLock _gate
+            all = _published.Values.ToList()
+        End SyncLock
+        For Each p As Published In all
+            Try
+                Await session.SendAsync(ExchangeMessages.Unpublish(p.ResourceId), ct).ConfigureAwait(False)
+            Catch ex As OperationCanceledException
+                Exit For
+            End Try
+        Next
+        _options.Log.Invoke("Exchange producer: unpublished " & all.Count.ToString(Globalization.CultureInfo.InvariantCulture) & " resources before leaving")
+    End Function
 
     Public Sub OnAccountForgotten() Implements IExchangeProducerHooks.OnAccountForgotten
         SyncLock _gate

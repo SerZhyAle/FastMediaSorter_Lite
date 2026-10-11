@@ -155,6 +155,81 @@ Public Class ExchangeHelperTests
         Next
     End Sub
 
+    ''' <summary>
+    ''' Ticket 162 section 4: the server builds the admin pipe's descriptor from <c>admin.manageSids</c>
+    ''' and in service mode runs as LocalService, so the enrolled user is admitted only when the
+    ''' helper writes the member. The pure merge is run, not read.
+    ''' </summary>
+    <Fact>
+    Public Sub ServiceHelper_ManageSids_AreWrittenIntoTheAdminMember_AndNothingElseMoves()
+        Const sid As String = "S-1-5-21-1004336348-1177238915-682003330-1001"
+        Dim full As String =
+            "{""_comment"":""keep"",""listen"":"":22022"",""publicEndpoint"":""pc.example:22022""," &
+            """limits"":{""tunnelsPerResource"":16},""admin"":{""_comment"":""admin note"",""manageSids"":[]}}"
+        Dim out As String = RunDriver(ServiceHelperPath(),
+            "function ShowCase($tag, $text) {" & vbLf &
+            "  if ($null -eq $text) { Write-Output ($tag + '|UNCHANGED'); return }" & vbLf &
+            "  $o = $text | ConvertFrom-Json" & vbLf &
+            "  Write-Output ($tag + '|' + (@($o.admin.manageSids) -join ',') + '|' + $o.listen + '|' + $o.publicEndpoint + '|' + $o.limits.tunnelsPerResource + '|' + $o.admin._comment + '|' + $o._comment)" & vbLf &
+            "}" & vbLf &
+            "ShowCase 'EMPTY' (Merge-AdminManageSids '{}' @('" & sid & "'))" & vbLf &
+            "ShowCase 'KEPT' (Merge-AdminManageSids '" & full & "' @('" & sid & "'))" & vbLf &
+            "ShowCase 'LOWER' (Merge-AdminManageSids '{}' @('" & sid.ToLowerInvariant() & "'))" & vbLf &
+            "ShowCase 'SAME' (Merge-AdminManageSids '{""admin"":{""manageSids"":[""" & sid & """]}}' @('" & sid & "'))" & vbLf &
+            "ShowCase 'STALE' (Merge-AdminManageSids '{""admin"":{""manageSids"":[""S-1-5-21-9-9-9-1500""]}}' @('" & sid & "','S-1-5-32-545','s-1-5-32-545'))" & vbLf &
+            "ShowCase 'NULLADMIN' (Merge-AdminManageSids '{""admin"":null}' @('" & sid & "'))" & vbLf &
+            "foreach ($case in @(@('NOTJSON','not json','" & sid & "'), @('ARRAY','[]','" & sid & "'), @('ADMINSTR','{""admin"":""x""}','" & sid & "'), @('NOTSID','{}','WD'))) {" & vbLf &
+            "  try { [void](Merge-AdminManageSids $case[1] @($case[2])); Write-Output ($case[0] + '|NOTHROW') } catch { Write-Output ($case[0] + '|THROW') }" & vbLf &
+            "}")
+        Dim lines As String() = out.Split({vbCrLf, vbLf}, StringSplitOptions.RemoveEmptyEntries).Select(Function(s) s.Trim()).ToArray()
+        Dim byTag As Dictionary(Of String, String) = lines.ToDictionary(Function(l) l.Substring(0, l.IndexOf("|"c)), Function(l) l.Substring(l.IndexOf("|"c) + 1))
+
+        Assert.Equal(sid & "|||||", byTag("EMPTY"))
+        ' Every other member and both comments ride through untouched.
+        Assert.Equal(sid & "|:22022|pc.example:22022|16|admin note|keep", byTag("KEPT"))
+        ' The server accepts only the upper-case "S-1-" prefix; a lower-case SID is written normalised.
+        Assert.Equal(sid & "|||||", byTag("LOWER"))
+        ' A healthy file is left alone (a repair rewrites nothing), a stale user is replaced, not kept.
+        Assert.Equal("UNCHANGED", byTag("SAME"))
+        Assert.Equal(sid & ",S-1-5-32-545|||||", byTag("STALE"))
+        Assert.Equal(sid & "|||||", byTag("NULLADMIN"))
+        ' Text that is not a config object, or a value that is not a SID, never reaches the file.
+        For Each tag As String In {"NOTJSON", "ARRAY", "ADMINSTR", "NOTSID"}
+            Assert.Equal("THROW", byTag(tag))
+        Next
+    End Sub
+
+    <Fact>
+    Public Sub ServiceHelper_ManageSids_AreWrittenByInstallRepairAndMigrateBeforeTheServiceRuns()
+        Dim code As String = CodeOnly(ServiceHelperFile)
+        ' install, repair and migrate-to-service each seed the file, write the member, then lock the ACL
+        ' and only then register: three branches, no other caller.
+        Assert.Equal(3, Regex.Matches(code, "Initialize-ConfigFile\s+Set-AdminManageSids\s+Set-StateFileAcls").Count)
+        Assert.Equal(3, Regex.Matches(code, "(?<![\w-])Set-AdminManageSids(?![\w-])").Count - 1)
+        For Each verb As String In {"install", "repair", "migrate-to-service"}
+            Dim b As String = Branch(code, verb)
+            Assert.True(b.IndexOf("Set-AdminManageSids", StringComparison.Ordinal) >= 0 AndAlso
+                        b.IndexOf("Set-AdminManageSids", StringComparison.Ordinal) < b.IndexOf("Register-Service", StringComparison.Ordinal),
+                        "'" & verb & "' must write admin.manageSids before the service is registered and started.")
+        Next
+        For Each verb As String In {"remove", "start", "stop", "restart"}
+            Assert.DoesNotContain("Set-AdminManageSids", Branch(code, verb))
+        Next
+        ' A migration writes it AFTER the copy: the user store's file would otherwise overwrite it.
+        Dim migrate As String = Branch(code, "migrate-to-service")
+        Assert.True(migrate.IndexOf("Copy-State", StringComparison.Ordinal) < migrate.IndexOf("Set-AdminManageSids", StringComparison.Ordinal))
+
+        ' The writer: a link is refused, a bad file is a state error that leaves the file alone, the
+        ' write is a temporary file replaced over the original without a BOM (the Go parser refuses one).
+        Dim fn As String = FunctionBody(code, "Set-AdminManageSids")
+        Assert.Contains("Test-ReparsePoint $path", fn)
+        Assert.Contains("was not changed"" 6", fn)
+        Assert.Contains("UTF8Encoding($false)", fn)
+        Assert.Contains("[System.IO.File]::Replace($tmp, $path, $null)", fn)
+        Assert.DoesNotContain("Set-Content", fn)
+        Assert.DoesNotContain("Out-File", fn)
+    End Sub
+
     <Fact>
     Public Sub ServiceHelper_Sddl_IsBuiltOnlyFromValidatedSids()
         Dim code As String = CodeOnly(ServiceHelperFile)
@@ -633,7 +708,7 @@ Public Class ExchangeHelperTests
             "param([string]$Helper)" & vbLf &
             "$ErrorActionPreference='Stop'" & vbLf &
             "$ast=[System.Management.Automation.Language.Parser]::ParseFile($Helper,[ref]$null,[ref]$null)" & vbLf &
-            "foreach ($n in 'Test-ManageSid','Split-Sids','New-ServiceSddl','Get-ServiceCommandLine') {" & vbLf &
+            "foreach ($n in 'Test-ManageSid','Split-Sids','New-ServiceSddl','Get-ServiceCommandLine','Merge-AdminManageSids') {" & vbLf &
             "  $fd=$ast.Find({param($x) $x -is [System.Management.Automation.Language.FunctionDefinitionAst] -and $x.Name -eq $n},$true)" & vbLf &
             "  if (-not $fd) { throw ('function ' + $n + ' is missing from the helper') }" & vbLf &
             "  Invoke-Expression $fd.Extent.Text" & vbLf &

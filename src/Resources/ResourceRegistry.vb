@@ -58,6 +58,12 @@ Friend NotInheritable Class ResourceDescriptor
     Public Property ExchangeResourceId As String
     <JsonIgnore(Condition:=JsonIgnoreCondition.WhenWritingNull)>
     Public Property ExchangeDeviceId As String
+    ''' <summary>Ticket 187 rule 6: the viewer's account ENTRY the resource was attached through. A producer's resource id is looked up only
+    ''' inside an account, so the binding is the entry and the resource id TOGETHER. Nothing on a resource attached before entries existed
+    ''' (through the Share Manager's agent) - such a resource is bound to that older account and no entry claims it. Removing an entry
+    ''' never deletes a resource carrying its id: the resource shows "sign in again" until the entry is added back.</summary>
+    <JsonIgnore(Condition:=JsonIgnoreCondition.WhenWritingNull)>
+    Public Property ExchangeEntryId As String
     ''' <summary>The producing device's name as the directory last said it (for the list's type column).</summary>
     <JsonIgnore(Condition:=JsonIgnoreCondition.WhenWritingNull)>
     Public Property ExchangeDeviceName As String
@@ -112,6 +118,7 @@ Friend Module ResourceOrigin
         built.Origin = source.Origin
         built.ExchangeResourceId = source.ExchangeResourceId
         built.ExchangeDeviceId = source.ExchangeDeviceId
+        built.ExchangeEntryId = source.ExchangeEntryId
         built.ExchangeDeviceName = source.ExchangeDeviceName
         built.ExchangeNotice = source.ExchangeNotice
         built.TunnelHost = source.TunnelHost
@@ -134,6 +141,7 @@ Friend Module ResourceOrigin
         resource.Origin = Nothing
         resource.ExchangeResourceId = Nothing
         resource.ExchangeDeviceId = Nothing
+        resource.ExchangeEntryId = Nothing
         resource.ExchangeDeviceName = Nothing
         resource.ExchangeNotice = Nothing
         resource.TunnelHost = Nothing
@@ -142,10 +150,14 @@ Friend Module ResourceOrigin
         resource.TunnelPin = Nothing
     End Sub
 
-    ''' <summary>The attached resource bound to this producer's resource id, or Nothing. Ordinal: an id is case-sensitive.</summary>
-    Friend Function FindByExchangeId(resources As IEnumerable(Of ResourceDescriptor), resourceId As String) As ResourceDescriptor
+    ''' <summary>The attached resource bound to this producer's resource id, or Nothing. Ordinal: an id is case-sensitive. With an
+    ''' <paramref name="entryId"/> only a resource attached THROUGH THAT ENTRY matches (ticket 187: the binding is the entry and the resource
+    ''' id together - two accounts can hold the same resource id); without one, only a resource that no entry claims (attached through the
+    ''' Share Manager's agent before entries existed).</summary>
+    Friend Function FindByExchangeId(resources As IEnumerable(Of ResourceDescriptor), resourceId As String, Optional entryId As String = Nothing) As ResourceDescriptor
         If String.IsNullOrEmpty(resourceId) Then Return Nothing
-        Return resources.FirstOrDefault(Function(r) IsExchange(r) AndAlso String.Equals(r.ExchangeResourceId, resourceId, StringComparison.Ordinal))
+        Return resources.FirstOrDefault(Function(r) IsExchange(r) AndAlso String.Equals(r.ExchangeResourceId, resourceId, StringComparison.Ordinal) AndAlso
+                                                    String.Equals(If(r.ExchangeEntryId, ""), If(entryId, ""), StringComparison.Ordinal))
     End Function
 
 End Module

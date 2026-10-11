@@ -169,6 +169,61 @@ Public Class ExchangeProcessTests
         Assert.Equal({"set-endpoint", "203.0.113.7:22022"}, seen)
     End Sub
 
+    ' --- the connection string (ticket 187 T-2) ---------------------------------------------
+
+    <Fact>
+    Public Sub The_connection_string_is_the_binarys_own_line_with_the_name_and_login_as_separate_arguments()
+        Dim seen As String() = Nothing
+        ExchangeProcess.RunOverride = Function(args, stdin)
+                                          seen = args
+                                          Return Result(0, "FMSEXCH1:x=203.0.113.7%3A22022&n=Home+NAS&u=alice" & vbLf)
+                                      End Function
+        Dim r As ExchangeProcess.ConnectionStringResult = ExchangeProcess.ConnectionString(" Home NAS ", "alice")
+        Assert.Equal({"connection-string", "--name", "Home NAS", "--login", "alice"}, seen)
+        Assert.Equal(ExchangeProcess.ConnectionStringOutcome.Made, r.Outcome)
+        Assert.Equal("FMSEXCH1:x=203.0.113.7%3A22022&n=Home+NAS&u=alice", r.Text)
+    End Sub
+
+    <Fact>
+    Public Sub A_blank_name_and_login_are_left_out_and_the_default_string_is_the_bare_verb()
+        Dim seen As String() = Nothing
+        ExchangeProcess.RunOverride = Function(args, stdin)
+                                          seen = args
+                                          Return Result(0, "FMSEXCH1:x=203.0.113.7%3A22022" & vbLf)
+                                      End Function
+        Assert.Equal(ExchangeProcess.ConnectionStringOutcome.Made, ExchangeProcess.ConnectionString("  ", Nothing).Outcome)
+        Assert.Equal({"connection-string"}, seen)
+    End Sub
+
+    <Theory>
+    <InlineData(2, "Refused")>
+    <InlineData(4, "ConfigProblem")>
+    <InlineData(1, "Failed")>
+    <InlineData(5, "Failed")>
+    Public Sub An_exit_code_of_the_connection_string_verb_is_one_named_outcome_and_never_a_string(code As Integer, expected As String)
+        ExchangeProcess.RunOverride = Function(args, stdin) Result(code, "", "the address for clients is not set")
+        Dim r As ExchangeProcess.ConnectionStringResult = ExchangeProcess.ConnectionString("", "")
+        Assert.Equal(expected, r.Outcome.ToString())
+        Assert.Equal("", r.Text)
+    End Sub
+
+    <Fact>
+    Public Sub Output_that_is_not_a_connection_string_is_a_failure_not_a_string()
+        ExchangeProcess.RunOverride = Function(args, stdin) Result(0, "something else" & vbLf)
+        Assert.Equal(ExchangeProcess.ConnectionStringOutcome.Failed, ExchangeProcess.ConnectionString("", "").Outcome)
+        ExchangeProcess.RunOverride = Function(args, stdin) New ExchangeProcess.RunResult()
+        Assert.Equal(ExchangeProcess.ConnectionStringOutcome.Failed, ExchangeProcess.ConnectionString("", "").Outcome)
+    End Sub
+
+    <Fact>
+    Public Sub Without_the_component_there_is_no_string_and_nothing_is_run()
+        File.Delete(Path.Combine(_dir, ExchangeProcess.ExeName))
+        ExchangeProcess.RunOverride = Function(args, stdin)
+                                          Throw New InvalidOperationException("must not run")
+                                      End Function
+        Assert.Equal(ExchangeProcess.ConnectionStringOutcome.Unavailable, ExchangeProcess.ConnectionString("", "").Outcome)
+    End Sub
+
     <Fact>
     Public Sub An_empty_public_address_clears_it_with_the_dash_the_binary_knows()
         Dim seen As String() = Nothing

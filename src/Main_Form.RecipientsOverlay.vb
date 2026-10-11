@@ -33,6 +33,44 @@ Partial Public Class Main_Form
 #End If
     End Function
 
+#If Not NETFRAMEWORK Then
+    ''' <summary>Whether the rows carry a catalog glyph before their caption (WINDOWS-UI 0.4 section 11 item 1). Not in a
+    ''' right-to-left layout: the row control paints its picture and caption itself and does not yet mirror the pair, so
+    ''' those languages keep the text-only rows rather than an overlapped caption.</summary>
+    Private ReadOnly Property recipients_Row_Glyphs As Boolean
+        Get
+            Return Not Localization.IsRightToLeft()
+        End Get
+    End Property
+
+    ''' <summary>One glyph, 16 logical px at the overlay's scale, and the 6 px gap to the caption in the same bitmap,
+    ''' in the row's current ink. Re-run whenever the row's ink changes.</summary>
+    Private Sub ApplyRecipientRowGlyph(row As Button, glyphId As String)
+        Dim size As Integer = RecipientPx(ButtonGlyphs.GlyphLogicalSize)
+        Dim composed As New Bitmap(size + RecipientPx(ButtonGlyphs.GapLogicalSize), size)
+        Try
+            Using glyph As Bitmap = GlyphRenderer.Render(glyphId, size, row.ForeColor, AddressOf RuntimeBootstrap.OpenBundledAsset)
+                Using g As Graphics = Graphics.FromImage(composed)
+                    g.DrawImageUnscaled(glyph, 0, 0)
+                End Using
+            End Using
+        Catch ex As Exception
+            composed.Dispose()
+            AppFileLogger.LogException("Recipients overlay: row glyph", ex)
+            Return
+        End Try
+        Dim previous As Image = row.Image
+        row.Image = composed
+        row.ImageAlign = ContentAlignment.MiddleLeft
+        If previous Is Nothing Then
+            AddHandler row.Disposed, Sub() row.Image?.Dispose()
+        Else
+            previous.Dispose()
+        End If
+        row.Invalidate()
+    End Sub
+#End If
+
     Private recipients_Overlay As RecipientsOverlayWindow
     Private recipients_ToolTip As ToolTip
     Private recipients_Overlay_Tracking As Boolean
@@ -185,7 +223,13 @@ Partial Public Class Main_Form
         If Not String.IsNullOrEmpty(zeroPath) Then rows.Add(Tuple.Create(10, "0  " & RecipientRowCaption(zeroPath)))
 #End If
         ' Delete is always available (a valid sort action even with no folders set).
+#If Not NETFRAMEWORK Then
+        ' The glyph of the delete row is the catalog's own (WINDOWS-UI 0.4 section 11); the multiplication sign
+        ' that stood in for it is not a picture of the vocabulary (ICON-RENDER rule 1).
+        rows.Add(Tuple.Create(-1, Localization.T("Удалить")))
+#Else
         rows.Add(Tuple.Create(-1, ChrW(215) & "  " & Localization.T("Удалить")))
+#End If
 
         If recipients_ToolTip Is Nothing Then recipients_ToolTip = New ToolTip()
 
@@ -234,7 +278,7 @@ Partial Public Class Main_Form
         Dim copyW As Integer = 0
 #If Not NETFRAMEWORK Then
         copy_Caption = Localization.T("копия")
-        copyW = Math.Max(RecipientPx(38), MeasureRowText(copy_Caption, ui_Font) + RecipientPx(14))
+        copyW = Math.Max(RecipientPx(38), MeasureRowText(copy_Caption, ui_Font) + RecipientPx(14) + If(recipients_Row_Glyphs, RecipientPx(16 + 6), 0))
         ' A narrow window must not lose the path to the copy zone: below a usable width the
         ' row goes back to move-only, and the copy stays reachable by Shift+digit.
         If copyW > panelW - RecipientPx(80) Then copyW = 0
@@ -297,6 +341,7 @@ Partial Public Class Main_Form
             b.FlatAppearance.BorderSize = 0
 #If Not NETFRAMEWORK Then
             b.RowFont = ui_Font
+            If recipients_Row_Glyphs Then ApplyRecipientRowGlyph(b, If(isDelete, "action.delete", "action.move"))
 #End If
             ' Hover deepens the row's own blend (129 §3.3); only the DEL row keeps its own reds.
             b.FlatAppearance.MouseOverBackColor = If(isDelete, Color.FromArgb(140, 44, 44), RecipientRowHoverFill(r.Item1))
@@ -332,6 +377,7 @@ Partial Public Class Main_Form
                 }
                 c.Name = Recipients_Copy_Row_Name
                 c.RowFont = ui_Font
+                If recipients_Row_Glyphs Then ApplyRecipientRowGlyph(c, "action.copy")
                 c.FlatAppearance.BorderSize = 0
                 c.FlatAppearance.MouseOverBackColor = Color.FromArgb(52, 88, 52)
                 c.FlatAppearance.MouseDownBackColor = Color.FromArgb(66, 112, 66)
@@ -440,6 +486,7 @@ Partial Public Class Main_Form
                     row.BackColor = If(delete_Allowed, chrome_Theme.DestructiveRest, chrome_Theme.PanelFill)
                     row.FlatAppearance.MouseOverBackColor = If(delete_Allowed AndAlso Not chrome_Theme.IsHighContrast, chrome_Theme.DestructiveHover, chrome_Theme.PanelFill)
                     row.FlatAppearance.MouseDownBackColor = If(delete_Allowed AndAlso Not chrome_Theme.IsHighContrast, chrome_Theme.DestructivePressed, chrome_Theme.PanelFill)
+                    If recipients_Row_Glyphs Then ApplyRecipientRowGlyph(row, "action.delete")
                     Continue For
                 End If
                 If slot < 1 OrElse slot > 10 Then Continue For   ' the delete row has no destination
@@ -468,6 +515,7 @@ Partial Public Class Main_Form
                                                             If(is_Copy_Zone, chrome_Theme.ItemHover, RecipientRowHoverFill(slot)))
                 row.FlatAppearance.MouseDownBackColor = If(unusable OrElse chrome_Theme.IsHighContrast, row.BackColor,
                                                             If(is_Copy_Zone, chrome_Theme.ItemPressed, RecipientRowHoverFill(slot)))
+                If recipients_Row_Glyphs Then ApplyRecipientRowGlyph(row, If(is_Copy_Zone, "action.copy", "action.move"))
                 If recipients_ToolTip IsNot Nothing Then
                     Dim note As String = SlotHealthNote(verdict)
                     Dim tip As String = If(is_Copy_Zone,

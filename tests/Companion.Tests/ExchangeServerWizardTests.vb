@@ -195,6 +195,50 @@ Public Class ExchangeServerWizardTests
         Assert.Equal(3, p.Delays)
     End Sub
 
+    ' --- this PC as the first device of an account that was just added or reset (no account, no start, no service check) ---
+
+    Private Shared Function EnrollOnly(ports As StubPorts, Optional login As String = "Owner", Optional password As String = "TypedPassword12") As ExchangeWizardResult
+        Return ExchangeServerWizard.EnrollThisPcAsync(login, password, ports, Nothing, CancellationToken.None).GetAwaiter().GetResult()
+    End Function
+
+    <Fact>
+    Public Sub Enrolling_this_pc_alone_creates_nothing_starts_nothing_and_ignores_a_registered_service()
+        Dim p As New StubPorts With {.HasService = True}
+        Dim r As ExchangeWizardResult = EnrollOnly(p)
+        Assert.Equal(ExchangeWizardOutcome.Done, r.Outcome)
+        Assert.Equal({"inspect", "offered", "probe 127.0.0.1:22022", "enroll"}, p.Calls.ToArray())
+        Assert.Equal("TypedPassword12", p.EnrollPasswordAtCall)
+        Assert.Equal("owner", p.LastEnroll.Login)
+        Assert.Equal("SHA256:real", p.LastEnroll.AcceptedFingerprint)
+        Assert.False(r.AccountCreated)
+        ' the wizard keeps its password to show it once; this flow was given one and keeps nothing
+        Assert.Equal("", r.Password)
+        Assert.Equal("", p.LastEnroll.Password)
+    End Sub
+
+    <Fact>
+    Public Sub Enrolling_this_pc_alone_sends_nothing_secret_to_a_server_whose_certificate_is_not_the_reported_one()
+        Dim p As New StubPorts With {.ProbeFingerprint = "SHA256:someone-else"}
+        Assert.Equal(ExchangeWizardOutcome.CertificateMismatch, EnrollOnly(p).Outcome)
+        Assert.DoesNotContain("enroll", p.Calls)
+    End Sub
+
+    <Fact>
+    Public Sub Enrolling_this_pc_alone_stops_when_the_binary_cannot_be_asked()
+        Dim p As New StubPorts()
+        p.Report = New ExchangeProcess.InspectReport With {.Answered = False}
+        Assert.Equal(ExchangeWizardOutcome.NotAvailable, EnrollOnly(p).Outcome)
+        Assert.Equal({"inspect"}, p.Calls.ToArray())
+    End Sub
+
+    <Fact>
+    Public Sub A_refused_enrolment_of_this_pc_says_so_in_the_first_device_sentence()
+        Dim p As New StubPorts With {.EnrollResult = New ExchangeEnrollResult(ExchangeEnrollOutcome.Refused, ExchangeRefusal.BadCredentials, "")}
+        Dim r As ExchangeWizardResult = EnrollOnly(p)
+        Assert.Equal(ExchangeWizardOutcome.EnrollFailed, r.Outcome)
+        Assert.NotEqual("", ExchangeAdminText.ThisPcEnrolment(r))
+    End Sub
+
     ' --- nothing is done when nothing can be done --------------------------------------------------------------
 
     <Theory>
@@ -337,10 +381,14 @@ Public Class ExchangeServerWizardTests
     Public Sub The_production_ports_read_the_client_gate_before_the_agent_is_touched()
         Dim code As String = ExchangeTestSupport.CodeOnly(ExchangeTestSupport.ReadSource("Core\ExchangeServerWizard.vb"))
         Assert.Contains("Return ExchangeFeatures.IsEnabled()", ExchangeTestSupport.MethodBody(code, "Public Function AgentOffered() As Boolean"))
-        ' the flow asks AgentOffered first and only then probes
-        Dim flow As String = ExchangeTestSupport.MethodBody(code, "Friend Shared Async Function RunAsync(")
+        ' the shared tail asks AgentOffered first and only then probes - and both flows (the wizard and "this PC alone") go through it
+        Dim flow As String = ExchangeTestSupport.MethodBody(code, "Private Shared Async Function ProbeAndEnrollAsync(")
         Assert.True(flow.IndexOf("ports.AgentOffered()", StringComparison.Ordinal) < flow.IndexOf("ProbeWithRetriesAsync(", StringComparison.Ordinal))
         Assert.True(flow.IndexOf("ports.AgentOffered()", StringComparison.Ordinal) < flow.IndexOf("ports.EnrollAsync(", StringComparison.Ordinal))
+        Assert.DoesNotContain("ports.EnrollAsync(", ExchangeTestSupport.MethodBody(code, "Friend Shared Async Function RunAsync("))
+        Assert.DoesNotContain("ports.EnrollAsync(", ExchangeTestSupport.MethodBody(code, "Friend Shared Async Function EnrollThisPcAsync("))
+        Assert.Contains("ProbeAndEnrollAsync(", ExchangeTestSupport.MethodBody(code, "Friend Shared Async Function RunAsync("))
+        Assert.Contains("ProbeAndEnrollAsync(", ExchangeTestSupport.MethodBody(code, "Friend Shared Async Function EnrollThisPcAsync("))
         ' and it is the host's gated door, never a second agent, that the ports use
         Assert.DoesNotContain("New ExchangeDeviceAgent(", code)
         Assert.Contains("ExchangeDeviceHost.GetOrCreate()", code)

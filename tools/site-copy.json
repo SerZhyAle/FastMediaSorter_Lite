@@ -18,6 +18,12 @@
   "_howto": {
     "title": "HOW TO",
     "note": "Step-by-step guides. The guide pages themselves are in English and Russian.",
+    "portal": {
+      "_comment": "The shared media-exchange portal of the product family (the Android site). An absolute address on another origin, so it is NOT an item of the list below - those are repository pages, checked on disk and offered by the 404 page. Rendered as one extra HOW TO entry and one footer link, opening in a new tab. Link only the start page here; the portal page about the exchange server is never linked from a Windows-site surface (SITE-REPRESENTATION rule 4).",
+      "label": "Media exchange between your devices (portal)",
+      "footer": "Media exchange portal",
+      "url": "https://serzhyale.github.io/FastMediaSorter_mob_v2/docs/media-exchange-portal/"
+    },
     "items": [
       ["docs/how-to-viewer.html",            "Review and sort a media folder"],
       ["docs/how-to-keys.html",              "Keys, zoom and full screen"],

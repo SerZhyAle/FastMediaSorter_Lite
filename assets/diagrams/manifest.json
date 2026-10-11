@@ -1,0 +1,93 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "folder": "assets/diagrams",
+  "description": "Catalog of the connection scheme pictures kept for Fast Media Sorter & Sharing for Windows. Only the three quick scheme cards are current: they are the Russian-only copies of the portal's corrected cards (portal: Media exchange between your devices, folder from-windows). Every other file is a rejected generated picture, kept for the record and referenced by no page. The reader-facing explanation of the ways to connect is the portal, not this folder; the developer-facing index is docs/guides/NETWORK_ARCHITECTURE_AND_SCHEMES.md.",
+  "totalAssets": 15,
+  "status": {
+    "current": "quick",
+    "rejected": ["slides", "detailed", "simple", "infographics"],
+    "rejectedBy": "the portal's picture selection of 2026-10-10: invented numbers (8 MB buffer, Opus, 1-second keyframe), a real public IP and a real provider domain as examples, UPnP presented as the setup path, a zero-delay claim, generated lettering with errors"
+  },
+  "scenarios": [
+    {
+      "id": "scheme-1-internet",
+      "title": "Scheme 1: exchange server (development tree only, not available yet)",
+      "files": {
+        "quick": "quick-scheme-1-internet.svg",
+        "slide": "slide-exchange-cloud.jpg",
+        "detailed": "scheme-1-internet-exchange-detailed.svg",
+        "simple": "scheme-1-internet-exchange-simple.svg",
+        "infographic": "presentation-exchange-mesh.jpg"
+      }
+    },
+    {
+      "id": "scheme-2-broadcast",
+      "title": "Scheme 2: live broadcast and Cast (broadcasting from a Windows PC is planned, not built)",
+      "files": {
+        "quick": "quick-scheme-2-broadcast.svg",
+        "slide": "slide-live-broadcast.jpg",
+        "detailed": "scheme-2-live-broadcast-detailed.svg",
+        "simple": "scheme-2-live-broadcast-simple.svg",
+        "infographic": "presentation-live-broadcast.jpg"
+      }
+    },
+    {
+      "id": "scheme-3-router",
+      "title": "Scheme 3: home network and router (shipped)",
+      "files": {
+        "quick": "quick-scheme-3-router.svg",
+        "slide": "slide-home-storage.jpg",
+        "detailed": "scheme-3-lan-router-detailed.svg",
+        "simple": "scheme-3-lan-router-simple.svg",
+        "infographic": "presentation-lan-home-storage.jpg"
+      }
+    }
+  ],
+  "categories": {
+    "quick": {
+      "format": "SVG, 1100 x 720, Russian",
+      "purpose": "Setup cards with two blocks per device, what it does and what to set up. Corrected copies: 'works behind NAT' (devices dial out, nothing is punched), 'the delay does not build up' (the relay keeps about two seconds), the receiver asks before it plays, the UPnP option removed from the router card, an example domain instead of a real provider's.",
+      "files": [
+        "quick-scheme-1-internet.svg",
+        "quick-scheme-2-broadcast.svg",
+        "quick-scheme-3-router.svg"
+      ]
+    },
+    "slides": {
+      "format": "JPG (16:9)",
+      "purpose": "Rejected: generated imagery with broken lettering and invented footers. Kept for the record.",
+      "files": [
+        "slide-exchange-cloud.jpg",
+        "slide-live-broadcast.jpg",
+        "slide-home-storage.jpg"
+      ]
+    },
+    "detailed": {
+      "format": "SVG",
+      "purpose": "Rejected: invented limits, a real public IP as an example, UPnP as a setup path. Kept for the record.",
+      "files": [
+        "scheme-1-internet-exchange-detailed.svg",
+        "scheme-2-live-broadcast-detailed.svg",
+        "scheme-3-lan-router-detailed.svg"
+      ]
+    },
+    "simple": {
+      "format": "SVG",
+      "purpose": "Rejected: thinner than the portal's own pictures; scheme 1 names a server edition as a device role the contracts do not define. Kept for the record.",
+      "files": [
+        "scheme-1-internet-exchange-simple.svg",
+        "scheme-2-live-broadcast-simple.svg",
+        "scheme-3-lan-router-simple.svg"
+      ]
+    },
+    "infographics": {
+      "format": "JPG (16:9)",
+      "purpose": "Rejected: generated 3D imagery with third-party marks and a zero-delay claim. Kept for the record.",
+      "files": [
+        "presentation-exchange-mesh.jpg",
+        "presentation-live-broadcast.jpg",
+        "presentation-lan-home-storage.jpg"
+      ]
+    }
+  }
+}

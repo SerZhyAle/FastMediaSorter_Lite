@@ -126,6 +126,37 @@ Partial Public NotInheritable Class Localization
             "फ़ोल्डर कैसे प्रकाशित करें (वेबसाइट)", "কীভাবে ফোল্ডার প্রকাশ করবেন (ওয়েবসাইট)",
             "فولڈرز کیسے شائع کریں (ویب سائٹ)", "如何发布文件夹（网站）")
 
+        ' Links to the media exchange portal (the shared section of the product family, on the Android
+        ' app's site): one for the start page, one for each place that has a page of its own.
+        Add("Портал обмена медиа",
+            "Media exchange portal", "Портал обміну медіа",
+            "Portal für Medienaustausch", "Portale per lo scambio di media",
+            "Portal de intercambio de medios", "Portail d'échange de médias",
+            "Portal de troca de mídia", "بوابة تبادل الوسائط",
+            "मीडिया आदान-प्रदान पोर्टल", "মিডিয়া বিনিময় পোর্টাল",
+            "میڈیا تبادلہ پورٹل", "媒体交换门户")
+        Add("Доступ из дома и из других сетей (портал)",
+            "Access from home and other networks (portal)", "Доступ з дому та з інших мереж (портал)",
+            "Zugriff von zu Hause und aus anderen Netzen (Portal)", "Accesso da casa e da altre reti (portale)",
+            "Acceso desde casa y desde otras redes (portal)", "Accès depuis la maison et depuis d'autres réseaux (portail)",
+            "Acesso de casa e de outras redes (portal)", "الوصول من المنزل ومن شبكات أخرى (البوابة)",
+            "घर से और अन्य नेटवर्क से पहुँच (पोर्टल)", "বাড়ি ও অন্য নেটওয়ার্ক থেকে অ্যাক্সেস (পোর্টাল)",
+            "گھر اور دوسرے نیٹ ورکس سے رسائی (پورٹل)", "从家中和其他网络访问（门户）")
+        Add("ПК как постоянный сервер (портал)",
+            "A PC as an always-on server (portal)", "ПК як постійний сервер (портал)",
+            "PC als ständig laufender Server (Portal)", "Il PC come server sempre attivo (portale)",
+            "El PC como servidor siempre activo (portal)", "Le PC comme serveur toujours actif (portail)",
+            "O PC como servidor sempre ligado (portal)", "الحاسوب كخادم دائم التشغيل (البوابة)",
+            "पीसी हमेशा चालू सर्वर के रूप में (पोर्टल)", "পিসি সর্বদা চালু সার্ভার হিসেবে (পোর্টাল)",
+            "پی سی بطور ہمیشہ چلنے والا سرور (پورٹل)", "电脑作为常开服务器（门户）")
+        Add("Как устроен сервер обмена (портал)",
+            "How the exchange server works (portal)", "Як влаштований сервер обміну (портал)",
+            "So funktioniert der Austauschserver (Portal)", "Come funziona il server di scambio (portale)",
+            "Cómo funciona el servidor de intercambio (portal)", "Comment fonctionne le serveur d'échange (portail)",
+            "Como funciona o servidor de troca (portal)", "كيف يعمل خادم التبادل (البوابة)",
+            "आदान-प्रदान सर्वर कैसे काम करता है (पोर्टल)", "বিনিময় সার্ভার কীভাবে কাজ করে (পোর্টাল)",
+            "تبادلہ سرور کیسے کام کرتا ہے (پورٹل)", "交换服务器的工作方式（门户）")
+
         Add("Инструкция для моей модели роутера",
             "Guide for my router model", "Інструкція для моєї моделі роутера",
             "Anleitung für mein Routermodell", "Guida per il mio modello di router",

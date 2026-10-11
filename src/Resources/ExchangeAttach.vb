@@ -91,7 +91,7 @@ Friend NotInheritable Class ExchangeAttach
     ''' <summary>The resource a producer's record becomes. Nothing for a record that cannot be attached: no `access` (an offline producer's),
     ''' one that is not whole, a key login (this viewer opens a share with a password), or a root that is not a path the viewer can use.</summary>
     Friend Shared Function BuildDraft(resourceId As String, deviceId As String, deviceName As String, name As String, accessJson As String,
-                               newId As Func(Of String)) As ExchangeAttachDraft
+                               newId As Func(Of String), Optional entryId As String = Nothing) As ExchangeAttachDraft
         Dim info As ExchangeAccessInfo = Nothing
         If Not ExchangeResourceAccess.TryRead(accessJson, name, info) Then Return Nothing
         If String.IsNullOrEmpty(info.Code.Password) Then Return Nothing
@@ -104,7 +104,8 @@ Friend NotInheritable Class ExchangeAttach
             .Host = hosts(0), .Port = info.Code.Port, .UserName = info.Code.Username, .RootPath = root,
             .ReadOnlyHint = False, .PinnedFingerprint = info.Code.Fingerprint,
             .Endpoints = hosts.Select(Function(h) New ResourceEndpoint With {.Kind = KindOfHost(h), .Host = h, .Port = info.Code.Port}).ToList(),
-            .Origin = ResourceOrigin.Exchange, .ExchangeResourceId = resourceId, .ExchangeDeviceId = deviceId, .ExchangeDeviceName = deviceName}
+            .Origin = ResourceOrigin.Exchange, .ExchangeResourceId = resourceId, .ExchangeDeviceId = deviceId, .ExchangeDeviceName = deviceName,
+            .ExchangeEntryId = If(String.IsNullOrEmpty(entryId), Nothing, entryId)}
         Return New ExchangeAttachDraft(descriptor, info.Code.Password)
     End Function
 

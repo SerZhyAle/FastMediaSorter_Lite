@@ -65,10 +65,11 @@ Public NotInheritable Class InternetAccessForm
         ' button/label content); the guide link gets a fixed roomy row so its
         ' two-dot sentence can wrap to two lines instead of being clipped; the
         ' instructions text box is the only row that stretches (Percent 100).
-        Dim root As New TableLayoutPanel With {.Dock = DockStyle.Fill, .ColumnCount = 1, .RowCount = 4, .Padding = New Padding(12)}
+        Dim root As New TableLayoutPanel With {.Dock = DockStyle.Fill, .ColumnCount = 1, .RowCount = 5, .Padding = New Padding(12)}
         root.ColumnStyles.Add(New ColumnStyle(SizeType.Percent, 100.0F))
         root.RowStyles.Add(New RowStyle(SizeType.AutoSize))
         root.RowStyles.Add(New RowStyle(SizeType.Absolute, 44.0F))
+        root.RowStyles.Add(New RowStyle(SizeType.Absolute, 28.0F))
         root.RowStyles.Add(New RowStyle(SizeType.Percent, 100.0F))
         root.RowStyles.Add(New RowStyle(SizeType.AutoSize))
 
@@ -85,6 +86,8 @@ Public NotInheritable Class InternetAccessForm
             .Margin = New Padding(0, 0, 8, 0), .Text = Localization.T("Тест")}
         btnRefresh = New Button With {.AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink, .Padding = New Padding(12, 4, 12, 4),
             .Margin = New Padding(0), .Text = Localization.T("Обновить")}
+        ButtonGlyphs.Apply(btnTestNet, "action.test-connection")
+        ButtonGlyphs.Apply(btnRefresh, "action.refresh")
         AddHandler btnTestNet.Click, AddressOf OnTestNet
         AddHandler btnRefresh.Click, AddressOf OnRefresh
         tip.SetToolTip(btnTestNet, Localization.T("Проверить внешний адрес с этого ПК (не окончательно - роутер может не пускать на свой адрес изнутри)."))
@@ -100,13 +103,23 @@ Public NotInheritable Class InternetAccessForm
         AddHandler lnkGuide.LinkClicked, AddressOf OnOpenGuide
         root.Controls.Add(lnkGuide, 0, 1)
 
-        ' --- row 2: the instructions themselves, the only part that stretches ------
+        ' --- row 2: the portal page on reaching the folders from home and from other networks. It is
+        ' a website, so unlike the guide above it needs no running share and stays enabled; one line,
+        ' ellipsised, with the full text as its tooltip.
+        Dim lnkPortal As New LinkLabel With {.Dock = DockStyle.Fill, .AutoSize = False, .AutoEllipsis = True,
+            .Margin = New Padding(0, 0, 0, 6), .TextAlign = ContentAlignment.MiddleLeft,
+            .Text = Localization.T("Доступ из дома и из других сетей (портал)")}
+        AddHandler lnkPortal.LinkClicked, Sub() NetworkInfo.OpenInBrowser(ShareLinks.ExchangePortalUrl("home-network"))
+        tip.SetToolTip(lnkPortal, lnkPortal.Text)
+        root.Controls.Add(lnkPortal, 0, 2)
+
+        ' --- row 3: the instructions themselves, the only part that stretches ------
         txtForward = New TextBox With {.Dock = DockStyle.Fill, .Margin = New Padding(0, 0, 0, 10),
             .Multiline = True, .ReadOnly = True, .ScrollBars = ScrollBars.Vertical, .BorderStyle = BorderStyle.FixedSingle,
             .BackColor = SystemColors.Window}
-        root.Controls.Add(txtForward, 0, 2)
+        root.Controls.Add(txtForward, 0, 3)
 
-        ' --- row 3: hint + Close ----------------------------------------------------
+        ' --- row 4: hint + Close ----------------------------------------------------
         Dim footer As New TableLayoutPanel With {.Dock = DockStyle.Fill, .AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink,
             .ColumnCount = 2, .Margin = New Padding(0)}
         footer.ColumnStyles.Add(New ColumnStyle(SizeType.Percent, 100.0F))
@@ -115,9 +128,10 @@ Public NotInheritable Class InternetAccessForm
             .TextAlign = ContentAlignment.MiddleLeft, .Margin = New Padding(0, 6, 12, 0)}
         btnClose = New Button With {.AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink, .Padding = New Padding(16, 4, 16, 4),
             .Margin = New Padding(0), .Text = Localization.T("Закрыть"), .DialogResult = DialogResult.OK}
+        ButtonGlyphs.Apply(btnClose, "nav.close", ButtonGlyphRole.Dismissing)
         footer.Controls.Add(lblHint, 0, 0)
         footer.Controls.Add(btnClose, 1, 0)
-        root.Controls.Add(footer, 0, 3)
+        root.Controls.Add(footer, 0, 4)
 
         Me.Controls.Add(root)
         Me.CancelButton = btnClose

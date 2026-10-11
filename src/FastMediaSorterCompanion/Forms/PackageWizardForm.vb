@@ -200,6 +200,11 @@ Public NotInheritable Class PackageWizardForm
         btnEmail = New Button With {.AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink, .Margin = New Padding(0, 2, 8, 2), .Padding = New Padding(10, 5, 10, 5), .Text = Localization.T("Отправить по почте.."), .Enabled = False}
         btnClose = New Button With {.AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink, .Margin = New Padding(0, 2, 0, 2), .Padding = New Padding(16, 5, 16, 5), .Text = Localization.T("Закрыть"), .DialogResult = DialogResult.Cancel}
         btnRetryCheck = New Button With {.AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink, .Margin = New Padding(0, 2, 8, 2), .Padding = New Padding(10, 5, 10, 5), .Text = Localization.T("Проверить доступ снова"), .Visible = False}
+        ButtonGlyphs.Apply(btnCopyLogin, "action.copy")
+        ButtonGlyphs.Apply(btnSave, "action.export")
+        ButtonGlyphs.Apply(btnEmail, "action.email")
+        ButtonGlyphs.Apply(btnRetryCheck, "action.test-connection")
+        ButtonGlyphs.Apply(btnClose, "nav.close", ButtonGlyphRole.Dismissing)
         AddHandler btnRetryCheck.Click, AddressOf OnRetryCheck
         AddHandler btnCopyLogin.Click, AddressOf OnCopyLogin
         AddHandler btnSave.Click, AddressOf OnSaveConfig

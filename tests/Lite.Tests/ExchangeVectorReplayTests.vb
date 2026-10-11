@@ -9,6 +9,9 @@ Imports System.Text.Json
 Imports System.Threading
 Imports System.Threading.Tasks
 Imports Xunit
+#If COMPANION_TESTS Then
+Imports FastMediaSorterCompanion
+#End If
 
 ''' <summary>A fact that needs the Go module's generated frames: skipped, loudly and by name, when the file is not there. A
 ''' skip is the honest answer - a vector this test made up would prove only that the VB codec agrees with itself.</summary>
@@ -27,9 +30,7 @@ Public NotInheritable Class ExchangeTranscriptFactAttribute
     Inherits FactAttribute
 
     Public Sub New()
-        If Not File.Exists(ExchangeVectorCorpus.TranscriptPath()) Then
-            Skip = "the Go module's transcripts are absent (exchange-server/testdata/vectors/frames-v2.json); run `go run ./cmd/exchange-vectors -out testdata/vectors` in exchange-server"
-        End If
+        ' Ticket 178 fixtures are required: missing evidence must fail the replay.
     End Sub
 End Class
 
@@ -39,9 +40,7 @@ Friend NotInheritable Class ExchangeVectorCorpus
     End Sub
 
     Friend Shared Function TranscriptPath() As String
-        Dim root As String = ExchangeWireTestKit.RepoRoot()
-        If root.Length = 0 Then Return ""
-        Return System.IO.Path.Combine(root, "exchange-server", "testdata", "vectors", "frames-v2.json")
+        Return System.IO.Path.Combine(AppContext.BaseDirectory, "TestData", "exchange-vectors", "frames-v2.json")
     End Function
 
     Friend Shared Function Path() As String
@@ -158,13 +157,16 @@ Public Class ExchangeVectorReplayTests
                     Try
                         env = ExchangeEnvelopeCodec.Decode(body)
                     Catch ex As ExchangeWireException
-                        ' a frame that is not a valid version-2 envelope: it is in a transcript to show the server's reaction, not to be replayed
+                        ' Only the deliberately obsolete opening is expected to fail decoding.
+                        Using opening As JsonDocument = JsonDocument.Parse(body)
+                            Assert.Equal(1, opening.RootElement.GetProperty("schemaVersion").GetInt32())
+                        End Using
+                        Assert.Equal(ExchangeWireError.Schema, ex.Error)
                         notEnvelopes.Add(where & " (" & ex.Error.ToString() & ")")
                         Continue For
                     End Try
                     If Not env.IsKnown Then
-                        notEnvelopes.Add(where & " (unknown type " & env.Type & ")")
-                        Continue For
+                        problems.Add(where & " (unknown type " & env.Type & ")")
                     End If
                     Dim again As Byte() = ExchangeEnvelopeCodec.Encode(env)
                     If Not body.SequenceEqual(again) Then problems.Add(where & ": body differs")

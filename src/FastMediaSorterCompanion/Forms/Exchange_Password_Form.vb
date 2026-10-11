@@ -152,9 +152,11 @@ Friend NotInheritable Class Exchange_Password_Form
         If _mode = DialogMode.Enter Then
             _btnOk = New Button With {.AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink,
                 .Padding = New Padding(12, 4, 12, 4), .Text = ExchangeText.SavePasswordButton()}
+            ButtonGlyphs.Apply(_btnOk, "action.save", ButtonGlyphRole.Affirmative)
             AddHandler _btnOk.Click, AddressOf OnSaveClicked
             Dim btnCancel As New Button With {.AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink,
                 .Padding = New Padding(12, 4, 12, 4), .Text = Localization.T("Отмена"), .DialogResult = DialogResult.Cancel}
+            ButtonGlyphs.Apply(btnCancel, "action.cancel", ButtonGlyphRole.Dismissing)
             buttons.Controls.Add(_btnOk)
             buttons.Controls.Add(btnCancel)
             Me.AcceptButton = _btnOk
@@ -162,14 +164,17 @@ Friend NotInheritable Class Exchange_Password_Form
         Else
             _btnCopy = New Button With {.AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink,
                 .Padding = New Padding(12, 4, 12, 4), .Text = ExchangeText.CopyPasswordButton()}
+            ButtonGlyphs.Apply(_btnCopy, "action.copy", ButtonGlyphRole.Affirmative)
             AddHandler _btnCopy.Click, AddressOf OnCopyClicked
             Dim btnClose As New Button With {.AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink,
                 .Padding = New Padding(12, 4, 12, 4), .Text = Localization.T("Закрыть"), .DialogResult = DialogResult.OK}
+            ButtonGlyphs.Apply(btnClose, "nav.close", ButtonGlyphRole.Dismissing)
             buttons.Controls.Add(_btnCopy)
             If _mode = DialogMode.Generated Then
                 ' the one way to a password of the person's own choosing, from the same screen as the generated one
                 _btnOwn = New Button With {.AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink,
                     .Padding = New Padding(12, 4, 12, 4), .Text = ExchangeAdminText.OwnPasswordButton()}
+                ButtonGlyphs.Apply(_btnOwn, "action.change-password")
                 AddHandler _btnOwn.Click, AddressOf OnOwnClicked
                 buttons.Controls.Add(_btnOwn)
             End If

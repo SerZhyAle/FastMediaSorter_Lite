@@ -113,6 +113,7 @@ Partial Public NotInheritable Class Share_Settings_Form
             dialog.Controls.Add(results)
             dialog.Controls.Add(query)
             dialog.Controls.Add(closeButton)
+            ButtonGlyphs.Apply(closeButton, "nav.close", ButtonGlyphRole.Dismissing)
             dialog.CancelButton = closeButton
             Dim fill As Action =
                 Sub()

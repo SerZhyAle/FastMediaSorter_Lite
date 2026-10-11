@@ -37,8 +37,8 @@ End Class
 ''' list summary on the left and the commands on the right (Add, Edit, Remove, Test, then Open
 ''' as the row's primary action on the Settings host, then the "more" overflow holding Export
 ''' and the two imports behind the 125 painted menu); the list fills every remaining pixel and
-''' is fully themed in the dark through the host palette (owner-drawn header, editor-fill rows,
-''' catalogue type glyphs); the status line is one always-visible line whose full text lives in
+''' is fully themed in the dark through the host palette (owner-drawn header, editor-fill
+''' rows); the status line is one always-visible line whose full text lives in
 ''' its tooltip and whose severity is a coloured catalogue glyph, never colour alone; with no
 ''' resources the list gives way to the 124 empty state - a muted glyph, one sentence and an
 ''' Add button.
@@ -59,7 +59,7 @@ Friend NotInheritable Class Resource_List_Panel
     Private Const CommandPadding As Integer = 16
     Private Const CommandGap As Integer = 8
     Private Const StatusHeight As Integer = 24
-    Private Const RowHeight As Integer = 28
+    Private Const RowHeight As Integer = 22
     Private Const GlyphSize As Integer = 16
     Private Const EmptyGlyphSize As Integer = 48
 
@@ -208,6 +208,12 @@ Friend NotInheritable Class Resource_List_Panel
         If withPrimaryOpen Then
             openButton = MakeCommandButton("res_Open", Localization.T("Открыть"), AddressOf OnOpen)
         End If
+        ' WINDOWS-UI section 11: a command carries the glyph of its verb, mono (a panel command is never an answer).
+        ButtonGlyphs.Apply(addButton, "action.add")
+        ButtonGlyphs.Apply(editButton, "action.edit")
+        ButtonGlyphs.Apply(removeButton, "action.delete")
+        ButtonGlyphs.Apply(testButton, "action.test-connection")
+        If openButton IsNot Nothing Then ButtonGlyphs.Apply(openButton, "nav.open-external")
         moreButton = New Button With {
             .Name = "res_More", .Text = "", .ImageAlign = ContentAlignment.MiddleCenter,
             .MinimumSize = New Size(0, Sp(28)), .Height = Sp(CommandHeight),
@@ -230,8 +236,9 @@ Friend NotInheritable Class Resource_List_Panel
         emptyAddButton = New Button With {
             .Name = "res_EmptyAdd", .Text = Localization.T("Добавить.."),
             .MinimumSize = New Size(0, Sp(28)), .Height = Sp(CommandHeight)}
+        ButtonGlyphs.Apply(emptyAddButton, "action.add")
         AddHandler emptyAddButton.Click, AddressOf OnAdd
-        emptyPanel = New Panel With {.Name = "res_Empty"}
+        emptyPanel =New Panel With {.Name = "res_Empty"}
         emptyPanel.Controls.Add(emptyGlyph)
         emptyPanel.Controls.Add(hint)
         emptyPanel.Controls.Add(emptyAddButton)
@@ -250,17 +257,16 @@ Friend NotInheritable Class Resource_List_Panel
         Controls.Add(statusRow)
         Controls.Add(actionRow)
 
-        ' Ticket 171: "My devices". Built only where it can exist (the gate and the Share Manager); the section hides itself otherwise.
+        ' Tickets 171 and 187: "My devices", one group per exchange server the viewer holds an entry for. Built only where it can exist (the
+        ' gate); it needs no Share Manager (rule 5) and the section hides itself while the features are not offered.
         If Not customStore AndAlso ExchangeFeatures.IsEnabled() Then
-            Dim feed As ExchangeDevicesFeed = ExchangeDevicesFeed.CreateDefault()
-            If feed.IsOffered() Then
-                devices = New Exchange_Devices_Panel(feed, ExchangeSync.CreateDefault(), AddressOf ResourceRegistry.Load, confirmRemove, AddressOf RemoveExchangeResource)
-                devices.SetMetrics(Function(n) Dv(n))
-                AddHandler devices.ResourcesChanged, Sub() OnDevicesChangedResources()
-                AddHandler devices.StatesChanged, Sub() Refill(If(Selected() Is Nothing, Nothing, Selected().Id))
-                AddHandler devices.StatusSaid, Sub(text, ok) Say(text, If(ok, ResourceStatusSeverity.Success, ResourceStatusSeverity.Warning))
-                Controls.Add(devices)
-            End If
+            devices = New Exchange_Devices_Panel(ExchangeViewerHub.Instance(), ExchangeEntryStore.CreateDefault(), AddressOf ResourceRegistry.Load,
+                                                 confirmRemove, AddressOf RemoveExchangeResource)
+            devices.SetMetrics(Function(n) Dv(n))
+            AddHandler devices.ResourcesChanged, Sub() OnDevicesChangedResources()
+            AddHandler devices.StatesChanged, Sub() Refill(If(Selected() Is Nothing, Nothing, Selected().Id))
+            AddHandler devices.StatusSaid, Sub(text, ok) Say(text, If(ok, ResourceStatusSeverity.Success, ResourceStatusSeverity.Warning))
+            Controls.Add(devices)
         End If
 
         AddHandler Resize, Sub() Relayout()
@@ -328,12 +334,15 @@ Friend NotInheritable Class Resource_List_Panel
     End Function
 
     ''' <summary>A command fits its text with 16 logical px of horizontal padding at the uniform
-    ''' 32 px height (127 §3.2); the overflow is square. Never docked, never stretched.</summary>
+    ''' 32 px height (127 §3.2) plus the verb's glyph and its gap (WINDOWS-UI section 11 item 3);
+    ''' the overflow is square. Never docked, never stretched.</summary>
     Private Function MeasureCommandButton(button As Button) As Integer
         If button Is moreButton Then Return Dv(CommandHeight)
         Dim textWidth As Integer = TextRenderer.MeasureText(button.Text, button.Font,
             New Size(Integer.MaxValue, Integer.MaxValue), TextFormatFlags.NoPadding Or TextFormatFlags.SingleLine).Width
-        Return Math.Max(Dv(64), textWidth + 2 * Dv(CommandPadding))
+        ' The picture already holds its own gap to the caption; the logical 16 + 6 is the floor before it is rendered.
+        Dim glyphWidth As Integer = Math.Max(Dv(GlyphSize + 6), ButtonGlyphs.ExtraWidth(button))
+        Return Math.Max(Dv(64), textWidth + glyphWidth + 2 * Dv(CommandPadding))
     End Function
 
     ''' <summary>The panel's whole layout (131 §3.1): action row, list (or the empty state over
@@ -551,20 +560,6 @@ Friend NotInheritable Class Resource_List_Panel
         Dim bounds As Rectangle = e.Bounds
         bounds.Inflate(-Dv(6), 0)
         Dim rtl As Boolean = RightToLeft = RightToLeft.Yes
-        If e.ColumnIndex = 0 Then
-            Dim size As Integer = Dv(GlyphSize)
-            Using glyph As Bitmap = RenderGlyphForList(e.Item.ImageKey, palette.EditorText, size)
-                If glyph IsNot Nothing Then
-                    ' RightToLeftLayout mirrors the native drawing context already;
-                    ' the logical start remains Left, including the leading glyph.
-                    e.Graphics.DrawImageUnscaled(glyph, bounds.Left,
-                                                 bounds.Top + (bounds.Height - size) \ 2)
-                End If
-            End Using
-            Dim inset As Integer = size + Dv(6)
-            bounds.X += inset
-            bounds.Width = Math.Max(0, bounds.Width - inset)
-        End If
         Dim flags As TextFormatFlags = TextFormatFlags.SingleLine Or TextFormatFlags.VerticalCenter Or
             TextFormatFlags.EndEllipsis Or TextFormatFlags.NoPadding Or TextFormatFlags.NoPrefix
         If rtl Then flags = flags Or TextFormatFlags.RightToLeft
@@ -640,14 +635,8 @@ Friend NotInheritable Class Resource_List_Panel
         Return WorkerShares.Combined(registered, managed)
     End Function
 
-    ''' <summary>The type glyph of a row (131 §3.3): the catalogue's resource meaning for an
-    ''' SFTP server, the folder for a network share. Mono ink here - the 128 identity-colour
-    ''' exception covers the navigation list only.</summary>
-    Private Shared Function GlyphKeyForKind(kind As ResourceKind) As String
-        If kind = ResourceKind.Sftp Then Return "source.resource"
-        Return "content.folder"
-    End Function
-
+    ''' <summary>The rows carry no leading type glyph: the Type column already says what a
+    ''' resource is, and the picture only took row height and a leading inset away.</summary>
     Private Sub Refill(Optional select_Id As String = Nothing)
         list.BeginUpdate()
         Try
@@ -657,7 +646,7 @@ Friend NotInheritable Class Resource_List_Panel
                 OrderByDescending(Function(r) If(r.LastUsedUtc, DateTime.MinValue)).
                 ThenBy(Function(r) r.DisplayName, StringComparer.CurrentCultureIgnoreCase)
             For Each r As ResourceDescriptor In ordered
-                Dim item As New ListViewItem(r.DisplayName) With {.Tag = r, .ImageKey = GlyphKeyForKind(r.Kind)}
+                Dim item As New ListViewItem(r.DisplayName) With {.Tag = r}
                 UpdateRowPresentation(item, r)
                 list.Items.Add(item)
                 If select_Id IsNot Nothing AndAlso String.Equals(r.Id, select_Id, StringComparison.OrdinalIgnoreCase) Then item.Selected = True
@@ -816,32 +805,15 @@ Friend NotInheritable Class Resource_List_Panel
         End Try
     End Function
 
-    ''' <summary>The row-height image list is the honest way to a 28+ logical px row (131 §3.3):
-    ''' the Details view sizes its rows after the small image list, and a 16 px glyph centred in
-    ''' the taller cell keeps the leading type glyph at its own size. Rebuilt when the ink, the
-    ''' scale or the handle changes. The PANEL's handle drives this, not the list's: with no
-    ''' resources the list stays hidden and never creates a handle, and the empty state's own
-    ''' glyph would never arrive.</summary>
+    ''' <summary>The row-height image list is the honest way to a fixed logical row height
+    ''' (131 §3.3): the Details view sizes its rows after the small image list. The rows carry
+    ''' no leading glyph any more (the Type column says what a resource is), so the cells stay
+    ''' blank and only the height matters. Rebuilt when the scale or the handle changes. The
+    ''' PANEL's handle drives this, not the list's: with no resources the list stays hidden
+    ''' and never creates a handle, and the empty state's own glyph would never arrive.</summary>
     Private Sub RefreshGlyphImages()
-        Dim ink As Color = If(palette IsNot Nothing, palette.EditorText, list.ForeColor)
-        Dim cellWidth As Integer = Math.Max(1, Dv(GlyphSize))
-        Dim cellHeight As Integer = Math.Max(cellWidth, Dv(RowHeight))
-        Dim images As New ImageList With {.ImageSize = New Size(cellWidth, cellHeight), .ColorDepth = ColorDepth.Depth32Bit}
-        ' Materialize the native list before Add: a lazy ImageList retains the source
-        ' bitmaps until its handle is created, so disposing a cell earlier invalidates it.
-        Dim imageHandle As IntPtr = images.Handle
-        For Each glyphId As String In New String() {"source.resource", "content.folder"}
-            Using cell As New Bitmap(cellWidth, cellHeight)
-                Using glyph As Bitmap = RenderGlyphForList(glyphId, ink, cellWidth)
-                    If glyph IsNot Nothing Then
-                        Using g As Graphics = Graphics.FromImage(cell)
-                            g.DrawImageUnscaled(glyph, (cellWidth - glyph.Width) \ 2, (cellHeight - glyph.Height) \ 2)
-                        End Using
-                    End If
-                End Using
-                images.Images.Add(glyphId, cell)
-            End Using
-        Next
+        Dim cellHeight As Integer = Dv(RowHeight)
+        Dim images As New ImageList With {.ImageSize = New Size(1, cellHeight), .ColorDepth = ColorDepth.Depth32Bit}
         Dim old As ImageList = rowImages
         rowImages = images
         list.SmallImageList = images

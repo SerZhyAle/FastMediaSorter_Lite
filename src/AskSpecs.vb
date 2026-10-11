@@ -62,9 +62,9 @@ Friend NotInheritable Class AskSpecs
             Localization.TF("В папке назначения уже есть файл {0}.", fileName),
             AskIcon.Warning,
             New List(Of AskButton) From {
-                New AskButton(Localization.T("Заменить"), destructive:=True),
-                New AskButton(Localization.T("Оставить оба")),
-                New AskButton(Localization.T("Пропустить"))},
+                New AskButton(Localization.T("Заменить"), destructive:=True, role:=ButtonGlyphRole.Caution, glyphId:="action.replace"),
+                New AskButton(Localization.T("Оставить оба"), glyphId:="action.copy"),
+                New AskButton(Localization.T("Пропустить"), role:=ButtonGlyphRole.Dismissing, glyphId:="media.next")},
             defaultIndex:=CollisionSkip, cancelIndex:=CollisionSkip, detail:=detail)
     End Function
 
@@ -76,8 +76,8 @@ Friend NotInheritable Class AskSpecs
             Localization.TF("В настройках выбрано «заменять»: файл {0} в папке назначения будет перезаписан. Продолжить? Это предупреждение показывается один раз за сеанс.", fileName),
             AskIcon.Warning,
             New List(Of AskButton) From {
-                New AskButton(Localization.T("Заменить"), destructive:=True),
-                New AskButton(Localization.T("Отмена"))},
+                New AskButton(Localization.T("Заменить"), destructive:=True, role:=ButtonGlyphRole.Caution, glyphId:="action.replace"),
+                New AskButton(Localization.T("Отмена"), role:=ButtonGlyphRole.Dismissing)},
             defaultIndex:=1, cancelIndex:=1)
     End Function
 
@@ -93,9 +93,9 @@ Friend NotInheritable Class AskSpecs
             summary,
             AskIcon.Question,
             New List(Of AskButton) From {
-                New AskButton(Localization.T("Заменить"), destructive:=True),
-                New AskButton(Localization.T("Объединить")),
-                New AskButton(Localization.T("Отмена"))},
+                New AskButton(Localization.T("Заменить"), destructive:=True, role:=ButtonGlyphRole.Irreversible, glyphId:="action.replace"),
+                New AskButton(Localization.T("Объединить"), role:=ButtonGlyphRole.Affirmative, glyphId:="action.import"),
+                New AskButton(Localization.T("Отмена"), role:=ButtonGlyphRole.Dismissing)},
             defaultIndex:=ImportCancel, cancelIndex:=ImportCancel,
             detail:=Localization.T("Заменить - взять все настройки из файла. Объединить - взять только то, что отличается от значений по умолчанию."))
     End Function
@@ -112,9 +112,9 @@ Friend NotInheritable Class AskSpecs
             Localization.TF("Сочетание {0} уже назначено действию «{1}».", combo, ownerCaption),
             AskIcon.Question,
             New List(Of AskButton) From {
-                New AskButton(Localization.T("Обменять сочетания")),
-                New AskButton(Localization.T("Снять у того действия")),
-                New AskButton(Localization.T("Отмена"))},
+                New AskButton(Localization.T("Обменять сочетания"), role:=ButtonGlyphRole.Affirmative, glyphId:="action.swap"),
+                New AskButton(Localization.T("Снять у того действия"), glyphId:="action.remove"),
+                New AskButton(Localization.T("Отмена"), role:=ButtonGlyphRole.Dismissing)},
             defaultIndex:=ConflictSwap, cancelIndex:=ConflictCancel)
     End Function
 
@@ -134,9 +134,9 @@ Friend NotInheritable Class AskSpecs
             Localization.T("Закрыть редактор и потерять несохранённые правки?"),
             AskIcon.Warning,
             New List(Of AskButton) From {
-                New AskButton(Localization.T("Сохранить"), destructive:=True),
-                New AskButton(Localization.T("Не сохранять"), destructive:=True),
-                New AskButton(Localization.T("Отмена"))},
+                New AskButton(Localization.T("Сохранить"), destructive:=True, role:=ButtonGlyphRole.Affirmative, glyphId:="action.save"),
+                New AskButton(Localization.T("Не сохранять"), destructive:=True, role:=ButtonGlyphRole.Irreversible, glyphId:="action.revert"),
+                New AskButton(Localization.T("Отмена"), role:=ButtonGlyphRole.Dismissing)},
             defaultIndex:=EditorCloseCancel, cancelIndex:=EditorCloseCancel)
     End Function
 
@@ -147,8 +147,8 @@ Friend NotInheritable Class AskSpecs
             Localization.T("Вернуть все сочетания к значениям по умолчанию?"),
             AskIcon.Question,
             New List(Of AskButton) From {
-                New AskButton(Localization.T("Вернуть к умолчаниям"), destructive:=True),
-                New AskButton(Localization.T("Отмена"))},
+                New AskButton(Localization.T("Вернуть к умолчаниям"), destructive:=True, role:=ButtonGlyphRole.Irreversible, glyphId:="action.reset"),
+                New AskButton(Localization.T("Отмена"), role:=ButtonGlyphRole.Dismissing)},
             defaultIndex:=1, cancelIndex:=1)
     End Function
 
@@ -162,8 +162,8 @@ Friend NotInheritable Class AskSpecs
             Localization.T("Сбросить все настройки просмотрщика к значениям по умолчанию?"),
             AskIcon.Warning,
             New List(Of AskButton) From {
-                New AskButton(Localization.T("Сбросить и закрыть"), destructive:=True),
-                New AskButton(Localization.T("Отмена"))},
+                New AskButton(Localization.T("Сбросить и закрыть"), destructive:=True, role:=ButtonGlyphRole.Irreversible, glyphId:="action.reset"),
+                New AskButton(Localization.T("Отмена"), role:=ButtonGlyphRole.Dismissing)},
             defaultIndex:=ProfileResetCancel, cancelIndex:=ProfileResetCancel,
             detail:=Localization.T("Программа закроется, а настройки вернутся к умолчаниям при следующем запуске. Получатели (клавиши 0-9 и Delete), вид, видео, OCR и положение окон будут сброшены. Язык, тема, пароли, список ресурсов и история останутся. Прежние значения сохранятся в файл."))
     End Function

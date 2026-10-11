@@ -31,6 +31,8 @@ Partial Public NotInheritable Class Localization
         AddExchangePublishStrings()    ' ticket 170: the producer rows - publishing the shares, the third-party port, outsider links (replaces 148's)
         AddExchangeDeviceStrings()     ' ticket 180: the device agent - the "Exchange account" group and its sign-in dialog
         AddExchangeAdminStrings()      ' ticket 168: the exchange server administration - accounts, devices, address, ports, certificate, statement, wizard
+        AddExchangeStringStrings()     ' ticket 187 T-2: the operator's "Get connection string" action
+        AddExchangeJoinStrings()       ' ticket 187 T-5: the quick join by connection string and the clean leave
         AddSendLogsStrings()    ' ticket 182 L-3/L-6: a log that cannot be included, no mail program (table linked from the viewer)
     End Sub
 

@@ -135,13 +135,16 @@ Friend NotInheritable Class Resource_Edit_Form
         forgetKey = New Button With {.Name = "res_ForgetKey", .Location = New Point(FieldX, y - 4), .Size = New Size(FieldWidth, 26),
                                      .Text = Localization.T("Забыть ключ сервера..")}
         AddHandler forgetKey.Click, AddressOf OnForgetKey
+        ButtonGlyphs.Apply(forgetKey, "action.remove")
 
         problem = New Label With {.Name = "res_Problem", .AutoSize = False, .Location = New Point(LabelX, y + 26), .Size = New Size(432, 30), .ForeColor = Color.Firebrick}
 
         okButton = New Button With {.Name = "res_Ok", .Location = New Point(264, y + 60), .Size = New Size(86, 28), .Text = Localization.T("Сохранить")}
         AddHandler okButton.Click, AddressOf Confirm
+        ButtonGlyphs.Apply(okButton, "action.save", ButtonGlyphRole.Affirmative)
         dismissButton = New Button With {.Name = "res_Cancel", .Location = New Point(358, y + 60), .Size = New Size(88, 28),
                                          .Text = Localization.T("Отмена"), .DialogResult = DialogResult.Cancel}
+        ButtonGlyphs.Apply(dismissButton, "action.cancel", ButtonGlyphRole.Dismissing)
 
         For Each c As Control In New Control() {kind, nameBox, hostBox, portBox, userBox, passwordBox, passwordHint, revealBox, folderBox, readOnlyBox, keyValue, forgetKey, problem, okButton, dismissButton}
             Me.Controls.Add(c)

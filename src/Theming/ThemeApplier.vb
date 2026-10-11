@@ -474,7 +474,10 @@ Friend NotInheritable Class ThemeApplier
             TextRenderer.MeasureText(g, caption, b.Font, New Size(Short.MaxValue, Short.MaxValue), flags))
         Dim picture As Image = b.Image
         Dim pictureSize As Size = If(picture Is Nothing, Size.Empty, picture.Size)
-        Dim gap As Integer = If(picture IsNot Nothing AndAlso caption.Length > 0, b.LogicalToDeviceUnits(4), 0)
+        ' A glyph from ButtonGlyphs holds its own 6 px gap to the caption inside its bitmap (WINDOWS-UI
+        ' section 11 item 2); adding this one would make the disabled button's gap differ from the enabled one.
+        Dim gap As Integer = If(picture IsNot Nothing AndAlso caption.Length > 0 AndAlso Not ButtonGlyphs.PictureHoldsGap(b),
+                                b.LogicalToDeviceUnits(4), 0)
         Dim x As Integer = Math.Max(0, (bounds.Width - (pictureSize.Width + gap + textSize.Width)) \ 2)
         Dim pictureFirst As Boolean = Not rtl
 

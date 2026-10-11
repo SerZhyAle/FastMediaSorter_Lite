@@ -731,8 +731,11 @@ Partial Public Class Table_Form
         For index As Integer = 0 To modernSettingsNavButtons.Length - 1
             modernSettingsNavButtons(index).Text = navLabels(index)
             Tab_Control.TabPages(index).Text = navLabels(index)
-            modernSettingsNavButtons(index).Height = Math.Max(Sp(44), TextRenderer.MeasureText(navLabels(index), modernSettingsNavButtons(index).Font,
-                New Size(Math.Max(1, modernSettingsNavButtons(index).Width - Sp(48)), Integer.MaxValue), TextFormatFlags.WordBreak).Height + Sp(12))
+            ' The compact row of the build (34 logical px, above the 28 px mouse floor):
+            ' eleven entries take 418 logical px instead of 528, so the whole navigation
+            ' fits an ordinary monitor without scrolling.
+            modernSettingsNavButtons(index).Height = Math.Max(Sp(34), TextRenderer.MeasureText(navLabels(index), modernSettingsNavButtons(index).Font,
+                New Size(Math.Max(1, modernSettingsNavButtons(index).Width - Sp(48)), Integer.MaxValue), TextFormatFlags.WordBreak).Height + Sp(6))
             modernSettingsNavButtons(index).Top = If(index = 0, 0, modernSettingsNavButtons(index - 1).Bottom + Sp(4))
             ' The caption can be clipped by a long translation: the tooltip and the
             ' accessible name always carry the whole word (ICON-RENDER rule 8).
@@ -834,7 +837,10 @@ Partial Public Class Table_Form
             Select Case row.Key
                 Case "image_associations", "video_associations"
                     Dim button As Button = TryCast(row.Editor, Button)
-                    If button IsNot Nothing Then button.Text = AssociationButtonCaption(Main_Form.IsPackagedApp())
+                    If button IsNot Nothing Then
+                        button.Text = AssociationButtonCaption(Main_Form.IsPackagedApp())
+                        ApplySettingsCommandGlyph(button, row.Key)
+                    End If
                 Case "sftp_manager"
                     Dim button As Button = TryCast(row.Editor, Button)
                     If button IsNot Nothing Then button.Text = Localization.T("Управление SFTP")
@@ -863,6 +869,9 @@ Partial Public Class Table_Form
                 Case "project_trust"
                     Dim link As LinkLabel = TryCast(row.Title, LinkLabel)
                     If link IsNot Nothing Then link.Tag = SitePages.TrustPageUrl(Localization.CurrentCode)
+                Case "exchange_portal"
+                    Dim link As LinkLabel = TryCast(row.Title, LinkLabel)
+                    If link IsNot Nothing Then link.Tag = SitePages.ExchangePortalUrl("home-network", Localization.CurrentCode)
                 Case "slideshow_interval"
                     ' PrepareForDisplay's legacy block (which runs before this pass on every
                     ' opening) pins DecimalPlaces = 3; restate the whole-seconds presentation
@@ -1037,6 +1046,7 @@ Partial Public Class Table_Form
             Case "sftp_manager" : Return Localization.T("Публикация папок по SFTP")
             Case "sftp_guide" : Return Localization.T("Инструкция по подключению")
             Case "android_app" : Return Localization.T("Приложение для Android")
+            Case "exchange_portal" : Return Localization.T("Доступ из дома и из других сетей")
             Case "about_intro" : Return ProductNames.FullForLabel
             Case "support_send_logs" : Return Localization.T("Отправить логи автору")
             Case "profile_reset_all" : Return Localization.T("Сброс настроек")
@@ -1169,6 +1179,7 @@ Partial Public Class Table_Form
             Case "sftp_manager" : Return Localization.T("Открывает отдельное приложение управления SFTP-доступом и опубликованными папками.")
             Case "sftp_guide" : Return Localization.T("Пошаговая настройка сервера, сети и подключения мобильного клиента.")
             Case "android_app" : Return Localization.T("Страница мобильного приложения для Android.")
+            Case "exchange_portal" : Return Localization.T("Как открыть папки ПК и телефона на других устройствах: домашняя сеть, проброс порта, постоянный сервер.")
             Case "about_intro" : Return Localization.TF("Современный просмотрщик и сортировщик фото и видео." & vbCrLf & "Версия {0}", ShortSettingsVersion())
             Case "support_send_logs" : Return Localization.T("Соберёт журналы работы программы в архив и создаст письмо автору. Ничего не отправляется без вашего подтверждения.")
             Case "profile_reset_all" : Return Localization.T("Вернёт настройки просмотрщика к значениям по умолчанию. Язык, тема, пароли и история останутся. Прежние значения сохранятся в файл.")
@@ -1402,6 +1413,8 @@ Partial Public Class Table_Form
         ElseIf numeric IsNot Nothing Then
             AddModernNumericUnit(row, key)
         ElseIf TypeOf editor Is Button Then
+            ' The glyph first, so the measured width below already counts it (WINDOWS-UI section 11 item 3).
+            ApplySettingsCommandGlyph(DirectCast(editor, Button), key)
             StyleModernCommandButton(DirectCast(editor, Button))
         End If
 
@@ -1552,8 +1565,71 @@ Partial Public Class Table_Form
         If String.IsNullOrEmpty(text) Then Return Sp(96)
         Dim textWidth As Integer = TextRenderer.MeasureText(text, SettingsFont("Segoe UI Semibold", Sf(9.0F)),
             New Size(Integer.MaxValue, Integer.MaxValue), TextFormatFlags.NoPadding).Width
-        Return Math.Max(Sp(64), textWidth + 2 * Sp(SettingsRowGridRules.ButtonHorizontalPadding))
+        ' WINDOWS-UI section 11 item 3: the verb's glyph and its gap come on top of the caption, never out of it.
+        ' The picture holds its own gap; the settings scale (which already includes the monitor's DPI) is the
+        ' floor, because the bitmap may have been drawn before the window knew its final monitor.
+        Dim glyphWidth As Integer = 0
+        If ButtonGlyphs.CarriesGlyph(button) Then
+            glyphWidth = Math.Max(Sp(ButtonGlyphs.GlyphLogicalSize + ButtonGlyphs.GapLogicalSize), ButtonGlyphs.ExtraWidth(button))
+        End If
+        Return Math.Max(Sp(64), textWidth + glyphWidth + 2 * Sp(SettingsRowGridRules.ButtonHorizontalPadding))
     End Function
+
+    ''' <summary>The ONE table from a settings command to its verb's glyph (WINDOWS-UI section 11): the id is
+    ''' the row key of a button that is a row's editor, or the control name of a button inside a strip.
+    ''' Every settings-page command is Neutral - colour is spent on dialog answers only (item 5). Header tools,
+    ''' navigation and group disclosure buttons are not here: they have pictures of their own.</summary>
+    Private Function SettingsCommandGlyph(id As String) As String
+        Select Case id
+            Case "image_associations", "video_associations"
+                Return If(AssociationUx.ModeFor(Main_Form.IsPackagedApp()) = AssociationMode.OpenWindowsSettings,
+                          "nav.open-external", "action.install")
+            Case "included_extensions", "document_extensions", "other_extensions", "custom_hotkeys", "shared_audio_settings"
+                Return "action.adjust"
+            Case "recent_history"
+                Return "nav.open-external"
+            Case "settings_export"
+                Return "action.export"
+            Case "settings_import"
+                Return "action.import"
+            Case "settings_defaults", "profile_reset_all"
+                Return "action.reset"
+            Case "welcome_replay"
+                Return "app.help"
+            Case "sftp_manager"
+                Return "action.share"
+            Case "support_send_logs"
+                Return "action.email"
+            Case "ocr_download", "btnOcrPullModel"
+                Return "action.download"
+            Case "btnOcrInstallOllama"
+                Return "action.install"
+            Case "btnOcrStartOllama"
+                Return "action.run"
+            Case "settingsCacheRefresh"
+                Return "action.refresh"
+            Case "settingsCacheClear"
+                Return "action.clear-all"
+            Case "settingsSlotBrowse"
+                Return "action.choose-folder"
+            Case "settingsSlotResources"
+                Return "source.resource"
+            Case "settingsSlotClear"
+                Return "action.clear-input"
+            Case Else
+                Return String.Empty
+        End Select
+    End Function
+
+    ''' <summary>Gives a settings command its glyph, Neutral, from <see cref="SettingsCommandGlyph"/>. Safe to
+    ''' call again (the verb of a toggling caption is applied by its own refresh); a button with no entry
+    ''' keeps exactly what it had.</summary>
+    Private Sub ApplySettingsCommandGlyph(button As Button, id As String)
+        If button Is Nothing OrElse String.IsNullOrEmpty(id) Then Return
+        Dim glyphId As String = SettingsCommandGlyph(id)
+        If glyphId.Length = 0 Then Return
+        ButtonGlyphs.Apply(button, glyphId, ButtonGlyphRole.Neutral)
+    End Sub
 
     ''' <summary>The natural width of a strip: its controls' own widths plus the 8 px gaps.</summary>
     Private Function MeasureModernStripWidth(strip As FlowLayoutPanel) As Integer
@@ -1675,7 +1751,11 @@ Partial Public Class Table_Form
                                 New Padding(0, Sp(2), Sp(SettingsRowGridRules.StripGap), Sp(2)),
                                 New Padding(0, Sp(2), 0, Sp(2)))
             Dim button As Button = TryCast(control, Button)
-            If button IsNot Nothing Then StyleModernCommandButton(button)
+            If button IsNot Nothing Then
+                ' A strip's commands are found by their control names (the table keys them).
+                ApplySettingsCommandGlyph(button, button.Name)
+                StyleModernCommandButton(button)
+            End If
         Next
         AddHandler strip.Resize, Sub() LayoutModernControlStrip(strip)
         For Each control As Control In controls
@@ -1828,6 +1908,9 @@ Partial Public Class Table_Form
         If btn_Share_Manager IsNot Nothing Then AddSettingRow(flow, "sftp_manager", btn_Share_Manager, 230, True)
         AddProjectLinkRow(flow, "sftp_guide", SitePages.ForLanguage("https://serzhyale.github.io/FastMediaSorter_Lite/publish-folders-android.html", Localization.CurrentCode))
         AddProjectLinkRow(flow, "android_app", SitePages.AndroidAppSiteUrl(Localization.CurrentCode))
+        ' The portal is the shared "media exchange" section of the product family, on the Android
+        ' app's site: the page about reaching folders from home and from other networks.
+        AddProjectLinkRow(flow, "exchange_portal", SitePages.ExchangePortalUrl("home-network", Localization.CurrentCode))
     End Sub
 
     Private Sub BuildModernAboutPage()

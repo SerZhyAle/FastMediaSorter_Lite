@@ -36,6 +36,11 @@ Partial Public Class Main_Form
     ''' open continues on its own and the caller must not read a folder); False leaves it a plain path.
     ''' </summary>
     Friend Function TryOpenAsResourceLocator(text As String) As Boolean
+        ' ticket 187: a pasted connection string in the folder box opens the add dialog, FILLED and stopped - nothing is sent until Connect
+        If ExchangeFeatures.IsEnabled() AndAlso ExchangeConnectInput.LooksLikeConnectionString(text) Then
+            OpenExchangeConnect(text)
+            Return True
+        End If
         If Not ResourceLocator.IsLocator(text) Then Return False
         OpenResourceFromLocator(text.Trim())
         Return True
@@ -44,12 +49,29 @@ Partial Public Class Main_Form
     ''' <summary>The viewer's own handling of an argument that is not a path: an address to open, or a
     ''' Share Manager document to import. True when it was taken.</summary>
     Private Function TryHandleResourceArgument(argument As String) As Boolean
+        ' ticket 187: a dropped or forwarded .fmsexch file opens the add dialog with its line in the field (the features must be offered)
+        If ExchangeFeatures.IsEnabled() AndAlso String.Equals(Path.GetExtension(argument), ".fmsexch", StringComparison.OrdinalIgnoreCase) Then
+            Dim bytes As Byte() = Exchange_Connect_Form.ReadBounded(argument)
+            OpenExchangeConnect(System.Text.Encoding.UTF8.GetString(bytes))
+            Return True
+        End If
         If TryOpenAsResourceLocator(argument) Then Return True
         If Not ResourceImportFlow.IsImportFile(argument) OrElse
            Not String.Equals(Path.GetExtension(argument), ".fmscfg", StringComparison.OrdinalIgnoreCase) Then Return False
         ImportResourceFile(argument)
         Return True
     End Function
+
+    ''' <summary>The "Add from an exchange server.." dialog, opened with text that arrived from outside (a dropped file, a pasted line). The
+    ''' text FILLS the form and stops (grammar proposal rule 13): no connection is made until the person pressed Connect. After an add the
+    ''' manager is shown, where the account's folders are ticked.</summary>
+    Friend Sub OpenExchangeConnect(initialText As String)
+        SlideShowStop()
+        Dim added As ExchangeEntry = ExchangeConnectFlowUi.Run(Me, initialText, Nothing)
+        If added Is Nothing Then Return
+        lbl_Status.Text = ExchangeEntryText.Added(added.DisplayName)
+        ShowResourceManager()
+    End Sub
 
     ''' <summary>Imports a dropped or forwarded document. One resource stored opens at once - it is what the
     ''' drop was for; several are left in the manager, where the user picks.</summary>
@@ -218,12 +240,16 @@ Partial Public Class Main_Form
             ' when it differs the kept one is replaced and the user told once. Without the agent the kept access simply stays and the resource opens
             ' by its direct addresses as before (rule 8). Nothing happens for a resource of any other origin, nor while the features are not offered.
             If ResourceOrigin.IsExchange(descriptor) AndAlso ExchangeFeatures.IsEnabled() Then
-                Dim followed As ExchangeFollowOutcome = Await ExchangeSync.CreateDefault().FollowOneAsync(descriptor, descriptor.ExchangeDeviceName, cancel.Token)
-                If cancel.IsCancellationRequested OrElse IsDisposed Then Return
-                descriptor = followed.Descriptor
-                If followed.Changed Then
-                    ClearExchangeNotice(descriptor)
-                    Notify(ExchangeResourceText.NoticeLine(descriptor.DisplayName), NotifyLevel.Info)
+                ' ticket 187: through the resource's own entry (the viewer's own session, no Share Manager); Nothing when the entry is gone
+                Dim followSync As ExchangeSync = ExchangeFollowSync.For(descriptor)
+                If followSync IsNot Nothing Then
+                    Dim followed As ExchangeFollowOutcome = Await followSync.FollowOneAsync(descriptor, descriptor.ExchangeDeviceName, cancel.Token)
+                    If cancel.IsCancellationRequested OrElse IsDisposed Then Return
+                    descriptor = followed.Descriptor
+                    If followed.Changed Then
+                        ClearExchangeNotice(descriptor)
+                        Notify(ExchangeResourceText.NoticeLine(descriptor.DisplayName), NotifyLevel.Info)
+                    End If
                 End If
             End If
 
