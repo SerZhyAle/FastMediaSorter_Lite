@@ -1,30 +1,31 @@
 package wire
 
 // Reason is a `refused.reason` of DEVICE-EXCHANGE 7.10: kebab-case, frozen with the wire. Exactly
-// nine exist; a client shows an unknown value as a generic refusal.
+// ten exist; a client shows an unknown value as a generic refusal.
 type Reason string
 
-// The nine reasons. Refuse is the only way a `refused` envelope is built, and a source scan
+// The ten reasons. Refuse is the only way a `refused` envelope is built, and a source scan
 // (guard_test.go) fails any other construction and any Refuse argument that is not one of these.
 const (
-	ReasonBadCredentials     Reason = "bad-credentials"
-	ReasonDeviceRevoked      Reason = "device-revoked"
-	ReasonVersionUnsupported Reason = "version-unsupported"
-	ReasonTLSRequired        Reason = "tls-required"
-	ReasonIDCollision        Reason = "id-collision"
-	ReasonCapacity           Reason = "capacity"
-	ReasonPortUnavailable    Reason = "port-unavailable"
-	ReasonUnavailable        Reason = "unavailable"
-	ReasonRateLimited        Reason = "rate-limited"
+	ReasonBadCredentials        Reason = "bad-credentials"
+	ReasonDeviceRevoked         Reason = "device-revoked"
+	ReasonVersionUnsupported    Reason = "version-unsupported"
+	ReasonTLSRequired           Reason = "tls-required"
+	ReasonIDCollision           Reason = "id-collision"
+	ReasonCapacity              Reason = "capacity"
+	ReasonPortUnavailable       Reason = "port-unavailable"
+	ReasonUnavailable           Reason = "unavailable"
+	ReasonRateLimited           Reason = "rate-limited"
+	ReasonProtectionUnsupported Reason = "protection-unsupported"
 )
 
 // AllReasons is the closed list of 7.10, in the order of the contract.
 var AllReasons = []Reason{
 	ReasonBadCredentials, ReasonDeviceRevoked, ReasonVersionUnsupported, ReasonTLSRequired,
-	ReasonIDCollision, ReasonCapacity, ReasonPortUnavailable, ReasonUnavailable, ReasonRateLimited,
+	ReasonIDCollision, ReasonCapacity, ReasonPortUnavailable, ReasonUnavailable, ReasonRateLimited, ReasonProtectionUnsupported,
 }
 
-// Valid reports whether r is one of the nine.
+// Valid reports whether r is one of the ten.
 func (r Reason) Valid() bool {
 	for _, k := range AllReasons {
 		if r == k {
@@ -47,7 +48,7 @@ const (
 // which is also what answers a peer that spoke the legacy one.
 func Refuse(r Reason) *Refused {
 	if !r.Valid() {
-		panic("wire: Refuse with a reason outside the nine of DEVICE-EXCHANGE 7.10: " + string(r))
+		panic("wire: Refuse with a reason outside the ten of DEVICE-EXCHANGE 7.10: " + string(r))
 	}
 	return &Refused{Head: Head{SchemaVersion, TypeRefused}, Reason: string(r)}
 }

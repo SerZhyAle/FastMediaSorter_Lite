@@ -1,0 +1,61 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TestRun id="7020dbfe-1810-46a2-bf4a-8be1e5b702d6" name="serzh@MARK 2026-10-12 17:55:09" runUser="MARK\serzh" xmlns="http://microsoft.com/schemas/VisualStudio/TeamTest/2010">
+  <Times creation="2026-10-12T17:55:09.0585499+02:00" queuing="2026-10-12T17:55:09.0585502+02:00" start="2026-10-12T17:55:07.8810238+02:00" finish="2026-10-12T17:55:09.0615942+02:00" />
+  <TestSettings name="default" id="c48e488e-c8cb-4b94-882d-d8979b6b2871">
+    <Deployment runDeploymentRoot="serzh_MARK_2026-10-12_17_55_09" />
+  </TestSettings>
+  <Results>
+    <UnitTestResult executionId="d1fbfafd-e1ec-4879-bf5e-222bb7cc4591" testId="e0affd5e-7179-d5bf-d7bd-9930762b2596" testName="Companion.Tests.WindowsUiContractTests.The_left_menu_tree_toggles_items_selects_pages_and_reveals_blocks" computerName="MARK" duration="00:00:00.6221099" startTime="2026-10-12T17:55:08.9859950+02:00" endTime="2026-10-12T17:55:08.9860086+02:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Failed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="d1fbfafd-e1ec-4879-bf5e-222bb7cc4591">
+      <Output>
+        <ErrorInfo>
+          <Message>the service block scrolled into view</Message>
+          <StackTrace>   at Companion.Tests.WindowsUiContractTests._Closure$__._Lambda$__5-0() in P:\WINDOWS\FastMediaSorter_Lite\tests\Companion.Tests\WindowsUiContractTests.vb:line 122&#xD;
+   at Companion.Tests.WindowsUiContractTests._Closure$__2-0._Lambda$__0() in P:\WINDOWS\FastMediaSorter_Lite\tests\Companion.Tests\WindowsUiContractTests.vb:line 24&#xD;
+--- End of stack trace from previous location ---&#xD;
+   at Companion.Tests.WindowsUiContractTests.OnUi(Action test) in P:\WINDOWS\FastMediaSorter_Lite\tests\Companion.Tests\WindowsUiContractTests.vb:line 32&#xD;
+   at Companion.Tests.WindowsUiContractTests.The_left_menu_tree_toggles_items_selects_pages_and_reveals_blocks() in P:\WINDOWS\FastMediaSorter_Lite\tests\Companion.Tests\WindowsUiContractTests.vb:line 81&#xD;
+   at System.Reflection.MethodBaseInvoker.InterpretedInvoke_Method(Object obj, IntPtr* args)&#xD;
+   at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)</StackTrace>
+        </ErrorInfo>
+      </Output>
+    </UnitTestResult>
+  </Results>
+  <TestDefinitions>
+    <UnitTest name="Companion.Tests.WindowsUiContractTests.The_left_menu_tree_toggles_items_selects_pages_and_reveals_blocks" storage="p:\windows\fastmediasorter_lite\tests\companion.tests\bin\debug\net10.0-windows10.0.19041\companion.tests.dll" id="e0affd5e-7179-d5bf-d7bd-9930762b2596">
+      <Execution id="d1fbfafd-e1ec-4879-bf5e-222bb7cc4591" />
+      <TestMethod codeBase="P:\WINDOWS\FastMediaSorter_Lite\tests\Companion.Tests\bin\Debug\net10.0-windows10.0.19041\Companion.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner2/netcoreapp" className="Companion.Tests.WindowsUiContractTests" name="The_left_menu_tree_toggles_items_selects_pages_and_reveals_blocks" />
+    </UnitTest>
+  </TestDefinitions>
+  <TestEntries>
+    <TestEntry testId="e0affd5e-7179-d5bf-d7bd-9930762b2596" executionId="d1fbfafd-e1ec-4879-bf5e-222bb7cc4591" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+  </TestEntries>
+  <TestLists>
+    <TestList name="Results Not in a List" id="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestList name="All Loaded Results" id="19431567-8539-422a-85d7-44ee4e166bda" />
+  </TestLists>
+  <ResultSummary outcome="Failed">
+    <Counters total="1" executed="1" passed="0" failed="1" error="0" timeout="0" aborted="0" inconclusive="0" passedButRunAborted="0" notRunnable="0" notExecuted="0" disconnected="0" warning="0" completed="0" inProgress="0" pending="0" />
+    <Output>
+      <StdOut>[xUnit.net 00:00:00.00] xUnit.net VSTest Adapter v2.8.2+699d445a1a (64-bit .NET 10.0.12)&#xD;
+[xUnit.net 00:00:00.05]   Discovering: Companion.Tests&#xD;
+[xUnit.net 00:00:00.15]   Discovered:  Companion.Tests&#xD;
+[xUnit.net 00:00:00.16]   Starting:    Companion.Tests&#xD;
+[xUnit.net 00:00:00.81]       the service block scrolled into view&#xD;
+[xUnit.net 00:00:00.81]       Stack Trace:&#xD;
+[xUnit.net 00:00:00.81]         P:\WINDOWS\FastMediaSorter_Lite\tests\Companion.Tests\WindowsUiContractTests.vb(122,0): at Companion.Tests.WindowsUiContractTests._Closure$__._Lambda$__5-0()&#xD;
+[xUnit.net 00:00:00.81]         P:\WINDOWS\FastMediaSorter_Lite\tests\Companion.Tests\WindowsUiContractTests.vb(24,0): at Companion.Tests.WindowsUiContractTests._Closure$__2-0._Lambda$__0()&#xD;
+[xUnit.net 00:00:00.81]         --- End of stack trace from previous location ---&#xD;
+[xUnit.net 00:00:00.81]         P:\WINDOWS\FastMediaSorter_Lite\tests\Companion.Tests\WindowsUiContractTests.vb(32,0): at Companion.Tests.WindowsUiContractTests.OnUi(Action test)&#xD;
+[xUnit.net 00:00:00.81]         P:\WINDOWS\FastMediaSorter_Lite\tests\Companion.Tests\WindowsUiContractTests.vb(81,0): at Companion.Tests.WindowsUiContractTests.The_left_menu_tree_toggles_items_selects_pages_and_reveals_blocks()&#xD;
+[xUnit.net 00:00:00.81]            at System.Reflection.MethodBaseInvoker.InterpretedInvoke_Method(Object obj, IntPtr* args)&#xD;
+[xUnit.net 00:00:00.81]            at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)&#xD;
+[xUnit.net 00:00:00.81]   Finished:    Companion.Tests&#xD;
+</StdOut>
+    </Output>
+    <RunInfos>
+      <RunInfo computerName="MARK" outcome="Error" timestamp="2026-10-12T17:55:08.9845858+02:00">
+        <Text>[xUnit.net 00:00:00.81]     Companion.Tests.WindowsUiContractTests.The_left_menu_tree_toggles_items_selects_pages_and_reveals_blocks [FAIL]</Text>
+      </RunInfo>
+    </RunInfos>
+  </ResultSummary>
+</TestRun>

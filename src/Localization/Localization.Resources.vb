@@ -1,4 +1,4 @@
-Option Strict On
+﻿Option Strict On
 
 ' <summary>
 ' Strings of remote resources (007: a saved remote place - an SFTP server, or a network
@@ -24,6 +24,92 @@ Option Strict On
 Partial Public NotInheritable Class Localization
 
     Private Shared Sub AddResourceStrings()
+        ' 216: the original resource PIN is separate from the server password.
+        Add("PIN-код ресурса",
+            "Resource PIN",
+            "PIN-код ресурсу",
+            "Ressourcen-PIN",
+            "PIN della risorsa",
+            "PIN del recurso",
+            "Code PIN de la ressource",
+            "PIN do recurso",
+            "رمز PIN للمورد",
+            "संसाधन का PIN",
+            "রিসোর্সের PIN",
+            "وسیلے کا PIN",
+            "资源 PIN")
+
+        Add("Введите PIN-код для «{0}»",
+            "Enter the PIN for «{0}»",
+            "Введіть PIN-код для «{0}»",
+            "PIN für «{0}« eingeben",
+            "Inserisci il PIN per «{0}»",
+            "Introduce el PIN de «{0}»",
+            "Saisissez le code PIN de « {0} »",
+            "Digite o PIN de «{0}»",
+            "أدخل رمز PIN للمورد «{0}»",
+            "«{0}» का PIN दर्ज करें",
+            "«{0}»-এর PIN লিখুন",
+            "«{0}» کا PIN درج کریں",
+            "输入«{0}»的 PIN")
+
+        Add("Показать PIN-код",
+            "Show PIN",
+            "Показати PIN-код",
+            "PIN anzeigen",
+            "Mostra PIN",
+            "Mostrar PIN",
+            "Afficher le code PIN",
+            "Mostrar PIN",
+            "إظهار رمز PIN",
+            "PIN दिखाएँ",
+            "PIN দেখান",
+            "PIN دکھائیں",
+            "显示 PIN")
+
+        Add("PIN-код не подошёл. Введите его ещё раз.",
+            "The PIN was rejected. Enter it again.",
+            "PIN-код не підійшов. Введіть його ще раз.",
+            "Die PIN wurde abgelehnt. Bitte erneut eingeben.",
+            "PIN rifiutato. Inseriscilo di nuovo.",
+            "El PIN se ha rechazado. Introdúcelo de nuevo.",
+            "Le code PIN a été refusé. Saisissez-le à nouveau.",
+            "O PIN foi recusado. Digite-o novamente.",
+            "تم رفض رمز PIN. أدخله مرة أخرى.",
+            "PIN अस्वीकृत हुआ। इसे फिर दर्ज करें।",
+            "PIN প্রত্যাখ্যাত হয়েছে। আবার লিখুন।",
+            "PIN مسترد ہو گیا۔ اسے دوبارہ درج کریں۔",
+            "PIN 被拒绝。请重新输入。")
+
+        Add("защищено PIN-кодом",
+            "protected by PIN",
+            "захищено PIN-кодом",
+            "durch PIN geschützt",
+            "protetto da PIN",
+            "protegido por PIN",
+            "protégé par un code PIN",
+            "protegido por PIN",
+            "محمي برمز PIN",
+            "PIN से सुरक्षित",
+            "PIN দ্বারা সুরক্ষিত",
+            "PIN سے محفوظ",
+            "受 PIN 保护")
+
+        Add("заблокировано: защита не поддерживается",
+            "locked: protection is unsupported",
+            "заблоковано: захист не підтримується",
+            "gesperrt: Schutz wird nicht unterstützt",
+            "bloccato: protezione non supportata",
+            "bloqueado: protección no compatible",
+            "verrouillé : protection non prise en charge",
+            "bloqueado: proteção não suportada",
+            "مقفل: الحماية غير مدعومة",
+            "लॉक है: सुरक्षा समर्थित नहीं है",
+            "লক করা: সুরক্ষা সমর্থিত নয়",
+            "مقفل: تحفظ معاونت یافتہ نہیں",
+            "已锁定：不支持此保护")
+
+
         Add("Будет передано {0} через медленный или тарифицируемый ресурс. Между разными серверами файл сначала скачивается, затем загружается; проверка также расходует трафик. Продолжить?",
             "{0} will be transferred over a slow or metered resource. Between different servers, files are downloaded then uploaded; verification also uses data. Continue?",
             "Буде передано {0} через повільний або тарифікований ресурс. Між різними серверами файл спочатку завантажується на ПК, потім на сервер; перевірка також витрачає трафік. Продовжити?",

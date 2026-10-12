@@ -23,7 +23,7 @@ func (s *seeded) Read(p []byte) (int, error) {
 	return len(p), nil
 }
 
-// TestSetRandomMakesIDsAndTokensReproducible is ticket 161 T-5: the vector generator of ticket 178
+// TestSetRandomMakesIDsAndTokensReproducible is ticket 161 T-5: the vector generator of ticket 205
 // draws every id and token from a seeded source, so regenerating gives the same bytes.
 func TestSetRandomMakesIDsAndTokensReproducible(t *testing.T) {
 	defer SetRandom(nil)

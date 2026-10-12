@@ -64,8 +64,14 @@ func wrapDrive(kind, id string, listed json.RawMessage) *driveFile {
 	if err != nil {
 		failf("%v", err)
 	}
+	version := driveFileVersion
+	if kind == "resource" {
+		if _, protected := members["protection"]; protected {
+			version = 2
+		}
+	}
 	var b bytes.Buffer
-	fmt.Fprintf(&b, `{"schemaVersion":%d,"type":%q,"writtenAt":%q,"ttlSeconds":%d,"record":`, driveFileVersion, kind,
+	fmt.Fprintf(&b, `{"schemaVersion":%d,"type":%q,"writtenAt":%q,"ttlSeconds":%d,"record":`, version, kind,
 		instant.Format("2006-01-02T15:04:05.000Z"), driveTTL(kind))
 	b.Write(body)
 	b.WriteByte('}')

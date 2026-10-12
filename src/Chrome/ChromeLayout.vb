@@ -170,6 +170,71 @@ Friend NotInheritable Class ChromeLayout
         Return total + Math.Max(0, gap) * (slots.Count - 1)
     End Function
 
+    ''' <summary>The floor of <see cref="ArrangeRow"/>: the flexible items at their minimum, only the
+    ''' pinned core kept, and the "more" button's room reserved the moment anything has collapsed
+    ''' (which it has, or the caller would not be asking). A row given less width than this has lost
+    ''' priority content - the caller must find room another way, not shrink further (188 §3.5).</summary>
+    Public Shared Function PinnedCoreWidth(slots As IList(Of ChromeSlot), gap As Integer,
+                                           overflowButtonWidth As Integer) As Integer
+        If slots Is Nothing OrElse slots.Count = 0 Then Return 0
+        Dim gapValue As Integer = Math.Max(0, gap)
+        Dim total As Integer = 0
+        Dim pinnedCount As Integer = 0
+        Dim droppable As Boolean = False
+        For index As Integer = 0 To slots.Count - 1
+            Dim slot As ChromeSlot = slots(index)
+            If slot.Pinned Then
+                Dim width As Integer = If(slot.IsFlexible, slot.MinWidth, slot.Width)
+                total += If(pinnedCount > 0, gapValue, 0) + Math.Max(0, width)
+                pinnedCount += 1
+            Else
+                droppable = True
+            End If
+        Next
+        If Not droppable Then Return total
+        Return total + overflowButtonWidth + If(pinnedCount > 0, gapValue, 0)
+    End Function
+
+    ''' <summary>Where a TOP row stands beside the window-controls panel in its corner (188 §3.5):
+    ''' the row shares the top band with the panel, capped to the width left of it, or - when its
+    ''' minimum content cannot fit in that width - wraps locally BELOW the panel at full width.
+    ''' Pure; every rectangle is in one coordinate space (the media area), the panel's top-left
+    ''' corner at its <see cref="Rectangle.Location"/>.</summary>
+    Public Structure RowBandPlacement
+        ''' <summary>The row's top, media-relative.</summary>
+        Public ReadOnly Top As Integer
+        ''' <summary>The widest the row's host may be. The full band when the row wrapped or never overlapped.</summary>
+        Public ReadOnly MaxWidth As Integer
+        ''' <summary>The width taken out of the band's far (corner) end for the panel; 0 when the row wrapped.</summary>
+        Public ReadOnly ReservedWidth As Integer
+        ''' <summary>True when the row moved below the panel instead of sharing the band.</summary>
+        Public ReadOnly Wrapped As Boolean
+
+        Public Sub New(top As Integer, maxWidth As Integer, reservedWidth As Integer, wrapped As Boolean)
+            Me.Top = top
+            Me.MaxWidth = maxWidth
+            Me.ReservedWidth = reservedWidth
+            Me.Wrapped = wrapped
+        End Sub
+    End Structure
+
+    ''' <summary>The band decision of <see cref="RowBandPlacement"/>.</summary>
+    Public Shared Function PlaceRowBesideCornerPanel(naturalTop As Integer, rowHeight As Integer,
+                                                     minimumRowWidth As Integer,
+                                                     cornerPanel As Rectangle, mediaWidth As Integer,
+                                                     gap As Integer, inset As Integer) As RowBandPlacement
+        Dim bandWidth As Integer = Math.Max(0, mediaWidth - 2 * Math.Max(0, inset))
+        Dim overlaps As Boolean = cornerPanel.Width > 0 AndAlso cornerPanel.Height > 0 AndAlso
+                                  naturalTop < cornerPanel.Bottom AndAlso naturalTop + rowHeight > cornerPanel.Top
+        If Not overlaps Then Return New RowBandPlacement(naturalTop, bandWidth, 0, False)
+        Dim gapValue As Integer = Math.Max(0, gap)
+        Dim sharedWidth As Integer = bandWidth - cornerPanel.Width - gapValue
+        If sharedWidth > 0 AndAlso minimumRowWidth <= sharedWidth Then
+            Return New RowBandPlacement(naturalTop, sharedWidth, cornerPanel.Width + gapValue, False)
+        End If
+        Return New RowBandPlacement(Math.Max(naturalTop, cornerPanel.Bottom + gapValue), bandWidth, 0, True)
+    End Function
+
     ''' <summary>
     ''' The status strip's two cells: the file name and the status words (121 UX-415). The name is entitled to its own
     ''' width up to half the strip, so a long sentence can no longer squeeze it (it used to be left with the third

@@ -43,7 +43,7 @@ func withRunner(paths config.Paths, stderr io.Writer, f func(opRunner) int) int 
 		var infos []directory.DeviceInfo
 		for _, d := range store.AllDevices() {
 			infos = append(infos, directory.DeviceInfo{ID: d.ID, Account: d.Account, Name: d.Name, Product: d.Product,
-				ProductVersion: d.ProductVersion, Platform: d.Platform, Roles: d.Roles, Receiver: d.Receiver})
+				ProductVersion: d.ProductVersion, Platform: d.Platform, Roles: d.Roles, Capabilities: d.Capabilities, Receiver: d.Receiver})
 		}
 		if err := dir.Load(infos); err != nil {
 			printf(stderr, "cannot open the directory: %v\n", err)

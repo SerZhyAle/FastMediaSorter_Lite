@@ -177,6 +177,7 @@ Friend Module ResourceCommit
         Dim current As List(Of ResourceDescriptor) = ResourceRegistry.Parse(readValue("Resources"))
         Dim target As ResourceDescriptor = current.FirstOrDefault(Function(r) String.Equals(r.Id, id, StringComparison.OrdinalIgnoreCase))
         If target Is Nothing Then Return New ResourceCommitResult(ResourceCommitOutcome.NotFound)
+        ResourcePinMemory.Forget(target)
         Dim remaining As List(Of ResourceDescriptor) = current.Where(Function(r) Not ReferenceEquals(r, target)).ToList()
         Try
             ResourceRegistry.Save(remaining, readValue, writeValue)

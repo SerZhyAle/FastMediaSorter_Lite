@@ -1,4 +1,4 @@
-// Command exchange-vectors generates the conformance vectors of DEVICE-EXCHANGE (ticket 178 T-1): the
+// Command exchange-vectors generates the conformance vectors of DEVICE-EXCHANGE (ticket 205 T-1): the
 // frames of the server wire and the records of section 6, produced by running the REAL exchange server
 // against a scripted client with an injected clock, id source and random source.
 //
@@ -73,6 +73,6 @@ func run(args []string, stdout, stderr io.Writer) int {
 		fmt.Fprintf(stdout, "exchange-vectors: FAIL - %v\n", err)
 		return 1
 	}
-	fmt.Fprintln(stdout, "exchange-vectors: PASS (3 files, byte for byte, hashes in PROVENANCE.txt)")
+	fmt.Fprintln(stdout, "exchange-vectors: PASS (4 files, byte for byte, hashes in PROVENANCE.txt)")
 	return 0
 }

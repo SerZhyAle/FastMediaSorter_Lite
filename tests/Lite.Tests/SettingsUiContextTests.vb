@@ -54,7 +54,7 @@ Public Class SettingsUiContextTests
     <Theory>
     <InlineData("{")>
     <InlineData("null")>
-    <InlineData("{""SchemaVersion"":2}")>
+    <InlineData("{""SchemaVersion"":3}")>
     <InlineData("{""Pages"":null}")>
     Public Sub Invalid_or_future_state_resets_only_private_context(json As String)
         Dim invalid As Boolean
@@ -62,6 +62,41 @@ Public Class SettingsUiContextTests
         Assert.True(invalid)
         Assert.Equal("general", state.LastPageId)
         Assert.Empty(state.Pages)
+    End Sub
+
+    <Fact>
+    Public Sub V1_context_migrates_any_open_group_into_the_share_managers_menu_state()
+        Dim invalid As Boolean
+        Dim state = SettingsUiContext.Read(
+            "{""SchemaVersion"":1,""LastPageId"":""exchange"",""Pages"":{""exchange"":{""Groups"":{""server"":true,""accounts"":false}," &
+            """AnchorId"":""exchange/server"",""AnchorOffsetLogical"":12},""startup"":{""Groups"":{""startup"":false}}}}", invalid)
+        Assert.False(invalid)
+        Assert.Equal(2, state.SchemaVersion)
+        ' 210 section 7.2: a page the user worked on with any group open opens its item list
+        ' in the new menu; a page with only collapsed groups stays folded.
+        Assert.True(state.Page("exchange").NavExpanded)
+        Assert.False(state.Page("startup").NavExpanded)
+        Assert.True(state.Page("exchange").Expanded("server", False))
+        Assert.False(state.Page("exchange").Expanded("accounts", True))
+        Assert.Equal("exchange/server", state.Page("exchange").AnchorId)
+        Assert.Equal(12, state.Page("exchange").AnchorOffsetLogical)
+    End Sub
+
+    <Fact>
+    Public Sub V2_context_round_trips_the_menu_expansion_without_touching_group_state()
+        Dim state As New SettingsUiContext With {.LastPageId = "exchange"}
+        state.Page("exchange").NavExpanded = True
+        state.Page("exchange").Groups("server") = False
+        state.Page("startup").NavExpanded = False
+        Dim invalid As Boolean
+        Dim restored = SettingsUiContext.Read(state.ToJson(), invalid)
+        Assert.False(invalid)
+        Assert.Equal(2, restored.SchemaVersion)
+        Assert.True(restored.Page("exchange").NavExpanded)
+        Assert.False(restored.Page("startup").NavExpanded)
+        ' The viewer's fold map is untouched by the Share Manager's menu flag.
+        Assert.False(restored.Page("exchange").Expanded("server", True))
+        Assert.Equal("exchange", restored.LastPageId)
     End Sub
 
     <Fact>

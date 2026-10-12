@@ -1,7 +1,7 @@
 #If Not NETFRAMEWORK Then
 Option Strict On
 
-' Ticket 172 section 6 rule 6 (Q172-5) and ticket 179 section 2: the one switch every producer surface of a
+' Ticket 199 section 6 rule 6 (Q199-5) and ticket 206 section 2: the one switch every producer surface of a
 ' live broadcast reads, separate from the exchange's <c>ExchangeFeatures.Offered</c>. The audio shape is
 ' `[CONTRACT]` and may be opened before the exchange; the video shape is `[PROPOSED]`, binds nobody and
 ' stays closed until the owner flips it on his own word.
@@ -11,7 +11,7 @@ Option Strict On
 ' the released default is untouched, so a build with the constant False and no variable starts no capture,
 ' opens no listener and shows no row.
 '
-' LiveBroadcastGateGuardTests (ticket 177 section 3 item 3) holds the constant in both directions: it stays
+' LiveBroadcastGateGuardTests (ticket 204 section 3 item 3) holds the constant in both directions: it stays
 ' False unless a reviewed evidence file names the rung or phase it was opened at, and the surface-reachability
 ' cases land with each step of 172-176 that creates a surface.
 

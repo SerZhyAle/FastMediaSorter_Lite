@@ -15,7 +15,7 @@ Imports System.Text.Json.Nodes
 ' the whole file is a secret, not just the ids in it. The key of an entry is the share's NAME (the worker's own key): a rename is a new
 ' resource, and the rename confirmation says its old links stop working (Q170-1).
 '
-' Nothing is created on construction or on a read: a machine that never published has no file (the dormant rule of 177).
+' Nothing is created on construction or on a read: a machine that never published has no file (the dormant rule of 204).
 
 ''' <summary>One published share's ids.</summary>
 Friend NotInheritable Class ExchangeProducerEntry

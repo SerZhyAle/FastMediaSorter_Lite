@@ -1,4 +1,4 @@
-#If Not NETFRAMEWORK Then
+﻿#If Not NETFRAMEWORK Then
 Option Strict On
 
 Imports System.Security.Cryptography
@@ -91,6 +91,7 @@ Friend Enum ExchangeRefusal
     PortUnavailable = 7
     Unavailable = 8
     RateLimited = 9
+    ProtectionUnsupported = 10
 End Enum
 
 Friend NotInheritable Class ExchangeRefusals
@@ -100,7 +101,7 @@ Friend NotInheritable Class ExchangeRefusals
 
     Private Shared ReadOnly Names As String() = {
         "", "bad-credentials", "device-revoked", "version-unsupported", "tls-required",
-        "id-collision", "capacity", "port-unavailable", "unavailable", "rate-limited"}
+        "id-collision", "capacity", "port-unavailable", "unavailable", "rate-limited", "protection-unsupported"}
 
     ''' <summary>The enum of a wire reason; <see cref="ExchangeRefusal.Unknown"/> for anything else.</summary>
     Public Shared Function Parse(reason As String) As ExchangeRefusal
@@ -122,7 +123,7 @@ Friend NotInheritable Class ExchangeRefusals
     Public Shared Function All() As ExchangeRefusal()
         Return {ExchangeRefusal.BadCredentials, ExchangeRefusal.DeviceRevoked, ExchangeRefusal.VersionUnsupported,
                 ExchangeRefusal.TlsRequired, ExchangeRefusal.IdCollision, ExchangeRefusal.Capacity,
-                ExchangeRefusal.PortUnavailable, ExchangeRefusal.Unavailable, ExchangeRefusal.RateLimited}
+                ExchangeRefusal.PortUnavailable, ExchangeRefusal.Unavailable, ExchangeRefusal.RateLimited, ExchangeRefusal.ProtectionUnsupported}
     End Function
 
 End Class

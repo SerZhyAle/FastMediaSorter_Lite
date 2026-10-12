@@ -1,6 +1,7 @@
-Option Strict On
+﻿Option Strict On
 
 Imports System.IO
+Imports System.Linq
 Imports System.IO.Pipes
 Imports System.Runtime.InteropServices
 Imports System.Security.Principal
@@ -125,6 +126,9 @@ Public NotInheritable Class WorkerIpc
         If understoodSchema = 2 AndAlso response.Ok AndAlso response.SchemaVersion <> 2 Then
             Throw New WorkerExchangeException(WorkerExchangeProblem.Malformed, "A disk response must use schema 2.")
         End If
+        If understoodSchema = 3 AndAlso response.Ok AndAlso response.SchemaVersion <> 3 Then
+            Throw New WorkerExchangeException(WorkerExchangeProblem.Malformed, "A resource PIN response must use schema 3.")
+        End If
         If response.Disks IsNot Nothing AndAlso response.Disks.Count > 1024 Then Throw New WorkerExchangeException(WorkerExchangeProblem.Malformed, "Too many disk records.")
         If response.Status?.Roots IsNot Nothing AndAlso response.Status.Roots.Count > 1024 Then Throw New WorkerExchangeException(WorkerExchangeProblem.Malformed, "Too many roots.")
         Return response
@@ -132,6 +136,11 @@ Public NotInheritable Class WorkerIpc
 
     Friend Shared Function RequestSchema(request As WorkerRequest) As Integer
         Select Case request.type
+            Case "InvalidatePinSessions"
+                Return 3
+            Case "SetSharedFolders"
+                If request.PinConfiguration OrElse (request.folders IsNot Nothing AndAlso request.folders.Any(Function(r) Not String.IsNullOrEmpty(r.accessPin))) Then Return 3
+                Return SchemaVersion
             Case "disk-share", "disk-open", "disk-close", "disk-autostart", "disk-status", "disk-list"
                 Return 2
             Case Else
@@ -410,6 +419,8 @@ End Class
 
 ''' <summary>Request envelope. type is one of the WORKER-IPC section 4 message names.</summary>
 Public Class WorkerRequest
+    <JsonIgnore>
+    Public Property PinConfiguration As Boolean
     Public Property owner As String
     Public Property action As String
     Public Property containerPath As String
@@ -472,6 +483,9 @@ End Class
 
 ''' <summary>A shared root. Used both in requests (folders) and status (roots).</summary>
 Public Class ShareFolder
+    Public Property accessPin As String
+    <JsonIgnore(Condition:=JsonIgnoreCondition.WhenWritingDefault)>
+    Public Property pinProtected As Boolean
     Public Property owner As String
     <JsonIgnore>
     Public ReadOnly Property IsFmsOwned As Boolean
@@ -566,6 +580,7 @@ Public Class WorkerResponse
 End Class
 
 Public Class WorkerStatus
+    Public Property ResourcePinSupported As Boolean
     Public Property Mode As String
     Public Property Capabilities As Dictionary(Of String, Boolean)
     Public Property DiskSharingError As String
@@ -601,7 +616,7 @@ Public Class WorkerStatus
     Public Property BroadcastPort As Integer
     ''' <summary>Number of active broadcasts.</summary>
     Public Property BroadcastCount As Integer
-    ''' <summary>This worker serves all five broadcast verbs of 016 section 3.4 (spec 159 section 3.1), so none
+    ''' <summary>This worker serves all five broadcast verbs of 196 section 3.4 (spec 159 section 3.1), so none
     ''' of them is answered with "unsupported request type". Additive and top level, the exact shape of
     ''' <see cref="PortSupported"/>: a worker that predates the verbs omits it, so absent is False. The host never infers support
     ''' from a refusal's wording.</summary>

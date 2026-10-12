@@ -376,6 +376,11 @@ Public Class Main_Form
     Protected Overrides Sub WndProc(ByRef m As Message)
 
 #If Not NETFRAMEWORK Then
+        ' The borderless main window (188 §6): the caption is claimed as client area, the outer
+        ' resize bands are re-classified and the minimum tracking size fits the window-controls
+        ' panel. Full handling keeps the single-instance and media-key routing below untouched.
+        If ChromeWindowBorderWndProc(m) Then Return
+
         ' Hardware media keys may arrive as an application command rather than KeyDown.
         ' The normal key route honours the current binding and the media applicability gate.
         If m.Msg = &H319 AndAlso PlaybackRules.IsMediaPlayPauseCommand(m.LParam.ToInt64()) Then

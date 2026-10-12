@@ -94,6 +94,7 @@ type Device struct {
 	ProductVersion string          `json:"productVersion,omitempty"`
 	Platform       string          `json:"platform,omitempty"`
 	Roles          []string        `json:"roles,omitempty"`
+	Capabilities   []string        `json:"capabilities,omitempty"`
 	Receiver       json.RawMessage `json:"receiver,omitempty"`
 	TokenHash      string          `json:"tokenHash"` // hex SHA-256 of the token
 	EnrolledAt     string          `json:"enrolledAt"`
@@ -473,6 +474,7 @@ type EnrollSpec struct {
 	ProductVersion string
 	Platform       string
 	Roles          []string
+	Capabilities   []string
 	Receiver       json.RawMessage
 }
 
@@ -520,7 +522,7 @@ func (s *Store) Enroll(spec EnrollSpec) (Enrolled, error) {
 	now := wire.FormatTime(s.now())
 	d := &Device{
 		ID: spec.DeviceID, Account: spec.Account, Name: spec.Name, Product: spec.Product,
-		ProductVersion: spec.ProductVersion, Platform: spec.Platform, Roles: spec.Roles, Receiver: spec.Receiver,
+		ProductVersion: spec.ProductVersion, Platform: spec.Platform, Roles: spec.Roles, Capabilities: append([]string(nil), spec.Capabilities...), Receiver: spec.Receiver,
 		TokenHash: hashToken(token), EnrolledAt: now, LastSeen: now,
 	}
 	if old != nil {

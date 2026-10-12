@@ -9,7 +9,13 @@
   -->
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
-    <TargetFramework>net10.0-windows</TargetFramework>
+    <!-- windows10.0.19041: the Windows SDK projections this project needs for the live-broadcast
+         screen source (ticket 172 section 4: Windows Graphics Capture, Windows 10 1903+; the
+         process-loopback audio exclusion, 2004+). TargetPlatformMinVersion stays at the package's
+         own floor (10.0.17763, the MSIX manifest's MinVersion) so nothing about the package changes;
+         the capture itself refuses to start where the OS lacks it (SourceUnavailable). -->
+    <TargetFramework>net10.0-windows10.0.19041</TargetFramework>
+    <TargetPlatformMinVersion>10.0.17763.0</TargetPlatformMinVersion>
     <UseWindowsForms>true</UseWindowsForms>
     <RootNamespace>FastMediaSorterCompanion</RootNamespace>
     <AssemblyName>FastMediaSorterCompanion</AssemblyName>
@@ -160,6 +166,16 @@
       its ..\**\*.vb glob; the net48 project lists none of it (a source scan holds that).
     -->
     <Compile Include="..\Exchange\*.vb" Link="Exchange\%(Filename)%(Extension)" />
+    <!--
+      Ticket 172: the live-broadcast PRODUCER library - the descriptor writer, the hub, the chunker,
+      the LAN server, the controller and the seams - linked (not copied) from the viewer's source
+      tree, whole-file "#If Not NETFRAMEWORK" like the exchange library above. The Share Manager is
+      the producer program (spec 172 section 2); the viewer compiles the same files through its
+      src\**\*.vb glob. LiveBroadcastFeatures.vb is the gate of safety rule 6, shared so the tray
+      item, the window and the release preflight read ONE constant.
+    -->
+    <Compile Include="..\LiveBroadcast\LiveBroadcastFeatures.vb" Link="LiveBroadcast\LiveBroadcastFeatures.vb" />
+    <Compile Include="..\LiveBroadcast\Producer\*.vb" Link="LiveBroadcast\Producer\%(Filename)%(Extension)" />
   </ItemGroup>
 
 </Project>

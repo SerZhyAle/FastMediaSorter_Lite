@@ -42,13 +42,15 @@ Friend NotInheritable Class ExchangePlannedShare
     Public ReadOnly AccessJson As String
     ''' <summary>The third-party port REQUEST for this resource: Nothing = none, 0 = any, N = that one.</summary>
     Public ReadOnly PublicPortRequest As Integer?
+    Public ReadOnly PinProtected As Boolean
 
-    Public Sub New(name As String, resourceId As String, shareId As String, accessJson As String, publicPortRequest As Integer?)
+    Public Sub New(name As String, resourceId As String, shareId As String, accessJson As String, publicPortRequest As Integer?, Optional pinProtected As Boolean = False)
         Me.Name = name
         Me.ResourceId = resourceId
         Me.ShareId = If(shareId, "")
         Me.AccessJson = accessJson
         Me.PublicPortRequest = publicPortRequest
+        Me.PinProtected = pinProtected
     End Sub
 
     Public Overrides Function ToString() As String
@@ -147,7 +149,8 @@ Friend NotInheritable Class ExchangePublishPlan
         If roots.Count = 0 Then Return New ExchangePublishPlan(ExchangePublishBlock.NoShares, none, state, "")
 
         For Each r As ShareFolder In roots
-            If inputs.HasPin(If(r.hostPath, "")) Then Return New ExchangePublishPlan(ExchangePublishBlock.PinLocked, none, state, "")
+            If (inputs.HasPin(If(r.hostPath, "")) OrElse r.pinProtected) AndAlso
+                (Not st.ResourcePinSupported OrElse Not r.pinProtected) Then Return New ExchangePublishPlan(ExchangePublishBlock.PinLocked, none, state, "")
         Next
 
         Dim hosts As List(Of String) = SelectHosts(st, inputs.IncludeExternal, inputs.LanFallback)
@@ -174,6 +177,10 @@ Friend NotInheritable Class ExchangePublishPlan
                 entry = New ExchangeProducerEntry(inputs.NewId.Invoke(), "")
                 current = current.WithEntry(r.name, entry)
             End If
+            If r.pinProtected AndAlso entry.ShareId.Length > 0 Then
+                entry = entry.WithShareId("")
+                current = current.WithEntry(r.name, entry)
+            End If
             Dim shareId As String = If(exchangeEndpoint.Length > 0 AndAlso entry.ShareId.Length > 0, entry.ShareId, "")
             Dim code As New FmsSftpCode(hosts, st.ListenPort, st.Username, st.Password, st.Fingerprint,
                                         If(shareId.Length > 0, exchangeEndpoint, ""), shareId, False)
@@ -183,7 +190,7 @@ Friend NotInheritable Class ExchangePublishPlan
             End If
             Dim request As Integer? = Nothing
             If String.Equals(r.name, carrier, StringComparison.Ordinal) Then request = If(state.CarrierPort > 0, state.CarrierPort, 0)
-            planned.Add(New ExchangePlannedShare(r.name, entry.ResourceId, shareId, access, request))
+            planned.Add(New ExchangePlannedShare(r.name, entry.ResourceId, shareId, access, request, r.pinProtected))
         Next
         Return New ExchangePublishPlan(ExchangePublishBlock.None, planned, current, carrier)
     End Function

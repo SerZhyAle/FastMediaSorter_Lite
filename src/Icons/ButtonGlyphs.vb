@@ -58,6 +58,15 @@ Public NotInheritable Class ButtonGlyphs
     ''' <summary>The gap between glyph and caption, in logical pixels (WINDOWS-UI section 11 item 2).</summary>
     Public Const GapLogicalSize As Integer = 6
 
+    ''' <summary>How much room a button may have beyond its glyph, gap and caption before the pair is moved from
+    ''' the middle to the reading start (logical px, both sides together). A full-width command button
+    ''' otherwise centres glyph and caption as one unit, so the glyphs of stacked buttons stand at a different
+    ''' x each; at the start they form one column and the captions follow in a second one.</summary>
+    Public Const WideSlackLogical As Integer = 64
+
+    ''' <summary>The inset of the pair from the reading-start edge of a wide button (logical px).</summary>
+    Public Const StartInsetLogical As Integer = 12
+
     ''' <summary>The face tint of an answer button, in percent of the hue (item 4, reference value).</summary>
     Public Const TintPercent As Integer = 12
 
@@ -88,6 +97,20 @@ Public NotInheritable Class ButtonGlyphs
         Public SavedFlatStyle As FlatStyle
         Public SavedBorder As Color
         Public SavedBorderSize As Integer
+        ''' <summary>The pair was moved to the reading start because the button is much wider than its content;
+        ''' the alignment and padding it had are kept so a narrower button gets them back.</summary>
+        Public ArrangedStart As Boolean
+        Public OriginalTextAlign As ContentAlignment
+        Public OriginalPadding As Padding
+        ''' <summary>What the pair was last placed for: a layout pass that repeats the same width, caption and font
+        ''' (a hidden section being shown, a table re-fitting its rows) costs a comparison and nothing else.</summary>
+        Public ArrangedWidth As Integer = -1
+        Public ArrangedText As String
+        Public ArrangedFont As Font
+        Public ArrangedRtl As Boolean
+        Public MeasuredText As String
+        Public MeasuredFont As Font
+        Public MeasuredWidth As Integer
     End Class
 
     Private Shared ReadOnly states As New ConditionalWeakTable(Of Button, GlyphState)()
@@ -133,6 +156,11 @@ Public NotInheritable Class ButtonGlyphs
             ' A neutral glyph takes the caption's colour, and a window that themes itself (the settings
             ' window) sets that colour after the application palette has been handed over.
             AddHandler button.ForeColorChanged, AddressOf OnRefreshEvent
+            ' The pair's place depends on how much room the caption has: a resize, a new caption (a language
+            ' switch) or a new font moves it, with no need to draw the picture again.
+            AddHandler button.SizeChanged, AddressOf OnArrangeEvent
+            AddHandler button.TextChanged, AddressOf OnArrangeEvent
+            AddHandler button.FontChanged, AddressOf OnArrangeEvent
             AddHandler button.Paint, AddressOf OnPaintTint
             AddHandler button.Disposed, AddressOf OnDisposed
             SyncLock live
@@ -260,6 +288,21 @@ Public NotInheritable Class ButtonGlyphs
         If b IsNot Nothing Then Refresh(b)
     End Sub
 
+    Private Shared Sub OnArrangeEvent(sender As Object, e As EventArgs)
+        Dim b As Button = TryCast(sender, Button)
+        Dim st As GlyphState = Nothing
+        If b Is Nothing OrElse b.IsDisposed OrElse Not states.TryGetValue(b, st) Then Return
+        If st.Rendering Then Return
+        If b.Width = st.ArrangedWidth AndAlso String.Equals(b.Text, st.ArrangedText) AndAlso
+           Object.ReferenceEquals(b.Font, st.ArrangedFont) AndAlso (b.RightToLeft = RightToLeft.Yes) = st.ArrangedRtl Then Return
+        st.Rendering = True
+        Try
+            ArrangeContent(b, st)
+        Finally
+            st.Rendering = False
+        End Try
+    End Sub
+
     Private Shared Sub OnDisposed(sender As Object, e As EventArgs)
         Dim b As Button = TryCast(sender, Button)
         If b Is Nothing Then Return
@@ -304,18 +347,7 @@ Public NotInheritable Class ButtonGlyphs
 
             Dim old As Image = b.Image
             b.Image = composed
-            ' The picture and the caption sit together: the picture takes the caption's own horizontal alignment, so a
-            ' left-aligned list button keeps its caption at the start with the glyph in front of it, and a centred one
-            ' centres the pair. The caption's alignment is never changed here.
-            Select Case b.TextAlign
-                Case ContentAlignment.TopLeft, ContentAlignment.MiddleLeft, ContentAlignment.BottomLeft
-                    b.ImageAlign = ContentAlignment.MiddleLeft
-                Case ContentAlignment.TopRight, ContentAlignment.MiddleRight, ContentAlignment.BottomRight
-                    b.ImageAlign = ContentAlignment.MiddleRight
-                Case Else
-                    b.ImageAlign = ContentAlignment.MiddleCenter
-            End Select
-            b.TextImageRelation = TextImageRelation.ImageBeforeText
+            ArrangeContent(b, st)
             old?.Dispose()
             b.Invalidate()
         Catch ex As Exception
@@ -325,6 +357,97 @@ Public NotInheritable Class ButtonGlyphs
             st.Rendering = False
         End Try
     End Sub
+
+    ' --- where the pair sits -----------------------------------------------------------------
+
+    Private Shared Function IsCentred(a As ContentAlignment) As Boolean
+        Return a = ContentAlignment.TopCenter OrElse a = ContentAlignment.MiddleCenter OrElse a = ContentAlignment.BottomCenter
+    End Function
+
+    Private Shared Function StartOf(a As ContentAlignment) As ContentAlignment
+        Select Case a
+            Case ContentAlignment.TopCenter : Return ContentAlignment.TopLeft
+            Case ContentAlignment.BottomCenter : Return ContentAlignment.BottomLeft
+            Case Else : Return ContentAlignment.MiddleLeft
+        End Select
+    End Function
+
+    ''' <summary>True when the button has far more room than glyph, gap and caption need - a command stretched
+    ''' across a page - so centring the pair would leave the glyphs of a stack at different x.</summary>
+    Private Shared Function HasRoomToSpare(b As Button, st As GlyphState) As Boolean
+        If b.Image Is Nothing OrElse String.IsNullOrEmpty(b.Text) OrElse b.Width <= 0 Then Return False
+        If Not String.Equals(st.MeasuredText, b.Text) OrElse Not Object.ReferenceEquals(st.MeasuredFont, b.Font) Then
+            Dim flags As TextFormatFlags = TextFormatFlags.NoPadding Or TextFormatFlags.HidePrefix Or TextFormatFlags.SingleLine
+            st.MeasuredWidth = TextRenderer.MeasureText(b.Text, b.Font, New Size(Short.MaxValue, Short.MaxValue), flags).Width
+            st.MeasuredText = b.Text
+            st.MeasuredFont = b.Font
+        End If
+        Dim textWidth As Integer = st.MeasuredWidth
+        ' The padding the button had before this module moved the pair, or the answer would depend on it.
+        Dim own As Padding = If(st.ArrangedStart, st.OriginalPadding, b.Padding)
+        Dim used As Integer = b.Image.Width + textWidth + own.Horizontal
+        Return b.Width - used > b.LogicalToDeviceUnits(WideSlackLogical)
+    End Function
+
+    ''' <summary>Puts glyph and caption together at their place: the caption's own alignment, with the glyph in
+    ''' front of it; a centred pair that has far more room than it needs goes to the reading start with an
+    ''' inset instead (left in a left-to-right layout, right in a right-to-left one, where the framework
+    ''' mirrors the alignment itself). The caption keeps its alignment when the button is narrow again.</summary>
+    Private Shared Sub ArrangeContent(b As Button, st As GlyphState)
+        If b.Image Is Nothing Then Return
+        Dim rtl As Boolean = b.RightToLeft = RightToLeft.Yes
+        Dim own As ContentAlignment = If(st.ArrangedStart, st.OriginalTextAlign, b.TextAlign)
+
+        If IsCentred(own) AndAlso HasRoomToSpare(b, st) Then
+            If Not st.ArrangedStart Then
+                st.ArrangedStart = True
+                st.OriginalTextAlign = b.TextAlign
+                st.OriginalPadding = b.Padding
+            End If
+            Dim start As ContentAlignment = StartOf(own)
+            Dim inset As Integer = b.LogicalToDeviceUnits(StartInsetLogical)
+            Dim p As Padding = st.OriginalPadding
+            Dim target As Padding = If(rtl,
+                New Padding(p.Left, p.Top, Math.Max(p.Right, inset), p.Bottom),
+                New Padding(Math.Max(p.Left, inset), p.Top, p.Right, p.Bottom))
+            If b.TextAlign <> start Then b.TextAlign = start
+            If b.Padding <> target Then b.Padding = target
+        ElseIf st.ArrangedStart Then
+            st.ArrangedStart = False
+            If b.TextAlign <> st.OriginalTextAlign Then b.TextAlign = st.OriginalTextAlign
+            If b.Padding <> st.OriginalPadding Then b.Padding = st.OriginalPadding
+        End If
+
+        ' The picture takes the caption's own horizontal alignment, so a left-aligned list button keeps its
+        ' caption at the start with the glyph in front of it, and a centred one centres the pair.
+        Dim imageAlign As ContentAlignment
+        Select Case b.TextAlign
+            Case ContentAlignment.TopLeft, ContentAlignment.MiddleLeft, ContentAlignment.BottomLeft
+                imageAlign = ContentAlignment.MiddleLeft
+            Case ContentAlignment.TopRight, ContentAlignment.MiddleRight, ContentAlignment.BottomRight
+                imageAlign = ContentAlignment.MiddleRight
+            Case Else
+                imageAlign = ContentAlignment.MiddleCenter
+        End Select
+        If b.ImageAlign <> imageAlign Then b.ImageAlign = imageAlign
+        If b.TextImageRelation <> TextImageRelation.ImageBeforeText Then b.TextImageRelation = TextImageRelation.ImageBeforeText
+        st.ArrangedWidth = b.Width
+        st.ArrangedText = b.Text
+        st.ArrangedFont = b.Font
+        st.ArrangedRtl = rtl
+    End Sub
+
+    ''' <summary>Where the glyph-and-caption pair of a button sits horizontally, as the framework will place it:
+    ''' <c>-1</c> at the physical left edge, <c>1</c> at the right, <c>0</c> centred. Read by the disabled
+    ''' repaint of the dark theme so it draws the pair where the enabled button does.</summary>
+    Public Shared Function PairSide(b As Button) As Integer
+        Dim leftSet As Boolean = b.TextAlign = ContentAlignment.TopLeft OrElse b.TextAlign = ContentAlignment.MiddleLeft OrElse b.TextAlign = ContentAlignment.BottomLeft
+        Dim rightSet As Boolean = b.TextAlign = ContentAlignment.TopRight OrElse b.TextAlign = ContentAlignment.MiddleRight OrElse b.TextAlign = ContentAlignment.BottomRight
+        Dim rtl As Boolean = b.RightToLeft = RightToLeft.Yes
+        If leftSet Then Return If(rtl, 1, -1)
+        If rightSet Then Return If(rtl, -1, 1)
+        Return 0
+    End Function
 
     ' --- ink, face, tint ---------------------------------------------------------------------
 

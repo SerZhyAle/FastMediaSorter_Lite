@@ -131,9 +131,9 @@ Friend NotInheritable Class ExchangeAgentPipe
     Public Const RequestGetState As String = "GetState"
     Public Const RequestGetDirectory As String = "GetDirectory"
     Public Const RequestGetAccess As String = "GetAccess"
-    ''' <summary>Ticket 174: the answer to a cast offer. Named here so the vocabulary is whole; the agent answers `unsupported` until 174 lands.</summary>
+    ''' <summary>Ticket 201: the answer to a cast offer. Named here so the vocabulary is whole; the agent answers `unsupported` until 174 lands.</summary>
     Public Const RequestCastAnswer As String = "CastAnswer"
-    ''' <summary>Ticket 174: whether an incoming cast asks or plays at once.</summary>
+    ''' <summary>Ticket 201: whether an incoming cast asks or plays at once.</summary>
     Public Const RequestCastPolicy As String = "CastPolicy"
 
     ' --- the machine errors of a refused request ---

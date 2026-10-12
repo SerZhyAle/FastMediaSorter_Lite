@@ -45,7 +45,7 @@ func NewTable() *Table {
 	return &Table{pending: map[string]*Tunnel{}, byKey: map[Key]map[string]*Tunnel{}, byDevice: map[string]map[string]*Tunnel{}}
 }
 
-// SetRand makes tunnel ids come from r (the vector generator of ticket 178 and tests); nil restores
+// SetRand makes tunnel ids come from r (the vector generator of ticket 205 and tests); nil restores
 // wire.NewID's source. Call it before the first Open.
 func (t *Table) SetRand(r io.Reader) {
 	t.mu.Lock()

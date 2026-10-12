@@ -93,6 +93,7 @@ type Enroll struct {
 	ProductVersion   string          `json:"productVersion,omitempty"`
 	Platform         string          `json:"platform,omitempty"`
 	Roles            []string        `json:"roles,omitempty"`
+	Capabilities     []string        `json:"capabilities,omitempty"`
 	Receiver         json.RawMessage `json:"receiver,omitempty"`
 	KeepaliveSeconds int             `json:"keepaliveSeconds,omitempty"`
 }

@@ -1,12 +1,12 @@
 <#
 .SYNOPSIS
-    The "today" baseline of ticket 177 (dual mode): a machine with no exchange account and no Google
+    The "today" baseline of ticket 204 (dual mode): a machine with no exchange account and no Google
     sign-in must be unable to tell that the exchange client exists. Captures what the CURRENT build of
     the viewer and the Share Manager does on a clean profile, or compares a fresh capture with the
     committed capture.
 
 .DESCRIPTION
-    177 section 3 item 1. For each program that can be started here it records, on a CLEAN profile:
+    204 section 3 item 1. For each program that can be started here it records, on a CLEAN profile:
 
       * the registry: the value NAMES (never the data) under SZA\FastMediaSorter before, while it runs and
         after it closed, and the names that appeared; the value names of the per-user Run key before/after;
@@ -343,7 +343,7 @@ function Invoke-Capture([string]$Name, [string]$Exe, [string[]]$ProgramArgs, [bo
 
 function Write-Provenance([string]$Dir) {
     $lines = @(
-        '# Provenance of the dual-mode baseline (ticket 177). The suites check these hashes FIRST: a hand edit of a',
+        '# Provenance of the dual-mode baseline (ticket 204). The suites check these hashes FIRST: a hand edit of a',
         '# fixture fails them. Regenerate: tests\Integration\ExchangeBaseline.ps1 -Mode Capture (the JSON captures),',
         '# the Companion test DualModeBaselineGenerator with FMS_WRITE_DUAL_MODE_BASELINE=<this folder> (the',
         '# reference-share files), then tests\Integration\ExchangeBaseline.ps1 -Mode Provenance (this file).',

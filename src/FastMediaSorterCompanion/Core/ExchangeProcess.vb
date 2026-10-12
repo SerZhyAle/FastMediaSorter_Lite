@@ -226,6 +226,17 @@ Friend Module ExchangeProcess
     End Function
 
 
+    ''' <summary>Asks the binary what the named data directory holds - the registered service's - for this one run (the
+    ''' directory goes to the child's environment, not into <see cref="DataDirOverride"/>). The enrolled user may not read the
+    ''' stores there, so <c>accounts</c> is not to be trusted and the report may carry an error; its address and the fingerprint of
+    ''' the certificate (a file the user may read) are what this is for.</summary>
+    Friend Function InspectIn(dataDir As String) As InspectReport
+        If Not IsAvailable() Then Return New InspectReport()
+        Dim r As RunResult = Run({"inspect"}, Nothing, CommandTimeoutMs, dataDir)
+        If Not r.Started OrElse r.TimedOut Then Return New InspectReport With {.ExitCode = r.ExitCode}
+        Return ParseInspect(r.StdOut, r.ExitCode)
+    End Function
+
     ' --- the listen port --------------------------------------------------------------------
 
     Friend Enum ListenOutcome
@@ -651,14 +662,18 @@ Friend Module ExchangeProcess
     ' --- plumbing -------------------------------------------------------------------------
 
 
-    Private Sub ApplyEnvironment(psi As ProcessStartInfo)
-        If Not String.IsNullOrEmpty(DataDirOverride) Then psi.Environment(DataDirEnvironmentName) = DataDirOverride
+    Private Sub ApplyEnvironment(psi As ProcessStartInfo, Optional dataDirForThisRun As String = "")
+        If Not String.IsNullOrEmpty(dataDirForThisRun) Then
+            psi.Environment(DataDirEnvironmentName) = dataDirForThisRun
+        ElseIf Not String.IsNullOrEmpty(DataDirOverride) Then
+            psi.Environment(DataDirEnvironmentName) = DataDirOverride
+        End If
     End Sub
 
     ''' <summary>One run of the binary with bounded waits. Reads stdout and stderr concurrently (a full pipe
     ''' would otherwise block the child), writes stdin as UTF-8 WITHOUT a byte-order mark - the Go side
     ''' trims only newlines, so a BOM would become the first character of the password.</summary>
-    Friend Function Run(args As String(), stdin As String, timeoutMs As Integer) As RunResult
+    Friend Function Run(args As String(), stdin As String, timeoutMs As Integer, Optional dataDirForThisRun As String = "") As RunResult
         If RunOverride IsNot Nothing Then Return RunOverride(args, stdin)
 
         Dim psi As New ProcessStartInfo(ExePath()) With {
@@ -674,7 +689,7 @@ Friend Module ExchangeProcess
         For Each a As String In args
             psi.ArgumentList.Add(a)
         Next
-        ApplyEnvironment(psi)
+        ApplyEnvironment(psi, dataDirForThisRun)
 
         Dim result As New RunResult
         Dim p As Process

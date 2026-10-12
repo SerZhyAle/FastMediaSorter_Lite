@@ -1,11 +1,11 @@
 <#
 .SYNOPSIS
-    The CONFIGURED half of ticket 177 (dual mode): a throw-away Media Exchange Server deployment on
-    loopback, and the two scenarios of 177 section 2 run against it. Hand-run at each gate opening
+    The CONFIGURED half of ticket 204 (dual mode): a throw-away Media Exchange Server deployment on
+    loopback, and the two scenarios of 204 section 2 run against it. Hand-run at each gate opening
     (177 T-5) and on the test host beside the hand rows of 182 and 187.
 
 .DESCRIPTION
-    177 section 3 item 4 (146's fixture, re-aimed) and acceptance 3: the CONFIGURED run shows the new
+    204 section 3 item 4 (146's fixture, re-aimed) and acceptance 3: the CONFIGURED run shows the new
     behaviour and the UNCONFIGURED run beside it shows none. What it does, in order:
 
       1. builds or takes fms-exchange-server.exe (default: exchange-server\build.ps1 into a scratch
@@ -31,7 +31,7 @@
          dialogs of 187, the account group of 180) are the hand rows of 182/187, run by a person
          against this or the owner's deployment;
       6. the UNCONFIGURED scenario: the Share Manager (and, with -ViewerExe, the viewer) runs on a
-         CLEAN profile BESIDE the live server, and the scriptable rows of 177 section 2 must hold:
+         CLEAN profile BESIDE the live server, and the scriptable rows of 204 section 2 must hold:
          no outbound connection (in particular none to the server), no listening or UDP endpoint, no
          child process, no exchange value name in the settings key, no new file under
          %LOCALAPPDATA%\SZA (no exchange folder, no token file), no exchange word in its own log.
@@ -127,7 +127,7 @@ trap {
     Exit-Verdict $check 2 'the harness itself failed'
 }
 
-Write-Subject $check "the configured half of the dual-mode regression (177 section 3 item 4); $(Get-TreeLabel $repoRoot)"
+Write-Subject $check "the configured half of the dual-mode regression (204 section 3 item 4); $(Get-TreeLabel $repoRoot)"
 
 # --- the server and the probe: build or take ------------------------------------------------------
 
@@ -356,7 +356,7 @@ function Get-Endpoints([int]$ProcId) {
     return , @($list)
 }
 
-# One program on a clean profile: the scriptable rows of 177 section 2, observed - not trusted.
+# One program on a clean profile: the scriptable rows of 204 section 2, observed - not trusted.
 function Invoke-UnconfiguredRun([string]$Name, [string]$Exe, [string[]]$ProgramArgs, [bool]$CloseWindow) {
     $running = @(Get-Process -ErrorAction SilentlyContinue | Where-Object { $blockedNames -contains $_.ProcessName })
     if ($running.Count -gt 0) {

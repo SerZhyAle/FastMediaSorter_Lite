@@ -161,5 +161,32 @@ Public Class ExchangeDirectoryTests
         Assert.False(ExchangeRecordReader.TryReadDevice("{""deviceName"":""no id""}", rec))
     End Sub
 
+    <Theory>
+    <InlineData("{""scheme"":""future""}")>
+    <InlineData("null")>
+    <InlineData("[]")>
+    Public Sub Protection_is_kept_visible_but_never_exposes_access_to_an_unsupported_client(protection As String)
+        Dim raw As String = PhoneShare.Substring(0, PhoneShare.Length - 1) & ",""protection"":" & protection & "}"
+        Dim record As ExchangeResourceRecord = Nothing
+        Assert.True(ExchangeRecordReader.TryReadResource(raw, record))
+        Assert.True(record.IsProtected)
+        Assert.False(record.HasAccess)
+        Assert.Empty(record.AccessJson)
+        Assert.Equal("R1", record.ResourceId)
+        Dim model As New ExchangeDirectoryModel()
+        model.ApplyDirectory(Directory(1, {Phone}, {raw}, Array.Empty(Of String)()))
+        Assert.Single(model.Snapshot().Resources)
+    End Sub
+
+    <Fact>
+    Public Sub Pin_v1_access_retains_the_lock_requirement_for_a_capable_consumer()
+        Dim raw As String = PhoneShare.Substring(0, PhoneShare.Length - 1) & ",""protection"":{""scheme"":""pin-v1""}}"
+        Dim record As ExchangeResourceRecord = Nothing
+        Assert.True(ExchangeRecordReader.TryReadResource(raw, record))
+        Assert.True(record.IsProtected)
+        Assert.True(record.CanAuthorize)
+        Assert.True(record.HasAccess)
+    End Sub
+
 End Class
 #End If

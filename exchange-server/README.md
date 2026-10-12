@@ -23,8 +23,8 @@ never the protocol core).
 | --- | --- |
 | `cmd/fms-exchange-server` | the program: `serve` (console, or `--service` under the SCM), `stop`, `account add/passwd/remove/list`, `device list/revoke`, `set-listen`, `set-endpoint`, `connection-string`, `inspect`, `--version` |
 | `cmd/exchange-fakeproducer` | **manual-proof tool, its own module** (enrolls into an account, publishes a share and serves a real SFTP subsystem through the bridge); see `testdata/manual-winscp.md`. Kept for the one thing the probe cannot do - serve a real SFTP subsystem for WinSCP or FileZilla (that needs `pkg/sftp`, which stays out of this module) |
-| `cmd/exchange-vectors` | the conformance vector generator (ticket 178 T-1): runs the real server against a scripted client with an injected clock, seeded ids and tokens, and writes `testdata/vectors/frames-v2.json`, `records-v1.json` and `PROVENANCE.txt`. `go run ./cmd/exchange-vectors -out testdata/vectors` writes, `-check` regenerates and compares (one verdict line). Developer tool, never installed |
-| `cmd/exchange-probe` | the self-test client (ticket 178 T-2): `exchange-probe --server host:port --fingerprint SHA256:.. --login x --password-stdin` runs enroll, hello, publish, list, pairing, subscribe, tunnels by resourceId and shareId, relay upload and listen, cast and revoke, leaves the account as it found it and prints one verdict line. Developer and joint-test tool, never installed |
+| `cmd/exchange-vectors` | the conformance vector generator (ticket 205 T-1): runs the real server against a scripted client with an injected clock, seeded ids and tokens, and writes `testdata/vectors/frames-v2.json`, `records-v1.json` and `PROVENANCE.txt`. `go run ./cmd/exchange-vectors -out testdata/vectors` writes, `-check` regenerates and compares (one verdict line). Developer tool, never installed |
+| `cmd/exchange-probe` | the self-test client (ticket 205 T-2): `exchange-probe --server host:port --fingerprint SHA256:.. --login x --password-stdin` runs enroll, hello, publish, list, pairing, subscribe, tunnels by resourceId and shareId, relay upload and listen, cast and revoke, leaves the account as it found it and prints one verdict line. Developer and joint-test tool, never installed |
 | `internal/wire` | the typed envelopes of `schemaVersion` 2, the codec, the 4-byte length framing (`MaxFrame` 16384 before `welcome`, `MaxFrameAuth` 262144 after), the verbatim records, the nine reasons, the HTTP-opening reader - the only place that builds or parses a wire byte |
 | `internal/accounts` | accounts, enrolled devices, token hashes, tombstones (`accounts.json`, `devices.json`) and the in-memory pairing codes |
 | `internal/directory` | the per-account directory: presence, `list`/`changed` with a revision per transaction, resources (on disk without `access`, `shareId`, `publicPort`) and broadcasts (memory only), `directory.json` |
@@ -146,7 +146,7 @@ to `<data dir>\service.log`, which exists only once there is something to say.
 the configured port (a stopping service no longer says Running but still holds it; the owner of the
 port comes from the TCP table). A probe that cannot answer (no SCM access) never refuses on its own:
 it prints a warning and the listen decides. The probe is `deploy.Probe`, replaceable in tests.
-## Conformance evidence (ticket 178)
+## Conformance evidence (ticket 205)
 
 `tools/Test-ExchangeConformance.ps1` regenerates the three JSON corpora and checks their provenance,
 then builds and probes a fresh server on loopback. The generated files and `PROVENANCE.txt` are vendored

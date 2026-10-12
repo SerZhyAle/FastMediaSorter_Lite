@@ -2,7 +2,7 @@
 // section 7: the envelope set, its codec, the 4-byte length framing, the opaque records and the
 // reason list. It is the ONE place that builds or parses a wire byte (ticket 161): no other package
 // writes a JSON member name of an envelope, a frame header or an HTTP status line, so a changed
-// owner decision costs edits here and nowhere else, and the golden frames of ticket 178 can be
+// owner decision costs edits here and nowhere else, and the golden frames of ticket 205 can be
 // generated from this code and nothing else.
 //
 // It is pure Go with no OS dependency and no dependency on any other package of the module.
@@ -68,7 +68,7 @@ var idRand atomic.Pointer[randSource]
 func init() { idRand.Store(&randSource{rand.Reader}) }
 
 // SetRandom replaces the source NewID and NewToken draw from (ticket 161 T-5: the vector generator of
-// ticket 178 and tests that need stable ids). nil restores the system's cryptographic generator. It
+// ticket 205 and tests that need stable ids). nil restores the system's cryptographic generator. It
 // is NOT for production use - nothing outside tests and cmd/exchange-vectors calls it - and a
 // replacement source must itself be safe for concurrent use, or only be drawn from by one goroutine
 // at a time, as a scripted generator run is.
@@ -85,7 +85,7 @@ func currentRandom() io.Reader { return idRand.Load().r }
 // the id form of a deviceId, resourceId, shareId, broadcastId and tunnelId (DEVICE-EXCHANGE 2).
 func NewID() string { return NewIDFrom(currentRandom()) }
 
-// NewIDFrom is NewID over an injected source (ticket 178: a generated vector draws its ids from a
+// NewIDFrom is NewID over an injected source (ticket 205: a generated vector draws its ids from a
 // seeded source so the bytes are stable).
 func NewIDFrom(r io.Reader) string {
 	var b [16]byte

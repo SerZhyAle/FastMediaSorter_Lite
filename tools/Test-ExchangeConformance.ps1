@@ -1,6 +1,6 @@
 <#
 .SYNOPSIS
-    Holds the Media Exchange Server's conformance evidence (ticket 178) against the code: the generated
+    Holds the Media Exchange Server's conformance evidence (ticket 205) against the code: the generated
     vectors are byte for byte what the generator produces now, and the probe passes against a server
     started from the binary this repository builds.
 

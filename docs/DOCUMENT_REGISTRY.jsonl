@@ -119,3 +119,4 @@
 {"path": "docs/contracts/DISK-SHARE.md", "topic": "DISK-SHARE", "area": "contracts", "triggers": ["Adoption, disk lifecycle, ownership, bundle, hosting or conformance changes for DISK-SHARE"], "role": "source"}
 {"path":"docs/guides/WINDOWS_UI_AUDIT.md","topic":"Windows UI contract audit","area":"engineering","triggers":["Windows viewer, settings, server dialogs, menu/theme/DPI or UI acceptance changes"],"role":"source"}
 {"path": "docs/contracts/USER-PLAYLIST.md", "topic": "USER-PLAYLIST", "area": "contracts", "triggers": ["Adoption, version, conformance gate or exception changes for USER-PLAYLIST"], "role": "source"}
+{"path": "tools/dynaudit/README.md", "topic": "DynAudit runbook", "area": "engineering", "triggers": ["Changes to the dynamic audit harness, its scenes or its campaign"], "role": "source"}

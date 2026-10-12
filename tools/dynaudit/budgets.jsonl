@@ -1,0 +1,14 @@
+{"id":"H1","property":"R","budget":"UI ping p95 / p99 during any S4 scene","value":{"p95Ms":50,"p99Ms":150,"timeouts":0},"accepted":false,"note":"0 timeouts; measured-minus-control evidence only (section 7)"}
+{"id":"H2","property":"R","budget":"Cold start to first responsive ping (warm disk)","value":{"ms":3000},"accepted":false}
+{"id":"H3","property":"R","budget":"Injected-key to effect p95","value":{"p95MsSmall":150,"p95MsLarge":400},"accepted":false,"note":"150 ms for the 100-file folder, 400 ms for the 100 000-file folder; the scene row selects the half"}
+{"id":"H4","property":"R","budget":"UI freezes per scene","value":{"freezeMs":500,"maxFreezes":0,"p0FreezeMs":5000},"accepted":false,"note":"0 freezes >= 500 ms; any freeze >= 5 s is a P0 candidate"}
+{"id":"H5","property":"B","budget":"Clipboard open failures attributable to the product","value":{"failures":0,"slowOpenMs":50},"accepted":false,"note":"0 failures, 0 opens slower than 50 ms"}
+{"id":"H6","property":"B","budget":"Cooperating-host degradation vs control","value":{"pingP95DeltaMs":20,"workloadDeltaPct":30},"accepted":false}
+{"id":"H7","property":"B","budget":"Held-file release after pause / stop / close","value":{"releaseMs":500},"accepted":false}
+{"id":"H8","property":"L","budget":"GDI/USER objects return to scene-start baseline at scene end","value":{"delta":10,"gdiPeak":8000},"accepted":false}
+{"id":"H9","property":"L","budget":"Handles/threads at scene end; slope over the 8 h soak","value":{"handleDelta":100,"threadDelta":2},"accepted":false,"note":"soak slope CI must include 0"}
+{"id":"H10","property":"L","budget":"Private bytes slope over the 8 h soak (after 15 min warm-up)","value":{"mbPerHour":5},"accepted":false}
+{"id":"H11","property":"L","budget":"Temp/log/registry deltas","value":{"tempNet":0,"peakMb":500,"logsMb":20},"accepted":false,"note":"temp net 0 after exit; registry value count restored within documented additions"}
+{"id":"H12","property":"E","budget":"Wrapped-error criteria met by injected faults","value":{"fraction":1.0,"secrets":0,"rawExceptionTexts":0},"accepted":false,"note":"5/5 criteria for 100% of injections; 0 secrets in new log lines; 0 raw exception texts shown to the user"}
+{"id":"H13","property":"A","budget":"Accessibility of understanding","value":{"unnamed":0,"unreadableToggles":0,"rollbackFailures":0,"languages":13},"accepted":false,"note":"13/13 languages pass the label/state matrix (RTL included)"}
+{"id":"H14","property":"L","budget":"Idle cost: product % CPU while idle on screen / minimized","value":{"onScreenPct":1.0,"minimizedPct":0.5},"accepted":false}

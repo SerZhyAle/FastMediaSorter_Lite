@@ -8,7 +8,7 @@ Imports System.Text.RegularExpressions
 Imports Xunit
 
 ''' <summary>
-''' Ticket 187 T-6 (rules 5, 10, 11, 12 and the dual-mode rule of 177): the gate and the honesty of the viewer's OWN exchange entries.
+''' Ticket 187 T-6 (rules 5, 10, 11, 12 and the dual-mode rule of 204): the gate and the honesty of the viewer's OWN exchange entries.
 '''
 '''   - no surface exists without <c>ExchangeFeatures.IsEnabled</c>: the section, the dialog, the dropped file and the pasted line;
 '''   - the viewer is a complete client: the section and the dialog never name the Share Manager, its agent, its pipe or its locator;

@@ -2,7 +2,7 @@
 Option Strict On
 
 ' Ticket 187 T-3/T-4: the viewer's own entries as the rest of the viewer reaches them - one process-wide hub of sessions (empty and
-' connection-free until something asks, 177 dual mode) and the one place that picks the sync of an attached resource.
+' connection-free until something asks, 204 dual mode) and the one place that picks the sync of an attached resource.
 
 Friend NotInheritable Class ExchangeViewerHub
     Private Sub New()

@@ -11,12 +11,12 @@ import (
 
 // legacySchemaVersion is the schemaVersion of the superseded ANYWHERE-ACCESS 0.10 wire. It is
 // recognised in this one place, for this one purpose: the refusal of DEVICE-EXCHANGE 7.1. Nothing
-// reads it, writes it or falls back to it (ticket 160 rule 1), and a source scan holds the module
+// reads it, writes it or falls back to it (ticket 198 rule 1), and a source scan holds the module
 // to exactly this occurrence.
 const legacySchemaVersion = 1
 
 // LegacyProbeFrame is the frame a peer of the superseded wire would send first: a `hello` carrying the
-// legacy schemaVersion. It exists for the conformance vectors and the probe of ticket 178, which show
+// legacy schemaVersion. It exists for the conformance vectors and the probe of ticket 205, which show
 // the server's `version-unsupported` answer; nothing in the server reads or writes that version.
 func LegacyProbeFrame() []byte {
 	body := fmt.Sprintf("{\"schemaVersion\":%d,\"type\":\"hello\",\"deviceId\":\"AAAAAAAAAAAAAAAAAAAAAA\",\"deviceToken\":\"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\"}", legacySchemaVersion)

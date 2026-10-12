@@ -19,7 +19,7 @@ import (
 
 // The relay's side of the scripted client (ticket 165): a broadcaster that starts a broadcast and
 // uploads chunks, and a listener that GETs the listen URL inside TLS and reads the body. The probe of
-// ticket 178 uses the same pieces against a real deployment.
+// ticket 205 uses the same pieces against a real deployment.
 
 // BroadcastJSON builds a section 6.3 `broadcast` record for id: the descriptor is a stub with an
 // endpoints list (a receiver imports it as it imports one from a link).

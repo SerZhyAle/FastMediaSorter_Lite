@@ -5,7 +5,7 @@
 | **Id** | `ANYWHERE-ACCESS` |
 | **Version** | 0.13, draft (read in full 2026-10-07). Since 0.11 sections 5, 6 and 7 are **superseded** by `DEVICE-EXCHANGE` sections 5, 7 and 8 and stay as the record; section 4 (the descriptor `FMSSFTP1`/`FMSSFTP2`, its rung 1 vectors), section 5.5 (the third-party port) and section 8 (backward compatibility) still bind. 0.12 corrected 5.5: the port is not in `FMSSFTP2`; 0.13 narrowed Drive (a share's credentials and addresses reach it only by the user's opt-in) and put the share id inside TLS. Owner: FastMediaSorter Android |
 | **Home** | `anywhere-access/README.md` in the shared contracts catalog |
-| **Role here** | exchange-server implementer (now through `DEVICE-EXCHANGE`, see its pointer) and, for what stays here, **producer and consumer of the share descriptor** `FMSSFTP1`/`FMSSFTP2` and of the third-party port (local specifications 170 and 171). The server specification 133 is re-scoped by local specification 160 |
+| **Role here** | exchange-server implementer (now through `DEVICE-EXCHANGE`, see its pointer) and, for what stays here, **producer and consumer of the share descriptor** `FMSSFTP1`/`FMSSFTP2` and of the third-party port (local specifications 170 and 171). The server specification 133 is re-scoped by local specification 198 |
 
 **Reader-facing description:** the portal page [Home network](https://serzhyale.github.io/FastMediaSorter_mob_v2/docs/media-exchange-portal/home-network.html) of the shared "Media exchange between your devices" portal (not published until the Android site publishes it). Nothing there binds this contract.
 
@@ -31,7 +31,7 @@ never by `FMSSFTP2`) and the backward-compatibility rules of section 8.
    descriptor codec of section 4 still does not exist, and nothing ships before the server wire's rung 2. The producer no longer asks the worker to register anything: the Share Manager's device agent publishes
    what the worker serves.
 4. **Section 8 rule 5 (dual mode)** is held by the byte-identical export tests today and by the baseline of local
-   specification 177 once the clients exist: with no account and no server a share is served and exported exactly
+   specification 204 once the clients exist: with no account and no server a share is served and exported exactly
    as before.
 5. **No proposal of this repository is open on this contract.** The one it filed on 2026-10-07 (the third-party
    port cannot ride in an `FMSSFTP2` code) was folded as amendment G of 0.12.

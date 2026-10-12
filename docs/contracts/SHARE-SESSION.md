@@ -1,9 +1,9 @@
-# Pointer - `SHARE-SESSION`
+﻿# Pointer - `SHARE-SESSION`
 
 | | |
 | --- | --- |
 | **Id** | `SHARE-SESSION` |
-| **Version** | 1.1, active (read 2026-10-02: the 1.1 clarification states guarantee 3's own trigger - the identity survives until the host's state store is explicitly removed by hand; no obligation, class or threshold changed; the catalog is still at 1.1 on 2026-10-07 and the custody statements below were re-read against `install-share-service.ps1`, `FastMediaSorter.iss` and `WorkerProcess.vb` that day, nothing re-run). Owner: FMS Companion (the Go worker holds the server guarantees) |
+| **Version** | 1.2, active (read 2026-10-02: the 1.1 clarification states guarantee 3's own trigger - the identity survives until the host's state store is explicitly removed by hand; no obligation, class or threshold changed; the catalog is still at 1.1 on 2026-10-07 and the custody statements below were re-read against `install-share-service.ps1`, `FastMediaSorter.iss` and `WorkerProcess.vb` that day, nothing re-run). Owner: FMS Companion (the Go worker holds the server guarantees) |
 | **Home** | `remote-folder-access/README.md` + `share-session-reconnect.md` in the shared contracts catalog |
 | **Role here** | **client** of the session for the 64-bit viewer's SFTP resources (obligations O1-O4, "The client half" below); no server half; custodian of guarantee 3's state across installs, uninstalls and host-mode changes (ticket 036) |
 
@@ -66,3 +66,11 @@ and a refused password have, against the worker's own `devserve`, in the hand-ru
 
 Not filed, for the owner: the catalog names Android as the only client of `SHARE-SESSION`; a registry row for the
 viewer as a second client is to be added through a proposal.
+
+## Resource PIN amendment read at 1.2
+
+Protected resources use the exact non-echo SSH keyboard-interactive challenge `Resource`,
+`Password`, `PIN`. The original resource PIN authorizes one virtual root for one SSH session.
+Ordinary password authentication exposes only unprotected roots. Traversal and protected
+physical descendants remain denied. Configuration changes and explicit proof invalidation
+close prior sessions. The live Windows consumer fixture exercises the actual Go SFTP boundary.

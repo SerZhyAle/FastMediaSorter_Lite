@@ -8,17 +8,19 @@ Imports System.Text.RegularExpressions
 Imports Xunit
 
 ''' <summary>
-''' Ticket 177 section 3 item 3, the LIVE-BROADCAST half of the gate guard (the exchange half lives in
+''' Ticket 204 section 3 item 3, the LIVE-BROADCAST half of the gate guard (the exchange half lives in
 ''' <c>ExchangeClientGuardTests</c>, and the source-wide scan of every "Offered" constant in
-''' <c>DualModeGateGuardTests</c>). The gate is 172 section 6 rule 6: <c>LiveBroadcastFeatures.Offered</c>,
-''' false until the owner opens it, SEPARATE from the exchange's gate (Q172-5) - the [CONTRACT] audio shape
-''' may be opened before the exchange, the [PROPOSED] video shape binds nobody - and 179 section 2 puts it in
+''' <c>DualModeGateGuardTests</c>). The gate is 199 section 6 rule 6: <c>LiveBroadcastFeatures.Offered</c>,
+''' false until the owner opens it, SEPARATE from the exchange's gate (Q199-5) - the [CONTRACT] audio shape
+''' may be opened before the exchange, the [PROPOSED] video shape binds nobody - and 206 section 2 puts it in
 ''' the table of gates the release preflight reads (<c>tools\Test-FeatureGates.ps1</c>).
 '''
-''' What is NOT here, and why: the cases "no surface is reachable while the gate is false" need a producer
-''' surface, and 172 has none built yet. Each case lands with the step of 172-176 that creates the surface
-''' (the WANT 0b remainder of 177); until then the scan of DualModeGateGuardTests is the interim form and
-''' already fails if this constant is switched on.
+''' The surface-reachability cases of "no surface is reachable while the gate is false" landed with
+''' ticket 199's first surfaces (the Share Manager's tray item, window and host): they are
+''' LiveProducerSurfaceTests in Companion.Tests, next to the program that owns the surfaces. The
+''' controller-side behavior (a shut gate refuses the start and touches nothing) is
+''' LiveProducerControllerTests here; DualModeGateGuardTests keeps the source-wide scan of every
+''' "Offered" constant and still fails if this one is switched on without the evidence file.
 ''' </summary>
 Public Class LiveBroadcastGateGuardTests
 
@@ -44,7 +46,7 @@ Public Class LiveBroadcastGateGuardTests
         Dim evidence As String = Path.Combine(RepoRoot(), "docs", "specifications", "live-broadcast-gate-evidence.md")
         Assert.True(File.Exists(evidence),
                     "LiveBroadcastFeatures.Offered is True but docs\specifications\live-broadcast-gate-evidence.md does not exist. Opening the gate " &
-                    "needs the owner's word and an evidence file naming the rung or phase it was opened at (177 section 3 item 3; 172 section 6 keeps " &
+                    "needs the owner's word and an evidence file naming the rung or phase it was opened at (204 section 3 item 3; 199 section 6 keeps " &
                     "the [PROPOSED] video shape closed until the owner flips it).")
         Dim text As String = File.ReadAllText(evidence)
         Assert.Matches("(?i)(rung\s*[2-5]|phase\s*B[0-3])", text)
@@ -54,7 +56,7 @@ Public Class LiveBroadcastGateGuardTests
     <Fact>
     Public Sub The_default_stays_False_no_build_offers_a_live_broadcast_producer()
         ' The test above allows True WITH evidence. This one states the present decision: the owner has not
-        ' opened the producer, and the [PROPOSED] video shape is not his word until he gives it (179 section 2).
+        ' opened the producer, and the [PROPOSED] video shape is not his word until he gives it (206 section 2).
         Assert.False(LiveBroadcastFeatures.Offered, "the owner has not opened the live-broadcast producer; flip the constant only on his word, with the evidence file")
     End Sub
 
@@ -84,7 +86,7 @@ Public Class LiveBroadcastGateGuardTests
 
     <Fact>
     Public Sub With_the_gate_shut_the_features_exist_only_through_the_own_switch()
-        ' Q172-5: the exchange's developer switch (FMS_EXCHANGE_CLIENT, the one the first check of 182 sets
+        ' Q199-5: the exchange's developer switch (FMS_EXCHANGE_CLIENT, the one the first check of 182 sets
         ' on the test host) must not light the producer up - the two gates are separate.
         Assert.False(LiveBroadcastFeatures.Offered)
         Assert.False(LiveBroadcastFeatures.IsEnabled(Reader(Nothing, Nothing, Nothing)))

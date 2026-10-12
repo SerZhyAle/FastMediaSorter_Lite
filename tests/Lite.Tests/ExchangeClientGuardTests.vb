@@ -12,7 +12,7 @@ Imports Xunit
 ''' Ticket 180 T-5 and rules 1, 2 and 5: the gate of the exchange CLIENT features and the source scans that keep the client library honest.
 '''
 '''   - <c>ExchangeFeatures.Offered</c> is False until the owner opens the gate, and it can only become True together with an evidence file
-'''     that names the rung it was opened at (177 section 3 item 3) - the shape of the guard of 159 section 3.4.
+'''     that names the rung it was opened at (204 section 3 item 3) - the shape of the guard of 159 section 3.4.
 '''   - the developer switch FMS_EXCHANGE_CLIENT=1 shows the client features while the gate is shut, and nothing else does.
 '''   - the net48 project lists none of the library (the x86 fallback gets none of this), and every library file is whole-file modern-only.
 '''   - no log call of the client takes a token, a password, a pairing code, an `access` or a raw id (the 148 scan, extended): an id reaches
@@ -55,7 +55,8 @@ Public Class ExchangeClientGuardTests
         ' ticket 168 section 3.7: ExchangeServerWizard.vb is the "use this PC as my server" wizard, which enrols THIS PC's own agent. Its production
         ' ports ask the host (GetOrCreate reads the gate, and the wizard asks ExchangeFeatures.IsEnabled itself before it probes or enrols anything)
         Dim allowed As New HashSet(Of String)(StringComparer.OrdinalIgnoreCase) From {
-            "ExchangeDeviceAgent.vb", "TrayContext.vb", "Share_Settings_Form.ExchangeAccount.vb", "Share_Settings_Form.ExchangeAdmin.vb", "Exchange_Account_Form.vb", "ExchangeServerWizard.vb"}
+            "ExchangeDeviceAgent.vb", "TrayContext.vb", "Share_Settings_Form.ExchangeAccount.vb", "Share_Settings_Form.ExchangeAdmin.vb", "Exchange_Account_Form.vb", "ExchangeServerWizard.vb",
+            "ExchangeLocalJoin.vb"}   ' 2026-10-12: the local join enrols THIS PC's agent in the server that runs on it; every entry asks ExchangeFeatures first, and GetOrCreate reads the gate
         ' ticket 170: reading ExchangeDeviceHost.Current (the export and the producer rows) never constructs an agent, so it is not a use of the host
         Dim src As String = Path.Combine(Root(), "src")
         Dim users As New List(Of String)
@@ -97,7 +98,7 @@ Public Class ExchangeClientGuardTests
         Dim evidence As String = Path.Combine(Root(), "docs", "specifications", "exchange-gate-evidence.md")
         Assert.True(File.Exists(evidence),
                     "ExchangeFeatures.Offered is True but docs\specifications\exchange-gate-evidence.md does not exist. Opening the gate needs the owner's word and " &
-                    "an evidence file naming the rung it was opened at (177 section 3 item 3).")
+                    "an evidence file naming the rung it was opened at (204 section 3 item 3).")
         Dim text As String = File.ReadAllText(evidence)
         Assert.Matches("(?i)rung\s*[2-5]", text)
         Assert.Matches("20\d\d-\d\d-\d\d", text)
@@ -105,7 +106,7 @@ Public Class ExchangeClientGuardTests
 
     <Fact>
     Public Sub The_default_stays_False_the_released_build_offers_nothing()
-        ' The test above allows True WITH evidence. This one states the present decision: nothing ships before rung 2 (160 rule 3, 133 section 8).
+        ' The test above allows True WITH evidence. This one states the present decision: nothing ships before rung 2 (198 rule 3, 133 section 8).
         Assert.False(ExchangeFeatures.Offered, "the owner has not opened the exchange clients; flip the constant only on his word, with the evidence file")
     End Sub
 

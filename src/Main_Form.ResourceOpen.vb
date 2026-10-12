@@ -1,4 +1,4 @@
-#If Not NETFRAMEWORK Then
+﻿#If Not NETFRAMEWORK Then
 Option Strict On
 
 Imports System.Collections.Generic
@@ -110,7 +110,8 @@ Partial Public Class Main_Form
     ''' One implementation for the manager dialog AND the Settings window, so the two cannot drift.</summary>
     Friend Sub ApplyResourceChanges(removedIds As IReadOnlyList(Of String))
         Dim active As ResourceSession = ActiveResourceSession()
-        If active IsNot Nothing AndAlso removedIds.Any(Function(id) String.Equals(id, active.Resource.Id, StringComparison.OrdinalIgnoreCase)) Then
+        If active IsNot Nothing AndAlso (removedIds.Any(Function(id) String.Equals(id, active.Resource.Id, StringComparison.OrdinalIgnoreCase)) OrElse
+            (active.Resource.PinRequired AndAlso ResourcePinMemory.GetPin(active.Resource) Is Nothing)) Then
             LeaveResource()
             lbl_Status.Text = Localization.T("Ресурс удалён")
         End If
@@ -225,7 +226,7 @@ Partial Public Class Main_Form
         ' A share of the local SFTP server is a folder of this machine: it opens the plain
         ' local way - no credential, no dial - and the server's own read-only rule keeps
         ' living on its phone side, in the Share Manager.
-        If WorkerShares.IsManaged(descriptor) Then
+        If WorkerShares.IsManaged(descriptor) AndAlso Not descriptor.PinRequired Then
             OpenManagedShareFolder(descriptor)
             Return
         End If
@@ -273,6 +274,11 @@ Partial Public Class Main_Form
                 If cancel.IsCancellationRequested OrElse IsDisposed Then Return
 
                 Dim chosen As ResourceDescriptor = descriptor
+                Dim resourcePin As String = ResourcePinMemory.GetPin(chosen)
+                If chosen.PinRequired AndAlso Not chosen.ProtectionUnsupported AndAlso resourcePin Is Nothing Then
+                    resourcePin = ResourcePinPromptUi.Ask(Me, chosen.DisplayName, retry)
+                    If resourcePin Is Nothing Then Return
+                End If
                 ' Ticket 171 rule 6: the tunnel is one more candidate of the race, last; Nothing for a resource of any other origin or while the
                 ' exchange client features are not offered
                 Dim tunnel As IExchangeTunnelSource = ExchangeTunnelSources.For(chosen, resource_Secrets,
@@ -282,7 +288,7 @@ Partial Public Class Main_Form
                     Function(fingerprint As String, ct As CancellationToken) AskTrust(chosen, fingerprint),
                     Function(fingerprint As String) ResourcePins.Persist(chosen, fingerprint, AddressOf ResourceRegistry.HiveRead, AddressOf ResourceRegistry.HiveWrite),
                     Function() If(chosen.IncludeSubfolders.HasValue, chosen.IncludeSubfolders.Value, modern_Preferences IsNot Nothing AndAlso modern_Preferences.IncludeSubfolders),
-                    cancel.Token, Nothing, tunnel)
+                    cancel.Token, Nothing, tunnel, resourcePin)
                 If cancel.IsCancellationRequested OrElse IsDisposed Then
                     DirectCast(outcome.Provider, IDisposable)?.Dispose()
                     Return
@@ -291,6 +297,11 @@ Partial Public Class Main_Form
 
                 ' A refused password is asked for again - once per answer, never in a loop of its own.
                 If outcome.Failure.Kind = ResourceFailureKind.Auth Then
+                    If descriptor.PinRequired Then
+                        ResourcePinMemory.Forget(descriptor)
+                        retry = True
+                        Continue Do
+                    End If
                     password = Nothing
                     retry = True
                     resource_Session_Passwords.Remove(descriptor.Id)

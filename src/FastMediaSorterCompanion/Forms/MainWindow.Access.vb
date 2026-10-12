@@ -557,6 +557,10 @@ Partial Public NotInheritable Class MainWindow
     Private Sub UpdateHostingBlock()
         If lblHosting Is Nothing Then Return
         Dim line As String = If(ServerFeatures.IsSystemServiceHost(), HostingText.HostModeLine(ServerFeatures.HostMode()), "")
+        ' what the exchange account holds of these folders, in the same place: the producer rows are on a settings page nobody opens
+        ' to learn whether a folder reached the server
+        Dim exchange As String = ExchangeProducerSummary.Line()
+        If exchange.Length > 0 Then line = If(line.Length > 0, line & vbCrLf, "") & exchange
         lblHosting.Text = line
         lblHosting.Visible = line.Length > 0
     End Sub

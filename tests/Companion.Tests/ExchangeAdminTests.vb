@@ -28,6 +28,49 @@ Public Class ExchangeAdminTests
         ExchangeTestSupport.Reset()
         _dir = ExchangeTestSupport.MakeFakeComponent(True, False, False)
         ExchangeProcess.ExeDirectoryOverride = _dir
+        ' No service registered unless a test says so: the developer's registry is never read.
+        ExchangeService.ImagePathOverride = Function() ""
+    End Sub
+
+    ' --- the service's store (the test host, 2026-10-12) ----------------------------------------
+
+    <Fact>
+    Public Sub The_config_path_is_read_from_a_service_command_line_quoted_or_not()
+        Assert.Equal("C:\ProgramData\FastMediaSorterExchange\exchange.json",
+                     ExchangeAdmin.ConfigPathOf("""C:\ProgramData\FastMediaSorterExchange\bin\fms-exchange-server.exe"" serve --service --config ""C:\ProgramData\FastMediaSorterExchange\exchange.json"""))
+        Assert.Equal("D:\x\exchange.json", ExchangeAdmin.ConfigPathOf("D:\bin\fms-exchange-server.exe serve --service --config D:\x\exchange.json"))
+        Assert.Equal("D:\x\exchange.json", ExchangeAdmin.ConfigPathOf("fms-exchange-server.exe serve --service --config=D:\x\exchange.json"))
+        Assert.Equal("", ExchangeAdmin.ConfigPathOf("fms-exchange-server.exe serve --service"))
+        Assert.Equal("", ExchangeAdmin.ConfigPathOf("fms-exchange-server.exe serve --config ""D:\unclosed"))
+        Assert.Equal("", ExchangeAdmin.ConfigPathOf(""))
+    End Sub
+
+    <Fact>
+    Public Sub While_our_service_is_registered_its_own_directory_names_the_pipe()
+        ExchangeService.ImagePathOverride = Function() """C:\ProgramData\FastMediaSorterExchange\bin\fms-exchange-server.exe"" serve --service --config ""C:\ProgramData\FastMediaSorterExchange\exchange.json"""
+        Assert.Equal("C:\ProgramData\FastMediaSorterExchange", ExchangeAdmin.ServiceDataDir())
+        ' Without --config the machine store is the binary's own default for the service.
+        ExchangeService.MachineDataDirOverride = "M:\machine"
+        ExchangeService.ImagePathOverride = Function() """C:\bin\fms-exchange-server.exe"" serve --service"
+        Assert.Equal("M:\machine", ExchangeAdmin.ServiceDataDir())
+        ' Not ours (no "serve --service"), or none: no service directory.
+        ExchangeService.ImagePathOverride = Function() """C:\bin\fms-exchange-server.exe"""
+        Assert.Equal("", ExchangeAdmin.ServiceDataDir())
+        ExchangeService.ImagePathOverride = Function() ""
+        Assert.Equal("", ExchangeAdmin.ServiceDataDir())
+    End Sub
+
+    <Fact>
+    Public Sub While_our_service_is_registered_a_silent_pipe_is_not_reached_and_never_the_offline_store()
+        ' The test host: the reset went "offline" into the per-user store, the screen said done, the service
+        ' never saw it. A registered service's pipe that does not answer must say so instead.
+        Dim cfg As String = Path.Combine(_dir, "svc-" & Guid.NewGuid().ToString("N").Substring(0, 8), "exchange.json")
+        ExchangeService.ImagePathOverride = Function() """" & Path.Combine(_dir, "fms-exchange-server.exe") & """ serve --service --config """ & cfg & """"
+        ExchangeProcess.RunOverride = AddressOf Forbidden
+        Dim reply As ExchangeAdminReply = ExchangeAdmin.ResetPasswordAsync("sza", "Secret12345x", False, CancellationToken.None).GetAwaiter().GetResult()
+        Assert.False(reply.Ok)
+        Assert.Equal(ExchangeAdminCodes.NotReached, reply.Code)
+        Assert.Equal(ExchangeAdminRoute.NotReached, reply.Route)
     End Sub
 
     Public Sub Dispose() Implements IDisposable.Dispose

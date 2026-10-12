@@ -4,7 +4,7 @@
 | --- | --- |
 | **Id** | `BROADCAST-RESOURCE` |
 | **Version** | 1.0, active (2026-10-03). Owner: StreamsPlayer / FastMediaSorter cross-product contract |
-| **Home** | `docs/specifications/016_SPECIFICATION_STREAMSPLAYER_BROADCAST_RESOURCE.md` |
+| **Home** | `docs/specifications/196_SPECIFICATION_STREAMSPLAYER_BROADCAST_RESOURCE.md` |
 | **Role here** | **producer** - `src/FastMediaSorterCompanion/Core/BroadcastConfigBuilder.vb` builds the `.spres`, QR code and clipboard quick link |
 
 ## Contract (schemaVersion 1)

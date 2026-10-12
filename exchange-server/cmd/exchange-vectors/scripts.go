@@ -114,6 +114,9 @@ func scenarioRefusals() *transcript {
 	b.expectRefused(wire.ReasonIDCollision)
 	b.expectClosed()
 
+	a.send(&wire.Publish{Resource: json.RawMessage(fmt.Sprintf(`{"resourceId":%q,"kind":"sftp-share","name":"Unsafe protection","protection":{"scheme":"future"}}`, r.newID()))})
+	a.expectRefused(wire.ReasonProtectionUnsupported)
+
 	// a's stream becomes its control stream with a publish
 	res1, res2 := r.newID(), r.newID()
 	a.send(&wire.Publish{Resource: json.RawMessage(fmt.Sprintf(`{"resourceId":%q,"kind":"sftp-share","name":"First"}`, res1))})

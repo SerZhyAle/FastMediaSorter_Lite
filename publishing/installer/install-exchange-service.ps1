@@ -93,6 +93,7 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
+$script:RestartOnFailure = $false
 
 $ServiceName    = 'FastMediaSorterExchangeServer'
 $ServiceDisplay = 'Media Exchange Server'
@@ -225,6 +226,7 @@ function Write-Log([string]$message) {
 
 function Fail([string]$message, [int]$code = 1) {
     Write-Log "FAILED: $message"
+    Restore-ServiceAfterFailure
     if (-not $script:LogPath) { Write-PendingLog (Get-FallbackLogPath) }
     exit $code
 }
@@ -624,11 +626,34 @@ function Stop-ServiceGracefully {
     if (-not $svc) { return }
     if ($svc.Status -eq 'Stopped') { return }
     Write-Log "stopping $ServiceName .."
+    # A service that was serving and is stopped only to be re-staged or re-registered is started again
+    # if this run fails afterwards (Restore-ServiceAfterFailure): a failed upgrade must not leave the
+    # server down. `stop` and `remove` stop it on purpose.
+    if ($Action -ne 'stop' -and $Action -ne 'remove') { $script:RestartOnFailure = $true }
     try { Stop-Service -Name $ServiceName -Force -ErrorAction Stop } catch { Write-Log "stop returned: $_" }
     # Bounded wait: a file-replacing install must not start until the listener is released.
     try { (Get-Service -Name $ServiceName).WaitForStatus('Stopped', [TimeSpan]::FromSeconds(30)) } catch { }
     $svc = Get-ServiceOrNull
     if ($svc -and $svc.Status -ne 'Stopped') { Write-Log "WARNING: $ServiceName is still $($svc.Status)" }
+}
+
+# Called on every failure path (Fail and the trap). Best effort and bounded: whatever is registered
+# and staged at that moment is started once, the outcome is logged, and the run's own failure (its
+# exit code) is never changed by it. Runs at most once.
+function Restore-ServiceAfterFailure {
+    if (-not $script:RestartOnFailure) { return }
+    $script:RestartOnFailure = $false
+    try {
+        $svc = Get-ServiceOrNull
+        if (-not $svc) { Write-Log "the service was stopped by this run and is no longer registered - not started"; return }
+        if ($svc.Status -eq 'Running') { return }
+        Write-Log "starting $ServiceName again after the failure (it was running before this run) .."
+        Start-Service -Name $ServiceName -ErrorAction Stop
+        try { (Get-Service -Name $ServiceName).WaitForStatus('Running', [TimeSpan]::FromSeconds(30)) } catch { }
+        Write-Log "$ServiceName is $((Get-Service -Name $ServiceName).Status) after the failure"
+    } catch {
+        Write-Log "WARNING: could not start $ServiceName again after the failure: $($_.Exception.Message)"
+    }
 }
 
 function Remove-ServiceRegistration {
@@ -1084,7 +1109,11 @@ function Set-AdminManageSids {
     if (Test-ReparsePoint $tmp) { Remove-LinkOnly $tmp }
     try {
         [System.IO.File]::WriteAllText($tmp, $merged, (New-Object System.Text.UTF8Encoding($false)))
-        [System.IO.File]::Replace($tmp, $path, $null)
+        # [NullString]::Value, never $null: PowerShell binds $null to a .NET [string] parameter as ""
+        # and File.Replace refuses "" as a backup name ("The path is not of a legal form"). That threw
+        # AFTER the service was stopped, so every upgrade's repair left the server down with no
+        # firewall rule for its staged copy (the test host, 2026-10-12).
+        [System.IO.File]::Replace($tmp, $path, [NullString]::Value)
     } finally {
         if ($null -ne (Get-RawAttributes $tmp)) { Remove-LinkOnly $tmp }
     }
@@ -1328,7 +1357,9 @@ function Set-FirewallRule([bool]$present) {
         Write-Log 'firewall rule removed'
         return
     }
-    & netsh.exe advfirewall firewall delete rule name="$FirewallRule" | Out-Null
+    # Replace this name's rule for THIS program only: the console copy's rule of the same name (added by
+    # enable-exchange-server.ps1) is not ours to take.
+    & netsh.exe advfirewall firewall delete rule name="$FirewallRule" program="$script:ServiceExePath" | Out-Null
     & netsh.exe advfirewall firewall add rule name="$FirewallRule" dir=in action=allow `
         program="$script:ServiceExePath" protocol=TCP profile=domain,private,public enable=yes | Out-Null
     if ($LASTEXITCODE -ne 0) { Fail "could not add the firewall rule (netsh exit $LASTEXITCODE)" 8 }
@@ -1373,6 +1404,7 @@ function Enter-StateLock {
 # would otherwise end the script with exit 1 and NO reason in the log the UI tells the user to send.
 trap {
     Write-Log ("FAILED: {0}" -f (($_ | Out-String).Trim()))
+    Restore-ServiceAfterFailure
     if (-not $script:LogPath) { Write-PendingLog (Get-FallbackLogPath) }
     exit 1
 }

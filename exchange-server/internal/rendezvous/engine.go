@@ -46,7 +46,7 @@ type EngineConfig struct {
 	// Relay is ticket 165's handler; nil until it is built.
 	Relay RelayHandler
 	// Rand is the source of tunnel ids; nil is the system's generator (the vector generator of
-	// ticket 178 injects a seeded one).
+	// ticket 205 injects a seeded one).
 	Rand io.Reader
 }
 
@@ -83,7 +83,7 @@ func NewEngine(cfg EngineConfig) *Engine {
 	e := &Engine{cfg: cfg, p: cfg.Params, now: cfg.Now, tunnels: tunnel.NewTable(), closing: make(chan struct{}),
 		cast: cast.New(cfg.Now, cfg.Params.CastTimeout, cfg.Params.CastPerAccount),
 		ctl:  map[string]*ctlEntry{}, streams: map[string]map[*Stream]struct{}{}}
-	e.ops = &admin.Ops{Accounts: cfg.Accounts, Dir: cfg.Dir, Log: cfg.Log}
+	e.ops = &admin.Ops{Accounts: cfg.Accounts, Dir: cfg.Dir, Log: cfg.Log, Live: true}
 	if cfg.Rand != nil {
 		e.tunnels.SetRand(cfg.Rand)
 	}

@@ -77,6 +77,14 @@ func (e *Enroll) validate() error {
 	if !textOK(e.ProductVersion, maxVersion) || !textOK(e.Platform, maxPlatform) {
 		return errors.New("productVersion or platform is out of bounds")
 	}
+	if len(e.Capabilities) > maxRoles {
+		return errors.New("too many capabilities")
+	}
+	for _, capability := range e.Capabilities {
+		if !textOK(capability, 32) {
+			return errors.New("a capability is out of bounds")
+		}
+	}
 	if len(e.Roles) > maxRoles {
 		return errors.New("too many roles")
 	}

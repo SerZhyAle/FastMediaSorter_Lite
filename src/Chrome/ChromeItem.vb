@@ -19,6 +19,12 @@ Friend Enum ChromeCustomGlyph
     None
     ''' <summary>"Always on top": two stacked windows, the front one filled while the mode is on.</summary>
     OnTop
+    ''' <summary>Window controls (188 §5): the caption row's three commands, drawn from lines.
+    ''' They mean the PHYSICAL window, so they never mirror in a right-to-left language.</summary>
+    WindowMinimize
+    WindowMaximize
+    WindowRestore
+    WindowClose
 End Enum
 
 ''' <summary>
@@ -72,6 +78,12 @@ Friend NotInheritable Class ChromeItem
     ''' <summary>The pin button of a panel's corner: painted as a pin (upright and filled while
     ''' <see cref="Checked"/>, tilted and outlined while not), never as a checkbox.</summary>
     Public Property IsPin As Boolean
+
+    ''' <summary>A slot whose only work is dragging the window (188 §5, 2026-10-12 revision: the
+    ''' window-controls panel's grip). A press on it raises the surface's move-grip events instead
+    ''' of running an action; visually it is empty panel - no hover fill, no tooltip - and it is
+    ''' never focusable and never enters an overflow menu.</summary>
+    Public Property IsMoveGrip As Boolean
 
     ''' <summary>A menu row that is a dividing line: no caption, no action, never focused or hit (125 UX-320).</summary>
     Public Property IsSeparator As Boolean

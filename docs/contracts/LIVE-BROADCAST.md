@@ -5,7 +5,7 @@
 | **Id** | `LIVE-BROADCAST` |
 | **Version** | 0.18, draft (read in full 2026-10-07). 0.14 added the PC producer, the HTTP MPEG-TS video shape, the `RELAY` and `TUNNEL` endpoints, receivers and cast, all `[PROPOSED]`; 0.15-0.18 folded the proposals of the same day (`sourceId` names a source, the PC producer's numbers, the first-picture budget, `TUNNEL.inner` never omitted). The RTSP stream kinds are `[CONTRACT]` since 0.13. Owner: FastMediaSorter Android |
 | **Home** | `live-broadcast/README.md`, `11_live_broadcast_contract.md` and `13_contract_amendment_2026-10-07.md` in the shared contracts catalog |
-| **Role here** | **consumer** - local specification 023, built in the working tree on 2026-10-07 (audio over HTTP), real-device acceptance not run; **planned producer** (local specifications 172 and 173) and **planned receiver** over every transport and as a cast target (local specification 174), under the umbrella 160 |
+| **Role here** | **consumer** - local specification 023, built in the working tree on 2026-10-07 (audio over HTTP), real-device acceptance not run; **planned producer** (local specifications 172 and 173) and **planned receiver** over every transport and as a cast target (local specification 201), under the umbrella 160 |
 
 **Reader-facing description:** the portal page [Live broadcast](https://serzhyale.github.io/FastMediaSorter_mob_v2/docs/media-exchange-portal/live-broadcast.html) of the shared "Media exchange between your devices" portal (not published until the Android site publishes it). Nothing there binds this contract.
 

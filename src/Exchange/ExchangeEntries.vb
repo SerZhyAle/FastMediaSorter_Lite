@@ -19,7 +19,7 @@ Imports System.Text.Json
 '   - The identity of an entry is its address and its login (case-insensitive): a second add of the same identity re-enrolls the
 '     existing entry - same device id, a rotated token - instead of creating a twin (the proposal of FastMediaSorter Android,
 '     ask 2). Removing an entry removes its token and pin and NEVER an attached resource (9.3): those say "sign in again".
-'   - Dormant (177 section 2): reading never creates a key, a value or a folder; with no entry nothing exists.
+'   - Dormant (204 section 2): reading never creates a key, a value or a folder; with no entry nothing exists.
 '
 ' This store is the VIEWER's. The Share Manager keeps its own single producer entry (ExchangeAccountStore): the two programs are two
 ' devices of one account, which is what lets the viewer list this PC's shared folders next to the other machines'.

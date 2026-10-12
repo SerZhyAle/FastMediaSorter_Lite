@@ -132,8 +132,18 @@ Partial Public Class Main_Form
 #If NETFRAMEWORK Then
         ApplyModernStyling()
 #Else
+        ' The docked strips are dead carriers here: the floating chrome rows and the
+        ' floating status show in their place. An invisible DOCKED control still
+        ' reserves its band, though - panel_Media was squeezed between flow_Toolbar's
+        ' 60 px and the status strip's own height, and the zoomed picture left a dark
+        ' frame of the media background around itself instead of filling the window
+        ' (the owner's ruling: the content uses the whole surface, 2026-10-12).
+        ' Zero the footprint: no band, no paint, no layout claim.
         flow_Toolbar.Visible = False
         panel_Status.Visible = False
+        flow_Toolbar.Height = 0
+        panel_Status.AutoSize = False
+        panel_Status.Height = 0
 #End If
 
         Me.ResumeLayout(True)

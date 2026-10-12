@@ -528,8 +528,11 @@ Public Class ExchangeDeviceAgentTests
                     Assert.False(rig.Ports.Credentials.Exists())
                     Assert.False(rig.Ports.Accounts.IsConfigured())
                     Assert.Equal(ExchangeAgentState.NotConfigured, agent.GetStatus().State)
-                    ' nothing but the device id is left in the settings
-                    Assert.Equal({ExchangeAccountStore.DeviceIdName}, rig.Port.Values.Keys.ToArray())
+                    ' nothing but the device id is left in the settings, and the one note that the person left on purpose: the local join
+                    ' (this PC enrolling itself in the server that runs on it) must not undo a disconnect at the next start
+                    Assert.Equal({ExchangeAccountStore.DeviceIdName, ExchangeAccountStore.LocalJoinDeclinedName}.OrderBy(Function(n) n).ToArray(),
+                                 rig.Port.Values.Keys.OrderBy(Function(n) n).ToArray())
+                    Assert.Equal("1", rig.Port.Values(ExchangeAccountStore.LocalJoinDeclinedName))
                 End Using
             End Using
         End Using

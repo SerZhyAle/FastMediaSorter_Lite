@@ -20,7 +20,7 @@ const (
 	// connFileName (connection-string-v1.json) is declared in connstr.go
 
 	contractID      = "DEVICE-EXCHANGE"
-	contractVersion = "0.17"
+	contractVersion = "0.19"
 	producerName    = "Media Exchange Server (Go) of Fast Media Sorter & Sharing for Windows, cmd/exchange-vectors"
 )
 
@@ -166,6 +166,13 @@ func generate(commit string) (files map[string][]byte, err error) {
 	if files[connFileName], err = render(connVectors()); err != nil {
 		return nil, err
 	}
+	if files["protection-v1.json"], err = render(map[string]any{
+		"contract": contractID, "contractVersion": contractVersion,
+		"sections": "17 AG-AL", "producer": producerName,
+		"transcripts": []*transcript{scenarioProtection()},
+	}); err != nil {
+		return nil, err
+	}
 	files[provenanceFileName] = []byte(provenance(files, commit))
 	return files, nil
 }
@@ -237,4 +244,4 @@ func mustClose(r *rig) {
 }
 
 // hashedFiles are the generated vector files PROVENANCE.txt names a hash for, in the order it lists them.
-var hashedFiles = []string{framesFileName, recordsFileName, connFileName}
+var hashedFiles = []string{framesFileName, recordsFileName, connFileName, "protection-v1.json"}

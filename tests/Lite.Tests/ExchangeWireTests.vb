@@ -1,4 +1,4 @@
-#If Not NETFRAMEWORK Then
+﻿#If Not NETFRAMEWORK Then
 Option Strict On
 
 Imports System.Collections.Generic
@@ -335,9 +335,9 @@ Public Class ExchangeWireTests
     ' ---------------------------------------------------------------- reasons, ids
 
     <Fact>
-    Public Sub The_nine_reasons_parse_and_an_unknown_one_is_a_generic_refusal()
+    Public Sub The_ten_reasons_parse_and_an_unknown_one_is_a_generic_refusal()
         Dim names As String() = {"bad-credentials", "device-revoked", "version-unsupported", "tls-required", "id-collision", "capacity", "port-unavailable", "unavailable", "rate-limited"}
-        Assert.Equal(9, ExchangeRefusals.All().Length)
+        Assert.Equal(10, ExchangeRefusals.All().Length)
         For i As Integer = 0 To names.Length - 1
             Dim r As ExchangeRefusal = ExchangeRefusals.Parse(names(i))
             Assert.NotEqual(ExchangeRefusal.Unknown, r)

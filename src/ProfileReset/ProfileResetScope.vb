@@ -106,6 +106,7 @@ Public NotInheritable Class ProfileResetScope
         "ChromeRow2Pinned",
         "ChromeStatusPinned",
         "RecipientsOverlayPinned",
+        "ChromeWindowControlsPinned",
         "RecipientsOverlayPosition",
         "RecipientsOverlayWidth",
         "RecipientsOverlayFontSize",

@@ -1,10 +1,10 @@
 <#
 .SYNOPSIS
     The gates of the device-exchange and live-broadcast program against their evidence, in the form the
-    release preflight reads (ticket 177 section 3 item 3; the table is 179 section 2).
+    release preflight reads (ticket 204 section 3 item 3; the table is 206 section 2).
 
 .DESCRIPTION
-    A release never opens a gate by itself. The three gates of 179 section 2:
+    A release never opens a gate by itself. The three gates of 206 section 2:
 
       * INCLUDE_EXCHANGE (the exchange server binary in a package) - .github\workflows\release.yml;
       * ExchangeFeatures.Offered (the exchange client features) - src\Exchange\ExchangeFeatures.vb;
@@ -113,7 +113,7 @@ foreach ($g in $gates) {
 }
 foreach ($rel in $switches.Keys) {
     if ($switches[$rel] -and -not $known.ContainsKey($rel)) {
-        $problems.Add("$rel holds an offer switch that is ON but no gate of the table (179 section 2) names it")
+        $problems.Add("$rel holds an offer switch that is ON but no gate of the table (206 section 2) names it")
     }
 }
 

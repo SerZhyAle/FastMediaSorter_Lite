@@ -1,4 +1,4 @@
-Option Strict On
+﻿Option Strict On
 
 Imports System.Collections.Generic
 Imports System.IO
@@ -86,6 +86,10 @@ Public Class WorkerIpcConformanceTests
                 New ShareFolder With {.name = "Фото", .hostPath = "D:\Архив\Фото", .readOnly = True}
             }
         })
+        c("invalidate-pin-sessions") = New VectorCase(New WorkerRequest With {.type = "InvalidatePinSessions"})
+        c("set-protected-folders") = New VectorCase(New WorkerRequest With {
+            .type = "SetSharedFolders", .PinConfiguration = True,
+            .folders = New List(Of ShareFolder) From {New ShareFolder With {.name = "Private", .hostPath = "C:\Synthetic\Private", .readOnly = True, .accessPin = "synthetic-vector-pin"}}})
         c("start-server") = New VectorCase(New WorkerRequest With {.type = "StartServer"})
         c("stop-server") = New VectorCase(New WorkerRequest With {.type = "StopServer"})
         c("reset-stats") = New VectorCase(New WorkerRequest With {.type = "ResetStats"})
@@ -345,7 +349,7 @@ Public Class WorkerIpcConformanceTests
             "                that harness that answers as an older or a newer build. The command is the worker",
             "                owner's to name and goes on a line here when the files arrive.",
             "",
-            "Contract   : WORKER-IPC 0.14 + DISK-SHARE 1.4 (pointers: docs/contracts/)",
+            "Contract   : WORKER-IPC 0.15 + DISK-SHARE 1.4 (pointers: docs/contracts/)",
             "Credentials: synthetic vector literals, never user credentials",
             "Host       : FastMediaSorter_Lite, the Share Manager (src/FastMediaSorterCompanion/Core/WorkerIpc.vb)",
             "Generator  : WorkerIpcConformanceTests.Generate_VectorFolder_WhenAsked (tests/Companion.Tests)",

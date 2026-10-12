@@ -10,6 +10,7 @@ package admin
 import (
 	"errors"
 	"sort"
+	"time"
 
 	"fms/exchange-server/internal/accounts"
 	"fms/exchange-server/internal/directory"
@@ -22,6 +23,37 @@ type Ops struct {
 	Accounts *accounts.Store
 	Dir      *directory.Dir
 	Log      *logx.Logger
+	// Live is true only for the Ops of a running engine. What lives in the memory of the engine's store (the
+	// pairing codes) is meaningless to an offline command that opens a store of its own, so those operations
+	// refuse there instead of handing out a code that dies with the process.
+	Live bool
+}
+
+// ErrNotLive is the refusal of an operation that needs the running server.
+var ErrNotLive = errors.New("this operation needs the running server")
+
+// PairingCodeView is what the operator gets: the code, once, and when it stops being valid.
+type PairingCodeView struct {
+	Code      string `json:"code"`
+	ExpiresAt string `json:"expiresAt"`
+}
+
+// PairingCode issues a single-use pairing code for an account (ten minutes, five outstanding at most). The
+// log gets the account's short hash and never the code.
+func (o *Ops) PairingCode(login string) (string, time.Time, error) {
+	if !o.Live {
+		return "", time.Time{}, ErrNotLive
+	}
+	l, ok := accounts.NormalizeLogin(login)
+	if !ok || !o.Accounts.Exists(l) {
+		return "", time.Time{}, accounts.ErrNoAccount
+	}
+	code, expires, err := o.Accounts.NewPairingCode(l)
+	if err != nil {
+		return "", time.Time{}, err
+	}
+	o.Log.Info("pairing-code-issued", logx.Login(l))
+	return code, expires, nil
 }
 
 // AddAccount creates an account under the password policy and returns its normalised login.

@@ -129,7 +129,7 @@ Friend NotInheritable Class ExchangeResourceRecordBuilder
     ''' the third-party port REQUEST (0 = any, N = that one, Nothing = none; ANYWHERE-ACCESS 5.5). Nothing is returned when the
     ''' record would break a rule of section 6 (an id out of its form, an empty name, a record above 16 KiB).</summary>
     Public Shared Function TryBuild(resourceId As String, deviceId As String, name As String, accessJson As String, shareId As String,
-                                    publicPortRequest As Integer?, updatedAtUtc As DateTime, ByRef json As String) As Boolean
+                                    publicPortRequest As Integer?, updatedAtUtc As DateTime, ByRef json As String, Optional pinProtected As Boolean = False) As Boolean
         json = ""
         If Not ExchangeIds.IsValidId(resourceId) OrElse Not ExchangeIds.IsValidId(deviceId) Then Return False
         If String.IsNullOrWhiteSpace(name) OrElse name.Length > 256 Then Return False
@@ -141,6 +141,7 @@ Friend NotInheritable Class ExchangeResourceRecordBuilder
         o("kind") = ExchangeWire.KindSftpShare
         o("name") = name
         o("updatedAt") = updatedAtUtc.ToUniversalTime().ToString("yyyy-MM-dd'T'HH:mm:ss.fff'Z'", CultureInfo.InvariantCulture)
+        If pinProtected Then o("protection") = New JsonObject From {{"scheme", JsonValue.Create("pin-v1")}}
         If Not String.IsNullOrEmpty(accessJson) Then
             Dim access As JsonNode = Nothing
             Try

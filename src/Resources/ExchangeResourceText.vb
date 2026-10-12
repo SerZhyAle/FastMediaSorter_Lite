@@ -50,6 +50,7 @@ Friend NotInheritable Class ExchangeResourceText
 
     ''' <summary>The state text of a row of the view: an attached one says what it is now; an unattached one says why it cannot be ticked.</summary>
     Friend Shared Function RowState(row As ExchangeDeviceRow) As String
+        If row.PinProtected Then Return If(row.Supported, Localization.T("защищено PIN-кодом"), Localization.T("заблокировано: защита не поддерживается"))
         If Not row.Supported Then Return Localization.T("не поддерживается этой версией")
         If row.Attached Then
             Select Case row.State
@@ -96,6 +97,8 @@ Friend NotInheritable Class ExchangeResourceText
             Case ExchangeAttachOutcome.NoAccess : Return Localization.T("Устройство не в сети: подключить папку сейчас нельзя.")
             Case ExchangeAttachOutcome.Unusable : Return Localization.T("Эту папку нельзя открыть в этой программе.")
             Case ExchangeAttachOutcome.AgentUnavailable : Return Localization.T("Share Manager не ответил.")
+            Case ExchangeAttachOutcome.ConnectionFailed : Return ResourceMessages.ForFailure(Nothing)
+            Case ExchangeAttachOutcome.SignInAgain : Return Localization.T("Чтобы подключить папки с PIN, войдите в учётную запись сервера обмена ещё раз.")
             Case Else : Return Localization.T("Не удалось сохранить ресурс.")
         End Select
     End Function

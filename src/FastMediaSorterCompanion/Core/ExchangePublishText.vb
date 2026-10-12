@@ -1,4 +1,4 @@
-Option Strict On
+﻿Option Strict On
 
 Imports System.Linq
 
@@ -103,6 +103,7 @@ Friend NotInheritable Class ExchangePublishText
 
     ''' <summary>One sentence for a link action that did not work.</summary>
     Friend Shared Function LinkFailure(result As ExchangeLinkResult) As String
+        If result.Refusal = ExchangeRefusal.ProtectionUnsupported Then Return Localization.T("заблокировано: защита не поддерживается")
         Select Case result.Outcome
             Case ExchangeLinkOutcome.NotPublished
                 Return Localization.T("Эта папка сейчас не опубликована, поэтому ссылку сделать нельзя.")
@@ -172,7 +173,7 @@ Friend NotInheritable Class ExchangePublishText
             Case ExchangePublishBlock.ServerDown
                 Return Localization.T("Не опубликовано: раздача не запущена или не отвечает.")
             Case ExchangePublishBlock.PinLocked
-                Return Localization.T("Не опубликовано: у одной из папок задан PIN-код доступа. В записи учётной записи нет места для запрета, и другие устройства открыли бы её без PIN-кода.")
+                Return Localization.T("Не опубликовано: сервер раздачи не подтвердил защиту папки PIN-кодом. Обновите сервер и примените настройки папки.")
             Case ExchangePublishBlock.NoAddress
                 Return Localization.T("Не опубликовано: нет адреса этого компьютера, который можно передать другим устройствам.")
             Case ExchangePublishBlock.NoShares
@@ -189,7 +190,7 @@ Friend NotInheritable Class ExchangePublishText
     Friend Shared Function RowState(row As ExchangePublishRow) As String
         Select Case row.State
             Case ExchangePublishState.Published
-                Return Localization.T("опубликована")
+                Return Localization.T("опубликована") & If(row.PinProtected, " · " & Localization.T("защищено PIN-кодом"), "")
             Case ExchangePublishState.Refused
                 Return Refusal(row.Refusal)
             Case Else
@@ -200,6 +201,8 @@ Friend NotInheritable Class ExchangePublishText
     ''' <summary>One sentence per refusal of a publish, never the raw reason.</summary>
     Friend Shared Function Refusal(reason As ExchangeRefusal) As String
         Select Case reason
+            Case ExchangeRefusal.ProtectionUnsupported
+                Return Localization.T("заблокировано: защита не поддерживается")
             Case ExchangeRefusal.Capacity
                 Return Localization.T("сервер не принял: достигнут предел списка")
             Case ExchangeRefusal.IdCollision

@@ -8,7 +8,7 @@ Imports System.Text.Json
 Imports Xunit
 
 ''' <summary>
-''' Ticket 177 section 3 item 1, the half a unit run can hold: the COMMITTED capture of the modern viewer started
+''' Ticket 204 section 3 item 1, the half a unit run can hold: the COMMITTED capture of the modern viewer started
 ''' on a clean profile before any exchange client code existed. The capture itself is taken by
 ''' <c>tests\Integration\ExchangeBaseline.ps1</c> (hand-run: it starts the real exe); what runs here is the
 ''' proof that the committed capture is untouched (PROVENANCE first) and that it really is a capture of
@@ -81,7 +81,7 @@ Public Class DualModeViewerBaselineTests
 
     <Fact>
     Public Sub The_x86_viewer_baseline_holds_no_connection_no_child_no_new_file_and_nothing_of_the_exchange()
-        ' The net48 fallback is outside the exchange program (177 section 3 item 5): its capture on a clean profile is the
+        ' The net48 fallback is outside the exchange program (204 section 3 item 5): its capture on a clean profile is the
         ' "today" the later build is compared with, and it must stay exactly that. It records ONE loopback TCP listener
         ' that the net10 viewer does not have (pre-existing in the net48 build: no source line of this repository
         ' listens, no exchange word or value is anywhere in it) - it is written down here instead of being hidden, and

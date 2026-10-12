@@ -1,4 +1,4 @@
-#If Not NETFRAMEWORK Then
+﻿#If Not NETFRAMEWORK Then
 Option Strict On
 
 Imports System.Collections.Generic
@@ -199,6 +199,13 @@ Public Class FmsConfigExportTests
     <Fact>
     Public Sub Export_Refusals_AreEachTheirOwnOutcome_NeverAnException()
         Dim secrets As IResourceSecretStore = New MemoryStore()
+
+        Dim locked As ResourceDescriptor = PinnedResource()
+        locked.PinRequired = True
+        Dim denied As FmsExportResult = FmsConfigExport.Export(locked, True, secrets)
+        Assert.Equal(FmsExportRefusal.UnsupportedProtection, denied.Refusal)
+        Assert.False(denied.Succeeded)
+        Assert.Empty(denied.Json)
 
         Dim smb As ResourceDescriptor = PinnedResource()
         smb.Kind = ResourceKind.Unc : smb.RootPath = "\\server\photos"

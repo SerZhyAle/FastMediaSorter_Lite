@@ -84,9 +84,7 @@ Public Class ExchangeAdminGroupUiTests
                     form.Location = New Point(-6000, -6000)
                     form.ShowInTaskbar = False
                     form.Show()
-                    Dim section As CollapsibleSection = Field(Of CollapsibleSection)(form, "_secExchange")
                     GetType(Share_Settings_Form).GetMethod("SelectSettingsPage", BindingFlags.Instance Or BindingFlags.NonPublic).Invoke(form, New Object() {"exchange"})
-                    GetType(Share_Settings_Form).GetMethod("SetPageGroupsExpanded", BindingFlags.Instance Or BindingFlags.NonPublic).Invoke(form, New Object() {True})
                     Dim accounts As ListView = Field(Of ListView)(form, "_lvXAccounts")
                     Dim devices As ListView = Field(Of ListView)(form, "_lvXDevices")
                     Dim reset As Button = Field(Of Button)(form, "_btnXResetPw")
@@ -147,7 +145,6 @@ Public Class ExchangeAdminGroupUiTests
                     form.Show()
                     Dim accounts As ListView = Field(Of ListView)(form, "_lvXAccounts")
                     GetType(Share_Settings_Form).GetMethod("SelectSettingsPage", BindingFlags.Instance Or BindingFlags.NonPublic).Invoke(form, New Object() {"exchange"})
-                    GetType(Share_Settings_Form).GetMethod("SetPageGroupsExpanded", BindingFlags.Instance Or BindingFlags.NonPublic).Invoke(form, New Object() {True})
                     Pump(Function() accounts.Items.Count = 2, "the accounts list")
                     Assert.False(Field(Of FlowLayoutPanel)(form, "_rowXWizard").Visible, "accounts exist: the wizard is for a PC where nothing exists yet")
                     Assert.Equal(ExchangeAdminText.Totals(2, 2), Field(Of Label)(form, "_lblXAccTotals").Text)
@@ -179,7 +176,6 @@ Public Class ExchangeAdminGroupUiTests
                     form.Show()
                     Dim accounts As ListView = Field(Of ListView)(form, "_lvXAccounts")
                     GetType(Share_Settings_Form).GetMethod("SelectSettingsPage", BindingFlags.Instance Or BindingFlags.NonPublic).Invoke(form, New Object() {"exchange"})
-                    GetType(Share_Settings_Form).GetMethod("SetPageGroupsExpanded", BindingFlags.Instance Or BindingFlags.NonPublic).Invoke(form, New Object() {True})
                     Pump(Function() accounts.Items.Count = 2, "the accounts list")
                     accounts.Handle.ToString()
                     accounts.Items(1).Selected = True

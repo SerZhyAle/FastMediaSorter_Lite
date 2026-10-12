@@ -1,4 +1,4 @@
-#If Not NETFRAMEWORK Then
+﻿#If Not NETFRAMEWORK Then
 Option Strict On
 
 Imports System.Drawing
@@ -27,6 +27,7 @@ Friend NotInheritable Class Resource_Credential_Form
     Private ReadOnly okButton As Button
     Private ReadOnly dismissButton As Button
     Private script_Font As Font
+    Private ReadOnly pinMode As Boolean
 
     ''' <summary>The password as typed, never trimmed: a space at either end is part of it.</summary>
     Friend ReadOnly Property Credential As String
@@ -44,8 +45,9 @@ Friend NotInheritable Class Resource_Credential_Form
 
     ''' <param name="retry">True when a password was just refused, so the dialog opens carrying the reason.</param>
     ''' <param name="showRemember">False when the caller stores the password regardless (an import does), so the dialog does not offer a choice that changes nothing.</param>
-    Friend Sub New(resourceName As String, userName As String, retry As Boolean, Optional showRemember As Boolean = True)
-        Me.Text = Localization.T("Пароль ресурса")
+    Friend Sub New(resourceName As String, userName As String, retry As Boolean, Optional showRemember As Boolean = True, Optional pinMode As Boolean = False)
+        Me.pinMode = pinMode
+        Me.Text = If(pinMode, Localization.T("PIN-код ресурса"), Localization.T("Пароль ресурса"))
         Me.FormBorderStyle = FormBorderStyle.FixedDialog
         Me.MaximizeBox = False
         Me.MinimizeBox = False
@@ -65,13 +67,14 @@ Friend NotInheritable Class Resource_Credential_Form
             .AutoSize = False,
             .Location = New Point(14, 14),
             .Size = New Size(432, 34),
-            .Text = Localization.TF("Введите пароль для «{0}» (пользователь {1})", resourceName, userName)
+            .Text = If(pinMode, Localization.TF("Введите PIN-код для «{0}»", resourceName), Localization.TF("Введите пароль для «{0}» (пользователь {1})", resourceName, userName))
         }
 
         field = New TextBox With {
             .Name = "resource_Password",
             .Location = New Point(14, 52),
             .Size = New Size(432, 24),
+            .MaxLength = If(pinMode, 128, 32767),
             .UseSystemPasswordChar = True
         }
 
@@ -79,7 +82,7 @@ Friend NotInheritable Class Resource_Credential_Form
             .Name = "resource_Reveal",
             .AutoSize = True,
             .Location = New Point(14, 82),
-            .Text = Localization.T("Показать пароль")
+            .Text = If(pinMode, Localization.T("Показать PIN-код"), Localization.T("Показать пароль"))
         }
         AddHandler reveal.CheckedChanged, Sub() field.UseSystemPasswordChar = Not reveal.Checked
 
@@ -88,7 +91,7 @@ Friend NotInheritable Class Resource_Credential_Form
             .AutoSize = True,
             .Location = New Point(14, 104),
             .Checked = True,
-            .Visible = showRemember,
+            .Visible = showRemember AndAlso Not pinMode,
             .Text = Localization.T("Запомнить пароль (защищён средствами Windows)")
         }
 
@@ -98,7 +101,7 @@ Friend NotInheritable Class Resource_Credential_Form
             .Location = New Point(14, 126),
             .Size = New Size(432, 16),
             .ForeColor = Color.Firebrick,
-            .Text = If(retry, Localization.T("Пароль не подошёл. Введите его ещё раз."), "")
+            .Text = If(retry, If(pinMode, Localization.T("PIN-код не подошёл. Введите его ещё раз."), Localization.T("Пароль не подошёл. Введите его ещё раз.")), "")
         }
 
         okButton = New Button With {
@@ -154,7 +157,7 @@ Friend NotInheritable Class Resource_Credential_Form
     ''' store (ResourceCommit refuses it too), and saying so now is kinder than failing later.</summary>
     Private Sub Confirm(sender As Object, e As EventArgs)
         If field.Text.Length = 0 Then
-            warning.Text = Localization.T("Введите пароль")
+            warning.Text = If(pinMode, Localization.T("PIN-код ресурса"), Localization.T("Введите пароль"))
             field.Focus()
             Return
         End If
@@ -162,5 +165,16 @@ Friend NotInheritable Class Resource_Credential_Form
         Me.Close()
     End Sub
 
+End Class
+
+Friend NotInheritable Class ResourcePinPromptUi
+    Private Sub New()
+    End Sub
+    Friend Shared Function Ask(owner As Form, resourceName As String, Optional retry As Boolean = False) As String
+        Using dialog As New Resource_Credential_Form(resourceName, "", retry, showRemember:=False, pinMode:=True)
+            If DialogLayer.ShowViewerDialog(dialog, owner) <> DialogResult.OK Then Return Nothing
+            Return dialog.Credential
+        End Using
+    End Function
 End Class
 #End If

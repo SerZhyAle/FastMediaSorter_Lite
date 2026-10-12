@@ -1,4 +1,4 @@
-#If Not NETFRAMEWORK Then
+﻿#If Not NETFRAMEWORK Then
 Option Strict On
 
 Imports System.Collections.Generic
@@ -29,6 +29,10 @@ Friend NotInheritable Class ResourceDescriptor
     ''' still have the last word.</summary>
     Public Property ReadOnlyHint As Boolean
     Public Property SecretHandle As String = ""
+    <JsonIgnore(Condition:=JsonIgnoreCondition.WhenWritingDefault)>
+    Public Property PinRequired As Boolean
+    <JsonIgnore(Condition:=JsonIgnoreCondition.WhenWritingDefault)>
+    Public Property ProtectionUnsupported As Boolean
     ''' <summary>The SSH host key this resource is pinned to, canonical <c>SHA256:..</c>, or ""
     ''' while the first connection has not been accepted yet (007 §3.3). A fingerprint is public
     ''' information, so unlike the credential it lives here, next to the resource it protects.</summary>
@@ -125,6 +129,8 @@ Friend Module ResourceOrigin
         built.TunnelPort = source.TunnelPort
         built.TunnelSecretHandle = source.TunnelSecretHandle
         built.TunnelPin = source.TunnelPin
+        built.PinRequired = source.PinRequired
+        built.ProtectionUnsupported = source.ProtectionUnsupported
     End Sub
 
     ''' <summary>True when an edit moved the resource: the same test <see cref="CarryOver"/> callers use to let go of it.</summary>

@@ -1,4 +1,4 @@
-#If Not NETFRAMEWORK Then
+﻿#If Not NETFRAMEWORK Then
 Option Strict On
 
 Imports System.Collections.Generic
@@ -30,11 +30,14 @@ Friend NotInheritable Class SftpProvider
 
     Private client As SftpClient
     Private is_Disposed As Boolean
+    Private pin_Session_Used As Boolean
+    Private pin_Rejected As Boolean
     Private lastHostKeyFailure As ResourceFailure
     Private connection_Cancellation As CancellationToken
     Private listing_Truncated As Integer
     Private ReadOnly listing_Max_Depth As Integer
     Private ReadOnly listing_Max_Entries As Integer
+    Private ReadOnly resource_Pin As String
 
     Private Const ConnectTimeoutSeconds As Integer = 5
     Private Const KeepAliveIntervalSeconds As Integer = 30
@@ -49,13 +52,15 @@ Friend NotInheritable Class SftpProvider
                    Optional capabilities As ProviderCapabilities = Nothing,
                    Optional includeSubfolders As Func(Of Boolean) = Nothing,
                    Optional maxListingDepth As Integer = MaxListingDepth,
-                   Optional maxListingEntries As Integer = MaxListingEntries)
+                   Optional maxListingEntries As Integer = MaxListingEntries,
+                   Optional resourcePin As String = Nothing)
         If descriptor Is Nothing Then Throw New ArgumentNullException(NameOf(descriptor))
         If maxListingDepth < 0 Then Throw New ArgumentOutOfRangeException(NameOf(maxListingDepth))
         If maxListingEntries < 1 Then Throw New ArgumentOutOfRangeException(NameOf(maxListingEntries))
         listing_Max_Depth = maxListingDepth
         listing_Max_Entries = maxListingEntries
         descriptor_Value = descriptor
+        resource_Pin = If(resourcePin, ResourcePinMemory.GetPin(descriptor))
         password_Value = If(password, "")
         hostKeyGate_Value = hostKeyGate
         include_Subfolders = includeSubfolders
@@ -111,6 +116,25 @@ Friend NotInheritable Class SftpProvider
         End Get
     End Property
 
+    ''' <summary>A cached protected file is usable only while its original SSH proof still answers.</summary>
+    Friend Sub EnsureResourceAuthorization(ct As CancellationToken)
+        If Not descriptor_Value.PinRequired Then Return
+        SyncLock gate
+            Try
+                ConnectLocked(retry:=False, ct:=ct)
+                ct.ThrowIfCancellationRequested()
+                client.GetAttributes(descriptor_Value.RootPath)
+            Catch ex As OperationCanceledException
+                Throw
+            Catch ex As Exception
+                pin_Rejected = True
+                ResourcePinMemory.Forget(descriptor_Value)
+                DisposeClientLocked()
+                Throw New ResourceFailureException(New ResourceFailure(ResourceFailureKind.Auth))
+            End Try
+        End SyncLock
+    End Sub
+
     Friend Sub EnsureConnected(Optional ct As CancellationToken = Nothing)
         CheckNotDisposed()
         SyncLock gate
@@ -134,6 +158,10 @@ Friend NotInheritable Class SftpProvider
             Throw New ResourceFailureException(New ResourceFailure(ResourceFailureKind.KeyMismatch))
         End If
         If client IsNot Nothing AndAlso client.IsConnected Then Return
+        If descriptor_Value.PinRequired AndAlso (pin_Session_Used OrElse pin_Rejected) Then
+            ResourcePinMemory.Forget(descriptor_Value)
+            Throw New ResourceFailureException(New ResourceFailure(ResourceFailureKind.Auth))
+        End If
 
         Dim port As Integer = If(descriptor_Value.Port > 0, descriptor_Value.Port, 22)
         Dim user As String = descriptor_Value.UserName
@@ -151,7 +179,31 @@ Friend NotInheritable Class SftpProvider
                 DisposeClientLocked()
                 lastHostKeyFailure = Nothing
 
-                Dim authMethod As New PasswordAuthenticationMethod(user, password_Value)
+                Dim pinChallengeAnswered As Boolean = False
+                Dim authMethod As AuthenticationMethod
+                If descriptor_Value.PinRequired Then
+                    If String.IsNullOrEmpty(resource_Pin) Then Throw New ResourceFailureException(New ResourceFailure(ResourceFailureKind.Auth))
+                    Dim interactive As New KeyboardInteractiveAuthenticationMethod(user)
+                    AddHandler interactive.AuthenticationPrompt, Sub(sender, args)
+                        If args.Prompts.Count <> 3 Then Throw New ResourceFailureException(New ResourceFailure(ResourceFailureKind.Auth))
+                        Dim expected As String() = {"Resource", "Password", "PIN"}
+                        Dim i As Integer = 0
+                        For Each prompt As AuthenticationPrompt In args.Prompts
+                            If prompt.Request <> expected(i) OrElse prompt.IsEchoed Then Throw New ResourceFailureException(New ResourceFailure(ResourceFailureKind.Auth))
+                            i += 1
+                        Next
+                        i = 0
+                        Dim answers As String() = {descriptor_Value.RootPath.Trim("/"c).Split("/"c)(0), password_Value, resource_Pin}
+                        For Each prompt As AuthenticationPrompt In args.Prompts
+                            prompt.Response = answers(i)
+                            i += 1
+                        Next
+                        pinChallengeAnswered = True
+                    End Sub
+                    authMethod = interactive
+                Else
+                    authMethod = New PasswordAuthenticationMethod(user, password_Value)
+                End If
                 Dim connInfo As New ConnectionInfo(host, port, user, authMethod) With {
                     .Timeout = TimeSpan.FromSeconds(ConnectTimeoutSeconds)
                 }
@@ -163,7 +215,11 @@ Friend NotInheritable Class SftpProvider
 
                 connection_Cancellation = ct
                 client.ConnectAsync(ct).GetAwaiter().GetResult()
-                If client.IsConnected Then Return
+                If descriptor_Value.PinRequired AndAlso Not pinChallengeAnswered Then Throw New ResourceFailureException(New ResourceFailure(ResourceFailureKind.Auth))
+                If client.IsConnected Then
+                    pin_Session_Used = descriptor_Value.PinRequired
+                    Return
+                End If
                 last = New ResourceFailure(ResourceFailureKind.Transport)
             Catch ex As Exception
                 ' The gate's own verdict is the more exact reason: SSH.NET reports a refused
@@ -172,6 +228,10 @@ Friend NotInheritable Class SftpProvider
                 DisposeClientLocked()
                 If keyFailure IsNot Nothing Then Throw New ResourceFailureException(keyFailure)
                 last = Classify(ex)
+                If descriptor_Value.PinRequired AndAlso last.Kind = ResourceFailureKind.Auth Then
+                    pin_Rejected = True
+                    ResourcePinMemory.Forget(descriptor_Value)
+                End If
                 If Not last.IsRetryable Then Throw New ResourceFailureException(last)
             End Try
         Next

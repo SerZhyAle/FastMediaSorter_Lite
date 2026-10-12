@@ -8,9 +8,12 @@ Imports System.Collections.Generic
 Imports System.Linq
 Imports System.Text.Json
 
-''' <summary>Private modern-viewer navigation state, excluded from preference exchange (120).</summary>
+''' <summary>Private modern-viewer navigation state, excluded from preference exchange (120).
+''' Schema 2 (210): the Share Manager's left-menu expansion joined the per-page state as
+''' <see cref="SettingsPageContext.NavExpanded"/>; the viewer's per-group fold map is
+''' unchanged. A v1 payload migrates on read (210 section 7.2).</summary>
 Friend NotInheritable Class SettingsUiContext
-    Public Property SchemaVersion As Integer = 1
+    Public Property SchemaVersion As Integer = 2
     Public Property LastPageId As String = "general"
     Public Property Pages As New Dictionary(Of String, SettingsPageContext)(StringComparer.Ordinal)
 
@@ -57,8 +60,19 @@ Friend NotInheritable Class SettingsUiContext
         Try
             If json.Length > 131072 Then Throw New JsonException("UI context exceeds its size limit.")
             Dim state As SettingsUiContext = JsonSerializer.Deserialize(Of SettingsUiContext)(json)
-            If state Is Nothing OrElse state.SchemaVersion <> 1 OrElse state.Pages Is Nothing OrElse state.Pages.Count > 64 Then
+            If state Is Nothing OrElse state.Pages Is Nothing OrElse state.Pages.Count > 64 OrElse
+               (state.SchemaVersion <> 1 AndAlso state.SchemaVersion <> 2) Then
                 Throw New JsonException("Unsupported UI context shape.")
+            End If
+            ' 210 section 7.2: a v1 context migrates - a page the user worked on with any
+            ' group open opens its item list in the new menu.
+            If state.SchemaVersion = 1 Then
+                For Each pageState As SettingsPageContext In state.Pages.Values
+                    If pageState IsNot Nothing AndAlso pageState.Groups IsNot Nothing AndAlso pageState.Groups.ContainsValue(True) Then
+                        pageState.NavExpanded = True
+                    End If
+                Next
+                state.SchemaVersion = 2
             End If
             If state.LastPageId Is Nothing Then state.LastPageId = "general"
             For Each id As String In state.Pages.Keys.ToArray()
@@ -80,6 +94,9 @@ Friend NotInheritable Class SettingsUiContext
 End Class
 
 Friend NotInheritable Class SettingsPageContext
+    ''' <summary>The Share Manager's left menu (210): whether the page's item list is expanded.
+    ''' Untouched by the viewer, whose fold state stays in <see cref="Groups"/>.</summary>
+    Public Property NavExpanded As Boolean
     Public Property Groups As New Dictionary(Of String, Boolean)(StringComparer.Ordinal)
     Public Property AnchorId As String = String.Empty
     Public Property AnchorOffsetLogical As Integer

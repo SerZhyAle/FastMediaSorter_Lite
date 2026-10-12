@@ -72,7 +72,7 @@ func (e *Engine) Enroll(st *Stream, m *wire.Enroll) Result {
 
 	en, err := e.cfg.Accounts.Enroll(accounts.EnrollSpec{
 		Account: login, DeviceID: m.DeviceID, Name: m.DeviceName, Product: m.Product,
-		ProductVersion: m.ProductVersion, Platform: m.Platform, Roles: knownRoles(m.Roles), Receiver: m.Receiver,
+		ProductVersion: m.ProductVersion, Platform: m.Platform, Roles: knownRoles(m.Roles), Capabilities: m.Capabilities, Receiver: m.Receiver,
 	})
 	switch {
 	case errors.Is(err, accounts.ErrIDCollision):
@@ -90,7 +90,7 @@ func (e *Engine) Enroll(st *Stream, m *wire.Enroll) Result {
 	d := en.Device
 	e.cfg.Dir.DeviceEnrolled(directory.DeviceInfo{
 		ID: d.ID, Account: d.Account, Name: d.Name, Product: d.Product, ProductVersion: d.ProductVersion,
-		Platform: d.Platform, Roles: d.Roles, Receiver: d.Receiver,
+		Platform: d.Platform, Roles: d.Roles, Capabilities: d.Capabilities, Receiver: d.Receiver,
 	})
 	e.track(d.ID, st)
 

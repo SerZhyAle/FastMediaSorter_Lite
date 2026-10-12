@@ -602,6 +602,8 @@ Friend NotInheritable Class ExchangeDeviceAgent
         Await StopAsync().ConfigureAwait(False)
         _ports.Credentials.Delete()
         _ports.Accounts.Forget()
+        ' "keep nothing" has one exception: that the person chose to leave, so the local join does not undo it at the next start
+        _ports.Accounts.SetLocalJoinDeclined(True)
         ' the ids, the third-party port and both choices go with the account: a later enrollment publishes nothing until asked (170 rule 1)
         _ports.Producer?.OnAccountForgotten()
         SetIdle(ExchangeAgentState.NotConfigured, "")
@@ -739,7 +741,7 @@ Friend NotInheritable Class ExchangeDeviceAgent
                 Return ExchangeLocalResult.Success(found.AccessJson)
 
             Case ExchangeAgentPipe.RequestCastAnswer, ExchangeAgentPipe.RequestCastPolicy
-                ' ticket 174 owns both; until it lands the agent says so rather than pretending
+                ' ticket 201 owns both; until it lands the agent says so rather than pretending
                 Return ExchangeLocalResult.Failure(ExchangeAgentPipe.ErrorUnsupported)
 
             Case Else

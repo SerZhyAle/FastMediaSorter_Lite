@@ -15,9 +15,11 @@ import (
 
 // The local admin channel (ticket 162 section 4). One JSON request per connection, answered
 // {ok, error, data}; the request is bounded and the whole exchange has a deadline; no secret is ever
-// returned. A password travels on this channel only, never on a command line. The transport - a named
-// pipe with a current-user ACL on Windows, a mode-0600 Unix socket elsewhere - is internal/deploy's;
-// this file speaks over any net.Conn.
+// returned: no password, token or hash. The one thing handed out is a single-use pairing code of
+// device.pairing-code, ten minutes of life, which the same operator could already get by resetting the
+// password; it is never logged. A password travels on this channel only, never on a command line. The
+// transport - a named pipe with a current-user ACL on Windows, a mode-0600 Unix socket elsewhere - is
+// internal/deploy's; this file speaks over any net.Conn.
 
 // Bounds of the channel.
 const (
@@ -38,6 +40,11 @@ const (
 	OpDeviceList    = "device.list"
 	OpDeviceRevoke  = "device.revoke"
 	OpStatus        = "status"
+
+	// OpDevicePairingCode issues a single-use pairing code of an account to the operator, so a program on the
+	// operator's own PC can enroll as a device of that account without the password (the local join of the Share
+	// Manager, ticket 187). It is live-only: the code exists in the memory of the running server.
+	OpDevicePairingCode = "device.pairing-code"
 )
 
 // Request is one request. It holds a password, so it prints as its operation only.
@@ -71,6 +78,7 @@ const (
 	CodeBadLogin   = "bad-login"
 	CodeWeak       = "weak-password"
 	CodeNotFound   = "not-found"
+	CodeCapacity   = "capacity"
 	CodeInternal   = "internal"
 )
 
@@ -110,6 +118,10 @@ func failFrom(err error) Response {
 		return fail(CodeExists, "the account exists")
 	case errors.Is(err, accounts.ErrBadLogin):
 		return fail(CodeBadLogin, err.Error())
+	case errors.Is(err, accounts.ErrCapacity):
+		return fail(CodeCapacity, "the account is at its limit of outstanding pairing codes; one expires in ten minutes")
+	case errors.Is(err, ErrNotLive):
+		return fail(CodeBadRequest, err.Error())
 	case errors.Is(err, password.ErrTooShort), errors.Is(err, password.ErrNoUpper),
 		errors.Is(err, password.ErrNoLower), errors.Is(err, password.ErrNoDigit):
 		return fail(CodeWeak, err.Error())
@@ -155,6 +167,12 @@ func (o *Ops) Handle(req Request) Response {
 		return okData(nil)
 	case OpStatus:
 		return okData(o.Status())
+	case OpDevicePairingCode:
+		code, expires, err := o.PairingCode(req.Login)
+		if err != nil {
+			return failFrom(err)
+		}
+		return okData(PairingCodeView{Code: code, ExpiresAt: expires.UTC().Format(time.RFC3339)})
 	}
 	return fail(CodeBadRequest, "unknown operation")
 }

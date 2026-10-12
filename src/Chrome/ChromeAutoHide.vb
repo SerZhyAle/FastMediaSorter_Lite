@@ -96,7 +96,7 @@ Friend NotInheritable Class ChromeAutoHide
         Return alpha
     End Function
 
-    ''' <summary>The five persisted pin switches, as one value - the algebra below and the tests
+    ''' <summary>The six persisted pin switches, as one value - the algebra below and the tests
     ''' both read and write it as a whole.</summary>
     Public Structure ChromePinState
         Public GlobalPinned As Boolean
@@ -106,6 +106,9 @@ Friend NotInheritable Class ChromeAutoHide
         ''' <summary>The recipients overlay's own pin (2026-10-04 revision of 117 Ф-2): it is a
         ''' fourth floating surface with a corner pin of its own, not a rider on the panels'.</summary>
         Public OverlayPinned As Boolean
+        ''' <summary>The window-controls panel's own pin (188 §4): a fifth floating surface,
+        ''' mapped explicitly below - the unknown-name fallback must never reach it.</summary>
+        Public WindowControlsPinned As Boolean
     End Structure
 
     ''' <summary>A panel's own pin - the corner button's switch - by the panel's name. The
@@ -115,6 +118,7 @@ Friend NotInheritable Class ChromeAutoHide
             Case "chrome_Row1" : Return state.Row1Pinned
             Case "chrome_Row2" : Return state.Row2Pinned
             Case "recipients_Overlay" : Return state.OverlayPinned
+            Case "chrome_WindowControls" : Return state.WindowControlsPinned
             Case Else : Return state.StatusPinned
         End Select
     End Function
@@ -124,6 +128,7 @@ Friend NotInheritable Class ChromeAutoHide
             Case "chrome_Row1" : state.Row1Pinned = value
             Case "chrome_Row2" : state.Row2Pinned = value
             Case "recipients_Overlay" : state.OverlayPinned = value
+            Case "chrome_WindowControls" : state.WindowControlsPinned = value
             Case Else : state.StatusPinned = value
         End Select
     End Sub
@@ -136,7 +141,8 @@ Friend NotInheritable Class ChromeAutoHide
     ''' <summary>A pin button's click (117, the <c>ChromeTogglePin</c> rule). While the global
     ''' switch is on, unpinning one surface converts the switch into the individual pins of all the
     ''' others minus this one - otherwise the click would do nothing visible. Pinning an unpinned
-    ''' surface sets its own pin.</summary>
+    ''' surface sets its own pin. The window-controls panel joins the split like a panel
+    ''' (188 §4): unpinning another surface leaves its effective pinned state alone.</summary>
     Public Shared Function TogglePin(state As ChromePinState, panelName As String) As ChromePinState
         Dim result As ChromePinState = state
         If PanelPinned(state, panelName) Then
@@ -145,6 +151,7 @@ Friend NotInheritable Class ChromeAutoHide
                 result.Row1Pinned = True
                 result.Row2Pinned = True
                 result.StatusPinned = True
+                result.WindowControlsPinned = True
             End If
             SetOwnPin(result, panelName, False)
         Else

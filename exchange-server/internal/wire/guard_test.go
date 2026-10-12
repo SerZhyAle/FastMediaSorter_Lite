@@ -90,7 +90,7 @@ func TestRefuseTakesAReasonConstantOrAVariable(t *testing.T) {
 	}
 }
 
-// TestEveryReasonConstantIsInTheList: the nine constants of reason.go are exactly AllReasons, so a
+// TestEveryReasonConstantIsInTheList: the ten constants of reason.go are exactly AllReasons, so a
 // tenth cannot be added without the list (and so without Valid) knowing.
 func TestEveryReasonConstantIsInTheList(t *testing.T) {
 	src := moduleGoFiles(t, false)["internal/wire/reason.go"]
@@ -100,18 +100,18 @@ func TestEveryReasonConstantIsInTheList(t *testing.T) {
 	}
 }
 
-// TestTheReasonsTheServerCanEmitAreExactlyTheNineOfTheContract is ticket 167 rule 7: the set of
+// TestTheReasonsTheServerCanEmitAreExactlyTheTenOfTheContract is ticket 167 rule 7: the set of
 // reasons the server can emit is built by scanning the sources for every Reason constant a non-test
-// file names, and it must be inside the list of DEVICE-EXCHANGE 7.10 - and every one of the nine must
+// file names, and it must be inside the list of DEVICE-EXCHANGE 7.10 - and every one of the ten must
 // be emitted somewhere (a reason nothing can produce would be a promise the server cannot keep).
-func TestTheReasonsTheServerCanEmitAreExactlyTheNineOfTheContract(t *testing.T) {
+func TestTheReasonsTheServerCanEmitAreExactlyTheTenOfTheContract(t *testing.T) {
 	ident := regexp.MustCompile(`\b(?:wire\.)?(Reason[A-Z]\w*)\b`)
 	declared := map[string]bool{}
 	for _, m := range regexp.MustCompile(`(?m)^\s*(Reason[A-Z]\w*)\s+Reason\s*=`).FindAllStringSubmatch(moduleGoFiles(t, false)["internal/wire/reason.go"], -1) {
 		declared[m[1]] = true
 	}
-	if len(declared) != 9 || len(AllReasons) != 9 {
-		t.Fatalf("%d declared, %d listed: the contract has nine reasons", len(declared), len(AllReasons))
+	if len(declared) != 10 || len(AllReasons) != 10 {
+		t.Fatalf("%d declared, %d listed: the contract has ten reasons", len(declared), len(AllReasons))
 	}
 	emitted := map[string]bool{}
 	for name, src := range moduleGoFiles(t, false) {
@@ -120,7 +120,7 @@ func TestTheReasonsTheServerCanEmitAreExactlyTheNineOfTheContract(t *testing.T) 
 		}
 		for _, m := range ident.FindAllStringSubmatch(src, -1) {
 			if !declared[m[1]] {
-				t.Errorf("%s names %s, which is not one of the nine reasons of 7.10", name, m[1])
+				t.Errorf("%s names %s, which is not one of the ten reasons of 7.10", name, m[1])
 			}
 			emitted[m[1]] = true
 		}

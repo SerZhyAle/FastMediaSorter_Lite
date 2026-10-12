@@ -14,6 +14,19 @@ Option Strict On
 ' </summary>
 Partial Public NotInheritable Class Localization
     Private Shared Sub AddExchangeResourceStrings()
+        Add("Чтобы подключить папки с PIN, войдите в учётную запись сервера обмена ещё раз.",
+            "To connect folders protected by PIN, sign in to the exchange server account again.",
+            "Щоб підключити папки з PIN, увійдіть в обліковий запис сервера обміну ще раз.",
+            "Melden Sie sich erneut beim Konto des Austauschservers an, um PIN-geschützte Ordner zu verbinden.",
+            "Per collegare cartelle protette da PIN, accedi di nuovo all'account del server di scambio.",
+            "Para conectar carpetas protegidas por PIN, vuelve a iniciar sesión en la cuenta del servidor de intercambio.",
+            "Pour connecter des dossiers protégés par PIN, reconnectez-vous au compte du serveur d'échange.",
+            "Para ligar pastas protegidas por PIN, inicie sessão novamente na conta do servidor de troca.",
+            "لربط المجلدات المحمية برمز PIN، سجّل الدخول إلى حساب خادم التبادل مرة أخرى.",
+            "PIN से सुरक्षित फ़ोल्डर जोड़ने के लिए एक्सचेंज सर्वर खाते में फिर से साइन इन करें।",
+            "PIN দ্বারা সুরক্ষিত ফোল্ডার সংযুক্ত করতে এক্সচেঞ্জ সার্ভার অ্যাকাউন্টে আবার সাইন ইন করুন।",
+            "PIN سے محفوظ فولڈرز کو جوڑنے کے لیے ایکسچینج سرور اکاؤنٹ میں دوبارہ سائن ان کریں۔",
+            "要连接受 PIN 保护的文件夹，请重新登录交换服务器账户。")
         Add("Мои устройства", "My devices", "Мої пристрої", "Meine Geräte", "I miei dispositivi", "Mis dispositivos", "Mes appareils", "Os meus dispositivos", "أجهزتي", "मेरे डिवाइस", "আমার ডিভাইস", "میرے آلات", "我的设备")
         Add("Share Manager не запущен, поэтому папки ваших устройств не видны.", "Share Manager is not running, so the folders of your devices cannot be shown.", "Share Manager не запущено, тому папки ваших пристроїв не видно.", "Share Manager läuft nicht, daher werden die Ordner Ihrer Geräte nicht angezeigt.", "Share Manager non è in esecuzione, quindi le cartelle dei tuoi dispositivi non sono visibili.", "Share Manager no está en ejecución, por lo que no se ven las carpetas de tus dispositivos.", "Share Manager n'est pas lancé, les dossiers de vos appareils ne sont donc pas visibles.", "O Share Manager não está em execução, por isso as pastas dos seus dispositivos não estão visíveis.", "Share Manager غير قيد التشغيل، لذلك لا تظهر مجلدات أجهزتك.", "Share Manager चालू नहीं है, इसलिए आपके डिवाइस के फ़ोल्डर दिखाई नहीं दे रहे।", "Share Manager চালু নেই, তাই আপনার ডিভাইসের ফোল্ডারগুলো দেখা যাচ্ছে না।", "Share Manager چل نہیں رہا، اس لیے آپ کے آلات کے فولڈرز نظر نہیں آ رہے۔", "Share Manager 未运行，因此看不到您设备上的文件夹。")
         Add("Запустить Share Manager", "Start Share Manager", "Запустити Share Manager", "Share Manager starten", "Avvia Share Manager", "Iniciar Share Manager", "Lancer Share Manager", "Iniciar o Share Manager", "تشغيل Share Manager", "Share Manager शुरू करें", "Share Manager চালু করুন", "Share Manager شروع کریں", "启动 Share Manager")

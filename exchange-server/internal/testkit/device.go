@@ -494,7 +494,7 @@ func (d *Device) secret(s string) {
 }
 
 // NewRemoteDevice returns a device that talks to a server somewhere else (the manual-proof tool, the
-// probe of ticket 178): no Env, no log to check.
+// probe of ticket 205): no Env, no log to check.
 func NewRemoteDevice(addr, pin, login string) *Device {
 	return &Device{Addr: addr, Pin: pin, ID: wire.NewID(), Login: login, Name: "Test device", Product: "fms-windows"}
 }

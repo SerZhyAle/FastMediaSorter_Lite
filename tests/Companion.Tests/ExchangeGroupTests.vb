@@ -325,6 +325,8 @@ Public Class ExchangeGroupTests
                                   "Server_Welcome_Form.vb"}).ToArray()   ' ticket 185: a second entry to the same acts (the wizard), explaining them - spec 185 section 2
         ' ticket 187 T-2: the operator's connection string is built by the server binary, shown in its own window beside the fingerprint
         allowed = allowed.Concat({"ExchangeConnectionStringText.vb", "Exchange_Connection_String_Form.vb"}).ToArray()
+        ' 2026-10-12 (owner): the local join - this PC enrols itself in the server that runs on it, so it asks the binary and the service for their address and certificate
+        allowed = allowed.Concat({"ExchangeLocalJoin.vb"}).ToArray()
         For Each p As String In ExchangeTestSupport.CompanionSources()
             Dim name As String = Path.GetFileName(p)
             If name.StartsWith("Localization.", StringComparison.Ordinal) OrElse allowed.Contains(name) Then Continue For
@@ -455,6 +457,30 @@ Public Class ExchangeGroupTests
                                          Assert.Equal(DialogResult.OK, dlg.DialogResult)
                                          Assert.Equal("Abcdefghi1", dlg.EnteredPassword)
                                      End Using
+                                 End Sub)
+    End Sub
+
+    ''' <summary>The order a real caller has: OK, the window closes (the field is emptied), and only THEN does the caller read
+    ''' the password - <c>ShowDialog</c> has returned by then. Reading it from the field gave the server an empty password and a
+    ''' typed reset answered weak-password every time (the test host, 2026-10-12); the dialog above never closed, so it did not see it.</summary>
+    <Fact>
+    Public Sub A_typed_password_is_still_there_when_the_caller_reads_it_after_the_dialog_closed()
+        ExchangeTestSupport.OnUi(Sub()
+                                     Dim dlg As New Exchange_Password_Form(Exchange_Password_Form.DialogMode.Enter)
+                                     Try
+                                         Dim txt As TextBox = Field(Of TextBox)(dlg, "_txt")
+                                         txt.Text = "Qwerty7Zxcvbn"
+                                         Save(dlg)
+                                         ' A modal window is hidden, not disposed, when it closes: only FormClosed is raised (Close() on a
+                                         ' modeless one would dispose it, which is not the order a ShowDialog caller sees).
+                                         GetType(Form).GetMethod("OnFormClosed", BindingFlags.Instance Or BindingFlags.NonPublic).
+                                             Invoke(dlg, New Object() {New FormClosedEventArgs(CloseReason.None)})
+                                         Assert.Equal("", txt.Text)   ' the window's own copy is gone ..
+                                         Assert.Equal("Qwerty7Zxcvbn", dlg.EnteredPassword)   ' .. the one the caller takes is not
+                                     Finally
+                                         dlg.Dispose()
+                                     End Try
+                                     Assert.Equal("", dlg.EnteredPassword)   ' dropped with the dialog
                                  End Sub)
     End Sub
 

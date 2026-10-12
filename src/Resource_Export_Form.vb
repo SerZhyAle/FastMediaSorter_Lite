@@ -1,4 +1,4 @@
-#If Not NETFRAMEWORK Then
+﻿#If Not NETFRAMEWORK Then
 Option Strict On
 
 Imports System.Drawing
@@ -135,6 +135,7 @@ Friend NotInheritable Class Resource_Export_Form
                 Select Case result.Refusal
                     Case FmsExportRefusal.Smb : Say(Localization.T("Передать можно только сервер SFTP: файл настроек не описывает сетевую папку Windows."))
                     Case FmsExportRefusal.NotPinned : Say(Localization.T("Ключ сервера ещё не запомнен. Откройте ресурс один раз и подтвердите ключ - тогда его можно передать."))
+                    Case FmsExportRefusal.UnsupportedProtection : Say(Localization.T("заблокировано: защита не поддерживается"))
                     Case FmsExportRefusal.NoAddress : Say(Localization.T("У ресурса нет адреса, который можно передать."))
                     Case Else : Say(Localization.T("Папка ресурса записана так, что файл настроек её не примет. Исправьте её через «Изменить..»."))
                 End Select

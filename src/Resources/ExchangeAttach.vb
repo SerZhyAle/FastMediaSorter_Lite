@@ -1,4 +1,4 @@
-#If Not NETFRAMEWORK Then
+﻿#If Not NETFRAMEWORK Then
 Option Strict On
 
 Imports System.Collections.Generic
@@ -71,6 +71,12 @@ Friend NotInheritable Class ExchangeFollowResult
 End Class
 
 Friend NotInheritable Class ExchangeAttach
+    ''' <summary>DEVICE-EXCHANGE 17 AG: an older enrollment receives the lock but no access until it re-enrolls with pin-v1.</summary>
+    Friend Shared Function NeedsPinEnrollment(record As ExchangeResourceRecord) As Boolean
+        Return record IsNot Nothing AndAlso record.IsProtected AndAlso record.CanAuthorize AndAlso Not record.HasAccess AndAlso
+            String.Equals(record.Presence, ExchangeWire.PresenceOnline, StringComparison.Ordinal)
+    End Function
+
     Private Sub New()
     End Sub
 
@@ -113,6 +119,7 @@ Friend NotInheritable Class ExchangeAttach
     Friend Shared Function SameAccess(existing As ResourceDescriptor, existingPassword As String, draft As ExchangeAttachDraft) As Boolean
         If existing Is Nothing OrElse draft Is Nothing Then Return False
         Dim d As ResourceDescriptor = draft.Descriptor
+        If existing.PinRequired <> d.PinRequired OrElse existing.ProtectionUnsupported <> d.ProtectionUnsupported Then Return False
         If Not String.Equals(existing.Host, d.Host, StringComparison.OrdinalIgnoreCase) OrElse existing.Port <> d.Port OrElse
            Not String.Equals(existing.UserName, d.UserName, StringComparison.Ordinal) OrElse
            Not String.Equals(existing.RootPath, d.RootPath, StringComparison.Ordinal) OrElse
@@ -156,6 +163,8 @@ Friend NotInheritable Class ExchangeAttach
         next_.RootPath = d.RootPath
         next_.PinnedFingerprint = d.PinnedFingerprint
         next_.Endpoints = d.Endpoints
+        next_.PinRequired = d.PinRequired
+        next_.ProtectionUnsupported = d.ProtectionUnsupported
         next_.ExchangeNotice = True
         Return New ExchangeFollowResult(next_, If(String.Equals(If(existingPassword, ""), draft.Password, StringComparison.Ordinal), Nothing, draft.Password), True)
     End Function
@@ -187,8 +196,10 @@ Friend NotInheritable Class ExchangeDeviceRow
     ''' <summary>Already attached (ticked).</summary>
     Friend ReadOnly Property Attached As Boolean
     Friend ReadOnly Property State As ExchangeResourceState
+    Friend ReadOnly Property PinProtected As Boolean
 
-    Friend Sub New(resourceId As String, name As String, kind As String, supported As Boolean, deviceOnline As Boolean, attached As Boolean, state As ExchangeResourceState)
+    Friend Sub New(resourceId As String, name As String, kind As String, supported As Boolean, deviceOnline As Boolean, attached As Boolean, state As ExchangeResourceState,
+                   Optional pinProtected As Boolean = False)
         Me.ResourceId = resourceId
         Me.Name = name
         Me.Kind = kind
@@ -196,6 +207,7 @@ Friend NotInheritable Class ExchangeDeviceRow
         Me.DeviceOnline = deviceOnline
         Me.Attached = attached
         Me.State = state
+        Me.PinProtected = pinProtected
     End Sub
 End Class
 
@@ -235,8 +247,8 @@ Friend NotInheritable Class ExchangeDevicesModel
             For Each r As ExchangeResourceRecord In snapshot.Resources.Where(Function(x) String.Equals(x.DeviceId, device.DeviceId, StringComparison.Ordinal)).
                     OrderBy(Function(x) x.Name, StringComparer.CurrentCultureIgnoreCase)
                 Dim isAttached As Boolean = bound.ContainsKey(r.ResourceId)
-                rows.Add(New ExchangeDeviceRow(r.ResourceId, r.Name, r.Kind, r.IsSupportedKind, device.IsOnline, isAttached,
-                                               ExchangeAttach.StateOf(r.ResourceId, snapshot, fullList:=True)))
+                rows.Add(New ExchangeDeviceRow(r.ResourceId, r.Name, r.Kind, r.IsSupportedKind AndAlso r.CanAuthorize, device.IsOnline, isAttached,
+                                               ExchangeAttach.StateOf(r.ResourceId, snapshot, fullList:=True), r.IsProtected))
             Next
             groups.Add(New ExchangeDeviceGroup(device.DeviceId, If(device.DeviceName.Length > 0, device.DeviceName, device.Product), device.IsOnline, rows))
         Next

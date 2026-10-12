@@ -11,13 +11,13 @@ Option Strict On
 Public Module BroadcastPage
 
     ''' <summary>
-    ''' The build offers the page. <b>False</b> while the vendored worker has no broadcast verbs (016 phase 1 is
-    ''' written in another repository, <c>fms_companion</c>, and is not built). It is a constant, not a
-    ''' setting: it flips in the SAME change that re-vendors a worker which has the verbs and rewrites
-    ''' <c>payload/companion/fms-share-worker.exe.sha256</c>, and <c>BroadcastWorkerCapabilityTests</c> fails
-    ''' the suite if the two ever disagree - that test is what stops the host half shipping alone.
+    ''' The build offers the page. Flipped to True on 2026-10-12, in the SAME change that re-vendored a worker
+    ''' which serves the five broadcast verbs (196 phase 1, built in <c>fms_companion</c>: <c>internal/httpgw</c> +
+    ''' <c>broadcasts.json</c>), so a host half never ships alone. It is a constant, not a setting, and
+    ''' <c>BroadcastWorkerCapabilityTests</c> still fails the suite if the vendored binary and this flag ever
+    ''' disagree - that test is what stops the host half shipping alone.
     ''' </summary>
-    Public Const Offered As Boolean = False
+    Public Const Offered As Boolean = True
 
     ''' <summary>The decision, with the build's answer passed in so a test can exercise both.</summary>
     Public Function ShouldOffer(status As WorkerStatus, offeredByBuild As Boolean) As Boolean

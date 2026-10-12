@@ -10,6 +10,40 @@ Imports Xunit
 ''' server's public endpoint and the kept ids - and, when nothing, why not. No I/O, no clock.
 ''' </summary>
 Public Class ExchangePublishPlanTests
+    <Fact>
+    Public Sub Protected_and_public_roots_publish_only_with_verified_worker_enforcement()
+        Dim worker As WorkerStatus = Status("Public", "Private")
+        Dim input As ExchangePublishInputs = Inputs(worker)
+        input.HasPin = Function(host) host.EndsWith("Private", StringComparison.Ordinal)
+        Assert.Equal(ExchangePublishBlock.PinLocked, ExchangePublishPlan.Build(input).Block)
+        worker.ResourcePinSupported = True
+        Assert.Equal(ExchangePublishBlock.PinLocked, ExchangePublishPlan.Build(input).Block)
+        worker.Roots(1).pinProtected = True
+        Dim plan As ExchangePublishPlan = ExchangePublishPlan.Build(input)
+        Assert.Equal(ExchangePublishBlock.None, plan.Block)
+        Assert.Equal(2, plan.Shares.Count)
+        Assert.False(plan.Shares(0).PinProtected)
+        Assert.True(plan.Shares(1).PinProtected)
+        Dim json As String = Nothing
+        Dim share As ExchangePlannedShare = plan.Shares(1)
+        Assert.True(ExchangeResourceRecordBuilder.TryBuild(share.ResourceId, Device, share.Name, share.AccessJson, "", Nothing, DateTime.UtcNow, json, share.PinProtected))
+        Assert.Contains("""protection"":{""scheme"":""pin-v1""}", json)
+        Assert.DoesNotContain("accessPin", json)
+    End Sub
+
+    <Fact>
+    Public Sub Adding_original_PIN_revokes_the_previous_outsider_link()
+        Dim worker As WorkerStatus = Status("Photos")
+        worker.ResourcePinSupported = True
+        worker.Roots(0).pinProtected = True
+        Dim oldEntry As New ExchangeProducerEntry("EBESExQVFhcYGRobHB0eHw", "q3Vb7YtK0xP2mN9sLfR4wA")
+        Dim state As ExchangeProducerState = ExchangeProducerState.Empty.WithEntry("Photos", oldEntry)
+        Dim plan As ExchangePublishPlan = ExchangePublishPlan.Build(Inputs(worker, state:=state))
+        Assert.Equal(oldEntry.ResourceId, plan.Shares(0).ResourceId)
+        Assert.Equal("", plan.Shares(0).ShareId)
+        Assert.Equal("", plan.State.Get("Photos").ShareId)
+        Assert.Equal("", ReadCode(plan.Shares(0).AccessJson, "Photos").ShareId)
+    End Sub
 
     Private Const Fp As String = "SHA256:8f6TQvCbXjDMOyu4A9JzKcWlEHmR5pNsGgVaU2wYqhk"
     Private Const Device As String = "AAECAwQFBgcICQoLDA0ODw"

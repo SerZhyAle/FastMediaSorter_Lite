@@ -3,7 +3,7 @@ Option Strict On
 Partial Public NotInheritable Class Localization
 
     ''' <summary>
-    ''' Strings for StreamsPlayer Broadcast resource entry points (016_SPECIFICATION_STREAMSPLAYER_BROADCAST_RESOURCE.md).
+    ''' Strings for StreamsPlayer Broadcast resource entry points (196_SPECIFICATION_STREAMSPLAYER_BROADCAST_RESOURCE.md).
     ''' </summary>
     Private Shared Sub AddBroadcastStrings()
 

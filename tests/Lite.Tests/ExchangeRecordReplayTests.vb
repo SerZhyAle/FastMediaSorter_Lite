@@ -1,4 +1,4 @@
-#If Not NETFRAMEWORK Then
+﻿#If Not NETFRAMEWORK Then
 Option Explicit On
 Option Strict On
 Option Infer On
@@ -14,7 +14,7 @@ Imports Xunit
 Imports FastMediaSorterCompanion
 #End If
 
-' DEVICE-EXCHANGE 6, ticket 178: replay the Go server's listed records with the independent VB reader.
+' DEVICE-EXCHANGE 6, ticket 205: replay the Go server's listed records with the independent VB reader.
 ' Refusal cases describe server admission, not reader validation; those are proved by the generator/probe.
 Public Class ExchangeRecordReplayTests
 
@@ -33,7 +33,7 @@ Public Class ExchangeRecordReplayTests
         Dim provenance As String = File.ReadAllText(Path.Combine(CorpusDirectory(), "PROVENANCE.txt"))
         Assert.Equal(File.ReadAllBytes(Path.Combine(root, "exchange-server", "testdata", "vectors", "PROVENANCE.txt")),
                      File.ReadAllBytes(Path.Combine(CorpusDirectory(), "PROVENANCE.txt")))
-        For Each name As String In {"frames-v2.json", "records-v1.json", "connection-string-v1.json"}
+        For Each name As String In {"frames-v2.json", "records-v1.json", "connection-string-v1.json", "protection-v1.json"}
             Dim bytes As Byte() = File.ReadAllBytes(Path.Combine(CorpusDirectory(), name))
             Assert.Equal(File.ReadAllBytes(Path.Combine(root, "exchange-server", "testdata", "vectors", name)), bytes)
             Assert.Matches("(?m)^\s*" & System.Text.RegularExpressions.Regex.Escape(name) & "\s+" & Hash(bytes) & "\s*$", provenance)
@@ -41,6 +41,32 @@ Public Class ExchangeRecordReplayTests
             changed(0) = changed(0) Xor CByte(1)
             Assert.DoesNotContain(Hash(changed), provenance)
         Next
+    End Sub
+
+    <Fact>
+    Public Sub Protected_resource_vectors_preserve_the_lock_and_the_per_client_access_gate()
+        Dim seen As Integer = 0
+        Using corpus As JsonDocument = JsonDocument.Parse(File.ReadAllText(Path.Combine(CorpusDirectory(), "protection-v1.json")))
+            For Each transcript As JsonElement In corpus.RootElement.GetProperty("transcripts").EnumerateArray()
+                For Each stepValue As JsonElement In transcript.GetProperty("steps").EnumerateArray()
+                    Dim jsonValue As JsonElement
+                    If Not stepValue.TryGetProperty("json", jsonValue) Then Continue For
+                    Using frame As JsonDocument = JsonDocument.Parse(jsonValue.GetString())
+                        Dim root As JsonElement = frame.RootElement
+                        If root.GetProperty("type").GetString() <> "directory" Then Continue For
+                        For Each raw As JsonElement In root.GetProperty("resources").EnumerateArray()
+                            Dim record As ExchangeResourceRecord = Nothing
+                            Assert.True(ExchangeRecordReader.TryReadResource(raw.GetRawText(), record))
+                            Assert.True(record.IsProtected)
+                            Assert.Equal("pin-v1", record.ProtectionScheme)
+                            Assert.Equal(stepValue.GetProperty("stream").GetString() = "capable", record.HasAccess)
+                            seen += 1
+                        Next
+                    End Using
+                Next
+            Next
+        End Using
+        Assert.Equal(2, seen)
     End Sub
 
     Private Shared Function ReadRaw(kind As String, json As String) As String

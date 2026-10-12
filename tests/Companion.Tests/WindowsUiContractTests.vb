@@ -57,7 +57,7 @@ Public Class WindowsUiContractTests
     End Sub
 
     <Fact>
-    Public Sub Settings_group_changes_preserve_the_user_window_size()
+    Public Sub Revealing_the_menu_items_preserves_the_user_window_size()
         OnUi(Sub()
                  Using window As New Share_Settings_Form()
                      If Environment.GetEnvironmentVariable("FMS_SETTINGS_CAPTURE") IsNot Nothing Then
@@ -66,14 +66,72 @@ Public Class WindowsUiContractTests
                      End If
                      window.Size = New Size(750, 550)
                      Dim before = window.Size
-                     Dim groups = DirectCast(GetType(Share_Settings_Form).GetField("_pageGroups",
-                         BindingFlags.Instance Or BindingFlags.NonPublic).GetValue(window), Dictionary(Of String, List(Of CollapsibleSection)))
-                     Dim section = groups("startup")(0)
-                     section.Expanded = True
+                     Dim flags = BindingFlags.Instance Or BindingFlags.NonPublic
+                     Dim expand = GetType(Share_Settings_Form).GetMethod("SetSettingsNavExpanded", flags)
+                     expand.Invoke(window, New Object() {"startup", True})
                      Assert.Equal(before, window.Size)
-                     section.Expanded = False
+                     expand.Invoke(window, New Object() {"startup", False})
                      Assert.Equal(before, window.Size)
                  End Using
+             End Sub)
+    End Sub
+
+    <Fact>
+    Public Sub The_left_menu_tree_toggles_items_selects_pages_and_reveals_blocks()
+        OnUi(Sub()
+                 ExchangeTestSupport.Reset()
+                 Dim component = ExchangeTestSupport.MakeFakeComponent(True, False, False)
+                 ExchangeProcess.ExeDirectoryOverride = component
+                 ExchangeProcess.RunOverride = Function(args, input) New ExchangeProcess.RunResult With {.Started = False}
+                 Try
+                     Using window As New Share_Settings_Form()
+                         Dim flags = BindingFlags.Instance Or BindingFlags.NonPublic
+                         ' A fresh context, not whatever this machine last saved: the tree starts
+                         ' from its defaults and the test owns every toggle below.
+                         GetType(Share_Settings_Form).GetField("managerSettingsContext", flags).SetValue(window, New SettingsUiContext())
+                         GetType(Share_Settings_Form).GetMethod("ApplySettingsNavExpansion", flags).Invoke(window, Nothing)
+                         window.Show()
+                         window.ClientSize = New Size(820, 600)
+                         Application.DoEvents()
+                     Dim buttons = DirectCast(GetType(Share_Settings_Form).GetField("_navButtons", flags).GetValue(window), Dictionary(Of String, Button))
+                     Dim items = DirectCast(GetType(Share_Settings_Form).GetField("_navItems", flags).GetValue(window), Dictionary(Of String, List(Of Share_Settings_Form.SettingsNavItemButton)))
+                     Dim pages = DirectCast(GetType(Share_Settings_Form).GetField("_pages", flags).GetValue(window), Dictionary(Of String, Panel))
+                     Dim context = DirectCast(GetType(Share_Settings_Form).GetField("managerSettingsContext", flags).GetValue(window), SettingsUiContext)
+                     ' A page with groups announces itself as an expandable PageTab and starts with its items hidden.
+                     Assert.True(items("startup").Count > 0)
+                     Assert.All(items("startup"), Sub(item) Assert.False(item.Visible))
+                     Assert.True((buttons("startup").AccessibilityObject.State And AccessibleStates.Collapsed) <> 0)
+                     Assert.True(items("exchange").Count = 4, "the exchange page carries its four blocks")
+                     ' The whole row is the toggle (Q210-3): one click selects the page and reveals its items.
+                     buttons("exchange").PerformClick()
+                     Assert.True(items("exchange")(0).Visible)
+                     Assert.True((buttons("exchange").AccessibilityObject.State And AccessibleStates.Expanded) <> 0)
+                     Assert.Equal("exchange", context.LastPageId)
+                     Assert.True(pages("exchange").Visible)
+                     ' Another click folds the items and keeps the page selected.
+                     buttons("exchange").PerformClick()
+                     Assert.All(items("exchange"), Sub(item) Assert.False(item.Visible))
+                     Assert.Equal("exchange", context.LastPageId)
+                     Assert.True((buttons("exchange").AccessibilityObject.State And AccessibleStates.Collapsed) <> 0)
+                     ' A subordinate item selects its page and scrolls its block into view.
+                     buttons("exchange").PerformClick()
+                     items("exchange")(items("exchange").Count - 1).PerformClick()
+                     Application.DoEvents()
+                     Assert.Equal("exchange", context.LastPageId)
+                     Assert.True(pages("exchange").Visible)
+                     Assert.True(pages("exchange").AutoScrollPosition.Y < 0, "the service block scrolled into view")
+                     ' Left/Right fold and unfold the selected page's items.
+                     Dim keyDown = GetType(Share_Settings_Form).GetMethod("OnSettingsNavigationKeyDown", flags)
+                     keyDown.Invoke(window, New Object() {buttons("exchange"), New KeyEventArgs(Keys.Left)})
+                     Assert.All(items("exchange"), Sub(item) Assert.False(item.Visible))
+                     keyDown.Invoke(window, New Object() {buttons("exchange"), New KeyEventArgs(Keys.Right)})
+                     Assert.True(items("exchange")(0).Visible)
+                     window.Hide()
+                 End Using
+                 Finally
+                     ExchangeTestSupport.Reset()
+                     ExchangeTestSupport.DeleteQuietly(component)
+                 End Try
              End Sub)
     End Sub
 
@@ -188,7 +246,7 @@ Public Class WindowsUiContractTests
     <InlineData(1.0F)>
     <InlineData(1.75F)>
     <InlineData(2.0F)>
-    Public Sub Settings_group_changes_retain_bounds_and_complete_within_the_repeat_budget(scale As Single)
+    Public Sub Menu_tree_toggles_retain_bounds_and_complete_within_the_repeat_budget(scale As Single)
         OnUi(Sub()
                  ExchangeTestSupport.Reset()
                  Dim component = ExchangeTestSupport.MakeFakeComponent(True, False, False)
@@ -207,26 +265,24 @@ Public Class WindowsUiContractTests
                          window.Show()
                          ThemeService.Attach(window)
                          Application.DoEvents()
-                         Dim groups = DirectCast(GetType(Share_Settings_Form).GetField("_pageGroups", flags).GetValue(window), Dictionary(Of String, List(Of CollapsibleSection)))
+                         Dim pages = DirectCast(GetType(Share_Settings_Form).GetField("_pages", flags).GetValue(window), Dictionary(Of String, Panel))
                          Dim selectPage = GetType(Share_Settings_Form).GetMethod("SelectSettingsPage", flags)
+                         Dim setExpanded = GetType(Share_Settings_Form).GetMethod("SetSettingsNavExpanded", flags)
                          Dim before = window.Bounds
-                         For Each page In groups
-                             selectPage.Invoke(window, New Object() {page.Key})
+                         For Each pageId In pages.Keys
+                             selectPage.Invoke(window, New Object() {pageId})
                              Application.DoEvents()
-                             For Each group In page.Value
-                                 ' Warm both states before timing repeats, including the expanded server configuration.
-                                 group.Expanded = True
-                                 group.Expanded = False
+                             ' Warm both states before timing repeats.
+                             setExpanded.Invoke(window, New Object() {pageId, True})
+                             setExpanded.Invoke(window, New Object() {pageId, False})
+                             Application.DoEvents()
+                             For Each expanded In {True, False, True, False}
+                                 Dim clock = Diagnostics.Stopwatch.StartNew()
+                                 setExpanded.Invoke(window, New Object() {pageId, expanded})
                                  Application.DoEvents()
-                                 For Each expanded In {True, False, True, False}
-                                     Dim clock = Diagnostics.Stopwatch.StartNew()
-                                     group.Expanded = expanded
-                                     Dim layoutMilliseconds = clock.ElapsedMilliseconds
-                                     Application.DoEvents()
-                                     Assert.True(clock.ElapsedMilliseconds < 150,
-                                         group.Key & " at scale " & scale.ToString() & ": " & clock.ElapsedMilliseconds.ToString() & " ms (layout " & layoutMilliseconds.ToString() & " ms)")
-                                     Assert.Equal(before, window.Bounds)
-                                 Next
+                                 Assert.True(clock.ElapsedMilliseconds < 150,
+                                     pageId & " at scale " & scale.ToString() & ": " & clock.ElapsedMilliseconds.ToString() & " ms")
+                                 Assert.Equal(before, window.Bounds)
                              Next
                          Next
                          window.Hide()
@@ -281,8 +337,6 @@ Public Class WindowsUiContractTests
                          GetType(Share_Settings_Form).GetField("_hostingLoaded", flags).SetValue(window, True)
                          window.Show()
                          GetType(Share_Settings_Form).GetMethod("SelectSettingsPage", flags).Invoke(window, New Object() {"exchange"})
-                         Dim groups = DirectCast(GetType(Share_Settings_Form).GetField("_pageGroups", flags).GetValue(window), Dictionary(Of String, List(Of CollapsibleSection)))
-                         groups("exchange")(0).Expanded = True
                          Dim previousContext = SynchronizationContext.Current
                          Dim refresh As Threading.Tasks.Task
                          Try
@@ -319,7 +373,7 @@ Public Class WindowsUiContractTests
     <Theory>
     <InlineData(640)>
     <InlineData(820)>
-    Public Sub Every_expanded_group_contains_its_editors_after_resize_and_server_state_changes(width As Integer)
+    Public Sub Every_page_contains_its_editors_after_resize_and_server_state_changes(width As Integer)
         OnUi(Sub()
                  ExchangeTestSupport.Reset()
                  Dim component = ExchangeTestSupport.MakeFakeComponent(True, False, False)
@@ -335,7 +389,7 @@ Public Class WindowsUiContractTests
                          GetType(Share_Settings_Form).GetMethod("SelectSettingsPage", flags).Invoke(window, New Object() {"startup"})
                          window.Show()
                          window.ClientSize = New Size(window.LogicalToDeviceUnits(width), window.LogicalToDeviceUnits(480))
-                         Dim groups = DirectCast(GetType(Share_Settings_Form).GetField("_pageGroups", flags).GetValue(window), Dictionary(Of String, List(Of CollapsibleSection)))
+                         Dim pages = DirectCast(GetType(Share_Settings_Form).GetField("_pages", flags).GetValue(window), Dictionary(Of String, Panel))
                          Dim selectPage = GetType(Share_Settings_Form).GetMethod("SelectSettingsPage", flags)
                          For Each state As Integer In {2, 0, 1, 3}
                              Dim snapshot As New ExchangeSnapshot With {.ServiceExists = state = 2,
@@ -346,34 +400,28 @@ Public Class WindowsUiContractTests
                                      .CertPresent = state <> 0, .Fingerprint = If(state = 0, "", "SHA256:abc"),
                                      .Listen = ":22022", .PortRange = "40000-40100", .PublicEndpoint = "203.0.113.7:22022"}}
                              GetType(Share_Settings_Form).GetMethod("ApplyExchangeState", flags).Invoke(window, New Object() {snapshot})
-                             For Each page In groups
-                                 selectPage.Invoke(window, New Object() {page.Key})
-                                 If page.Key = "exchange" AndAlso state = 1 Then
+                             For Each pageId In pages.Keys
+                                 selectPage.Invoke(window, New Object() {pageId})
+                                 If pageId = "exchange" AndAlso state = 1 Then
                                      DirectCast(GetType(Share_Settings_Form).GetField("_txtXEndpoint", flags).GetValue(window), TextBox).Text = "203.0.113.9:22023"
                                      DirectCast(GetType(Share_Settings_Form).GetField("numXRangeHigh", flags).GetValue(window), NumericUpDown).Value = 40101
                                      DirectCast(GetType(Share_Settings_Form).GetField("numXPort", flags).GetValue(window), NumericUpDown).Value = 22023
                                  End If
-                                 For Each group In page.Value
-                                     group.Expanded = False
-                                     group.Expanded = True
-                                 Next
                                  Application.DoEvents()
-                                 If page.Key = "exchange" AndAlso state = 1 Then
+                                 If pageId = "exchange" AndAlso state = 1 Then
                                      For Each name In {"_btnXApplyEndpoint", "_btnXApplyRange", "_btnXApplyPort"}
                                          Assert.True(DirectCast(GetType(Share_Settings_Form).GetField(name, flags).GetValue(window), Button).Visible, name)
                                      Next
                                  End If
-                                 For Each group In page.Value
-                                     If Not group.Visible Then Continue For
-                                     Assert.True(group.Height >= group.PreferredSize.Height, group.Key & ": stale expanded height")
-                                     For Each control In ControlsBelow(group).Where(Function(c) c.Visible AndAlso
-                                         (TypeOf c Is ManagerSettingRow OrElse TypeOf c Is FlowLayoutPanel OrElse
-                                          TypeOf c Is Button OrElse TypeOf c Is TextBox OrElse TypeOf c Is NumericUpDown OrElse TypeOf c Is ListView))
-                                         Assert.True(control.Left >= 0 AndAlso control.Right <= control.Parent.ClientSize.Width + 1,
-                                             page.Key & "/" & control.Name & ": horizontal clipping " & control.Bounds.ToString() & " in " & control.Parent.ClientSize.ToString())
-                                         Assert.True(control.Top >= 0 AndAlso control.Bottom <= control.Parent.ClientSize.Height + 1,
-                                             page.Key & "/" & control.Name & ": vertical clipping " & control.Bounds.ToString() & " in " & control.Parent.ClientSize.ToString())
-                                     Next
+                                 ' Nothing folds any more (210): every editor of the page is on
+                                 ' show and must sit inside its parent's layout box.
+                                 For Each control In ControlsBelow(pages(pageId)).Where(Function(c) c.Visible AndAlso
+                                     (TypeOf c Is ManagerSettingRow OrElse TypeOf c Is FlowLayoutPanel OrElse
+                                      TypeOf c Is Button OrElse TypeOf c Is TextBox OrElse TypeOf c Is NumericUpDown OrElse TypeOf c Is ListView))
+                                     Assert.True(control.Left >= 0 AndAlso control.Right <= control.Parent.ClientSize.Width + 1,
+                                         pageId & "/" & control.Name & ": horizontal clipping " & control.Bounds.ToString() & " in " & control.Parent.ClientSize.ToString())
+                                     Assert.True(control.Top >= 0 AndAlso control.Bottom <= control.Parent.ClientSize.Height + 1,
+                                         pageId & "/" & control.Name & ": vertical clipping " & control.Bounds.ToString() & " in " & control.Parent.ClientSize.ToString())
                                  Next
                                  For Each row In ControlsBelow(window).OfType(Of ManagerSettingRow)().Where(Function(c) c.Visible)
                                      Assert.True(row.Hint.Height >= row.Hint.GetPreferredSize(New Size(row.Hint.Width, 0)).Height, row.Caption.Text)
@@ -417,10 +465,17 @@ Public Class WindowsUiContractTests
                          GetType(Share_Settings_Form).GetMethod("SelectSettingsPage", flags).Invoke(window, New Object() {"startup"})
                          Application.DoEvents()
                          Dim buttons = DirectCast(GetType(Share_Settings_Form).GetField("_navButtons", flags).GetValue(window), Dictionary(Of String, Button))
+                         Dim items = DirectCast(GetType(Share_Settings_Form).GetField("_navItems", flags).GetValue(window), Dictionary(Of String, List(Of Share_Settings_Form.SettingsNavItemButton)))
                          For Each button In buttons.Values
                              Dim needed = TextRenderer.MeasureText(button.Text, button.Font,
                                  New Size(button.Width - window.LogicalToDeviceUnits(52), Integer.MaxValue), TextFormatFlags.WordBreak).Height
                              Assert.True(button.Height >= needed + window.LogicalToDeviceUnits(16), code & ": " & button.Text)
+                         Next
+                         For Each row In items.Values.SelectMany(Function(list) list)
+                             Dim indent = window.LogicalToDeviceUnits(46)
+                             Dim needed = TextRenderer.MeasureText(row.Text, row.Font,
+                                 New Size(row.Width - indent - window.LogicalToDeviceUnits(12), Integer.MaxValue), TextFormatFlags.WordBreak).Height
+                             Assert.True(row.Height >= needed + window.LogicalToDeviceUnits(16), code & ": " & row.Text)
                          Next
                          For Each row In ControlsBelow(window).OfType(Of ManagerSettingRow)().Where(Function(item) item.Visible)
                              Assert.True(row.Hint.Height >= row.Hint.GetPreferredSize(New Size(row.Hint.Width, 0)).Height, code & ": " & row.Caption.Text)

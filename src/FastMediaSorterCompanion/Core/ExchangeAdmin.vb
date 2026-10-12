@@ -22,6 +22,8 @@ Friend NotInheritable Class ExchangeAdminCodes
     Friend Const BadLogin As String = "bad-login"
     Friend Const WeakPassword As String = "weak-password"
     Friend Const NotFound As String = "not-found"
+    ''' <summary>The account is at its limit of outstanding pairing codes.</summary>
+    Friend Const Capacity As String = "capacity"
     Friend Const Internal As String = "internal"
     ''' <summary>Ours: neither the admin pipe nor the binary's offline path could be used.</summary>
     Friend Const NotReached As String = "not-reached"
@@ -35,7 +37,8 @@ Friend Enum ExchangeAdminRoute
     Offline
 End Enum
 
-''' <summary>One answer of the admin channel. It never holds a secret: the server returns none.</summary>
+''' <summary>One answer of the admin channel. It holds no stored secret: no password, token or hash. The one exception is the
+''' data of a <c>device.pairing-code</c> answer, a single-use code of ten minutes the caller reads once and drops.</summary>
 Friend NotInheritable Class ExchangeAdminReply
     Public Property Ok As Boolean
     Public Property Code As String = ""
@@ -61,6 +64,9 @@ Friend NotInheritable Class ExchangeAdminRequest
     Friend Const OpDeviceList As String = "device.list"
     Friend Const OpDeviceRevoke As String = "device.revoke"
     Friend Const OpStatus As String = "status"
+    ''' <summary>A single-use pairing code of an account, so this PC can enroll as a device of it without the password (the local
+    ''' join). Only the running server's pipe answers it: a code lives in the memory of that server.</summary>
+    Friend Const OpDevicePairingCode As String = "device.pairing-code"
 
     ''' <summary>The channel's bound on one request (<c>admin.MaxRequest</c>).</summary>
     Friend Const MaxBytes As Integer = 4096
@@ -149,6 +155,20 @@ Friend NotInheritable Class ExchangeAdminParser
                 .LastSeen = Str(el, "lastSeen"), .Online = Bool(el, "online")})
         Next
         Return list
+    End Function
+
+    ''' <summary>The code of a <c>device.pairing-code</c> answer: "" when the text is not one. It is a secret for ten minutes;
+    ''' the caller uses it once and drops it.</summary>
+    Friend Shared Function PairingCode(dataJson As String) As String
+        If String.IsNullOrWhiteSpace(dataJson) Then Return ""
+        Try
+            Using doc As JsonDocument = JsonDocument.Parse(dataJson)
+                If doc.RootElement.ValueKind <> JsonValueKind.Object Then Return ""
+                Return Str(doc.RootElement, "code")
+            End Using
+        Catch ex As JsonException
+            Return ""
+        End Try
     End Function
 
     Friend Shared Function Status(dataJson As String) As ExchangeAdminStatus
@@ -269,12 +289,59 @@ Friend Module ExchangeAdmin
         Return PipePrefix & Convert.ToHexString(sum, 0, 4).ToLowerInvariant()
     End Function
 
+    ''' <summary>Pure: the value of <c>--config</c> in a service command line, quoted or not, or "" when it has none.</summary>
+    Friend Function ConfigPathOf(image As String) As String
+        If String.IsNullOrEmpty(image) Then Return ""
+        Dim at As Integer = image.IndexOf("--config", StringComparison.OrdinalIgnoreCase)
+        If at < 0 Then Return ""
+        Dim rest As String = image.Substring(at + "--config".Length)
+        If rest.StartsWith("=", StringComparison.Ordinal) Then rest = rest.Substring(1)
+        rest = rest.TrimStart()
+        If rest.Length = 0 Then Return ""
+        If rest(0) = """"c Then
+            Dim close As Integer = rest.IndexOf(""""c, 1)
+            Return If(close < 0, "", rest.Substring(1, close - 1))
+        End If
+        Dim space As Integer = rest.IndexOf(" "c)
+        Return If(space < 0, rest, rest.Substring(0, space))
+    End Function
+
+    ''' <summary>The data directory of OUR registered service - the directory of its <c>--config</c> (the binary's own
+    ''' rule), else the machine store - or "" when no service of ours is registered.</summary>
+    Friend Function ServiceDataDir() As String
+        Try
+            Dim image As String = ExchangeService.RegisteredImagePath()
+            If Not ExchangeService.IsOurImagePath(image) Then Return ""
+            Dim config As String = ConfigPathOf(image)
+            If config.Length > 0 Then
+                Dim dir As String = Path.GetDirectoryName(Path.GetFullPath(config))
+                If Not String.IsNullOrEmpty(dir) Then Return dir
+            End If
+            Return ExchangeService.MachineDataDir()
+        Catch
+            Return ""
+        End Try
+    End Function
+
     ' --- one request ---------------------------------------------------------------------------
 
     ''' <summary>Sends one request: through the running server's pipe when there is one, else through the binary's
     ''' offline path. Blocks no thread of the UI: the caller awaits it.</summary>
     Friend Async Function SendAsync(request As ExchangeAdminRequest, ct As CancellationToken) As Task(Of ExchangeAdminReply)
-        Dim name As String = If(String.IsNullOrEmpty(PipeNameOverride), Await Task.Run(Function() PipeNameFor(ExchangeProcess.DataDir())).ConfigureAwait(False), PipeNameOverride)
+        ' While our service is registered its store is the only one that counts, and it is addressed by the service's
+        ' own data directory. ExchangeProcess.DataDir() cannot say so: it asks the binary as THIS user, who has no
+        ' right to open the service's directory, so the binary falls back to the per-user store - and the pipe name
+        ' of that store has no server behind it. The offline path then "succeeded" against a store nothing serves:
+        ' a password reset that the screen confirmed and the server never saw (the test host, 2026-10-12).
+        Dim serviceDir As String = If(String.IsNullOrEmpty(PipeNameOverride), Await Task.Run(Function() ServiceDataDir()).ConfigureAwait(False), "")
+        Dim name As String
+        If Not String.IsNullOrEmpty(PipeNameOverride) Then
+            name = PipeNameOverride
+        ElseIf serviceDir.Length > 0 Then
+            name = PipeNameFor(serviceDir)
+        Else
+            name = Await Task.Run(Function() PipeNameFor(ExchangeProcess.DataDir())).ConfigureAwait(False)
+        End If
         If name.Length > 0 Then
             Dim viaPipe As ExchangeAdminReply = Await SendViaPipeAsync(name, request, ct).ConfigureAwait(False)
             If viaPipe IsNot Nothing Then
@@ -283,6 +350,12 @@ Friend Module ExchangeAdmin
             End If
         End If
         ct.ThrowIfCancellationRequested()
+        If serviceDir.Length > 0 Then
+            ' The service is registered but its pipe is not answering (stopped, starting). The offline path would edit
+            ' another store, or none: this user cannot write the service's directory. Say "not reached" instead.
+            AppFileLogger.WriteLine("Exchange admin: " & request.Op & " - not reached (the service's admin pipe did not answer)")
+            Return ExchangeAdminReply.Failure(ExchangeAdminCodes.NotReached, ExchangeAdminRoute.NotReached)
+        End If
         Dim offline As ExchangeAdminReply = Await Task.Run(Function() SendOffline(request)).ConfigureAwait(False)
         AppFileLogger.WriteLine("Exchange admin: " & request.Op & " - " & If(offline.Ok, "ok", offline.Code) & " (offline)")
         Return offline
@@ -361,6 +434,9 @@ Friend Module ExchangeAdmin
                 args = {"device", "revoke", "--", request.Login, request.DeviceId}
             Case ExchangeAdminRequest.OpStatus
                 Return OfflineStatus()
+            Case ExchangeAdminRequest.OpDevicePairingCode
+                ' a code exists only in the memory of a running server: the offline verbs have no such thing to give
+                Return ExchangeAdminReply.Failure(ExchangeAdminCodes.NotReached, ExchangeAdminRoute.NotReached)
             Case Else
                 Return ExchangeAdminReply.Failure(ExchangeAdminCodes.BadRequest, ExchangeAdminRoute.Offline)
         End Select
@@ -419,6 +495,12 @@ Friend Module ExchangeAdmin
 
     Friend Function ResetPasswordAsync(login As String, password As String, signOutEveryDevice As Boolean, ct As CancellationToken) As Task(Of ExchangeAdminReply)
         Return SendAsync(New ExchangeAdminRequest(ExchangeAdminRequest.OpAccountPasswd, login, password, signOut:=signOutEveryDevice), ct)
+    End Function
+
+    ''' <summary>A single-use pairing code of an account from the running server. The reply's data holds the code for ten minutes:
+    ''' read it with <see cref="ExchangeAdminParser.PairingCode"/> and drop it.</summary>
+    Friend Function PairingCodeAsync(login As String, ct As CancellationToken) As Task(Of ExchangeAdminReply)
+        Return SendAsync(New ExchangeAdminRequest(ExchangeAdminRequest.OpDevicePairingCode, login), ct)
     End Function
 
     Friend Function RemoveAccountAsync(login As String, ct As CancellationToken) As Task(Of ExchangeAdminReply)

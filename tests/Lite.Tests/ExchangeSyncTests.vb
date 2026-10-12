@@ -115,6 +115,93 @@ Public Class ExchangeSyncTests
 
     ' --- attach ---
 
+    <Theory>
+    <InlineData("online", True, "pin-v1", "SignInAgain")>
+    <InlineData("offline", True, "pin-v1", "NoAccess")>
+    <InlineData("online", False, "", "NoAccess")>
+    <InlineData("online", True, "future", "Unusable")>
+    Public Async Function Missing_access_distinguishes_an_older_pin_enrollment_from_an_offline_producer(presence As String, isProtected As Boolean,
+                                                                                                     scheme As String, expected As String) As Task
+        Dim api As New FakeApi()
+        api.Access(Rid) = NoAccess()
+        Dim reg As New Registry()
+        Dim record As New ExchangeResourceRecord("{}", Rid, Did, "sftp-share", "Downloads", presence, "", isProtected, scheme)
+        Dim outcome As ExchangeAttachOutcome = Await reg.Sync(api).AttachAsync(record, "W25", CancellationToken.None, "1234")
+        Assert.Equal(expected, outcome.ToString())
+        Assert.Equal(0, reg.Commits)
+        If expected = "SignInAgain" OrElse expected = "Unusable" Then Assert.Empty(api.AccessAsked)
+    End Function
+
+    Private NotInheritable Class RefusingDialer
+        Implements IEndpointDialer
+
+        Friend Failure As ResourceFailure
+        Friend Calls As Integer
+
+        Public Function DialAsync(endpoint As FmsEndpoint, ct As CancellationToken) As Task(Of DialResult) Implements IEndpointDialer.DialAsync
+            Calls += 1
+            Return Task.FromResult(DialResult.Failed(Failure))
+        End Function
+    End Class
+
+    Private NotInheritable Class UnavailableTunnel
+        Implements IExchangeTunnelSource
+
+        Friend Calls As Integer
+
+        Public Function OpenAsync(ct As CancellationToken) As Task(Of ExchangeTunnelOpen) Implements IExchangeTunnelSource.OpenAsync
+            Calls += 1
+            Return Task.FromResult(ExchangeTunnelOpen.Failed(ExchangeTunnelFailure.Unavailable))
+        End Function
+    End Class
+
+    <Fact>
+    Public Async Function Protected_attachment_tries_the_account_tunnel_when_direct_access_fails() As Task
+        Dim api As New FakeApi()
+        api.Access(Rid) = AccessResult()
+        Dim reg As New Registry()
+        Dim dialer As New RefusingDialer With {.Failure = New ResourceFailure(ResourceFailureKind.Transport)}
+        Dim tunnel As New UnavailableTunnel()
+        Dim sourceResource As ResourceDescriptor = Nothing
+        Dim sync As New ExchangeSync(api, AddressOf reg.Load, AddressOf reg.Commit, AddressOf reg.ReadPassword, AddressOf reg.NewId,
+            "entry:test", dialer, Function(d)
+                                      sourceResource = d
+                                      Return tunnel
+                                  End Function)
+        Dim record As New ExchangeResourceRecord("{}", Rid, Did, "sftp-share", "Camera", "online", api.Access(Rid).AccessJson, True, "pin-v1")
+        Dim failure As ResourceFailure = Nothing
+        Dim outcome As ExchangeAttachOutcome = Await sync.AttachAsync(record, "Home PC", CancellationToken.None, "1234", Sub(f) failure = f)
+        Assert.Equal(ExchangeAttachOutcome.ConnectionFailed, outcome)
+        Assert.Equal(1, tunnel.Calls)
+        Assert.True(dialer.Calls > 0)
+        Assert.Equal("entry:test", sourceResource.ExchangeEntryId)
+        Assert.Equal(Rid, sourceResource.ExchangeResourceId)
+        Assert.True(sourceResource.PinRequired)
+        Assert.Equal(ResourceFailureKind.Transport, failure.Kind)
+        Assert.Equal(0, reg.Commits)
+        Assert.Null(ResourcePinMemory.GetPin(sourceResource))
+    End Function
+
+    <Theory>
+    <InlineData(ResourceFailureKind.Auth)>
+    <InlineData(ResourceFailureKind.Timeout)>
+    <InlineData(ResourceFailureKind.KeyMismatch)>
+    Public Async Function Protected_attachment_reports_the_connection_failure_without_claiming_offline(kindValue As Integer) As Task
+        Dim kind As ResourceFailureKind = CType(kindValue, ResourceFailureKind)
+        Dim api As New FakeApi()
+        api.Access(Rid) = AccessResult()
+        Dim reg As New Registry()
+        Dim dialer As New RefusingDialer With {.Failure = New ResourceFailure(kind)}
+        Dim sync As New ExchangeSync(api, AddressOf reg.Load, AddressOf reg.Commit, AddressOf reg.ReadPassword, AddressOf reg.NewId,
+            dialer:=dialer, tunnelSource:=Function(d) Nothing)
+        Dim record As New ExchangeResourceRecord("{}", Rid, Did, "sftp-share", "Camera", "online", api.Access(Rid).AccessJson, True, "pin-v1")
+        Dim failure As ResourceFailure = Nothing
+        Dim outcome As ExchangeAttachOutcome = Await sync.AttachAsync(record, "Home PC", CancellationToken.None, "1234", Sub(f) failure = f)
+        Assert.Equal(ExchangeAttachOutcome.ConnectionFailed, outcome)
+        Assert.Equal(kind, failure.Kind)
+        Assert.Equal(0, reg.Commits)
+    End Function
+
     <Fact>
     Public Async Function Ticking_a_resource_asks_the_agent_for_its_access_and_stores_it_with_the_password_beside() As Task
         Dim api As New FakeApi()

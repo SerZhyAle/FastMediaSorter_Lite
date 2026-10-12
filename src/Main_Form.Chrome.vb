@@ -53,15 +53,22 @@ Partial Public Class Main_Form
         Return True
     End Function
 
-    ''' <summary>The five persisted pin switches as one value (see <see cref="ChromeAutoHide"/>).</summary>
+    ''' <summary>The floating panel that carries the window commands the removed native caption
+    ''' used to hold (188). Its window name is an explicit case in the pin algebra, never the fallback.</summary>
+    Private Const Window_Controls_Panel_Name As String = "chrome_WindowControls"
+
+    ''' <summary>The persisted pin switches as one value (see <see cref="ChromeAutoHide"/>). Without
+    ''' a preferences object the window-controls panel is still pinned: it replaces the native
+    ''' caption, and its default pin is True (188 §4).</summary>
     Private Function ChromePinSnapshot() As ChromeAutoHide.ChromePinState
-        If modern_Preferences Is Nothing Then Return New ChromeAutoHide.ChromePinState()
+        If modern_Preferences Is Nothing Then Return New ChromeAutoHide.ChromePinState With {.WindowControlsPinned = True}
         Return New ChromeAutoHide.ChromePinState With {
             .GlobalPinned = modern_Preferences.ChromePinned,
             .Row1Pinned = modern_Preferences.ChromeRow1Pinned,
             .Row2Pinned = modern_Preferences.ChromeRow2Pinned,
             .StatusPinned = modern_Preferences.ChromeStatusPinned,
-            .OverlayPinned = modern_Preferences.RecipientsOverlayPinned}
+            .OverlayPinned = modern_Preferences.RecipientsOverlayPinned,
+            .WindowControlsPinned = modern_Preferences.ChromeWindowControlsPinned}
     End Function
 
     ''' <summary>Whether this panel stays up: pinned for all, or pinned on its own.</summary>
@@ -100,6 +107,7 @@ Partial Public Class Main_Form
         modern_Preferences.ChromeRow2Pinned = updated.Row2Pinned
         modern_Preferences.ChromeStatusPinned = updated.StatusPinned
         modern_Preferences.RecipientsOverlayPinned = updated.OverlayPinned
+        modern_Preferences.ChromeWindowControlsPinned = updated.WindowControlsPinned
     End Sub
 
     ''' <summary>The recipients overlay's own pin button (2026-10-04 revision of 117 Ф-2). The same
@@ -168,7 +176,103 @@ Partial Public Class Main_Form
         row2.Add(btn_Image_Menu)
         BuildChromeRow("chrome_Row2", row2)
         BuildChromeRow("chrome_Status", New Control() {lbl_Current_File, lbl_Status})
+        BuildWindowControlsPanel()
         TrackChromeGeometry()
+    End Sub
+
+    ''' <summary>The floating panel of the window commands the removed native caption used to hold
+    ''' (188): pin, Minimize, Maximize / Restore and Close, in physical order with Close rightmost.
+    ''' It rides the shared chrome cycle like the other panels - its own persisted pin, its own local
+    ''' reveal zone, the F10 ring reaches it after the status strip - but carries no legacy carrier:
+    ''' the actions drive the window directly, and its drag grip runs the native move loop.</summary>
+    Private Sub BuildWindowControlsPanel()
+        Dim panel As New ChromePanel(Window_Controls_Panel_Name)
+        chrome_Panels.Add(panel)
+        panel.Host.Owner = Me
+        AdmitLowerIntegrityMessages(panel.Host)
+
+        Dim items As New List(Of ChromeItem)()
+        ' The drag grip (2026-10-12 owner revision): one button-sized EMPTY slot right after the
+        ' pin - no hover fill, no tooltip, no action; a press on it runs the native move loop,
+        ' a double click toggles maximize. The three window commands keep the corner.
+        Dim grip As New ChromeItem("win_Grip", ChromeItemKind.Text) With {
+            .IsMoveGrip = True,
+            .AccessibleName = Localization.T("Перетащить окно")}
+        items.Add(grip)
+
+        Dim minimize As New ChromeItem("win_Minimize", ChromeItemKind.Button) With {
+            .CustomGlyph = ChromeCustomGlyph.WindowMinimize,
+            .AccessibleName = Localization.T("Свернуть окно"),
+            .Tooltip = Localization.T("Свернуть окно"),
+            .Action = AddressOf ChromeMinimizeViewer}
+        items.Add(minimize)
+
+        Dim maximize As New ChromeItem("win_Maximize", ChromeItemKind.Button) With {
+            .CustomGlyph = ChromeCustomGlyph.WindowMaximize,
+            .Action = AddressOf ChromeToggleMaximized}
+        items.Add(maximize)
+
+        Dim closeItem As New ChromeItem("win_Close", ChromeItemKind.Button) With {
+            .CustomGlyph = ChromeCustomGlyph.WindowClose,
+            .AccessibleName = Localization.T("Закрыть окно"),
+            .Action = AddressOf ChromeCloseViewer}
+        items.Add(closeItem)
+
+        panel.Host.Surface.PinAtStart = True
+        panel.Host.Surface.ExtraPadding = ChromeMetrics.WindowControlsExtraPadding
+        panel.Pin.Action = Sub() ChromeTogglePin(panel)
+        SyncChromePin(panel)
+        panel.Host.Surface.PinItem = panel.Pin
+        panel.Host.Surface.SetItems(items)
+        AddHandler panel.Host.Surface.ItemInvoked, AddressOf Chrome_ItemInvoked
+        AddHandler panel.Host.Surface.MouseWheel, Sub(sender, args) MouseUse(args)
+        AddHandler panel.Host.Surface.MoveGripPress, Sub(sender, args) ChromeBeginWindowDrag()
+        AddHandler panel.Host.Surface.MoveGripDoubleClick, Sub(sender, args) ChromeToggleMaximized()
+        ChromeSyncWindowControlsItems(panel)
+        ' For the file-drop surfaces the panel floats over the picture like any other (124 UX-212).
+        For Each target As Control In New Control() {panel.Host, panel.Host.Surface}
+            target.AllowDrop = True
+            AddHandler target.DragEnter, AddressOf Form1_DragEnter
+            AddHandler target.DragDrop, AddressOf Form1_DragDrop
+        Next
+    End Sub
+
+    ''' <summary>The Maximize / Restore button's state follows the window, not the button: glyph,
+    ''' words, tooltip and the full-screen disable (188 §6) are re-read on every tick and after
+    ''' every command, so a snap shortcut or the system menu update it within one idle poll.</summary>
+    Private Sub ChromeSyncWindowControlsItems(p As ChromePanel)
+        Dim maximized As Boolean = WindowState = FormWindowState.Maximized
+        Dim fullscreen As Boolean = is_Full_Screen_Mode
+        Dim maximizeItem As ChromeItem = Nothing
+        For Each candidate As ChromeItem In p.Host.Surface.Items
+            If candidate.Id = "win_Maximize" Then maximizeItem = candidate
+        Next
+        If maximizeItem Is Nothing Then Return
+        Dim caption As String = If(maximized, Localization.T("Восстановить окно"), Localization.T("Развернуть окно"))
+        Dim tooltip As String = If(fullscreen, Localization.T("Окно раскрыто на весь экран. Выйдите клавишей F7 или Esc."), caption)
+        Dim glyph As ChromeCustomGlyph = If(maximized, ChromeCustomGlyph.WindowRestore, ChromeCustomGlyph.WindowMaximize)
+        If maximizeItem.Enabled = Not fullscreen AndAlso maximizeItem.AccessibleName = caption AndAlso
+           maximizeItem.Tooltip = tooltip AndAlso maximizeItem.CustomGlyph = glyph Then Return
+        maximizeItem.Enabled = Not fullscreen
+        maximizeItem.AccessibleName = caption
+        maximizeItem.Tooltip = tooltip
+        maximizeItem.CustomGlyph = glyph
+        p.Host.Surface.LayoutItems()
+        p.Host.Surface.Invalidate()
+    End Sub
+
+    Private Function ChromeCloseTooltipText() As String
+        Return Localization.TF("Закрыть окно: {0}", ProductNames.WindowTitle)
+    End Function
+
+    Private Sub ChromeMinimizeViewer()
+        Me.WindowState = FormWindowState.Minimized
+    End Sub
+
+    ''' <summary>The existing close lifecycle exactly once (188 §5): Close() runs FormClosing,
+    ''' with its cancellation, persistence and cleanup - no direct termination, no new question.</summary>
+    Private Sub ChromeCloseViewer()
+        Me.Close()
     End Sub
 
     Private Sub BuildChromeRow(name As String, controls As IEnumerable(Of Control))
@@ -277,6 +381,12 @@ Partial Public Class Main_Form
         AddHandler panel.Host.Surface.MouseWheel, Sub(sender, args) MouseUse(args)
         AddHandler panel.Host.Surface.LayoutChanged, Sub() ChromePlacePath()
         AddHandler panel.Host.Surface.OverflowRequested, Sub(sender, args) ChromeShowOverflow(panel)
+        ' Row 1 carries the window-level commands, so a press that misses every control drags the
+        ' viewer, like the caption it stands in for (188 §5, 2026-10-12 owner revision). A double
+        ' click on it toggles nothing: the row's own commands are the point here.
+        If name = "chrome_Row1" Then
+            AddHandler panel.Host.Surface.MoveGripPress, Sub(sender, args) ChromeBeginWindowDrag()
+        End If
     End Sub
 
     Private Sub ChromePlacePath()
@@ -554,10 +664,14 @@ Partial Public Class Main_Form
             p.Host.Text = ChromePanelTitle(p.Name)
             p.Host.AccessibleName = p.Host.Text
             p.Host.SetCornerRadius(UiScale.Px(ChromeCorner(), factor))
-            p.Host.Surface.Configure(chrome_Theme, factor, Localization.IsRightToLeft(), chrome_Text_Font, chrome_Symbol_Font)
+            ' The window-controls panel stays physical: its commands hold one physical order with
+            ' Close rightmost in every language (188 §3.1), and none of its captions is text.
+            Dim rightToLeft As Boolean = Localization.IsRightToLeft() AndAlso p.Name <> Window_Controls_Panel_Name
+            p.Host.Surface.Configure(chrome_Theme, factor, rightToLeft, chrome_Text_Font, chrome_Symbol_Font)
             p.Host.Surface.SetAnimationEnabled(Not ReduceMotionActive())
             p.AppliedOpacity = -1.0R
             SyncChromePin(p)
+            If p.Name = Window_Controls_Panel_Name Then ChromeSyncWindowControlsItems(p)
             For Each pair In p.Legacy
                 SyncChromeItem(pair.Key, pair.Value)
             Next
@@ -576,6 +690,7 @@ Partial Public Class Main_Form
         Select Case panelName
             Case "chrome_Row1" : Return Localization.T("Панель инструментов, строка 1")
             Case "chrome_Row2" : Return Localization.T("Панель инструментов, строка 2")
+            Case Window_Controls_Panel_Name : Return Localization.T("Панель управления окном")
             Case Else : Return Localization.T("Строка состояния")
         End Select
     End Function
@@ -814,7 +929,41 @@ Partial Public Class Main_Form
             top += chrome_Panels(0).Host.Surface.PreferredPanelSize().Height + UiScale.Px(ChromeMetrics.Gap, factor)
         End If
         Dim left As Integer = If(Localization.IsRightToLeft(), media.Right - inset - size.Width, media.Left + inset)
+
+        If p.Name = Window_Controls_Panel_Name Then
+            ' The window commands sit in the PHYSICAL upper-right corner in every language (188 §3.2),
+            ' unclamped: the three commands are always whole (188 §3.7), and the window's minimum
+            ' tracking size guarantees them the room.
+            left = media.Right - inset - size.Width
+            Return New Rectangle(left, top, size.Width, size.Height)
+        End If
+
+        If p.Name = "chrome_Row1" OrElse p.Name = "chrome_Row2" Then
+            ' The top rows share their band with the window-controls panel: capped to the width left
+            ' of it, or wrapped locally below it when their priority core no longer fits (188 §3.5).
+            Dim controls As ChromePanel = ChromeWindowControlsPanel()
+            If controls IsNot Nothing Then
+                Dim controlsSize As Size = controls.Host.Surface.PreferredPanelSize()
+                Dim controlsMedia As New Rectangle(media.Right - inset - controlsSize.Width - media.Left, inset,
+                                                   controlsSize.Width, controlsSize.Height)
+                Dim placement As ChromeLayout.RowBandPlacement = ChromeLayout.PlaceRowBesideCornerPanel(
+                    top - media.Top, size.Height, p.Host.Surface.MinimumRowWidth(), controlsMedia, media.Width,
+                    UiScale.Px(ChromeMetrics.Gap, factor), inset)
+                If placement.MaxWidth < size.Width Then size.Width = placement.MaxWidth
+                top = media.Top + placement.Top
+                left = If(Localization.IsRightToLeft(), media.Right - inset - placement.ReservedWidth - size.Width,
+                          media.Left + inset)
+            End If
+        End If
         Return New Rectangle(left, top, size.Width, size.Height)
+    End Function
+
+    ''' <summary>The window-controls panel of <see cref="Window_Controls_Panel_Name"/>, or Nothing before it is built.</summary>
+    Private Function ChromeWindowControlsPanel() As ChromePanel
+        For Each p As ChromePanel In chrome_Panels
+            If p.Name = Window_Controls_Panel_Name Then Return p
+        Next
+        Return Nothing
     End Function
 
     Private Sub PlaceChromePanels()
@@ -839,13 +988,20 @@ Partial Public Class Main_Form
                 ' Status bar revealed from bottom
                 Dim top As Integer = r.Top - zoneHeight
                 Return New Rectangle(media.Left, Math.Max(media.Top, top), media.Width, Math.Max(0, r.Bottom - top))
+            Case Window_Controls_Panel_Name
+                ' The reveal zone is LOCAL to the panel: its own rectangle grown by the margin, kept
+                ' inside the media (188 §4). It never widens the toolbar rows' band, and visiting it
+                ' does not summon the rows with it.
+                Dim zone As Rectangle = Rectangle.Inflate(r, zoneHeight, zoneHeight)
+                zone.Intersect(media)
+                Return zone
             Case Else
                 ' The top rows are summoned together: the zone is measured from the bottom of the LOWEST of them
                 ' (row 2), for both - from each row's own bottom, row 2 hung alone in the band between the two
-                ' (125 UX-308).
+                ' (125 UX-308). The window-controls panel keeps out of it: its zone is its own corner (188 §4).
                 Dim bottoms As New List(Of Integer)()
                 For Each other As ChromePanel In chrome_Panels
-                    If other.Name <> "chrome_Status" Then bottoms.Add(ChromePanelRect(other).Bottom)
+                    If other.Name <> "chrome_Status" AndAlso other.Name <> Window_Controls_Panel_Name Then bottoms.Add(ChromePanelRect(other).Bottom)
                 Next
                 Dim bottom As Integer = ChromeAutoHide.TopHotZoneBottom(bottoms, zoneHeight)
                 Return New Rectangle(media.Left, media.Top, media.Width, Math.Max(0, bottom - media.Top))
@@ -862,10 +1018,13 @@ Partial Public Class Main_Form
     End Function
 
     ''' <summary>Whether the viewer (or its path editor) holds the input focus: the auto-hide
-    ''' countdown is only meaningful while it does, and losing it drops an unpinned surface at once.</summary>
+    ''' countdown is only meaningful while it does, and losing it drops an unpinned surface at once.
+    ''' An open popup or focus on an owned window keeps it active.</summary>
     Private Function ChromeWindowActive() As Boolean
         Return Me.ContainsFocus OrElse (Form.ActiveForm Is Me) OrElse
-               (chrome_Path IsNot Nothing AndAlso chrome_Path.ContainsFocus)
+               (chrome_Path IsNot Nothing AndAlso chrome_Path.ContainsFocus) OrElse
+               ChromeMenu.PopupVisible OrElse
+               (Form.ActiveForm IsNot Nothing AndAlso Form.ActiveForm.Owner Is Me)
     End Function
 
     ' --- the shared tick: summon, fade, hide -------------------------------------------------------
@@ -890,8 +1049,7 @@ Partial Public Class Main_Form
             If moved Then NotePointerMovedOnScreen()   ' feeds the cursor-hide stillness clock (UX-108 of 123)
             Dim usable As Boolean = ChromeUsable()
             Dim active As Boolean = ChromeWindowActive()
-            ' The holds the panels share with the overlay: an open chrome popup, path editing,
-            ' the F10 keyboard mode (117 §2.6).
+            ' The toolbar panels' holds: an open chrome popup, path editing, the F10 keyboard mode (117 §2.6).
             Dim hold As Boolean = ChromeMenu.PopupVisible OrElse chrome_Keyboard_Mode OrElse
                                   (chrome_Path IsNot Nothing AndAlso chrome_Path.ContainsFocus)
             Dim animating As Boolean = False
@@ -900,9 +1058,15 @@ Partial Public Class Main_Form
                 For Each pair In p.Legacy
                     If SyncChromeItem(pair.Key, pair.Value) Then p.Host.Surface.LayoutItems()
                 Next
+                ' The window commands follow the window state within one tick (188 §5): a snap
+                ' shortcut or the system menu flips the Maximize / Restore button on the next poll.
+                If p.Name = Window_Controls_Panel_Name Then ChromeSyncWindowControlsItems(p)
 
+                ' The window-controls panel is the removed caption's replacement, not part of the
+                ' toolbar: a slideshow asked to hide the toolbar keeps the window commands (188 §3.8).
+                ' Super-full-screen hides it through <see cref="ChromeUsable"/> like everything else.
                 If Not usable OrElse (p.Name = "chrome_Status" AndAlso SlideshowHidesStatus()) OrElse
-                   (p.Name <> "chrome_Status" AndAlso SlideshowHidesToolbar()) Then
+                   (p.Name <> "chrome_Status" AndAlso p.Name <> Window_Controls_Panel_Name AndAlso SlideshowHidesToolbar()) Then
                     p.Wanted = False
                     p.Alpha = 0.0R
                     p.TargetAlpha = 0.0R
@@ -1055,8 +1219,10 @@ Partial Public Class Main_Form
                 ' The placed rectangle, not the window's bounds: the overlay may not have been
                 ' shown yet, and its geometry is where the cycle would show it anyway.
                 Dim over As Boolean = RecipientsOverlayPlacedRect().Contains(pointer)
-                Dim hold As Boolean = ChromeMenu.PopupVisible OrElse chrome_Keyboard_Mode OrElse
-                                      (chrome_Path IsNot Nothing AndAlso chrome_Path.ContainsFocus)
+                ' The overlay is its own floating surface (117 revision): it carries no popups,
+                ' no path editor and no F10 ring, and toolbar popups (such as btn_Resource) must
+                ' never summon or hold the unpinned table.
+                Dim hold As Boolean = False
                 Dim hotZone As Boolean = windowActive AndAlso pointerMoved AndAlso
                                          Control.MouseButtons = MouseButtons.None AndAlso
                                          RecipientsOverlayHotZone().Contains(pointer)

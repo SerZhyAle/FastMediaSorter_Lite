@@ -178,7 +178,7 @@ func serveCore(ctx context.Context, cmd command, console bool, stdout, stderr io
 	var infos []directory.DeviceInfo
 	for _, d := range store.AllDevices() {
 		infos = append(infos, directory.DeviceInfo{ID: d.ID, Account: d.Account, Name: d.Name, Product: d.Product,
-			ProductVersion: d.ProductVersion, Platform: d.Platform, Roles: d.Roles, Receiver: d.Receiver})
+			ProductVersion: d.ProductVersion, Platform: d.Platform, Roles: d.Roles, Capabilities: d.Capabilities, Receiver: d.Receiver})
 	}
 	l := cfg.Limits
 	dir := directory.New(directory.Options{Dir: paths.Dir,

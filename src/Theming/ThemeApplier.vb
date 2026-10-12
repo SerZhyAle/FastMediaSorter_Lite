@@ -478,7 +478,16 @@ Friend NotInheritable Class ThemeApplier
         ' section 11 item 2); adding this one would make the disabled button's gap differ from the enabled one.
         Dim gap As Integer = If(picture IsNot Nothing AndAlso caption.Length > 0 AndAlso Not ButtonGlyphs.PictureHoldsGap(b),
                                 b.LogicalToDeviceUnits(4), 0)
-        Dim x As Integer = Math.Max(0, (bounds.Width - (pictureSize.Width + gap + textSize.Width)) \ 2)
+        Dim contentWidth As Integer = pictureSize.Width + gap + textSize.Width
+        ' Where the enabled button puts the pair: its caption's alignment (a wide command is moved to the
+        ' reading start by ButtonGlyphs), inside the button's own padding.
+        Dim x As Integer
+        Select Case ButtonGlyphs.PairSide(b)
+            Case -1 : x = b.Padding.Left
+            Case 1 : x = bounds.Width - b.Padding.Right - contentWidth
+            Case Else : x = (bounds.Width - contentWidth) \ 2
+        End Select
+        x = Math.Max(0, x)
         Dim pictureFirst As Boolean = Not rtl
 
         If picture IsNot Nothing AndAlso pictureFirst Then

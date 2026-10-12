@@ -1,4 +1,4 @@
-Option Strict On
+﻿Option Strict On
 
 Imports System.Collections.Generic
 Imports System.Text.Json
@@ -27,6 +27,14 @@ Public Class ShareConfigBuilderTests
             .Reachability = If(reach, New WorkerReachability With {.LanAddress = "192.168.1.50"})
         }
     End Function
+
+    <Fact>
+    Public Sub Worker_protected_roots_cannot_be_exported_as_an_unlocked_config_or_public_qr()
+        Dim status As WorkerStatus = RunningStatus()
+        status.ResourcePinSupported = True
+        status.Roots(0).pinProtected = True
+        Assert.Null(ShareConfigBuilder.Build(status, includeExternal:=True))
+    End Sub
 
     <Fact>
     Public Sub Build_ReturnsNothing_WhenNotServable()
@@ -79,7 +87,7 @@ Public Class ShareConfigBuilderTests
     End Sub
 
     ''' <summary>
-    ''' The default display name is a promise made to the Android product (request 113 section 3): the
+    ''' The default display name is a promise made to the Android product (request 197 section 3): the
     ''' compact product name, " on ", the machine. A phone shows it as a label and never matches on it
     ''' (FMSCFG matches server + user + root), but the text itself is what the request told that
     ''' product to expect, so a rename here has to be a decision and not a side effect. The

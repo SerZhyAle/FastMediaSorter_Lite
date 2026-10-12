@@ -1,4 +1,4 @@
-Option Strict On
+﻿Option Strict On
 
 Imports System.Linq
 Imports System.Net.Sockets
@@ -9,8 +9,8 @@ Imports System.Threading.Tasks
 
 ' Ticket 170 (T-2, T-3, T-4): the producer half of the device agent, inside the Share Manager. It publishes what the share worker
 ' serves as `sftp-share` resources, answers `open` by splicing a tunnel to the worker, and carries the two opt-in extras (the
-' third-party port and the outsider links). THE WORKER IS UNTOUCHED: this class reads its status like the .fmscfg and the QR do,
-' and dials its SFTP listener on 127.0.0.1 like any client; nothing is registered with it and no exchange secret is sent to it.
+' third-party port and the outsider links). This class reads the worker status like the .fmscfg and QR producers,
+' and dials its SFTP listener on loopback. Protected resource removal also invalidates worker sessions through schema-3 IPC.
 '
 ' It plugs into the agent through <see cref="IExchangeProducerHooks"/> (the republish hook of 180): after every `welcome` it publishes
 ' everything again (items G and H of DEVICE-EXCHANGE 14.5 - `access` and `shareId` live in memory on the server), and while the stream
@@ -63,12 +63,14 @@ Friend NotInheritable Class ExchangePublishRow
     Public ReadOnly Refusal As ExchangeRefusal
     ''' <summary>An outsider link exists for this share (rule 8).</summary>
     Public ReadOnly HasLink As Boolean
+    Public ReadOnly PinProtected As Boolean
 
-    Public Sub New(name As String, state As ExchangePublishState, refusal As ExchangeRefusal, hasLink As Boolean)
+    Public Sub New(name As String, state As ExchangePublishState, refusal As ExchangeRefusal, hasLink As Boolean, Optional pinProtected As Boolean = False)
         Me.Name = name
         Me.State = state
         Me.Refusal = refusal
         Me.HasLink = hasLink
+        Me.PinProtected = pinProtected
     End Sub
 
 End Class
@@ -132,6 +134,10 @@ Friend NotInheritable Class ExchangePublisherOptions
 
     Public Property Settings As ExchangePublishSettings = ExchangePublishSettings.CreateDefault()
     Public Property Store As ExchangeProducerStore = ExchangeProducerStore.CreateDefault()
+    Public Property InvalidatePinSessions As Func(Of Task) = Async Function()
+                                                               Dim response As WorkerResponse = Await Task.Run(Function() WorkerIpc.Send(New WorkerRequest With {.type = "InvalidatePinSessions"})).ConfigureAwait(False)
+                                                               If Not response.Ok Then Throw New InvalidOperationException("Worker refused resource PIN session invalidation")
+                                                           End Function
     Public Property GetStatus As Func(Of Task(Of WorkerStatus)) = Function() ShareController.GetStatusAsync()
     ''' <summary>True under the server-wide "LAN only" setting (nothing reachable from outside travels in a descriptor).</summary>
     Public Property LanOnly As Func(Of Boolean) = Function()
@@ -173,14 +179,16 @@ Friend NotInheritable Class ExchangePublisher
         Public ReadOnly Signature As String
         Public ReadOnly AccessJson As String
         Public ReadOnly State As ExchangePublishState
+        Public ReadOnly PinProtected As Boolean
         Public ReadOnly Refusal As ExchangeRefusal
-        Public Sub New(resourceId As String, shareId As String, signature As String, accessJson As String, state As ExchangePublishState, refusal As ExchangeRefusal)
+        Public Sub New(resourceId As String, shareId As String, signature As String, accessJson As String, state As ExchangePublishState, refusal As ExchangeRefusal, pinProtected As Boolean)
             Me.ResourceId = resourceId
             Me.ShareId = shareId
             Me.Signature = signature
             Me.AccessJson = accessJson
             Me.State = state
             Me.Refusal = refusal
+            Me.PinProtected = pinProtected
         End Sub
     End Class
 
@@ -194,6 +202,8 @@ Friend NotInheritable Class ExchangePublisher
     Private _nudge As TaskCompletionSource(Of Boolean)
     Private _snapshot As ExchangePublishSnapshot = ExchangePublishSnapshot.Empty
     Private _listenPort As Integer
+    ''' <summary>The last plan outcome that was written to the log, so a blocked producer says why once instead of every pass.</summary>
+    Private _lastBlockLogged As ExchangePublishBlock? = Nothing
     Private _grantedPort As Integer
     Private _disposed As Boolean
 
@@ -286,6 +296,7 @@ Friend NotInheritable Class ExchangePublisher
         SyncLock _gate
             all = _published.Values.ToList()
         End SyncLock
+        If all.Any(Function(p) p.PinProtected) Then Await _options.InvalidatePinSessions.Invoke().ConfigureAwait(False)
         For Each p As Published In all
             Try
                 Await session.SendAsync(ExchangeMessages.Unpublish(p.ResourceId), ct).ConfigureAwait(False)
@@ -366,7 +377,7 @@ Friend NotInheritable Class ExchangePublisher
     End Function
 
     Private Shared Function SignatureOf(s As ExchangePlannedShare) As String
-        Dim text As String = s.ResourceId & vbLf & s.ShareId & vbLf & s.AccessJson & vbLf & If(s.PublicPortRequest.HasValue, s.PublicPortRequest.Value.ToString(Globalization.CultureInfo.InvariantCulture), "-")
+        Dim text As String = s.ResourceId & vbLf & s.ShareId & vbLf & s.AccessJson & vbLf & If(s.PublicPortRequest.HasValue, s.PublicPortRequest.Value.ToString(Globalization.CultureInfo.InvariantCulture), "-") & vbLf & s.PinProtected.ToString()
         Return Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(text)))
     End Function
 
@@ -403,6 +414,23 @@ Friend NotInheritable Class ExchangePublisher
             .PublicEndpoint = session.PublicEndpoint, .IncludeExternal = Not _options.LanOnly.Invoke(),
             .LanFallback = _options.LanFallback.Invoke(), .HasPin = _options.HasPin, .State = state}
         Dim plan As ExchangePublishPlan = ExchangePublishPlan.Build(inputs)
+        If publish AndAlso (Not _lastBlockLogged.HasValue OrElse _lastBlockLogged.Value <> plan.Block) Then
+            _lastBlockLogged = plan.Block
+            ' facts only (booleans and counts) - never the credential, the address or the fingerprint themselves
+            Dim detail As String = ""
+            If plan.Block <> ExchangePublishBlock.None AndAlso plan.Block <> ExchangePublishBlock.Off Then
+                If status Is Nothing Then
+                    detail = " (no worker status)"
+                Else
+                    detail = " (running=" & status.Running.ToString() & ", port=" & (status.ListenPort > 0).ToString() &
+                             ", user=" & (Not String.IsNullOrEmpty(status.Username)).ToString() &
+                             ", password=" & (Not String.IsNullOrEmpty(status.Password)).ToString() &
+                             ", fingerprint=" & ExchangeTrust.IsFingerprint(status.Fingerprint).ToString() &
+                             ", roots=" & If(status.Roots Is Nothing, 0, status.Roots.Count).ToString(Globalization.CultureInfo.InvariantCulture) & ")"
+                End If
+            End If
+            _options.Log.Invoke("Exchange producer: plan " & plan.Block.ToString() & " for " & plan.Shares.Count.ToString(Globalization.CultureInfo.InvariantCulture) & " folders" & detail)
+        End If
         If status IsNot Nothing AndAlso status.ListenPort > 0 Then
             SyncLock _gate
                 _listenPort = status.ListenPort
@@ -438,6 +466,7 @@ Friend NotInheritable Class ExchangePublisher
                     If plan.Find(pair.Key) Is Nothing Then gone.Add(pair)
                 Next
             End SyncLock
+            If gone.Any(Function(p) p.Value.PinProtected) Then Await _options.InvalidatePinSessions.Invoke().ConfigureAwait(False)
             For Each pair As KeyValuePair(Of String, Published) In gone
                 Await session.SendAsync(ExchangeMessages.Unpublish(pair.Value.ResourceId), ct).ConfigureAwait(False)
                 SyncLock _gate
@@ -469,7 +498,7 @@ Friend NotInheritable Class ExchangePublisher
         Dim request As Integer? = share.PublicPortRequest
         For attempt As Integer = 1 To 2
             Dim json As String = Nothing
-            If Not ExchangeResourceRecordBuilder.TryBuild(share.ResourceId, deviceId, share.Name, share.AccessJson, share.ShareId, request, _options.NowUtc.Invoke(), json) Then
+            If Not ExchangeResourceRecordBuilder.TryBuild(share.ResourceId, deviceId, share.Name, share.AccessJson, share.ShareId, request, _options.NowUtc.Invoke(), json, share.PinProtected) Then
                 SetPublished(share, signature, ExchangePublishState.Refused, ExchangeRefusal.Capacity)
                 _options.Log.Invoke("Exchange producer: the record of resource " & ExchangeIds.ForLog(share.ResourceId) & " cannot be built")
                 Return state
@@ -511,7 +540,7 @@ Friend NotInheritable Class ExchangePublisher
 
     Private Sub SetPublished(share As ExchangePlannedShare, signature As String, state As ExchangePublishState, refusal As ExchangeRefusal)
         SyncLock _gate
-            _published(share.Name) = New Published(share.ResourceId, share.ShareId, signature, share.AccessJson, state, refusal)
+            _published(share.Name) = New Published(share.ResourceId, share.ShareId, signature, share.AccessJson, state, refusal, share.PinProtected)
         End SyncLock
     End Sub
 
@@ -524,9 +553,9 @@ Friend NotInheritable Class ExchangePublisher
             For Each s As ExchangePlannedShare In plan.Shares
                 Dim p As Published = Nothing
                 If _published.TryGetValue(s.Name, p) Then
-                    rows.Add(New ExchangePublishRow(s.Name, p.State, p.Refusal, s.ShareId.Length > 0))
+                    rows.Add(New ExchangePublishRow(s.Name, p.State, p.Refusal, s.ShareId.Length > 0, s.PinProtected))
                 Else
-                    rows.Add(New ExchangePublishRow(s.Name, ExchangePublishState.Pending, ExchangeRefusal.Unknown, s.ShareId.Length > 0))
+                    rows.Add(New ExchangePublishRow(s.Name, ExchangePublishState.Pending, ExchangeRefusal.Unknown, s.ShareId.Length > 0, s.PinProtected))
                 End If
             Next
             If _grantedPort > 0 AndAlso _session IsNot Nothing Then
@@ -583,6 +612,7 @@ Friend NotInheritable Class ExchangePublisher
         If plan Is Nothing OrElse plan.Block <> ExchangePublishBlock.None OrElse plan.Find(name) Is Nothing Then
             Return New ExchangeLinkResult(ExchangeLinkOutcome.NotPublished, ExchangeRefusal.Unknown)
         End If
+        If Not remove AndAlso plan.Find(name).PinProtected Then Return New ExchangeLinkResult(ExchangeLinkOutcome.Failed, ExchangeRefusal.ProtectionUnsupported)
         Dim entry As ExchangeProducerEntry = plan.State.Get(name)
         If entry Is Nothing Then Return New ExchangeLinkResult(ExchangeLinkOutcome.NotPublished, ExchangeRefusal.Unknown)
         If remove Then
@@ -610,7 +640,7 @@ Friend NotInheritable Class ExchangePublisher
         codeText = ""
         Dim p As Published = Nothing
         SyncLock _gate
-            If Not _published.TryGetValue(name, p) OrElse p.State <> ExchangePublishState.Published OrElse p.ShareId.Length = 0 Then Return False
+            If Not _published.TryGetValue(name, p) OrElse p.State <> ExchangePublishState.Published OrElse p.ShareId.Length = 0 OrElse p.PinProtected Then Return False
         End SyncLock
         Dim info As ExchangeAccessInfo = Nothing
         If Not ExchangeResourceAccess.TryRead(p.AccessJson, name, info) OrElse info.Code.ShareId.Length = 0 Then Return False
@@ -624,7 +654,7 @@ Friend NotInheritable Class ExchangePublisher
         Dim endpoint As String = ""
         Dim granted As Integer
         SyncLock _gate
-            If _session Is Nothing OrElse Not _published.TryGetValue(name, p) OrElse p.State <> ExchangePublishState.Published OrElse p.ShareId.Length = 0 Then Return Nothing
+            If _session Is Nothing OrElse Not _published.TryGetValue(name, p) OrElse p.State <> ExchangePublishState.Published OrElse p.ShareId.Length = 0 OrElse p.PinProtected Then Return Nothing
             endpoint = _session.PublicEndpoint
             granted = _grantedPort
         End SyncLock

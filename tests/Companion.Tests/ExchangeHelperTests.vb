@@ -38,8 +38,8 @@ Public Class ExchangeHelperTests
     <Fact>
     Public Sub FirewallHelper_ScopesTheRuleByProgram_AndNeverByPort()
         Dim code As String = CodeOnly(FirewallHelperFile)
-        ' Enable adds one rule naming the program; disable deletes by program.
-        Assert.Equal(2, Count(code, "program=""$ExePath"""))
+        ' Enable replaces this program's rule (delete + add, both naming it); disable deletes by program.
+        Assert.Equal(3, Count(code, "program=""$ExePath"""))
         Assert.Contains("advfirewall firewall add rule name=""$rule"" dir=in action=allow", code)
         Assert.Contains("protocol=TCP profile=domain,private,public enable=yes", code)
         ' No port anywhere: the rule must keep working when the listen port or range changes
@@ -55,11 +55,14 @@ Public Class ExchangeHelperTests
         Dim code As String = CodeOnly(FirewallHelperFile)
         Assert.Contains("'FastMediaSorter Media Exchange Server'", code)
         Assert.Equal(1, Count(code, "delete rule name=all program="))
-        ' The one delete-by-name is the idempotence step of the ENABLE branch, before the add.
-        Assert.Equal(1, Count(code, "delete rule name=""$rule"""))
+        ' The one delete naming the rule is the idempotence step of the ENABLE branch, before the add,
+        ' and it is narrowed to THIS program: the service's staged copy has a rule of the same name, and a
+        ' delete by name alone took it away (the test host's server went unreachable, 2026-10-12).
+        Assert.Equal(1, Count(code, "delete rule name=""$rule"" program=""$ExePath"""))
+        Assert.Equal(0, Count(code, "delete rule name=""$rule"" |"))
         Assert.True(code.IndexOf("delete rule name=""$rule""", StringComparison.Ordinal) <
                     code.IndexOf("add rule name=", StringComparison.Ordinal),
-                    "the delete-by-name must be the enable branch's step before the add, not a withdrawal.")
+                    "the delete naming the rule must be the enable branch's step before the add, not a withdrawal.")
     End Sub
 
     <Fact>
@@ -107,6 +110,24 @@ Public Class ExchangeHelperTests
         Assert.Matches("\$BinDirName\s*=\s*'bin'", code)
         ' The firewall rule names the STAGED copy (the program the service really starts).
         Assert.Contains("program=""$script:ServiceExePath""", code)
+        ' Replacing its own rule never takes the console copy's rule of the same name.
+        Assert.Contains("delete rule name=""$FirewallRule"" program=""$script:ServiceExePath""", code)
+        Assert.DoesNotContain("delete rule name=""$FirewallRule"" |", code)
+    End Sub
+
+    <Fact>
+    Public Sub ServiceHelper_NeverPassesNullAsADotNetPath_AndRestartsAServiceItStoppedWhenItFails()
+        ' The test host, 2026-10-12: File.Replace($tmp, $path, $null) - PowerShell binds $null to a .NET
+        ' string as "", Replace refuses it, and every upgrade's repair died AFTER stopping the service.
+        Dim code As String = CodeOnly(ServiceHelperFile)
+        Assert.DoesNotMatch("::Replace\([^)]*\$null\s*\)", code)
+        Assert.Contains("[NullString]::Value", code)
+        ' Both failure paths try to bring back a service this run stopped; stop and remove never do.
+        Assert.Matches("function Fail\([^)]*\)\s*\{[^}]*Restore-ServiceAfterFailure", code)
+        Dim trapAt As Integer = code.IndexOf("trap {", StringComparison.Ordinal)
+        Assert.True(trapAt >= 0, "the helper has no trap")
+        Assert.Contains("Restore-ServiceAfterFailure", code.Substring(trapAt, Math.Min(400, code.Length - trapAt)))
+        Assert.Contains("$Action -ne 'stop' -and $Action -ne 'remove'", code)
         Assert.DoesNotContain("localport", code, StringComparison.OrdinalIgnoreCase)
         ' Withdrawal by program, never by name.
         Assert.Contains("delete rule name=all program=", code)
@@ -225,7 +246,7 @@ Public Class ExchangeHelperTests
         Assert.Contains("Test-ReparsePoint $path", fn)
         Assert.Contains("was not changed"" 6", fn)
         Assert.Contains("UTF8Encoding($false)", fn)
-        Assert.Contains("[System.IO.File]::Replace($tmp, $path, $null)", fn)
+        Assert.Contains("[System.IO.File]::Replace($tmp, $path, [NullString]::Value)", fn)
         Assert.DoesNotContain("Set-Content", fn)
         Assert.DoesNotContain("Out-File", fn)
     End Sub

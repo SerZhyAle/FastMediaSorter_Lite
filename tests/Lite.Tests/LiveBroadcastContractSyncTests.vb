@@ -7,7 +7,7 @@ Imports Xunit
 
 ' Contract synchronization, round 2026-10-07 (specification 181): what LIVE-BROADCAST 0.15 to 0.18 asks of a
 ' CONSUMER, read against the consumer in src/LiveBroadcast. Nothing here changes behaviour: every test pins a
-' reading the consumer already has, so a later change (the receiver of specification 174 adds RELAY and
+' reading the consumer already has, so a later change (the receiver of specification 201 adds RELAY and
 ' TUNNEL playback) cannot lose it quietly.
 '
 '   0.15 item G  - sourceId names a SOURCE; "<deviceSourceId>:<source>" is one opaque string, and a stored

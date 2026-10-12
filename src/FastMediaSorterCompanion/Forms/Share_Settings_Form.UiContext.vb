@@ -27,12 +27,9 @@ Partial Public NotInheritable Class Share_Settings_Form
                 Dim previous = managerSettingsContext.Page("manager").AnchorId
                 managerSettingsContext.LastPageId = If(_pages.ContainsKey(previous), previous, "startup")
             End If
-            For Each pair In _pageGroups
-                Dim page = managerSettingsContext.Page(pair.Key)
-                For Each group In pair.Value
-                    group.Expanded = page.Expanded(group.Key, group.Expanded)
-                Next
-            Next
+            ' The menu resumes its saved expansion (210 section 7.4); the v1-to-v2
+            ' migration happened inside Read.
+            ApplySettingsNavExpansion()
             SelectSettingsPage(managerSettingsContext.ResolvePage(_pages.Keys))
         Catch ex As Exception
             AppFileLogger.LogException("Share settings: restoring UI context", ex)

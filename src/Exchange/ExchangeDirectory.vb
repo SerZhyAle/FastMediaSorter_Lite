@@ -64,14 +64,26 @@ Friend NotInheritable Class ExchangeResourceRecord
     Public ReadOnly AccessJson As String
     Public ReadOnly Raw As String
 
-    Public Sub New(raw As String, resourceId As String, deviceId As String, kind As String, name As String, presence As String, accessJson As String)
+    ''' <summary>Any protection declaration is locked until this client implements DEVICE-EXCHANGE 17 AH.</summary>
+    Public ReadOnly IsProtected As Boolean
+    Public ReadOnly ProtectionScheme As String
+    Public ReadOnly Property CanAuthorize As Boolean
+        Get
+            Return Not IsProtected OrElse String.Equals(ProtectionScheme, "pin-v1", StringComparison.Ordinal)
+        End Get
+    End Property
+
+    Public Sub New(raw As String, resourceId As String, deviceId As String, kind As String, name As String, presence As String, accessJson As String,
+                   Optional isProtected As Boolean = False, Optional protectionScheme As String = "")
         Me.Raw = raw
         Me.ResourceId = resourceId
         Me.DeviceId = deviceId
         Me.Kind = kind
         Me.Name = name
         Me.Presence = presence
-        Me.AccessJson = accessJson
+        Me.IsProtected = isProtected
+        Me.ProtectionScheme = protectionScheme
+        Me.AccessJson = If(CanAuthorize, accessJson, "")
     End Sub
 
     Public ReadOnly Property HasAccess As Boolean
@@ -170,9 +182,12 @@ Friend NotInheritable Class ExchangeRecordReader
             Dim id As String = Str(root, "resourceId")
             If id.Length = 0 Then Return False
             Dim access As String = ""
+            Dim protection As JsonElement = Nothing
+            Dim isProtected As Boolean = root.TryGetProperty("protection", protection)
             Dim accessEl As JsonElement = Nothing
             If root.TryGetProperty("access", accessEl) AndAlso accessEl.ValueKind = JsonValueKind.Object Then access = ExchangeJson.Compact(accessEl.GetRawText())
-            record = New ExchangeResourceRecord(raw, id, Str(root, "deviceId"), Str(root, "kind"), Str(root, "name"), Str(root, "presence"), access)
+            Dim scheme As String = If(isProtected AndAlso protection.ValueKind = JsonValueKind.Object, Str(protection, "scheme"), "")
+            record = New ExchangeResourceRecord(raw, id, Str(root, "deviceId"), Str(root, "kind"), Str(root, "name"), Str(root, "presence"), access, isProtected, scheme)
             Return True
         End Using
     End Function

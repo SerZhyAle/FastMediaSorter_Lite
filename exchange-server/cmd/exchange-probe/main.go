@@ -1,4 +1,4 @@
-// Command exchange-probe is the self-test client of ticket 178 (T-2): one scripted run of a
+// Command exchange-probe is the self-test client of ticket 205 (T-2): one scripted run of a
 // Media Exchange Server deployment that prints ONE verdict line.
 //
 //	exchange-probe --server host:port --fingerprint SHA256:... --login alice --password-stdin

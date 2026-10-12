@@ -1,6 +1,6 @@
 {
   "contract": "DEVICE-EXCHANGE",
-  "contractVersion": "0.17",
+  "contractVersion": "0.19",
   "sections": "5, 6, 7.1-7.10",
   "rung": 2,
   "producer": "Media Exchange Server (Go) of Fast Media Sorter & Sharing for Windows, cmd/exchange-vectors",
@@ -305,20 +305,32 @@
         {
           "stream": "a-enroll",
           "direction": "client->server",
-          "json": "{\"schemaVersion\":2,\"type\":\"publish\",\"resource\":{\"resourceId\":\"xsXvyZ6r6WmsTAhIHiW0_g\",\"kind\":\"sftp-share\",\"name\":\"First\"}}",
-          "hex": "0000007a7b22736368656d6156657273696f6e223a322c2274797065223a227075626c697368222c227265736f75726365223a7b227265736f757263654964223a2278735876795a367236576d7354416849486957305f67222c226b696e64223a22736674702d7368617265222c226e616d65223a224669727374227d7d"
+          "json": "{\"schemaVersion\":2,\"type\":\"publish\",\"resource\":{\"resourceId\":\"xsXvyZ6r6WmsTAhIHiW0_g\",\"kind\":\"sftp-share\",\"name\":\"Unsafe protection\",\"protection\":{\"scheme\":\"future\"}}}",
+          "hex": "000000a77b22736368656d6156657273696f6e223a322c2274797065223a227075626c697368222c227265736f75726365223a7b227265736f757263654964223a2278735876795a367236576d7354416849486957305f67222c226b696e64223a22736674702d7368617265222c226e616d65223a22556e736166652070726f74656374696f6e222c2270726f74656374696f6e223a7b22736368656d65223a22667574757265227d7d7d"
         },
         {
           "stream": "a-enroll",
           "direction": "server->client",
-          "json": "{\"schemaVersion\":2,\"type\":\"published\",\"resourceId\":\"xsXvyZ6r6WmsTAhIHiW0_g\"}",
-          "hex": "0000004c7b22736368656d6156657273696f6e223a322c2274797065223a227075626c6973686564222c227265736f757263654964223a2278735876795a367236576d7354416849486957305f67227d"
+          "json": "{\"schemaVersion\":2,\"type\":\"refused\",\"reason\":\"protection-unsupported\"}",
+          "hex": "000000467b22736368656d6156657273696f6e223a322c2274797065223a2272656675736564222c22726561736f6e223a2270726f74656374696f6e2d756e737570706f72746564227d"
         },
         {
           "stream": "a-enroll",
           "direction": "client->server",
-          "json": "{\"schemaVersion\":2,\"type\":\"publish\",\"resource\":{\"resourceId\":\"M_2tesoglGFoi_XQbwoGOA\",\"kind\":\"sftp-share\",\"name\":\"Second\"}}",
-          "hex": "0000007b7b22736368656d6156657273696f6e223a322c2274797065223a227075626c697368222c227265736f75726365223a7b227265736f757263654964223a224d5f327465736f676c47466f695f585162776f474f41222c226b696e64223a22736674702d7368617265222c226e616d65223a225365636f6e64227d7d"
+          "json": "{\"schemaVersion\":2,\"type\":\"publish\",\"resource\":{\"resourceId\":\"M_2tesoglGFoi_XQbwoGOA\",\"kind\":\"sftp-share\",\"name\":\"First\"}}",
+          "hex": "0000007a7b22736368656d6156657273696f6e223a322c2274797065223a227075626c697368222c227265736f75726365223a7b227265736f757263654964223a224d5f327465736f676c47466f695f585162776f474f41222c226b696e64223a22736674702d7368617265222c226e616d65223a224669727374227d7d"
+        },
+        {
+          "stream": "a-enroll",
+          "direction": "server->client",
+          "json": "{\"schemaVersion\":2,\"type\":\"published\",\"resourceId\":\"M_2tesoglGFoi_XQbwoGOA\"}",
+          "hex": "0000004c7b22736368656d6156657273696f6e223a322c2274797065223a227075626c6973686564222c227265736f757263654964223a224d5f327465736f676c47466f695f585162776f474f41227d"
+        },
+        {
+          "stream": "a-enroll",
+          "direction": "client->server",
+          "json": "{\"schemaVersion\":2,\"type\":\"publish\",\"resource\":{\"resourceId\":\"g6_cRQTI_g_PVGA4zyq6-A\",\"kind\":\"sftp-share\",\"name\":\"Second\"}}",
+          "hex": "0000007b7b22736368656d6156657273696f6e223a322c2274797065223a227075626c697368222c227265736f75726365223a7b227265736f757263654964223a2267365f63525154495f675f50564741347a7971362d41222c226b696e64223a22736674702d7368617265222c226e616d65223a225365636f6e64227d7d"
         },
         {
           "stream": "a-enroll",
@@ -330,8 +342,8 @@
         {
           "stream": "a-enroll",
           "direction": "client->server",
-          "json": "{\"schemaVersion\":2,\"type\":\"publish\",\"resource\":{\"resourceId\":\"xsXvyZ6r6WmsTAhIHiW0_g\",\"kind\":\"sftp-share\",\"name\":\"First\",\"publicPort\":0}}",
-          "hex": "000000897b22736368656d6156657273696f6e223a322c2274797065223a227075626c697368222c227265736f75726365223a7b227265736f757263654964223a2278735876795a367236576d7354416849486957305f67222c226b696e64223a22736674702d7368617265222c226e616d65223a224669727374222c227075626c6963506f7274223a307d7d"
+          "json": "{\"schemaVersion\":2,\"type\":\"publish\",\"resource\":{\"resourceId\":\"M_2tesoglGFoi_XQbwoGOA\",\"kind\":\"sftp-share\",\"name\":\"First\",\"publicPort\":0}}",
+          "hex": "000000897b22736368656d6156657273696f6e223a322c2274797065223a227075626c697368222c227265736f75726365223a7b227265736f757263654964223a224d5f327465736f676c47466f695f585162776f474f41222c226b696e64223a22736674702d7368617265222c226e616d65223a224669727374222c227075626c6963506f7274223a307d7d"
         },
         {
           "stream": "a-enroll",
@@ -355,8 +367,8 @@
         {
           "stream": "unknown-id",
           "direction": "client->server",
-          "json": "{\"schemaVersion\":2,\"type\":\"connect\",\"resourceId\":\"g6_cRQTI_g_PVGA4zyq6-A\"}",
-          "hex": "0000004a7b22736368656d6156657273696f6e223a322c2274797065223a22636f6e6e656374222c227265736f757263654964223a2267365f63525154495f675f50564741347a7971362d41227d"
+          "json": "{\"schemaVersion\":2,\"type\":\"connect\",\"resourceId\":\"hIptJh7zPunCqttPOAMYgw\"}",
+          "hex": "0000004a7b22736368656d6156657273696f6e223a322c2274797065223a22636f6e6e656374222c227265736f757263654964223a22684970744a68377a50756e43717474504f414d596777227d"
         },
         {
           "stream": "unknown-id",
@@ -372,8 +384,8 @@
         {
           "stream": "b-enroll",
           "direction": "client->server",
-          "json": "{\"schemaVersion\":2,\"type\":\"enroll\",\"login\":\"alice\",\"password\":\"Passw0rdTest\",\"deviceId\":\"hIptJh7zPunCqttPOAMYgw\",\"deviceName\":\"Vector tablet\",\"product\":\"fms-windows\",\"productVersion\":\"1.0.0\",\"platform\":\"vector\",\"roles\":[\"resource-consumer\"],\"keepaliveSeconds\":30}",
-          "hex": "000001077b22736368656d6156657273696f6e223a322c2274797065223a22656e726f6c6c222c226c6f67696e223a22616c696365222c2270617373776f7264223a22506173737730726454657374222c226465766963654964223a22684970744a68377a50756e43717474504f414d596777222c226465766963654e616d65223a22566563746f72207461626c6574222c2270726f64756374223a22666d732d77696e646f7773222c2270726f6475637456657273696f6e223a22312e302e30222c22706c6174666f726d223a22766563746f72222c22726f6c6573223a5b227265736f757263652d636f6e73756d6572225d2c226b656570616c6976655365636f6e6473223a33307d"
+          "json": "{\"schemaVersion\":2,\"type\":\"enroll\",\"login\":\"alice\",\"password\":\"Passw0rdTest\",\"deviceId\":\"rIuNosBhFd3xGC6V_e9XnA\",\"deviceName\":\"Vector tablet\",\"product\":\"fms-windows\",\"productVersion\":\"1.0.0\",\"platform\":\"vector\",\"roles\":[\"resource-consumer\"],\"keepaliveSeconds\":30}",
+          "hex": "000001077b22736368656d6156657273696f6e223a322c2274797065223a22656e726f6c6c222c226c6f67696e223a22616c696365222c2270617373776f7264223a22506173737730726454657374222c226465766963654964223a227249754e6f73426846643378474336565f6539586e41222c226465766963654e616d65223a22566563746f72207461626c6574222c2270726f64756374223a22666d732d77696e646f7773222c2270726f6475637456657273696f6e223a22312e302e30222c22706c6174666f726d223a22766563746f72222c22726f6c6573223a5b227265736f757263652d636f6e73756d6572225d2c226b656570616c6976655365636f6e6473223a33307d"
         },
         {
           "stream": "b-enroll",
@@ -396,8 +408,8 @@
         {
           "stream": "a-enroll",
           "direction": "client->server",
-          "json": "{\"schemaVersion\":2,\"type\":\"revoke\",\"deviceId\":\"hIptJh7zPunCqttPOAMYgw\"}",
-          "hex": "000000477b22736368656d6156657273696f6e223a322c2274797065223a227265766f6b65222c226465766963654964223a22684970744a68377a50756e43717474504f414d596777227d",
+          "json": "{\"schemaVersion\":2,\"type\":\"revoke\",\"deviceId\":\"rIuNosBhFd3xGC6V_e9XnA\"}",
+          "hex": "000000477b22736368656d6156657273696f6e223a322c2274797065223a227265766f6b65222c226465766963654964223a227249754e6f73426846643378474336565f6539586e41227d",
           "note": "revoke is not answered; the revoked device's streams are closed"
         },
         {
@@ -408,8 +420,8 @@
         {
           "stream": "hello-revoked",
           "direction": "client->server",
-          "json": "{\"schemaVersion\":2,\"type\":\"hello\",\"deviceId\":\"hIptJh7zPunCqttPOAMYgw\",\"deviceToken\":\"AIplLdh3gkJXt0_dQ4tOOc0rojhIxO60BWmJThVD66M\"}",
-          "hex": "000000827b22736368656d6156657273696f6e223a322c2274797065223a2268656c6c6f222c226465766963654964223a22684970744a68377a50756e43717474504f414d596777222c22646576696365546f6b656e223a224149706c4c646833676b4a5874305f645134744f4f6330726f6a6849784f363042576d4a5468564436364d227d"
+          "json": "{\"schemaVersion\":2,\"type\":\"hello\",\"deviceId\":\"rIuNosBhFd3xGC6V_e9XnA\",\"deviceToken\":\"AIplLdh3gkJXt0_dQ4tOOc0rojhIxO60BWmJThVD66M\"}",
+          "hex": "000000827b22736368656d6156657273696f6e223a322c2274797065223a2268656c6c6f222c226465766963654964223a227249754e6f73426846643378474336565f6539586e41222c22646576696365546f6b656e223a224149706c4c646833676b4a5874305f645134744f4f6330726f6a6849784f363042576d4a5468564436364d227d"
         },
         {
           "stream": "hello-revoked",
@@ -442,8 +454,8 @@
         {
           "stream": "enroll-limited",
           "direction": "client->server",
-          "json": "{\"schemaVersion\":2,\"type\":\"enroll\",\"login\":\"alice\",\"password\":\"Wrongpass1\",\"deviceId\":\"rIuNosBhFd3xGC6V_e9XnA\",\"deviceName\":\"Guesser\",\"product\":\"fms-windows\"}",
-          "hex": "0000009e7b22736368656d6156657273696f6e223a322c2274797065223a22656e726f6c6c222c226c6f67696e223a22616c696365222c2270617373776f7264223a2257726f6e677061737331222c226465766963654964223a227249754e6f73426846643378474336565f6539586e41222c226465766963654e616d65223a2247756573736572222c2270726f64756374223a22666d732d77696e646f7773227d"
+          "json": "{\"schemaVersion\":2,\"type\":\"enroll\",\"login\":\"alice\",\"password\":\"Wrongpass1\",\"deviceId\":\"awD-rZCIC06z2SSKiHJ2Pg\",\"deviceName\":\"Guesser\",\"product\":\"fms-windows\"}",
+          "hex": "0000009e7b22736368656d6156657273696f6e223a322c2274797065223a22656e726f6c6c222c226c6f67696e223a22616c696365222c2270617373776f7264223a2257726f6e677061737331222c226465766963654964223a226177442d725a43494330367a3253534b69484a325067222c226465766963654e616d65223a2247756573736572222c2270726f64756374223a22666d732d77696e646f7773227d"
         },
         {
           "stream": "enroll-limited",

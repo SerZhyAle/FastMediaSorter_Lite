@@ -26,6 +26,8 @@ Public Class ExchangeElevationTests
         ExchangeTestSupport.Reset()
         _dir = ExchangeTestSupport.MakeFakeComponent(True, True, True)
         ExchangeProcess.ExeDirectoryOverride = _dir
+        ' No service registered unless a test says so: the developer's registry is never read.
+        ExchangeService.ImagePathOverride = Function() ""
     End Sub
 
     Public Sub Dispose() Implements IDisposable.Dispose
@@ -136,6 +138,35 @@ Public Class ExchangeElevationTests
                                                 Throw New InvalidOperationException("netsh missing")
                                             End Function
         Assert.Equal(ExchangeFirewall.RuleState.Unknown, ExchangeFirewall.QueryRule())
+    End Sub
+
+    <Fact>
+    Public Sub The_service_command_line_names_its_program_quoted_or_not()
+        Dim staged As String = "C:\ProgramData\FastMediaSorterExchange\bin\fms-exchange-server.exe"
+        Assert.Equal(staged, ExchangeFirewall.ServiceExeOf("""" & staged & """ serve --service --config ""C:\x\exchange.json"""))
+        Assert.Equal("C:\bin\fms-exchange-server.exe", ExchangeFirewall.ServiceExeOf("C:\bin\fms-exchange-server.exe serve --service"))
+        Assert.Equal("", ExchangeFirewall.ServiceExeOf("""C:\other\tool.exe"" serve --service"))
+        Assert.Equal("", ExchangeFirewall.ServiceExeOf("""C:\unclosed\fms-exchange-server.exe serve"))
+        Assert.Equal("", ExchangeFirewall.ServiceExeOf(""))
+    End Sub
+
+    <Fact>
+    Public Sub While_the_service_is_registered_the_rule_is_read_and_set_for_the_copy_it_starts()
+        ' The test host, 2026-10-12: the rule named the application folder's copy, the service ran the
+        ' staged one, the screen said "a rule exists" and nothing reached the port.
+        Dim staged As String = "C:\ProgramData\FastMediaSorterExchange\bin\fms-exchange-server.exe"
+        ExchangeService.ImagePathOverride = Function() """" & staged & """ serve --service --config ""C:\ProgramData\FastMediaSorterExchange\exchange.json"""
+        Assert.Equal(staged, ExchangeFirewall.TargetExePath())
+        ExchangeFirewall.ShowRuleOverride = Function() Tuple.Create(0, "Program: " & ExchangeProcess.ExePath())
+        Assert.Equal(ExchangeFirewall.RuleState.OtherProgram, ExchangeFirewall.QueryRule())
+        ExchangeFirewall.ShowRuleOverride = Function() Tuple.Create(0, "Program: " & staged)
+        Assert.Equal(ExchangeFirewall.RuleState.ThisProgram, ExchangeFirewall.QueryRule())
+        LaunchReturns(0)
+        Assert.Equal(ExchangeElevation.ElevatedOutcome.Succeeded, ExchangeFirewall.EnableViaElevation())
+        Assert.Contains("-ExePath """ & staged & """", _calls(0).Item2)
+        ' A registration that is not ours (no "serve --service") leaves the console copy as the target.
+        ExchangeService.ImagePathOverride = Function() """" & staged & """"
+        Assert.Equal(ExchangeProcess.ExePath(), ExchangeFirewall.TargetExePath())
     End Sub
 
     ' --- the helper scripts, read as text (143 T-6) ----------------------------------------------

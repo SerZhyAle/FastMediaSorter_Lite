@@ -331,7 +331,7 @@ Partial Public Class Table_Form
         FormBorderStyle = FormBorderStyle.Sizable
         MaximizeBox = True
         MinimizeBox = False
-        MinimumSize = New Size(Sp(780), Sp(520))
+        MinimumSize = New Size(Sp(780), Sp(400))
         ClientSize = New Size(Sp(960), Sp(640))
         RestoreModernSettingsWindowSize()
         BackColor = SettingsCanvas
@@ -507,7 +507,7 @@ Partial Public Class Table_Form
 
     Private Sub BuildModernSettingsNavigation()
         ' A dense list (ICON-RENDER rule 5: 20 px glyph, a row of 34 - above the 28 px
-        ' mouse floor): nine entries fit the window's minimum height with room to spare.
+        ' mouse floor). The list AutoScrolls, so a shortened window shows a slice of it instead of clipping entries away.
         Dim top As Integer = 0
         Dim navLabels As String() = {"General", "Destination folders", "Images", "Video", "Audio", "Files and system",
                                      "Server and resources",

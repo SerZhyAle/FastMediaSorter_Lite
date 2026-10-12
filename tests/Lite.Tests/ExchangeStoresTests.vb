@@ -11,7 +11,7 @@ Imports Xunit
 ''' <summary>
 ''' Ticket 180 T-1 and section 3: where the secret of an enrolled device lives. The token is stored under DPAPI in a file, bound to the
 ''' device id, replaced atomically; the account entry (server, login, pin, device id) is not secret and lives in the settings; neither
-''' is ever created by a read (the dormant rule of 177 section 2).
+''' is ever created by a read (the dormant rule of 204 section 2).
 ''' </summary>
 Public Class ExchangeStoresTests
 

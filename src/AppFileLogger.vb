@@ -168,6 +168,10 @@ Friend Module AppFileLogger
                 End Using
                 acquiredWriter.WriteLine("Version: " & Assembly.GetExecutingAssembly().GetName().Version.ToString())
                 acquiredWriter.WriteLine("OS: " & Environment.OSVersion.ToString())
+#If Not NETFRAMEWORK Then
+                ' Ticket 182 L-8: identify the host even when no support bundle is requested.
+                acquiredWriter.WriteLine(HostingReport.BuildLiveStateLine(ProductNames.Full, Assembly.GetExecutingAssembly().GetName().Version.ToString()))
+#End If
                 ' Ticket 182 L-8: the runtime too, so a log says which of the two exes wrote it
                 ' without anyone reading the file name (".NET 10.x" for the mainline, ".NET Framework 4.8.x").
                 Try

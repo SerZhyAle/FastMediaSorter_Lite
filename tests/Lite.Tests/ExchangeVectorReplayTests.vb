@@ -25,12 +25,12 @@ Public NotInheritable Class ExchangeVectorFactAttribute
     End Sub
 End Class
 
-''' <summary>The same, for the transcripts of ticket 178 (exchange-server/testdata/vectors/frames-v2.json): skipped by name when they are not generated yet.</summary>
+''' <summary>The same, for the transcripts of ticket 205 (exchange-server/testdata/vectors/frames-v2.json): skipped by name when they are not generated yet.</summary>
 Public NotInheritable Class ExchangeTranscriptFactAttribute
     Inherits FactAttribute
 
     Public Sub New()
-        ' Ticket 178 fixtures are required: missing evidence must fail the replay.
+        ' Ticket 205 fixtures are required: missing evidence must fail the replay.
     End Sub
 End Class
 
@@ -131,7 +131,7 @@ Public Class ExchangeVectorReplayTests
         Next
     End Sub
 
-    ''' <summary>The transcripts of ticket 178 (frames-v2.json), when the Go module has generated them: every frame of every transcript is classified, and a frame the
+    ''' <summary>The transcripts of ticket 205 (frames-v2.json), when the Go module has generated them: every frame of every transcript is classified, and a frame the
     ''' wire says is an envelope round-trips byte for byte and frame for frame.</summary>
     <ExchangeTranscriptFact>
     Public Sub Every_frame_of_the_generated_transcripts_replays_through_the_codec()

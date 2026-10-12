@@ -101,6 +101,23 @@ Public Class ChromeAutoHideTests
         Assert.False(Step_(quiet, 900000, False, False, False, False, True))
     End Sub
 
+    <Fact>
+    Public Sub Surface_without_holds_is_not_summoned_by_unrelated_popups()
+        ' The recipients overlay carries no holds: an open popup on the toolbar must not reveal it.
+        Dim state As New TickState With {.Wanted = False, .LastActivity = 0}
+        state.Wanted = Step_(state, 1000, pinned:=False, over:=False, hold:=False, hotZone:=False, active:=True)
+        Assert.False(state.Wanted)
+        ' Reveal by pointer hotZone still works.
+        state.Wanted = Step_(state, 2000, pinned:=False, over:=False, hold:=False, hotZone:=True, active:=True)
+        Assert.True(state.Wanted)
+        ' Leaves the hotZone: stays wanted for the 5-second countdown.
+        state.Wanted = Step_(state, 2000 + ChromeMetrics.PanelHideDelayMilliseconds - 1, pinned:=False, over:=False, hold:=False, hotZone:=False, active:=True)
+        Assert.True(state.Wanted)
+        ' Past 5 seconds: hides.
+        state.Wanted = Step_(state, 2000 + ChromeMetrics.PanelHideDelayMilliseconds, pinned:=False, over:=False, hold:=False, hotZone:=False, active:=True)
+        Assert.False(state.Wanted)
+    End Sub
+
     ' --- the fade step ----------------------------------------------------------------------
 
     <Fact>

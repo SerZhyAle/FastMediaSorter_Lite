@@ -1,4 +1,4 @@
-Option Strict On
+﻿Option Strict On
 
 Imports System.Collections.Generic
 Imports System.Drawing
@@ -16,6 +16,7 @@ Imports System.Windows.Forms
 ''' touched.
 ''' </summary>
 Partial Public NotInheritable Class MainWindow
+    Private _pinClearedHost As String
 
     ' --- folder-list handlers ---------------------------------------------------
 
@@ -102,11 +103,14 @@ Partial Public NotInheritable Class MainWindow
         Using dlg As New Share_Root_Params_Form(it.Text, before)
             If dlg.ShowDialog(Me) <> DialogResult.OK Then Return
             Dim after As ShareRootParams = dlg.Result
+            If after.AccessPin.Length > 0 AndAlso String.Equals(_pinClearedHost, host, StringComparison.OrdinalIgnoreCase) Then _pinClearedHost = Nothing
+            If before.AccessPin.Length > 0 AndAlso after.AccessPin.Length = 0 Then _pinClearedHost = host
             ShareRootParamsStore.SetFor(host, after)
             _lastTouchedRoot = host
             it.SubItems(1).Text = ProfileLabel(after)
             it.SubItems(3).Text = RoLabel(after)
-            If before.IsWritable() <> after.IsWritable() AndAlso it.Checked AndAlso _status IsNot Nothing AndAlso _status.Running Then
+            If (before.IsWritable() <> after.IsWritable() OrElse Not String.Equals(before.AccessPin, after.AccessPin, StringComparison.Ordinal)) AndAlso
+                it.Checked AndAlso _status IsNot Nothing AndAlso _status.Running Then
                 If IsDisposed Then Return
                 Await ApplySharedFoldersAsync()
             End If
@@ -319,7 +323,9 @@ Partial Public NotInheritable Class MainWindow
         Dim list As New List(Of ShareFolder)()
         For i As Integer = 0 To hosts.Count - 1
             Dim writable As Boolean = ShareRootParamsStore.GetFor(hosts(i)).IsWritable()
-            list.Add(New ShareFolder With {.name = names(i), .hostPath = hosts(i), .readOnly = Not writable})
+            Dim pin As String = ShareRootParamsStore.GetFor(hosts(i)).AccessPin
+            list.Add(New ShareFolder With {.name = names(i), .hostPath = hosts(i), .readOnly = Not writable,
+                .accessPin = If(String.Equals(_pinClearedHost, hosts(i), StringComparison.OrdinalIgnoreCase), "", If(String.IsNullOrEmpty(pin), Nothing, pin))})
         Next
         Return list
     End Function
@@ -601,6 +607,7 @@ Partial Public NotInheritable Class MainWindow
         If IsDisposed Then Return
         ApplyStatusToUi()
         SetBusy(False)
+        If refused = "" Then _pinClearedHost = Nothing
         If refused <> "" Then SetHint(refused)
         If _status IsNot Nothing AndAlso _status.Running AndAlso _status.Reachability Is Nothing Then Await PollReachabilityAsync()
     End Function

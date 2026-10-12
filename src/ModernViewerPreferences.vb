@@ -97,7 +97,8 @@ Public NotInheritable Class ModernViewerPreferences
 
     Friend Function ChromeLayoutKey() As String
         Return JsonSerializer.Serialize(New Object() {InterfaceScalePercent, InterfaceScaleRelativePercent, ChromeSize,
-            ChromePinned, ChromeOpacityPercent, ChromeCornerRadius, ChromeRow1Pinned, ChromeRow2Pinned, ChromeStatusPinned})
+            ChromePinned, ChromeOpacityPercent, ChromeCornerRadius, ChromeRow1Pinned, ChromeRow2Pinned, ChromeStatusPinned,
+            ChromeWindowControlsPinned})
     End Function
 
     Friend Function OverlayLayoutKey() As String
@@ -136,6 +137,11 @@ Public NotInheritable Class ModernViewerPreferences
     ''' button in its corner: a pinned table never auto-hides. <see cref="ChromePinned"/> holds it up
     ''' as well; the per-panel pins do not - the table pins like a panel, not with the panels.</summary>
     Public Property RecipientsOverlayPinned As Boolean
+
+    ''' <summary>The window-controls panel's own pin (188 §4), set by the small button in its corner.
+    ''' Pinned by default - including upgrades whose profile has no key for it yet: the panel replaces
+    ''' the removed native caption, so hiding it out of the box would hide the window commands.</summary>
+    Public Property ChromeWindowControlsPinned As Boolean = True
 
     Public Property RecipientsOverlayPosition As String = "topLeft"
     Public Property RecipientsOverlayWidth As Integer = 280
@@ -321,6 +327,7 @@ Public NotInheritable Class ModernViewerPreferences
         p.ChromeRow2Pinned = ReadBool("ChromeRow2Pinned", p.ChromeRow2Pinned)
         p.ChromeStatusPinned = ReadBool("ChromeStatusPinned", p.ChromeStatusPinned)
         p.RecipientsOverlayPinned = ReadBool("RecipientsOverlayPinned", p.RecipientsOverlayPinned)
+        p.ChromeWindowControlsPinned = ReadBool("ChromeWindowControlsPinned", p.ChromeWindowControlsPinned)
 
         p.RecipientsOverlayPosition = ReadChoice("RecipientsOverlayPosition", p.RecipientsOverlayPosition, "topLeft", "topRight", "bottomLeft", "bottomRight")
         p.RecipientsOverlayWidth = ReadInt("RecipientsOverlayWidth", p.RecipientsOverlayWidth, 180, 520)
@@ -407,6 +414,7 @@ Public NotInheritable Class ModernViewerPreferences
         WriteBool("ChromeRow2Pinned", ChromeRow2Pinned)
         WriteBool("ChromeStatusPinned", ChromeStatusPinned)
         WriteBool("RecipientsOverlayPinned", RecipientsOverlayPinned)
+        WriteBool("ChromeWindowControlsPinned", ChromeWindowControlsPinned)
         WriteString("RecipientsOverlayPosition", RecipientsOverlayPosition)
         WriteString("RecipientsOverlayWidth", RecipientsOverlayWidth.ToString(CultureInfo.InvariantCulture))
         WriteString("RecipientsOverlayFontSize", RecipientsOverlayFontSize.ToString(CultureInfo.InvariantCulture))

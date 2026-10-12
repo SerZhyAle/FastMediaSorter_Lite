@@ -10,7 +10,7 @@ Imports System.Text.RegularExpressions
 Imports Xunit
 
 ''' <summary>
-''' The committed "today" baseline of ticket 177 (dual mode) - what the programs did BEFORE any exchange client
+''' The committed "today" baseline of ticket 204 (dual mode) - what the programs did BEFORE any exchange client
 ''' code existed - and the one place that reads it. It lives in <c>TestData\dual-mode</c> beside a
 ''' <c>PROVENANCE.txt</c> whose SHA-256 of every other file is checked FIRST, by every test that reads a
 ''' fixture: a baseline that was edited by hand to fit a change proves nothing.
@@ -24,7 +24,7 @@ Friend Module DualModeFixtures
     Friend Const GeneratorVariable As String = "FMS_WRITE_DUAL_MODE_BASELINE"
 
     ''' <summary>A registry value name or a log word of the CLIENT side of the exchange. A machine with no account
-    ''' has none of these (177 section 2, "Registry" and "Files").</summary>
+    ''' has none of these (204 section 2, "Registry" and "Files").</summary>
     Friend ReadOnly ExchangeValuePattern As New Regex(
         "(^|\\)(Exchange_(DeviceId|Account|Login|Server|Endpoint|Pin|Agent|Features|Paired|Enrolled)|Exchange.?Client|FmsX_|DeviceExchange)",
         RegexOptions.IgnoreCase Or RegexOptions.CultureInvariant)

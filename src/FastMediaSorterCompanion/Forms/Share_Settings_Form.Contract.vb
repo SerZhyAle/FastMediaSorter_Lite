@@ -8,7 +8,9 @@ Imports System.Linq
 Imports System.Windows.Forms
 
 Partial Public NotInheritable Class Share_Settings_Form
-    Private ReadOnly _pageGroups As New Dictionary(Of String, List(Of CollapsibleSection))(StringComparer.Ordinal)
+    ''' <summary>Each page's former fold groups (210): one left-menu item and one static
+    ''' heading block per entry, in page order. No fold state lives here any more.</summary>
+    Private ReadOnly _pageGroups As New Dictionary(Of String, List(Of SettingsNavGroup))(StringComparer.Ordinal)
     Private _wheelSafety As SettingsWheelSafety
     Private _aboutStart As Control
     Private _hostingSnapshot As WorkerResponse
@@ -16,6 +18,22 @@ Partial Public NotInheritable Class Share_Settings_Form
     Private _fittingSettings As Boolean
     Private ReadOnly _fittedSettingsWidths As New Dictionary(Of Panel, Integer)()
     Private _heldSettingsControls As Control()
+
+    ''' <summary>One former fold group of one page: its id in stored state, its localized
+    ''' caption source, the static heading that names the block in the right pane and the
+    ''' rows that belong to it (210 section 5).</summary>
+    Friend NotInheritable Class SettingsNavGroup
+        Friend Id As String
+        Friend CaptionSource As Func(Of String)
+        Friend Heading As Label
+        Friend Rows As New List(Of Control)()
+
+        Friend ReadOnly Property Caption As String
+            Get
+                Return CaptionSource()
+            End Get
+        End Property
+    End Class
 
     Private Shared Function CreateSettingsSection(key As String, title As String) As CollapsibleSection
         Dim section As New CollapsibleSection(key, title)
@@ -31,6 +49,25 @@ Partial Public NotInheritable Class Share_Settings_Form
                 Yield nested
             Next
         Next
+    End Function
+
+    ''' <summary>The block's own editor a subordinate-item click or a search reveal focuses
+    ''' (210 section 4.4): its first selectable control in display order, a setting row
+    ''' answering with its editor rather than its caption.</summary>
+    Private Shared Function FirstSettingsBlockEditor(group As SettingsNavGroup) As Control
+        For Each row As Control In group.Rows
+            Dim owned = TryCast(row, ManagerSettingRow)
+            If owned IsNot Nothing Then
+                If owned.Editor.CanSelect Then Return owned.Editor
+                Continue For
+            End If
+            For Each control In (New Control() {row}).Concat(Descendants(row))
+                Dim inner = TryCast(control, ManagerSettingRow)
+                Dim candidate = If(inner IsNot Nothing, inner.Editor, control)
+                If candidate.CanSelect Then Return candidate
+            Next
+        Next
+        Return Nothing
     End Function
 
     Private Shared Function SettingsPageCaption(section As CollapsibleSection) As String
@@ -67,69 +104,62 @@ Partial Public NotInheritable Class Share_Settings_Form
         section.AddBodyRow(support)
     End Sub
 
-    ' The page owns the old section's editors; the inner groups own disclosure/context only.
+    ' The page owns the old section's editors; the inner groups are one static heading each
+    ' (210 section 5): the fold lives in the left menu, the content never hides a row.
     Private Sub BuildContractGroups(section As CollapsibleSection)
         Dim rows = section.Body.Controls.Cast(Of Control)().ToArray()
-        Dim groups As New List(Of CollapsibleSection)()
+        Dim groups As New List(Of SettingsNavGroup)()
         section.Body.SuspendLayout()
         section.Body.Controls.Clear()
         DirectCast(section.Body, TableLayoutPanel).RowStyles.Clear()
         DirectCast(section.Body, TableLayoutPanel).RowCount = 0
-        Dim current As CollapsibleSection = Nothing
+        Dim current As SettingsNavGroup = Nothing
         Dim groupId As String = Nothing
-        Dim caption As String = Nothing
         For Each row In rows
             Dim nextId = "basic"
-            Dim nextCaption = section.Title
+            Dim caption As Func(Of String) = Function() section.Title
             Select Case section.Key
                 Case "startup"
                     Dim appearance = row.Contains(cmbTheme) OrElse row.Contains(cmbLanguage)
                     nextId = If(appearance, "appearance", "startup")
-                    nextCaption = If(appearance, Localization.T("Настройки интерфейса"), Localization.T("Запуск"))
+                    caption = If(appearance, Function() Localization.T("Настройки интерфейса"), Function() Localization.T("Запуск"))
                 Case "network"
                     Dim policyIndex = Array.IndexOf(rows, DirectCast(chkLanOnly, Control))
                     Dim policy = Array.IndexOf(rows, row) >= policyIndex
                     nextId = If(policy, "access", "connections")
-                    nextCaption = If(policy, Localization.T("Сеть"), Localization.T("Подключения"))
+                    caption = If(policy, Function() Localization.T("Сеть"), Function() Localization.T("Подключения"))
                 Case "hosting"
                     Dim actions = Array.IndexOf(rows, row) >= Array.IndexOf(rows, DirectCast(_btnSwitchToService, Control))
                     nextId = If(actions, "service", "status")
-                    nextCaption = If(actions, Localization.T("Служба Windows"), Localization.T("Состояние"))
+                    caption = If(actions, Function() Localization.T("Служба Windows"), Function() Localization.T("Состояние"))
                 Case "exchange"
                     If row Is _pnlXConfig Then
-                        nextId = "configuration" : nextCaption = Localization.T("Сеть")
+                        nextId = "configuration" : caption = Function() Localization.T("Сеть")
                     ElseIf row Is _pnlXAccounts Then
-                        nextId = "accounts" : nextCaption = ExchangeAdminText.AccountsTitle()
+                        nextId = "accounts" : caption = Function() ExchangeAdminText.AccountsTitle()
                     ElseIf Array.IndexOf(rows, row) > Array.IndexOf(rows, DirectCast(_pnlXAccounts, Control)) Then
-                        nextId = "service" : nextCaption = Localization.T("Служба Windows")
+                        nextId = "service" : caption = Function() Localization.T("Служба Windows")
                     Else
-                        nextId = "server" : nextCaption = ExchangeText.Title()
+                        nextId = "server" : caption = Function() ExchangeText.Title()
                     End If
                 Case "help"
                     Dim about = Array.IndexOf(rows, row) >= Array.IndexOf(rows, _aboutStart)
                     nextId = If(about, "about", "documentation")
-                    nextCaption = If(about, Localization.T("О программе"), Localization.T("Документация"))
+                    caption = If(about, Function() Localization.T("О программе"), Function() Localization.T("Документация"))
             End Select
             If current Is Nothing OrElse nextId <> groupId Then
-                groupId = nextId : caption = nextCaption
-                current = New CollapsibleSection(section.Key & "/" & groupId, caption)
-                current.Width = section.Width
-                current.SuspendLayout()
-                current.Body.SuspendLayout()
-                current.Name = current.Key
-                current.ConfigureSettingsHeader()
-                current.Expanded = (section.Key = "startup" AndAlso groupId = "appearance") OrElse
-                    section.Key = "network" OrElse (section.Key = "hosting" AndAlso groupId = "status") OrElse
-                    (section.Key = "exchange" AndAlso groupId = "server") OrElse section.Key = "exchange-account" OrElse section.Key = "help"
+                groupId = nextId
+                current = New SettingsNavGroup With {.Id = groupId, .CaptionSource = caption}
+                Dim heading As New Label With {.Text = current.Caption, .AutoSize = True, .Dock = DockStyle.Top,
+                    .Name = "managerSettingsHeading_" & section.Key & "_" & groupId,
+                    .Font = New Font(Font.FontFamily, Font.Size, FontStyle.Bold), .Margin = New Padding(0, 10, 0, 4)}
+                AddHandler heading.Disposed, Sub() heading.Font.Dispose()
+                current.Heading = heading
+                section.AddBodyRow(heading)
                 groups.Add(current)
-                section.AddBodyRow(current)
-                AddHandler current.ExpandedChanged, AddressOf OnSettingsGroupChanged
             End If
-            current.AddBodyRow(row)
-        Next
-        For Each group In groups
-            group.Body.ResumeLayout(False)
-            group.ResumeLayout(False)
+            current.Rows.Add(row)
+            section.AddBodyRow(row)
         Next
         _pageGroups.Add(section.Key, groups)
         section.Body.ResumeLayout(False)
@@ -161,13 +191,6 @@ Partial Public NotInheritable Class Share_Settings_Form
             page.ResumeLayout(True)
         End Sub
     End Class
-
-    Private Sub OnSettingsGroupChanged(sender As Object, e As EventArgs)
-        If Not _built Then Return
-        Dim group = DirectCast(sender, CollapsibleSection)
-        managerSettingsContext.Page(_selectedPage).Groups(group.Key) = group.Expanded
-        _pages(_selectedPage).PerformLayout()
-    End Sub
 
     Private Sub HoldSettingsLayout()
         _heldSettingsControls = Descendants(Me).ToArray()
@@ -246,7 +269,8 @@ Partial Public NotInheritable Class Share_Settings_Form
                 number.Width = 110
             End If
             Dim button = TryCast(control, Button)
-            If button IsNot Nothing AndAlso Not _navButtons.Values.Contains(button) AndAlso Not _headerCommands.Contains(button) Then
+            If button IsNot Nothing AndAlso Not _navButtons.Values.Contains(button) AndAlso
+               Not _headerCommands.Contains(button) AndAlso Not TypeOf button Is SettingsNavItemButton Then
                 button.MinimumSize = New Size(0, 44)
                 button.Padding = New Padding(16, 5, 16, 5)
                 button.AutoSize = True
@@ -338,7 +362,9 @@ Partial Public NotInheritable Class Share_Settings_Form
         Dim page = _pages("startup")
         page.PerformLayout()
         Dim height = page.Controls(0).PreferredSize.Height + LogicalToDeviceUnits(52) + _root.Padding.Vertical
-        Dim rail = _navButtons.Values.Sum(Function(button) button.Height + button.Margin.Vertical) + _root.Padding.Vertical
+        ' The rail as it will actually show: page rows plus the item lists their saved
+        ' expansion state reveals (210 section 7.4).
+        Dim rail = SettingsNavRows().Sum(Function(row) row.Height + row.Margin.Vertical) + _root.Padding.Vertical
         ClientSize = New Size(ClientSize.Width, Math.Max(height, rail))
         DpiLayout.ClampToWorkingArea(Me)
     End Sub
@@ -377,6 +403,15 @@ Partial Public NotInheritable Class Share_Settings_Form
             For Each section In AllSettingsSections()
                 _navButtons(section.Key).Text = SettingsPageCaption(section)
                 _navButtons(section.Key).AccessibleName = _navButtons(section.Key).Text
+                Dim items As List(Of SettingsNavItemButton) = Nothing
+                If _navItems.TryGetValue(section.Key, items) Then
+                    For Each item In items
+                        item.Text = item.Group.Caption
+                        item.AccessibleName = item.Group.Caption
+                        toolTip.SetToolTip(item, item.Group.Caption)
+                        item.Group.Heading.Text = item.Group.Caption
+                    Next
+                End If
             Next
             Dim version = Descendants(Me).FirstOrDefault(Function(control) control.Name = "managerVersion")
             If version IsNot Nothing Then version.Text = Localization.T("Версия") & ": " & Application.ProductVersion

@@ -290,7 +290,7 @@ Friend NotInheritable Class ExchangeEntrySession
 End Class
 
 ''' <summary>The viewer's sessions, one per entry, kept while the program runs and closed with it. Nothing is created for an entry
-''' until something asks (a view opens, a resource opens): with no entry the hub is empty and nothing connects (177 dual mode).</summary>
+''' until something asks (a view opens, a resource opens): with no entry the hub is empty and nothing connects (204 dual mode).</summary>
 Friend NotInheritable Class ExchangeEntryHub
     Implements IDisposable
 

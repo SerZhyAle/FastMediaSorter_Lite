@@ -193,13 +193,18 @@ func (d *Dir) Subscribe(account, deviceID string, sink Sink) {
 // Snapshot is the answer to `list`: the account's revision and every record, sorted by id. The
 // requester's own device is included; hiding it is the consumer's rule (9.1).
 func (d *Dir) Snapshot(account string) (revision int64, devices, resources, broadcasts []json.RawMessage) {
+	return d.SnapshotFor(account, "")
+}
+
+// SnapshotFor applies the enrolled device capability to every resource in a full list.
+func (d *Dir) SnapshotFor(account, deviceID string) (revision int64, devices, resources, broadcasts []json.RawMessage) {
 	d.mu.Lock()
 	defer d.mu.Unlock()
 	h := d.hubs[account]
 	if h == nil {
 		return 0, nil, nil, nil
 	}
-	return h.revision, d.rawDevices(h), d.rawResources(h, "", nil), d.rawBroadcasts(h, "", nil)
+	return h.revision, d.rawDevices(h), d.resourcesFor(h, deviceID, d.rawResources(h, "", nil)), d.rawBroadcasts(h, "", nil)
 }
 
 func (d *Dir) rawDevices(h *hub) []json.RawMessage {
@@ -279,6 +284,9 @@ func (d *Dir) Publish(account, deviceID string, raw json.RawMessage) (PublishRes
 			return PublishResult{}, err
 		}
 		return PublishResult{}, ErrMalformed
+	}
+	if rec.Has("protection") && !wire.ValidProtection(rec.Raw("protection")) {
+		return PublishResult{}, ErrProtectionUnsupported
 	}
 	id, ok := rec.Str("resourceId")
 	kind, okK := rec.Str("kind")

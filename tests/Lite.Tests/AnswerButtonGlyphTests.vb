@@ -253,6 +253,104 @@ Public Class AnswerButtonGlyphTests
               End Sub)
     End Sub
 
+    ' --- where the glyph stands on a wide button --------------------------------------------------------------
+
+    Private Shared Function WideButton(caption As String, width As Integer, host As Form, Optional rtl As Boolean = False) As Button
+        Dim b As New Button With {.Text = caption, .AutoSize = False, .Width = width, .Height = 40}
+        If rtl Then b.RightToLeft = RightToLeft.Yes
+        host.Controls.Add(b)
+        ButtonGlyphs.Apply(b, "action.copy", ButtonGlyphRole.Neutral)
+        Return b
+    End Function
+
+    ''' <summary>The first column from the left where a dark pixel of the glyph stands (the border is skipped).</summary>
+    Private Shared Function FirstInkColumn(b As Button) As Integer
+        Using bmp As New Bitmap(b.Width, b.Height)
+            b.DrawToBitmap(bmp, New Rectangle(0, 0, b.Width, b.Height))
+            For x As Integer = 4 To bmp.Width - 1
+                For y As Integer = 4 To bmp.Height - 5
+                    Dim c As Color = bmp.GetPixel(x, y)
+                    If c.R < 110 AndAlso c.G < 110 AndAlso c.B < 110 Then Return x
+                Next
+            Next
+        End Using
+        Return -1
+    End Function
+
+    <Fact>
+    Public Sub The_glyphs_of_stacked_wide_buttons_stand_in_one_column_at_the_reading_start()
+        OnSta(Sub()
+                  Using form As New Form()
+                      Dim stack As New List(Of Button) From {
+                          WideButton("Return to the User edition..", 900, form),
+                          WideButton("Stop the service", 900, form),
+                          WideButton("Restart the service", 900, form),
+                          WideButton("Grant the service access to the shared folders", 900, form)}
+                      Dim inset As Integer = stack(0).LogicalToDeviceUnits(ButtonGlyphs.StartInsetLogical)
+                      For Each b As Button In stack
+                          Assert.Equal(ContentAlignment.MiddleLeft, b.TextAlign)
+                          Assert.Equal(ContentAlignment.MiddleLeft, b.ImageAlign)
+                          Assert.True(b.Padding.Left >= inset, "the pair is inset from the start edge")
+                      Next
+                      Dim columns As List(Of Integer) = stack.Select(Function(b) FirstInkColumn(b)).ToList()
+                      Assert.DoesNotContain(-1, columns)
+                      Assert.Single(columns.Distinct())
+                      Assert.True(columns(0) < 4 * inset, "the glyph is at the start edge, not in the middle: x = " & columns(0))
+                  End Using
+              End Sub)
+    End Sub
+
+    <Fact>
+    Public Sub A_narrow_button_keeps_the_pair_centred_and_a_widened_one_gets_its_alignment_back()
+        OnSta(Sub()
+                  Using form As New Form()
+                      Dim b As Button = WideButton("Stop", 100, form)
+                      Assert.Equal(ContentAlignment.MiddleCenter, b.TextAlign)
+                      Assert.Equal(ContentAlignment.MiddleCenter, b.ImageAlign)
+                      Assert.Equal(Padding.Empty, b.Padding)
+
+                      b.Width = 900
+                      Assert.Equal(ContentAlignment.MiddleLeft, b.TextAlign)
+                      Assert.True(b.Padding.Left > 0)
+
+                      b.Width = 100
+                      Assert.Equal(ContentAlignment.MiddleCenter, b.TextAlign)
+                      Assert.Equal(ContentAlignment.MiddleCenter, b.ImageAlign)
+                      Assert.Equal(Padding.Empty, b.Padding)
+                  End Using
+              End Sub)
+    End Sub
+
+    <Fact>
+    Public Sub In_a_right_to_left_layout_the_inset_is_on_the_right_where_the_reading_starts()
+        OnSta(Sub()
+                  Using form As New Form()
+                      Dim b As Button = WideButton("Stop", 900, form, rtl:=True)
+                      Dim inset As Integer = b.LogicalToDeviceUnits(ButtonGlyphs.StartInsetLogical)
+                      ' The alignment is the logical one (the framework mirrors it); the padding is physical.
+                      Assert.Equal(ContentAlignment.MiddleLeft, b.TextAlign)
+                      Assert.True(b.Padding.Right >= inset)
+                      Assert.Equal(0, b.Padding.Left)
+                      Assert.Equal(1, ButtonGlyphs.PairSide(b))
+                  End Using
+              End Sub)
+    End Sub
+
+    <Fact>
+    Public Sub A_button_the_owner_aligned_left_is_left_as_the_owner_set_it()
+        OnSta(Sub()
+                  Using form As New Form()
+                      Dim b As New Button With {.Text = "Open the folder", .AutoSize = False, .Width = 900, .Height = 40,
+                                                .TextAlign = ContentAlignment.MiddleLeft, .Padding = New Padding(20, 0, 0, 0)}
+                      form.Controls.Add(b)
+                      ButtonGlyphs.Apply(b, "nav.open-external", ButtonGlyphRole.Neutral)
+                      Assert.Equal(ContentAlignment.MiddleLeft, b.TextAlign)
+                      Assert.Equal(New Padding(20, 0, 0, 0), b.Padding)
+                      Assert.Equal(ContentAlignment.MiddleLeft, b.ImageAlign)
+                  End Using
+              End Sub)
+    End Sub
+
     <Theory>
     <InlineData(144, 24, 9)>
     <InlineData(192, 32, 12)>

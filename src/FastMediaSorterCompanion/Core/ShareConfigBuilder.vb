@@ -1,4 +1,4 @@
-Option Strict On
+﻿Option Strict On
 
 Imports System.Collections.Generic
 Imports System.Globalization
@@ -127,6 +127,9 @@ Public Module ShareConfigBuilder
                           Optional stamp As ShareConfigStamp = Nothing,
                           Optional exchange As ExchangeExport = Nothing) As ShareConfigResult
         If status Is Nothing OrElse Not status.Running Then Return Nothing
+        ' FMSCFG has no SSH resource-proof marker: exporting a worker-enforced lock
+        ' would hand older clients a descriptor that looks unlocked, or reveal the original PIN.
+        If status.ResourcePinSupported AndAlso status.Roots IsNot Nothing AndAlso status.Roots.Any(Function(r) r.pinProtected) Then Return Nothing
         Dim reach As WorkerReachability = status.Reachability
         Dim port As Integer = status.ListenPort
         If port <= 0 Then Return Nothing

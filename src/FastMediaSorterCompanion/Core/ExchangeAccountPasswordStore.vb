@@ -14,7 +14,7 @@ Imports System.Text.Json.Nodes
 ' its own) - never in the registry, never in a log, never on a command line. Anything that can run under the same
 ' Windows account can decrypt it; that is the trade-off the person accepts when they turn keeping on (the warning says so).
 '
-' Nothing is created on construction or on a read: a machine that never kept a password has no file (the dormant rule of 177).
+' Nothing is created on construction or on a read: a machine that never kept a password has no file (the dormant rule of 204).
 ' Keeping off deletes the file (ExchangeAccountPasswordStore.Clear), so nothing stays on disk behind the person's back.
 
 ''' <summary>Windows DPAPI for the account passwords: user scope, an entropy of this product's own.</summary>

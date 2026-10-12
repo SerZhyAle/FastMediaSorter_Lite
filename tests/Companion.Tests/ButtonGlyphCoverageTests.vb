@@ -52,6 +52,9 @@ Public Class ButtonGlyphCoverageTests
         For Each b As Button In all
             If String.IsNullOrWhiteSpace(b.Text) Then Continue For
             If OwnPicture.Contains(b.Name) Then Continue For
+            ' The settings nav tree's subordinate rows are caption-only by design (spec 210):
+            ' the page row carries the icon, the item is its indented text.
+            If b.Name.StartsWith("managerSettingsNavItem_", StringComparison.Ordinal) Then Continue For
             ' The navigation rail and the header tools render their own catalog glyph (ThemePalette-aware, 20 px); a
             ' picture is what this walk asks for, whichever mechanism drew it.
             If Not ButtonGlyphs.CarriesGlyph(b) AndAlso b.Image Is Nothing Then missing.Add(form.GetType().Name & "/" & If(b.Name.Length > 0, b.Name, "(unnamed)") & " '" & b.Text & "' [glyph=" & ButtonGlyphs.GlyphOf(b) & ", image=" & (b.Image IsNot Nothing).ToString() & ", enabled=" & b.Enabled.ToString() & "]")

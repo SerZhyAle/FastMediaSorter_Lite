@@ -1,4 +1,4 @@
-#If Not NETFRAMEWORK Then
+﻿#If Not NETFRAMEWORK Then
 Option Strict On
 
 Imports System.Collections.Generic
@@ -53,6 +53,8 @@ Public NotInheritable Class LiveServerFixture
         Dim share As String = Path.Combine(work, "share")
         Directory.CreateDirectory(Path.Combine(share, "sub"))
         Directory.CreateDirectory(Path.Combine(work, "data"))
+        Directory.CreateDirectory(Path.Combine(work, "protected"))
+        File.WriteAllText(Path.Combine(work, "protected", "secret.txt"), "protected fixture bytes")
         File.WriteAllBytes(Path.Combine(share, "a.jpg"), New Byte() {&HFF, &HD8, &HFF, &HE0, 1, 2, 3, 4, 5, 6, 7, 8})
         File.WriteAllBytes(Path.Combine(share, "b.png"), New Byte() {&H89, &H50, &H4E, &H47, 9, 8, 7, 6})
         File.WriteAllText(Path.Combine(share, "only.txt"), "read only share content")
@@ -82,6 +84,7 @@ Public NotInheritable Class LiveServerFixture
             .UseShellExecute = False, .CreateNoWindow = True, .RedirectStandardOutput = True, .RedirectStandardError = True}
         info.ArgumentList.Add(Path.Combine(work, "share"))
         info.ArgumentList.Add(Port.ToString())
+        info.Environment("FMS_DEVSERVE_RESOURCE_PIN") = "216-original-pin"
         info.Environment("FMS_COMPANION_DATA_DIR") = Path.Combine(work, "data")
         process = Process.Start(info)
         ' Drain stderr so a full pipe never stalls the server.
@@ -211,6 +214,41 @@ Public Class SftpLiveTests
     Private Shared Function Failure(work As Action) As ResourceFailure
         Dim thrown As ResourceFailureException = Assert.Throws(Of ResourceFailureException)(work)
         Return thrown.Failure
+    End Function
+
+    <LiveFact>
+    Public Async Function Live_OriginalResourcePinIsRequiredAndProofCannotOpenAnotherRoot() As Task
+        Dim lockedResource As ResourceDescriptor = Resource(folder:="/Protected")
+        lockedResource.PinRequired = True
+        ResourcePinMemory.Forget(lockedResource)
+        Dim missing As ConnectOutcome = Await ResourceConnect.ConnectAsync(lockedResource, server.Password, Nothing, Nothing, Function() False, CancellationToken.None)
+        Assert.False(missing.Succeeded)
+        Assert.Equal(ResourceFailureKind.Auth, missing.Failure.Kind)
+        Dim wrong As ConnectOutcome = Await ResourceConnect.ConnectAsync(lockedResource, server.Password, Nothing, Nothing, Function() False, CancellationToken.None, resourcePin:="wrong")
+        Assert.False(wrong.Succeeded)
+        Assert.Equal(ResourceFailureKind.Auth, wrong.Failure.Kind)
+        Assert.Null(ResourcePinMemory.GetPin(lockedResource))
+        Dim correct As ConnectOutcome = Await ResourceConnect.ConnectAsync(lockedResource, server.Password, Nothing, Nothing, Function() False, CancellationToken.None, resourcePin:="216-original-pin")
+        Assert.True(correct.Succeeded, If(correct.Failure?.ToString(), ""))
+        Using provider As SftpProvider = DirectCast(correct.Provider, SftpProvider)
+            Assert.Equal({"secret.txt"}, Names(provider.ListEntries("/Protected", CancellationToken.None)))
+            Dim target As String = Path.Combine(scratch, "secret.txt")
+            provider.Download("/Protected/secret.txt", target, Nothing, CancellationToken.None)
+            Assert.Equal("protected fixture bytes", File.ReadAllText(target))
+            Assert.NotNull(Failure(Sub() provider.ListEntries("/Share", CancellationToken.None)))
+            server.Drop()
+            Try
+                Assert.Equal(ResourceFailureKind.Auth, Failure(Sub() provider.EnsureResourceAuthorization(CancellationToken.None)).Kind)
+                Assert.Null(ResourcePinMemory.GetPin(lockedResource))
+            Finally
+                server.Restore()
+            End Try
+            Assert.Equal(ResourceFailureKind.Auth, Failure(Sub() provider.EnsureResourceAuthorization(CancellationToken.None)).Kind)
+        End Using
+        ResourcePinMemory.Forget(lockedResource)
+        Using legacy As SftpProvider = Opened(Resource())
+            Assert.NotNull(Failure(Sub() legacy.ListEntries("/Protected", CancellationToken.None)))
+        End Using
     End Function
 
     ' --------------------------------------------------------------------------- listing ----

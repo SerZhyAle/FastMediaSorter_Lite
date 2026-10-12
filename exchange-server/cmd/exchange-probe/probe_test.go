@@ -18,7 +18,7 @@ import (
 	"fms/exchange-server/internal/testkit"
 )
 
-// Ticket 178 T-2 acceptance 3: the probe's verdict line is PASS against a fresh deployment and names the
+// Ticket 205 T-2 acceptance 3: the probe's verdict line is PASS against a fresh deployment and names the
 // step it stopped at otherwise. The same code runs here in process against the test kit's server and
 // against the real fms-exchange-server binary built from this module.
 

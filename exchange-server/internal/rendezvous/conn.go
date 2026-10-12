@@ -43,6 +43,7 @@ type Server struct {
 	closeOnce sync.Once
 
 	mu    sync.Mutex
+	jobs  sync.WaitGroup
 	ln    net.Listener
 	conns map[*trackedConn]struct{}
 }
@@ -86,9 +87,20 @@ func (s *Server) Connections() int {
 // Serve accepts connections until Close. It returns nil after Close.
 func (s *Server) Serve(ln net.Listener) error {
 	s.mu.Lock()
+	select {
+	case <-s.closed:
+		s.mu.Unlock()
+		_ = ln.Close()
+		return nil
+	default:
+	}
 	s.ln = ln
+	s.jobs.Add(1)
 	s.mu.Unlock()
-	go s.sweepLoop()
+	go func() {
+		defer s.jobs.Done()
+		s.sweepLoop()
+	}()
 	for {
 		c, err := ln.Accept()
 		if err != nil {
@@ -132,6 +144,7 @@ func (s *Server) Close() {
 		for _, c := range conns {
 			_ = c.Close()
 		}
+		s.jobs.Wait()
 	})
 }
 
@@ -185,6 +198,13 @@ func (s *Server) track(c net.Conn) *trackedConn {
 	}
 	tc := &trackedConn{Conn: c, s: s}
 	s.mu.Lock()
+	select {
+	case <-s.closed:
+		s.mu.Unlock()
+		_ = c.Close()
+		return nil
+	default:
+	}
 	s.conns[tc] = struct{}{}
 	s.mu.Unlock()
 	return tc

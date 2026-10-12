@@ -1,4 +1,4 @@
-#If Not NETFRAMEWORK Then
+﻿#If Not NETFRAMEWORK Then
 Option Strict On
 
 Imports System.Collections.Generic
@@ -240,7 +240,8 @@ Friend NotInheritable Class Exchange_Devices_Panel
             Dim src As ServerSource = _sources(i)
             Dim keep As ExchangeEntry = stored.FirstOrDefault(Function(e) String.Equals(e.Id, src.Entry.Id, StringComparison.Ordinal))
             If keep Is Nothing OrElse Not String.Equals(keep.Server, src.Entry.Server, StringComparison.Ordinal) OrElse
-               Not String.Equals(keep.Pin, src.Entry.Pin, StringComparison.Ordinal) Then
+               Not String.Equals(keep.Pin, src.Entry.Pin, StringComparison.Ordinal) OrElse
+               Not Object.ReferenceEquals(src.Session, _hub.SessionFor(keep)) Then
                 StopSource(src)
                 RemoveHandler src.Feed.Changed, src.Handler
                 _sources.RemoveAt(i)
@@ -576,7 +577,9 @@ Friend NotInheritable Class Exchange_Devices_Panel
         Dim state As ExchangeAgentState = If(src Is Nothing, ExchangeAgentState.NotConfigured, StateOfSource(src))
         _attachAllButton.Visible = src IsNot Nothing AndAlso state = ExchangeAgentState.Online
         _signOutButton.Visible = src IsNot Nothing
-        _signInButton.Visible = src IsNot Nothing AndAlso (state = ExchangeAgentState.SignInAgain OrElse state = ExchangeAgentState.PinMismatch)
+        Dim needsPinEnrollment As Boolean = src IsNot Nothing AndAlso src.Feed.Current.Snapshot IsNot Nothing AndAlso
+            src.Feed.Current.Snapshot.Resources.Any(Function(r) ExchangeAttach.NeedsPinEnrollment(r))
+        _signInButton.Visible = src IsNot Nothing AndAlso (state = ExchangeAgentState.SignInAgain OrElse state = ExchangeAgentState.PinMismatch OrElse needsPinEnrollment)
         _updateAddressButton.Visible = src IsNot Nothing AndAlso src.Moved.Length > 0
         _handOnButton.Visible = src IsNot Nothing AndAlso state = ExchangeAgentState.Online
         _autoBox.Visible = src IsNot Nothing
@@ -670,15 +673,26 @@ Friend NotInheritable Class Exchange_Devices_Panel
             RaiseEvent StatusSaid(ExchangeResourceText.AttachFailure(ExchangeAttachOutcome.NoAccess), False)
             Return
         End If
+        If ExchangeAttach.NeedsPinEnrollment(data.Record) Then
+            RaiseEvent StatusSaid(ExchangeResourceText.AttachFailure(ExchangeAttachOutcome.SignInAgain), False)
+            UpdateButtons()
+            Return
+        End If
         _busy = True
         Try
             Dim token As CancellationToken = If(src.Cts IsNot Nothing, src.Cts.Token, CancellationToken.None)
-            Dim outcome As ExchangeAttachOutcome = Await src.Sync.AttachAsync(data.Record, data.Group.Name, token)
+            Dim pin As String = Nothing
+            If data.Record.IsProtected Then
+                pin = ResourcePinPromptUi.Ask(FindForm(), data.Row.Name)
+                If pin Is Nothing Then Return
+            End If
+            Dim failure As ResourceFailure = Nothing
+            Dim outcome As ExchangeAttachOutcome = Await src.Sync.AttachAsync(data.Record, data.Group.Name, token, pin, Sub(f) failure = f)
             If outcome = ExchangeAttachOutcome.Attached Then
                 RaiseEvent StatusSaid(ExchangeResourceText.Attached(data.Row.Name), True)
                 RaiseEvent ResourcesChanged(Me, EventArgs.Empty)
             Else
-                RaiseEvent StatusSaid(ExchangeResourceText.AttachFailure(outcome), False)
+                RaiseEvent StatusSaid(If(outcome = ExchangeAttachOutcome.ConnectionFailed, ResourceMessages.ForFailure(failure), ExchangeResourceText.AttachFailure(outcome)), False)
             End If
         Catch ex As OperationCanceledException
         Finally
@@ -740,6 +754,7 @@ Friend NotInheritable Class Exchange_Devices_Panel
         Dim name As String = src.Entry.DisplayName
         StopSource(src)
         _hub.Forget(src.Entry.Id)
+        ResourcePinMemory.ForgetEntry(src.Entry.Id)
         _entries.Remove(src.Entry.Id)
         RebuildSources()
         RaiseEvent StatusSaid(ExchangeEntryText.SignedOut(name), True)

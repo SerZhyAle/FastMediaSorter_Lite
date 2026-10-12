@@ -26,11 +26,13 @@
     6d. Positioning and typed facts -> tools/Test-SitePositioning.ps1 (the pillars in the source's order on every declared
                                        surface, the editions, the reserved door, the language count and the platform floor; offline)
 
-    These are UNIT/logic suites - fast, no network, no phone. Two live suites are opt-in:
+    These are UNIT/logic suites - fast, no network, no phone. Three live suites are opt-in:
     -Integration sends GetStatus to a RUNNING worker and validates the answer (read-only - it
-    never starts a worker or touches its data), and -OcrScenes drives the built mainline viewer
+    never starts a worker or touches its data), -OcrScenes drives the built mainline viewer
     over the OCR overlay scenes - minutes, a window on screen, the OCR settings borrowed and put
-    back - so it is never part of a default run.
+    back - and -DynAudit runs the dynamic-audit campaign of specification 209 (self-test,
+    control run, measured scenes against an isolated profile; hours, injected input), so
+    neither is ever part of a default run.
 
     Every suite runs whatever the one before it returned, and the summary names all of them.
 
@@ -41,6 +43,13 @@
 .PARAMETER OcrScenes
     Also run tests/Integration/OcrOverlayScenes.ps1 (needs a built bin\Release viewer and no
     viewer running; about 45 s per scene).
+
+.PARAMETER DynAudit
+    Also run tools/dynaudit/DynAudit.ps1 (specification 209: the dynamic-audit campaign -
+    self-test, control run, then the measured scenes of the catalog against an isolated
+    profile). It drives a real interactive session of the built viewer (injected keys,
+    clipboard, storms), so without -Confirm quiet-session and a quiet machine it answers
+    COULD NOT VERIFY, never a pass - an opt-in hand-run switch, never a default run.
 
 .PARAMETER SkipGo
     Skip the Go worker suite. It is reported as SKIPPED, never as passed.
@@ -74,6 +83,7 @@
 param(
     [switch]$Integration,
     [switch]$OcrScenes,
+    [switch]$DynAudit,
     [switch]$SkipGo,
     [switch]$SkipExchangeGo,
     [string]$WorkerRepo = ''
@@ -99,6 +109,7 @@ $plan = @('viewer', 'share-manager', $(if ($SkipGo) { 'worker-go (skipped)' } el
           'placement', 'documentation', 'naming', 'site', 'site-addresses', 'site-origins', 'site-positioning')
 if ($Integration) { $plan += 'share-identity', 'share-helper-logic', 'worker-ipc' }
 if ($OcrScenes)   { $plan += 'ocr-scenes' }
+if ($DynAudit)     { $plan += 'dynaudit' }
 Write-Subject 'Run-AllTests' "$($plan -join ', '); $(Get-TreeLabel $root)"
 
 # One row per suite. Code: 0 / 1 / 2, or $null for a suite the caller switched off. SkippedTests is the
@@ -288,7 +299,7 @@ if ($SkipExchangeGo) {
     }
 }
 
-# --- 3c: the exchange conformance evidence (ticket 178) -------------------------
+# --- 3c: the exchange conformance evidence (ticket 205) -------------------------
 # The vectors the generator produces and the probe against a server built from this module. It runs
 # its own 64-bit Go resolution and answers COULD NOT VERIFY without one; -SkipExchangeGo switches it
 # off with the suite it belongs to.
@@ -317,6 +328,9 @@ if ($Integration) {
 }
 if ($OcrScenes) {
     Invoke-ScriptSuite 'ocr-scenes' 'OCR overlay scenes' (Join-Path $root 'tests\Integration\OcrOverlayScenes.ps1')
+}
+if ($DynAudit) {
+    Invoke-ScriptSuite 'dynaudit' 'Dynamic audit campaign' (Join-Path $root 'tools\dynaudit\DynAudit.ps1')
 }
 
 # --- summary ------------------------------------------------------------------

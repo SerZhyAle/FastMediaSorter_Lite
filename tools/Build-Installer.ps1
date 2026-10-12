@@ -206,8 +206,9 @@ New-Item -ItemType Directory -Path $distDir -Force | Out-Null
 
 # ".log": bin\Release is where the app is run from, so AppFileLogger's current.log sits
 # here carrying this machine's paths - see the same filter in Build-OfflineRelease.ps1.
+# Keep local executable backups on disk, outside the distributed payload.
 Get-ChildItem $releaseDir -Recurse -File |
-    Where-Object { $_.Extension -notin ".pdb", ".xml", ".log" } |
+    Where-Object { $_.Extension -notin ".pdb", ".xml", ".log" -and $_.Name -notlike '*.previous-*.exe' } |
     ForEach-Object {
         $relative = Get-RelativePath -BasePath $releaseDir -TargetPath $_.FullName
         # The exchange server (specification 133) is never taken from this wildcard copy: a

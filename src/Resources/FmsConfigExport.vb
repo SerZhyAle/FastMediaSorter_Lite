@@ -1,4 +1,4 @@
-#If Not NETFRAMEWORK Then
+﻿#If Not NETFRAMEWORK Then
 Option Strict On
 
 Imports System.Collections.Generic
@@ -26,6 +26,7 @@ Friend Enum FmsExportRefusal
     NoAddress = 3
     ''' <summary>The root path is not a virtual path the reader accepts.</summary>
     BadRoot = 4
+    UnsupportedProtection = 5
 End Enum
 
 ''' <summary>The outcome of one export. The JSON and the compressed code are held only here, in
@@ -87,6 +88,7 @@ Friend Module FmsConfigExport
                            Optional unprotect As Func(Of String, SecretProtectionResult) = Nothing) As FmsExportResult
         If descriptor Is Nothing Then Return New FmsExportResult(FmsExportRefusal.BadRoot)
         ' The wire carries protocol "sftp" only; an SMB selection is refused before anything is built.
+        If descriptor.PinRequired Then Return New FmsExportResult(FmsExportRefusal.UnsupportedProtection)
         If descriptor.Kind <> ResourceKind.Sftp Then Return New FmsExportResult(FmsExportRefusal.Smb)
         ' An exported document without a fingerprint would downgrade the receiver to first-use
         ' trust - the pin is what makes the document better than typing the address in.

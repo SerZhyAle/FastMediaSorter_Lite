@@ -14,7 +14,7 @@ import (
 	"fms/exchange-server/internal/wire"
 )
 
-// Ticket 178 T-1 acceptance 1 and 2 on the Go side: regenerating gives the same bytes, a hand edit
+// Ticket 205 T-1 acceptance 1 and 2 on the Go side: regenerating gives the same bytes, a hand edit
 // fails the suite on the provenance hash, and the committed files are what the generator produces now.
 
 var (
@@ -48,7 +48,7 @@ func TestRegeneratingGivesTheSameBytes(t *testing.T) {
 			t.Errorf("%s differs between two runs: a generated vector must be a function of the code alone", name)
 		}
 	}
-	if len(first) != 4 {
+	if len(first) != 5 {
 		t.Fatalf("%d files", len(first))
 	}
 }

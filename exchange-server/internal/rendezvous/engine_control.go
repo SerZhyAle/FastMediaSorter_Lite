@@ -67,7 +67,7 @@ func (e *Engine) handle(cs *ControlStream, sess *Session, env wire.Envelope) boo
 	case *wire.Bye:
 		return false
 	case *wire.List:
-		rev, ds, rs, bs := e.cfg.Dir.Snapshot(acct)
+		rev, ds, rs, bs := e.cfg.Dir.SnapshotFor(acct, dev)
 		return cs.Send(&wire.Directory{Revision: rev, Devices: ds, Resources: rs, Broadcasts: bs}) == nil
 	case *wire.Subscribe:
 		e.cfg.Dir.Subscribe(acct, dev, cs)
@@ -143,6 +143,8 @@ func (e *Engine) handle(cs *ControlStream, sess *Session, env wire.Envelope) boo
 // publishWhy is a short, secret-free word for a refused publish, for the log.
 func publishWhy(err error) string {
 	switch {
+	case errors.Is(err, directory.ErrProtectionUnsupported):
+		return "protection-unsupported"
 	case errors.Is(err, directory.ErrIDCollision):
 		return "id-collision"
 	case errors.Is(err, directory.ErrCapacity), errors.Is(err, wire.ErrRecordSize):

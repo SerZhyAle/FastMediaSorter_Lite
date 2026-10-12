@@ -233,6 +233,8 @@ Partial Public NotInheritable Class Share_Settings_Form
 
         ' ask 2 of the entries proposal: the announced address is shown and the edit offered - never a silent switch
         Dim moved As String = If(status Is Nothing OrElse Not status.Configured, "", ExchangeEntryMove.Announced(status.Server, status.PublicEndpoint))
+        ' a server on this very PC is reached by loopback whatever address it announces to other devices: nothing to update
+        If moved.Length > 0 AndAlso ExchangeLocalJoin.IsLocalServer(status.Server) Then moved = ""
         _accMoved.Text = If(moved.Length = 0, "", ExchangeDeviceText.MovedAddress(moved))
         _accMoved.Visible = moved.Length > 0
         _accMovedRow.Visible = moved.Length > 0

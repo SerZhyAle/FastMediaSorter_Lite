@@ -116,9 +116,12 @@ try {
         if (-not (Test-Path -LiteralPath $ExePath -PathType Leaf)) {
             Stop-Run 2 "the exchange server executable was not found: '$ExePath'"
         }
-        # Idempotent: drop any rule of this name first. Its exit code is ignored on purpose -
-        # "No rules match" is non-zero when nothing was there, which is fine.
-        & netsh.exe advfirewall firewall delete rule name="$rule" | Out-Null
+        # Idempotent: drop this name's rule FOR THIS PROGRAM first - never every rule of the name. The
+        # console copy and the service's staged copy share the name; deleting by name alone replaced
+        # the service's rule with one for a copy nothing runs while the service is registered, and the
+        # server went unreachable behind a screen that said "a rule exists". Its exit code is ignored
+        # on purpose - "No rules match" is non-zero when nothing was there, which is fine.
+        & netsh.exe advfirewall firewall delete rule name="$rule" program="$ExePath" | Out-Null
         & netsh.exe advfirewall firewall add rule name="$rule" dir=in action=allow `
             program="$ExePath" protocol=TCP profile=domain,private,public enable=yes | Out-Null
         if ($LASTEXITCODE -ne 0) {

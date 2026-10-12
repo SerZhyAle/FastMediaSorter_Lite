@@ -5,7 +5,7 @@ Option Strict On
 '   "Let other SFTP programs (WinSCP, FileZilla) reach my shares through the server"   Exchange_AgentThirdPartyPort
 '
 ' Enrolling an account publishes nothing: a value that is absent is "off". The names start with "Exchange_Agent" so that the dual-mode
-' baseline of ticket 177 (the value pattern in DualModeFixtures) would catch one leaking into a profile that never configured an
+' baseline of ticket 204 (the value pattern in DualModeFixtures) would catch one leaking into a profile that never configured an
 ' account, and they are NEVER added to the log package's allow-list (a new setting is withheld from a report until added on purpose).
 '
 ' A value is a plain "1" or absent; reading never creates a key. Leaving the account ("Disconnect: keep nothing") removes both, so a

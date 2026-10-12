@@ -51,13 +51,17 @@ Friend NotInheritable Class Exchange_Password_Form
     Private _copied As Boolean
     Private _revealed As Boolean
     Private _choseOwn As Boolean
+    Private _entered As String = ""
 
     Private Const ContentWidth As Integer = 420
 
-    ''' <summary>The password a person typed and the policy accepted; read once, right after OK.</summary>
+    ''' <summary>The password a person typed and the policy accepted, taken at the moment of OK. It is NOT read from the field:
+    ''' the field is emptied when the window closes, and a caller reads this after <c>ShowDialog</c> has returned - which is
+    ''' after the close. Reading the field there handed the server an empty password (the test host, 2026-10-12: every typed
+    ''' reset answered weak-password). It is dropped when the dialog is disposed.</summary>
     Friend ReadOnly Property EnteredPassword As String
         Get
-            Return If(_txt Is Nothing, "", _txt.Text)
+            Return _entered
         End Get
     End Property
 
@@ -226,6 +230,7 @@ Friend NotInheritable Class Exchange_Password_Form
             _txt.Focus()
             Return
         End If
+        _entered = _txt.Text
         Me.DialogResult = DialogResult.OK
     End Sub
 
@@ -261,6 +266,11 @@ Friend NotInheritable Class Exchange_Password_Form
             End If
         End If
         MyBase.OnFormClosing(e)
+    End Sub
+
+    Protected Overrides Sub Dispose(disposing As Boolean)
+        If disposing Then _entered = ""
+        MyBase.Dispose(disposing)
     End Sub
 
 End Class

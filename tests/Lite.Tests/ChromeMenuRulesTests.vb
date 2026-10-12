@@ -13,6 +13,9 @@ Imports Xunit
 ''' (UX-307), the reveal rules (UX-308, UX-309) and the contrast floors (UX-313h, UX-314). Plus a few checks
 ''' of the surface and the menu that need a window handle but no screen.
 ''' </summary>
+' Popup dismissal observes the desktop foreground window. Other UI tests must not
+' activate windows while this collection drives the real popup message filter.
+<Collection("ChromeMenuDesktop")>
 Public Class ChromeMenuRulesTests
 
     Private Shared Sub OnSta(action As Action)

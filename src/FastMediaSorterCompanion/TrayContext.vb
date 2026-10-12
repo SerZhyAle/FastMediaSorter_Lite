@@ -59,6 +59,9 @@ Friend NotInheritable Class TrayContext
         ' The device agent of the exchange (ticket 180). Dormant unless the client gate is open AND an account is configured: with
         ' neither, no agent is even constructed - no connection, no pipe, no registry value, no file.
         ExchangeDeviceHost.StartIfConfigured()
+        ' A PC that runs the exchange server joins it by itself: one silent, bounded background effort, only where the server component is
+        ' installed, no account is configured and the person has not disconnected on purpose (ExchangeLocalJoin).
+        ExchangeLocalJoinHost.Start()
 
         ' Who gets a window. An EXPLICIT gesture always does: a folder argument ("share
         ' this folder", jumps to the package wizard) or windowRequested (the viewer's Share
@@ -142,6 +145,27 @@ Friend NotInheritable Class TrayContext
         AddHandler miBroadcasts.Click, Sub() ShowBroadcastsWindow("")
         menu.Items.Add(miBroadcasts)
         AddHandler menu.Opening, Sub() RefreshBroadcastTrayItem(miBroadcasts)
+
+        ' Live broadcast (ticket 199): the producer of a live broadcast - the microphone, system audio
+        ' or screen - in its own window, a vocabulary deliberately separate from the StreamsPlayer item
+        ' above. Absent, not disabled, while the gate is shut (safety rule 6): LiveBroadcastHost.Offered
+        ' is the gate (the owner's constant or the developer switch), decided on Opening so a switched-on
+        ' machine needs no restart. Nothing is started by showing it; the window alone starts a broadcast.
+        Dim miLive As New ToolStripMenuItem(Localization.T("Живая трансляция..")) With {.Visible = False}
+        AddHandler miLive.Click, Sub() ShowLiveBroadcastWindow()
+        menu.Items.Add(miLive)
+        ' Visibility is the gate; the TEXT is the on-air state (safety rule 2): a broadcast that is
+        ' running names what it captures, so the tray alone says "on air" before the window is opened.
+        AddHandler menu.Opening, Sub()
+                                      miLive.Visible = LiveBroadcastHost.Offered()
+                                      If Not miLive.Visible Then Return
+                                      Dim state As LiveProducerState = LiveBroadcastHost.Controller().State
+                                      If state.Running Then
+                                          miLive.Text = Localization.TF("Идёт живая трансляция - {0}.", state.SourceName)
+                                      Else
+                                          miLive.Text = Localization.T("Живая трансляция..")
+                                      End If
+                                  End Sub
 
         ' Current state + local usage counters (last connection, totals, files served).
         Dim miStatus As New ToolStripMenuItem(Localization.T("Текущее состояние.."))
@@ -587,6 +611,21 @@ Friend NotInheritable Class TrayContext
     ''' Share Manager window, not a page the user cannot use. The status is read fresh: a worker can be
     ''' replaced under a tray that has been up for weeks.
     ''' </summary>
+    ''' <summary>The live broadcast window (ticket 199): one instance, shown on top. Opening it starts
+    ''' nothing - safety rule 1 says a broadcast starts only by the user's act inside the window.</summary>
+    Private _liveBroadcastWindow As Live_Broadcast_Form
+
+    Private Sub ShowLiveBroadcastWindow()
+        If _liveBroadcastWindow Is Nothing OrElse _liveBroadcastWindow.IsDisposed Then
+            _liveBroadcastWindow = New Live_Broadcast_Form()
+        End If
+        Try
+            _liveBroadcastWindow.Show()
+            _liveBroadcastWindow.Activate()
+        Catch
+        End Try
+    End Sub
+
     Private Async Sub ShowBroadcastsWindow(targetPath As String)
         Try
             If Not ServerFeatures.IsEnabled() OrElse Not WorkerProcess.IsAvailable() Then
@@ -796,6 +835,7 @@ Friend NotInheritable Class TrayContext
             End Try
             ' A clean exit says `bye` (presence goes offline at once) and closes the agent's stream and local channel.
             Try
+                ExchangeLocalJoinHost.Stop()
                 ExchangeDeviceHost.StopAtExit()
             Catch e As Exception
                 AppFileLogger.LogException("Exchange: stopping the device agent at exit", e)

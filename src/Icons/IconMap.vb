@@ -112,8 +112,6 @@ Public Module IconMap
         {"managerSettingsNav_exchange-account", New IconMeaning("managerSettingsNav_exchange-account", "device.phone", "Android / SFTP", IconRole.Content, surface:=SM)},
         {"managerSettingsNav_help", New IconMeaning("managerSettingsNav_help", "app.info", "О программе", IconRole.Content, surface:=SM)},
         {"managerSettingsSearch", New IconMeaning("managerSettingsSearch", "action.search", "Поиск настроек", IconRole.Content, surface:=SM)},
-        {"managerSettingsExpandAll", New IconMeaning("managerSettingsExpandAll", "nav.expand", "Развернуть", IconRole.Content, surface:=SM)},
-        {"managerSettingsCollapseAll", New IconMeaning("managerSettingsCollapseAll", "nav.collapse", "Свернуть", IconRole.Content, surface:=SM)},
         {"btnShare", New IconMeaning("btnShare", "action.share", "Поделиться", IconRole.Content, surface:=SM)},
         {"btnAdd", New IconMeaning("btnAdd", "action.add", "Добавить папку..", IconRole.Content, surface:=SM)},
         {"btnDisks", New IconMeaning("btnDisks", "content.disk-container", "Диски .fdd..", IconRole.Content, surface:=SM)},

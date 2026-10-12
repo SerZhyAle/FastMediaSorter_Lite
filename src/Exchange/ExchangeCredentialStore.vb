@@ -15,7 +15,7 @@ Imports System.Text
 '     (ExchangeAccountStore), beside the product's other settings, under values of their own.
 '
 ' Nothing in this file writes or creates anything on construction or on a read: a machine with no account has no
-' exchange folder, no token file and no registry value (the dormant rule of 177 section 2).
+' exchange folder, no token file and no registry value (the dormant rule of 204 section 2).
 
 ''' <summary>Protects and unprotects bytes for the current user. Injectable so the failure paths are testable.</summary>
 Friend Interface IExchangeSecretCipher

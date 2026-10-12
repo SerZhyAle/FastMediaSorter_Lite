@@ -45,6 +45,41 @@ Friend Module ExchangeFirewall
         Return If(dir.Length = 0, "", Path.Combine(dir, HelperScriptName))
     End Function
 
+    ''' <summary>Pure: the program a registered service command line starts - the first token, quoted or
+    ''' not - or "" when the line does not name one.</summary>
+    Friend Function ServiceExeOf(image As String) As String
+        If String.IsNullOrWhiteSpace(image) Then Return ""
+        Dim text As String = image.Trim()
+        Dim exe As String
+        If text.StartsWith("""", StringComparison.Ordinal) Then
+            Dim close As Integer = text.IndexOf(""""c, 1)
+            If close < 0 Then Return ""
+            exe = text.Substring(1, close - 1)
+        Else
+            Dim space As Integer = text.IndexOf(" "c)
+            exe = If(space < 0, text, text.Substring(0, space))
+        End If
+        If Not exe.EndsWith(ExchangeProcess.ExeName, StringComparison.OrdinalIgnoreCase) Then Return ""
+        Return exe
+    End Function
+
+    ''' <summary>The exe the rule has to name: the one that actually listens. While our service is
+    ''' registered that is the copy it starts (the staged one under the machine state directory, never the
+    ''' application folder's), otherwise the application folder's copy the console runs. A rule naming the
+    ''' other copy lets nothing through, which is how the screen once said "a rule exists" for a server
+    ''' nobody could reach.</summary>
+    Friend Function TargetExePath() As String
+        Try
+            Dim image As String = ExchangeService.RegisteredImagePath()
+            If ExchangeService.IsOurImagePath(image) Then
+                Dim staged As String = ServiceExeOf(image)
+                If staged.Length > 0 Then Return staged
+            End If
+        Catch
+        End Try
+        Return ExchangeProcess.ExePath()
+    End Function
+
     ''' <summary>The helper and the exe are both on disk: there is something to enable.</summary>
     Friend Function CanChange() As Boolean
         Dim script As String = HelperScriptPath()
@@ -68,7 +103,7 @@ Friend Module ExchangeFirewall
         Try
             Dim answer As Tuple(Of Integer, String) = If(ShowRuleOverride IsNot Nothing, ShowRuleOverride(), RunNetshShow())
             If answer Is Nothing Then Return RuleState.Unknown
-            Return ParseRule(answer.Item1, answer.Item2, ExchangeProcess.ExePath())
+            Return ParseRule(answer.Item1, answer.Item2, TargetExePath())
         Catch ex As Exception
             AppFileLogger.LogException("Exchange firewall: reading the rule", ex)
             Return RuleState.Unknown
@@ -116,9 +151,9 @@ Friend Module ExchangeFirewall
         Dim code As Integer
         Dim label As String = If(disable, "Exchange firewall: withdraw", "Exchange firewall: enable")
         If disable Then
-            Return ExchangeElevation.RunHelper(label, HelperScriptPath(), code, "-ExePath", ExchangeProcess.ExePath(), "-Disable")
+            Return ExchangeElevation.RunHelper(label, HelperScriptPath(), code, "-ExePath", TargetExePath(), "-Disable")
         End If
-        Return ExchangeElevation.RunHelper(label, HelperScriptPath(), code, "-ExePath", ExchangeProcess.ExePath())
+        Return ExchangeElevation.RunHelper(label, HelperScriptPath(), code, "-ExePath", TargetExePath())
     End Function
 
 

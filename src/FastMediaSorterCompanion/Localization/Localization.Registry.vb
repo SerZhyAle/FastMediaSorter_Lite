@@ -24,7 +24,7 @@ Partial Public NotInheritable Class Localization
         AddAppUxStrings()       ' ticket 028: confirmations, failure actions, consent, accessible names
         AddActivationStrings()  ' ticket 105/108: single-instance hand-off, folder-request consent
         AddThemeStrings()       ' spec 060: the theme setting (table linked from the viewer)
-        AddBroadcastStrings()   ' spec 016: streamsplayer broadcast resource management
+        AddBroadcastStrings()   ' spec 196: streamsplayer broadcast resource management
         AddDiskStrings()        ' DISK-SHARE: file-backed containers and local drive aliases
         AddExchangeStrings()    ' tickets 142-144: the Media Exchange Server group and tray item
         AddServerWelcomeStrings()      ' spec 185: the server welcome - the steps of the share server and the exchange server
@@ -33,6 +33,7 @@ Partial Public NotInheritable Class Localization
         AddExchangeAdminStrings()      ' ticket 168: the exchange server administration - accounts, devices, address, ports, certificate, statement, wizard
         AddExchangeStringStrings()     ' ticket 187 T-2: the operator's "Get connection string" action
         AddExchangeJoinStrings()       ' ticket 187 T-5: the quick join by connection string and the clean leave
+        AddLiveBroadcastStrings()      ' ticket 199: the live broadcast window, tray item and refusals (never 016's "Трансляции для StreamsPlayer")
         AddSendLogsStrings()    ' ticket 182 L-3/L-6: a log that cannot be included, no mail program (table linked from the viewer)
     End Sub
 

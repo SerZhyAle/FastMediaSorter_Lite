@@ -1,4 +1,4 @@
-#If Not NETFRAMEWORK Then
+﻿#If Not NETFRAMEWORK Then
 Option Strict On
 
 Imports System.Collections.Generic
@@ -269,6 +269,10 @@ Friend Enum ExchangeAttachOutcome
     AgentUnavailable = 4
     ''' <summary>The credential could not be protected or the registry could not be saved; nothing was stored.</summary>
     NotStored = 5
+    ''' <summary>The SFTP verification failed; the caller receives the actual connection failure.</summary>
+    ConnectionFailed = 6
+    ''' <summary>The online protected resource has no access for this device's older enrollment.</summary>
+    SignInAgain = 7
 End Enum
 
 ''' <summary>Attaching, and following the producer. The registry and the credential go through ResourceCommit (the secret first, the reference
@@ -281,17 +285,23 @@ Friend NotInheritable Class ExchangeSync
     Private ReadOnly _readPassword As Func(Of ResourceDescriptor, String)
     Private ReadOnly _newId As Func(Of String)
     Private ReadOnly _entryId As String
+    Private ReadOnly _dialer As IEndpointDialer
+    Private ReadOnly _tunnelSource As Func(Of ResourceDescriptor, IExchangeTunnelSource)
 
     ''' <param name="entryId">Ticket 187: the entry this sync serves. An attached resource is bound to the entry AND the producer's resource
     ''' id; only resources carrying this entry's id are looked up, followed or created. Nothing = the Share Manager's older account.</param>
     Friend Sub New(api As IExchangeAgentApi, load As Func(Of List(Of ResourceDescriptor)), commit As Func(Of ResourceDescriptor, String, ResourceCommitResult),
-                   readPassword As Func(Of ResourceDescriptor, String), newId As Func(Of String), Optional entryId As String = Nothing)
+                   readPassword As Func(Of ResourceDescriptor, String), newId As Func(Of String), Optional entryId As String = Nothing,
+                   Optional dialer As IEndpointDialer = Nothing, Optional tunnelSource As Func(Of ResourceDescriptor, IExchangeTunnelSource) = Nothing)
         _api = api
         _load = load
         _commit = commit
         _readPassword = readPassword
         _newId = newId
         _entryId = If(String.IsNullOrEmpty(entryId), Nothing, entryId)
+        _dialer = dialer
+        _tunnelSource = tunnelSource
+        If _tunnelSource Is Nothing Then _tunnelSource = Function(d As ResourceDescriptor) ExchangeTunnelSources.For(d, Nothing, Nothing, Nothing)
     End Sub
 
     ''' <summary>The sync of one of the viewer's own entries, over its own session (no Share Manager).</summary>
@@ -319,20 +329,41 @@ Friend NotInheritable Class ExchangeSync
     End Function
 
     ''' <summary>The user ticked a resource: ask the agent for its access, build the resource, store it (the credential through the DPAPI blob).</summary>
-    Friend Async Function AttachAsync(record As ExchangeResourceRecord, deviceName As String, ct As CancellationToken) As Task(Of ExchangeAttachOutcome)
-        If record Is Nothing OrElse Not record.IsSupportedKind Then Return ExchangeAttachOutcome.Unusable
+    Friend Async Function AttachAsync(record As ExchangeResourceRecord, deviceName As String, ct As CancellationToken, Optional resourcePin As String = Nothing,
+                                     Optional reportFailure As Action(Of ResourceFailure) = Nothing) As Task(Of ExchangeAttachOutcome)
+        If record Is Nothing OrElse Not record.IsSupportedKind OrElse Not record.CanAuthorize Then Return ExchangeAttachOutcome.Unusable
+        If ExchangeAttach.NeedsPinEnrollment(record) Then Return ExchangeAttachOutcome.SignInAgain
+        If record.IsProtected AndAlso String.IsNullOrEmpty(resourcePin) Then
+            reportFailure?.Invoke(New ResourceFailure(ResourceFailureKind.Auth))
+            Return ExchangeAttachOutcome.ConnectionFailed
+        End If
         If ResourceOrigin.FindByExchangeId(_load.Invoke(), record.ResourceId, _entryId) IsNot Nothing Then Return ExchangeAttachOutcome.AlreadyAttached
         Dim access As ExchangeAgentAccessResult = Await _api.GetAccessAsync(record.ResourceId, ct).ConfigureAwait(False)
         If Not access.Reply.IsOk Then
             Select Case access.Reply.Error
-                Case ExchangeAgentPipe.ErrorNoAccess : Return ExchangeAttachOutcome.NoAccess
+                Case ExchangeAgentPipe.ErrorNoAccess
+                    Return If(record.IsProtected AndAlso String.Equals(record.Presence, ExchangeWire.PresenceOnline, StringComparison.Ordinal),
+                              ExchangeAttachOutcome.SignInAgain, ExchangeAttachOutcome.NoAccess)
                 Case ExchangeAgentPipe.ErrorUnknownResource : Return ExchangeAttachOutcome.NoAccess
                 Case Else : Return If(access.Reply.Kind = ExchangeAgentReplyKind.Refused, ExchangeAttachOutcome.Unusable, ExchangeAttachOutcome.AgentUnavailable)
             End Select
         End If
         Dim draft As ExchangeAttachDraft = ExchangeAttach.BuildDraft(record.ResourceId, record.DeviceId, deviceName, record.Name, access.AccessJson, _newId, _entryId)
         If draft Is Nothing Then Return ExchangeAttachOutcome.Unusable
+        draft.Descriptor.PinRequired = record.IsProtected
+        If record.IsProtected Then
+            Dim verified As ConnectOutcome = Await ResourceConnect.ConnectAsync(draft.Descriptor, draft.Password, Nothing, Nothing, Function() False, ct,
+                dialerOverride:=_dialer, tunnelSource:=_tunnelSource.Invoke(draft.Descriptor), resourcePin:=resourcePin).ConfigureAwait(False)
+            If Not verified.Succeeded Then
+                ResourcePinMemory.Forget(draft.Descriptor)
+                reportFailure?.Invoke(verified.Failure)
+                Return ExchangeAttachOutcome.ConnectionFailed
+            End If
+            DirectCast(verified.Provider, IDisposable).Dispose()
+            ResourcePinMemory.Forget(draft.Descriptor)
+        End If
         Dim result As ResourceCommitResult = _commit.Invoke(draft.Descriptor, draft.Password)
+        If Not result.Succeeded Then ResourcePinMemory.Forget(draft.Descriptor)
         Return If(result.Succeeded, ExchangeAttachOutcome.Attached, ExchangeAttachOutcome.NotStored)
     End Function
 
@@ -357,6 +388,25 @@ Friend NotInheritable Class ExchangeSync
     ''' addresses without the agent).</summary>
     Friend Async Function FollowOneAsync(resource As ResourceDescriptor, deviceName As String, ct As CancellationToken) As Task(Of ExchangeFollowOutcome)
         If Not ResourceOrigin.IsExchange(resource) Then Return New ExchangeFollowOutcome(resource, False)
+        Dim listed As ExchangeResourceRecord = Nothing
+        Try
+            Dim directory As ExchangeAgentDirectoryResult = Await _api.GetDirectoryAsync(-1, 0, ct).ConfigureAwait(False)
+            If directory.Reply.IsOk AndAlso directory.Snapshot IsNot Nothing Then
+                listed = directory.Snapshot.Resources.FirstOrDefault(Function(r) r.ResourceId = resource.ExchangeResourceId)
+            End If
+        Catch ex As OperationCanceledException
+            Throw
+        Catch ex As Exception
+            ' A missing directory cannot authorize clearing a stored lock.
+        End Try
+        If listed IsNot Nothing AndAlso Not listed.CanAuthorize Then
+            Dim denied As ResourceDescriptor = System.Text.Json.JsonSerializer.Deserialize(Of ResourceDescriptor)(System.Text.Json.JsonSerializer.Serialize(resource))
+            denied.PinRequired = True
+            denied.ProtectionUnsupported = True
+            ResourcePinMemory.Forget(resource)
+            _commit.Invoke(denied, Nothing)
+            Return New ExchangeFollowOutcome(denied, True)
+        End If
         Dim access As ExchangeAgentAccessResult
         Try
             access = Await _api.GetAccessAsync(resource.ExchangeResourceId, ct).ConfigureAwait(False)
@@ -368,6 +418,12 @@ Friend NotInheritable Class ExchangeSync
         Dim draft As ExchangeAttachDraft = ExchangeAttach.BuildDraft(resource.ExchangeResourceId, resource.ExchangeDeviceId, deviceName,
                                                                      If(resource.RootPath, "").Trim("/"c), access.AccessJson, _newId, _entryId)
         If draft Is Nothing Then Return New ExchangeFollowOutcome(resource, False)
+        draft.Descriptor.PinRequired = resource.PinRequired
+        draft.Descriptor.ProtectionUnsupported = resource.ProtectionUnsupported
+        If listed IsNot Nothing Then
+            draft.Descriptor.PinRequired = listed.IsProtected
+            draft.Descriptor.ProtectionUnsupported = Not listed.CanAuthorize
+        End If
         Dim followed As ExchangeFollowResult = ExchangeAttach.Follow(resource, _readPassword.Invoke(resource), draft, deviceName)
         If Object.ReferenceEquals(followed.Descriptor, resource) Then Return New ExchangeFollowOutcome(resource, False)
         Dim stored As ResourceCommitResult = _commit.Invoke(followed.Descriptor, followed.NewPassword)
@@ -384,7 +440,18 @@ Friend NotInheritable Class ExchangeSync
             If Not ResourceOrigin.IsExchange(resource) Then Continue For
             ' only what was attached through THIS entry: another entry's resource of the same id is another account's
             If Not String.Equals(If(resource.ExchangeEntryId, ""), If(_entryId, ""), StringComparison.Ordinal) Then Continue For
-            If ExchangeAttach.StateOf(resource.ExchangeResourceId, state.Snapshot, True) <> ExchangeResourceState.Available Then Continue For
+            Dim currentRecord As ExchangeResourceRecord = state.Snapshot.Resources.FirstOrDefault(Function(r) r.ResourceId = resource.ExchangeResourceId)
+            If currentRecord IsNot Nothing AndAlso Not currentRecord.CanAuthorize Then
+                Await FollowOneAsync(resource, DeviceNameOf(state.Snapshot, resource.ExchangeResourceId), ct).ConfigureAwait(False)
+                changed.Add(resource.Id)
+                Continue For
+            End If
+            Dim resourceState As ExchangeResourceState = ExchangeAttach.StateOf(resource.ExchangeResourceId, state.Snapshot, True)
+            If resourceState <> ExchangeResourceState.Available AndAlso resource.PinRequired Then
+                ResourcePinMemory.Forget(resource)
+                changed.Add(resource.Id)
+            End If
+            If resourceState <> ExchangeResourceState.Available Then Continue For
             Dim deviceName As String = DeviceNameOf(state.Snapshot, resource.ExchangeResourceId)
             Dim outcome As ExchangeFollowOutcome = Await FollowOneAsync(resource, deviceName, ct).ConfigureAwait(False)
             If Not Object.ReferenceEquals(outcome.Descriptor, resource) Then changed.Add(resource.Id)

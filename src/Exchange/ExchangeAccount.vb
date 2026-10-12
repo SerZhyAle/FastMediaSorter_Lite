@@ -11,7 +11,7 @@ Imports Microsoft.Win32
 ' the log package's allow-list (LogPackage.SafeSettingNames): a new setting is withheld from a report until someone adds
 ' it on purpose, and these are the kind that should stay withheld.
 '
-' Dormant rule (177 section 2): reading opens a key read-only and creates nothing; the device id is created when the
+' Dormant rule (204 section 2): reading opens a key read-only and creates nothing; the device id is created when the
 ' first account is configured (EnsureDeviceId from the enrollment), not at start.
 
 ''' <summary>A string store, injectable. Reading never creates a key or a value.</summary>
@@ -113,9 +113,12 @@ Friend NotInheritable Class ExchangeAccountStore
     Friend Const LoginName As String = "Exchange_AccountLogin"
     Friend Const PinName As String = "Exchange_AccountPin"
     Friend Const CertificateName As String = "Exchange_AccountCertificate"
+    ''' <summary>"1" once the person disconnected the account of a server that runs on this very PC: the local join (this PC enrolling itself
+    ''' in that server) does not run again by itself, or "Disconnect" would be undone at the next start. An explicit sign-in clears it.</summary>
+    Friend Const LocalJoinDeclinedName As String = "Exchange_LocalJoinDeclined"
 
     ''' <summary>Every value this store owns, so a test can assert that a dormant run wrote none of them.</summary>
-    Friend Shared ReadOnly AllNames As String() = {DeviceIdName, DeviceNameName, ServerName, LoginName, PinName, CertificateName}
+    Friend Shared ReadOnly AllNames As String() = {DeviceIdName, DeviceNameName, ServerName, LoginName, PinName, CertificateName, LocalJoinDeclinedName}
 
     Private ReadOnly _port As IExchangeSettingsPort
 
@@ -170,6 +173,17 @@ Friend NotInheritable Class ExchangeAccountStore
         _port.SetValue(LoginName, account.Login)
         _port.SetValue(PinName, account.Pin)
         _port.SetValue(CertificateName, If(account.Certificate = ExchangeCertificateKind.CaSigned, "ca-signed", If(account.Certificate = ExchangeCertificateKind.Pinned, "pinned", "")))
+        ' an account is configured again: whatever the person declined before is over
+        _port.DeleteValue(LocalJoinDeclinedName)
+    End Sub
+
+    ''' <summary>True when the person disconnected the local account on purpose: the local join stays out of it.</summary>
+    Public Function LocalJoinDeclined() As Boolean
+        Return String.Equals(_port.GetValue(LocalJoinDeclinedName), "1", StringComparison.Ordinal)
+    End Function
+
+    Public Sub SetLocalJoinDeclined(declined As Boolean)
+        If declined Then _port.SetValue(LocalJoinDeclinedName, "1") Else _port.DeleteValue(LocalJoinDeclinedName)
     End Sub
 
     ''' <summary>"Disconnect": the entry is forgotten. The device id stays - it identifies this Windows user, not the account, and a

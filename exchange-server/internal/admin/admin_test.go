@@ -321,3 +321,65 @@ func TestDoTalksToServeAndRefusesAnOversizeRequest(t *testing.T) {
 		t.Fatal("the client must refuse to send an oversize request")
 	}
 }
+
+func TestThePairingCodeOperationIssuesASingleUseCodeAndNeverLogsIt(t *testing.T) {
+	o, log := newOps(t)
+	call := serve(t, o, log.Logger)
+	if r, _ := call(Request{Op: OpAccountAdd, Login: "alice", Password: pw1}); !r.OK {
+		t.Fatal(r)
+	}
+
+	// an offline command's Ops (its own store, nothing to redeem against) refuses instead of handing out a code
+	r, raw := call(Request{Op: OpDevicePairingCode, Login: "alice"})
+	if r.OK || r.Code != CodeBadRequest || r.Data != nil {
+		t.Fatalf("not live: %s", raw)
+	}
+
+	o.Live = true
+	if r, _ = call(Request{Op: OpDevicePairingCode, Login: "nobody"}); r.OK || r.Code != CodeNoAccount {
+		t.Fatalf("no such account: %+v", r)
+	}
+	if r, _ = call(Request{Op: OpDevicePairingCode, Login: "x"}); r.OK || r.Code != CodeNoAccount {
+		t.Fatalf("a login that cannot exist is no account: %+v", r)
+	}
+
+	r, raw = call(Request{Op: OpDevicePairingCode, Login: "Alice"})
+	if !r.OK {
+		t.Fatalf("%+v", r)
+	}
+	var v PairingCodeView
+	if err := json.Unmarshal(r.Data, &v); err != nil || len(v.Code) != 8 || v.ExpiresAt == "" {
+		t.Fatalf("the answer is a code and its expiry: %s (%v)", r.Data, err)
+	}
+	exp, err := time.Parse(time.RFC3339, v.ExpiresAt)
+	if err != nil || time.Until(exp) <= 0 || time.Until(exp) > 11*time.Minute {
+		t.Fatalf("expiry %q: %v", v.ExpiresAt, err)
+	}
+	// it is the very code the engine's store redeems, once
+	if !o.Accounts.RedeemPairingCode("alice", v.Code) {
+		t.Fatal("the issued code does not redeem")
+	}
+	if o.Accounts.RedeemPairingCode("alice", v.Code) {
+		t.Fatal("a pairing code is single use")
+	}
+
+	// the limit of outstanding codes is a named failure, not an internal one
+	var capped bool
+	for i := 0; i < 20 && !capped; i++ {
+		r, raw = call(Request{Op: OpDevicePairingCode, Login: "alice"})
+		if !r.OK {
+			if r.Code != CodeCapacity {
+				t.Fatalf("a full account: %+v", r)
+			}
+			capped = true
+		}
+	}
+	if !capped {
+		t.Fatal("the account never reached its limit of outstanding codes")
+	}
+
+	log.AssertNone(t, v.Code, pw1)
+	if !strings.Contains(strings.Join(log.Lines(), "\n"), "pairing-code-issued") {
+		t.Error("the issue is logged (by the account's short hash)")
+	}
+}

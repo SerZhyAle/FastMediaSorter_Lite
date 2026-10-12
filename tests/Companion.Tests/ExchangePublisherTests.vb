@@ -1,4 +1,4 @@
-Option Strict On
+﻿Option Strict On
 
 Imports System.Collections.Concurrent
 Imports System.Collections.Generic
@@ -94,6 +94,7 @@ Public Class ExchangePublisherTests
         Public ReadOnly Publisher As ExchangePublisher
         Public Status As WorkerStatus
         Public StatusCalls As Integer
+        Public Invalidations As Integer
         Public PinLocked As Boolean
         Public WorkerDialFails As Boolean
 
@@ -103,6 +104,10 @@ Public Class ExchangePublisherTests
             Status = StatusOf("Photos", "Videos")
             Dim options As New ExchangePublisherOptions With {
                 .Settings = Settings, .Store = Store,
+                .InvalidatePinSessions = Function()
+                                             Interlocked.Increment(Invalidations)
+                                             Return Task.CompletedTask
+                                         End Function,
                 .GetStatus = Function()
                                  Interlocked.Increment(StatusCalls)
                                  Return Task.FromResult(Status)
@@ -223,6 +228,32 @@ Public Class ExchangePublisherTests
                     Assert.Equal(Fp, info.Code.Fingerprint)
                     Assert.Equal(ExchangePublishBlock.None, kit.Publisher.Snapshot.Block)
                     Assert.All(kit.Publisher.Snapshot.Rows, Sub(r) Assert.Equal(ExchangePublishState.Published, r.State))
+                End Using
+            End Using
+        End Using
+    End Function
+
+    <Fact>
+    Public Async Function Protected_publication_has_a_lock_and_unpublishing_invalidates_worker_proofs() As Task
+        Using account As New ExchangeStubAccount()
+            Using kit As New Kit()
+                kit.Status.ResourcePinSupported = True
+                kit.Status.Roots(0).pinProtected = True
+                kit.Settings.SetPublishShares(True)
+                Using agent As ExchangeDeviceAgent = Await EnrollOnlineAsync(kit, account)
+                    Assert.True(Await ExchangeStubAccount.WaitUntilAsync(Function() account.PublishedNow().Count = 2))
+                    Using record As JsonDocument = JsonDocument.Parse(Latest(account, "Photos"))
+                        Assert.Equal("pin-v1", record.RootElement.GetProperty("protection").GetProperty("scheme").GetString())
+                        Dim pinField As JsonElement
+                        Assert.False(record.RootElement.TryGetProperty("accessPin", pinField))
+                    End Using
+                    Assert.True(kit.Publisher.Snapshot.Rows.Single(Function(r) r.Name = "Photos").PinProtected)
+                    Dim code As String = Nothing
+                    Assert.False(kit.Publisher.TryGetLinkCode("Photos", code))
+                    kit.Settings.SetPublishShares(False)
+                    kit.Publisher.Notify()
+                    Assert.True(Await ExchangeStubAccount.WaitUntilAsync(Function() account.PublishedNow().Count = 0))
+                    Assert.Equal(1, kit.Invalidations)
                 End Using
             End Using
         End Using
@@ -565,7 +596,10 @@ Public Class ExchangePublisherTests
                     Assert.NotNull(down)
                     Assert.True(Await ExchangeStubAccount.EndedWithoutDataAsync(down))
                     down.Release()
-                    Assert.Equal(0, kit.Publisher.ActiveTunnels)
+                    ' The peer sees EOF as soon as the attach stream is disposed; the
+                    ' producer releases its tunnel count immediately afterwards.
+                    Assert.True(Await ExchangeStubAccount.WaitUntilAsync(Function() kit.Publisher.ActiveTunnels = 0),
+                                "The failed worker attach must release its tunnel slot")
                 End Using
             End Using
         End Using

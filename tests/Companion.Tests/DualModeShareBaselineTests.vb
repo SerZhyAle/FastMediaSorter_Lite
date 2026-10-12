@@ -14,7 +14,7 @@ Imports FastMediaSorterCompanion
 Imports Xunit
 
 ''' <summary>
-''' Ticket 177 section 2, row "Exports", and section 3 item 2 (the golden comparison moved here from 148): with no
+''' Ticket 204 section 2, row "Exports", and section 3 item 2 (the golden comparison moved here from 148): with no
 ''' exchange account and no Google sign-in the <c>.fmscfg</c> and the QR of a reference share are IDENTICAL to what the
 ''' build before the exchange program produced.
 '''
@@ -28,7 +28,7 @@ Imports Xunit
 ''' compared as the digest of its DECODED pixels, because the deflate stream inside a PNG may change with a runtime
 ''' servicing update while the picture does not - and the picture is what a phone scans.
 '''
-''' The fixtures are FROZEN "today" files (Q177-2): regenerated only on purpose, with the generator at the bottom,
+''' The fixtures are FROZEN "today" files (Q204-2): regenerated only on purpose, with the generator at the bottom,
 ''' and the regeneration shows in review as a changed file and a changed hash. Nothing in them is real: documentation
 ''' addresses (RFC 5737 / RFC 3849), a throw-away password and PIN, and a made-up host key fingerprint.
 ''' </summary>

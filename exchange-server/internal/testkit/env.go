@@ -60,7 +60,7 @@ type Options struct {
 	// binds are not real sockets, so a granted port is the same on every machine).
 	Pool *ports.Pool
 	// AccountsRand and EngineRand are injected random sources for tokens and pairing codes, and for
-	// tunnel ids (ticket 178: stable bytes). ServerVersion is announced in `welcome` (default "test").
+	// tunnel ids (ticket 205: stable bytes). ServerVersion is announced in `welcome` (default "test").
 	AccountsRand  io.Reader
 	EngineRand    io.Reader
 	ServerVersion string
@@ -165,7 +165,7 @@ func StartServer(t TB, opt Options) *Env {
 	var infos []directory.DeviceInfo
 	for _, d := range env.Accounts.AllDevices() {
 		infos = append(infos, directory.DeviceInfo{ID: d.ID, Account: d.Account, Name: d.Name, Product: d.Product,
-			ProductVersion: d.ProductVersion, Platform: d.Platform, Roles: d.Roles, Receiver: d.Receiver})
+			ProductVersion: d.ProductVersion, Platform: d.Platform, Roles: d.Roles, Capabilities: d.Capabilities, Receiver: d.Receiver})
 	}
 	if err := env.Dir.Load(infos); err != nil {
 		t.Fatalf("directory: %v", err)

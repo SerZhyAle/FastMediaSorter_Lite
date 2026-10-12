@@ -1,4 +1,4 @@
-# Provenance of the dual-mode baseline (ticket 177). The suites check these hashes FIRST: a hand edit of a
+# Provenance of the dual-mode baseline (ticket 204). The suites check these hashes FIRST: a hand edit of a
 # fixture fails them. Regenerate: tests\Integration\ExchangeBaseline.ps1 -Mode Capture (the JSON captures),
 # the Companion test DualModeBaselineGenerator with FMS_WRITE_DUAL_MODE_BASELINE=<this folder> (the
 # reference-share files), then tests\Integration\ExchangeBaseline.ps1 -Mode Provenance (this file).

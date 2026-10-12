@@ -878,6 +878,10 @@
       <DependentUpon>Main_Form.vb</DependentUpon>
       <SubType>Form</SubType>
     </Compile>
+    <Compile Include="Main_Form.WindowBorder.vb">
+      <DependentUpon>Main_Form.vb</DependentUpon>
+      <SubType>Form</SubType>
+    </Compile>
     <Compile Include="Localization\Localization.ProfileReset.vb" />
     <Compile Include="ProfileReset\ProfileResetScope.vb" />
     <Compile Include="ProfileReset\ProfileResetStore.vb" />

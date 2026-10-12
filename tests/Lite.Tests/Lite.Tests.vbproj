@@ -757,6 +757,13 @@
     <Compile Include="..\..\src\LiveBroadcast\AdtsFrameCounter.vb">
       <Link>Linked\LiveBroadcast\AdtsFrameCounter.vb</Link>
     </Compile>
+    <!-- Ticket 172: the PRODUCER half of a live broadcast (the Share Manager is the producer program,
+         but the round-trip rule of section 8 - "our own viewer's reader must accept everything this
+         ticket writes" - needs writer and reader in ONE assembly: this one). Same whole-file
+         "#If Not NETFRAMEWORK" shape as every other file of this block. -->
+    <Compile Include="..\..\src\LiveBroadcast\Producer\*.vb">
+      <Link>Linked\LiveBroadcast\Producer\%(Filename)%(Extension)</Link>
+    </Compile>
     <Compile Include="..\..\src\LiveBroadcast\LiveDriftGuard.vb">
       <Link>Linked\LiveBroadcast\LiveDriftGuard.vb</Link>
     </Compile>

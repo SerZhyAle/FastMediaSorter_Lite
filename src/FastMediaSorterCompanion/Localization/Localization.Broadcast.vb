@@ -3,7 +3,7 @@ Option Strict On
 Partial Public NotInheritable Class Localization
 
     ''' <summary>
-    ''' Strings for StreamsPlayer HTTP broadcast gateway & resource management (016_SPECIFICATION_STREAMSPLAYER_BROADCAST_RESOURCE.md).
+    ''' Strings for StreamsPlayer HTTP broadcast gateway & resource management (196_SPECIFICATION_STREAMSPLAYER_BROADCAST_RESOURCE.md).
     ''' </summary>
     Private Shared Sub AddBroadcastStrings()
 

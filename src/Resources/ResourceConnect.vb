@@ -1,4 +1,4 @@
-#If Not NETFRAMEWORK Then
+﻿#If Not NETFRAMEWORK Then
 Option Strict On
 
 Imports System.Collections.Generic
@@ -20,12 +20,14 @@ Friend NotInheritable Class SftpEndpointDialer
     Private ReadOnly password As String
     Private ReadOnly gate As HostKeyGate
     Private ReadOnly includeSubfolders As Func(Of Boolean)
+    Private ReadOnly resourcePin As String
 
-    Friend Sub New(descriptor As ResourceDescriptor, password As String, gate As HostKeyGate, includeSubfolders As Func(Of Boolean))
+    Friend Sub New(descriptor As ResourceDescriptor, password As String, gate As HostKeyGate, includeSubfolders As Func(Of Boolean), Optional resourcePin As String = Nothing)
         Me.descriptor = descriptor
         Me.password = password
         Me.gate = gate
         Me.includeSubfolders = includeSubfolders
+        Me.resourcePin = resourcePin
     End Sub
 
     Public Function DialAsync(endpoint As FmsEndpoint, ct As CancellationToken) As Task(Of DialResult) Implements IEndpointDialer.DialAsync
@@ -39,10 +41,12 @@ Friend NotInheritable Class SftpEndpointDialer
             .Id = descriptor.Id, .DisplayName = descriptor.DisplayName, .Kind = ResourceKind.Sftp,
             .Host = endpoint.Host, .Port = endpoint.Port, .UserName = descriptor.UserName,
             .RootPath = descriptor.RootPath, .ReadOnlyHint = descriptor.ReadOnlyHint,
-            .PinnedFingerprint = descriptor.PinnedFingerprint}
+            .PinnedFingerprint = descriptor.PinnedFingerprint, .PinRequired = descriptor.PinRequired,
+            .ProtectionUnsupported = descriptor.ProtectionUnsupported,
+            .ExchangeEntryId = descriptor.ExchangeEntryId, .ExchangeResourceId = descriptor.ExchangeResourceId}
         Dim provider As SftpProvider = Nothing
         Try
-            provider = New SftpProvider(attempt, password, gate, includeSubfolders:=includeSubfolders)
+            provider = New SftpProvider(attempt, password, gate, includeSubfolders:=includeSubfolders, resourcePin:=resourcePin)
             provider.ConnectOnce(ct)
             If ct.IsCancellationRequested Then
                 provider.Dispose()
@@ -94,11 +98,13 @@ Friend Module ResourceConnect
                                        includeSubfolders As Func(Of Boolean),
                                        ct As CancellationToken,
                                        Optional dialerOverride As IEndpointDialer = Nothing,
-                                       Optional tunnelSource As IExchangeTunnelSource = Nothing) As Task(Of ConnectOutcome)
+                                       Optional tunnelSource As IExchangeTunnelSource = Nothing,
+                                       Optional resourcePin As String = Nothing) As Task(Of ConnectOutcome)
         If descriptor Is Nothing Then Throw New ArgumentNullException(NameOf(descriptor))
+        If descriptor.ProtectionUnsupported Then Return New ConnectOutcome(Nothing, New ResourceFailure(ResourceFailureKind.Unsupported))
         Select Case descriptor.Kind
             Case ResourceKind.Sftp
-                Return Await ConnectSftpAsync(descriptor, password, consent, persistPin, includeSubfolders, ct, dialerOverride, tunnelSource).ConfigureAwait(False)
+                Return Await ConnectSftpAsync(descriptor, password, consent, persistPin, includeSubfolders, ct, dialerOverride, tunnelSource, resourcePin).ConfigureAwait(False)
             Case ResourceKind.Smb
                 Return Await Task.Run(Function() ConnectSmb(descriptor, password, includeSubfolders)).ConfigureAwait(False)
             Case Else
@@ -112,10 +118,12 @@ Friend Module ResourceConnect
                                             includeSubfolders As Func(Of Boolean),
                                             ct As CancellationToken,
                                             dialerOverride As IEndpointDialer,
-                                            tunnelSource As IExchangeTunnelSource) As Task(Of ConnectOutcome)
+                                            tunnelSource As IExchangeTunnelSource, resourcePin As String) As Task(Of ConnectOutcome)
         Dim clock As New SystemResolutionClock()
         Dim gate As New HostKeyGate(descriptor.PinnedFingerprint, consent, persistPin, Function() clock.NowMs)
-        Dim dialer As IEndpointDialer = If(dialerOverride, New SftpEndpointDialer(descriptor, password, gate, includeSubfolders))
+        Dim pin As String = If(resourcePin, ResourcePinMemory.GetPin(descriptor))
+        If descriptor.PinRequired AndAlso String.IsNullOrEmpty(pin) Then Return New ConnectOutcome(Nothing, New ResourceFailure(ResourceFailureKind.Auth))
+        Dim dialer As IEndpointDialer = If(dialerOverride, New SftpEndpointDialer(descriptor, password, gate, includeSubfolders, pin))
 
         Dim candidates As List(Of FmsEndpoint) = EndpointResolver.PlanCandidates(CandidatesOf(descriptor))
         If tunnelSource IsNot Nothing Then
@@ -125,11 +133,12 @@ Friend Module ResourceConnect
             dialer = New ExchangeTunnelDialer(dialer, tunnelSource)
         End If
         ' One handshake at a time while the server is unpinned: one trust prompt, never two.
-        Dim lanes As Integer = If(String.IsNullOrEmpty(descriptor.PinnedFingerprint), 1, ResolutionLimits.MaxLanes)
+        Dim lanes As Integer = If(descriptor.PinRequired OrElse String.IsNullOrEmpty(descriptor.PinnedFingerprint), 1, ResolutionLimits.MaxLanes)
         Dim outcome As ResolutionOutcome = Await EndpointResolver.ResolveAsync(
             candidates, dialer, clock, ct, lanes, AddressOf gate.ConsentMsSoFar).ConfigureAwait(False)
 
         If outcome.Succeeded Then
+            If descriptor.PinRequired Then ResourcePinMemory.SetPin(descriptor, pin)
             Return New ConnectOutcome(DirectCast(outcome.Session, IFileSystemProvider), Nothing)
         End If
         Dim failure As ResourceFailure = If(outcome.Failure, New ResourceFailure(ResourceFailureKind.Transport))
@@ -214,4 +223,38 @@ Friend Module ResourcePins
     End Function
 
 End Module
+
+''' <summary>PINs live only in this process, keyed by account entry and resource. Nothing is persisted or logged.</summary>
+Friend NotInheritable Class ResourcePinMemory
+    Private Sub New()
+    End Sub
+    Private Shared ReadOnly Pins As New Dictionary(Of String, String)(StringComparer.Ordinal)
+    Private Shared Function Key(resource As ResourceDescriptor) As String
+        Return If(resource.ExchangeEntryId, "") & ":" & If(String.IsNullOrEmpty(resource.ExchangeResourceId), resource.Id, resource.ExchangeResourceId)
+    End Function
+    Friend Shared Function GetPin(resource As ResourceDescriptor) As String
+        SyncLock Pins
+            Dim pin As String = Nothing
+            Pins.TryGetValue(Key(resource), pin)
+            Return pin
+        End SyncLock
+    End Function
+    Friend Shared Sub SetPin(resource As ResourceDescriptor, pin As String)
+        SyncLock Pins
+            Pins(Key(resource)) = pin
+        End SyncLock
+    End Sub
+    Friend Shared Sub ForgetEntry(entryId As String)
+        SyncLock Pins
+            For Each pinKey As String In Pins.Keys.Where(Function(k) k.StartsWith(entryId & ":", StringComparison.Ordinal)).ToArray()
+                Pins.Remove(pinKey)
+            Next
+        End SyncLock
+    End Sub
+    Friend Shared Sub Forget(resource As ResourceDescriptor)
+        SyncLock Pins
+            Pins.Remove(Key(resource))
+        End SyncLock
+    End Sub
+End Class
 #End If

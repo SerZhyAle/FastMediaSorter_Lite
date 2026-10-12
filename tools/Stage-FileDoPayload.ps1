@@ -65,7 +65,12 @@ if ($localExe) {
 # The disk-sharing worker refuses a FileDO that has no `vd` command; say so at build time, not at the first share.
 $probe = Join-Path $env:TEMP ('filedo-vd-probe-' + [Guid]::NewGuid().ToString('N') + '.jsonl')
 try {
-    & $exe vd --events $probe --no-history *> $null
+    # The probe is best-effort by design (see the finally below), but under the caller's
+    # inherited $ErrorActionPreference 'Stop' a redirected native stderr line becomes a
+    # terminating NativeCommandError - and a FileDO that HAS the vd command but wants a
+    # verb under it answers the bare probe with exactly that. Swallow the invocation's own
+    # failure; only the "Unknown command" verdict matters.
+    try { & $exe vd --events $probe --no-history *> $null } catch { }
     $text = if (Test-Path -LiteralPath $probe) { Get-Content -LiteralPath $probe -Raw } else { '' }
     if ($text -match 'Unknown command') { Write-Warning ('Staged FileDO ' + $manifest.version + ' has no "vd" command: disk sharing will be refused by the worker.') }
 } finally {

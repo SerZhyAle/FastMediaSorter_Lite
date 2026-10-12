@@ -54,6 +54,33 @@ Friend NotInheritable Class ChromeMetrics
     Public Const PinButtonSize As Integer = 20
     ''' <summary>How far past a panel the pointer still counts as "near it" - the reveal zone.</summary>
     Public Const HotZoneMargin As Integer = 48
+    ''' <summary>Extra padding around the window-controls panel's buttons (188 §3.1): the free
+    ''' background is the panel's drag grip, so it breathes wider than the toolbar rows do.</summary>
+    Public Const WindowControlsExtraPadding As Integer = 4
+
+    ' --- the window-controls panel's own footprint (188 §3.7) -----------------------------
+    ' The logical size the panel can never go below: the padding, the pin slot, the three
+    ' command buttons and the corner drag grip at the hit-target floor. The viewer's minimum
+    ' tracking size is built from these, so the window can never be asked to hold less than
+    ' the panel shows.
+
+    Public Shared Function WindowControlsLogicalWidth() As Integer
+        Dim button As Integer = Math.Max(ItemHeight, MinTarget)
+        Dim pad As Integer = PanelPadding + WindowControlsExtraPadding
+        Return 2 * pad + (MinTarget + Gap) + 4 * button + 3 * Gap
+    End Function
+
+    Public Shared Function WindowControlsLogicalHeight() As Integer
+        ' Vertical breathing stays the standard padding: the panel stands beside the toolbar rows
+        ' at the same top edge and shares their height (2026-10-12 owner revision). The extra
+        ' padding is horizontal only - the drag frame along the row.
+        Return Math.Max(ItemHeight, MinTarget) + 2 * PanelPadding
+    End Function
+
+    ''' <summary>The invisible resize band of the borderless window (188 §6, 2026-10-12 owner
+    ''' revision): how far from an edge or a corner the pointer still grabs the frame. Logical px
+    ''' at the window's DPI, and never below the frame Windows actually keeps.</summary>
+    Public Const WindowResizeBand As Integer = 15
     Public Const FocusRingWidth As Integer = 2
     Public Const FocusRingInset As Integer = 2
     ''' <summary>The room a menu button keeps at its end for its ▾ (125 UX-305), and a submenu row for its ▸.</summary>

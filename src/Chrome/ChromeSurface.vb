@@ -59,6 +59,22 @@ Friend NotInheritable Class ChromeSurface
     Public Property VerticalLayout As Boolean
     <System.ComponentModel.DesignerSerializationVisibility(System.ComponentModel.DesignerSerializationVisibility.Hidden)>
     Public Property StatusLayout As Boolean
+    ''' <summary>The corner pin sits at the panel's physical START edge instead of its end (188 §3.1):
+    ''' the window-controls panel keeps Minimize, Maximize/Restore and Close in physical order with
+    ''' Close rightmost, so its pin leads the row whatever the reading direction.</summary>
+    <System.ComponentModel.DesignerSerializationVisibility(System.ComponentModel.DesignerSerializationVisibility.Hidden)>
+    Public Property PinAtStart As Boolean
+    ''' <summary>Extra logical padding at a horizontal panel's START/END edges (188 §3.1): the
+    ''' window-controls panel's free background is its drag grip, so it breathes wider than the
+    ''' toolbar rows. Vertical breathing is <see cref="ExtraPaddingVertical"/> and stays at zero,
+    ''' so panels standing at the same top edge keep one height.</summary>
+    <System.ComponentModel.DesignerSerializationVisibility(System.ComponentModel.DesignerSerializationVisibility.Hidden)>
+    Public Property ExtraPadding As Integer
+
+    ''' <summary>Extra logical padding at a horizontal panel's top and bottom edges. Zero - the
+    ''' standard padding - keeps the height every other panel at that edge shows.</summary>
+    <System.ComponentModel.DesignerSerializationVisibility(System.ComponentModel.DesignerSerializationVisibility.Hidden)>
+    Public Property ExtraPaddingVertical As Integer
     <System.ComponentModel.DesignerSerializationVisibility(System.ComponentModel.DesignerSerializationVisibility.Hidden)>
     Public Property OverflowId As String = "btn_Overflow"
     ''' <summary>The pin button of this panel's corner (the end of the row, the start edge in a
@@ -111,6 +127,20 @@ Friend NotInheritable Class ChromeSurface
 
     ''' <summary>Raised after an item's action ran, so the owner can re-assert z-order or reposition.</summary>
     Public Event ItemInvoked As EventHandler(Of ChromeItem)
+
+    ''' <summary>A left press on the panel's free background - no item under the pointer. The
+    ''' window-controls panel turns it into a native window move (188 §5); nothing else listens.</summary>
+    Public Event MoveGripPress As EventHandler
+
+    ''' <summary>The second background press of a double click, near the first. The window-controls
+    ''' panel toggles maximize with it (188 §5); the first press has already run its own event.</summary>
+    Public Event MoveGripDoubleClick As EventHandler
+
+    ''' <summary>The last move-grip press (free background or a grip slot), for the double-click
+    ''' rule: its tick (<see cref="Integer.MinValue"/> when there was none in memory) and its
+    ''' screen position.</summary>
+    Private lastMovePressTick As Integer = Integer.MinValue
+    Private lastMovePressScreen As Point
 
     Public Sub New()
         SetStyle(ControlStyles.AllPaintingInWmPaint Or ControlStyles.UserPaint Or
@@ -250,7 +280,12 @@ Friend NotInheritable Class ChromeSurface
     End Function
 
     Public Function PanelPadding() As Integer
-        Return Px(ChromeMetrics.PanelPadding)
+        Return Px(ChromeMetrics.PanelPadding + Math.Max(0, ExtraPadding))
+    End Function
+
+    ''' <summary>The padding at a horizontal panel's top and bottom edges.</summary>
+    Public Function PanelPaddingVertical() As Integer
+        Return Px(ChromeMetrics.PanelPadding + Math.Max(0, ExtraPaddingVertical))
     End Function
 
     ''' <summary>The width the corner pin takes out of a row, gap included; 0 when there is none (or in
@@ -260,10 +295,13 @@ Friend NotInheritable Class ChromeSurface
         Return MinTargetPx() + Px(ChromeMetrics.Gap)
     End Function
 
-    ''' <summary>The size a panel with these items wants: one row, padded.</summary>
+    ''' <summary>The size a panel with these items wants: one row, padded. The height comes from
+    ''' the VERTICAL padding, so the window-controls panel - wider, but with the standard vertical
+    ''' breathing - stands exactly as tall as the toolbar rows beside it (2026-10-12).</summary>
     Public Function PreferredPanelSize() As Size
         Dim slots As List(Of ChromeSlot) = BuildSlots(Nothing)
         Dim pad As Integer = PanelPadding()
+        Dim verticalPad As Integer = PanelPaddingVertical()
         If VerticalLayout Then
             Dim heights As New List(Of Integer)()
             For Each item As ChromeItem In itemList
@@ -273,7 +311,15 @@ Friend NotInheritable Class ChromeSurface
             ChromeMenuRules.StackRows(heights, pad, total)
             Return New Size(If(slots.Count = 0, Px(ChromeMetrics.MenuMinWidth), slots.Max(Function(slot) slot.Width)) + 2 * pad, total)
         End If
-        Return New Size(ChromeLayout.NaturalWidth(slots, Px(ChromeMetrics.Gap)) + PinReserve() + 2 * pad, ItemHeight() + 2 * pad)
+        Return New Size(ChromeLayout.NaturalWidth(slots, Px(ChromeMetrics.Gap)) + PinReserve() + 2 * pad, ItemHeight() + 2 * verticalPad)
+    End Function
+
+    ''' <summary>The narrowest this horizontal row may get without losing its priority core (188 §3.5):
+    ''' <see cref="ChromeLayout.PinnedCoreWidth"/> over the panel's own slots. A host narrower than this
+    ''' has hidden pinned content; the placer wraps the row below an obstacle instead.</summary>
+    Public Function MinimumRowWidth() As Integer
+        If VerticalLayout Then Return 0
+        Return ChromeLayout.PinnedCoreWidth(BuildSlots(Nothing), Px(ChromeMetrics.Gap), ItemHeight())
     End Function
 
     Private Function BuildSlots(indexMap As List(Of ChromeItem)) As List(Of ChromeSlot)
@@ -304,10 +350,12 @@ Friend NotInheritable Class ChromeSurface
         End If
 
         Dim pad As Integer = PanelPadding()
+        Dim verticalPad As Integer = PanelPaddingVertical()
         Dim cornerReserve As Integer = PinReserve()
         Dim available As Integer = Math.Max(0, ClientSize.Width - 2 * pad - cornerReserve)
-        ' The row sits beside the corner pin: after it in a right-to-left panel (the pin is on the left).
-        Dim rowStart As Integer = pad + If(isRightToLeft, cornerReserve, 0)
+        ' The row sits beside the corner pin: after it in a right-to-left panel (the pin is on the left),
+        ' and always after it when the pin leads the row (the window-controls panel, 188 §3.1).
+        Dim rowStart As Integer = pad + If(PinAtStart OrElse isRightToLeft, cornerReserve, 0)
         If VerticalLayout Then
             Dim heights As New List(Of Integer)()
             For Each entry As ChromeItem In order
@@ -335,7 +383,7 @@ Friend NotInheritable Class ChromeSurface
                 New ChromeSlot(order(0).Id, fileWidth), New ChromeSlot(order(1).Id, statusWidth)}
             row = ChromeLayout.ArrangeRow(slots, available, ItemHeight(), Px(ChromeMetrics.Gap), ItemHeight(), isRightToLeft)
         End If
-        Dim top As Integer = Math.Max(pad, (ClientSize.Height - ItemHeight()) \ 2)
+        Dim top As Integer = Math.Max(verticalPad, (ClientSize.Height - ItemHeight()) \ 2)
         For i As Integer = 0 To order.Count - 1
             If row.Overflowed(i) Then
                 overflowList.Add(order(i))
@@ -352,7 +400,11 @@ Friend NotInheritable Class ChromeSurface
         End If
         If PinItem IsNot Nothing AndAlso cornerReserve > 0 Then
             Dim pinWidth As Integer = cornerReserve - Px(ChromeMetrics.Gap)
-            PinItem.Bounds = New Rectangle(If(isRightToLeft, pad, ClientSize.Width - pad - pinWidth), top, pinWidth, ItemHeight())
+            If PinAtStart Then
+                PinItem.Bounds = New Rectangle(pad, top, pinWidth, ItemHeight())
+            Else
+                PinItem.Bounds = New Rectangle(If(isRightToLeft, pad, ClientSize.Width - pad - pinWidth), top, pinWidth, ItemHeight())
+            End If
             itemList.Add(PinItem)
         End If
         Invalidate()
@@ -539,6 +591,18 @@ Friend NotInheritable Class ChromeSurface
         ElseIf item.CustomGlyph = ChromeCustomGlyph.OnTop Then
             PaintOnTop(g, item.Checked, r, ink, currentScale)
             drawn = True
+        ElseIf item.CustomGlyph = ChromeCustomGlyph.WindowMinimize Then
+            PaintWindowMinimize(g, r, ink, currentScale)
+            drawn = True
+        ElseIf item.CustomGlyph = ChromeCustomGlyph.WindowMaximize Then
+            PaintWindowMaximize(g, r, ink, currentScale, False)
+            drawn = True
+        ElseIf item.CustomGlyph = ChromeCustomGlyph.WindowRestore Then
+            PaintWindowMaximize(g, r, ink, currentScale, True)
+            drawn = True
+        ElseIf item.CustomGlyph = ChromeCustomGlyph.WindowClose Then
+            PaintWindowClose(g, r, ink, currentScale)
+            drawn = True
         ElseIf item.Kind = ChromeItemKind.Toggle AndAlso item.GlyphId.Length = 0 AndAlso item.Caption.Length = 0 Then
             Dim side As Integer = Px(ChromeMetrics.GlyphSize)
             Dim box As New Rectangle(r.X + (r.Width - side) \ 2, r.Y + (r.Height - side) \ 2, side, side)
@@ -629,6 +693,53 @@ Friend NotInheritable Class ChromeSurface
             Else
                 g.DrawRectangle(pen, front.X, front.Y, front.Width, front.Height)
             End If
+        End Using
+    End Sub
+
+    ''' <summary>The caption row's commands, drawn from lines like <see cref="PaintOnTop"/> (the catalogue
+    ''' has no glyphs for them yet, 188 §5). They mean the physical window, so nothing here mirrors.</summary>
+    Friend Shared Sub PaintWindowMinimize(g As Graphics, r As Rectangle, ink As Color, scale As Single)
+        Dim side As Integer = UiScale.Px(ChromeMetrics.GlyphSize, scale)
+        Dim unit As Single = side / 16.0F
+        Dim cx As Single = r.X + r.Width / 2.0F
+        Dim cy As Single = r.Y + r.Height / 2.0F
+        Using pen As New Pen(ink, Math.Max(1.0F, 1.4F * unit))
+            g.DrawLine(pen, cx - 5.0F * unit, cy + 4.0F * unit, cx + 5.0F * unit, cy + 4.0F * unit)
+        End Using
+    End Sub
+
+    ''' <summary>Maximize: one square. <paramref name="restored"/> draws the restore pair instead -
+    ''' the front square outlined in full, the back one as its top and right edges, so the pair reads
+    ''' without any occlusion fill (188 §5).</summary>
+    Friend Shared Sub PaintWindowMaximize(g As Graphics, r As Rectangle, ink As Color, scale As Single, restored As Boolean)
+        Dim side As Integer = UiScale.Px(ChromeMetrics.GlyphSize, scale)
+        Dim unit As Single = side / 16.0F
+        Dim cx As Single = r.X + r.Width / 2.0F
+        Dim cy As Single = r.Y + r.Height / 2.0F
+        Using pen As New Pen(ink, Math.Max(1.0F, 1.2F * unit))
+            If Not restored Then
+                g.DrawRectangle(pen, cx - 5.0F * unit, cy - 5.0F * unit, 10.0F * unit, 10.0F * unit)
+                Return
+            End If
+            Dim backX As Single = cx - 3.0F * unit
+            Dim backY As Single = cy - 6.0F * unit
+            Dim backRight As Single = cx + 5.0F * unit
+            Dim backBottom As Single = cy + 2.0F * unit
+            g.DrawLine(pen, backX, backY, backRight, backY)
+            g.DrawLine(pen, backRight, backY, backRight, backBottom)
+            g.DrawRectangle(pen, cx - 5.0F * unit, cy - 4.0F * unit, 8.0F * unit, 8.0F * unit)
+        End Using
+    End Sub
+
+    ''' <summary>Close: the diagonal cross.</summary>
+    Friend Shared Sub PaintWindowClose(g As Graphics, r As Rectangle, ink As Color, scale As Single)
+        Dim side As Integer = UiScale.Px(ChromeMetrics.GlyphSize, scale)
+        Dim unit As Single = side / 16.0F
+        Dim cx As Single = r.X + r.Width / 2.0F
+        Dim cy As Single = r.Y + r.Height / 2.0F
+        Using pen As New Pen(ink, Math.Max(1.0F, 1.4F * unit))
+            g.DrawLine(pen, cx - 4.5F * unit, cy - 4.5F * unit, cx + 4.5F * unit, cy + 4.5F * unit)
+            g.DrawLine(pen, cx + 4.5F * unit, cy - 4.5F * unit, cx - 4.5F * unit, cy + 4.5F * unit)
         End Using
     End Sub
 
@@ -818,6 +929,8 @@ Friend NotInheritable Class ChromeSurface
     Protected Overrides Sub OnMouseMove(e As MouseEventArgs)
         MyBase.OnMouseMove(e)
         Dim item As ChromeItem = HitTest(e.Location)
+        ' A move grip is empty panel (188): it drags on press, but shows no hover fill and no tooltip.
+        If item IsNot Nothing AndAlso item.IsMoveGrip Then item = Nothing
         SetHot(If(item IsNot Nothing AndAlso item.Enabled, item, Nothing))
         ' Disabled actions still explain their purpose, without a hover animation.
         UpdateTip(item)
@@ -832,7 +945,14 @@ Friend NotInheritable Class ChromeSurface
         MyBase.OnMouseDown(e)
         If e.Button <> MouseButtons.Left Then Return
         Dim item As ChromeItem = HitTest(e.Location)
-        If item Is Nothing OrElse Not item.Enabled Then Return
+        ' A press on the free background or on a move-grip slot belongs to the panel's owner -
+        ' the window drag (188 §5): no capture, no press level, no action, and the second press
+        ' of a double click is told apart by the shared rule.
+        If item Is Nothing OrElse item.IsMoveGrip Then
+            NoteMoveGripPress()
+            Return
+        End If
+        If Not item.Enabled Then Return
         pressedItem = item
         holdElapsed = 0
         holdInvoked = False
@@ -841,6 +961,22 @@ Friend NotInheritable Class ChromeSurface
         item.IsPressed = True
         Capture = True
         RefreshLevels()
+    End Sub
+
+    ''' <summary>One press meant for the owner's move grip: a plain press or, within the system's
+    ''' double-click time and rectangle of the previous one, the double click.</summary>
+    Private Sub NoteMoveGripPress()
+        Dim nowTick As Integer = Environment.TickCount
+        Dim nowScreen As Point = Cursor.Position
+        Dim isDoubleClick As Boolean = ChromeMenuRules.IsDoubleClickPress(
+            lastMovePressTick, nowTick, nowScreen.X - lastMovePressScreen.X, nowScreen.Y - lastMovePressScreen.Y)
+        lastMovePressTick = nowTick
+        lastMovePressScreen = nowScreen
+        If isDoubleClick Then
+            RaiseEvent MoveGripDoubleClick(Me, EventArgs.Empty)
+        Else
+            RaiseEvent MoveGripPress(Me, EventArgs.Empty)
+        End If
     End Sub
 
     Protected Overrides Sub OnMouseUp(e As MouseEventArgs)
@@ -860,7 +996,10 @@ Friend NotInheritable Class ChromeSurface
         End If
 
         ' After the press the pointer may no longer be over anything (the action moved the panel).
-        If pressedItem Is Nothing Then
+        ' The action may also have disposed this very surface (closing its panel) - then there
+        ' is nothing left to update, and PointToClient would throw ObjectDisposedException
+        ' into the user's face as an "Internal error" line.
+        If pressedItem Is Nothing AndAlso Not IsDisposed Then
             Dim under As ChromeItem = HitTest(PointToClient(Cursor.Position))
             SetHot(If(under IsNot Nothing AndAlso under.Enabled, under, Nothing))
             UpdateTip(under)

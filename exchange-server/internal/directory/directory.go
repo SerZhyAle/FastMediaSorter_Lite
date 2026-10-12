@@ -37,19 +37,22 @@ const (
 
 // Errors. Reason maps one to the wire's refusal where the contract has one.
 var (
-	ErrMalformed   = errors.New("directory: malformed record")
-	ErrIDCollision = errors.New("directory: the id is held by another")
-	ErrCapacity    = errors.New("directory: capacity")
-	ErrPortUnavail = errors.New("directory: no port available")
-	ErrNoDevice    = errors.New("directory: no such device")
-	ErrNotYours    = errors.New("directory: not this device's")
-	ErrNewerStore  = errors.New("directory: the store was written by a newer server")
+	ErrMalformed             = errors.New("directory: malformed record")
+	ErrProtectionUnsupported = errors.New("directory: unsupported protection")
+	ErrIDCollision           = errors.New("directory: the id is held by another")
+	ErrCapacity              = errors.New("directory: capacity")
+	ErrPortUnavail           = errors.New("directory: no port available")
+	ErrNoDevice              = errors.New("directory: no such device")
+	ErrNotYours              = errors.New("directory: not this device's")
+	ErrNewerStore            = errors.New("directory: the store was written by a newer server")
 )
 
 // Reason turns a Dir error into the refusal the wire answers with ("" for an error that is not a
 // refusal: a malformed record closes the stream).
 func Reason(err error) wire.Reason {
 	switch {
+	case errors.Is(err, ErrProtectionUnsupported):
+		return wire.ReasonProtectionUnsupported
 	case errors.Is(err, ErrIDCollision):
 		return wire.ReasonIDCollision
 	case errors.Is(err, ErrCapacity), errors.Is(err, wire.ErrRecordSize):
@@ -114,6 +117,7 @@ type Options struct {
 type DeviceInfo struct {
 	ID, Account, Name, Product, ProductVersion, Platform string
 	Roles                                                []string
+	Capabilities                                         []string
 	Receiver                                             json.RawMessage
 	LastSeen                                             time.Time
 }
@@ -209,6 +213,10 @@ func (d *Dir) renderDevice(h *hub, s *devState) {
 	if len(s.info.Roles) > 0 {
 		b, _ := json.Marshal(s.info.Roles)
 		r.SetRaw("roles", b)
+	}
+	if len(s.info.Capabilities) > 0 {
+		b, _ := json.Marshal(s.info.Capabilities)
+		r.SetRaw("capabilities", b)
 	}
 	if len(s.info.Receiver) > 0 {
 		r.SetRaw("receiver", s.info.Receiver)
@@ -356,8 +364,10 @@ func (t *tx) commit() {
 	if len(h.subs) == 0 {
 		return
 	}
-	frame, err := wire.EncodeFrame(ch, wire.MaxFrameAuth)
 	for id, sink := range h.subs {
+		view := *ch
+		view.Upserts.Resources = t.d.resourcesFor(h, id, ch.Upserts.Resources)
+		frame, err := wire.EncodeFrame(&view, wire.MaxFrameAuth)
 		if err != nil {
 			go sink.Close() // never under the lock: closing a TLS stream may wait on a slow peer
 			delete(h.subs, id)

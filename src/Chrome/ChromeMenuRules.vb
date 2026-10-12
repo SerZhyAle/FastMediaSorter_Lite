@@ -334,6 +334,20 @@ Friend NotInheritable Class ChromeMenuRules
         Return (extraInfo And &HFFFFFF00L) = &HFF515700L
     End Function
 
+    ''' <summary>Whether a press on a panel's free background is the second press of a double click
+    ''' (188 §5: double-clicking the window-controls grip toggles maximize). Within the system's
+    ''' double-click time of the previous press and inside its rectangle. Pure; the ticks are
+    ''' <c>Environment.TickCount</c>-style values and may wrap, so the distance is the raw
+    ''' two's-complement difference - negative means "before the previous press", never a match.</summary>
+    Public Shared Function IsDoubleClickPress(previousTickMs As Integer, currentTickMs As Integer,
+                                              deltaX As Integer, deltaY As Integer) As Boolean
+        If previousTickMs = Integer.MinValue Then Return False
+        Dim elapsed As Integer = currentTickMs - previousTickMs
+        If elapsed < 0 OrElse elapsed > SystemInformation.DoubleClickTime Then Return False
+        Dim size As Size = SystemInformation.DoubleClickSize
+        Return Math.Abs(deltaX) <= size.Width AndAlso Math.Abs(deltaY) <= size.Height
+    End Function
+
     ''' <summary>A panel reacts to a text change of the counter, the zoom label or the status line only if it
     ''' is the status panel: the toolbar rows are summoned by the pointer, a pin or F10, never by paging
     ''' through files (125 UX-309).</summary>

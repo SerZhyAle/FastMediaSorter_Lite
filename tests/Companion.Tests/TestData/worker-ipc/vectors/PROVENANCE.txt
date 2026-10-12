@@ -18,7 +18,7 @@ response.json - NOT PRESENT. Owed by the worker's harness (the only implementati
                 that harness that answers as an older or a newer build. The command is the worker
                 owner's to name and goes on a line here when the files arrive.
 
-Contract   : WORKER-IPC 0.14 + DISK-SHARE 1.4 (pointers: docs/contracts/)
+Contract   : WORKER-IPC 0.15 + DISK-SHARE 1.4 (pointers: docs/contracts/)
 Credentials: synthetic vector literals, never user credentials
 Host       : FastMediaSorter_Lite, the Share Manager (src/FastMediaSorterCompanion/Core/WorkerIpc.vb)
 Generator  : WorkerIpcConformanceTests.Generate_VectorFolder_WhenAsked (tests/Companion.Tests)
@@ -38,10 +38,12 @@ Digests
   SHA-256  ca821bfc4417a7f96f0026aab60f25c2f3ec7d69fd4bf73a582f5984bef3ef86  disk-unshare/request.json
   SHA-256  a052d6343870b31cbe4062e3a76f67c47394d6ff669f55bd02970f26a34c4de6  higher-schema/request.json
   SHA-256  5e7f2488f8a2650eff3078b6341f8fd9d0629ec56bba3692331b1fc4750dbfb0  higher-schema/expect.json
+  SHA-256  ee828b3762b7385f6f3e215921b2e850df1cd00043e5a0b122d8edc4a85ebdcd  invalidate-pin-sessions/request.json
   SHA-256  94fb95918a7b0fd0da1f5d5bf373b7d81f1a10fcbd69191f42a22ac6e920f489  reset-stats/request.json
   SHA-256  c2500d616dec13e27811441562f230a870d443f7441b7e9ef66fec1a4df394e7  set-network-policy-full/request.json
   SHA-256  47fd7160e384ef305ab646e0bae36b14379d8bc7f5e19abad9bf305e194393bd  set-network-policy-partial/request.json
   SHA-256  89240f971d31c50dc4d78cc7ff34532ef2e9a8896038326adcb50a5edd893390  set-network-policy-port-only/request.json
+  SHA-256  0deacb1658b859bf67644fcbb764b9c7a9b3b3d51d28ad2377e3a2c159089437  set-protected-folders/request.json
   SHA-256  3b1e5e3fea1d63fd118069b32b3f586f10afb27127c048af898ccdd7a41ea649  set-shared-folders/request.json
   SHA-256  95ce2f744adbf8e190fe84a91eaa2dc8615cbd2c3b1203774990c30314556231  start-server/request.json
   SHA-256  a052d6343870b31cbe4062e3a76f67c47394d6ff669f55bd02970f26a34c4de6  status-down/request.json
@@ -54,4 +56,4 @@ Digests
   SHA-256  5cfaa1ddc3493bed1772192e60e03d6cc9529603413b9c586d4fcca92fc742c6  unknown-type/request.json
   SHA-256  86a50c6ffcd5dbd0ff375bf98188b1c3ebbbe0ba42be858b82ba0ca27d2a82d8  unknown-type/expect.json
 
-Cases without an expect.json above: disk-autostart-off, disk-autostart-on, disk-close, disk-list, disk-open, disk-share, disk-status, disk-unshare, reset-stats, set-network-policy-full, set-network-policy-partial, set-network-policy-port-only, set-shared-folders, start-server, stop-server
+Cases without an expect.json above: disk-autostart-off, disk-autostart-on, disk-close, disk-list, disk-open, disk-share, disk-status, disk-unshare, invalidate-pin-sessions, reset-stats, set-network-policy-full, set-network-policy-partial, set-network-policy-port-only, set-protected-folders, set-shared-folders, start-server, stop-server

@@ -1,4 +1,4 @@
-#If Not NETFRAMEWORK Then
+﻿#If Not NETFRAMEWORK Then
 Option Strict On
 
 Imports System.Collections.Generic
@@ -208,6 +208,19 @@ Friend NotInheritable Class ResourceSession
                                    Optional prefetch As Boolean = False) As EnsureLocalOutcome
         If IndexOfLocalPath(localPath) < 0 Then Return EnsureLocalOutcome.NotOurs
         If Not NeedsMaterialisation Then Return EnsureLocalOutcome.Ready
+        If Resource.PinRequired Then
+            Try
+                Dim sftp As SftpProvider = TryCast(Provider, SftpProvider)
+                If sftp Is Nothing Then Return EnsureLocalOutcome.Failed
+                sftp.EnsureResourceAuthorization(ct)
+            Catch ex As OperationCanceledException
+                Return EnsureLocalOutcome.Cancelled
+            Catch ex As ResourceFailureException
+                ResourcePinMemory.Forget(Resource)
+                Dispose()
+                Return EnsureLocalOutcome.Failed
+            End Try
+        End If
 
         Using linked As CancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(cancel_Source.Token, ct)
             Dim index As Integer
@@ -561,6 +574,7 @@ Friend NotInheritable Class ResourceSessionSlot
         Catch ex As Exception
             AppFileLogger.LogException("Resource: closing the session", ex)
         End Try
+        ResourcePinMemory.Forget(closing.Resource)
         RemoteCacheStore.DeleteSession(closing.SessionDir)
     End Sub
 

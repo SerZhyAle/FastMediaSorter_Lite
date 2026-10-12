@@ -273,6 +273,18 @@ Public Class LoggerOwnershipTests
                     Dim text As String = sr.ReadToEnd()
                     Assert.Contains("written after the retry", text)
                     Assert.Equal(1, text.Split(New String() {"Session started:"}, StringSplitOptions.None).Length - 1)
+#If Not NETFRAMEWORK Then
+                    Dim stateLines As String() = text.Split(New String() {Environment.NewLine}, StringSplitOptions.None).
+                        Where(Function(line) line.StartsWith("State: ", StringComparison.Ordinal)).ToArray()
+                    Dim state As String = Assert.Single(stateLines)
+                    Assert.Contains(ProductNames.Full, state)
+                    Assert.Contains("; os=", state)
+                    Assert.Contains("; session=", state)
+                    Assert.Contains("; hostMode=", state)
+                    Assert.Contains("; components=", state)
+                    Assert.Contains("; shareService=", state)
+                    Assert.Contains("; exchangeService=", state)
+#End If
                 End Using
             End Using
         End Using

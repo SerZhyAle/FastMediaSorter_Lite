@@ -251,6 +251,7 @@ Friend NotInheritable Class ExchangeMessages
             SetText("platform", description.Platform).SetTextList("roles", description.Roles).
             SetNumber("keepaliveSeconds", keepaliveSeconds)
         If description.ReceiverJson.Length > 0 Then env.SetRecord("receiver", description.ReceiverJson)
+        If description.Roles.Contains(ExchangeWire.RoleResourceConsumer) Then env.SetTextList("capabilities", New String() {"pin-v1"})
         Return env
     End Function
 

@@ -185,31 +185,5 @@ Partial Public NotInheritable Class Localization
             "সেটিংস খুঁজুন",
             "ترتیبات تلاش کریں",
             "搜索设置")
-        Add("Развернуть все группы",
-            "Expand all groups",
-            "Розгорнути всі групи",
-            "Alle Gruppen aufklappen",
-            "Espandi tutti i gruppi",
-            "Expandir todos los grupos",
-            "Développer tous les groupes",
-            "Expandir todos os grupos",
-            "توسيع جميع المجموعات",
-            "सभी समूह खोलें",
-            "সব গোষ্ঠী প্রসারিত করুন",
-            "تمام گروپ کھولیں",
-            "展开所有组")
-        Add("Свернуть все группы",
-            "Collapse all groups",
-            "Згорнути всі групи",
-            "Alle Gruppen zuklappen",
-            "Comprimi tutti i gruppi",
-            "Contraer todos los grupos",
-            "Réduire tous les groupes",
-            "Recolher todos os grupos",
-            "طي جميع المجموعات",
-            "सभी समूह समेटें",
-            "সব গোষ্ঠী গুটিয়ে নিন",
-            "تمام گروپ سمیٹیں",
-            "折叠所有组")
     End Sub
 End Class

@@ -9,7 +9,7 @@ Imports Xunit
 ''' <summary>
 ''' Spec 159 section 3.4 (test T-4): the host half of the broadcasts feature cannot ship alone.
 '''
-''' The Share Manager's broadcasts page is built (016 phase 2) and the worker that serves it is not (016 phase 1,
+''' The Share Manager's broadcasts page is built (196 phase 2) and the worker that serves it is not (196 phase 1,
 ''' another repository). This test reads the vendored worker as bytes and holds one rule in both directions:
 ''' the five verb names and the <c>broadcastSupported</c> status field are ALL present in
 ''' <c>payload/companion/fms-share-worker.exe</c> if and only if <see cref="BroadcastPage.Offered"/> is True.
@@ -23,7 +23,7 @@ Imports Xunit
 ''' </summary>
 Public Class BroadcastWorkerCapabilityTests
 
-    ''' <summary>The five verbs of 016 section 3.4 plus the status field spec 159 section 3.1 adds, spelled as on the wire.</summary>
+    ''' <summary>The five verbs of 196 section 3.4 plus the status field spec 159 section 3.1 adds, spelled as on the wire.</summary>
     Private Shared ReadOnly RequiredNames As String() = {
         "SetBroadcastPolicy", "CreateBroadcast", "ListBroadcasts", "RefreshBroadcast", "RevokeBroadcast",
         "broadcastSupported"}

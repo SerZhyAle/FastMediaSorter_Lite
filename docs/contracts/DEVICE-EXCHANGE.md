@@ -1,9 +1,9 @@
-# Pointer - `DEVICE-EXCHANGE`
+﻿# Pointer - `DEVICE-EXCHANGE`
 
 | | |
 | --- | --- |
 | **Id** | `DEVICE-EXCHANGE` |
-| **Version** | 0.17, draft, `[PROPOSED]` in full (created 2026-10-07 by FastMediaSorter Android, ticket S4116; 0.11-0.15 folded the proposals filed beside it, 0.16 added the rung 1 artifact `records-v1`, 0.17 is marked `breaking` for a draft because section 15 holds the owner's answers of the same day: the frame limit, the chunk bound, every outsider `connect` over TLS, the Drive client types, `access` on Drive by opt-in). Read in full at 0.17 on 2026-10-07; nothing is deployed anywhere |
+| **Version** | 0.19, draft, `[PROPOSED]` in full (created 2026-10-07 by FastMediaSorter Android, ticket S4116; 0.11-0.15 folded the proposals filed beside it, 0.16 added the rung 1 artifact `records-v1`, 0.17 is marked `breaking` for a draft because section 15 holds the owner's answers of the same day: the frame limit, the chunk bound, every outsider `connect` over TLS, the Drive client types, `access` on Drive by opt-in). Read in full at 0.17 on 2026-10-07; nothing is deployed anywhere |
 | **Home** | `device-exchange/README.md` in the shared contracts catalog |
 | **Role here** | **exchange-server implementer** (sections 5 and 7; local specifications 161-168) **and** device client, resource producer, resource consumer, broadcaster and receiver (local specifications 180, 170, 171, 172-174); the Drive channel waits on an experiment (175, 176). **State (2026-10-07): the Go server core of 161-164 is built to 0.17 in the development tree and exercised by no client; the device client, the producer, the consumer, the broadcaster and the receiver are not built** |
 
@@ -16,7 +16,7 @@ Windows shipped in this product's package; the language is not normative.
 
 ## What this repository holds while the contract is `[PROPOSED]`
 
-1. **Local specification 160** is the umbrella (nine roles, the process model, the order of work with the server
+1. **Local specification 198** is the umbrella (nine roles, the process model, the order of work with the server
    first, the ladder); 161-168 and 170-180 are its children, 181 the synchronization that wrote this page.
 2. **No `schemaVersion` 1 is kept.** The Go module `exchange-server/` was first built to the superseded
    `ANYWHERE-ACCESS` 0.10 wire (register by one deployment password, a flat 16 KiB frame, a plain `connect`
@@ -27,7 +27,7 @@ Windows shipped in this product's package; the language is not normative.
    a plain stream is answered only `tls-required` or `version-unsupported`. The module's own suite is green (race
    included). **Update 2026-10-11:** the local probe exercises the full flow against a fresh built server,
    and the VB client library is built; a phone joint run is not claimed. The registry remains `partial 0.17`.
-3. **Rung 1 is not frozen.** Ticket 178 now vendors the generated frames, records, connection strings and
+3. **Rung 1 is not frozen.** Ticket 205 now vendors the generated frames, records, connection strings and
    provenance; the VB frame and record replay runs in both modern test assemblies. The 16 KiB input
    boundary grows beyond the reader's record limit after server-owned fields are added and is skipped;
    `PROPOSAL-2026-10-11-fmsw-vectors.md` offers the files and asks the owner to resolve this boundary.
@@ -50,6 +50,24 @@ Windows shipped in this product's package; the language is not normative.
    ticket, not a deviation. The one filed on 2026-10-07 (the server's first read, fifteen asks) was folded: asks 2-15
    into 0.15, the frame size and the chunk bound answered in 0.17 items T and U.
 7. **The registry row** (`DEVICE-EXCHANGE`, role P/C, `Implements` `partial 0.17` since 2026-10-11) moves only with the evidence of a rung, and
-   each rung's dated note names the two implementations that agreed (local specification 178).
+   each rung's dated note names the two implementations that agreed (local specification 205).
 8. **Modern only.** Everything here is the .NET 10 x64 mainline plus the Go server; the net48 fallback gets none
    of it.
+
+## Access and connection experience (specification 218, 2026-10-12)
+
+Nothing new is binding. Specification 218 records what the implementation does, what the first live self-test
+showed (twelve of twelve steps, after five defects fixed in the tree) and what must be checked before the access path
+is called working. The part for the other products is filed in the catalog beside the contract as
+`PROPOSAL-2026-10-12-access-and-connection-experience.md` (status `proposed`): a named joint conformance run for rung 2,
+one user-visible outcome per failure class in section 9, no empty or unread credential on the wire, and a kept pending
+state for a removal the server did not hear. The contract stays at 0.19 until its owner folds or rejects that proposal.
+
+## Resource PIN amendment read at 0.19 (specification 216)
+
+Section 17 AG-AL preserves the original resource PIN through public lock metadata and
+consumer capability gating. The exchange server filters both list and changed records;
+Windows performs the SSH root proof. Unsupported and malformed schemes never authorize
+attachment or a stored-resource open. Protected FMSCFG/QR exports are refused until their
+carrier can express the serving protocol without carrying the original PIN. The generated
+`protection-v1.json` corpus is replayed independently by the VB resource reader.

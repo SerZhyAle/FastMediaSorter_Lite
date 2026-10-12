@@ -1,4 +1,4 @@
-Option Strict On
+﻿Option Strict On
 
 Imports System.Threading.Tasks
 
@@ -84,7 +84,8 @@ Public Module ShareController
         ' pass already honors LAN-only (no UPnP) and the connection cap.
         Await PushNetworkPolicyAsync(pipeName)
 
-        Dim setResp As WorkerResponse = Await SendAsync(New WorkerRequest With {.type = "SetSharedFolders", .folders = FmsFoldersOnly(folders)}, 5000, pipeName)
+        Dim setResp As WorkerResponse = Await SendAsync(New WorkerRequest With {.type = "SetSharedFolders", .folders = FmsFoldersOnly(folders),
+            .PinConfiguration = r.Status IsNot Nothing AndAlso r.Status.ResourcePinSupported}, 5000, pipeName)
         Dim refused As String = RefusedText(setResp)
         If refused <> "" Then
             r.ErrorText = refused
@@ -221,8 +222,13 @@ Public Module ShareController
             If Not r.IsFmsOwned Then Continue For
             Dim host As String = If(r.hostPath, "")
             Dim desiredReadOnly As Boolean = ReconciledReadOnly(r.readOnly, ShareRootParamsStore.GetFor(host))
+            Dim pin As String = ShareRootParamsStore.GetFor(host).AccessPin
+            ' An existing worker lock cannot be cleared by a missing host-side configuration.
+            If r.pinProtected AndAlso String.IsNullOrEmpty(pin) Then Return status
+            If r.pinProtected <> Not String.IsNullOrEmpty(pin) Then drift = True
             If desiredReadOnly <> r.readOnly Then drift = True
-            corrected.Add(New ShareFolder With {.name = r.name, .hostPath = host, .readOnly = desiredReadOnly})
+            corrected.Add(New ShareFolder With {.name = r.name, .hostPath = host, .readOnly = desiredReadOnly,
+                .accessPin = If(String.IsNullOrEmpty(pin), Nothing, pin)})
         Next
         If Not drift Then Return status
 
@@ -230,7 +236,8 @@ Public Module ShareController
         ' already running); StartServer then covers the case where autostart had not
         ' brought it up - and only when the list was actually taken, since starting on
         ' a refused list would serve the old one.
-        Dim setResp As WorkerResponse = Await SendAsync(New WorkerRequest With {.type = "SetSharedFolders", .folders = corrected}, 5000)
+        Dim setResp As WorkerResponse = Await SendAsync(New WorkerRequest With {.type = "SetSharedFolders", .folders = corrected,
+            .PinConfiguration = status.ResourcePinSupported}, 5000)
         If setResp IsNot Nothing AndAlso setResp.Ok Then
             Await SendAsync(New WorkerRequest With {.type = "StartServer"}, 6000)
         End If
@@ -301,7 +308,8 @@ Public Module ShareController
     ''' A separate global StopServer would race a concurrent FileDO registration, so the
     ''' worker's SetSharedFolders lifecycle owns whether the server remains needed.</summary>
     Friend Async Function UnshareAsync(r As ShareResult, pipeName As String) As Task
-        Dim setResp As WorkerResponse = Await SendAsync(New WorkerRequest With {.type = "SetSharedFolders", .folders = New List(Of ShareFolder)()}, 5000, pipeName)
+        Dim setResp As WorkerResponse = Await SendAsync(New WorkerRequest With {.type = "SetSharedFolders", .folders = New List(Of ShareFolder)(),
+            .PinConfiguration = r.Status IsNot Nothing AndAlso r.Status.ResourcePinSupported}, 5000, pipeName)
         r.ErrorText = RefusedText(setResp)
         Dim cur As WorkerResponse = Await Task.Run(Function() WorkerProcess.TryGetStatus(2000, pipeName))
         If cur IsNot Nothing AndAlso cur.Ok AndAlso cur.Status IsNot Nothing Then r.Status = cur.Status

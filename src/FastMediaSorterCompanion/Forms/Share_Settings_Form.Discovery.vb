@@ -11,11 +11,11 @@ Partial Public NotInheritable Class Share_Settings_Form
     Private ReadOnly _headerCommands As New List(Of Button)()
 
     Private Sub BuildSettingsHeader()
+        ' The fold buttons went with the fold (210 section 6): the groups they managed live
+        ' in the left menu now, so the header keeps the search only.
         Dim tools As New FlowLayoutPanel With {.Dock = DockStyle.Top, .Height = 52,
             .FlowDirection = FlowDirection.LeftToRight, .WrapContents = False, .Padding = New Padding(4, 0, 4, 4)}
         AddSettingsHeaderCommand(tools, "managerSettingsSearch", AddressOf SearchManagerSettings)
-        AddSettingsHeaderCommand(tools, "managerSettingsExpandAll", Sub() SetPageGroupsExpanded(True))
-        AddSettingsHeaderCommand(tools, "managerSettingsCollapseAll", Sub() SetPageGroupsExpanded(False))
         _pageHost.Controls.Add(tools)
         tools.SendToBack()
     End Sub
@@ -32,11 +32,7 @@ Partial Public NotInheritable Class Share_Settings_Form
     End Sub
 
     Private Shared Function SettingsCommandCaption(name As String) As String
-        Select Case name
-            Case "managerSettingsExpandAll" : Return Localization.T("Развернуть все группы")
-            Case "managerSettingsCollapseAll" : Return Localization.T("Свернуть все группы")
-            Case Else : Return Localization.T("Поиск настроек")
-        End Select
+        Return Localization.T("Поиск настроек")
     End Function
 
     Private Sub RenderSettingsHeader(palette As ThemePalette)
@@ -50,35 +46,15 @@ Partial Public NotInheritable Class Share_Settings_Form
         Next
     End Sub
 
-    Private Sub SetPageGroupsExpanded(expanded As Boolean)
-        If _selectedPage.Length = 0 Then Return
-        Dim page = _pages(_selectedPage)
-        Dim held = Descendants(page).ToArray()
-        For Each control In held
-            control.SuspendLayout()
-        Next
-        page.SuspendLayout()
-        Try
-            For Each group In _pageGroups(_selectedPage)
-                group.Expanded = expanded
-            Next
-        Finally
-            For Each control In held.Reverse()
-                control.ResumeLayout(False)
-            Next
-            page.ResumeLayout(True)
-        End Try
-    End Sub
-
     Private NotInheritable Class SearchEntry
         Friend PageId As String
-        Friend Group As CollapsibleSection
+        Friend Group As SettingsNavGroup
         Friend Editor As Control
         Friend Title As String
         Friend Hint As String
         Friend PageTitle As String
         Public Overrides Function ToString() As String
-            Return PageTitle & " / " & Group.Title & " / " & Title
+            Return PageTitle & " / " & Group.Caption & " / " & Title
         End Function
     End Class
 
@@ -86,13 +62,19 @@ Partial Public NotInheritable Class Share_Settings_Form
         Dim entries As New List(Of SearchEntry)()
         For Each section In AllSettingsSections()
             For Each group In _pageGroups(section.Key)
-                For Each row In Descendants(group).OfType(Of ManagerSettingRow)()
-                    entries.Add(New SearchEntry With {.PageId = section.Key, .Group = group, .Editor = row.Editor,
-                        .Title = row.Caption.Text, .Hint = row.Hint.Text, .PageTitle = SettingsPageCaption(section)})
-                Next
-                For Each check In Descendants(group).OfType(Of CheckBox)()
-                    entries.Add(New SearchEntry With {.PageId = section.Key, .Group = group, .Editor = check,
-                        .Title = check.Text, .Hint = check.AccessibleDescription, .PageTitle = SettingsPageCaption(section)})
+                For Each row In group.Rows
+                    For Each control In (New Control() {row}).Concat(Descendants(row))
+                        Dim settingRow = TryCast(control, ManagerSettingRow)
+                        If settingRow IsNot Nothing Then
+                            entries.Add(New SearchEntry With {.PageId = section.Key, .Group = group, .Editor = settingRow.Editor,
+                                .Title = settingRow.Caption.Text, .Hint = settingRow.Hint.Text, .PageTitle = SettingsPageCaption(section)})
+                        End If
+                        Dim check = TryCast(control, CheckBox)
+                        If check IsNot Nothing Then
+                            entries.Add(New SearchEntry With {.PageId = section.Key, .Group = group, .Editor = check,
+                                .Title = check.Text, .Hint = check.AccessibleDescription, .PageTitle = SettingsPageCaption(section)})
+                        End If
+                    Next
                 Next
             Next
         Next
@@ -153,11 +135,9 @@ Partial Public NotInheritable Class Share_Settings_Form
             DpiLayout.ClampToWorkingArea(dialog)
             If dialog.ShowDialog(Me) <> DialogResult.OK Then Return
             Dim chosen = DirectCast(results.SelectedItem, SearchEntry)
-            SelectSettingsPage(chosen.PageId)
-            chosen.Group.Expanded = True
-            _pages(chosen.PageId).PerformLayout()
-            _pages(chosen.PageId).ScrollControlIntoView(chosen.Editor)
-            chosen.Editor.Focus()
+            ' The same path a subordinate-item click uses (210 section 5.4): select the
+            ' page, scroll the block's heading to the top, focus the editor.
+            RevealSettingsBlock(chosen.PageId, chosen.Group, chosen.Editor)
         End Using
     End Sub
 
