@@ -79,6 +79,41 @@
     },
     "scan": ["*.html", "lang/*/*.html", "docs/*.html", "assets/help/*.html", "README.md", "README_RU.md", "README_UK.md", "publishing/store/listingData.csv", "publishing/store/LOCALES.md", "publishing/winget/*.yaml", "publishing/winget/server/*.yaml", "publishing/msix/README.md", "docs/guides/STORE_PUBLISHING.md", "exchange-server/package/README.txt", "tools/site-copy.json", "tools/trust-copy.json"]
   },
+  "discoverability": {
+    "_about": "The machine form of docs/guides/POSITIONING.md section 7 (the worksheet's derived field table, ticket 207 T-1; canon PROMOTION section 2). Every discoverability field of a channel is derived from this block, so a channel never drifts from another: GitHub description and topics, winget Tags, Store search terms, the page titles and the social card. 'applied' names the channels whose fields tools/Test-SitePositioning.ps1 holds against the tree today; a channel joins it in the step that writes its fields (winget and the Store at T-8). Competitor names are never written here: the gate reads them from the internal research guide named in 'competitorTermsSource' (owner decision 2026-10-09, D-7).",
+    "source": "docs/guides/POSITIONING.md",
+    "category": "photo and video sorter",
+    "synonyms": ["image viewer", "photo organizer"],
+    "tagline": "Sort photos and videos with one key per file",
+    "githubDescription": "Photo and video sorter and viewer for Windows: one key per file to move or copy, offline video, archives and SFTP folders opened like folders, optional OCR translation. Fast Media Sorter & Sharing - folder sharing to Android is optional and off by default. Free, MIT.",
+    "homepage": "https://serzhyale.github.io/FastMediaSorter_Lite/",
+    "topics": ["photo-sorter", "photo-organizer", "image-sorter", "image-viewer", "video-viewer", "media-sorter", "media-player", "slideshow", "windows", "desktop", "sftp", "ocr", "heic", "webp", "libvlc", "vb-net"],
+    "wingetTags": ["photo-sorter", "photo-organizer", "image-sorter", "image-viewer", "video-viewer", "media-sorter", "media-player", "slideshow", "sftp", "ocr", "heic", "webp", "photos", "videos", "hotkeys", "sharing"],
+    "wingetOnlyTags": ["photos", "videos", "hotkeys", "sharing"],
+    "storeSearchTerms": {
+      "en-us": ["photo sorter", "image viewer", "video sorter", "media organizer", "photo organizer", "slideshow viewer", "heic avif viewer"]
+    },
+    "limits": { "taglineWordsMin": 6, "taglineWordsMax": 10, "githubDescription": 350, "topics": 20, "topicLength": 50, "wingetTags": 16, "storeSearchTerms": 7, "title": 60, "metaDescription": 160 },
+    "titles": { "separator": " | ", "suffix": "Fast Media Sorter & Sharing" },
+    "forbiddenWords": ["lite", "lightweight", "lean", "fms"],
+    "competitorTermsSource": "docs/guides/RESEARCH_COMPETITOR_FEATURES.md",
+    "competitorPhrases": ["alternative to", "alternatives to", "replacement for", "better than"],
+    "competitorScan": ["*.html", "lang/*/*.html", "docs/*.html", "assets/help/*.html", "README.md", "README_RU.md", "README_UK.md", "publishing/store/listingData.csv", "publishing/store/LOCALES.md", "publishing/winget/*.yaml", "publishing/winget/server/*.yaml", "tools/site-copy.json", "tools/trust-copy.json"],
+    "socialCard": {
+      "lines": [
+        "Offline video, archives, SFTP folders, optional OCR",
+        "Folder sharing and FileDO disks: optional, off by default",
+        "Free, open source (MIT), {languages} interface languages"
+      ],
+      "alt": "Fast Media Sorter & Sharing for Windows: sort photos and videos with one key per file",
+      "stamp": "assets/social-card.json",
+      "sizes": [
+        { "name": "open-graph", "file": "assets/social-card-1200x630.png", "width": 1200, "height": 630 },
+        { "name": "repository-preview", "file": "assets/social-preview-1280x640.png", "width": 1280, "height": 640, "maxBytes": 1000000 }
+      ]
+    },
+    "applied": ["site-titles", "social-card", "winget"]
+  },
   "surfaces": [
     {
       "file": "index.html", "names": 3, "why": "landing, meta description",

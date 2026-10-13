@@ -351,12 +351,16 @@ Partial Public NotInheritable Class MainWindow
             lblState.Text = HostingText.RunningNoAccessLine(_rootsWithoutAccess)
             lblState.ForeColor = CollapsibleSection.AttentionColor
             SetStateGlyph("shareStatusError")
-        ElseIf running Then
-            Dim count As Integer = CountSharedFolders()
+        ElseIf ManagerWelcomeModel.IsGreen(running, WelcomeLiveFolderCount(), _rootsWithoutAccess, workerWarning) Then
+            Dim count As Integer = WelcomeLiveFolderCount()
             Dim port As Integer = If(_status IsNot Nothing, _status.ListenPort, 0)
             lblState.Text = Localization.TF("Раздача работает - {0}, порт {1}", FolderCountText(count), port)
-            lblState.ForeColor = Color.ForestGreen
+            lblState.ForeColor = ThemePalette.ReadableText(Color.ForestGreen, ThemeService.Palette.SurfaceWindow)
             SetStateGlyph("shareStatusOk")
+        ElseIf running Then
+            lblState.Text = Localization.T("Сначала добавьте папку и отметьте её галочкой.")
+            lblState.ForeColor = CollapsibleSection.AttentionColor
+            SetStateGlyph("shareStatusError")
         Else
             lblState.Text = Localization.T("Раздача выключена")
             lblState.ForeColor = ThemeService.Palette.TextMuted

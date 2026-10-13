@@ -8,6 +8,7 @@ Imports Xunit
 Imports System.IO
 Imports Microsoft.Win32
 
+<Collection(UiLanguageCollection.Name)>
 Public Class DiskSharingTests
     <Theory>
     <InlineData("disk-share")>

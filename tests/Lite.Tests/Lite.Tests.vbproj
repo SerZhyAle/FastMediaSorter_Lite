@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <!-- Unit tests for viewer-unique pure logic (net48). The Share subsystem is covered
        by Companion.Tests (same ported code); this project targets code that lives
        ONLY in the viewer - currently Utils (array ops, contrast colour, and the header-only
@@ -210,6 +210,8 @@
     <Compile Include="..\..\src\ViewerBox.vb"><Link>Linked\ViewerBox.vb</Link></Compile>
     <Compile Include="..\..\src\AskModel.vb"><Link>Linked\AskModel.vb</Link></Compile>
     <Compile Include="..\..\src\Welcome\WelcomeRules.vb"><Link>Linked\WelcomeRules.vb</Link></Compile>
+    <!-- Spec 211 section 7: the where-pairing gate lives in WelcomeWhereGateTests.vb, picked up by the
+         default glob like the rest of the suite. -->
     <Compile Include="..\..\src\AskSpecs.vb"><Link>Linked\AskSpecs.vb</Link></Compile>
     <Compile Include="..\..\src\Ask_Dialog.vb"><Link>Linked\Ask_Dialog.vb</Link></Compile>
     <!-- The secondary windows whose layout the dialog-layer tests drive at 100/150/175 % (124 UX-202/UX-203):
@@ -402,6 +404,14 @@
          are its only dependencies. -->
     <Compile Include="..\..\src\ModernViewerPreferences.vb">
       <Link>Linked\ModernViewerPreferences.vb</Link>
+    </Compile>
+    <!-- The pure geometry of the recipients overlay's free position (219): the anchored corner
+         offsets, the logical-px storage conversions, the recovery clamp and the moved panel's
+         hot zone. Whole-file "#If Not NETFRAMEWORK", so on the net48 leg this - and
+         RecipientsOverlayPlacementTests - compile to nothing, matching the shipped shape; it
+         needs nothing new (UiScale is already linked above for the seam's own tests). -->
+    <Compile Include="..\..\src\RecipientsOverlayPlacement.vb">
+      <Link>Linked\RecipientsOverlayPlacement.vb</Link>
     </Compile>
     <Compile Include="..\..\src\AudioMetadata.vb">
       <Link>Linked\AudioMetadata.vb</Link>

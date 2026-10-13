@@ -1,4 +1,4 @@
-Option Strict On
+﻿Option Strict On
 
 Imports System.Threading
 Imports System.Threading.Tasks
@@ -167,14 +167,15 @@ Friend NotInheritable Class ExchangeServerWizard
         Return host & ":" & port.ToString(Globalization.CultureInfo.InvariantCulture)
     End Function
 
-    Friend Shared Async Function RunAsync(login As String, ports As IExchangeWizardPorts, progress As Action(Of ExchangeWizardStep), ct As CancellationToken) As Task(Of ExchangeWizardResult)
+    Friend Shared Async Function RunAsync(login As String, ports As IExchangeWizardPorts, progress As Action(Of ExchangeWizardStep), ct As CancellationToken,
+                                         Optional allowManagedService As Boolean = False, Optional enrollThisPc As Boolean = True) As Task(Of ExchangeWizardResult)
         Dim result As New ExchangeWizardResult With {.Login = ExchangeLoginRules.Normalize(login)}
         If ExchangeLoginRules.Check(result.Login) <> ExchangeLoginRules.Verdict.Accepted Then
             result.Outcome = ExchangeWizardOutcome.LoginRefused
             Return result
         End If
         Dim report As ExchangeProcess.InspectReport = ports.Inspect()
-        If Not report.Answered OrElse ports.ServiceExists() Then
+        If Not report.Answered OrElse (ports.ServiceExists() AndAlso Not allowManagedService) Then
             result.Outcome = ExchangeWizardOutcome.NotAvailable
             Return result
         End If
@@ -189,24 +190,33 @@ Friend NotInheritable Class ExchangeServerWizard
         End If
         result.AccountCreated = True
         result.Password = password
+        Dim partialFailure As ExchangeWizardOutcome = ExchangeWizardOutcome.StartFailed
 
-        ' 2. the server (it refuses to start with no account, so this comes second)
-        ct.ThrowIfCancellationRequested()
-        Notify(progress, ExchangeWizardStep.StartingServer)
-        If Not ports.IsConsoleRunning() Then
-            result.StartOutcome = ports.Start()
-            If result.StartOutcome <> ExchangeProcess.StartOutcome.Started AndAlso result.StartOutcome <> ExchangeProcess.StartOutcome.AlreadyRunning Then
-                result.Outcome = ExchangeWizardOutcome.StartFailed
-                Return result
+        Try
+            ' 2. the server (it refuses to start with no account, so this comes second)
+            ct.ThrowIfCancellationRequested()
+            Notify(progress, ExchangeWizardStep.StartingServer)
+            If Not ports.IsConsoleRunning() Then
+                result.StartOutcome = ports.Start()
+                If result.StartOutcome <> ExchangeProcess.StartOutcome.Started AndAlso result.StartOutcome <> ExchangeProcess.StartOutcome.AlreadyRunning Then
+                    result.Outcome = ExchangeWizardOutcome.StartFailed
+                    Return result
+                End If
             End If
-        End If
-
-        ' 3. and 4. what answers is the server whose fingerprint the binary reports (the certificate exists after the first start),
-        ' then this PC's own agent, with that password
-        ct.ThrowIfCancellationRequested()
-        Notify(progress, ExchangeWizardStep.CheckingCertificate)
-        report = ports.Inspect()
-        Await ProbeAndEnrollAsync(result, report, password, ports, progress, ct).ConfigureAwait(False)
+    
+            ' 3. and 4. what answers is the server whose fingerprint the binary reports (the certificate exists after the first start),
+            ' then this PC's own agent, with that password
+            ct.ThrowIfCancellationRequested()
+            Notify(progress, ExchangeWizardStep.CheckingCertificate)
+            partialFailure = ExchangeWizardOutcome.ServerNotAnswering
+            report = ports.Inspect()
+            Await ProbeAndEnrollAsync(result, report, password, ports, progress, ct, enrollThisPc).ConfigureAwait(False)
+        Catch ex As OperationCanceledException When allowManagedService
+            ' First-run callers still need the created account's one-time password and the real partial outcome.
+            result.Outcome = ExchangeWizardOutcome.Cancelled
+        Catch ex As Exception When allowManagedService AndAlso (TypeOf ex Is InvalidOperationException OrElse TypeOf ex Is IO.IOException)
+            result.Outcome = If(result.LocalAddress.Length = 0, partialFailure, ExchangeWizardOutcome.EnrollFailed)
+        End Try
         Return result
     End Function
 
@@ -232,7 +242,8 @@ Friend NotInheritable Class ExchangeServerWizard
     ''' <summary>The shared tail: the address, the certificate compared with the one the binary reports, then the enrolment. Sets
     ''' <see cref="ExchangeWizardResult.Outcome"/>; nothing secret is sent before the fingerprints agree.</summary>
     Private Shared Async Function ProbeAndEnrollAsync(result As ExchangeWizardResult, report As ExchangeProcess.InspectReport, password As String,
-                                                      ports As IExchangeWizardPorts, progress As Action(Of ExchangeWizardStep), ct As CancellationToken) As Task
+                                                      ports As IExchangeWizardPorts, progress As Action(Of ExchangeWizardStep), ct As CancellationToken,
+                                                      Optional enrollThisPc As Boolean = True) As Task
         result.LocalAddress = LocalAddressOf(report.Listen)
         result.PublicEndpoint = report.PublicEndpoint
         result.Fingerprint = report.Fingerprint
@@ -249,7 +260,7 @@ Friend NotInheritable Class ExchangeServerWizard
             End If
         End If
 
-        If probe Is Nothing Then
+        If probe Is Nothing OrElse Not enrollThisPc Then
             result.Outcome = ExchangeWizardOutcome.DoneNoAgent
             Return
         End If

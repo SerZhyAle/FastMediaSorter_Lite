@@ -1446,6 +1446,12 @@ Partial Public Class Main_Form
         ' A media-surface change may have re-ordered z (video BringToFront) - keep
         ' the recipients overlay clickable on top.
         KeepRecipientsOverlayOnTop()
+
+#If Not NETFRAMEWORK Then
+        ' The media surface just changed what it shows: the welcome invitation (spec 211 §4.3)
+        ' stands down the moment a picture takes the surface, and returns when it empties.
+        UpdateWelcomeInvite()
+#End If
     End Sub
 
 #If NETFRAMEWORK Then

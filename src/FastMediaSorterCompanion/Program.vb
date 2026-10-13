@@ -51,6 +51,14 @@ Friend Module Program
     ''' the same intent over WM_COPYDATA instead).</summary>
     Public Const ShowWindowFlag As String = "--show"
 
+    ''' <summary>WM_COPYDATA payload meaning "show the window and open the guided add-resource flow" (spec 215: the
+    ''' viewer's welcome wizard, on a server row that is green). An intent with no path in it; a receiver that does not
+    ''' know it is never sent it (<see cref="ShareActivationPolicy.IsAddResourceCapable"/>).</summary>
+    Public Const AddResourceCommand As String = "::fms-add-resource::"
+
+    ''' <summary>Command line form of <see cref="AddResourceCommand"/>, for a cold start.</summary>
+    Public Const AddResourceFlag As String = "--add-resource"
+
     <STAThread>
     Friend Sub Main(args As String())
         AppFileLogger.Initialize()
@@ -60,12 +68,20 @@ Friend Module Program
         ' Sort the arguments into: silent-tray flag, explicit show-window request, folder.
         Dim silentTray As Boolean = False
         Dim windowRequested As Boolean = False
+        Dim addResourceRequested As Boolean = False
         Dim folder As String = Nothing
         If args IsNot Nothing Then
             For Each a As String In args
                 If String.Equals(a, TrayFlag, StringComparison.OrdinalIgnoreCase) OrElse
                    String.Equals(a, "/tray", StringComparison.OrdinalIgnoreCase) Then
                     silentTray = True
+                ElseIf String.Equals(a, AddResourceFlag, StringComparison.OrdinalIgnoreCase) OrElse
+                       String.Equals(a, "/add-resource", StringComparison.OrdinalIgnoreCase) OrElse
+                       String.Equals(a, AddResourceCommand, StringComparison.Ordinal) Then
+                    ' Same shape as the show-window marker below: an explicit request for the window, plus the
+                    ' intent of what to open in it. Checked before the folder branch for the same reason.
+                    windowRequested = True
+                    addResourceRequested = True
                 ElseIf String.Equals(a, ShowWindowFlag, StringComparison.OrdinalIgnoreCase) OrElse
                        String.Equals(a, "/show", StringComparison.OrdinalIgnoreCase) OrElse
                        String.Equals(a, ShowWindowCommand, StringComparison.Ordinal) Then
@@ -85,6 +101,8 @@ Friend Module Program
         Dim payload As String
         If Not String.IsNullOrEmpty(folder) Then
             payload = folder
+        ElseIf addResourceRequested Then
+            payload = AddResourceCommand
         ElseIf windowRequested Then
             payload = ShowWindowCommand
         ElseIf silentTray Then
@@ -134,6 +152,8 @@ Friend Module Program
             ' Read the shared UI-language flag before any Share text is built, so
             ' Companion matches the viewer's language (invariant 9).
             CompanionGlobals.LoadLanguage()
+
+            ManagerWelcomeStore.CaptureFreshProfile()
 
             ' ONE line about the machine this log came from (ticket 182 L-8): version, OS and build,
             ' Server or client, session and RDP, host mode, the components, the two services. Only
@@ -187,7 +207,7 @@ Friend Module Program
             ' folder to share, or --show from the viewer's Share Manager button), and every
             ' other launch - logon autostart, a double-click on the exe, a script -
             ' obeys the "Open the manager window at startup" option, off by default.
-            Using ctx As New TrayContext(folder, windowRequested, silentTray)
+            Using ctx As New TrayContext(folder, windowRequested, silentTray, addResourceRequested)
                 Application.Run(ctx)
             End Using
         Finally
@@ -291,6 +311,9 @@ Friend Module Program
         If command.Kind = CompanionCommandKind.ShareFolder AndAlso
            ShareActivationPolicy.PlanFor(command.Folder, receiverVersion) <> ActivationPlan.SendFolder Then Return ShowWindowCommand
         If command.Kind = CompanionCommandKind.PlainStart AndAlso Not ShareActivationPolicy.IsConsentCapable(receiverVersion) Then Return ShowWindowCommand
+        ' Spec 215: the add-resource intent never reaches a receiver that is not known to understand it - the plain
+        ' wake is what an older Share Manager gets, and it opens its window as it always did.
+        If command.Kind = CompanionCommandKind.AddResource AndAlso Not ShareActivationPolicy.IsAddResourceCapable(receiverVersion) Then Return ShowWindowCommand
         Return payload
     End Function
 

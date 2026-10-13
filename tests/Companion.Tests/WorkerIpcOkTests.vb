@@ -1,4 +1,4 @@
-Option Strict On
+﻿Option Strict On
 
 Imports System.Collections.Generic
 Imports System.Threading.Tasks
@@ -69,6 +69,16 @@ Public Class WorkerIpcOkTests
     End Function
 
     ' --- SetSharedFolders / StartServer ----------------------------------------------
+
+    <Fact>
+    Public Async Function Add_without_serving_sets_the_folder_list_once_without_starting_the_server() As Task
+        Using stub As New StubWorker(Function(t) Accept)
+            Dim result As New ShareController.ShareResult()
+            Await ShareController.ServeAsync(result, Folders(), 0, stub.PipeName, startServing:=False)
+            Assert.Equal(New String() {"SetNetworkPolicy", "SetSharedFolders"}, stub.Seen().ToArray())
+            Assert.False(result.Served)
+        End Using
+    End Function
 
     <Fact>
     Public Async Function Share_RefusedFolderList_IsReported_AndNotStarted() As Task

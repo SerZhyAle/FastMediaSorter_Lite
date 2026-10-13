@@ -134,6 +134,102 @@ Public Class WelcomeRulesTests
         Assert.False(WelcomeRules.KeyOneMayBind("\\nas\share\gone", folderExists:=False))
     End Sub
 
+    ' --- the invitation button (spec 211 section 4.3) ----------------------------------------------
+
+    <Fact>
+    Public Sub The_invite_is_offered_exactly_while_the_profile_is_eligible()
+        ' A fresh profile (T-1/T-2) and a deferred one (the pending note) are eligible; the invite exists
+        ' exactly for the launch that carried a file, so there is no file-argument clause here.
+        Assert.True(WelcomeRules.InviteOffered(welcomeDone:=False, welcomePending:=False, freshProfile:=True))
+        Assert.True(WelcomeRules.InviteOffered(welcomeDone:=False, welcomePending:=True, freshProfile:=False))
+        Assert.True(WelcomeRules.InviteOffered(welcomeDone:=False, welcomePending:=True, freshProfile:=True))
+    End Sub
+
+    <Fact>
+    Public Sub The_invite_never_returns_on_an_ineligible_profile_or_after_a_wizard_exit()
+        ' An upgrade (values, no note) is not eligible, and any exit of the wizard writes DoneValue - which
+        ' is what takes the button away the moment the wizard is left.
+        Assert.False(WelcomeRules.InviteOffered(welcomeDone:=False, welcomePending:=False, freshProfile:=False))
+        Assert.False(WelcomeRules.InviteOffered(welcomeDone:=True, welcomePending:=False, freshProfile:=True))
+        Assert.False(WelcomeRules.InviteOffered(welcomeDone:=True, welcomePending:=True, freshProfile:=True))
+    End Sub
+
+    ' --- the delete question (spec 211 section 4.2) --------------------------------------------------
+
+    <Fact>
+    Public Sub The_delete_question_opens_on_the_code_default_which_is_the_Bin()
+        ' The checkbox preselects what the viewer holds; on a fresh profile that is the class default,
+        ' and spec 211 rule 4 says walking through with Next must change nothing.
+        Assert.True((New ModernViewerPreferences()).DeleteToRecycleBin)
+    End Sub
+
+    ' --- the installed-servers block (spec 215 sections 4-6) ---------------------------------------
+
+    <Fact>
+    Public Sub No_installed_server_component_draws_no_block_at_all()
+        ' The fresh viewer-only install (and the packaged build, where both probes read False) ends the wizard
+        ' exactly as 211 does: nothing to name, so nothing is added.
+        Assert.Empty(WelcomeRules.ServerBlock(False, Nothing, False, Nothing))
+        Assert.Empty(WelcomeRules.ServerBlock(False, True, False, True))
+    End Sub
+
+    <Fact>
+    Public Sub One_installed_component_draws_only_its_own_row()
+        Dim shareOnly As IReadOnlyList(Of WelcomeServerRow) = WelcomeRules.ServerBlock(True, True, False, Nothing)
+        Assert.Single(shareOnly)
+        Assert.Equal(WelcomeServer.ShareServer, shareOnly(0).Server)
+
+        Dim exchangeOnly As IReadOnlyList(Of WelcomeServerRow) = WelcomeRules.ServerBlock(False, Nothing, True, False)
+        Assert.Single(exchangeOnly)
+        Assert.Equal(WelcomeServer.ExchangeServer, exchangeOnly(0).Server)
+    End Sub
+
+    <Fact>
+    Public Sub Both_components_keep_the_fixed_order_share_first_exchange_second()
+        ' The order is the table of spec 215 section 4, whatever the green facts are.
+        For Each shareUp As Boolean In {True, False}
+            For Each exchangeUp As Boolean In {True, False}
+                Dim rows As IReadOnlyList(Of WelcomeServerRow) = WelcomeRules.ServerBlock(True, shareUp, True, exchangeUp)
+                Assert.Equal(2, rows.Count)
+                Assert.Equal(WelcomeServer.ShareServer, rows(0).Server)
+                Assert.Equal(WelcomeServer.ExchangeServer, rows(1).Server)
+            Next
+        Next
+    End Sub
+
+    <Fact>
+    Public Sub Green_needs_an_installed_component_AND_a_definite_running_process()
+        Assert.Equal(ServerPill.Absent, WelcomeRules.StatusFor(False, True))
+        Assert.Equal(ServerPill.Absent, WelcomeRules.StatusFor(False, False))
+        Assert.Equal(ServerPill.Absent, WelcomeRules.StatusFor(False, Nothing))
+        Assert.Equal(ServerPill.Green, WelcomeRules.StatusFor(True, True))
+        Assert.Equal(ServerPill.Amber, WelcomeRules.StatusFor(True, False))
+    End Sub
+
+    <Fact>
+    Public Sub An_unknown_probe_is_amber_and_never_green()
+        ' Spec 215 rule 3: a lookup that could not tell never overclaims.
+        Assert.Equal(ServerPill.Amber, WelcomeRules.StatusFor(True, Nothing))
+        Dim rows As IReadOnlyList(Of WelcomeServerRow) = WelcomeRules.ServerBlock(True, Nothing, True, Nothing)
+        Assert.All(rows, Sub(row) Assert.Equal(ServerPill.Amber, row.Pill))
+    End Sub
+
+    <Fact>
+    Public Sub A_green_row_leads_on_to_adding_a_resource_and_any_other_opens_the_manager()
+        Assert.Equal(ServerAct.AddResource, WelcomeRules.ActFor(ServerPill.Green))
+        Assert.Equal(ServerAct.OpenManager, WelcomeRules.ActFor(ServerPill.Amber))
+        Dim rows As IReadOnlyList(Of WelcomeServerRow) = WelcomeRules.ServerBlock(True, True, True, False)
+        Assert.Equal(ServerAct.AddResource, rows(0).Act)
+        Assert.Equal(ServerAct.OpenManager, rows(1).Act)
+    End Sub
+
+    <Fact>
+    Public Sub The_probe_names_are_the_processes_of_the_two_servers()
+        ' One name lookup each is the whole probe (spec 215 section 5); a rename of either exe is a decision here too.
+        Assert.Equal("fms-share-worker", WelcomeRules.ShareWorkerProcessName)
+        Assert.Equal("fms-exchange-server", WelcomeRules.ExchangeServerProcessName)
+    End Sub
+
 End Class
 
 #End If

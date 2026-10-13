@@ -21,15 +21,13 @@ Partial Public NotInheritable Class MainWindow
     ' --- folder-list handlers ---------------------------------------------------
 
     Private Async Sub OnAddFolder(sender As Object, e As EventArgs)
-        If _busy Then Return
-        Dim picked As String = Nothing
-        Using dlg As New FolderBrowserDialog() With {.ShowNewFolderButton = False,
-                .Description = Localization.T("Выберите папку, которую хотите открыть на телефоне")}
-            If dlg.ShowDialog(Me) <> DialogResult.OK Then Return
-            picked = dlg.SelectedPath
-        End Using
-        Await AddFolderInteractive(picked)
+        Await OpenResourceAddAsync(Me, ResourceAddEntry.AddButton)
     End Sub
+
+    Friend Async Function AddWelcomeFolderAsync(dialogOwner As Form) As Task
+        If _busy Then Return
+        Await OpenResourceAddAsync(dialogOwner, ResourceAddEntry.Welcome)
+    End Function
 
     Private Async Sub OnAddCurrentFolder(sender As Object, e As EventArgs)
         If _busy OrElse _initialFolder.Length = 0 Then Return
@@ -39,33 +37,8 @@ Partial Public NotInheritable Class MainWindow
         End Try
     End Sub
 
-    Private Async Function AddFolderInteractive(path As String) As Task
-        If String.IsNullOrWhiteSpace(path) Then Return
-        If Not AddShareRow(path) Then
-            SetHint(Localization.T("Эта папка уже в списке."))
-            Return
-        End If
-        ' Said at the moment it is picked, not after a phone fails to open it (ticket 054 H-19).
-        If FolderAccess.NetworkRootsInServerMode(New ShareFolder() {New ShareFolder With {.hostPath = path}}).Count > 0 Then
-            SetHint(HostingText.FolderNoAccessTip())
-        End If
-        Dim before As ShareRootParams = ShareRootParamsStore.GetFor(path)
-        Using dlg As New Share_Root_Params_Form(ShareFolderDisplayName(path), before)
-            If dlg.ShowDialog(Me) = DialogResult.OK Then
-                ShareRootParamsStore.SetFor(path, dlg.Result)
-                For Each it As ListViewItem In lvFolders.Items
-                    If String.Equals(Convert.ToString(it.Tag), path, StringComparison.OrdinalIgnoreCase) Then
-                        Dim lbl As String = If(dlg.Result.Label, "").Trim()
-                        If lbl.Length > 0 Then it.Text = lbl
-                        it.SubItems(1).Text = ProfileLabel(dlg.Result)
-                        it.SubItems(3).Text = RoLabel(dlg.Result)
-                        Exit For
-                    End If
-                Next
-            End If
-        End Using
-        If IsDisposed Then Return
-        Await ApplySharedFoldersAsync()
+    Private Async Function AddFolderInteractive(path As String, Optional dialogOwner As Form = Nothing) As Task
+        Await OpenResourceAddAsync(If(dialogOwner, Me), ResourceAddEntry.EmptyList, path)
     End Function
 
     Private Async Sub OnRemoveFolder(sender As Object, e As EventArgs)
@@ -188,7 +161,7 @@ Partial Public NotInheritable Class MainWindow
         Next
     End Sub
 
-    Private Function AddShareRow(path As String) As Boolean
+    Private Function AddShareRow(path As String, Optional paramsAreConfirmed As Boolean = False) As Boolean
         If String.IsNullOrWhiteSpace(path) Then Return False
         For Each existing As ListViewItem In lvFolders.Items
             If String.Equals(Convert.ToString(existing.Tag), path, StringComparison.OrdinalIgnoreCase) Then Return False
@@ -199,14 +172,14 @@ Partial Public NotInheritable Class MainWindow
         ' default stays "none" (Android import default / v1-purity invariant); only a
         ' new add in this app opts into all_files.
         Dim prm As ShareRootParams = ShareRootParamsStore.GetFor(path)
-        If prm.IsDefault() Then
+        If prm.IsDefault() AndAlso Not paramsAreConfirmed Then
             prm.Profile = "all_files"
             ShareRootParamsStore.SetFor(path, prm)
         End If
         Dim prev As Boolean = _loading
         _loading = True
         Try
-            Dim it As New ListViewItem(ShareFolderDisplayName(path)) With {.Checked = True, .Tag = path}
+            Dim it As New ListViewItem(If(prm.Label.Trim().Length > 0, prm.Label, ShareFolderDisplayName(path))) With {.Checked = True, .Tag = path}
             it.SubItems.Add(ProfileLabel(prm))
             it.SubItems.Add(path)
             it.SubItems.Add(RoLabel(prm))
@@ -358,14 +331,14 @@ Partial Public NotInheritable Class MainWindow
     ''' Skipped when the user has just declined the first grant: one refusal is an answer,
     ''' asking again in the next breath is nagging.
     ''' </summary>
-    Private Async Function EnsureServiceAccessAsync(folders As List(Of ShareFolder)) As Task
-        If Await EnsureRootAccessAsync(folders) Then
-            Await EnsureSubtreeAccessAsync(folders)
+    Private Async Function EnsureServiceAccessAsync(folders As List(Of ShareFolder), Optional dialogOwner As Form = Nothing) As Task
+        If Await EnsureRootAccessAsync(folders, dialogOwner) Then
+            Await EnsureSubtreeAccessAsync(folders, dialogOwner)
         End If
     End Function
 
     ''' <summary>Returns False only when the user declined the prompt.</summary>
-    Private Async Function EnsureRootAccessAsync(folders As List(Of ShareFolder)) As Task(Of Boolean)
+    Private Async Function EnsureRootAccessAsync(folders As List(Of ShareFolder), Optional dialogOwner As Form = Nothing) As Task(Of Boolean)
         Dim needy As List(Of ShareFolder) = FolderAccess.RootsNeedingGrant(folders)
         If needy.Count = 0 Then Return True
         If Not ServiceControl.CanManage() Then Return True
@@ -375,7 +348,7 @@ Partial Public NotInheritable Class MainWindow
             names.Add(If(r.hostPath, ""))
         Next
         Dim question As String = HostingText.GrantNeededPrompt(String.Join(Environment.NewLine, names))
-        If MessageBox.Show(Me, question, Me.Text, MessageBoxButtons.OKCancel, MessageBoxIcon.Question) <> DialogResult.OK Then
+        If MessageBox.Show(If(dialogOwner, Me), question, Me.Text, MessageBoxButtons.OKCancel, MessageBoxIcon.Question) <> DialogResult.OK Then
             SetHint(HostingText.GrantDeclinedHint())
             Return False
         End If
@@ -415,7 +388,7 @@ Partial Public NotInheritable Class MainWindow
     ''' Asked once per folder set: a scan is not free, and a user who said no to this list
     ''' should not meet it again on the next status tick.
     ''' </summary>
-    Private Async Function EnsureSubtreeAccessAsync(folders As List(Of ShareFolder)) As Task
+    Private Async Function EnsureSubtreeAccessAsync(folders As List(Of ShareFolder), Optional dialogOwner As Form = Nothing) As Task
         If folders Is Nothing OrElse folders.Count = 0 Then Return
         If Not ServiceControl.CanManage() Then Return
 
@@ -433,7 +406,7 @@ Partial Public NotInheritable Class MainWindow
         End If
 
         Dim question As String = HostingText.SubtreeGrantPrompt(FolderListForPrompt(scan.Grantable))
-        If MessageBox.Show(Me, question, Me.Text, MessageBoxButtons.OKCancel, MessageBoxIcon.Warning) <> DialogResult.OK Then
+        If MessageBox.Show(If(dialogOwner, Me), question, Me.Text, MessageBoxButtons.OKCancel, MessageBoxIcon.Warning) <> DialogResult.OK Then
             SetHint(HostingText.SubtreeBlockedWarning(scan.Blocked.Count))
             Return
         End If
@@ -584,7 +557,7 @@ Partial Public NotInheritable Class MainWindow
         ApplyStatusToUi()
     End Function
 
-    Private Async Function ApplySharedFoldersAsync() As Task
+    Private Async Function ApplySharedFoldersAsync(Optional dialogOwner As Form = Nothing, Optional startServing As Boolean = True) As Task
         CancelReachabilityPoll()
         SetBusy(True, Localization.T("Обновляю список папок.."))
         Dim folders As List(Of ShareFolder) = CurrentShareFolders()
@@ -597,9 +570,9 @@ Partial Public NotInheritable Class MainWindow
             _status = If(u.Status, Await ShareController.GetStatusAsync())
             refused = u.ErrorText
         Else
-            Await EnsureServiceAccessAsync(folders)
+            If startServing Then Await EnsureServiceAccessAsync(folders, dialogOwner)
             If IsDisposed Then Return
-            Dim r As ShareController.ShareResult = Await ShareController.ShareFoldersAsync(folders)
+            Dim r As ShareController.ShareResult = Await ShareController.ShareFoldersAsync(folders, startServing:=startServing)
             _status = r.Status
             refused = r.ErrorText
         End If
@@ -764,6 +737,7 @@ Partial Public NotInheritable Class MainWindow
     ''' dark mode the rows alternate between the two surface roles (spec 060). Also restates the
     ''' "blocked folder" ink, which a theme switch would otherwise leave in the other palette.</summary>
     Private Sub RestripeList()
+        RefreshEmptyResourceHint()
         Dim theme As ThemePalette = ThemeService.Palette
         Dim even As Color = theme.SurfaceRaised
         Dim odd As Color = theme.SurfaceWindow

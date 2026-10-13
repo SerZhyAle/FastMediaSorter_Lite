@@ -83,6 +83,10 @@ Friend NotInheritable Class Exchange_Devices_Panel
     Private _running As Boolean
     Private _busy As Boolean
     Private _loadingAuto As Boolean
+    ''' <summary>The Settings page's own group hosts the section (217): its caption replaces the internal
+    ''' title, and the section stands at the height of its own content. The manager dialog never sets either.</summary>
+    Private _groupHostedValue As Boolean
+    Private _autoHeightValue As Boolean
 
     ''' <summary>An attach, an untick or a follow changed the registry: the host refills its list.</summary>
     Friend Event ResourcesChanged As EventHandler
@@ -157,6 +161,7 @@ Friend NotInheritable Class Exchange_Devices_Panel
         Controls.Add(_note)
         Controls.Add(_titleLabel)
         AddHandler Resize, Sub() Relayout()
+        AddHandler HandleCreated, Sub() Relayout() ' the row height turns from an estimate into the list's own
         AddHandler VisibleChanged, AddressOf OnSectionVisibleChanged
         RebuildSources()
     End Sub
@@ -239,6 +244,8 @@ Friend NotInheritable Class Exchange_Devices_Panel
         For i As Integer = _sources.Count - 1 To 0 Step -1
             Dim src As ServerSource = _sources(i)
             Dim keep As ExchangeEntry = stored.FirstOrDefault(Function(e) String.Equals(e.Id, src.Entry.Id, StringComparison.Ordinal))
+            ' Signing in again forgets the hub's session even when the address and pin stay the same.
+            ' The feed must follow the replacement instead of retaining the disposed session.
             If keep Is Nothing OrElse Not String.Equals(keep.Server, src.Entry.Server, StringComparison.Ordinal) OrElse
                Not String.Equals(keep.Pin, src.Entry.Pin, StringComparison.Ordinal) OrElse
                Not Object.ReferenceEquals(src.Session, _hub.SessionFor(keep)) Then
@@ -332,11 +339,39 @@ Friend NotInheritable Class Exchange_Devices_Panel
 
     ' ---- layout ----------------------------------------------------------------------------------------------------
 
+    ''' <summary>The Settings page hosts the section as its own collapsible group (217): the
+    ''' group's caption replaces the section's internal title, and the section stands at the
+    ''' height of its own content - the rows it is showing, not a share of the list panel's
+    ''' body. The group's fold, through the section's Visible flag, keeps the entries' loop
+    ''' alive only while the section is really on screen (rule 8). The manager dialog never
+    ''' calls this and keeps the embedded look of tickets 171 and 187.</summary>
+    Friend Sub HostInCollapsibleGroup()
+        _groupHostedValue = True
+        _autoHeightValue = True
+        _titleLabel.Visible = False
+        Relayout()
+    End Sub
+
+    ''' <summary>The height one row of the section's list really takes: asked from the list
+    ''' once its handle exists, estimated from the font before that (the section's rows are
+    ''' font-height rows, no fixed image list sizes them).</summary>
+    Private Function MeasuredRowHeight() As Integer
+        If _list.IsHandleCreated AndAlso _list.Items.Count > 0 Then
+            Try
+                Return _list.Items(0).Bounds.Height
+            Catch
+            End Try
+        End If
+        Return Math.Max(Dv(26), TextRenderer.MeasureText("Ag", _list.Font).Height + Dv(8))
+    End Function
+
     Private Sub Relayout()
         Dim w As Integer = Math.Max(Dv(120), ClientSize.Width)
         Dim y As Integer = 0
-        _titleLabel.SetBounds(0, y, w, Dv(24))
-        y += Dv(24)
+        If Not _groupHostedValue Then
+            _titleLabel.SetBounds(0, y, w, Dv(24))
+            y += Dv(24)
+        End If
         Dim noteHeight As Integer = If(_note.Text.Length = 0, 0, TextRenderer.MeasureText(_note.Text, _note.Font, New Size(w, Integer.MaxValue), TextFormatFlags.WordBreak).Height + Dv(4))
         _note.SetBounds(0, y, w, noteHeight)
         y += noteHeight
@@ -366,7 +401,16 @@ Friend NotInheritable Class Exchange_Devices_Panel
             _autoNote.SetBounds(0, y, w, nh)
             y += nh
         End If
-        _list.SetBounds(0, y, w, Math.Max(0, ClientSize.Height - y))
+        Dim listHeight As Integer = Math.Max(0, ClientSize.Height - y)
+        If _autoHeightValue Then
+            listHeight = If(_list.Visible, _list.Items.Count * MeasuredRowHeight() + Dv(8), 0)
+            Dim wantedHeight As Integer = y + listHeight + Dv(6)
+            If Height <> wantedHeight Then
+                Height = wantedHeight
+                Return ' the Resize this triggers lays the list out at the settled height
+            End If
+        End If
+        _list.SetBounds(0, y, w, listHeight)
         FitColumn()
     End Sub
 
@@ -683,7 +727,8 @@ Friend NotInheritable Class Exchange_Devices_Panel
             Dim token As CancellationToken = If(src.Cts IsNot Nothing, src.Cts.Token, CancellationToken.None)
             Dim pin As String = Nothing
             If data.Record.IsProtected Then
-                pin = ResourcePinPromptUi.Ask(FindForm(), data.Row.Name)
+                pin = ResourcePinMemory.GetPin(New ResourceDescriptor With {.ExchangeEntryId = src.Entry.Id, .ExchangeResourceId = data.Row.ResourceId})
+                If pin Is Nothing Then pin = ResourcePinPromptUi.Ask(FindForm(), data.Row.Name)
                 If pin Is Nothing Then Return
             End If
             Dim failure As ResourceFailure = Nothing

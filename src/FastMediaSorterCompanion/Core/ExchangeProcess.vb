@@ -263,9 +263,9 @@ Friend Module ExchangeProcess
     ''' <summary>Writes the listen endpoint THROUGH the binary (<c>set-listen</c>): it validates with the serve
     ''' rules, stores only <c>listen</c> and keeps every other member. This program never edits
     ''' exchange.json itself. The change reaches a running server only after a restart.</summary>
-    Friend Function SetListen(listen As String) As ListenOutcome
+    Friend Function SetListen(listen As String, Optional dataDirForThisRun As String = "") As ListenOutcome
         If Not IsAvailable() Then Return ListenOutcome.Unavailable
-        Dim r As RunResult = Run({"set-listen", If(listen, "")}, Nothing, CommandTimeoutMs)
+        Dim r As RunResult = Run({"set-listen", If(listen, "")}, Nothing, CommandTimeoutMs, dataDirForThisRun)
         Log("set-listen", r)
         If Not r.Started OrElse r.TimedOut Then Return ListenOutcome.Failed
         Select Case r.ExitCode
@@ -304,10 +304,10 @@ Friend Module ExchangeProcess
 
     ''' <summary>Stores the public <c>host:port</c> every welcome announces (<c>set-endpoint</c>); an empty
     ''' value clears it. The binary refuses a loopback or wildcard address.</summary>
-    Friend Function SetEndpoint(value As String) As ConfigOutcome
+    Friend Function SetEndpoint(value As String, Optional dataDirForThisRun As String = "") As ConfigOutcome
         If Not IsAvailable() Then Return ConfigOutcome.Unavailable
         Dim text As String = If(value, "").Trim()
-        Dim r As RunResult = Run({"set-endpoint", If(text.Length = 0, "-", text)}, Nothing, CommandTimeoutMs)
+        Dim r As RunResult = Run({"set-endpoint", If(text.Length = 0, "-", text)}, Nothing, CommandTimeoutMs, dataDirForThisRun)
         Log("set-endpoint", r)
         Return ConfigOutcomeOf(r)
     End Function
@@ -364,9 +364,9 @@ Friend Module ExchangeProcess
     End Function
 
     ''' <summary>Stores the third-party port range as "lo-hi" (<c>set-port-range</c>).</summary>
-    Friend Function SetPortRange(range As String) As ConfigOutcome
+    Friend Function SetPortRange(range As String, Optional dataDirForThisRun As String = "") As ConfigOutcome
         If Not IsAvailable() Then Return ConfigOutcome.Unavailable
-        Dim r As RunResult = Run({"set-port-range", If(range, "")}, Nothing, CommandTimeoutMs)
+        Dim r As RunResult = Run({"set-port-range", If(range, "")}, Nothing, CommandTimeoutMs, dataDirForThisRun)
         Log("set-port-range", r)
         Return ConfigOutcomeOf(r)
     End Function

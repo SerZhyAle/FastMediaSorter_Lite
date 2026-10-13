@@ -25,6 +25,7 @@ Partial Public NotInheritable Class Localization
         Add("Ширина таблицы", "Table width", "Ширина таблиці", "Breite der Tabelle", "Larghezza della tabella", "Ancho de la tabla", "Largeur de la table", "Largura da tabela", "عرض الجدول", "तालिका की चौड़ाई", "টেবিলের প্রস্থ", "ٹیبل کی چوڑائی", "表格宽度")
         Add("Размер текста", "Text size", "Розмір тексту", "Textgröße", "Dimensione del testo", "Tamaño del texto", "Taille du texte", "Tamanho do texto", "حجم النص", "पाठ का आकार", "লেখার আকার", "متن کا سائز", "文字大小")
         Add("Непрозрачность", "Opacity", "Непрозорість", "Deckkraft", "Opacità", "Opacidad", "Opacité", "Opacidade", "العتامة", "अपारदर्शिता", "অস্বচ্ছতা", "دھندلاپن", "不透明度")
+        Add("Сброс позиции панели получателей", "Reset the destination panel position", "Скинути позицію панелі отримувачів", "Position der Zieltabelle zurücksetzen", "Ripristina la posizione della tabella delle destinazioni", "Restablecer la posición del panel de destinos", "Réinitialiser la position du panneau des destinations", "Redefinir a posição do painel de destinos", "إعادة ضبط موضع لوحة الوجهات", "गंतव्य पैनल की स्थिति रीसेट करें", "গন্তব্য প্যানেলের অবস্থান রিসেট করুন", "منزل پینل کی پوزیشن ری سیٹ کریں", "重置目标面板位置")
         Add("Видимые строки", "Visible rows", "Видимі рядки", "Sichtbare Zeilen", "Righe visibili", "Filas visibles", "Lignes visibles", "Linhas visíveis", "الصفوف الظاهرة", "दृश्य पंक्तियाँ", "দৃশ্যমান সারি", "نظر آنے والی قطاریں", "可见行数")
 
         ' --- background -----------------------------------------------------------

@@ -162,7 +162,8 @@ Friend NotInheritable Class ResourceRootPolicy
                                         isMetered:=baseCaps.IsMetered,
                                         costHint:=baseCaps.CostHint,
                                         supportsAtomicOverwriteRename:=writable AndAlso baseCaps.SupportsAtomicOverwriteRename,
-                                        supportsStableSourceDelete:=deletable AndAlso baseCaps.SupportsStableSourceDelete)
+                                        supportsStableSourceDelete:=deletable AndAlso baseCaps.SupportsStableSourceDelete,
+                                        supportsCheckedSourceDelete:=deletable AndAlso baseCaps.SupportsCheckedSourceDelete)
     End Function
 
 End Class

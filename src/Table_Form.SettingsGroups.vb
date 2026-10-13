@@ -67,7 +67,8 @@ Partial Public Class Table_Form
         AddSettingsGroup("general", "advanced", "Дополнительные настройки", False, "settings_export_personal", "settings_export", "settings_import", "settings_defaults")
         AddSettingsGroup("recipients", "basic", "Основные настройки", True, "recipients_overlay")
         AddSettingsGroup("recipients", "overlay", "Вид таблицы получателей", False,
-                         "recipients_position", "recipients_width", "recipients_font", "recipients_opacity", "recipients_rows")
+                         "recipients_position", "recipients_width", "recipients_font", "recipients_opacity", "recipients_rows",
+                         "recipients_position_reset")
         AddSettingsGroup("images", "basic", "Основные настройки", True, "new_image_scale", "exif_rotate", "wheel_zooms", "show_picture_size", "show_file_size", "show_file_date")
         AddSettingsGroup("images", "background", "Фон изображения", False, "background_color", "perspective", "dynamic_perspective", "animated_perspective", "halo_speed")
         AddSettingsGroup("images", "slideshow", "Поведение слайд-шоу", True, "slideshow_interval", "slideshow_random_order", "stop_slideshow_manual", "slideshow_ui")
@@ -104,6 +105,19 @@ Partial Public Class Table_Form
         ' One page hosts the resource list and server controls in independent groups.
         ' The Open command remains in the list panel's own action row.
         AddSettingsGroup("resources", "basic", "Ресурсы", True, "resources_intro")
+        ' "Мои устройства" (171/187) stands in its own fold between the list and the Android/SFTP group:
+        ' the section keeps its wiring through the panel, only the placement moves, and the fold -
+        ' not the list panel's body - decides whether the entries' loop runs (rule 8).
+        Dim devicesSection As Exchange_Devices_Panel = resourcesPanel.DetachDevices()
+        If devicesSection IsNot Nothing Then
+            AddSettingsGroup("resources", "devices", "Мои устройства", True)
+            Dim devicesGroup As SettingsCollapsibleGroup = settingsGroups("resources/devices")
+            devicesSection.HostInCollapsibleGroup()
+            devicesSection.Margin = New Padding(Sp(12), 0, Sp(12), Sp(6))
+            devicesGroup.Body.Controls.Add(devicesSection)
+            devicesSection.Visible = devicesGroup.Expanded
+            AddHandler devicesGroup.ExpansionChanged, Sub() devicesSection.Visible = devicesGroup.Expanded
+        End If
         AddSettingsGroup("resources", "server", "Android / SFTP", True, "sftp_intro", "sftp_manager", "sftp_guide", "android_app", "exchange_portal")
         Dim resourcesFlow As FlowLayoutPanel = PageFlow(modernResourcesPage)
         For Each child As Control In resourcesFlow.Controls.Cast(Of Control)().Where(Function(c) Not TypeOf c Is SettingsCollapsibleGroup).ToArray()
@@ -111,9 +125,6 @@ Partial Public Class Table_Form
             child.Name = "settingsResourcesPanel"
             settingsGroups("resources/basic").Body.Controls.Add(child)
         Next
-        Dim resourcesHost As Panel = DirectCast(resourcesPanel.Parent, Panel)
-        AddHandler settingsGroups("resources/server").SizeChanged,
-            Sub() SizeResourcesListHost(resourcesFlow, resourcesHost)
 
         For Each heading As ModernSettingRow In modernSettingsRows.Where(Function(r) r.Key.StartsWith("section_", StringComparison.Ordinal)).ToArray()
             modernSettingsRows.Remove(heading)
@@ -235,6 +246,12 @@ Partial Public Class Table_Form
         For Each row As ModernSettingRow In modernSettingsRows.Where(Function(r) r.Host.Parent Is PageFlow(page))
             result.Add(row.Key, row.Host)
         Next
+        ' The destination slots grid is not a preference row, but the overlay's edit door opens
+        ' the settings window AT it (219 §4), so it is an anchor of its page like any row -
+        ' only while its group is expanded, like every other anchor inside a fold.
+        If pageIds(page) = "recipients" AndAlso settingsGroups("recipients/basic").Expanded Then
+            result.Add("settingsRecipientsGrid", Data_Grid_View)
+        End If
         Return result
     End Function
 
@@ -283,6 +300,37 @@ Partial Public Class Table_Form
         QueueRestoreSettingsContext()
     End Sub
 
+    ''' <summary>The overlay's edit door (219 §4): an open-at entry that behaves exactly like
+    ''' <see cref="RevealModernSetting"/> - explicit setting navigation overrides remembered context,
+    ''' without changing its value - but addresses the recipients page's grid, which is not a
+    ''' preference row: the "recipients/basic" group is expanded, the destination slots grid is
+    ''' focused and scrolled to. The next plain settings open lands where it always did.</summary>
+    Friend Sub RevealModernRecipientsGrid()
+        If Not settingsContextReady Then Return
+        Tab_Control.SelectedTab = pageIds.First(Function(p) p.Value = "recipients").Key
+        settingsGroups("recipients/basic").Expanded = True
+        Dim state As SettingsPageContext = settingsContext.Page("recipients")
+        state.AnchorId = "settingsRecipientsGrid"
+        state.AnchorOffsetLogical = 0
+        state.FocusId = "settingsRecipientsGrid"
+        contextFlush.MarkDirty()
+        QueueRestoreSettingsContext()
+    End Sub
+
+    ''' <summary>Set when the viewer asks for one open-at before showing the window (219 §4);
+    ''' consumed by the first Shown, so a plain open never sees it.</summary>
+    Private pendingOpenAtRecipientsGrid As Boolean
+
+    ''' <summary>The viewer's entry: an already-visible window reveals the grid at once; a window
+    ''' still hidden takes the request with it and honours it when it is shown.</summary>
+    Friend Sub RequestOpenAtRecipientsGrid()
+        If Visible AndAlso settingsContextReady Then
+            RevealModernRecipientsGrid()
+        Else
+            pendingOpenAtRecipientsGrid = True
+        End If
+    End Sub
+
     Private Sub QueueRestoreSettingsContext()
         If Not settingsContextReady OrElse Not IsHandleCreated OrElse IsDisposed Then Return
         restoreGeneration += 1
@@ -301,7 +349,10 @@ Partial Public Class Table_Form
                     If id Is Nothing Then Return
                     Dim focused As Control = Nothing
                     If anchors.TryGetValue(state.FocusId, focused) Then
-                        If TypeOf focused Is Button Then
+                        ' A button or the destination slots grid takes the focus itself (219 §4:
+                        ' the overlay's edit door opens the window AT the grid); anything else is
+                        ' walked into from its position in the tab order.
+                        If TypeOf focused Is Button OrElse TypeOf focused Is DataGridView Then
                             focused.Focus()
                         Else
                             focused.SelectNextControl(Nothing, True, True, True, False)

@@ -39,6 +39,10 @@ Partial Public Class Main_Form
     Private chrome_Last_Pointer As Point
     Private chrome_Applied_Scale As Single
     Private chrome_Theme As ChromeTheme = ChromeTheme.FromScheme(Color.Black, Color.Gainsboro, False)
+    ''' <summary>The palette BEFORE the 220 tone flip. The panels' <see cref="chrome_Theme"/> is its
+    ''' flipped view below half opacity; a surface with a transparency knob of its own (the
+    ''' recipients overlay) reads its base ink here and decides its own flip.</summary>
+    Private chrome_Base_Theme As ChromeTheme = chrome_Theme
     Private chrome_Scheme_Back As Color = Color.Black
     Private chrome_Scheme_Fore As Color = Color.Gainsboro
     Private chrome_High_Contrast As Boolean
@@ -620,10 +624,17 @@ Partial Public Class Main_Form
         If chrome_Panels.Count = 0 Then Return
 
         chrome_High_Contrast = SystemInformation.HighContrast
-        chrome_Theme = ChromeTheme.FromScheme(chrome_Scheme_Back, chrome_Scheme_Fore, chrome_High_Contrast)
-
-        If Not chrome_High_Contrast AndAlso modern_Preferences IsNot Nothing Then chrome_Theme.PanelOpacity = modern_Preferences.ChromeOpacityPercent / 100.0R
-        chrome_Theme.PanelCornerRadius = ChromeCorner()
+        chrome_Base_Theme = ChromeTheme.FromScheme(chrome_Scheme_Back, chrome_Scheme_Fore, chrome_High_Contrast)
+        If Not chrome_High_Contrast AndAlso modern_Preferences IsNot Nothing Then chrome_Base_Theme.PanelOpacity = modern_Preferences.ChromeOpacityPercent / 100.0R
+        chrome_Base_Theme.PanelCornerRadius = ChromeCorner()
+        chrome_Theme = chrome_Base_Theme
+        If Not chrome_High_Contrast AndAlso modern_Preferences IsNot Nothing AndAlso
+           ChromeMetrics.InvertsInk(modern_Preferences.ChromeOpacityPercent) Then
+            ' 220: below half opacity the panels' ink flips tone - black becomes white, white becomes
+            ' black, the outline with it - while the fills and the accent keep their hue. The base
+            ' theme stays un-flipped: the recipients overlay reads its ink there and flips on its own knob.
+            chrome_Theme = chrome_Base_Theme.WithInvertedInk()
+        End If
         Dim factor As Single = ChromeScale()
         chrome_Applied_Scale = factor
         Dim previousScale As Single = chrome_Panels(0).Host.Surface.ScaleFactor
@@ -1182,12 +1193,20 @@ Partial Public Class Main_Form
     Private recipients_AppliedOpacity As Double = -1.0R
     ''' <summary>The overlay's own pin button, built with the overlay (nothing on net48).</summary>
     Private recipients_Overlay_Pin As RecipientsPinButton
+    ''' <summary>The header strip's edit button (219 §4): the settings door at the strip's left end
+    ''' (nothing on net48).</summary>
+    Private recipients_Overlay_Edit As RecipientsEditButton
+    ''' <summary>The header strip itself (219 §2): the grip between its two buttons that drags the
+    ''' window (nothing on net48).</summary>
+    Private recipients_Overlay_Strip As Control
     ''' <summary>The scrollable host of the recipient rows below the pin strip (nothing on net48).</summary>
     Private recipients_Overlay_Rows As Control
 
-    ''' <summary>The overlay's pin button follows the preference: the checked state (the glyph's tilt
-    ''' and fill), the accessible name and the words. A pin click, a language switch and a theme
-    ''' change all land here; a disposed or missing button makes it a no-op.</summary>
+    ''' <summary>The overlay's header strip follows the preference and the language: the pin's checked
+    ''' state (the glyph's tilt and fill), the strip's own accessible name and the words of both strip
+    ''' buttons (219 §2/§4: the drag and the door must not be mouse-only secrets). A pin click, a
+    ''' language switch and a theme change all land here; a disposed or missing control makes its
+    ''' half a no-op.</summary>
     Private Sub SyncRecipientsOverlayPin()
         If recipients_Overlay_Pin Is Nothing OrElse recipients_Overlay_Pin.IsDisposed OrElse recipients_Overlay_Pin.Disposing Then Return
         Dim pinned As Boolean = ChromeAutoHide.PanelPinned(ChromePinSnapshot(), Recipients_Overlay_Panel_Name)
@@ -1200,6 +1219,16 @@ Partial Public Class Main_Form
                 Localization.T("Закрепить таблицу получателей: она перестанет скрываться.")))
         End If
         recipients_Overlay_Pin.Invalidate()
+        If recipients_Overlay_Strip IsNot Nothing AndAlso Not recipients_Overlay_Strip.IsDisposed Then
+            recipients_Overlay_Strip.AccessibleName = Localization.T("Заголовок таблицы получателей; панель можно перетащить.")
+        End If
+        If recipients_Overlay_Edit IsNot Nothing AndAlso Not recipients_Overlay_Edit.IsDisposed AndAlso Not recipients_Overlay_Edit.Disposing Then
+            recipients_Overlay_Edit.AccessibleName = Localization.T("Настройки таблицы получателей")
+            If recipients_ToolTip IsNot Nothing Then
+                recipients_ToolTip.SetToolTip(recipients_Overlay_Edit, Localization.T("Настройки таблицы получателей"))
+            End If
+            recipients_Overlay_Edit.Invalidate()
+        End If
     End Sub
 
     ''' <summary>One cycle step for the overlay. Pinned, it stays up exactly as the panels did;

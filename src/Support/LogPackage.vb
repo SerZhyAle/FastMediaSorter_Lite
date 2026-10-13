@@ -810,6 +810,7 @@ Public Module LogPackage
         "CreateMissingDestination", "IncludeSubfolders", "IncludedExtensions", "InterfaceScalePercent",
         "NewImageScaleMode", "ReduceMotion", "ModernChrome", "ChromePinned", "ChromeSize", "ChromeRow1Pinned", "ChromeRow2Pinned", "ChromeStatusPinned", "ChromeOpacityPercent", "ChromeCornerRadius", "RecipientsOverlayPosition", "RecipientsOverlayWidth",
         "RecipientsOverlayFontSize", "RecipientsOverlayOpacity", "RecipientsOverlayVisibleRows", "RecipientsOverlayPinned",
+        "RecipientsOverlayHasCustomPosition", "RecipientsOverlayCustomX", "RecipientsOverlayCustomY",
         "SlideshowRandomOrder", "StopSlideshowOnManualNavigation", "SlideshowUiMode", "VideoAutoplay",
         "IncludeVideoInNavigation", "RememberVideoPosition", "VideoControlsHideDelaySec",
         "SeekShortSec", "SeekMediumSec", "SeekLongSec", "HideCursorAfterSec",

@@ -10,9 +10,9 @@ Imports System.Windows.Forms
 ''' <summary>The left menu as a tree (210): each page row keeps its icon, caption, selection
 ''' tint, accent stripe and focus rectangle and gains a display-only disclosure chevron; the
 ''' page's former fold groups sit under it as indented, icon-less rows. Clicking a page
-''' selects it and toggles its item list; clicking an item selects the page and scrolls the
-''' owning block's heading to the top of the right pane. Which pages are expanded is the
-''' stored context's <see cref="SettingsPageContext.NavExpanded"/>.</summary>
+''' selects it and toggles its item list; clicking an item makes that group the page's whole
+''' right-pane content (owner revision 2026-10-13) - only the chosen row carries the tint.
+''' Which pages are expanded is the stored context's <see cref="SettingsPageContext.NavExpanded"/>.</summary>
 Partial Public NotInheritable Class Share_Settings_Form
     Implements IThemeAware
 
@@ -25,12 +25,22 @@ Partial Public NotInheritable Class Share_Settings_Form
     Private _pageViewportHost As Panel
     Private _navigation As FlowLayoutPanel
     Private _selectedPage As String = String.Empty
+    ''' <summary>The chosen sub-menu per page: the group id shown alone in the right pane,
+    ''' or empty for the whole page. Runtime view state, not persisted.</summary>
+    Private ReadOnly _selectedItem As New Dictionary(Of String, String)(StringComparer.Ordinal)
+    ''' <summary>Rows an active item filter hid. App-driven visibility (service state,
+    ''' pairing notes) keeps changing underneath, so a lift restores exactly what the
+    ''' filter took away and never second-guesses the app.</summary>
+    Private ReadOnly _filteredOut As New Dictionary(Of String, List(Of Control))(StringComparer.Ordinal)
+    ''' <summary>Body rows already carrying the filter's VisibleChanged guard.</summary>
+    Private ReadOnly _guardWired As New HashSet(Of Control)()
+    Private _applyingItemFilter As Boolean
 
     Private Sub BuildSettingsPages()
         _root = New TableLayoutPanel With {.Dock = DockStyle.Fill, .ColumnCount = 2, .RowCount = 1,
             .Padding = New Padding(12, 10, 12, 6), .Size = New Size(ClientSize.Width, ClientSize.Height)}
         _root.SuspendLayout()
-        _root.ColumnStyles.Add(New ColumnStyle(SizeType.Absolute, 196))
+        _root.ColumnStyles.Add(New ColumnStyle(SizeType.Absolute, 255))
         _root.ColumnStyles.Add(New ColumnStyle(SizeType.Percent, 100))
         _root.RowStyles.Add(New RowStyle(SizeType.Percent, 100))
         _navigation = New FlowLayoutPanel With {.Dock = DockStyle.Fill, .AutoScroll = True,
@@ -43,13 +53,15 @@ Partial Public NotInheritable Class Share_Settings_Form
         _root.Controls.Add(_navigation, 0, 0)
         _root.Controls.Add(_pageHost, 1, 0)
         For Each sec As CollapsibleSection In AllSettingsSections()
-            sec.Width = Math.Max(1, ClientSize.Width - 240)
+            sec.Width = Math.Max(1, ClientSize.Width - 300)
             BuildContractGroups(sec)
             Dim id = sec.Key
+            _selectedItem(id) = String.Empty
+            _filteredOut(id) = New List(Of Control)()
             Dim button As New SettingsNavigationButton With {.Text = SettingsPageCaption(sec), .Name = "managerSettingsNav_" & id,
                 .PageId = id, .AccessibleName = SettingsPageCaption(sec), .AccessibleRole = AccessibleRole.PageTab,
-                .FlatStyle = FlatStyle.Flat, .UseVisualStyleBackColor = False, .Width = 180, .Height = 48,
-                .Padding = New Padding(10, 4, 8, 4), .Margin = New Padding(0, 0, 0, 4),
+                .FlatStyle = FlatStyle.Flat, .UseVisualStyleBackColor = False, .Width = 240, .Height = 34,
+                .Padding = New Padding(10, 4, 8, 4), .Margin = New Padding(0, 0, 0, 2),
                 .TextAlign = ContentAlignment.MiddleLeft, .ImageAlign = ContentAlignment.MiddleLeft,
                 .TextImageRelation = TextImageRelation.ImageBeforeText, .AutoEllipsis = False}
             AddHandler button.Disposed, Sub() button.Image?.Dispose()
@@ -70,7 +82,7 @@ Partial Public NotInheritable Class Share_Settings_Form
                 Dim item As New SettingsNavItemButton With {.Text = group.Caption,
                     .Name = "managerSettingsNavItem_" & id & "_" & group.Id, .PageId = id, .Group = group,
                     .AccessibleName = group.Caption, .AccessibleRole = AccessibleRole.PageTab,
-                    .FlatStyle = FlatStyle.Flat, .UseVisualStyleBackColor = False, .Width = 180, .Height = 44,
+                    .FlatStyle = FlatStyle.Flat, .UseVisualStyleBackColor = False, .Width = 220, .Height = 26,
                     .Margin = New Padding(0, 0, 0, 2), .TextAlign = ContentAlignment.MiddleLeft,
                     .AutoEllipsis = False, .Visible = False}
                 item.FlatAppearance.BorderSize = 0
@@ -89,7 +101,7 @@ Partial Public NotInheritable Class Share_Settings_Form
                 .Name = "managerSettingsPage_" & id, .AccessibleName = sec.Title}
             AddHandler viewport.SizeChanged, Sub() FitSettingsContent(viewport)
             viewport.SuspendLayout()
-            Dim content As New TableLayoutPanel With {.Dock = DockStyle.Top, .AutoSize = True, .Width = ClientSize.Width - 240,
+            Dim content As New TableLayoutPanel With {.Dock = DockStyle.Top, .AutoSize = True, .Width = ClientSize.Width - 300,
                 .AutoSizeMode = AutoSizeMode.GrowAndShrink, .ColumnCount = 1, .Margin = Padding.Empty,
                 .Padding = New Padding(4, 0, 12, 0)}
             content.SuspendLayout()
@@ -137,14 +149,17 @@ Partial Public NotInheritable Class Share_Settings_Form
     Private Sub ArrangeSettingsNavigation()
         Dim railWidth = Math.Max(1, _navigation.ClientSize.Width - LogicalToDeviceUnits(8) - SystemInformation.VerticalScrollBarWidth)
         Dim rtl = RightToLeft = RightToLeft.Yes
+        ' Compact rows (owner revision 2026-10-13): a single-line page row fits its 20 px
+        ' glyph, an item row its caption, with a sliver of air - not the former 44 px
+        ' minimum that read twice too tall.
         For Each pair In _navButtons
             Dim button = pair.Value
             button.Width = railWidth
             ' Pages with items also keep the trailing chevron clear of the caption.
             Dim textWidth = Math.Max(1, button.Width - LogicalToDeviceUnits(52) -
                 If(DirectCast(button, SettingsNavigationButton).HasItems, LogicalToDeviceUnits(28), 0))
-            button.Height = Math.Max(LogicalToDeviceUnits(44), TextRenderer.MeasureText(button.Text, button.Font,
-                New Size(textWidth, Integer.MaxValue), TextFormatFlags.WordBreak).Height + LogicalToDeviceUnits(16))
+            button.Height = Math.Max(LogicalToDeviceUnits(34), TextRenderer.MeasureText(button.Text, button.Font,
+                New Size(textWidth, Integer.MaxValue), TextFormatFlags.WordBreak).Height + LogicalToDeviceUnits(10))
         Next
         ' The subordinate indent: the page's icon column plus 16 logical px, mirrored in
         ' RTL (210 section 4.2).
@@ -154,8 +169,8 @@ Partial Public NotInheritable Class Share_Settings_Form
                 item.Width = railWidth
                 item.Padding = If(rtl, New Padding(8, 4, indent, 4), New Padding(indent, 4, 8, 4))
                 Dim textWidth = Math.Max(1, item.Width - indent - LogicalToDeviceUnits(12))
-                item.Height = Math.Max(LogicalToDeviceUnits(44), TextRenderer.MeasureText(item.Text, item.Font,
-                    New Size(textWidth, Integer.MaxValue), TextFormatFlags.WordBreak).Height + LogicalToDeviceUnits(16))
+                item.Height = Math.Max(LogicalToDeviceUnits(26), TextRenderer.MeasureText(item.Text, item.Font,
+                    New Size(textWidth, Integer.MaxValue), TextFormatFlags.WordBreak).Height + LogicalToDeviceUnits(10))
             Next
         Next
     End Sub
@@ -191,14 +206,25 @@ Partial Public NotInheritable Class Share_Settings_Form
         ApplySettingsNavigationTheme(ThemeService.Palette)
     End Sub
 
+    Private Function SelectedItemId(pageId As String) As String
+        Dim value As String = Nothing
+        Return If(_selectedItem.TryGetValue(pageId, value), value, String.Empty)
+    End Function
+
     ''' <summary>One gesture (210 section 4.3, Q210-3): a click on a collapsed page selects
     ''' it and reveals its items; a click on an expanded page folds the items and keeps the
-    ''' page selected. The right pane never changes on a toggle.</summary>
+    ''' page selected. A page row always means the whole page, so it also lifts any item
+    ''' filter (owner revision 2026-10-13).</summary>
     Private Sub OnSettingsPageClicked(id As String)
+        If SelectedItemId(id).Length > 0 Then
+            _selectedItem(id) = String.Empty
+            ApplySettingsItemFilter(id)
+            ApplySettingsNavigationTheme(ThemeService.Palette)
+        End If
         If _navItems.ContainsKey(id) AndAlso _navItems(id).Count > 0 Then
             SetSettingsNavExpanded(id, Not NavExpanded(id))
         End If
-        SelectSettingsPage(id)
+        If id <> _selectedPage Then SelectSettingsPage(id)
     End Sub
 
     Private Sub SetSettingsNavExpanded(id As String, expanded As Boolean)
@@ -239,17 +265,101 @@ Partial Public NotInheritable Class Share_Settings_Form
         Next
     End Function
 
-    ''' <summary>The one reveal path (210 sections 4.4 and 5.4): select the page, scroll the
-    ''' block's heading to the top of the viewport, focus the block's first editor. Nothing
-    ''' is ever hidden, so there is no fold to open - the menu's state is untouched.</summary>
+    ''' <summary>The one reveal path (210 sections 4.4 and 5.4, owner revision 2026-10-13):
+    ''' a subordinate item - or a search hit - shows that group and nothing else in the
+    ''' right pane, focuses the block's first editor. The filter runs while the page is
+    ''' visible, so a later switch back to the page row restores what the app had shown.</summary>
     Private Sub RevealSettingsBlock(pageId As String, group As SettingsNavGroup, editor As Control)
         SelectSettingsPage(pageId)
-        If editor Is Nothing Then editor = FirstSettingsBlockEditor(group)
         Dim viewport = _pages(pageId)
+        _selectedItem(pageId) = group.Id
+        ApplySettingsItemFilter(pageId)
         viewport.PerformLayout()
-        viewport.AutoScrollPosition = New Point(0, Math.Max(0, ViewportTop(group.Heading)))
+        If editor Is Nothing Then editor = FirstSettingsBlockEditor(group)
+        viewport.AutoScrollPosition = Point.Empty
         If editor IsNot Nothing Then editor.Focus()
+        ApplySettingsNavigationTheme(ThemeService.Palette)
     End Sub
+
+    ''' <summary>Shows the page's chosen group (or every group when none is chosen) by
+    ''' hiding the other groups' headings and rows. Must run while the page is visible:
+    ''' "currently visible" then means "the app wants this row", and the hidden rows are
+    ''' remembered verbatim for the lift. Every classified row gets the VisibleChanged
+    ''' guard, so app-driven state revealing a filtered-out row goes back behind the
+    ''' filter instead of leaking into the sub-menu's view.</summary>
+    Private Sub ApplySettingsItemFilter(pageId As String)
+        Dim suppressed = _filteredOut(pageId)
+        _applyingItemFilter = True
+        Try
+            For Each row In suppressed
+                row.Visible = True
+            Next
+            suppressed.Clear()
+            Dim groupId = SelectedItemId(pageId)
+            For Each pair In ClassifiedSettingsRows(pageId)
+                WireSettingsRowGuard(pair.Key)
+                If groupId.Length = 0 Then Continue For
+                If pair.Value.Id = groupId OrElse Not pair.Key.Visible Then Continue For
+                suppressed.Add(pair.Key)
+                pair.Key.Visible = False
+            Next
+        Finally
+            _applyingItemFilter = False
+        End Try
+    End Sub
+
+    ''' <summary>The body rows of the page in display order with the group whose block
+    ''' each ends: the nearest <c>managerSettingsHeading_</c> label above names the block
+    ''' (210 section 5). Rows the contract pass adds after the build - checkbox hints -
+    ''' classify into the block they follow, so the filter cannot strand them.</summary>
+    Private Iterator Function ClassifiedSettingsRows(pageId As String) As IEnumerable(Of KeyValuePair(Of Control, SettingsNavGroup))
+        Dim body = SettingsSections().First(Function(s As CollapsibleSection) s.Key = pageId).Body
+        Dim headingPrefix = "managerSettingsHeading_" & pageId & "_"
+        Dim current As SettingsNavGroup = Nothing
+        For Each child As Control In body.Controls
+            Dim label = TryCast(child, Label)
+            If label IsNot Nothing AndAlso label.Name.StartsWith(headingPrefix, StringComparison.Ordinal) Then
+                Dim groupId = label.Name.Substring(headingPrefix.Length)
+                current = _pageGroups(pageId).FirstOrDefault(Function(g As SettingsNavGroup) g.Id = groupId)
+            End If
+            If current IsNot Nothing Then Yield New KeyValuePair(Of Control, SettingsNavGroup)(child, current)
+        Next
+    End Function
+
+    Private Sub WireSettingsRowGuard(row As Control)
+        If _guardWired.Add(row) Then AddHandler row.VisibleChanged, AddressOf OnSettingsRowVisibleChanged
+    End Sub
+
+    Private Sub OnSettingsRowVisibleChanged(sender As Object, e As EventArgs)
+        If _applyingItemFilter Then Return
+        Dim row = DirectCast(sender, Control)
+        Dim pageId = SettingsRowPageId(row)
+        If Not row.Visible OrElse pageId.Length = 0 OrElse pageId <> _selectedPage Then Return
+        Dim groupId = SelectedItemId(pageId)
+        If groupId.Length = 0 Then Return
+        Dim owning = ClassifiedSettingsRows(pageId).FirstOrDefault(Function(item As KeyValuePair(Of Control, SettingsNavGroup)) item.Key Is row)
+        If owning.Key Is Nothing OrElse owning.Value Is Nothing OrElse owning.Value.Id = groupId Then Return
+        Dim suppressed = _filteredOut(pageId)
+        If Not suppressed.Contains(row) Then suppressed.Add(row)
+        _applyingItemFilter = True
+        Try
+            row.Visible = False
+        Finally
+            _applyingItemFilter = False
+        End Try
+    End Sub
+
+    ''' <summary>The page viewport a row lives in, by the viewport's name.</summary>
+    Private Shared Function SettingsRowPageId(row As Control) As String
+        Dim parent = row.Parent
+        While parent IsNot Nothing
+            If parent.Name.StartsWith("managerSettingsPage_", StringComparison.Ordinal) Then
+                Return parent.Name.Substring("managerSettingsPage_".Length)
+            End If
+            parent = parent.Parent
+        End While
+        Return String.Empty
+    End Function
 
     Private Sub LoadSelectedSettingsPage()
         Select Case _selectedPage
@@ -277,19 +387,11 @@ Partial Public NotInheritable Class Share_Settings_Form
             CInt(palette.SurfaceWindow.B * 0.78 + palette.Accent.B * 0.22))
         For Each pair In _navButtons
             Dim button = pair.Value
-            Dim selected = pair.Key = _selectedPage
+            ' The page row carries the selection only while no sub-menu of it is the view;
+            ' a chosen item owns the tint and the stripe instead (owner revision 2026-10-13).
+            Dim selected = pair.Key = _selectedPage AndAlso SelectedItemId(pair.Key).Length = 0
             DirectCast(button, SettingsNavigationButton).Selected = selected
-            button.BackColor = If(selected, If(SystemInformation.HighContrast, SystemColors.Highlight, fill), palette.SurfaceWindow)
-            button.ForeColor = If(selected AndAlso SystemInformation.HighContrast, SystemColors.HighlightText, palette.TextPrimary)
-            button.FlatAppearance.MouseOverBackColor = NavigationFill(palette, If(selected, 0.3F, 0.18F))
-            button.FlatAppearance.MouseDownBackColor = NavigationFill(palette, If(selected, 0.4F, 0.28F))
-            If SystemInformation.HighContrast Then
-                button.FlatAppearance.MouseOverBackColor = button.BackColor
-                button.FlatAppearance.MouseDownBackColor = button.BackColor
-            End If
-            For Each surface In {button.BackColor, button.FlatAppearance.MouseOverBackColor, button.FlatAppearance.MouseDownBackColor}
-                button.ForeColor = ThemePalette.ReadableText(button.ForeColor, surface)
-            Next
+            StyleSettingsNavRow(button, selected, False, fill, palette)
             Dim oldImage = button.Image
             button.Image = GlyphRenderer.Render(SettingsPageGlyph(pair.Key), LogicalToDeviceUnits(20), SettingsNavIconPalette.ResolveInk(button.Name, palette.IsDark,
                     {button.BackColor, button.FlatAppearance.MouseOverBackColor, button.FlatAppearance.MouseDownBackColor},
@@ -297,26 +399,34 @@ Partial Public NotInheritable Class Share_Settings_Form
             oldImage?.Dispose()
             button.Invalidate()
         Next
-        ' The item rows: the selected page's tinted background continues behind its items
-        ' (210 section 8), an item of any other page reads muted on the plain surface.
+        ' The item rows: exactly one row - the chosen sub-menu - reads selected, the rest
+        ' sit on the plain surface; items of pages other than the shown one read muted.
         For Each pair In _navItems
-            Dim selected = pair.Key = _selectedPage
             For Each item In pair.Value
-                item.BackColor = If(selected, If(SystemInformation.HighContrast, SystemColors.Highlight, fill), palette.SurfaceWindow)
-                item.ForeColor = If(selected AndAlso SystemInformation.HighContrast, SystemColors.HighlightText,
-                                If(selected, palette.TextPrimary, palette.TextMuted))
-                item.FlatAppearance.MouseOverBackColor = NavigationFill(palette, If(selected, 0.3F, 0.18F))
-                item.FlatAppearance.MouseDownBackColor = NavigationFill(palette, If(selected, 0.4F, 0.28F))
-                If SystemInformation.HighContrast Then
-                    item.FlatAppearance.MouseOverBackColor = item.BackColor
-                    item.FlatAppearance.MouseDownBackColor = item.BackColor
-                End If
-                For Each surface In {item.BackColor, item.FlatAppearance.MouseOverBackColor, item.FlatAppearance.MouseDownBackColor}
-                    item.ForeColor = ThemePalette.ReadableText(item.ForeColor, surface)
-                Next
-                item.Invalidate()
+                Dim selected = pair.Key = _selectedPage AndAlso SelectedItemId(pair.Key) = item.Group.Id
+                item.Selected = selected
+                StyleSettingsNavRow(item, selected, pair.Key <> _selectedPage, fill, palette)
             Next
         Next
+    End Sub
+
+    ''' <summary>The shared row treatment: selection tint (or high-contrast highlight),
+    ''' hover and press fills, readable ink - muted when the row belongs to another page.</summary>
+    Private Sub StyleSettingsNavRow(button As Button, selected As Boolean, muted As Boolean,
+                                    fill As Color, palette As ThemePalette)
+        button.BackColor = If(selected, If(SystemInformation.HighContrast, SystemColors.Highlight, fill), palette.SurfaceWindow)
+        button.ForeColor = If(selected AndAlso SystemInformation.HighContrast, SystemColors.HighlightText,
+                        If(muted, palette.TextMuted, palette.TextPrimary))
+        button.FlatAppearance.MouseOverBackColor = NavigationFill(palette, If(selected, 0.3F, 0.18F))
+        button.FlatAppearance.MouseDownBackColor = NavigationFill(palette, If(selected, 0.4F, 0.28F))
+        If SystemInformation.HighContrast Then
+            button.FlatAppearance.MouseOverBackColor = button.BackColor
+            button.FlatAppearance.MouseDownBackColor = button.BackColor
+        End If
+        For Each surface In {button.BackColor, button.FlatAppearance.MouseOverBackColor, button.FlatAppearance.MouseDownBackColor}
+            button.ForeColor = ThemePalette.ReadableText(button.ForeColor, surface)
+        Next
+        button.Invalidate()
     End Sub
 
     Protected Overrides Sub OnDpiChanged(e As DpiChangedEventArgs)
@@ -334,16 +444,21 @@ Partial Public NotInheritable Class Share_Settings_Form
     Private Sub PaintSettingsNavigation(sender As Object, e As PaintEventArgs)
         Dim button = DirectCast(sender, Button)
         Dim rtl = RightToLeft = RightToLeft.Yes
+        Dim selected = False
         Dim pageButton = TryCast(sender, SettingsNavigationButton)
+        Dim itemButton = TryCast(sender, SettingsNavItemButton)
         If pageButton IsNot Nothing Then
-            If _navButtons.ContainsKey(_selectedPage) AndAlso button Is _navButtons(_selectedPage) Then
-                Dim width = LogicalToDeviceUnits(3)
-                Using brush As New SolidBrush(If(SystemInformation.HighContrast, button.ForeColor, ThemeService.Palette.Accent))
-                    e.Graphics.FillRectangle(brush, If(rtl, button.Width - width, 0), 0, width, button.Height)
-                End Using
-            End If
-            If pageButton.HasItems Then PaintSettingsChevron(pageButton, e.Graphics, rtl)
+            selected = pageButton.Selected
+        ElseIf itemButton IsNot Nothing Then
+            selected = itemButton.Selected
         End If
+        If selected Then
+            Dim width = LogicalToDeviceUnits(3)
+            Using brush As New SolidBrush(If(SystemInformation.HighContrast, button.ForeColor, ThemeService.Palette.Accent))
+                e.Graphics.FillRectangle(brush, If(rtl, button.Width - width, 0), 0, width, button.Height)
+            End Using
+        End If
+        If pageButton IsNot Nothing AndAlso pageButton.HasItems Then PaintSettingsChevron(pageButton, e.Graphics, rtl)
         If button.Focused Then
             Dim inset = LogicalToDeviceUnits(3)
             Using pen As New Pen(If(SystemInformation.HighContrast, button.ForeColor, ThemeService.Palette.Accent), LogicalToDeviceUnits(2))
@@ -411,6 +526,44 @@ Partial Public NotInheritable Class Share_Settings_Form
         End Select
     End Sub
 
+    ''' <summary>The tree row's face for assistive tech: selection, and for page rows the
+    ''' disclosure state (210 section 4.6).</summary>
+    Private NotInheritable Class NavRowAccessibleObject
+        Inherits Control.ControlAccessibleObject
+
+        Private ReadOnly row As Button
+
+        Public Sub New(owner As Button)
+            MyBase.New(owner)
+            row = owner
+        End Sub
+
+        Public Overrides Sub DoDefaultAction()
+            row.PerformClick()
+        End Sub
+
+        Public Overrides ReadOnly Property DefaultAction As String
+            Get
+                Return row.Text
+            End Get
+        End Property
+
+        Public Overrides ReadOnly Property State As AccessibleStates
+            Get
+                Dim page = TryCast(row, SettingsNavigationButton)
+                Dim item = TryCast(row, SettingsNavItemButton)
+                Dim selected = If(page IsNot Nothing, page.Selected, item IsNot Nothing AndAlso item.Selected)
+                Dim value = MyBase.State Or If(selected, AccessibleStates.Selected, AccessibleStates.None)
+                ' An expandable PageTab (210 section 4.6): the disclosure state travels
+                ' with the row for assistive tech.
+                If page IsNot Nothing AndAlso page.HasItems Then
+                    value = value Or If(page.Expanded, AccessibleStates.Expanded, AccessibleStates.Collapsed)
+                End If
+                Return value
+            End Get
+        End Property
+    End Class
+
     Private NotInheritable Class SettingsNavigationButton
         Inherits Button
 
@@ -427,41 +580,8 @@ Partial Public NotInheritable Class Share_Settings_Form
         End Function
 
         Protected Overrides Function CreateAccessibilityInstance() As AccessibleObject
-            Return New NavigationAccessibleObject(Me)
+            Return New NavRowAccessibleObject(Me)
         End Function
-
-        Private NotInheritable Class NavigationAccessibleObject
-            Inherits Control.ControlAccessibleObject
-
-            Private ReadOnly navigationButton As SettingsNavigationButton
-
-            Public Sub New(owner As SettingsNavigationButton)
-                MyBase.New(owner)
-                navigationButton = owner
-            End Sub
-
-            Public Overrides Sub DoDefaultAction()
-                navigationButton.PerformClick()
-            End Sub
-
-            Public Overrides ReadOnly Property DefaultAction As String
-                Get
-                    Return navigationButton.Text
-                End Get
-            End Property
-
-            Public Overrides ReadOnly Property State As AccessibleStates
-                Get
-                    Dim value = MyBase.State Or If(navigationButton.Selected, AccessibleStates.Selected, AccessibleStates.None)
-                    ' An expandable PageTab (210 section 4.6): the disclosure state travels
-                    ' with the row for assistive tech.
-                    If navigationButton.HasItems Then
-                        value = value Or If(navigationButton.Expanded, AccessibleStates.Expanded, AccessibleStates.Collapsed)
-                    End If
-                    Return value
-                End Get
-            End Property
-        End Class
     End Class
 
     ''' <summary>A subordinate row: a plain caption under its page, no icon and no chevron,
@@ -471,12 +591,17 @@ Partial Public NotInheritable Class Share_Settings_Form
 
         Friend PageId As String
         Friend Group As SettingsNavGroup
+        Friend Selected As Boolean
 
         Protected Overrides Function IsInputKey(keyData As Keys) As Boolean
             Select Case keyData And Keys.KeyCode
                 Case Keys.Up, Keys.Down, Keys.Left, Keys.Right, Keys.Home, Keys.End : Return True
             End Select
             Return MyBase.IsInputKey(keyData)
+        End Function
+
+        Protected Overrides Function CreateAccessibilityInstance() As AccessibleObject
+            Return New NavRowAccessibleObject(Me)
         End Function
     End Class
 

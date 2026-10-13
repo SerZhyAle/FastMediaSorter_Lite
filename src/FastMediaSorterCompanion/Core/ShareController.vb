@@ -51,7 +51,7 @@ Public Module ShareController
     ''' <see cref="ShareResult.ErrorText"/>.
     ''' </summary>
     Public Async Function ShareFoldersAsync(folders As List(Of ShareFolder),
-                                            Optional pollSeconds As Integer = 15) As Task(Of ShareResult)
+                                            Optional pollSeconds As Integer = 15, Optional startServing As Boolean = True) As Task(Of ShareResult)
         Dim r As New ShareResult()
         If Not WorkerProcess.IsAvailable() Then Return r
         r.Available = True
@@ -66,9 +66,9 @@ Public Module ShareController
             Return r
         End If
         r.Status = ensured.Status
-        MarkShareEverStarted()
+        If startServing Then MarkShareEverStarted()
 
-        Await ServeAsync(r, folders, pollSeconds, WorkerIpc.PipeName)
+        Await ServeAsync(r, folders, pollSeconds, WorkerIpc.PipeName, startServing)
         Return r
     End Function
 
@@ -79,7 +79,7 @@ Public Module ShareController
     ''' one, and a refused start is reported with the worker's own words.
     ''' </summary>
     Friend Async Function ServeAsync(r As ShareResult, folders As List(Of ShareFolder),
-                                     pollSeconds As Integer, pipeName As String) As Task
+                                     pollSeconds As Integer, pipeName As String, Optional startServing As Boolean = True) As Task
         ' Push the network policy BEFORE the server starts so the first reachability
         ' pass already honors LAN-only (no UPnP) and the connection cap.
         Await PushNetworkPolicyAsync(pipeName)
@@ -91,6 +91,8 @@ Public Module ShareController
             r.ErrorText = refused
             Return
         End If
+
+        If Not startServing Then Return
 
         Dim startResp As WorkerResponse = Await SendAsync(New WorkerRequest With {.type = "StartServer"}, 6000, pipeName)
         refused = RefusedText(startResp)

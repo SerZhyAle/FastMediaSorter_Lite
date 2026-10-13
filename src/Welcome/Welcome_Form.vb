@@ -7,9 +7,9 @@ Imports System.IO
 Imports System.Windows.Forms
 
 ' <summary>
-' The welcome wizard window (spec 184 T-1, T-2): six steps, one screen each. Every screen has the three named
-' parts the owner asked for - what it is, why it exists, how the viewer will behave - and the controls that step
-' owns.
+' The welcome wizard window (spec 184 T-1, T-2): six steps, one screen each. Every screen has the four named
+' parts the owner asked for - what it is, why it exists, how the viewer will behave, and where to change it
+' later (spec 211 §4.1) - and the controls that step owns.
 '
 ' The window edits DRAFTS only. A step's draft reaches the viewer on Next (spec 184 rule 2: each step applies through
 ' the viewer's own settings block, flushed at once). Skip jumps to the finish screen and applies nothing more. Esc and
@@ -63,10 +63,12 @@ Friend NotInheritable Class Welcome_Form
     Private openedScheme As Integer
     Private openedWheelZooms As Boolean
     Private openedKeyOne As String
+    Private openedDeleteBin As Boolean
 
     Private draftScheme As Integer
     Private draftWheelZooms As Boolean
     Private draftKeyOne As String
+    Private draftDeleteBin As Boolean
     Private draftAssociations As Boolean
 
     Private position As Integer
@@ -76,6 +78,31 @@ Friend NotInheritable Class Welcome_Form
     Private localizerStep As Integer = -1
     Private ReadOnly panels As New List(Of FlowLayoutPanel)()
     Private ReadOnly headings As New List(Of Label)()
+
+    ''' <summary>One row of the finish screen's installed-servers block (spec 215): built once for each server the
+    ''' block can name, shown or hidden by what <see cref="RefreshServers"/> reads - so the DPI scaling of the
+    ''' constructor reaches every control, as it does for the six screens.</summary>
+    Private NotInheritable Class ServerRowView
+        Friend ReadOnly Server As WelcomeServer
+        Friend ReadOnly Container As New FlowLayoutPanel()
+        Friend ReadOnly NameLabel As New Label()
+        Friend ReadOnly WhatLabel As New Label()
+        Friend ReadOnly Dot As New Label()
+        Friend ReadOnly Word As New Label()
+        Friend ReadOnly ActButton As New Button()
+        Friend Pill As ServerPill = ServerPill.Absent
+        Friend Act As ServerAct = ServerAct.OpenManager
+
+        Friend Sub New(forServer As WelcomeServer)
+            Server = forServer
+        End Sub
+    End Class
+
+    ''' <summary>The pill's dot: decoration only - the word beside it is the meaning (spec 215 section 5).</summary>
+    Private Const PillDot As String = "●"
+
+    Private ReadOnly serverRows As New List(Of ServerRowView)()
+    Private serversBlock As FlowLayoutPanel
 
     Private ReadOnly stepLabel As New Label()
     Private keyOneValueLabel As Label
@@ -102,6 +129,10 @@ Friend NotInheritable Class Welcome_Form
         draftWheelZooms = Zoom_Wheel_Zooms
         openedKeyOne = If(Hardkeys_to_move_mediafile(1), "")
         draftKeyOne = openedKeyOne
+        ' Spec 211 §4.2: the question opens on the value the viewer holds now - the code default (True) on a fresh
+        ' profile. Walking through with no touch applies nothing (spec 211 rule 4).
+        openedDeleteBin = host.GetModernPreferences().DeleteToRecycleBin
+        draftDeleteBin = openedDeleteBin
         draftAssociations = False
 
         BuildWindow()
@@ -266,12 +297,30 @@ Friend NotInheritable Class Welcome_Form
         localizerStep = -1
     End Sub
 
-    ''' <summary>The three named parts of a step, in the order the owner asked for: what, why, how.</summary>
-    Private Sub AddWhatWhyHow(panel As FlowLayoutPanel, what As Func(Of String), why As Func(Of String), how As Func(Of String))
+    ''' <summary>The four named parts of a step, in the order the owner asked for: what, why, how - and where to change it later (spec 211 §4.1).</summary>
+    Private Sub AddWhatWhyHowWhere(panel As FlowLayoutPanel, what As Func(Of String), why As Func(Of String), how As Func(Of String), where As Func(Of String))
         AddPart(panel, Function() Localization.T("Что это"), what)
         AddPart(panel, Function() Localization.T("Зачем"), why)
         AddPart(panel, Function() Localization.T("Как будет работать"), how)
+        AddPart(panel, Function() Localization.T("Где это менять"), where)
     End Sub
+
+    ''' <summary>
+    ''' The settings path a step's where-part names: the settings window's own name, then page, group and row - each
+    ''' the caption the window really renders (spec 211 §4.1). The row ids and their captions are paired in
+    ''' <see cref="WelcomeRules"/>; the pairing test holds them against the placement catalog. Right-to-left languages
+    ''' read the path the other way, so the separator points the way they read.
+    ''' </summary>
+    Private Function WherePath(rowId As String) As String
+        Dim keys As String() = WelcomeRules.WherePathKeys(rowId)
+        If keys.Length = 0 Then Return String.Empty
+        Dim parts(keys.Length) As String
+        parts(0) = Localization.T("Настройки")
+        For i As Integer = 0 To keys.Length - 1
+            parts(i + 1) = Localization.T(keys(i))
+        Next
+        Return String.Join(If(Localization.IsRightToLeft(), " ← ", " → "), parts)
+    End Function
 
     Private Sub AddPart(panel As FlowLayoutPanel, heading As Func(Of String), text As Func(Of String))
         Dim head As New Label With {.AutoSize = True, .Margin = New Padding(0, 10, 0, 0)}
@@ -290,10 +339,11 @@ Friend NotInheritable Class Welcome_Form
     End Sub
 
     Private Sub BuildLanguagePanel(panel As FlowLayoutPanel)
-        AddWhatWhyHow(panel,
+        AddWhatWhyHowWhere(panel,
             Function() Localization.T("Язык, на котором говорят окна, подсказки и сообщения программы."),
             Function() Localization.T("Программа выбрала язык по настройкам Windows. Если вам нужен другой, выберите его здесь."),
-            Function() Localization.T("Все окна, подсказки и вопросы сразу станут на этом языке. Сменить его можно в любой момент в окне настроек."))
+            Function() Localization.T("Все окна, подсказки и вопросы сразу станут на этом языке. Сменить его можно в любой момент в окне настроек."),
+            Function() Localization.TF("Позже меняется здесь: {0}.", WherePath("interface_language")))
 
         Dim language As New WelcomeComboBox With {
             .AutoSize = True,
@@ -313,10 +363,11 @@ Friend NotInheritable Class Welcome_Form
     End Sub
 
     Private Sub BuildAppearancePanel(panel As FlowLayoutPanel)
-        AddWhatWhyHow(panel,
+        AddWhatWhyHowWhere(panel,
             Function() Localization.T("Фон вокруг картинки и то, что делает колесо мыши."),
             Function() Localization.T("Фон должен спокойно обрамлять снимок, а колесо не должно случайно менять масштаб, когда вы листаете."),
-            Function() AppearanceHow())
+            Function() AppearanceHow(),
+            Function() Localization.TF("Фон - {0}; колесо - {1}.", WherePath("background_color"), WherePath("wheel_zooms")))
 
         Dim schemeLabel As New Label With {.AutoSize = True, .Margin = New Padding(0, 12, 0, 0)}
         Localize(Sub() schemeLabel.Text = Localization.T("Цвет фона:"))
@@ -372,10 +423,12 @@ Friend NotInheritable Class Welcome_Form
     End Function
 
     Private Sub BuildSortingPanel(panel As FlowLayoutPanel)
-        AddWhatWhyHow(panel,
+        AddWhatWhyHowWhere(panel,
             Function() Localization.T("Цифры 0-9 переносят открытый файл в папку, закреплённую за этой клавишей."),
             Function() Localization.T("Сортировка одним нажатием - главное, ради чего существует программа. Папки назначаются заранее, поэтому нажатие не требует раздумий."),
-            Function() Localization.T("Цифра переносит файл. Shift с цифрой верхнего ряда копирует его в ту же папку вместо переноса."))
+            Function() Localization.T("Цифра переносит файл. Shift с цифрой верхнего ряда копирует его в ту же папку вместо переноса."),
+            Function() Localization.TF("Папки назначаются {0}; переход после копирования - {1}.",
+                                       Localization.T("в меню папок программы"), WherePath("advance_after_copy")))
 
         panel.Controls.Add(Chips("0-9", "->", "@content.folder"))
         panel.Controls.Add(Chips("Shift", "+", "1-9", "->", "@action.copy"))
@@ -441,13 +494,27 @@ Friend NotInheritable Class Welcome_Form
     End Sub
 
     Private Sub BuildDeletePanel(panel As FlowLayoutPanel)
-        AddWhatWhyHow(panel,
+        AddWhatWhyHowWhere(panel,
             Function() Localization.T("Del отправляет файл в Корзину, откуда его можно восстановить. Shift+Del удаляет окончательно."),
             Function() Localization.T("Ошибка при сортировке не должна стоить файла. Корзина - страховка, которая есть почти всегда."),
-            Function() Localization.T("Если на диске нет Корзины (сетевой диск, флешка), программа скажет об этом до удаления."))
+            Function() Localization.T("Если на диске нет Корзины (сетевой диск, флешка), программа скажет об этом до удаления."),
+            Function() Localization.TF("Позже меняется здесь: {0} и {1}.",
+                                       WherePath("delete_to_recycle_bin"), WherePath("confirm_delete")))
 
         panel.Controls.Add(Chips("Del", "->", "@action.delete"))
         panel.Controls.Add(Chips("Shift", "+", "Del", "->", "@status.warning"))
+
+        ' Spec 211 §4.2: the step asks, like every other step. The checkbox is bound to the settings row
+        ' delete_to_recycle_bin, opens on the value the viewer holds (the code default on a fresh profile) and is
+        ' applied on Next through the settings block - nothing is written unless the user changes it.
+        Dim check As New CheckBox With {
+            .AutoSize = True,
+            .MinimumSize = New Size(0, TargetHeight),
+            .Margin = New Padding(0, 12, 0, 0),
+            .Checked = draftDeleteBin}
+        Localize(Sub() check.Text = Localization.T("Удалять в Корзину"))
+        AddHandler check.CheckedChanged, Sub() draftDeleteBin = check.Checked
+        panel.Controls.Add(check)
     End Sub
 
     ''' <summary>A row of key caps and catalog glyphs (see <see cref="StepChips"/>); it carries no words.</summary>
@@ -456,10 +523,12 @@ Friend NotInheritable Class Welcome_Form
     End Function
 
     Private Sub BuildAssociationsPanel(panel As FlowLayoutPanel)
-        AddWhatWhyHow(panel,
+        AddWhatWhyHowWhere(panel,
             Function() Localization.T("Двойной щелчок по картинке в Проводнике откроет её в этой программе."),
             Function() Localization.T("Файловые связи меняют то, что делает Проводник, поэтому без вашего согласия ничего не меняется."),
-            Function() Localization.T("Если включить, связи записываются только для вашей учётной записи и не требуют прав администратора. Изменить это можно в настройках."))
+            Function() Localization.T("Если включить, связи записываются только для вашей учётной записи и не требуют прав администратора. Изменить это можно в настройках."),
+            Function() Localization.TF("Позже меняется здесь: {0} и {1}.",
+                                       WherePath("image_associations"), WherePath("video_associations")))
 
         panel.Controls.Add(Chips("JPG", "PNG", "WEBP", "GIF", "MP4"))
 
@@ -474,26 +543,184 @@ Friend NotInheritable Class Welcome_Form
     End Sub
 
     Private Sub BuildFinishPanel(panel As FlowLayoutPanel)
-        AddWhatWhyHow(panel,
+        AddWhatWhyHowWhere(panel,
             Function() Localization.T("Выбранное сохранено. Всё остальное осталось по умолчанию."),
             Function() Localization.T("Эти шаги - всё, что нужно понять новичку. Остальные параметры собраны в окне настроек, где работает поиск."),
-            Function() Localization.T("Откройте папку, чтобы начать. Окно настроек и F1 вернут эту справку в любой момент."))
+            Function() Localization.T("Откройте папку, чтобы начать. Окно настроек и F1 вернут эту справку в любой момент."),
+            Function() Localization.TF("Вернуть эти шаги: {0} или клавиша F1.", WherePath("welcome_replay")))
         Dim summary As New Label With {.AutoSize = True, .MaximumSize = New Size(ContentWidth, 0),
                                         .UseMnemonic = False, .Margin = New Padding(0, 12, 0, 0)}
         Localize(Sub() summary.Text = FinishSummary())
         panel.Controls.Add(summary)
+        BuildServersBlock(panel)
     End Sub
 
+    ''' <summary>
+    ''' The installed-servers block (spec 215): below the recap, one row per server component installed with this
+    ''' program - what it is, a pill saying whether its process is up, and one button. An offer, never an act: a user
+    ''' who presses nothing gets exactly the wizard 211 ends with (rule 4). Both rows are built here and shown or
+    ''' hidden by <see cref="RefreshServers"/>; a block with no installed component stays hidden whole.
+    ''' </summary>
+    Private Sub BuildServersBlock(panel As FlowLayoutPanel)
+        serversBlock = New FlowLayoutPanel With {
+            .AutoSize = True,
+            .AutoSizeMode = AutoSizeMode.GrowAndShrink,
+            .FlowDirection = FlowDirection.TopDown,
+            .WrapContents = False,
+            .Margin = New Padding(0, 14, 0, 0),
+            .Visible = False}
+
+        Dim title As New Label With {.AutoSize = True, .MaximumSize = New Size(ContentWidth, 0), .UseMnemonic = False, .Margin = New Padding(0)}
+        headings.Add(title)
+        Localize(Sub() title.Text = Localization.T("Серверы на этом ПК"))
+        serversBlock.Controls.Add(title)
+
+        For Each server As WelcomeServer In {WelcomeServer.ShareServer, WelcomeServer.ExchangeServer}
+            Dim view As New ServerRowView(server)
+            BuildServerRow(view)
+            serverRows.Add(view)
+            serversBlock.Controls.Add(view.Container)
+        Next
+        panel.Controls.Add(serversBlock)
+        RefreshServers()
+    End Sub
+
+    Private Sub BuildServerRow(view As ServerRowView)
+        view.Container.AutoSize = True
+        view.Container.AutoSizeMode = AutoSizeMode.GrowAndShrink
+        view.Container.FlowDirection = FlowDirection.TopDown
+        view.Container.WrapContents = False
+        view.Container.Margin = New Padding(0, 10, 0, 0)
+        view.Container.Visible = False
+
+        view.NameLabel.AutoSize = True
+        view.NameLabel.MaximumSize = New Size(ContentWidth, 0)
+        view.NameLabel.UseMnemonic = False
+        view.NameLabel.Margin = New Padding(0)
+        headings.Add(view.NameLabel)
+
+        view.WhatLabel.AutoSize = True
+        view.WhatLabel.MaximumSize = New Size(ContentWidth, 0)
+        view.WhatLabel.UseMnemonic = False
+        view.WhatLabel.Margin = New Padding(0, 2, 0, 0)
+
+        view.Dot.AutoSize = True
+        view.Dot.UseMnemonic = False
+        view.Dot.Text = PillDot
+        view.Dot.Margin = New Padding(0, 0, 6, 0)
+        view.Dot.AccessibleRole = AccessibleRole.None
+
+        view.Word.AutoSize = True
+        view.Word.MaximumSize = New Size(ContentWidth - 24, 0)
+        view.Word.UseMnemonic = False
+        view.Word.Margin = New Padding(0)
+
+        Dim pillRow As New FlowLayoutPanel With {
+            .AutoSize = True,
+            .AutoSizeMode = AutoSizeMode.GrowAndShrink,
+            .FlowDirection = FlowDirection.LeftToRight,
+            .WrapContents = False,
+            .Margin = New Padding(0, 6, 0, 0)}
+        pillRow.Controls.Add(view.Dot)
+        pillRow.Controls.Add(view.Word)
+
+        StyleButton(view.ActButton)
+        view.ActButton.Margin = New Padding(0, 6, 0, 0)
+        Dim captured As ServerRowView = view
+        AddHandler view.ActButton.Click, Sub() host.WelcomeOpenServerManager(captured.Act)
+
+        view.Container.Controls.Add(view.NameLabel)
+        view.Container.Controls.Add(view.WhatLabel)
+        view.Container.Controls.Add(pillRow)
+        view.Container.Controls.Add(view.ActButton)
+
+        Localize(Sub() UpdateServerRowText(captured))
+    End Sub
+
+    Private Shared Function ServerName(server As WelcomeServer) As String
+        Return If(server = WelcomeServer.ExchangeServer, ProductNames.ExchangeServer, Localization.T("Сервер папок для Android"))
+    End Function
+
+    Private Shared Function ServerWhat(server As WelcomeServer) As String
+        Return Localization.T(If(server = WelcomeServer.ExchangeServer,
+                                 "Собственный сервер обмена этого ПК. Управляется в Share Manager.",
+                                 "Раздаёт папки этого ПК на телефон. Управляется в Share Manager."))
+    End Function
+
+    ''' <summary>The words of one row in the language being shown: name, what it is, the pill's word and the button's.
+    ''' The amber word carries the one clause of what to do (spec 215 section 5), so colour is never the only signal.</summary>
+    Private Sub UpdateServerRowText(view As ServerRowView)
+        view.NameLabel.Text = ServerName(view.Server)
+        view.WhatLabel.Text = ServerWhat(view.Server)
+        view.Word.Text = Localization.T(If(view.Pill = ServerPill.Green, "Работает", "Не запущен - менеджер включит его по вашему выбору"))
+        Dim isAdd As Boolean = view.Act = ServerAct.AddResource
+        view.ActButton.Text = Localization.T(If(isAdd, "Добавить ресурс", "Открыть менеджер"))
+        view.ActButton.AccessibleName = Localization.TF("{0} - {1}", view.ActButton.Text, view.NameLabel.Text)
+        Dim glyph As String = If(isAdd, "action.add", "nav.open-external")
+        If Not String.Equals(ButtonGlyphs.GlyphOf(view.ActButton), glyph, StringComparison.Ordinal) Then
+            ButtonGlyphs.Apply(view.ActButton, glyph)
+        End If
+    End Sub
+
+    ''' <summary>
+    ''' Reads the block's facts now (the component probes and one process lookup per installed server) and redraws it.
+    ''' Called when the wizard opens and each time the finish screen becomes current, so a server started behind the
+    ''' wizard's back shows the truth at the end - no timer, no polling (spec 215 section 5).
+    ''' </summary>
+    Private Sub RefreshServers()
+        If serversBlock Is Nothing Then Return
+        Dim block As IReadOnlyList(Of WelcomeServerRow) = host.WelcomeServerBlock()
+        serversBlock.SuspendLayout()
+        Try
+            For Each view As ServerRowView In serverRows
+                view.Pill = ServerPill.Absent
+                For Each row As WelcomeServerRow In block
+                    If row.Server = view.Server Then
+                        view.Pill = row.Pill
+                        view.Act = row.Act
+                    End If
+                Next
+                view.Container.Visible = view.Pill <> ServerPill.Absent
+                UpdateServerRowText(view)
+            Next
+            serversBlock.Visible = block.Count > 0
+            ApplyServerPills()
+        Finally
+            serversBlock.ResumeLayout(True)
+        End Try
+    End Sub
+
+    ''' <summary>The dot's colour for the current theme, never lighter or darker than 4.5:1 on the window (spec 215
+    ''' section 5). The word beside it is plain text, so a high-contrast or colour-blind reader loses nothing.</summary>
+    Private Sub ApplyServerPills()
+        Dim palette As ThemePalette = ThemeService.Palette
+        For Each view As ServerRowView In serverRows
+            Dim ink As Color = If(view.Pill = ServerPill.Green, palette.Success, palette.Warning)
+            view.Dot.ForeColor = ThemePalette.ReadableText(ink, palette.SurfaceWindow)
+        Next
+    End Sub
+
+    ''' <summary>
+    ''' The finish recap (spec 211 §4.4): what was chosen, and - after a plain hyphen - the settings page and row
+    ''' where each choice lives later, from the same pairing the steps' where-parts are built on.
+    ''' </summary>
     Private Function FinishSummary() As String
         Dim schemes As String() = {"По углу", "Чёрный", "Белый", "По краю", "По верху", "По низу"}
         Dim scheme As Integer = Math.Max(0, Math.Min(schemes.Length - 1, openedScheme))
         Return String.Join(Environment.NewLine, {
-            Localization.TF("{0}: {1}", Localization.T("Язык интерфейса"), Localization.Names(Localization.IndexOf(appliedLanguage))),
-            Localization.TF("{0}: {1}", Localization.T("Внешний вид"), Localization.T(schemes(scheme))),
-            Localization.T(If(openedWheelZooms, "Колесо меняет масштаб у курсора, файлы листают стрелки.",
-                                               "Колесо переходит к следующему или предыдущему файлу, а Ctrl с колесом меняет масштаб.")),
-            Localization.TF("{0}: {1}", Localization.TF("Папка для клавиши {0}", 1),
-                            If(String.IsNullOrEmpty(openedKeyOne), Localization.T("Не выбрана"), openedKeyOne))})
+            Localization.TF("{0}: {1} - {2}", Localization.T("Язык интерфейса"),
+                            Localization.Names(Localization.IndexOf(appliedLanguage)), WherePath("interface_language")),
+            Localization.TF("{0}: {1} - {2}", Localization.T("Внешний вид"), Localization.T(schemes(scheme)),
+                            WherePath("background_color")),
+            Localization.TF("{0}: {1} - {2}", Localization.T("Масштабирование колёсиком"),
+                            Localization.T(If(openedWheelZooms, "Колесо меняет масштаб у курсора, файлы листают стрелки.",
+                                               "Колесо переходит к следующему или предыдущему файлу, а Ctrl с колесом меняет масштаб.")), WherePath("wheel_zooms")),
+            Localization.TF("{0}: {1} - {2}", Localization.TF("Папка для клавиши {0}", 1),
+                            If(String.IsNullOrEmpty(openedKeyOne), Localization.T("Не выбрана"), openedKeyOne),
+                            Localization.T("в меню папок программы")),
+            Localization.TF("{0}: {1} - {2}", Localization.T("Удалять в Корзину"),
+                            Localization.T(If(openedDeleteBin, "Файлы после Del уходят в Корзину.",
+                                              "Файлы после Del удаляются окончательно.")), WherePath("delete_to_recycle_bin"))})
     End Function
 
     ' ---------------------------------------------------------------- texts ----
@@ -609,6 +836,9 @@ Friend NotInheritable Class Welcome_Form
             Next
             backButton.Enabled = index > 0
             skipButton.Visible = index < finishIndex
+            ' Spec 215 section 5: a server started behind the wizard's back shows the truth when the finish screen is
+            ' reached - the second of the two reads (the first is at open time); never polled in between.
+            If steps(index) = WelcomeStep.Finish Then RefreshServers()
             RetextAll()
         Finally
             ResumeTree(Me)
@@ -663,6 +893,13 @@ Friend NotInheritable Class Welcome_Form
                     End If
                     host.WelcomeApplyKeyOne(draftKeyOne)
                     openedKeyOne = draftKeyOne
+                End If
+
+            Case WelcomeStep.Delete
+                ' Spec 211 rule 4: a user who walks through with Next gets exactly today's behaviour.
+                If draftDeleteBin <> openedDeleteBin Then
+                    host.WelcomeApplyDeleteToRecycleBin(draftDeleteBin)
+                    openedDeleteBin = draftDeleteBin
                 End If
 
             Case WelcomeStep.Associations
@@ -720,6 +957,7 @@ Friend NotInheritable Class Welcome_Form
         If IsDisposed Then Return
         ApplyTargetSizes()
         ApplyAccents()
+        ApplyServerPills()
     End Sub
 
     Protected Overrides Sub OnDpiChanged(e As DpiChangedEventArgs)

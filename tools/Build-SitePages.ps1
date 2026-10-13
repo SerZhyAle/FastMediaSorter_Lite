@@ -31,11 +31,21 @@
     The script also renders robots.txt, sitemap.xml and search-index.json. The search
     index covers the same public page set as the sitemap (DOC-EXTERNAL-QUALITY rules 2
     and 5 - ticket 059); a hand-authored root page is read back out of its own HTML,
-    the generated pages out of the copy JSON.
+    the generated pages out of the copy JSON. The sitemap's <lastmod> is the commit
+    date of each page's file (a file that differs from HEAD changed today), never the
+    build time.
+
+    Ticket 207 (the free-promotion campaign, T-4 and T-5) added: the page title of
+    every locale page (a job word, then the compact name - `pageTitle` in
+    site-copy.json), the Open Graph image set with its size and a text alternative on
+    every generated page (the card is made by tools/New-SocialCard.ps1 from the
+    `discoverability` block of tools/site-facts.json), and two generated root pages,
+    support.html and whats-new.html (the latter rendered from the released sections
+    of CHANGELOG.md).
 
 .PARAMETER Check
     Render into memory and fail if any page or marked region on disk differs, or if any
-    of the 14 contract conformance checks fail. For a pre-flight sweep:
+    of the 16 contract conformance checks fail. For a pre-flight sweep:
     it proves the committed HTML still matches its source and contracts.
 
 .NOTES
@@ -58,8 +68,9 @@ trap {
     Exit-Verdict 'Build-SitePages' 2 'the check could not run'
 }
 if ($Check) {
-    Write-Subject 'Build-SitePages' ('the trust pages, the per-language index pages, the not-found page, robots.txt, sitemap.xml, ' +
-        'search-index.json and index.html marked regions against tools/site-copy.json + tools/trust-copy.json')
+    Write-Subject 'Build-SitePages' ('the trust pages, the per-language index pages, the not-found page, the Support and What''s new pages, ' +
+        'robots.txt, sitemap.xml, search-index.json and index.html marked regions against tools/site-copy.json + ' +
+        'tools/trust-copy.json + CHANGELOG.md, and the social card')
 }
 $Root     = Split-Path $PSScriptRoot -Parent
 $CopyFile = Join-Path $PSScriptRoot 'site-copy.json'
@@ -67,8 +78,21 @@ $BaseUrl  = 'https://serzhyale.github.io/FastMediaSorter_Lite'
 $LangDir  = 'lang'   # the one root folder that holds every translated page
 $Releases = 'https://github.com/SerZhyAle/FastMediaSorter_Lite/releases/latest'
 $Repo     = 'https://github.com/SerZhyAle/FastMediaSorter_Lite'
-$OgImage  = 'assets/social-preview-1280x640.png'
 $Favicon  = 'assets/icons/Fast_Media_Sorter.ico'
+# The discoverability fields of the site are typed once, in the `discoverability` block of tools/site-facts.json (the
+# machine form of docs/guides/POSITIONING.md section 7, ticket 207): the social card's file and size, the title
+# separator and suffix. The Open Graph image of EVERY page is the 1200x630 rendering of the one card made by
+# tools/New-SocialCard.ps1; the 1280x640 one is the repository's own preview and no page names it.
+$FactsFile = Join-Path $PSScriptRoot 'site-facts.json'
+if (-not (Test-Path $FactsFile)) { throw "Missing data file: $FactsFile" }
+$facts = Get-Content $FactsFile -Raw -Encoding UTF8 | ConvertFrom-Json
+$disc  = $facts.discoverability
+$ogSize = @($disc.socialCard.sizes | Where-Object { $_.name -eq 'open-graph' })[0]
+$OgImage  = [string]$ogSize.file
+$OgWidth  = [int]$ogSize.width
+$OgHeight = [int]$ogSize.height
+$TitleSeparator = [string]$disc.titles.separator
+$TitleSuffix    = [string]$disc.titles.suffix
 # The product names (docs/guides/PRODUCT_NAMING.md section 1; src/ProductNames.vb). The name is NOT translated: it is
 # written in Latin in all 13 languages, and "&" is part of it (Esc turns it into "&amp;" in HTML).
 # $ProductCompact is the compact name: the short title-length form only, NOT a Microsoft Store name.
@@ -112,6 +136,27 @@ function Body([string]$s) {
     $h = Esc $s
     if ($script:RtlPage) { $h = [regex]::Replace($h, 'Fast Media Sorter &amp; Sharing(?: for Windows)?|«Sharing»|Media Exchange Server', '<bdi>$0</bdi>') }
     $h
+}
+
+# The page's <title>, its og:title and its twitter:title: the job in the page's language, then the compact name, which is
+# the short title-length form (PRODUCT_NAMING section 1). The H1 and the structured data keep the full name.
+function PageTitle($e) { "$($e.pageTitle)$TitleSeparator$TitleSuffix" }
+
+# The Open Graph and Twitter image sets of canon PROMOTION section 3: the 1200x630 card, its declared size and a text
+# alternative in the page's language - a crawler or a screen reader gets what the picture says.
+function OgImageMeta([string]$alt) {
+    @(
+        "<meta property=`"og:image`" content=`"$BaseUrl/$OgImage`">",
+        "<meta property=`"og:image:width`" content=`"$OgWidth`">",
+        "<meta property=`"og:image:height`" content=`"$OgHeight`">",
+        "<meta property=`"og:image:alt`" content=`"$(Esc $alt)`">"
+    ) -join "`n"
+}
+function TwitterImageMeta([string]$alt) {
+    @(
+        "<meta name=`"twitter:image`" content=`"$BaseUrl/$OgImage`">",
+        "<meta name=`"twitter:image:alt`" content=`"$(Esc $alt)`">"
+    ) -join "`n"
 }
 
 function JsonLd([string]$code, $e) {
@@ -325,21 +370,21 @@ function Render([string]$code) {
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 $ThemeResolver
-<title>$(Esc $e.title)</title>
+<title>$(Esc (PageTitle $e))</title>
 <meta name="description" content="$(Esc $e.tagline)">
 <link rel="canonical" href="$(PageUrl $code)">
 $alts
 <meta property="og:type" content="website">
-<meta property="og:title" content="$(Esc $e.title)">
+<meta property="og:title" content="$(Esc (PageTitle $e))">
 <meta property="og:description" content="$(Esc $e.tagline)">
 <meta property="og:url" content="$(PageUrl $code)">
-<meta property="og:image" content="$BaseUrl/$OgImage">
+$(OgImageMeta $e.ogAlt)
 <meta property="og:site_name" content="$(Esc $ProductCompact)">
 <meta property="og:locale" content="$code">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="$(Esc $e.title)">
+<meta name="twitter:title" content="$(Esc (PageTitle $e))">
 <meta name="twitter:description" content="$(Esc $e.tagline)">
-<meta name="twitter:image" content="$BaseUrl/$OgImage">
+$(TwitterImageMeta $e.ogAlt)
 <meta name="theme-color" content="#0a0f0a">
 <link rel="icon" href="$A$Favicon" sizes="any">
 <link rel="apple-touch-icon" href="${A}assets/icons/store-icon-256.png">
@@ -471,7 +516,9 @@ $howto
     <a href="$(TrustUrl $code)">$(Esc $trust.$code.title)</a>
     <a href="$BaseUrl/docs/privacy.html">Privacy</a>
     <a href="$Repo#readme">README</a>
+    <a href="$BaseUrl/whats-new.html">What's new</a>
     <a href="$Repo/blob/main/CHANGELOG.md">Changelog</a>
+    <a href="$BaseUrl/support.html">Support</a>
     <a href="$Repo/issues">Issues</a>
   </div>
 $familyGrid
@@ -587,13 +634,13 @@ $alts
 <meta property="og:title" content="$(Esc $t.title)">
 <meta property="og:description" content="$(Esc $t.desc)">
 <meta property="og:url" content="$(TrustUrl $code)">
-<meta property="og:image" content="$BaseUrl/$OgImage">
+$(OgImageMeta $e.ogAlt)
 <meta property="og:site_name" content="$(Esc $ProductCompact)">
 <meta property="og:locale" content="$code">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="$(Esc $t.title)">
 <meta name="twitter:description" content="$(Esc $t.desc)">
-<meta name="twitter:image" content="$BaseUrl/$OgImage">
+$(TwitterImageMeta $e.ogAlt)
 <meta name="theme-color" content="#0a0f0a">
 <link rel="icon" href="$A$Favicon" sizes="any">
 <link rel="apple-touch-icon" href="${A}assets/icons/store-icon-256.png">
@@ -779,6 +826,254 @@ $guides
 "@
 }
 
+# --- Support and What's new: the two small generated root pages (ticket 207 T-5; DOCUMENTATION_CONCEPT section 4) ------
+# Each has one address at the site root and is in-page trilingual (en, ru, ua) like the not-found page - the core three
+# every root page of this site carries. Both are listed in the sitemap and the search index with the other root pages,
+# and the topics page links them (Test-SiteQuality rule 1).
+$InPageLangs = 'en', 'ru', 'ua'
+
+# One page shell for both: head with the full SEO block, the header and footer of the root pages, the language and theme
+# script of the not-found page. $titles and $descs are keyed en/ru/ua; the <title> is the English one, the switcher
+# swaps document.title for the other two.
+function PlainPage([string]$file, $titles, $descs, [string]$kicker, [string]$h1, [string]$lead, [string]$body) {
+    $url = "$BaseUrl/$file"
+    $script:RtlPage = $false
+    $title = "$($titles.en)$TitleSeparator$TitleSuffix"
+    $desc  = [string]$descs.en
+    $nf = $copy._notFound
+    function Spans([string]$key) { ($InPageLangs | ForEach-Object { '<span data-l="{0}">{1}</span>' -f $_, (Esc $nf.$_.$key) }) -join '' }
+    $ld = [ordered]@{
+        '@context'   = 'https://schema.org'
+        '@type'      = 'WebPage'
+        'headline'   = $title
+        'description' = $desc
+        'url'        = $url
+        'inLanguage' = 'en'
+        'image'      = "$BaseUrl/$OgImage"
+        'isPartOf'   = [ordered]@{ '@type' = 'WebSite'; 'name' = $ProductFull; 'url' = "$BaseUrl/" }
+        'author'     = [ordered]@{ '@type' = 'Person'; 'name' = $copy._contact.github }
+    }
+    $metaTitles = ($InPageLangs | ForEach-Object { '{0}:"{1}"' -f $_, ('{0}{1}{2}' -f $titles.$_, $TitleSeparator, $TitleSuffix) }) -join ','
+@"
+<!DOCTYPE html>
+<html lang="en" data-theme="dark" data-lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+$ThemeResolver
+<title>$(Esc $title)</title>
+<meta name="description" content="$(Esc $desc)">
+<link rel="canonical" href="$url">
+<link rel="alternate" hreflang="x-default" href="$url">
+<meta property="og:type" content="website">
+<meta property="og:title" content="$(Esc $title)">
+<meta property="og:description" content="$(Esc $desc)">
+<meta property="og:url" content="$url">
+$(OgImageMeta ([string]$disc.socialCard.alt))
+<meta property="og:site_name" content="$(Esc $ProductCompact)">
+<meta property="og:locale" content="en">
+<meta property="og:locale:alternate" content="ru">
+<meta property="og:locale:alternate" content="uk">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="$(Esc $title)">
+<meta name="twitter:description" content="$(Esc $desc)">
+$(TwitterImageMeta ([string]$disc.socialCard.alt))
+<meta name="theme-color" content="#0a0f0a">
+<link rel="icon" href="$Favicon" sizes="any">
+<link rel="apple-touch-icon" href="assets/icons/store-icon-256.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/sza-kit.css">
+<link rel="stylesheet" href="assets/fms-site.css">
+<script type="application/ld+json">$($ld | ConvertTo-Json -Depth 5 -Compress)</script>
+<style>
+html[data-lang="ru"] [data-l]:not([data-l="ru"]),html[data-lang="en"] [data-l]:not([data-l="en"]),html[data-lang="ua"] [data-l]:not([data-l="ua"]){display:none}
+.site-header>.brand{margin-right:auto}.hero{text-align:left;padding:1.5rem 0 .8rem}.hero .lead{margin:0}
+.section h2{font-size:1.2rem;margin:0 0 .6rem}.section h3{font-size:1rem;margin:1rem 0 .4rem}.section ul{margin:0 0 .8rem;padding-left:1.3rem}.section li{margin:0 0 .5rem}
+.section time{color:var(--text-2);font-size:.9rem;font-weight:400;margin-left:.6rem}
+</style>
+</head>
+<body>
+<a class="skip-link" href="#main">$(Spans 'skip')</a>
+<header class="site-header">
+  <span id="site-nav-label" class="sr-only">$(Spans 'nav')</span>
+  <nav class="site-nav" aria-labelledby="site-nav-label">
+  <a class="brand" href="$BaseUrl/" aria-label="$(Esc $ProductFull)"><span class="brand-mark"><img src="$Favicon" alt="" width="24" height="24"></span>$(Esc $ProductFull)</a>
+  <div class="seg" role="group" aria-label="Language">
+    <button data-setlang="ru">RU</button><button data-setlang="en" aria-pressed="true">EN</button><button data-setlang="ua">UA</button>
+  </div>
+  <button class="theme-btn" id="themeBtn" aria-label="Switch theme">◐</button>
+  <a class="btn btn-primary btn-sm" href="$BaseUrl/#get">$(Spans 'download')</a>
+  </nav>
+</header>
+
+<main class="container" id="main" tabindex="-1">
+  <section class="hero">
+    <span class="kicker">$kicker</span>
+    <h1>$h1</h1>
+    <p class="lead">$lead</p>
+  </section>
+
+$body
+</main>
+
+<footer class="site-footer"><div class="container"><div class="footer-bottom">
+  <span><a href="$BaseUrl/">$(Esc $ProductFull)</a> &middot; <a href="$BaseUrl/topics.html">$(Spans 'topicsTitle')</a> &middot; <a href="$BaseUrl/whats-new.html">$(($InPageLangs | ForEach-Object { '<span data-l="{0}">{1}</span>' -f $_, (Esc $copy._whatsNew.short.$_) }) -join '')</a> &middot; <a href="$BaseUrl/support.html">$(($InPageLangs | ForEach-Object { '<span data-l="{0}">{1}</span>' -f $_, (Esc $copy._support.short.$_) }) -join '')</a> &middot; <a href="$BaseUrl/docs/privacy.html">Privacy</a></span>
+  <span>&copy; $(Get-Date -Format 'yyyy') <a href="https://$($copy._contact.website)">$($copy._contact.github)</a> &middot; <a href="mailto:$($copy._contact.email)">$($copy._contact.email)</a></span>
+</div></div></footer>
+
+<script>
+(function(){
+  var doc=document.documentElement;
+  var TITLES={$metaTitles};
+  function setLang(l){
+    if(!TITLES[l]) l='en';
+    doc.setAttribute('data-lang',l);
+    doc.setAttribute('lang', l==='ua'?'uk':l);
+    try{localStorage.setItem('sza-lang',l);}catch(e){}
+    document.querySelectorAll('.seg [data-setlang]').forEach(function(b){
+      b.setAttribute('aria-pressed', b.getAttribute('data-setlang')===l ? 'true':'false');
+    });
+    document.title=TITLES[l];
+  }
+  document.querySelectorAll('.seg [data-setlang]').forEach(function(b){
+    b.addEventListener('click',function(){setLang(b.getAttribute('data-setlang'));});
+  });
+  setLang(doc.getAttribute('data-lang')||'en');
+  var tb=document.getElementById('themeBtn');
+  if(tb) tb.addEventListener('click',function(){
+    var v=doc.getAttribute('data-theme')==='light'?'dark':'light';
+    doc.setAttribute('data-theme',v);
+    try{localStorage.setItem('sza-theme',v);}catch(e){}
+  });
+})();
+</script>
+</body>
+</html>
+"@
+}
+
+# A string of the copy keyed en/ru/ua, as the three in-page spans.
+function InPageSpans($block, [scriptblock]$format = { param($s) Esc $s }) {
+    ($InPageLangs | ForEach-Object { '<span data-l="{0}">{1}</span>' -f $_, (& $format $block.$_) }) -join ''
+}
+
+function RenderSupport {
+    $sp = $copy._support
+    $mail = [string]$copy._contact.email
+    $withMail = { param($s) (Esc $s).Replace('{email}', ('<a href="mailto:{0}">{0}</a>' -f $mail)) }
+    $sections = foreach ($s in $sp.sections) {
+        $parts = @("  <section class=`"section`" id=`"$($s.id)`">", "    <h2>$(InPageSpans $s.h)</h2>")
+        if ($s.PSObject.Properties['p']) { $parts += "    <p>$(InPageSpans $s.p $withMail)</p>" }
+        if ($s.PSObject.Properties['items']) {
+            $n = @($s.items.en).Count
+            $parts += '    <ul>'
+            for ($i = 0; $i -lt $n; $i++) {
+                $cell = [pscustomobject]@{ en = $s.items.en[$i]; ru = $s.items.ru[$i]; ua = $s.items.ua[$i] }
+                $parts += "      <li>$(InPageSpans $cell)</li>"
+            }
+            $parts += '    </ul>'
+        }
+        if ($s.PSObject.Properties['links']) {
+            $parts += '    <ul>'
+            foreach ($l in $s.links) { $parts += "      <li><a href=`"$($l.url)`">$(InPageSpans $l.label)</a></li>" }
+            $parts += '    </ul>'
+        }
+        $parts += '  </section>'
+        $parts -join "`n"
+    }
+    PlainPage 'support.html' $sp.short $sp.desc (InPageSpans $sp.kicker) (InPageSpans $sp.h1) (InPageSpans $sp.lead) ($sections -join "`n`n")
+}
+
+# The latest released sections of CHANGELOG.md as plain data: version, date, categories, entries. [Unreleased] and anything
+# older than the 'count'-th release is never read. A top-level entry (with its sub-entries) that names a reserved,
+# non-public variant is left out - the page must not say what docs/guides/POSITIONING.md keeps unsaid (rule 4, Q155-2).
+function ReadReleases([int]$count) {
+    $path = Join-Path $Root 'CHANGELOG.md'
+    if (-not (Test-Path -LiteralPath $path)) { throw "Missing release notes: $path" }
+    $reserved = @($facts.reservations | ForEach-Object { [string]$_.mentionPattern } | Where-Object { $_ })
+    $releases = [Collections.Generic.List[object]]::new()
+    $cur = $null; $cat = $null; $item = $null
+    foreach ($raw in [IO.File]::ReadAllLines($path, [Text.UTF8Encoding]::new($false))) {
+        $line = $raw.TrimEnd()
+        $m = [regex]::Match($line, '^## \[(?<v>\d+\.\d+\.\d+\.\d+)\]\s*-\s*(?<d>\d{4}-\d{2}-\d{2})')
+        if ($m.Success) {
+            if ($releases.Count -ge $count) { break }
+            $cur = [pscustomobject]@{ Version = $m.Groups['v'].Value; Date = $m.Groups['d'].Value; Cats = [ordered]@{} }
+            $releases.Add($cur); $cat = $null; $item = $null
+            continue
+        }
+        if ($line -match '^## ') { $cur = $null; $cat = $null; $item = $null; continue }
+        if (-not $cur) { continue }
+        if ($line -match '^### (?<c>.+)$') {
+            $cat = $Matches['c'].Trim()
+            if (-not $cur.Cats.Contains($cat)) { $cur.Cats[$cat] = [Collections.Generic.List[object]]::new() }
+            $item = $null
+            continue
+        }
+        if (-not $cat) { continue }
+        $b = [regex]::Match($line, '^(?<i>\s*)[-*]\s+(?<t>.+)$')
+        if ($b.Success) {
+            if ($b.Groups['i'].Length -ge 2 -and $item) { $item.Children.Add($b.Groups['t'].Value) }
+            else {
+                $item = [pscustomobject]@{ Text = $b.Groups['t'].Value; Children = [Collections.Generic.List[string]]::new() }
+                $cur.Cats[$cat].Add($item)
+            }
+            continue
+        }
+        if ($line.Trim() -and $item) {
+            if ($item.Children.Count -gt 0) { $item.Children[$item.Children.Count - 1] += ' ' + $line.Trim() }
+            else { $item.Text += ' ' + $line.Trim() }
+        }
+    }
+    foreach ($r in $releases) {
+        foreach ($c in @($r.Cats.Keys)) {
+            $kept = [Collections.Generic.List[object]]::new()
+            foreach ($it in $r.Cats[$c]) {
+                $all = @($it.Text) + @($it.Children)
+                $hit = $false
+                foreach ($rx in $reserved) { foreach ($t in $all) { if ($t -match $rx) { $hit = $true } } }
+                if (-not $hit) { $kept.Add($it) }
+            }
+            $r.Cats[$c] = $kept
+        }
+    }
+    , @($releases)
+}
+
+# Inline Markdown of a changelog entry: escaped first, then **bold**, `code`; a link keeps its text only (the target is a
+# repository path the site does not serve).
+function ChangelogInline([string]$s) {
+    $h = Esc $s
+    $h = [regex]::Replace($h, '\[([^\]]+)\]\([^)]*\)', '$1')
+    $h = [regex]::Replace($h, '`([^`]+)`', '<code>$1</code>')
+    [regex]::Replace($h, '\*\*([^*]+)\*\*', '<strong>$1</strong>')
+}
+
+function RenderWhatsNew {
+    $wn = $copy._whatsNew
+    $releases = ReadReleases ([int]$wn.count)
+    if ($releases.Count -eq 0) { throw 'CHANGELOG.md holds no released section for the What''s new page' }
+    $blocks = foreach ($r in $releases) {
+        $cats = foreach ($c in $r.Cats.Keys) {
+            if ($r.Cats[$c].Count -eq 0) { continue }
+            $lis = foreach ($it in $r.Cats[$c]) {
+                $sub = ''
+                if ($it.Children.Count -gt 0) {
+                    $sub = "`n          <ul>`n" + (($it.Children | ForEach-Object { "            <li>$(ChangelogInline $_)</li>" }) -join "`n") + "`n          </ul>`n        "
+                }
+                "        <li>$(ChangelogInline $it.Text)$sub</li>"
+            }
+            "      <h3>$(Esc $c)</h3>`n      <ul>`n$($lis -join "`n")`n      </ul>"
+        }
+        if (@($cats).Count -eq 0) { continue }
+        "  <section class=`"section`" id=`"v$($r.Version)`">`n    <h2>$($r.Version)<time datetime=`"$($r.Date)`">$($r.Date)</time></h2>`n    <div lang=`"en`" dir=`"ltr`">`n$(@($cats) -join "`n")`n    </div>`n  </section>"
+    }
+    $tail = "  <section class=`"section`">`n    <p class=`"note`">$(InPageSpans $wn.note)</p>`n    <p><a href=`"$Repo/releases`">$(InPageSpans $wn.all)</a></p>`n  </section>"
+    PlainPage 'whats-new.html' $wn.short $wn.desc (InPageSpans $wn.kicker) (InPageSpans $wn.h1) (InPageSpans $wn.lead) ((@($blocks) + $tail) -join "`n`n")
+}
+
 $written = @(); $stale = @(); $compared = 0
 
 # 1. Update/check root index.html marked regions (gen:channels, gen:family)
@@ -867,6 +1162,20 @@ if ($Check) {
     $written += '404.html'
 }
 
+# 5. Render/check the Support and What's new pages (ticket 207 T-5)
+foreach ($page in @(@('support.html', (RenderSupport)), @('whats-new.html', (RenderWhatsNew)))) {
+    $name = $page[0]; $html = ($page[1] -join "`n") -replace "`r`n", "`n"
+    $dest = Join-Path $Root $name
+    if ($Check) {
+        $compared++
+        if (-not (Test-Path $dest)) { $stale += "$name (missing)" }
+        elseif ((Get-Content $dest -Raw -Encoding UTF8) -replace "`r`n", "`n" -ne $html) { $stale += $name }
+        continue
+    }
+    [IO.File]::WriteAllText($dest, $html, (New-Object Text.UTF8Encoding $false))
+    $written += $name
+}
+
 # --- robots.txt + sitemap.xml -------------------------------------------------
 # A redirect stub keeps a retired address alive: noindex AND an immediate meta refresh. It is not a page of the set.
 function Test-RedirectStub([string]$path) {
@@ -901,17 +1210,53 @@ Sitemap: $BaseUrl/sitemap.xml
 "@ -replace "`r`n", "`n"
 }
 
-function RenderSitemap {
-    $urls = @(SiteEntries | ForEach-Object { $_.url })
+# When a page last changed, from git: the committer date of the last commit that touched its file, never the build time
+# (canon PROMOTION section 3). A file that differs from HEAD, or is not tracked yet, changed today. Where git cannot answer
+# (no git, no repository, a shallow clone) the map is empty and the sitemap carries no <lastmod> - a date is never invented.
+$script:LastmodMap = $null     # repo-relative path -> yyyy-MM-dd
+$script:DirtyPages = @{}       # repo-relative path -> $true when the working copy differs from HEAD
+function Get-LastmodMap {
+    if ($null -ne $script:LastmodMap) { return $script:LastmodMap }
+    $map = @{}
+    if (Get-Command git -ErrorAction SilentlyContinue) {
+        Push-Location $Root
+        try {
+            $inside  = (& git rev-parse --is-inside-work-tree 2>$null)
+            $shallow = (& git rev-parse --is-shallow-repository 2>$null)
+            if ($inside -eq 'true' -and $shallow -ne 'true') {
+                $date = $null
+                foreach ($l in @(& git log --format='%x01%cs' --name-only --no-renames -- '*.html' 2>$null)) {
+                    if ($l.Length -gt 0 -and $l[0] -eq [char]1) { $date = $l.Substring(1); continue }
+                    if ($l -and $date -and -not $map.ContainsKey($l)) { $map[$l] = $date }
+                }
+                $today = Get-Date -Format 'yyyy-MM-dd'
+                foreach ($l in @(& git status --porcelain --untracked-files=all -- '*.html' 2>$null)) {
+                    if ($l.Length -le 3) { continue }
+                    $p = $l.Substring(3).Trim().Trim('"')
+                    if ($p -match ' -> ') { $p = ($p -split ' -> ')[-1].Trim('"') }
+                    $map[$p] = $today
+                    $script:DirtyPages[$p] = $true
+                }
+            }
+        } finally { Pop-Location }
+    }
+    $script:LastmodMap = $map
+    $map
+}
 
-    $body = ($urls | ForEach-Object {
-        if ($_ -eq "$BaseUrl/") {
+function RenderSitemap {
+    $entries = @(SiteEntries)
+    $lastmod = Get-LastmodMap
+
+    $body = ($entries | ForEach-Object {
+        $mod = if ($lastmod.ContainsKey($_.path)) { "`n    <lastmod>$($lastmod[$_.path])</lastmod>" } else { '' }
+        if ($_.url -eq "$BaseUrl/") {
             $alts = (($codes | ForEach-Object {
                 '    <xhtml:link rel="alternate" hreflang="{0}" href="{1}"/>' -f $_, (PageUrl $_)
             }) -join "`n")
-            "  <url>`n    <loc>$_</loc>`n$alts`n    <xhtml:link rel=`"alternate`" hreflang=`"x-default`" href=`"$BaseUrl/`"/>`n  </url>"
+            "  <url>`n    <loc>$($_.url)</loc>$mod`n$alts`n    <xhtml:link rel=`"alternate`" hreflang=`"x-default`" href=`"$BaseUrl/`"/>`n  </url>"
         } else {
-            "  <url>`n    <loc>$_</loc>`n  </url>"
+            "  <url>`n    <loc>$($_.url)</loc>$mod`n  </url>"
         }
     }) -join "`n"
 
@@ -932,14 +1277,14 @@ function SiteEntries {
         $title = if ($html -match '(?s)<title>(.*?)</title>') { [Net.WebUtility]::HtmlDecode($Matches[1]) } else { '' }
         $desc  = if ($html -match '(?s)<meta\s+name="description"\s+content="(.*?)"') { [Net.WebUtility]::HtmlDecode($Matches[1]) } else { '' }
         if (-not $title -or -not $desc) { throw "root page $f carries no title or description for the search index" }
-        $entries += [pscustomobject]@{ url = $url; lang = 'en'; title = $title; description = $desc }
+        $entries += [pscustomobject]@{ url = $url; lang = 'en'; title = $title; description = $desc; path = $f }
     }
     foreach ($f in (GuidePages)) {
         $html = Get-Content (Join-Path $Root $f) -Raw -Encoding UTF8
         $title = if ($html -match '(?s)<title>(.*?)</title>') { [Net.WebUtility]::HtmlDecode($Matches[1]) } else { '' }
         $desc  = if ($html -match '(?s)<meta\s+name="description"\s+content="(.*?)"') { [Net.WebUtility]::HtmlDecode($Matches[1]) } else { '' }
         if (-not $title -or -not $desc) { throw "guide page $f carries no title or description for the search index" }
-        $entries += [pscustomobject]@{ url = "$BaseUrl/$f"; lang = 'en'; title = $title; description = $desc }
+        $entries += [pscustomobject]@{ url = "$BaseUrl/$f"; lang = 'en'; title = $title; description = $desc; path = $f }
     }
     # The privacy policy is a required page type (SITE-STRUCTURE section 2) and lives under docs/, so it is not a root page;
     # it carries the same title/description SEO block and is listed explicitly (specification 151, T-3).
@@ -947,10 +1292,10 @@ function SiteEntries {
     $pvTitle = if ($pv -match '(?s)<title>(.*?)</title>') { [Net.WebUtility]::HtmlDecode($Matches[1]) } else { '' }
     $pvDesc  = if ($pv -match '(?s)<meta\s+name="description"\s+content="(.*?)"') { [Net.WebUtility]::HtmlDecode($Matches[1]) } else { '' }
     if (-not $pvTitle -or -not $pvDesc) { throw 'docs/privacy.html carries no title or description for the search index' }
-    $entries += [pscustomobject]@{ url = "$BaseUrl/docs/privacy.html"; lang = 'en'; title = $pvTitle; description = $pvDesc }
+    $entries += [pscustomobject]@{ url = "$BaseUrl/docs/privacy.html"; lang = 'en'; title = $pvTitle; description = $pvDesc; path = 'docs/privacy.html' }
     foreach ($code in ($codes | Where-Object { $_ -ne 'en' })) {
-        $entries += [pscustomobject]@{ url = (PageUrl $code); lang = $code; title = $copy.$code.title; description = $copy.$code.tagline }
-        $entries += [pscustomobject]@{ url = (TrustUrl $code); lang = $code; title = $trust.$code.title; description = $trust.$code.desc }
+        $entries += [pscustomobject]@{ url = (PageUrl $code); lang = $code; title = (PageTitle $copy.$code); description = $copy.$code.tagline; path = "$LangDir/$code/index.html" }
+        $entries += [pscustomobject]@{ url = (TrustUrl $code); lang = $code; title = $trust.$code.title; description = $trust.$code.desc; path = "$LangDir/$code/trust.html" }
     }
     return $entries
 }
@@ -962,6 +1307,26 @@ function RenderSearchIndex {
     } | ConvertTo-Json -Depth 3) -join "`n") -replace "`r`n", "`n") + "`n"
 }
 
+# -Check reads the sitemap's <lastmod> dates with one day of grace: a page committed after midnight of the day the sitemap
+# was generated has a commit date one day later than the date the generator knew, and that is not a stale sitemap. A
+# machine that cannot read git history (no git, a shallow clone) renders no <lastmod> at all, so the dates on disk are
+# set aside there and everything else is still compared.
+function Normalize-SitemapLastmod([string]$onDisk, [string]$expected) {
+    if ((Get-LastmodMap).Count -eq 0) { return [regex]::Replace($onDisk, '(?m)^[ \t]*<lastmod>[^<]*</lastmod>\r?\n', '') }
+    $want = @{}
+    foreach ($m in [regex]::Matches($expected, '<loc>(?<l>[^<]+)</loc>\s*<lastmod>(?<d>[^<]+)</lastmod>')) { $want[$m.Groups['l'].Value] = $m.Groups['d'].Value }
+    [regex]::Replace($onDisk, '(<loc>(?<l>[^<]+)</loc>\s*<lastmod>)(?<d>\d{4}-\d{2}-\d{2})(</lastmod>)', {
+        param($m)
+        $d = $m.Groups['d'].Value
+        $e = $want[$m.Groups['l'].Value]
+        if ($e -and $e -ne $d) {
+            $delta = ([datetime]::ParseExact($e, 'yyyy-MM-dd', $null) - [datetime]::ParseExact($d, 'yyyy-MM-dd', $null)).Days
+            if ($delta -eq 1) { return $m.Groups[1].Value + $e + $m.Groups[4].Value }
+        }
+        $m.Value
+    })
+}
+
 foreach ($pair in @(@('robots.txt', (RenderRobots)), @('sitemap.xml', (RenderSitemap)), @('search-index.json', (RenderSearchIndex)))) {
     $name = $pair[0]; $text = $pair[1]
     $dest = Join-Path $Root $name
@@ -969,6 +1334,7 @@ foreach ($pair in @(@('robots.txt', (RenderRobots)), @('sitemap.xml', (RenderSit
         $compared++
         if (-not (Test-Path $dest)) { $stale += "$name (missing)"; continue }
         $on = (Get-Content $dest -Raw -Encoding UTF8) -replace "`r`n", "`n"
+        if ($name -eq 'sitemap.xml') { $on = Normalize-SitemapLastmod $on $text }
         if ($on -ne $text) { $stale += $name }
         continue
     }
@@ -1119,6 +1485,43 @@ if ($Check) {
     if (-not (Test-Path (Join-Path $Root ($OgImage -replace '/', '\')))) { $problems += "Social assets: the og:image asset $OgImage does not exist" }
     if (-not (Test-Path (Join-Path $Root ($Favicon -replace '/', '\')))) { $problems += "Social assets: the favicon $Favicon does not exist" }
 
+    # 9b. The card is the 1200x630 rendering the pages declare (og:image:width/height are read from the data file, so a
+    # card re-rendered at another size must change the declaration with it), the repository preview is the size and the
+    # weight the data file declares, and both were rendered from the current words and icon (tools/New-SocialCard.ps1).
+    function Get-PngSize([string]$path) {
+        $b = [IO.File]::ReadAllBytes($path)
+        if ($b.Length -lt 24 -or $b[0] -ne 0x89 -or $b[1] -ne 0x50 -or $b[2] -ne 0x4E -or $b[3] -ne 0x47) { return $null }
+        $w = ([int]$b[16] -shl 24) -bor ([int]$b[17] -shl 16) -bor ([int]$b[18] -shl 8) -bor [int]$b[19]
+        $h = ([int]$b[20] -shl 24) -bor ([int]$b[21] -shl 16) -bor ([int]$b[22] -shl 8) -bor [int]$b[23]
+        @($w, $h)
+    }
+    foreach ($s in @($disc.socialCard.sizes)) {
+        $p = Join-Path $Root (([string]$s.file) -replace '/', '\')
+        if (-not (Test-Path -LiteralPath $p)) { $problems += "Social card: $($s.file) does not exist (run tools\New-SocialCard.ps1)"; continue }
+        $dim = Get-PngSize $p
+        if (-not $dim) { $problems += "Social card: $($s.file) is not a PNG"; continue }
+        if ($dim[0] -ne [int]$s.width -or $dim[1] -ne [int]$s.height) { $problems += "Social card: $($s.file) is $($dim[0])x$($dim[1]) and the data file declares $($s.width)x$($s.height)" }
+        if ($s.PSObject.Properties['maxBytes'] -and (Get-Item -LiteralPath $p).Length -ge [int64]$s.maxBytes) { $problems += "Social card: $($s.file) is not under $($s.maxBytes) bytes" }
+    }
+    $cardScript = Join-Path $PSScriptRoot 'New-SocialCard.ps1'
+    if (-not (Test-Path -LiteralPath $cardScript)) { $problems += 'Social card: tools\New-SocialCard.ps1 (the one generator) does not exist' }
+    else {
+        $cardOut = @(& pwsh -NoProfile -File $cardScript -Check 2>&1)
+        if ($LASTEXITCODE -ne 0) { foreach ($l in $cardOut) { $problems += "Social card: $l".TrimEnd() } }
+    }
+
+    # 9c. The mandatory pages (DOCUMENTATION_CONCEPT section 4) are linked from the landing's footer, which is hand-authored
+    # on the root page and rendered on the twelve locale pages.
+    $landingFooterFiles = @(Join-Path $Root 'index.html') + @($codes | Where-Object { $_ -ne 'en' } | ForEach-Object { Join-Path (Join-Path (Join-Path $Root $LangDir) $_) 'index.html' })
+    foreach ($f in $landingFooterFiles) {
+        if (-not (Test-Path $f)) { continue }
+        $fc = Get-Content $f -Raw -Encoding UTF8
+        $rel = $f.Substring($Root.Length).TrimStart('\', '/') -replace '\\', '/'
+        foreach ($target in 'whats-new.html', 'support.html') {
+            if ($fc -notmatch ('href="(?:' + [regex]::Escape($BaseUrl) + '/|\./|\.\./\.\./)?' + [regex]::Escape($target) + '"')) { $problems += "Mandatory pages: $rel does not link $target" }
+        }
+    }
+
     # 11. Every page the HOW TO block links is on disk.
     foreach ($item in $copy._howto.items) {
         if (-not (Test-Path (Join-Path $Root ($item[0] -replace '/', '\')))) {
@@ -1183,7 +1586,7 @@ if ($Check) {
         Exit-Verdict 'Build-SitePages' 1 ($problems -join '; ')
     }
 
-    Exit-Verdict 'Build-SitePages' 0 "$compared render targets and 14 conformance checks passed"
+    Exit-Verdict 'Build-SitePages' 0 "$compared render targets and 16 conformance checks passed"
 }
 
 Write-Host "Wrote $($written.Count) pages:"

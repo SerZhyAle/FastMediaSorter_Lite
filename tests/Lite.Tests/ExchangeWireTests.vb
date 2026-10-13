@@ -33,6 +33,22 @@ Public Class ExchangeWireTests
 
     ' ---------------------------------------------------------------- the envelope table
 
+    <Theory>
+    <InlineData("resource-consumer", True)>
+    <InlineData("resource-producer", False)>
+    Public Sub Enrollment_declares_PIN_support_on_the_wire_only_for_consumers(role As String, supportsPin As Boolean)
+        Dim description As New ExchangeDeviceDescription(New String("D"c, 21) & "A", "Test device",
+            ExchangeWire.ProductWindows, "test", "Windows", New List(Of String) From {role}, "")
+        Dim encoded As Byte() = ExchangeEnvelopeCodec.Encode(ExchangeMessages.Enroll("alice", "synthetic", "", description, 30))
+        Using document As System.Text.Json.JsonDocument = System.Text.Json.JsonDocument.Parse(encoded)
+            Dim capabilities As System.Text.Json.JsonElement
+            Assert.Equal(supportsPin, document.RootElement.TryGetProperty("capabilities", capabilities))
+            If supportsPin Then Assert.Equal("pin-v1", capabilities(0).GetString())
+        End Using
+        Dim decoded As ExchangeEnvelope = ExchangeEnvelopeCodec.Decode(encoded)
+        Assert.Equal(If(supportsPin, New String() {"pin-v1"}, Array.Empty(Of String)()), decoded.TextList("capabilities").ToArray())
+    End Sub
+
     ''' <summary>A value for every member kind, so every type of the table can be built and round-tripped.</summary>
     Private Shared Function Sample(typeName As String) As ExchangeEnvelope
         Dim env As New ExchangeEnvelope(typeName)

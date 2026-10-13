@@ -84,6 +84,108 @@
     }
   },
 
+  "_support": {
+    "_comment": "Copy of the generated Support page, support.html (ticket 207 T-5, Q207-3; DOCUMENTATION_CONCEPT section 4). In-page trilingual (en, ru, ua) like the not-found page. {email} becomes the contact link (_contact.email, SITE-FAMILY-MAP rule 3). The wording of 'What to expect' is the author's to confirm: it promises nothing but an honest absence of promise.",
+    "short": { "en": "Support", "ru": "Поддержка", "ua": "Підтримка" },
+    "desc": {
+      "en": "How to get help with Fast Media Sorter & Sharing for Windows: the issue tracker, e-mail, what to include and what to expect.",
+      "ru": "Как получить помощь по Fast Media Sorter & Sharing for Windows: трекер задач, почта, что приложить и чего ждать.",
+      "ua": "Як отримати допомогу щодо Fast Media Sorter & Sharing for Windows: трекер задач, пошта, що додати та чого чекати."
+    },
+    "kicker": { "en": "Support", "ru": "Поддержка", "ua": "Підтримка" },
+    "h1": { "en": "Getting help", "ru": "Как получить помощь", "ua": "Як отримати допомогу" },
+    "lead": {
+      "en": "Fast Media Sorter & Sharing for Windows is made and supported by one person. Questions, problems and ideas are welcome.",
+      "ru": "Fast Media Sorter & Sharing for Windows делает и поддерживает один человек. Вопросы, сообщения о проблемах и идеи приветствуются.",
+      "ua": "Fast Media Sorter & Sharing for Windows створює й підтримує одна людина. Запитання, повідомлення про проблеми та ідеї вітаються."
+    },
+    "sections": [
+      {
+        "id": "report",
+        "h": { "en": "Report a problem or ask a question", "ru": "Сообщить о проблеме или задать вопрос", "ua": "Повідомити про проблему або поставити запитання" },
+        "p": {
+          "en": "The issue tracker is the best place: a report there stays visible to everyone who meets the same problem, and the answer helps them too.",
+          "ru": "Лучше всего - трекер задач: обращение там видно всем, кто столкнулся с тем же, и ответ помогает и им.",
+          "ua": "Найкраще - трекер задач: звернення там бачать усі, хто зіткнувся з тим самим, і відповідь допомагає й їм."
+        },
+        "links": [
+          { "url": "https://github.com/SerZhyAle/FastMediaSorter_Lite/issues", "label": { "en": "Open the issue tracker", "ru": "Открыть трекер задач", "ua": "Відкрити трекер задач" } }
+        ]
+      },
+      {
+        "id": "email",
+        "h": { "en": "Write by e-mail", "ru": "Написать по почте", "ua": "Написати поштою" },
+        "p": {
+          "en": "If you would rather not use GitHub, write to {email}.",
+          "ru": "Если GitHub вам не подходит, пишите на {email}.",
+          "ua": "Якщо GitHub вам не підходить, пишіть на {email}."
+        }
+      },
+      {
+        "id": "include",
+        "h": { "en": "What to include", "ru": "Что указать", "ua": "Що вказати" },
+        "items": {
+          "en": [
+            "Your Windows version, and whether you run the 64-bit program or the 32-bit fallback.",
+            "What you did, what you expected and what happened instead; a screenshot helps.",
+            "The log: on the About page of the settings, the \"Send the logs to the author\" button packs the program's log and opens your mail program with the archive attached. The program never sends anything itself - the message leaves when you press Send."
+          ],
+          "ru": [
+            "Версию Windows и какую программу вы запускаете: 64-разрядную или 32-разрядную резервную.",
+            "Что вы делали, чего ждали и что получилось; снимок экрана поможет.",
+            "Журнал: на странице «О программе» в настройках кнопка «Отправить логи автору» упаковывает журнал программы и открывает вашу почтовую программу с архивом во вложении. Сама программа ничего не отправляет - письмо уходит, когда вы нажмёте «Отправить»."
+          ],
+          "ua": [
+            "Версію Windows і яку програму ви запускаєте: 64-розрядну чи 32-розрядну резервну.",
+            "Що ви робили, чого чекали і що вийшло; знімок екрана допоможе.",
+            "Журнал: на сторінці «Про програму» в налаштуваннях кнопка «Надіслати журнали автору» пакує журнал програми та відкриває вашу поштову програму з архівом у вкладенні. Сама програма нічого не надсилає - лист іде, коли ви натиснете «Надіслати»."
+          ]
+        }
+      },
+      {
+        "id": "before",
+        "h": { "en": "Before you write", "ru": "Прежде чем писать", "ua": "Перш ніж писати" },
+        "links": [
+          { "url": "https://serzhyale.github.io/FastMediaSorter_Lite/trust.html", "label": { "en": "Windows warns about an unknown publisher (SmartScreen)", "ru": "Windows предупреждает о неизвестном издателе (SmartScreen)", "ua": "Windows попереджає про невідомого видавця (SmartScreen)" } },
+          { "url": "https://serzhyale.github.io/FastMediaSorter_Lite/topics.html", "label": { "en": "All guides, by task", "ru": "Все руководства по задачам", "ua": "Усі посібники за завданнями" } },
+          { "url": "https://serzhyale.github.io/FastMediaSorter_Lite/whats-new.html", "label": { "en": "What's new in the latest versions", "ru": "Что нового в последних версиях", "ua": "Що нового в останніх версіях" } },
+          { "url": "https://serzhyale.github.io/FastMediaSorter_Lite/docs/privacy.html", "label": { "en": "Privacy", "ru": "Конфиденциальность", "ua": "Конфіденційність" } }
+        ]
+      },
+      {
+        "id": "expect",
+        "h": { "en": "What to expect", "ru": "Чего ждать", "ua": "Чого чекати" },
+        "p": {
+          "en": "This is a one-person project: there is no support contract and no promised response time. Messages are read in the order they arrive, and a report with the steps to repeat the problem is answered fastest.",
+          "ru": "Это проект одного человека: договора поддержки и обещанного срока ответа нет. Сообщения читаются по мере поступления, а обращение с шагами для воспроизведения проблемы обрабатывается быстрее всего.",
+          "ua": "Це проєкт однієї людини: договору підтримки й обіцяного терміну відповіді немає. Повідомлення читаються в міру надходження, а звернення з кроками для відтворення проблеми опрацьовується найшвидше."
+        }
+      }
+    ]
+  },
+  "_whatsNew": {
+    "_comment": "Chrome copy of the generated What's new page, whats-new.html (ticket 207 T-5, Q207-2; closes Q149-1). The entries themselves are not here: tools/Build-SitePages.ps1 renders the latest 'count' released sections of CHANGELOG.md, in English, which is the language the release notes are written and published in. [Unreleased] is never rendered. A top-level entry that names the reserved door (tools/site-facts.json reservations) is left out, so this page never says what POSITIONING.md keeps unsaid.",
+    "count": 10,
+    "short": { "en": "What's new", "ru": "Что нового", "ua": "Що нового" },
+    "desc": {
+      "en": "What each recent version of Fast Media Sorter & Sharing for Windows added, changed and fixed: the release notes of the latest ten versions.",
+      "ru": "Что добавили, изменили и исправили последние версии Fast Media Sorter & Sharing for Windows: заметки о выпуске десяти последних версий.",
+      "ua": "Що додали, змінили й виправили останні версії Fast Media Sorter & Sharing for Windows: нотатки про випуск десяти останніх версій."
+    },
+    "kicker": { "en": "Release notes", "ru": "Заметки о выпусках", "ua": "Нотатки про випуски" },
+    "h1": { "en": "What's new", "ru": "Что нового", "ua": "Що нового" },
+    "lead": {
+      "en": "The latest versions, newest first: what each one added, changed and fixed.",
+      "ru": "Последние версии, новые сверху: что добавлено, изменено и исправлено в каждой.",
+      "ua": "Останні версії, нові згори: що додано, змінено й виправлено в кожній."
+    },
+    "note": {
+      "en": "The release notes are written in English. Every version, with its installers, is on the GitHub releases page.",
+      "ru": "Заметки о выпусках написаны по-английски. Все версии с установщиками - на странице релизов GitHub.",
+      "ua": "Нотатки про випуски написано англійською. Усі версії з інсталяторами - на сторінці релізів GitHub."
+    },
+    "all": { "en": "All releases on GitHub", "ru": "Все релизы на GitHub", "ua": "Усі релізи на GitHub" }
+  },
   "_channels": {
     "store": {
       "url": "https://apps.microsoft.com/detail/9N59Z73WZ53C",
@@ -197,6 +299,8 @@
   "en": {
     "dir": "ltr", "machine": false, "name": "English",
     "title": "Fast Media Sorter & Sharing for Windows",
+    "pageTitle": "Photo & video sorting",
+    "ogAlt": "Fast Media Sorter & Sharing for Windows: sort photos and videos with one key per file",
     "tagline": "Browse huge folders of photos and videos at speed, then move, copy, rename or delete each file with a single key.",
     "sharing": "«Sharing» in the name means giving your media to someone else: your Android phone, another copy of the program or any SFTP client. It stays off until you switch it on.",
     "features": [
@@ -243,6 +347,8 @@
   "ru": {
     "dir": "ltr", "machine": false, "name": "Русский",
     "title": "Fast Media Sorter & Sharing for Windows",
+    "pageTitle": "Сортировка фото и видео",
+    "ogAlt": "Fast Media Sorter & Sharing for Windows: сортируйте фото и видео одной клавишей на файл",
     "tagline": "Быстро листайте огромные папки с фото и видео и раскладывайте файлы по каталогам одним нажатием клавиши.",
     "sharing": "«Sharing» в названии - это передача ваших медиафайлов другому: телефону с Android, другой копии программы или любому SFTP-клиенту. Пока вы не включите, она выключена.",
     "features": [
@@ -289,6 +395,8 @@
   "uk": {
     "dir": "ltr", "machine": false, "name": "Українська",
     "title": "Fast Media Sorter & Sharing for Windows",
+    "pageTitle": "Сортування фото та відео",
+    "ogAlt": "Fast Media Sorter & Sharing for Windows: сортуйте фото та відео одним натисканням клавіші на файл",
     "tagline": "Швидко гортайте великі теки з фото та відео і розкладайте файли по каталогах одним натисканням клавіші.",
     "sharing": "«Sharing» у назві - це передача ваших медіафайлів комусь іншому: телефону з Android, іншій копії програми або будь-якому SFTP-клієнту. Доки ви не ввімкнете, вона вимкнена.",
     "features": [
@@ -335,6 +443,8 @@
   "de": {
     "dir": "ltr", "machine": true, "name": "Deutsch",
     "title": "Fast Media Sorter & Sharing for Windows",
+    "pageTitle": "Fotos & Videos sortieren",
+    "ogAlt": "Fast Media Sorter & Sharing for Windows: Fotos und Videos mit einer Taste pro Datei sortieren",
     "tagline": "Blättern Sie im Tempo durch riesige Foto- und Videoordner und verschieben, kopieren, benennen oder löschen Sie jede Datei mit einer einzigen Taste.",
     "sharing": "«Sharing» im Namen heißt: Ihre Medien an jemand anderen weitergeben - an Ihr Android-Telefon, eine weitere Kopie des Programms oder einen beliebigen SFTP-Client. Es bleibt aus, bis Sie es einschalten.",
     "features": [
@@ -381,6 +491,8 @@
   "it": {
     "dir": "ltr", "machine": true, "name": "Italiano",
     "title": "Fast Media Sorter & Sharing for Windows",
+    "pageTitle": "Ordina foto e video",
+    "ogAlt": "Fast Media Sorter & Sharing for Windows: ordina foto e video con un tasto per file",
     "tagline": "Sfoglia velocemente cartelle enormi di foto e video e sposta, copia, rinomina o elimina ogni file con un solo tasto.",
     "sharing": "«Sharing» nel nome significa dare i tuoi file multimediali a qualcun altro: il tuo telefono Android, un'altra copia del programma o un qualsiasi client SFTP. Resta disattivato finché non lo attivi.",
     "features": [
@@ -427,6 +539,8 @@
   "es": {
     "dir": "ltr", "machine": true, "name": "Español",
     "title": "Fast Media Sorter & Sharing for Windows",
+    "pageTitle": "Ordena fotos y vídeos",
+    "ogAlt": "Fast Media Sorter & Sharing for Windows: ordena fotos y vídeos con una tecla por archivo",
     "tagline": "Recorra a toda velocidad carpetas enormes de fotos y vídeos y mueva, copie, renombre o elimine cada archivo con una sola tecla.",
     "sharing": "«Sharing» en el nombre significa entregar sus archivos multimedia a otra persona: su teléfono Android, otra copia del programa o cualquier cliente SFTP. Permanece desactivado hasta que lo active.",
     "features": [
@@ -473,6 +587,8 @@
   "fr": {
     "dir": "ltr", "machine": true, "name": "Français",
     "title": "Fast Media Sorter & Sharing for Windows",
+    "pageTitle": "Triez photos et vidéos",
+    "ogAlt": "Fast Media Sorter & Sharing for Windows : triez photos et vidéos avec une touche par fichier",
     "tagline": "Parcourez à toute vitesse d'énormes dossiers de photos et de vidéos, puis déplacez, copiez, renommez ou supprimez chaque fichier d'une seule touche.",
     "sharing": "«Sharing» dans le nom signifie donner vos médias à quelqu'un d'autre : votre téléphone Android, une autre copie du programme ou n'importe quel client SFTP. Désactivé tant que vous ne l'activez pas.",
     "features": [
@@ -519,6 +635,8 @@
   "pt": {
     "dir": "ltr", "machine": true, "name": "Português",
     "title": "Fast Media Sorter & Sharing for Windows",
+    "pageTitle": "Organize fotos e vídeos",
+    "ogAlt": "Fast Media Sorter & Sharing for Windows: organize fotos e vídeos com uma tecla por arquivo",
     "tagline": "Percorra rapidamente pastas enormes de fotos e vídeos e mova, copie, renomeie ou exclua cada arquivo com uma única tecla.",
     "sharing": "«Sharing» no nome significa entregar suas mídias a outra pessoa: seu telefone Android, outra cópia do programa ou qualquer cliente SFTP. Fica desligado até você ligar.",
     "features": [
@@ -565,6 +683,8 @@
   "ar": {
     "dir": "rtl", "machine": true, "name": "العربية",
     "title": "Fast Media Sorter & Sharing for Windows",
+    "pageTitle": "فرز الصور والفيديو",
+    "ogAlt": "Fast Media Sorter & Sharing for Windows: فرز الصور والفيديو بمفتاح واحد لكل ملف",
     "tagline": "تصفّح مجلدات ضخمة من الصور والفيديو بسرعة، ثم انقل أو انسخ أو أعد تسمية أو احذف كل ملف بمفتاح واحد.",
     "sharing": "«Sharing» في الاسم تعني تسليم وسائطك إلى طرف آخر: هاتف Android الخاص بك أو نسخة أخرى من البرنامج أو أي عميل SFTP. يبقى معطّلًا حتى تفعّله بنفسك.",
     "features": [
@@ -611,6 +731,8 @@
   "hi": {
     "dir": "ltr", "machine": true, "name": "हिन्दी",
     "title": "Fast Media Sorter & Sharing for Windows",
+    "pageTitle": "फ़ोटो और वीडियो छाँटें",
+    "ogAlt": "Fast Media Sorter & Sharing for Windows: हर फ़ाइल के लिए एक कुंजी से फ़ोटो और वीडियो छाँटें",
     "tagline": "फ़ोटो और वीडियो के विशाल फ़ोल्डर तेज़ी से देखें और हर फ़ाइल को एक ही कुंजी से ले जाएँ, कॉपी करें, नाम बदलें या हटाएँ।",
     "sharing": "नाम में «Sharing» का मतलब है अपनी मीडिया किसी और को देना: आपका Android फ़ोन, प्रोग्राम की कोई दूसरी प्रति, या कोई भी SFTP क्लाइंट। जब तक आप चालू न करें, यह बंद रहता है।",
     "features": [
@@ -657,6 +779,8 @@
   "bn": {
     "dir": "ltr", "machine": true, "name": "বাংলা",
     "title": "Fast Media Sorter & Sharing for Windows",
+    "pageTitle": "ছবি ও ভিডিও সাজান",
+    "ogAlt": "Fast Media Sorter & Sharing for Windows: প্রতিটি ফাইলের জন্য এক কী দিয়ে ছবি ও ভিডিও সাজান",
     "tagline": "ছবি ও ভিডিওর বিশাল ফোল্ডার দ্রুত ঘুরে দেখুন এবং প্রতিটি ফাইল এক কী চেপেই সরান, কপি করুন, নাম বদলান বা মুছুন।",
     "sharing": "নামের «Sharing»-এর অর্থ আপনার মিডিয়া অন্য কাউকে দেওয়া: আপনার Android ফোন, প্রোগ্রামের অন্য কোনো কপি, বা যেকোনো SFTP ক্লায়েন্ট। না চালানো পর্যন্ত এটি বন্ধ থাকে।",
     "features": [
@@ -703,6 +827,8 @@
   "ur": {
     "dir": "rtl", "machine": true, "name": "اردو",
     "title": "Fast Media Sorter & Sharing for Windows",
+    "pageTitle": "تصاویر اور ویڈیو ترتیب دیں",
+    "ogAlt": "Fast Media Sorter & Sharing for Windows: ہر فائل کے لیے ایک کلید سے تصاویر اور ویڈیو ترتیب دیں",
     "tagline": "تصاویر اور ویڈیو کے بڑے فولڈرز تیزی سے دیکھیں اور ہر فائل کو ایک ہی کلید سے منتقل، نقل، نام تبدیل یا حذف کریں۔",
     "sharing": "نام میں «Sharing» کا مطلب ہے اپنا میڈیا کسی اور کو دینا: آپ کا Android فون، پروگرام کی کوئی دوسری کاپی، یا کوئی بھی SFTP کلائنٹ۔ جب تک آپ آن نہ کریں، یہ بند رہتا ہے۔",
     "features": [
@@ -749,6 +875,8 @@
   "zh": {
     "dir": "ltr", "machine": true, "name": "中文",
     "title": "Fast Media Sorter & Sharing for Windows",
+    "pageTitle": "整理照片和视频",
+    "ogAlt": "Fast Media Sorter & Sharing for Windows：用一个按键整理每个照片和视频文件",
     "tagline": "飞快地翻阅海量照片和视频文件夹，一个按键就能移动、复制、重命名或删除每个文件。",
     "sharing": "名称中的「Sharing」指把你的媒体交给别人：你的 Android 手机、本程序的另一份副本，或任何 SFTP 客户端。你不开启它，它就保持关闭。",
     "features": [

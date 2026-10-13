@@ -3,6 +3,7 @@
 {"path":"tools/product-naming-allow.jsonl","pattern":".","reason":"The allow-list quotes the forms it permits."}
 {"path":"docs/guides/PRODUCT_NAMING.md","pattern":"LITE|Lite|for Windows|Exchange Server","reason":"The standard defines the forbidden forms and the frozen identifiers that still carry them."}
 {"path":"CHANGELOG.md","pattern":"FastMediaSorter LITE|for Windows","reason":"Past entries are history, and the Unreleased entry names the old product and the frozen package name once."}
+{"path":"whats-new.html","pattern":"FastMediaSorter LITE|Fast Media Sorter for Windows","reason":"Generated from the released sections of CHANGELOG.md (Build-SitePages.ps1, ticket 207): past entries are history and keep the name they were written with, the same allowance CHANGELOG.md has; an entry may also state the frozen Add/Remove Programs and winget name."}
 {"path":"README.md","pattern":"FastMediaSorter LITE","reason":"States once that Add/Remove Programs and winget keep the frozen package name FastMediaSorter LITE."}
 {"path":"README_RU.md","pattern":"FastMediaSorter LITE","reason":"Same statement as README.md, in Russian."}
 {"path":"README_UK.md","pattern":"FastMediaSorter LITE","reason":"Same statement as README.md, in Ukrainian."}

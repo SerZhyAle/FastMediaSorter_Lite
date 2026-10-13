@@ -153,12 +153,14 @@ Partial Public Class Main_Form
     Private Sub ShowEmptyState()
         empty_State_Lines = EmptyStateRules.Lines()
         If panel_Media IsNot Nothing Then panel_Media.Invalidate()
+        UpdateWelcomeInvite()
     End Sub
 
     Private Sub HideEmptyState()
         If empty_State_Lines.Length = 0 Then Return
         empty_State_Lines = Array.Empty(Of String)()
         If panel_Media IsNot Nothing Then panel_Media.Invalidate()
+        UpdateWelcomeInvite()
     End Sub
 
     ''' <summary>Paints the empty state on panel_Media - only while nothing is shown on it: a visible child (a
@@ -166,9 +168,12 @@ Partial Public Class Main_Form
     Private Sub PaintEmptyState(sender As Object, e As PaintEventArgs)
         If empty_State_Lines.Length = 0 OrElse panel_Media Is Nothing Then Return
         For Each child As Control In panel_Media.Controls
-            If child.Visible Then Return
+            If child.Visible AndAlso child IsNot welcome_Invite_Button Then Return
         Next
         Dim area As Rectangle = Rectangle.Inflate(panel_Media.ClientRectangle, -panel_Media.LogicalToDeviceUnits(24), -panel_Media.LogicalToDeviceUnits(24))
+        If welcome_Invite_Button IsNot Nothing AndAlso welcome_Invite_Button.Visible Then
+            area.Height = Math.Min(area.Height, welcome_Invite_Button.Top - panel_Media.LogicalToDeviceUnits(12) - area.Top)
+        End If
         If area.Width <= 0 OrElse area.Height <= 0 Then Return
         Dim ink As Color = ChromeTheme.ContrastingText(panel_Media.BackColor)
         Dim family As String = If(Localization.FontFamily(), Font.FontFamily.Name)

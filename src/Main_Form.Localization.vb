@@ -79,6 +79,9 @@ Partial Public Class Main_Form
         UpdateLanguageButtonCaption()
         ApplyScriptFont()
         ApplyRightToLeftText()
+#If Not NETFRAMEWORK Then
+        UpdateWelcomeInvite()
+#End If
 
         Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " n0030: UI language = " & Localization.CurrentCode)
 
@@ -184,25 +187,34 @@ Partial Public Class Main_Form
             End Try
         End If
 
-        Dim previous As Font = script_Font
+        ' WinForms may keep the previous Font when the replacement compares equal (Arabic and Urdu use
+        ' the same family). Keep each distinct font alive until the controls are disposed.
+        For Each owned As Font In script_Fonts
+            If owned.Equals(target) Then
+                target.Dispose()
+                target = owned
+                Exit For
+            End If
+        Next
         ' Keep ownership even if assigning a control font fails part way through.
         script_Font = target
-        script_Fonts.Add(target)
+        If Not script_Fonts.Contains(target) Then script_Fonts.Add(target)
         For Each c As Control In LocalizedTextControls()
             If c IsNot Nothing Then c.Font = target
         Next
-        If previous IsNot Nothing Then
-            previous.Dispose()
-            script_Fonts.Remove(previous)
-        End If
     End Sub
 
     ''' <summary>Controls whose caption is translated and therefore may need a script font.</summary>
     Private Function LocalizedTextControls() As Control()
-        Return New Control() {
+        Dim controls As Control() = {
             lbl_Folder, lbl_Help_Info, lbl_Status, lbl_Current_File, lbl_File_Number,
             btn_Prev_File, btn_Next_File, bt_Delete, btn_Move_Table, btn_Rename,
             btn_Select_Folder, btn_choose_file, chkbox_Top_Most, cmbox_Sort, cmbox_Media_Folder}
+#If Not NETFRAMEWORK Then
+        ReDim Preserve controls(controls.Length)
+        controls(controls.Length - 1) = welcome_Invite_Button
+#End If
+        Return controls
     End Function
 
     ''' <summary>

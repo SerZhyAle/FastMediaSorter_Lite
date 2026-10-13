@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark" data-lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script>
+(function(){try{
+  var t=localStorage.getItem('sza-theme');
+  if(t!=='dark'&&t!=='light')t=matchMedia('(prefers-color-scheme: light)').matches?'light':'dark';
+  document.documentElement.setAttribute('data-theme',t);
+  var l=localStorage.getItem('sza-lang');
+  if(l==='uk')l='ua';
+  if(l!=='ru'&&l!=='en'&&l!=='ua'){var n=(navigator.language||'en').toLowerCase();l=n.indexOf('ru')==0?'ru':n.indexOf('uk')==0?'ua':'en';}
+  document.documentElement.setAttribute('data-lang',l);
+}catch(e){}})();
+</script>
+<title>Support | Fast Media Sorter &amp; Sharing</title>
+<meta name="description" content="How to get help with Fast Media Sorter &amp; Sharing for Windows: the issue tracker, e-mail, what to include and what to expect.">
+<link rel="canonical" href="https://serzhyale.github.io/FastMediaSorter_Lite/support.html">
+<link rel="alternate" hreflang="x-default" href="https://serzhyale.github.io/FastMediaSorter_Lite/support.html">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Support | Fast Media Sorter &amp; Sharing">
+<meta property="og:description" content="How to get help with Fast Media Sorter &amp; Sharing for Windows: the issue tracker, e-mail, what to include and what to expect.">
+<meta property="og:url" content="https://serzhyale.github.io/FastMediaSorter_Lite/support.html">
+<meta property="og:image" content="https://serzhyale.github.io/FastMediaSorter_Lite/assets/social-card-1200x630.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Fast Media Sorter &amp; Sharing for Windows: sort photos and videos with one key per file">
+<meta property="og:site_name" content="Fast Media Sorter &amp; Sharing">
+<meta property="og:locale" content="en">
+<meta property="og:locale:alternate" content="ru">
+<meta property="og:locale:alternate" content="uk">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Support | Fast Media Sorter &amp; Sharing">
+<meta name="twitter:description" content="How to get help with Fast Media Sorter &amp; Sharing for Windows: the issue tracker, e-mail, what to include and what to expect.">
+<meta name="twitter:image" content="https://serzhyale.github.io/FastMediaSorter_Lite/assets/social-card-1200x630.png">
+<meta name="twitter:image:alt" content="Fast Media Sorter &amp; Sharing for Windows: sort photos and videos with one key per file">
+<meta name="theme-color" content="#0a0f0a">
+<link rel="icon" href="assets/icons/Fast_Media_Sorter.ico" sizes="any">
+<link rel="apple-touch-icon" href="assets/icons/store-icon-256.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/sza-kit.css">
+<link rel="stylesheet" href="assets/fms-site.css">
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"WebPage","headline":"Support | Fast Media Sorter & Sharing","description":"How to get help with Fast Media Sorter & Sharing for Windows: the issue tracker, e-mail, what to include and what to expect.","url":"https://serzhyale.github.io/FastMediaSorter_Lite/support.html","inLanguage":"en","image":"https://serzhyale.github.io/FastMediaSorter_Lite/assets/social-card-1200x630.png","isPartOf":{"@type":"WebSite","name":"Fast Media Sorter & Sharing for Windows","url":"https://serzhyale.github.io/FastMediaSorter_Lite/"},"author":{"@type":"Person","name":"SerZhyAle"}}</script>
+<style>
+html[data-lang="ru"] [data-l]:not([data-l="ru"]),html[data-lang="en"] [data-l]:not([data-l="en"]),html[data-lang="ua"] [data-l]:not([data-l="ua"]){display:none}
+.site-header>.brand{margin-right:auto}.hero{text-align:left;padding:1.5rem 0 .8rem}.hero .lead{margin:0}
+.section h2{font-size:1.2rem;margin:0 0 .6rem}.section h3{font-size:1rem;margin:1rem 0 .4rem}.section ul{margin:0 0 .8rem;padding-left:1.3rem}.section li{margin:0 0 .5rem}
+.section time{color:var(--text-2);font-size:.9rem;font-weight:400;margin-left:.6rem}
+</style>
+</head>
+<body>
+<a class="skip-link" href="#main"><span data-l="en">Skip to main content</span><span data-l="ru">Перейти к основному содержимому</span><span data-l="ua">Перейти до основного вмісту</span></a>
+<header class="site-header">
+  <span id="site-nav-label" class="sr-only"><span data-l="en">Main navigation</span><span data-l="ru">Основная навигация</span><span data-l="ua">Основна навігація</span></span>
+  <nav class="site-nav" aria-labelledby="site-nav-label">
+  <a class="brand" href="https://serzhyale.github.io/FastMediaSorter_Lite/" aria-label="Fast Media Sorter &amp; Sharing for Windows"><span class="brand-mark"><img src="assets/icons/Fast_Media_Sorter.ico" alt="" width="24" height="24"></span>Fast Media Sorter &amp; Sharing for Windows</a>
+  <div class="seg" role="group" aria-label="Language">
+    <button data-setlang="ru">RU</button><button data-setlang="en" aria-pressed="true">EN</button><button data-setlang="ua">UA</button>
+  </div>
+  <button class="theme-btn" id="themeBtn" aria-label="Switch theme">◐</button>
+  <a class="btn btn-primary btn-sm" href="https://serzhyale.github.io/FastMediaSorter_Lite/#get"><span data-l="en">Download</span><span data-l="ru">Скачать</span><span data-l="ua">Завантажити</span></a>
+  </nav>
+</header>
+
+<main class="container" id="main" tabindex="-1">
+  <section class="hero">
+    <span class="kicker"><span data-l="en">Support</span><span data-l="ru">Поддержка</span><span data-l="ua">Підтримка</span></span>
+    <h1><span data-l="en">Getting help</span><span data-l="ru">Как получить помощь</span><span data-l="ua">Як отримати допомогу</span></h1>
+    <p class="lead"><span data-l="en">Fast Media Sorter &amp; Sharing for Windows is made and supported by one person. Questions, problems and ideas are welcome.</span><span data-l="ru">Fast Media Sorter &amp; Sharing for Windows делает и поддерживает один человек. Вопросы, сообщения о проблемах и идеи приветствуются.</span><span data-l="ua">Fast Media Sorter &amp; Sharing for Windows створює й підтримує одна людина. Запитання, повідомлення про проблеми та ідеї вітаються.</span></p>
+  </section>
+
+  <section class="section" id="report">
+    <h2><span data-l="en">Report a problem or ask a question</span><span data-l="ru">Сообщить о проблеме или задать вопрос</span><span data-l="ua">Повідомити про проблему або поставити запитання</span></h2>
+    <p><span data-l="en">The issue tracker is the best place: a report there stays visible to everyone who meets the same problem, and the answer helps them too.</span><span data-l="ru">Лучше всего - трекер задач: обращение там видно всем, кто столкнулся с тем же, и ответ помогает и им.</span><span data-l="ua">Найкраще - трекер задач: звернення там бачать усі, хто зіткнувся з тим самим, і відповідь допомагає й їм.</span></p>
+    <ul>
+      <li><a href="https://github.com/SerZhyAle/FastMediaSorter_Lite/issues"><span data-l="en">Open the issue tracker</span><span data-l="ru">Открыть трекер задач</span><span data-l="ua">Відкрити трекер задач</span></a></li>
+    </ul>
+  </section>
+
+  <section class="section" id="email">
+    <h2><span data-l="en">Write by e-mail</span><span data-l="ru">Написать по почте</span><span data-l="ua">Написати поштою</span></h2>
+    <p><span data-l="en">If you would rather not use GitHub, write to <a href="mailto:sza@ukr.net">sza@ukr.net</a>.</span><span data-l="ru">Если GitHub вам не подходит, пишите на <a href="mailto:sza@ukr.net">sza@ukr.net</a>.</span><span data-l="ua">Якщо GitHub вам не підходить, пишіть на <a href="mailto:sza@ukr.net">sza@ukr.net</a>.</span></p>
+  </section>
+
+  <section class="section" id="include">
+    <h2><span data-l="en">What to include</span><span data-l="ru">Что указать</span><span data-l="ua">Що вказати</span></h2>
+    <ul>
+      <li><span data-l="en">Your Windows version, and whether you run the 64-bit program or the 32-bit fallback.</span><span data-l="ru">Версию Windows и какую программу вы запускаете: 64-разрядную или 32-разрядную резервную.</span><span data-l="ua">Версію Windows і яку програму ви запускаєте: 64-розрядну чи 32-розрядну резервну.</span></li>
+      <li><span data-l="en">What you did, what you expected and what happened instead; a screenshot helps.</span><span data-l="ru">Что вы делали, чего ждали и что получилось; снимок экрана поможет.</span><span data-l="ua">Що ви робили, чого чекали і що вийшло; знімок екрана допоможе.</span></li>
+      <li><span data-l="en">The log: on the About page of the settings, the &quot;Send the logs to the author&quot; button packs the program's log and opens your mail program with the archive attached. The program never sends anything itself - the message leaves when you press Send.</span><span data-l="ru">Журнал: на странице «О программе» в настройках кнопка «Отправить логи автору» упаковывает журнал программы и открывает вашу почтовую программу с архивом во вложении. Сама программа ничего не отправляет - письмо уходит, когда вы нажмёте «Отправить».</span><span data-l="ua">Журнал: на сторінці «Про програму» в налаштуваннях кнопка «Надіслати журнали автору» пакує журнал програми та відкриває вашу поштову програму з архівом у вкладенні. Сама програма нічого не надсилає - лист іде, коли ви натиснете «Надіслати».</span></li>
+    </ul>
+  </section>
+
+  <section class="section" id="before">
+    <h2><span data-l="en">Before you write</span><span data-l="ru">Прежде чем писать</span><span data-l="ua">Перш ніж писати</span></h2>
+    <ul>
+      <li><a href="https://serzhyale.github.io/FastMediaSorter_Lite/trust.html"><span data-l="en">Windows warns about an unknown publisher (SmartScreen)</span><span data-l="ru">Windows предупреждает о неизвестном издателе (SmartScreen)</span><span data-l="ua">Windows попереджає про невідомого видавця (SmartScreen)</span></a></li>
+      <li><a href="https://serzhyale.github.io/FastMediaSorter_Lite/topics.html"><span data-l="en">All guides, by task</span><span data-l="ru">Все руководства по задачам</span><span data-l="ua">Усі посібники за завданнями</span></a></li>
+      <li><a href="https://serzhyale.github.io/FastMediaSorter_Lite/whats-new.html"><span data-l="en">What's new in the latest versions</span><span data-l="ru">Что нового в последних версиях</span><span data-l="ua">Що нового в останніх версіях</span></a></li>
+      <li><a href="https://serzhyale.github.io/FastMediaSorter_Lite/docs/privacy.html"><span data-l="en">Privacy</span><span data-l="ru">Конфиденциальность</span><span data-l="ua">Конфіденційність</span></a></li>
+    </ul>
+  </section>
+
+  <section class="section" id="expect">
+    <h2><span data-l="en">What to expect</span><span data-l="ru">Чего ждать</span><span data-l="ua">Чого чекати</span></h2>
+    <p><span data-l="en">This is a one-person project: there is no support contract and no promised response time. Messages are read in the order they arrive, and a report with the steps to repeat the problem is answered fastest.</span><span data-l="ru">Это проект одного человека: договора поддержки и обещанного срока ответа нет. Сообщения читаются по мере поступления, а обращение с шагами для воспроизведения проблемы обрабатывается быстрее всего.</span><span data-l="ua">Це проєкт однієї людини: договору підтримки й обіцяного терміну відповіді немає. Повідомлення читаються в міру надходження, а звернення з кроками для відтворення проблеми опрацьовується найшвидше.</span></p>
+  </section>
+</main>
+
+<footer class="site-footer"><div class="container"><div class="footer-bottom">
+  <span><a href="https://serzhyale.github.io/FastMediaSorter_Lite/">Fast Media Sorter &amp; Sharing for Windows</a> &middot; <a href="https://serzhyale.github.io/FastMediaSorter_Lite/topics.html"><span data-l="en">Every task, from one page</span><span data-l="ru">Любая задача - с одной страницы</span><span data-l="ua">Будь-яке завдання - з однієї сторінки</span></a> &middot; <a href="https://serzhyale.github.io/FastMediaSorter_Lite/whats-new.html"><span data-l="en">What's new</span><span data-l="ru">Что нового</span><span data-l="ua">Що нового</span></a> &middot; <a href="https://serzhyale.github.io/FastMediaSorter_Lite/support.html"><span data-l="en">Support</span><span data-l="ru">Поддержка</span><span data-l="ua">Підтримка</span></a> &middot; <a href="https://serzhyale.github.io/FastMediaSorter_Lite/docs/privacy.html">Privacy</a></span>
+  <span>&copy; 2026 <a href="https://sza.od.ua">SerZhyAle</a> &middot; <a href="mailto:sza@ukr.net">sza@ukr.net</a></span>
+</div></div></footer>
+
+<script>
+(function(){
+  var doc=document.documentElement;
+  var TITLES={en:"Support | Fast Media Sorter & Sharing",ru:"Поддержка | Fast Media Sorter & Sharing",ua:"Підтримка | Fast Media Sorter & Sharing"};
+  function setLang(l){
+    if(!TITLES[l]) l='en';
+    doc.setAttribute('data-lang',l);
+    doc.setAttribute('lang', l==='ua'?'uk':l);
+    try{localStorage.setItem('sza-lang',l);}catch(e){}
+    document.querySelectorAll('.seg [data-setlang]').forEach(function(b){
+      b.setAttribute('aria-pressed', b.getAttribute('data-setlang')===l ? 'true':'false');
+    });
+    document.title=TITLES[l];
+  }
+  document.querySelectorAll('.seg [data-setlang]').forEach(function(b){
+    b.addEventListener('click',function(){setLang(b.getAttribute('data-setlang'));});
+  });
+  setLang(doc.getAttribute('data-lang')||'en');
+  var tb=document.getElementById('themeBtn');
+  if(tb) tb.addEventListener('click',function(){
+    var v=doc.getAttribute('data-theme')==='light'?'dark':'light';
+    doc.setAttribute('data-theme',v);
+    try{localStorage.setItem('sza-theme',v);}catch(e){}
+  });
+})();
+</script>
+</body>
+</html>

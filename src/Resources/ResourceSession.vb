@@ -216,7 +216,7 @@ Friend NotInheritable Class ResourceSession
             Catch ex As OperationCanceledException
                 Return EnsureLocalOutcome.Cancelled
             Catch ex As ResourceFailureException
-                ResourcePinMemory.Forget(Resource)
+                If ex.Failure.Kind = ResourceFailureKind.Auth Then ResourcePinMemory.Forget(Resource)
                 Dispose()
                 Return EnsureLocalOutcome.Failed
             End Try
@@ -574,7 +574,6 @@ Friend NotInheritable Class ResourceSessionSlot
         Catch ex As Exception
             AppFileLogger.LogException("Resource: closing the session", ex)
         End Try
-        ResourcePinMemory.Forget(closing.Resource)
         RemoteCacheStore.DeleteSession(closing.SessionDir)
     End Sub
 

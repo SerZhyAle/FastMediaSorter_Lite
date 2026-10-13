@@ -54,7 +54,7 @@ Partial Public NotInheritable Class Share_Settings_Form
     ''' <summary>Design width of the page, 96-DPI units. Set by the hosting group's prose,
     ''' which wraps at <see cref="HostingContentWidth"/>; the other two are far narrower and
     ''' a settings dialog that changed width per group would be worse than a little air.</summary>
-    Private Const PageWidth As Integer = 820
+    Private Const PageWidth As Integer = 880
 
     ''' <summary>True when an elevated action actually changed the machine - the caller
     ''' re-reads status then, exactly as the main window did when it owned the Hosting
@@ -78,6 +78,9 @@ Partial Public NotInheritable Class Share_Settings_Form
 
     Private _portPushed As Boolean
     Private _policyPushed As Boolean
+    Friend ReplayManagerRequested As Boolean
+    Friend ReplayExchangeRequested As Boolean
+    Friend ResourceAddRequested As Boolean
 
     Public Sub New(Optional status As WorkerStatus = Nothing)
         _status = status
@@ -173,6 +176,28 @@ Partial Public NotInheritable Class Share_Settings_Form
     ''' <summary>The Запуск group: whether the program starts, and whether it shows itself
     ''' when it does - two different questions, hence two independent checkboxes.</summary>
     Private Sub BuildStartupSection(sec As CollapsibleSection)
+        Dim welcome As New Button With {.Name = "managerWelcomeReplay", .Text = Localization.T("Приветствие.."),
+            .AutoSize = True, .MinimumSize = New Size(0, 44), .Margin = New Padding(0, 8, 0, 4)}
+        ButtonGlyphs.Apply(welcome, "app.help")
+        AddHandler welcome.Click, Sub()
+            Dim menu As New ContextMenuStrip()
+            menu.Items.Add(Localization.T("Повторить настройку папок"), Nothing, Sub()
+                ReplayManagerRequested = True
+                Close()
+            End Sub)
+            If ExchangeFirstRunModel.GateOpen() AndAlso ExchangeProcess.IsAvailable() Then
+                menu.Items.Add(Localization.T("Повторить настройку сервера обмена"), Nothing, Sub()
+                    ReplayExchangeRequested = True
+                    Close()
+                End Sub)
+            End If
+            AddHandler menu.Closed, Sub()
+                Dim sync = Threading.SynchronizationContext.Current
+                If sync IsNot Nothing Then sync.Post(Sub() menu.Dispose(), Nothing)
+            End Sub
+            menu.Show(welcome, New Point(0, welcome.Height))
+        End Sub
+        sec.AddBodyRow(welcome)
         chkAutostart = New CheckBox With {.AutoSize = True, .Margin = New Padding(0, 2, 0, 2),
             .Text = Localization.T("Запускать при входе в Windows")}
         AddHandler chkAutostart.CheckedChanged, AddressOf OnAutostartChanged

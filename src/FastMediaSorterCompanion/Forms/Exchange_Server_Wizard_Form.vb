@@ -53,12 +53,17 @@ Friend NotInheritable Class Exchange_Server_Wizard_Form
     Private _revealed As Boolean
     Private _holdsPassword As Boolean
     Private _kept As Boolean
+    Private ReadOnly _firstRun As Boolean
+    Private ReadOnly _enrollThisPc As Boolean
 
     ''' <summary>How the flow ended; Nothing until it has run.</summary>
     Friend ReadOnly Property Result As ExchangeWizardResult
 
-    Friend Sub New(Optional ports As IExchangeWizardPorts = Nothing, Optional defaultLogin As String = Nothing)
+    Friend Sub New(Optional ports As IExchangeWizardPorts = Nothing, Optional defaultLogin As String = Nothing,
+                   Optional firstRun As Boolean = False, Optional enrollThisPc As Boolean = True)
         _ports = If(ports, New ExchangeWizardPorts())
+        _firstRun = firstRun
+        _enrollThisPc = enrollThisPc
         BuildUi(If(defaultLogin, ExchangeLoginRules.SuggestFrom(Environment.UserName)))
     End Sub
 
@@ -79,6 +84,7 @@ Friend NotInheritable Class Exchange_Server_Wizard_Form
         Dim b As New Button With {.AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink, .Padding = New Padding(12, 4, 12, 4),
             .Margin = New Padding(0, 4, 8, 4), .Text = text}
         If glyph.Length > 0 Then ButtonGlyphs.Apply(b, glyph, role)
+        If _firstRun Then b.MinimumSize = New Size(0, 44)
         Return b
     End Function
 
@@ -123,6 +129,7 @@ Friend NotInheritable Class Exchange_Server_Wizard_Form
             .Margin = New Padding(0, 0, 0, 4), .Text = String.Join(vbCrLf & vbCrLf, ExchangeStatement.Paragraphs()), .AccessibleName = ExchangeAdminText.StatementTitle()}
         _pnlInput.Controls.Add(_txtStatement)
         body.Controls.Add(_pnlInput)
+        If _firstRun Then _pnlInput.Visible = False
 
         _lblProgress = Note("")
         _lblProgress.Visible = False
@@ -151,6 +158,7 @@ Friend NotInheritable Class Exchange_Server_Wizard_Form
                 _txtPassword.UseSystemPasswordChar = Not _chkShow.Checked
                 If _chkShow.Checked Then _revealed = True
             End Sub
+        If _firstRun Then _chkShow.MinimumSize = New Size(0, 44)
         _pnlFacts.Controls.Add(_chkShow)
         _btnCopyPassword = NewButton(ExchangeText.CopyPasswordButton(), "action.copy")
         AddHandler _btnCopyPassword.Click, AddressOf OnCopyPassword
@@ -180,6 +188,7 @@ Friend NotInheritable Class Exchange_Server_Wizard_Form
         Dim buttons As New FlowLayoutPanel With {.AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink, .FlowDirection = FlowDirection.LeftToRight,
             .WrapContents = False, .Margin = New Padding(0, 8, 0, 4)}
         _btnStart = NewButton(ExchangeAdminText.WizardStart(), "action.confirm", ButtonGlyphRole.Affirmative)
+        If _firstRun Then _btnStart.Visible = False
         AddHandler _btnStart.Click, AddressOf OnStartClicked
         _btnClose = NewButton(Localization.T("Закрыть"), "nav.close", ButtonGlyphRole.Dismissing)
         AddHandler _btnClose.Click, AddressOf OnCloseClicked
@@ -225,11 +234,15 @@ Friend NotInheritable Class Exchange_Server_Wizard_Form
         Dim outcome As ExchangeWizardResult = Nothing
         Try
             outcome = Await ExchangeServerWizard.RunAsync(_txtLogin.Text, _ports,
-                                                          Sub(s) ShowStep(s), _cts.Token)
+                                                          Sub(s) ShowStep(s), _cts.Token, allowManagedService:=_firstRun, enrollThisPc:=_enrollThisPc)
         Catch ex As OperationCanceledException
             Return
         Catch ex As Exception When TypeOf ex Is InvalidOperationException OrElse TypeOf ex Is IO.IOException
-            AppFileLogger.LogException("Exchange wizard", ex)
+            If _firstRun Then
+                AppFileLogger.WriteLine("Exchange first run: account engine failed")
+            Else
+                AppFileLogger.LogException("Exchange wizard", ex)
+            End If
             outcome = New ExchangeWizardResult With {.Outcome = ExchangeWizardOutcome.AccountFailed}
         Finally
             _busy = False
@@ -262,9 +275,10 @@ Friend NotInheritable Class Exchange_Server_Wizard_Form
         Try
             _Result = r
             _lblProgress.Visible = False
-            _lblOutcome.Text = ExchangeAdminText.WizardOutcome(r)
+            _lblOutcome.Text = ExchangeAdminText.WizardOutcome(r, _enrollThisPc)
             Dim good As Boolean = r.Outcome = ExchangeWizardOutcome.Done OrElse r.Outcome = ExchangeWizardOutcome.DoneNoAgent
             _lblOutcome.ForeColor = If(good, Color.ForestGreen, CollapsibleSection.AttentionColor)
+            If _firstRun Then _lblOutcome.ForeColor = ThemePalette.ReadableText(_lblOutcome.ForeColor, ThemeService.Palette.SurfaceWindow)
             _lblOutcome.Visible = True
             If r.AccountCreated Then
                 ' the flow does not run twice: the account exists, and its password is shown here once
@@ -275,13 +289,15 @@ Friend NotInheritable Class Exchange_Server_Wizard_Form
                 _txtLogin2.Text = r.Login
                 _txtPassword.Text = r.Password
                 _holdsPassword = r.Password.Length > 0
-                _kept = _holdsPassword AndAlso KeepIfChosen(r.Login, r.Password)
+                _kept = Not _firstRun AndAlso _holdsPassword AndAlso KeepIfChosen(r.Login, r.Password)
                 _txtFingerprint.Text = r.Fingerprint
                 _btnCopyFingerprint.Visible = r.Fingerprint.Length > 0
                 _pnlFacts.Visible = True
                 r.Wipe()
                 _btnClose.Focus()
-                Dim stringTask As Task = ShowConnectionStringAsync()
+                If Not _firstRun Then
+                    Dim stringTask As Task = ShowConnectionStringAsync()
+                End If
             Else
                 ' nothing was created: the person can fix the login and go again
                 _btnStart.Enabled = True
@@ -294,6 +310,11 @@ Friend NotInheritable Class Exchange_Server_Wizard_Form
         End Try
         ClientSize = Controls(0).PreferredSize
         DpiLayout.ClampToWorkingArea(Me)
+    End Sub
+
+    Protected Overrides Sub OnShown(e As EventArgs)
+        MyBase.OnShown(e)
+        If _firstRun Then OnStartClicked(Me, EventArgs.Empty)
     End Sub
 
     ' --- copying ---------------------------------------------------------------------------------

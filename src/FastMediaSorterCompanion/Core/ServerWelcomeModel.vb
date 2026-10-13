@@ -1,4 +1,4 @@
-Option Strict On
+﻿Option Strict On
 
 Imports System.Collections.Generic
 
@@ -22,6 +22,10 @@ Friend Enum WelcomeStepKind
     ExchangeStatement = 3
     ExchangeAccount = 4
     ExchangeDone = 5
+    ExchangeDoors = 6
+    ExchangeService = 7
+    ExchangeAddress = 8
+    ExchangeCertificate = 9
 End Enum
 
 ''' <summary>
@@ -64,11 +68,11 @@ Friend Module ServerWelcomeModel
     End Function
 
     ''' <summary>The steps of a half, in the order the person meets them.</summary>
-    Friend Function StepsFor(half As WelcomeHalf) As IReadOnlyList(Of WelcomeStepKind)
+    Friend Function StepsFor(half As WelcomeHalf, Optional serverEdition As Boolean = False, Optional serviceExists As Boolean = False) As IReadOnlyList(Of WelcomeStepKind)
         If half = WelcomeHalf.Share Then
             Return New List(Of WelcomeStepKind) From {WelcomeStepKind.ShareEnable, WelcomeStepKind.SharePort, WelcomeStepKind.ShareDone}
         End If
-        Return New List(Of WelcomeStepKind) From {WelcomeStepKind.ExchangeStatement, WelcomeStepKind.ExchangeAccount, WelcomeStepKind.ExchangeDone}
+        Return ExchangeFirstRunModel.StepsFor(serverEdition, serviceExists)
     End Function
 
     ''' <summary>Whether a number is a fixed port the welcome may store (never 0 here - 0 is the system choice).</summary>

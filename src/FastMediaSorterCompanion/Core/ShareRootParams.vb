@@ -1,4 +1,4 @@
-Option Strict On
+﻿Option Strict On
 
 Imports System.Text.Json
 
@@ -192,6 +192,14 @@ Public Module ShareRootParamsStore
         If String.IsNullOrEmpty(hostPath) Then Return
         If Map().Remove(hostPath) Then Save()
     End Sub
+
+    ' Guided add verifies the existing write before inserting its local row. No extra persisted field.
+    Friend Function TrySetFor(hostPath As String, value As ShareRootParams) As Boolean
+        SetFor(hostPath, value)
+        If GetSetting(App_name, Second_App_Name, RegKey, "") = JsonSerializer.Serialize(_map, JsonOpts) Then Return True
+        _map = Nothing ' The persisted version wins when SaveSetting failed.
+        Return False
+    End Function
 
     Private Function Map() As Dictionary(Of String, ShareRootParams)
         If _map Is Nothing Then

@@ -280,3 +280,70 @@ irfanview.net, xnview.com, faststone.org, nomacs.org, imageglass.org, docs.digik
 acdsee.com, helpx.adobe.com, excire.com, mylio.com, docs.photoprism.app, docs.immich.app,
 github.com/qarmin/czkawka, dupeguru.net, visipics.info, duplicatecleaner.com,
 aftershoot.com, narrative.so, learn.microsoft.com (PowerToys/WIC).
+
+---
+
+## Gate terms (ticket 207, D-7)
+
+The programs researched above are competitors under the owner's decision of 2026-10-09: no published surface names
+them - not a page, a README, a listing, a winget tag, a Store search term, a GitHub topic or an outreach text, and never
+as "an alternative to" one. This guide is the one place the names may stay, so it is also where the gate reads them
+from: `tools/Test-SitePositioning.ps1` takes the block below (one term per line, whole word, any case) and fails when a
+term appears in a file that `discoverability.competitorScan` of `tools/site-facts.json` lists.
+
+Not competitors under that decision, so not listed: the built-in VLC engine and LibVLC (a bundled component's credit),
+WinSCP and FileZilla (SFTP clients the product interoperates with), and the platform names. Add a term here when a
+program joins the research above.
+
+```gate-terms
+IrfanView
+XnView
+XnConvert
+FastStone
+Honeyview
+nomacs
+ImageGlass
+JPEGView
+qView
+WildBit
+PicView
+123 Photo Viewer
+digiKam
+ACDSee
+Adobe Bridge
+Lightroom
+Excire
+Mylio
+PhotoPrism
+immich
+Google Photos
+Apple Photos
+Czkawka
+dupeGuru
+VisiPics
+AntiDupl
+Duplicate Cleaner
+Awesome Duplicate Photo Finder
+ImBatch
+BatchPhoto
+Advanced Renamer
+Bulk Rename Utility
+MPC-HC
+mpv
+PotPlayer
+SMPlayer
+Photo Mechanic
+FastRawViewer
+Narrative Select
+Aftershoot
+FilterPixel
+PowerToys
+Capture2Text
+NormCap
+Google Lens
+ScreenTranslator
+Immersive Translate
+Manga Image Translator
+Slidebox
+Quick Picture Viewer
+```

@@ -63,7 +63,8 @@ Friend Enum TransferReason
     ''' <summary>The source is not the version that was copied.</summary>
     SourceChanged = 11
     SourceDeleteFailed = 12
-    ''' <summary>The source provider cannot guarantee a conditional delete (arbitrary SFTP): copy only.</summary>
+    ''' <summary>The source provider offers neither a stable nor a checked source delete (a read-only or
+    ''' PIN-locked root), or an undo of a copy needs a stable delete it lacks: copy only.</summary>
     SourceDeleteUnsupported = 13
     Cancelled = 14
     Uncertain = 15
@@ -204,8 +205,10 @@ End Class
 ''' <item>Nothing is deleted before the new content is published and proven, the old destination
 ''' is renamed to an owned backup (never deleted ahead of an uncertain rename), and an uncertain
 ''' step is reconciled by stat - never replayed.</item>
-''' <item>A source on a provider without <see cref="ProviderCapabilities.SupportsStableSourceDelete"/>
-''' is never deleted: the outcome is CopyOnly. No atomic-delete guarantee is invented for SFTP.</item>
+''' <item>A source on a provider with neither <see cref="ProviderCapabilities.SupportsStableSourceDelete"/>
+''' nor <see cref="ProviderCapabilities.SupportsCheckedSourceDelete"/> is never deleted: the outcome
+''' is CopyOnly. Ordinary SFTP has the checked form only (re-stat, remove, confirm absence); no
+''' atomic-delete guarantee is invented for it (ticket 221).</item>
 ''' </list>
 ''' </summary>
 Friend Module TransferExecutor
@@ -505,10 +508,10 @@ Friend Module TransferExecutor
     Private Function DeleteSource(run As Run, ct As CancellationToken) As TransferOutcome
         Dim plan As TransferPlan = run.Plan
         Dim provider As IFileSystemProvider = plan.Source.Provider
-        If Not provider.Capabilities.SupportsStableSourceDelete Then
+        If Not provider.Capabilities.SupportsStableSourceDelete AndAlso Not provider.Capabilities.SupportsCheckedSourceDelete Then
             Return run.Outcome(TransferResult.CopyOnly, TransferReason.SourceDeleteUnsupported)
         End If
-        If ct.IsCancellationRequested Then Return run.Outcome(TransferResult.Cancelled, TransferReason.Cancelled)
+        If ct.IsCancellationRequested Then Return run.Outcome(TransferResult.CopyOnly, TransferReason.Cancelled)
 
         Dim again As StatResult = ResourceProviderCalls.Stat(provider, run.Source.FullPath)
         Select Case again.Outcome
@@ -523,13 +526,15 @@ Friend Module TransferExecutor
                 Return run.Outcome(TransferResult.CopyOnly, TransferReason.SourceDeleteFailed)
         End Select
 
+        If ct.IsCancellationRequested Then Return run.Outcome(TransferResult.CopyOnly, TransferReason.Cancelled)
         Try
             provider.DeleteFile(run.Source.FullPath)
         Catch ex As Exception
-            Dim after As StatResult = ResourceProviderCalls.Stat(provider, run.Source.FullPath)
-            If after.Outcome = StatOutcome.Failed Then Return run.Outcome(TransferResult.Indeterminate, TransferReason.Uncertain)
-            If after.Outcome <> StatOutcome.Missing Then Return run.Outcome(TransferResult.CopyOnly, TransferReason.SourceDeleteFailed)
+            ' The reply may have been lost after removal. Reconcile without retrying remove.
         End Try
+        Dim after As StatResult = ResourceProviderCalls.Stat(provider, run.Source.FullPath)
+        If after.Outcome <> StatOutcome.Found AndAlso after.Outcome <> StatOutcome.Missing Then Return run.Outcome(TransferResult.Indeterminate, TransferReason.Uncertain)
+        If after.Outcome <> StatOutcome.Missing Then Return run.Outcome(TransferResult.CopyOnly, TransferReason.SourceDeleteFailed)
         run.State = TransferState.SourceDeleteConfirmed
         run.State = TransferState.Completed
         Return run.Outcome(TransferResult.Completed, TransferReason.None)

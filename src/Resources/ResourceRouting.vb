@@ -57,6 +57,36 @@ Friend Module ResourceRouting
 
     ' ------------------------------------------------ the staged transfer (100 T10) ----
 
+    ''' <summary>Capture remote ownership before a prompt or queue wait. Never fall back
+    ''' to deleting a cache file when the session closes.</summary>
+    Friend Function CaptureDelete(filePath As String, Optional session As ResourceSession = Nothing) As ResourceDeleteTarget
+        Dim owner As ResourceSession = If(session, OwnerOf(filePath))
+        If owner Is Nothing Then
+            If RemoteCachePaths.IsSessionCopy(filePath) Then Throw New OperationCanceledException("The resource owning this display copy is no longer open.")
+            Return Nothing
+        End If
+        Dim entry As ResourceEntry = owner.EntryAt(filePath)
+        If entry Is Nothing Then Throw New IOException("The resource entry is no longer available.")
+        Dim lease As IDisposable = owner.TryAcquireLease()
+        If lease Is Nothing Then Throw New OperationCanceledException("The resource was closed before deletion.")
+        Return New ResourceDeleteTarget(owner, entry.FullPath, filePath, lease)
+    End Function
+
+    Friend Function TransferCaptured(kind As TransferKind, session As ResourceSession, source As String,
+                                     destination As String, overwrite As Boolean) As TransferOutcome
+        If RemoteCachePaths.IsSessionCopy(destination) AndAlso OwnerOf(destination) Is Nothing Then
+            Throw New OperationCanceledException("The destination resource is no longer open.")
+        End If
+        Dim intoSlot As TransferEndpoint = SlotEndpointOf(destination)
+        Dim intoResource As ResourceSession = If(intoSlot Is Nothing, OwnerOf(destination), Nothing)
+        Dim target As TransferEndpoint = SideOf(destination, intoSlot, intoResource)
+        Dim plan As New TransferPlan(kind, New TransferEndpoint(session.Provider, source, session.Resource.Id),
+                                     target, ConflictOf(overwrite), TransferScratchDir)
+        Dim outcome As TransferOutcome = Executed(plan, session.Cancellation)
+        intoResource?.Invalidate(destination)
+        Return outcome
+    End Function
+
     ''' <summary>A plain-file endpoint for transfers whose other side is not a resource: the
     ''' local file system behind the same provider seam. Its capabilities carry the stable-
     ''' source-delete guarantee a Windows file has always had - re-check, then delete - which
@@ -255,9 +285,13 @@ Friend Module ResourceRouting
         End If
 
         Dim owner As ResourceSession = OwnerOf(filePath)
-        If owner Is Nothing Then Return False
-        owner.Provider.DeleteFile(owner.EntryAt(filePath).FullPath)
-        owner.Invalidate(filePath)
+        If owner Is Nothing Then
+            If RemoteCachePaths.IsSessionCopy(filePath) Then Throw New OperationCanceledException("The resource owning this display copy is no longer open.")
+            Return False
+        End If
+        Using target As ResourceDeleteTarget = CaptureDelete(filePath, owner)
+            target.Execute()
+        End Using
         Return True
     End Function
 
@@ -280,6 +314,83 @@ Friend Module ResourceRouting
     End Function
 
 End Module
+
+''' <summary>A leased original remote target, independent of the currently displayed folder.</summary>
+Friend NotInheritable Class ResourceDeleteTarget
+    Implements IDisposable
+
+    Private ReadOnly session As ResourceSession
+    Private ReadOnly remotePath As String
+    Private ReadOnly cachePath As String
+    Private lease As IDisposable
+
+    Friend Sub New(session As ResourceSession, remotePath As String, cachePath As String, lease As IDisposable)
+        Me.session = session
+        Me.remotePath = remotePath
+        Me.cachePath = cachePath
+        Me.lease = lease
+    End Sub
+
+    Friend ReadOnly Property Capabilities As ProviderCapabilities
+        Get
+            Return session.Provider.Capabilities
+        End Get
+    End Property
+
+    Friend ReadOnly Property DisplayPath As String
+        Get
+            Return If(session.Resource?.DisplayName, "") & ": " & remotePath
+        End Get
+    End Property
+
+    Friend Function Fork() As ResourceDeleteTarget
+        Dim held As IDisposable = session.TryAcquireLease()
+        If held Is Nothing Then Throw New OperationCanceledException("The resource was closed before deletion.")
+        Return New ResourceDeleteTarget(session, remotePath, cachePath, held)
+    End Function
+
+    Friend Function Transfer(kind As TransferKind, destination As String, overwrite As Boolean) As TransferOutcome
+        session.Cancellation.ThrowIfCancellationRequested()
+        Dim outcome As TransferOutcome = ResourceRouting.TransferCaptured(kind, session, remotePath, destination, overwrite)
+        If kind = TransferKind.Move Then session.Invalidate(cachePath)
+        Return outcome
+    End Function
+
+    Friend Sub Execute()
+        session.Cancellation.ThrowIfCancellationRequested()
+        If Not Capabilities.CanDelete Then Throw New UnauthorizedAccessException("The resource does not permit deletion.")
+        Dim failure As Exception = Nothing
+        Try
+            session.Provider.DeleteFile(remotePath)
+        Catch ex As Exception
+            ' A lost reply does not justify a second destructive command.
+            failure = ex
+        End Try
+        Dim result As StatResult = ResourceProviderCalls.Stat(session.Provider, remotePath)
+        If result.Outcome <> StatOutcome.Found AndAlso result.Outcome <> StatOutcome.Missing Then Throw New ResourceDeleteException(True, failure)
+        If result.Outcome <> StatOutcome.Missing Then
+            If failure IsNot Nothing Then Throw failure
+            Throw New ResourceDeleteException(False)
+        End If
+        session.Invalidate(cachePath)
+        AppFileLogger.WriteLine("Resource: permanent remote deletion confirmed")
+    End Sub
+
+    Public Sub Dispose() Implements IDisposable.Dispose
+        Interlocked.Exchange(lease, Nothing)?.Dispose()
+    End Sub
+End Class
+
+Friend NotInheritable Class ResourceDeleteException
+    Inherits IOException
+
+    Friend Sub New(unverified As Boolean, Optional inner As Exception = Nothing)
+        MyBase.New(If(unverified, "Remote deletion could not be verified.", "The remote source was not deleted."), inner)
+        Me.Unverified = unverified
+    End Sub
+
+    Friend ReadOnly Property Unverified As Boolean
+End Class
 
 ''' <summary>
 ''' Which verbs a resource allows (PV-7) - the one decision behind every refusal, so the key,

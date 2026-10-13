@@ -8,6 +8,8 @@ Imports System.Collections.Generic
 ' code defaults are. Nothing here reads the registry or a window - the viewer passes the facts in - so the rules
 ' that protect a user's file (never between a double-click and its picture, never on an upgrade, every step
 ' skippable at the code defaults) are provable in a unit test rather than by hand on a fresh VM.
+' Spec 211 adds the second pass's pure half: the invitation button's eligibility and the where-pairing that
+' ties every step's "Где это менять" text to a real settings row.
 ' Modern build only, like the wizard itself.
 ' </summary>
 
@@ -21,7 +23,81 @@ Friend Enum WelcomeStep
     Finish = 5
 End Enum
 
+''' <summary>The server components the finish screen can name (spec 215 section 4), in the order their rows appear.</summary>
+Friend Enum WelcomeServer
+    ''' <summary>The Android Folder Share server, driven by the Share Manager's worker.</summary>
+    ShareServer = 0
+    ''' <summary>The Media Exchange Server, administered inside the Share Manager.</summary>
+    ExchangeServer = 1
+End Enum
+
+''' <summary>What the status pill of a server row says (spec 215 section 5). Absent draws no row and no pill.</summary>
+Friend Enum ServerPill
+    Absent = 0
+    ''' <summary>Installed and its process is up.</summary>
+    Green = 1
+    ''' <summary>Installed and not known to be up. Unknown lands here, never on green.</summary>
+    Amber = 2
+End Enum
+
+''' <summary>What a row's button does (spec 215 section 6). Both are the same consent-gated wake of the Share Manager.</summary>
+Friend Enum ServerAct
+    ''' <summary>Wake the manager with no intent; its own first-run flows greet (212, 213).</summary>
+    OpenManager = 0
+    ''' <summary>Wake the manager with the add-resource intent; it opens the guided add flow (214).</summary>
+    AddResource = 1
+End Enum
+
+''' <summary>One row of the installed-servers block: which server, what its pill says, what its button does.</summary>
+Friend Structure WelcomeServerRow
+    Friend ReadOnly Server As WelcomeServer
+    Friend ReadOnly Pill As ServerPill
+    Friend ReadOnly Act As ServerAct
+
+    Friend Sub New(server As WelcomeServer, pill As ServerPill, act As ServerAct)
+        Me.Server = server
+        Me.Pill = pill
+        Me.Act = act
+    End Sub
+End Structure
+
 Friend Module WelcomeRules
+
+    ''' <summary>Process names (no extension) whose existence is the "server is up" fact (spec 215 section 5): the share
+    ''' server serves through the worker, the exchange server is its own exe. One name lookup each - nothing is started,
+    ''' no handle is kept, no pipe or port is touched.</summary>
+    Friend Const ShareWorkerProcessName As String = "fms-share-worker"
+    Friend Const ExchangeServerProcessName As String = "fms-exchange-server"
+
+    ''' <summary>
+    ''' The server rows the finish screen carries (spec 215 sections 4-6), as a function of the facts the viewer read when
+    ''' the wizard opened: a fixed order (the Android Folder Share server first, the Media Exchange Server second), an
+    ''' absent component draws no row, and when none is installed the list is empty - the fresh viewer-only install's
+    ''' finish screen is exactly 211's. <paramref name="shareUp"/> / <paramref name="exchangeUp"/> are Nothing when the
+    ''' probe could not tell, which is amber and never green.
+    ''' </summary>
+    Friend Function ServerBlock(shareInstalled As Boolean, shareUp As Boolean?,
+                                exchangeInstalled As Boolean, exchangeUp As Boolean?) As IReadOnlyList(Of WelcomeServerRow)
+        Dim rows As New List(Of WelcomeServerRow)()
+        Dim sharePill As ServerPill = StatusFor(shareInstalled, shareUp)
+        If sharePill <> ServerPill.Absent Then rows.Add(New WelcomeServerRow(WelcomeServer.ShareServer, sharePill, ActFor(sharePill)))
+        Dim exchangePill As ServerPill = StatusFor(exchangeInstalled, exchangeUp)
+        If exchangePill <> ServerPill.Absent Then rows.Add(New WelcomeServerRow(WelcomeServer.ExchangeServer, exchangePill, ActFor(exchangePill)))
+        Return rows
+    End Function
+
+    ''' <summary>The green fact (spec 215 section 5): installed AND the process is up. Anything short of a definite yes
+    ''' is amber - a probe that could not tell never overclaims.</summary>
+    Friend Function StatusFor(installed As Boolean, processUp As Boolean?) As ServerPill
+        If Not installed Then Return ServerPill.Absent
+        Return If(processUp.GetValueOrDefault(False), ServerPill.Green, ServerPill.Amber)
+    End Function
+
+    ''' <summary>The routing (spec 215 section 6): a green row leads on to adding a resource (214), any other opens the
+    ''' manager and lets its own first-run flow lead to green.</summary>
+    Friend Function ActFor(pill As ServerPill) As ServerAct
+        Return If(pill = ServerPill.Green, ServerAct.AddResource, ServerAct.OpenManager)
+    End Function
 
     ''' <summary>Recorded on every exit of the wizard (finish, skip, Esc, close), so the trigger cannot re-fire by accident.</summary>
     Friend Const DoneValue As String = "WelcomeDone"
@@ -60,6 +136,59 @@ Friend Module WelcomeRules
     ''' </summary>
     Friend Function DeferToNextLaunch(welcomeDone As Boolean, freshProfile As Boolean, hasFileArgument As Boolean) As Boolean
         Return hasFileArgument AndAlso freshProfile AndAlso Not welcomeDone
+    End Function
+
+    ''' <summary>
+    ''' Whether the viewer's empty media surface may carry the "Первоначальная настройка" button (spec 211 §4.3): the
+    ''' same eligibility as <see cref="ShouldRun"/> without the "no file argument" clause - the invitation exists
+    ''' exactly for the launch that carried a file and so never sees the wizard. The host re-reads this whenever the
+    ''' surface or the profile changes; an exit of the wizard writes <see cref="DoneValue"/>, which turns the answer
+    ''' false and takes the button away.
+    ''' </summary>
+    Friend Function InviteOffered(welcomeDone As Boolean, welcomePending As Boolean, freshProfile As Boolean) As Boolean
+        If welcomeDone Then Return False
+        Return freshProfile OrElse welcomePending
+    End Function
+
+    ''' <summary>
+    ''' The settings rows a step's "Где это менять" text names, by the placement catalog's own row ids
+    ''' (<c>Table_Form.SettingsGroups.vb</c>). The gate test holds every id against the catalog the settings window
+    ''' really builds, so a rework that moves or drops a row the wizard points at fails here before the text can lie
+    ''' (spec 211 §5 rule 2). A surface that is not a settings row - the folder menu on W-3, the F1 key on W-6 - has
+    ''' no id here; the where-sentence names it in words.
+    ''' </summary>
+    Friend Function WhereRowIds(wizardStep As WelcomeStep) As String()
+        Select Case wizardStep
+            Case WelcomeStep.Language : Return New String() {"interface_language"}
+            Case WelcomeStep.Appearance : Return New String() {"background_color", "wheel_zooms"}
+            Case WelcomeStep.Sorting : Return New String() {"advance_after_copy"}
+            Case WelcomeStep.Delete : Return New String() {"delete_to_recycle_bin", "confirm_delete"}
+            Case WelcomeStep.Associations : Return New String() {"image_associations", "video_associations"}
+            Case WelcomeStep.Finish : Return New String() {"welcome_replay"}
+            Case Else : Return Array.Empty(Of String)()
+        End Select
+    End Function
+
+    ''' <summary>
+    ''' The where-path of one row, as the settings window nests it: page caption, group caption, row caption - each
+    ''' the very Localization key the window itself renders, so a rename in the window renames the wizard's pointer
+    ''' with it (spec 211 §4.1: "exactly as the settings window renders it"). The gate test checks the row caption
+    ''' against the window's own caption switch and the group caption against the placement catalog's declarations.
+    ''' Always three entries; the window's own name ("Настройки") is prefixed by the form.
+    ''' </summary>
+    Friend Function WherePathKeys(rowId As String) As String()
+        Select Case rowId
+            Case "interface_language" : Return New String() {"Общие", "Основные настройки", "Язык интерфейса"}
+            Case "background_color" : Return New String() {"Изображения", "Фон изображения", "Цвет фона"}
+            Case "wheel_zooms" : Return New String() {"Изображения", "Основные настройки", "Масштабирование колёсиком"}
+            Case "advance_after_copy" : Return New String() {"Файлы", "Основные настройки", "Переходить к следующему файлу после копирования"}
+            Case "delete_to_recycle_bin" : Return New String() {"Файлы", "Основные настройки", "Удалять в Корзину"}
+            Case "confirm_delete" : Return New String() {"Файлы", "Основные настройки", "Спрашивать перед удалением"}
+            Case "image_associations" : Return New String() {"Файлы", "Клавиши и ассоциации", "Форматы изображений"}
+            Case "video_associations" : Return New String() {"Файлы", "Клавиши и ассоциации", "Форматы видео"}
+            Case "welcome_replay" : Return New String() {"Общие", "Запуск", "Показать приветственные шаги снова"}
+            Case Else : Return Array.Empty(Of String)()
+        End Select
     End Function
 
     ''' <summary>

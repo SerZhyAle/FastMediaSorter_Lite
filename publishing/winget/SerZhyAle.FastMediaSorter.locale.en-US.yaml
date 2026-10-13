@@ -15,11 +15,11 @@ Author: Serhii Zhyhunenko
 # Sharing for Windows" (docs/guides/PRODUCT_NAMING.md). `winget search` still lists the
 # package under the frozen PackageName.
 PackageName: FastMediaSorter LITE
-PackageUrl: https://github.com/SerZhyAle/FastMediaSorter_Lite
+PackageUrl: https://serzhyale.github.io/FastMediaSorter_Lite/
 License: MIT
 LicenseUrl: https://github.com/SerZhyAle/FastMediaSorter_Lite/blob/main/LICENSE
 Copyright: Copyright (c) 2025 SZA
-ShortDescription: Fast Media Sorter & Sharing for Windows - sort, view and share images and videos with a keyboard-driven viewer and sorter that also shares folders to your phone over SFTP.
+ShortDescription: Fast Media Sorter & Sharing for Windows - sort photos and videos with one key per file; an optional server, off by default, shares folders to your phone over SFTP.
 Description: |-
   View and sort your media; when you need it, the same program is also a folder-share server and a
   host for FileDO virtual disks - each of those ships optional, off until you ask for it.
@@ -56,27 +56,29 @@ Moniker: fastmediasorter
 # INSTALL-TRUST 1.1 rule 7 (item H): the builds are unsigned, so winget tells the user
 # where the SmartScreen page lives. Ships with the next manifest version bump.
 InstallationNotes: "This package is unsigned - Windows may show a SmartScreen warning on first run. What to expect and click: https://serzhyale.github.io/FastMediaSorter_Lite/trust.html"
+# Ticket 207 T-8: the Tags are the worksheet's (docs/guides/POSITIONING.md section 7; the machine form is
+# `discoverability.wingetTags` in tools/site-facts.json, held by tools/Test-SitePositioning.ps1). No tag is a
+# competitor's name, and none repeats a retired runtime word.
 Tags:
-- file-manager
+- heic
 - hotkeys
-- images
-- media
-- organizer
+- image-sorter
+- image-viewer
+- media-player
+- media-sorter
+- ocr
+- photo-organizer
+- photo-sorter
 - photos
-- pictures
+- sftp
 - sharing
 - slideshow
-- sorter
-- triage
-- utility
+- video-viewer
 - videos
-- viewer
-- winforms
+- webp
 ReleaseNotesUrl: https://github.com/SerZhyAle/FastMediaSorter_Lite/releases/tag/v26.9.20.1206
 Documentations:
 - DocumentLabel: Windows warning (SmartScreen)
   DocumentUrl: https://serzhyale.github.io/FastMediaSorter_Lite/trust.html
-- DocumentLabel: Wiki
-  DocumentUrl: https://github.com/SerZhyAle/FastMediaSorter_Lite/wiki
 ManifestType: defaultLocale
 ManifestVersion: 1.12.0

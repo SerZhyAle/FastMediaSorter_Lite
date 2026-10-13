@@ -54,7 +54,12 @@ Partial Public Class Table_Form
         AddPreferenceChoice(destinations, "recipients_position",
                             Function() {Choice("topLeft", "Вверху слева"), Choice("topRight", "Вверху справа"), Choice("bottomLeft", "Внизу слева"), Choice("bottomRight", "Внизу справа")},
                             Function() Main_Form.GetModernPreferences().RecipientsOverlayPosition,
-                            Sub(v) Main_Form.GetModernPreferences().RecipientsOverlayPosition = v)
+                            Sub(v)
+                                Main_Form.GetModernPreferences().RecipientsOverlayPosition = v
+                                ' A drag is the fine move, a corner pick the coarse one (219 §3):
+                                ' the chosen corner is the anchor again, and the custom point goes.
+                                Main_Form.GetModernPreferences().RecipientsOverlayHasCustomPosition = False
+                            End Sub)
         AddPreferenceNumber(destinations, "recipients_width", 180, 520,
                             Function() Main_Form.GetModernPreferences().RecipientsOverlayWidth,
                             Sub(v) Main_Form.GetModernPreferences().RecipientsOverlayWidth = v)
@@ -67,6 +72,14 @@ Partial Public Class Table_Form
         AddPreferenceNumber(destinations, "recipients_rows", 3, 11,
                             Function() Main_Form.GetModernPreferences().RecipientsOverlayVisibleRows,
                             Sub(v) Main_Form.GetModernPreferences().RecipientsOverlayVisibleRows = v)
+        ' 219 §5: the one recovery command - "утащил и потерял" in a click. It clears the custom
+        ' point and repositions the overlay at once, from any state, and says what it did
+        ' through the Notify line; at the anchor it is an honest no-op that still says so.
+        Dim resetPosition As New Button With {.AutoSize = True}
+        expandedRefreshActions.Add(Sub() resetPosition.Text = Localization.T("Сбросить"))
+        resetPosition.Text = Localization.T("Сбросить")
+        AddHandler resetPosition.Click, Sub() Main_Form.ResetRecipientsOverlayPosition()
+        AddSettingRow(destinations, "recipients_position_reset", resetPosition, 230, True)
 
         AddSectionHeader(viewing, "section_accessibility")
         AddInterfaceScaleRow(viewing)

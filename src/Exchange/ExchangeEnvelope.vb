@@ -286,7 +286,7 @@ Friend NotInheritable Class ExchangeEnvelopeTable
         ' --- opening a stream (7.2) ---
         Row("enroll", T("login", True), T("password", omit:=WhenEmpty), T("pairingCode", omit:=WhenEmpty),
             T("deviceId", True), T("deviceName", True), T("product", True), T("productVersion", omit:=WhenEmpty),
-            T("platform", omit:=WhenEmpty), L("roles", WhenEmpty), R("receiver", omit:=WhenEmpty),
+            T("platform", omit:=WhenEmpty), L("roles", WhenEmpty), L("capabilities", WhenEmpty), R("receiver", omit:=WhenEmpty),
             N("keepaliveSeconds", WhenEmpty))
         Row("enrolled", T("deviceToken", True), T("account"), T("publicEndpoint"), N("keepaliveSeconds"),
             L("features"), T("serverVersion"))

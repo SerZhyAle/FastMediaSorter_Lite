@@ -856,6 +856,10 @@
     <Compile Include="AskModel.vb" />
     <Compile Include="AskSpecs.vb" />
     <Compile Include="Ask_Dialog.vb" />
+    <!-- Ticket 219: the pure geometry of the recipients overlay's free position. Whole file
+         is #If Not NETFRAMEWORK, so it compiles to nothing here; listed anyway like the other
+         modern-only files above. -->
+    <Compile Include="RecipientsOverlayPlacement.vb" />
     <!-- Spec 184: the welcome wizard. Whole files are #If Not NETFRAMEWORK, so they compile to nothing here;
          listed anyway like the other modern-only files above. -->
     <Compile Include="Welcome\WelcomeRules.vb" />

@@ -155,6 +155,51 @@ Public Class ExchangeSyncTests
         End Function
     End Class
 
+    Private NotInheritable Class AcceptingDialer
+        Implements IEndpointDialer
+
+        Public Function DialAsync(endpoint As FmsEndpoint, ct As CancellationToken) As Task(Of DialResult) Implements IEndpointDialer.DialAsync
+            Return Task.FromResult(DialResult.Verified(New SftpProvider(New ResourceDescriptor With {.Kind = ResourceKind.Sftp}, "", Nothing)))
+        End Function
+    End Class
+
+    <Fact>
+    Public Async Function Protected_attachment_keeps_the_verified_PIN_after_the_probe_is_disposed() As Task
+        Dim api As New FakeApi()
+        api.Access(Rid) = AccessResult()
+        Dim reg As New Registry()
+        Dim entryId As String = Guid.NewGuid().ToString("N")
+        Dim sync As New ExchangeSync(api, AddressOf reg.Load, AddressOf reg.Commit, AddressOf reg.ReadPassword, AddressOf reg.NewId,
+            entryId, New AcceptingDialer(), Function(d) Nothing)
+        Dim record As New ExchangeResourceRecord("{}", Rid, Did, "sftp-share", "Camera", "online", api.Access(Rid).AccessJson, True, "pin-v1")
+        Try
+            Assert.Equal(ExchangeAttachOutcome.Attached, Await sync.AttachAsync(record, "Home PC", CancellationToken.None, "synthetic-pin"))
+            Assert.Equal("synthetic-pin", ResourcePinMemory.GetPin(reg.Items.Single()))
+        Finally
+            ResourcePinMemory.ForgetEntry(entryId)
+        End Try
+    End Function
+
+    <Fact>
+    Public Async Function Offline_keeps_the_PIN_but_unpublishing_clears_it() As Task
+        Dim api As New FakeApi()
+        Dim reg As New Registry()
+        Dim resource As ResourceDescriptor = Await AttachedAsync(reg, api)
+        resource.PinRequired = True
+        ResourcePinMemory.SetPin(resource, "synthetic-pin")
+        Try
+            Dim offline As New ExchangeDevicesState(ExchangeDevicesAvailability.Ready, api.Info, Dir(online:=False))
+            Assert.Empty(Await reg.Sync(api).FollowAllAsync(offline, CancellationToken.None))
+            Assert.Equal("synthetic-pin", ResourcePinMemory.GetPin(resource))
+            Dim gone As New ExchangeDirectorySnapshot(9, New List(Of ExchangeDeviceRecord), New List(Of ExchangeResourceRecord), New List(Of ExchangeBroadcastRecord))
+            Assert.Equal({resource.Id}, Await reg.Sync(api).FollowAllAsync(New ExchangeDevicesState(ExchangeDevicesAvailability.Ready, api.Info, gone), CancellationToken.None))
+            Assert.Null(ResourcePinMemory.GetPin(resource))
+            Assert.Single(reg.Items)
+        Finally
+            ResourcePinMemory.Forget(resource)
+        End Try
+    End Function
+
     <Fact>
     Public Async Function Protected_attachment_tries_the_account_tunnel_when_direct_access_fails() As Task
         Dim api As New FakeApi()

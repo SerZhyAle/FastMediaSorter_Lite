@@ -137,9 +137,9 @@ Public Class RecipientPaletteTests
         Assert.Contains("RecipientPalette.ColorFor(slot, ThemeService.IsDark)", overlay)
         Assert.Contains("RecipientPalette.HoverColorFor(slot, ThemeService.IsDark)", overlay)
         Assert.Contains("Return ThemePalette.ForDark(ThemeService.IsDark).TextPrimary", overlay)
-        Assert.Contains("row.ForeColor = If(is_Copy_Zone, chrome_Theme.Foreground, RecipientRowInk())", overlay)
+        Assert.Contains("row.ForeColor = If(is_Copy_Zone, theme.Foreground, RecipientRowInk())", overlay)
         Assert.DoesNotContain("ChromeTheme.IsDark(chrome_Theme.PanelFill)", overlay)
-        Assert.Contains("MouseOverBackColor = If(unusable OrElse chrome_Theme.IsHighContrast, row.BackColor", overlay)
+        Assert.Contains("MouseOverBackColor = If(unusable OrElse theme.IsHighContrast, row.BackColor", overlay)
     End Sub
 
 #If Not NETFRAMEWORK Then

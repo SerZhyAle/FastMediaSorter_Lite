@@ -35,6 +35,17 @@
   send already carries `SMTO_ABORTIFHUNG`. Whether that is conformant is the owner's reading; it is recorded
   as a deviation until then.
 
+## The Share Manager's own sentinels (additive, 2026-10-13)
+
+The wake payload set of the Share Manager is this product's own declared format and is bound by the same
+transport rules as the folder path (tagged, bounded, strictly decoded, acknowledged on the receiver's own answer).
+Besides `::fms-show-window::` it carries `::fms-plain-start::` (a re-run exe), `::fms-broadcast::<path>` and, since
+spec 215, **`::fms-add-resource::`** - "show the window and open the guided add flow", an intent with no path in it
+(command line form `--add-resource`). It is sent only to a receiver at or above
+`ShareActivationPolicy.MinAddResourceVersion` (26.10.13.0); an older or unidentified one gets
+`::fms-show-window::`, so no installed build sees a payload it does not know. Nothing in it is staged or shared:
+it opens a window, and the consent queue is untouched.
+
 ## Current compatibility policy (2026-10-03)
 
 The viewer and Companion senders share `ShareActivationPolicy.MinConsentVersion`

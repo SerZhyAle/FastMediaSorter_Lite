@@ -546,7 +546,7 @@ Public Class ResourceFoundationTests
         Dim baseCaps As New ProviderCapabilities(canWrite:=True, canDelete:=True, canRename:=True, canCreateFolder:=True,
                                                 hasRecycleBin:=False, needsMaterialisation:=True,
                                                 supportsServerSideRename:=True, supportsAtomicOverwriteRename:=True,
-                                                supportsStableSourceDelete:=True)
+                                                supportsStableSourceDelete:=True, supportsCheckedSourceDelete:=True)
 
         ' Read-only root
         Dim readOnlyRoot As New ResourceRootPolicy("root-1", "prof-1", "/Photos", label:="Photos", readOnlyRaw:=True, isDestination:=False)
@@ -554,6 +554,7 @@ Public Class ResourceFoundationTests
         Dim roCaps As ProviderCapabilities = readOnlyRoot.DeriveCapabilities(baseCaps)
         Assert.False(roCaps.CanWrite)
         Assert.False(roCaps.CanDelete)
+        Assert.False(roCaps.SupportsCheckedSourceDelete)
         Assert.False(roCaps.CanRename)
         Assert.False(roCaps.SupportsServerSideRename)
 
@@ -563,6 +564,7 @@ Public Class ResourceFoundationTests
         Dim destCaps As ProviderCapabilities = destRoot.DeriveCapabilities(baseCaps)
         Assert.True(destCaps.CanWrite)
         Assert.True(destCaps.CanDelete)
+        Assert.True(destCaps.SupportsCheckedSourceDelete)
         Assert.True(destCaps.CanRename)
         Assert.True(destCaps.SupportsServerSideRename)
 
@@ -571,6 +573,7 @@ Public Class ResourceFoundationTests
         Dim pinCaps As ProviderCapabilities = pinRoot.DeriveCapabilities(baseCaps)
         Assert.False(pinCaps.CanWrite)
         Assert.False(pinCaps.CanDelete)
+        Assert.False(pinCaps.SupportsCheckedSourceDelete)
         Assert.False(pinCaps.CanRename)
     End Sub
 

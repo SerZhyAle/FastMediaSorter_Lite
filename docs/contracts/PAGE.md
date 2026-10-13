@@ -26,7 +26,7 @@
 - The hand-authored root `index.html` receives the same shared blocks, so the root and the generated pages
   cannot drift.
 - The copy button's done state is the localized word for "Copied", with no check mark (1.4): `CopyWords` in the
-  generator, `COPY` in the root page, `copied` in `docs/index.html`.
+  generator, `COPY` in the root page.
 
 What 1.2 settled for this site:
 

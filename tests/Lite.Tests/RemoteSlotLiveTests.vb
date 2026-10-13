@@ -227,13 +227,50 @@ Public Class RemoteSlotLiveTests
         Assert.False(File.Exists(source))
         Assert.Equal(original, ServerBytes(destination))
 
-        ' U brings the file back - and, out of a server that cannot condition a delete, keeps the
-        ' server's copy and says so (100 §15.6.3: a move out of arbitrary SFTP is a copy). Both
-        ' copies are whole; nothing is lost either way.
+        ' Ticket 221: U completes the ordinary checked SFTP move back to the original folder.
         Dim undone As TransferOutcome = TransferUndo.Undo(TransferUndo.Record(moved), ResourceRouting.TransferScratchDir)
-        Assert.Equal(TransferResult.CopyOnly, undone.Result)
+        Assert.Equal(TransferResult.Completed, undone.Result)
         Assert.Equal(original, File.ReadAllBytes(source))
-        Assert.Equal(original, ServerBytes(destination))
+        Assert.False(connections.FileExists(destination))
+    End Sub
+
+    <WritableLiveFact>
+    Public Sub Live_Captured_SFTP_source_moves_out_and_deletes_the_original_not_its_cache()
+        Dim connected As ConnectOutcome = Dial(Descriptor(), server.Password, CancellationToken.None)
+        Assert.True(connected.Succeeded)
+        Dim provider As SftpProvider = DirectCast(connected.Provider, SftpProvider)
+        Dim folder As String = "/MOV/source-" & Guid.NewGuid().ToString("N")
+        provider.CreateDirectory(folder)
+        Dim original As String = LocalFile("original.jpg", 8193)
+        Dim bytes As Byte() = File.ReadAllBytes(original)
+        provider.Upload(original, folder & "/move.jpg", Nothing, CancellationToken.None)
+        provider.Upload(original, folder & "/delete.jpg", Nothing, CancellationToken.None)
+        Dim cache As String = Path.Combine(scratch, "cache")
+        Directory.CreateDirectory(cache)
+        Using session As New ResourceSession(Descriptor(), provider, cache, 100000)
+            session.LoadListing(folder, CancellationToken.None)
+            Dim movePath As String = session.Entries.Single(Function(e) e.Name = "move.jpg").LocalPath
+            Dim deletePath As String = session.Entries.Single(Function(e) e.Name = "delete.jpg").LocalPath
+            Assert.Equal(EnsureLocalOutcome.Ready, session.TryEnsureLocal(movePath))
+            Assert.Equal(EnsureLocalOutcome.Ready, session.TryEnsureLocal(deletePath))
+            Using target = ResourceRouting.CaptureDelete(movePath, session)
+                Dim destination As String = Path.Combine(scratch, "moved.jpg")
+                Dim moved = target.Transfer(TransferKind.Move, destination, False)
+                Assert.Equal(TransferResult.Completed, moved.Result)
+                Assert.Equal(SHA256.HashData(bytes), SHA256.HashData(File.ReadAllBytes(destination)))
+                Assert.Equal(StatOutcome.Missing, provider.Stat(folder & "/move.jpg").Outcome)
+                Assert.False(File.Exists(movePath))
+            End Using
+            Using target = ResourceRouting.CaptureDelete(deletePath, session)
+                Dim decision = DeletePolicy.DecideForProvider(target.Capabilities,
+                    New DeleteVolumeFacts With {.Kind = DeleteVolumeKind.FixedDisk}, bytes.Length, True, False)
+                Assert.True(decision.IsPermanent)
+                target.Execute()
+                Assert.Equal(StatOutcome.Missing, provider.Stat(folder & "/delete.jpg").Outcome)
+                Assert.False(File.Exists(deletePath))
+            End Using
+            Assert.Empty(provider.ListEntries(folder, CancellationToken.None))
+        End Using
     End Sub
 
     <WritableLiveFact>
@@ -262,6 +299,30 @@ Public Class RemoteSlotLiveTests
         FileManager.DeleteFile(free)
         Assert.False(connections.FileExists(free))
         Assert.True(connections.FileExists(destination))
+    End Sub
+
+    <WritableLiveFact>
+    Public Sub Live_Move_between_two_SFTP_servers_verifies_bytes_and_removes_the_first_original()
+        Using second As New WritableServerFixture()
+            Dim firstDescriptor As ResourceDescriptor = Descriptor()
+            Dim secondDescriptor As ResourceDescriptor = Descriptor(second.Fingerprint)
+            secondDescriptor.Id = "rw-second"
+            secondDescriptor.Port = second.Port
+            Using connections As New RemoteSlotConnections(
+                Function() New List(Of ResourceDescriptor) From {firstDescriptor, secondDescriptor},
+                Function(d As ResourceDescriptor) If(d.Id = secondDescriptor.Id, second.Password, server.Password), AddressOf Dial)
+                RemoteSlotConnections.Current = connections
+                Dim sourceLocator As String = SlotPaths.Combine(SlotFolder(""), "between-" & Guid.NewGuid().ToString("N") & ".jpg")
+                Dim destLocator As String = "sftp://" & second.User & "@127.0.0.1:" & second.Port.ToString() & "/MOV/landed.jpg"
+                Dim local As String = LocalFile("between.jpg", 4097)
+                FileManager.CopyFile(local, sourceLocator)
+                Dim moved As TransferOutcome = Nothing
+                FileManager.MoveFileTracked(sourceLocator, destLocator, False, moved)
+                Assert.Equal(TransferResult.Completed, moved.Result)
+                Assert.False(connections.FileExists(sourceLocator))
+                Assert.Equal(SHA256.HashData(File.ReadAllBytes(local)), SHA256.HashData(ServerBytes(destLocator)))
+            End Using
+        End Using
     End Sub
 
     <WritableLiveFact>

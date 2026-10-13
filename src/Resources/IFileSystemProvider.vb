@@ -51,7 +51,8 @@ Friend NotInheritable Class ProviderCapabilities
                    Optional isMetered As Boolean = False,
                    Optional costHint As ProviderCostHint = ProviderCostHint.Slow,
                    Optional supportsAtomicOverwriteRename As Boolean = False,
-                   Optional supportsStableSourceDelete As Boolean = False)
+                   Optional supportsStableSourceDelete As Boolean = False,
+                   Optional supportsCheckedSourceDelete As Boolean = False)
         Me.CanWrite = canWrite
         Me.CanDelete = canDelete
         Me.CanRename = canRename
@@ -63,6 +64,7 @@ Friend NotInheritable Class ProviderCapabilities
         Me.CostHint = costHint
         Me.SupportsAtomicOverwriteRename = supportsAtomicOverwriteRename
         Me.SupportsStableSourceDelete = supportsStableSourceDelete
+        Me.SupportsCheckedSourceDelete = supportsCheckedSourceDelete
     End Sub
 
     Friend ReadOnly Property CanWrite As Boolean
@@ -85,8 +87,11 @@ Friend NotInheritable Class ProviderCapabilities
     ''' <summary>The source can be deleted only if it is still the version that was copied: the provider
     ''' either offers a conditional delete or the file is owned locally, where re-checking the version
     ''' immediately before the delete is what the app has always done. Arbitrary SFTP does NOT have
-    ''' this, and is never assumed to - a move out of it is a copy unless the guarantee is declared.</summary>
+    ''' this, and is never assumed to. Ordinary SFTP moves use SupportsCheckedSourceDelete instead.</summary>
     Friend ReadOnly Property SupportsStableSourceDelete As Boolean
+    ''' <summary>Ordinary move: re-check source metadata, remove, then confirm absence.
+    ''' Does not promise an atomic conditional delete (ticket 221).</summary>
+    Friend ReadOnly Property SupportsCheckedSourceDelete As Boolean
 
     ''' <summary>A local disk or a UNC share: every verb, a Recycle Bin, nothing to
     ''' materialise.</summary>

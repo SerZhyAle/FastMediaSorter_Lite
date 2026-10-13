@@ -1,0 +1,17 @@
+{
+  "_comment": "Written by tools/New-SocialCard.ps1; compared by its -Check (Build-SitePages -Check runs it). Never edit by hand.",
+  "generator": "tools/New-SocialCard.ps1",
+  "inputsSha256": "fd9df4e6c8b58675089986710eb1f2f36e0670b492d80cd1fd8e4cedda125e92",
+  "renderings": [
+    {
+      "file": "assets/social-card-1200x630.png",
+      "width": 1200,
+      "height": 630
+    },
+    {
+      "file": "assets/social-preview-1280x640.png",
+      "width": 1280,
+      "height": 640
+    }
+  ]
+}

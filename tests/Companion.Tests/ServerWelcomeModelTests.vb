@@ -1,4 +1,4 @@
-Option Strict On
+﻿Option Strict On
 
 Imports System.Collections.Generic
 Imports FastMediaSorterCompanion
@@ -65,9 +65,9 @@ Public Class ServerWelcomeModelTests
     End Sub
 
     <Fact>
-    Public Sub The_exchange_half_has_its_statement_account_and_done_steps_in_that_order()
+    Public Sub The_exchange_half_has_six_steps_without_service()
         Dim steps As IReadOnlyList(Of WelcomeStepKind) = ServerWelcomeModel.StepsFor(WelcomeHalf.Exchange)
-        Assert.Equal(New List(Of WelcomeStepKind) From {WelcomeStepKind.ExchangeStatement, WelcomeStepKind.ExchangeAccount, WelcomeStepKind.ExchangeDone},
+        Assert.Equal(New List(Of WelcomeStepKind) From {WelcomeStepKind.ExchangeStatement, WelcomeStepKind.ExchangeDoors, WelcomeStepKind.ExchangeAddress, WelcomeStepKind.ExchangeAccount, WelcomeStepKind.ExchangeCertificate, WelcomeStepKind.ExchangeDone},
                      New List(Of WelcomeStepKind)(steps))
     End Sub
 

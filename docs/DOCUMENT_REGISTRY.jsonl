@@ -65,7 +65,6 @@
 {"path": "docs/how-to-resources.html", "topic": "how-to-resources", "area": "website", "triggers": ["Changes to website behavior, structure or workflow"], "role": "source"}
 {"path": "docs/how-to-setup.html", "topic": "how-to-setup", "area": "website", "triggers": ["Changes to website behavior, structure or workflow"], "role": "source"}
 {"path": "docs/how-to-viewer.html", "topic": "how-to-viewer", "area": "website", "triggers": ["Changes to website behavior, structure or workflow"], "role": "source"}
-{"path": "docs/index.html", "topic": "index", "area": "website", "triggers": ["Changes to website behavior, structure or workflow"], "role": "source"}
 {"path": "docs/privacy.html", "topic": "privacy", "area": "website", "triggers": ["Changes to website behavior, structure or workflow"], "role": "source"}
 {"path": "docs/publish-folders-android.html", "topic": "publish-folders-android", "area": "website", "triggers": ["Changes to website behavior, structure or workflow"], "role": "source"}
 {"path": "exchange-server/README.md", "topic": "exchange-server README", "area": "engineering", "triggers": ["Changes to the exchange server's layout, build, tests or settled behaviour"], "role": "source"}
@@ -113,10 +112,15 @@
 {"path": "robots.txt", "topic": "Site discovery and crawling", "area": "website", "triggers": ["Changes to public page inventory or canonical URLs"], "role": "render", "generator": "tools/Build-SitePages.ps1 -Check"}
 {"path": "server.html", "topic": "server", "area": "website", "triggers": ["Changes to website behavior, structure or workflow"], "role": "source"}
 {"path": "sitemap.xml", "topic": "Site discovery and crawling", "area": "website", "triggers": ["Changes to public page inventory or canonical URLs"], "role": "render", "generator": "tools/Build-SitePages.ps1 -Check"}
+{"path": "support.html", "topic": "support", "area": "website", "triggers": ["Changes to website behavior, structure or workflow"], "role": "render", "generator": "tools/Build-SitePages.ps1 -Check"}
 {"path": "tools/audit-slice-template.md", "topic": "audit-slice-template", "area": "engineering", "triggers": ["Changes to engineering behavior, structure or workflow"], "role": "source"}
 {"path": "topics.html", "topic": "topics", "area": "website", "triggers": ["Changes to website behavior, structure or workflow"], "role": "source"}
 {"path": "trust.html", "topic": "trust", "area": "website", "triggers": ["Changes to website behavior, structure or workflow"], "role": "render", "generator": "tools/Build-SitePages.ps1 -Check"}
+{"path": "whats-new.html", "topic": "whats-new", "area": "website", "triggers": ["Changes to website behavior, structure or workflow"], "role": "render", "generator": "tools/Build-SitePages.ps1 -Check"}
 {"path": "docs/contracts/DISK-SHARE.md", "topic": "DISK-SHARE", "area": "contracts", "triggers": ["Adoption, disk lifecycle, ownership, bundle, hosting or conformance changes for DISK-SHARE"], "role": "source"}
 {"path":"docs/guides/WINDOWS_UI_AUDIT.md","topic":"Windows UI contract audit","area":"engineering","triggers":["Windows viewer, settings, server dialogs, menu/theme/DPI or UI acceptance changes"],"role":"source"}
 {"path": "docs/contracts/USER-PLAYLIST.md", "topic": "USER-PLAYLIST", "area": "contracts", "triggers": ["Adoption, version, conformance gate or exception changes for USER-PLAYLIST"], "role": "source"}
 {"path": "tools/dynaudit/README.md", "topic": "DynAudit runbook", "area": "engineering", "triggers": ["Changes to the dynamic audit harness, its scenes or its campaign"], "role": "source"}
+{"path":"tests/Integration/ManagerWelcomeScenes/README.md","topic":"Manager welcome scene harness","area":"engineering","triggers":["Changes to the manager onboarding scenes, checks or manual acceptance scope"],"role":"source"}
+{"path":"tests/Integration/ExchangeFirstRunScenes/README.md","topic":"Exchange first-run scene harness","area":"engineering","triggers":["Changes to exchange server onboarding scenes or manual acceptance scope"],"role":"source"}
+{"path":"tests/Integration/ResourceAddScenes/README.md","topic":"Resource add scene harness","area":"engineering","triggers":["Changes to guided resource addition scenes or manual acceptance scope"],"role":"source"}

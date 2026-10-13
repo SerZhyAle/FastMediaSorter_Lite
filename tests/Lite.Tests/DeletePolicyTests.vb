@@ -15,6 +15,25 @@ Imports Xunit
 ' shown when two of them apply, and that is a sentence a person reads, not an internal.
 Public Class DeletePolicyTests
 
+    <Theory>
+    <InlineData(True, False)>
+    <InlineData(False, False)>
+    <InlineData(True, True)>
+    Public Sub A_remote_source_never_inherits_the_cache_disks_recycle_bin(binEnabled As Boolean, forced As Boolean)
+        Dim decision = DeletePolicy.DecideForProvider(New ProviderCapabilities(hasRecycleBin:=False),
+            Facts(DeleteVolumeKind.FixedDisk), 100, binEnabled, forced)
+        Assert.True(decision.IsPermanent)
+        Assert.Equal(PermanentReason.VolumeUnknown, decision.Reason)
+        Assert.True(DeletePolicy.ShouldConfirm("permanentOnly", decision))
+        Assert.False(DeletePolicy.ShouldConfirm("never", decision))
+    End Sub
+
+    <Fact>
+    Public Sub Ordinary_local_deletion_keeps_the_volume_policy()
+        Assert.False(DeletePolicy.DecideForProvider(Nothing, Facts(DeleteVolumeKind.FixedDisk), 100, True, False).IsPermanent)
+        Assert.False(DeletePolicy.DecideForProvider(ProviderCapabilities.LocalDisk, Facts(DeleteVolumeKind.FixedDisk), 100, True, False).IsPermanent)
+    End Sub
+
     Private Shared Function Facts(kind As DeleteVolumeKind,
                                   Optional binDisabled As Boolean = False,
                                   Optional quotaBytes As Long = -1) As DeleteVolumeFacts

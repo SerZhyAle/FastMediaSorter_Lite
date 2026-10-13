@@ -17,6 +17,7 @@
 {"address":"https://serzhyale.github.io/FastMediaSorter_Lite/trust.html","holder":"publishing/installer/FastMediaSorter.iss","kind":"trust","carried":"built","fragment":"SiteBaseUrl + 'trust.html'"}
 {"address":"https://serzhyale.github.io/FastMediaSorter_Lite/lang/ru/trust.html","holder":"publishing/installer/FastMediaSorter.iss","kind":"trust","carried":"built","fragment":"SiteBaseUrl + 'lang/ru/trust.html'"}
 {"address":"https://serzhyale.github.io/FastMediaSorter_Lite/lang/uk/trust.html","holder":"publishing/installer/FastMediaSorter.iss","kind":"trust","carried":"built","fragment":"SiteBaseUrl + 'lang/uk/trust.html'"}
+{"address":"https://serzhyale.github.io/FastMediaSorter_Lite/","holder":"publishing/winget/SerZhyAle.FastMediaSorter.locale.en-US.yaml","kind":"landing"}
 {"address":"https://serzhyale.github.io/FastMediaSorter_Lite/trust.html","holder":"publishing/winget/SerZhyAle.FastMediaSorter.locale.en-US.yaml","kind":"trust"}
 {"address":"https://serzhyale.github.io/FastMediaSorter_Lite/server.html","holder":"publishing/winget/server/SerZhyAle.FastMediaSorter.Server.locale.en-US.yaml","kind":"edition"}
 {"address":"https://serzhyale.github.io/FastMediaSorter_Lite/trust.html","holder":"publishing/winget/server/SerZhyAle.FastMediaSorter.Server.locale.en-US.yaml","kind":"trust"}

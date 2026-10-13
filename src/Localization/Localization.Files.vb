@@ -8,6 +8,29 @@ Partial Public NotInheritable Class Localization
 
     Private Shared Sub AddFileStrings()
 
+        ' Ticket 221: permanent remote deletion and incomplete checked moves.
+        Add("Исходный файл изменился",
+            "The source file changed", "Початковий файл змінився", "Die Quelldatei wurde geändert",
+            "Il file di origine è cambiato", "El archivo de origen ha cambiado", "Le fichier source a changé",
+            "O arquivo de origem mudou", "تغيّر الملف الأصلي", "स्रोत फ़ाइल बदल गई", "উৎস ফাইলটি পরিবর্তিত হয়েছে",
+            "اصل فائل تبدیل ہو گئی", "源文件已更改")
+        Add("Исходный файл не удалось удалить",
+            "The source file could not be deleted", "Не вдалося видалити початковий файл", "Die Quelldatei konnte nicht gelöscht werden",
+            "Impossibile eliminare il file di origine", "No se pudo eliminar el archivo de origen", "Le fichier source n'a pas pu être supprimé",
+            "Não foi possível excluir o arquivo de origem", "تعذّر حذف الملف الأصلي", "स्रोत फ़ाइल हटाई नहीं जा सकी", "উৎস ফাইলটি মুছে ফেলা যায়নি",
+            "اصل فائل حذف نہیں ہو سکی", "无法删除源文件")
+        Add("Результат удаления на сервере неизвестен - проверьте исходную папку",
+            "The server deletion result is unknown - check the source folder", "Результат видалення на сервері невідомий - перевірте початкову теку",
+            "Das Ergebnis der Löschung auf dem Server ist unbekannt - prüfen Sie den Quellordner",
+            "L'esito dell'eliminazione sul server è sconosciuto - controlla la cartella di origine",
+            "Se desconoce el resultado de la eliminación en el servidor - compruebe la carpeta de origen",
+            "Le résultat de la suppression sur le serveur est inconnu - vérifiez le dossier source",
+            "O resultado da exclusão no servidor é desconhecido - verifique a pasta de origem",
+            "نتيجة الحذف على الخادم غير معروفة - تحقق من المجلد الأصلي",
+            "सर्वर पर हटाने का परिणाम अज्ञात है - स्रोत फ़ोल्डर देखें",
+            "সার্ভারে মুছে ফেলার ফলাফল অজানা - উৎস ফোল্ডার পরীক্ষা করুন",
+            "سرور پر حذف کرنے کا نتیجہ نامعلوم ہے - اصل فولڈر دیکھیں", "服务器上的删除结果未知 - 请检查源文件夹")
+
         ' --- Ticket 047: file operations, undo and input ---------------------------
         Add("Файл открыт в другой программе, оставлен в списке: {0}",
             "File is open in another program, kept in the list: {0}",

@@ -29,6 +29,9 @@ Partial Public Class Main_Form
     ''' ran the wrong branch. ListIndex is the snapshot needed to put the file back
     ''' if the operation fails.</summary>
     Private NotInheritable Class FileOp
+#If Not NETFRAMEWORK Then
+        Public Property RemoteDelete As ResourceDeleteTarget
+#End If
         Public Property Kind As FileOpKind
         Public Property Source As String = ""
         Public Property Destination As String = ""
@@ -132,6 +135,15 @@ Partial Public Class Main_Form
 
     ''' <summary>The work itself, on a worker thread. Touches nothing but its argument.</summary>
     Private Shared Sub RunFileOp(op As FileOp)
+#If Not NETFRAMEWORK Then
+        If op.RemoteDelete IsNot Nothing AndAlso (op.Kind = FileOpKind.Move OrElse op.Kind = FileOpKind.Copy) Then
+            Using target As ResourceDeleteTarget = op.RemoteDelete
+                EnsureDestinationFolder(op)
+                op.OpOutcome = target.Transfer(If(op.Kind = FileOpKind.Move, TransferKind.Move, TransferKind.Copy), op.Destination, op.ReplaceExisting)
+            End Using
+            Return
+        End If
+#End If
         Select Case op.Kind
             Case FileOpKind.Copy
                 EnsureDestinationFolder(op)
@@ -155,7 +167,17 @@ Partial Public Class Main_Form
                 MoveFile(op.Source, op.Destination, op.ReplaceExisting)
 #End If
             Case FileOpKind.Delete
+#If Not NETFRAMEWORK Then
+                Using target As ResourceDeleteTarget = op.RemoteDelete
+                    If target Is Nothing Then
+                        DeleteFile(op.Source)
+                    Else
+                        target.Execute()
+                    End If
+                End Using
+#Else
                 DeleteFile(op.Source)
+#End If
             Case FileOpKind.DeleteUndo
                 ' A resource copy's inverse is conditional on its record (100 §15.6 item 5):
                 ' the created object must still be exactly as it was left, and only a
@@ -270,6 +292,7 @@ Partial Public Class Main_Form
 
     ''' <summary>Back on the UI thread once an operation has finished.</summary>
     Private Sub FileOpQueue_OpCompleted(sender As Object, done As FileOpQueue(Of FileOp).Completion)
+        done.Op.RemoteDelete?.Dispose()
         If Me.IsDisposed Then Return
         FinishFileOp(done.Op, done.Error_Info)
         ShowFileOpQueueDepth()
@@ -341,7 +364,11 @@ Partial Public Class Main_Form
     ''' FileOpWorkerBusy() first.</summary>
     Private Sub QueueFileOp(op As FileOp)
 #If Not NETFRAMEWORK Then
+        If (op.Kind = FileOpKind.Move OrElse op.Kind = FileOpKind.Copy) AndAlso op.RemoteDelete Is Nothing Then
+            op.RemoteDelete = ResourceRouting.CaptureDelete(op.Source)
+        End If
         If Not EnsureFileOpQueue().Enqueue(op) Then
+            op.RemoteDelete?.Dispose()
             ' Belt and braces: FileOpWorkerBusy already refuses everything once the queue is
             ' closed, so this should be unreachable. If it ever is reached, the operation is
             ' NOT going to run and that has to surface as a failure rather than be swallowed.
@@ -1514,65 +1541,74 @@ Partial Public Class Main_Form
             Return False
         End If
 
-        If Not File.Exists(targetPath) Then
-            lbl_Status.Text = Localization.T("! Файл не найден")
-            Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0580: case DeleteFile failed: not found")
-            Return False
-        End If
-
-        ' -1 when the size cannot be read: the quota rule then never fires, which is the
-        ' safe direction - it can only turn a "permanent" prediction back into "to the bin",
-        ' and the shell has the final word on that anyway.
-        Dim size_Bytes As Long = -1
         Try
-            size_Bytes = New FileInfo(targetPath).Length
-        Catch
-        End Try
+            Using remoteTarget As ResourceDeleteTarget = ResourceRouting.CaptureDelete(targetPath)
+                If remoteTarget Is Nothing AndAlso Not File.Exists(targetPath) Then
+                    lbl_Status.Text = Localization.T("! Файл не найден")
+                    Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0580: case DeleteFile failed: not found")
+                    Return False
+                End If
 
-        ' Two preferences, both from Ф4. "Use the Recycle Bin" off reaches the same verdict
-        ' Shift+DEL does, and for the same reason - the user asked - so it is told to the
-        ' policy rather than handled beside it.
-        Dim prefs As ModernViewerPreferences = GetModernPreferences()
-        Dim decision As DeleteDecision =
-            DeletePolicy.Decide(DeleteVolumeProbe.FactsFor(targetPath), size_Bytes,
-                                binEnabledBySetting:=prefs.DeleteToRecycleBin,
-                                forcedPermanent:=forcedPermanent)
+                ' -1 when the size cannot be read: the quota rule then never fires, which is the
+                ' safe direction - it can only turn a "permanent" prediction back into "to the bin",
+                ' and the shell has the final word on that anyway.
+                Dim size_Bytes As Long = -1
+                Try
+                    size_Bytes = New FileInfo(targetPath).Length
+                Catch
+                End Try
 
-        ' The delete question is now its own setting, not the blanket "no confirmations"
-        ' flag: that one still governs every other file operation, and it could never say
-        ' "ask me only about the deletions that cannot be taken back" (§3.7, §0.4).
-        If DeletePolicy.ShouldConfirm(prefs.ConfirmDelete, decision) Then
-            If ViewerBox.Show(Me, DeleteText.ConfirmOne(decision, Path.GetFileName(targetPath)),
-                               Localization.T("Подтверждение удаления"),
-                               MessageBoxButtons.YesNo, MessageBoxIcon.Warning, MessageBoxDefaultButton.Button2) <> DialogResult.Yes Then
-                Return False
-            End If
-        End If
+                ' Two preferences, both from Ф4. "Use the Recycle Bin" off reaches the same verdict
+                ' Shift+DEL does, and for the same reason - the user asked - so it is told to the
+                ' policy rather than handled beside it.
+                Dim prefs As ModernViewerPreferences = GetModernPreferences()
+                Dim decision As DeleteDecision =
+                    DeletePolicy.DecideForProvider(remoteTarget?.Capabilities,
+                                        If(remoteTarget Is Nothing, DeleteVolumeProbe.FactsFor(targetPath), Nothing), size_Bytes,
+                                        binEnabledBySetting:=prefs.DeleteToRecycleBin,
+                                        forcedPermanent:=forcedPermanent)
 
-        Try
-            ' One release path for both builds and every operation: stops the GIF timer,
-            ' disposes the shown image AND its stream, clears the box and stops VLC, which
-            ' holds the playing file open - the shell fails on a locked file just as
-            ' File.Delete did.
-            ReleaseActiveMedia()
+                ' The delete question is now its own setting, not the blanket "no confirmations"
+                ' flag: that one still governs every other file operation, and it could never say
+                ' "ask me only about the deletions that cannot be taken back" (§3.7, §0.4).
+                If DeletePolicy.ShouldConfirm(prefs.ConfirmDelete, decision) Then
+                    If ViewerBox.Show(Me, DeleteText.ConfirmOne(decision, If(remoteTarget Is Nothing, Path.GetFileName(targetPath), remoteTarget.DisplayPath)),
+                                       Localization.T("Подтверждение удаления"),
+                                       MessageBoxButtons.YesNo, MessageBoxIcon.Warning, MessageBoxDefaultButton.Button2) <> DialogResult.Yes Then
+                        Return False
+                    End If
+                End If
 
-            Dim op As New FileOp With {
-                .Kind = If(decision.Outcome = DeleteOutcome.Recycle, FileOpKind.RecycleDelete, FileOpKind.Delete),
-                .Source = targetPath,
-                .DeletedAtUtc = DateTime.UtcNow,
-                .PermanentDeleteReason = decision.Reason,
-                .ListGeneration = file_List_Generation}
-            QueueFileOp(op)
-            ' Optimistic, rolled back by FinishFileOp if the operation fails.
-            op.ListIndex = RemoveCurrentFileFromList(targetPath)
+                Try
+                    ' One release path for both builds and every operation: stops the GIF timer,
+                    ' disposes the shown image AND its stream, clears the box and stops VLC, which
+                    ' holds the playing file open - the shell fails on a locked file just as
+                    ' File.Delete did.
+                    ReleaseActiveMedia()
 
-            lbl_Status.Text = DeleteText.StatusOne(decision, targetPath)
-            Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0550: file queued for deletion (" &
-                            op.Kind.ToString() & "): " & targetPath)
-            Return True
+                    Dim op As New FileOp With {
+                        .Kind = If(decision.Outcome = DeleteOutcome.Recycle, FileOpKind.RecycleDelete, FileOpKind.Delete),
+                        .Source = targetPath,
+                        .DeletedAtUtc = DateTime.UtcNow,
+                        .PermanentDeleteReason = decision.Reason,
+                        .RemoteDelete = remoteTarget?.Fork(),
+                        .ListGeneration = file_List_Generation}
+                    QueueFileOp(op)
+                    ' Optimistic, rolled back by FinishFileOp if the operation fails.
+                    op.ListIndex = RemoveCurrentFileFromList(targetPath)
+
+                    SayProgress(Localization.TF("!Ждите. Файл удаляется в каталоге {0}", If(remoteTarget Is Nothing, targetPath, remoteTarget.DisplayPath)))
+                    Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0550: file queued for deletion (" &
+                                    op.Kind.ToString() & "): " & targetPath)
+                    Return True
+                Catch ex As Exception
+                    ReportOperationError("E001", ex, FolderOfFile(targetPath))
+                    Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0590: ERR: " & ex.Message)
+                    Return False
+                End Try
+            End Using
         Catch ex As Exception
-            ReportOperationError("E001", ex, FolderOfFile(targetPath))
-            Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0590: ERR: " & ex.Message)
+            ReportOperationError("E001", ex)
             Return False
         End Try
     End Function
@@ -1650,8 +1686,11 @@ Partial Public Class Main_Form
                                       op.StatusNote & CreatedFolderNote(op)
 
                 Case FileOpKind.Delete, FileOpKind.RecycleDelete
-                    ' The status line was already written when the delete was queued -
-                    ' and it was built from the same decision as the confirmation.
+#If Not NETFRAMEWORK Then
+                    lbl_Status.Text = DeleteText.StatusOne(New DeleteDecision With {
+                        .Outcome = If(op.Kind = FileOpKind.RecycleDelete, DeleteOutcome.Recycle, DeleteOutcome.Permanent),
+                        .Reason = op.PermanentDeleteReason}, If(op.RemoteDelete Is Nothing, op.Source, op.RemoteDelete.DisplayPath))
+#End If
 
 #If NETFRAMEWORK Then
                 Case FileOpKind.DeleteUndo
@@ -1796,6 +1835,8 @@ Partial Public Class Main_Form
                 If transfer_Failure.Outcome.Result = TransferResult.CopyOnly Then
                     lbl_Status.Text = Localization.TF("! Перемещение не завершено: файл скопирован в {0}, исходный файл остался на месте",
                                                       FolderOfFile(op.Destination))
+                    lbl_Status.Text = Localization.TF("{0}: {1}", lbl_Status.Text,
+                                                      ResourceMessages.ForMoveFailure(transfer_Failure.Outcome.Reason))
                 Else
                     lbl_Status.Text = Localization.T("! Результат последнего шага неизвестен: проверьте файл в обеих папках - ничего не удалялось автоматически")
                 End If
@@ -1808,6 +1849,9 @@ Partial Public Class Main_Form
                 Dim failure_Folder As String =
                     If(PathFailure.Classify(failure) = PathFailureKind.Locked OrElse String.IsNullOrEmpty(op.Destination),
                        FolderOfFile(op.Source), FolderOfFile(op.Destination))
+                If op.RemoteDelete IsNot Nothing Then
+                    failure_Folder = If(TypeOf failure Is ResourceDeleteException, "", op.RemoteDelete.DisplayPath)
+                End If
                 ReportOperationError("E014", failure, failure_Folder)
             End If
 #Else

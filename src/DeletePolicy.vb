@@ -71,6 +71,16 @@ End Class
 
 Friend Module DeletePolicy
 
+    ''' <summary>A materialised resource's cache volume cannot supply its Recycle Bin.</summary>
+    Friend Function DecideForProvider(capabilities As ProviderCapabilities, facts As DeleteVolumeFacts,
+                                      fileSizeBytes As Long, binEnabledBySetting As Boolean,
+                                      forcedPermanent As Boolean) As DeleteDecision
+        If capabilities IsNot Nothing AndAlso Not capabilities.HasRecycleBin Then
+            Return Permanent(PermanentReason.VolumeUnknown)
+        End If
+        Return Decide(facts, fileSizeBytes, binEnabledBySetting, forcedPermanent)
+    End Function
+
     ''' <summary>
     ''' The whole rule set.
     '''

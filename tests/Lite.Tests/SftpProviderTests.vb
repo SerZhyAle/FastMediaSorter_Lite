@@ -38,6 +38,7 @@ Public Class SftpProviderTests
         Assert.Equal(ResourceKind.Sftp, roProvider.Kind)
         Assert.False(roProvider.Capabilities.CanWrite)
         Assert.False(roProvider.Capabilities.CanDelete)
+        Assert.False(roProvider.Capabilities.SupportsCheckedSourceDelete)
         Assert.False(roProvider.Capabilities.CanRename)
         Assert.False(roProvider.Capabilities.HasRecycleBin)
         Assert.True(roProvider.Capabilities.NeedsMaterialisation)
@@ -56,6 +57,8 @@ Public Class SftpProviderTests
         Dim rwProvider As New SftpProvider(writableDesc, "pass", Nothing)
         Assert.True(rwProvider.Capabilities.CanWrite)
         Assert.True(rwProvider.Capabilities.CanDelete)
+        Assert.True(rwProvider.Capabilities.SupportsCheckedSourceDelete)
+        Assert.False(rwProvider.Capabilities.SupportsStableSourceDelete)
         Assert.True(rwProvider.Capabilities.CanRename)
     End Sub
 

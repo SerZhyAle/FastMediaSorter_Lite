@@ -249,6 +249,8 @@ Public Class ImportedSettingsLimitsTests
             New NumericSpec("ChromeCornerRadius", 0, 16),
             New NumericSpec("RecipientsOverlayOpacity", 40, 100),
             New NumericSpec("RecipientsOverlayVisibleRows", 3, 11),
+            New NumericSpec("RecipientsOverlayCustomX", -32768, 32767),
+            New NumericSpec("RecipientsOverlayCustomY", -32768, 32767),
             New NumericSpec("VideoControlsHideDelaySec", 1, 15),
             New NumericSpec("SeekShortSec", 1, 600),
             New NumericSpec("SeekMediumSec", 1, 600),
@@ -489,7 +491,7 @@ Public Class ImportedSettingsLimitsTests
             "IncludeDocumentInNavigation", "IncludeSubfolders", "IncludeVideoInNavigation", "ModernChrome", "ChromePinned", "ChromeRow1Pinned", "ChromeRow2Pinned", "ChromeStatusPinned", "RecipientsOverlayPinned", "ChromeWindowControlsPinned",
             "ReduceMotion", "RememberVideoPosition", "ResumeLastPlayback", "SortOtherFiles", "SecureIncludeInNavigation",
             "SecureShowTrueName", "ShowVideoControlsWhenPaused", "StopSlideshowOnManualNavigation",
-            "VideoAutoplay"}
+            "VideoAutoplay", "RecipientsOverlayHasCustomPosition"}
         Dim actual As New HashSet(Of String)(ModernViewerPreferences.WritableProperties().
                                              Where(Function(prop) prop.PropertyType = GetType(Boolean)).
                                              Select(Function(prop) prop.Name))
@@ -512,6 +514,7 @@ Public Class ImportedSettingsLimitsTests
             .RecipientsOverlayPosition = "bottomRight", .RecipientsOverlayWidth = 400,
             .RecipientsOverlayFontSize = 14, .RecipientsOverlayOpacity = 77,
             .RecipientsOverlayVisibleRows = 8, .SlideshowRandomOrder = "shuffleCycle",
+            .RecipientsOverlayHasCustomPosition = True, .RecipientsOverlayCustomX = -137, .RecipientsOverlayCustomY = 245,
             .StopSlideshowOnManualNavigation = False, .SlideshowUiMode = "toolbarAndStatus",
             .VideoAutoplay = False, .IncludeVideoInNavigation = False, .RememberVideoPosition = False,
             .VideoControlsHideDelaySec = 9, .ShowVideoControlsWhenPaused = False,

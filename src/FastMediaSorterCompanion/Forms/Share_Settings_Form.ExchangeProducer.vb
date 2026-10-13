@@ -1,4 +1,4 @@
-Option Strict On
+﻿Option Strict On
 
 Imports System.Drawing
 Imports System.Threading
@@ -84,6 +84,14 @@ Partial Public NotInheritable Class Share_Settings_Form
             .WrapContents = False, .Margin = New Padding(0, 14, 0, 2), .Visible = False}
         _pxGroup.Controls.Add(New Label With {.AutoSize = True, .Margin = New Padding(0, 0, 0, 2), .Font = _pxBoldFont, .Text = ExchangePublishText.GroupTitle()})
 
+        If ExchangeFirstRunModel.GateOpen() Then
+            Dim addResource = PxButton(Localization.T("Добавить ресурс для публикации.."), Sub()
+                ResourceAddRequested = True
+                Close()
+            End Sub, "action.add")
+            addResource.MinimumSize = New Size(0, 44)
+            _pxGroup.Controls.Add(addResource)
+        End If
         _chkPxPublish = PxCheck(ExchangePublishText.PublishLabel(), AddressOf OnPxPublishChanged)
         _chkPxPublish.MaximumSize = New Size(ProducerContentWidth, 0)
         _pxGroup.Controls.Add(_chkPxPublish)

@@ -26,7 +26,9 @@
               canonical at the page's real URL, the Open Graph and Twitter sets (with
               title and description agreeing with the page's own), parseable JSON-LD
               whose url is the canonical, the hreflang set where translations exist
-              and x-default everywhere, and the og:image asset present on disk;
+              and x-default everywhere, the og:image asset present on disk with its
+              declared size (og:image:width/height) and a text alternative
+              (og:image:alt, twitter:image:alt) on every page (ticket 207);
       rule 6  a guide that declares data-ui-steps carries >= 1 screenshot from
               assets/guides/ with alt text whose PNG's true size matches its width and
               height attributes; every <img> on any page resolves, is tracked and has
@@ -70,7 +72,14 @@ trap {
 $Root    = Split-Path $PSScriptRoot -Parent
 $BaseUrl = 'https://serzhyale.github.io/FastMediaSorter_Lite'
 $LangDir = 'lang'   # keep in step with Build-SitePages.ps1's $LangDir
-$OgImage = 'assets/social-preview-1280x640.png'
+# The Open Graph image is the 1200x630 rendering of the one social card; its file and size are typed once, in the
+# `discoverability` block of tools/site-facts.json (ticket 207), which Build-SitePages.ps1 reads the same way.
+$FactsFile = Join-Path $PSScriptRoot 'site-facts.json'
+if (-not (Test-Path -LiteralPath $FactsFile)) { Exit-Verdict 'Test-SiteQuality' 2 "missing input: $FactsFile" }
+$ogSize    = @((Get-Content $FactsFile -Raw -Encoding UTF8 | ConvertFrom-Json).discoverability.socialCard.sizes | Where-Object { $_.name -eq 'open-graph' })[0]
+$OgImage   = [string]$ogSize.file
+$OgWidth   = [int]$ogSize.width
+$OgHeight  = [int]$ogSize.height
 
 $CopyFile   = Join-Path $Root 'tools\site-copy.json'
 $TrustFile  = Join-Path $Root 'tools\trust-copy.json'
@@ -278,6 +287,18 @@ foreach ($p in $pages) {
     if ($ogUrl -and $ogUrl -ne $can) { Problem "${rel}: og:url is not the canonical" }
     $ogImg = Attr $h '(?i)<meta\s+property="og:image"\s+content="([^"]*)"'
     if ($ogImg -and $ogImg -ne "$BaseUrl/$OgImage") { Problem "${rel}: og:image is not $BaseUrl/$OgImage" }
+    # The image set of canon PROMOTION section 3: its size, so a crawler need not fetch it to lay the card out, and a text
+    # alternative; twitter:image carries the same file and an alternative of its own.
+    $ogW = Attr $h '(?i)<meta\s+property="og:image:width"\s+content="([^"]*)"'
+    $ogH = Attr $h '(?i)<meta\s+property="og:image:height"\s+content="([^"]*)"'
+    $ogA = Attr $h '(?i)<meta\s+property="og:image:alt"\s+content="([^"]*)"'
+    if ($ogW -ne "$OgWidth") { Problem "${rel}: og:image:width is '$ogW', not $OgWidth" }
+    if ($ogH -ne "$OgHeight") { Problem "${rel}: og:image:height is '$ogH', not $OgHeight" }
+    if (-not $ogA -or -not $ogA.Trim()) { Problem "${rel}: og:image:alt is missing or empty" }
+    $twImg = Attr $h '(?i)<meta\s+name="twitter:image"\s+content="([^"]*)"'
+    if ($twImg -and $twImg -ne "$BaseUrl/$OgImage") { Problem "${rel}: twitter:image is not $BaseUrl/$OgImage" }
+    $twA = Attr $h '(?i)<meta\s+name="twitter:image:alt"\s+content="([^"]*)"'
+    if (-not $twA -or -not $twA.Trim()) { Problem "${rel}: twitter:image:alt is missing or empty" }
     $twDesc = Attr $h '(?i)<meta\s+name="twitter:description"\s+content="([^"]*)"'
     if ($twDesc -and $desc -and $twDesc -ne $desc) { Problem "${rel}: twitter:description disagrees with the meta description" }
 

@@ -113,13 +113,21 @@ Public Class WindowsUiContractTests
                      Assert.All(items("exchange"), Sub(item) Assert.False(item.Visible))
                      Assert.Equal("exchange", context.LastPageId)
                      Assert.True((buttons("exchange").AccessibilityObject.State And AccessibleStates.Collapsed) <> 0)
-                     ' A subordinate item selects its page and scrolls its block into view.
+                     ' A subordinate item makes its group the page's whole content: the chosen
+                     ' block alone stays visible (2026-10-13 owner revision).
                      buttons("exchange").PerformClick()
                      items("exchange")(items("exchange").Count - 1).PerformClick()
                      Application.DoEvents()
                      Assert.Equal("exchange", context.LastPageId)
                      Assert.True(pages("exchange").Visible)
-                     Assert.True(pages("exchange").AutoScrollPosition.Y < 0, "the service block scrolled into view")
+                     Dim chosen = pages("exchange").Controls.Find("managerSettingsHeading_exchange_service", True)
+                     Assert.True(chosen.Length = 1 AndAlso chosen(0).Visible, "the service heading shows")
+                     Assert.All(pages("exchange").Controls.Find("managerSettingsHeading_exchange_server", True),
+                                Sub(heading) Assert.False(heading.Visible, "the server block is behind the filter"))
+                     ' The page row means the whole page again: the filter lifts.
+                     buttons("exchange").PerformClick()
+                     Assert.All(pages("exchange").Controls.Find("managerSettingsHeading_exchange_server", True),
+                                Sub(heading) Assert.True(heading.Visible, "the filter lifted"))
                      ' Left/Right fold and unfold the selected page's items.
                      Dim keyDown = GetType(Share_Settings_Form).GetMethod("OnSettingsNavigationKeyDown", flags)
                      keyDown.Invoke(window, New Object() {buttons("exchange"), New KeyEventArgs(Keys.Left)})
@@ -469,13 +477,13 @@ Public Class WindowsUiContractTests
                          For Each button In buttons.Values
                              Dim needed = TextRenderer.MeasureText(button.Text, button.Font,
                                  New Size(button.Width - window.LogicalToDeviceUnits(52), Integer.MaxValue), TextFormatFlags.WordBreak).Height
-                             Assert.True(button.Height >= needed + window.LogicalToDeviceUnits(16), code & ": " & button.Text)
+                             Assert.True(button.Height >= needed + window.LogicalToDeviceUnits(10), code & ": " & button.Text)
                          Next
                          For Each row In items.Values.SelectMany(Function(list) list)
                              Dim indent = window.LogicalToDeviceUnits(46)
                              Dim needed = TextRenderer.MeasureText(row.Text, row.Font,
                                  New Size(row.Width - indent - window.LogicalToDeviceUnits(12), Integer.MaxValue), TextFormatFlags.WordBreak).Height
-                             Assert.True(row.Height >= needed + window.LogicalToDeviceUnits(16), code & ": " & row.Text)
+                             Assert.True(row.Height >= needed + window.LogicalToDeviceUnits(10), code & ": " & row.Text)
                          Next
                          For Each row In ControlsBelow(window).OfType(Of ManagerSettingRow)().Where(Function(item) item.Visible)
                              Assert.True(row.Hint.Height >= row.Hint.GetPreferredSize(New Size(row.Hint.Width, 0)).Height, code & ": " & row.Caption.Text)

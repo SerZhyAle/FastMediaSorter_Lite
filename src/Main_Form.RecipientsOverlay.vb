@@ -123,8 +123,10 @@ Partial Public Class Main_Form
             recipients_Overlay = Nothing
         End If
 #If Not NETFRAMEWORK Then
-        ' The pin button and the rows host die with the window; drop the stale references.
+        ' The strip's buttons and the rows host die with the window; drop the stale references.
         recipients_Overlay_Pin = Nothing
+        recipients_Overlay_Edit = Nothing
+        recipients_Overlay_Strip = Nothing
         recipients_Overlay_Rows = Nothing
 #End If
 
@@ -299,15 +301,39 @@ Partial Public Class Main_Form
         Dim headerH As Integer = 0
 #If Not NETFRAMEWORK Then
         Dim pinSize As Integer = RecipientPx(ChromeMetrics.MinTarget)
-        ' Two px off the end edge keep the hover box clear of the window's rounded corner.
+        ' The header strip (219 §2): the edit button at its left end, the pin at its right, the
+        ' empty grip between them - the one surface that moves the window. The rows scroll under
+        ' it; its buttons stay put. The strip inherits the window's fill, so it paints nothing.
+        Dim strip As New Panel With {
+            .Name = "recipients_Overlay_Strip",
+            .Size = New Size(panelW, pinSize),
+            .BorderStyle = BorderStyle.None,
+            .Cursor = Cursors.SizeAll,
+            .AccessibleRole = AccessibleRole.TitleBar}
         ' (VB rejects a comment INSIDE a multi-line object initializer, so it sits here.)
+        Dim edit As New RecipientsEditButton(Me) With {
+            .Name = "recipients_Overlay_Edit",
+            .Size = New Size(pinSize, pinSize),
+            .Cursor = Cursors.Default,
+            .Location = New Point(RecipientPx(2), 0)}
+        AddHandler edit.Click, Sub() RecipientsOverlayEditRequested()
+        strip.Controls.Add(edit)
+        recipients_Overlay_Edit = edit
+        ' Two px off the end edge keep the hover box clear of the window's rounded corner.
         Dim pin As New RecipientsPinButton(Me) With {
             .Name = "recipients_Overlay_Pin",
             .Size = New Size(pinSize, pinSize),
+            .Cursor = Cursors.Default,
             .Location = New Point(Math.Max(0, panelW - pinSize - RecipientPx(2)), 0)}
         AddHandler pin.Click, Sub() ChromeToggleRecipientsPin()
-        overlay.Controls.Add(pin)
+        strip.Controls.Add(pin)
         recipients_Overlay_Pin = pin
+        overlay.Controls.Add(strip)
+        recipients_Overlay_Strip = strip
+        ' The grip is the strip's empty area: a left press runs the native move loop - the same
+        ' drag the window-commands panel's grip runs - so the pointer keeps its grab point, the
+        ' window never activates and the viewer keeps the keyboard for the whole drag (219 §2).
+        AddHandler strip.MouseDown, Sub(s, e) If e.Button = MouseButtons.Left Then RecipientsOverlayBeginDrag()
 
         Dim rowsPanel As New Panel With {
             .Location = New Point(0, pinSize),
@@ -335,7 +361,7 @@ Partial Public Class Main_Form
                 .UseVisualStyleBackColor = False,
                 .Location = New Point(0, y),
                 .Size = New Size(If(showCopy, rowW - copyW, rowW), rowH),
-                .ForeColor = If(isDelete, Color.White, RecipientRowInk()),
+                .ForeColor = If(isDelete, RecipientDeleteRowInk(), RecipientRowInk()),
                 .BackColor = If(isDelete, Color.FromArgb(96, 32, 32), RecipientRowFill(r.Item1))
             }
             b.FlatAppearance.BorderSize = 0
@@ -421,6 +447,25 @@ Partial Public Class Main_Form
     Private Const Recipients_Copy_Row_Name As String = "recipient_copy_row"
 #End If
 
+#If Not NETFRAMEWORK Then
+    ''' <summary>True when the recipients overlay's own opacity setting is below the 220 threshold: the
+    ''' panel's ink flips tone - black becomes white, white becomes black, the outline with it - on
+    ''' ITS knob, independently of the chrome panels' setting. High contrast never flips.</summary>
+    Private Function RecipientsOverlayInkInverted() As Boolean
+        If chrome_High_Contrast Then Return False
+        If modern_Preferences Is Nothing Then Return False
+        Return ChromeMetrics.InvertsInk(modern_Preferences.RecipientsOverlayOpacity)
+    End Function
+
+    ''' <summary>The theme the recipients overlay paints from: the BASE palette (never the panels'
+    ''' flipped view), flipped here only when the overlay's own knob is below the threshold. The
+    ''' fills are identical in both views; only the ink differs.</summary>
+    Private Function RecipientsOverlayTheme() As ChromeTheme
+        If RecipientsOverlayInkInverted() Then Return chrome_Base_Theme.WithInvertedInk()
+        Return chrome_Base_Theme
+    End Function
+#End If
+
     ''' <summary>The identity fill of a recipient row: the slot's pastel from the one palette the
     ''' settings grid reads too, so a slot is the same colour on both surfaces (129 §3.3). The
     ''' themed build turns high contrast back to the panel fill - identity colour is an aid,
@@ -430,7 +475,8 @@ Partial Public Class Main_Form
 #If NETFRAMEWORK Then
         Return RecipientPalette.ColorFor(slot, True)
 #Else
-        If chrome_Theme.IsHighContrast Then Return chrome_Theme.PanelFill
+        Dim theme As ChromeTheme = RecipientsOverlayTheme()
+        If theme.IsHighContrast Then Return theme.PanelFill
         Return RecipientPalette.ColorFor(slot, ThemeService.IsDark)
 #End If
     End Function
@@ -440,19 +486,33 @@ Partial Public Class Main_Form
 #If NETFRAMEWORK Then
         Return RecipientPalette.HoverColorFor(slot, True)
 #Else
-        If chrome_Theme.IsHighContrast Then Return chrome_Theme.ItemHover
+        Dim theme As ChromeTheme = RecipientsOverlayTheme()
+        If theme.IsHighContrast Then Return theme.ItemHover
         Return RecipientPalette.HoverColorFor(slot, ThemeService.IsDark)
 #End If
     End Function
 
     ''' <summary>The ink on an identity fill stays the theme's text ink (129 §3.1) - never a
-    ''' per-row black/white guess.</summary>
+    ''' per-row black/white guess. Below the overlay's own 220 half the ink flips tone like every
+    ''' other label of the panel.</summary>
     Private Function RecipientRowInk() As Color
 #If NETFRAMEWORK Then
         Return Color.Gainsboro
 #Else
-        If chrome_Theme.IsHighContrast Then Return chrome_Theme.Foreground
+        Dim theme As ChromeTheme = RecipientsOverlayTheme()
+        If theme.IsHighContrast Then Return theme.Foreground
+        If RecipientsOverlayInkInverted() Then Return ChromeTheme.InvertedTone(ThemePalette.ForDark(ThemeService.IsDark).TextPrimary)
         Return ThemePalette.ForDark(ThemeService.IsDark).TextPrimary
+#End If
+    End Function
+
+    ''' <summary>The delete row's label ink: the theme's destructive foreground, which flips with the
+    ''' overlay's own 220 knob (white becomes black below half). net48 keeps its fixed white.</summary>
+    Private Function RecipientDeleteRowInk() As Color
+#If NETFRAMEWORK Then
+        Return Color.White
+#Else
+        Return RecipientsOverlayTheme().DestructiveForeground
 #End If
     End Function
 
@@ -467,6 +527,7 @@ Partial Public Class Main_Form
         If recipients_Overlay Is Nothing OrElse recipients_Overlay.IsDisposed Then Return
 
         Try
+            Dim theme As ChromeTheme = RecipientsOverlayTheme()
             ' A resource that cannot delete draws its move and DEL rows disabled, from the
             ' same answer the refusal point gives (006 PV-7). Always True for a plain folder.
             Dim move_Allowed As Boolean = ResourceAllows(ResourceVerb.Move)
@@ -482,10 +543,10 @@ Partial Public Class Main_Form
                 Dim slot As Integer = CInt(row.Tag)
                 If slot = -1 Then
                     ' The delete row: its own colours, as BuildRecipientsOverlay paints them.
-                    row.ForeColor = If(delete_Allowed, chrome_Theme.DestructiveForeground, chrome_Theme.DisabledForeground)
-                    row.BackColor = If(delete_Allowed, chrome_Theme.DestructiveRest, chrome_Theme.PanelFill)
-                    row.FlatAppearance.MouseOverBackColor = If(delete_Allowed AndAlso Not chrome_Theme.IsHighContrast, chrome_Theme.DestructiveHover, chrome_Theme.PanelFill)
-                    row.FlatAppearance.MouseDownBackColor = If(delete_Allowed AndAlso Not chrome_Theme.IsHighContrast, chrome_Theme.DestructivePressed, chrome_Theme.PanelFill)
+                    row.ForeColor = If(delete_Allowed, theme.DestructiveForeground, theme.DisabledForeground)
+                    row.BackColor = If(delete_Allowed, theme.DestructiveRest, theme.PanelFill)
+                    row.FlatAppearance.MouseOverBackColor = If(delete_Allowed AndAlso Not theme.IsHighContrast, theme.DestructiveHover, theme.PanelFill)
+                    row.FlatAppearance.MouseDownBackColor = If(delete_Allowed AndAlso Not theme.IsHighContrast, theme.DestructivePressed, theme.PanelFill)
                     If recipients_Row_Glyphs Then ApplyRecipientRowGlyph(row, "action.delete")
                     Continue For
                 End If
@@ -501,20 +562,22 @@ Partial Public Class Main_Form
                 ' tooltip, never by swapping the fill. The copy zone keeps its accent marker and
                 ' the DEL row its destructive red - states of the panel, not recipients.
                 If is_Copy_Zone Then
-                    row.BackColor = If(unusable OrElse chrome_Theme.IsHighContrast, chrome_Theme.PanelFill,
-                                       ChromeTheme.Blend(chrome_Theme.PanelFill, chrome_Theme.Accent, ChromeMetrics.HoverPercent / 100.0F))
+                    row.BackColor = If(unusable OrElse theme.IsHighContrast, theme.PanelFill,
+                                       ChromeTheme.Blend(theme.PanelFill, theme.Accent, ChromeMetrics.HoverPercent / 100.0F))
                 Else
                     row.BackColor = RecipientRowFill(slot)
                 End If
-                row.ForeColor = If(is_Copy_Zone, chrome_Theme.Foreground, RecipientRowInk())
-                If unusable Then row.ForeColor = If(is_Copy_Zone OrElse chrome_Theme.IsHighContrast,
-                                                   chrome_Theme.DisabledForeground,
+                row.ForeColor = If(is_Copy_Zone, theme.Foreground, RecipientRowInk())
+                ' Below the overlay's own 220 half the disabled ink follows the flipped pair (the
+                ' theme's disabled blend), never a palette gray of the old tone.
+                If unusable Then row.ForeColor = If(is_Copy_Zone OrElse theme.IsHighContrast OrElse RecipientsOverlayInkInverted(),
+                                                   theme.DisabledForeground,
                                                    ThemePalette.ForDark(ThemeService.IsDark).TextDisabled)
 
-                row.FlatAppearance.MouseOverBackColor = If(unusable OrElse chrome_Theme.IsHighContrast, row.BackColor,
-                                                            If(is_Copy_Zone, chrome_Theme.ItemHover, RecipientRowHoverFill(slot)))
-                row.FlatAppearance.MouseDownBackColor = If(unusable OrElse chrome_Theme.IsHighContrast, row.BackColor,
-                                                            If(is_Copy_Zone, chrome_Theme.ItemPressed, RecipientRowHoverFill(slot)))
+                row.FlatAppearance.MouseOverBackColor = If(unusable OrElse theme.IsHighContrast, row.BackColor,
+                                                            If(is_Copy_Zone, theme.ItemHover, RecipientRowHoverFill(slot)))
+                row.FlatAppearance.MouseDownBackColor = If(unusable OrElse theme.IsHighContrast, row.BackColor,
+                                                            If(is_Copy_Zone, theme.ItemPressed, RecipientRowHoverFill(slot)))
                 If recipients_Row_Glyphs Then ApplyRecipientRowGlyph(row, If(is_Copy_Zone, "action.copy", "action.move"))
                 If recipients_ToolTip IsNot Nothing Then
                     Dim note As String = SlotHealthNote(verdict)
@@ -557,14 +620,22 @@ Partial Public Class Main_Form
 
         Dim onScreen As Point = RecipientsOverlayPlacedRect().Location
         If recipients_Overlay.Location <> onScreen Then recipients_Overlay.Location = onScreen
+#If Not NETFRAMEWORK Then
+        PersistRecipientsOverlayRepairedPosition(onScreen)
+#End If
     End Sub
 
     ''' <summary>Where the overlay sits over the media surface, in screen coordinates - the one
     ''' geometry <see cref="PositionRecipientsOverlay"/> places by and the modern build's reveal
-    ''' hot zone extends toward the configured corner. No visibility side effects: the overlay's
-    ''' window may be hidden while this runs.</summary>
+    ''' hot zone grows from. No visibility side effects: the overlay's window may be hidden while
+    ''' this runs.</summary>
     Private Function RecipientsOverlayPlacedRect() As Rectangle
         If recipients_Overlay Is Nothing OrElse panel_Media Is Nothing Then Return Rectangle.Empty
+#If Not NETFRAMEWORK Then
+        ' Mid-drag the window is the truth (219 §2): the tick's containment checks and the reveal
+        ' zone follow the pointer, and nothing re-places the panel out from under it.
+        If recipients_Drag_Active Then Return New Rectangle(recipients_Overlay.Location, recipients_Overlay.Size)
+#End If
         Dim margin As Integer = RecipientPx(8)
         Dim topOffset As Integer = margin
         ' In full-screen (not super) the floating toolbar sits over the top strip;
@@ -581,6 +652,25 @@ Partial Public Class Main_Form
 #End If
         Dim x As Integer = margin
         Dim y As Integer = topOffset
+#If Not NETFRAMEWORK Then
+        ' The anchored corner (219 §3) - the coarse move, one honest function, not a copy that
+        ' can drift.
+        Dim offset As Point = RecipientsOverlayPlacement.CornerOffset(RecipientsOverlayPosition(),
+            panel_Media.ClientSize, recipients_Overlay.Size, margin, topOffset)
+        x = offset.X
+        y = offset.Y
+        ' The first drop of a real drag wrote a custom point (219 §3): logical px relative to
+        ' the media area's top-left, back through the same scale seam the corner offsets were
+        ' measured by. It overrides the anchor until the next corner pick, the reset row or
+        ' the profile reset.
+        If modern_Preferences IsNot Nothing AndAlso modern_Preferences.RecipientsOverlayHasCustomPosition Then
+            Dim custom As Point = RecipientsOverlayPlacement.ToDeviceOffset(
+                New Point(modern_Preferences.RecipientsOverlayCustomX, modern_Preferences.RecipientsOverlayCustomY),
+                ChromeScale())
+            x = custom.X
+            y = custom.Y
+        End If
+#Else
         Select Case RecipientsOverlayPosition()
             Case "topRight"
                 x = Math.Max(margin, panel_Media.ClientSize.Width - recipients_Overlay.Width - margin)
@@ -590,42 +680,140 @@ Partial Public Class Main_Form
                 x = Math.Max(margin, panel_Media.ClientSize.Width - recipients_Overlay.Width - margin)
                 y = Math.Max(margin, panel_Media.ClientSize.Height - recipients_Overlay.Height - margin)
         End Select
+#End If
 
-        ' The corner is the media area's, expressed on screen - the overlay is a separate
-        ' window, so its Location is in screen coordinates, not the form's client space.
-        Return New Rectangle(panel_Media.PointToScreen(New Point(x, y)), recipients_Overlay.Size)
+        ' The media area's top-left, expressed on screen - the overlay is a separate window, so
+        ' its Location is in screen coordinates, not the form's client space.
+        Dim areaOrigin As Point = panel_Media.PointToScreen(New Point(0, 0))
+        Dim location As New Point(areaOrigin.X + x, areaOrigin.Y + y)
+#If Not NETFRAMEWORK Then
+        ' The recovery clamp (219 §6): every placement validates the placed rectangle against
+        ' the media area's CURRENT on-screen rectangle - startup, settings close, form resize,
+        ' DPI or monitor change, form move. The panel is a free window over a moving world.
+        ' Out of bounds means the header strip (the grip, the only thing that can bring it
+        ' back) is not fully inside the area; the panel is then pulled back by the shortest
+        ' translation that fits it, margins included.
+        Dim area As New Rectangle(areaOrigin, panel_Media.ClientSize)
+        If Not RecipientsOverlayPlacement.HeaderInside(location, recipients_Overlay.Size,
+                                                       RecipientPx(ChromeMetrics.MinTarget), area) Then
+            location = RecipientsOverlayPlacement.PullInside(location, recipients_Overlay.Size,
+                                                             Rectangle.Inflate(area, -margin, -margin))
+        End If
+#End If
+        Return New Rectangle(location, recipients_Overlay.Size)
     End Function
 
 #If Not NETFRAMEWORK Then
-    ''' <summary>The pointer reveals the auto-hidden overlay from near its configured corner
-    ''' (117 Ф-2): the placed rectangle extended outward toward that corner, by the panels'
-    ''' hot-zone reach. It follows <see cref="RecipientsOverlayPosition"/>, so a moved overlay
-    ''' carries its zone with it.</summary>
+    ''' <summary>The pointer reveals the auto-hidden overlay (117 Ф-2) from the zone around the
+    ''' placed rectangle (219 §7, Q219-4): the panel's own rect grown outward toward the nearest
+    ''' edges of the media area, wherever the user put it - the configured corner is a position,
+    ''' not a compass. For a panel still on its corner anchor this is exactly the corner zone of
+    ''' 117 Ф-2.</summary>
     Private Function RecipientsOverlayHotZone() As Rectangle
         Dim placed As Rectangle = RecipientsOverlayPlacedRect()
         If placed.IsEmpty Then Return Rectangle.Empty
-        Dim reach As Integer = RecipientPx(ChromeMetrics.HotZoneMargin)
-        Dim zone As Rectangle = placed
-        Select Case RecipientsOverlayPosition()
-            Case "topRight"
-                zone.Y -= reach
-                zone.Height += reach
-                zone.Width += reach
-            Case "bottomLeft"
-                zone.Height += reach
-                zone.X -= reach
-                zone.Width += reach
-            Case "bottomRight"
-                zone.Height += reach
-                zone.Width += reach
-            Case Else   ' topLeft
-                zone.Y -= reach
-                zone.Height += reach
-                zone.X -= reach
-                zone.Width += reach
-        End Select
-        Return zone
+        Return RecipientsOverlayPlacement.HotZone(placed,
+            New Rectangle(panel_Media.PointToScreen(New Point(0, 0)), panel_Media.ClientSize),
+            RecipientPx(ChromeMetrics.HotZoneMargin))
     End Function
+
+    ''' <summary>True while the header strip's native move loop runs (219 §2): the placed rectangle
+    ''' is the window's live one, so the auto-hide cycle sees the pointer inside the panel for the
+    ''' whole drag and nothing re-places the panel out from under it.</summary>
+    Private recipients_Drag_Active As Boolean
+
+    ''' <summary>The grip's press (219 §2): the whole window follows the pointer through Windows'
+    ''' own move loop - the same drag the window-commands panel's grip runs - never activating it,
+    ''' so the viewer keeps the keyboard. The reveal rule of 117 Ф-2 holds for the whole drag and
+    ''' the pin state is not changed; the auto-hide cycle resumes from where it was on drop.</summary>
+    Private Sub RecipientsOverlayBeginDrag()
+        If recipients_Overlay Is Nothing OrElse recipients_Overlay.IsDisposed OrElse
+           Not recipients_Overlay.IsHandleCreated Then Return
+        Dim before As Point = recipients_Overlay.Location
+        recipients_Drag_Active = True
+        Try
+            ReleaseCapture()
+            Dim pointer As Point = Cursor.Position
+            Dim lParam As New IntPtr((pointer.Y << 16) Or (pointer.X And &HFFFF))
+            SendMessage(recipients_Overlay.Handle, WmNcLButtonDown, New IntPtr(HtCaption), lParam)
+        Finally
+            recipients_Drag_Active = False
+        End Try
+        If recipients_Overlay Is Nothing OrElse recipients_Overlay.IsDisposed Then Return
+        ' Saved on drop, not per pixel - and a drag that ends where it began writes nothing (219 §3).
+        If recipients_Overlay.Location <> before Then SaveRecipientsOverlayDraggedPosition()
+    End Sub
+
+    ''' <summary>Writes the dropped position as the custom point (219 §3): logical px relative to the
+    ''' media area's top-left, so a DPI or monitor change re-places it at the same visual spot instead
+    ''' of compounding device pixels. The drop may sit outside the media area - the drag never clips
+    ''' mid-air - and the recovery clamp of 219 §6 repairs it at the next placement.</summary>
+    Private Sub SaveRecipientsOverlayDraggedPosition()
+        If recipients_Overlay Is Nothing OrElse recipients_Overlay.IsDisposed OrElse panel_Media Is Nothing Then Return
+        Dim prefs As ModernViewerPreferences = GetModernPreferences()
+        Dim origin As Point = panel_Media.PointToScreen(New Point(0, 0))
+        Dim dropped As Point = RecipientsOverlayPlacement.ToLogicalPoint(
+            New Point(recipients_Overlay.Location.X - origin.X, recipients_Overlay.Location.Y - origin.Y),
+            ChromeScale())
+        prefs.RecipientsOverlayCustomX = dropped.X
+        prefs.RecipientsOverlayCustomY = dropped.Y
+        prefs.RecipientsOverlayHasCustomPosition = True
+        SaveRecipientsOverlayPreferences()
+    End Sub
+
+    ''' <summary>The repair half of the recovery (219 §6): when a placement pulled the panel back,
+    ''' the pulled-back point is what stays saved - a lost position never survives a run and never
+    ''' needs a second repair on the next start. Silent: no dialog, no toast, nothing beyond the
+    ''' ordinary trace; the panel is simply where the user last saw it work.</summary>
+    Private Sub PersistRecipientsOverlayRepairedPosition(applied As Point)
+        If recipients_Overlay Is Nothing OrElse recipients_Overlay.IsDisposed OrElse panel_Media Is Nothing Then Return
+        Dim prefs As ModernViewerPreferences = modern_Preferences
+        If prefs Is Nothing OrElse Not prefs.RecipientsOverlayHasCustomPosition Then Return
+        Dim origin As Point = panel_Media.PointToScreen(New Point(0, 0))
+        Dim stored As Point = RecipientsOverlayPlacement.ToDeviceOffset(
+            New Point(prefs.RecipientsOverlayCustomX, prefs.RecipientsOverlayCustomY), ChromeScale())
+        If origin.X + stored.X = applied.X AndAlso origin.Y + stored.Y = applied.Y Then Return   ' no repair fired
+        Dim repaired As Point = RecipientsOverlayPlacement.ToLogicalPoint(
+            New Point(applied.X - origin.X, applied.Y - origin.Y), ChromeScale())
+        prefs.RecipientsOverlayCustomX = repaired.X
+        prefs.RecipientsOverlayCustomY = repaired.Y
+        SaveRecipientsOverlayPreferences()
+    End Sub
+
+    ''' <summary>Persists the overlay's own block at once - the discipline a pin toggle uses
+    ''' (<see cref="ChromeToggleRecipientsPin"/>): write now, and on a failed write fall back to
+    ''' the settings dirty-flush retry.</summary>
+    Private Sub SaveRecipientsOverlayPreferences()
+        If modern_Preferences Is Nothing Then Return
+        Try
+            modern_Preferences.Save()
+        Catch ex As Exception
+            AppFileLogger.LogException("Recipients overlay: persisting the position", ex)
+            MarkSettingsDirty()
+        End Try
+    End Sub
+
+    ''' <summary>The header's edit button (219 §4): opens the viewer's settings window already
+    ''' standing on the recipients page, the destination slots grid focused. A door, not a move:
+    ''' the click changes neither the pin, nor the visibility, nor the position, and the button
+    ''' itself never takes the keyboard from the viewer.</summary>
+    Private Sub RecipientsOverlayEditRequested()
+        ShowSettingsWindowAtRecipientsGrid()
+    End Sub
+
+    ''' <summary>The settings' reset row (219 §5): clears the custom point and repositions the
+    ''' overlay at once - no restart, no settings reopen - from any state (visible, auto-hidden,
+    ''' dragged somewhere the user forgot). Idempotent: with the panel already at its anchor it is
+    ''' an honest no-op that still says so through the Notify line.</summary>
+    Friend Sub ResetRecipientsOverlayPosition()
+        Dim prefs As ModernViewerPreferences = GetModernPreferences()
+        Dim hadCustom As Boolean = prefs.RecipientsOverlayHasCustomPosition
+        prefs.RecipientsOverlayHasCustomPosition = False
+        SaveRecipientsOverlayPreferences()
+        ApplyRecipientsOverlay()
+        Notify(Localization.T(If(hadCustom, "Позиция панели получателей сброшена.",
+                                 "Панель получателей уже у своего угла.")), NotifyLevel.Info)
+    End Sub
 #End If
 
     ''' <summary>Remembers the last click per row, to drop a double-click's second one.</summary>
@@ -824,18 +1012,16 @@ Partial Public Class Main_Form
     End Class
 
 #If Not NETFRAMEWORK Then
-    ''' <summary>The recipients overlay's own pin button (2026-10-04 revision of 117 Ф-2): the same
-    ''' ambient corner control the chrome panels carry - no fill at rest, a small hover/press cue, an
-    ''' upright filled pin while pinned and a tilted outlined one while free - drawn by the shared
-    ''' <see cref="ChromeSurface.PaintPin"/>. It never takes focus, so clicking it leaves the
-    ''' keyboard with the viewer, exactly like a recipient row.</summary>
-    Private NotInheritable Class RecipientsPinButton
+    ''' <summary>The shared look of the header strip's two buttons (219 §2/§4): the same ambient
+    ''' corner control the chrome panels carry - no fill at rest, a small hover/press cue, the glyph
+    ''' in the theme's ink. Never selectable: a click leaves the keyboard focus with the viewer,
+    ''' exactly like a recipient row.</summary>
+    Private MustInherit Class RecipientsStripButton
         Inherits Control
 
-        Private ReadOnly owner As Main_Form
-        Private hovering As Boolean
+        Protected ReadOnly owner As Main_Form
+        Protected hovering As Boolean
         Private pressing As Boolean
-        Private checkedState As Boolean
 
         Public Sub New(form As Main_Form)
             owner = form
@@ -844,20 +1030,7 @@ Partial Public Class Main_Form
             ' Never selectable: the click must not pull the keyboard focus from the media surface.
             SetStyle(ControlStyles.Selectable, False)
             TabStop = False
-            AccessibleRole = AccessibleRole.CheckButton
         End Sub
-
-        ''' <summary>Set by SyncRecipientsOverlayPin from the persisted preference; drives the glyph.</summary>
-        Public Property PinChecked As Boolean
-            Get
-                Return checkedState
-            End Get
-            Set(value As Boolean)
-                If value = checkedState Then Return
-                checkedState = value
-                Invalidate()
-            End Set
-        End Property
 
         Protected Overrides Sub OnMouseEnter(e As EventArgs)
             MyBase.OnMouseEnter(e)
@@ -888,12 +1061,12 @@ Partial Public Class Main_Form
             ' Nothing: the strip is the window's own flat fill, painted under this control already.
         End Sub
 
-        ''' <summary>The hover/press cue, then the pin - the panels' ambient corner button, verbatim.</summary>
+        ''' <summary>The hover/press cue, then the glyph - the panels' ambient corner button, verbatim.</summary>
         Protected Overrides Sub OnPaint(e As PaintEventArgs)
             Dim g As Graphics = e.Graphics
             g.SmoothingMode = SmoothingMode.AntiAlias
             g.PixelOffsetMode = PixelOffsetMode.HighQuality
-            Dim theme As ChromeTheme = owner.chrome_Theme
+            Dim theme As ChromeTheme = owner.RecipientsOverlayTheme()
             Dim scale As Single = owner.ChromeScale()
             Dim r As Rectangle = ClientRectangle
             Dim size As Integer = Math.Min(r.Width, Math.Min(r.Height, UiScale.Px(ChromeMetrics.PinButtonSize, scale)))
@@ -908,16 +1081,79 @@ Partial Public Class Main_Form
                     End Using
                 End Using
             End If
-            Dim ink As Color
-            If theme.IsHighContrast Then
-                ink = If(checkedState, SystemColors.HighlightText, SystemColors.WindowText)
-            Else
-                Dim restInk As Color = ChromeTheme.Blend(theme.PanelFill, theme.Foreground, If(checkedState, 0.5F, 0.35F))
-                ink = If(hovering, ChromeTheme.Blend(restInk, theme.Foreground, 1.0F), restInk)
-            End If
-            ChromeSurface.PaintPin(g, checkedState,
-                                   New Rectangle(r.X + (r.Width - size) \ 2, r.Y + (r.Height - size) \ 2, size, size),
-                                   ink, scale)
+            Dim bounds As New Rectangle(r.X + (r.Width - size) \ 2, r.Y + (r.Height - size) \ 2, size, size)
+            PaintGlyph(g, bounds, Ink(theme), scale)
+        End Sub
+
+        ''' <summary>The glyph's ink: the theme's foreground blended into the panel fill, full on hover.
+        ''' High contrast hands the choice to the system.</summary>
+        Protected Overridable Function Ink(theme As ChromeTheme) As Color
+            If theme.IsHighContrast Then Return SystemColors.WindowText
+            Dim restInk As Color = ChromeTheme.Blend(theme.PanelFill, theme.Foreground, 0.35F)
+            Return If(hovering, ChromeTheme.Blend(restInk, theme.Foreground, 1.0F), restInk)
+        End Function
+
+        ''' <summary>The button's own picture, inside the cue's rounded box.</summary>
+        Protected MustOverride Sub PaintGlyph(g As Graphics, bounds As Rectangle, ink As Color, scale As Single)
+    End Class
+
+    ''' <summary>The recipients overlay's own pin button (2026-10-04 revision of 117 Ф-2): an upright
+    ''' filled pin while pinned and a tilted outlined one while free - drawn by the shared
+    ''' <see cref="ChromeSurface.PaintPin"/>. Its click is the pin algebra's, unchanged by the
+    ''' strip's drag around it.</summary>
+    Private NotInheritable Class RecipientsPinButton
+        Inherits RecipientsStripButton
+
+        Private checkedState As Boolean
+
+        Public Sub New(form As Main_Form)
+            MyBase.New(form)
+            AccessibleRole = AccessibleRole.CheckButton
+        End Sub
+
+        ''' <summary>Set by SyncRecipientsOverlayPin from the persisted preference; drives the glyph.</summary>
+        Public Property PinChecked As Boolean
+            Get
+                Return checkedState
+            End Get
+            Set(value As Boolean)
+                If value = checkedState Then Return
+                checkedState = value
+                Invalidate()
+            End Set
+        End Property
+
+        Protected Overrides Function Ink(theme As ChromeTheme) As Color
+            If theme.IsHighContrast Then Return If(checkedState, SystemColors.HighlightText, SystemColors.WindowText)
+            Dim restInk As Color = ChromeTheme.Blend(theme.PanelFill, theme.Foreground, If(checkedState, 0.5F, 0.35F))
+            Return If(hovering, ChromeTheme.Blend(restInk, theme.Foreground, 1.0F), restInk)
+        End Function
+
+        Protected Overrides Sub PaintGlyph(g As Graphics, bounds As Rectangle, ink As Color, scale As Single)
+            ChromeSurface.PaintPin(g, checkedState, bounds, ink, scale)
+        End Sub
+    End Class
+
+    ''' <summary>The header's edit button (219 §4): the door to the settings window standing on the
+    ''' recipients table - the same owner-drawn look as the pin, its glyph the catalog's pencil
+    ''' (WINDOWS-UI 0.4 section 11) rendered through the shared renderer in the theme's ink. Like the
+    ''' pin it never takes keyboard focus from the viewer: a non-activating window opens a window.</summary>
+    Private NotInheritable Class RecipientsEditButton
+        Inherits RecipientsStripButton
+
+        Public Sub New(form As Main_Form)
+            MyBase.New(form)
+            AccessibleRole = AccessibleRole.PushButton
+        End Sub
+
+        Protected Overrides Sub PaintGlyph(g As Graphics, bounds As Rectangle, ink As Color, scale As Single)
+            Try
+                Using glyph As Bitmap = GlyphRenderer.Render("action.edit", bounds.Width, ink, AddressOf RuntimeBootstrap.OpenBundledAsset)
+                    g.DrawImageUnscaled(glyph, bounds.X, bounds.Y)
+                End Using
+            Catch ex As Exception
+                AppFileLogger.LogException("Recipients overlay: edit glyph", ex)
+            End Try
         End Sub
     End Class
 #End If

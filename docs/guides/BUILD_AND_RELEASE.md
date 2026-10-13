@@ -247,7 +247,7 @@ Go-воркер и два повышающих helper-скрипта (~43 МБ �
 
 **A. Документация и сайт (до тега):**
 - [ ] Обновлены `README.md`, `README_RU.md`, `README_UK.md` если менялись фичи.
-- [ ] Обновлён сайт [docs/index.html](../index.html) / [docs/privacy.html](../privacy.html) по контенту.
+- [ ] Обновлён сайт [index.html](../../index.html) / [docs/privacy.html](../privacy.html) по контенту.
       Версию править НЕ нужно - кнопки ведут на `/releases/latest` и на winget id, без захардкоженного номера.
 - [ ] `CLAUDE.md` отражает изменения архитектуры (если были).
 - [ ] Всё закоммичено и запушено в `main` (бесплатно).

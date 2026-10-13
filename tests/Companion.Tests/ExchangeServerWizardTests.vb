@@ -1,4 +1,4 @@
-Option Strict On
+﻿Option Strict On
 
 Imports System.Collections.Generic
 Imports System.Linq
@@ -23,6 +23,7 @@ Public Class ExchangeServerWizardTests
         Implements IExchangeWizardPorts
 
         Public Report As New ExchangeProcess.InspectReport With {.Answered = True, .Listen = ":22022", .Fingerprint = "SHA256:real", .CertPresent = True}
+        Public StartException As Exception
         Public HasService As Boolean
         Public ConsoleRunning As Boolean
         Public Password As String = "Generated16Chars9"
@@ -81,6 +82,7 @@ Public Class ExchangeServerWizardTests
 
         Public Function Start() As ExchangeProcess.StartOutcome Implements IExchangeWizardPorts.Start
             Note("start")
+            If StartException IsNot Nothing Then Throw StartException
             Return StartResult
         End Function
 

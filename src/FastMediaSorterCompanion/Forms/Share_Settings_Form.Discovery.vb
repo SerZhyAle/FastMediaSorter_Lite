@@ -136,7 +136,7 @@ Partial Public NotInheritable Class Share_Settings_Form
             If dialog.ShowDialog(Me) <> DialogResult.OK Then Return
             Dim chosen = DirectCast(results.SelectedItem, SearchEntry)
             ' The same path a subordinate-item click uses (210 section 5.4): select the
-            ' page, scroll the block's heading to the top, focus the editor.
+            ' page, show only that group's block, focus the editor.
             RevealSettingsBlock(chosen.PageId, chosen.Group, chosen.Editor)
         End Using
     End Sub

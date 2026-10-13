@@ -111,8 +111,11 @@ Friend NotInheritable Class Resource_List_Panel
     ''' dependency on a form.</summary>
     Private ReadOnly manageSharesAction As Action
     ''' <summary>The "My devices" section (ticket 171). Nothing unless the exchange client features are offered and the Share Manager is installed;
-    ''' never in an injected world (a test's custom hive), where the agent's channel must not be asked.</summary>
+    ''' never in an injected world (a test's custom hive), where the agent's channel must not be asked. Once the Settings page has taken the
+    ''' section over through <see cref="DetachDevices"/>, the field keeps the wiring (the metrics, the palette, the per-row states) while the
+    ''' placement lives in the page's own group.</summary>
     Private ReadOnly devices As Exchange_Devices_Panel
+    Private devicesDetached As Boolean
 
     ''' <summary>Any registry write happened through this panel: adds, edits, removals, imports.
     ''' Carries the ids removed so far, so a host can close a resource that is on screen.</summary>
@@ -305,11 +308,46 @@ Friend NotInheritable Class Resource_List_Panel
         Relayout()
     End Sub
 
-    Friend ReadOnly Property MinimumPageHeight As Integer
-        Get
-            Return actionRow.Height + Dv(320 + StatusHeight + 12)
-        End Get
-    End Property
+    ''' <summary>The height the Settings page gives the panel when the table stands at the
+    ''' height of its own rows: the action row, the column strip, one row per resource and
+    ''' the status line - more rows, a taller table - while the empty state keeps the block
+    ''' its glyph and sentence need. The dialog host never asks; its body is the dialog's
+    ''' own chrome.</summary>
+    Friend Function PreferredHeight() As Integer
+        Dim bodyHeight As Integer
+        If list.Visible AndAlso list.Items.Count > 0 Then
+            bodyHeight = ColumnStripHeight() + Dv(RowHeight) * list.Items.Count
+        Else
+            bodyHeight = Dv(170)
+        End If
+        Return actionRow.Height + Dv(6) + bodyHeight + Dv(6) + Dv(StatusHeight)
+    End Function
+
+    ''' <summary>The column strip's own height: asked from the list once its handle exists
+    ''' (the first row's top is the strip's bottom), estimated before that. The Settings
+    ''' host re-asks when the handle arrives, so the estimate never survives on screen.</summary>
+    Private Function ColumnStripHeight() As Integer
+        If list.IsHandleCreated AndAlso list.Items.Count > 0 Then
+            Try
+                Return Math.Max(0, list.GetItemRect(0).Top)
+            Catch
+            End Try
+        End If
+        Return Dv(24)
+    End Function
+
+    ''' <summary>Hands the "My devices" section to the Settings page's own collapsible group:
+    ''' the placement moves out of this panel's body, the wiring - the events, the metrics,
+    ''' the palette, the per-row states - stays. Nothing when the section cannot exist or has
+    ''' already been handed over. The dialog host never calls this and keeps the embedded
+    ''' look of tickets 171 and 187.</summary>
+    Friend Function DetachDevices() As Exchange_Devices_Panel
+        If devices Is Nothing OrElse devicesDetached Then Return Nothing
+        devicesDetached = True
+        Controls.Remove(devices)
+        Relayout()
+        Return devices
+    End Function
 
     Private Function MakeCommandButton(controlName As String, text As String, handler As EventHandler) As Button
         Dim b As New Button With {.Name = controlName, .Text = text,
@@ -363,12 +401,15 @@ Friend NotInheritable Class Resource_List_Panel
         Dim statusRowHeight As Integer = Dv(StatusHeight)
         Dim bodyTop As Integer = rowHeight + Dv(6)
         Dim bodyHeight As Integer = Math.Max(Dv(60), ClientSize.Height - bodyTop - statusRowHeight - Dv(6))
-        ' Ticket 171: "My devices" takes the lower part of the body when it is offered; the resource list keeps the rest
+        ' Ticket 171: "My devices" takes the lower part of the body when it is offered; the resource list keeps the rest.
+        ' A detached section is the Settings page's own group and is never laid out here.
         Dim devicesHeight As Integer = 0
-        If devices IsNot Nothing Then devicesHeight = Math.Min(devices.WantedHeight(bodyHeight), Math.Max(0, bodyHeight - Dv(80)))
-        devices?.SetBounds(0, bodyTop + bodyHeight - devicesHeight, width, devicesHeight)
-        If devices IsNot Nothing Then devices.Visible = devicesHeight > 0
-        If devicesHeight > 0 Then bodyHeight = Math.Max(Dv(60), bodyHeight - devicesHeight - Dv(6))
+        If devices IsNot Nothing AndAlso Not devicesDetached Then
+            devicesHeight = Math.Min(devices.WantedHeight(bodyHeight), Math.Max(0, bodyHeight - Dv(80)))
+            devices.SetBounds(0, bodyTop + bodyHeight - devicesHeight, width, devicesHeight)
+            devices.Visible = devicesHeight > 0
+            If devicesHeight > 0 Then bodyHeight = Math.Max(Dv(60), bodyHeight - devicesHeight - Dv(6))
+        End If
         list.SetBounds(0, bodyTop, width, bodyHeight)
         emptyPanel.SetBounds(0, bodyTop, width, bodyHeight)
         statusRow.SetBounds(0, ClientSize.Height - statusRowHeight, width, statusRowHeight)

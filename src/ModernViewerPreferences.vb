@@ -27,6 +27,11 @@ Public NotInheritable Class ModernViewerPreferences
     Public Const SecureRememberMinutesMax As Integer = 480
     Public Const TextPreviewMaxKbMin As Integer = 64
     Public Const TextPreviewMaxKbMax As Integer = 65536
+    ''' <summary>The bounds of a saved free position of the recipients overlay (219 §3), in logical px
+    ''' relative to the media area's top-left: generous enough for any drop on any desktop, tight enough
+    ''' that a damaged stored value cannot place the panel in another postal code.</summary>
+    Public Const RecipientsOverlayCoordinateMin As Integer = -32768
+    Public Const RecipientsOverlayCoordinateMax As Integer = 32767
 
     Public Property NameCollisionPolicy As String = "ask"
     Public Property AfterFileOperation As String = "next"
@@ -103,7 +108,8 @@ Public NotInheritable Class ModernViewerPreferences
 
     Friend Function OverlayLayoutKey() As String
         Return JsonSerializer.Serialize(New Object() {RecipientsOverlayPosition, RecipientsOverlayWidth,
-            RecipientsOverlayFontSize, RecipientsOverlayOpacity, RecipientsOverlayVisibleRows, RecipientsOverlayPinned})
+            RecipientsOverlayFontSize, RecipientsOverlayOpacity, RecipientsOverlayVisibleRows, RecipientsOverlayPinned,
+            RecipientsOverlayHasCustomPosition, RecipientsOverlayCustomX, RecipientsOverlayCustomY})
     End Function
 
     Friend Function Snapshot() As ModernViewerPreferences
@@ -144,6 +150,18 @@ Public NotInheritable Class ModernViewerPreferences
     Public Property ChromeWindowControlsPinned As Boolean = True
 
     Public Property RecipientsOverlayPosition As String = "topLeft"
+    ''' <summary>The panel was dragged by its header (219 §2/§3): the saved free position overrides the
+    ''' corner anchor until the next corner pick, the reset row or the profile reset. The point itself is
+    ''' the two fields below; the flag alone says "anchored", so an imported old file - which carries no
+    ''' key for the three - leaves the panel at its corner.</summary>
+    Public Property RecipientsOverlayHasCustomPosition As Boolean
+    ''' <summary>The saved free position's X, in LOGICAL (96-dpi) px relative to the media area's
+    ''' top-left (219 §3): re-placed through the scale seam, so a DPI or monitor change keeps the same
+    ''' visual spot. May be negative - a drop outside the media area is allowed, and the recovery clamp
+    ''' repairs it at the next placement.</summary>
+    Public Property RecipientsOverlayCustomX As Integer
+    ''' <summary>The saved free position's Y, in logical px relative to the media area's top-left.</summary>
+    Public Property RecipientsOverlayCustomY As Integer
     Public Property RecipientsOverlayWidth As Integer = 280
     Public Property RecipientsOverlayFontSize As Integer = 9
     Public Property RecipientsOverlayOpacity As Integer = 88
@@ -330,6 +348,9 @@ Public NotInheritable Class ModernViewerPreferences
         p.ChromeWindowControlsPinned = ReadBool("ChromeWindowControlsPinned", p.ChromeWindowControlsPinned)
 
         p.RecipientsOverlayPosition = ReadChoice("RecipientsOverlayPosition", p.RecipientsOverlayPosition, "topLeft", "topRight", "bottomLeft", "bottomRight")
+        p.RecipientsOverlayHasCustomPosition = ReadBool("RecipientsOverlayHasCustomPosition", p.RecipientsOverlayHasCustomPosition)
+        p.RecipientsOverlayCustomX = ReadInt("RecipientsOverlayCustomX", p.RecipientsOverlayCustomX, RecipientsOverlayCoordinateMin, RecipientsOverlayCoordinateMax)
+        p.RecipientsOverlayCustomY = ReadInt("RecipientsOverlayCustomY", p.RecipientsOverlayCustomY, RecipientsOverlayCoordinateMin, RecipientsOverlayCoordinateMax)
         p.RecipientsOverlayWidth = ReadInt("RecipientsOverlayWidth", p.RecipientsOverlayWidth, 180, 520)
         p.RecipientsOverlayFontSize = ReadInt("RecipientsOverlayFontSize", p.RecipientsOverlayFontSize, 9, 18)
         p.RecipientsOverlayOpacity = ReadInt("RecipientsOverlayOpacity", p.RecipientsOverlayOpacity, 40, 100)
@@ -416,6 +437,9 @@ Public NotInheritable Class ModernViewerPreferences
         WriteBool("RecipientsOverlayPinned", RecipientsOverlayPinned)
         WriteBool("ChromeWindowControlsPinned", ChromeWindowControlsPinned)
         WriteString("RecipientsOverlayPosition", RecipientsOverlayPosition)
+        WriteBool("RecipientsOverlayHasCustomPosition", RecipientsOverlayHasCustomPosition)
+        WriteString("RecipientsOverlayCustomX", RecipientsOverlayCustomX.ToString(CultureInfo.InvariantCulture))
+        WriteString("RecipientsOverlayCustomY", RecipientsOverlayCustomY.ToString(CultureInfo.InvariantCulture))
         WriteString("RecipientsOverlayWidth", RecipientsOverlayWidth.ToString(CultureInfo.InvariantCulture))
         WriteString("RecipientsOverlayFontSize", RecipientsOverlayFontSize.ToString(CultureInfo.InvariantCulture))
         WriteString("RecipientsOverlayOpacity", RecipientsOverlayOpacity.ToString(CultureInfo.InvariantCulture))
@@ -656,6 +680,8 @@ Public NotInheritable Class ModernViewerPreferences
         If InterfaceScalePercent <> 0 AndAlso InterfaceScalePercent < 90 Then InterfaceScalePercent = 90
         NewImageScaleMode = Choice(NewImageScaleMode, "fit", "fit", "actual", "perFolder")
         RecipientsOverlayPosition = Choice(RecipientsOverlayPosition, "topLeft", "topLeft", "topRight", "bottomLeft", "bottomRight")
+        RecipientsOverlayCustomX = Clamp(RecipientsOverlayCustomX, RecipientsOverlayCoordinateMin, RecipientsOverlayCoordinateMax)
+        RecipientsOverlayCustomY = Clamp(RecipientsOverlayCustomY, RecipientsOverlayCoordinateMin, RecipientsOverlayCoordinateMax)
         ChromeSize = Choice(ChromeSize, "medium", "medium", "small", "large", "adaptive", "touch")
         ChromeOpacityPercent = Clamp(ChromeOpacityPercent, 0, 100)
         ChromeCornerRadius = Clamp(ChromeCornerRadius, 0, 16)

@@ -39,6 +39,10 @@ Friend NotInheritable Class ChromeTheme
 
     ''' <summary>True when the panel draws system colours (high contrast).</summary>
     Public Property IsHighContrast As Boolean
+    ''' <summary>True when this theme's ink pair has been flipped by the 220 rule: a panel whose
+    ''' transparency setting is below half inverts the tone of every label, glyph and outline it
+    ''' draws. The themes FromScheme builds carry False; WithInvertedInk sets it.</summary>
+    Public Property InkInverted As Boolean
 
     ''' <param name="back">The scheme's background colour (what the window is painted).</param>
     ''' <param name="fore">The scheme's contrasting colour (what text on it is painted).</param>
@@ -94,6 +98,45 @@ Friend NotInheritable Class ChromeTheme
             .PanelOpacity = 1.0R,
             .AllowsAnimation = False,
             .IsHighContrast = True
+        }
+    End Function
+
+    ''' <summary>The 220 tone inversion: a dark ink becomes white, a light one black - the same binary
+    ''' decision IsDark the outline already makes, so pure black and pure white trade places and no
+    ''' mid-grey survives un-flipped. Hue is never rotated: a coloured ink is neither black nor
+    ''' white and keeps its colour.</summary>
+    Public Shared Function InvertedTone(ink As Color) As Color
+        Return If(IsDark(ink), Color.White, Color.Black)
+    End Function
+
+    ''' <summary>This theme with its ink pair flipped (220): the ink, the white destructive label and
+    ''' the derived inks (the hairline, the disabled blend) invert tone and are recomputed from the
+    ''' flipped pair; the fills, the hover and pressed states, the accent family and the destructive
+    ''' reds are copied unchanged. High contrast never flips - the same theme comes back. The outline
+    ''' needs no rule of its own: it is always the tone opposite of the ink it surrounds, so it flips
+    ''' with the ink.</summary>
+    Public Function WithInvertedInk() As ChromeTheme
+        If IsHighContrast Then Return Me
+        Dim ink As Color = InvertedTone(Foreground)
+        Return New ChromeTheme() With {
+            .PanelCornerRadius = PanelCornerRadius,
+            .PanelFill = PanelFill,
+            .Foreground = ink,
+            .Hairline = Blend(PanelFill, ink, ChromeMetrics.HairlinePercent / 100.0F),
+            .ItemHover = ItemHover,
+            .ItemPressed = ItemPressed,
+            .Accent = Accent,
+            .AccentForeground = AccentForeground,
+            .DisabledForeground = Blend(PanelFill, ink, ChromeMetrics.DisabledPercent / 100.0F),
+            .FocusRing = FocusRing,
+            .DestructiveRest = DestructiveRest,
+            .DestructiveHover = DestructiveHover,
+            .DestructivePressed = DestructivePressed,
+            .DestructiveForeground = InvertedTone(DestructiveForeground),
+            .PanelOpacity = PanelOpacity,
+            .AllowsAnimation = AllowsAnimation,
+            .IsHighContrast = IsHighContrast,
+            .InkInverted = True
         }
     End Function
 

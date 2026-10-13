@@ -28,8 +28,22 @@ Friend Module ShareActivationPolicy
 
     Friend ReadOnly MinConsentVersion As New Version(26, 10, 2, 0)
 
+    ''' <summary>
+    ''' The first build that understands the add-resource intent (spec 215: <c>::fms-add-resource::</c> over the wake, or
+    ''' <c>--add-resource</c> on a cold start). The same written-decision shape as <see cref="MinConsentVersion"/>: builds
+    ''' are stamped YY.M.D.HHmm and the intent landed on 2026-10-13. An older receiver gets the plain wake - it would
+    ''' refuse the unknown payload (a pre-gate one could take any string for a folder), so the intent never travels to it.
+    ''' </summary>
+    Friend ReadOnly MinAddResourceVersion As New Version(26, 10, 13, 0)
+
     Friend Function IsConsentCapable(companionVersion As Version) As Boolean
         Return companionVersion IsNot Nothing AndAlso companionVersion >= MinConsentVersion
+    End Function
+
+    ''' <summary>The add-resource intent travels only to a Share Manager proven to know it; an unknown version is not proof
+    ''' (the plain wake is the fallback, never an error).</summary>
+    Friend Function IsAddResourceCapable(companionVersion As Version) As Boolean
+        Return companionVersion IsNot Nothing AndAlso companionVersion >= MinAddResourceVersion
     End Function
 
     ''' <summary>A folder travels only to a Share Manager proven to ask first; an unknown version

@@ -138,6 +138,14 @@ Public Class ShareSettings
     ''' <summary>The server welcome's "Later" for the Media Exchange Server half (spec 185 section 3.1).</summary>
     Public Property WelcomeExchangeDismissed As Boolean = False ' Welcome_ExchangeDismissed
 
+    Public Property WelcomeManagerState As String = "" ' read-only mirror; targeted onboarding writes own this value
+
+    Public ReadOnly Property WelcomeManagerDone As Boolean
+        Get
+            Return WelcomeManagerState = ManagerWelcomeModel.Done
+        End Get
+    End Property
+
     Public Sub Load()
         AutostartEnabled = ReadBool("Share_AutostartEnabled", False)
         OpenWindowOnStartup = ReadBool("Share_OpenWindowOnStartup", False)
@@ -157,6 +165,7 @@ Public Class ShareSettings
         ServerFeaturesEnabled = ReadBool(ServerFeatures.EnabledRegValue, False)
         WelcomeShareDismissed = ReadBool(ServerWelcomeModel.DismissShareValue, False)
         WelcomeExchangeDismissed = ReadBool(ServerWelcomeModel.DismissExchangeValue, False)
+        WelcomeManagerState = ReadString(ManagerWelcomeModel.DoneValue, "")
     End Sub
 
     Public Sub Save()
@@ -176,9 +185,21 @@ Public Class ShareSettings
         WriteBool("Share_WindowMaximized", WindowMaximized)
         WriteString("Share_ExpandedSections", If(ExpandedSections, ""))
         WriteBool(ServerWelcomeModel.DismissShareValue, WelcomeShareDismissed)
-        WriteBool(ServerWelcomeModel.DismissExchangeValue, WelcomeExchangeDismissed)
+        ' Exchange onboarding owns its dismissal; ordinary saves must never re-arm it.
+        ' Onboarding owns its marker; an older settings-window copy must not turn Done back into pending.
         ' ServerFeaturesEnabled is intentionally NOT written here - ServerFeatures
         ' owns that flag (see the property remark).
+    End Sub
+
+    Friend Shared Sub WriteManagerWelcomeState(value As String)
+        If value <> ManagerWelcomeModel.Pending AndAlso value <> ManagerWelcomeModel.Done Then
+            Throw New ArgumentException("Unsupported manager welcome state.", NameOf(value))
+        End If
+        WriteString(ManagerWelcomeModel.DoneValue, value)
+    End Sub
+
+    Friend Shared Sub WriteExchangeWelcomeDismissed()
+        WriteBool(ServerWelcomeModel.DismissExchangeValue, True)
     End Sub
 
     ''' <summary>Clamps a listen-port value: 0 (and anything below it) means "not recorded",

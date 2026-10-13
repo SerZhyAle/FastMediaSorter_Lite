@@ -10,6 +10,19 @@ Option Strict On
 ''' </summary>
 Friend Module ResourceMessages
 
+    Friend Function ForMoveFailure(reason As TransferReason) As String
+        Select Case reason
+            Case TransferReason.SourceChanged
+                Return Localization.T("Исходный файл изменился")
+            Case TransferReason.Cancelled
+                Return ForFailure(New ResourceFailure(ResourceFailureKind.Cancelled))
+            Case TransferReason.SourceDeleteUnsupported, TransferReason.NotDeletable
+                Return ForFailure(New ResourceFailure(ResourceFailureKind.Unsupported))
+            Case Else
+                Return Localization.T("Исходный файл не удалось удалить")
+        End Select
+    End Function
+
     ''' <summary>SFTP status codes the provider reports (<see cref="ResourceFailure.StatusCode"/>).</summary>
     Private Const SftpNoSuchFile As Integer = 2
     Private Const SftpPermissionDenied As Integer = 3

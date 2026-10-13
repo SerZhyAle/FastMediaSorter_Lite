@@ -218,6 +218,48 @@ Public Class ActivationDeliveryTests
         Next
     End Sub
 
+    ' ------------------------------------------------- the add-resource intent (spec 215) ----
+
+    <Fact>
+    Public Sub The_add_resource_sentinel_is_exact_and_is_not_a_path()
+        Assert.Equal(CompanionCommandKind.AddResource, CompanionCommand.Parse(Program.AddResourceCommand).Kind)
+        Assert.Equal("", CompanionCommand.Parse(Program.AddResourceCommand).TargetPath)
+        Assert.Equal(CompanionCommandKind.Invalid, CompanionCommand.Parse("::FMS-ADD-RESOURCE::").Kind)
+        Assert.Equal(CompanionCommandKind.Invalid, CompanionCommand.Parse(Program.AddResourceCommand & " x").Kind)
+        Assert.Equal(CompanionCommandKind.Invalid, CompanionCommand.Parse(Program.AddResourceCommand & "D:\Photos").Kind)
+    End Sub
+
+    <Fact>
+    Public Sub The_add_resource_intent_is_acknowledged_without_staging_anything()
+        ' It carries no folder: nothing is queued, so no consent question exists to be skipped.
+        For Each tag As Integer In {CopyDataTransport.CompanionTag, 0}
+            Dim stage As New Stage()
+            Dim command As CompanionCommand = Nothing
+            Dim bytes As Byte() = Utf8(Program.AddResourceCommand)
+            Assert.Equal(1, Deliver(tag, bytes, bytes.Length, stage, command))
+            Assert.Equal(CompanionCommandKind.AddResource, command.Kind)
+            Assert.Empty(stage.Staged)
+        Next
+    End Sub
+
+    <Fact>
+    Public Sub The_add_resource_intent_never_reaches_an_old_or_unknown_receiver()
+        ' An older Share Manager would refuse the unknown payload (a pre-gate one could take it for a folder):
+        ' it gets the plain wake, which opens its window as it always did.
+        Assert.Equal(Program.ShowWindowCommand, Program.CompatiblePayload(Program.AddResourceCommand, Nothing))
+        Assert.Equal(Program.ShowWindowCommand, Program.CompatiblePayload(Program.AddResourceCommand, ShareActivationPolicy.MinConsentVersion))
+        Assert.Equal(Program.ShowWindowCommand, Program.CompatiblePayload(Program.AddResourceCommand, New Version(26, 10, 12, 2359)))
+        Assert.Equal(Program.AddResourceCommand, Program.CompatiblePayload(Program.AddResourceCommand, ShareActivationPolicy.MinAddResourceVersion))
+        Assert.Equal(Program.AddResourceCommand, Program.CompatiblePayload(Program.AddResourceCommand, New Version(26, 11, 1, 0)))
+    End Sub
+
+    <Fact>
+    Public Sub The_add_resource_version_gate_is_known_and_never_older_than_the_consent_gate()
+        Assert.False(ShareActivationPolicy.IsAddResourceCapable(Nothing))
+        Assert.True(ShareActivationPolicy.IsAddResourceCapable(ShareActivationPolicy.MinAddResourceVersion))
+        Assert.True(ShareActivationPolicy.MinAddResourceVersion >= ShareActivationPolicy.MinConsentVersion)
+    End Sub
+
     <Fact>
     Public Sub Cyrillic_and_emoji_folder_names_survive_the_receiver()
         Dim stage As New Stage()

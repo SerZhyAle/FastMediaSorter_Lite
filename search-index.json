@@ -24,6 +24,12 @@
     "description": "Share this PC's folders to Android over SFTP: signed in with the full package, or always on with the Server edition - a Windows service that serves from boot."
   },
   {
+    "url": "https://serzhyale.github.io/FastMediaSorter_Lite/support.html",
+    "lang": "en",
+    "title": "Support | Fast Media Sorter & Sharing",
+    "description": "How to get help with Fast Media Sorter & Sharing for Windows: the issue tracker, e-mail, what to include and what to expect."
+  },
+  {
     "url": "https://serzhyale.github.io/FastMediaSorter_Lite/topics.html",
     "lang": "en",
     "title": "Topics: every task on one page | Fast Media Sorter & Sharing",
@@ -34,6 +40,12 @@
     "lang": "en",
     "title": "Why Windows warns about this download",
     "description": "What the SmartScreen warning on Fast Media Sorter & Sharing means, why it appears, exactly what to click, and what the program never does."
+  },
+  {
+    "url": "https://serzhyale.github.io/FastMediaSorter_Lite/whats-new.html",
+    "lang": "en",
+    "title": "What's new | Fast Media Sorter & Sharing",
+    "description": "What each recent version of Fast Media Sorter & Sharing for Windows added, changed and fixed: the release notes of the latest ten versions."
   },
   {
     "url": "https://serzhyale.github.io/FastMediaSorter_Lite/docs/how-to-archives.html",
@@ -92,7 +104,7 @@
   {
     "url": "https://serzhyale.github.io/FastMediaSorter_Lite/lang/ru/",
     "lang": "ru",
-    "title": "Fast Media Sorter & Sharing for Windows",
+    "title": "Сортировка фото и видео | Fast Media Sorter & Sharing",
     "description": "Быстро листайте огромные папки с фото и видео и раскладывайте файлы по каталогам одним нажатием клавиши."
   },
   {
@@ -104,7 +116,7 @@
   {
     "url": "https://serzhyale.github.io/FastMediaSorter_Lite/lang/uk/",
     "lang": "uk",
-    "title": "Fast Media Sorter & Sharing for Windows",
+    "title": "Сортування фото та відео | Fast Media Sorter & Sharing",
     "description": "Швидко гортайте великі теки з фото та відео і розкладайте файли по каталогах одним натисканням клавіші."
   },
   {
@@ -116,7 +128,7 @@
   {
     "url": "https://serzhyale.github.io/FastMediaSorter_Lite/lang/de/",
     "lang": "de",
-    "title": "Fast Media Sorter & Sharing for Windows",
+    "title": "Fotos & Videos sortieren | Fast Media Sorter & Sharing",
     "description": "Blättern Sie im Tempo durch riesige Foto- und Videoordner und verschieben, kopieren, benennen oder löschen Sie jede Datei mit einer einzigen Taste."
   },
   {
@@ -128,7 +140,7 @@
   {
     "url": "https://serzhyale.github.io/FastMediaSorter_Lite/lang/it/",
     "lang": "it",
-    "title": "Fast Media Sorter & Sharing for Windows",
+    "title": "Ordina foto e video | Fast Media Sorter & Sharing",
     "description": "Sfoglia velocemente cartelle enormi di foto e video e sposta, copia, rinomina o elimina ogni file con un solo tasto."
   },
   {
@@ -140,7 +152,7 @@
   {
     "url": "https://serzhyale.github.io/FastMediaSorter_Lite/lang/es/",
     "lang": "es",
-    "title": "Fast Media Sorter & Sharing for Windows",
+    "title": "Ordena fotos y vídeos | Fast Media Sorter & Sharing",
     "description": "Recorra a toda velocidad carpetas enormes de fotos y vídeos y mueva, copie, renombre o elimine cada archivo con una sola tecla."
   },
   {
@@ -152,7 +164,7 @@
   {
     "url": "https://serzhyale.github.io/FastMediaSorter_Lite/lang/fr/",
     "lang": "fr",
-    "title": "Fast Media Sorter & Sharing for Windows",
+    "title": "Triez photos et vidéos | Fast Media Sorter & Sharing",
     "description": "Parcourez à toute vitesse d'énormes dossiers de photos et de vidéos, puis déplacez, copiez, renommez ou supprimez chaque fichier d'une seule touche."
   },
   {
@@ -164,7 +176,7 @@
   {
     "url": "https://serzhyale.github.io/FastMediaSorter_Lite/lang/pt/",
     "lang": "pt",
-    "title": "Fast Media Sorter & Sharing for Windows",
+    "title": "Organize fotos e vídeos | Fast Media Sorter & Sharing",
     "description": "Percorra rapidamente pastas enormes de fotos e vídeos e mova, copie, renomeie ou exclua cada arquivo com uma única tecla."
   },
   {
@@ -176,7 +188,7 @@
   {
     "url": "https://serzhyale.github.io/FastMediaSorter_Lite/lang/ar/",
     "lang": "ar",
-    "title": "Fast Media Sorter & Sharing for Windows",
+    "title": "فرز الصور والفيديو | Fast Media Sorter & Sharing",
     "description": "تصفّح مجلدات ضخمة من الصور والفيديو بسرعة، ثم انقل أو انسخ أو أعد تسمية أو احذف كل ملف بمفتاح واحد."
   },
   {
@@ -188,7 +200,7 @@
   {
     "url": "https://serzhyale.github.io/FastMediaSorter_Lite/lang/hi/",
     "lang": "hi",
-    "title": "Fast Media Sorter & Sharing for Windows",
+    "title": "फ़ोटो और वीडियो छाँटें | Fast Media Sorter & Sharing",
     "description": "फ़ोटो और वीडियो के विशाल फ़ोल्डर तेज़ी से देखें और हर फ़ाइल को एक ही कुंजी से ले जाएँ, कॉपी करें, नाम बदलें या हटाएँ।"
   },
   {
@@ -200,7 +212,7 @@
   {
     "url": "https://serzhyale.github.io/FastMediaSorter_Lite/lang/bn/",
     "lang": "bn",
-    "title": "Fast Media Sorter & Sharing for Windows",
+    "title": "ছবি ও ভিডিও সাজান | Fast Media Sorter & Sharing",
     "description": "ছবি ও ভিডিওর বিশাল ফোল্ডার দ্রুত ঘুরে দেখুন এবং প্রতিটি ফাইল এক কী চেপেই সরান, কপি করুন, নাম বদলান বা মুছুন।"
   },
   {
@@ -212,7 +224,7 @@
   {
     "url": "https://serzhyale.github.io/FastMediaSorter_Lite/lang/ur/",
     "lang": "ur",
-    "title": "Fast Media Sorter & Sharing for Windows",
+    "title": "تصاویر اور ویڈیو ترتیب دیں | Fast Media Sorter & Sharing",
     "description": "تصاویر اور ویڈیو کے بڑے فولڈرز تیزی سے دیکھیں اور ہر فائل کو ایک ہی کلید سے منتقل، نقل، نام تبدیل یا حذف کریں۔"
   },
   {
@@ -224,7 +236,7 @@
   {
     "url": "https://serzhyale.github.io/FastMediaSorter_Lite/lang/zh/",
     "lang": "zh",
-    "title": "Fast Media Sorter & Sharing for Windows",
+    "title": "整理照片和视频 | Fast Media Sorter & Sharing",
     "description": "飞快地翻阅海量照片和视频文件夹，一个按键就能移动、复制、重命名或删除每个文件。"
   },
   {

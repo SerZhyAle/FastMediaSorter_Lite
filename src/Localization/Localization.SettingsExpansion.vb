@@ -1,4 +1,4 @@
-Option Strict On
+﻿Option Strict On
 
 ' <summary>
 ' Strings introduced by SPECIFICATION_SETTINGS_EXPANSION - the interface scale (§4.1),
@@ -446,6 +446,9 @@ Partial Public NotInheritable Class Localization
             "ماپنا ممکن نہیں: {0}. ریفریش بٹن دوبارہ کوشش کرے گا۔",
             "无法测量：{0}。「刷新」按钮会重试。")
 
+        ' 219 §5: the reset row's two answers - the act, and the honest no-op at the anchor.
+        Add("Позиция панели получателей сброшена.", "The destination panel position has been reset.", "Позицію панелі отримувачів скинуто.", "Die Position der Zieltabelle wurde zurückgesetzt.", "La posizione della tabella delle destinazioni è stata ripristinata.", "La posición del panel de destinos se ha restablecido.", "La position du panneau des destinations a été réinitialisée.", "A posição do painel de destinos foi redefinida.", "تمت إعادة ضبط موضع لوحة الوجهات.", "गंतव्य पैनल की स्थिति रीसेट कर दी गई है।", "গন্তব্য প্যানেলের অবস্থান রিসেট করা হয়েছে।", "منزل پینل کی پوزیشن ری سیٹ کر دی گئی ہے۔", "目标面板位置已重置。")
+        Add("Панель получателей уже у своего угла.", "The destination panel is already at its corner.", "Панель отримувачів уже у своєму куті.", "Die Zieltabelle ist bereits in ihrer Ecke.", "La tabella delle destinazioni è già nel suo angolo.", "El panel de destinos ya está en su esquina.", "Le panneau des destinations est déjà dans son coin.", "O painel de destinos já está no seu canto.", "لوحة الوجهات بالفعل في زاويتها.", "गंतव्य पैनल पहले से ही अपने कोने पर है।", "গন্তব্য প্যানেল আগেই তার কোণে আছে।", "منزل پینل پہلے ہی اپنے کونے پر ہے۔", "目标面板已在其角落。")
         Add("Кэш декодирования очищен.",
             "Decode cache cleared.", "Кеш декодування очищено.", "Dekodierer-Cache geleert.",
             "Cache di decodifica svuotata.", "Caché de decodificado vaciada.", "Cache de décodage vidé.",

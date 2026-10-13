@@ -1,4 +1,4 @@
-Option Strict On
+﻿Option Strict On
 
 Imports System.Drawing
 Imports System.Windows.Forms
@@ -12,7 +12,7 @@ Imports System.Windows.Forms
 ''' eight always fit and stay readable at high DPI. Each option carries a short
 ''' "what it does" note. The chip colour is NOT offered - the Android app decides it.
 ''' </summary>
-Public Class Share_Root_Params_Form
+Partial Public Class Share_Root_Params_Form
     Inherits Form
 
     Private Shared ReadOnly ProfileTokens As String() =
@@ -76,14 +76,10 @@ Public Class Share_Root_Params_Form
         UiLanguage.ApplyTo(Me)
         Me.Text = Localization.TF("Параметры ресурса - {0}", _folderName)
         Me.Icon = ShareIcons.CreateIcon(_iconHandle)
-        Dim boldFont As New Font(Me.Font, FontStyle.Bold)
-        Dim tip As New ToolTip()
-        AddHandler Me.FormClosed,
-            Sub()
-                Try : tip.Dispose() : Catch : End Try
-                Try : boldFont.Dispose() : Catch : End Try
-                ShareIcons.FreeIcon(Me.Icon, _iconHandle)
-            End Sub
+        _ownedBoldFont = New Font(Me.Font, FontStyle.Bold)
+        Dim boldFont As Font = _ownedBoldFont
+        _ownedTip = New ToolTip()
+        Dim tip As ToolTip = _ownedTip
         Me.FormBorderStyle = FormBorderStyle.FixedDialog
         Me.MaximizeBox = False
         Me.MinimizeBox = False
@@ -294,7 +290,7 @@ Public Class Share_Root_Params_Form
         UpdateDestinationEnabled()
     End Sub
 
-    Private Sub OnOk(sender As Object, e As EventArgs)
+    Friend Function ReadDraft() As ShareRootParams
         Dim label As String = txtLabel.Text.Trim()
         _params.Label = If(label.Length = 0 OrElse label = _folderName, "", label)
 
@@ -320,6 +316,11 @@ Public Class Share_Root_Params_Form
         _params.AccessPin = txtPin.Text.Trim()
         _params.SlideshowInterval = CInt(numSlide.Value)
 
+        Return _params.Clone()
+    End Function
+
+    Private Sub OnOk(sender As Object, e As EventArgs)
+        ReadDraft()
         Me.DialogResult = DialogResult.OK
         Me.Close()
     End Sub

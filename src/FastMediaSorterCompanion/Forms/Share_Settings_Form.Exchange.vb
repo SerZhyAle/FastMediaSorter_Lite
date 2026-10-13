@@ -51,6 +51,7 @@ Partial Public NotInheritable Class Share_Settings_Form
     Private numXPort As NumericUpDown
     Private _btnXApplyPort As Button
     Private _btnXWizard As Button
+    Private _btnXWelcome As Button
     Private _rowXWizard As FlowLayoutPanel
     Private _btnXCopyFp As Button
     Private _btnXStart As Button
@@ -131,6 +132,21 @@ Partial Public NotInheritable Class Share_Settings_Form
             .Margin = New Padding(0, 0, 0, 8), .Text = Localization.T("Как устроен сервер обмена (портал)")}
         AddHandler lnkXPortal.LinkClicked, Sub() NetworkInfo.OpenInBrowser(ShareLinks.ExchangePortalUrl("exchange-server"))
         sec.AddBodyRow(lnkXPortal)
+        If ExchangeFirstRunModel.GateOpen() Then
+            Dim addResource = XButton(Localization.T("Добавить ресурс для публикации.."), Sub()
+                ResourceAddRequested = True
+                Close()
+            End Sub, "action.add")
+            addResource.MinimumSize = New Size(0, 44)
+            sec.AddBodyRow(addResource)
+            _btnXWelcome = XButton(Localization.T("Приветствие.."), Sub()
+                ReplayExchangeRequested = True
+                Close()
+            End Sub, "app.help")
+            _btnXWelcome.Name = "exchangeWelcomeReplay"
+            _btnXWelcome.MinimumSize = New Size(0, 44)
+            sec.AddBodyRow(_btnXWelcome)
+        End If
 
         ' "use this PC as my server" (ticket 168 section 3.7): the one-person case in one step; drawn only while nothing exists yet
         _btnXWizard = XButton(ExchangeAdminText.WizardButton(), AddressOf OnXWizard, "action.adjust")
@@ -239,6 +255,18 @@ Partial Public NotInheritable Class Share_Settings_Form
                               UpdateSummaries()
                           End Sub)
     End Function
+
+    Friend Sub FocusPublishPage()
+        SelectSettingsPage("network")
+    End Sub
+
+    Friend Sub FocusHostingPage()
+        SelectSettingsPage("hosting")
+    End Sub
+
+    Friend Sub FocusExchangePage()
+        If HasExchange Then SelectSettingsPage("exchange")
+    End Sub
 
     ''' <summary>The server this window started (or one found) ended by itself or was stopped: refresh, on
     ''' the UI thread. Raised on a pool thread.</summary>

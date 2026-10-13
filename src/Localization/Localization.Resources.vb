@@ -131,6 +131,11 @@ Partial Public NotInheritable Class Localization
             "Recursos", "Ressources", "Recursos", "الموارد",
             "संसाधन", "রিসোর্স", "وسائل", "资源")
 
+        Add("Мои устройства",
+            "My devices", "Мої пристрої", "Meine Geräte", "I miei dispositivi",
+            "Mis dispositivos", "Mes appareils", "Os meus dispositivos", "أجهزتي",
+            "मेरे डिवाइस", "আমার ডিভাইন", "میرے آلات", "我的设备")
+
         Add("Управление ресурсами..",
             "Manage resources..", "Керування ресурсами..", "Ressourcen verwalten..", "Gestisci risorse..",
             "Administrar recursos..", "Gérer les ressources..", "Gerenciar recursos..", "إدارة الموارد..",

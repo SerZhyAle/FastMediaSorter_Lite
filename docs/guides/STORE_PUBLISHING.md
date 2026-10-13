@@ -520,7 +520,7 @@ What it accesses and why:
 Local files it writes: settings (registry - inside the package container in this Store build), OCR data,
 FFmpeg, the translation and decode caches under %LOCALAPPDATA%\SZA\FastMediaSorter, and sharing
 configuration/stats under %LOCALAPPDATA%\FastMediaSorterCompanion. These never leave your device.
-Data sharing: none with the developer. Open source: https://github.com/SerZhyAle/FastMediaSorter_Lite. Contact: serzhyale@gmail.com
+Data sharing: none with the developer. Open source: https://github.com/SerZhyAle/FastMediaSorter_Lite. Contact: sza@ukr.net
 ```
 
 ---

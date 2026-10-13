@@ -45,6 +45,9 @@ Friend Enum CompanionCommandKind
     PlainStart = 2
     ShareFolder = 3
     Broadcast = 4
+    ''' <summary>Spec 215: the viewer's wizard asks for the guided add-resource flow (214). An intent, never a path -
+    ''' it carries nothing to share, so no consent queue and no staging are involved.</summary>
+    AddResource = 5
 End Enum
 
 ''' <summary>What a WM_COPYDATA payload asks of the Share Manager, parsed strictly.</summary>
@@ -81,6 +84,9 @@ Friend NotInheritable Class CompanionCommand
         End If
         If String.Equals(payload, Program.PlainStartCommand, StringComparison.Ordinal) Then
             Return New CompanionCommand(CompanionCommandKind.PlainStart, "")
+        End If
+        If String.Equals(payload, Program.AddResourceCommand, StringComparison.Ordinal) Then
+            Return New CompanionCommand(CompanionCommandKind.AddResource, "")
         End If
         If payload.StartsWith(BroadcastCommandPrefix, StringComparison.Ordinal) Then
             Dim rawPath As String = payload.Substring(BroadcastCommandPrefix.Length).Trim()

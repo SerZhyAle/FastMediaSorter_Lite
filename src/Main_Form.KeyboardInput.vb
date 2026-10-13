@@ -747,6 +747,20 @@ Partial Public Class Main_Form
         End If
     End Sub
 
+#If Not NETFRAMEWORK Then
+    ''' <summary>The recipients overlay's edit door (219 §4): opens the settings window already
+    ''' standing on the recipients page with the destination slots grid focused, through the
+    ''' window's own open-at entry - the same discipline Table_Form.RevealModernSetting rides:
+    ''' the remembered context is overridden for this one open
+    ''' and not rewritten, so the next plain settings open lands where it always did. The overlay
+    ''' keeps its pin, its position and its visibility through the open.</summary>
+    Friend Sub ShowSettingsWindowAtRecipientsGrid()
+        EnsureSettingsWindow()
+        Table_Form.RequestOpenAtRecipientsGrid()
+        ShowSettingsWindow()
+    End Sub
+#End If
+
     ''' <summary>F7 - the window fills the screen. Friend, and a method rather than two
     ''' lines repeated: the video's right-click menu offers the same thing, and the pair
     ''' must not drift apart.</summary>

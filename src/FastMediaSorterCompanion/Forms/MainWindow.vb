@@ -238,9 +238,12 @@ Partial Public NotInheritable Class MainWindow
         _entered = True
         Try
             Await EnterAsync()
+            Dim managerRequested As Boolean = _managerWelcomeRequested
+            Dim managerFinished As Boolean = Await OpenManagerWelcomeAsync()
             ' Spec 185: the server welcome, once the window is on screen. It may enable the share server or write the
             ' port, so the settings are read again and the window re-enters - the same steps as after OnEnableServer.
-            If Server_Welcome_Form.OpenDueHalves(Me) Then
+            If _serverWelcomeAllowed AndAlso (Not managerRequested OrElse managerFinished) AndAlso
+               _initialFolder.Length = 0 AndAlso Await Server_Welcome_Form.OpenDueHalvesAsync(Me, includeShare:=False) Then
                 _settings.Load()
                 ApplyGate()
                 _entered = False
@@ -462,14 +465,29 @@ Partial Public NotInheritable Class MainWindow
             Return
         End If
         Dim changed As Boolean
+        Dim replayManager As Boolean
+        Dim replayExchange As Boolean
+        Dim addResource As Boolean
         Using dlg As New Share_Settings_Form(_status)
             _settingsWindow = dlg
+            If _focusExchangeSettings Then dlg.FocusExchangePage()
+            If _focusHostingSettings Then dlg.FocusHostingPage()
+            If _focusPublishSettings Then dlg.FocusPublishPage()
+            _focusPublishSettings = False
+            _focusHostingSettings = False
+            _focusExchangeSettings = False
             dlg.ShowDialog(Me)
             ' Either an elevated hosting action changed the machine, or a pinned port moved
             ' the running server - both leave the status snapshot here stale.
             changed = dlg.Changed OrElse dlg.WorkerStateChanged
+            replayManager = dlg.ReplayManagerRequested
+            replayExchange = dlg.ReplayExchangeRequested
+            addResource = dlg.ResourceAddRequested
         End Using
         LoadLocalState()
+        If addResource Then Await OpenResourceAddAsync(Me, ResourceAddEntry.Exchange)
+        If replayManager Then Await ReplayManagerWelcomeAsync()
+        If replayExchange Then Await Server_Welcome_Form.ReplayExchangeAsync(Me)
         If Not changed Then Return
         ' The opt-in may just have been withdrawn (ticket 028 Ф-6): back to the enable panel.
         If Not ServerFeatures.IsEnabled() Then
@@ -513,6 +531,7 @@ Partial Public NotInheritable Class MainWindow
         Dim running As Boolean = _status IsNot Nothing AndAlso _status.Running
         btnToggle.Enabled = Not value AndAlso avail
         btnAdd.Enabled = Not value AndAlso avail
+        RefreshEmptyResourceHint()
         btnDisks.Enabled = Not value AndAlso avail
         btnAddCurrent.Enabled = Not value AndAlso avail
         btnRemove.Enabled = Not value AndAlso avail

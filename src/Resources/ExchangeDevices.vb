@@ -360,7 +360,6 @@ Friend NotInheritable Class ExchangeSync
                 Return ExchangeAttachOutcome.ConnectionFailed
             End If
             DirectCast(verified.Provider, IDisposable).Dispose()
-            ResourcePinMemory.Forget(draft.Descriptor)
         End If
         Dim result As ResourceCommitResult = _commit.Invoke(draft.Descriptor, draft.Password)
         If Not result.Succeeded Then ResourcePinMemory.Forget(draft.Descriptor)
@@ -447,7 +446,7 @@ Friend NotInheritable Class ExchangeSync
                 Continue For
             End If
             Dim resourceState As ExchangeResourceState = ExchangeAttach.StateOf(resource.ExchangeResourceId, state.Snapshot, True)
-            If resourceState <> ExchangeResourceState.Available AndAlso resource.PinRequired Then
+            If resourceState = ExchangeResourceState.NoLongerPublished AndAlso resource.PinRequired Then
                 ResourcePinMemory.Forget(resource)
                 changed.Add(resource.Id)
             End If

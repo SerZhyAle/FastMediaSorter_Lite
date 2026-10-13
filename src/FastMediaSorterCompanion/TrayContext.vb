@@ -21,6 +21,7 @@ Friend NotInheritable Class TrayContext
     Private _mainWindow As MainWindow
     Private _disposed As Boolean
     Private _pendingStartupProposals As Boolean
+    Private _pendingStartupAddResource As Boolean
     Private ReadOnly _statsTimer As Timer   ' keeps the tooltip's usage counters reasonably fresh while serving
     Private ReadOnly _diskLetterTimer As Timer
     Private _diskLetterFetchInFlight As Boolean
@@ -29,7 +30,15 @@ Friend NotInheritable Class TrayContext
     ''' Manager button, --show). Such a request always wins over the startup option.</param>
     ''' <param name="silentLaunch">The logon autostart (--tray). Suppresses even the
     ''' "I am in the tray" hint, so a boot stays completely quiet.</param>
-    Friend Sub New(initialFolder As String, Optional windowRequested As Boolean = False, Optional silentLaunch As Boolean = False)
+    ''' <param name="addResourceRequested">Spec 215: the launch also asked for the guided add-resource flow (the viewer's
+    ''' welcome wizard, on a green server row). It follows the window the same way a folder follows it - after the message
+    ''' loop runs - and yields to the manager's own first-run welcome, whose handover leads to the same flow.</param>
+    Friend Sub New(initialFolder As String, Optional windowRequested As Boolean = False, Optional silentLaunch As Boolean = False,
+                   Optional addResourceRequested As Boolean = False)
+        ' Capture before resume or a window can write any manager settings. Silent/folder launches only leave the pending marker.
+        Dim fresh As Boolean = ManagerWelcomeStore.CaptureFreshProfile()
+        Dim welcomeDue As Boolean = ManagerWelcomeModel.ShouldOpen(ManagerWelcomeStore.State(), fresh,
+            silentLaunch, Not String.IsNullOrEmpty(initialFolder))
         _trayIcon = ShareIcons.CreateIcon(_trayHIcon)
 
         _notifyIcon = New NotifyIcon() With {
@@ -81,8 +90,10 @@ Friend NotInheritable Class TrayContext
             ElseIf windowRequested OrElse WantsWindowOnStartup() Then
                 ShowMainWindow(Nothing)
             End If
-        ElseIf windowRequested OrElse WantsWindowOnStartup() Then
-            ShowMainWindow(Nothing)
+        ElseIf welcomeDue OrElse windowRequested OrElse WantsWindowOnStartup() Then
+            ShowMainWindow(Nothing, welcomeDue, Not silentLaunch)
+            ' The welcome greets a fresh manager (212); its own handover opens the add flow (214 E-3). Never both.
+            If addResourceRequested AndAlso Not welcomeDue Then _pendingStartupAddResource = True
         ElseIf Not silentLaunch Then
             ShowTrayHint()
         End If
@@ -426,13 +437,15 @@ Friend NotInheritable Class TrayContext
     ''' non-empty <paramref name="initialFolder"/> requests the "share this folder"
     ''' flow - handed to the constructor for a fresh window, routed into the live one
     ''' when a window is already up.</summary>
-    Private Sub ShowMainWindow(initialFolder As String)
+    Private Sub ShowMainWindow(initialFolder As String, Optional requestWelcome As Boolean = False, Optional allowWelcome As Boolean = False)
         Try
             Dim reused As Boolean = _mainWindow IsNot Nothing AndAlso Not _mainWindow.IsDisposed
             If Not reused Then
                 _mainWindow = New MainWindow(initialFolder)
                 AddHandler _mainWindow.ServerStateChanged, AddressOf RefreshTrayState
+                AddHandler _mainWindow.WelcomeDeclined, Sub() ShowTrayHint()
             End If
+            If allowWelcome OrElse requestWelcome Then _mainWindow.RequestManagerWelcome(requestWelcome)
             If Not _mainWindow.Visible Then _mainWindow.Show()
             If _mainWindow.WindowState = FormWindowState.Minimized Then _mainWindow.WindowState = FormWindowState.Normal
             _mainWindow.Activate()
@@ -587,11 +600,17 @@ Friend NotInheritable Class TrayContext
     Private Sub OnPayloadReceived(command As CompanionCommand)
         Select Case command.Kind
             Case CompanionCommandKind.ShowWindow
-                ShowMainWindow(Nothing)
+                ShowMainWindow(Nothing, ManagerWelcomeModel.ShouldOpen(ManagerWelcomeStore.State(), False, False, False), True)
             Case CompanionCommandKind.PlainStart
                 ' The exe was run again with nothing attached - same rule as a first plain
                 ' start, and the running instance is the only one that can show the hint.
-                If WantsWindowOnStartup() Then ShowMainWindow(Nothing) Else ShowTrayHint()
+                If ManagerWelcomeModel.ShouldOpen(ManagerWelcomeStore.State(), False, False, False) Then
+                    ShowMainWindow(Nothing, True)
+                ElseIf WantsWindowOnStartup() Then
+                    ShowMainWindow(Nothing, False, True)
+                Else
+                    ShowTrayHint()
+                End If
             Case CompanionCommandKind.ShareFolder
                 ' Already staged by the receiver (the verdict was part of the acknowledgement).
                 If IsAlreadyShared(command.Folder) Then
@@ -602,7 +621,29 @@ Friend NotInheritable Class TrayContext
                 BeginInvokeProposals()
             Case CompanionCommandKind.Broadcast
                 ShowBroadcastsWindow(command.TargetPath)
+            Case CompanionCommandKind.AddResource
+                ' Spec 215: the window is shown exactly as a show-window wake shows it; when the manager's own welcome
+                ' is due it greets and the add flow waits for its handover (214 E-3) instead of stacking on it.
+                Dim welcomeDue As Boolean = ManagerWelcomeModel.ShouldOpen(ManagerWelcomeStore.State(), False, False, False)
+                ShowMainWindow(Nothing, welcomeDue, True)
+                If Not welcomeDue Then BeginOpenAddResource()
         End Select
+    End Sub
+
+    ''' <summary>Posts the guided add-resource flow to the window's own UI turn, after the wake handler has returned
+    ''' its acknowledgement. The window decides whether it can open it (a worker that is missing or a busy window
+    ''' leaves the plain window, never an error).</summary>
+    Private Sub BeginOpenAddResource()
+        If _disposed OrElse _mainWindow Is Nothing OrElse _mainWindow.IsDisposed Then Return
+        Dim live As MainWindow = _mainWindow
+        Try
+            live.BeginInvoke(New Action(Sub()
+                                            If live.IsDisposed Then Return
+                                            Dim t As Task = live.OpenResourceAddFromWakeAsync()
+                                        End Sub))
+        Catch ex As Exception
+            AppFileLogger.LogException("Companion add-resource wake", ex)
+        End Try
     End Sub
 
     ''' <summary>
@@ -666,6 +707,10 @@ Friend NotInheritable Class TrayContext
         If _pendingStartupProposals Then
             _pendingStartupProposals = False
             BeginInvokeProposals()
+        End If
+        If _pendingStartupAddResource Then
+            _pendingStartupAddResource = False
+            BeginOpenAddResource()
         End If
     End Sub
     ''' <summary>The receiver's decision for a validated folder request, taken synchronously so

@@ -1,4 +1,4 @@
-Option Strict On
+﻿Option Strict On
 
 Imports System.Collections.Generic
 Imports System.Drawing
@@ -292,7 +292,7 @@ Public Class ExchangeGroupTests
         ' The form calls them; the Core modules call each other (service -> elevation, firewall -> elevation).
         Assert.Contains("Share_Settings_Form.Exchange.vb", byFile.Keys)
         For Each name As String In byFile.Keys
-            Assert.Contains(name, {"Share_Settings_Form.Exchange.vb", "ExchangeFirewall.vb", "ExchangeService.vb"})
+            Assert.Contains(name, {"Share_Settings_Form.Exchange.vb", "ExchangeFirewall.vb", "ExchangeService.vb", "ExchangeFirstRunActions.vb"})
         Next
         Dim form As String = ExchangeTestSupport.CodeOnly(ExchangeTestSupport.ReadSource("Forms\Share_Settings_Form.Exchange.vb"))
         Assert.Contains("EnableViaElevation", ExchangeTestSupport.MethodBody(form, "Private Async Sub OnXFirewallEnable()"))
@@ -322,7 +322,8 @@ Public Class ExchangeGroupTests
         ' ticket 168: the administration files are part of the group
         allowed = allowed.Concat({"ExchangeAdmin.vb", "ExchangeAdminModel.vb", "ExchangeAdminText.vb", "ExchangeServerWizard.vb", "Exchange_Account_Admin_Form.vb",
                                   "Exchange_Server_Wizard_Form.vb", "Share_Settings_Form.ExchangeAdmin.vb",
-                                  "Server_Welcome_Form.vb"}).ToArray()   ' ticket 185: a second entry to the same acts (the wizard), explaining them - spec 185 section 2
+                                  "Server_Welcome_Form.vb", "MainWindow.Welcome.vb", "Server_Welcome_Form.ExchangeFirstRun.vb",
+                                  "ExchangeFirstRunModel.vb", "ServerWelcomeModel.vb", "ExchangeFirstRunActions.vb"}).ToArray()   ' gated onboarding reuses the existing exchange acts
         ' ticket 187 T-2: the operator's connection string is built by the server binary, shown in its own window beside the fingerprint
         allowed = allowed.Concat({"ExchangeConnectionStringText.vb", "Exchange_Connection_String_Form.vb"}).ToArray()
         ' 2026-10-12 (owner): the local join - this PC enrols itself in the server that runs on it, so it asks the binary and the service for their address and certificate

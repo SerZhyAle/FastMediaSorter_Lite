@@ -1,4 +1,4 @@
-#If Not NETFRAMEWORK Then
+﻿#If Not NETFRAMEWORK Then
 Option Strict On
 
 Imports System.Drawing
@@ -463,6 +463,7 @@ Partial Public Class Table_Form
         AddHandler DpiChanged, Sub()
                                    settingsScale = Math.Max(1.0F, CSng(DeviceDpi) / 96.0F) * fontScale
                                    resourcesPanel?.SetDeviceScale(settingsScale)
+                                   ResizeResourcesListHost()
                                    For Each group In settingsGroups.Values
                                        group.SetLayoutScale(settingsScale)
                                    Next
@@ -622,6 +623,12 @@ Partial Public Class Table_Form
 
     Private Sub ModernSettingsShown(sender As Object, e As EventArgs)
         PositionModernSettingsOnOwnerMonitor()
+        ' The recipients overlay's edit door (219 §4): one open-at entry, honoured when the
+        ' window is shown - a plain open never sees it.
+        If pendingOpenAtRecipientsGrid Then
+            pendingOpenAtRecipientsGrid = False
+            RevealModernRecipientsGrid()
+        End If
         QueueRestoreSettingsContext()
     End Sub
 
@@ -919,6 +926,7 @@ Partial Public Class Table_Form
             Case "recipients_font" : Return Localization.T("Размер текста")
             Case "recipients_opacity" : Return Localization.T("Непрозрачность")
             Case "recipients_rows" : Return Localization.T("Видимые строки")
+            Case "recipients_position_reset" : Return Localization.T("Сброс позиции панели получателей")
             Case "section_appearance" : Return Localization.T("Оформление")
             Case "ui_theme" : Return Localization.T("Тема оформления")
             Case "section_background" : Return Localization.T("Фон изображения")
@@ -1066,11 +1074,12 @@ Partial Public Class Table_Form
     Private Function ModernSettingDescription(key As String) As String
         Select Case key
             Case "recipients_overlay" : Return Localization.T("Показывает компактный список папок поверх изображения; закрепляется и открепляется своей булавкой, как панели.")
-            Case "recipients_position" : Return Localization.T("Угол области просмотра, в котором будет показана таблица.")
+            Case "recipients_position" : Return Localization.T("Угол области просмотра; панель можно перетащить за заголовок.")
             Case "recipients_width" : Return Localization.T("Ширина панели в пикселях.")
             Case "recipients_font" : Return Localization.T("Размер текста в пунктах.")
             Case "recipients_opacity" : Return Localization.T("Прозрачность фона таблицы в процентах.")
             Case "recipients_rows" : Return Localization.T("Лишние строки будут доступны прокруткой.")
+            Case "recipients_position_reset" : Return Localization.T("Возвращает панель в выбранный угол из любого состояния, включая потерянную позицию.")
             Case "ui_theme" : Return Localization.T("Светлая, тёмная или как в Windows - для всех окон просмотрщика и менеджера общего доступа.")
             Case "background_color" : Return Localization.T("Выберите, как вычислять цвет свободной области вокруг фотографии.")
             Case "perspective" : Return Localization.T("Продолжает края фотографии на свободную область экрана.")
@@ -1088,7 +1097,7 @@ Partial Public Class Table_Form
             Case "new_image_scale" : Return Localization.T("Начальный масштаб при открытии следующего изображения.")
             Case "reduce_motion" : Return Localization.T("Отключает декоративные переходы, анимацию ореола и движение фона у аудио без обложки.")
             Case "chrome_size" : Return Localization.T("Малые, средние или крупные; адаптивный следит и за шириной окна.")
-            Case "chrome_opacity" : Return Localization.T("Чем меньше значение, тем прозрачнее плавающие панели.")
+            Case "chrome_opacity" : Return Localization.T("Чем меньше значение, тем прозрачнее плавающие панели. Ниже 50 % надписи и значки инвертируются: чёрное становится белым.")
             Case "chrome_corners" : Return Localization.T("Скругление углов панелей")
             Case "chrome_pinned" : Return Localization.T("Панели не исчезают сами и остаются над изображением постоянно.")
             Case "slideshow_random_order" : Return Localization.T("Выберите обычный, случайный или перемешанный порядок.")
@@ -1592,7 +1601,7 @@ Partial Public Class Table_Form
                 Return "action.export"
             Case "settings_import"
                 Return "action.import"
-            Case "settings_defaults", "profile_reset_all"
+            Case "settings_defaults", "profile_reset_all", "recipients_position_reset"
                 Return "action.reset"
             Case "welcome_replay"
                 Return "app.help"
@@ -1843,6 +1852,7 @@ Partial Public Class Table_Form
                 For Each id As String In removedIds
                     If Not settingsRemovedResourceIdList.Contains(id) Then settingsRemovedResourceIdList.Add(id)
                 Next
+                ResizeResourcesListHost()
             End Sub
         AddHandler resourcesPanel.ItemActivated,
             Sub(resource As ResourceDescriptor)
@@ -1856,35 +1866,30 @@ Partial Public Class Table_Form
         host.Controls.Add(resourcesPanel)
         flow.Controls.Add(host)
         host.BringToFront()
-        AddHandler flow.ClientSizeChanged, Sub() SizeResourcesListHost(flow, host)
-        AddHandler host.ClientSizeChanged, Sub() SizeResourcesListHost(flow, host)
+        ' The column strip's height is an estimate until the list has its handle; the
+        ' first exact measure settles the table's height.
+        AddHandler resourcesPanel.HandleCreated, Sub() BeginInvoke(New MethodInvoker(Sub() SizeResourcesListHost(host)))
         expandedRefreshActions.Add(Sub()
                                        resourcesPanel.Localize()
-                                       SizeResourcesListHost(flow, host)
+                                       SizeResourcesListHost(host)
                                    End Sub)
-        SizeResourcesListHost(flow, host)
+        SizeResourcesListHost(host)
     End Sub
 
-    ''' <summary>The fluid list host of 131 §3.1: everything else on the page (the group's
-    ''' header band, the introduction block and the margins) is measured, and the host takes
-    ''' what is left of the page - keeping 320 logical px for the list body, plus its actions
-    ''' and status, at which point the page itself
-    ''' scrolls. Runs on every page resize.</summary>
-    Private Sub SizeResourcesListHost(flow As FlowLayoutPanel, host As Panel)
+    ''' <summary>The content-sized list host: the table stands at the height of its own
+    ''' rows - more rows, a taller table - so the page's height belongs to the sections
+    ''' below it and no longer to the list. Re-run on every refill, scale change and
+    ''' language switch.</summary>
+    Private Sub SizeResourcesListHost(host As Panel)
         resourcesPanel.SetDeviceScale(settingsScale)
-        Dim occupied As Integer = flow.Padding.Vertical + host.Margin.Vertical
-        Dim group As SettingsCollapsibleGroup = Nothing
-        If settingsGroups.TryGetValue("resources/basic", group) Then
-            occupied += group.Header.Height + group.Margin.Vertical
-            For Each sibling As Control In group.Body.Controls
-                If sibling IsNot host Then occupied += sibling.Height + sibling.Margin.Vertical
-            Next
-        End If
-        Dim serverGroup As SettingsCollapsibleGroup = Nothing
-        If settingsGroups.TryGetValue("resources/server", serverGroup) Then
-            occupied += serverGroup.Height + serverGroup.Margin.Vertical
-        End If
-        host.Height = Math.Max(resourcesPanel.MinimumPageHeight, flow.ClientSize.Height - occupied)
+        host.Height = resourcesPanel.PreferredHeight()
+    End Sub
+
+    ''' <summary>The same measure through the panel's own host, for the places that hold
+    ''' no local reference (the DPI change).</summary>
+    Private Sub ResizeResourcesListHost()
+        If resourcesPanel Is Nothing OrElse resourcesPanel.Parent Is Nothing Then Return
+        SizeResourcesListHost(DirectCast(resourcesPanel.Parent, Panel))
     End Sub
 
     ''' <summary>True when anything in the resources list was changed while the window was open;

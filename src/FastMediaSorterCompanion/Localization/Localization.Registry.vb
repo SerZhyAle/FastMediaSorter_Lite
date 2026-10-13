@@ -28,6 +28,9 @@ Partial Public NotInheritable Class Localization
         AddDiskStrings()        ' DISK-SHARE: file-backed containers and local drive aliases
         AddExchangeStrings()    ' tickets 142-144: the Media Exchange Server group and tray item
         AddServerWelcomeStrings()      ' spec 185: the server welcome - the steps of the share server and the exchange server
+        AddResourceAddStrings()        ' spec 214: guided add with shared resource controls
+        AddExchangeFirstRunStrings()   ' spec 213: local exchange server onboarding
+        AddManagerWelcomeStrings()     ' spec 212: share the first folder, startup trigger and replay
         AddExchangePublishStrings()    ' ticket 170: the producer rows - publishing the shares, the third-party port, outsider links (replaces 148's)
         AddExchangeDeviceStrings()     ' ticket 180: the device agent - the "Exchange account" group and its sign-in dialog
         AddExchangeAdminStrings()      ' ticket 168: the exchange server administration - accounts, devices, address, ports, certificate, statement, wizard

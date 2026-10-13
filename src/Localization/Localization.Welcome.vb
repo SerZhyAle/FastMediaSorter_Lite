@@ -1,23 +1,33 @@
 Option Strict On
 
 ' <summary>
-' The strings of the welcome wizard (spec 184): the window's title, the step frame, the three named parts of
-' every step (what it is, why it exists, how the viewer will behave), the controls and the buttons.
+' The strings of the welcome wizard (spec 184): the window's title, the step frame, the four named parts of
+' every step - what it is, why it exists, how the viewer will behave, and where to change it later (spec 211) -
+' the controls and the buttons.
 '
 ' The table is shared with the net48 build like the others (a string table costs the x86 exe nothing, and splitting
 ' it per build is how two tables drift apart); only the .NET 10 viewer shows the wizard. Keys that already exist
 ' elsewhere are reused, not repeated: the six background names, "Язык интерфейса", "Цвет фона:", "Очистить" and
-' "Выбрать папку..". Never a smart double quote in a literal (CLAUDE.md): use the guillemets. House style: ".." not
+' "Выбрать папку..", and - through the where-paths of spec 211 - the pages, groups and rows the settings window
+' itself renders. Never a smart double quote in a literal (CLAUDE.md): use the guillemets. House style: ".." not
 ' "...", a plain hyphen, and the Russian "ё" where it belongs.
 ' </summary>
 Partial Public NotInheritable Class Localization
 
     Private Shared Sub AddWelcomeStrings()
-        Add("Первоначальная настройка доступна через F1.",
-            "Press F1 for the welcome setup.", "Початкове налаштування доступне через F1.", "Drücken Sie F1 für die Ersteinrichtung.",
-            "Premi F1 per la configurazione iniziale.", "Pulse F1 para la configuración inicial.", "Appuyez sur F1 pour la configuration initiale.",
-            "Prima F1 para a configuração inicial.", "اضغط F1 للإعداد الأولي.", "प्रारंभिक सेटअप के लिए F1 दबाएँ।",
-            "প্রাথমিক সেটআপের জন্য F1 চাপুন।", "ابتدائی سیٹ اپ کے لیے F1 دبائیں۔", "按 F1 打开初始设置。")
+        Add("{0}: {1} - {2}", "{0}: {1} - {2}", "{0}: {1} - {2}", "{0}: {1} - {2}",
+            "{0}: {1} - {2}", "{0}: {1} - {2}", "{0}: {1} - {2}", "{0}: {1} - {2}",
+            "{0}: {1} - {2}", "{0}: {1} - {2}", "{0}: {1} - {2}", "{0}: {1} - {2}", "{0}: {1} - {2}")
+        Add("Первоначальную настройку можно открыть кнопкой на пустом экране.",
+            "The welcome setup can be opened with the button on the empty screen.", "Початкове налаштування можна відкрити кнопкою на порожньому екрані.", "Die Ersteinrichtung lässt sich über die Schaltfläche auf dem leeren Bildschirm öffnen.",
+            "La configurazione iniziale si apre con il pulsante sulla schermata vuota.", "La configuración inicial se abre con el botón de la pantalla vacía.", "La configuration initiale s'ouvre avec le bouton de l'écran vide.",
+            "A configuração inicial abre-se com o botão no ecrã vazio.", "يمكن فتح الإعداد الأولي بزر على الشاشة الفارغة.", "प्रारंभिक सेटअप खाली स्क्रीन पर बटन से खोला जा सकता है।",
+            "প্রাথমিক সেটআপ খালি স্ক্রিনের বোতাম দিয়ে খোলা যায়।", "ابتدائی سیٹ اپ خالی اسکرین پر موجود بٹن سے کھولا جا سکتا ہے۔", "初始设置可以通过空白屏幕上的按钮打开。")
+        Add("Первоначальная настройка",
+            "Welcome setup", "Початкове налаштування", "Ersteinrichtung",
+            "Configurazione iniziale", "Configuración inicial", "Configuration initiale",
+            "Configuração inicial", "الإعداد الأولي", "प्रारंभिक सेटअप",
+            "প্রাথমিক সেটআপ", "ابتدائی سیٹ اپ", "初始设置")
         Add("Колесо меняет масштаб у курсора, файлы листают стрелки.",
             "The wheel zooms at the cursor; the arrow keys browse files.", "Колесо змінює масштаб біля курсора, файли гортають стрілки.", "Das Mausrad zoomt am Mauszeiger; die Pfeiltasten wechseln Dateien.",
             "La rotella ingrandisce al cursore; i tasti freccia scorrono i file.", "La rueda amplía en el cursor; las flechas recorren los archivos.", "La molette zoome au niveau du curseur ; les flèches parcourent les fichiers.",
@@ -51,6 +61,12 @@ Partial Public NotInheritable Class Localization
             "Come funzionerà", "Cómo funcionará", "Comment cela fonctionnera",
             "Como vai funcionar", "كيف سيعمل", "यह कैसे काम करेगा",
             "এটি কীভাবে কাজ করবে", "یہ کیسے کام کرے گا", "它将如何工作")
+        ' Spec 211 §4.1: the fourth named part, "Где это менять" - the settings page and row, later in the recap too.
+        Add("Где это менять",
+            "Where to change it", "Де це змінити", "Wo man es ändert",
+            "Dove si cambia", "Dónde se cambia", "Où le modifier",
+            "Onde se muda", "أين تغيّره", "इसे कहाँ बदलें",
+            "কোথায় বদলাবেন", "اسے کہاں بدلیں", "在哪里修改")
         Add("Внешний вид",
             "Appearance", "Вигляд", "Erscheinungsbild",
             "Aspetto", "Apariencia", "Apparence",
@@ -174,6 +190,17 @@ Partial Public NotInheritable Class Localization
             "Se un disco non ha il Cestino, come una condivisione di rete o una chiavetta, il programma lo dice prima di eliminare.", "Si una unidad no tiene Papelera, como un recurso de red o una memoria USB, el programa lo indica antes de borrar.", "Si un lecteur n'a pas de Corbeille, comme un partage réseau ou une clé USB, le programme le signale avant de supprimer.",
             "Se uma unidade não tiver Lixo, como uma partilha de rede ou uma pen, o programa diz-lho antes de eliminar.", "إذا لم يكن في القرص سلة محذوفات، كمشاركة شبكية أو ذاكرة USB، يخبرك البرنامج بذلك قبل الحذف.", "यदि किसी ड्राइव में रीसायकल बिन नहीं है, जैसे नेटवर्क शेयर या मेमोरी स्टिक, तो प्रोग्राम मिटाने से पहले बता देता है।",
             "কোনো ড্রাইভে রিসাইকেল বিন না থাকলে, যেমন নেটওয়ার্ক শেয়ার বা মেমোরি স্টিক, মোছার আগে প্রোগ্রাম সেটা জানিয়ে দেয়।", "اگر کسی ڈرائیو میں ری سائیکل بن نہ ہو، جیسے نیٹ ورک شیئر یا میموری اسٹک، تو پروگرام حذف کرنے سے پہلے بتا دیتا ہے۔", "如果某个驱动器没有回收站（例如网络共享或U盘），程序会在删除前提示。")
+        ' Spec 211 §4.4: the recap's line for the delete choice, one sentence per state.
+        Add("Файлы после Del уходят в Корзину.",
+            "After Del, files go to the Recycle Bin.", "Після Del файли потрапляють до Кошика.", "Nach Entf wandern Dateien in den Papierkorb.",
+            "Dopo Canc, i file finiscono nel Cestino.", "Tras Supr, los archivos van a la Papelera.", "Après Suppr, les fichiers vont à la Corbeille.",
+            "Depois de Del, os ficheiros vão para o Lixo.", "بعد Del، تذهب الملفات إلى سلة المحذوفات.", "Del के बाद फ़ाइलें रीसायकल बिन में जाती हैं।",
+            "Del-এর পরে ফাইল রিসাইকেল বিনে যায়।", "Del کے بعد فائلیں ری سائیکل بن میں جاتی ہیں۔", "按 Del 后，文件进入回收站。")
+        Add("Файлы после Del удаляются окончательно.",
+            "After Del, files are deleted for good.", "Після Del файли видаляються остаточно.", "Nach Entf werden Dateien endgültig gelöscht.",
+            "Dopo Canc, i file vengono eliminati per sempre.", "Tras Supr, los archivos se eliminan para siempre.", "Après Suppr, les fichiers sont supprimés définitivement.",
+            "Depois de Del, os ficheiros são eliminados de vez.", "بعد Del، تُحذف الملفات نهائياً.", "Del के बाद फ़ाइलें हमेशा के लिए मिट जाती हैं।",
+            "Del-এর পরে ফাইল চিরতরে মুছে যায়।", "Del کے بعد فائلیں مستقل طور پر حذف ہو جاتی ہیں۔", "按 Del 后，文件被永久删除。")
 
         ' --- step 5: associations ---------------------------------------------------------------
         Add("Двойной щелчок по картинке в Проводнике откроет её в этой программе.",
@@ -214,6 +241,40 @@ Partial Public NotInheritable Class Localization
             "Abra uma pasta para começar. A janela de definições e a tecla F1 trazem esta ajuda de volta a qualquer momento.", "افتح مجلداً للبدء. تعيد نافذة الإعدادات ومفتاح F1 هذه المساعدة في أي وقت.", "किसी फ़ोल्डर को खोलकर शुरू करें। सेटिंग्स विंडो और F1 यह मदद कभी भी वापस ला देते हैं।",
             "শুরু করতে একটি ফোল্ডার খুলুন। সেটিংস উইন্ডো ও F1 যেকোনো সময় এই সাহায্য ফিরিয়ে আনে।", "شروع کرنے کے لیے ایک فولڈر کھولیں۔ سیٹنگز ونڈو اور F1 یہ مدد کسی بھی وقت واپس لے آتے ہیں۔", "打开一个文件夹即可开始。设置窗口和 F1 随时可以再次显示此帮助。")
 
+        ' --- the fourth part: where to change it later (spec 211 §4.1) ----------------------------
+        ' One template per step; the {0}/{1} slots take the settings paths the form composes from the very keys the
+        ' settings window renders. "в меню папок программы" names the one live surface that is not a settings row.
+        Add("Позже меняется здесь: {0}.",
+            "You can change it later here: {0}.", "Пізніше змінюється тут: {0}.", "Später können Sie es hier ändern: {0}.",
+            "Puoi cambiarlo più avanti qui: {0}.", "Puede cambiarlo más adelante aquí: {0}.", "Vous pourrez le modifier ici : {0}.",
+            "Pode mudá-lo mais tarde aqui: {0}.", "يمكنك تغييره لاحقاً من هنا: {0}.", "इसे बाद में यहाँ बदलें: {0}.",
+            "পরে এখান থেকে বদলাতে পারবেন: {0}.", "بعد میں اسے یہاں سے بدلیں: {0}.", "以后可在这里修改：{0}。")
+        Add("Позже меняется здесь: {0} и {1}.",
+            "You can change them later here: {0} and {1}.", "Пізніше змінюється тут: {0} і {1}.", "Später können Sie beides hier ändern: {0} und {1}.",
+            "Puoi cambiarli più avanti qui: {0} e {1}.", "Puede cambiarlos más adelante aquí: {0} y {1}.", "Vous pourrez les modifier ici : {0} et {1}.",
+            "Pode mudá-los mais tarde aqui: {0} e {1}.", "يمكنك تغييرهما لاحقاً من هنا: {0} و{1}.", "दोनों को बाद में यहाँ बदलें: {0} और {1}.",
+            "দুটোই পরে এখান থেকে বদলাতে পারবেন: {0} এবং {1}.", "دونوں بعد میں یہاں سے بدلیں: {0} اور {1}.", "以后可在这里修改：{0}和{1}。")
+        Add("Фон - {0}; колесо - {1}.",
+            "Background - {0}; wheel - {1}.", "Фон - {0}; колесо - {1}.", "Hintergrund - {0}; Mausrad - {1}.",
+            "Sfondo - {0}; rotella - {1}.", "Fondo - {0}; rueda - {1}.", "Fond - {0} ; molette - {1}.",
+            "Fundo - {0}; roda - {1}.", "الخلفية - {0}؛ والعجلة - {1}.", "पृष्ठभूमि - {0}; व्हील - {1}.",
+            "পটভূমি - {0}; চাকা - {1}.", "پس منظر - {0}؛ وہیل - {1}.", "背景 - {0}；滚轮 - {1}。")
+        Add("Папки назначаются {0}; переход после копирования - {1}.",
+            "Folders are assigned {0}; moving on after copying - {1}.", "Папки призначаються {0}; перехід після копіювання - {1}.", "Ordner werden {0} festgelegt; der Wechsel nach dem Kopieren - {1}.",
+            "Le cartelle si assegnano {0}; il passaggio dopo la copia - {1}.", "Las carpetas se asignan {0}; pasar a la siguiente tras copiar - {1}.", "Les dossiers s'attribuent {0} ; le passage au suivant après une copie - {1}.",
+            "As pastas atribuem-se {0}; avançar após copiar - {1}.", "تُحدَّد المجلدات {0}؛ والانتقال بعد النسخ - {1}.", "फ़ोल्डर तय होते हैं {0}; कॉपी के बाद आगे बढ़ना - {1}.",
+            "ফোল্ডার ঠিক হয় {0}; কপির পরে এগিয়ে যাওয়া - {1}.", "فولڈر طے ہوتے ہیں {0}؛ کاپی کے بعد آگے بڑھنا - {1}.", "文件夹{0}指定；复制后跳到下一个 - {1}。")
+        Add("Вернуть эти шаги: {0} или клавиша F1.",
+            "Bring these steps back: {0}, or the F1 key.", "Повернути ці кроки: {0} або клавіша F1.", "Diese Schritte zurückholen: {0}, oder die Taste F1.",
+            "Riportare questi passaggi: {0}, oppure il tasto F1.", "Volver a mostrar estos pasos: {0}, o la tecla F1.", "Revenir à ces étapes : {0}, ou la touche F1.",
+            "Retomar estes passos: {0}, ou a tecla F1.", "إعادة هذه الخطوات: {0}، أو مفتاح F1.", "ये चरण वापस लाएँ: {0}, या F1 कुंजी।",
+            "এই ধাপগুলো ফিরিয়ে আনুন: {0}, বা F1 কী।", "یہ مراحل دوبارہ لائیں: {0}، یا F1 کلید۔", "再次显示这些步骤：{0}或 F1 键。")
+        Add("в меню папок программы",
+            "in the viewer's folder menu", "у меню папок програми", "im Ordnermenü des Programms",
+            "nel menu delle cartelle del programma", "en el menú de carpetas del programa", "dans le menu des dossiers du programme",
+            "no menu de pastas do programa", "في قائمة مجلدات البرنامج", "प्रोग्राम के फ़ोल्डर मेनू में",
+            "প্রোগ্রামের ফোল্ডার মেনুতে", "پروگرام کے فولڈر مینو میں", "在程序的文件夹菜单中")
+
         ' --- the buttons ------------------------------------------------------------------------
         Add("Пропустить настройку",
             "Skip setup", "Пропустити налаштування", "Einrichtung überspringen",
@@ -252,6 +313,49 @@ Partial Public NotInheritable Class Localization
             "La cartella non è più disponibile. Sceglierne un'altra.", "La carpeta ya no está disponible. Elija otra.", "Ce dossier n'est plus disponible. Choisissez-en un autre.",
             "Esta pasta já não está disponível. Escolha outra.", "لم يعد هذا المجلد متاحاً. اختر مجلداً آخر.", "यह फ़ोल्डर अब उपलब्ध नहीं है। कोई और चुनें।",
             "এই ফোল্ডারটি আর পাওয়া যাচ্ছে না। অন্যটি বেছে নিন।", "یہ فولڈر اب دستیاب نہیں۔ کوئی اور چنیں۔", "该文件夹已不可用，请选择其他文件夹。")
+
+        ' --- the finish screen's installed-servers block (spec 215) ---------------------------------
+        ' The Media Exchange Server's own name is never a key: it is Latin in every language (ProductNames.ExchangeServer).
+        Add("Серверы на этом ПК",
+            "Servers on this PC", "Сервери на цьому ПК", "Server auf diesem PC",
+            "Server su questo PC", "Servidores en este PC", "Serveurs sur ce PC",
+            "Servidores neste PC", "الخوادم على هذا الكمبيوتر", "इस पीसी पर सर्वर",
+            "এই পিসির সার্ভার", "اس پی سی پر سرورز", "此电脑上的服务器")
+        Add("Сервер папок для Android",
+            "Folder server for Android", "Сервер папок для Android", "Ordnerserver für Android",
+            "Server delle cartelle per Android", "Servidor de carpetas para Android", "Serveur de dossiers pour Android",
+            "Servidor de pastas para Android", "خادم المجلدات لجهاز Android", "Android के लिए फ़ोल्डर सर्वर",
+            "Android-এর জন্য ফোল্ডার সার্ভার", "Android کے لیے فولڈر سرور", "面向 Android 的文件夹服务器")
+        Add("Раздаёт папки этого ПК на телефон. Управляется в Share Manager.",
+            "Shares this PC's folders to your phone. Managed in Share Manager.", "Роздає папки цього ПК на телефон. Керується в Share Manager.", "Gibt die Ordner dieses PCs für das Telefon frei. Wird im Share Manager verwaltet.",
+            "Condivide le cartelle di questo PC con il telefono. Si gestisce in Share Manager.", "Comparte las carpetas de este PC con el teléfono. Se administra en Share Manager.", "Partage les dossiers de ce PC avec le téléphone. Se gère dans Share Manager.",
+            "Partilha as pastas deste PC com o telemóvel. Gerido no Share Manager.", "يشارك مجلدات هذا الكمبيوتر مع الهاتف. تتم إدارته في Share Manager.", "इस पीसी के फ़ोल्डर फ़ोन को साझा करता है। Share Manager में प्रबंधित होता है।",
+            "এই পিসির ফোল্ডার ফোনে শেয়ার করে। Share Manager-এ পরিচালিত হয়।", "اس پی سی کے فولڈر فون کے ساتھ شیئر کرتا ہے۔ Share Manager میں منظم ہوتا ہے۔", "将此电脑的文件夹共享给手机。在 Share Manager 中管理。")
+        Add("Собственный сервер обмена этого ПК. Управляется в Share Manager.",
+            "This PC's own exchange server. Managed in Share Manager.", "Власний сервер обміну цього ПК. Керується в Share Manager.", "Der eigene Austauschserver dieses PCs. Wird im Share Manager verwaltet.",
+            "Il server di scambio di questo PC. Si gestisce in Share Manager.", "El servidor de intercambio de este PC. Se administra en Share Manager.", "Le serveur d'échange de ce PC. Se gère dans Share Manager.",
+            "O servidor de troca deste PC. Gerido no Share Manager.", "خادم التبادل الخاص بهذا الكمبيوتر. تتم إدارته في Share Manager.", "इस पीसी का अपना एक्सचेंज सर्वर। Share Manager में प्रबंधित होता है।",
+            "এই পিসির নিজস্ব এক্সচেঞ্জ সার্ভার। Share Manager-এ পরিচালিত হয়।", "اس پی سی کا اپنا ایکسچینج سرور۔ Share Manager میں منظم ہوتا ہے۔", "此电脑自己的交换服务器。在 Share Manager 中管理。")
+        Add("Работает",
+            "Running", "Працює", "Läuft",
+            "In esecuzione", "En marcha", "En cours",
+            "A funcionar", "يعمل", "चल रहा है",
+            "চলছে", "چل رہا ہے", "正在运行")
+        Add("Не запущен - менеджер включит его по вашему выбору",
+            "Not running - the manager will start it if you choose", "Не запущено - менеджер увімкне його за вашим вибором", "Nicht gestartet - der Manager startet ihn auf Ihren Wunsch",
+            "Non avviato - il gestore lo avvierà a vostra scelta", "No iniciado - el administrador lo iniciará si usted lo decide", "Non démarré - le gestionnaire le démarrera si vous le choisissez",
+            "Não iniciado - o gestor inicia-o por sua escolha", "غير قيد التشغيل - سيشغّله المدير بحسب اختيارك", "चालू नहीं है - प्रबंधक आपकी पसंद पर इसे शुरू करेगा",
+            "চালু নেই - আপনার পছন্দে ম্যানেজার এটি চালু করবে", "چل نہیں رہا - مینیجر آپ کے انتخاب پر اسے شروع کرے گا", "未运行 - 管理器会按您的选择启动它")
+        Add("Открыть менеджер",
+            "Open the manager", "Відкрити менеджер", "Manager öffnen",
+            "Apri il gestore", "Abrir el administrador", "Ouvrir le gestionnaire",
+            "Abrir o gestor", "فتح المدير", "प्रबंधक खोलें",
+            "ম্যানেজার খুলুন", "مینیجر کھولیں", "打开管理器")
+        Add("Добавить ресурс",
+            "Add a resource", "Додати ресурс", "Ressource hinzufügen",
+            "Aggiungi una risorsa", "Añadir un recurso", "Ajouter une ressource",
+            "Adicionar um recurso", "إضافة مورد", "संसाधन जोड़ें",
+            "রিসোর্স যোগ করুন", "وسیلہ شامل کریں", "添加资源")
     End Sub
 
 End Class

@@ -7,7 +7,13 @@
 ''' </summary>
 Public Module CompanionGlobals
 
-    Public ReadOnly App_name As String = "SZA"
+    ' Tests and scene harnesses use an isolated VB settings hive; product calls retain the frozen coordinates.
+    Friend Property SettingsAppNameOverride As String
+    Public ReadOnly Property App_name As String
+        Get
+            Return If(SettingsAppNameOverride, "SZA")
+        End Get
+    End Property
     Public ReadOnly Second_App_Name As String = "FastMediaSorter"
 
     ' The old RU/EN boolean is gone: since 013_SPECIFICATION_THIRTEEN_UI_LANGUAGES.md block A'

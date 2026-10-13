@@ -30,6 +30,7 @@ Partial Public Class Main_Form
     ''' <summary>One run's bookkeeping, kept out of BatchRunner because it is about the
     ''' window (the list, the picture on screen), not about the sequence.</summary>
     Private NotInheritable Class BatchRunState
+        Public SourceSession As ResourceSession
         Public IsUndo As Boolean
         Public Intent As BatchIntent
         ''' <summary>The generation of the file list the run started from; list edits happen
@@ -228,6 +229,8 @@ Partial Public Class Main_Form
         Dim verb As ResourceVerb = If(intent = BatchIntent.Delete, ResourceVerb.Delete,
                                       If(intent = BatchIntent.CopyToSlot, ResourceVerb.Copy, ResourceVerb.Move))
         If ResourceBlocksFileOperations(verb) Then Return False
+        Dim sourceSession As ResourceSession = ActiveResourceSession()
+        Dim sourceGeneration As Integer = file_List_Generation
 
         Dim create_Destination As Boolean = False
         Dim destination_Folder As String = ""
@@ -273,6 +276,7 @@ Partial Public Class Main_Form
                                       If slots Is Nothing Then Throw New ResourceFailureException(New ResourceFailure(ResourceFailureKind.Unsupported))
                                       Return slots.FileExists(p)
                                   End If
+                                  If sourceSession IsNot Nothing AndAlso sourceSession.EntryAt(p) IsNot Nothing Then Return True
                                   Return File.Exists(p)
                               End Function,
                 .TransferName = Function(p As String)
@@ -288,6 +292,8 @@ Partial Public Class Main_Form
                 .FileSize = Function(p As String)
                                 Dim m As FileMetaInfo
                                 If meta IsNot Nothing AndAlso meta.TryGetValue(p, m) Then Return m.SizeBytes
+                                Dim entry As ResourceEntry = sourceSession?.EntryAt(p)
+                                If entry IsNot Nothing Then Return Math.Max(0, entry.Length)
                                 Return New FileInfo(p).Length
                             End Function,
                 .IsSameFile = Function(a As String, b As String) FileManager.IsSameFile(a, b)}
@@ -300,7 +306,7 @@ Partial Public Class Main_Form
             Try
                 plan = Await Task.Run(
                     Function() As BatchPlan
-                        If intent = BatchIntent.Delete Then ctx.DeleteDecision = SelectionDeleteDecision(paths, bin_Enabled)
+                        If intent = BatchIntent.Delete Then ctx.DeleteDecision = SelectionDeleteDecision(paths, bin_Enabled, sourceSession?.Provider.Capabilities)
                         Return BatchPlan.Build(paths, intent, ctx)
                     End Function)
             Catch ex As Exception When ResourceLocator.IsLocator(destination_Folder)
@@ -343,6 +349,7 @@ Partial Public Class Main_Form
             If Me.IsDisposed Then Return False
 
             ' --- go ---------------------------------------------------------------------
+            If sourceGeneration <> file_List_Generation OrElse sourceSession IsNot ActiveResourceSession() Then Return False
             If intent <> BatchIntent.Delete Then
                 Dim sourceCaps As ProviderCapabilities = ActiveResourceSession()?.Provider.Capabilities
                 Dim destinationCaps As ProviderCapabilities = Nothing
@@ -364,6 +371,7 @@ Partial Public Class Main_Form
 
             Dim run As New BatchRunState With {
                 .IsUndo = False,
+                .SourceSession = sourceSession,
                 .Intent = intent,
                 .ListGeneration = file_List_Generation,
                 .Entry = New BatchUndoEntry()}
@@ -427,7 +435,11 @@ Partial Public Class Main_Form
     ''' passed: the quota rule is per file and stat-ing three hundred files over SMB to sharpen
     ''' one sentence is not a trade worth making - the shell still has the last word.
     ''' </summary>
-    Private Shared Function SelectionDeleteDecision(paths As IEnumerable(Of String), binEnabled As Boolean) As DeleteDecision
+    Private Shared Function SelectionDeleteDecision(paths As IEnumerable(Of String), binEnabled As Boolean,
+                                                    Optional capabilities As ProviderCapabilities = Nothing) As DeleteDecision
+        If capabilities IsNot Nothing AndAlso Not capabilities.HasRecycleBin Then
+            Return DeletePolicy.DecideForProvider(capabilities, Nothing, -1, binEnabled, False)
+        End If
         Dim verdict As DeleteDecision = Nothing
         Dim roots_Seen As New HashSet(Of String)(StringComparer.OrdinalIgnoreCase)
         For Each p As String In paths
@@ -491,7 +503,12 @@ Partial Public Class Main_Form
         ' An undo of a copy deletes it only while the original still exists (046 C-04); the
         ' worker asks, and needs the original's path to do so.
         If item.Kind = FileOpKind.DeleteUndo Then op.UndoOrigin = New FileOp With {.Source = item.OriginalSource}
-        Return EnsureFileOpQueue().Enqueue(op)
+        If (item.Kind = FileOpKind.Delete OrElse item.Kind = FileOpKind.Move OrElse item.Kind = FileOpKind.Copy) AndAlso batch_Run?.SourceSession IsNot Nothing Then
+            op.RemoteDelete = ResourceRouting.CaptureDelete(item.Source, batch_Run.SourceSession)
+        End If
+        Dim admitted As Boolean = EnsureFileOpQueue().Enqueue(op)
+        If Not admitted Then op.RemoteDelete?.Dispose()
+        Return admitted
     End Function
 
     ''' <summary>

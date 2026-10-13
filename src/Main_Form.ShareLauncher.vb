@@ -47,6 +47,9 @@ Partial Public Class Main_Form
     ''' <summary>Empty-call marker (no folder) - Companion just shows its window.</summary>
     Private Const CompanionShowWindowCommand As String = "::fms-show-window::"
     Private Const CompanionBroadcastCommandPrefix As String = "::fms-broadcast::"
+    ''' <summary>Spec 215: "show your window and open the guided add-resource flow". An intent with no path in it.</summary>
+    Private Const CompanionAddResourceCommand As String = "::fms-add-resource::"
+    Private Const CompanionAddResourceFlag As String = "--add-resource"
     Private Const WM_COPYDATA_SHARE As Integer = &H4A
 
     <StructLayout(LayoutKind.Sequential)>
@@ -126,13 +129,36 @@ Partial Public Class Main_Form
     ''' A Share Manager that is running but does not answer is reported, never "fixed" by
     ''' starting a second one or by replaying the request (an uncertain send is not retried
     ''' as a mutation).</summary>
-    Friend Async Sub ActivateShareEntryPoint(Optional managerOnly As Boolean = False)
+    ''' <param name="addResource">Spec 215: the wake carries the add-resource intent, so the Share Manager opens its
+    ''' guided add flow (214) instead of only its window. It implies <paramref name="managerOnly"/> - no folder is ever
+    ''' sent with it - and it travels only to a receiver known to understand it; any other gets the plain wake.</param>
+    Friend Async Sub ActivateShareEntryPoint(Optional managerOnly As Boolean = False, Optional addResource As Boolean = False)
         Try
-            Await ActivateShareEntryPointAsync(managerOnly)
+            Await ActivateShareEntryPointAsync(managerOnly OrElse addResource, addResource)
         Catch ex As Exception
             AppFileLogger.LogException("ShareLauncher", ex)
         End Try
     End Sub
+
+    ''' <summary>The Share Manager component is installed beside this program (or in the Server edition's own folder).
+    ''' A file probe only - nothing is started or woken (spec 215 rule 3).</summary>
+    Friend Function ShareComponentInstalled() As Boolean
+        Try
+            Dim exePath As String = CompanionExePath()
+            Return Not String.IsNullOrEmpty(exePath) AndAlso File.Exists(exePath)
+        Catch
+            Return False
+        End Try
+    End Function
+
+    ''' <summary>The window dialogs of the wake answer to: the welcome wizard while it is on screen (spec 215 - its
+    ''' finish screen is where the wake comes from, and a box owned by the disabled main window would open behind it),
+    ''' otherwise the main window.</summary>
+    Private Function ShareDialogOwner() As IWin32Window
+        Dim wizard As Form = welcome_Dialog
+        If wizard IsNot Nothing AndAlso Not wizard.IsDisposed AndAlso wizard.Visible Then Return wizard
+        Return Me
+    End Function
 
     ''' <summary>
     ''' Viewer entry point for broadcasting a file or folder to StreamsPlayer.
@@ -171,7 +197,7 @@ Partial Public Class Main_Form
         ColdStartCompanion(exePath, payload)
     End Function
 
-    Private Async Function ActivateShareEntryPointAsync(managerOnly As Boolean) As Task
+    Private Async Function ActivateShareEntryPointAsync(managerOnly As Boolean, Optional addResource As Boolean = False) As Task
         Dim folder As String = If(managerOnly, "", ResolveCurrentFolder())
         Dim exePath As String = CompanionExePath()
         If String.IsNullOrEmpty(exePath) OrElse Not File.Exists(exePath) Then
@@ -187,10 +213,13 @@ Partial Public Class Main_Form
         Dim receiver As Version = If(running = True, RunningCompanionVersion(), FileVersionOfExe(exePath))
         Dim plan As ActivationPlan = ShareActivationPolicy.PlanFor(folder, receiver)
         Dim sentFolder As String = If(plan = ActivationPlan.SendFolder, folder, "")
+        ' Spec 215: the add-resource intent is a payload of its own and never travels beside a folder. A receiver that is
+        ' not known to understand it (unknown is not proof) gets the plain wake - its window opens as it always did.
+        Dim sendIntent As Boolean = addResource AndAlso sentFolder.Length = 0 AndAlso ShareActivationPolicy.IsAddResourceCapable(receiver)
 
         If running = True Then
-            AppFileLogger.WriteLine("ShareLauncher: Companion running - " & plan.ToString())
-            Dim payload As String = If(sentFolder.Length > 0, sentFolder, CompanionShowWindowCommand)
+            AppFileLogger.WriteLine("ShareLauncher: Companion running - " & plan.ToString() & If(sendIntent, " + add-resource", ""))
+            Dim payload As String = If(sentFolder.Length > 0, sentFolder, If(sendIntent, CompanionAddResourceCommand, CompanionShowWindowCommand))
             Dim outcome As ForwardOutcome = Await Task.Run(Function() ForwardToCompanion(payload))
             If outcome = ForwardOutcome.Delivered Then
                 If plan = ActivationPlan.WakeAndAdvise Then AdviseManualAdd(folder)
@@ -200,17 +229,29 @@ Partial Public Class Main_Form
             ' would only repeat the request through another path (and a second manager must never
             ' start), so the user is told what happened.
             AppFileLogger.WriteLine("ShareLauncher: Companion running but not reachable (" & outcome.ToString() & ")")
-            ' News, not a question: the status line (and, in full screen without panels, a toast) says it (124 UX-206).
-            Notify(Localization.T("Share Manager уже запущен, но не ответил на запрос. Подождите немного и повторите; второй экземпляр не запускается."), NotifyLevel.Warning)
+            ReportShareManagerSilent()
             Return
         End If
 
-        ColdStartCompanion(exePath, sentFolder)
+        ColdStartCompanion(exePath, sentFolder, sendIntent)
         If plan = ActivationPlan.WakeAndAdvise Then AdviseManualAdd(folder)
     End Function
 
+    ''' <summary>The running Share Manager did not answer. News, not a question: the status line (and, in full screen
+    ''' without panels, a toast) says it (124 UX-206) - except above the welcome wizard, which is modal and hides the
+    ''' status line, where a box over the wizard says it instead.</summary>
+    Private Sub ReportShareManagerSilent()
+        Dim text As String = Localization.T("Share Manager уже запущен, но не ответил на запрос. Подождите немного и повторите; второй экземпляр не запускается.")
+        Dim owner As IWin32Window = ShareDialogOwner()
+        If Not Object.ReferenceEquals(owner, Me) Then
+            ViewerBox.Show(owner, text, Localization.T("Общий доступ"), MessageBoxButtons.OK, MessageBoxIcon.Warning)
+        Else
+            Notify(text, NotifyLevel.Warning)
+        End If
+    End Sub
+
     Private Sub AdviseManualAdd(folder As String)
-        ViewerBox.Show(Me,
+        ViewerBox.Show(ShareDialogOwner(),
             Localization.TF("Share Manager старой версии не умеет безопасно принимать папку отсюда. Обновите его или добавьте папку в нём вручную:" & vbCrLf & "{0}", folder),
             Localization.T("Общий доступ"), MessageBoxButtons.OK, MessageBoxIcon.Information)
     End Sub
@@ -275,7 +316,7 @@ Partial Public Class Main_Form
         End Try
         Return oldest
     End Function
-    Private Sub ColdStartCompanion(exePath As String, folder As String)
+    Private Sub ColdStartCompanion(exePath As String, folder As String, Optional addResource As Boolean = False)
         Try
             ' Let the freshly-launched Companion raise its window in front of us
             ' (we don't have its PID yet, so grant to any process).
@@ -286,7 +327,10 @@ Partial Public Class Main_Form
             ' by default), so without the marker this button would cold-start a
             ' tray-only process and look like it did nothing.
             ' QuoteArgument, not a bare pair of quotes: "E:\" reads back as E:" (053 F-13).
-            psi.Arguments = If(folder.Length > 0, Utils.QuoteArgument(folder), CompanionShowWindowCommand)
+            ' --add-resource is the same request with the intent of what to open in that window (spec 215); it is
+            ' only passed to a build that was found to understand it, so an older exe never sees an unknown flag.
+            psi.Arguments = If(folder.Length > 0, Utils.QuoteArgument(folder),
+                               If(addResource, CompanionAddResourceFlag, CompanionShowWindowCommand))
             AppFileLogger.WriteLine("ShareLauncher: cold-starting Companion '" & exePath & "'")
             ' We never wait on it - release the handle instead of leaving it to the
             ' finalizer (this runs per user click).
@@ -294,7 +338,7 @@ Partial Public Class Main_Form
             If started IsNot Nothing Then started.Dispose()
         Catch ex As Exception
             AppFileLogger.LogException("ShareLauncher cold-start", ex)
-            ViewerBox.Show(Me,
+            ViewerBox.Show(ShareDialogOwner(),
                 Localization.TF("Не удалось запустить {1}." & vbCrLf & "{0}", FailureText.Describe(ex), ProductNames.ShareManager),
                 Localization.T("Общий доступ"),
                 MessageBoxButtons.OK, MessageBoxIcon.Warning)
@@ -313,7 +357,7 @@ Partial Public Class Main_Form
     ''' place - same AppId, same directory, settings and associations untouched.
     ''' </summary>
     Private Sub OfferShareComponentDownload()
-        Dim answer As DialogResult = ViewerBox.Show(Me,
+        Dim answer As DialogResult = ViewerBox.Show(ShareDialogOwner(),
             Localization.TF("Компонент общего доступа не установлен ({0})." & vbCrLf & vbCrLf &
                             "Он входит в полный установщик: запустите его поверх текущей версии - настройки сохранятся." & vbCrLf & vbCrLf &
                             "Открыть страницу загрузки?", ProductNames.ShareManager),
@@ -328,7 +372,7 @@ Partial Public Class Main_Form
             If started IsNot Nothing Then started.Dispose()
         Catch ex As Exception
             AppFileLogger.LogException("ShareLauncher download page", ex)
-            ViewerBox.Show(Me,
+            ViewerBox.Show(ShareDialogOwner(),
                 Localization.TF("Не удалось открыть страницу загрузки." & vbCrLf & "{0}", FailureText.Describe(ex)),
                 Localization.T("Общий доступ"),
                 MessageBoxButtons.OK, MessageBoxIcon.Warning)

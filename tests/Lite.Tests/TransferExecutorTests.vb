@@ -98,7 +98,7 @@ Public Class TransferExecutorTests
             Deletes.Add(remotePath)
             Dim mode As Integer = DeleteBehavior(remotePath)
             If mode = 1 Then Throw New IOException("link dropped before delete")
-            File.Delete(Inner.BackingPath(remotePath))
+            If mode <> 3 Then File.Delete(Inner.BackingPath(remotePath))
             If mode = 2 Then Throw New IOException("link dropped after delete")
         End Sub
         Public Sub Rename(remotePath As String, newRemotePath As String) Implements IFileSystemProvider.Rename
@@ -131,9 +131,11 @@ Public Class TransferExecutorTests
 
     Private Shared ReadOnly Sftpish As New ProviderCapabilities(supportsServerSideRename:=True)
     Private Shared Function Caps(Optional write As Boolean = True, Optional delete As Boolean = True, Optional rename As Boolean = False,
-                                 Optional atomic As Boolean = False, Optional stable As Boolean = False) As ProviderCapabilities
+                                 Optional atomic As Boolean = False, Optional stable As Boolean = False,
+                                 Optional checkedDelete As Boolean = False) As ProviderCapabilities
         Return New ProviderCapabilities(canWrite:=write, canDelete:=delete, supportsServerSideRename:=rename,
-                                        supportsAtomicOverwriteRename:=atomic, supportsStableSourceDelete:=stable)
+                                        supportsAtomicOverwriteRename:=atomic, supportsStableSourceDelete:=stable,
+                                        supportsCheckedSourceDelete:=checkedDelete)
     End Function
 
     Private Shared Function Dir() As String
@@ -204,6 +206,143 @@ Public Class TransferExecutorTests
     End Sub
 
     ' ------------------------------------------------------------------- move ----
+
+    <Theory>
+    <InlineData(0, TransferResult.Completed)>
+    <InlineData(1, TransferResult.CopyOnly)>
+    <InlineData(2, TransferResult.Completed)>
+    <InlineData(3, TransferResult.CopyOnly)>
+    Public Sub Checked_SFTP_moves_confirm_source_absence_even_when_delete_returns_success(mode As Integer, expectedValue As Integer)
+        Dim expected As TransferResult = CType(expectedValue, TransferResult)
+        Dim src As New FaultProvider(Dir(), Caps(checkedDelete:=True))
+        Dim dst As New FaultProvider(Dir(), Caps())
+        src.Put("/s/a.jpg", Data(777))
+        src.DeleteBehavior = Function(p) mode
+        Dim outcome = TransferExecutor.Execute(Plan(TransferKind.Move, src, "/s/a.jpg", dst, "/in/a.jpg"))
+        Assert.Equal(expected, outcome.Result)
+        Assert.Equal(Data(777), dst.Bytes("/in/a.jpg"))
+        Assert.Equal(expected <> TransferResult.Completed, src.Exists("/s/a.jpg"))
+        Assert.Single(src.Deletes)
+        Assert.False(src.Capabilities.SupportsStableSourceDelete)
+    End Sub
+
+    <Fact>
+    Public Sub Checked_SFTP_move_retains_a_source_changed_after_publication()
+        Dim src As New FaultProvider(Dir(), Caps(checkedDelete:=True))
+        Dim dst As New FaultProvider(Dir(), Caps())
+        src.Put("/s/a.jpg", Data(100))
+        dst.AfterUpload = Sub(p) src.Put("/s/a.jpg", Data(200))
+        Dim outcome = TransferExecutor.Execute(Plan(TransferKind.Move, src, "/s/a.jpg", dst, "/in/a.jpg"))
+        Assert.Equal(TransferResult.CopyOnly, outcome.Result)
+        Assert.Equal(TransferReason.SourceChanged, outcome.Reason)
+        Assert.Empty(src.Deletes)
+        Assert.Equal(Data(200), src.Bytes("/s/a.jpg"))
+    End Sub
+
+    <Theory>
+    <InlineData(0, True)>
+    <InlineData(1, False)>
+    <InlineData(2, True)>
+    <InlineData(3, False)>
+    Public Sub Captured_remote_deletion_verifies_the_original_not_the_display_copy(mode As Integer, succeeds As Boolean)
+        Dim provider As New FaultProvider(Dir(), Caps(checkedDelete:=True))
+        provider.Put("/s/a.jpg", Data(100))
+        provider.DeleteBehavior = Function(p) mode
+        Dim cache As String = Dir()
+        Using session As New ResourceSession(New ResourceDescriptor With {.Id = "test", .DisplayName = "Test"}, provider, cache, 1000)
+            session.LoadListing("/s", CancellationToken.None)
+            Dim displayPath As String = session.Entries(0).LocalPath
+            Assert.Equal(EnsureLocalOutcome.Ready, session.TryEnsureLocal(displayPath))
+            Using target = ResourceRouting.CaptureDelete(displayPath, session)
+                If succeeds Then
+                    target.Execute()
+                    Assert.False(provider.Exists("/s/a.jpg"))
+                    Assert.False(File.Exists(displayPath))
+                Else
+                    Assert.ThrowsAny(Of IOException)(Sub() target.Execute())
+                    Assert.True(provider.Exists("/s/a.jpg"))
+                    Assert.True(File.Exists(displayPath))
+                End If
+            End Using
+            Assert.Single(provider.Deletes)
+        End Using
+    End Sub
+
+    <Fact>
+    Public Sub Closing_a_captured_session_cancels_delete_without_touching_its_original()
+        Dim provider As New FaultProvider(Dir(), Caps(checkedDelete:=True))
+        provider.Put("/s/a.jpg", Data(100))
+        Using session As New ResourceSession(New ResourceDescriptor With {.Id = "test"}, provider, Dir(), 1000)
+            session.LoadListing("/s", CancellationToken.None)
+            Using target = ResourceRouting.CaptureDelete(session.Entries(0).LocalPath, session)
+                session.Dispose()
+                Assert.Throws(Of OperationCanceledException)(Sub() target.Execute())
+                Assert.True(provider.Exists("/s/a.jpg"))
+                Assert.Empty(provider.Deletes)
+            End Using
+        End Using
+    End Sub
+
+    <Fact>
+    Public Sub A_delete_with_no_stat_verdict_is_unverified_and_never_retried()
+        Dim provider As New FaultProvider(Dir(), Caps(checkedDelete:=True))
+        provider.Put("/s/a.jpg", Data(100))
+        Using session As New ResourceSession(New ResourceDescriptor With {.Id = "test"}, provider, Dir(), 1000)
+            session.LoadListing("/s", CancellationToken.None)
+            provider.StatFault = Function(p) If(provider.Deletes.Count > 0, StatResult.Denied(), Nothing)
+            Using target = ResourceRouting.CaptureDelete(session.Entries(0).LocalPath, session)
+                Dim failure = Assert.Throws(Of ResourceDeleteException)(Sub() target.Execute())
+                Assert.True(failure.Unverified)
+                Assert.Single(provider.Deletes)
+                Assert.False(provider.Exists("/s/a.jpg"))
+            End Using
+        End Using
+    End Sub
+
+    <Fact>
+    Public Sub A_successful_remove_with_no_stat_verdict_never_reports_a_completed_move()
+        Dim src As New FaultProvider(Dir(), Caps(checkedDelete:=True))
+        Dim dst As New FaultProvider(Dir(), Caps())
+        src.Put("/s/a.jpg", Data(100))
+        src.StatFault = Function(p) If(src.Deletes.Count > 0, StatResult.Denied(), Nothing)
+        Dim outcome = TransferExecutor.Execute(Plan(TransferKind.Move, src, "/s/a.jpg", dst, "/in/a.jpg"))
+        Assert.Equal(TransferResult.Indeterminate, outcome.Result)
+        Assert.Equal(Data(100), dst.Bytes("/in/a.jpg"))
+        Assert.Single(src.Deletes)
+    End Sub
+
+    <Fact>
+    Public Sub Cancelling_during_the_final_source_stat_keeps_both_verified_copies()
+        Dim src As New FaultProvider(Dir(), Caps(checkedDelete:=True))
+        Dim dst As New FaultProvider(Dir(), Caps())
+        src.Put("/s/a.jpg", Data(100))
+        Using cancel As New CancellationTokenSource()
+            src.StatFault = Function(p)
+                                If dst.Exists("/in/a.jpg") Then cancel.Cancel()
+                                Return Nothing
+                            End Function
+            Dim outcome = TransferExecutor.Execute(Plan(TransferKind.Move, src, "/s/a.jpg", dst, "/in/a.jpg"), Nothing, cancel.Token)
+            Assert.Equal(TransferResult.CopyOnly, outcome.Result)
+            Assert.Equal(TransferReason.Cancelled, outcome.Reason)
+            Assert.True(src.Exists("/s/a.jpg"))
+            Assert.Equal(Data(100), dst.Bytes("/in/a.jpg"))
+            Assert.Empty(src.Deletes)
+        End Using
+    End Sub
+
+    <Fact>
+    Public Sub A_captured_read_only_source_refuses_delete_before_sending_a_command()
+        Dim provider As New FaultProvider(Dir(), Caps(delete:=False))
+        provider.Put("/s/a.jpg", Data(100))
+        Using session As New ResourceSession(New ResourceDescriptor With {.Id = "test"}, provider, Dir(), 1000)
+            session.LoadListing("/s", CancellationToken.None)
+            Using target = ResourceRouting.CaptureDelete(session.Entries(0).LocalPath, session)
+                Assert.Throws(Of UnauthorizedAccessException)(Sub() target.Execute())
+                Assert.True(provider.Exists("/s/a.jpg"))
+                Assert.Empty(provider.Deletes)
+            End Using
+        End Using
+    End Sub
 
     <Fact>
     Public Sub A_move_deletes_the_source_only_after_the_copy_is_proven_when_the_source_can_be_deleted_safely()
@@ -549,6 +688,7 @@ Public Class TransferExecutorTests
             dst.AfterUpload = Sub(p) cts.Cancel()
             Dim outcome = TransferExecutor.Execute(Plan(TransferKind.Move, src, "/s/a.jpg", dst, "/in/a.jpg"), Nothing, cts.Token)
             Assert.Equal(TransferResult.Cancelled, outcome.Result)
+            Assert.Equal(TransferReason.Cancelled, outcome.Reason)
             Assert.False(dst.Exists("/in/a.jpg"))
             Assert.Empty(dst.Leftovers("/in"))
             Assert.True(src.Exists("/s/a.jpg"))
@@ -567,7 +707,8 @@ Public Class TransferExecutorTests
                                      Return 0
                                  End Function
             Dim outcome = TransferExecutor.Execute(Plan(TransferKind.Move, src, "/s/a.jpg", dst, "/in/a.jpg"), Nothing, cts.Token)
-            Assert.Equal(TransferResult.Cancelled, outcome.Result)
+            Assert.Equal(TransferResult.CopyOnly, outcome.Result)
+            Assert.Equal(TransferReason.Cancelled, outcome.Reason)
             Assert.True(outcome.DestinationCreated)
             Assert.True(dst.Exists("/in/a.jpg"))
             Assert.True(src.Exists("/s/a.jpg"))

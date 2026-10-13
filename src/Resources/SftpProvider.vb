@@ -30,7 +30,6 @@ Friend NotInheritable Class SftpProvider
 
     Private client As SftpClient
     Private is_Disposed As Boolean
-    Private pin_Session_Used As Boolean
     Private pin_Rejected As Boolean
     Private lastHostKeyFailure As ResourceFailure
     Private connection_Cancellation As CancellationToken
@@ -77,7 +76,8 @@ Friend NotInheritable Class SftpProvider
             costHint:=ProviderCostHint.Slow,
             isMetered:=False,
             supportsAtomicOverwriteRename:=False,
-            supportsStableSourceDelete:=False)
+            supportsStableSourceDelete:=False,
+            supportsCheckedSourceDelete:=canWrite)
         capabilities_Value = If(capabilities, defaultCaps)
     End Sub
 
@@ -116,7 +116,7 @@ Friend NotInheritable Class SftpProvider
         End Get
     End Property
 
-    ''' <summary>A cached protected file is usable only while its original SSH proof still answers.</summary>
+    ''' <summary>A cached protected file is usable only while an authenticated SSH connection proves access to its root.</summary>
     Friend Sub EnsureResourceAuthorization(ct As CancellationToken)
         If Not descriptor_Value.PinRequired Then Return
         SyncLock gate
@@ -127,10 +127,14 @@ Friend NotInheritable Class SftpProvider
             Catch ex As OperationCanceledException
                 Throw
             Catch ex As Exception
-                pin_Rejected = True
-                ResourcePinMemory.Forget(descriptor_Value)
+                Dim failure As ResourceFailure = Classify(ex)
+                If failure.Kind = ResourceFailureKind.Auth OrElse (failure.Kind = ResourceFailureKind.SftpStatus AndAlso failure.StatusCode = 3) Then
+                    pin_Rejected = True
+                    ResourcePinMemory.Forget(descriptor_Value)
+                    failure = New ResourceFailure(ResourceFailureKind.Auth)
+                End If
                 DisposeClientLocked()
-                Throw New ResourceFailureException(New ResourceFailure(ResourceFailureKind.Auth))
+                Throw New ResourceFailureException(failure)
             End Try
         End SyncLock
     End Sub
@@ -158,7 +162,7 @@ Friend NotInheritable Class SftpProvider
             Throw New ResourceFailureException(New ResourceFailure(ResourceFailureKind.KeyMismatch))
         End If
         If client IsNot Nothing AndAlso client.IsConnected Then Return
-        If descriptor_Value.PinRequired AndAlso (pin_Session_Used OrElse pin_Rejected) Then
+        If descriptor_Value.PinRequired AndAlso pin_Rejected Then
             ResourcePinMemory.Forget(descriptor_Value)
             Throw New ResourceFailureException(New ResourceFailure(ResourceFailureKind.Auth))
         End If
@@ -217,7 +221,6 @@ Friend NotInheritable Class SftpProvider
                 client.ConnectAsync(ct).GetAwaiter().GetResult()
                 If descriptor_Value.PinRequired AndAlso Not pinChallengeAnswered Then Throw New ResourceFailureException(New ResourceFailure(ResourceFailureKind.Auth))
                 If client.IsConnected Then
-                    pin_Session_Used = descriptor_Value.PinRequired
                     Return
                 End If
                 last = New ResourceFailure(ResourceFailureKind.Transport)

@@ -238,13 +238,18 @@ Public Class SftpLiveTests
             Assert.NotNull(Failure(Sub() provider.ListEntries("/Share", CancellationToken.None)))
             server.Drop()
             Try
-                Assert.Equal(ResourceFailureKind.Auth, Failure(Sub() provider.EnsureResourceAuthorization(CancellationToken.None)).Kind)
-                Assert.Null(ResourcePinMemory.GetPin(lockedResource))
+                Dim unavailable As ResourceFailure = Failure(Sub() provider.EnsureResourceAuthorization(CancellationToken.None))
+                Assert.True(unavailable.Kind = ResourceFailureKind.Transport OrElse unavailable.Kind = ResourceFailureKind.Timeout)
+                Assert.Equal("216-original-pin", ResourcePinMemory.GetPin(lockedResource))
             Finally
                 server.Restore()
             End Try
-            Assert.Equal(ResourceFailureKind.Auth, Failure(Sub() provider.EnsureResourceAuthorization(CancellationToken.None)).Kind)
+            provider.EnsureResourceAuthorization(CancellationToken.None)
+            Assert.Equal({"secret.txt"}, Names(provider.ListEntries("/Protected", CancellationToken.None)))
         End Using
+        Dim reopened As ConnectOutcome = Await ResourceConnect.ConnectAsync(lockedResource, server.Password, Nothing, Nothing, Function() False, CancellationToken.None)
+        Assert.True(reopened.Succeeded, If(reopened.Failure?.ToString(), ""))
+        DirectCast(reopened.Provider, IDisposable).Dispose()
         ResourcePinMemory.Forget(lockedResource)
         Using legacy As SftpProvider = Opened(Resource())
             Assert.NotNull(Failure(Sub() legacy.ListEntries("/Protected", CancellationToken.None)))

@@ -1,4 +1,4 @@
-Option Strict On
+﻿Option Strict On
 
 ''' <summary>
 ''' The words of the server administration of ticket 168 (accounts, devices, the address clients use, the third-party
@@ -463,11 +463,12 @@ Friend Module ExchangeAdminText
     End Function
 
     ''' <summary>One sentence per way the wizard ended. An enrolment refusal adds the agent's own sentence after it.</summary>
-    Friend Function WizardOutcome(r As ExchangeWizardResult) As String
+    Friend Function WizardOutcome(r As ExchangeWizardResult, Optional enrollWasChosen As Boolean = True) As String
         Select Case r.Outcome
             Case ExchangeWizardOutcome.Done
                 Return Localization.T("Готово: сервер работает, учётная запись создана, этот ПК подключён к ней.")
             Case ExchangeWizardOutcome.DoneNoAgent
+                If Not enrollWasChosen Then Return Localization.T("Сервер работает, учётная запись создана. Подключение этого компьютера пропущено по вашему выбору.")
                 Return Localization.T("Сервер работает, учётная запись создана. Этот ПК к ней не подключён: клиентские возможности обмена в этой сборке не включены.")
             Case ExchangeWizardOutcome.NotAvailable
                 Return Localization.T("Мастер недоступен: сервер обмена не найден, не читается или им управляет служба.")

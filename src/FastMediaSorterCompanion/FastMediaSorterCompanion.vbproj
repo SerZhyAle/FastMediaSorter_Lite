@@ -72,6 +72,8 @@
          (the table is an implementation detail, not API). The viewer's test project sees
          it by linking the sources; this one project-references, so it needs the grant. -->
     <InternalsVisibleTo Include="Companion.Tests" />
+    <InternalsVisibleTo Include="ExchangeFirstRunScenes" />
+    <InternalsVisibleTo Include="ResourceAddScenes" />
   </ItemGroup>
 
   <ItemGroup>

@@ -23,7 +23,13 @@
       4  facts     the language count and the platform floor are read from their real sources (the
                    Localization table, the site copy's locale keys, the Inno scripts, the Server winget
                    manifest, the MSIX manifest) and compared with the data file; every "N languages" and every
-                   "Windows 10 <version>" in the scanned files is a value the data file holds (rule 3).
+                   "Windows 10 <version>" in the scanned files is a value the data file holds (rule 3);
+      5  discover  the discoverability block (ticket 207 T-1, canon PROMOTION section 2) - the tagline,
+                   the GitHub description, topics, winget tags, Store search terms, page titles and the
+                   social card's words - holds its channels' limits and none of the words the naming
+                   standard retired; no published surface, topic, tag or search term names a competitor
+                   (the names are read from the research guide's gate-terms block, never from the data
+                   file); and each channel the block lists as `applied` matches the tree.
 
     Ends in the shared one-line verdict (CHECK-VERDICT): exit 0 PASS / 1 FAIL / 2 COULD NOT VERIFY.
 
@@ -307,9 +313,134 @@ if ($null -ne $landing) {
     }
 }
 
+# --- 5: the discoverability fields (ticket 207 T-1; canon PROMOTION section 2) --------------------------------------
+# The machine form of POSITIONING.md section 7: the tagline, the GitHub description, the topics, the winget tags, the
+# Store search terms, the page titles and the social card's words. Judged: the limits of each channel, the words the
+# naming standard retired, and the competitor names - which are NOT in the data file: the internal research guide
+# holds them in a fenced `gate-terms` block (owner decision D-7), read here and nowhere else.
+$discSummary = 'no discoverability block'
+if ($decl.PSObject.Properties['discoverability']) {
+    $disc = $decl.discoverability
+    $lim = $disc.limits
+    $applied = @($disc.applied | ForEach-Object { [string]$_ })
+    $fields = [Collections.Generic.List[object]]::new()   # @(label, text) of every text the block types
+    function Add-Field([string]$label, [string]$text) { $fields.Add(@($label, $text)) }
+    Add-Field 'tagline' ([string]$disc.tagline)
+    Add-Field 'githubDescription' ([string]$disc.githubDescription)
+    foreach ($t in @($disc.topics)) { Add-Field 'topic' ([string]$t) }
+    foreach ($t in @($disc.wingetTags)) { Add-Field 'wingetTag' ([string]$t) }
+    foreach ($prop in $disc.storeSearchTerms.PSObject.Properties) { foreach ($t in @($prop.Value)) { Add-Field "storeSearchTerm ($($prop.Name))" ([string]$t) } }
+    foreach ($t in @($disc.socialCard.lines)) { Add-Field 'socialCard line' ([string]$t) }
+    Add-Field 'socialCard alt' ([string]$disc.socialCard.alt)
+
+    # the limits
+    $words = @(([string]$disc.tagline) -split '\s+' | Where-Object { $_ })
+    if ($words.Count -lt [int]$lim.taglineWordsMin -or $words.Count -gt [int]$lim.taglineWordsMax) { Problem "discoverability: the tagline has $($words.Count) words, the worksheet's range is $($lim.taglineWordsMin) to $($lim.taglineWordsMax)" }
+    $gd = [string]$disc.githubDescription
+    if ($gd.Length -gt [int]$lim.githubDescription) { Problem "discoverability: the GitHub description is $($gd.Length) characters, over $($lim.githubDescription)" }
+    if ($gd -match '[–—]') { Problem 'discoverability: the GitHub description holds an em or en dash (a hyphen only)' }
+    if (-not $gd.StartsWith([string]$disc.category, [StringComparison]::OrdinalIgnoreCase)) { Problem "discoverability: the GitHub description does not open with the category noun '$($disc.category)'" }
+    $compact = [string]$decl.discoverability.titles.suffix
+    if (-not $gd.Contains($compact)) { Problem "discoverability: the GitHub description does not carry the compact name '$compact'" }
+    $topics = @($disc.topics | ForEach-Object { [string]$_ })
+    if ($topics.Count -gt [int]$lim.topics) { Problem "discoverability: $($topics.Count) topics, over GitHub's $($lim.topics)" }
+    if (@($topics | Select-Object -Unique).Count -ne $topics.Count) { Problem 'discoverability: a topic is listed twice' }
+    foreach ($t in $topics) { if ($t -cnotmatch '^[a-z0-9][a-z0-9-]*$' -or $t.Length -gt [int]$lim.topicLength) { Problem "discoverability: topic '$t' is not lowercase letters, digits and hyphens within $($lim.topicLength) characters" } }
+    $tags = @($disc.wingetTags | ForEach-Object { [string]$_ })
+    $tagOnly = @($disc.wingetOnlyTags | ForEach-Object { [string]$_ })
+    if ($tags.Count -gt [int]$lim.wingetTags) { Problem "discoverability: $($tags.Count) winget tags, over $($lim.wingetTags)" }
+    if (@($tags | Select-Object -Unique).Count -ne $tags.Count) { Problem 'discoverability: a winget tag is listed twice' }
+    foreach ($t in $tags) { if ($topics -notcontains $t -and $tagOnly -notcontains $t) { Problem "discoverability: winget tag '$t' is neither a topic nor declared in wingetOnlyTags - the channels derive from one worksheet" } }
+    foreach ($prop in $disc.storeSearchTerms.PSObject.Properties) {
+        $terms = @($prop.Value | ForEach-Object { [string]$_ })
+        if ($terms.Count -gt [int]$lim.storeSearchTerms) { Problem "discoverability: $($terms.Count) Store search terms for $($prop.Name), over $($lim.storeSearchTerms)" }
+        if (@($terms | Select-Object -Unique).Count -ne $terms.Count) { Problem "discoverability: a Store search term of $($prop.Name) is listed twice" }
+    }
+    $landing = Get-Text 'index.html'
+    if ($null -ne $landing) {
+        $can = [regex]::Match($landing, '<link rel="canonical" href="(?<u>[^"]+)"')
+        if ($can.Success -and $can.Groups['u'].Value -ne [string]$disc.homepage) { Problem "discoverability: the homepage '$($disc.homepage)' is not the landing's canonical '$($can.Groups['u'].Value)'" }
+    }
+
+    # the words the naming standard retired, in every field the block types and in every locale's page title
+    $titleFields = [Collections.Generic.List[object]]::new()
+    foreach ($c in $codes) {
+        $pt = [string]$siteCopy.$c.pageTitle
+        if (-not $pt) { Problem "discoverability: $siteCopyRel has no pageTitle for '$c'"; continue }
+        $full = "$pt$($disc.titles.separator)$($disc.titles.suffix)"
+        if ($full.Length -gt [int]$lim.title) { Problem "discoverability: the page title of '$c' is $($full.Length) characters, over $($lim.title): $full" }
+        $titleFields.Add(@("pageTitle ($c)", $pt))
+        if (-not [string]$siteCopy.$c.ogAlt) { Problem "discoverability: $siteCopyRel has no ogAlt (the card's text alternative) for '$c'" }
+    }
+    $banned = @($disc.forbiddenWords | ForEach-Object { [string]$_ })
+    foreach ($f in @($fields) + @($titleFields)) {
+        foreach ($w in $banned) {
+            if ($f[1] -match ('(?i)(?<![\p{L}\p{N}])' + [regex]::Escape($w) + '(?![\p{L}\p{N}])')) { Problem "discoverability: $($f[0]) '$($f[1])' uses '$w', a word the naming standard retired" }
+        }
+    }
+
+    # competitor names (D-7): read from the research guide's gate-terms block, never from this data file
+    $researchRel = [string]$disc.competitorTermsSource
+    $research = Get-Text $researchRel
+    $terms = @()
+    if ($null -eq $research) { Problem "discoverability: the research guide $researchRel (the competitor terms' only home) is missing" }
+    else {
+        $blk = [regex]::Match($research, '(?ms)^```gate-terms\r?\n(?<t>.*?)^```')
+        if (-not $blk.Success) { Problem "discoverability: $researchRel has no fenced gate-terms block" }
+        else { $terms = @($blk.Groups['t'].Value -split '\r?\n' | ForEach-Object { $_.Trim() } | Where-Object { $_ }) }
+    }
+    $competitorHits = 0
+    if ($terms.Count -gt 0) {
+        $rxTerms = [regex]::new('(?<![\p{L}\p{N}])(?:' + (($terms | Sort-Object { - $_.Length } | ForEach-Object { [regex]::Escape($_) }) -join '|') + ')(?![\p{L}\p{N}])', 'IgnoreCase')
+        $rxPhrases = [regex]::new(('(?<![\p{L}\p{N}])(?:' + ((@($disc.competitorPhrases) | ForEach-Object { [regex]::Escape([string]$_) }) -join '|') + ')(?![\p{L}\p{N}])'), 'IgnoreCase')
+        foreach ($f in @($fields) + @($titleFields)) {
+            if ($rxTerms.IsMatch($f[1])) { Problem "discoverability: $($f[0]) '$($f[1])' names a competitor (D-7)" }
+        }
+        foreach ($file in (Expand-Patterns @($disc.competitorScan))) {
+            $text = Get-Text $file
+            foreach ($m in $rxTerms.Matches($text)) { $competitorHits++; Problem "${file}:$(Get-LineAt $text $m.Index) names a competitor product, '$($m.Value)' (ticket 207 D-7): a published surface names none" }
+            foreach ($m in $rxPhrases.Matches($text)) { $competitorHits++; Problem "${file}:$(Get-LineAt $text $m.Index) says '$($m.Value)': a published surface names no alternative to a product (D-7)" }
+        }
+    }
+
+    # the channels whose fields are in the tree today
+    foreach ($a in $applied) {
+        switch ($a) {
+            'site-titles' {
+                foreach ($c in $codes) {
+                    if ($c -eq 'en') { continue }
+                    $page = Get-Text "lang/$c/index.html"
+                    if ($null -eq $page) { Problem "discoverability: lang/$c/index.html is missing"; continue }
+                    $tm = [regex]::Match($page, '(?s)<title>(?<t>.*?)</title>')
+                    $want = "$([string]$siteCopy.$c.pageTitle)$($disc.titles.separator)$($disc.titles.suffix)"
+                    $got = if ($tm.Success) { [Net.WebUtility]::HtmlDecode($tm.Groups['t'].Value) } else { '' }
+                    if ($got -ne $want) { Problem "discoverability: lang/$c/index.html has the title '$got', the worksheet derives '$want' (run tools\Build-SitePages.ps1)" }
+                }
+            }
+            'social-card' {
+                foreach ($s in @($disc.socialCard.sizes)) { if (-not (Test-Path -LiteralPath (Join-Path $Root ([string]$s.file)) -PathType Leaf)) { Problem "discoverability: the social card $($s.file) does not exist" } }
+            }
+            'winget' {
+                $y = Require-Text 'publishing/winget/SerZhyAle.FastMediaSorter.locale.en-US.yaml'
+                $tm = [regex]::Match($y, '(?m)^Tags:[ \t]*\r?\n(?<l>(?:-[ \t]+[^\r\n]*\r?\n?)+)')
+                $have = if ($tm.Success) { @($tm.Groups['l'].Value -split '\r?\n' | ForEach-Object { $_.Trim() -replace '^-\s*', '' } | Where-Object { $_ }) } else { @() }
+                if ((($have | Sort-Object) -join ',') -ne (($tags | Sort-Object) -join ',')) { Problem "discoverability: the winget Tags [$($have -join ' ')] are not the worksheet's [$($tags -join ' ')]" }
+            }
+            'store' {
+                $csv = Require-Text 'publishing/store/listingData.csv'
+                $have = @([regex]::Matches($csv, '(?m)^SearchTerm\d+,\d+,Text,,(?<v>[^,\r\n]*),') | ForEach-Object { $_.Groups['v'].Value.Trim() } | Where-Object { $_ })
+                $want = @($disc.storeSearchTerms.'en-us' | ForEach-Object { [string]$_ })
+                if ((($have | Sort-Object) -join ',') -ne (($want | Sort-Object) -join ',')) { Problem "discoverability: the Store en-us search terms [$($have -join ', ')] are not the worksheet's [$($want -join ', ')]" }
+            }
+            default { Problem "discoverability: applied names an unknown channel '$a'" }
+        }
+    }
+    $discSummary = "$($topics.Count) topics, $($tags.Count) winget tags, $($terms.Count) competitor terms over $competitorHits hits, channels held: $($applied -join '+')"
+}
+
 # --- verdict -------------------------------------------------------------------------------------------
 if (-not $surfaceFiles) { Exit-Verdict 'Test-SitePositioning' 2 'no declared surface was found to judge' }
-$summary = "$($ids.Count) pillars, $regions regions of $surfaceFiles surface files, $editionHits edition names, $mentionSites reservation mentions, $claims typed claims in $($factFiles.Count) files"
+$summary = "$($ids.Count) pillars, $regions regions of $surfaceFiles surface files, $editionHits edition names, $mentionSites reservation mentions, $claims typed claims in $($factFiles.Count) files; $discSummary"
 if ($problems.Count) {
     foreach ($p in $problems) { Write-Host "  $p" -ForegroundColor Red }
     Exit-Verdict 'Test-SitePositioning' 1 "$($problems.Count) problems; $summary"

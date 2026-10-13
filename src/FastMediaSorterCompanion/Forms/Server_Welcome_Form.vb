@@ -1,4 +1,4 @@
-Option Strict On
+﻿Option Strict On
 
 Imports System.Collections.Generic
 Imports System.Drawing
@@ -6,14 +6,15 @@ Imports System.Threading.Tasks
 Imports System.Windows.Forms
 
 ''' <summary>
-''' The server welcome of spec 185: one window per half, one step at a time. Every step has the three named parts
+''' The server welcome of specs 185 and 213: one window per half, one step at a time. Every step has the three named parts
 ''' (what it is, why it exists, how it will work) above its input, and the acts are the existing ones - the share
 ''' server's enable dialog for A-1, the exchange wizard for B-4 (which carries the fingerprint and the agent). A step
-''' writes its value on Next, never on paint. "Later" records the half as dismissed; closing the window without it
-''' does not, so the welcome comes back until the half is configured. The rules are in <see cref="ServerWelcomeModel"/>.
+''' writes its value on Next, never on paint. Every exchange exit records the half as dismissed; the share half
+''' retains its existing dismissal behavior. The rules are in <see cref="ServerWelcomeModel"/>.
 ''' </summary>
-Friend NotInheritable Class Server_Welcome_Form
+Partial Friend NotInheritable Class Server_Welcome_Form
     Inherits Form
+    Implements IThemeAware
 
     ''' <summary>Text column width in design units; every paragraph wraps inside it.</summary>
     Private Const ContentWidth As Integer = 460
@@ -32,7 +33,6 @@ Friend NotInheritable Class Server_Welcome_Form
     Private ReadOnly _accentLabels As New List(Of Label)()
 
     Private _position As Integer
-    Private _accountCreated As Boolean
 
     Private _heading As Label
     Private _counter As Label
@@ -45,55 +45,70 @@ Friend NotInheritable Class Server_Welcome_Form
     Private _portNumber As NumericUpDown
     Private _doneStatus As Label
     Private _statement As TextBox
-    Private _wizardButton As Button
-    Private _wizardStatus As Label
     Private _later As Button
     Private _back As Button
     Private _next As Button
 
-    Private Sub New(half As WelcomeHalf)
+    Friend Sub New(half As WelcomeHalf, Optional actions As IExchangeFirstRunActions = Nothing,
+                   Optional snapshot As ExchangeSnapshot = Nothing, Optional replay As Boolean = False)
         _half = half
-        _steps = ServerWelcomeModel.StepsFor(half)
+        If half = WelcomeHalf.Exchange Then
+            If Not ExchangeFirstRunModel.GateOpen() Then Throw New InvalidOperationException("Exchange onboarding is not offered.")
+            _exchangeActions = If(actions, New ExchangeFirstRunActions())
+            _exchangeSnapshot = If(snapshot, New ExchangeSnapshot With {.Report = New ExchangeProcess.InspectReport()})
+            _steps = ExchangeFirstRunModel.StepsFor(_exchangeSnapshot.CanRegisterService, _exchangeSnapshot.ServiceExists)
+        Else
+            _steps = ServerWelcomeModel.StepsFor(half)
+        End If
         _settings.Load()
         BuildUi()
+        If replay Then ShowStep(_steps.Count - 1)
     End Sub
 
     ''' <summary>
     ''' Opens each half that is due, share first, and answers whether any window was shown. Called by the Share Manager
     ''' once its window is on screen (spec 185 section 3.1); the exchange half needs the shipping gate open.
     ''' </summary>
-    Friend Shared Function OpenDueHalves(owner As Form) As Boolean
+    Friend Shared Async Function OpenDueHalvesAsync(owner As Form, Optional includeShare As Boolean = True) As Task(Of Boolean)
         Dim settings As New ShareSettings()
         settings.Load()
         Dim opened As Boolean = False
 
-        If ServerWelcomeModel.ShouldOpen(WelcomeHalf.Share, ServerFeatures.IsEnabled(), settings.WelcomeShareDismissed, True, True) Then
+        If includeShare AndAlso ServerWelcomeModel.ShouldOpen(WelcomeHalf.Share, ServerFeatures.IsEnabled(), settings.WelcomeShareDismissed, True, True) Then
             ShowHalf(owner, WelcomeHalf.Share)
             opened = True
         End If
 
-        Dim gateOpen As Boolean = ExchangeFeatures.Offered
+        Dim gateOpen As Boolean = ExchangeFirstRunModel.GateOpen()
         Dim componentPresent As Boolean = gateOpen AndAlso ExchangeProcess.IsAvailable()
-        Dim exchangeConfigured As Boolean = componentPresent AndAlso ExchangeAccountsExist()
-        If ServerWelcomeModel.ShouldOpen(WelcomeHalf.Exchange, exchangeConfigured, settings.WelcomeExchangeDismissed, componentPresent, gateOpen) Then
-            ShowHalf(owner, WelcomeHalf.Exchange)
-            opened = True
+        If componentPresent AndAlso Not settings.WelcomeExchangeDismissed Then
+            Dim actions As New ExchangeFirstRunActions()
+            Dim snapshot As ExchangeSnapshot = Await actions.ReadAsync()
+            If ExchangeFirstRunModel.ShouldOpen(componentPresent, gateOpen, snapshot.Report IsNot Nothing AndAlso snapshot.Report.Answered,
+                    If(snapshot.Report?.Accounts, 0), settings.WelcomeExchangeDismissed, False, False) Then
+                ShowHalf(owner, WelcomeHalf.Exchange, actions, snapshot)
+                opened = True
+            End If
         End If
         Return opened
     End Function
 
-    Private Shared Function ExchangeAccountsExist() As Boolean
-        Try
-            Return ExchangeProcess.Inspect().Accounts > 0
-        Catch
-            ' An exchange server that does not answer counts as not configured: the welcome may show, and it says so.
-            Return False
-        End Try
+    Friend Shared Async Function ReplayExchangeAsync(owner As Form) As Task
+        If Not ExchangeFirstRunModel.GateOpen() OrElse Not ExchangeProcess.IsAvailable() Then Return
+        ShareSettings.WriteExchangeWelcomeDismissed()
+        Dim actions As New ExchangeFirstRunActions()
+        Dim snapshot As ExchangeSnapshot = Await actions.ReadAsync()
+        ShowHalf(owner, WelcomeHalf.Exchange, actions, snapshot, replay:=True)
     End Function
 
-    Private Shared Sub ShowHalf(owner As Form, half As WelcomeHalf)
-        Using dlg As New Server_Welcome_Form(half)
+    Private Shared Sub ShowHalf(owner As Form, half As WelcomeHalf, Optional actions As IExchangeFirstRunActions = Nothing,
+                               Optional snapshot As ExchangeSnapshot = Nothing, Optional replay As Boolean = False)
+        Using dlg As New Server_Welcome_Form(half, actions, snapshot, replay)
             dlg.ShowDialog(owner)
+            If half = WelcomeHalf.Exchange AndAlso dlg.DialogResult = DialogResult.OK Then
+                Dim manager As MainWindow = TryCast(owner, MainWindow)
+                If manager IsNot Nothing Then manager.BeginInvoke(New Action(AddressOf manager.ShowExchangeSettings))
+            End If
         End Using
     End Sub
 
@@ -110,7 +125,7 @@ Friend NotInheritable Class Server_Welcome_Form
         StartPosition = FormStartPosition.CenterParent
         AutoSize = True
         AutoSizeMode = AutoSizeMode.GrowAndShrink
-        AddHandler FormClosed, AddressOf DisposeFonts
+        AutoScroll = True
 
         _counter = New Label With {.AutoSize = True, .ForeColor = SystemColors.GrayText, .Margin = New Padding(0, 0, 0, 2)}
         _heading = New Label With {.AutoSize = True, .MaximumSize = New Size(ContentWidth - BadgeSize - 16, 0), .Margin = New Padding(0),
@@ -206,8 +221,12 @@ Friend NotInheritable Class Server_Welcome_Form
             Case WelcomeStepKind.SharePort : BuildSharePort(panel)
             Case WelcomeStepKind.ShareDone : BuildShareDone(panel)
             Case WelcomeStepKind.ExchangeStatement : BuildStatement(panel)
-            Case WelcomeStepKind.ExchangeAccount : BuildAccount(panel)
-            Case WelcomeStepKind.ExchangeDone : BuildExchangeDone(panel)
+            Case WelcomeStepKind.ExchangeAccount : BuildFirstRunAccount(panel)
+            Case WelcomeStepKind.ExchangeDone : BuildFirstRunDone(panel)
+            Case WelcomeStepKind.ExchangeDoors : BuildDoors(panel)
+            Case WelcomeStepKind.ExchangeService : BuildService(panel)
+            Case WelcomeStepKind.ExchangeAddress : BuildAddress(panel)
+            Case WelcomeStepKind.ExchangeCertificate : BuildCertificate(panel)
         End Select
         Return panel
     End Function
@@ -269,6 +288,7 @@ Friend NotInheritable Class Server_Welcome_Form
             Localization.T("Учётные записи, устройства и опубликованные ресурсы: вход по логину и паролю или по коду сопряжения."),
             Localization.T("Устройство доверяет серверу только после того, как проверит отпечаток его сертификата при первом подключении."),
             Localization.T("Ниже - заявление оператора в полном виде. Его нельзя пропустить: оно описывает, кто и что видит на сервере."))
+        AddText(panel, Localization.T("Сервер связывает устройства одного аккаунта и сообщает, какие из них сейчас в сети."), New Padding(0, 8, 0, 0))
         ' A device checks the certificate fingerprint before it trusts the folders behind it.
         panel.Controls.Add(Chips("@device.phone", "->", "@status.locked", "->", "@content.folder"))
         AddText(panel, Localization.T("Заявление оператора"), New Padding(0, 12, 0, 4))
@@ -276,26 +296,8 @@ Friend NotInheritable Class Server_Welcome_Form
             .Width = ContentWidth, .Height = 150, .TabStop = False,
             .Text = String.Join(Environment.NewLine & Environment.NewLine, ExchangeStatement.Paragraphs())}
         panel.Controls.Add(_statement)
-    End Sub
-
-    Private Sub BuildAccount(panel As FlowLayoutPanel)
-        AddExplanation(panel,
-            Localization.T("Учётная запись, с которой войдёт первое устройство."),
-            Localization.T("Без неё сервер ничего не принимает, а пароль показывается один раз."),
-            Localization.T("Откроется мастер: он создаст учётную запись, запустит сервер, покажет отпечаток сертификата и, если нужно, подключит агент этого компьютера. Пароль показывается один раз; «Скопировать» кладёт его в буфер обмена, который очищается сам."))
-        _wizardButton = New Button With {.Text = Localization.T("Открыть мастер")}
-        StyleButton(_wizardButton)
-        ButtonGlyphs.Apply(_wizardButton, "action.run", ButtonGlyphRole.Affirmative)
-        AddHandler _wizardButton.Click, AddressOf OnOpenWizard
-        panel.Controls.Add(_wizardButton)
-        _wizardStatus = AddText(panel, String.Empty, New Padding(0, 12, 0, 0))
-    End Sub
-
-    Private Sub BuildExchangeDone(panel As FlowLayoutPanel)
-        AddExplanation(panel,
-            Localization.TF("Адрес для этого компьютера и для других устройств, логин и отпечаток сертификата записаны в группе «{0}».", ProductNames.ExchangeServer),
-            Localization.T("Пароль больше нигде не показывается. Устройство подключается, пройдя проверку отпечатка при первом подключении."),
-            Localization.T("Для Android-приложения следующий шаг - QR-код в окне программы. Остальные параметры - в группах настроек."))
+        AddText(panel, Localization.T("Где это менять"), New Padding(0, 10, 0, 0), True)
+        AddText(panel, Localization.T("Учётные записи, устройства и папки сохраняются при перезапуске. Настройки и заявление оператора находятся в группе сервера обмена."), New Padding(0, 10, 0, 0))
     End Sub
 
     Private Sub AddExplanation(panel As FlowLayoutPanel, what As String, why As String, how As String)
@@ -326,8 +328,18 @@ Friend NotInheritable Class Server_Welcome_Form
 
     Private Sub OnThemeChanged(sender As Object, e As EventArgs)
         If IsDisposed Then Return
+        ApplyWelcomeTheme(ThemeService.Palette)
+    End Sub
+
+    Private ReadOnly Property ThemesItself As Boolean Implements IThemeAware.ThemesItself
+        Get
+            Return False
+        End Get
+    End Property
+
+    Private Sub ApplyWelcomeTheme(palette As ThemePalette) Implements IThemeAware.ApplyTheme
         For Each label As Label In _accentLabels
-            label.ForeColor = ThemeService.Palette.Accent
+            label.ForeColor = ThemePalette.ReadableText(palette.Accent, palette.SurfaceWindow)
         Next
         _badge.Invalidate()
         _dots.Invalidate()
@@ -340,6 +352,10 @@ Friend NotInheritable Class Server_Welcome_Form
             Case WelcomeStepKind.SharePort : Return "system.wifi"
             Case WelcomeStepKind.ExchangeStatement : Return "status.locked"
             Case WelcomeStepKind.ExchangeAccount : Return "device.phone"
+            Case WelcomeStepKind.ExchangeDoors : Return "system.wifi"
+            Case WelcomeStepKind.ExchangeService : Return "action.run"
+            Case WelcomeStepKind.ExchangeAddress : Return "system.wifi"
+            Case WelcomeStepKind.ExchangeCertificate : Return "status.locked"
             Case Else : Return "status.ok"
         End Select
     End Function
@@ -362,10 +378,18 @@ Friend NotInheritable Class Server_Welcome_Form
         Dim nextGlyph As String = If(index = _steps.Count - 1, "action.confirm", "nav.forward")
         If ButtonGlyphs.GlyphOf(_next) <> nextGlyph Then ButtonGlyphs.Apply(_next, nextGlyph, ButtonGlyphRole.Affirmative)
         RefreshStep(kind)
+        If _half = WelcomeHalf.Exchange AndAlso IsHandleCreated Then
+            PerformLayout()
+            DpiLayout.CenterOnOwner(Me)
+        End If
     End Sub
 
     ''' <summary>Refreshes what a step shows from the live state (the enable dialog or the wizard may have changed it).</summary>
     Private Sub RefreshStep(kind As WelcomeStepKind)
+        If _half = WelcomeHalf.Exchange Then
+            RefreshExchangeStep(kind)
+            Return
+        End If
         Dim enabled As Boolean = ServerFeatures.IsEnabled()
         If kind = WelcomeStepKind.ShareEnable Then
             _enableStatus.Text = If(enabled, Localization.T("Сервер включён."),
@@ -374,7 +398,7 @@ Friend NotInheritable Class Server_Welcome_Form
         ElseIf kind = WelcomeStepKind.ShareDone Then
             _doneStatus.Text = If(enabled, Localization.T("Сервер включён."), Localization.T("Сервер выключен."))
         End If
-        _next.Enabled = ServerWelcomeModel.CanAdvance(kind, _accountCreated)
+        _next.Enabled = ServerWelcomeModel.CanAdvance(kind, False)
     End Sub
 
     Private Shared Function StepTitle(kind As WelcomeStepKind) As String
@@ -384,13 +408,21 @@ Friend NotInheritable Class Server_Welcome_Form
             Case WelcomeStepKind.ShareDone : Return Localization.T("Сервер настроен")
             Case WelcomeStepKind.ExchangeStatement : Return ExchangeText.Title()
             Case WelcomeStepKind.ExchangeAccount : Return Localization.T("Первая учётная запись")
+            Case WelcomeStepKind.ExchangeDoors : Return Localization.T("Порты и брандмауэр")
+            Case WelcomeStepKind.ExchangeService : Return Localization.T("Служба Windows")
+            Case WelcomeStepKind.ExchangeAddress : Return ExchangeAdminText.EndpointLabel()
+            Case WelcomeStepKind.ExchangeCertificate : Return ExchangeText.FingerprintLabel()
             Case Else : Return Localization.T("Сервер готов")
         End Select
     End Function
 
     Private Async Sub OnNext(sender As Object, e As EventArgs)
+        If _half = WelcomeHalf.Exchange Then
+            Await AdvanceExchangeAsync()
+            Return
+        End If
         Dim kind As WelcomeStepKind = _steps(_position)
-        If Not ServerWelcomeModel.CanAdvance(kind, _accountCreated) Then Return
+        If Not ServerWelcomeModel.CanAdvance(kind, False) Then Return
         If kind = WelcomeStepKind.SharePort Then Await SavePortChoice()
         If _position = _steps.Count - 1 Then
             MarkDismissed()
@@ -423,11 +455,13 @@ Friend NotInheritable Class Server_Welcome_Form
     End Sub
 
     Private Sub MarkDismissed()
+        If _half = WelcomeHalf.Exchange Then
+            ShareSettings.WriteExchangeWelcomeDismissed()
+            Return
+        End If
         _settings.Load()
         If _half = WelcomeHalf.Share Then
             _settings.WelcomeShareDismissed = True
-        Else
-            _settings.WelcomeExchangeDismissed = True
         End If
         _settings.Save()
     End Sub
@@ -439,21 +473,6 @@ Friend NotInheritable Class Server_Welcome_Form
         RefreshStep(WelcomeStepKind.ShareEnable)
     End Sub
 
-    Private Sub OnOpenWizard(sender As Object, e As EventArgs)
-        Dim result As ExchangeWizardResult = Nothing
-        Using dlg As New Exchange_Server_Wizard_Form()
-            dlg.ShowDialog(Me)
-            result = dlg.Result
-        End Using
-        If result IsNot Nothing Then
-            _accountCreated = _accountCreated OrElse result.AccountCreated
-            result.Wipe()
-        End If
-        _wizardStatus.Text = If(_accountCreated, Localization.T("Учётная запись создана."),
-                                Localization.T("Учётная запись ещё не создана. Этот шаг обязательный: откройте мастер снова."))
-        RefreshStep(WelcomeStepKind.ExchangeAccount)
-    End Sub
-
     ' ---------------------------------------------------------------- fonts and window events ----
 
     Private Function BoldFont(Optional scale As Single = 1.0F) As Font
@@ -462,7 +481,12 @@ Friend NotInheritable Class Server_Welcome_Form
         Return font
     End Function
 
-    Private Sub DisposeFonts(sender As Object, e As EventArgs)
+    Protected Overrides Sub Dispose(disposing As Boolean)
+        If Not disposing Then
+            MyBase.Dispose(False)
+            Return
+        End If
+        MyBase.Dispose(True)
         RemoveHandler ThemeService.Changed, AddressOf OnThemeChanged
         For Each font As Font In _fonts
             font.Dispose()
@@ -472,7 +496,33 @@ Friend NotInheritable Class Server_Welcome_Form
 
     Protected Overrides Sub OnLoad(e As EventArgs)
         MyBase.OnLoad(e)
+        MaximumSize = Screen.FromControl(Me).WorkingArea.Size
         DpiLayout.ClampToWorkingArea(Me)
     End Sub
+
+    Protected Overrides Sub OnShown(e As EventArgs)
+        MyBase.OnShown(e)
+        If _half = WelcomeHalf.Exchange Then DpiLayout.CenterOnOwner(Me)
+    End Sub
+
+    Protected Overrides Sub OnFormClosing(e As FormClosingEventArgs)
+        If _half = WelcomeHalf.Exchange Then
+            If _exchangeBusy Then
+                e.Cancel = True
+            Else
+                MarkDismissed()
+                If _exchangeResult IsNot Nothing Then _exchangeResult.Wipe()
+            End If
+        End If
+        MyBase.OnFormClosing(e)
+    End Sub
+
+    Protected Overrides Function ProcessCmdKey(ByRef msg As Message, keyData As Keys) As Boolean
+        If keyData = Keys.Escape Then
+            If Not _exchangeBusy Then Close()
+            Return True
+        End If
+        Return MyBase.ProcessCmdKey(msg, keyData)
+    End Function
 
 End Class

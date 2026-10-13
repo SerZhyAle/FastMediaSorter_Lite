@@ -1,4 +1,4 @@
-Option Strict On
+﻿Option Strict On
 
 Imports System.Collections.Generic
 Imports System.Drawing
@@ -261,7 +261,12 @@ Partial Public NotInheritable Class MainWindow
         BuildDiskMenu()
 
         ' Fill first, then the docked button row - see the docking note in BuildUi.
+        _emptyResourceHint = New Button With {.Dock = DockStyle.Bottom, .AutoSize = True,
+            .MinimumSize = New Size(0, 44), .Text = Localization.T("Добавьте первый ресурс..")}
+        ButtonGlyphs.Apply(_emptyResourceHint, "action.add")
+        AddHandler _emptyResourceHint.Click, Async Sub() Await OpenResourceAddAsync(Me, ResourceAddEntry.EmptyList)
         _pnlList.Controls.Add(lvFolders)
+        _pnlList.Controls.Add(_emptyResourceHint)
         _pnlList.Controls.Add(_pnlListButtons)
     End Sub
 

@@ -29,6 +29,7 @@ Friend NotInheritable Class ExchangeStubAccount
     Private ReadOnly _revoked As New HashSet(Of String)(StringComparer.Ordinal)
     Private ReadOnly _enrollRefusals As New ConcurrentQueue(Of String)
     Private ReadOnly _enrollRoles As New List(Of String)
+    Private ReadOnly _enrollCapabilities As New List(Of String)
     Private ReadOnly _enrollNames As New List(Of String)
     Private ReadOnly _enrollDeviceIds As New List(Of String)
 
@@ -44,6 +45,12 @@ Friend NotInheritable Class ExchangeStubAccount
     Public Function EnrollRolesSeen() As List(Of String)
         SyncLock _gate
             Return New List(Of String)(_enrollRoles)
+        End SyncLock
+    End Function
+
+    Public Function EnrollCapabilitiesSeen() As List(Of String)
+        SyncLock _gate
+            Return New List(Of String)(_enrollCapabilities)
         End SyncLock
     End Function
 
@@ -223,6 +230,7 @@ Friend NotInheritable Class ExchangeStubAccount
                 SyncLock _gate
                     _enrollPasswords.Add(first.Text("password"))
                     _enrollRoles.Add(String.Join(",", first.TextList("roles")))
+                    _enrollCapabilities.Add(String.Join(",", first.TextList("capabilities")))
                     _enrollNames.Add(first.Text("deviceName"))
                     _enrollDeviceIds.Add(first.Text("deviceId"))
                 End SyncLock

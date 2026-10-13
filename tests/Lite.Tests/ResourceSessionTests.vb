@@ -59,6 +59,34 @@ Public Class ResourceSessionTests
     ' ------------------------------------------------------------ acceptance 2 ----
 
     <Fact>
+    Public Sub Leaving_a_folder_preserves_its_PIN_for_the_program_session()
+        Dim descriptor As ResourceDescriptor = Me.Descriptor()
+        descriptor.ExchangeEntryId = Guid.NewGuid().ToString("N")
+        descriptor.ExchangeResourceId = "protected-folder"
+        descriptor.PinRequired = True
+        ResourcePinMemory.SetPin(descriptor, "synthetic-pin")
+        Dim slot As New ResourceSessionSlot()
+        Try
+            slot.Enter(New ResourceSession(descriptor, NewProvider(), RemoteCacheStore.CreateSessionUnder(cacheRoot), 1024L * 1024L))
+            slot.Leave()
+            Assert.Null(slot.Current)
+            Assert.Equal("synthetic-pin", ResourcePinMemory.GetPin(descriptor))
+            Dim other As ResourceDescriptor = Me.Descriptor()
+            other.ExchangeEntryId = descriptor.ExchangeEntryId
+            other.ExchangeResourceId = "another-folder"
+            Assert.Null(ResourcePinMemory.GetPin(other))
+            other.ExchangeEntryId = "another-account"
+            other.ExchangeResourceId = descriptor.ExchangeResourceId
+            Assert.Null(ResourcePinMemory.GetPin(other))
+            ResourcePinMemory.ForgetEntry(descriptor.ExchangeEntryId)
+            Assert.Null(ResourcePinMemory.GetPin(descriptor))
+        Finally
+            slot.Leave()
+            ResourcePinMemory.Forget(descriptor)
+        End Try
+    End Sub
+
+    <Fact>
     Public Sub Thumbnail_materialisation_fetches_an_unviewed_remote_file_once_and_refuses_foreign_paths()
         Dim provider As ResourceTestProvider = NewProvider()
         Using session As ResourceSession = OpenSession(provider)

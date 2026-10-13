@@ -96,6 +96,13 @@ Public Module FailureText
 #If NETFRAMEWORK Then
         Return If(ex Is Nothing, "", ex.Message)
 #Else
+        Dim remoteDelete As ResourceDeleteException = TryCast(Unwrap(ex), ResourceDeleteException)
+        If remoteDelete IsNot Nothing Then
+            Return If(remoteDelete.Unverified, Localization.T("Результат удаления на сервере неизвестен - проверьте исходную папку"),
+                      Localization.T("Исходный файл не удалось удалить"))
+        End If
+        Dim resourceFailure As ResourceFailureException = TryCast(Unwrap(ex), ResourceFailureException)
+        If resourceFailure IsNot Nothing Then Return ResourceMessages.ForFailure(resourceFailure.Failure)
         Return Sentence(CauseOf(ex))
 #End If
     End Function
