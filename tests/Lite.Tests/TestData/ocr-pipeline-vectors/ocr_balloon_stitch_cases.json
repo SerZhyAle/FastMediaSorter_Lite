@@ -1,0 +1,41 @@
+{
+  "_comment": "Shared OCR line-split cases, read by internal/ocr (splitWideGaps) and extension/src/ocr-cluster.js (splitWideGaps). The stitch cases are the word boxes the desktop engine actually returned for the two touching speech balloons of a public-service Superman page (ticket 67): the balloons' rows are stitched into one recognizer line and the touching outlines are read as tokens of that line, so no gap between words holds the boundary stroke - it runs inside the boundary token's box. A word box taller than the type-size ratio (1.6) x the line's median word height reaches into a neighbouring row, which no lettering of one line does, so the split cuts before it. The single-line case is the guard: a real line of one size is never cut.",
+  "cases": [
+    {
+      "name": "row one: outlines read as a tall token between the balloons",
+      "words": [
+        { "text": "GEE,", "conf": 95, "bbox": { "x0": 49, "y0": 610, "x1": 112, "y1": 626 } },
+        { "text": "TH-THANKS,", "conf": 79, "bbox": { "x0": 106, "y0": 610, "x1": 230, "y1": 625 } },
+        { "text": "“J", "conf": 2, "bbox": { "x0": 249, "y0": 602, "x1": 276, "y1": 637 } },
+        { "text": "OON'T", "conf": 83, "bbox": { "x0": 283, "y0": 610, "x1": 344, "y1": 625 } },
+        { "text": "DEPEND", "conf": 88, "bbox": { "x0": 351, "y0": 610, "x1": 430, "y1": 625 } }
+      ],
+      "want": ["GEE, TH-THANKS,", "“J OON'T DEPEND"]
+    },
+    {
+      "name": "row two: a lone tall token where the outlines touch",
+      "words": [
+        { "text": "SUPERMAN:", "conf": 95, "bbox": { "x0": 36, "y0": 626, "x1": 175, "y1": 643 } },
+        { "text": "(T'S", "conf": 39, "bbox": { "x0": 192, "y0": 628, "x1": 242, "y1": 644 } },
+        { "text": "A", "conf": 90, "bbox": { "x0": 229, "y0": 622, "x1": 240, "y1": 654 } },
+        { "text": "J]", "conf": 49, "bbox": { "x0": 259, "y0": 640, "x1": 262, "y1": 650 } },
+        { "text": "ON", "conf": 93, "bbox": { "x0": 272, "y0": 629, "x1": 299, "y1": 643 } },
+        { "text": "LUCK!", "conf": 93, "bbox": { "x0": 308, "y0": 628, "x1": 367, "y1": 644 } },
+        { "text": "I", "conf": 93, "bbox": { "x0": 378, "y0": 628, "x1": 386, "y1": 643 } },
+        { "text": "MAY", "conf": 97, "bbox": { "x0": 397, "y0": 629, "x1": 442, "y1": 643 } }
+      ],
+      "want": ["SUPERMAN: (T'S", "A J] ON LUCK! I MAY"]
+    },
+    {
+      "name": "one real line of one size is never cut",
+      "words": [
+        { "text": "LOOK", "conf": 96, "bbox": { "x0": 33, "y0": 1038, "x1": 86, "y1": 1053 } },
+        { "text": "BOTH", "conf": 97, "bbox": { "x0": 95, "y0": 1038, "x1": 146, "y1": 1055 } },
+        { "text": "WAYS", "conf": 97, "bbox": { "x0": 155, "y0": 1039, "x1": 212, "y1": 1055 } },
+        { "text": "BEFORE", "conf": 97, "bbox": { "x0": 224, "y0": 1039, "x1": 305, "y1": 1054 } },
+        { "text": "You", "conf": 96, "bbox": { "x0": 315, "y0": 1040, "x1": 354, "y1": 1054 } }
+      ],
+      "want": ["LOOK BOTH WAYS BEFORE You"]
+    }
+  ]
+}

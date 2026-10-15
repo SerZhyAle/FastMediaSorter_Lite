@@ -447,7 +447,7 @@ Partial Friend NotInheritable Class Image_Editor_Form
         If image_Bitmap Is Nothing Then Return ""
         Dim size As String = image_Bitmap.Width.ToString() & " × " & image_Bitmap.Height.ToString()
         If Not dirty Then Return size
-        Dim text As String = size & " · " & Localization.T("изменено")
+        Dim text As String = Localization.TF("{0} · {1}", size, Localization.T("изменено"))
         If edits_Made > 0 Then
             text &= " · " & Localization.TF("Шаг {0} из {1}", undo_History.Count, edits_Made)
             If undo_History.StepsWereDropped Then
@@ -534,8 +534,9 @@ Partial Friend NotInheritable Class Image_Editor_Form
         Using dialog As New SaveFileDialog()
             dialog.Title = Localization.T("Сохранить как..")
             dialog.InitialDirectory = If(String.IsNullOrEmpty(save_As_Folder), Path.GetDirectoryName(source_Path), save_As_Folder)
-            dialog.FileName = If(String.IsNullOrEmpty(save_As_Stem), Path.GetFileNameWithoutExtension(source_Path), save_As_Stem) &
-                              Localization.T(" (ред.)") & preferred
+            dialog.FileName = Localization.TF("{0} (ред.){1}",
+                                              If(String.IsNullOrEmpty(save_As_Stem), Path.GetFileNameWithoutExtension(source_Path), save_As_Stem),
+                                              preferred)
             dialog.OverwritePrompt = True
             dialog.AddExtension = True
             dialog.Filter = BuildSaveFilter(preferred)

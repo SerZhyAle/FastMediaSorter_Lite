@@ -41,6 +41,12 @@ Friend NotInheritable Class Exchange_Account_Form
     Private _rbCode As RadioButton
     Private _lblSecret As Label
     Private _txtSecret As TextBox
+    ''' <summary>226 rule 1: registration by invitation asks for the password twice and states the policy in words. Both live only in the register mode.</summary>
+    Private _lblSecretRepeat As Label
+    Private _txtSecretRepeat As TextBox
+    Private _lblPolicy As Label
+    Private _register As Boolean
+    Private _invitationCode As String = ""
     Private _chkShow As CheckBox
     Private _txtName As TextBox
     Private _btnCheck As Button
@@ -50,6 +56,8 @@ Friend NotInheritable Class Exchange_Account_Form
     Private _btnTrust As Button
     Private _chkStart As CheckBox
     Private _txtString As TextBox
+    Private _stringButtons As FlowLayoutPanel
+    Private _loginHintApplied As String = ""
     Private _lblString As Label
     Private _chkPublish As CheckBox
     ''' <summary>The fingerprint the pasted string named: the trust anchor, no prompt. "" when the string had none (or there was none).</summary>
@@ -95,6 +103,9 @@ Friend NotInheritable Class Exchange_Account_Form
                 ' nothing secret outlives the window
                 Try
                     _txtSecret.Text = ""
+                    _txtSecretRepeat.Text = ""
+                    _invitationCode = ""
+                    _txtString.Text = ""
                 Catch
                 End Try
                 Try : _cts.Cancel() : Catch : End Try
@@ -116,15 +127,18 @@ Friend NotInheritable Class Exchange_Account_Form
         _txtString = New TextBox With {.Width = ContentWidth, .Margin = New Padding(0, 0, 0, 2), .AccessibleName = ExchangeJoinText.StringLabel()}
         AddHandler _txtString.TextChanged, AddressOf OnStringChanged
         body.Controls.Add(_txtString)
-        Dim stringButtons As New FlowLayoutPanel With {.AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink, .FlowDirection = FlowDirection.LeftToRight,
+        _stringButtons = New FlowLayoutPanel With {.AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink, .FlowDirection = FlowDirection.LeftToRight,
             .WrapContents = False, .Margin = New Padding(0)}
         Dim paste As Button = NewButton(ExchangeJoinText.PasteButton(), "action.paste")
         AddHandler paste.Click, AddressOf OnPasteString
         Dim openFile As Button = NewButton(ExchangeJoinText.OpenFileButton(), "action.choose-file")
         AddHandler openFile.Click, AddressOf OnOpenStringFile
-        stringButtons.Controls.Add(paste)
-        stringButtons.Controls.Add(openFile)
-        body.Controls.Add(stringButtons)
+        _stringButtons.Controls.Add(paste)
+        _stringButtons.Controls.Add(openFile)
+        Dim scan As Button = NewButton(Localization.T("Сканировать камерой.."))
+        AddHandler scan.Click, AddressOf OnScanString
+        _stringButtons.Controls.Add(scan)
+        body.Controls.Add(_stringButtons)
         _lblString = Note("")
         _lblString.Visible = False
         body.Controls.Add(_lblString)
@@ -154,6 +168,7 @@ Friend NotInheritable Class Exchange_Account_Form
         ' who
         body.Controls.Add(Caption(Localization.T("Логин:")))
         _txtLogin = New TextBox With {.Width = ContentWidth, .Text = presetLogin, .Margin = New Padding(0, 0, 0, 2)}
+        _loginHintApplied = If(presetLogin, "")
         body.Controls.Add(_txtLogin)
 
         _rbPassword = New RadioButton With {.AutoSize = True, .Checked = True, .Margin = New Padding(0, 8, 0, 0), .Text = Localization.T("Войти с паролем")}
@@ -167,8 +182,19 @@ Friend NotInheritable Class Exchange_Account_Form
         _txtSecret = New TextBox With {.Width = ContentWidth, .UseSystemPasswordChar = True, .Margin = New Padding(0, 0, 0, 2)}
         body.Controls.Add(_txtSecret)
         _chkShow = New CheckBox With {.AutoSize = True, .Margin = New Padding(0, 0, 0, 2), .Text = Localization.T("Показать пароль")}
-        AddHandler _chkShow.CheckedChanged, Sub() _txtSecret.UseSystemPasswordChar = Not _chkShow.Checked
+        AddHandler _chkShow.CheckedChanged, Sub()
+                                                 _txtSecret.UseSystemPasswordChar = Not _chkShow.Checked
+                                                 _txtSecretRepeat.UseSystemPasswordChar = Not _chkShow.Checked
+                                             End Sub
         body.Controls.Add(_chkShow)
+        _lblSecretRepeat = Caption(Localization.T("Пароль ещё раз:"))
+        _lblSecretRepeat.Visible = False
+        body.Controls.Add(_lblSecretRepeat)
+        _txtSecretRepeat = New TextBox With {.Width = ContentWidth, .UseSystemPasswordChar = True, .Margin = New Padding(0, 0, 0, 2), .Visible = False}
+        body.Controls.Add(_txtSecretRepeat)
+        _lblPolicy = Note(Localization.T("Пароль: не короче 10 символов, с заглавной латинской буквой, со строчной латинской буквой и с цифрой."))
+        _lblPolicy.Visible = False
+        body.Controls.Add(_lblPolicy)
 
         body.Controls.Add(Caption(Localization.T("Имя этого устройства:")))
         _txtName = New TextBox With {.Width = ContentWidth, .Text = Environment.MachineName, .MaxLength = 64, .Margin = New Padding(0, 0, 0, 2)}
@@ -212,7 +238,7 @@ Friend NotInheritable Class Exchange_Account_Form
 
     Protected Overrides Sub OnLoad(e As EventArgs)
         MyBase.OnLoad(e)
-        DpiLayout.ClampToWorkingArea(Me)
+        FitAccountToWorkingArea()
         DpiLayout.CenterOnOwner(Me)
         _txtServer.Focus()
     End Sub
@@ -224,28 +250,54 @@ Friend NotInheritable Class Exchange_Account_Form
         _lblResult.Visible = text.Length > 0
     End Sub
 
+    Private Sub FitAccountToWorkingArea()
+        For Each child As Control In Controls
+            Dim body As TableLayoutPanel = TryCast(child, TableLayoutPanel)
+            If body Is Nothing Then Continue For
+            Dim area As Rectangle = Screen.FromControl(Me).WorkingArea
+            Dim content As Size = body.GetPreferredSize(Size.Empty)
+            Dim desired As Size = SizeFromClientSize(content)
+            If AutoScroll OrElse desired.Height > area.Height OrElse desired.Width > area.Width Then
+                AutoSize = False
+                AutoScroll = True
+                body.Dock = DockStyle.Top
+                AutoScrollMinSize = content
+                Size = New Size(Math.Min(desired.Width, area.Width), Math.Min(desired.Height, area.Height))
+            End If
+            Exit For
+        Next
+        DpiLayout.ClampToWorkingArea(Me)
+    End Sub
+
     Private Sub SetBusy(busy As Boolean)
         _busy = busy
         _btnCheck.Enabled = Not busy
         _btnSignIn.Enabled = Not busy
         _btnTrust.Enabled = Not busy
+        For Each input As Control In New Control() {_txtString, _stringButtons, _txtServer, _txtLogin, _txtSecret, _txtSecretRepeat,
+                                                   _txtName, _rbPassword, _rbCode, _chkShow, _chkPublish, _chkStart}
+            input.Enabled = Not busy
+        Next
     End Sub
 
     ''' <summary>A new server text forgets the certificate that was shown for the old one.</summary>
     Private Sub OnServerChanged(sender As Object, e As EventArgs)
+        _pinnedFromString = ""
         _probe = Nothing
         _trusted = False
         _pnlCert.Visible = False
         _btnSignIn.Visible = False
         _btnCheck.Visible = True
         ShowResult("")
+        ApplyRegisterMode("")
     End Sub
 
     ' --- the connection string ---
 
     Private Sub OnStringChanged(sender As Object, e As EventArgs)
         Dim input As ExchangeConnectInput = ExchangeConnectInput.Classify(_txtString.Text)
-        _pinnedFromString = ""
+        ' A new hand-off is a new trust decision, even when its endpoint text is unchanged.
+        OnServerChanged(Me, EventArgs.Empty)
         Select Case input.Kind
             Case ExchangeConnectInputKind.Empty
                 _lblString.Visible = False
@@ -256,10 +308,16 @@ Friend NotInheritable Class Exchange_Account_Form
             Case Else
                 ' it FILLS the form and stops: no connection, no byte sent
                 _txtServer.Text = input.Value.Endpoint
-                If input.Value.Login.Length > 0 AndAlso _txtLogin.Text.Trim().Length = 0 Then _txtLogin.Text = input.Value.Login
+                If input.Value.Login.Length > 0 AndAlso (_txtLogin.Text.Length = 0 OrElse _txtLogin.Text = _loginHintApplied) Then
+                    _txtLogin.Text = input.Value.Login
+                    _loginHintApplied = input.Value.Login
+                End If
                 _lblString.ForeColor = ThemeService.Palette.TextMuted
                 _lblString.Text = ExchangeJoinText.StringRead(input.Value.Endpoint)
                 _lblString.Visible = True
+                ' 226 rule 1: an invitation string offers the REGISTRATION - the third way beside a sign-in and a pairing code.
+                ' The code is a secret holder: it lives in this window and in the one frame, and nowhere after that.
+                If input.HasInvitation Then ApplyRegisterMode(input.Value.Invitation)
                 If input.HasPin Then
                     ' the string's fp is the trust anchor: nothing to compare by hand, a different leaf is refused at enrollment
                     _pinnedFromString = input.Value.Fingerprint
@@ -273,12 +331,19 @@ Friend NotInheritable Class Exchange_Account_Form
                     _btnSignIn.Visible = True
                 End If
         End Select
-        DpiLayout.ClampToWorkingArea(Me)
+        FitAccountToWorkingArea()
     End Sub
 
     Private Sub OnPasteString(sender As Object, e As EventArgs)
         Try
-            If Clipboard.ContainsText() Then _txtString.Text = Clipboard.GetText().Trim()
+            Dim decoded As QrDecodeResult = QrCodeDecoder.DecodeClipboard()
+            If decoded.Succeeded Then
+                _txtString.Text = decoded.Text
+            Else
+                _lblString.ForeColor = CollapsibleSection.AttentionColor
+                _lblString.Text = decoded.FailureMessage
+                _lblString.Visible = True
+            End If
         Catch ex As Exception When TypeOf ex Is System.Runtime.InteropServices.ExternalException OrElse TypeOf ex Is Threading.ThreadStateException
             AppFileLogger.WriteLine("Exchange sign-in: the clipboard could not be read")
         End Try
@@ -287,6 +352,18 @@ Friend NotInheritable Class Exchange_Account_Form
     Private Sub OnOpenStringFile(sender As Object, e As EventArgs)
         Using dlg As New OpenFileDialog With {.Filter = ExchangeJoinText.OpenFileFilter(), .CheckFileExists = True, .Multiselect = False}
             If dlg.ShowDialog(Me) <> DialogResult.OK Then Return
+            If ExchangeQrDecoder.IsImageFile(dlg.FileName) Then
+                Dim decoded As QrDecodeResult = QrCodeDecoder.DecodeFile(dlg.FileName)
+                If decoded.Succeeded Then
+                    _txtString.Text = decoded.Text
+                    Return
+                Else
+                    _lblString.ForeColor = CollapsibleSection.AttentionColor
+                    _lblString.Text = decoded.FailureMessage
+                    _lblString.Visible = True
+                    Return
+                End If
+            End If
             Dim bytes As Byte()
             Try
                 Using fs As New IO.FileStream(dlg.FileName, IO.FileMode.Open, IO.FileAccess.Read, IO.FileShare.ReadWrite)
@@ -314,12 +391,39 @@ Friend NotInheritable Class Exchange_Account_Form
         End Using
     End Sub
 
+    Private Sub OnScanString(sender As Object, e As EventArgs)
+        If _busy Then Return
+        Using scan As New Camera_Scan_Form()
+            If scan.ShowDialog(Me) <> DialogResult.OK OrElse String.IsNullOrWhiteSpace(scan.DecodedText) Then Return
+            _txtString.Text = scan.DecodedText
+        End Using
+    End Sub
+
     Private Sub OnModeChanged(sender As Object, e As EventArgs)
         Dim byPassword As Boolean = _rbPassword.Checked
         _lblSecret.Text = If(byPassword, Localization.T("Пароль:"), Localization.T("Код сопряжения:"))
         _txtSecret.Text = ""
         _txtSecret.UseSystemPasswordChar = byPassword AndAlso Not _chkShow.Checked
         _chkShow.Visible = byPassword
+    End Sub
+
+    ''' <summary>The register mode: the password is the account's NEW one, typed twice, and the button says what happens. A
+    ''' registration is offered only while the string carries the invitation - typing an address stays a sign-in.</summary>
+    Private Sub ApplyRegisterMode(invitationCode As String)
+        Dim registering As Boolean = invitationCode.Length > 0
+        If _register = registering AndAlso String.Equals(_invitationCode, invitationCode, StringComparison.Ordinal) Then Return
+        _register = registering
+        _invitationCode = invitationCode
+        _rbPassword.Checked = True
+        _txtSecret.Text = ""
+        _txtSecretRepeat.Text = ""
+        _rbPassword.Visible = Not registering
+        _rbCode.Visible = Not registering
+        _lblSecret.Text = If(registering, Localization.T("Пароль учётной записи:"), Localization.T("Пароль:"))
+        _lblSecretRepeat.Visible = registering
+        _txtSecretRepeat.Visible = registering
+        _lblPolicy.Visible = registering
+        _btnSignIn.Text = If(registering, Localization.T("Создать учётную запись"), Localization.T("Войти"))
     End Sub
 
     ' --- first contact ---
@@ -335,7 +439,10 @@ Friend NotInheritable Class Exchange_Account_Form
         _lblResult.ForeColor = ThemeService.Palette.TextMuted
         SetBusy(True)
         Try
-            _probe = Await _agent.ProbeCertificateAsync(_txtServer.Text, _cts.Token)
+            Dim target As String = _txtServer.Text.Trim()
+            Dim probe As ExchangeCertificateInfo = Await _agent.ProbeCertificateAsync(target, _cts.Token)
+            If IsDisposed OrElse Not String.Equals(target, _txtServer.Text.Trim(), StringComparison.OrdinalIgnoreCase) Then Return
+            _probe = probe
             ShowCertificate()
         Catch ex As ExchangeConnectException
             _probe = Nothing
@@ -374,7 +481,7 @@ Friend NotInheritable Class Exchange_Account_Form
         End If
         _btnSignIn.Visible = _trusted
         ShowResult("")
-        DpiLayout.ClampToWorkingArea(Me)
+        FitAccountToWorkingArea()
     End Sub
 
     ''' <summary>The explicit act: only this accepts a certificate the system does not know.</summary>
@@ -390,6 +497,11 @@ Friend NotInheritable Class Exchange_Account_Form
 
     Private Async Sub OnSignInClicked(sender As Object, e As EventArgs)
         If _busy OrElse _probe Is Nothing OrElse Not _trusted Then Return
+        If _txtLogin.Text.Trim().Length = 0 OrElse _txtSecret.Text.Length = 0 Then
+            ShowResult(Localization.T("Проверьте адрес (хост:порт), логин и пароль или код."))
+            Return
+        End If
+        If _register AndAlso Not ValidateRegistrationPassword() Then Return
 
         ' one publisher (rule 9): a join while another server is held asks to replace it, and replacing leaves the first one cleanly
         Dim held As ExchangeDeviceStatus = _agent.GetStatus()
@@ -407,24 +519,45 @@ Friend NotInheritable Class Exchange_Account_Form
             End Try
         End If
 
-        Dim request As New ExchangeEnrollRequest With {
-            .Server = _txtServer.Text.Trim(), .Login = _txtLogin.Text.Trim(), .DeviceName = _txtName.Text,
-            .PlatformValid = _probe.PlatformValid, .AcceptedFingerprint = _probe.Fingerprint}
-        If _rbPassword.Checked Then request.Password = _txtSecret.Text Else request.PairingCode = _txtSecret.Text
-        ' the field is cleared as soon as the value has left it - whatever the outcome
-        _txtSecret.Text = ""
-        _lblResult.ForeColor = ThemeService.Palette.TextMuted
-        ShowResult(Localization.T("Подключение.."))
-        SetBusy(True)
+        ' 226 rule 1: in the register mode the password is the account's NEW one, the twins must match and the policy must pass
         Dim result As ExchangeEnrollResult = Nothing
-        Try
-            result = Await _agent.EnrollAsync(request, _cts.Token)
-        Catch ex As OperationCanceledException
-            Return
-        Finally
-            request.Wipe()
-            If Not IsDisposed Then SetBusy(False)
-        End Try
+        If _register Then
+            Dim register As New ExchangeRegisterRequest With {
+                .Server = _txtServer.Text.Trim(), .Login = _txtLogin.Text.Trim(), .DeviceName = _txtName.Text,
+                .PlatformValid = _probe.PlatformValid, .AcceptedFingerprint = _probe.Fingerprint,
+                .InvitationCode = _invitationCode, .Password = _txtSecret.Text}
+            _txtSecret.Text = ""
+            _txtSecretRepeat.Text = ""
+            _lblResult.ForeColor = ThemeService.Palette.TextMuted
+            ShowResult(Localization.T("Подключение.."))
+            SetBusy(True)
+            Try
+                result = Await _agent.RegisterAsync(register, _cts.Token)
+            Catch ex As OperationCanceledException
+                Return
+            Finally
+                register.Wipe()
+                If Not IsDisposed Then SetBusy(False)
+            End Try
+        Else
+            Dim request As New ExchangeEnrollRequest With {
+                .Server = _txtServer.Text.Trim(), .Login = _txtLogin.Text.Trim(), .DeviceName = _txtName.Text,
+                .PlatformValid = _probe.PlatformValid, .AcceptedFingerprint = _probe.Fingerprint}
+            If _rbPassword.Checked Then request.Password = _txtSecret.Text Else request.PairingCode = _txtSecret.Text
+            ' the field is cleared as soon as the value has left it - whatever the outcome
+            _txtSecret.Text = ""
+            _lblResult.ForeColor = ThemeService.Palette.TextMuted
+            ShowResult(Localization.T("Подключение.."))
+            SetBusy(True)
+            Try
+                result = Await _agent.EnrollAsync(request, _cts.Token)
+            Catch ex As OperationCanceledException
+                Return
+            Finally
+                request.Wipe()
+                If Not IsDisposed Then SetBusy(False)
+            End Try
+        End If
 
         If result.Outcome = ExchangeEnrollOutcome.Enrolled Then
             ' publishing is the person's explicit choice, made in this dialog; it is recorded only now that there is an account
@@ -456,8 +589,24 @@ Friend NotInheritable Class Exchange_Account_Form
             _btnSignIn.Visible = False
         End If
         _lblResult.ForeColor = CollapsibleSection.AttentionColor
-        ShowResult(ExchangeDeviceText.EnrollFailure(result))
+        ShowResult(If(_register, ExchangeJoinText.RegisterFailure(result), ExchangeDeviceText.EnrollFailure(result)))
         _txtSecret.Focus()
     End Sub
+
+    Private Function ValidateRegistrationPassword() As Boolean
+        _lblResult.ForeColor = CollapsibleSection.AttentionColor
+        If Not String.Equals(_txtSecret.Text, _txtSecretRepeat.Text, StringComparison.Ordinal) Then
+            ShowResult(Localization.T("Пароли в двух полях не совпали."))
+            _txtSecret.Focus()
+            Return False
+        End If
+        Dim policy As ExchangePasswordPolicy.Verdict = ExchangePasswordPolicy.Check(_txtSecret.Text)
+        If policy <> ExchangePasswordPolicy.Verdict.Accepted Then
+            ShowResult(ExchangeJoinText.PolicyFailure(policy))
+            _txtSecret.Focus()
+            Return False
+        End If
+        Return True
+    End Function
 
 End Class

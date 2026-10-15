@@ -419,19 +419,13 @@ Friend NotInheritable Class BatchPlan
     ''' </summary>
     Friend Shared Function FreeName(destination As String, exists As Func(Of String, Boolean),
                                     reserved As ISet(Of String)) As String
-        Dim dir As String = SlotPaths.FolderOf(destination)
-        Dim name As String = SlotPaths.FileNameOf(destination)
-        Dim dot As Integer = name.LastIndexOf("."c)
-        Dim base As String = If(dot > 0, name.Substring(0, dot), name)
-        Dim ext As String = If(dot > 0, name.Substring(dot), "")
-        For n As Integer = 2 To 9999
-            Dim candidate As String = SlotPaths.Combine(dir, base & " (" & n.ToString() & ")" & ext)
-            If reserved IsNot Nothing AndAlso reserved.Contains(candidate) Then Continue For
-            If Not exists(candidate) Then Return candidate
-        Next
+        ' The rule itself is FreeNameRule (ticket 222: linked into the Share Manager as well).
+        Dim free As String = FreeNameRule.Find(SlotPaths.FolderOf(destination), SlotPaths.FileNameOf(destination),
+                                               Function(folder As String, fileName As String) SlotPaths.Combine(folder, fileName),
+                                               exists, reserved)
         ' 9998 namesakes in one folder is not a collision any more - the operation fails
         ' honestly instead of this looping.
-        Return destination
+        Return If(free, destination)
     End Function
 
     Private Shared Sub ApplyKeepBoth(op As BatchOp, ctx As BatchPlanContext, reserved As ISet(Of String))

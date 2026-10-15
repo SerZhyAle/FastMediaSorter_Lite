@@ -36,6 +36,27 @@ Friend Module ShareActivationPolicy
     ''' </summary>
     Friend ReadOnly MinAddResourceVersion As New Version(26, 10, 13, 0)
 
+    ''' <summary>
+    ''' The first build that understands the schedule intent (ticket 222: <c>::fms-schedule::</c> plus a folder over the
+    ''' wake) - a written decision of the same shape as the two above, not a measurement. An older receiver would refuse
+    ''' the unknown payload, so the viewer sends it the plain wake instead and the user opens the page by hand.
+    ''' </summary>
+    Friend ReadOnly MinScheduleVersion As New Version(26, 10, 13, 2000)
+
+    ''' <summary>
+    ''' The first build whose viewer understands the phone-code hand-back (spec 227 T-3:
+    ''' <c>::fms-phone-code::</c> / <c>::fms-phone-code-file::</c> over the mirror-image wake, the Share Manager sending
+    ''' the code its camera or intake door read). The same written-decision shape. An older receiver would take the
+    ''' payload for a file path and put the code on the screen in a "file not found" box - exactly what must never
+    ''' happen to a secret holder - so the code never travels to it; the clipboard fallback covers that case.
+    ''' </summary>
+    Friend ReadOnly MinPhoneCodeVersion As New Version(26, 10, 15, 0)
+
+    ''' <summary>Spec 227 T-3: phone connection code command prefix.</summary>
+    Friend Const PhoneCodeCommandPrefix As String = "::fms-phone-code::"
+    ''' <summary>Spec 227 T-3: phone connection code file command prefix.</summary>
+    Friend Const PhoneCodeFileCommandPrefix As String = "::fms-phone-code-file::"
+
     Friend Function IsConsentCapable(companionVersion As Version) As Boolean
         Return companionVersion IsNot Nothing AndAlso companionVersion >= MinConsentVersion
     End Function
@@ -44,6 +65,18 @@ Friend Module ShareActivationPolicy
     ''' (the plain wake is the fallback, never an error).</summary>
     Friend Function IsAddResourceCapable(companionVersion As Version) As Boolean
         Return companionVersion IsNot Nothing AndAlso companionVersion >= MinAddResourceVersion
+    End Function
+
+    ''' <summary>The schedule intent travels only to a Share Manager proven to know it (ticket 222); an unknown
+    ''' version is not proof - the plain wake is the fallback, never an error.</summary>
+    Friend Function IsScheduleCapable(companionVersion As Version) As Boolean
+        Return companionVersion IsNot Nothing AndAlso companionVersion >= MinScheduleVersion
+    End Function
+
+    ''' <summary>The phone code travels only to a viewer proven to know it (spec 227); an unknown version is not
+    ''' proof - the clipboard fallback answers instead, never a payload an old receiver would show as a path.</summary>
+    Friend Function IsPhoneCodeCapable(viewerVersion As Version) As Boolean
+        Return viewerVersion IsNot Nothing AndAlso viewerVersion >= MinPhoneCodeVersion
     End Function
 
     ''' <summary>A folder travels only to a Share Manager proven to ask first; an unknown version

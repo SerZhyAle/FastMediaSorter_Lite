@@ -62,6 +62,58 @@ Friend NotInheritable Class ExchangeEntryText
         Return Localization.T("Подключиться")
     End Function
 
+    ' ---- registration with an invitation (226 rule 1) -----------------------------------------------------------
+
+    Friend Shared Function RegisterIntro() As String
+        Return Localization.T("Строка - приглашение: в ней уже назван сервер. Придумайте логин и пароль учётной записи - программа создаст её на сервере и запомнит вход на этом компьютере.")
+    End Function
+
+    Friend Shared Function RegisterButton() As String
+        Return Localization.T("Создать учётную запись")
+    End Function
+
+    ''' <summary>The new password is typed twice; the label of the second field.</summary>
+    Friend Shared Function PasswordTwiceLabel() As String
+        Return Localization.T("Пароль ещё раз:")
+    End Function
+
+    ''' <summary>The server's password policy in words, shown before the first refusal.</summary>
+    Friend Shared Function PasswordPolicyNote() As String
+        Return Localization.T("Пароль: не короче 10 символов, с заглавной латинской буквой, со строчной латинской буквой и с цифрой.")
+    End Function
+
+    ''' <summary>The policy's own sentence of a password that does not pass (verdict 0-3 of ExchangePasswordVerdict).</summary>
+    Friend Shared Function PasswordPolicyFailure(verdict As Integer) As String
+        Select Case verdict
+            Case 0 : Return Localization.T("Пароль короче 10 символов.")
+            Case 1 : Return Localization.T("В пароле нет заглавной латинской буквы.")
+            Case 2 : Return Localization.T("В пароле нет строчной латинской буквы.")
+            Case Else : Return Localization.T("В пароле нет цифры.")
+        End Select
+    End Function
+
+    Friend Shared Function PasswordsDiffer() As String
+        Return Localization.T("Пароли в двух полях не совпали.")
+    End Function
+
+    ''' <summary>The refusals of a registration, one sentence each - a used code and a wrong code say the same (224 rule 6).</summary>
+    Friend Shared Function RegisterFailure(outcome As ExchangeConsumerEnrollOutcome, refusal As ExchangeRefusal) As String
+        Select Case outcome
+            Case ExchangeConsumerEnrollOutcome.BadInput
+                Return Localization.T("Укажите логин и пароль.")
+            Case ExchangeConsumerEnrollOutcome.Refused
+                Select Case refusal
+                    Case ExchangeRefusal.BadCredentials : Return Localization.T("Приглашение не подошло, уже использовано, или такой логин уже занят.")
+                    Case ExchangeRefusal.VersionUnsupported : Return Localization.T("Сервер и программа не совпадают по версии: обновите программу.")
+                    Case ExchangeRefusal.RateLimited : Return Localization.T("Слишком много попыток. Подождите минуту и повторите.")
+                    Case ExchangeRefusal.Capacity : Return Localization.T("На сервере не осталось мест для учётных записей.")
+                    Case Else : Return Localization.T("Сервер отказал в регистрации.")
+                End Select
+            Case Else
+                Return EnrollFailure(outcome, refusal)
+        End Select
+    End Function
+
     Friend Shared Function Connecting() As String
         Return Localization.T("Подключаюсь..")
     End Function
@@ -247,6 +299,50 @@ Friend NotInheritable Class ExchangeEntryText
 
     Friend Shared Function HandOnCopyFailed() As String
         Return Localization.T("Не удалось скопировать строку в буфер обмена.")
+    End Function
+
+    ' ---- changing the account's password (226 rule 4) ----------------------------------------------------------
+
+    Friend Shared Function ChangePasswordButton() As String
+        Return Localization.T("Сменить пароль..")
+    End Function
+
+    Friend Shared Function ChangePasswordTitle(accountName As String) As String
+        Return Localization.TF("Смена пароля: {0}", accountName)
+    End Function
+
+    Friend Shared Function ChangePasswordOldLabel() As String
+        Return Localization.T("Старый пароль:")
+    End Function
+
+    Friend Shared Function ChangePasswordNewLabel() As String
+        Return Localization.T("Новый пароль:")
+    End Function
+
+    Friend Shared Function ChangePasswordRepeatLabel() As String
+        Return Localization.T("Новый пароль ещё раз:")
+    End Function
+
+    Friend Shared Function ChangePasswordNeedOld() As String
+        Return Localization.T("Укажите старый пароль.")
+    End Function
+
+    ''' <summary>The success sentence: this device keeps working, the account's OTHER devices must sign in again.</summary>
+    Friend Shared Function PasswordChanged() As String
+        Return Localization.T("Пароль сменён. Этот компьютер продолжает работать, а другие устройства учётной записи должны войти заново.")
+    End Function
+
+    ''' <summary>The refusals of a password change, one sentence each.</summary>
+    Friend Shared Function ChangePasswordFailure(refusal As ExchangeRefusal) As String
+        Select Case refusal
+            Case ExchangeRefusal.BadCredentials : Return Localization.T("Старый пароль не подошёл.")
+            Case ExchangeRefusal.RateLimited : Return Localization.T("Слишком много попыток. Подождите минуту и повторите.")
+            Case Else : Return Localization.T("Сервер отказал в смене пароля.")
+        End Select
+    End Function
+
+    Friend Shared Function ChangePasswordNoStream() As String
+        Return Localization.T("Нет связи с сервером. Подключитесь и повторите.")
     End Function
 
 End Class

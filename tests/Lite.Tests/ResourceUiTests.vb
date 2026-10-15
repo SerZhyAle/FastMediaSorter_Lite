@@ -479,7 +479,11 @@ Public Class ResourceUiTests
                       Assert.True(DirectCast(panel.Controls.Find("res_Open", True)(0), Button).Enabled)
                       Assert.True(DirectCast(panel.Controls.Find("res_Add", True)(0), Button).Enabled)
                       Dim overflow As IEnumerable(Of ChromeMenuItem) = panel.BuildOverflowItems()
-                      Assert.Equal({"res_Export", "res_ImportFile", "res_ImportClipboard"}, overflow.Select(Function(item) item.Id))
+                      Dim overflowIds As List(Of String) = overflow.Select(Function(item) item.Id).ToList()
+                      Assert.Equal("res_Export", overflowIds(0))
+                      Assert.Equal("res_ImportFile", overflowIds(1))
+                      Assert.Equal("res_ImportClipboard", overflowIds(2))
+                      Assert.True(overflowIds.Contains("res_ScanCamera") OrElse overflowIds.Contains("res_ShowPhoneCode"))
                       Assert.All(overflow, Sub(item) Assert.True(item.Enabled))
 
                       ' The dialog builds the same panel without the primary Open: its own chrome

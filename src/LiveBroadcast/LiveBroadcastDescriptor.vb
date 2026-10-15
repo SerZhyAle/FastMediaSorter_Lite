@@ -2,6 +2,7 @@
 Option Strict On
 
 Imports System.Collections.Generic
+Imports System.Text.Json
 
 ' 023_SPECIFICATION_FMS_LIVE_BROADCAST_CONSUMER.md §3.1/§3.2. Pure data, modern build only:
 ' no WinForms, no LibVLC, no network - so every contract fixture runs in Lite.Tests.
@@ -36,6 +37,11 @@ End Enum
 Friend NotInheritable Class LiveBroadcastEndpoint
     Public Property Url As String = ""
     Public Property Transport As String = ""
+    Public Property CertFingerprint As String = ""
+    Public Property Inner As String = ""
+    Public Property IsSealed As Boolean
+    Public Property AuthUser As String = ""
+    Public Property Password As String
     Public Property Mode As String = ""
     Public Property ModeValue As LiveBroadcastMode = LiveBroadcastMode.Unknown
     Public Property VideoCodec As String
@@ -55,6 +61,11 @@ Friend NotInheritable Class LiveBroadcastDescriptor
     Public Property ModeValue As LiveBroadcastMode = LiveBroadcastMode.Unknown
     Public Property Title As String
     Public Property SourceId As String
+    Public Property BroadcastId As String
+    Public Property AuthScheme As String = ""
+    Public Property AuthUser As String = ""
+    ' Credentials are session-only; never serialized to the recent-channel store.
+    Public Property Password As String
     Public Property IsLive As Boolean?
     Public Property TargetLatencyMs As Long?
     Public ReadOnly Property Endpoints As New List(Of LiveBroadcastEndpoint)()
@@ -78,4 +89,33 @@ Friend NotInheritable Class LiveBroadcastReadResult
         Return New LiveBroadcastReadResult(status, Nothing)
     End Function
 End Class
+
+' DEVICE-EXCHANGE 6.3/7.7: directory, guest and cast records use the same descriptor reader.
+Friend Module LiveBroadcastRecords
+    Public Function ReadRecord(raw As String) As LiveBroadcastReadResult
+        Try
+            Using doc As JsonDocument = JsonDocument.Parse(raw)
+                Dim descriptor As JsonElement = Nothing
+                If Not doc.RootElement.TryGetProperty("descriptor", descriptor) Then Return LiveBroadcastReadResult.Fail(LiveReadStatus.InvalidDocument)
+                Dim result As LiveBroadcastReadResult = LiveBroadcastReader.ReadText(descriptor.GetRawText())
+                If result.Status <> LiveReadStatus.Ok Then Return result
+                Dim id As JsonElement = Nothing
+                If doc.RootElement.TryGetProperty("broadcastId", id) AndAlso id.ValueKind = JsonValueKind.String Then result.Descriptor.BroadcastId = id.GetString()
+                Dim credentials As JsonElement = Nothing
+                If doc.RootElement.TryGetProperty("credentials", credentials) AndAlso credentials.ValueKind = JsonValueKind.Object Then
+                    Dim user As JsonElement = Nothing
+                    Dim password As JsonElement = Nothing
+                    If credentials.TryGetProperty("user", user) AndAlso user.ValueKind = JsonValueKind.String AndAlso
+                       credentials.TryGetProperty("password", password) AndAlso password.ValueKind = JsonValueKind.String Then
+                        result.Descriptor.AuthUser = user.GetString()
+                        result.Descriptor.Password = password.GetString()
+                    End If
+                End If
+                Return result
+            End Using
+        Catch ex As JsonException
+            Return LiveBroadcastReadResult.Fail(LiveReadStatus.InvalidDocument)
+        End Try
+    End Function
+End Module
 #End If

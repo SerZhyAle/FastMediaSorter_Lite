@@ -99,6 +99,46 @@ func (d *Device) enroll(pw, code string) (wire.Envelope, error) {
 	return en, nil
 }
 
+// Register registers a NEW account by a one-time invitation code (invitation) or the shared invitation
+// password (shared), with the login and password chosen, and enrolls this device as the account's first
+// (19 item AQ). On `enrolled` the device takes the new login and password, the token is kept and the
+// stream becomes the device's Control, as after Enroll.
+func (d *Device) Register(invitation, shared, login, pw string) (wire.Envelope, error) {
+	c, err := DialTLS(d.Addr, d.Pin)
+	if err != nil {
+		return nil, err
+	}
+	for _, s := range []string{invitation, shared, pw} {
+		d.Env.AddSecret(s)
+	}
+	f := d.enrollFrame()
+	reg := &wire.Register{InvitationCode: invitation, SharedPassword: shared, Login: login, Password: pw,
+		DeviceID: f.DeviceID, DeviceName: f.DeviceName, Product: f.Product, ProductVersion: f.ProductVersion,
+		Platform: f.Platform, Roles: f.Roles, Receiver: f.Receiver}
+	if err := c.Send(reg); err != nil {
+		_ = c.Close()
+		return nil, err
+	}
+	r, err := c.Recv(5 * time.Second)
+	if err != nil {
+		_ = c.Close()
+		return nil, err
+	}
+	en, ok := r.(*wire.Enrolled)
+	if !ok {
+		_ = c.Close()
+		return r, nil
+	}
+	d.Login, d.Password, d.Token = login, pw, en.DeviceToken
+	d.secret(d.Token)
+	d.Env.AddSecret(login)
+	c.Authenticated()
+	d.mu.Lock()
+	d.control = newControl(d, c)
+	d.mu.Unlock()
+	return en, nil
+}
+
 // Hello opens a new TLS stream and says hello with the device's token. On `welcome` the connection
 // is returned authenticated; otherwise the refusal and a nil connection.
 func (d *Device) Hello() (*Conn, wire.Envelope, error) { return d.HelloWith(d.Token) }

@@ -40,6 +40,9 @@ Friend NotInheritable Class EscapeLadder
         ''' <summary>A connection to a remote resource is being dialled (124 UX-211): Esc cancels the attempt. Numbered
         ''' last so the older values stay what they were; its place in the order is <see cref="[Next]"/>'s.</summary>
         CancelConnect = 8
+        ''' <summary>Text is selected in a text document (124 UX-216): Esc lets go of the selection and leaves
+        ''' the file. Numbered after the older values like <see cref="CancelConnect"/>.</summary>
+        ClearTextSelection = 9
     End Enum
 
     ''' <summary>A snapshot of the layers that can be on top, read by the caller at the moment of the press.</summary>
@@ -53,6 +56,8 @@ Friend NotInheritable Class EscapeLadder
         Public FullScreen As Boolean
         ''' <summary>A connection to a resource is being dialled and can be cancelled.</summary>
         Public Connecting As Boolean
+        ''' <summary>Text is selected in the text document on screen.</summary>
+        Public TextSelectionShown As Boolean
     End Structure
 
     ''' <summary>The single layer this Esc undoes: popup, F1 card, F10 mode, OCR overlay, zoom, slideshow,
@@ -63,6 +68,9 @@ Friend NotInheritable Class EscapeLadder
         If current.Connecting Then Return Rung.CancelConnect
         If current.HelpCardShown Then Return Rung.CloseHelpCard
         If current.KeyboardModeOn Then Return Rung.LeaveKeyboardMode
+        ' A selection is the lightest layer there is - one press and it is gone, before anything is undone that
+        ' costs the user a view (124 UX-216).
+        If current.TextSelectionShown Then Return Rung.ClearTextSelection
         If current.OcrOverlayShown Then Return Rung.HideOcrOverlay
         If current.ZoomedOrPanned Then Return Rung.ZoomToFit
         If current.SlideshowRunning Then Return Rung.StopSlideshow

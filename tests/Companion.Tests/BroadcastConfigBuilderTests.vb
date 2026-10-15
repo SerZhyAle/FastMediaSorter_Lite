@@ -1,6 +1,10 @@
 Option Strict On
 
 Imports System.Collections.Generic
+Imports System.IO
+Imports System.IO.Compression
+Imports System.Security.Cryptography
+Imports System.Text
 Imports System.Text.Json
 Imports FastMediaSorterCompanion
 Imports Xunit
@@ -11,6 +15,55 @@ Imports Xunit
 ''' Contract: CONTRACT_BROADCAST_RESOURCE.md (schemaVersion 1).
 ''' </summary>
 Public Class BroadcastConfigBuilderTests
+
+    <Fact>
+    Public Sub Real_Go_serializer_response_builds_a_two_item_audio_playlist_on_the_HTTP_mapping()
+        Dim bytes = File.ReadAllBytes(Path.Combine(AppContext.BaseDirectory, "TestData", "broadcast", "worker-response.json"))
+        Assert.Equal("1413eeb9c28a506f7ae156a15ce394dae2b217b37ea5de7307dc96dc723581d1",
+                     Convert.ToHexString(SHA256.HashData(bytes)).ToLowerInvariant())
+        Dim wire = Encoding.UTF8.GetString(bytes)
+        Dim response = WorkerIpc.ParseResponse(wire)
+        Assert.True(response.Ok)
+        Assert.Equal(2, response.Broadcast.ItemCount)
+        Assert.Equal("audio", response.Broadcast.MediaKind)
+        Dim built = BroadcastConfigBuilder.Build(response.Broadcast, response.Status, True)
+        Assert.NotNull(built)
+        Using doc = JsonDocument.Parse(built.ConfigJson)
+            Assert.Equal(2, doc.RootElement.GetProperty("itemCount").GetInt32())
+            Assert.True(doc.RootElement.GetProperty("playlist").GetBoolean())
+            Assert.Equal("audio", doc.RootElement.GetProperty("mediaKind").GetString())
+            Assert.Equal(55273, doc.RootElement.GetProperty("accessPaths")(1).GetProperty("port").GetInt32())
+        End Using
+    End Sub
+
+    <Fact>
+    Public Sub The_first_broadcast_worker_items_supply_the_missing_count()
+        Dim wire = File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "TestData", "broadcast", "worker-response.json"))
+        Dim response = WorkerIpc.ParseResponse(wire.Replace(",""itemCount"":2", ""))
+        Assert.Equal(2, response.Broadcast.ItemCount)
+        Dim built = BroadcastConfigBuilder.Build(response.Broadcast, response.Status, False)
+        Assert.NotNull(built)
+        Using doc = JsonDocument.Parse(built.ConfigJson)
+            Assert.Equal(2, doc.RootElement.GetProperty("itemCount").GetInt32())
+        End Using
+    End Sub
+
+    <Fact>
+    Public Sub QR_transports_round_trip_the_same_document_bytes()
+        Dim shortJson = "{""schemaVersion"":1,""resourceName"":""Album""}"
+        Assert.Equal(shortJson, BroadcastConfigBuilder.QrPayload(shortJson))
+        Dim longJson = "{""resourceName"":""" & New String("Ж"c, 800) & """}"
+        Dim payload = BroadcastConfigBuilder.QrPayload(longJson)
+        Assert.StartsWith("SPRES1:", payload)
+        Using input As New MemoryStream(Convert.FromBase64String(payload.Substring(7)))
+            Using gzip As New GZipStream(input, CompressionMode.Decompress)
+                Using output As New MemoryStream()
+                    gzip.CopyTo(output)
+                    Assert.Equal(Encoding.UTF8.GetBytes(longJson), output.ToArray())
+                End Using
+            End Using
+        End Using
+    End Sub
 
     Private Shared Function SampleBroadcast(Optional kind As String = "file",
                                              Optional hostPath As String = "C:\Media\movie.mp4",
@@ -38,7 +91,7 @@ Public Class BroadcastConfigBuilderTests
             .ListenPort = 2222,
             .BroadcastEnabled = True,
             .BroadcastPort = bcastPort,
-            .Reachability = If(reach, New WorkerReachability With {.LanAddress = "192.168.1.100"})
+            .BroadcastReachability = If(reach, New WorkerReachability With {.LanAddress = "192.168.1.100"})
         }
     End Function
 
@@ -46,6 +99,42 @@ Public Class BroadcastConfigBuilderTests
     Public Sub Build_ReturnsNothing_WhenBroadcastOrStatusIsNull()
         Assert.Null(BroadcastConfigBuilder.Build(Nothing, SampleStatus(), includeExternal:=False))
         Assert.Null(BroadcastConfigBuilder.Build(SampleBroadcast(), Nothing, includeExternal:=False))
+    End Sub
+
+    <Fact>
+    Public Sub No_HTTP_listener_never_exports_an_SFTP_or_invented_port()
+        Dim status = SampleStatus(bcastPort:=0)
+        Assert.Null(BroadcastConfigBuilder.Build(SampleBroadcast(), status, False))
+        status.BroadcastPort = 55272
+        status.BroadcastEnabled = False
+        Assert.Null(BroadcastConfigBuilder.Build(SampleBroadcast(), status, False))
+    End Sub
+
+    <Fact>
+    Public Sub Older_worker_address_facts_never_export_the_SFTP_mapping_or_its_probe_verdict()
+        Dim status = SampleStatus()
+        status.BroadcastReachability = Nothing
+        status.Reachability = New WorkerReachability With {
+            .LanAddress = "192.168.1.100", .ExternalHost = "203.0.113.10", .ExternalPort = 2222,
+            .ExternalPortChecked = True, .ExternalPortOpen = True
+        }
+        Dim res = BroadcastConfigBuilder.Build(SampleBroadcast(), status, True)
+        Assert.Contains(":55272/b/", res.ClipboardLink)
+        Using doc = JsonDocument.Parse(res.ConfigJson)
+            Assert.Equal(55272, doc.RootElement.GetProperty("accessPaths")(1).GetProperty("port").GetInt32())
+        End Using
+        Assert.Equal(ShareText.AccessNote(New WorkerReachability With {
+            .LanAddress = "192.168.1.100", .ExternalHost = "203.0.113.10"
+        }, 55272, True), res.AccessNote)
+    End Sub
+
+    <Fact>
+    Public Sub Media_kind_comes_from_the_frozen_worker_snapshot()
+        Dim broadcast = SampleBroadcast(kind:="folder", hostPath:="C:\MissingAlbum")
+        broadcast.MediaKind = "audio"
+        Using doc = JsonDocument.Parse(BroadcastConfigBuilder.Build(broadcast, SampleStatus(), False).ConfigJson)
+            Assert.Equal("audio", doc.RootElement.GetProperty("mediaKind").GetString())
+        End Using
     End Sub
 
     <Fact>

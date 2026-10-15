@@ -20,6 +20,8 @@ Public NotInheritable Class Share_Broadcasts_Form
     ''' <summary>The worker under this page stopped serving the broadcast verbs (it was swapped, or never had
     ''' them): the toggle and every action are off and one inline line says why (spec 159 section 3.2).</summary>
     Private _degraded As Boolean
+    Private _refreshInFlight As Boolean
+    Private ReadOnly _refreshTimer As New Timer With {.Interval = 5000}
 
     Private chkEnableGateway As CheckBox
     Private lblGatewayDesc As Label
@@ -44,6 +46,11 @@ Public NotInheritable Class Share_Broadcasts_Form
         Me.Text = Localization.T("Трансляции для StreamsPlayer")
         Me.Icon = ShareIcons.CreateIcon(_iconHandle)
         AddHandler Me.FormClosed, Sub() ShareIcons.FreeIcon(Me.Icon, _iconHandle)
+        AddHandler Me.FormClosed, Sub()
+                                     _refreshTimer.Stop()
+                                     _refreshTimer.Dispose()
+                                 End Sub
+        AddHandler _refreshTimer.Tick, Async Sub() Await RefreshStatusAndListAsync()
         Me.FormBorderStyle = FormBorderStyle.Sizable
         Me.StartPosition = FormStartPosition.CenterScreen
         Me.MinimumSize = New Size(700, 480)
@@ -113,6 +120,7 @@ Public NotInheritable Class Share_Broadcasts_Form
         }
         lvBroadcasts.Columns.Add(Localization.T("Название"), 220)
         lvBroadcasts.Columns.Add(Localization.T("Тип"), 90)
+        lvBroadcasts.Columns.Add(Localization.T("Создана"), 140)
         lvBroadcasts.Columns.Add(Localization.T("Срок действия"), 140)
         lvBroadcasts.Columns.Add(Localization.T("Запросов"), 70)
         lvBroadcasts.Columns.Add(Localization.T("Токен"), 90)
@@ -218,6 +226,8 @@ Public NotInheritable Class Share_Broadcasts_Form
 
     Private Async Sub OnShownAsync(sender As Object, e As EventArgs)
         Await RefreshStatusAndListAsync()
+        If IsDisposed Then Return
+        _refreshTimer.Start()
 
         If Not String.IsNullOrEmpty(_initialTargetPath) Then
             Dim path As String = _initialTargetPath
@@ -258,13 +268,17 @@ Public NotInheritable Class Share_Broadcasts_Form
     End Sub
 
     Public Async Function RefreshStatusAndListAsync() As Task
+        If IsDisposed OrElse _refreshInFlight Then Return
+        _refreshInFlight = True
         Try
             Dim statusResp As WorkerStatus = Await ShareController.GetStatusAsync()
+            If IsDisposed Then Return
             _status = statusResp
             If _status Is Nothing Then
                 ' The worker did not answer (not running, or it refused): nothing on this page can work and
                 ' the page does not know why - so it says the one true generic thing and keeps the detail in the log.
                 AppFileLogger.WriteLine("Broadcasts: the worker's status is unavailable")
+                SetDegraded(True)
                 ShowNotice(BroadcastMessages.Text(BroadcastNoticeReason.Failed))
                 Return
             End If
@@ -282,7 +296,7 @@ Public NotInheritable Class Share_Broadcasts_Form
             AddHandler chkEnableGateway.CheckedChanged, AddressOf OnGatewayToggleChanged
 
             If _status.BroadcastEnabled Then
-                Dim port As Integer = If(_status.BroadcastPort > 0, _status.BroadcastPort, _status.ListenPort)
+                Dim port As Integer = _status.BroadcastPort
                 lblGatewayStatus.Text = Localization.TF("Шлюз трансляций включён (порт {0})", port)
                 lblGatewayStatus.ForeColor = Color.DarkGreen
             Else
@@ -291,6 +305,7 @@ Public NotInheritable Class Share_Broadcasts_Form
             End If
 
             Dim listResp As WorkerResponse = Await BroadcastController.ListBroadcastsAsync()
+            If IsDisposed Then Return
             If listResp IsNot Nothing AndAlso listResp.Ok Then
                 _broadcasts = If(listResp.Broadcasts, New List(Of WorkerBroadcast)())
                 SetDegraded(False)
@@ -301,10 +316,14 @@ Public NotInheritable Class Share_Broadcasts_Form
             End If
         Catch ex As Exception
             AppFileLogger.LogException("Share_Broadcasts_Form.RefreshStatusAndListAsync", ex)
+        Finally
+            _refreshInFlight = False
         End Try
     End Function
 
     Private Sub PopulateListView()
+        Dim selected = SelectedBroadcast()
+        Dim selectedId As String = If(selected Is Nothing, "", selected.Id)
         lvBroadcasts.BeginUpdate()
         lvBroadcasts.Items.Clear()
         For Each b As WorkerBroadcast In _broadcasts
@@ -312,15 +331,17 @@ Public NotInheritable Class Share_Broadcasts_Form
             Dim isFolder As Boolean = String.Equals(b.Kind, "folder", StringComparison.OrdinalIgnoreCase)
             Dim typeStr As String = If(isFolder, Localization.TF("Папка ({0})", b.ItemCount), Localization.T("Файл"))
             item.SubItems.Add(typeStr)
+            item.SubItems.Add(b.CreatedAt)
 
             Dim expStr As String = If(String.IsNullOrEmpty(b.ExpiresAt), Localization.T("До отзыва"), b.ExpiresAt)
             item.SubItems.Add(expStr)
             item.SubItems.Add(b.Hits.ToString())
 
-            Dim tokPrefix As String = If(b.Token.Length > 6, b.Token.Substring(0, 6) & "...", b.Token)
+            Dim tokPrefix As String = If(b.Token.Length > 6, b.Token.Substring(0, 6) & "..", b.Token)
             item.SubItems.Add(tokPrefix)
             item.Tag = b
             lvBroadcasts.Items.Add(item)
+            item.Selected = String.Equals(b.Id, selectedId, StringComparison.Ordinal)
         Next
         lvBroadcasts.EndUpdate()
         UpdateActionButtons()
@@ -333,9 +354,11 @@ Public NotInheritable Class Share_Broadcasts_Form
     Private Sub UpdateActionButtons()
         Dim sel As WorkerBroadcast = SelectedBroadcast()
         Dim hasSel As Boolean = sel IsNot Nothing AndAlso Not _degraded
-        btnCopyLink.Enabled = hasSel
-        btnSaveSpres.Enabled = hasSel
-        btnShowQr.Enabled = hasSel
+        Dim canExport As Boolean = hasSel AndAlso _status IsNot Nothing AndAlso
+            _status.BroadcastEnabled AndAlso _status.BroadcastPort > 0
+        btnCopyLink.Enabled = canExport
+        btnSaveSpres.Enabled = canExport
+        btnShowQr.Enabled = canExport
         btnRefresh.Enabled = hasSel AndAlso String.Equals(sel.Kind, "folder", StringComparison.OrdinalIgnoreCase)
         btnRevoke.Enabled = hasSel
     End Sub
@@ -394,20 +417,20 @@ Public NotInheritable Class Share_Broadcasts_Form
                     kind, createDlg.TargetPath, createDlg.Recursive, createDlg.BroadcastTitle, createDlg.TtlSeconds)
 
                 If createResp IsNot Nothing AndAlso createResp.Ok AndAlso createResp.Broadcast IsNot Nothing Then
+                    BroadcastExportPreferences.Remember(createResp.Broadcast.Id, createDlg.IncludeExternal)
                     Await RefreshStatusAndListAsync()
 
                     ' Build .spres and config result
                     Dim config As BroadcastConfigResult = BroadcastConfigBuilder.Build(createResp.Broadcast, _status, createDlg.IncludeExternal)
                     If config IsNot Nothing Then
                         ' Copy SPCH1 quick link to clipboard
-                        Try
-                            SecureClipboard.SetSecret(config.ClipboardLink)
-                        Catch
-                        End Try
+                        If Not SecureClipboard.SetSecret(config.ClipboardLink) Then
+                            ShowNotice(Localization.T("Не удалось скопировать ссылку в буфер обмена."))
+                            Return
+                        End If
 
                         MessageBox.Show(Me,
-                            Localization.TF("Трансляция успешно создана!" & vbCrLf & vbCrLf &
-                                           "Ссылка для быстрого воспроизведения в StreamsPlayer скопирована в буфер обмена:" & vbCrLf & "{0}", config.ClipboardLink),
+                            Localization.T("Ссылка на трансляцию скопирована в буфер обмена."),
                             Localization.T("Трансляции для StreamsPlayer"), MessageBoxButtons.OK, MessageBoxIcon.Information)
                     End If
                 Else
@@ -421,12 +444,13 @@ Public NotInheritable Class Share_Broadcasts_Form
         Dim b As WorkerBroadcast = SelectedBroadcast()
         If b Is Nothing OrElse _status Is Nothing Then Return
 
-        Dim settings As New ShareSettings()
-        Try : settings.Load() : Catch : End Try
-        Dim config As BroadcastConfigResult = BroadcastConfigBuilder.Build(b, _status, Not settings.LanOnlyExport)
+        Dim config As BroadcastConfigResult = BroadcastConfigBuilder.Build(b, _status, BroadcastExportPreferences.IncludeExternal(b.Id))
         If config IsNot Nothing AndAlso Not String.IsNullOrEmpty(config.ClipboardLink) Then
             Try
-                SecureClipboard.SetSecret(config.ClipboardLink)
+                If Not SecureClipboard.SetSecret(config.ClipboardLink) Then
+                    ShowNotice(Localization.T("Не удалось скопировать ссылку в буфер обмена."))
+                    Return
+                End If
                 MessageBox.Show(Me, Localization.T("Ссылка на трансляцию скопирована в буфер обмена."),
                                 Localization.T("Трансляции для StreamsPlayer"), MessageBoxButtons.OK, MessageBoxIcon.Information)
             Catch ex As Exception
@@ -441,9 +465,7 @@ Public NotInheritable Class Share_Broadcasts_Form
         Dim b As WorkerBroadcast = SelectedBroadcast()
         If b Is Nothing OrElse _status Is Nothing Then Return
 
-        Dim settings As New ShareSettings()
-        Try : settings.Load() : Catch : End Try
-        Dim config As BroadcastConfigResult = BroadcastConfigBuilder.Build(b, _status, Not settings.LanOnlyExport)
+        Dim config As BroadcastConfigResult = BroadcastConfigBuilder.Build(b, _status, BroadcastExportPreferences.IncludeExternal(b.Id))
         If config Is Nothing OrElse String.IsNullOrEmpty(config.ConfigJson) Then Return
 
         Dim safeName As String = "broadcast"
@@ -474,9 +496,7 @@ Public NotInheritable Class Share_Broadcasts_Form
         Dim b As WorkerBroadcast = SelectedBroadcast()
         If b Is Nothing OrElse _status Is Nothing Then Return
 
-        Dim settings As New ShareSettings()
-        Try : settings.Load() : Catch : End Try
-        Dim config As BroadcastConfigResult = BroadcastConfigBuilder.Build(b, _status, Not settings.LanOnlyExport)
+        Dim config As BroadcastConfigResult = BroadcastConfigBuilder.Build(b, _status, BroadcastExportPreferences.IncludeExternal(b.Id))
         If config IsNot Nothing AndAlso config.QrPng IsNot Nothing Then
             Using ms As New MemoryStream(config.QrPng)
                 Using img As Image = Image.FromStream(ms)
@@ -498,8 +518,7 @@ Public NotInheritable Class Share_Broadcasts_Form
             MessageBox.Show(Me, Localization.T("Трансляция обновлена."),
                             Localization.T("Трансляции для StreamsPlayer"), MessageBoxButtons.OK, MessageBoxIcon.Information)
         Else
-            MessageBox.Show(Me, Localization.T("Не удалось обновить трансляцию."),
-                            Localization.T("Трансляции для StreamsPlayer"), MessageBoxButtons.OK, MessageBoxIcon.Warning)
+            ReportFailure(resp, gatewayRequest:=False, action:="RefreshBroadcast")
         End If
     End Sub
 
@@ -518,8 +537,7 @@ Public NotInheritable Class Share_Broadcasts_Form
             MessageBox.Show(Me, Localization.T("Трансляция отозвана."),
                             Localization.T("Трансляции для StreamsPlayer"), MessageBoxButtons.OK, MessageBoxIcon.Information)
         Else
-            MessageBox.Show(Me, Localization.T("Не удалось отозвать трансляцию."),
-                            Localization.T("Трансляции для StreamsPlayer"), MessageBoxButtons.OK, MessageBoxIcon.Warning)
+            ReportFailure(resp, gatewayRequest:=False, action:="RevokeBroadcast")
         End If
     End Sub
 

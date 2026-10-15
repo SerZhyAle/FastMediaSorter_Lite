@@ -57,12 +57,15 @@ main:focus{outline:none}
 <main class="container" id="main" tabindex="-1">
         <div data-l="en">
         <h1>Privacy Policy</h1>
-        <p class="note">Last updated: 6 October 2026</p>
+        <p class="note">Last updated: 14 October 2026</p>
 
-        <p><strong>Fast Media Sorter &amp; Sharing for Windows collects no personal data.</strong> It has no user accounts, no
-        advertising, and no telemetry or analytics. It runs entirely on your own device, and the developer
+        <p><strong>Fast Media Sorter &amp; Sharing for Windows collects no personal data.</strong> There is no advertising,
+        and no telemetry or analytics. It runs entirely on your own device, and the developer
         receives no data about you or your use of the app - unless you choose to send your logs yourself (see
-        <a href="#logs">Diagnostic logs</a>) - honestly, we wouldn't know what to do with it anyway.</p>
+        <a href="#logs">Diagnostic logs</a>) - honestly, we wouldn't know what to do with it anyway. Where the app
+        signs in anywhere - the password of a share server, an exchange account, a translation provider's key -
+        it signs in to a server or service <em>you</em> chose; no account is ever created with, or reported to,
+        the developer.</p>
 
         <h2>What the app accesses, and why</h2>
         <ul>
@@ -107,6 +110,8 @@ main:focus{outline:none}
             instead). The app keeps local-only connection counters (this is not telemetry and never leaves
             your PC).</li>
 
+            <li><strong>Broadcasts for StreamsPlayer.</strong> In the 64-bit viewer, right-click a video or audio file or its folder and choose Broadcast. Share Manager exports a .spres file, QR code or quick link for import in StreamsPlayer. A folder is one playlist channel with a frozen list; Refresh replaces that list and Revoke stops its link. The HTTP gateway has its own switch, off by default. Each token grants read-only access to one broadcast and normally expires after 24 hours. HTTP is unencrypted: share the document privately and keep internet access off unless you need it.</li>
+
             <li><strong>FileDO disks - optional, opt-in.</strong> If you connect a .fdd container for sharing,
             the server mounts it on this PC and publishes its contents to authorized SFTP clients.
             A selected Windows drive letter is a local alias for the current signed-in session; it does
@@ -135,6 +140,25 @@ main:focus{outline:none}
             Manager set up (a silent uninstall, such as <code>winget uninstall</code>, cannot ask and leaves it
             in place). The host key is kept unless you delete that folder, so your paired phones still work if
             you reinstall.</li>
+
+            <li><strong>An exchange account - a server somebody runs; normally, you.</strong> The 64-bit viewer and
+            the Share Manager can join an exchange account on an exchange server, so that every device of one
+            account sees the folders the others publish. The server is not ours: it is a small program
+            somebody runs - normally you, on your own PC or a machine you control. Until you sign in with the
+            login and password of an account on that server (or with a pairing code that one of its devices made
+            for you), nothing happens: no exchange connection, no listening port, nothing written. The password
+            is typed once and is not kept - unless you switch on keeping it, and then it is encrypted with
+            Windows (DPAPI) for your Windows account in one local file, while the server itself stores only a
+            hash of it, never the password. An enrolled device keeps a device token instead of the password,
+            encrypted the same way on your PC; the server stores only a hash of the token. The app remembers the
+            server's address and its certificate fingerprint, and refuses a server whose certificate ever
+            changes. A connection string that another device of the account can show you is that address with
+            the fingerprint: it carries no password and no token, and it never enters the logs or the support
+            archive. What whoever runs the server can see: the accounts as password hashes, the devices enrolled
+            in them, the records of the shares published to the server and - while a share is being published
+            from one of its devices - the access key of that share, held in the server's memory; folders you
+            open through the exchange reach the PC as encrypted sessions between the two ends, and the server's
+            own log names a share or a device only by a short one-way fingerprint.</li>
 
             <li><strong>Network - only when you use a feature that needs it.</strong> The on-image translation
             feature is off until you enable and configure it. When you use it, the app sends the recognized text
@@ -203,7 +227,8 @@ main:focus{outline:none}
         <p>None with the developer - the kind of "none" that is actually none, and no telemetry or analytics
         ever. The only things that leave your device do so at your explicit choice and go where you direct them,
         not to us: the text you translate goes to the translation endpoint you configured; shared files go
-        directly to your own phone over SFTP; when a share starts, your public IP address is seen by
+        directly to your own phone over SFTP; the folders of an exchange account pass through the exchange
+        server you chose, exactly as described above; when a share starts, your public IP address is seen by
         api.ipify.org and icanhazip.com (which return it to the program) and, unless LAN only is on, your public address
         and port are shown to check-host.net solely to test reachability; and the log archive reaches the developer only
         if you send it yourself from your own mail program.</p>
@@ -247,12 +272,14 @@ main:focus{outline:none}
         </div>
         <div data-l="ru">
         <h1>Политика конфиденциальности</h1>
-        <p class="note">Последнее обновление: 6 октября 2026 г.</p>
+        <p class="note">Последнее обновление: 14 октября 2026 г.</p>
 
-        <p><strong>Fast Media Sorter &amp; Sharing for Windows не собирает персональные данные.</strong> В нём нет учётных записей,
-        рекламы, телеметрии и аналитики. Программа работает целиком на вашем устройстве, и разработчик
+        <p><strong>Fast Media Sorter &amp; Sharing for Windows не собирает персональные данные.</strong> В нём нет рекламы,
+        телеметрии и аналитики. Программа работает целиком на вашем устройстве, и разработчик
         не получает никаких данных ни о вас, ни о том, как вы пользуетесь программой - если только вы сами не решите отправить свои логи (см.
-        <a href="#logs-ru">Диагностические логи</a>) - честно говоря, мы бы всё равно не знали, что с ними делать.</p>
+        <a href="#logs-ru">Диагностические логи</a>) - честно говоря, мы бы всё равно не знали, что с ними делать. Там, где программа
+        куда-то входит - пароль сервера общих папок, учётная запись обмена, ключ переводчика, - она входит на сервер или в службу,
+        <em>которые выбрали вы</em>; учётная запись создаётся там, где она живёт, и разработчику о ней не сообщается никогда.</p>
 
         <h2>К чему обращается программа и зачем</h2>
         <ul>
@@ -296,6 +323,8 @@ main:focus{outline:none}
             при удалении программы правило убирается (пакет из Microsoft Store объявляет это правило в своём манифесте).
             Программа ведёт только локальные счётчики соединений (это не телеметрия, и они никогда не покидают ваш ПК).</li>
 
+            <li><strong>Трансляции для StreamsPlayer.</strong> В 64-битном просмотрщике нажмите правой кнопкой на видео, аудиофайл или его папку и выберите трансляцию. Менеджер общего доступа выдаёт файл .spres, QR-код или быструю ссылку для импорта в StreamsPlayer. Папка становится одним каналом с зафиксированным списком: обновление заменяет список, отзыв отключает ссылку. HTTP-шлюз имеет отдельный переключатель и по умолчанию выключен. Токен даёт доступ только для чтения одной трансляции, обычно на 24 часа. HTTP не шифруется: передавайте документ лично и включайте интернет-доступ только при необходимости.</li>
+
             <li><strong>Диски FileDO - по желанию, только по вашему согласию.</strong> Если вы подключаете контейнер .fdd для общего доступа,
             сервер монтирует его на этом ПК и публикует его содержимое для авторизованных SFTP-клиентов.
             Выбранная буква диска Windows - это локальный псевдоним для текущего сеанса вашего входа; SMB-ресурс
@@ -324,6 +353,23 @@ main:focus{outline:none}
             (тихое удаление, например <code>winget uninstall</code>, не может спросить и оставляет службу
             на месте). Ключ хоста сохраняется, если вы не удалите эту папку, так что ваши сопряжённые телефоны продолжат работать, если
             вы переустановите программу.</li>
+
+            <li><strong>Учётная запись обмена - сервер, который кто-то запускает; обычно это вы.</strong> 64-разрядный просмотрщик
+            и Менеджер общего доступа могут подключиться к учётной записи на сервере обмена, чтобы все устройства одной
+            учётной записи видели папки, которые публикуют остальные. Сервер - не наш: это небольшая программа, которую
+            запускает кто-то свой - обычно вы, на своём ПК или на машине под вашим контролем. Пока вы не войдёте с логином и паролем
+            учётной записи этого сервера (или с кодом сопряжения, который создало для вас одно из его устройств), ничего не происходит:
+            ни соединения с сервером обмена, ни слушающего порта, ни записей. Пароль вводится один раз и не сохраняется - если вы сами
+            не включите его хранение; тогда он шифруется средствами Windows (DPAPI) для вашей учётной записи Windows в одном локальном
+            файле, а сам сервер хранит только его хеш, никогда не пароль. Зарегистрированное устройство вместо пароля хранит токен
+            устройства, на вашем ПК он зашифрован так же; сервер хранит только хеш токена. Программа помнит адрес сервера и отпечаток
+            его сертификата и отказывается подключаться к серверу, чей сертификат изменился. Строка подключения, которую может показать
+            другое устройство учётной записи, - это тот же адрес с отпечатком: в ней нет ни пароля, ни токена, и в логи и в архив
+            поддержки она не попадает никогда. Что видит тот, кто запускает сервер: учётные записи в виде хешей паролей,
+            зарегистрированные в них устройства, записи об опубликованных на сервере общих папках и - пока папка публикуется с одного
+            из его устройств - ключ доступа этой папки, который держится в памяти сервера; папки, открытые через сервер обмена,
+            доходят до ПК зашифрованными сеансами между двумя концами, а собственный журнал сервера называет папку или устройство
+            только коротким односторонним отпечатком.</li>
 
             <li><strong>Сеть - только когда вы используете функцию, которой она нужна.</strong> Функция перевода текста на картинке
             выключена, пока вы её не включите и не настроите. Когда вы ею пользуетесь, программа отправляет распознанный текст
@@ -392,7 +438,8 @@ main:focus{outline:none}
         <p>Разработчику - ничего, причём такое «ничего», которое действительно ничего, и никакой телеметрии или аналитики
         никогда. Единственное, что покидает ваше устройство, делает это по вашему явному выбору и идёт туда, куда вы укажете,
         а не к нам: переводимый вами текст уходит на настроенную вами конечную точку перевода; общие файлы идут
-        напрямую на ваш собственный телефон по SFTP; при запуске общего доступа ваш публичный IP-адрес видят api.ipify.org
+        напрямую на ваш собственный телефон по SFTP; папки учётной записи обмена проходят через выбранный вами сервер обмена -
+        ровно как описано выше; при запуске общего доступа ваш публичный IP-адрес видят api.ipify.org
         и icanhazip.com (они возвращают его программе), а если не включён режим «Только локальная сеть», ваш публичный адрес и порт
         показываются check-host.net исключительно для проверки доступности; а архив логов попадает к разработчику, только
         если вы сами отправите его из своей почтовой программы.</p>
@@ -436,12 +483,14 @@ main:focus{outline:none}
         </div>
         <div data-l="ua">
         <h1>Політика конфіденційності</h1>
-        <p class="note">Останнє оновлення: 6 жовтня 2026 р.</p>
+        <p class="note">Останнє оновлення: 14 жовтня 2026 р.</p>
 
-        <p><strong>Fast Media Sorter &amp; Sharing for Windows не збирає персональних даних.</strong> У ній немає облікових записів,
-        реклами, телеметрії та аналітики. Програма працює цілком на вашому пристрої, і розробник
+        <p><strong>Fast Media Sorter &amp; Sharing for Windows не збирає персональних даних.</strong> У ній немає реклами,
+        телеметрії та аналітики. Програма працює цілком на вашому пристрої, і розробник
         не отримує жодних даних ні про вас, ні про те, як ви користуєтеся програмою - хіба що ви самі вирішите надіслати свої журнали (див.
-        <a href="#logs-ua">Діагностичні журнали</a>) - чесно кажучи, ми б усе одно не знали, що з ними робити.</p>
+        <a href="#logs-ua">Діагностичні журнали</a>) - чесно кажучи, ми б усе одно не знали, що з ними робити. Там, де програма
+        кудись входить - пароль сервера спільних тек, обліковий запис обміну, ключ перекладача, - вона входить на сервер або службу,
+        <em>які обрали ви</em>; обліковий запис створюється там, де він живе, і розробникові про нього не повідомляється ніколи.</p>
 
         <h2>До чого звертається програма і навіщо</h2>
         <ul>
@@ -485,6 +534,8 @@ main:focus{outline:none}
             під час видалення програми правило прибирається (пакет зі Microsoft Store оголошує це правило у своєму маніфесті).
             Програма веде лише локальні лічильники з'єднань (це не телеметрія, і вони ніколи не залишають ваш ПК).</li>
 
+            <li><strong>Трансляції для StreamsPlayer.</strong> У 64-бітному переглядачі натисніть правою кнопкою на відео, аудіофайл або його теку й виберіть трансляцію. Менеджер спільного доступу видає файл .spres, QR-код або швидке посилання для імпорту в StreamsPlayer. Тека стає одним каналом із зафіксованим списком: оновлення замінює список, відкликання вимикає посилання. HTTP-шлюз має окремий перемикач і типово вимкнений. Токен надає доступ лише для читання однієї трансляції, зазвичай на 24 години. HTTP не шифрується: передавайте документ особисто й вмикайте інтернет-доступ лише за потреби.</li>
+
             <li><strong>Диски FileDO - за бажанням, лише за вашою згодою.</strong> Якщо ви підключаєте контейнер .fdd для спільного доступу,
             сервер монтує його на цьому ПК і публікує його вміст для авторизованих SFTP-клієнтів.
             Вибрана літера диска Windows - це локальний псевдонім для поточного сеансу вашого входу; SMB-ресурс
@@ -513,6 +564,23 @@ main:focus{outline:none}
             (тихе видалення, наприклад <code>winget uninstall</code>, не може запитати і залишає службу
             на місці). Ключ хоста зберігається, якщо ви не видалите цю теку, тож ваші сполучені телефони й надалі працюватимуть, якщо
             ви перевстановите програму.</li>
+
+            <li><strong>Обліковий запис обміну - сервер, який хтось запускає; зазвичай це ви.</strong> 64-розрядний переглядач
+            і Менеджер спільного доступу можуть підключитися до облікового запису на сервері обміну, щоб усі пристрої одного
+            облікового запису бачили теки, які публікують інші. Сервер - не наш: це невелика програма, яку запускає
+            хтось свій - зазвичай ви, на своєму ПК або на машині під вашим контролем. Поки ви не увійдете з логіном і паролем
+            облікового запису цього сервера (або з кодом сполучення, який створив для вас один із його пристроїв), нічого не відбувається:
+            ні з'єднання з сервером обміну, ні порта, що слухає, ні записів. Пароль вводиться один раз і не зберігається - якщо ви самі
+            не ввімкнете його зберігання; тоді він шифрується засобами Windows (DPAPI) для вашого облікового запису Windows в одній
+            локальній теці, а сам сервер зберігає лише його хеш, ніколи не пароль. Зареєстрований пристрій замість пароля зберігає
+            токен пристрою, на вашому ПК він зашифрований так само; сервер зберігає лише хеш токена. Програма пам'ятає адресу сервера
+            і відбиток його сертифіката та відмовляється підключатися до сервера, чий сертифікат змінився. Рядок підключення, який
+            може показати інший пристрій облікового запису, - це та сама адреса з відбитком: у ній немає ні пароля, ні токена, і до
+            журналів та архіву підтримки вона не потрапляє ніколи. Що бачить той, хто запускає сервер: облікові записи у вигляді хешів
+            паролів, зареєстровані в них пристрої, записи про опубліковані на сервері спільні теки та - поки тека публікується з одного
+            з його пристроїв - ключ доступу цієї теки, який тримається в пам'яті сервера; теки, відкриті крізь сервер обміну,
+            доходять до ПК зашифрованими сеансами між двома кінцями, а власний журнал сервера називає теку або пристрій
+            лише коротким одностороннім відбитком.</li>
 
             <li><strong>Мережа - лише коли ви користуєтеся функцією, якій вона потрібна.</strong> Функція перекладу тексту на зображенні
             вимкнена, поки ви її не ввімкнете й не налаштуєте. Коли ви нею користуєтеся, програма надсилає розпізнаний текст
@@ -581,7 +649,8 @@ main:focus{outline:none}
         <p>Розробнику - нічого, причому таке «нічого», яке справді нічого, і жодної телеметрії чи аналітики
         ніколи. Єдине, що залишає ваш пристрій, робить це за вашим явним вибором і йде туди, куди ви вкажете,
         а не до нас: текст, який ви перекладаєте, іде на налаштовану вами кінцеву точку перекладу; спільні файли йдуть
-        напряму на ваш власний телефон через SFTP; під час запуску спільного доступу вашу публічну IP-адресу бачать api.ipify.org
+        напряму на ваш власний телефон через SFTP; теки облікового запису обміну проходять через обраний вами сервер обміну -
+        рівно як описано вище; під час запуску спільного доступу вашу публічну IP-адресу бачать api.ipify.org
         та icanhazip.com (вони повертають її програмі), а якщо не ввімкнено режим «Лише локальна мережа», вашу публічну адресу та порт
         показують check-host.net виключно для перевірки доступності; а архів журналів потрапляє до розробника, лише
         якщо ви самі надішлете його зі своєї поштової програми.</p>

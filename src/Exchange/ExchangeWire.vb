@@ -58,6 +58,9 @@ Friend NotInheritable Class ExchangeWire
     Public Const RoleResourceConsumer As String = "resource-consumer"
     Public Const RoleBroadcaster As String = "broadcaster"
     Public Const RoleReceiver As String = "receiver"
+    ''' <summary>Item BV (section 22): a device that sends or receives clipboard values. Not declared by this client until
+    ''' the server it speaks to lists the role (spec 229): a server of today's `KnownRoles` refuses an unknown one.</summary>
+    Public Const RoleClipboard As String = "clipboard"
 
     ' --- the features of `welcome` (7.2) ---
     Public Const FeatureDirectory As String = "directory"
@@ -65,6 +68,8 @@ Friend NotInheritable Class ExchangeWire
     Public Const FeatureRelay As String = "relay"
     Public Const FeatureCast As String = "cast"
     Public Const FeaturePairing As String = "pairing"
+    ''' <summary>Item BV: the server holds one clipboard value per `member` account (section 22).</summary>
+    Public Const FeatureClipboard As String = "clipboard"
 
     ' --- presence (6.1) ---
     Public Const PresenceOnline As String = "online"
@@ -92,6 +97,10 @@ Friend Enum ExchangeRefusal
     Unavailable = 8
     RateLimited = 9
     ProtectionUnsupported = 10
+    ''' <summary>Item BW: a `clipboard-put` from a `guest` account.</summary>
+    NotPermitted = 11
+    ''' <summary>Item BW and BZ: a `clipboard-put` whose `size` is above the account's `clipboardBytes`.</summary>
+    LimitReached = 12
 End Enum
 
 Friend NotInheritable Class ExchangeRefusals
@@ -101,7 +110,8 @@ Friend NotInheritable Class ExchangeRefusals
 
     Private Shared ReadOnly Names As String() = {
         "", "bad-credentials", "device-revoked", "version-unsupported", "tls-required",
-        "id-collision", "capacity", "port-unavailable", "unavailable", "rate-limited", "protection-unsupported"}
+        "id-collision", "capacity", "port-unavailable", "unavailable", "rate-limited", "protection-unsupported",
+        "not-permitted", "limit-reached"}
 
     ''' <summary>The enum of a wire reason; <see cref="ExchangeRefusal.Unknown"/> for anything else.</summary>
     Public Shared Function Parse(reason As String) As ExchangeRefusal
@@ -123,7 +133,8 @@ Friend NotInheritable Class ExchangeRefusals
     Public Shared Function All() As ExchangeRefusal()
         Return {ExchangeRefusal.BadCredentials, ExchangeRefusal.DeviceRevoked, ExchangeRefusal.VersionUnsupported,
                 ExchangeRefusal.TlsRequired, ExchangeRefusal.IdCollision, ExchangeRefusal.Capacity,
-                ExchangeRefusal.PortUnavailable, ExchangeRefusal.Unavailable, ExchangeRefusal.RateLimited, ExchangeRefusal.ProtectionUnsupported}
+                ExchangeRefusal.PortUnavailable, ExchangeRefusal.Unavailable, ExchangeRefusal.RateLimited, ExchangeRefusal.ProtectionUnsupported,
+                ExchangeRefusal.NotPermitted, ExchangeRefusal.LimitReached}
     End Function
 
 End Class

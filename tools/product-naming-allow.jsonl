@@ -1,5 +1,5 @@
 {"path":"*","pattern":"Lite\\.Tests","reason":"The frozen test project folder, project file and namespace (tests/Lite.Tests, Namespace Lite.Tests): an identifier every script path and linked source depends on, never visible text."}
-{"path":"tools/Test-ProductNaming.ps1","pattern":"LITE|Lite|for Windows|Exchange Server","reason":"The check names the forbidden forms it searches for."}
+{"path":"tools/Test-ProductNaming.ps1","pattern":"LITE|Lite|for Windows|Exchange Server|relay servers?|FMS servers?|the cloud|cloud accounts?|log ?in to Fast Media Sorter|upload my folders|transmissions?|broadcast","reason":"The check names the forbidden forms it searches for, the product-name ones and the exchange-vocabulary ones (206 section 3)."}
 {"path":"tools/product-naming-allow.jsonl","pattern":".","reason":"The allow-list quotes the forms it permits."}
 {"path":"docs/guides/PRODUCT_NAMING.md","pattern":"LITE|Lite|for Windows|Exchange Server","reason":"The standard defines the forbidden forms and the frozen identifiers that still carry them."}
 {"path":"CHANGELOG.md","pattern":"FastMediaSorter LITE|for Windows","reason":"Past entries are history, and the Unreleased entry names the old product and the frozen package name once."}
@@ -26,3 +26,10 @@
 {"path":"publishing/store/listingData.csv","pattern":"FastMediaSorter LITE","reason":"The frozen Store listing title and the true 'published as' sentence in the descriptions."}
 {"path":"publishing/store/LOCALES.md","pattern":"FastMediaSorter LITE","reason":"Documents the frozen Store title and the 'published as' sentence."}
 {"path":"src/ProductNames.vb","pattern":"FastMediaSorter LITE","reason":"The comment says which channels keep the frozen name."}
+{"path":"docs/guides/PRODUCT_NAMING.md","pattern":"relay servers?|FMS servers?|the cloud|cloud accounts?|log ?in to Fast Media Sorter|upload my folders|transmissions?|(start|stop) broadcast","reason":"The vocabulary section (206 section 3, PRODUCT_NAMING section 6) quotes each forbidden form to define it; the sanctioned role description \"Fast Media Sorter exchange relay server\" is covered by the check's own lookbehind."}
+{"path":"index.html","pattern":"no cloud accounts?","reason":"A negative contrast claim - the sentence denies cloud accounts instead of calling the exchange one (206 section 3)."}
+{"path":"README.md","pattern":"no cloud accounts?","reason":"A negative contrast claim - the sentence denies a cloud account instead of calling the exchange one (206 section 3)."}
+{"reason":"Names a translation endpoint the user configured, which may be a cloud API - Google is named when meant (206 section 3).","path":"src/OcrTranslateSettings.vb","pattern":"The cloud API key"}
+{"reason":"The same cloud translation API key as OcrTranslateSettings, in a wrapped comment line (206 section 3).","path":"src/Security/DpapiSecrets.vb","pattern":"the cloud API"}
+{"reason":"A wrapped line of a cloud-clipboard comment; the check works line by line, so its clipboard lookahead cannot see across the wrap (206 section 3).","path":"src/FastMediaSorterCompanion/Forms/Exchange_Password_Form.vb","pattern":"history and the cloud"}
+{"path":".claude/rules/naming-and-positioning.md","pattern":"FastMediaSorter LITE|\\bLite\\b|\\bLITE\\b","reason":"The area rule file that carries the naming rule of CLAUDE.md moved verbatim: it names the frozen package-name anchors and the forbidden word for coding agents."}

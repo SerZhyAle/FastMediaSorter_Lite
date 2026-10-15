@@ -202,11 +202,12 @@ Public NotInheritable Class EdgeSampler
     ''' </summary>
     Public Function GetDisplayedVerticalEdgeColors(targetHeight As Integer, imageRect As Rectangle, isLeftEdge As Boolean) As List(Of Color)
         Dim edgeColors As New List(Of Color)(targetHeight)
-        Dim edgeInset As Integer = If(_width >= 3, 1, 0)
-        Dim sourceX As Integer = If(isLeftEdge, edgeInset, _width - 1 - edgeInset)
+        ' LETTERBOX-BARS rule 3 (LetterboxFillMath): one pixel IN from the edge, and the surface
+        ' row's source row clamped to the displayed image.
+        Dim sourceX As Integer = LetterboxFillMath.EdgeIndex(_width, Not isLeftEdge)
 
         For targetY As Integer = 0 To targetHeight - 1
-            Dim sourceY As Integer = Math.Max(0, Math.Min(targetY - imageRect.Top, _height - 1))
+            Dim sourceY As Integer = LetterboxFillMath.EdgeSourceIndex(targetY, imageRect.Top, _height)
             Dim px As Color = GetPixel(sourceX, sourceY)
             edgeColors.Add(Color.FromArgb(255, px.R, px.G, px.B))
         Next
@@ -219,11 +220,11 @@ Public NotInheritable Class EdgeSampler
     ''' </summary>
     Public Function GetDisplayedHorizontalEdgeColors(targetWidth As Integer, imageRect As Rectangle, isTopEdge As Boolean) As List(Of Color)
         Dim edgeColors As New List(Of Color)(targetWidth)
-        Dim edgeInset As Integer = If(_height >= 3, 1, 0)
-        Dim sourceY As Integer = If(isTopEdge, edgeInset, _height - 1 - edgeInset)
+        ' LETTERBOX-BARS rule 3, transposed.
+        Dim sourceY As Integer = LetterboxFillMath.EdgeIndex(_height, Not isTopEdge)
 
         For targetX As Integer = 0 To targetWidth - 1
-            Dim sourceX As Integer = Math.Max(0, Math.Min(targetX - imageRect.Left, _width - 1))
+            Dim sourceX As Integer = LetterboxFillMath.EdgeSourceIndex(targetX, imageRect.Left, _width)
             Dim px As Color = GetPixel(sourceX, sourceY)
             edgeColors.Add(Color.FromArgb(255, px.R, px.G, px.B))
         Next

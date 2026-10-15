@@ -1,4 +1,4 @@
-﻿Option Strict On
+Option Strict On
 
 Imports System.Collections.Generic
 Imports System.Drawing
@@ -213,6 +213,8 @@ Partial Public NotInheritable Class MainWindow
         ' silently does nothing is worse than one that shows it has nothing to act on.
         btnParams = New Button With {.AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink, .Padding = New Padding(10, 5, 10, 5),
             .Text = Localization.T("Редактировать"), .Enabled = False}
+        btnOutsideAccess = New Button With {.AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink, .Padding = New Padding(10, 5, 10, 5),
+            .Text = Localization.T("Дать доступ наружу.."), .Enabled = False}
         ' Absent, not disabled, until the build offers the page AND the worker states it serves it (spec 159):
         ' ApplyStatusToUi is the one place that shows it.
         btnBroadcasts = New Button With {.AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink, .Padding = New Padding(10, 5, 10, 5),
@@ -220,18 +222,28 @@ Partial Public NotInheritable Class MainWindow
         ButtonGlyphs.Apply(btnAddCurrent, "action.add")
         ButtonGlyphs.Apply(btnRemove, "action.remove")
         ButtonGlyphs.Apply(btnParams, "action.edit")
+        ButtonGlyphs.Apply(btnOutsideAccess, "action.share")
         ButtonGlyphs.Apply(btnBroadcasts, "media.cast")
         AddHandler btnAdd.Click, AddressOf OnAddFolder
         AddHandler btnAddCurrent.Click, AddressOf OnAddCurrentFolder
         AddHandler btnRemove.Click, AddressOf OnRemoveFolder
         AddHandler btnParams.Click, AddressOf OnConfigureFolder
+        AddHandler btnOutsideAccess.Click, AddressOf OnOutsideAccessClicked
         AddHandler btnBroadcasts.Click, AddressOf OnBroadcastsClicked
         btnDisks = New Button With {.AutoSize = True, .Padding = New Padding(10, 5, 12, 5),
             .Text = Localization.T("Диски .fdd.."),
             .TextAlign = ContentAlignment.MiddleCenter}
         ButtonGlyphs.Apply(btnDisks, "content.disk-container")
         AddHandler btnDisks.Click, AddressOf OnDisksClicked
-        _pnlListButtons.Controls.AddRange(New Control() {btnAdd, btnAddCurrent, btnDisks, btnRemove, btnParams, btnBroadcasts})
+        ' Spec 227 rule 1: the phone's connection code - paste, file, clipboard screenshot or camera -
+        ' read by the same readers and relayed to the viewer's import door.
+        btnPhoneCode = New Button With {.AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink,
+            .Padding = New Padding(10, 5, 12, 5),
+            .Text = Localization.T("Код телефона.."),
+            .TextAlign = ContentAlignment.MiddleCenter}
+        ButtonGlyphs.Apply(btnPhoneCode, "device.phone")
+        AddHandler btnPhoneCode.Click, Async Sub() Await OpenPhoneCodeIntakeAsync()
+        _pnlListButtons.Controls.AddRange(New Control() {btnAdd, btnAddCurrent, btnPhoneCode, btnDisks, btnRemove, btnParams, btnOutsideAccess, btnBroadcasts})
 
         ' ShowItemToolTips: a row the service account cannot read is coloured and explains
         ' itself on hover (RefreshFolderAccessWarnings) - without this flag the item tooltip

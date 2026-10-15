@@ -38,6 +38,42 @@ Public Class RecipientsOverlaySeamTests
         Return text.Substring(start, [end] - start)
     End Function
 
+    ' ------------------------------------------------------------ the pictures of the table ----
+
+    <Fact>
+    Public Sub Only_the_delete_row_and_the_copy_zone_carry_a_picture_and_it_follows_the_row()
+        Dim overlay As String = Source("Main_Form.RecipientsOverlay.vb")
+        ' The folder rows say it with the word at their end; the folder-and-arrow before every caption is gone.
+        Assert.DoesNotContain("""action.move""", overlay)
+        Dim build As String = MemberBody(overlay, "Private Sub BuildRecipientsOverlay()")
+        Assert.Contains("If recipients_Row_Glyphs AndAlso isDelete Then ApplyRecipientRowGlyph(b, ""action.delete"")", build)
+        Assert.Contains("If recipients_Row_Glyphs AndAlso is_Copy_Zone Then ApplyRecipientRowGlyph(row, ""action.copy"")",
+                        MemberBody(overlay, "Friend Sub ApplyRecipientsOverlayHealth()"))
+        ' The picture's side comes from the row's own height, never from a size of its own - and the copy zone
+        ' is sized for the same picture it draws.
+        Dim apply As String = MemberBody(overlay, "Private Sub ApplyRecipientRowGlyph(row As Button, glyphId As String)")
+        Assert.Contains("RecipientsOverlayRows.GlyphSide(row.Height)", apply)
+        Assert.DoesNotContain("ButtonGlyphs.GlyphLogicalSize", apply)
+        Assert.Contains("RecipientsOverlayRows.GlyphSide(rowH)", build)
+        Assert.DoesNotContain("RecipientPx(16 + 6)", build)
+    End Sub
+
+    <Fact>
+    Public Sub The_pin_is_the_catalogs_upright_push_pin_and_never_a_tilted_second_pencil()
+        ' A line-drawn pin tilted 45 degrees while free was, on a 20 px button, the picture of the edit pencil
+        ' beside it on the table's header: two buttons nobody could tell apart. The catalog has a pin and its
+        ' outlined state variant; both stand upright.
+        Dim surface As String = Source("Chrome\ChromeSurface.vb")
+        Dim pin As String = MemberBody(surface, "Friend Shared Sub PaintPin(")
+        Assert.Contains("If(pinned, ""action.pin"", ""action.pin--off"")", pin)
+        Assert.Contains("GlyphRenderer.Render(", pin)
+        Assert.DoesNotContain("RotateTransform", pin)
+        ' The overlay's pin button is that very drawing, and its neighbour is the pencil.
+        Dim overlay As String = Source("Main_Form.RecipientsOverlay.vb")
+        Assert.Contains("ChromeSurface.PaintPin(g, checkedState, bounds, ink, scale)", overlay)
+        Assert.Contains("GlyphRenderer.Render(""action.edit"", bounds.Width, ink,", overlay)
+    End Sub
+
     ' ------------------------------------------------------------------ deliverable 2: the drag ----
 
     <Fact>
@@ -62,13 +98,60 @@ Public Class RecipientsOverlaySeamTests
         Dim overlay As String = Source("Main_Form.RecipientsOverlay.vb")
         ' Saved on drop, not per pixel - and a drag that ends where it began writes nothing.
         Dim drag As String = MemberBody(overlay, "Private Sub RecipientsOverlayBeginDrag()")
-        Assert.Contains("If recipients_Overlay.Location <> before Then SaveRecipientsOverlayDraggedPosition()", drag)
+        Assert.Contains("If recipients_Overlay.Location <> before Then", drag)
+        Assert.Contains("SaveRecipientsOverlayDraggedPosition()", drag)
+        Assert.True(drag.IndexOf("SaveRecipientsOverlayDraggedPosition()", StringComparison.Ordinal) <
+                    drag.IndexOf("PositionRecipientsOverlay()", StringComparison.Ordinal))
         ' The point is stored through the logical-px seam (Q219-5), not as raw screen coordinates.
         Dim save As String = MemberBody(overlay, "Private Sub SaveRecipientsOverlayDraggedPosition()")
         Assert.Contains("RecipientsOverlayPlacement.ToLogicalPoint(", save)
         Assert.Contains("prefs.RecipientsOverlayHasCustomPosition = True", save)
         Assert.Contains("RecipientsOverlayPlacement.ToDeviceOffset(",
                         MemberBody(overlay, "Private Function RecipientsOverlayPlacedRect()"))
+    End Sub
+
+    <Fact>
+    Public Sub Geometry_callbacks_cannot_save_or_replace_a_position_during_the_native_drag()
+        Dim overlay As String = Source("Main_Form.RecipientsOverlay.vb")
+        Dim position As String = MemberBody(overlay, "Private Sub PositionRecipientsOverlay()")
+        Assert.True(position.IndexOf("If recipients_Drag_Active Then Return", StringComparison.Ordinal) <
+                    position.IndexOf("PersistRecipientsOverlayRepairedPosition(onScreen)", StringComparison.Ordinal))
+        Assert.Contains("If recipients_Drag_Active Then Return",
+                        MemberBody(overlay, "Private Sub PersistRecipientsOverlayRepairedPosition(applied As Point)"))
+        Assert.Contains("recipients_Drag_Active OrElse RecipientsOverlayPlacedRect().Contains(pointer)", Source("Main_Form.Chrome.vb"))
+    End Sub
+
+    <Fact>
+    Public Sub The_grid_open_preserves_the_complete_remembered_context_through_flush_and_close()
+        Dim groups As String = Source("Table_Form.SettingsGroups.vb")
+        Dim reveal As String = MemberBody(groups, "Friend Sub RevealModernRecipientsGrid()")
+        Assert.Contains("openAtRememberedContext = settingsContext", reveal)
+        Assert.Contains("SettingsUiContext.Read(settingsContext.ToJson(), invalid)", reveal)
+        Assert.Contains("If(openAtRememberedContext, settingsContext).ToJson()",
+                        MemberBody(groups, "Private Function WriteSettingsContext()"))
+        Assert.Contains("If Not Visible OrElse openAtRememberedContext IsNot Nothing Then",
+                        MemberBody(groups, "Private Sub SaveSettingsContext()"))
+        Assert.Contains("AddHandler FormClosed, Sub() RestoreContextAfterRecipientsOpen()", groups)
+        Dim restore As String = MemberBody(groups, "Private Sub RestoreContextAfterRecipientsOpen()")
+        Assert.Contains("settingsContext = openAtRememberedContext", restore)
+        Assert.Contains("openAtRememberedContext = Nothing", restore)
+        Assert.Contains("settingsContext.ResolvePage(pageIds.Values)", restore)
+        Dim request As String = MemberBody(groups, "Friend Sub RequestOpenAtRecipientsGrid()")
+        Assert.Contains("If settingsContextReady Then", request)
+        Assert.DoesNotContain("If Visible AndAlso", request)
+    End Sub
+
+    <Fact>
+    Public Sub The_edit_door_keeps_the_overlay_visible_until_the_modal_editor_returns()
+        Dim overlay As String = Source("Main_Form.RecipientsOverlay.vb")
+        Dim edit As String = MemberBody(overlay, "Private Sub RecipientsOverlayEditRequested()")
+        Assert.Contains("recipients_Edit_Active = True", edit)
+        Assert.Contains("Finally", edit)
+        Assert.Contains("recipients_Edit_Active = False", edit)
+        Assert.Contains("recipients_LastActivity = chrome_Clock.ElapsedMilliseconds", edit)
+        Dim tick As String = MemberBody(Source("Main_Form.Chrome.vb"), "Private Function ChromeTickRecipientsOverlay(")
+        Assert.True(tick.IndexOf("If recipients_Edit_Active Then", StringComparison.Ordinal) <
+                    tick.IndexOf("ChromeAutoHide.NextWanted", StringComparison.Ordinal))
     End Sub
 
     <Fact>

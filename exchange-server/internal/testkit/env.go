@@ -64,6 +64,11 @@ type Options struct {
 	AccountsRand  io.Reader
 	EngineRand    io.Reader
 	ServerVersion string
+	// PaceInterval is the time between two password checks of one login or address (19 item AW). Zero is
+	// pacing OFF - the many tests that sign in again and again from one address are not about the pace; a
+	// test that is sets it, and Sleep replaces time.Sleep in the pacer (with Now, a fully injected clock).
+	PaceInterval time.Duration
+	Sleep        func(time.Duration)
 }
 
 // Env is a running server with everything a test may look at.
@@ -136,9 +141,19 @@ func StartServer(t TB, opt Options) *Env {
 	if now == nil {
 		now = time.Now
 	}
+	policy := env.Params.Policy()
+	if opt.Caps != nil {
+		policy.Defaults.Resources, policy.Defaults.Broadcasts, policy.Defaults.BroadcastsPerDevice =
+			opt.Caps.ResourcesPerAccount, opt.Caps.BroadcastsPerAccount, opt.Caps.BroadcastsPerDevice
+	}
+	pace := opt.PaceInterval
+	if pace == 0 {
+		pace = -1 // off: see Options.PaceInterval
+	}
 	env.Accounts, err = accounts.Open(accounts.Options{Dir: dir, Now: now, Params: cheap,
 		DevicesPerAccount: env.Params.DevicesPerAccount, CodesPerAccount: env.Params.CodesPerAccount, CodeLifetime: env.Params.CodeLifetime,
-		TombstoneLifetime: env.Params.TombstoneLifetime, Rand: opt.AccountsRand})
+		TombstoneLifetime: env.Params.TombstoneLifetime, Rand: opt.AccountsRand, Policy: &policy,
+		PaceInterval: pace, Sleep: opt.Sleep})
 	if err != nil {
 		t.Fatalf("accounts: %v", err)
 	}

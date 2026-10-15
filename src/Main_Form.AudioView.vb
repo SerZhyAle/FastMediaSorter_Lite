@@ -175,10 +175,10 @@ Partial Public Class Main_Form
         EnsureAudioPaintObjects()
         g.FillRectangle(audio_Plate_Brush, New Rectangle(12, top, Math.Max(0, bounds.Width - 24), Math.Max(0, bounds.Height - top - 8)))
         Dim line = top + 8
-        g.DrawString(audio_Current_Metadata.Title, audio_Title_Font, Brushes.White, New Rectangle(22, line, bounds.Width - 44, 28), audio_Plate_Format) : line += 30
-        If audio_Current_Metadata.Artist <> "" Then g.DrawString(audio_Current_Metadata.Artist, audio_Detail_Font, Brushes.White, New Rectangle(22, line, bounds.Width - 44, 20), audio_Plate_Format) : line += 20
-        If audio_Current_Metadata.Album <> "" Then g.DrawString(audio_Current_Metadata.Album, audio_Detail_Font, Brushes.White, New Rectangle(22, line, bounds.Width - 44, 20), audio_Plate_Format) : line += 20
-        g.DrawString(audio_Current_Metadata.FormatLine, audio_Detail_Font, Brushes.Gainsboro, New Rectangle(22, line, bounds.Width - 44, 20), audio_Plate_Format)
+        g.DrawString(audio_Current_Metadata.Title, audio_Title_Font, audio_Title_Brush, New Rectangle(22, line, bounds.Width - 44, 28), audio_Plate_Format) : line += 30
+        If audio_Current_Metadata.Artist <> "" Then g.DrawString(audio_Current_Metadata.Artist, audio_Detail_Font, audio_Detail_Brush, New Rectangle(22, line, bounds.Width - 44, 20), audio_Plate_Format) : line += 20
+        If audio_Current_Metadata.Album <> "" Then g.DrawString(audio_Current_Metadata.Album, audio_Detail_Font, audio_Detail_Brush, New Rectangle(22, line, bounds.Width - 44, 20), audio_Plate_Format) : line += 20
+        g.DrawString(audio_Current_Metadata.FormatLine, audio_Detail_Font, audio_Format_Brush, New Rectangle(22, line, bounds.Width - 44, 20), audio_Plate_Format)
     End Sub
 
     ' The plate's and the visualiser's GDI+ objects, made once and reused (audit 050 D-21).
@@ -186,7 +186,14 @@ Partial Public Class Main_Form
     ' brushes and a StringFormat per paint, a Pen and a GraphicsPath per wave and a brush per
     ' particle per tick: thousands of GDI+ handles a second for as long as an uncovered
     ' track was on screen. Disposed in ClearAudioSurface.
+    '
+    ' Every colour below comes from AudioOverlayColours: this surface is a content overlay declared outside the
+    ' theme (APP-STYLE rule 5), its pair of plate and ink is held at 4.5 : 1 for text and 3 : 1 for strokes by
+    ' AudioOverlayContrastTests, and this file carries no colour literal (the same test reads it).
     Private audio_Plate_Brush As SolidBrush
+    Private audio_Title_Brush As SolidBrush
+    Private audio_Detail_Brush As SolidBrush
+    Private audio_Format_Brush As SolidBrush
     Private audio_Title_Font As Font
     Private audio_Detail_Font As Font
     Private audio_Plate_Format As StringFormat
@@ -194,17 +201,23 @@ Partial Public Class Main_Form
     Private audio_Visualiser_Fill As SolidBrush
 
     Private Sub EnsureAudioPaintObjects()
-        If audio_Plate_Brush Is Nothing Then audio_Plate_Brush = New SolidBrush(Color.FromArgb(175, 0, 0, 0))
+        If audio_Plate_Brush Is Nothing Then audio_Plate_Brush = New SolidBrush(AudioOverlayColours.PlateBacking)
+        If audio_Title_Brush Is Nothing Then audio_Title_Brush = New SolidBrush(AudioOverlayColours.TitleInk)
+        If audio_Detail_Brush Is Nothing Then audio_Detail_Brush = New SolidBrush(AudioOverlayColours.DetailInk)
+        If audio_Format_Brush Is Nothing Then audio_Format_Brush = New SolidBrush(AudioOverlayColours.FormatInk)
         If audio_Title_Font Is Nothing Then audio_Title_Font = New Font("Segoe UI", 15.0F, FontStyle.Bold)
         If audio_Detail_Font Is Nothing Then audio_Detail_Font = New Font("Segoe UI", 10.0F)
         If audio_Plate_Format Is Nothing Then audio_Plate_Format = New StringFormat With {.Trimming = StringTrimming.EllipsisCharacter, .FormatFlags = StringFormatFlags.NoWrap}
         ' Round caps and joins: WAVE-PARTICLES section 3.2 / 4 ("stroke path, round cap").
-        If audio_Visualiser_Pen Is Nothing Then audio_Visualiser_Pen = New Pen(Color.White, 1.0F) With {.StartCap = LineCap.Round, .EndCap = LineCap.Round, .LineJoin = LineJoin.Round}
-        If audio_Visualiser_Fill Is Nothing Then audio_Visualiser_Fill = New SolidBrush(Color.White)
+        If audio_Visualiser_Pen Is Nothing Then audio_Visualiser_Pen = New Pen(AudioOverlayColours.StrokeInk, 1.0F) With {.StartCap = LineCap.Round, .EndCap = LineCap.Round, .LineJoin = LineJoin.Round}
+        If audio_Visualiser_Fill Is Nothing Then audio_Visualiser_Fill = New SolidBrush(AudioOverlayColours.StrokeInk)
     End Sub
 
     Private Sub DisposeAudioPaintObjects()
         If audio_Plate_Brush IsNot Nothing Then audio_Plate_Brush.Dispose() : audio_Plate_Brush = Nothing
+        If audio_Title_Brush IsNot Nothing Then audio_Title_Brush.Dispose() : audio_Title_Brush = Nothing
+        If audio_Detail_Brush IsNot Nothing Then audio_Detail_Brush.Dispose() : audio_Detail_Brush = Nothing
+        If audio_Format_Brush IsNot Nothing Then audio_Format_Brush.Dispose() : audio_Format_Brush = Nothing
         If audio_Title_Font IsNot Nothing Then audio_Title_Font.Dispose() : audio_Title_Font = Nothing
         If audio_Detail_Font IsNot Nothing Then audio_Detail_Font.Dispose() : audio_Detail_Font = Nothing
         If audio_Plate_Format IsNot Nothing Then audio_Plate_Format.Dispose() : audio_Plate_Format = Nothing

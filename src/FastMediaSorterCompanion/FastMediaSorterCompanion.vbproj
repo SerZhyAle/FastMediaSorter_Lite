@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <!--
     Share Manager - Fast Media Sorter & Sharing - the Android Folder Share controller,
@@ -65,6 +65,11 @@
     <EmbeddedResource Include="..\..\LICENSE" LogicalName="LICENSE" />
     <!-- QR rendering for the .fmscfg export (ShareConfigBuilder), same version as the viewer. -->
     <PackageReference Include="QRCoder" Version="1.4.3" />
+    <PackageReference Include="ZXing.Net" Version="0.16.11" />
+    <PackageReference Include="ZXing.Net.Bindings.Windows.Compatibility" Version="0.16.16" />
+    <!-- Spec 227: the linked QrCodeDecoder falls back to ImageSharp for what GDI+ cannot read
+         (a WEBP phone screenshot), the viewer's own managed decoder and version. -->
+    <PackageReference Include="SixLabors.ImageSharp" Version="3.1.12" />
   </ItemGroup>
 
   <ItemGroup>
@@ -114,6 +119,7 @@
     -->
     <Compile Include="..\Support\MailSender.vb" Link="Core\MailSender.vb" />
     <Compile Include="..\CopyDataTransport.vb" Link="Core\CopyDataTransport.vb" />
+    <Compile Include="..\SingleInstanceProtocol.vb" Link="Core\SingleInstanceProtocol.vb" />
     <Compile Include="..\ProbeScheduler.vb" Link="Core\ProbeScheduler.vb" />
     <Compile Include="..\ShareActivationPolicy.vb" Link="Core\ShareActivationPolicy.vb" />
     <Compile Include="..\MonotonicClock.vb" Link="Core\MonotonicClock.vb" />
@@ -178,6 +184,53 @@
     -->
     <Compile Include="..\LiveBroadcast\LiveBroadcastFeatures.vb" Link="LiveBroadcast\LiveBroadcastFeatures.vb" />
     <Compile Include="..\LiveBroadcast\Producer\*.vb" Link="LiveBroadcast\Producer\%(Filename)%(Extension)" />
+  </ItemGroup>
+
+  <!--
+    Ticket 222: scheduled file operations. The engine is the Share Manager's own (Core\Scheduled\); what it
+    shares with the viewer is LINKED, never copied, so a rule is fixed once: the media classifier (the type
+    mask), the pure delete policy and the volume probe (what a deletion will do), the Recycle Bin I/O and its
+    index (the shell call and the check that the bin really took the file), the folder scan, and the
+    "name (2).ext" free-name rule. Each is a whole-file "#If Not NETFRAMEWORK" module with no UI strings; the
+    few that had strings or a viewer-only dependency were split first (DeleteText, SortableContentKinds,
+    RecycleBinIo.Delete).
+  -->
+  <ItemGroup>
+    <Compile Include="..\MediaKind.vb" Link="Core\Scheduled\Linked\MediaKind.vb" />
+    <Compile Include="..\DeletePolicy.vb" Link="Core\Scheduled\Linked\DeletePolicy.vb" />
+    <Compile Include="..\DeleteVolumeProbe.vb" Link="Core\Scheduled\Linked\DeleteVolumeProbe.vb" />
+    <Compile Include="..\RecycleBinIo.vb" Link="Core\Scheduled\Linked\RecycleBinIo.vb" />
+    <Compile Include="..\RecycleBinIndex.vb" Link="Core\Scheduled\Linked\RecycleBinIndex.vb" />
+    <Compile Include="..\FolderScan.vb" Link="Core\Scheduled\Linked\FolderScan.vb" />
+    <Compile Include="..\PathFailure.vb" Link="Core\Scheduled\Linked\PathFailure.vb" />
+    <Compile Include="..\FreeNameRule.vb" Link="Core\Scheduled\Linked\FreeNameRule.vb" />
+    <Compile Include="..\Resources\IFileSystemProvider.vb" Link="Core\Scheduled\Linked\IFileSystemProvider.vb" />
+    <!-- EXPERIMENT (ticket 222 step 4): the provider layer the viewer already has, for registered resources. -->
+    <Compile Include="..\Resources\ResourceRegistry.vb" Link="Core\Scheduled\Linked\Resources\ResourceRegistry.vb" />
+    <Compile Include="..\Resources\ResourceFailure.vb" Link="Core\Scheduled\Linked\Resources\ResourceFailure.vb" />
+    <Compile Include="..\Resources\NetworkChangeTracker.vb" Link="Core\Scheduled\Linked\Resources\NetworkChangeTracker.vb" />
+    <Compile Include="..\Resources\ResourceConnect.vb" Link="Core\Scheduled\Linked\Resources\ResourceConnect.vb" />
+    <Compile Include="..\Resources\EndpointResolver.vb" Link="Core\Scheduled\Linked\Resources\EndpointResolver.vb" />
+    <Compile Include="..\Resources\HostKeyGate.vb" Link="Core\Scheduled\Linked\Resources\HostKeyGate.vb" />
+    <Compile Include="..\Resources\SshFingerprint.vb" Link="Core\Scheduled\Linked\Resources\SshFingerprint.vb" />
+    <Compile Include="..\Resources\SftpProvider.vb" Link="Core\Scheduled\Linked\Resources\SftpProvider.vb" />
+    <Compile Include="..\Resources\SmbProvider.vb" Link="Core\Scheduled\Linked\Resources\SmbProvider.vb" />
+    <Compile Include="..\Resources\SmbConnectionLease.vb" Link="Core\Scheduled\Linked\Resources\SmbConnectionLease.vb" />
+    <Compile Include="..\Resources\ResourcePolicy.vb" Link="Core\Scheduled\Linked\Resources\ResourcePolicy.vb" />
+    <Compile Include="..\Resources\ResourceCommit.vb" Link="Core\Scheduled\Linked\Resources\ResourceCommit.vb" />
+    <PackageReference Include="SSH.NET" Version="2026.0.0" />
+    <Compile Include="..\Resources\LocalProvider.vb" Link="Core\Scheduled\Linked\Resources\LocalProvider.vb" />
+    <Compile Include="..\Resources\FmsConfigReader.vb" Link="Core\Scheduled\Linked\Resources\FmsConfigReader.vb" />
+    <Compile Include="..\Resources\ExchangeTunnel.vb" Link="Core\Scheduled\Linked\Resources\ExchangeTunnel.vb" />
+    <Compile Include="..\Resources\FmsTunnelPaths.vb" Link="Core\Scheduled\Linked\Resources\FmsTunnelPaths.vb" />
+    <Compile Include="..\Resources\ExchangeAttach.vb" Link="Core\Scheduled\Linked\Resources\ExchangeAttach.vb" />
+    <Compile Include="..\Resources\TransferPlan.vb" Link="Core\Scheduled\Linked\Resources\TransferPlan.vb" />
+    <Compile Include="..\Resources\ResourceTransfer.vb" Link="Core\Scheduled\Linked\Resources\ResourceTransfer.vb" />
+    <Compile Include="..\Security\DpapiSecrets.vb" Link="Core\Scheduled\Linked\Resources\DpapiSecrets.vb" />
+    <Compile Include="..\Resources\QrCodeDecoder.vb" Link="Core\QrCodeDecoder.vb" />
+    <Compile Include="..\Resources\PhoneConnectionIntake.vb" Link="Core\PhoneConnectionIntake.vb" />
+    <Compile Include="..\Resources\FmsImportRules.vb" Link="Core\FmsImportRules.vb" />
+    <Compile Include="..\Resources\ResourceImport.vb" Link="Core\ResourceImport.vb" />
   </ItemGroup>
 
 </Project>

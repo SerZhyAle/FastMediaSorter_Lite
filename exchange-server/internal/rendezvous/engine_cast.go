@@ -35,6 +35,10 @@ func castReason(accepted bool, sent string) string {
 // whether the stream goes on.
 func (e *Engine) handleCast(cs *ControlStream, sess *Session, m *wire.Cast) bool {
 	acct, dev := sess.Account, sess.DeviceID
+	if e.cfg.Accounts.IsGuest(acct) { // a guest offers nothing, and so casts nothing (19 item AO)
+		e.cfg.Log.Info("cast-refused", logx.Device(dev), logx.Text("why", "guest"))
+		return cs.Send(wire.Refuse(wire.ReasonNotPermitted)) == nil
+	}
 	if !e.cfg.LoginLimiter.Allow(dev, limits.Cast) {
 		return cs.Send(wire.Refuse(wire.ReasonRateLimited)) == nil
 	}

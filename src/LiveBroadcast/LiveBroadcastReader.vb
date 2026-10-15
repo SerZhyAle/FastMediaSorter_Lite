@@ -359,9 +359,8 @@ Friend Module LiveBroadcastReader
             Dim modeStr As String = modeProp.GetString()
             Dim modeVal As LiveBroadcastMode = ParseMode(modeStr)
 
-            ' Section 3.2: the required top-level mode is judged FIRST. Until it is AUDIO_ONLY the answer is always
-            ' UnsupportedMode - even when an endpoint below would be playable, and before the address is looked at.
-            If modeVal <> LiveBroadcastMode.AudioOnly Then
+            ' Judge the required top-level mode before endpoints and addresses. Ticket 201 adds the HTTP video modes.
+            If modeVal = LiveBroadcastMode.Unknown Then
                 Return LiveBroadcastReadResult.Fail(LiveReadStatus.UnsupportedMode)
             End If
 
@@ -377,6 +376,20 @@ Friend Module LiveBroadcastReader
                 .Mode = modeStr,
                 .ModeValue = modeVal
             }
+
+            Dim auth As JsonElement = Nothing
+            If root.TryGetProperty("auth", auth) Then
+                Dim scheme As JsonElement = Nothing
+                Dim user As JsonElement = Nothing
+                If auth.ValueKind <> JsonValueKind.Object OrElse
+                   Not auth.TryGetProperty("scheme", scheme) OrElse scheme.ValueKind <> JsonValueKind.String OrElse
+                   Not auth.TryGetProperty("user", user) OrElse user.ValueKind <> JsonValueKind.String Then
+                    Return LiveBroadcastReadResult.Fail(LiveReadStatus.InvalidDocument)
+                End If
+                If scheme.GetString() <> "password-v1" Then Return LiveBroadcastReadResult.Fail(LiveReadStatus.UnsupportedMode)
+                descriptor.AuthScheme = scheme.GetString()
+                descriptor.AuthUser = user.GetString()
+            End If
 
             ' title (optional)
             Dim titleProp As JsonElement = Nothing
@@ -439,6 +452,7 @@ Friend Module LiveBroadcastReader
             ' A correct descriptor whose every address is one this build cannot play (an RTSP URL under AUDIO_ONLY):
             ' refused here, by name, so it is never remembered and never half-played (section 3.2).
             If LiveEndpointSelector.SelectEndpoint(descriptor) Is Nothing Then
+                If descriptor.Endpoints.Exists(Function(ep) ep.IsSealed) Then Return LiveBroadcastReadResult.Fail(LiveReadStatus.UnsupportedVersion)
                 Return LiveBroadcastReadResult.Fail(LiveReadStatus.UnsupportedMode)
             End If
 
@@ -473,9 +487,14 @@ Friend Module LiveBroadcastReader
             .ModeValue = modeVal
         }
 
+        Dim extra As JsonElement = Nothing
+        If elem.TryGetProperty("certFingerprint", extra) AndAlso extra.ValueKind = JsonValueKind.String Then ep.CertFingerprint = extra.GetString()
+        If elem.TryGetProperty("inner", extra) AndAlso extra.ValueKind = JsonValueKind.String Then ep.Inner = extra.GetString()
+        ep.IsSealed = elem.TryGetProperty("seal", extra)
+
         Dim transProp As JsonElement = Nothing
         If elem.TryGetProperty("transport", transProp) AndAlso transProp.ValueKind = JsonValueKind.String Then
-            ep.Transport = transProp.GetString()
+            ep.Transport = transProp.GetString().ToUpperInvariant()
         End If
 
         Dim vCodecProp As JsonElement = Nothing

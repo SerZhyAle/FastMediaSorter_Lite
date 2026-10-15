@@ -123,7 +123,16 @@ Public Class ExchangeVectorReplayTests
                 seen.Add(doc.RootElement.GetProperty("type").GetString())
             End Using
         Next
+        ' Dated allow-list (2026-10-15, spec 230): the eight clipboard types are written ahead of the generator. The Go
+        ' vector generator (ticket 205, exchange-server/cmd/exchange-vectors) emits their frames with the server slot of
+        ' spec 229; until then the round trip of every one is held by ExchangeWireTests (every type of the table) and by
+        ' ExchangeClipboardTests (the exact member order on a scripted server). Removing a name here is the check that
+        ' the corpus caught up - the second loop below already refuses a vector whose type the table lacks.
+        Dim pendingVectors As String() = {
+            "clipboard-put", "clipboard-ready", "clipboard-stored", "clipboard-info",
+            "clipboard-state", "clipboard-get", "clipboard-value", "clipboard-empty"}
         For Each typeName As String In ExchangeEnvelopeTable.Types()
+            If Array.IndexOf(pendingVectors, typeName) >= 0 AndAlso Not seen.Contains(typeName) Then Continue For
             Assert.True(seen.Contains(typeName), "no vector for type " & typeName)
         Next
         For Each typeName As String In seen

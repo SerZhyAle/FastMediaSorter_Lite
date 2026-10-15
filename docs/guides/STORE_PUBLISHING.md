@@ -180,13 +180,15 @@ email (1-3 business days).
 > **Bulk-import CSV:** [publishing/store/listingData.csv](../../publishing/store/listingData.csv) is Partner
 > Center's own "Import listing data" CSV format (`Field,ID,Type,default,en-us,ru`), kept in the repo so
 > each release can update it in place instead of rebuilding it from scratch. It carries the same copy as
-> the templates below - Description, ReleaseNotes ("What's new"), ShortDescription, Feature1-15,
+> the templates below - Description, ReleaseNotes ("What's new"), ShortDescription, Feature1-20,
 > SearchTerm1-7 - plus every screenshot/logo asset URL and blank field from the last export, untouched.
-> At release time: update Description/ReleaseNotes/features in this doc first, then mirror the exact
-> same text into the CSV's `en-us`/`ru` columns for the same `Field` rows (respect the file's own CSV
-> quoting - double any literal `"` inside a quoted cell, keep embedded line breaks as bare `\n` inside the
-> quotes). Re-export from Partner Center after any manual edit there and diff before overwriting this
-> file, so asset URLs never go stale. Import it in Partner Center via the submission's listing page →
+> At release time: update Description/ReleaseNotes/features in this doc first (and the search terms in
+> `tools/site-facts.json`), then run `Build-ListingData.ps1` - never mirror the text into the CSV by hand.
+> The file's shape is WINDOWS-STORE rule 8: UTF-8 **without** a BOM, **CRLF as the only line break - inside a
+> quoted cell as much as between records** - and no trailing newline; an embedded quote is doubled. A bare LF
+> inside a cell is refused by Partner Center, and the builder writes none. Re-export from Partner Center after
+> any manual edit there and diff before overwriting this file, so asset URLs never go stale. Import it in
+> Partner Center via the submission's listing page →
 > "Import listing data".
 
 > **Status (2026-09-01): submitted.** The owner uploaded
@@ -265,6 +267,8 @@ ordinary MP4 that replaces it, with a seek bar, a pause and full colour. And a m
 of its own: the album cover it carries, or a wave-and-particle animation when it has none, with the
 title, artist, album and format along the bottom, an end-of-track action and a sleep timer.
 
+In the 64-bit viewer, right-click a video or audio file or its folder and choose Broadcast. Share Manager exports a .spres file, QR code or quick link for import in StreamsPlayer. A folder is one playlist channel with a frozen list; Refresh replaces that list and Revoke stops its link. The HTTP gateway has its own switch, off by default. Each token grants read-only access to one broadcast and normally expires after 24 hours. HTTP is unencrypted: share the document privately and keep internet access off unless you need it.
+
 Share folders with your phone: the bundled Share Manager turns this PC
 into a private SFTP server for folders you pick, so the Android app can browse them -
 on your home Wi-Fi or over the internet - after a one-time QR pairing. Sharing is strictly opt-in and
@@ -319,6 +323,8 @@ Internet Explorer больше нет, и теперь с полноценной
 паузой и полным цветом. А у музыкального файла появился свой экран: обложка альбома, если она есть, а
 если нет - анимация из волн и частиц, с названием, исполнителем, альбомом и форматом внизу, действием
 в конце дорожки и таймером сна.
+
+В 64-битном просмотрщике нажмите правой кнопкой на видео, аудиофайл или его папку и выберите трансляцию. Менеджер общего доступа выдаёт файл .spres, QR-код или быструю ссылку для импорта в StreamsPlayer. Папка становится одним каналом с зафиксированным списком: обновление заменяет список, отзыв отключает ссылку. HTTP-шлюз имеет отдельный переключатель и по умолчанию выключен. Токен даёт доступ только для чтения одной трансляции, обычно на 24 часа. HTTP не шифруется: передавайте документ лично и включайте интернет-доступ только при необходимости.
 
 Раздавайте папки на телефон: входящая в комплект программа Share Manager превращает этот
 ПК в частный SFTP-сервер для выбранных вами папок, чтобы Android-приложение
@@ -397,11 +403,13 @@ Del использует Корзину там, где она есть, и че�
 > **The blocks on this page are the source; the CSV is generated from them.** After editing any of
 > Description / Product features / What's new above, run
 > `pwsh -NoProfile -File .\publishing\store\Build-ListingData.ps1` - it rewrites only the
-> `Description`, `ReleaseNotes` and `Feature1..20` cells of
-> [publishing/store/listingData.csv](../../publishing/store/listingData.csv) (both `en-us` and `ru`),
-> carries every other cell through unchanged, and refuses to write if the copy breaks a Partner
-> Center limit (1500 for What's new, 10000 for Description, 20 features of 200 chars). `-Check`
-> verifies the committed CSV still matches and exits 1 if not. Import it in Partner Center via the
+> `Description`, `ReleaseNotes`, `Feature1..20` and `SearchTerm1..7` cells of
+> [publishing/store/listingData.csv](../../publishing/store/listingData.csv) (both `en-us` and `ru`;
+> the search terms come from `tools/site-facts.json`), carries every other cell through unchanged, and
+> refuses to write if the copy breaks a Partner Center limit (1500 for What's new, 10000 for Description, 20
+> features of 200 chars, 7 search terms; each counted after the line breaks become CRLF, as Partner Center
+> counts them). `-Check` verifies the committed CSV is byte for byte what the builder writes and exits 1 if
+> not. Import it in Partner Center via the
 > submission's listing page -> "Import listing data". **After editing anything by hand in Partner
 > Center, re-export and diff before overwriting the file** - it also holds screenshot and logo asset
 > URLs that only a real export can produce.
@@ -409,7 +417,9 @@ Del использует Корзину там, где она есть, и че�
 ### What's new in this version (Store "release notes" field) - submitted 2026-09-01 (26.7.14.1801 -> 26.9.1.1550)
 
 > This is the text that went into the submission's **"What's new in this version"** box - **capped at
-> 1500 characters** (measured: EN 1485, RU 1493). EN is the primary; RU is the RU listing's copy. Keep
+> 1500 characters** counted after the line breaks become CRLF, as Partner Center counts them (measured
+> 2026-10-13: EN 1496, RU 1479; the RU block was 1504 and lost the end of its second bullet to fit). EN is the
+> primary; RU is the RU listing's copy. Keep
 > it short: the Store shows only the first lines on the product page, so the biggest, most visible
 > changes come first.
 >
@@ -438,7 +448,7 @@ Del использует Корзину там, где она есть, и че�
 **RU**
 ```
 - Пересобрано как современная 64-битная программа со своей средой выполнения: ничего доустанавливать не нужно, .NET Framework не требуется. Настройки сохраняются.
-- HEIC, HEIF, AVIF и анимированные WEBP открываются везде без дополнительных кодеков, а медленные форматы теперь открываются повторно мгновенно.
+- HEIC, HEIF, AVIF и анимированные WEBP открываются везде без дополнительных кодеков, а повторно открываются мгновенно.
 - Del отправляет файл в Корзину там, где она есть, и честно предупреждает, когда её нет; U отменяет последние 50 операций, включая переименования.
 - ZIP или CBZ открывается как папка: комикс или папку сканов можно листать, масштабировать и переводить, ничего не распаковывая заранее.
 - Новое: разметка и кадрирование картинки в отдельном окне - поверх оригинала или рядом, в одном из шести форматов.
@@ -474,6 +484,7 @@ its core features depend on:
   share port, protected by a per-install password; a "LAN only" switch keeps it off the internet, and
   the number of simultaneous connections is user-limited (default 10). Idle connections are closed after
   a few hours.
+- Optional file broadcasts: a separately enabled HTTP listener in the same companion serves one read-only resource per expiring token; HTTP is unencrypted, and the existing program firewall rule covers it.
 - Optional OCR/translation: may call a user-configured translation endpoint (e.g. a local Ollama
   instance); OCR runs locally with bundled Tesseract data.
 No user data is collected; no telemetry. Open source: https://github.com/SerZhyAle/FastMediaSorter_Lite
@@ -506,6 +517,7 @@ What it accesses and why:
   itself on the local network (mDNS) so a paired phone can find it again. Local-only connection counters
   are not telemetry and never leave the PC. In this Store package the firewall rule comes from the package
   manifest, and no Windows service is ever registered.
+- Broadcasts for StreamsPlayer: a separate, explicitly enabled HTTP listener in the same worker. It serves one file or a frozen folder playlist per read-only token; links expire or can be revoked. HTTP is unencrypted, including the token. Exported .spres documents and QR codes are secrets. Its own port mapping and external probe follow the network policy and disclose the public address and port to the same services described above. Counters stay on this PC; no author service receives media or tokens. The existing program firewall rule covers both listeners.
 - Always-on sharing (GitHub and winget builds only, never this package): a Windows service, only if you
   ask for it and approve an administrator prompt; it runs as LOCAL SERVICE with access only to the folders
   you share, and "Remove the server role" or uninstalling takes it away. Nothing collected changes.

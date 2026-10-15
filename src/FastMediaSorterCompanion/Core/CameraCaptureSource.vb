@@ -39,6 +39,7 @@ Friend NotInheritable Class CameraCaptureSource
     Private _displayName As String = "camera"
     Private _width As Integer
     Private _height As Integer
+    Private _framesPerSecond As Integer = 25
     Private _sink As Action(Of LiveVideoFrame)
     Private _stop As Boolean
     Private _pacing As Thread
@@ -77,7 +78,7 @@ Friend NotInheritable Class CameraCaptureSource
 
     Public ReadOnly Property FramesPerSecond As Integer Implements ILiveVideoSource.FramesPerSecond
         Get
-            Return 25
+            Return _framesPerSecond
         End Get
     End Property
 
@@ -168,6 +169,7 @@ Friend NotInheritable Class CameraCaptureSource
                 Await source.SetFormatAsync(format)
             End If
 
+            _framesPerSecond = Math.Max(1, Math.Min(30, picked.FramesPerSecond))
             _width = picked.Width
             _height = picked.Height
             _fixedBuffer = New Byte(_width * _height * 4 - 1) {}
@@ -285,7 +287,7 @@ Friend NotInheritable Class CameraCaptureSource
     ''' <summary>Pushes the fixed buffer at the frame rate the encoder was told, whether or not the
     ''' camera delivered a new frame (a camera that stops delivering keeps a frozen picture).</summary>
     Private Sub PaceFrames()
-        Dim frameMs As Long = 40
+        Dim frameMs As Long = Math.Max(1, 1000L \ _framesPerSecond)
         Dim nextTick As Long = MonotonicClock.NowMs()
         While Not _stop
             Dim buffer As Byte() = Nothing

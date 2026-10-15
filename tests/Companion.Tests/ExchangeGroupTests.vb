@@ -1,4 +1,4 @@
-﻿Option Strict On
+Option Strict On
 
 Imports System.Collections.Generic
 Imports System.Drawing
@@ -198,7 +198,8 @@ Public Class ExchangeGroupTests
                                      Using form As New Share_Settings_Form()
                                          Assert.Null(SectionField(form, "_secExchange"))
                                          Dim keys As String() = Sections(form).Select(Function(s) s.Key).ToArray()
-                                         Assert.Equal({"startup", "network", "hosting", "help"}, keys)
+                                         ' the CLIENT page is there on every install since ticket 223 T-3; the administration page is not
+                                         Assert.Equal({"startup", "network", "hosting", "scheduled", "exchange-account", "help"}, keys)
                                          Assert.Equal(keys, SettingsSections(form).Select(Function(s) s.Key).ToArray())
                                          Assert.DoesNotContain("exchange", keys)
                                      End Using
@@ -211,7 +212,7 @@ Public Class ExchangeGroupTests
         ExchangeTestSupport.OnUi(Sub()
                                      Using form As New Share_Settings_Form()
                                          Dim keys As String() = Sections(form).Select(Function(s) s.Key).ToArray()
-                                         Assert.Equal({"startup", "network", "hosting", "exchange", "help"}, keys)
+                                         Assert.Equal({"startup", "network", "hosting", "exchange", "scheduled", "exchange-account", "help"}, keys)
                                          ' The persisted expansion / anchor list is the same list.
                                          Assert.Equal(keys, SettingsSections(form).Select(Function(s) s.Key).ToArray())
                                          Dim exchange As CollapsibleSection = SectionField(form, "_secExchange")
@@ -321,7 +322,7 @@ Public Class ExchangeGroupTests
                                    "Share_Settings_Form.UiContext.vb", "Share_Settings_Form.Navigation.vb", "Share_Settings_Form.Contract.vb", "Share_Settings_Form.Discovery.vb", "TrayContext.vb"}
         ' ticket 168: the administration files are part of the group
         allowed = allowed.Concat({"ExchangeAdmin.vb", "ExchangeAdminModel.vb", "ExchangeAdminText.vb", "ExchangeServerWizard.vb", "Exchange_Account_Admin_Form.vb",
-                                  "Exchange_Server_Wizard_Form.vb", "Share_Settings_Form.ExchangeAdmin.vb",
+                                  "Exchange_Server_Wizard_Form.vb", "Share_Settings_Form.ExchangeAdmin.vb", "Share_Settings_Form.ExchangeHost.vb",
                                   "Server_Welcome_Form.vb", "MainWindow.Welcome.vb", "Server_Welcome_Form.ExchangeFirstRun.vb",
                                   "ExchangeFirstRunModel.vb", "ServerWelcomeModel.vb", "ExchangeFirstRunActions.vb"}).ToArray()   ' gated onboarding reuses the existing exchange acts
         ' ticket 187 T-2: the operator's connection string is built by the server binary, shown in its own window beside the fingerprint

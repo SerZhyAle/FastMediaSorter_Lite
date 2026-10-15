@@ -196,6 +196,51 @@ Public Class ChromeAutoHideTests
         Assert.True(ChromeAutoHide.PanelPinned(state, "recipients_Overlay"))
     End Sub
 
+    ' --- a window with no media holds its panels (125 UX-313m) -------------------------------
+
+    <Fact>
+    Public Sub An_empty_window_holds_its_panels_only_after_the_hand_over_delay()
+        Dim since As Long = -1L
+        Dim delay As Integer = ChromeMetrics.EmptyWindowHoldDelayMilliseconds
+        ' The first tick of an empty window starts the clock and holds nothing yet.
+        Assert.False(ChromeAutoHide.HoldsForEmptyWindow(False, 1000, since))
+        Assert.Equal(1000L, since)
+        Assert.False(ChromeAutoHide.HoldsForEmptyWindow(False, 1000 + delay - 1, since))
+        Assert.True(ChromeAutoHide.HoldsForEmptyWindow(False, 1000 + delay, since))
+        ' ... and keeps holding for as long as the window stays empty.
+        Assert.True(ChromeAutoHide.HoldsForEmptyWindow(False, 900000, since))
+        Assert.Equal(1000L, since)
+    End Sub
+
+    <Fact>
+    Public Sub Media_on_screen_releases_the_hold_and_the_next_empty_spell_starts_a_fresh_clock()
+        Dim since As Long = 5000L
+        Assert.False(ChromeAutoHide.HoldsForEmptyWindow(True, 9000, since))
+        Assert.Equal(-1L, since)
+        ' A picture hands over to a video: a gap shorter than the delay never raises the panels.
+        Assert.False(ChromeAutoHide.HoldsForEmptyWindow(False, 20000, since))
+        Assert.False(ChromeAutoHide.HoldsForEmptyWindow(False, 20000 + ChromeMetrics.EmptyWindowHoldDelayMilliseconds \ 2, since))
+        Assert.False(ChromeAutoHide.HoldsForEmptyWindow(True, 20000 + ChromeMetrics.EmptyWindowHoldDelayMilliseconds \ 2 + 50, since))
+        ' Emptied again later: the countdown is from the NEW start, not from the first one.
+        Assert.False(ChromeAutoHide.HoldsForEmptyWindow(False, 40000, since))
+        Assert.False(ChromeAutoHide.HoldsForEmptyWindow(False, 40000 + ChromeMetrics.EmptyWindowHoldDelayMilliseconds - 1, since))
+        Assert.True(ChromeAutoHide.HoldsForEmptyWindow(False, 40000 + ChromeMetrics.EmptyWindowHoldDelayMilliseconds, since))
+    End Sub
+
+    <Fact>
+    Public Sub The_empty_window_hold_is_a_hold_not_a_pin_and_ends_with_the_countdown_once_media_appears()
+        Dim state As New TickState With {.Wanted = False, .LastActivity = 0}
+        ' Held: the panels come up in an active window, with nothing else asking for them ...
+        Assert.True(Step_(state, 2000, pinned:=False, over:=False, hold:=True, hotZone:=False, active:=True))
+        ' ... and a window that is not in use drops them, like every other hold.
+        Assert.False(Step_(state, 2100, pinned:=False, over:=False, hold:=True, hotZone:=False, active:=False))
+        ' Media arrives: the hold ends at the tick it appears, and the ordinary five seconds run from there.
+        state.Wanted = True
+        state.LastActivity = 3000
+        Assert.True(Step_(state, 3000 + ChromeMetrics.PanelHideDelayMilliseconds - 1, pinned:=False, over:=False, hold:=False, hotZone:=False, active:=True))
+        Assert.False(Step_(state, 3000 + ChromeMetrics.PanelHideDelayMilliseconds, pinned:=False, over:=False, hold:=False, hotZone:=False, active:=True))
+    End Sub
+
     ' --- the popup menu's dismissal on an activation change (ChromeMenu.PreFilterMessage) ----
 
     ''' <summary>The window set at the moment the popup opens: argument order is openForeground,

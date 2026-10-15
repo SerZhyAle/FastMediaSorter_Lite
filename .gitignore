@@ -30,8 +30,9 @@ payload/filedo/*
 src/My Project/VersionInfo.vb
 
 # Claude Code internal state
-.claude/
-
+.claude/*
+!.claude/rules/
+!.claude/agents/
 # Locally downloaded build tools
 tools/nuget.exe
 tools/ocr-cache/

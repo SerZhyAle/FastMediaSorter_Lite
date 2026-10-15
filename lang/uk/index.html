@@ -61,6 +61,7 @@
 <header class="site-header">
   <nav class="site-nav" aria-label="Основна навігація">
   <a class="brand" href="https://serzhyale.github.io/FastMediaSorter_Lite/lang/uk/" aria-label="Fast Media Sorter &amp; Sharing for Windows">Fast Media Sorter &amp; Sharing for Windows</a>
+  <a class="nav-doc" href="https://serzhyale.github.io/FastMediaSorter_Lite/topics.html">Документація</a>
   <details class="lang-menu">
     <summary>Українська</summary>
     <div class="lang-pop">
@@ -86,14 +87,15 @@
 
 <main class="container" id="main" tabindex="-1">
   <section class="hero">
-    <div class="hero-id">
-      <img class="app-icon" src="../../assets/icons/store-icon-256.png" alt="" width="168" height="168">
-      <div class="hero-copy">
-        <span class="eyebrow">Windows desktop app</span>
-        <h1>Fast Media Sorter &amp; Sharing for Windows</h1>
-        <span class="kicker">Free &amp; open-source</span>
+    <div class="identity">
+      <img class="product-icon" src="../../assets/icons/store-icon-256.png" alt="" width="104" height="104">
+      <div>
+        <p class="product-name">Fast Media Sorter &amp; Sharing for Windows</p>
+        <p class="kicker" lang="en" dir="ltr">Windows desktop app</p>
+        <p class="kicker" lang="en" dir="ltr">Free &amp; open-source</p>
       </div>
     </div>
+    <h1>Сортуйте фото та відео одним натисканням клавіші на файл</h1>
     <p class="lead lead-narrow">Переглядайте й сортуйте медіа; коли знадобиться, ця сама програма - ще й сервер роздачі тек і хост віртуальних дисків FileDO: кожна з цих ролей необов'язкова й вимкнена, доки ви її не ввімкнете.</p>
     <p class="lead lead-narrow">Швидко гортайте великі теки з фото та відео і розкладайте файли по каталогах одним натисканням клавіші.</p>
     <p class="lead lead-narrow">«Sharing» у назві - це передача ваших медіафайлів комусь іншому: телефону з Android, іншій копії програми або будь-якому SFTP-клієнту. Доки ви не ввімкнете, вона вимкнена. <a href="https://serzhyale.github.io/FastMediaSorter_Lite/publish-folders-android.html" lang="en" dir="ltr">Share folders to Android over SFTP</a></p>
@@ -119,7 +121,7 @@
       <span class="pill">Роздача на Android</span>
       <h3>Хочу теки з ПК на телефоні</h3>
       <p>Віддайте теки цього ПК телефону по SFTP: встановіть повний пакет із позначеним сервером роздачі тек і один раз прив'яжіть телефон за QR-кодом - або поставте серверну редакцію на машину, що має роздавати, коли ніхто не ввійшов у систему. Переглядач теж усередині, у серверній редакції він необов'язковий.</p>
-      <div class="scenario-foot"><a class="btn btn-ghost btn-sm" href="https://serzhyale.github.io/FastMediaSorter_Lite/server.html">Роздача на Android (англійською)</a></div>
+      <div class="scenario-foot"><a class="btn btn-ghost btn-sm" href="https://serzhyale.github.io/FastMediaSorter_Lite/server.html">Роздача на Android</a></div>
     </article>
     <article class="card scenario-card" id="door-3">
       <span class="pill gold">У планах</span>
@@ -171,13 +173,13 @@
         <a class="btn btn-ghost" id="dl-zip" href="https://github.com/SerZhyAle/FastMediaSorter_Lite/releases/latest">Portable (.zip)</a>
         <a class="btn btn-ghost btn-sm" href="https://github.com/SerZhyAle/FastMediaSorter_Lite/releases/latest">All releases</a>
         <a class="btn btn-ghost btn-sm" href="https://apps.microsoft.com/detail/9N59Z73WZ53C" target="_blank" rel="noopener"><span>Microsoft Store</span></a>
+        <a class="btn btn-ghost btn-sm" href="https://serzhyale.github.io/FastMediaSorter_Lite/server.html">Серверна редакція: роздача без входу в систему</a>
         <span class="dl-meta" id="dlMeta">Offline-ready bundles - VLC runtimes and OCR packs included. Windows 10 1607+ / 11; a 32-bit build for Windows 7/8.1 is in the same download.</span>
       </div>
       <p class="dl-meta">Усередині повного пакета, усе необов'язкове й вимкнене, доки ви не ввімкнете: сервер роздачі тек (Менеджер спільного доступу та SFTP-воркер), хост віртуальних дисків FileDO, відео-кодеки й моделі OCR для роботи без інтернету. Виберіть тип «Компактна», щоб сервер не ставився.</p>
       <p class="dl-meta">
         <a href="https://serzhyale.github.io/FastMediaSorter_Lite/lang/uk/trust.html">Чому Windows попереджає про це завантаження</a>
       </p>
-      <p><a href="https://serzhyale.github.io/FastMediaSorter_Lite/server.html">Серверна редакція: роздача без входу в систему (англійською)</a></p>
     </div>
   </section>
 
@@ -225,6 +227,10 @@
       <article class="card">
         <h3>Роздача папок через SFTP</h3>
         <p>Опублікуйте вибрані теки через SFTP і відкрийте їх у застосунку для Android - або в будь-якому SFTP-клієнті. Вимкнено, доки не увімкнете.</p>
+      </article>
+      <article class="card">
+        <h3>Трансляції для StreamsPlayer</h3>
+        <p>У 64-бітному переглядачі натисніть правою кнопкою на відео, аудіофайл або його теку й виберіть трансляцію. Менеджер спільного доступу видає файл .spres, QR-код або швидке посилання для імпорту в StreamsPlayer. Тека стає одним каналом із зафіксованим списком: оновлення замінює список, відкликання вимикає посилання. HTTP-шлюз має окремий перемикач і типово вимкнений. Токен надає доступ лише для читання однієї трансляції, зазвичай на 24 години. HTTP не шифрується: передавайте документ особисто й вмикайте інтернет-доступ лише за потреби.</p>
       </article>
       <article class="card">
         <h3>Скасування і справжній Кошик</h3>

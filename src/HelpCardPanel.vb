@@ -30,6 +30,8 @@ Friend NotInheritable Class HelpCardPanel
         GroupHeader
         KeyText
         DescText
+        ''' <summary>The muted line under a description that says what the key works on (UX-114 of 123).</summary>
+        ScopeText
         Footer
     End Enum
 
@@ -261,11 +263,24 @@ Friend NotInheritable Class HelpCardPanel
                 Dim descText As String = WrapLongWords(Localization.T(row.Description), bodyFont, descWidth)
                 Dim keysSize As Size = TextRenderer.MeasureText(keysText, keyFont, New Size(keyWidth, 0), KeyFlags(rtl, technical))
                 Dim descSize As Size = TextRenderer.MeasureText(descText, bodyFont, New Size(descWidth, 0), Flags(rtl))
-                Dim rowHeight As Integer = Math.Max(keysSize.Height, descSize.Height)
+                ' A key that works on one kind of media says so under its description (UX-114 of 123); the
+                ' mark is part of the row, so the key column keeps its place beside the whole of it.
+                Dim markText As String = String.Empty
+                Dim markHeight As Integer = 0
+                Dim markKey As String = HelpCardRows.ScopeMark(row.Scope)
+                If markKey.Length > 0 Then
+                    markText = WrapLongWords(Localization.T(markKey), bodyFont, descWidth)
+                    markHeight = TextRenderer.MeasureText(markText, bodyFont, New Size(descWidth, 0), Flags(rtl)).Height
+                End If
+                Dim rowHeight As Integer = Math.Max(keysSize.Height, descSize.Height + markHeight)
                 items.Add(New DrawItem With {.Kind = ItemKind.KeyText, .Text = keysText, .Muted = unassigned, .TechnicalKeys = technical,
                                              .Bounds = New Rectangle(keyLeft, y, keyWidth, rowHeight)})
                 items.Add(New DrawItem With {.Kind = ItemKind.DescText, .Text = descText,
-                                             .Bounds = New Rectangle(descLeft, y, descWidth, rowHeight)})
+                                             .Bounds = New Rectangle(descLeft, y, descWidth, descSize.Height)})
+                If markHeight > 0 Then
+                    items.Add(New DrawItem With {.Kind = ItemKind.ScopeText, .Text = markText, .Muted = True,
+                                                 .Bounds = New Rectangle(descLeft, y + descSize.Height, descWidth, markHeight)})
+                End If
                 y += rowHeight + Px(4)
             Next
         Next
@@ -352,7 +367,7 @@ Friend NotInheritable Class HelpCardPanel
                 Case ItemKind.KeyText
                     font = keyFont
                     If item.Muted Then ink = palette.TextMuted
-                Case ItemKind.Footer
+                Case ItemKind.Footer, ItemKind.ScopeText
                     ink = palette.TextMuted
             End Select
             Dim textFlags As TextFormatFlags = If(item.Kind = ItemKind.KeyText, KeyFlags(rtl, item.TechnicalKeys), Flags(rtl))

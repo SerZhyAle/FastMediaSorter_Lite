@@ -23,14 +23,21 @@ Friend NotInheritable Class ExchangeProducerEntry
     Public ReadOnly ResourceId As String
     ''' <summary>The outsider capability, or "" when no link exists.</summary>
     Public ReadOnly ShareId As String
+    ''' <summary>The link password, or "" when none (spec 228 rule 5).</summary>
+    Public ReadOnly LinkPassword As String
 
-    Public Sub New(resourceId As String, shareId As String)
+    Public Sub New(resourceId As String, shareId As String, Optional linkPassword As String = "")
         Me.ResourceId = resourceId
         Me.ShareId = If(shareId, "")
+        Me.LinkPassword = If(linkPassword, "")
     End Sub
 
     Public Function WithShareId(newShareId As String) As ExchangeProducerEntry
-        Return New ExchangeProducerEntry(ResourceId, newShareId)
+        Return New ExchangeProducerEntry(ResourceId, newShareId, LinkPassword)
+    End Function
+
+    Public Function WithLink(newShareId As String, newPassword As String) As ExchangeProducerEntry
+        Return New ExchangeProducerEntry(ResourceId, newShareId, newPassword)
     End Function
 
     Public Overrides Function ToString() As String
@@ -179,7 +186,10 @@ Friend NotInheritable Class ExchangeProducerStore
                         If Not p.Value.TryGetProperty("resourceId", rid) OrElse rid.ValueKind <> JsonValueKind.String OrElse Not ExchangeIds.IsValidId(rid.GetString()) Then Continue For
                         Dim shareId As String = ""
                         If p.Value.TryGetProperty("shareId", sid) AndAlso sid.ValueKind = JsonValueKind.String AndAlso ExchangeIds.IsValidId(sid.GetString()) Then shareId = sid.GetString()
-                        entries(p.Name) = New ExchangeProducerEntry(rid.GetString(), shareId)
+                        Dim pw As JsonElement = Nothing
+                        Dim linkPassword As String = ""
+                        If p.Value.TryGetProperty("linkPassword", pw) AndAlso pw.ValueKind = JsonValueKind.String Then linkPassword = pw.GetString()
+                        entries(p.Name) = New ExchangeProducerEntry(rid.GetString(), shareId, linkPassword)
                     Next
                 End If
                 Dim carrierName As String = ""
@@ -215,6 +225,7 @@ Friend NotInheritable Class ExchangeProducerStore
             Dim o As New JsonObject()
             o("resourceId") = pair.Value.ResourceId
             If pair.Value.ShareId.Length > 0 Then o("shareId") = pair.Value.ShareId
+            If pair.Value.LinkPassword.Length > 0 Then o("linkPassword") = pair.Value.LinkPassword
             shares(pair.Key) = o
         Next
         root("shares") = shares

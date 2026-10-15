@@ -103,6 +103,42 @@ Friend NotInheritable Class ExchangeConsumerEnrollRequest
 
 End Class
 
+''' <summary>What the user gave to REGISTER (226 rule 1): the invitation code of the string (or the shared invitation
+''' password the operator handed out), the chosen login and the password typed twice by the person (the field's twin is
+''' the window's business). The code and the password are cleared as soon as the frame is built, whatever happens - and
+''' the code is never stored after use (rule 6).</summary>
+Friend NotInheritable Class ExchangeConsumerRegisterRequest
+
+    ''' <summary>host:port.</summary>
+    Public Property Server As String = ""
+    Public Property Login As String = ""
+    Public Property Password As String = ""
+    ''' <summary>The one-time code the invitation string carried; "" when the person typed the shared password instead.</summary>
+    Public Property InvitationCode As String = ""
+    ''' <summary>The shared invitation password the operator set; "" when a one-time code is used.</summary>
+    Public Property SharedPassword As String = ""
+    ''' <summary>The fingerprint to trust without a prompt: the string's `fp`, or the one the user accepted. "" = none.</summary>
+    Public Property TrustedFingerprint As String = ""
+    ''' <summary>The probe found the certificate validated by the platform: no pin is made.</summary>
+    Public Property PlatformValid As Boolean
+    ''' <summary>The server's display name (the string's `n`), a hint.</summary>
+    Public Property ServerName As String = ""
+    ''' <summary>"" = "&lt;machine&gt; (viewer)".</summary>
+    Public Property DeviceName As String = ""
+
+    ''' <summary>Overwrites the secrets.</summary>
+    Public Sub Wipe()
+        Password = ""
+        InvitationCode = ""
+        SharedPassword = ""
+    End Sub
+
+    Public Overrides Function ToString() As String
+        Return "ExchangeConsumerRegisterRequest"
+    End Function
+
+End Class
+
 Friend NotInheritable Class ExchangeConsumer
 
     Private Sub New()
@@ -128,6 +164,95 @@ Friend NotInheritable Class ExchangeConsumer
         Return ExchangeDeviceDescription.Clip(machine & " " & ports.DeviceNameSuffix, 64)
     End Function
 
+    ''' <summary>REGISTER by invitation (226 rule 1): TLS under the invitation string's trust, `register` with the code (or
+    ''' the shared password), the chosen login and the password, and the answer `enrolled` stores the SAME entry a sign-in
+    ''' stores - same shape, same token store, same pin decision. The request's secrets are wiped whatever happens, and
+    ''' the invitation code is left behind nowhere (it crossed the wire once).</summary>
+    Public Shared Async Function RegisterAsync(request As ExchangeConsumerRegisterRequest, ports As ExchangeConsumerPorts, ct As CancellationToken) As Task(Of ExchangeConsumerEnrollResult)
+        Try
+            Dim address As ExchangeServerAddress = Nothing
+            Dim login As String = request.Login.Trim()
+            Dim hasCode As Boolean = request.InvitationCode.Trim().Length > 0
+            Dim hasShared As Boolean = request.SharedPassword.Length > 0
+            If Not ExchangeServerAddress.TryParse(request.Server, address) OrElse login.Length = 0 OrElse
+               request.Password.Length = 0 OrElse hasCode = hasShared Then
+                Return New ExchangeConsumerEnrollResult(ExchangeConsumerEnrollOutcome.BadInput, ExchangeRefusal.Unknown, "", Nothing)
+            End If
+            Dim pin As String = If(request.PlatformValid, "", request.TrustedFingerprint)
+            If Not request.PlatformValid AndAlso Not ExchangeTrust.IsFingerprint(pin) Then
+                Return New ExchangeConsumerEnrollResult(ExchangeConsumerEnrollOutcome.Untrusted, ExchangeRefusal.Unknown, "", Nothing)
+            End If
+
+            ' a failed registration leaves nothing behind: the entry is stored only after `enrolled`
+            Dim deviceName As String = If(request.DeviceName.Trim().Length > 0, ExchangeDeviceDescription.Clip(request.DeviceName, 64), DefaultDeviceName(ports))
+            Dim entry As ExchangeEntry = ports.Entries.Propose(address.ToString(), login, ExchangeDeviceDescription.Clip(request.ServerName, 64), deviceName)
+            Dim platformValid As Boolean = request.PlatformValid
+            Dim password As String = request.Password
+            Dim invitation As String = request.InvitationCode.Trim()
+            Dim sharedPw As String = request.SharedPassword
+            request.Wipe()
+            Dim outcome As ExchangeConsumerEnrollResult = Nothing
+            For attempt As Integer = 0 To 1
+                outcome = Await TryRegisterOnceAsync(password, invitation, sharedPw, ports, address, pin, platformValid, entry, ct).ConfigureAwait(False)
+                ' a device id already known in another account of the deployment: one fresh id, once (the same item G as a sign-in's)
+                If outcome.Outcome = ExchangeConsumerEnrollOutcome.Refused AndAlso outcome.Refusal = ExchangeRefusal.IdCollision AndAlso attempt = 0 Then
+                    entry = New ExchangeEntry(entry.Id, entry.Server, entry.Login, entry.Pin, entry.Certificate, ExchangeIds.NewId(), entry.DeviceName, entry.Name, entry.AutoAttach, entry.Seen, entry.KeyPin)
+                    Continue For
+                End If
+                Exit For
+            Next
+            Return outcome
+        Finally
+            request.Wipe()
+        End Try
+    End Function
+
+    Private Shared Async Function TryRegisterOnceAsync(password As String, invitation As String, sharedPw As String, ports As ExchangeConsumerPorts,
+                                                       address As ExchangeServerAddress, pin As String, platformValid As Boolean, entry As ExchangeEntry, ct As CancellationToken) As Task(Of ExchangeConsumerEnrollResult)
+        Dim description As New ExchangeDeviceDescription(entry.DeviceId, entry.DeviceName, ExchangeWire.ProductWindows,
+            ExchangeDeviceDescription.Clip(ports.ProductVersion, 64), ExchangeDeviceDescription.PlatformText(),
+            New List(Of String) From {ExchangeWire.RoleResourceConsumer}, "")
+        Dim register As ExchangeEnvelope = ExchangeMessages.Register(invitation, sharedPw, entry.Login, password, description, ExchangeWire.ProposedKeepaliveSeconds)
+        Dim opened As ExchangeOpenResult
+        Try
+            ' the answer of `register` is `enrolled`, the same frame a sign-in answers with (224 rule 6)
+            opened = Await ExchangeSessions.EnrollAsync(ports.Transport, address, pin, register, ct).ConfigureAwait(False)
+        Finally
+            ' the frame's buffer was overwritten in the writer; the envelope's copies go too
+            register.SetText("password", "").SetText("invitationCode", "").SetText("sharedPassword", "")
+        End Try
+        Select Case opened.Outcome
+            Case ExchangeOpenOutcome.Connected
+                ' the completion path is a sign-in's own: a registered entry is stored in the same shape (226 rule 1)
+                Dim shim As New ExchangeConsumerEnrollRequest With {.PlatformValid = platformValid, .TrustedFingerprint = pin}
+                Return Await CompleteAsync(opened, ports, address, shim, pin, entry).ConfigureAwait(False)
+            Case Else
+                Return OpenFailure(opened)
+        End Select
+    End Function
+
+    ''' <summary>The open outcome of a registration attempt, in the sign-in's own vocabulary (a refusal, a pin mismatch,
+    ''' a failed handshake - the same answers the dialog maps to the common sentences of 232).</summary>
+    Private Shared Function OpenFailure(opened As ExchangeOpenResult) As ExchangeConsumerEnrollResult
+        Select Case opened.Outcome
+            Case ExchangeOpenOutcome.Refused
+                Return New ExchangeConsumerEnrollResult(ExchangeConsumerEnrollOutcome.Refused, opened.Refusal, opened.Fingerprint, Nothing)
+            Case ExchangeOpenOutcome.PinMismatch
+                Return New ExchangeConsumerEnrollResult(ExchangeConsumerEnrollOutcome.PinMismatch, ExchangeRefusal.Unknown, opened.Fingerprint, Nothing)
+            Case ExchangeOpenOutcome.Untrusted
+                Return New ExchangeConsumerEnrollResult(ExchangeConsumerEnrollOutcome.Untrusted, ExchangeRefusal.Unknown, opened.Fingerprint, Nothing)
+            Case ExchangeOpenOutcome.TlsFailed
+                Return New ExchangeConsumerEnrollResult(ExchangeConsumerEnrollOutcome.TlsFailed, ExchangeRefusal.Unknown, opened.Fingerprint, Nothing)
+            Case ExchangeOpenOutcome.Network
+                Return New ExchangeConsumerEnrollResult(ExchangeConsumerEnrollOutcome.Network, ExchangeRefusal.Unknown, opened.Fingerprint, Nothing)
+            Case ExchangeOpenOutcome.TimedOut
+                Return New ExchangeConsumerEnrollResult(ExchangeConsumerEnrollOutcome.TimedOut, ExchangeRefusal.Unknown, opened.Fingerprint, Nothing)
+            Case ExchangeOpenOutcome.Cancelled
+                Return New ExchangeConsumerEnrollResult(ExchangeConsumerEnrollOutcome.Cancelled, ExchangeRefusal.Unknown, opened.Fingerprint, Nothing)
+            Case Else
+                Return New ExchangeConsumerEnrollResult(ExchangeConsumerEnrollOutcome.Protocol, ExchangeRefusal.Unknown, opened.Fingerprint, Nothing)
+        End Select
+    End Function
     ''' <summary>The quick join, steps 2-4. The request's password is wiped whatever happens.</summary>
     Public Shared Async Function EnrollAsync(request As ExchangeConsumerEnrollRequest, ports As ExchangeConsumerPorts, ct As CancellationToken) As Task(Of ExchangeConsumerEnrollResult)
         Try
@@ -152,7 +277,7 @@ Friend NotInheritable Class ExchangeConsumer
                 outcome = Await TryEnrollOnceAsync(password, request, ports, address, pin, entry, ct).ConfigureAwait(False)
                 ' item G: a device id that is enrolled in another account of the deployment - one fresh id, once (a second is shown)
                 If outcome.Outcome = ExchangeConsumerEnrollOutcome.Refused AndAlso outcome.Refusal = ExchangeRefusal.IdCollision AndAlso attempt = 0 Then
-                    entry = New ExchangeEntry(entry.Id, entry.Server, entry.Login, entry.Pin, entry.Certificate, ExchangeIds.NewId(), entry.DeviceName, entry.Name, entry.AutoAttach, entry.Seen)
+                    entry = New ExchangeEntry(entry.Id, entry.Server, entry.Login, entry.Pin, entry.Certificate, ExchangeIds.NewId(), entry.DeviceName, entry.Name, entry.AutoAttach, entry.Seen, entry.KeyPin)
                     Continue For
                 End If
                 Exit For
@@ -209,7 +334,7 @@ Friend NotInheritable Class ExchangeConsumer
             End If
             Dim kind As ExchangeCertificateKind = If(request.PlatformValid, ExchangeCertificateKind.CaSigned, ExchangeCertificateKind.Pinned)
             Dim stored As New ExchangeEntry(entry.Id, entry.Server, entry.Login, pin, kind, entry.DeviceId, entry.DeviceName,
-                                            entry.Name, entry.AutoAttach, entry.Seen)
+                                            entry.Name, entry.AutoAttach, entry.Seen, If(request.PlatformValid, "", opened.KeyPin))
             ' the token first, the entry last: a stored entry without its token is a worse state than a token without an entry
             Dim existing As ExchangeEntry = ports.Entries.Find(entry.Id)
             If existing Is Nothing AndAlso ports.Entries.Count() >= ExchangeEntryStore.MaxEntries Then

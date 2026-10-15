@@ -375,15 +375,20 @@ Public Class FmsEntrySurfaceTests
             Dim relative As String = path.Substring(srcRoot.Length + 1).Replace("\", "/")
             Dim code As String = CodeOf(path)
             If relative <> "ResourceImportFlow.vb" AndAlso code.Contains("ResourceImportFlow.Run(") Then callers.Add(relative)
-            ' A surface obtains its read only from the flow's ReadFile or the reader's ReadText/ReadBytes.
             If code.Contains("FmsConfigReadResult") AndAlso relative <> "Resources/FmsConfigReader.vb" AndAlso relative <> "ResourceImportFlow.vb" AndAlso
                relative <> "Resources/FmsConfigExport.vb" AndAlso relative <> "Resource_List_Panel.vb" AndAlso relative <> "Resources/ResourceMessages.vb" AndAlso
-               relative <> "Resources/FmsTunnelPaths.vb" Then      ' 171 C1: the pasted-code reader is the reader's second front end (it makes the plan the flow then previews)
+               relative <> "Resources/FmsTunnelPaths.vb" AndAlso relative <> "Resources/PhoneConnectionIntake.vb" AndAlso
+               relative <> "Resources/Resource_Phone_Code_Form.vb" AndAlso
+               relative <> "Main_Form.ResourceOpen.vb" AndAlso
+               relative <> "FastMediaSorterCompanion/Forms/Phone_Code_Intake_Form.vb" Then      ' 171 C1: the pasted-code reader; 227: the phone intake door, and the dropped-file door's shared import tail
                 Assert.Fail(relative & " handles a read result but is not a known entry surface; route it through ResourceImportFlow and add it here on purpose")
             End If
         Next
         ' The three surfaces of today: the open dialog and the clipboard (the resource list), and a dropped/launched file.
         Assert.Equal({"Main_Form.ResourceOpen.vb", "Resource_List_Panel.vb"}, callers.OrderBy(Function(c) c, StringComparer.Ordinal).ToArray())
+        ' The phone-receive window prevalidates pasted text; its caller still owns the one import flow.
+        Assert.Contains("PhoneConnectionIntake.ReadText(qr.Text)", CodeOf(System.IO.Path.Combine(srcRoot, "Resources", "Resource_Phone_Code_Form.vb")))
+        Assert.Contains("ImportAndRefresh(PhoneConnectionIntake.ReadText(form.ReceivedCode))", CodeOf(System.IO.Path.Combine(srcRoot, "Resource_List_Panel.vb")))
 
         Dim flow As String = CodeOf(System.IO.Path.Combine(srcRoot, "ResourceImportFlow.vb"))
         Dim run As Integer = flow.IndexOf("Shared Function Run(", StringComparison.Ordinal)

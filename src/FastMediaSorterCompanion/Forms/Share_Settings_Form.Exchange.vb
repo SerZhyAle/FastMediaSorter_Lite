@@ -1,4 +1,4 @@
-﻿Option Strict On
+Option Strict On
 
 Imports System.Drawing
 Imports System.Threading.Tasks
@@ -84,6 +84,9 @@ Partial Public NotInheritable Class Share_Settings_Form
     Private Function AllSections() As CollapsibleSection()
         Dim list As New List(Of CollapsibleSection) From {_secStartup, _secNetwork, _secHosting}
         If _secExchange IsNot Nothing Then list.Add(_secExchange)
+        ' Scheduled file operations (ticket 222): a page of every Share Manager, after hosting and the exchange server
+        ' and before Help - it is not behind the exchange component or the Share opt-in.
+        If _secScheduled IsNot Nothing Then list.Add(_secScheduled)
         list.Add(_secHelp)
         Return list.ToArray()
     End Function

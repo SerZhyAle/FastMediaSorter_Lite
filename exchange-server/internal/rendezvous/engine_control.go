@@ -7,6 +7,7 @@ import (
 	"fms/exchange-server/internal/directory"
 	"fms/exchange-server/internal/limits"
 	"fms/exchange-server/internal/logx"
+	"fms/exchange-server/internal/password"
 	"fms/exchange-server/internal/wire"
 )
 
@@ -67,12 +68,21 @@ func (e *Engine) handle(cs *ControlStream, sess *Session, env wire.Envelope) boo
 	case *wire.Bye:
 		return false
 	case *wire.List:
+		if e.cfg.Accounts.IsGuest(acct) {
+			// a guest lists its own devices and what was given to it, nothing else (19 item AO)
+			rev, ds, rs, bs := e.cfg.Dir.GuestSnapshot(acct)
+			return cs.Send(&wire.Directory{Revision: rev, Devices: ds, Resources: rs, Broadcasts: bs}) == nil
+		}
 		rev, ds, rs, bs := e.cfg.Dir.SnapshotFor(acct, dev)
 		return cs.Send(&wire.Directory{Revision: rev, Devices: ds, Resources: rs, Broadcasts: bs}) == nil
 	case *wire.Subscribe:
 		e.cfg.Dir.Subscribe(acct, dev, cs)
 		return true
 	case *wire.Publish:
+		if e.cfg.Accounts.IsGuest(acct) {
+			e.cfg.Log.Info("publish-refused", logx.Device(dev), logx.Text("why", "guest"))
+			return cs.Send(wire.Refuse(wire.ReasonNotPermitted)) == nil
+		}
 		res, err := e.cfg.Dir.Publish(acct, dev, m.Resource)
 		if err != nil {
 			e.cfg.Log.Info("publish-refused", logx.Device(dev), logx.Text("why", publishWhy(err)))
@@ -88,6 +98,10 @@ func (e *Engine) handle(cs *ControlStream, sess *Session, env wire.Envelope) boo
 		e.cfg.Dir.Unpublish(acct, dev, m.ResourceID)
 		return true
 	case *wire.BroadcastStart:
+		if e.cfg.Accounts.IsGuest(acct) {
+			e.cfg.Log.Info("broadcast-refused", logx.Device(dev), logx.Text("why", "guest"))
+			return cs.Send(wire.Refuse(wire.ReasonNotPermitted)) == nil
+		}
 		if !e.cfg.LoginLimiter.Allow(dev, limits.BroadcastStart) {
 			return cs.Send(wire.Refuse(wire.ReasonRateLimited)) == nil
 		}
@@ -128,6 +142,10 @@ func (e *Engine) handle(cs *ControlStream, sess *Session, env wire.Envelope) boo
 			e.cfg.Log.Error("revoke-failed", logx.Device(dev), logx.Text("error", err.Error()))
 		}
 		return true
+	case *wire.PasswordChange:
+		return e.handlePasswordChange(cs, sess, m)
+	case *wire.AccountDelete:
+		return e.handleAccountDelete(cs, sess, m)
 	case *wire.Cast:
 		return e.handleCast(cs, sess, m)
 	case *wire.CastAnswer:
@@ -136,8 +154,93 @@ func (e *Engine) handle(cs *ControlStream, sess *Session, env wire.Envelope) boo
 	case *wire.CastStop:
 		e.handleCastStop(sess, m)
 		return true
+	case *wire.ClipboardInfo:
+		// 22 item BY: the one value, or no value when the clipboard is empty; a guest is answered
+		// an empty state (it holds no slot and announces nothing)
+		var st *wire.ClipboardState
+		if !e.cfg.Accounts.IsGuest(acct) {
+			if v := e.clip.Get(acct); v != nil {
+				body := clipboardBody(v)
+				st = &wire.ClipboardState{Value: &body}
+			}
+		}
+		if st == nil {
+			st = &wire.ClipboardState{}
+		}
+		return cs.Send(st) == nil
 	}
 	return false // a known envelope that is invalid on a control stream closes it
+}
+
+// handlePasswordChange is `password-change` (19 item AT): the person's own change, with the old password.
+// The old password is a password check, so it is paced like one (item AW) and runs inside the bound. On
+// success the calling device receives a fresh token and stays signed in; every other device of the
+// account is signed out - its streams close, its record stays and its next `hello` is `signed-out` - and
+// the pairing codes are burned.
+func (e *Engine) handlePasswordChange(cs *ControlStream, sess *Session, m *wire.PasswordChange) bool {
+	acct, dev := sess.Account, sess.DeviceID
+	refuse := func(r wire.Reason, why string) bool {
+		e.cfg.Log.Info("password-change-refused", logx.Device(dev), logx.Login(acct), logx.Text("reason", string(r)), logx.Text("why", why))
+		return cs.Send(wire.Refuse(r)) == nil
+	}
+	if !e.cfg.Accounts.Pacer().Wait(acct, cs.Addr()) {
+		return refuse(wire.ReasonRateLimited, "paced")
+	}
+	verified, err := e.cfg.Verifier.Run(func() bool { return e.cfg.Accounts.VerifyPassword(acct, m.OldPassword) })
+	switch {
+	case err != nil: // our own busy state is not the person's failure
+		return refuse(wire.ReasonCapacity, "busy")
+	case !verified:
+		return refuse(wire.ReasonBadCredentials, "old-password")
+	}
+	if err := password.Check(m.NewPassword); err != nil {
+		return refuse(wire.ReasonPasswordPolicy, "policy")
+	}
+	rec, err := e.hashBounded(m.NewPassword)
+	switch {
+	case errors.Is(err, limits.ErrBusy):
+		return refuse(wire.ReasonCapacity, "busy")
+	case err != nil:
+		return refuse(wire.ReasonPasswordPolicy, "policy")
+	}
+	token, signedOut, err := e.cfg.Accounts.ChangePassword(acct, rec, dev)
+	if err != nil {
+		e.cfg.Log.Error("password-change-failed", logx.Device(dev), logx.Login(acct), logx.Text("error", err.Error()))
+		return refuse(wire.ReasonUnavailable, "store")
+	}
+	for _, id := range signedOut {
+		e.cfg.Dir.SignOutDevice(acct, id)
+	}
+	e.cfg.Log.Info("password-changed", logx.Device(dev), logx.Login(acct), logx.Int("signedOut", len(signedOut)))
+	return cs.Send(&wire.PasswordChanged{DeviceToken: token}) == nil
+}
+
+// handleAccountDelete is `account-delete` (19 item AU): a person ends their own account. The password is
+// a password check like any other (paced, bounded). The answer is written and flushed BEFORE the removal,
+// because the removal closes every stream of the account, this one included; then the account goes
+// through the one path of the operator's removal, so the two erase the same set.
+func (e *Engine) handleAccountDelete(cs *ControlStream, sess *Session, m *wire.AccountDelete) bool {
+	acct, dev := sess.Account, sess.DeviceID
+	refuse := func(r wire.Reason) bool {
+		e.cfg.Log.Info("account-delete-refused", logx.Device(dev), logx.Login(acct), logx.Text("reason", string(r)))
+		return cs.Send(wire.Refuse(r)) == nil
+	}
+	if !e.cfg.Accounts.Pacer().Wait(acct, cs.Addr()) {
+		return refuse(wire.ReasonRateLimited)
+	}
+	verified, err := e.cfg.Verifier.Run(func() bool { return e.cfg.Accounts.VerifyPassword(acct, m.Password) })
+	switch {
+	case err != nil:
+		return refuse(wire.ReasonCapacity)
+	case !verified:
+		return refuse(wire.ReasonBadCredentials)
+	}
+	_ = cs.SendSync(&wire.AccountDeleted{})
+	if err := e.ops.RemoveAccount(acct); err != nil {
+		e.cfg.Log.Error("account-delete-failed", logx.Device(dev), logx.Login(acct), logx.Text("error", err.Error()))
+	}
+	e.cfg.Log.Info("account-deleted", logx.Device(dev), logx.Login(acct))
+	return false
 }
 
 // publishWhy is a short, secret-free word for a refused publish, for the log.
@@ -147,6 +250,8 @@ func publishWhy(err error) string {
 		return "protection-unsupported"
 	case errors.Is(err, directory.ErrIDCollision):
 		return "id-collision"
+	case errors.Is(err, directory.ErrLimit):
+		return "limit"
 	case errors.Is(err, directory.ErrCapacity), errors.Is(err, wire.ErrRecordSize):
 		return "capacity"
 	case errors.Is(err, directory.ErrPortUnavail):

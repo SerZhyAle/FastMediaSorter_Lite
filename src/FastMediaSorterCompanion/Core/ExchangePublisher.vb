@@ -1,4 +1,4 @@
-﻿Option Strict On
+Option Strict On
 
 Imports System.Linq
 Imports System.Net.Sockets
@@ -580,14 +580,14 @@ Friend NotInheritable Class ExchangePublisher
     ' --- outsider links (rule 8) -------------------------------------------------------------------------------------------
 
     ''' <summary>Creates the outsider link of a share: a share id of 16 random bytes, published with the record. Nothing is created by
-    ''' publishing alone.</summary>
-    Public Function CreateLinkAsync(name As String, ct As CancellationToken) As Task(Of ExchangeLinkResult)
-        Return ChangeLinkAsync(name, rotate:=False, remove:=False, ct)
+    ''' publishing alone. Spec 228 rule 4/5: supports link with a password.</summary>
+    Public Function CreateLinkAsync(name As String, ct As CancellationToken, Optional password As String = "") As Task(Of ExchangeLinkResult)
+        Return ChangeLinkAsync(name, rotate:=False, remove:=False, ct, password)
     End Function
 
     ''' <summary>"New link": rotates the id - the only revocation the capability model has. Every earlier QR and file stops working.</summary>
-    Public Function RotateLinkAsync(name As String, ct As CancellationToken) As Task(Of ExchangeLinkResult)
-        Return ChangeLinkAsync(name, rotate:=True, remove:=False, ct)
+    Public Function RotateLinkAsync(name As String, ct As CancellationToken, Optional newPassword As String = "") As Task(Of ExchangeLinkResult)
+        Return ChangeLinkAsync(name, rotate:=True, remove:=False, ct, newPassword)
     End Function
 
     ''' <summary>"Remove link": the share id is deleted and the record is published without it.</summary>
@@ -595,7 +595,7 @@ Friend NotInheritable Class ExchangePublisher
         Return ChangeLinkAsync(name, rotate:=False, remove:=True, ct)
     End Function
 
-    Private Async Function ChangeLinkAsync(name As String, rotate As Boolean, remove As Boolean, ct As CancellationToken) As Task(Of ExchangeLinkResult)
+    Private Async Function ChangeLinkAsync(name As String, rotate As Boolean, remove As Boolean, ct As CancellationToken, Optional password As String = "") As Task(Of ExchangeLinkResult)
         Dim session As ExchangeControlSession
         SyncLock _gate
             session = _session
@@ -617,9 +617,11 @@ Friend NotInheritable Class ExchangePublisher
         If entry Is Nothing Then Return New ExchangeLinkResult(ExchangeLinkOutcome.NotPublished, ExchangeRefusal.Unknown)
         If remove Then
             If entry.ShareId.Length = 0 Then Return New ExchangeLinkResult(ExchangeLinkOutcome.Done, ExchangeRefusal.Unknown)
-            entry = entry.WithShareId("")
-        ElseIf entry.ShareId.Length = 0 OrElse rotate Then
-            entry = entry.WithShareId(ExchangeIds.NewId())
+            entry = entry.WithLink("", "")
+        ElseIf entry.ShareId.Length = 0 OrElse rotate OrElse Not String.IsNullOrEmpty(password) Then
+            Dim newId As String = If(entry.ShareId.Length > 0 AndAlso Not rotate, entry.ShareId, ExchangeIds.NewId())
+            Dim pw As String = If(Not String.IsNullOrEmpty(password), password, entry.LinkPassword)
+            entry = entry.WithLink(newId, pw)
         Else
             Return New ExchangeLinkResult(ExchangeLinkOutcome.Done, ExchangeRefusal.Unknown)   ' already there
         End If
@@ -784,3 +786,46 @@ Friend NotInheritable Class ExchangePublisher
     End Sub
 
 End Class
+
+''' <summary>
+''' Spec 228 rule 5: Enforces password verification and 1 check/sec rate limiting for link access.
+''' </summary>
+Friend NotInheritable Class LinkPasswordValidator
+    Private Shared ReadOnly _attempts As New Dictionary(Of String, Long)(StringComparer.Ordinal)
+    Private Shared ReadOnly _gate As New Object()
+
+    Friend Shared Function VerifyPassword(shareId As String, candidate As String, expected As String, Optional clockNowMs As Long = -1) As Boolean
+        If String.IsNullOrEmpty(expected) Then Return True
+        Dim now As Long = If(clockNowMs >= 0, clockNowMs, MonotonicClock.NowMs())
+        SyncLock _gate
+            Dim lastMs As Long = 0
+            If _attempts.TryGetValue(shareId, lastMs) Then
+                If (now - lastMs) < 1000 Then
+                    ' Rate limit: at most one check per second
+                    Return False
+                End If
+            End If
+
+            If String.IsNullOrEmpty(candidate) Then
+                _attempts(shareId) = now
+                Return False
+            End If
+
+            Dim candBytes As Byte() = Encoding.UTF8.GetBytes(candidate)
+            Dim expBytes As Byte() = Encoding.UTF8.GetBytes(expected)
+            Dim matched As Boolean = CryptographicOperations.FixedTimeEquals(candBytes, expBytes)
+            If Not matched Then
+                _attempts(shareId) = now
+                Return False
+            End If
+            Return True
+        End SyncLock
+    End Function
+
+    Friend Shared Sub ResetForTesting()
+        SyncLock _gate
+            _attempts.Clear()
+        End SyncLock
+    End Sub
+End Class
+

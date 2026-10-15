@@ -58,6 +58,8 @@ Friend NotInheritable Class LiveBroadcastStore
     ''' </summary>
     Public Sub Upsert(descriptor As LiveBroadcastDescriptor)
         If descriptor Is Nothing OrElse String.IsNullOrWhiteSpace(descriptor.Url) Then Return
+        ' Ticket 234 owns encrypted-channel persistence. Never rewrite a sealed channel as a clear one.
+        If descriptor.Endpoints.Exists(Function(ep) ep.IsSealed) Then Return
 
         Dim list As List(Of LiveBroadcastDescriptor) = LoadAll()
 
@@ -91,6 +93,8 @@ Friend NotInheritable Class LiveBroadcastStore
     ''' </summary>
     Public Sub SaveAll(entries As IEnumerable(Of LiveBroadcastDescriptor))
         If entries Is Nothing Then Return
+        Dim snapshot As New List(Of LiveBroadcastDescriptor)(entries)
+        If snapshot.Exists(Function(d) d.Endpoints.Exists(Function(ep) ep.IsSealed)) Then Return
 
         Try
             Dim dir As String = Path.GetDirectoryName(storeFilePath)
@@ -102,7 +106,7 @@ Friend NotInheritable Class LiveBroadcastStore
             Using fs As New FileStream(tempFile, FileMode.Create, FileAccess.Write, FileShare.None)
                 Using writer As New Utf8JsonWriter(fs, New JsonWriterOptions With {.Indented = True})
                     writer.WriteStartArray()
-                    For Each d As LiveBroadcastDescriptor In entries
+                    For Each d As LiveBroadcastDescriptor In snapshot
                         WriteDescriptor(writer, d)
                     Next
                     writer.WriteEndArray()
@@ -124,6 +128,12 @@ Friend NotInheritable Class LiveBroadcastStore
         writer.WriteNumber("schemaVersion", d.SchemaVersion)
         writer.WriteString("url", d.Url)
         writer.WriteString("mode", d.Mode)
+        If d.AuthScheme.Length > 0 Then
+            writer.WriteStartObject("auth")
+            writer.WriteString("scheme", d.AuthScheme)
+            writer.WriteString("user", d.AuthUser)
+            writer.WriteEndObject()
+        End If
 
         If Not String.IsNullOrEmpty(d.Title) Then
             writer.WriteString("title", d.Title)
@@ -148,6 +158,8 @@ Friend NotInheritable Class LiveBroadcastStore
                 writer.WriteString("url", ep.Url)
                 writer.WriteString("mode", ep.Mode)
                 If Not String.IsNullOrEmpty(ep.Transport) Then writer.WriteString("transport", ep.Transport)
+                If Not String.IsNullOrEmpty(ep.CertFingerprint) Then writer.WriteString("certFingerprint", ep.CertFingerprint)
+                If Not String.IsNullOrEmpty(ep.Inner) Then writer.WriteString("inner", ep.Inner)
                 If Not String.IsNullOrEmpty(ep.VideoCodec) Then writer.WriteString("videoCodec", ep.VideoCodec)
                 If Not String.IsNullOrEmpty(ep.AudioCodec) Then writer.WriteString("audioCodec", ep.AudioCodec)
                 If ep.SampleRate.HasValue Then writer.WriteNumber("sampleRate", ep.SampleRate.Value)

@@ -106,6 +106,7 @@ if (-not $WorkerRepo) { $WorkerRepo = Join-Path (Split-Path $root -Parent) 'fms_
 $plan = @('viewer', 'share-manager', $(if ($SkipGo) { 'worker-go (skipped)' } else { 'worker-go' }),
           $(if ($SkipExchangeGo) { 'exchange-go (skipped)' } else { 'exchange-go' }),
           $(if ($SkipExchangeGo) { 'exchange-conformance (skipped)' } else { 'exchange-conformance' }),
+          'feature-gates-fixture',
           'placement', 'documentation', 'naming', 'site', 'site-addresses', 'site-origins', 'site-positioning')
 if ($Integration) { $plan += 'share-identity', 'share-helper-logic', 'worker-ipc' }
 if ($OcrScenes)   { $plan += 'ocr-scenes' }
@@ -310,6 +311,8 @@ if ($SkipExchangeGo) {
 }
 
 # --- 4: the placement registry against its runners ----------------------------
+Invoke-ScriptSuite 'feature-gates-fixture' 'Feature gate fixtures (206)' (Join-Path $root 'tools\Test-FeatureGatesFixture.ps1')
+
 Invoke-ScriptSuite 'placement' 'Check placement' (Join-Path $root 'tools\Test-CheckPlacement.ps1')
 
 Invoke-ScriptSuite 'documentation' 'Documentation registry' (Join-Path $root 'tools\Test-DocRegistry.ps1')

@@ -68,6 +68,7 @@ End Class
 ''' <summary>A one-line text question (rename, a file number, an address): the typed text is checked while the
 ''' dialog is still up, so a refused answer keeps what was typed and says why beside the field.</summary>
 Friend NotInheritable Class PromptSpec
+    Friend Property IsPassword As Boolean
     Friend ReadOnly Title As String
     Friend ReadOnly Body As String
     Friend ReadOnly InitialText As String

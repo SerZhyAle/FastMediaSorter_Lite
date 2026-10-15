@@ -16,17 +16,20 @@ import (
 // id. The single server password of the superseded design is gone from it (ticket 162): what the
 // server needs to serve is at least one account.
 type inspectReport struct {
-	DataDir        string `json:"dataDir"`
-	ConfigPresent  bool   `json:"configPresent"`
-	Accounts       int    `json:"accounts"`
-	Devices        int    `json:"devices"`
-	CertPresent    bool   `json:"certPresent"`
-	CertImported   bool   `json:"certImported"` // exchange.json names a certificate and key to serve instead of the generated identity
-	Fingerprint    string `json:"fingerprint"`
-	Listen         string `json:"listen"`
-	PortRange      string `json:"portRange"`
-	PublicEndpoint string `json:"publicEndpoint"`
-	Error          string `json:"error,omitempty"`
+	DataDir          string `json:"dataDir"`
+	ConfigPresent    bool   `json:"configPresent"`
+	Accounts         int    `json:"accounts"`
+	Devices          int    `json:"devices"`
+	CertPresent      bool   `json:"certPresent"`
+	CertImported     bool   `json:"certImported"` // exchange.json names a certificate and key to serve instead of the generated identity
+	Fingerprint      string `json:"fingerprint"`
+	Listen           string `json:"listen"`
+	PortRange        string `json:"portRange"`
+	PublicEndpoint   string `json:"publicEndpoint"`
+	Error            string `json:"error,omitempty"`
+	KeepAwake        bool   `json:"keepAwake"`
+	LogRetentionDays int    `json:"logRetentionDays"`
+	MaxAccounts      int    `json:"maxAccounts"`
 }
 
 // runInspect prints the report as JSON, even on failure, and creates nothing - except with --init,
@@ -57,6 +60,7 @@ func runInspect(cmd command, stdout, stderr io.Writer) int {
 		rep.ConfigPresent = true
 	}
 	rep.Listen, rep.PortRange, rep.PublicEndpoint = cfg.Listen, cfg.PortRange, cfg.PublicEndpoint
+	rep.KeepAwake, rep.LogRetentionDays, rep.MaxAccounts = cfg.KeepAwake, cfg.Log.RetentionDays, cfg.Limits.MaxAccounts
 	if a, d, err := accounts.Peek(paths.Dir); err != nil {
 		fail(exitConfig, err)
 	} else {

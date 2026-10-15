@@ -66,6 +66,7 @@ func TestEveryRefusal(t *testing.T) {
 		"range zero":              func(c *Config) { c.PortRange = "0-10" },
 		"keepalive min > default": func(c *Config) { c.Keepalive.MinSeconds = 60 },
 		"keepalive window zero":   func(c *Config) { c.Keepalive.WindowMultiplier = 0 },
+		"max accounts zero":       func(c *Config) { c.Limits.MaxAccounts = 0 },
 		"cap zero":                func(c *Config) { c.Limits.DevicesPerAccount = 0 },
 		"tunnel cap zero":         func(c *Config) { c.Limits.TunnelsPerResource = 0 },
 		"loopback endpoint":       func(c *Config) { c.PublicEndpoint = "127.0.0.1:22022" },
@@ -245,7 +246,7 @@ func TestTheNewLimitNamesReplaceTheOldOnes(t *testing.T) {
 			t.Errorf("the superseded member %q is still written", gone)
 		}
 	}
-	for _, want := range []string{"tunnelsPerResource", "failedAuthRate", "failedEnrollRate", "failedHelloRate", "pairingRequestRate",
+	for _, want := range []string{"maxAccounts", "tunnelsPerResource", "failedAuthRate", "failedEnrollRate", "failedHelloRate", "pairingRequestRate",
 		"broadcastStartRate", "devicesPerAccount", "resourcesPerAccount", "publicEndpoint", "manageSids"} {
 		if !strings.Contains(s, want) {
 			t.Errorf("the member %q is missing from the defaults", want)

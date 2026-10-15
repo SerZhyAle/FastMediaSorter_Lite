@@ -67,9 +67,10 @@ Friend NotInheritable Class ExchangeOpenResult
     Public ReadOnly Refusal As ExchangeRefusal
     ''' <summary>The certificate fingerprint seen, when the handshake got that far.</summary>
     Public ReadOnly Fingerprint As String
+    Public ReadOnly KeyPin As String
 
     Public Sub New(outcome As ExchangeOpenOutcome, stream As Stream, reader As ExchangeFrameReader, writer As ExchangeFrameWriter,
-                   welcome As ExchangeEnvelope, refusal As ExchangeRefusal, fingerprint As String)
+                   welcome As ExchangeEnvelope, refusal As ExchangeRefusal, fingerprint As String, Optional keyPin As String = "")
         Me.Outcome = outcome
         Me.Stream = stream
         Me.Reader = reader
@@ -77,6 +78,7 @@ Friend NotInheritable Class ExchangeOpenResult
         Me.Welcome = welcome
         Me.Refusal = refusal
         Me.Fingerprint = If(fingerprint, "")
+        Me.KeyPin = If(keyPin, "")
     End Sub
 
     Public Shared Function Failed(outcome As ExchangeOpenOutcome, Optional refusal As ExchangeRefusal = ExchangeRefusal.Unknown, Optional fingerprint As String = "") As ExchangeOpenResult
@@ -149,7 +151,7 @@ Friend NotInheritable Class ExchangeSessions
             reader.MarkAuthenticated()
             writer.MarkAuthenticated()
             ok = True
-            Return New ExchangeOpenResult(ExchangeOpenOutcome.Connected, conn.Stream, reader, writer, reply, ExchangeRefusal.Unknown, conn.Fingerprint)
+            Return New ExchangeOpenResult(ExchangeOpenOutcome.Connected, conn.Stream, reader, writer, reply, ExchangeRefusal.Unknown, conn.Fingerprint, conn.KeyPin)
         Catch ex As OperationCanceledException
             Return ExchangeOpenResult.Failed(If(ct.IsCancellationRequested, ExchangeOpenOutcome.Cancelled, ExchangeOpenOutcome.TimedOut), fingerprint:=conn.Fingerprint)
         Catch ex As EndOfStreamException
@@ -225,6 +227,19 @@ Friend NotInheritable Class ExchangeEnvelopeTypes
     Public Const BroadcastStarted As String = "broadcast-started"
     Public Const BroadcastUpdate As String = "broadcast-update"
     Public Const BroadcastEnd As String = "broadcast-end"
+    Public Const Register As String = "register"
+    Public Const PasswordChange As String = "password-change"
+    Public Const PasswordChanged As String = "password-changed"
+    Public Const AccountDelete As String = "account-delete"
+    Public Const AccountDeleted As String = "account-deleted"
+    Public Const ClipboardPut As String = "clipboard-put"
+    Public Const ClipboardReady As String = "clipboard-ready"
+    Public Const ClipboardStored As String = "clipboard-stored"
+    Public Const ClipboardInfo As String = "clipboard-info"
+    Public Const ClipboardState As String = "clipboard-state"
+    Public Const ClipboardGet As String = "clipboard-get"
+    Public Const ClipboardValue As String = "clipboard-value"
+    Public Const ClipboardEmpty As String = "clipboard-empty"
 
 End Class
 
@@ -259,6 +274,30 @@ Friend NotInheritable Class ExchangeMessages
         Return New ExchangeEnvelope(typeName)
     End Function
 
+    ''' <summary>A `register` (ticket 224 rule 6, the client half 226): the one-time invitation CODE or the shared invitation
+    ''' password (exactly one of them), the chosen login and password, and the first device's members - the account and the
+    ''' device in one exchange. The answer is `enrolled`, exactly as a sign-in's. The code and the password are secret
+    ''' holders: they live in the caller's field and in this one frame.</summary>
+    Public Shared Function Register(invitationCode As String, sharedPassword As String, login As String, password As String,
+                                    description As ExchangeDeviceDescription, keepaliveSeconds As Integer) As ExchangeEnvelope
+        Dim env As ExchangeEnvelope = New ExchangeEnvelope(ExchangeEnvelopeTypes.Register).
+            SetText("invitationCode", invitationCode).SetText("sharedPassword", sharedPassword).
+            SetText("login", login).SetText("password", password).
+            SetText("deviceId", description.DeviceId).SetText("deviceName", description.DeviceName).
+            SetText("product", description.Product).SetText("productVersion", description.ProductVersion).
+            SetText("platform", description.Platform).SetTextList("roles", description.Roles).
+            SetNumber("keepaliveSeconds", keepaliveSeconds)
+        If description.ReceiverJson.Length > 0 Then env.SetRecord("receiver", description.ReceiverJson)
+        If description.Roles.Contains(ExchangeWire.RoleResourceConsumer) Then env.SetTextList("capabilities", New String() {"pin-v1"})
+        Return env
+    End Function
+
+    ''' <summary>A `password-change` (ticket 224 rule 9): the old password and the new one, on the control stream. The answer is
+    ''' `password-changed` with this device's fresh token, or one refusal; every OTHER device of the account is signed out.</summary>
+    Public Shared Function PasswordChange(oldPassword As String, newPassword As String) As ExchangeEnvelope
+        Return New ExchangeEnvelope(ExchangeEnvelopeTypes.PasswordChange).SetText("oldPassword", oldPassword).SetText("newPassword", newPassword)
+    End Function
+
     Public Shared Function Publish(resourceJson As String) As ExchangeEnvelope
         Return New ExchangeEnvelope(ExchangeEnvelopeTypes.Publish).SetRecord("resource", resourceJson)
     End Function
@@ -290,6 +329,22 @@ Friend NotInheritable Class ExchangeMessages
 
     Public Shared Function Upload(broadcastId As String, contentType As String) As ExchangeEnvelope
         Return New ExchangeEnvelope(ExchangeEnvelopeTypes.Upload).SetText("broadcastId", broadcastId).SetText("contentType", contentType)
+    End Function
+
+    ''' <summary>A `clipboard-put` (item BW): `kind`, `size` of at least 1, and `mimeType` / `name` only where the kind has them.</summary>
+    Public Shared Function ClipboardPut(kind As String, size As Long, mimeType As String, name As String) As ExchangeEnvelope
+        Return New ExchangeEnvelope(ExchangeEnvelopeTypes.ClipboardPut).SetText("kind", kind).SetNumber("size", size).
+            SetText("mimeType", mimeType).SetText("name", name)
+    End Function
+
+    ''' <summary>A `clipboard-get` (item BY): the `clipId` of the value the person was told about, or "" for the current one.</summary>
+    Public Shared Function ClipboardGet(clipId As String) As ExchangeEnvelope
+        Return New ExchangeEnvelope(ExchangeEnvelopeTypes.ClipboardGet).SetText("clipId", clipId)
+    End Function
+
+    ''' <summary>A `clipboard-info` (item BY): no members; the answer is `clipboard-state`.</summary>
+    Public Shared Function ClipboardInfo() As ExchangeEnvelope
+        Return New ExchangeEnvelope(ExchangeEnvelopeTypes.ClipboardInfo)
     End Function
 
     Public Shared Function CastAnswer(broadcastId As String, accepted As Boolean, reason As String) As ExchangeEnvelope

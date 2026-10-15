@@ -41,10 +41,13 @@ var (
 	ErrProtectionUnsupported = errors.New("directory: unsupported protection")
 	ErrIDCollision           = errors.New("directory: the id is held by another")
 	ErrCapacity              = errors.New("directory: capacity")
-	ErrPortUnavail           = errors.New("directory: no port available")
-	ErrNoDevice              = errors.New("directory: no such device")
-	ErrNotYours              = errors.New("directory: not this device's")
-	ErrNewerStore            = errors.New("directory: the store was written by a newer server")
+	// ErrLimit is a count limit of the account (resources, live broadcasts): DEVICE-EXCHANGE 19 item AS.
+	// ErrCapacity stays for what does not fit a frame.
+	ErrLimit       = errors.New("directory: an account limit")
+	ErrPortUnavail = errors.New("directory: no port available")
+	ErrNoDevice    = errors.New("directory: no such device")
+	ErrNotYours    = errors.New("directory: not this device's")
+	ErrNewerStore  = errors.New("directory: the store was written by a newer server")
 )
 
 // Reason turns a Dir error into the refusal the wire answers with ("" for an error that is not a
@@ -55,6 +58,8 @@ func Reason(err error) wire.Reason {
 		return wire.ReasonProtectionUnsupported
 	case errors.Is(err, ErrIDCollision):
 		return wire.ReasonIDCollision
+	case errors.Is(err, ErrLimit):
+		return wire.ReasonLimitReached
 	case errors.Is(err, ErrCapacity), errors.Is(err, wire.ErrRecordSize):
 		return wire.ReasonCapacity
 	case errors.Is(err, ErrPortUnavail):
@@ -99,16 +104,19 @@ type Caps struct {
 	BroadcastsPerDevice  int
 }
 
-// DefaultCaps are 256 resources and 16 live broadcasts per account, 4 per device.
+// DefaultCaps are 256 resources and 16 live broadcasts per account, 4 per device. A zero is no cap.
 func DefaultCaps() Caps { return Caps{256, 16, 4} }
 
 // Options configure a Dir.
 type Options struct {
-	Dir   string // the data directory ("" keeps nothing on disk)
-	Now   func() time.Time
-	Caps  Caps
-	Ports PortGranter
-	Hooks Hooks
+	Dir  string // the data directory ("" keeps nothing on disk)
+	Now  func() time.Time
+	Caps Caps
+	// CapsFor resolves the caps of ONE account (the operator's per-account limits, 19 item AS); nil
+	// means Caps for everyone. It is called under the directory's lock, so it must not call back.
+	CapsFor func(account string) Caps
+	Ports   PortGranter
+	Hooks   Hooks
 	// WriteTemp creates the temporary file of a write (a test replaces it).
 	WriteTemp func(name string, data []byte, perm os.FileMode) error
 }
@@ -167,9 +175,10 @@ type Dir struct {
 	shareIdx  map[string]ref // shareId -> (account, resourceId)
 	broIdx    map[string]ref // broadcastId -> (account, broadcastId)
 	devIdx    map[string]string
-	resDirty  bool      // resource records changed since the last write
-	revDirty  bool      // a revision changed since the last write
-	lastWrite time.Time // of the last write
+	grants    GrantSource // what members gave to guests (grants.go); nil: nothing
+	resDirty  bool        // resource records changed since the last write
+	revDirty  bool        // a revision changed since the last write
+	lastWrite time.Time   // of the last write
 	persistMu sync.Mutex
 }
 
@@ -361,6 +370,7 @@ func (t *tx) commit() {
 		Upserts:  wire.Upserts{Devices: sortedRaw(t.upDev), Resources: sortedRaw(t.upRes), Broadcasts: sortedRaw(t.upBro)},
 		Removals: wire.Removals{DeviceIDs: sortedIDs(t.rmDev), ResourceIDs: sortedIDs(t.rmRes), BroadcastIDs: sortedIDs(t.rmBro)},
 	}
+	t.d.fanOutToGuestsLocked(h.login, t) // what changed in what a guest was given
 	if len(h.subs) == 0 {
 		return
 	}

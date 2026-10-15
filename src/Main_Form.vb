@@ -61,12 +61,14 @@ Public Class Main_Form
     Private Const max_Number_Of_Files_For_List As Integer = 2000000
 #End If
     Private Const height_For_instruments_on_WebPanel As String = "45"
+    ' step_size_while_color_Search and percent_of_color_deviation are the DYNAMIC BACKGROUND COLOUR's
+    ' own numbers (EdgeSampler.CalculateBackgroundColor). The letterbox bars' (LETTERBOX-BARS 4, 5,
+    ' 6) live once in LetterboxFillMath and are not read from here.
     Private Const percent_of_second_Color_Point = 20
     Private Const step_size_while_color_Search = 100
     Private Const SW_SHOWNOACTIVATE As Integer = 4
     Private Const SW_RESTORE As Integer = 9
     Private Const percent_of_color_deviation As Integer = 4
-    Private Const percent_of_color_smooth_To_Remove = 7
     Private Const first_Color_X As Integer = 0
     Private Const first_Color_Y As Integer = 0
     Private Const second_Color_X As Integer = 5
@@ -89,8 +91,11 @@ Public Class Main_Form
     ' At or above this slideshow interval the background drawing (perspective bars +
     ' dynamic-colour analysis) is allowed; below it the flips come too fast to be worth
     ' the GDI+ pixel work, so it is forced off. Owner rule: works at 5 s and slower.
-    Private Const slideshow_limit_to_change_color = 5000
-    Private Const how_long_wait_before_draw_perspective = 50
+    ' Both are LETTERBOX-BARS host conditions (section 2), kept once in LetterboxFillMath: the
+    ' 5000 ms slideshow floor (the dynamic-colour analysis follows the same owner rule) and the
+    ' 50 ms redraw throttle.
+    Private Const slideshow_limit_to_change_color As Integer = LetterboxFillMath.FastSlideshowIntervalMs
+    Private Const how_long_wait_before_draw_perspective As Integer = LetterboxFillMath.RedrawThrottleMs
     Private Const max_Number_Of_Recent_Media_Files As Integer = 50
 
 #If NETFRAMEWORK Then
@@ -124,7 +129,6 @@ Public Class Main_Form
     Private Image_Panel_Form As Image_Panel_Form
     Private toolTip As ToolTip
     Private zoom_Scale As Single = 1.0F
-    Private smoothIndex As Double = 0.0006
 
     ''' <summary>True when the media surface is at Fit - no free zoom: left clicks
     ''' navigate, drag pans, and (modern) the perspective bars may show. Legacy reads
@@ -886,7 +890,7 @@ Public Class Main_Form
             ' §2.1 point 3, §12 Ф4) - only what Openable_Extensions can actually read today;
             ' 7z/RAR/CBR stay out of this dialog until Ф2 can open them for real.
             archiveExtensions = String.Join(";", ArchiveEntryFilter.Openable_Extensions.Select(Function(ext) "*" & ext))
-            archiveFilterGroup = "|" & Localization.T("Архивы") & "|" & archiveExtensions
+            archiveFilterGroup = "|" & Localization.TF("Архивы|{0}", archiveExtensions)
 #End If
 
             openFileDialog.Filter = "All Supported Files|" & imageExtensions & ";" & videoExtensions &

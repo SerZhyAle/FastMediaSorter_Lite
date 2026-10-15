@@ -1,4 +1,4 @@
-﻿Field,ID,Type (Type),default,en-us,ru
+Field,ID,Type (Type),default,en-us,ru
 Description,2,Text,,"Sort thousands of photos and videos in minutes - and share them with your phone. Fast Media Sorter & Sharing for Windows is a fast, keyboard-driven viewer and sorter for images and video, with a bundled Share Manager that can also share the folders you pick - optional, off until you switch it on.
 
 Open a folder and fly through it: full-screen slideshow, quick panel navigation, and one-key Move / Copy / Rename / Delete. Assign folders to hotkeys and file each item with a single press - or turn on the recipients panel to click those destination folders right over the image and sort one-handed with the mouse. It plays a broad range of video through its built-in VLC engine - H.264/MP4, AVI, MKV, VP9, ZMBV and more - and fills letterbox/pillarbox bars with a matching ""ambilight"" background.
@@ -6,6 +6,8 @@ Open a folder and fly through it: full-screen slideshow, quick panel navigation,
 Rebuilt as a modern 64-bit app that carries its own runtime: there is nothing extra to install and no .NET Framework prerequisite. Static and animated WEBP images open everywhere, because the app decodes them itself instead of needing the Windows ""WebP Image Extensions"" codec that some editions of Windows lack, and so do HEIC/HEIF and AVIF - the formats iPhones and modern cameras produce - with no paid codec required. Video always runs through the built-in VLC engine, so it plays the same on systems where the retired Internet Explorer component is no longer present, now with a full control bar (seek, volume, audio track and subtitle picking) and ""Open URL.."" to play straight off a network address. Zoom at the mouse cursor with drag-to-pan, and right-click/middle-click menus put every action right on the picture or video.
 
 Sorting is not only about moving files. Del sends a file to the Recycle Bin where one exists and says plainly when there is none - a network drive or a memory stick - instead of pretending; U walks back through the last 50 operations, renames and deletions included, each file returning to its folder and to its place in the list. A ZIP or CBZ opens like an ordinary folder, so a comic or a folder of scans browses, zooms and translates exactly like loose files, with nothing unpacked in advance and nothing left behind afterwards. A picture can be marked up and cropped in its own editing window - brush, rectangle and ellipse, a live crop frame with handles, Ctrl+Z - then saved over the original or beside it in any of six formats, EXIF carried across. An animated WEBP, APNG or GIF can be turned into an ordinary MP4 that replaces it, with a seek bar, a pause and full colour. And a music file gets a screen of its own: the album cover it carries, or a wave-and-particle animation when it has none, with the title, artist, album and format along the bottom, an end-of-track action and a sleep timer.
+
+In the 64-bit viewer, right-click a video or audio file or its folder and choose Broadcast. Share Manager exports a .spres file, QR code or quick link for import in StreamsPlayer. A folder is one playlist channel with a frozen list; Refresh replaces that list and Revoke stops its link. The HTTP gateway has its own switch, off by default. Each token grants read-only access to one broadcast and normally expires after 24 hours. HTTP is unencrypted: share the document privately and keep internet access off unless you need it.
 
 Share folders with your phone: the bundled Share Manager turns this PC into a private SFTP server for folders you pick, so the Android app can browse them - on your home Wi-Fi or over the internet - after a one-time QR pairing. Sharing is strictly opt-in and stays between your own devices; nothing is uploaded to any third party. Sharing runs while you are signed in. The same program family also has an always-on Server edition, which hosts the same sharing as a Windows service, and FileDO virtual-disk hosting; neither is part of the Store version - both are available from the project website and winget.
 
@@ -20,6 +22,8 @@ On the Microsoft Store this app is published as ""FastMediaSorter LITE"".","Ра
 Программа пересобрана как современное 64-битное приложение со своей средой выполнения: ничего доустанавливать не нужно, .NET Framework больше не требуется. Статические и анимированные WEBP-изображения открываются везде - приложение декодирует их само, без кодека Windows ""WebP Image Extensions"", которого нет в некоторых редакциях Windows, а также HEIC/HEIF и AVIF - форматы, которые снимают iPhone и современные камеры - без каких-либо платных кодеков. Видео всегда идёт через встроенный движок VLC, поэтому оно одинаково воспроизводится и на системах, где компонента Internet Explorer больше нет, и теперь с полноценной панелью управления (перемотка, громкость, выбор аудиодорожки и субтитров) и командой ""Открыть по адресу.."" для воспроизведения прямо по сетевому пути. Масштабирование под курсором мыши с перетаскиванием, а меню по правому/среднему клику выносят все действия прямо на изображение или видео.
 
 Сортировка - это не только перемещение файлов. Del отправляет файл в Корзину там, где она есть, и честно предупреждает, когда её нет - на сетевом диске или флешке, - вместо того чтобы делать вид; U отменяет последние 50 операций, включая переименования и удаления, и каждый файл возвращается в свою папку и на своё место в списке. ZIP или CBZ открывается как обычная папка: комикс или папка сканов листается, масштабируется и переводится ровно так же, как отдельные файлы, - ничего не нужно распаковывать заранее и ничего не остаётся потом. Картинку можно разметить и кадрировать в отдельном окне редактирования - кисть, прямоугольник и эллипс, живая рамка кадрирования с маркерами, Ctrl+Z, - а затем сохранить поверх оригинала или рядом в одном из шести форматов, с переносом EXIF. Анимированный WEBP, APNG или GIF можно превратить в обычный MP4, который его заменит, - с перемоткой, паузой и полным цветом. А у музыкального файла появился свой экран: обложка альбома, если она есть, а если нет - анимация из волн и частиц, с названием, исполнителем, альбомом и форматом внизу, действием в конце дорожки и таймером сна.
+
+В 64-битном просмотрщике нажмите правой кнопкой на видео, аудиофайл или его папку и выберите трансляцию. Менеджер общего доступа выдаёт файл .spres, QR-код или быструю ссылку для импорта в StreamsPlayer. Папка становится одним каналом с зафиксированным списком: обновление заменяет список, отзыв отключает ссылку. HTTP-шлюз имеет отдельный переключатель и по умолчанию выключен. Токен даёт доступ только для чтения одной трансляции, обычно на 24 часа. HTTP не шифруется: передавайте документ лично и включайте интернет-доступ только при необходимости.
 
 Раздавайте папки на телефон: входящая в комплект программа Share Manager превращает этот ПК в частный SFTP-сервер для выбранных вами папок, чтобы Android-приложение открывало их - в домашней сети Wi-Fi или через интернет - после однократного подключения по QR-коду. Раздача включается только по вашему желанию и остаётся между вашими устройствами; никуда на сторону ничего не выгружается. Раздача работает, пока вы вошли в систему. У того же семейства программ есть ещё серверная редакция, которая поднимает ту же раздачу как службу Windows, и хостинг виртуальных дисков FileDO; ни то ни другое в версию из Store не входит - всё это доступно на сайте проекта и через winget.
 
@@ -40,7 +44,7 @@ ReleaseNotes,3,Text,,"- Rebuilt as a modern 64-bit program with its own runtime:
 - A destination folder that is switched off or asleep says so on the first press instead of after twenty timeouts; a missing last folder is created for you.
 - Keyboard shortcuts can be reassigned, and the settings that were listed but did nothing now do what they say.
 - The interface speaks 13 languages, and folder sharing is safer by default.","- Пересобрано как современная 64-битная программа со своей средой выполнения: ничего доустанавливать не нужно, .NET Framework не требуется. Настройки сохраняются.
-- HEIC, HEIF, AVIF и анимированные WEBP открываются везде без дополнительных кодеков, а медленные форматы теперь открываются повторно мгновенно.
+- HEIC, HEIF, AVIF и анимированные WEBP открываются везде без дополнительных кодеков, а повторно открываются мгновенно.
 - Del отправляет файл в Корзину там, где она есть, и честно предупреждает, когда её нет; U отменяет последние 50 операций, включая переименования.
 - ZIP или CBZ открывается как папка: комикс или папку сканов можно листать, масштабировать и переводить, ничего не распаковывая заранее.
 - Новое: разметка и кадрирование картинки в отдельном окне - поверх оригинала или рядом, в одном из шести форматов.
@@ -395,13 +399,13 @@ RecommendedHardwareReq8,857,Text,,,
 RecommendedHardwareReq9,858,Text,,,
 RecommendedHardwareReq10,859,Text,,,
 RecommendedHardwareReq11,860,Text,,,
-SearchTerm1,900,Text,,photo sorter,
-SearchTerm2,901,Text,,image viewer,
-SearchTerm3,902,Text,,video sorter,
-SearchTerm4,903,Text,,media organizer,
-SearchTerm5,904,Text,,photo organizer,
-SearchTerm6,905,Text,,slideshow viewer,
-SearchTerm7,906,Text,,heic avif viewer,
+SearchTerm1,900,Text,,photo sorter,сортировщик фото
+SearchTerm2,901,Text,,image viewer,просмотрщик изображений
+SearchTerm3,902,Text,,video sorter,сортировка фотографий
+SearchTerm4,903,Text,,media organizer,просмотр фото и видео
+SearchTerm5,904,Text,,photo organizer,органайзер фото
+SearchTerm6,905,Text,,slideshow viewer,слайд-шоу фото
+SearchTerm7,906,Text,,heic avif viewer,просмотр heic
 TrailerToPlayAtTopOfListing,999,Relative path (or URL to file in Partner Center),,,
 Trailer1,1000,Relative path (or URL to file in Partner Center),,,
 Trailer2,1001,Relative path (or URL to file in Partner Center),,,

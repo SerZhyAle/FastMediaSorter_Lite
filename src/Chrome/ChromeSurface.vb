@@ -236,7 +236,9 @@ Friend NotInheritable Class ChromeSurface
         Dim square As Integer = Math.Max(Px(ChromeMetrics.ItemHeight), MinTargetPx())
         If item.PreferredWidth > 0 Then Return Px(item.PreferredWidth)
         Dim chevron As Integer = If(ShowsMenuChevron(item), ChevronStrip(), 0)
-        If Not VerticalLayout AndAlso Not item.ShowCaptionWithGlyph AndAlso (item.Image IsNot Nothing OrElse item.GlyphId.Length > 0 OrElse item.Caption.Length = 0) Then Return square + chevron
+        ' A text that reserves a width (a zoom value that is not on screen right now) is measured, not a bare square.
+        If Not VerticalLayout AndAlso Not item.ShowCaptionWithGlyph AndAlso
+           (item.Image IsNot Nothing OrElse item.GlyphId.Length > 0 OrElse (item.Caption.Length = 0 AndAlso item.ReservedText.Length = 0)) Then Return square + chevron
         Dim font As Font = FontFor(item)
         If font Is Nothing Then Return square
         Dim flags As TextFormatFlags = TextFormatFlags.NoPadding Or TextFormatFlags.SingleLine Or TextFormatFlags.NoPrefix
@@ -325,11 +327,20 @@ Friend NotInheritable Class ChromeSurface
     Private Function BuildSlots(indexMap As List(Of ChromeItem)) As List(Of ChromeSlot)
         Dim slots As New List(Of ChromeSlot)()
         For Each item As ChromeItem In itemList
-            If Not item.Visible OrElse item Is overflowItem OrElse item Is pinButton Then Continue For
+            If item Is overflowItem OrElse item Is pinButton Then Continue For
+            ' A conditional button that is away still holds its place (empty air) in a horizontal row (125 UX-313b).
+            Dim away As Boolean = Not item.Visible
+            If away AndAlso (Not item.KeepsSlotWhenHidden OrElse VerticalLayout) Then Continue For
             slots.Add(New ChromeSlot(item.Id, MeasureItemWidth(item), If(item.MinimumWidth > 0, Px(item.MinimumWidth), -1),
-                pinned:=item.Id = "cmbox_Media_Folder" OrElse item.Id = "chkbox_Top_Most" OrElse item.Id = "cmbox_Sort"))
+                pinned:=Not away AndAlso (item.Id = "cmbox_Media_Folder" OrElse item.Id = "chkbox_Top_Most" OrElse item.Id = "cmbox_Sort"),
+                soft:=away))
             If indexMap IsNot Nothing Then indexMap.Add(item)
         Next
+        ' Air with no visible item after it holds nothing in place: it is not kept (and so never widens the row).
+        While slots.Count > 0 AndAlso slots(slots.Count - 1).Soft
+            slots.RemoveAt(slots.Count - 1)
+            If indexMap IsNot Nothing Then indexMap.RemoveAt(indexMap.Count - 1)
+        End While
         Return slots
     End Function
 
@@ -385,6 +396,8 @@ Friend NotInheritable Class ChromeSurface
         End If
         Dim top As Integer = Math.Max(verticalPad, (ClientSize.Height - ItemHeight()) \ 2)
         For i As Integer = 0 To order.Count - 1
+            ' A kept place (the item is away) is air: no bounds, never in the menu.
+            If Not order(i).Visible Then Continue For
             If row.Overflowed(i) Then
                 overflowList.Add(order(i))
                 Continue For
@@ -790,34 +803,24 @@ Friend NotInheritable Class ChromeSurface
         Return remaining
     End Function
 
-    ''' <summary>A push-pin drawn from lines, in the item's ink: upright and filled while the panel is
-    ''' pinned, tilted a quarter turn and only outlined while it is free. The vocabulary has no pin
-    ''' glyph yet, so it is painted like the toggle's check box and the secondary-action tick are.
-    ''' Shared so the recipients overlay's own pin button draws the very same glyph.</summary>
+    ''' <summary>The catalog's push-pin, in the item's ink, centred in <paramref name="r"/>: the filled
+    ''' <c>action.pin</c> while the panel is pinned and its outlined state variant <c>action.pin--off</c>
+    ''' while it is free (ICON-SET: "an outlined pin means it is not pinned"). Upright in both states: the
+    ''' line-drawn pin this replaced was tilted 45 degrees while free, which on a small button is the very
+    ''' picture of the edit pencil beside it on the recipients table's header. Shared so the recipients
+    ''' overlay's own pin button draws the very same glyph.</summary>
     Friend Shared Sub PaintPin(g As Graphics, pinned As Boolean, r As Rectangle, ink As Color, scale As Single)
-        Dim unit As Single = UiScale.Px(ChromeMetrics.PinGlyphSize, scale) / 12.0F
-        Dim state As GraphicsState = g.Save()
+        Dim size As Integer = Math.Max(8, UiScale.Px(ChromeMetrics.PinGlyphSize, scale))
+        Dim glyphId As String = If(pinned, "action.pin", "action.pin--off")
         Try
-            g.TranslateTransform(r.X + r.Width / 2.0F, r.Y + r.Height / 2.0F)
-            If Not pinned Then g.RotateTransform(45.0F)
-            Dim head As New RectangleF(-2.5F * unit, -6.0F * unit, 5.0F * unit, 1.5F * unit)
-            Dim body As PointF() = {New PointF(-2.0F * unit, -4.5F * unit), New PointF(2.0F * unit, -4.5F * unit),
-                                    New PointF(3.0F * unit, 0.0F), New PointF(-3.0F * unit, 0.0F)}
-            Using pen As New Pen(ink, Math.Max(1.0F, 1.2F * unit))
-                If pinned Then
-                    Using brush As New SolidBrush(ink)
-                        g.FillRectangle(brush, head)
-                        g.FillPolygon(brush, body)
-                    End Using
-                Else
-                    g.DrawRectangle(pen, head.X, head.Y, head.Width, head.Height)
-                    g.DrawPolygon(pen, body)
-                End If
-                g.DrawLine(pen, -4.0F * unit, 0.0F, 4.0F * unit, 0.0F)
-                g.DrawLine(pen, 0.0F, 0.0F, 0.0F, 6.0F * unit)
+            Using glyph As Bitmap = GlyphRenderer.Render(glyphId, size, ink, AddressOf RuntimeBootstrap.OpenBundledAsset)
+                Dim x As Integer = r.X + (r.Width - size) \ 2
+                Dim y As Integer = r.Y + (r.Height - size) \ 2
+                g.DrawImage(glyph, New Rectangle(x, y, size, size), 0, 0, glyph.Width, glyph.Height, GraphicsUnit.Pixel)
             End Using
-        Finally
-            g.Restore(state)
+        Catch ex As Exception
+            ' A glyph that cannot be drawn must not take the panel down; the button simply paints nothing.
+            Debug.WriteLine("w2600: chrome glyph " & glyphId & " failed: " & ex.Message)
         End Try
     End Sub
 

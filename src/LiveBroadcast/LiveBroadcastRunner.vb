@@ -52,6 +52,7 @@ Friend NotInheritable Class LiveBroadcastRunner
     End Enum
 
     Private ReadOnly endpoint As LiveBroadcastEndpoint
+    Private ReadOnly candidates As IReadOnlyList(Of LiveBroadcastEndpoint)
     Private ReadOnly policyValue As LiveReconnectPolicy
     Private ReadOnly host As ILiveRunnerHost
     Private ReadOnly options As LivePlaybackOptions
@@ -69,12 +70,15 @@ Friend NotInheritable Class LiveBroadcastRunner
                    Optional options As LivePlaybackOptions = Nothing,
                    Optional targetLatencyMs As Long? = Nothing,
                    Optional sessionFactory As Func(Of LiveBroadcastEndpoint, LivePlaybackOptions, LiveHttpPlaybackSession) = Nothing,
-                   Optional delayAsync As Func(Of Integer, CancellationToken, Task) = Nothing)
+                   Optional delayAsync As Func(Of Integer, CancellationToken, Task) = Nothing,
+                   Optional endpoints As IReadOnlyList(Of LiveBroadcastEndpoint) = Nothing)
         If endpoint Is Nothing Then Throw New ArgumentNullException(NameOf(endpoint))
         If policy Is Nothing Then Throw New ArgumentNullException(NameOf(policy))
         If host Is Nothing Then Throw New ArgumentNullException(NameOf(host))
 
         Me.endpoint = endpoint
+        Me.candidates = If(endpoints, New LiveBroadcastEndpoint() {endpoint})
+        If Me.candidates.Count = 0 Then Throw New ArgumentException("At least one endpoint is required.", NameOf(endpoints))
         Me.policyValue = policy
         Me.host = host
         Me.options = If(options, New LivePlaybackOptions())
@@ -140,7 +144,7 @@ Friend NotInheritable Class LiveBroadcastRunner
     ''' <summary>The same with the time given, so a test can walk the guard through minutes in an instant.</summary>
     Friend Function SampleDrift(nowMs As Long, playedMs As Long, isPlaying As Boolean) As LiveDriftAction
         Dim session As LiveHttpPlaybackSession = CurrentSession
-        If session Is Nothing Then Return LiveDriftAction.None
+        If session Is Nothing OrElse session.IsMpegTs Then Return LiveDriftAction.None
         Dim action As LiveDriftAction = driftGuard.Evaluate(nowMs, session.Frames.DurationMs, playedMs, isPlaying)
         If action = LiveDriftAction.Rejoin Then RequestRejoin()
         Return action
@@ -165,15 +169,21 @@ Friend NotInheritable Class LiveBroadcastRunner
             policyValue.NoteConnecting()
             NoteState(LiveSessionState.Connecting)
 
-            Dim session As LiveHttpPlaybackSession = sessionFactory(endpoint, options)
-            Volatile.Write(activeSession, session)
-
-            Dim result As LiveOpenResult
-            Using attempt As CancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken)
-                ' The attempt in flight is cut at the end of the outage budget: 12 s is a wall-clock bound.
-                attempt.CancelAfter(CInt(Math.Min(Integer.MaxValue, Math.Max(1L, policyValue.RemainingBudgetMs))))
-                result = Await session.OpenAsync(attempt.Token)
-            End Using
+            Dim session As LiveHttpPlaybackSession = Nothing
+            Dim result As LiveOpenResult = Nothing
+            For index As Integer = 0 To candidates.Count - 1
+                session = sessionFactory(candidates(index), options)
+                Volatile.Write(activeSession, session)
+                Using attempt As CancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken)
+                    attempt.CancelAfter(CInt(Math.Min(Integer.MaxValue, Math.Max(1L, policyValue.RemainingBudgetMs))))
+                    result = Await session.OpenAsync(attempt.Token)
+                End Using
+                If result.IsConnected OrElse result.IsFatal OrElse cancellationToken.IsCancellationRequested Then Exit For
+                If index < candidates.Count - 1 Then
+                    session.Dispose()
+                    Volatile.Write(activeSession, Nothing)
+                End If
+            Next
             Volatile.Write(lastOpenResult, result)
 
             If cancellationToken.IsCancellationRequested Then

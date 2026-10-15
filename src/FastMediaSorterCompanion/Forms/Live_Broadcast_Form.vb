@@ -2,6 +2,8 @@ Option Strict On
 
 Imports System.Drawing
 Imports System.IO
+Imports System.Threading
+Imports System.Threading.Tasks
 Imports System.Windows.Forms
 
 ' Ticket 199 sections 2, 4, 6: the "Live broadcast" window of the Share Manager - the one place a
@@ -43,6 +45,8 @@ Public Class Live_Broadcast_Form
     Private _cameraFilled As Boolean
     Private _chkAllowLanViewers As CheckBox
     Private _txtTitle As TextBox
+    Private _txtPassword As TextBox
+    Private _btnGenPassword As Button
     Private _numPort As NumericUpDown
     Private _numBitrate As NumericUpDown
     Private _gainTrack As TrackBar
@@ -52,9 +56,13 @@ Public Class Live_Broadcast_Form
     Private _btnStop As Button
     Private _lblState As Label
     Private _lblListeners As Label
+    Private _btnCopyLink As Button
     Private _btnCopyCode As Button
     Private _btnSaveFile As Button
     Private _btnShowQr As Button
+    Private _btnCast As Button
+    Private _activeCastReceiverId As String = ""
+    Private _activeCastReceiverName As String = ""
     Private _levelPeak As Double
     Private _onAirChip As LiveOnAirChip
     Private _fileNumber As Integer
@@ -90,8 +98,8 @@ Public Class Live_Broadcast_Form
         AddHandler Me.FormClosed, Sub() ShareIcons.FreeIcon(Me.Icon, _iconHandle)
         Me.FormBorderStyle = FormBorderStyle.Sizable
         Me.StartPosition = FormStartPosition.CenterScreen
-        Me.MinimumSize = New Size(560, 430)
-        Me.Size = New Size(600, 470)
+        Me.MinimumSize = New Size(580, 480)
+        Me.Size = New Size(620, 520)
         AddHandler Me.FormClosed, Sub() StopChip()
 
         Dim pnl As New TableLayoutPanel With {
@@ -124,7 +132,7 @@ Public Class Live_Broadcast_Form
         Dim rows As New TableLayoutPanel With {
             .AutoSize = True,
             .ColumnCount = 2,
-            .RowCount = 4,
+            .RowCount = 5,
             .Margin = New Padding(0, 8, 0, 4)
         }
         rows.ColumnStyles.Add(New ColumnStyle(SizeType.Absolute, 170))
@@ -169,6 +177,17 @@ Public Class Live_Broadcast_Form
         gainFlow.Controls.Add(_gainValue)
         rows.Controls.Add(gainFlow, 1, 3)
         UpdateGainLabel()
+
+        rows.Controls.Add(New Label With {.AutoSize = True, .Text = Localization.T("Пароль:")}, 0, 4)
+        Dim pwdFlow As New FlowLayoutPanel With {.AutoSize = True, .FlowDirection = FlowDirection.LeftToRight}
+        _txtPassword = New TextBox With {.Width = 140}
+        _btnGenPassword = New Button With {.AutoSize = True, .Text = Localization.T("Случайный")}
+        AddHandler _btnGenPassword.Click, Sub()
+            _txtPassword.Text = LiveProducerTokens.NewId().Substring(0, 8)
+        End Sub
+        pwdFlow.Controls.Add(_txtPassword)
+        pwdFlow.Controls.Add(_btnGenPassword)
+        rows.Controls.Add(pwdFlow, 1, 4)
         pnl.Controls.Add(rows, 0, 2)
 
         ' --- the video rows (B2 screen, B3 camera): the pickers, the cursor toggle, the no-sound
@@ -294,16 +313,22 @@ Public Class Live_Broadcast_Form
         pnl.Controls.Add(stateFlow, 0, 8)
 
         ' --- the hand-off buttons, on-air only ---
-        Dim handoffFlow As New FlowLayoutPanel With {.AutoSize = True, .FlowDirection = FlowDirection.LeftToRight, .Margin = New Padding(0, 6, 0, 0)}
+        Dim handoffFlow As New FlowLayoutPanel With {.AutoSize = True, .FlowDirection = FlowDirection.LeftToRight, .Margin = New Padding(0, 6, 0, 0), .WrapContents = True}
+        _btnCopyLink = New Button With {.AutoSize = True, .Text = Localization.T("Скопировать ссылку на трансляцию"), .Enabled = False}
+        AddHandler _btnCopyLink.Click, AddressOf OnCopyLink
         _btnCopyCode = New Button With {.AutoSize = True, .Text = Localization.T("Скопировать код для импорта"), .Enabled = False}
         AddHandler _btnCopyCode.Click, AddressOf OnCopyCode
         _btnSaveFile = New Button With {.AutoSize = True, .Text = Localization.T("Сохранить файл для импорта"), .Enabled = False}
         AddHandler _btnSaveFile.Click, AddressOf OnSaveFile
         _btnShowQr = New Button With {.AutoSize = True, .Text = Localization.T("Показать QR-код"), .Enabled = False}
         AddHandler _btnShowQr.Click, AddressOf OnShowQr
+        _btnCast = New Button With {.AutoSize = True, .Text = Localization.T("Воспроизвести на другом устройстве.."), .Enabled = False}
+        AddHandler _btnCast.Click, AddressOf OnCastClick
+        handoffFlow.Controls.Add(_btnCopyLink)
         handoffFlow.Controls.Add(_btnCopyCode)
         handoffFlow.Controls.Add(_btnSaveFile)
         handoffFlow.Controls.Add(_btnShowQr)
+        handoffFlow.Controls.Add(_btnCast)
         pnl.Controls.Add(handoffFlow, 0, 9)
 
         Me.Controls.Add(pnl)
@@ -482,7 +507,8 @@ Public Class Live_Broadcast_Form
         Dim request As New LiveStartRequest With {
             .Kind = kind,
             .Mode = mode,
-            .Title = If(_txtTitle.Text.Trim(), "")
+            .Title = If(_txtTitle.Text.Trim(), ""),
+            .Password = If(_txtPassword IsNot Nothing, _txtPassword.Text.Trim(), "")
         }
 
         Dim result As LiveStartResult = _controller.Start(request)
@@ -505,14 +531,36 @@ Public Class Live_Broadcast_Form
         _numPort.Enabled = False
         _numBitrate.Enabled = False
         _chkAllowLanViewers.Enabled = False
+        If _txtPassword IsNot Nothing Then _txtPassword.Enabled = False
+        If _btnGenPassword IsNot Nothing Then _btnGenPassword.Enabled = False
+        If _btnCopyLink IsNot Nothing Then _btnCopyLink.Enabled = True
         _btnCopyCode.Enabled = True
         _btnSaveFile.Enabled = True
         _btnShowQr.Enabled = True
+        If _btnCast IsNot Nothing Then
+            _btnCast.Enabled = True
+            _btnCast.Text = Localization.T("Воспроизвести на другом устройстве..")
+        End If
+        _activeCastReceiverId = ""
+        _activeCastReceiverName = ""
         RefreshOnAir()
         StartChip()
     End Sub
 
     Private Sub OnStop()
+        If Not String.IsNullOrEmpty(_activeCastReceiverId) Then
+            Dim receiverId As String = _activeCastReceiverId
+            Dim broadcastId As String = _controller.State.BroadcastId
+            Dim agent As ExchangeDeviceAgent = ExchangeDeviceHost.Current
+            If agent IsNot Nothing AndAlso Not String.IsNullOrEmpty(broadcastId) Then
+                Try
+                    Task.Run(Function() agent.CastStopAsync(broadcastId, receiverId, CancellationToken.None))
+                Catch
+                End Try
+            End If
+            _activeCastReceiverId = ""
+            _activeCastReceiverName = ""
+        End If
         _controller.Stop()
         BroadcastStopped()
     End Sub
@@ -532,9 +580,18 @@ Public Class Live_Broadcast_Form
         _numPort.Enabled = True
         _numBitrate.Enabled = True
         _chkAllowLanViewers.Enabled = True
+        If _txtPassword IsNot Nothing Then _txtPassword.Enabled = True
+        If _btnGenPassword IsNot Nothing Then _btnGenPassword.Enabled = True
+        If _btnCopyLink IsNot Nothing Then _btnCopyLink.Enabled = False
         _btnCopyCode.Enabled = False
         _btnSaveFile.Enabled = False
         _btnShowQr.Enabled = False
+        If _btnCast IsNot Nothing Then
+            _btnCast.Enabled = False
+            _btnCast.Text = Localization.T("Воспроизвести на другом устройстве..")
+        End If
+        _activeCastReceiverId = ""
+        _activeCastReceiverName = ""
         _lblState.Text = Localization.T("Трансляция остановлена.")
         _lblListeners.Visible = False
         _levelPeak = 0.0
@@ -564,12 +621,105 @@ Public Class Live_Broadcast_Form
     Private Sub RefreshOnAir()
         Dim state As LiveProducerState = _controller.State
         If Not state.Running Then Return
-        _lblState.Text = Localization.TF("Идёт живая трансляция - {0}.", state.SourceName)
+        If Not String.IsNullOrEmpty(_activeCastReceiverName) Then
+            _lblState.Text = Localization.TF("Воспроизводится на: {0}", _activeCastReceiverName)
+        Else
+            _lblState.Text = Localization.TF("Идёт живая трансляция - {0}.", state.SourceName)
+        End If
         _lblListeners.Text = Localization.TF("Слушателей: {0}", state.Listeners)
         _lblListeners.Visible = True
     End Sub
 
     ' --- the three hand-off channels (section 5, producer rule 3: the same description) -------
+
+    Private Sub OnCopyLink(sender As Object, e As EventArgs)
+        Dim state As LiveProducerState = _controller.State
+        If String.IsNullOrEmpty(state.BarcodeText) Then Return
+        ' LIVE-BROADCAST item M: hand off the complete descriptor; tell the password separately.
+        Dim url As String = "fmsbcast://live?payload=" & Uri.EscapeDataString(state.BarcodeText)
+        If SecureClipboard.SetSecret(url) Then
+            _lblState.Text = Localization.T("Ссылка скопирована.")
+        Else
+            _lblState.Text = Localization.T("Не удалось скопировать.")
+        End If
+    End Sub
+
+    Private Async Sub OnCastClick(sender As Object, e As EventArgs)
+        If Not String.IsNullOrEmpty(_activeCastReceiverId) Then
+            Dim receiverId As String = _activeCastReceiverId
+            Dim broadcastId As String = _controller.State.BroadcastId
+            Dim agent As ExchangeDeviceAgent = ExchangeDeviceHost.Current
+            _activeCastReceiverId = ""
+            _activeCastReceiverName = ""
+            _btnCast.Text = Localization.T("Воспроизвести на другом устройстве..")
+            If agent IsNot Nothing AndAlso Not String.IsNullOrEmpty(broadcastId) Then
+                Await agent.CastStopAsync(broadcastId, receiverId, CancellationToken.None)
+            End If
+            RefreshOnAir()
+            Return
+        End If
+
+        Dim currentAgent As ExchangeDeviceAgent = ExchangeDeviceHost.Current
+        If currentAgent Is Nothing Then
+            _lblState.Text = Localization.T("Нет доступных устройств для воспроизведения.")
+            Return
+        End If
+
+        Dim state As LiveProducerState = _controller.State
+        If Not state.Running Then Return
+
+        Dim candidates As List(Of ExchangeDeviceRecord) = currentAgent.GetCastCandidates(state.Mode, state.DescriptorJson)
+        If candidates Is Nothing OrElse candidates.Count = 0 Then
+            _lblState.Text = Localization.T("Нет доступных устройств для воспроизведения.")
+            Return
+        End If
+
+        Dim menu As New ContextMenuStrip()
+        For Each candidate In candidates
+            Dim c As ExchangeDeviceRecord = candidate
+            Dim displayName As String = If(String.IsNullOrEmpty(c.DeviceName), c.DeviceId, c.DeviceName)
+            Dim item As ToolStripItem = menu.Items.Add(displayName)
+            AddHandler item.Click, Async Sub()
+                                       Await InitiateCastAsync(currentAgent, state.BroadcastId, c.DeviceId, displayName)
+                                   End Sub
+        Next
+        menu.Show(_btnCast, New Point(0, _btnCast.Height))
+    End Sub
+
+    Private Async Function InitiateCastAsync(agent As ExchangeDeviceAgent, broadcastId As String, receiverDeviceId As String, receiverName As String) As Task
+        _lblState.Text = Localization.T("Отправка запроса..")
+        _btnCast.Enabled = False
+        Try
+            Using cts As New CancellationTokenSource(TimeSpan.FromSeconds(10))
+                Dim result As Tuple(Of Boolean, String) = Await agent.CastAsync(broadcastId, receiverDeviceId, cts.Token)
+                If result.Item1 Then
+                    _activeCastReceiverId = receiverDeviceId
+                    _activeCastReceiverName = receiverName
+                    _btnCast.Text = Localization.T("Остановить воспроизведение")
+                    _lblState.Text = Localization.TF("Воспроизводится на: {0}", receiverName)
+                Else
+                    Dim reasonText As String
+                    Select Case If(result.Item2, "").ToLowerInvariant()
+                        Case "declined"
+                            reasonText = Localization.T("Отклонено")
+                        Case "unsupported"
+                            reasonText = Localization.T("Не поддерживается")
+                        Case "unavailable"
+                            reasonText = Localization.T("Недоступно")
+                        Case "timeout"
+                            reasonText = Localization.T("Таймаут")
+                        Case Else
+                            reasonText = Localization.T("Не удалось воспроизвести.")
+                    End Select
+                    _lblState.Text = reasonText
+                End If
+            End Using
+        Catch
+            _lblState.Text = Localization.T("Не удалось воспроизвести.")
+        Finally
+            _btnCast.Enabled = True
+        End Try
+    End Function
 
     Private Sub OnCopyCode(sender As Object, e As EventArgs)
         Dim text As String = _controller.State.BarcodeText

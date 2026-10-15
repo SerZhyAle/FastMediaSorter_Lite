@@ -86,12 +86,12 @@ Public Module SitePages
     Public Const ExchangePortalRoot As String = AndroidAppSiteRoot & "docs/media-exchange-portal/"
 
     ''' <summary>The portal pages a program may link to, besides the start page ("").</summary>
-    Private ReadOnly ExchangePortalPages As String() = {"home-network", "windows-servers", "live-broadcast", "exchange-server", "clouds", "editions"}
+    Private ReadOnly ExchangePortalPages As String() = {"home-network", "windows-servers", "live-broadcast", "exchange-server", "clouds", "editions", "account-deletion"}
 
     ''' <summary>
     ''' A page of the media exchange portal in <paramref name="languageCode"/>. <paramref name="page"/> is ""
     ''' (the start page), <c>home-network</c>, <c>windows-servers</c>, <c>live-broadcast</c>,
-    ''' <c>exchange-server</c>, <c>clouds</c> or <c>editions</c>; anything else opens the start page, never
+    ''' <c>exchange-server</c>, <c>clouds</c>, <c>editions</c> or <c>account-deletion</c>; anything else opens the start page, never
     ''' a page that does not exist. The portal has a Russian (<c>-ru</c>) and a Ukrainian (<c>-uk</c>) copy of
     ''' every page; every other language reads the English one - the root itself for the start page,
     ''' <c>&lt;page&gt;.html</c> for the rest.

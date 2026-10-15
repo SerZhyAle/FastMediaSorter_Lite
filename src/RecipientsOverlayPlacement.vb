@@ -120,4 +120,56 @@ Friend NotInheritable Class RecipientsOverlayPlacement
     End Function
 
 End Class
+
+''' <summary>
+''' The pure arithmetic of the recipients table's ROWS (125 UX-332, layout part): where the delete row stands
+''' and whether a folder row has the room to say its verb. Numbers in, numbers out - no window, no font.
+''' </summary>
+Friend NotInheritable Class RecipientsOverlayRows
+
+    Private Sub New()
+    End Sub
+
+    ''' <summary>How much of a row's height the picture it carries takes: the bin of the delete row and the copy
+    ''' sheets of the copy zone. Seven tenths keeps the drawing clear of the row's edges and, at the default
+    ''' font, lands where the old fixed 16 px picture did.</summary>
+    Public Const GlyphShareOfRow As Double = 0.7R
+
+    ''' <summary>The least a row picture is drawn at, in device pixels: below it a catalog drawing is a smudge.</summary>
+    Public Const MinimumGlyphSide As Integer = 12
+
+    ''' <summary>The side of the square a row's picture is drawn in, from the row's own height (device pixels in,
+    ''' device pixels out). The table's font is a setting and the row follows it, so a picture with a size of its
+    ''' own stayed a 16 px stamp beside a large caption; this one grows and shrinks with the row. Never taller
+    ''' than the row less two pixels of air, so it cannot touch the row's edge or the next row.</summary>
+    Public Shared Function GlyphSide(rowHeight As Integer) As Integer
+        If rowHeight <= 0 Then Return 0
+        Dim side As Integer = CInt(Math.Round(rowHeight * GlyphShareOfRow, MidpointRounding.AwayFromZero))
+        Return Math.Max(1, Math.Min(Math.Max(MinimumGlyphSide, side), rowHeight - 2))
+    End Function
+
+    ''' <summary>The air between the last folder row and the delete row. Delete is the one row that destroys, and it
+    ''' used to sit flush under the last folder - one slip of the pointer away from "move there". Half a row of
+    ''' space (in the same units as <paramref name="rowHeight"/>) is enough to read it as another thing; none when
+    ''' there is no folder row above it (nothing to be apart from).</summary>
+    Public Shared Function DeleteRowGap(folderRowsAbove As Integer, rowHeight As Integer) As Integer
+        If folderRowsAbove <= 0 OrElse rowHeight <= 0 Then Return 0
+        Return Math.Max(1, rowHeight \ 2)
+    End Function
+
+    ''' <summary>Whether a folder row (its move zone) has room for the verb at its end. The folder's name is what
+    ''' the row is for: the verb is drawn only when the caption still keeps <paramref name="minimumCaptionWidth"/>
+    ''' after it, so a narrow table loses the word, never the path.</summary>
+    ''' <param name="rowWidth">The row's whole width.</param>
+    ''' <param name="captionLeft">Where the caption starts (after the padding and the glyph).</param>
+    ''' <param name="edgePadding">The padding at the row's far end.</param>
+    ''' <param name="verbWidth">The verb's width with the space before it; 0 or less = there is no verb.</param>
+    ''' <param name="minimumCaptionWidth">The least the caption must keep.</param>
+    Public Shared Function ShowsMoveVerb(rowWidth As Integer, captionLeft As Integer, edgePadding As Integer,
+                                         verbWidth As Integer, minimumCaptionWidth As Integer) As Boolean
+        If verbWidth <= 0 Then Return False
+        Return rowWidth - captionLeft - edgePadding - verbWidth >= Math.Max(0, minimumCaptionWidth)
+    End Function
+
+End Class
 #End If

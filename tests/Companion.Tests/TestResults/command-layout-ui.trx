@@ -1,0 +1,383 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TestRun id="12a758fd-3006-44b8-8212-cf1cbd6c24ad" name="serzh@MARK 2026-10-14 01:34:03" runUser="MARK\serzh" xmlns="http://microsoft.com/schemas/VisualStudio/TeamTest/2010">
+  <Times creation="2026-10-14T01:34:03.1343249+02:00" queuing="2026-10-14T01:34:03.1343258+02:00" start="2026-10-14T01:34:01.8917339+02:00" finish="2026-10-14T01:36:08.1047103+02:00" />
+  <TestSettings name="default" id="9c84e963-5ca5-473d-8e46-8ed742fa695a">
+    <Deployment runDeploymentRoot="serzh_MARK_2026-10-14_01_34_03" />
+  </TestSettings>
+  <Results>
+    <UnitTestResult executionId="630eae1f-1fc5-4175-b155-442ec5a77916" testId="e0affd5e-7179-d5bf-d7bd-9930762b2596" testName="Companion.Tests.WindowsUiContractTests.The_left_menu_tree_toggles_items_selects_pages_and_reveals_blocks" computerName="MARK" duration="00:00:11.6070227" startTime="2026-10-14T01:35:06.0356941+02:00" endTime="2026-10-14T01:35:06.0356953+02:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Failed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="630eae1f-1fc5-4175-b155-442ec5a77916">
+      <Output>
+        <ErrorInfo>
+          <Message>Assert.All() Failure: 4 out of 4 items in the collection did not pass.&#xD;
+[0]: Item:  FastMediaSorterCompanion.Share_Settings_Form+SettingsNavItemButton, Text: Media Exchange Server&#xD;
+     Error: Assert.False() Failure&#xD;
+            Expected: False&#xD;
+            Actual:   True&#xD;
+[1]: Item:  FastMediaSorterCompanion.Share_Settings_Form+SettingsNavItemButton, Text: الشبكة&#xD;
+     Error: Assert.False() Failure&#xD;
+            Expected: False&#xD;
+            Actual:   True&#xD;
+[2]: Item:  FastMediaSorterCompanion.Share_Settings_Form+SettingsNavItemButton, Text: الحسابات&#xD;
+     Error: Assert.False() Failure&#xD;
+            Expected: False&#xD;
+            Actual:   True&#xD;
+[3]: Item:  FastMediaSorterCompanion.Share_Settings_Form+SettingsNavItemButton, Text: خدمة Windows&#xD;
+     Error: Assert.False() Failure&#xD;
+            Expected: False&#xD;
+            Actual:   True</Message>
+          <StackTrace>   at Companion.Tests.WindowsUiContractTests._Closure$__._Lambda$__5-0() in P:\WINDOWS\FastMediaSorter_Lite\tests\Companion.Tests\WindowsUiContractTests.vb:line 134&#xD;
+   at Companion.Tests.WindowsUiContractTests._Closure$__2-0._Lambda$__0() in P:\WINDOWS\FastMediaSorter_Lite\tests\Companion.Tests\WindowsUiContractTests.vb:line 24&#xD;
+--- End of stack trace from previous location ---&#xD;
+   at Companion.Tests.WindowsUiContractTests.OnUi(Action test) in P:\WINDOWS\FastMediaSorter_Lite\tests\Companion.Tests\WindowsUiContractTests.vb:line 32&#xD;
+   at Companion.Tests.WindowsUiContractTests.The_left_menu_tree_toggles_items_selects_pages_and_reveals_blocks() in P:\WINDOWS\FastMediaSorter_Lite\tests\Companion.Tests\WindowsUiContractTests.vb:line 81&#xD;
+   at System.Reflection.MethodBaseInvoker.InterpretedInvoke_Method(Object obj, IntPtr* args)&#xD;
+   at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)</StackTrace>
+        </ErrorInfo>
+      </Output>
+    </UnitTestResult>
+    <UnitTestResult executionId="acdcb035-eeb8-46de-ada2-9a744e49c8ab" testId="a00cc297-883a-9074-67c8-48547776e310" testName="Companion.Tests.DisabledButtonCaptionTests.Self_themed_flat_buttons_draw_disabled_text_in_the_readable_role" computerName="MARK" duration="00:00:00.2719591" startTime="2026-10-14T01:34:03.6254930+02:00" endTime="2026-10-14T01:34:03.6254939+02:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="acdcb035-eeb8-46de-ada2-9a744e49c8ab" />
+    <UnitTestResult executionId="eb486164-920f-4e78-8e42-371cb060e769" testId="d7506e5e-d840-ae12-a0bd-fdcc48120441" testName="Companion.Tests.SectionLayoutTests.No_section_title_overflows_its_header_in_any_language" computerName="MARK" duration="00:00:00.0422832" startTime="2026-10-14T01:34:03.0719820+02:00" endTime="2026-10-14T01:34:03.0719823+02:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="eb486164-920f-4e78-8e42-371cb060e769" />
+    <UnitTestResult executionId="5d0a4866-ed72-4acb-a88b-1c074521aa66" testId="603cc54a-d35c-7836-0acf-26afceda177f" testName="Companion.Tests.ManagerWelcomeUiTests.Finish_copies_the_main_windows_sentence_color_and_glyph_and_reopen_starts_at_finish_only_when_green" computerName="MARK" duration="00:00:00.8949161" startTime="2026-10-14T01:36:07.9955320+02:00" endTime="2026-10-14T01:36:07.9955323+02:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="5d0a4866-ed72-4acb-a88b-1c074521aa66" />
+    <UnitTestResult executionId="887ae06d-1425-4ef7-b5fd-1d26f14c3a59" testId="d2d66b42-5ede-18a0-0318-3545f74ebea9" testName="Companion.Tests.SectionLayoutTests.Section_keys_are_unique" computerName="MARK" duration="00:00:00.0007161" startTime="2026-10-14T01:34:03.1049409+02:00" endTime="2026-10-14T01:34:03.1049409+02:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="887ae06d-1425-4ef7-b5fd-1d26f14c3a59" />
+    <UnitTestResult executionId="08b786de-45f6-4641-92fb-d3d3b482ce4c" testId="e627f997-ce2b-4685-976c-5e238e0d9588" testName="Companion.Tests.WindowsUiContractTests.Menu_tree_toggles_retain_bounds_and_complete_within_the_repeat_budget(scale: 1.75)" computerName="MARK" duration="00:00:05.6192664" startTime="2026-10-14T01:35:57.5396853+02:00" endTime="2026-10-14T01:35:57.5396857+02:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="08b786de-45f6-4641-92fb-d3d3b482ce4c" />
+    <UnitTestResult executionId="f57415c0-e61b-4794-a22a-4d739bc52eeb" testId="56359089-a3a2-8b23-ca2a-98f5cb28ab68" testName="Companion.Tests.WindowsUiContractTests.Manager_navigation_and_hints_fit_the_drawn_script(code: &quot;ar&quot;)" computerName="MARK" duration="00:00:09.4358548" startTime="2026-10-14T01:35:22.6750371+02:00" endTime="2026-10-14T01:35:22.6750374+02:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="f57415c0-e61b-4794-a22a-4d739bc52eeb" />
+    <UnitTestResult executionId="e5a875be-f135-44bc-94a8-00757485a643" testId="5081c1ee-d77b-7bed-ecfe-3e1118c47d31" testName="Companion.Tests.ManagerWelcomeUiTests.Untouched_port_and_basic_questions_write_no_defaults_and_preserve_external_settings_changes" computerName="MARK" duration="00:00:01.0046200" startTime="2026-10-14T01:36:06.1959073+02:00" endTime="2026-10-14T01:36:06.1959077+02:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="e5a875be-f135-44bc-94a8-00757485a643" />
+    <UnitTestResult executionId="452bd024-4a58-4a07-88df-07921c345d9c" testId="55376ba7-efb9-46d9-7170-5771f4c5bbc5" testName="Companion.Tests.ThemeApplierTests.The_real_settings_dialog_is_fully_themed" computerName="MARK" duration="00:00:14.1575594" startTime="2026-10-14T01:34:17.1637130+02:00" endTime="2026-10-14T01:34:17.1637136+02:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="452bd024-4a58-4a07-88df-07921c345d9c" />
+    <UnitTestResult executionId="caddb5d8-0d3d-42b3-9efc-029f773c04ff" testId="18626804-e64d-7ded-0666-c371ea7c46fa" testName="Companion.Tests.WindowsUiContractTests.Menu_tree_toggles_retain_bounds_and_complete_within_the_repeat_budget(scale: 1)" computerName="MARK" duration="00:00:15.0162091" startTime="2026-10-14T01:35:43.1475702+02:00" endTime="2026-10-14T01:35:43.1475705+02:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Failed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="caddb5d8-0d3d-42b3-9efc-029f773c04ff">
+      <Output>
+        <ErrorInfo>
+          <Message>UI contract check timed out.</Message>
+          <StackTrace>   at Companion.Tests.WindowsUiContractTests.OnUi(Action test) in P:\WINDOWS\FastMediaSorter_Lite\tests\Companion.Tests\WindowsUiContractTests.vb:line 31&#xD;
+   at Companion.Tests.WindowsUiContractTests.Menu_tree_toggles_retain_bounds_and_complete_within_the_repeat_budget(Single scale) in P:\WINDOWS\FastMediaSorter_Lite\tests\Companion.Tests\WindowsUiContractTests.vb:line 258&#xD;
+   at System.Reflection.MethodBaseInvoker.InterpretedInvoke_Method(Object obj, IntPtr* args)&#xD;
+   at System.Reflection.MethodBaseInvoker.InvokeDirectByRefWithFewArgs(Object obj, Span`1 copyOfArgs, BindingFlags invokeAttr)</StackTrace>
+        </ErrorInfo>
+      </Output>
+    </UnitTestResult>
+    <UnitTestResult executionId="66b387be-f249-489c-b502-bcd1ba7bfa8e" testId="710155b1-b76d-52dc-e1fe-d757006ba5d7" testName="Companion.Tests.WindowsUiContractTests.Manager_pages_keep_window_geometry_and_restore_each_viewport" computerName="MARK" duration="00:00:03.3629425" startTime="2026-10-14T01:36:03.5389327+02:00" endTime="2026-10-14T01:36:03.5389336+02:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="66b387be-f249-489c-b502-bcd1ba7bfa8e" />
+    <UnitTestResult executionId="12487731-60de-443a-ba51-46951857efcd" testId="a0b55a29-69a6-0c9b-82ed-ffd2b643864b" testName="Companion.Tests.ServerWelcomeModelTests.The_dismissal_values_are_the_names_the_settings_hive_owns" computerName="MARK" duration="00:00:00.0006525" startTime="2026-10-14T01:34:03.0227955+02:00" endTime="2026-10-14T01:34:03.0227956+02:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="12487731-60de-443a-ba51-46951857efcd" />
+    <UnitTestResult executionId="7d9aaa72-4e98-4795-bb8b-5e3b05e9d6e5" testId="1168633f-52f5-aa12-0b7b-702c589d6e36" testName="Companion.Tests.WindowsUiContractTests.Every_page_contains_its_editors_after_resize_and_server_state_changes(width: 640)" computerName="MARK" duration="00:00:11.5894828" startTime="2026-10-14T01:34:39.3372943+02:00" endTime="2026-10-14T01:34:39.3372960+02:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="7d9aaa72-4e98-4795-bb8b-5e3b05e9d6e5" />
+    <UnitTestResult executionId="bf4adc1a-682a-41f9-ac80-ffafc5dcbb9d" testId="2a4db498-e461-814f-770b-5624b4ab7a6a" testName="Companion.Tests.ButtonGlyphCoverageTests.Render_the_windows_light_and_dark_when_a_folder_is_given" computerName="MARK" duration="00:00:00.0005258" startTime="2026-10-14T01:34:06.6690923+02:00" endTime="2026-10-14T01:34:06.6690924+02:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="bf4adc1a-682a-41f9-ac80-ffafc5dcbb9d" />
+    <UnitTestResult executionId="1ca44ce2-1f5d-4660-a11a-f418af9d4ae9" testId="6b1947e0-71d8-2aa5-06d5-4e68d38d7f3f" testName="Companion.Tests.WindowsUiContractTests.Live_language_refresh_preserves_window_and_editor_values_and_resets_direction" computerName="MARK" duration="00:00:15.0183061" startTime="2026-10-14T01:34:54.4000318+02:00" endTime="2026-10-14T01:34:54.4000323+02:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Failed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="1ca44ce2-1f5d-4660-a11a-f418af9d4ae9">
+      <Output>
+        <ErrorInfo>
+          <Message>UI contract check timed out.</Message>
+          <StackTrace>   at Companion.Tests.WindowsUiContractTests.OnUi(Action test) in P:\WINDOWS\FastMediaSorter_Lite\tests\Companion.Tests\WindowsUiContractTests.vb:line 31&#xD;
+   at Companion.Tests.WindowsUiContractTests.Live_language_refresh_preserves_window_and_editor_values_and_resets_direction() in P:\WINDOWS\FastMediaSorter_Lite\tests\Companion.Tests\WindowsUiContractTests.vb:line 501&#xD;
+   at System.Reflection.MethodBaseInvoker.InterpretedInvoke_Method(Object obj, IntPtr* args)&#xD;
+   at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)</StackTrace>
+        </ErrorInfo>
+      </Output>
+    </UnitTestResult>
+    <UnitTestResult executionId="1a62a7d9-503c-4b44-bd34-f344580ce1ef" testId="b25ea434-9cbc-ee67-1cd6-38cddd11fc7f" testName="Companion.Tests.WindowsUiContractTests.Dropdown_field_and_arrow_are_painted_in_the_current_palette" computerName="MARK" duration="00:00:00.0667783" startTime="2026-10-14T01:36:03.6059674+02:00" endTime="2026-10-14T01:36:03.6059680+02:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="1a62a7d9-503c-4b44-bd34-f344580ce1ef" />
+    <UnitTestResult executionId="3e07eeae-45e0-4416-80d3-c00a62c61388" testId="614f7d65-5385-e7ed-753a-48141242392a" testName="Companion.Tests.WindowsUiContractTests.Revealing_the_menu_items_preserves_the_user_window_size" computerName="MARK" duration="00:00:00.7245006" startTime="2026-10-14T01:35:58.2976514+02:00" endTime="2026-10-14T01:35:58.2976517+02:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="3e07eeae-45e0-4416-80d3-c00a62c61388" />
+    <UnitTestResult executionId="bec4fe76-c5d4-420f-b5ab-0355043f46c0" testId="93ef696e-410b-850b-cc7f-71fb9a513eef" testName="Companion.Tests.IconNameTests.Every_share_manager_glyph_is_embedded" computerName="MARK" duration="00:00:00.0024860" startTime="2026-10-14T01:34:04.3574135+02:00" endTime="2026-10-14T01:34:04.3574140+02:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="bec4fe76-c5d4-420f-b5ab-0355043f46c0" />
+    <UnitTestResult executionId="c7ea2434-8e41-4d6f-a544-02725769569b" testId="9fc794dc-637c-2816-f6ad-10f99b0647e1" testName="Companion.Tests.ButtonGlyphCoverageTests.Every_captioned_command_button_of_the_walked_windows_has_a_glyph" computerName="MARK" duration="00:00:03.4195996" startTime="2026-10-14T01:34:06.4252803+02:00" endTime="2026-10-14T01:34:06.4252808+02:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="c7ea2434-8e41-4d6f-a544-02725769569b" />
+    <UnitTestResult executionId="87a420df-7022-4e6c-9e3d-9c9bd4a82606" testId="a7054092-b483-3648-2c02-b146807873f3" testName="Companion.Tests.WindowsUiContractTests.Async_server_refresh_without_a_synchronization_context_creates_controls_on_the_window_thread" computerName="MARK" duration="00:00:09.2167640" startTime="2026-10-14T01:34:13.5754053+02:00" endTime="2026-10-14T01:34:13.5754061+02:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="87a420df-7022-4e6c-9e3d-9c9bd4a82606" />
+    <UnitTestResult executionId="b163ce91-4e60-45d7-87f6-35a369ebb9eb" testId="86745780-d427-24f5-5d4c-74ec96a38daa" testName="Companion.Tests.WindowsUiContractTests.Manager_navigation_and_hints_fit_the_drawn_script(code: &quot;ru&quot;)" computerName="MARK" duration="00:00:02.0620558" startTime="2026-10-14T01:35:28.0790521+02:00" endTime="2026-10-14T01:35:28.0790524+02:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="b163ce91-4e60-45d7-87f6-35a369ebb9eb" />
+    <UnitTestResult executionId="a5d27546-73d2-497b-9cd2-b99572b611e3" testId="5849affd-4f79-d21c-74b7-60a4c5feb12d" testName="Companion.Tests.SectionLayoutTests.The_title_never_ellipsizes_and_the_summary_always_does" computerName="MARK" duration="00:00:00.0241679" startTime="2026-10-14T01:34:03.0296035+02:00" endTime="2026-10-14T01:34:03.0296038+02:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="a5d27546-73d2-497b-9cd2-b99572b611e3" />
+    <UnitTestResult executionId="d312f661-bdbe-4478-910c-39e6ba56d9c8" testId="f12cbca5-bf49-46df-2bec-5b3cf0c5355d" testName="Companion.Tests.WindowsUiContractTests.Native_checkboxes_keep_the_language_direction_and_hint_indent" computerName="MARK" duration="00:00:00.0494783" startTime="2026-10-14T01:35:28.1285743+02:00" endTime="2026-10-14T01:35:28.1285746+02:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="d312f661-bdbe-4478-910c-39e6ba56d9c8" />
+    <UnitTestResult executionId="e7440b94-72ec-45e1-a2cc-dfa3cd1a8859" testId="42d0b560-4a2f-991f-215a-0e294861904d" testName="Companion.Tests.ExchangeProcessTests.The_settings_default_to_nothing_running_in_the_background" computerName="MARK" duration="00:00:00.0060082" startTime="2026-10-14T01:34:04.3545030+02:00" endTime="2026-10-14T01:34:04.3545041+02:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="e7440b94-72ec-45e1-a2cc-dfa3cd1a8859" />
+    <UnitTestResult executionId="7d4ef180-43cf-43ca-8515-af6671f53fe4" testId="039191f1-101a-794f-2ee5-5202b99308ee" testName="Companion.Tests.DisabledButtonCaptionTests.Buttons_added_after_the_theme_pass_receive_the_same_disabled_painter" computerName="MARK" duration="00:00:00.5569146" startTime="2026-10-14T01:34:04.1824830+02:00" endTime="2026-10-14T01:34:04.1824835+02:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="7d4ef180-43cf-43ca-8515-af6671f53fe4" />
+    <UnitTestResult executionId="5fb55640-644d-4148-95f4-5a5cb455f06f" testId="e0db754d-9704-5f8e-2cb5-fc59405fc8f9" testName="Companion.Tests.SectionLayoutTests.The_scanner_actually_inspects_the_window" computerName="MARK" duration="00:00:00.0010810" startTime="2026-10-14T01:34:03.0731412+02:00" endTime="2026-10-14T01:34:03.0731417+02:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="5fb55640-644d-4148-95f4-5a5cb455f06f" />
+    <UnitTestResult executionId="f53c0efb-4314-477e-bccd-d873a01cc43f" testId="d1f70842-632a-a0e0-8894-b1918232987a" testName="Companion.Tests.WindowsUiContractTests.Embedded_dropdowns_in_toolbars_follow_both_palettes" computerName="MARK" duration="00:00:00.0331438" startTime="2026-10-14T01:35:57.5730036+02:00" endTime="2026-10-14T01:35:57.5730038+02:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="f53c0efb-4314-477e-bccd-d873a01cc43f" />
+    <UnitTestResult executionId="10aeed1e-6114-4e17-9284-54ce1a58526f" testId="8586f1f2-e679-322d-d36a-7baf1d4c080d" testName="Companion.Tests.WindowsUiContractTests.Manager_navigation_and_hints_fit_the_drawn_script(code: &quot;hi&quot;)" computerName="MARK" duration="00:00:04.9083474" startTime="2026-10-14T01:35:13.2385103+02:00" endTime="2026-10-14T01:35:13.2385145+02:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="10aeed1e-6114-4e17-9284-54ce1a58526f" />
+    <UnitTestResult executionId="846ddaef-e57e-4d52-8d09-af1fb0bbcc49" testId="17831edf-ffc5-491e-1aff-5187a3f4cae0" testName="Companion.Tests.ManagerWelcomeUiTests.A_regular_settings_save_does_not_invent_an_onboarding_marker_for_an_upgrade" computerName="MARK" duration="00:00:00.0100688" startTime="2026-10-14T01:36:05.1910536+02:00" endTime="2026-10-14T01:36:05.1910544+02:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="846ddaef-e57e-4d52-8d09-af1fb0bbcc49" />
+    <UnitTestResult executionId="415beb16-f113-4b4f-ade4-6f44006e9baf" testId="cafa63a8-5961-5317-dc44-74f2da191fa3" testName="Companion.Tests.ManagerWelcomeUiTests.Fresh_pending_survives_whole_settings_saves_and_an_explicit_decline_changes_no_preferences" computerName="MARK" duration="00:00:00.9039994" startTime="2026-10-14T01:36:07.1004535+02:00" endTime="2026-10-14T01:36:07.1004540+02:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="415beb16-f113-4b4f-ade4-6f44006e9baf" />
+    <UnitTestResult executionId="5c355d20-7085-4f16-8a49-a98b3a0eb80c" testId="17b89d4e-a566-09ea-59c3-418a15cb7571" testName="Companion.Tests.ButtonGlyphCoverageTests.The_enable_dialog_answers_are_an_amber_install_and_a_red_cancel" computerName="MARK" duration="00:00:00.2427584" startTime="2026-10-14T01:34:06.6683295+02:00" endTime="2026-10-14T01:34:06.6683298+02:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="5c355d20-7085-4f16-8a49-a98b3a0eb80c" />
+    <UnitTestResult executionId="148c2f8d-fb96-4375-9d7c-ff3833421bd7" testId="3a18d8e3-e561-4fff-423b-cd08440850ba" testName="Companion.Tests.ExchangeFirstRunUiTests.First_step_Later_writes_only_dismissal_and_stale_settings_cannot_rearm_it" computerName="MARK" duration="00:00:01.5699342" startTime="2026-10-14T01:36:05.1805707+02:00" endTime="2026-10-14T01:36:05.1805729+02:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="148c2f8d-fb96-4375-9d7c-ff3833421bd7" />
+    <UnitTestResult executionId="c880e75a-a522-40e0-8bae-baf3890fb09c" testId="6ad0c185-c74f-8050-9088-0dd0931f083e" testName="Companion.Tests.WindowsUiContractTests.Menu_tree_toggles_retain_bounds_and_complete_within_the_repeat_budget(scale: 2)" computerName="MARK" duration="00:00:08.7729822" startTime="2026-10-14T01:35:51.9190644+02:00" endTime="2026-10-14T01:35:51.9190647+02:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="c880e75a-a522-40e0-8bae-baf3890fb09c" />
+    <UnitTestResult executionId="2a05681b-d17e-49e1-9008-8fd399818a70" testId="846fb846-80f9-5f53-9add-feea364f86cb" testName="Companion.Tests.WindowsUiContractTests.Secondary_window_numeric_buttons_keep_their_width_and_native_value_semantics" computerName="MARK" duration="00:00:00.0354385" startTime="2026-10-14T01:34:54.4257433+02:00" endTime="2026-10-14T01:34:54.4257444+02:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="2a05681b-d17e-49e1-9008-8fd399818a70" />
+    <UnitTestResult executionId="c49a3ac6-f8d0-4dc1-a7e3-65bd6208dd59" testId="3e0072ee-f5a5-8be9-eca1-717a4a98feac" testName="Companion.Tests.WindowsUiContractTests.Manager_navigation_and_hints_fit_the_drawn_script(code: &quot;de&quot;)" computerName="MARK" duration="00:00:02.2951552" startTime="2026-10-14T01:35:08.3295154+02:00" endTime="2026-10-14T01:35:08.3295159+02:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="c49a3ac6-f8d0-4dc1-a7e3-65bd6208dd59" />
+    <UnitTestResult executionId="3dba7ae5-f5cc-4f60-83f5-c824ce37bf57" testId="40f7c11b-4617-ed86-68fa-cb97456b8e3b" testName="Companion.Tests.WindowsUiContractTests.Manager_navigation_and_hints_fit_the_drawn_script(code: &quot;zh&quot;)" computerName="MARK" duration="00:00:03.3410901" startTime="2026-10-14T01:35:26.0163783+02:00" endTime="2026-10-14T01:35:26.0163787+02:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="3dba7ae5-f5cc-4f60-83f5-c824ce37bf57" />
+    <UnitTestResult executionId="529c2cee-c5e1-4a2f-864c-b38373256f00" testId="7332eba0-45d5-98c4-9e3c-d01d5c8b40a9" testName="Companion.Tests.DisabledButtonCaptionTests.Switching_to_light_stops_the_dark_disabled_paint_and_keeps_native_state" computerName="MARK" duration="00:00:00.3477649" startTime="2026-10-14T01:34:03.3533120+02:00" endTime="2026-10-14T01:34:03.3533123+02:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="529c2cee-c5e1-4a2f-864c-b38373256f00" />
+    <UnitTestResult executionId="733debb5-e18d-4b93-b507-3130b3099930" testId="ef8b83aa-a912-f0f1-bede-34b38ef273da" testName="Companion.Tests.ServerWelcomeModelTests.The_welcome_suggests_the_same_numbers_the_share_settings_own" computerName="MARK" duration="00:00:00.0084461" startTime="2026-10-14T01:34:03.0194888+02:00" endTime="2026-10-14T01:34:03.0195183+02:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="733debb5-e18d-4b93-b507-3130b3099930" />
+    <UnitTestResult executionId="2a8e7d27-4f71-4039-b497-6b3bdca2aafb" testId="da4e6f45-eefa-eee0-5325-794b7de1bb90" testName="Companion.Tests.WindowsUiContractTests.Collapsing_a_focused_group_returns_focus_and_exposes_its_real_state" computerName="MARK" duration="00:00:00.1126061" startTime="2026-10-14T01:35:58.4103757+02:00" endTime="2026-10-14T01:35:58.4103761+02:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="2a8e7d27-4f71-4039-b497-6b3bdca2aafb" />
+    <UnitTestResult executionId="97d46cc6-bb7b-4456-8e03-ca68821d4407" testId="ac667b9f-75ee-375b-e807-d9757af91789" testName="Companion.Tests.CommandRowLayoutTests.Section_commands_fit_content_wrap_and_keep_notes_in_order" computerName="MARK" duration="00:00:01.3413972" startTime="2026-10-14T01:34:04.3470428+02:00" endTime="2026-10-14T01:34:04.3470433+02:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="97d46cc6-bb7b-4456-8e03-ca68821d4407" />
+    <UnitTestResult executionId="bb686f22-9e0d-46ba-8acf-f20fe2e30ac6" testId="82dcde5c-55fd-3855-c19d-f27e723b1472" testName="Companion.Tests.WindowsUiContractTests.Manager_contract_anatomy_keeps_hints_visible_and_about_last" computerName="MARK" duration="00:00:01.7647794" startTime="2026-10-14T01:36:00.1756686+02:00" endTime="2026-10-14T01:36:00.1756689+02:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="bb686f22-9e0d-46ba-8acf-f20fe2e30ac6" />
+    <UnitTestResult executionId="0c062dbd-9b8a-45b9-91b4-4537503c1d8e" testId="70f7dbe5-509d-c394-eeb8-4ddf36c4eb22" testName="Companion.Tests.WindowsUiContractTests.Every_page_contains_its_editors_after_resize_and_server_state_changes(width: 820)" computerName="MARK" duration="00:00:14.1710346" startTime="2026-10-14T01:34:27.7469332+02:00" endTime="2026-10-14T01:34:27.7469335+02:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="0c062dbd-9b8a-45b9-91b4-4537503c1d8e" />
+    <UnitTestResult executionId="744a663d-a2de-4831-8f6b-0566f03f46f5" testId="77fe321c-4b00-43ee-e68f-035b47e90d69" testName="Companion.Tests.WindowsUiContractTests.Manager_icons_use_identity_color_with_contrast_on_every_navigation_state" computerName="MARK" duration="00:00:00.0026386" startTime="2026-10-14T01:36:03.6095791+02:00" endTime="2026-10-14T01:36:03.6095798+02:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="744a663d-a2de-4831-8f6b-0566f03f46f5" />
+  </Results>
+  <TestDefinitions>
+    <UnitTest name="Companion.Tests.DisabledButtonCaptionTests.Buttons_added_after_the_theme_pass_receive_the_same_disabled_painter" storage="p:\windows\fastmediasorter_lite\tests\companion.tests\bin\commandlayoutuifinal\debug\net10.0-windows10.0.19041\companion.tests.dll" id="039191f1-101a-794f-2ee5-5202b99308ee">
+      <Execution id="7d4ef180-43cf-43ca-8515-af6671f53fe4" />
+      <TestMethod codeBase="P:\WINDOWS\FastMediaSorter_Lite\tests\Companion.Tests\bin\CommandLayoutUiFinal\Debug\net10.0-windows10.0.19041\Companion.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner2/netcoreapp" className="Companion.Tests.DisabledButtonCaptionTests" name="Buttons_added_after_the_theme_pass_receive_the_same_disabled_painter" />
+    </UnitTest>
+    <UnitTest name="Companion.Tests.ManagerWelcomeUiTests.Untouched_port_and_basic_questions_write_no_defaults_and_preserve_external_settings_changes" storage="p:\windows\fastmediasorter_lite\tests\companion.tests\bin\commandlayoutuifinal\debug\net10.0-windows10.0.19041\companion.tests.dll" id="5081c1ee-d77b-7bed-ecfe-3e1118c47d31">
+      <Execution id="e5a875be-f135-44bc-94a8-00757485a643" />
+      <TestMethod codeBase="P:\WINDOWS\FastMediaSorter_Lite\tests\Companion.Tests\bin\CommandLayoutUiFinal\Debug\net10.0-windows10.0.19041\Companion.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner2/netcoreapp" className="Companion.Tests.ManagerWelcomeUiTests" name="Untouched_port_and_basic_questions_write_no_defaults_and_preserve_external_settings_changes" />
+    </UnitTest>
+    <UnitTest name="Companion.Tests.ButtonGlyphCoverageTests.Render_the_windows_light_and_dark_when_a_folder_is_given" storage="p:\windows\fastmediasorter_lite\tests\companion.tests\bin\commandlayoutuifinal\debug\net10.0-windows10.0.19041\companion.tests.dll" id="2a4db498-e461-814f-770b-5624b4ab7a6a">
+      <Execution id="bf4adc1a-682a-41f9-ac80-ffafc5dcbb9d" />
+      <TestMethod codeBase="P:\WINDOWS\FastMediaSorter_Lite\tests\Companion.Tests\bin\CommandLayoutUiFinal\Debug\net10.0-windows10.0.19041\Companion.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner2/netcoreapp" className="Companion.Tests.ButtonGlyphCoverageTests" name="Render_the_windows_light_and_dark_when_a_folder_is_given" />
+    </UnitTest>
+    <UnitTest name="Companion.Tests.WindowsUiContractTests.The_left_menu_tree_toggles_items_selects_pages_and_reveals_blocks" storage="p:\windows\fastmediasorter_lite\tests\companion.tests\bin\commandlayoutuifinal\debug\net10.0-windows10.0.19041\companion.tests.dll" id="e0affd5e-7179-d5bf-d7bd-9930762b2596">
+      <Execution id="630eae1f-1fc5-4175-b155-442ec5a77916" />
+      <TestMethod codeBase="P:\WINDOWS\FastMediaSorter_Lite\tests\Companion.Tests\bin\CommandLayoutUiFinal\Debug\net10.0-windows10.0.19041\Companion.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner2/netcoreapp" className="Companion.Tests.WindowsUiContractTests" name="The_left_menu_tree_toggles_items_selects_pages_and_reveals_blocks" />
+    </UnitTest>
+    <UnitTest name="Companion.Tests.WindowsUiContractTests.Manager_pages_keep_window_geometry_and_restore_each_viewport" storage="p:\windows\fastmediasorter_lite\tests\companion.tests\bin\commandlayoutuifinal\debug\net10.0-windows10.0.19041\companion.tests.dll" id="710155b1-b76d-52dc-e1fe-d757006ba5d7">
+      <Execution id="66b387be-f249-489c-b502-bcd1ba7bfa8e" />
+      <TestMethod codeBase="P:\WINDOWS\FastMediaSorter_Lite\tests\Companion.Tests\bin\CommandLayoutUiFinal\Debug\net10.0-windows10.0.19041\Companion.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner2/netcoreapp" className="Companion.Tests.WindowsUiContractTests" name="Manager_pages_keep_window_geometry_and_restore_each_viewport" />
+    </UnitTest>
+    <UnitTest name="Companion.Tests.SectionLayoutTests.No_section_title_overflows_its_header_in_any_language" storage="p:\windows\fastmediasorter_lite\tests\companion.tests\bin\commandlayoutuifinal\debug\net10.0-windows10.0.19041\companion.tests.dll" id="d7506e5e-d840-ae12-a0bd-fdcc48120441">
+      <Execution id="eb486164-920f-4e78-8e42-371cb060e769" />
+      <TestMethod codeBase="P:\WINDOWS\FastMediaSorter_Lite\tests\Companion.Tests\bin\CommandLayoutUiFinal\Debug\net10.0-windows10.0.19041\Companion.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner2/netcoreapp" className="Companion.Tests.SectionLayoutTests" name="No_section_title_overflows_its_header_in_any_language" />
+    </UnitTest>
+    <UnitTest name="Companion.Tests.ManagerWelcomeUiTests.Finish_copies_the_main_windows_sentence_color_and_glyph_and_reopen_starts_at_finish_only_when_green" storage="p:\windows\fastmediasorter_lite\tests\companion.tests\bin\commandlayoutuifinal\debug\net10.0-windows10.0.19041\companion.tests.dll" id="603cc54a-d35c-7836-0acf-26afceda177f">
+      <Execution id="5d0a4866-ed72-4acb-a88b-1c074521aa66" />
+      <TestMethod codeBase="P:\WINDOWS\FastMediaSorter_Lite\tests\Companion.Tests\bin\CommandLayoutUiFinal\Debug\net10.0-windows10.0.19041\Companion.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner2/netcoreapp" className="Companion.Tests.ManagerWelcomeUiTests" name="Finish_copies_the_main_windows_sentence_color_and_glyph_and_reopen_starts_at_finish_only_when_green" />
+    </UnitTest>
+    <UnitTest name="Companion.Tests.SectionLayoutTests.The_scanner_actually_inspects_the_window" storage="p:\windows\fastmediasorter_lite\tests\companion.tests\bin\commandlayoutuifinal\debug\net10.0-windows10.0.19041\companion.tests.dll" id="e0db754d-9704-5f8e-2cb5-fc59405fc8f9">
+      <Execution id="5fb55640-644d-4148-95f4-5a5cb455f06f" />
+      <TestMethod codeBase="P:\WINDOWS\FastMediaSorter_Lite\tests\Companion.Tests\bin\CommandLayoutUiFinal\Debug\net10.0-windows10.0.19041\Companion.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner2/netcoreapp" className="Companion.Tests.SectionLayoutTests" name="The_scanner_actually_inspects_the_window" />
+    </UnitTest>
+    <UnitTest name="Companion.Tests.WindowsUiContractTests.Dropdown_field_and_arrow_are_painted_in_the_current_palette" storage="p:\windows\fastmediasorter_lite\tests\companion.tests\bin\commandlayoutuifinal\debug\net10.0-windows10.0.19041\companion.tests.dll" id="b25ea434-9cbc-ee67-1cd6-38cddd11fc7f">
+      <Execution id="1a62a7d9-503c-4b44-bd34-f344580ce1ef" />
+      <TestMethod codeBase="P:\WINDOWS\FastMediaSorter_Lite\tests\Companion.Tests\bin\CommandLayoutUiFinal\Debug\net10.0-windows10.0.19041\Companion.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner2/netcoreapp" className="Companion.Tests.WindowsUiContractTests" name="Dropdown_field_and_arrow_are_painted_in_the_current_palette" />
+    </UnitTest>
+    <UnitTest name="Companion.Tests.WindowsUiContractTests.Native_checkboxes_keep_the_language_direction_and_hint_indent" storage="p:\windows\fastmediasorter_lite\tests\companion.tests\bin\commandlayoutuifinal\debug\net10.0-windows10.0.19041\companion.tests.dll" id="f12cbca5-bf49-46df-2bec-5b3cf0c5355d">
+      <Execution id="d312f661-bdbe-4478-910c-39e6ba56d9c8" />
+      <TestMethod codeBase="P:\WINDOWS\FastMediaSorter_Lite\tests\Companion.Tests\bin\CommandLayoutUiFinal\Debug\net10.0-windows10.0.19041\Companion.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner2/netcoreapp" className="Companion.Tests.WindowsUiContractTests" name="Native_checkboxes_keep_the_language_direction_and_hint_indent" />
+    </UnitTest>
+    <UnitTest name="Companion.Tests.WindowsUiContractTests.Manager_navigation_and_hints_fit_the_drawn_script(code: &quot;zh&quot;)" storage="p:\windows\fastmediasorter_lite\tests\companion.tests\bin\commandlayoutuifinal\debug\net10.0-windows10.0.19041\companion.tests.dll" id="40f7c11b-4617-ed86-68fa-cb97456b8e3b">
+      <Execution id="3dba7ae5-f5cc-4f60-83f5-c824ce37bf57" />
+      <TestMethod codeBase="P:\WINDOWS\FastMediaSorter_Lite\tests\Companion.Tests\bin\CommandLayoutUiFinal\Debug\net10.0-windows10.0.19041\Companion.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner2/netcoreapp" className="Companion.Tests.WindowsUiContractTests" name="Manager_navigation_and_hints_fit_the_drawn_script" />
+    </UnitTest>
+    <UnitTest name="Companion.Tests.WindowsUiContractTests.Collapsing_a_focused_group_returns_focus_and_exposes_its_real_state" storage="p:\windows\fastmediasorter_lite\tests\companion.tests\bin\commandlayoutuifinal\debug\net10.0-windows10.0.19041\companion.tests.dll" id="da4e6f45-eefa-eee0-5325-794b7de1bb90">
+      <Execution id="2a8e7d27-4f71-4039-b497-6b3bdca2aafb" />
+      <TestMethod codeBase="P:\WINDOWS\FastMediaSorter_Lite\tests\Companion.Tests\bin\CommandLayoutUiFinal\Debug\net10.0-windows10.0.19041\Companion.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner2/netcoreapp" className="Companion.Tests.WindowsUiContractTests" name="Collapsing_a_focused_group_returns_focus_and_exposes_its_real_state" />
+    </UnitTest>
+    <UnitTest name="Companion.Tests.WindowsUiContractTests.Manager_navigation_and_hints_fit_the_drawn_script(code: &quot;de&quot;)" storage="p:\windows\fastmediasorter_lite\tests\companion.tests\bin\commandlayoutuifinal\debug\net10.0-windows10.0.19041\companion.tests.dll" id="3e0072ee-f5a5-8be9-eca1-717a4a98feac">
+      <Execution id="c49a3ac6-f8d0-4dc1-a7e3-65bd6208dd59" />
+      <TestMethod codeBase="P:\WINDOWS\FastMediaSorter_Lite\tests\Companion.Tests\bin\CommandLayoutUiFinal\Debug\net10.0-windows10.0.19041\Companion.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner2/netcoreapp" className="Companion.Tests.WindowsUiContractTests" name="Manager_navigation_and_hints_fit_the_drawn_script" />
+    </UnitTest>
+    <UnitTest name="Companion.Tests.DisabledButtonCaptionTests.Self_themed_flat_buttons_draw_disabled_text_in_the_readable_role" storage="p:\windows\fastmediasorter_lite\tests\companion.tests\bin\commandlayoutuifinal\debug\net10.0-windows10.0.19041\companion.tests.dll" id="a00cc297-883a-9074-67c8-48547776e310">
+      <Execution id="acdcb035-eeb8-46de-ada2-9a744e49c8ab" />
+      <TestMethod codeBase="P:\WINDOWS\FastMediaSorter_Lite\tests\Companion.Tests\bin\CommandLayoutUiFinal\Debug\net10.0-windows10.0.19041\Companion.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner2/netcoreapp" className="Companion.Tests.DisabledButtonCaptionTests" name="Self_themed_flat_buttons_draw_disabled_text_in_the_readable_role" />
+    </UnitTest>
+    <UnitTest name="Companion.Tests.ServerWelcomeModelTests.The_welcome_suggests_the_same_numbers_the_share_settings_own" storage="p:\windows\fastmediasorter_lite\tests\companion.tests\bin\commandlayoutuifinal\debug\net10.0-windows10.0.19041\companion.tests.dll" id="ef8b83aa-a912-f0f1-bede-34b38ef273da">
+      <Execution id="733debb5-e18d-4b93-b507-3130b3099930" />
+      <TestMethod codeBase="P:\WINDOWS\FastMediaSorter_Lite\tests\Companion.Tests\bin\CommandLayoutUiFinal\Debug\net10.0-windows10.0.19041\Companion.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner2/netcoreapp" className="Companion.Tests.ServerWelcomeModelTests" name="The_welcome_suggests_the_same_numbers_the_share_settings_own" />
+    </UnitTest>
+    <UnitTest name="Companion.Tests.ManagerWelcomeUiTests.Fresh_pending_survives_whole_settings_saves_and_an_explicit_decline_changes_no_preferences" storage="p:\windows\fastmediasorter_lite\tests\companion.tests\bin\commandlayoutuifinal\debug\net10.0-windows10.0.19041\companion.tests.dll" id="cafa63a8-5961-5317-dc44-74f2da191fa3">
+      <Execution id="415beb16-f113-4b4f-ade4-6f44006e9baf" />
+      <TestMethod codeBase="P:\WINDOWS\FastMediaSorter_Lite\tests\Companion.Tests\bin\CommandLayoutUiFinal\Debug\net10.0-windows10.0.19041\Companion.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner2/netcoreapp" className="Companion.Tests.ManagerWelcomeUiTests" name="Fresh_pending_survives_whole_settings_saves_and_an_explicit_decline_changes_no_preferences" />
+    </UnitTest>
+    <UnitTest name="Companion.Tests.ButtonGlyphCoverageTests.The_enable_dialog_answers_are_an_amber_install_and_a_red_cancel" storage="p:\windows\fastmediasorter_lite\tests\companion.tests\bin\commandlayoutuifinal\debug\net10.0-windows10.0.19041\companion.tests.dll" id="17b89d4e-a566-09ea-59c3-418a15cb7571">
+      <Execution id="5c355d20-7085-4f16-8a49-a98b3a0eb80c" />
+      <TestMethod codeBase="P:\WINDOWS\FastMediaSorter_Lite\tests\Companion.Tests\bin\CommandLayoutUiFinal\Debug\net10.0-windows10.0.19041\Companion.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner2/netcoreapp" className="Companion.Tests.ButtonGlyphCoverageTests" name="The_enable_dialog_answers_are_an_amber_install_and_a_red_cancel" />
+    </UnitTest>
+    <UnitTest name="Companion.Tests.ManagerWelcomeUiTests.A_regular_settings_save_does_not_invent_an_onboarding_marker_for_an_upgrade" storage="p:\windows\fastmediasorter_lite\tests\companion.tests\bin\commandlayoutuifinal\debug\net10.0-windows10.0.19041\companion.tests.dll" id="17831edf-ffc5-491e-1aff-5187a3f4cae0">
+      <Execution id="846ddaef-e57e-4d52-8d09-af1fb0bbcc49" />
+      <TestMethod codeBase="P:\WINDOWS\FastMediaSorter_Lite\tests\Companion.Tests\bin\CommandLayoutUiFinal\Debug\net10.0-windows10.0.19041\Companion.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner2/netcoreapp" className="Companion.Tests.ManagerWelcomeUiTests" name="A_regular_settings_save_does_not_invent_an_onboarding_marker_for_an_upgrade" />
+    </UnitTest>
+    <UnitTest name="Companion.Tests.WindowsUiContractTests.Live_language_refresh_preserves_window_and_editor_values_and_resets_direction" storage="p:\windows\fastmediasorter_lite\tests\companion.tests\bin\commandlayoutuifinal\debug\net10.0-windows10.0.19041\companion.tests.dll" id="6b1947e0-71d8-2aa5-06d5-4e68d38d7f3f">
+      <Execution id="1ca44ce2-1f5d-4660-a11a-f418af9d4ae9" />
+      <TestMethod codeBase="P:\WINDOWS\FastMediaSorter_Lite\tests\Companion.Tests\bin\CommandLayoutUiFinal\Debug\net10.0-windows10.0.19041\Companion.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner2/netcoreapp" className="Companion.Tests.WindowsUiContractTests" name="Live_language_refresh_preserves_window_and_editor_values_and_resets_direction" />
+    </UnitTest>
+    <UnitTest name="Companion.Tests.WindowsUiContractTests.Every_page_contains_its_editors_after_resize_and_server_state_changes(width: 820)" storage="p:\windows\fastmediasorter_lite\tests\companion.tests\bin\commandlayoutuifinal\debug\net10.0-windows10.0.19041\companion.tests.dll" id="70f7dbe5-509d-c394-eeb8-4ddf36c4eb22">
+      <Execution id="0c062dbd-9b8a-45b9-91b4-4537503c1d8e" />
+      <TestMethod codeBase="P:\WINDOWS\FastMediaSorter_Lite\tests\Companion.Tests\bin\CommandLayoutUiFinal\Debug\net10.0-windows10.0.19041\Companion.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner2/netcoreapp" className="Companion.Tests.WindowsUiContractTests" name="Every_page_contains_its_editors_after_resize_and_server_state_changes" />
+    </UnitTest>
+    <UnitTest name="Companion.Tests.DisabledButtonCaptionTests.Switching_to_light_stops_the_dark_disabled_paint_and_keeps_native_state" storage="p:\windows\fastmediasorter_lite\tests\companion.tests\bin\commandlayoutuifinal\debug\net10.0-windows10.0.19041\companion.tests.dll" id="7332eba0-45d5-98c4-9e3c-d01d5c8b40a9">
+      <Execution id="529c2cee-c5e1-4a2f-864c-b38373256f00" />
+      <TestMethod codeBase="P:\WINDOWS\FastMediaSorter_Lite\tests\Companion.Tests\bin\CommandLayoutUiFinal\Debug\net10.0-windows10.0.19041\Companion.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner2/netcoreapp" className="Companion.Tests.DisabledButtonCaptionTests" name="Switching_to_light_stops_the_dark_disabled_paint_and_keeps_native_state" />
+    </UnitTest>
+    <UnitTest name="Companion.Tests.WindowsUiContractTests.Async_server_refresh_without_a_synchronization_context_creates_controls_on_the_window_thread" storage="p:\windows\fastmediasorter_lite\tests\companion.tests\bin\commandlayoutuifinal\debug\net10.0-windows10.0.19041\companion.tests.dll" id="a7054092-b483-3648-2c02-b146807873f3">
+      <Execution id="87a420df-7022-4e6c-9e3d-9c9bd4a82606" />
+      <TestMethod codeBase="P:\WINDOWS\FastMediaSorter_Lite\tests\Companion.Tests\bin\CommandLayoutUiFinal\Debug\net10.0-windows10.0.19041\Companion.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner2/netcoreapp" className="Companion.Tests.WindowsUiContractTests" name="Async_server_refresh_without_a_synchronization_context_creates_controls_on_the_window_thread" />
+    </UnitTest>
+    <UnitTest name="Companion.Tests.ServerWelcomeModelTests.The_dismissal_values_are_the_names_the_settings_hive_owns" storage="p:\windows\fastmediasorter_lite\tests\companion.tests\bin\commandlayoutuifinal\debug\net10.0-windows10.0.19041\companion.tests.dll" id="a0b55a29-69a6-0c9b-82ed-ffd2b643864b">
+      <Execution id="12487731-60de-443a-ba51-46951857efcd" />
+      <TestMethod codeBase="P:\WINDOWS\FastMediaSorter_Lite\tests\Companion.Tests\bin\CommandLayoutUiFinal\Debug\net10.0-windows10.0.19041\Companion.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner2/netcoreapp" className="Companion.Tests.ServerWelcomeModelTests" name="The_dismissal_values_are_the_names_the_settings_hive_owns" />
+    </UnitTest>
+    <UnitTest name="Companion.Tests.WindowsUiContractTests.Embedded_dropdowns_in_toolbars_follow_both_palettes" storage="p:\windows\fastmediasorter_lite\tests\companion.tests\bin\commandlayoutuifinal\debug\net10.0-windows10.0.19041\companion.tests.dll" id="d1f70842-632a-a0e0-8894-b1918232987a">
+      <Execution id="f53c0efb-4314-477e-bccd-d873a01cc43f" />
+      <TestMethod codeBase="P:\WINDOWS\FastMediaSorter_Lite\tests\Companion.Tests\bin\CommandLayoutUiFinal\Debug\net10.0-windows10.0.19041\Companion.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner2/netcoreapp" className="Companion.Tests.WindowsUiContractTests" name="Embedded_dropdowns_in_toolbars_follow_both_palettes" />
+    </UnitTest>
+    <UnitTest name="Companion.Tests.WindowsUiContractTests.Manager_icons_use_identity_color_with_contrast_on_every_navigation_state" storage="p:\windows\fastmediasorter_lite\tests\companion.tests\bin\commandlayoutuifinal\debug\net10.0-windows10.0.19041\companion.tests.dll" id="77fe321c-4b00-43ee-e68f-035b47e90d69">
+      <Execution id="744a663d-a2de-4831-8f6b-0566f03f46f5" />
+      <TestMethod codeBase="P:\WINDOWS\FastMediaSorter_Lite\tests\Companion.Tests\bin\CommandLayoutUiFinal\Debug\net10.0-windows10.0.19041\Companion.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner2/netcoreapp" className="Companion.Tests.WindowsUiContractTests" name="Manager_icons_use_identity_color_with_contrast_on_every_navigation_state" />
+    </UnitTest>
+    <UnitTest name="Companion.Tests.ButtonGlyphCoverageTests.Every_captioned_command_button_of_the_walked_windows_has_a_glyph" storage="p:\windows\fastmediasorter_lite\tests\companion.tests\bin\commandlayoutuifinal\debug\net10.0-windows10.0.19041\companion.tests.dll" id="9fc794dc-637c-2816-f6ad-10f99b0647e1">
+      <Execution id="c7ea2434-8e41-4d6f-a544-02725769569b" />
+      <TestMethod codeBase="P:\WINDOWS\FastMediaSorter_Lite\tests\Companion.Tests\bin\CommandLayoutUiFinal\Debug\net10.0-windows10.0.19041\Companion.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner2/netcoreapp" className="Companion.Tests.ButtonGlyphCoverageTests" name="Every_captioned_command_button_of_the_walked_windows_has_a_glyph" />
+    </UnitTest>
+    <UnitTest name="Companion.Tests.ExchangeFirstRunUiTests.First_step_Later_writes_only_dismissal_and_stale_settings_cannot_rearm_it" storage="p:\windows\fastmediasorter_lite\tests\companion.tests\bin\commandlayoutuifinal\debug\net10.0-windows10.0.19041\companion.tests.dll" id="3a18d8e3-e561-4fff-423b-cd08440850ba">
+      <Execution id="148c2f8d-fb96-4375-9d7c-ff3833421bd7" />
+      <TestMethod codeBase="P:\WINDOWS\FastMediaSorter_Lite\tests\Companion.Tests\bin\CommandLayoutUiFinal\Debug\net10.0-windows10.0.19041\Companion.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner2/netcoreapp" className="Companion.Tests.ExchangeFirstRunUiTests" name="First_step_Later_writes_only_dismissal_and_stale_settings_cannot_rearm_it" />
+    </UnitTest>
+    <UnitTest name="Companion.Tests.WindowsUiContractTests.Menu_tree_toggles_retain_bounds_and_complete_within_the_repeat_budget(scale: 2)" storage="p:\windows\fastmediasorter_lite\tests\companion.tests\bin\commandlayoutuifinal\debug\net10.0-windows10.0.19041\companion.tests.dll" id="6ad0c185-c74f-8050-9088-0dd0931f083e">
+      <Execution id="c880e75a-a522-40e0-8bae-baf3890fb09c" />
+      <TestMethod codeBase="P:\WINDOWS\FastMediaSorter_Lite\tests\Companion.Tests\bin\CommandLayoutUiFinal\Debug\net10.0-windows10.0.19041\Companion.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner2/netcoreapp" className="Companion.Tests.WindowsUiContractTests" name="Menu_tree_toggles_retain_bounds_and_complete_within_the_repeat_budget" />
+    </UnitTest>
+    <UnitTest name="Companion.Tests.IconNameTests.Every_share_manager_glyph_is_embedded" storage="p:\windows\fastmediasorter_lite\tests\companion.tests\bin\commandlayoutuifinal\debug\net10.0-windows10.0.19041\companion.tests.dll" id="93ef696e-410b-850b-cc7f-71fb9a513eef">
+      <Execution id="bec4fe76-c5d4-420f-b5ab-0355043f46c0" />
+      <TestMethod codeBase="P:\WINDOWS\FastMediaSorter_Lite\tests\Companion.Tests\bin\CommandLayoutUiFinal\Debug\net10.0-windows10.0.19041\Companion.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner2/netcoreapp" className="Companion.Tests.IconNameTests" name="Every_share_manager_glyph_is_embedded" />
+    </UnitTest>
+    <UnitTest name="Companion.Tests.WindowsUiContractTests.Menu_tree_toggles_retain_bounds_and_complete_within_the_repeat_budget(scale: 1)" storage="p:\windows\fastmediasorter_lite\tests\companion.tests\bin\commandlayoutuifinal\debug\net10.0-windows10.0.19041\companion.tests.dll" id="18626804-e64d-7ded-0666-c371ea7c46fa">
+      <Execution id="caddb5d8-0d3d-42b3-9efc-029f773c04ff" />
+      <TestMethod codeBase="P:\WINDOWS\FastMediaSorter_Lite\tests\Companion.Tests\bin\CommandLayoutUiFinal\Debug\net10.0-windows10.0.19041\Companion.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner2/netcoreapp" className="Companion.Tests.WindowsUiContractTests" name="Menu_tree_toggles_retain_bounds_and_complete_within_the_repeat_budget" />
+    </UnitTest>
+    <UnitTest name="Companion.Tests.CommandRowLayoutTests.Section_commands_fit_content_wrap_and_keep_notes_in_order" storage="p:\windows\fastmediasorter_lite\tests\companion.tests\bin\commandlayoutuifinal\debug\net10.0-windows10.0.19041\companion.tests.dll" id="ac667b9f-75ee-375b-e807-d9757af91789">
+      <Execution id="97d46cc6-bb7b-4456-8e03-ca68821d4407" />
+      <TestMethod codeBase="P:\WINDOWS\FastMediaSorter_Lite\tests\Companion.Tests\bin\CommandLayoutUiFinal\Debug\net10.0-windows10.0.19041\Companion.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner2/netcoreapp" className="Companion.Tests.CommandRowLayoutTests" name="Section_commands_fit_content_wrap_and_keep_notes_in_order" />
+    </UnitTest>
+    <UnitTest name="Companion.Tests.WindowsUiContractTests.Manager_navigation_and_hints_fit_the_drawn_script(code: &quot;ar&quot;)" storage="p:\windows\fastmediasorter_lite\tests\companion.tests\bin\commandlayoutuifinal\debug\net10.0-windows10.0.19041\companion.tests.dll" id="56359089-a3a2-8b23-ca2a-98f5cb28ab68">
+      <Execution id="f57415c0-e61b-4794-a22a-4d739bc52eeb" />
+      <TestMethod codeBase="P:\WINDOWS\FastMediaSorter_Lite\tests\Companion.Tests\bin\CommandLayoutUiFinal\Debug\net10.0-windows10.0.19041\Companion.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner2/netcoreapp" className="Companion.Tests.WindowsUiContractTests" name="Manager_navigation_and_hints_fit_the_drawn_script" />
+    </UnitTest>
+    <UnitTest name="Companion.Tests.WindowsUiContractTests.Menu_tree_toggles_retain_bounds_and_complete_within_the_repeat_budget(scale: 1.75)" storage="p:\windows\fastmediasorter_lite\tests\companion.tests\bin\commandlayoutuifinal\debug\net10.0-windows10.0.19041\companion.tests.dll" id="e627f997-ce2b-4685-976c-5e238e0d9588">
+      <Execution id="08b786de-45f6-4641-92fb-d3d3b482ce4c" />
+      <TestMethod codeBase="P:\WINDOWS\FastMediaSorter_Lite\tests\Companion.Tests\bin\CommandLayoutUiFinal\Debug\net10.0-windows10.0.19041\Companion.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner2/netcoreapp" className="Companion.Tests.WindowsUiContractTests" name="Menu_tree_toggles_retain_bounds_and_complete_within_the_repeat_budget" />
+    </UnitTest>
+    <UnitTest name="Companion.Tests.ThemeApplierTests.The_real_settings_dialog_is_fully_themed" storage="p:\windows\fastmediasorter_lite\tests\companion.tests\bin\commandlayoutuifinal\debug\net10.0-windows10.0.19041\companion.tests.dll" id="55376ba7-efb9-46d9-7170-5771f4c5bbc5">
+      <Execution id="452bd024-4a58-4a07-88df-07921c345d9c" />
+      <TestMethod codeBase="P:\WINDOWS\FastMediaSorter_Lite\tests\Companion.Tests\bin\CommandLayoutUiFinal\Debug\net10.0-windows10.0.19041\Companion.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner2/netcoreapp" className="Companion.Tests.ThemeApplierTests" name="The_real_settings_dialog_is_fully_themed" />
+    </UnitTest>
+    <UnitTest name="Companion.Tests.WindowsUiContractTests.Manager_navigation_and_hints_fit_the_drawn_script(code: &quot;ru&quot;)" storage="p:\windows\fastmediasorter_lite\tests\companion.tests\bin\commandlayoutuifinal\debug\net10.0-windows10.0.19041\companion.tests.dll" id="86745780-d427-24f5-5d4c-74ec96a38daa">
+      <Execution id="b163ce91-4e60-45d7-87f6-35a369ebb9eb" />
+      <TestMethod codeBase="P:\WINDOWS\FastMediaSorter_Lite\tests\Companion.Tests\bin\CommandLayoutUiFinal\Debug\net10.0-windows10.0.19041\Companion.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner2/netcoreapp" className="Companion.Tests.WindowsUiContractTests" name="Manager_navigation_and_hints_fit_the_drawn_script" />
+    </UnitTest>
+    <UnitTest name="Companion.Tests.WindowsUiContractTests.Secondary_window_numeric_buttons_keep_their_width_and_native_value_semantics" storage="p:\windows\fastmediasorter_lite\tests\companion.tests\bin\commandlayoutuifinal\debug\net10.0-windows10.0.19041\companion.tests.dll" id="846fb846-80f9-5f53-9add-feea364f86cb">
+      <Execution id="2a05681b-d17e-49e1-9008-8fd399818a70" />
+      <TestMethod codeBase="P:\WINDOWS\FastMediaSorter_Lite\tests\Companion.Tests\bin\CommandLayoutUiFinal\Debug\net10.0-windows10.0.19041\Companion.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner2/netcoreapp" className="Companion.Tests.WindowsUiContractTests" name="Secondary_window_numeric_buttons_keep_their_width_and_native_value_semantics" />
+    </UnitTest>
+    <UnitTest name="Companion.Tests.WindowsUiContractTests.Revealing_the_menu_items_preserves_the_user_window_size" storage="p:\windows\fastmediasorter_lite\tests\companion.tests\bin\commandlayoutuifinal\debug\net10.0-windows10.0.19041\companion.tests.dll" id="614f7d65-5385-e7ed-753a-48141242392a">
+      <Execution id="3e07eeae-45e0-4416-80d3-c00a62c61388" />
+      <TestMethod codeBase="P:\WINDOWS\FastMediaSorter_Lite\tests\Companion.Tests\bin\CommandLayoutUiFinal\Debug\net10.0-windows10.0.19041\Companion.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner2/netcoreapp" className="Companion.Tests.WindowsUiContractTests" name="Revealing_the_menu_items_preserves_the_user_window_size" />
+    </UnitTest>
+    <UnitTest name="Companion.Tests.SectionLayoutTests.The_title_never_ellipsizes_and_the_summary_always_does" storage="p:\windows\fastmediasorter_lite\tests\companion.tests\bin\commandlayoutuifinal\debug\net10.0-windows10.0.19041\companion.tests.dll" id="5849affd-4f79-d21c-74b7-60a4c5feb12d">
+      <Execution id="a5d27546-73d2-497b-9cd2-b99572b611e3" />
+      <TestMethod codeBase="P:\WINDOWS\FastMediaSorter_Lite\tests\Companion.Tests\bin\CommandLayoutUiFinal\Debug\net10.0-windows10.0.19041\Companion.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner2/netcoreapp" className="Companion.Tests.SectionLayoutTests" name="The_title_never_ellipsizes_and_the_summary_always_does" />
+    </UnitTest>
+    <UnitTest name="Companion.Tests.WindowsUiContractTests.Manager_contract_anatomy_keeps_hints_visible_and_about_last" storage="p:\windows\fastmediasorter_lite\tests\companion.tests\bin\commandlayoutuifinal\debug\net10.0-windows10.0.19041\companion.tests.dll" id="82dcde5c-55fd-3855-c19d-f27e723b1472">
+      <Execution id="bb686f22-9e0d-46ba-8acf-f20fe2e30ac6" />
+      <TestMethod codeBase="P:\WINDOWS\FastMediaSorter_Lite\tests\Companion.Tests\bin\CommandLayoutUiFinal\Debug\net10.0-windows10.0.19041\Companion.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner2/netcoreapp" className="Companion.Tests.WindowsUiContractTests" name="Manager_contract_anatomy_keeps_hints_visible_and_about_last" />
+    </UnitTest>
+    <UnitTest name="Companion.Tests.WindowsUiContractTests.Manager_navigation_and_hints_fit_the_drawn_script(code: &quot;hi&quot;)" storage="p:\windows\fastmediasorter_lite\tests\companion.tests\bin\commandlayoutuifinal\debug\net10.0-windows10.0.19041\companion.tests.dll" id="8586f1f2-e679-322d-d36a-7baf1d4c080d">
+      <Execution id="10aeed1e-6114-4e17-9284-54ce1a58526f" />
+      <TestMethod codeBase="P:\WINDOWS\FastMediaSorter_Lite\tests\Companion.Tests\bin\CommandLayoutUiFinal\Debug\net10.0-windows10.0.19041\Companion.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner2/netcoreapp" className="Companion.Tests.WindowsUiContractTests" name="Manager_navigation_and_hints_fit_the_drawn_script" />
+    </UnitTest>
+    <UnitTest name="Companion.Tests.SectionLayoutTests.Section_keys_are_unique" storage="p:\windows\fastmediasorter_lite\tests\companion.tests\bin\commandlayoutuifinal\debug\net10.0-windows10.0.19041\companion.tests.dll" id="d2d66b42-5ede-18a0-0318-3545f74ebea9">
+      <Execution id="887ae06d-1425-4ef7-b5fd-1d26f14c3a59" />
+      <TestMethod codeBase="P:\WINDOWS\FastMediaSorter_Lite\tests\Companion.Tests\bin\CommandLayoutUiFinal\Debug\net10.0-windows10.0.19041\Companion.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner2/netcoreapp" className="Companion.Tests.SectionLayoutTests" name="Section_keys_are_unique" />
+    </UnitTest>
+    <UnitTest name="Companion.Tests.ExchangeProcessTests.The_settings_default_to_nothing_running_in_the_background" storage="p:\windows\fastmediasorter_lite\tests\companion.tests\bin\commandlayoutuifinal\debug\net10.0-windows10.0.19041\companion.tests.dll" id="42d0b560-4a2f-991f-215a-0e294861904d">
+      <Execution id="e7440b94-72ec-45e1-a2cc-dfa3cd1a8859" />
+      <TestMethod codeBase="P:\WINDOWS\FastMediaSorter_Lite\tests\Companion.Tests\bin\CommandLayoutUiFinal\Debug\net10.0-windows10.0.19041\Companion.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner2/netcoreapp" className="Companion.Tests.ExchangeProcessTests" name="The_settings_default_to_nothing_running_in_the_background" />
+    </UnitTest>
+    <UnitTest name="Companion.Tests.WindowsUiContractTests.Every_page_contains_its_editors_after_resize_and_server_state_changes(width: 640)" storage="p:\windows\fastmediasorter_lite\tests\companion.tests\bin\commandlayoutuifinal\debug\net10.0-windows10.0.19041\companion.tests.dll" id="1168633f-52f5-aa12-0b7b-702c589d6e36">
+      <Execution id="7d9aaa72-4e98-4795-bb8b-5e3b05e9d6e5" />
+      <TestMethod codeBase="P:\WINDOWS\FastMediaSorter_Lite\tests\Companion.Tests\bin\CommandLayoutUiFinal\Debug\net10.0-windows10.0.19041\Companion.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner2/netcoreapp" className="Companion.Tests.WindowsUiContractTests" name="Every_page_contains_its_editors_after_resize_and_server_state_changes" />
+    </UnitTest>
+  </TestDefinitions>
+  <TestEntries>
+    <TestEntry testId="e0affd5e-7179-d5bf-d7bd-9930762b2596" executionId="630eae1f-1fc5-4175-b155-442ec5a77916" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="a00cc297-883a-9074-67c8-48547776e310" executionId="acdcb035-eeb8-46de-ada2-9a744e49c8ab" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="d7506e5e-d840-ae12-a0bd-fdcc48120441" executionId="eb486164-920f-4e78-8e42-371cb060e769" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="603cc54a-d35c-7836-0acf-26afceda177f" executionId="5d0a4866-ed72-4acb-a88b-1c074521aa66" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="d2d66b42-5ede-18a0-0318-3545f74ebea9" executionId="887ae06d-1425-4ef7-b5fd-1d26f14c3a59" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="e627f997-ce2b-4685-976c-5e238e0d9588" executionId="08b786de-45f6-4641-92fb-d3d3b482ce4c" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="56359089-a3a2-8b23-ca2a-98f5cb28ab68" executionId="f57415c0-e61b-4794-a22a-4d739bc52eeb" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="5081c1ee-d77b-7bed-ecfe-3e1118c47d31" executionId="e5a875be-f135-44bc-94a8-00757485a643" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="55376ba7-efb9-46d9-7170-5771f4c5bbc5" executionId="452bd024-4a58-4a07-88df-07921c345d9c" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="18626804-e64d-7ded-0666-c371ea7c46fa" executionId="caddb5d8-0d3d-42b3-9efc-029f773c04ff" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="710155b1-b76d-52dc-e1fe-d757006ba5d7" executionId="66b387be-f249-489c-b502-bcd1ba7bfa8e" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="a0b55a29-69a6-0c9b-82ed-ffd2b643864b" executionId="12487731-60de-443a-ba51-46951857efcd" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="1168633f-52f5-aa12-0b7b-702c589d6e36" executionId="7d9aaa72-4e98-4795-bb8b-5e3b05e9d6e5" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="2a4db498-e461-814f-770b-5624b4ab7a6a" executionId="bf4adc1a-682a-41f9-ac80-ffafc5dcbb9d" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="6b1947e0-71d8-2aa5-06d5-4e68d38d7f3f" executionId="1ca44ce2-1f5d-4660-a11a-f418af9d4ae9" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="b25ea434-9cbc-ee67-1cd6-38cddd11fc7f" executionId="1a62a7d9-503c-4b44-bd34-f344580ce1ef" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="614f7d65-5385-e7ed-753a-48141242392a" executionId="3e07eeae-45e0-4416-80d3-c00a62c61388" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="93ef696e-410b-850b-cc7f-71fb9a513eef" executionId="bec4fe76-c5d4-420f-b5ab-0355043f46c0" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="9fc794dc-637c-2816-f6ad-10f99b0647e1" executionId="c7ea2434-8e41-4d6f-a544-02725769569b" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="a7054092-b483-3648-2c02-b146807873f3" executionId="87a420df-7022-4e6c-9e3d-9c9bd4a82606" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="86745780-d427-24f5-5d4c-74ec96a38daa" executionId="b163ce91-4e60-45d7-87f6-35a369ebb9eb" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="5849affd-4f79-d21c-74b7-60a4c5feb12d" executionId="a5d27546-73d2-497b-9cd2-b99572b611e3" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="f12cbca5-bf49-46df-2bec-5b3cf0c5355d" executionId="d312f661-bdbe-4478-910c-39e6ba56d9c8" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="42d0b560-4a2f-991f-215a-0e294861904d" executionId="e7440b94-72ec-45e1-a2cc-dfa3cd1a8859" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="039191f1-101a-794f-2ee5-5202b99308ee" executionId="7d4ef180-43cf-43ca-8515-af6671f53fe4" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="e0db754d-9704-5f8e-2cb5-fc59405fc8f9" executionId="5fb55640-644d-4148-95f4-5a5cb455f06f" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="d1f70842-632a-a0e0-8894-b1918232987a" executionId="f53c0efb-4314-477e-bccd-d873a01cc43f" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="8586f1f2-e679-322d-d36a-7baf1d4c080d" executionId="10aeed1e-6114-4e17-9284-54ce1a58526f" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="17831edf-ffc5-491e-1aff-5187a3f4cae0" executionId="846ddaef-e57e-4d52-8d09-af1fb0bbcc49" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="cafa63a8-5961-5317-dc44-74f2da191fa3" executionId="415beb16-f113-4b4f-ade4-6f44006e9baf" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="17b89d4e-a566-09ea-59c3-418a15cb7571" executionId="5c355d20-7085-4f16-8a49-a98b3a0eb80c" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="3a18d8e3-e561-4fff-423b-cd08440850ba" executionId="148c2f8d-fb96-4375-9d7c-ff3833421bd7" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="6ad0c185-c74f-8050-9088-0dd0931f083e" executionId="c880e75a-a522-40e0-8bae-baf3890fb09c" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="846fb846-80f9-5f53-9add-feea364f86cb" executionId="2a05681b-d17e-49e1-9008-8fd399818a70" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="3e0072ee-f5a5-8be9-eca1-717a4a98feac" executionId="c49a3ac6-f8d0-4dc1-a7e3-65bd6208dd59" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="40f7c11b-4617-ed86-68fa-cb97456b8e3b" executionId="3dba7ae5-f5cc-4f60-83f5-c824ce37bf57" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="7332eba0-45d5-98c4-9e3c-d01d5c8b40a9" executionId="529c2cee-c5e1-4a2f-864c-b38373256f00" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="ef8b83aa-a912-f0f1-bede-34b38ef273da" executionId="733debb5-e18d-4b93-b507-3130b3099930" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="da4e6f45-eefa-eee0-5325-794b7de1bb90" executionId="2a8e7d27-4f71-4039-b497-6b3bdca2aafb" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="ac667b9f-75ee-375b-e807-d9757af91789" executionId="97d46cc6-bb7b-4456-8e03-ca68821d4407" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="82dcde5c-55fd-3855-c19d-f27e723b1472" executionId="bb686f22-9e0d-46ba-8acf-f20fe2e30ac6" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="70f7dbe5-509d-c394-eeb8-4ddf36c4eb22" executionId="0c062dbd-9b8a-45b9-91b4-4537503c1d8e" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="77fe321c-4b00-43ee-e68f-035b47e90d69" executionId="744a663d-a2de-4831-8f6b-0566f03f46f5" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+  </TestEntries>
+  <TestLists>
+    <TestList name="Results Not in a List" id="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestList name="All Loaded Results" id="19431567-8539-422a-85d7-44ee4e166bda" />
+  </TestLists>
+  <ResultSummary outcome="Failed">
+    <Counters total="43" executed="43" passed="40" failed="3" error="0" timeout="0" aborted="0" inconclusive="0" passedButRunAborted="0" notRunnable="0" notExecuted="0" disconnected="0" warning="0" completed="0" inProgress="0" pending="0" />
+    <Output>
+      <StdOut>[xUnit.net 00:00:00.00] xUnit.net VSTest Adapter v2.8.2+699d445a1a (64-bit .NET 10.0.12)&#xD;
+[xUnit.net 00:00:00.12]   Discovering: Companion.Tests&#xD;
+[xUnit.net 00:00:00.41]   Discovered:  Companion.Tests&#xD;
+[xUnit.net 00:00:00.42]   Starting:    Companion.Tests&#xD;
+[xUnit.net 00:00:51.88]       UI contract check timed out.&#xD;
+[xUnit.net 00:00:51.89]       Stack Trace:&#xD;
+[xUnit.net 00:00:51.89]         P:\WINDOWS\FastMediaSorter_Lite\tests\Companion.Tests\WindowsUiContractTests.vb(31,0): at Companion.Tests.WindowsUiContractTests.OnUi(Action test)&#xD;
+[xUnit.net 00:00:51.89]         P:\WINDOWS\FastMediaSorter_Lite\tests\Companion.Tests\WindowsUiContractTests.vb(501,0): at Companion.Tests.WindowsUiContractTests.Live_language_refresh_preserves_window_and_editor_values_and_resets_direction()&#xD;
+[xUnit.net 00:00:51.89]            at System.Reflection.MethodBaseInvoker.InterpretedInvoke_Method(Object obj, IntPtr* args)&#xD;
+[xUnit.net 00:00:51.89]            at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)&#xD;
+[xUnit.net 00:01:03.52]       Assert.All() Failure: 4 out of 4 items in the collection did not pass.&#xD;
+[xUnit.net 00:01:03.52]       [0]: Item:  FastMediaSorterCompanion.Share_Settings_Form+SettingsNavItemButton, Text: Media Exchange Server&#xD;
+[xUnit.net 00:01:03.52]            Error: Assert.False() Failure&#xD;
+[xUnit.net 00:01:03.52]                   Expected: False&#xD;
+[xUnit.net 00:01:03.52]                   Actual:   True&#xD;
+[xUnit.net 00:01:03.52]       [1]: Item:  FastMediaSorterCompanion.Share_Settings_Form+SettingsNavItemButton, Text: الشبكة&#xD;
+[xUnit.net 00:01:03.52]            Error: Assert.False() Failure&#xD;
+[xUnit.net 00:01:03.52]                   Expected: False&#xD;
+[xUnit.net 00:01:03.52]                   Actual:   True&#xD;
+[xUnit.net 00:01:03.52]       [2]: Item:  FastMediaSorterCompanion.Share_Settings_Form+SettingsNavItemButton, Text: الحسابات&#xD;
+[xUnit.net 00:01:03.52]            Error: Assert.False() Failure&#xD;
+[xUnit.net 00:01:03.52]                   Expected: False&#xD;
+[xUnit.net 00:01:03.52]                   Actual:   True&#xD;
+[xUnit.net 00:01:03.52]       [3]: Item:  FastMediaSorterCompanion.Share_Settings_Form+SettingsNavItemButton, Text: خدمة Windows&#xD;
+[xUnit.net 00:01:03.52]            Error: Assert.False() Failure&#xD;
+[xUnit.net 00:01:03.52]                   Expected: False&#xD;
+[xUnit.net 00:01:03.52]                   Actual:   True&#xD;
+[xUnit.net 00:01:03.52]       Stack Trace:&#xD;
+[xUnit.net 00:01:03.52]         P:\WINDOWS\FastMediaSorter_Lite\tests\Companion.Tests\WindowsUiContractTests.vb(134,0): at Companion.Tests.WindowsUiContractTests._Closure$__._Lambda$__5-0()&#xD;
+[xUnit.net 00:01:03.53]         P:\WINDOWS\FastMediaSorter_Lite\tests\Companion.Tests\WindowsUiContractTests.vb(24,0): at Companion.Tests.WindowsUiContractTests._Closure$__2-0._Lambda$__0()&#xD;
+[xUnit.net 00:01:03.53]         --- End of stack trace from previous location ---&#xD;
+[xUnit.net 00:01:03.53]         P:\WINDOWS\FastMediaSorter_Lite\tests\Companion.Tests\WindowsUiContractTests.vb(32,0): at Companion.Tests.WindowsUiContractTests.OnUi(Action test)&#xD;
+[xUnit.net 00:01:03.53]         P:\WINDOWS\FastMediaSorter_Lite\tests\Companion.Tests\WindowsUiContractTests.vb(81,0): at Companion.Tests.WindowsUiContractTests.The_left_menu_tree_toggles_items_selects_pages_and_reveals_blocks()&#xD;
+[xUnit.net 00:01:03.53]            at System.Reflection.MethodBaseInvoker.InterpretedInvoke_Method(Object obj, IntPtr* args)&#xD;
+[xUnit.net 00:01:03.53]            at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)&#xD;
+[xUnit.net 00:01:40.63]       UI contract check timed out.&#xD;
+[xUnit.net 00:01:40.64]       Stack Trace:&#xD;
+[xUnit.net 00:01:40.64]         P:\WINDOWS\FastMediaSorter_Lite\tests\Companion.Tests\WindowsUiContractTests.vb(31,0): at Companion.Tests.WindowsUiContractTests.OnUi(Action test)&#xD;
+[xUnit.net 00:01:40.64]         P:\WINDOWS\FastMediaSorter_Lite\tests\Companion.Tests\WindowsUiContractTests.vb(258,0): at Companion.Tests.WindowsUiContractTests.Menu_tree_toggles_retain_bounds_and_complete_within_the_repeat_budget(Single scale)&#xD;
+[xUnit.net 00:01:40.64]            at System.Reflection.MethodBaseInvoker.InterpretedInvoke_Method(Object obj, IntPtr* args)&#xD;
+[xUnit.net 00:01:40.64]            at System.Reflection.MethodBaseInvoker.InvokeDirectByRefWithFewArgs(Object obj, Span`1 copyOfArgs, BindingFlags invokeAttr)&#xD;
+[xUnit.net 00:02:05.49]   Finished:    Companion.Tests&#xD;
+</StdOut>
+    </Output>
+    <RunInfos>
+      <RunInfo computerName="MARK" outcome="Error" timestamp="2026-10-14T01:34:54.3932494+02:00">
+        <Text>[xUnit.net 00:00:51.88]     Companion.Tests.WindowsUiContractTests.Live_language_refresh_preserves_window_and_editor_values_and_resets_direction [FAIL]</Text>
+      </RunInfo>
+      <RunInfo computerName="MARK" outcome="Error" timestamp="2026-10-14T01:35:06.0347781+02:00">
+        <Text>[xUnit.net 00:01:03.52]     Companion.Tests.WindowsUiContractTests.The_left_menu_tree_toggles_items_selects_pages_and_reveals_blocks [FAIL]</Text>
+      </RunInfo>
+      <RunInfo computerName="MARK" outcome="Error" timestamp="2026-10-14T01:35:43.1468970+02:00">
+        <Text>[xUnit.net 00:01:40.63]     Companion.Tests.WindowsUiContractTests.Menu_tree_toggles_retain_bounds_and_complete_within_the_repeat_budget(scale: 1) [FAIL]</Text>
+      </RunInfo>
+    </RunInfos>
+  </ResultSummary>
+</TestRun>

@@ -615,7 +615,7 @@ Partial Public Class Main_Form
         Dim badge As String = TransportRules.AbBadgeText(ab_Loop.Phase)
         If Not String.Equals(lbl_Video_Ab.Text, badge, StringComparison.Ordinal) Then
             lbl_Video_Ab.Text = badge
-            lbl_Video_Ab.AccessibleName = If(badge.Length = 0, "", Localization.T("Повтор A-B") & ": " & badge)
+            lbl_Video_Ab.AccessibleName = If(badge.Length = 0, "", Localization.TF("{0}: {1}", Localization.T("Повтор A-B"), badge))
             LayoutVideoControlsRow(UiScale.Px(ChromeMetrics.ScreenMargin, ChromeScale()))
         End If
     End Sub

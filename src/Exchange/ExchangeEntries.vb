@@ -33,6 +33,7 @@ Friend NotInheritable Class ExchangeEntry
     Public ReadOnly Login As String
     ''' <summary>The pin the user accepted ("" when the platform validated the certificate).</summary>
     Public ReadOnly Pin As String
+    Public ReadOnly KeyPin As String
     Public ReadOnly Certificate As ExchangeCertificateKind
     Public ReadOnly DeviceId As String
     Public ReadOnly DeviceName As String
@@ -47,11 +48,12 @@ Friend NotInheritable Class ExchangeEntry
     Friend Const MaxSeen As Integer = 256
 
     Public Sub New(id As String, server As String, login As String, pin As String, certificate As ExchangeCertificateKind,
-                   deviceId As String, deviceName As String, name As String, autoAttach As Boolean, Optional seen As IReadOnlyList(Of String) = Nothing)
+                   deviceId As String, deviceName As String, name As String, autoAttach As Boolean, Optional seen As IReadOnlyList(Of String) = Nothing, Optional keyPin As String = "")
         Me.Id = If(id, "")
         Me.Server = If(server, "")
         Me.Login = If(login, "")
         Me.Pin = If(pin, "")
+        Me.KeyPin = If(ExchangeTrust.IsFingerprint(keyPin), keyPin, "")
         Me.Certificate = certificate
         Me.DeviceId = If(deviceId, "")
         Me.DeviceName = If(deviceName, "")
@@ -78,27 +80,27 @@ Friend NotInheritable Class ExchangeEntry
         Return ExchangeServerAddress.TryParse(Server, address)
     End Function
 
-    Public Function WithPin(newPin As String, kind As ExchangeCertificateKind) As ExchangeEntry
-        Return New ExchangeEntry(Id, Server, Login, newPin, kind, DeviceId, DeviceName, Name, AutoAttach, Seen)
+    Public Function WithPin(newPin As String, kind As ExchangeCertificateKind, Optional newKeyPin As String = "") As ExchangeEntry
+        Return New ExchangeEntry(Id, Server, Login, newPin, kind, DeviceId, DeviceName, Name, AutoAttach, Seen, newKeyPin)
     End Function
 
     Public Function WithAutoAttach(value As Boolean) As ExchangeEntry
-        Return New ExchangeEntry(Id, Server, Login, Pin, Certificate, DeviceId, DeviceName, Name, value, Seen)
+        Return New ExchangeEntry(Id, Server, Login, Pin, Certificate, DeviceId, DeviceName, Name, value, Seen, KeyPin)
     End Function
 
     ''' <summary>The seen set, bounded (the newest <see cref="MaxSeen"/> ids).</summary>
     Public Function WithSeen(ids As IEnumerable(Of String)) As ExchangeEntry
         Dim list As New List(Of String)(If(ids, Array.Empty(Of String)()))
         If list.Count > MaxSeen Then list = list.GetRange(list.Count - MaxSeen, MaxSeen)
-        Return New ExchangeEntry(Id, Server, Login, Pin, Certificate, DeviceId, DeviceName, Name, AutoAttach, list)
+        Return New ExchangeEntry(Id, Server, Login, Pin, Certificate, DeviceId, DeviceName, Name, AutoAttach, list, KeyPin)
     End Function
 
     Public Function WithName(value As String) As ExchangeEntry
-        Return New ExchangeEntry(Id, Server, Login, Pin, Certificate, DeviceId, DeviceName, value, AutoAttach, Seen)
+        Return New ExchangeEntry(Id, Server, Login, Pin, Certificate, DeviceId, DeviceName, value, AutoAttach, Seen, KeyPin)
     End Function
 
     Public Function WithAddress(newServer As String) As ExchangeEntry
-        Return New ExchangeEntry(Id, newServer, Login, Pin, Certificate, DeviceId, DeviceName, Name, AutoAttach, Seen)
+        Return New ExchangeEntry(Id, newServer, Login, Pin, Certificate, DeviceId, DeviceName, Name, AutoAttach, Seen, KeyPin)
     End Function
 
     ''' <summary>The server, the login and the fingerprint are not secrets, but the text still names no member.</summary>
@@ -234,7 +236,7 @@ Friend NotInheritable Class ExchangeEntryStore
                 End If
             Next
         End If
-        Return New ExchangeEntry(id, address.ToString(), login, pin, kind, deviceId, ReadText(item, "deviceName"), ReadText(item, "name"), auto, seen)
+        Return New ExchangeEntry(id, address.ToString(), login, pin, kind, deviceId, ReadText(item, "deviceName"), ReadText(item, "name"), auto, seen, ReadText(item, "keyPin"))
     End Function
 
     Private Shared Function ReadText(item As JsonElement, name As String) As String
@@ -253,7 +255,7 @@ Friend NotInheritable Class ExchangeEntryStore
         Dim canonical As String = If(ExchangeServerAddress.TryParse(server, address), New ExchangeServerAddress(address.Host.ToLowerInvariant(), address.Port).ToString(), If(server, "").Trim())
         If existing IsNot Nothing Then
             Return New ExchangeEntry(existing.Id, canonical, existing.Login, existing.Pin, existing.Certificate, existing.DeviceId,
-                                     If(If(deviceName, "").Length > 0, deviceName, existing.DeviceName), If(If(name, "").Length > 0, name, existing.Name), existing.AutoAttach, existing.Seen)
+                                     If(If(deviceName, "").Length > 0, deviceName, existing.DeviceName), If(If(name, "").Length > 0, name, existing.Name), existing.AutoAttach, existing.Seen, existing.KeyPin)
         End If
         Return New ExchangeEntry(NewEntryId(), canonical, If(login, "").Trim(), "", ExchangeCertificateKind.None, ExchangeIds.NewId(), deviceName, name, False)
     End Function
@@ -280,7 +282,17 @@ Friend NotInheritable Class ExchangeEntryStore
         Return True
     End Function
 
-    ''' <summary>Replaces only the pin: the one explicit act that lets a changed certificate in (item D).</summary>
+    ''' <summary>Pairs the entry's accepted leaf with its key; a renewal updates only this entry (19 AY).</summary>
+    Public Function TransportFor(entry As ExchangeEntry, inner As IExchangeTransport) As IExchangeTransport
+        Dim persisted As ExchangeEntry = If(Find(entry.Id), entry)
+        Return New ExchangeRenewalTransport(inner, persisted.Pin, persisted.KeyPin,
+            Sub(leaf, key)
+                Dim current As ExchangeEntry = Find(entry.Id)
+                If current Is Nothing OrElse (current.Pin <> persisted.Pin AndAlso current.Pin <> leaf AndAlso current.KeyPin <> key) Then Throw New IOException("pin-entry-changed")
+                If (current.Pin <> leaf OrElse current.KeyPin <> key) AndAlso Not Upsert(current.WithPin(leaf, ExchangeCertificateKind.Pinned, key)) Then Throw New IOException("pin-store-failed")
+            End Sub)
+    End Function
+
     Public Function ReplacePin(id As String, pin As String, kind As ExchangeCertificateKind) As Boolean
         Dim e As ExchangeEntry = Find(id)
         If e Is Nothing Then Return False
@@ -314,6 +326,7 @@ Friend NotInheritable Class ExchangeEntryStore
                 w.WriteString("x", e.Server)
                 w.WriteString("login", e.Login)
                 w.WriteString("pin", e.Pin)
+                w.WriteString("keyPin", e.KeyPin)
                 w.WriteString("cert", If(e.Certificate = ExchangeCertificateKind.CaSigned, "ca-signed", If(e.Certificate = ExchangeCertificateKind.Pinned, "pinned", "")))
                 w.WriteString("deviceId", e.DeviceId)
                 w.WriteString("deviceName", ExchangeDeviceDescription.Clip(e.DeviceName, MaxNameChars))
@@ -341,8 +354,8 @@ End Class
 '''
 '''   - Ask 2: a client keeps connecting to the address it holds; when `welcome.publicEndpoint` differs, it SHOWS the announced address and
 '''     offers the in-place edit - it never switches silently. The edit keeps the device id, the token, the pin decision and the attachments
-'''     (ExchangeEntry.WithAddress); a pin carries over only while the server presents the same leaf, and a different leaf is item D's
-'''     explicit replacement (the `pin-mismatch` state, never a re-pin).
+'''     (ExchangeEntry.WithAddress); a pin carries over for the same accepted key (19 AY); a different key is item D's
+'''     explicit replacement (the `pin-mismatch` state, never a silent re-pin).
 '''   - Ask 7 (optional): a client may hand a server on from an entry - `x` from the last announced endpoint (never a LAN address or a
 '''     guess), `fp` exactly when the entry holds an item D pin, no login hint. It is not a secret and travels like the operator's.
 ''' </summary>

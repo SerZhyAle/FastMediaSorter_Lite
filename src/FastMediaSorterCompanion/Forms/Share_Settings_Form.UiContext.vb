@@ -1,4 +1,4 @@
-﻿Option Explicit On
+Option Explicit On
 Option Strict On
 Option Infer On
 Option Compare Binary
@@ -64,7 +64,7 @@ Partial Public NotInheritable Class Share_Settings_Form
         LoadSelectedSettingsPage()
         _pages(_selectedPage).PerformLayout()
         RestoreSettingsViewport()
-
+        HandleScheduledPrefill()
     End Sub
 
     Private Function PageRows() As Control()
@@ -82,12 +82,19 @@ Partial Public NotInheritable Class Share_Settings_Form
         Return top
     End Function
 
+    ''' <summary>The form's control fields in name order, reflected once. A page switch asks for an anchor
+    ''' for every unnamed row, and reflecting the whole form each time made every switch seconds slow.</summary>
+    Private Shared ReadOnly _controlFields As Lazy(Of FieldInfo()) = New Lazy(Of FieldInfo())(Function()
+        Return GetType(Share_Settings_Form).GetFields(BindingFlags.Instance Or BindingFlags.NonPublic).
+            Where(Function(item) GetType(Control).IsAssignableFrom(item.FieldType)).
+            OrderBy(Function(item) item.Name, StringComparer.Ordinal).ToArray()
+    End Function)
+
     Private Function RowAnchor(row As Control) As String
         If row.Name.Length > 0 Then Return _selectedPage & "/" & row.Name
         ' Field names survive translations and inserted/reordered rows. Anonymous prose
         ' uses the next named editor/status row rather than an ordinal pixel anchor.
-        For Each field In GetType(Share_Settings_Form).GetFields(BindingFlags.Instance Or BindingFlags.NonPublic).
-            Where(Function(item) GetType(Control).IsAssignableFrom(item.FieldType)).OrderBy(Function(item) item.Name, StringComparer.Ordinal)
+        For Each field In _controlFields.Value
             Dim control = TryCast(field.GetValue(Me), Control)
             If control IsNot Nothing AndAlso (control Is row OrElse row.Contains(control)) Then
                 Return _selectedPage & "/" & field.Name

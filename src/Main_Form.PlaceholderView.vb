@@ -150,9 +150,15 @@ Partial Public Class Main_Form
 
         Dim ext As String = MediaKindClassifier.ExtensionOf(content_Placeholder_Path)
         Dim isDocHtmlEbook As Boolean = (ext = ".epub" OrElse ext = ".fb2" OrElse ext = ".mobi")
-        Dim enterActionText As String = If(isDocHtmlEbook,
-            Localization.T("Enter - открыть в doc-html-translate"),
-            Localization.T("Enter - открыть в программе по умолчанию"))
+        ' Names the key the open action answers to NOW (123 UX-112: it can be moved); with the shortcut taken
+        ' away the line is left out - a double click on the placeholder still opens the file.
+        Dim openKey As String = OpenContentKeyLabel()
+        Dim enterActionText As String = ""
+        If openKey.Length > 0 Then
+            enterActionText = If(isDocHtmlEbook,
+                Localization.TF("{0} - открыть в doc-html-translate", openKey),
+                Localization.TF("{0} - открыть в программе по умолчанию", openKey))
+        End If
 
         Using nameFont As New Font(ScriptFonts.Family("Segoe UI"), Math.Max(8.0F, 16.0F * scale), FontStyle.Bold),
               detailFont As New Font(ScriptFonts.Family("Segoe UI"), Math.Max(8.0F, 11.0F * scale))

@@ -37,9 +37,12 @@ Partial Public Class Table_Form
     Private ReadOnly expandedRefreshActions As New List(Of Action)()
 
     Friend Sub RefreshExpandedSettingsRows()
-        For Each refreshAction As Action In expandedRefreshActions
-            refreshAction()
-        Next
+        HoldSettingsPages(
+            Sub()
+                For Each refreshAction As Action In expandedRefreshActions
+                    refreshAction()
+                Next
+            End Sub)
         ' Choice items and command captions change after the initial localization pass.
         ' Measure the final localized editors before assigning the shared page columns.
         LayoutModernSettingsPages()

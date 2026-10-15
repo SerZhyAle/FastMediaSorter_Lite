@@ -8,7 +8,7 @@ Imports System.Collections.Generic
 ''' <summary>The gated, explain-first exchange flow. No IO or secret values enter these decisions.</summary>
 Friend Module ExchangeFirstRunModel
     Friend Function GateOpen() As Boolean
-        Return ExchangeFeatures.Offered OrElse ExchangeFeatures.DeveloperSwitchOn()
+        Return ExchangeFeatures.BuildOffers() OrElse ExchangeFeatures.DeveloperSwitchOn()
     End Function
 
     Friend Function ShouldOpen(component As Boolean, gate As Boolean, answered As Boolean, accounts As Integer,

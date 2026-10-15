@@ -1,4 +1,4 @@
-﻿#If Not NETFRAMEWORK Then
+#If Not NETFRAMEWORK Then
 Option Strict On
 
 Imports System.Collections.Generic
@@ -75,7 +75,7 @@ Public Class ExchangeWireTests
 
     <Fact>
     Public Sub Every_type_of_the_table_survives_encode_then_decode_and_then_encodes_to_the_same_bytes()
-        Assert.Equal(32, ExchangeEnvelopeTable.Types().Count)
+        Assert.Equal(45, ExchangeEnvelopeTable.Types().Count)   ' 37 + the eight clipboard types of spec 230
         For Each typeName As String In ExchangeEnvelopeTable.Types()
             Dim first As Byte() = ExchangeEnvelopeCodec.Encode(Sample(typeName))
             Dim back As ExchangeEnvelope = ExchangeEnvelopeCodec.Decode(first)
@@ -351,9 +351,13 @@ Public Class ExchangeWireTests
     ' ---------------------------------------------------------------- reasons, ids
 
     <Fact>
-    Public Sub The_ten_reasons_parse_and_an_unknown_one_is_a_generic_refusal()
+    Public Sub The_twelve_reasons_parse_and_an_unknown_one_is_a_generic_refusal()
         Dim names As String() = {"bad-credentials", "device-revoked", "version-unsupported", "tls-required", "id-collision", "capacity", "port-unavailable", "unavailable", "rate-limited"}
-        Assert.Equal(10, ExchangeRefusals.All().Length)
+        Assert.Equal(12, ExchangeRefusals.All().Length)   ' the nine of 7.10, protection-unsupported, and the two of the clipboard (item BW)
+        Assert.Equal(ExchangeRefusal.NotPermitted, ExchangeRefusals.Parse("not-permitted"))
+        Assert.Equal(ExchangeRefusal.LimitReached, ExchangeRefusals.Parse("limit-reached"))
+        Assert.Equal("not-permitted", ExchangeRefusals.WireName(ExchangeRefusal.NotPermitted))
+        Assert.Equal("limit-reached", ExchangeRefusals.WireName(ExchangeRefusal.LimitReached))
         For i As Integer = 0 To names.Length - 1
             Dim r As ExchangeRefusal = ExchangeRefusals.Parse(names(i))
             Assert.NotEqual(ExchangeRefusal.Unknown, r)

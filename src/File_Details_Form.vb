@@ -213,7 +213,7 @@ Public NotInheritable Class File_Details_Form
                 If row.Value.Length = 0 Then
                     AppendLine(Localization.T(row.LabelKey))
                 Else
-                    AppendLine(Localization.T(row.LabelKey) & ": " & row.Value)
+                    AppendLine(Localization.TF("{0}: {1}", Localization.T(row.LabelKey), row.Value))
                 End If
             Next
             AppendLine("")

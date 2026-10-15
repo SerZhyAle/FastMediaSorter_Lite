@@ -11,6 +11,7 @@ Imports System.Collections.Generic
 ''' defaults and every on-demand media keep theirs (spec 023 section 6.3).
 ''' </summary>
 Friend NotInheritable Class LivePlaybackOptions
+    Public Property AutoAcceptCast As Boolean
 
     ''' <summary>Used when neither the endpoint nor the descriptor names a target (section 6.3).</summary>
     Public Const DefaultTargetLatencyMs As Integer = 1000
@@ -25,8 +26,8 @@ Friend NotInheritable Class LivePlaybackOptions
     ''' </summary>
     Public Property CachingMs As Integer = 300
 
-    ''' <summary>The headers deadline of the single GET (section 6.2 item 1).</summary>
-    Public Property ConnectTimeoutMs As Integer = 2000
+    ''' <summary>Ticket 201: each candidate has at most 1.5 seconds to return headers.</summary>
+    Public Property ConnectTimeoutMs As Integer = 1500
 
     ''' <summary>No bytes for this long closes the response and counts as a stall (section 6.2 item 5).</summary>
     Public Property StallTimeoutMs As Integer = 3000
@@ -76,11 +77,15 @@ Friend NotInheritable Class LivePlaybackOptions
     ''' which an earlier draft carried, made it about 300 ms worse - so they are not here.
     ''' </para>
     ''' </summary>
-    Public Function ToMediaOptions(targetLatencyMs As Long?, Optional adtsAac As Boolean = False) As String()
+    Public Function ToMediaOptions(targetLatencyMs As Long?, Optional adtsAac As Boolean = False, Optional mpegTs As Boolean = False) As String()
         If OverrideOptions IsNot Nothing Then Return OverrideOptions
         Dim cache As Integer = CachingFor(targetLatencyMs)
         Dim list As New List(Of String)()
-        If adtsAac Then list.Add(":demux=aac")
+        If mpegTs Then
+            list.Add(":demux=ts")
+        ElseIf adtsAac Then
+            list.Add(":demux=aac")
+        End If
         list.Add(":network-caching=" & cache.ToString(Globalization.CultureInfo.InvariantCulture))
         list.Add(":live-caching=" & cache.ToString(Globalization.CultureInfo.InvariantCulture))
         Return list.ToArray()

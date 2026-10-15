@@ -82,6 +82,30 @@ Partial Public Class Main_Form
         Return CustomHotkeys.IsRetiredDefault(custom_Hotkeys, combo)
     End Function
 
+    ''' <summary>
+    ''' What Enter has always done, as one action (UX-112 of 123): a document the viewer only shows as a
+    ''' placeholder, a text file or a PDF opens in its own program; a locked container asks for its password.
+    ''' Returns False when neither is on screen - the factory key then lets the press go on, as it always
+    ''' did, and a key the user moved the action to simply does nothing.
+    ''' </summary>
+    Private Function RunOpenContentAction() As Boolean
+        If IsContentPlaceholderShown() OrElse IsTextDocumentShown() OrElse IsPdfDocumentShown() Then
+            OpenContentInDefaultProgram()
+            Return True
+        End If
+        If IsSecurePlaceholderLocked() Then
+            SecureUnlockCurrent()
+            Return True
+        End If
+        Return False
+    End Function
+
+    ''' <summary>The key the open action answers to right now, for the hints that name it (placeholder, text
+    ''' footer): empty when the user took the shortcut away, in which case a hint must not name a key.</summary>
+    Friend Function OpenContentKeyLabel() As String
+        Return ChromeMenuRules.HintFor(custom_Hotkeys, "openContent", "Enter")
+    End Function
+
     ''' <summary>Every branch here calls the SAME method the built-in key calls - the
     ''' multi-line ones through the helpers extracted in Main_Form.KeyboardInput.vb, so a
     ''' rebound shortcut and its factory key can never drift apart.</summary>
@@ -125,10 +149,10 @@ Partial Public Class Main_Form
             Case "settings" : ShowSettingsWindow()
             Case "imagePanel" : ShowImagePanelForm()
             Case "help" : ShowFirstRunHelp()
-            Case "zoomIn" : ZoomStepAt(True, False, CursorAnchorOnPanel())
-            Case "zoomOut" : ZoomStepAt(False, False, CursorAnchorOnPanel())
-            Case "zoomFit" : ZoomToFit()
-            Case "zoomActual" : ZoomToActualSize(CursorAnchorOnPanel())
+                ' The same implementation the NumPad / main-row zoom keys end in (UX-113 of 123): a text
+                ' document zooms its text, a picture its pixels.
+            Case "zoomIn", "zoomOut", "zoomFit", "zoomActual" : RunZoomAction(actionId)
+            Case "openContent" : RunOpenContentAction()
                 ' Same calls the A / V keys make (TryHandleTrackKey): nothing happens, and nothing is
                 ' said, when the file offers no choice.
             Case "mediaMenu" : ShowMediaMenuFromKeyboard()

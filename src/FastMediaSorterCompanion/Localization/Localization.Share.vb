@@ -1,4 +1,4 @@
-﻿Option Strict On
+Option Strict On
 
 ' <summary>
 ' Tray menu, the shared ShareText prose and the server-features opt-in dialog.
@@ -891,6 +891,208 @@ Partial Public NotInheritable Class Localization
             "Azzeramento non riuscito", "No se pudo restablecer", "Échec de la réinitialisation",
             "A reposição falhou", "فشلت إعادة التعيين", "रीसेट विफल रहा", "রিসেট ব্যর্থ হয়েছে",
             "ری سیٹ ناکام رہا", "重置失败")
+
+        ' --- spec 228 outward access, channels and PIN strings ---
+
+        Add("гость",
+            "guest", "гість", "Gast", "ospite", "invitado",
+            "invité", "convidado", "ضيف", "अतिथि", "অতিথি",
+            "مہمان", "访客")
+
+        Add("ссылка с паролем",
+            "link with a password", "посилання з паролем", "Link mit Passwort", "collegamento con password", "enlace con contraseña",
+            "lien avec mot de passe", "link com senha", "رابط بكلمة مرور", "पासवर्ड वाला लिंक", "পাসওয়ার্ড সহ লিঙ্ক",
+            "پاس ورڈ کے ساتھ لنک", "带密码的链接")
+
+        Add("через Google Drive",
+            "through Google Drive", "через Google Drive", "über Google Drive", "tramite Google Drive", "a través de Google Drive",
+            "via Google Drive", "pelo Google Drive", "عبر Google Drive", "Google Drive के माध्यम से", "Google Drive-এর মাধ্যমে",
+            "Google Drive کے ذریعے", "通过 Google Drive")
+
+        Add("через GD",
+            "through GD", "через GD", "über GD", "tramite GD", "a través de GD",
+            "via GD", "pelo GD", "عبر GD", "GD के माध्यम से", "GD-এর মাধ্যমে",
+            "GD کے ذریعے", "通过 GD")
+
+        Add("Дать доступ наружу..",
+            "Give access outside..", "Дати доступ назовні..", "Zugriff nach außen geben..", "Dai accesso esterno..", "Dar acceso externo..",
+            "Donner l'accès extérieur..", "Dar acceso externo..", "منح وصول خارجي..", "बाहरी पहुंच दें..", "বাইরের অ্যাক্সেস দিন..",
+            "باہر رسائی دیں..", "提供外部访问..")
+
+        Add("PIN-код изменился",
+            "the PIN has changed", "PIN-код змінився", "die PIN wurde geändert", "il PIN è cambiato", "el PIN ha cambiado",
+            "le code PIN a changé", "o PIN foi alterado", "تم تغيير رمز PIN", "पिन बदल गया है", "পিন পরিবর্তিত হয়েছে",
+            "پن تبدیل ہو گیا ہے", "PIN 码已更改")
+
+        Add("Гостевое приглашение для этой папки",
+            "Guest invitation for this folder", "Гостьове запрошення для цієї папки", "Gasteinladung für diesen Ordner", "Invito per ospite per questa cartella",
+            "Invitación de invitado para esta carpeta", "Invitation d'invité pour ce dossier", "Convite de convidado para esta pasta",
+            "دعوة ضيف لهذا المجلد", "इस फ़ोल्डर के लिए अतिथि आमंत्रण", "এই ফোল্ডারের জন্য অতিথি আমন্ত্রণ",
+            "اس فولڈر کے لیے مہمان کی دعوت", "此文件夹的访客邀请")
+
+        Add("Ссылка с паролем (без аккаунта)",
+            "Link with a password (no account)", "Посилання з паролем (без акаунта)", "Link mit Passwort (ohne Konto)", "Collegamento con password (senza account)",
+            "Enlace con contraseña (sin cuenta)", "Lien avec mot de passe (sans compte)", "Link com senha (sem conta)",
+            "رابط بكلمة مرور (بدون حساب)", "पासवर्ड वाला लिंक (बिना खाते के)", "পাসওয়ার্ড সহ লিঙ্ক (অ্যাকাউন্ট ছাড়া)",
+            "پاس ورڈ کے ساتھ لنک (بغیر اکاؤنٹ کے)", "带密码的链接 (无需账户)")
+
+        Add("Создаёт гостевой аккаунт на сервере обмена, которому доступна только эта папка.",
+            "Creates a guest account on the exchange server that can only access this folder.",
+            "Створює гостьовий акаунт на сервері обміну, якому доступна тільки ця папка.",
+            "Erstellt ein Gastkonto auf dem Exchange-Server, das nur auf diesen Ordner zugreifen kann.",
+            "Crea un account ospite sul server di scambio che può accedere solo a questa cartella.",
+            "Crea una cuenta de invitado en el servidor de intercambio que solo puede acceder a esta carpeta.",
+            "Crée un compte invité sur le serveur d'échange qui ne peut accéder qu'à ce dossier.",
+            "Cria uma conta de convidado no servidor de partilha que só pode aceder a esta pasta.",
+            "ينشئ حساب ضيف على خادم التبادل يمكنه الوصول إلى هذا المجلد فقط.",
+            "एक्सचेंज सर्वर पर एक अतिथि खाता बनाता है जो केवल इस फ़ोल्डर तक पहुँच सकता है।",
+            "এক্সচেঞ্জ সার্ভারে একটি অতিথি অ্যাকাউন্ট তৈরি করে যা কেবল এই ফোল্ডারটিতে অ্যাক্সেস করতে পারে।",
+            "ایکسچینج سرور پر ایک مہمان اکاؤنٹ بناتا ہے جو صرف اس فولڈر تک رسائی حاصل کر سکتا ہے۔",
+            "在交换服务器上创建仅可访问此文件夹的访客账户。")
+
+        Add("Код телефона..",
+            "Phone code..", "Код телефона..", "Telefoncode..", "Codice telefono..", "Código de teléfono..",
+            "Code de téléphone..", "Código do telefone..", "رمز الهاتف..", "फ़ोन कोड..", "ফোন কোড..",
+            "فون کوڈ..", "手机验证码..")
+
+        Add("Папка: «{0}» ({1})",
+            "Folder: '{0}' ({1})", "Папка: «{0}» ({1})", "Ordner: «{0}» ({1})", "Cartella: «{0}» ({1})", "Carpeta: «{0}» ({1})",
+            "Dossier : « {0} » ({1})", "Pasta: «{0}» ({1})", "المجلد: «{0}» ({1})", "फ़ोल्डर: «{0}» ({1})", "ফোল্ডার: «{0}» ({1})",
+            "فولڈر: «{0}» ({1})", "文件夹：«{0}» ({1})")
+
+        Add("Создать гостевое приглашение..",
+            "Create guest invitation..", "Створити гостьове запрошення..", "Gasteinladung erstellen..", "Crea invito per ospite..", "Crear invitación de invitado..",
+            "Créer une invitation d'invité..", "Criar convite de convidado..", "إنشاء دعوة ضيف..", "अतिथि आमंत्रण बनाएँ..", "অতিথি আমন্ত্রণ তৈরি করুন..",
+            "مہمان کی دعوت بنائیں..", "创建访客邀请..")
+
+        Add("Отозвать выбранное",
+            "Withdraw selected", "Відкликати вибране", "Ausgewählte widerrufen", "Revoca selezionato", "Retirar seleccionado",
+            "Retirer la sélection", "Revogar selecionado", "سحب المحدد", "चयनित वापस लें", "নির্বাচিত প্রত্যাহার করুন",
+            "منتخب واپس لیں", "撤回所选项")
+
+        Add("Создано",
+            "Created", "Створено", "Erstellt", "Creato", "Creado",
+            "Créé", "Criado", "تم الإنشاء", "बनाया गया", "তৈরি হয়েছে",
+            "تخلیق شدہ", "已创建")
+
+        Add("Пароль ссылки:",
+            "Link password:", "Пароль посилання:", "Link-Passwort:", "Password del collegamento:", "Contraseña del enlace:",
+            "Mot de passe du lien :", "Palavra-passe do link:", "كلمة مرور الرابط:", "लिंक पासवर्ड:", "লিঙ্ক পাসওয়ার্ড:",
+            "لنک پاس ورڈ:", "链接密码：")
+
+        Add("Сгенерировать",
+            "Generate", "Згенерувати", "Generieren", "Genera", "Generar",
+            "Générer", "Gerar", "توليد", "उत्पन्न करें", "তৈরি করুন",
+            "بنائیں", "生成")
+
+        Add("Создать ссылку",
+            "Create link", "Створити посилання", "Link erstellen", "Crea collegamento", "Crear enlace",
+            "Créer un lien", "Criar link", "إنشاء رابط", "लिंक बनाएँ", "লিঙ্ক তৈরি করুন",
+            "لنک بنائیں", "创建链接")
+
+        Add("Отозвать ссылку",
+            "Withdraw link", "Відкликати посилання", "Link widerrufen", "Revoca collegamento", "Retirar enlace",
+            "Retirer le lien", "Revogar link", "سحب الرابط", "लिंक वापस लें", "লিঙ্ক প্রত্যাহার করুন",
+            "لنک واپس لیں", "撤回链接")
+
+        Add("Показать QR / Код..",
+            "Show QR / Code..", "Показати QR / Код..", "QR / Code anzeigen..", "Mostra QR / Codice..", "Mostrar QR / Código..",
+            "Afficher QR / Code..", "Mostrar QR / Código..", "إظهار QR / الرمز..", "QR / कोड दिखाएँ..", "QR / কোড দেখান..",
+            "QR / کوڈ دکھائیں..", "显示二维码 / 代码..")
+
+        Add("Служба публикаций недоступна.",
+            "Publishing service unavailable.", "Служба публікацій недоступна.", "Veröffentlichungsdienst nicht verfügbar.", "Servizio di pubblicazione non disponibile.", "Servicio de publicación no disponible.",
+            "Service de publication indisponible.", "Serviço de publicação indisponível.", "خدمة النشر غير متوفرة.", "प्रकाशन सेवा अनुपलब्ध है।", "প্রকাশনা পরিষেবা অনুপলব্ধ।",
+            "اشاعت کی سروس دستیاب نہیں ہے۔", "发布服务不可用。")
+
+        Add("Ссылка активна.",
+            "Link is active.", "Посилання активне.", "Link ist aktiv.", "Il collegamento è attivo.", "El enlace está activo.",
+            "Le lien est actif.", "O link está ativo.", "الرابط نشط.", "लिंक सक्रिय है।", "লিঙ্ক সক্রিয়।",
+            "لنک فعال ہے۔", "链接有效。")
+
+        Add("Обновить ссылку",
+            "Update link", "Оновити посилання", "Link aktualisieren", "Aggiorna collegamento", "Actualizar enlace",
+            "Mettre à jour le lien", "Atualizar link", "تحديث الرابط", "लिंक अपडेट करें", "লিঙ্ক আপডেট করুন",
+            "لنک اپ ڈیٹ کریں", "更新链接")
+
+        Add("Ссылка не создана.",
+            "Link not created.", "Посилання не створено.", "Link nicht erstellt.", "Collegamento non creato.", "Enlace no creado.",
+            "Lien non créé.", "Link não criado.", "لم يتم إنشاء الرابط.", "लिंक नहीं बनाया गया।", "লিঙ্ক তৈরি করা হয়নি।",
+            "لنک نہیں بنایا گیا۔", "未创建链接。")
+
+        Add("Создание ссылки..",
+            "Creating link..", "Створення посилання..", "Link wird erstellt..", "Creazione collegamento in corso..", "Creando enlace..",
+            "Création du lien en cours..", "A criar link..", "جارٍ إنشاء الرابط..", "लिंक बनाया जा रहा है..", "লিঙ্ক তৈরি হচ্ছে..",
+            "لنک بنایا جا رہا ہے..", "正在创建链接..")
+
+        Add("Ссылка успешно создана.",
+            "Link successfully created.", "Посилання успішно створено.", "Link erfolgreich erstellt.", "Collegamento creato con successo.", "Enlace creado con éxito.",
+            "Lien créé avec succès.", "Link criado com sucesso.", "تم إنشاء الرابط بنجاح.", "लिंक सफलतापूर्वक बन गया।", "লিঙ্ক সফলভাবে তৈরি হয়েছে।",
+            "لنک کامیابی کے ساتھ بن گیا۔", "链接已成功创建。")
+
+        Add("Не удалось создать ссылку.",
+            "Could not create link.", "Не вдалося створити посилання.", "Link konnte nicht erstellt werden.", "Impossibile creare il collegamento.", "No se pudo crear el enlace.",
+            "Impossible de créer le lien.", "Não foi possível criar o link.", "تعذّر إنشاء الرابط.", "लिंक नहीं बनाया जा सका।", "লিঙ্ক তৈরি করা যায়নি।",
+            "لنک نہیں بنایا جا سکا۔", "无法创建链接。")
+
+        Add("Отозвать ссылку наружу для этой папки? Все активные сессии по ней будут завершены.",
+            "Withdraw outward link for this folder? All active sessions on it will be terminated.",
+            "Відкликати посилання назовні для цієї папки? Усі активні сесії за ним будуть завершені.",
+            "Ausgehenden Link für diesen Ordner widerrufen? Alle aktiven Sitzungen darauf werden beendet.",
+            "Revocare il collegamento esterno per questa cartella? Tutte le sessioni attive su di essa saranno terminate.",
+            "¿Retirar el enlace externo para esta carpeta? Todas las sesiones activas en él se finalizarán.",
+            "Retirer le lien sortant pour ce dossier ? Toutes les sessions actives associées seront interrompues.",
+            "Revogar o link externo para esta pasta? Todas as sessões ativas nele serão terminadas.",
+            "هل تريد سحب الرابط الخارجي لهذا المجلد؟ سيتم إنهاء جميع الجلسات النشطة عليه.",
+            "इस फ़ोल्डर के लिए बाहरी लिंक वापस लें? इस पर सभी सक्रिय सत्र समाप्त हो जाएँगे।",
+            "এই ফোল্ডারের জন্য বাইরের লিঙ্ক প্রত্যাহার করবেন? এতে থাকা সমস্ত সক্রিয় সেশন বন্ধ হয়ে যাবে।",
+            "اس فولڈر کے لیے بیرونی لنک واپس لیں؟ اس پر موجود تمام فعال سیشن ختم کر دیے جائیں گے۔",
+            "撤回此文件夹的外部链接？其上的所有活动会话都将被终止。")
+
+        Add("Отзыв ссылки..",
+            "Withdrawing link..", "Відкликання посилання..", "Link wird widerrufen..", "Revoca collegamento in corso..", "Retirando enlace..",
+            "Retrait du lien en cours..", "A revogar link..", "جارٍ سحب الرابط..", "लिंक वापस लिया जा रहा है..", "লিঙ্ক প্রত্যাহার করা হচ্ছে..",
+            "لنک واپس لیا جا رہا ہے..", "正在撤回链接..")
+
+        Add("Ссылка отозвана.",
+            "Link withdrawn.", "Посилання відкликано.", "Link widerrufen.", "Collegamento revocato.", "Enlace retirado.",
+            "Lien retiré.", "Link revogado.", "تم سحب الرابط.", "लिंक वापस ले लिया गया।", "লিঙ্ক প্রত্যাহার করা হয়েছে।",
+            "لنک واپس لے لیا گیا۔", "链接已撤回。")
+
+        Add("Не удалось отозвать ссылку.",
+            "Could not withdraw link.", "Не вдалося відкликати посилання.", "Link konnte nicht widerrufen werden.", "Impossibile revocare il collegamento.", "No se pudo retirar el enlace.",
+            "Impossible de retirer le lien.", "Não foi possível revogar o link.", "تعذّر سحب الرابط.", "लिंक वापस नहीं लिया जा सका।", "লিঙ্ক প্রত্যাহার করা যায়নি।",
+            "لنک واپس نہیں لیا جا سکا۔", "无法撤回链接。")
+
+        Add("Создание гостевого приглашения..",
+            "Creating guest invitation..", "Створення гостьового запрошення..", "Gasteinladung wird erstellt..", "Creazione invito ospite in corso..", "Creando invitación de invitado..",
+            "Création de l'invitation d'invité en cours..", "A criar convite de convidado..", "جارٍ إنشاء دعوة ضيف..", "अतिथि आमंत्रण बनाया जा रहा है..", "অতিথি আমন্ত্রণ তৈরি হচ্ছে..",
+            "مہمان کی دعوت بنائی جا رہی ہے..", "正在创建访客邀请..")
+
+        Add("Гостевое приглашение создано.",
+            "Guest invitation created.", "Гостьове запрошення створено.", "Gasteinladung erstellt.", "Invito per ospite creato.", "Invitación de invitado creada.",
+            "Invitation d'invité créée.", "Convite de convidado criado.", "تم إنشاء دعوة ضيف.", "अतिथि आमंत्रण बन गया।", "অতিথি আমন্ত্রণ তৈরি হয়েছে।",
+            "مہمان کی دعوت بن گئی۔", "访客邀请已创建。")
+
+        Add("Не удалось создать приглашение на сервере.",
+            "Could not create invitation on server.", "Не вдалося створити запрошення на сервері.", "Einladung konnte auf dem Server nicht erstellt werden.", "Impossibile creare l'invito sul server.", "No se pudo crear la invitación en el servidor.",
+            "Impossible de créer l'invitation sur le serveur.", "Não foi possível criar o convite no servidor.", "تعذّر إنشاء الدعوة على الخادم.", "सर्वर पर आमंत्रण नहीं बनाया जा सका।", "সার্ভারে আমন্ত্রণ তৈরি করা যায়নি।",
+            "سرور پر دعوت نامہ نہیں بنایا جا سکا۔", "无法在服务器上创建邀请。")
+
+        Add("Отозвать это гостевое приглашение?",
+            "Withdraw this guest invitation?", "Відкликати це гостьове запрошення?", "Diese Gasteinladung widerrufen?", "Revocare questo invito per ospite?", "¿Retirar esta invitación de invitado?",
+            "Retirer cette invitation d'invité ?", "Revogar este convite de convidado?", "هل تريد سحب دعوة الضيف هذه؟", "क्या यह अतिथि आमंत्रण वापस लेना है?", "এই অতিথি আমন্ত্রণ কি প্রত্যাহার করবেন?",
+            "کیا یہ مہمان کی دعوت واپس لینی ہے؟", "撤回此访客邀请？")
+
+        Add("Отзыв приглашения..",
+            "Withdrawing invitation..", "Відкликання запрошення..", "Einladung wird widerrufen..", "Revoca invito in corso..", "Retirando invitación..",
+            "Retrait de l'invitation en cours..", "A revogar convite..", "جارٍ سحب الدعوة..", "आमंत्रण वापस लिया जा रहा है..", "আমন্ত্রণ প্রত্যাহার করা হচ্ছে..",
+            "دعوت نامہ واپس لیا جا رہا ہے..", "正在撤回邀请..")
+
+        Add("Не удалось отозвать приглашение.",
+            "Could not withdraw invitation.", "Не вдалося відкликати запрошення.", "Einladung konnte nicht widerrufen werden.", "Impossibile revocare l'invito.", "No se pudo retirar la invitación.",
+            "Impossible de retirer l'invitation.", "Não foi possível revogar o convite.", "تعذّر سحب الدعوة.", "आमंत्रण वापस नहीं लिया जा सका।", "আমন্ত্রণ প্রত্যাহার করা যায়নি।",
+            "دعوت نامہ واپس نہیں لیا جا سکا۔", "无法撤回邀请。")
 
     End Sub
 

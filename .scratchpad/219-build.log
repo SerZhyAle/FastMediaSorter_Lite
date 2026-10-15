@@ -1,0 +1,123 @@
+Using MSBuild: C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Current\Bin\MSBuild.exe
+Restoring NuGet packages...
+MSBuild auto-detection: using msbuild version '18.9.1.35102' from 'C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Current\bin'.
+All packages listed in packages.config are already installed.
+  CACHE https://api.nuget.org/v3/vulnerabilities/index.json
+  CACHE https://api.nuget.org/v3-vulnerabilities/2026.10.12.23.51.53/vulnerability.base.json
+  CACHE https://api.nuget.org/v3-vulnerabilities/2026.10.12.23.51.53/2026.10.13.17.51.57/vulnerability.update.json
+WARNING: NU1902: Package 'SixLabors.ImageSharp' 2.1.13 has a known moderate severity vulnerability, https://github.com/advisories/GHSA-gwg2-r3hj-4w44
+WARNING: NU1903: Package 'SixLabors.ImageSharp' 2.1.13 has a known high severity vulnerability, https://github.com/advisories/GHSA-j3p4-wp97-rph4
+WARNING: NU1903: Package 'SixLabors.ImageSharp' 2.1.13 has a known high severity vulnerability, https://github.com/advisories/GHSA-j9gm-c75j-xc9q
+WARNING: NU1902: Package 'SixLabors.ImageSharp' 2.1.13 has a known moderate severity vulnerability, https://github.com/advisories/GHSA-wmxv-xphr-5c9g
+WARNING: NU1903: Package 'SixLabors.ImageSharp' 2.1.13 has a known high severity vulnerability, https://github.com/advisories/GHSA-jjfr-hcj7-qf5w
+Assets file has not changed. Skipping assets file writing. Path: P:\WINDOWS\FastMediaSorter_Lite\src\FastMediaSorterCompanion\obj\project.assets.json
+Restored P:\WINDOWS\FastMediaSorter_Lite\src\FastMediaSorterCompanion\FastMediaSorterCompanion.vbproj (in 67 ms).
+Restoring packages for P:\WINDOWS\FastMediaSorter_Lite\src\Modern\FastMediaSorter.Modern.vbproj...
+  CACHE https://api.nuget.org/v3/vulnerabilities/index.json
+  CACHE https://api.nuget.org/v3-vulnerabilities/2026.10.12.23.51.53/vulnerability.base.json
+  CACHE https://api.nuget.org/v3-vulnerabilities/2026.10.12.23.51.53/2026.10.13.17.51.57/vulnerability.update.json
+WARNING: NU1902: Package 'SixLabors.ImageSharp' 3.1.12 has a known moderate severity vulnerability, https://github.com/advisories/GHSA-gwg2-r3hj-4w44
+WARNING: NU1903: Package 'SixLabors.ImageSharp' 3.1.12 has a known high severity vulnerability, https://github.com/advisories/GHSA-j3p4-wp97-rph4
+WARNING: NU1903: Package 'SixLabors.ImageSharp' 3.1.12 has a known high severity vulnerability, https://github.com/advisories/GHSA-j9gm-c75j-xc9q
+WARNING: NU1903: Package 'SixLabors.ImageSharp' 3.1.12 has a known high severity vulnerability, https://github.com/advisories/GHSA-jjfr-hcj7-qf5w
+WARNING: NU1902: Package 'SixLabors.ImageSharp' 3.1.12 has a known moderate severity vulnerability, https://github.com/advisories/GHSA-wmxv-xphr-5c9g
+Generating MSBuild file P:\WINDOWS\FastMediaSorter_Lite\src\Modern\obj\FastMediaSorter.Modern.vbproj.nuget.g.props.
+Writing assets file to disk. Path: P:\WINDOWS\FastMediaSorter_Lite\src\Modern\obj\project.assets.json
+Restored P:\WINDOWS\FastMediaSorter_Lite\src\Modern\FastMediaSorter.Modern.vbproj (in 520 ms).
+
+NuGet Config files used:
+    C:\Users\serzh\AppData\Roaming\NuGet\NuGet.Config
+    C:\Program Files (x86)\NuGet\Config\Microsoft.VisualStudio.Offline.config
+
+Feeds used:
+    C:\Program Files (x86)\Microsoft SDKs\NuGetPackages\
+    https://api.nuget.org/v3/index.json
+1 of 3 projects are up-to-date for restore.
+Building Release (version 26.10.13.2341)...
+
+  Auto-generating version: 26.10.13.2341
+P:\WINDOWS\FastMediaSorter_Lite\src\Main_Form.Lifecycle.vb(1176,23): warning BC42356: This async method lacks 'Await' operators and so will run synchronously. Consider using the 'Await' operator to await non-blocking API calls, or 'Await Task.Run(...)' to do CPU-bound work on a background thread. [P:\WINDOWS\FastMediaSorter_Lite\src\FastMediaSorter.vbproj]
+P:\WINDOWS\FastMediaSorter_Lite\src\Main_Form.FileOperations.vb(1636,9): warning BC42305: XML comment tag 'summary' appears with identical attributes more than once in the same XML comment block. [P:\WINDOWS\FastMediaSorter_Lite\src\FastMediaSorter.vbproj]
+P:\WINDOWS\FastMediaSorter_Lite\src\Localization\Localization.vb(6,4): warning BC42314: XML comment cannot be applied more than once on a partial class. XML comments for this class will be ignored. [P:\WINDOWS\FastMediaSorter_Lite\src\FastMediaSorter.vbproj]
+P:\WINDOWS\FastMediaSorter_Lite\src\Localization\Localization.ProfileReset.vb(6,4): warning BC42314: XML comment cannot be applied more than once on a partial class. XML comments for this class will be ignored. [P:\WINDOWS\FastMediaSorter_Lite\src\FastMediaSorter.vbproj]
+  FastMediaSorter -> P:\WINDOWS\FastMediaSorter_Lite\bin\Release\FastMediaSorter_x86.exe
+  FastMediaSorterCompanion -> P:\WINDOWS\FastMediaSorter_Lite\src\FastMediaSorterCompanion\bin\Release\net10.0-windows10.0.19041\FastMediaSorterCompanion.dll
+P:\WINDOWS\FastMediaSorter_Lite\src\Modern\FastMediaSorter.Modern.vbproj : warning NU1902: Package 'SixLabors.ImageSharp' 3.1.12 has a known moderate severity vulnerability, https://github.com/advisories/GHSA-gwg2-r3hj-4w44
+P:\WINDOWS\FastMediaSorter_Lite\src\Modern\FastMediaSorter.Modern.vbproj : warning NU1903: Package 'SixLabors.ImageSharp' 3.1.12 has a known high severity vulnerability, https://github.com/advisories/GHSA-j3p4-wp97-rph4
+P:\WINDOWS\FastMediaSorter_Lite\src\Modern\FastMediaSorter.Modern.vbproj : warning NU1903: Package 'SixLabors.ImageSharp' 3.1.12 has a known high severity vulnerability, https://github.com/advisories/GHSA-j9gm-c75j-xc9q
+P:\WINDOWS\FastMediaSorter_Lite\src\Modern\FastMediaSorter.Modern.vbproj : warning NU1903: Package 'SixLabors.ImageSharp' 3.1.12 has a known high severity vulnerability, https://github.com/advisories/GHSA-jjfr-hcj7-qf5w
+P:\WINDOWS\FastMediaSorter_Lite\src\Modern\FastMediaSorter.Modern.vbproj : warning NU1902: Package 'SixLabors.ImageSharp' 3.1.12 has a known moderate severity vulnerability, https://github.com/advisories/GHSA-wmxv-xphr-5c9g
+P:\WINDOWS\FastMediaSorter_Lite\src\Video\Video_Convert_Form.vb(26,22): warning BC40004: variable 'cancelButton' conflicts with property 'cancelButton' in the base class 'Form' and should be declared 'Shadows'. [P:\WINDOWS\FastMediaSorter_Lite\src\Modern\FastMediaSorter.Modern.vbproj]
+P:\WINDOWS\FastMediaSorter_Lite\src\Secure\FdSecStream.vb(231,29): warning BC42108: Variable 'held' is passed by reference before it has been assigned a value. A null reference exception could result at runtime. Make sure the structure or all the reference members are initialized before use [P:\WINDOWS\FastMediaSorter_Lite\src\Modern\FastMediaSorter.Modern.vbproj]
+P:\WINDOWS\FastMediaSorter_Lite\src\Ocr\TesseractOcrEngine.vb(1016,13): warning SYSLIB0014: 'ServicePointManager' is obsolete: 'WebRequest, HttpWebRequest, ServicePoint, and WebClient are obsolete. Use HttpClient instead. Settings on ServicePointManager no longer affect SslStream or HttpClient.'. (https://aka.ms/dotnet-warnings/SYSLIB0014) [P:\WINDOWS\FastMediaSorter_Lite\src\Modern\FastMediaSorter.Modern.vbproj]
+P:\WINDOWS\FastMediaSorter_Lite\src\Ocr\TesseractOcrEngine.vb(1016,52): warning SYSLIB0014: 'ServicePointManager' is obsolete: 'WebRequest, HttpWebRequest, ServicePoint, and WebClient are obsolete. Use HttpClient instead. Settings on ServicePointManager no longer affect SslStream or HttpClient.'. (https://aka.ms/dotnet-warnings/SYSLIB0014) [P:\WINDOWS\FastMediaSorter_Lite\src\Modern\FastMediaSorter.Modern.vbproj]
+P:\WINDOWS\FastMediaSorter_Lite\src\Ocr\TesseractOcrEngine.vb(1017,52): warning SYSLIB0014: 'Public Shared Overloads Function Create(requestUriString As String) As WebRequest' is obsolete: 'WebRequest, HttpWebRequest, ServicePoint, and WebClient are obsolete. Use HttpClient instead.'. (https://aka.ms/dotnet-warnings/SYSLIB0014) [P:\WINDOWS\FastMediaSorter_Lite\src\Modern\FastMediaSorter.Modern.vbproj]
+  FastMediaSorter.Modern -> P:\WINDOWS\FastMediaSorter_Lite\src\Modern\bin\Release\net10.0-windows\FastMediaSorter_LITE.dll
+Single-file x86 viewer staged at: P:\WINDOWS\FastMediaSorter_Lite\bin\SingleFile\FastMediaSorter_x86.exe
+Publishing Companion (net10, self-contained single-file)..
+Leaving FastMediaSorterCompanion alone - it runs from C:\Program Files\FastMediaSorter_Server\FastMediaSorterCompanion.exe, which this build does not write.
+  Determining projects to restore...
+  Restored P:\WINDOWS\FastMediaSorter_Lite\src\FastMediaSorterCompanion\FastMediaSorterCompanion.vbproj (in 209 ms).
+  FastMediaSorterCompanion -> P:\WINDOWS\FastMediaSorter_Lite\src\FastMediaSorterCompanion\bin\Release\net10.0-windows10.0.19041\win-x64\FastMediaSorterCompanion.dll
+  FastMediaSorterCompanion -> P:\WINDOWS\FastMediaSorter_Lite\bin\CompanionPublish\
+Companion published at: P:\WINDOWS\FastMediaSorter_Lite\bin\CompanionPublish\FastMediaSorterCompanion.exe
+Skipping exchange server build (-SkipExchange).
+Publishing modern viewer (net10 x64, self-contained single-file)..
+  Determining projects to restore...
+P:\WINDOWS\FastMediaSorter_Lite\src\Modern\FastMediaSorter.Modern.vbproj : warning NU1902: Package 'SixLabors.ImageSharp' 3.1.12 has a known moderate severity vulnerability, https://github.com/advisories/GHSA-gwg2-r3hj-4w44
+P:\WINDOWS\FastMediaSorter_Lite\src\Modern\FastMediaSorter.Modern.vbproj : warning NU1903: Package 'SixLabors.ImageSharp' 3.1.12 has a known high severity vulnerability, https://github.com/advisories/GHSA-j3p4-wp97-rph4
+P:\WINDOWS\FastMediaSorter_Lite\src\Modern\FastMediaSorter.Modern.vbproj : warning NU1903: Package 'SixLabors.ImageSharp' 3.1.12 has a known high severity vulnerability, https://github.com/advisories/GHSA-j9gm-c75j-xc9q
+P:\WINDOWS\FastMediaSorter_Lite\src\Modern\FastMediaSorter.Modern.vbproj : warning NU1903: Package 'SixLabors.ImageSharp' 3.1.12 has a known high severity vulnerability, https://github.com/advisories/GHSA-jjfr-hcj7-qf5w
+P:\WINDOWS\FastMediaSorter_Lite\src\Modern\FastMediaSorter.Modern.vbproj : warning NU1902: Package 'SixLabors.ImageSharp' 3.1.12 has a known moderate severity vulnerability, https://github.com/advisories/GHSA-wmxv-xphr-5c9g
+  Restored P:\WINDOWS\FastMediaSorter_Lite\src\Modern\FastMediaSorter.Modern.vbproj (in 601 ms).
+P:\WINDOWS\FastMediaSorter_Lite\src\Modern\FastMediaSorter.Modern.vbproj : warning NU1902: Package 'SixLabors.ImageSharp' 3.1.12 has a known moderate severity vulnerability, https://github.com/advisories/GHSA-gwg2-r3hj-4w44
+P:\WINDOWS\FastMediaSorter_Lite\src\Modern\FastMediaSorter.Modern.vbproj : warning NU1903: Package 'SixLabors.ImageSharp' 3.1.12 has a known high severity vulnerability, https://github.com/advisories/GHSA-j3p4-wp97-rph4
+P:\WINDOWS\FastMediaSorter_Lite\src\Modern\FastMediaSorter.Modern.vbproj : warning NU1903: Package 'SixLabors.ImageSharp' 3.1.12 has a known high severity vulnerability, https://github.com/advisories/GHSA-j9gm-c75j-xc9q
+P:\WINDOWS\FastMediaSorter_Lite\src\Modern\FastMediaSorter.Modern.vbproj : warning NU1903: Package 'SixLabors.ImageSharp' 3.1.12 has a known high severity vulnerability, https://github.com/advisories/GHSA-jjfr-hcj7-qf5w
+P:\WINDOWS\FastMediaSorter_Lite\src\Modern\FastMediaSorter.Modern.vbproj : warning NU1902: Package 'SixLabors.ImageSharp' 3.1.12 has a known moderate severity vulnerability, https://github.com/advisories/GHSA-wmxv-xphr-5c9g
+P:\WINDOWS\FastMediaSorter_Lite\src\Video\Video_Convert_Form.vb(26,22): warning BC40004: variable 'cancelButton' conflicts with property 'cancelButton' in the base class 'Form' and should be declared 'Shadows'. [P:\WINDOWS\FastMediaSorter_Lite\src\Modern\FastMediaSorter.Modern.vbproj]
+P:\WINDOWS\FastMediaSorter_Lite\src\Secure\FdSecStream.vb(231,29): warning BC42108: Variable 'held' is passed by reference before it has been assigned a value. A null reference exception could result at runtime. Make sure the structure or all the reference members are initialized before use [P:\WINDOWS\FastMediaSorter_Lite\src\Modern\FastMediaSorter.Modern.vbproj]
+P:\WINDOWS\FastMediaSorter_Lite\src\Ocr\TesseractOcrEngine.vb(1016,13): warning SYSLIB0014: 'ServicePointManager' is obsolete: 'WebRequest, HttpWebRequest, ServicePoint, and WebClient are obsolete. Use HttpClient instead. Settings on ServicePointManager no longer affect SslStream or HttpClient.'. (https://aka.ms/dotnet-warnings/SYSLIB0014) [P:\WINDOWS\FastMediaSorter_Lite\src\Modern\FastMediaSorter.Modern.vbproj]
+P:\WINDOWS\FastMediaSorter_Lite\src\Ocr\TesseractOcrEngine.vb(1016,52): warning SYSLIB0014: 'ServicePointManager' is obsolete: 'WebRequest, HttpWebRequest, ServicePoint, and WebClient are obsolete. Use HttpClient instead. Settings on ServicePointManager no longer affect SslStream or HttpClient.'. (https://aka.ms/dotnet-warnings/SYSLIB0014) [P:\WINDOWS\FastMediaSorter_Lite\src\Modern\FastMediaSorter.Modern.vbproj]
+P:\WINDOWS\FastMediaSorter_Lite\src\Ocr\TesseractOcrEngine.vb(1017,52): warning SYSLIB0014: 'Public Shared Overloads Function Create(requestUriString As String) As WebRequest' is obsolete: 'WebRequest, HttpWebRequest, ServicePoint, and WebClient are obsolete. Use HttpClient instead.'. (https://aka.ms/dotnet-warnings/SYSLIB0014) [P:\WINDOWS\FastMediaSorter_Lite\src\Modern\FastMediaSorter.Modern.vbproj]
+  FastMediaSorter.Modern -> P:\WINDOWS\FastMediaSorter_Lite\src\Modern\bin\Release\net10.0-windows\win-x64\FastMediaSorter_LITE.dll
+  FastMediaSorter.Modern -> P:\WINDOWS\FastMediaSorter_Lite\bin\ModernPublish\
+Modern viewer published at: P:\WINDOWS\FastMediaSorter_Lite\bin\ModernPublish\FastMediaSorter_LITE.exe
+  loose publish asset -> LICENSE
+  loose publish asset -> Magick.Native-Q8-x64.dll
+  loose publish asset -> pdfium.dll
+Modern viewer staged next to the x86 sibling -> P:\WINDOWS\FastMediaSorter_Lite\bin\Release\FastMediaSorter_LITE.exe
+Test-ArtifactVersion: subject = 3 file(s), version resource, expected stamp '26.10.13.2341'
+  FastMediaSorter_x86.exe carries 26.10.13.2341
+  FastMediaSorter_LITE.exe carries 26.10.13.2341
+  FastMediaSorterCompanion.exe carries 26.10.13.2341
+Test-ArtifactVersion: PASS (3 file(s) at 26.10.13.2341)
+Server edition detected (FastMediaSorterCompanionSFTP is running) - leaving its worker alone.
+  It serves from its own install directory; nothing here is locked by it.
+Leaving FastMediaSorterCompanion alone - it runs from C:\Program Files\FastMediaSorter_Server\FastMediaSorterCompanion.exe, which this build does not write.
+Staged FileDO 26.10.13.2333 (local build): 0f49fcfb8025a55b3d555472940d344f81b5c8aae0a9c0e6c205196351e3b681
+Deployed companion payload -> P:\WINDOWS\FastMediaSorter_Lite\bin\Release\companion
+Staged FileDO 26.10.13.2333 (local build): 0f49fcfb8025a55b3d555472940d344f81b5c8aae0a9c0e6c205196351e3b681
+Deployed companion payload -> P:\WINDOWS\FastMediaSorter_Lite\bin\SingleFile\companion
+Deployed Companion exe -> P:\WINDOWS\FastMediaSorter_Lite\bin\Release\FastMediaSorterCompanion.exe
+Deployed Companion exe -> P:\WINDOWS\FastMediaSorter_Lite\bin\SingleFile\FastMediaSorterCompanion.exe
+Deployed x86 viewer -> C:\GD\i\FastMediaSorter_x86.exe
+  loose publish asset -> LICENSE
+  loose publish asset -> Magick.Native-Q8-x64.dll
+  loose publish asset -> pdfium.dll
+Deployed modern x64 viewer -> C:\GD\i\FastMediaSorter_LITE.exe
+Staged FileDO 26.10.13.2333 (local build): 0f49fcfb8025a55b3d555472940d344f81b5c8aae0a9c0e6c205196351e3b681
+Deployed companion payload -> C:\GD\i\companion
+Deployed Companion exe -> C:\GD\i\FastMediaSorterCompanion.exe
+Deployed x86 viewer -> C:\GD\tc\SZA\_APP\FastMediaSorter_x86.exe
+  loose publish asset -> LICENSE
+  loose publish asset -> Magick.Native-Q8-x64.dll
+  loose publish asset -> pdfium.dll
+Deployed modern x64 viewer -> C:\GD\tc\SZA\_APP\FastMediaSorter_LITE.exe
+Staged FileDO 26.10.13.2333 (local build): 0f49fcfb8025a55b3d555472940d344f81b5c8aae0a9c0e6c205196351e3b681
+Deployed companion payload -> C:\GD\tc\SZA\_APP\companion
+Deployed Companion exe -> C:\GD\tc\SZA\_APP\FastMediaSorterCompanion.exe
+WARNING: Leftover from the old layout - delete it: C:\GD\i\modern
+Skipping installer packaging (-SkipInstaller).
+Skipping Server edition installer (-SkipServerInstaller).
+Skipping viewer launch (-SkipLaunch or -SkipModern).

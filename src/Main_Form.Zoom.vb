@@ -250,26 +250,53 @@ Partial Public Class Main_Form
         Return False   ' default: let the caller navigate
     End Function
 
-    ''' <summary>NumPad zoom (spec 4.3). Only the grey block - every Ctrl combo is
-    ''' already taken, and NumPad 0..9 belong to sorting. Returns True if consumed.</summary>
+    ''' <summary>
+    ''' The zoom action a key press stands for, or "" (spec 4.3 and UX-113 of 123). The grey NumPad block counts
+    ''' by key code, as it always did - every Ctrl combo is already taken, and NumPad 0..9 belong to sorting.
+    ''' The main row ("=", "+" and "-" beside the zero, for a laptop with no numeric block) counts only by its
+    ''' exact combination, which the shortcut catalogue lists as the second home of zoom in / zoom out.
+    ''' </summary>
+    Private Shared Function ZoomActionOfPress(e As KeyEventArgs) As String
+        Select Case e.KeyCode
+            Case Keys.Add : Return "zoomIn"
+            Case Keys.Subtract : Return "zoomOut"
+            Case Keys.Divide : Return "zoomFit"
+            Case Keys.Multiply : Return "zoomActual"
+        End Select
+        Return CustomHotkeys.ZoomActionOfFactoryKey(e.KeyData)
+    End Function
+
+    ''' <summary>Zoom keys (the NumPad and, since UX-113 of 123, the main row). Returns True if consumed.</summary>
     Private Function TryHandleZoomKey(e As KeyEventArgs) As Boolean
+        Dim actionId As String = ZoomActionOfPress(e)
+        If actionId.Length = 0 Then Return False
+        Return RunZoomAction(actionId)
+    End Function
+
+    ''' <summary>
+    ''' The one implementation of the four zoom actions - the factory keys above and a key the user moved the
+    ''' action to both end here, so they cannot drift apart (a moved "zoom in" used to ignore a text document,
+    ''' which the NumPad key zooms). A text document has its own zoom: in, out and back to 100 %. "Real size"
+    ''' means a picture's pixels and has no text counterpart, so a text document does not claim that key.
+    ''' </summary>
+    Friend Function RunZoomAction(actionId As String) As Boolean
         If IsTextDocumentShown() Then
-            Select Case e.KeyCode
-                Case Keys.Add : ZoomText(0.1F)
-                Case Keys.Subtract : ZoomText(-0.1F)
-                Case Keys.Divide : ResetTextZoom()
+            Select Case actionId
+                Case "zoomIn" : ZoomText(0.1F)
+                Case "zoomOut" : ZoomText(-0.1F)
+                Case "zoomFit" : ResetTextZoom()
                 Case Else : Return False
             End Select
             Return True
         End If
-        Select Case e.KeyCode
-            Case Keys.Add
+        Select Case actionId
+            Case "zoomIn"
                 ZoomStepAt(True, False, CursorAnchorOnPanel())
-            Case Keys.Subtract
+            Case "zoomOut"
                 ZoomStepAt(False, False, CursorAnchorOnPanel())
-            Case Keys.Divide
+            Case "zoomFit"
                 ZoomToFit()
-            Case Keys.Multiply
+            Case "zoomActual"
                 ZoomToActualSize(CursorAnchorOnPanel())
             Case Else
                 Return False

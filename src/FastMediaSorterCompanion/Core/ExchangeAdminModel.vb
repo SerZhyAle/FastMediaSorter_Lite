@@ -161,7 +161,11 @@ Friend NotInheritable Class ExchangeAccountsView
     Public Property Accounts As IReadOnlyList(Of ExchangeAdminAccount) = Array.Empty(Of ExchangeAdminAccount)()
     ''' <summary>The devices of the account the list was read for ("" when none was asked).</summary>
     Public Property DevicesOf As String = ""
+    Public Property KeepAwakeActive As Boolean
+    Public Property KeepAwakeKnown As Boolean
     Public Property Devices As IReadOnlyList(Of ExchangeAdminDevice) = Array.Empty(Of ExchangeAdminDevice)()
+    Public Property Invitations As IReadOnlyList(Of ExchangeAdminInvitation) = Array.Empty(Of ExchangeAdminInvitation)()
+    Public Property SharedInvitation As ExchangeAdminSharedInvitation
 
     ''' <summary>Reads the accounts and, for <paramref name="devicesOf"/>, its devices. Blocks nothing: awaited.</summary>
     Friend Shared Async Function ReadAsync(devicesOf As String, ct As Threading.CancellationToken) As Task(Of ExchangeAccountsView)
@@ -171,6 +175,10 @@ Friend NotInheritable Class ExchangeAccountsView
         If Not accounts.Ok Then Return view
         view.Reached = True
         view.Accounts = ExchangeAdminParser.Accounts(accounts.DataJson)
+        Dim status As ExchangeAdminReply = Await ExchangeAdmin.SendAsync(New ExchangeAdminRequest(ExchangeAdminRequest.OpStatus), ct).ConfigureAwait(False)
+        Dim host As ExchangeAdminStatus = ExchangeAdminParser.Status(status.DataJson)
+        view.KeepAwakeKnown = status.Ok AndAlso status.Route = ExchangeAdminRoute.Pipe AndAlso host.KeepAwakeReported
+        view.KeepAwakeActive = status.Ok AndAlso host.KeepAwakeActive
         Dim wanted As String = ExchangeLoginRules.Normalize(devicesOf)
         If wanted.Length > 0 AndAlso view.Accounts.Any(Function(a) String.Equals(a.Login, wanted, StringComparison.Ordinal)) Then
             Dim devices As ExchangeAdminReply = Await ExchangeAdmin.ListDevicesAsync(wanted, ct).ConfigureAwait(False)
@@ -178,6 +186,14 @@ Friend NotInheritable Class ExchangeAccountsView
                 view.DevicesOf = wanted
                 view.Devices = ExchangeAdminParser.Devices(devices.DataJson)
             End If
+        End If
+        Dim invReply As ExchangeAdminReply = Await ExchangeAdmin.ListInvitationsAsync(ct).ConfigureAwait(False)
+        If invReply.Ok Then
+            view.Invitations = ExchangeAdminParser.Invitations(invReply.DataJson)
+        End If
+        Dim sharedReply As ExchangeAdminReply = Await ExchangeAdmin.GetSharedInvitationStatusAsync(ct).ConfigureAwait(False)
+        If sharedReply.Ok Then
+            view.SharedInvitation = ExchangeAdminParser.SharedInvitation(sharedReply.DataJson)
         End If
         Return view
     End Function
@@ -200,11 +216,14 @@ Friend NotInheritable Class ExchangeAccountsModel
     Public Property ShowAccountsList As Boolean
     Public Property ShowAdd As Boolean
     Public Property ShowReset As Boolean
+    Public Property ShowLimits As Boolean
     Public Property ShowRemove As Boolean
     Public Property ShowDevices As Boolean
     Public Property ShowRevoke As Boolean
+    Public Property ShowInvitations As Boolean
+    Public Property ShowWithdrawInvitation As Boolean
 
-    Friend Shared Function Build(view As ExchangeAccountsView, selectedLogin As String, selectedDeviceId As String) As ExchangeAccountsModel
+    Friend Shared Function Build(view As ExchangeAccountsView, selectedLogin As String, selectedDeviceId As String, Optional selectedInvHash As String = "") As ExchangeAccountsModel
         Dim m As New ExchangeAccountsModel()
         If view Is Nothing OrElse Not view.Reached Then
             m.ShowNotReached = view IsNot Nothing
@@ -220,16 +239,20 @@ Friend NotInheritable Class ExchangeAccountsModel
         Dim login As String = ExchangeLoginRules.Normalize(selectedLogin)
         Dim selected As Boolean = login.Length > 0 AndAlso view.Accounts.Any(Function(a) String.Equals(a.Login, login, StringComparison.Ordinal))
         m.ShowReset = selected
+        m.ShowLimits = selected
         m.ShowRemove = selected
         m.ShowDevices = selected AndAlso String.Equals(view.DevicesOf, login, StringComparison.Ordinal) AndAlso view.Devices.Count > 0
         m.ShowRevoke = m.ShowDevices AndAlso Not String.IsNullOrEmpty(selectedDeviceId) AndAlso
                        view.Devices.Any(Function(d) String.Equals(d.DeviceId, selectedDeviceId, StringComparison.Ordinal))
+        m.ShowInvitations = True
+        Dim invHash As String = If(selectedInvHash, "")
+        m.ShowWithdrawInvitation = invHash.Length > 0 AndAlso view.Invitations.Any(Function(i) String.Equals(i.CodeHash, invHash, StringComparison.Ordinal) AndAlso Not i.Used)
         Return m
     End Function
 End Class
 
 ''' <summary>
-''' The statement of what the operator can see (DEVICE-EXCHANGE 7.9, ticket 167 rule 8, shown by 168 section 3.6): six
+''' The statement of what the operator can see (DEVICE-EXCHANGE 7.9, ticket 167 rule 8, shown by 168 section 3.6): seven
 ''' points, each a fact of its own. The ids are the Go module's (<c>internal/statement</c>) and never change meaning;
 ''' a point is added, never reworded in place. The text is the Russian source of the 13-language layer, one key per
 ''' point, so a language never shows a different set of limits.
@@ -238,7 +261,7 @@ Friend NotInheritable Class ExchangeStatement
     Private Sub New()
     End Sub
 
-    Friend Shared ReadOnly Ids As String() = {"relay-visible", "tunnel-broadcast-plain", "access-visible", "sftp-opaque", "multi-user-limit", "flat-trust"}
+    Friend Shared ReadOnly Ids As String() = {"relay-visible", "tunnel-broadcast-plain", "access-visible", "sftp-opaque", "multi-user-limit", "flat-trust", "clipboard-visible"}
 
     Friend Shared Function Text(id As String) As String
         Select Case id
@@ -254,13 +277,17 @@ Friend NotInheritable Class ExchangeStatement
                 Return Localization.T("На сервере, где живут чужие учётные записи, это известное ограничение данной версии: оператор видит то, что описано выше. Сквозное шифрование данных доступа, при котором их не прочитает даже оператор, - работа впереди.")
             Case "flat-trust"
                 Return Localization.T("Каждое устройство учётной записи полностью доверяет каждому другому устройству этой записи: любое устройство может удалить другое, запросить коды сопряжения и прочитать данные доступа всех общих папок записи. Удалить себя может любое устройство.")
+            Case "clipboard-visible"
+                Return Localization.T("Последнее значение, отправленное в буфер обмена этого сервера, - текст, картинка или один файл в пределах размера, установленного для аккаунта, - лежит в памяти этого сервера и нигде больше: на диск не пишется, в журнал не попадает и теряется при перезапуске сервера. Пока оно там, оператор может прочитать его в открытом виде. У аккаунта одно значение - последнее, пришедшее целиком.")
             Case Else
                 Return ""
         End Select
     End Function
 
     ''' <summary>The whole statement as paragraphs, in the order it is shown.</summary>
-    Friend Shared Function Paragraphs() As List(Of String)
-        Return Ids.Select(Function(id) Text(id)).ToList()
+    Friend Shared Function Paragraphs(Optional retentionDays As Integer = 31) As List(Of String)
+        Dim points As List(Of String) = Ids.Select(Function(id) Text(id)).ToList()
+        points.Add(Localization.TF("Журналы хранятся {0} дней. Файлы создаются по дням UTC и очищаются ежедневно.", retentionDays))
+        Return points
     End Function
 End Class

@@ -38,8 +38,14 @@ Friend NotInheritable Class Resource_Manager_Form
     ''' <param name="openShareManager">The handover a managed share's Edit/Remove becomes. The viewer
     ''' names its own Share entry point; Nothing keeps the panel's quiet form-free default, which is
     ''' what the tests construct with.</param>
+    ''' <param name="shareInstalledProbe">Spec 227 rule 2: the host's "Share Manager installed" probe
+    ''' for the camera item's gate. Nothing keeps the panel's own file probe.</param>
+    ''' <param name="scanPhoneCodeCamera">Spec 227 rule 2: the host's camera hand-over to the Share
+    ''' Manager's add-resource flow. Nothing keeps the item absent.</param>
     Friend Sub New(Optional draft As ResourceDescriptor = Nothing,
-                   Optional openShareManager As Action = Nothing)
+                   Optional openShareManager As Action = Nothing,
+                   Optional shareInstalledProbe As Func(Of Boolean) = Nothing,
+                   Optional scanPhoneCodeCamera As Action = Nothing)
         Me.Text = Localization.T("Ресурсы")
         Me.FormBorderStyle = FormBorderStyle.Sizable
         Me.MinimumSize = New Size(640, 340)
@@ -59,7 +65,9 @@ Friend NotInheritable Class Resource_Manager_Form
         ' The shared list+actions panel (the Settings window's resources page embeds the same one).
         ' A managed share's Edit/Remove hands the user over to the Share Manager - the viewer
         ' passes its own wake (Main_Form.ShowResourceManager), the tests construct without one.
-        panel = New Resource_List_Panel(openShareManager:=openShareManager) With {.Dock = DockStyle.Fill}
+        panel = New Resource_List_Panel(openShareManager:=openShareManager,
+                                        shareInstalledProbe:=shareInstalledProbe,
+                                        scanPhoneCodeCamera:=scanPhoneCodeCamera) With {.Dock = DockStyle.Fill}
         AddHandler panel.ItemActivated, AddressOf OnOpenFromPanel
         AddHandler panel.SelectionChanged, Sub(has As Boolean) openButton.Enabled = has
 

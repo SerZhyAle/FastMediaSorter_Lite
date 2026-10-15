@@ -41,7 +41,7 @@ Friend NotInheritable Class LiveVlcMedia
 
         Dim streamInput As New StreamMediaInput(session.Stream)
         Try
-            Dim created As New Media(libVlc, streamInput, options.ToMediaOptions(targetLatencyMs, session.IsAdtsAac))
+            Dim created As New Media(libVlc, streamInput, options.ToMediaOptions(targetLatencyMs, session.IsAdtsAac, session.IsMpegTs))
             Return New LiveVlcMedia(streamInput, created)
         Catch
             streamInput.Dispose()

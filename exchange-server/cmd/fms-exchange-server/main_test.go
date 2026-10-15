@@ -20,6 +20,7 @@ import (
 	"fms/exchange-server/internal/config"
 	"fms/exchange-server/internal/connstr"
 	"fms/exchange-server/internal/deploy"
+	"fms/exchange-server/internal/logx"
 	"fms/exchange-server/internal/password"
 	"fms/exchange-server/internal/testkit"
 	"fms/exchange-server/internal/wire"
@@ -586,7 +587,7 @@ func TestAnObsoletePasswordInTheConfigIsIgnoredLoggedOnceAndRemovedBySetListen(t
 	enrollOver(t, addr, fingerprintOf(t, cfgFile), "alice", pw, wire.NewID()) // the account is what counts
 	cancel()
 	<-done
-	logb, _ := os.ReadFile(filepath.Join(filepath.Dir(cfgFile), config.LogsDir, config.LogName))
+	logb, _ := os.ReadFile(filepath.Join(filepath.Dir(cfgFile), config.LogsDir, "exchange-"+time.Now().UTC().Format("2006-01-02")+".log"))
 	if n := bytes.Count(logb, []byte("\tobsolete\t")); n != 1 {
 		t.Fatalf("the obsolete member must be logged once, not %d times:\n%s", n, logb)
 	}
@@ -681,7 +682,7 @@ func TestHardKillLeavesNothingButTheStoresTheIdentityTheLockAndTheLog(t *testing
 	srv.Wait()
 
 	allowed := map[string]bool{
-		config.FileName: true, filepath.Join(config.LogsDir, config.LogName): true,
+		config.FileName: true, filepath.Join(config.LogsDir, "exchange-"+time.Now().UTC().Format("2006-01-02")+".log"): true,
 		filepath.Join(config.TLSDir, config.CertName): true, filepath.Join(config.TLSDir, config.KeyName): true,
 		accounts.AccountsFile: true, accounts.DevicesFile: true, "directory.json": true, deploy.LockFile: true,
 	}
@@ -693,7 +694,7 @@ func TestHardKillLeavesNothingButTheStoresTheIdentityTheLockAndTheLog(t *testing
 			return nil
 		}
 		rel, _ := filepath.Rel(dir, p)
-		if !allowed[rel] {
+		if !allowed[rel] && !(strings.HasPrefix(filepath.ToSlash(rel), "logs/") && logx.IsDayFile(filepath.Base(rel))) {
 			t.Errorf("the data directory holds an unexpected file after a kill: %s", rel)
 		}
 		if b, _ := os.ReadFile(p); bytes.Contains(b, []byte("kill-test-secret")) || bytes.Contains(b, []byte(pw)) || bytes.Contains(b, []byte(en.DeviceToken)) {
@@ -701,7 +702,7 @@ func TestHardKillLeavesNothingButTheStoresTheIdentityTheLockAndTheLog(t *testing
 		}
 		return nil
 	})
-	logb, _ := os.ReadFile(filepath.Join(dir, config.LogsDir, config.LogName))
+	logb, _ := os.ReadFile(filepath.Join(dir, config.LogsDir, "exchange-"+time.Now().UTC().Format("2006-01-02")+".log"))
 	if bytes.Contains(logb, []byte(devID)) {
 		t.Fatal("the log carries a device id")
 	}

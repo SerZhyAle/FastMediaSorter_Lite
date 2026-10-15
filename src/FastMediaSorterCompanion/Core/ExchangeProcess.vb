@@ -137,6 +137,9 @@ Friend Module ExchangeProcess
         ''' <summary>The <c>host:port</c> announced in every welcome, "" while none is set.</summary>
         Public Property PublicEndpoint As String = ""
         Public Property ErrorText As String = ""
+        Public Property KeepAwake As Boolean
+        Public Property LogRetentionDays As Integer = 31
+        Public Property MaxAccounts As Integer = 10
 
         ''' <summary>The listen port from the endpoint ("" host or not), or 0 when it has none.</summary>
         Public ReadOnly Property Port As Integer
@@ -181,6 +184,11 @@ Friend Module ExchangeProcess
                 report.PortRange = ReadString(root, "portRange")
                 report.PublicEndpoint = ReadString(root, "publicEndpoint")
                 report.ErrorText = ReadString(root, "error")
+                report.KeepAwake = ReadBool(root, "keepAwake")
+                Dim days As Integer = ReadInt(root, "logRetentionDays")
+                report.LogRetentionDays = If(days > 0, days, 31)
+                Dim maxAcc As Integer = ReadInt(root, "maxAccounts")
+                report.MaxAccounts = If(maxAcc > 0, maxAcc, 10)
                 report.Answered = True
             End Using
         Catch ex As JsonException
@@ -304,6 +312,34 @@ Friend Module ExchangeProcess
 
     ''' <summary>Stores the public <c>host:port</c> every welcome announces (<c>set-endpoint</c>); an empty
     ''' value clears it. The binary refuses a loopback or wildcard address.</summary>
+    Friend Function SetKeepAwake(value As Boolean) As ConfigOutcome
+        If Not IsAvailable() Then Return ConfigOutcome.Unavailable
+        Dim r As RunResult = Run({"set-keep-awake", If(value, "on", "off")}, Nothing, CommandTimeoutMs)
+        Log("set-keep-awake", r)
+        Return ConfigOutcomeOf(r)
+    End Function
+
+    Friend Function SetLogRetention(days As Integer) As ConfigOutcome
+        If Not IsAvailable() Then Return ConfigOutcome.Unavailable
+        Dim r As RunResult = Run({"set-log-retention", days.ToString(Globalization.CultureInfo.InvariantCulture)}, Nothing, CommandTimeoutMs)
+        Log("set-log-retention", r)
+        Return ConfigOutcomeOf(r)
+    End Function
+
+    Friend Function SetMaxAccounts(maxAccounts As Integer) As ConfigOutcome
+        If Not IsAvailable() Then Return ConfigOutcome.Unavailable
+        Dim r As RunResult = Run({"set-max-accounts", maxAccounts.ToString(Globalization.CultureInfo.InvariantCulture)}, Nothing, CommandTimeoutMs)
+        Log("set-max-accounts", r)
+        Return ConfigOutcomeOf(r)
+    End Function
+
+    Friend Function RenewCertificate() As CertificateResult
+        If Not IsAvailable() Then Return New CertificateResult With {.Outcome = CertificateOutcome.Unavailable}
+        Dim r As RunResult = Run({"tls", "renew"}, Nothing, CommandTimeoutMs)
+        Log("tls renew", r)
+        Return CertificateResultOf(r)
+    End Function
+
     Friend Function SetEndpoint(value As String, Optional dataDirForThisRun As String = "") As ConfigOutcome
         If Not IsAvailable() Then Return ConfigOutcome.Unavailable
         Dim text As String = If(value, "").Trim()
@@ -334,7 +370,7 @@ Friend Module ExchangeProcess
     ''' <summary>The connection string clients use (<c>connection-string</c>): built by the binary from the
     ''' configured public endpoint and the real certificate - this program never assembles it, so what a button
     ''' shows is what the command prints, byte for byte. A blank name or login is left out.</summary>
-    Friend Function ConnectionString(name As String, login As String) As ConnectionStringResult
+    Friend Function ConnectionString(name As String, login As String, Optional invitation As String = "") As ConnectionStringResult
         Dim result As New ConnectionStringResult
         If Not IsAvailable() Then
             result.Outcome = ConnectionStringOutcome.Unavailable
@@ -348,6 +384,10 @@ Friend Module ExchangeProcess
         If Not String.IsNullOrWhiteSpace(login) Then
             args.Add("--login")
             args.Add(login.Trim())
+        End If
+        If Not String.IsNullOrWhiteSpace(invitation) Then
+            args.Add("--inv")
+            args.Add(invitation.Trim())
         End If
         Dim r As RunResult = Run(args.ToArray(), Nothing, CommandTimeoutMs)
         ' the verb and the exit code only: the string, the name and the login are not written to the log (187 rule 11)

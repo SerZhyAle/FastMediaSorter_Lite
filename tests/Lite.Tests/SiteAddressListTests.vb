@@ -98,7 +98,7 @@ Public Class SiteAddressListTests
 
     <Fact>
     Public Sub EveryPortalPageHasAnEnglishRussianAndUkrainianAddress()
-        For Each page As String In New String() {"home-network", "windows-servers", "live-broadcast", "exchange-server", "clouds", "editions"}
+        For Each page As String In New String() {"home-network", "windows-servers", "live-broadcast", "exchange-server", "clouds", "editions", "account-deletion"}
             Assert.Equal(SitePages.ExchangePortalRoot & page & ".html", SitePages.ExchangePortalUrl(page, "en"))
             Assert.Equal(SitePages.ExchangePortalRoot & page & "-ru.html", SitePages.ExchangePortalUrl(page, "ru"))
             Assert.Equal(SitePages.ExchangePortalRoot & page & "-uk.html", SitePages.ExchangePortalUrl(page, "uk"))

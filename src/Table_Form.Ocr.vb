@@ -834,7 +834,7 @@ Partial Public Class Table_Form
 #End If
 
         lblOcrStatus.Text = If(ok,
-            Localization.T("Модель установлена: ") & modelName,
+            Localization.TF("Модель установлена: {0}", modelName),
             Localization.T("Не удалось загрузить модель (Ollama запущен?)"))
         If ok Then RefreshInstalledOcrModels()
     End Sub
@@ -880,7 +880,7 @@ Partial Public Class Table_Form
 #End If
 
         SetRecognitionStatus(If(ok,
-            Localization.T("Готово: пакет ") & tessLangs,
+            Localization.TF("Готово: пакет {0}", tessLangs),
             Localization.T("Не удалось скачать (нет сети?)")))
     End Sub
 

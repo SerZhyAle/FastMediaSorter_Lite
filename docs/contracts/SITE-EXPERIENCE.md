@@ -10,9 +10,9 @@
 ## What this repository must do
 
 1. **Serve the kit as the catalog's file, first** (rule 1): `assets/sza-kit.css` is vendored and linked before
-   `assets/fms-site.css` on every page. It is the catalog's file byte for byte (the `PAGE-STYLE` 1.3 revision,
-   vendored again 2026-10-07; marked `-text`, so the working-tree bytes are LF); `Build-SitePages.ps1 -Check` pins
-   its SHA-256. The revision that `PAGE-STYLE` 1.4 and 1.5 owe is not in the catalog yet.
+   `assets/fms-site.css` on every page. It is the catalog's file byte for byte (the revision of 15661 bytes, SHA-256
+   `27501a10..`, that carries `PAGE-STYLE` 1.4 and 1.5, vendored 2026-10-13; marked `-text`, so the working-tree bytes
+   are LF); `Build-SitePages.ps1 -Check` pins its SHA-256.
 2. **Keep layout out of `style` attributes** (rule 4) and the pre-paint theme resolver before the first
    stylesheet (rule 7). Both are open exceptions.
 3. **Share language and theme through `sza-lang` (`ru`, `en`, `ua`) and `sza-theme` (`dark`, `light`)**
@@ -26,13 +26,18 @@
    both directions. Held since 2026-10-06 (specification 153).
 6. **Keep the pages usable by keyboard, by landmark, in both themes, with a text equivalent for every image
    and under reduced motion** (rules 15-19): the skip link, the `nav` landmark, the light-theme contrast and
-   the 44 px targets for every pointer are built (the last in `assets/fms-site.css`, 2026-10-07; measured in Chrome
-   on the landing, fine pointer); the privacy page now has the kit, the resolver and the skip link too. What was not
-   run: a screen reader, the deployed site and the 360 px width.
+   the 44 px targets for every pointer are built (the kit's own for `.btn`, `.seg button` and `.theme-btn` since the
+   2026-10-13 re-vendoring, the rest in `assets/fms-site.css`; measured 2026-10-13 in headless Chrome, fine pointer,
+   on the root landing at 360, 768, 1280 and 1920 px and on `lang/de/` and `lang/ar/` at 360 and 1280: no header
+   control, get-it button, footer-bottom link, tools-grid link or copy button under 44 px and no horizontal overflow;
+   the footer's documentation and author rows of the generated pages were not in that run); the privacy page now has
+   the kit, the resolver and the skip link too. What was not run: a screen reader, a coarse pointer, the deployed
+   site and the 2560 px width.
 7. **Fill the screen** (rule 20, 0.2): the kit carries `--wide: 100%` and `--gutter`, the page layer repeats
    `--wide` for the gate, and `tools/Test-SiteQuality.ps1` rule 8 fails a cap on a page, a header, a footer or a
    heading. Measured in Chrome 2026-10-07 on the landing and a generated page at 1428 px: the `main` box is
-   viewport minus 10 px; 1920 and 2560 px were not re-measured (the window would not resize).
+   viewport minus 10 px; and in headless Chrome 2026-10-13 at 360, 768, 1280 and 1920 px on the root landing (`main` is
+   the viewport less the 10 px scrollbar each time, the header and hero start at the gutter); 2560 px was not measured.
 
 ## Where the evidence is
 

@@ -195,6 +195,14 @@ Partial Public Class Main_Form
             Exit Sub
         End If
 
+        ' A text document's Ctrl+A / Ctrl+C (124 UX-216): also a Ctrl chord the historical map never accepted, and
+        ' for the same reason asked here. Only while a text document is on screen - nowhere else is the chord taken.
+        If TryHandleTextSelectionKey(e) Then
+            e.Handled = True
+            e.SuppressKeyPress = True
+            Exit Sub
+        End If
+
         ' Menu key / Shift+F10: the media menu of the current file, from the viewer's main mode (UX-104
         ' of 123; inside the F10 panel mode the chrome already took these in ProcessCmdKey). Asked before
         ' the Ctrl/Alt gate and the main map, so it neither stops the slideshow by itself nor reaches the
@@ -350,14 +358,10 @@ Partial Public Class Main_Form
                 ' Enter on a locked container is the explicit unlock action - and ONLY
                 ' there: everywhere else Enter has never done anything in this window, so
                 ' this takes nothing away (026_SPECIFICATION_SECURE_CONTAINER_FD_SEC_DOTNET10.md §3.3).
+                ' It is the catalogue action "openContent" since 123 (UX-112): a key the user moved
+                ' it to ends in the same RunOpenContentAction through RunHotkeyAction.
                 Case Keys.Enter
-                    If IsContentPlaceholderShown() OrElse IsTextDocumentShown() OrElse IsPdfDocumentShown() Then
-                        OpenContentInDefaultProgram()
-                    ElseIf IsSecurePlaceholderLocked() Then
-                        SecureUnlockCurrent()
-                    Else
-                        key_Handled = False
-                    End If
+                    If Not RunOpenContentAction() Then key_Handled = False
 #End If
                 Case Keys.PageDown, Keys.Next
 #If Not NETFRAMEWORK Then
@@ -417,26 +421,6 @@ Partial Public Class Main_Form
                 Case Keys.End, Keys.E, Keys.L, Keys.BrowserStop
                     Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1380: to last file")
                     JumpTo(total_File_Count - 1, "последний файл")
-#If Not NETFRAMEWORK Then
-                Case Keys.Add, Keys.Oemplus
-                    If IsTextDocumentShown() Then
-                        ZoomText(0.1F)
-                    Else
-                        key_Handled = False
-                    End If
-                Case Keys.Subtract, Keys.OemMinus
-                    If IsTextDocumentShown() Then
-                        ZoomText(-0.1F)
-                    Else
-                        key_Handled = False
-                    End If
-                Case Keys.Divide
-                    If IsTextDocumentShown() Then
-                        ResetTextZoom()
-                    Else
-                        key_Handled = False
-                    End If
-#End If
                 Case Keys.F, Keys.F4
                     Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1385: choose file")
                     Choose_file()
@@ -625,6 +609,7 @@ Partial Public Class Main_Form
         state.PopupOpen = ChromeMenu.PopupVisible
         state.HelpCardShown = IsHelpCardUp()
         state.KeyboardModeOn = chrome_Keyboard_Mode
+        state.TextSelectionShown = HasTextSelection()
         state.OcrOverlayShown = ocr_Settings IsNot Nothing AndAlso ocr_Overlay_Visible AndAlso
                                 CurrentDocBelongsToCurrentFile() AndAlso current_Overlay_Document.Blocks.Count > 0
         state.ZoomedOrPanned = zoom_Mode_Free
@@ -648,6 +633,8 @@ Partial Public Class Main_Form
                 HideHelpCard()
             Case EscapeLadder.Rung.LeaveKeyboardMode
                 ChromeLeaveKeyboardMode()
+            Case EscapeLadder.Rung.ClearTextSelection
+                ClearTextSelection()
             Case EscapeLadder.Rung.HideOcrOverlay
                 SetOcrOverlayVisibility(False)
             Case EscapeLadder.Rung.ZoomToFit
@@ -710,12 +697,20 @@ Partial Public Class Main_Form
     ''' disposed the cached instance. The close hook is attached exactly once per
     ''' instance, here, because BOTH entry points come through this method.</summary>
     Friend Sub EnsureSettingsWindow()
+#If Not NETFRAMEWORK Then
+        ' Every way of opening the settings window comes through here first: this is the person's action for the
+        ' opt-in timing of WINDOWS-UI section 9 (0 unless FMS_UI_TIMING=1; the window reports at its Shown).
+        Dim opening As Long = UiTiming.Begin()
+#End If
         If Table_Form Is Nothing OrElse Table_Form.IsDisposed Then
             Table_Form = New Table_Form()
 #If Not NETFRAMEWORK Then
             AddHandler Table_Form.FormClosed, AddressOf SettingsWindowClosed
 #End If
         End If
+#If Not NETFRAMEWORK Then
+        If opening <> 0 AndAlso Not Table_Form.Visible Then Table_Form.OpenTimingStarted = opening
+#End If
     End Sub
 
     ''' <summary>F2 - the settings window.</summary>

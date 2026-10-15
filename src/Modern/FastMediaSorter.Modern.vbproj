@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <!--
     Fast Media Sorter &amp; Sharing for Windows - the .NET 10 x64 mainline
@@ -180,6 +180,12 @@
     <!-- SSH.NET for SFTP resource provider (007_SPECIFICATION_REMOTE_RESOURCES_SFTP_SMB_DOTNET10.md).
          MIT license; recorded in THIRD-PARTY-NOTICES.txt. Modern only. -->
     <PackageReference Include="SSH.NET" Version="2026.0.0" />
+
+    <!-- QR decoding and rendering (227_SPECIFICATION_PHONE_CONNECTION_CODE_AND_QR_INTAKE.md).
+         ZXing.Net (Apache-2.0) and QRCoder (MIT). Modern only: the x86 project gets nothing. -->
+    <PackageReference Include="ZXing.Net" Version="0.16.11" />
+    <PackageReference Include="ZXing.Net.Bindings.Windows.Compatibility" Version="0.16.16" />
+    <PackageReference Include="QRCoder" Version="1.4.3" />
   </ItemGroup>
 
 </Project>

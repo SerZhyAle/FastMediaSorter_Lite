@@ -49,17 +49,19 @@ type connFields struct {
 	FP   string `json:"fp,omitempty"`
 	N    string `json:"n,omitempty"`
 	U    string `json:"u,omitempty"`
+	I    string `json:"i,omitempty"` // the one-time invitation of an invitation string (19 item AR)
 }
 
 func connNotes() []string {
 	return []string{
 		"The cases were run against the codec of the exchange-server module (internal/connstr) and each one was checked against the verdict this file states before it was written: a disagreement stops the generator.",
 		"verdict `valid`: the input is the canonical text; a writer given `fields` produces exactly `input`. `tolerated`: a reader accepts it and a writer given `fields` produces `canonical`, which differs from the input. `refused`: a reader refuses the WHOLE string with `reason`; nothing is partially read.",
-		"Canonical writing: prefix `FMSEXCH1:`, then `x`, `fp`, `n`, `u` in that order, `&`-separated; each value is escaped with the WHATWG application/x-www-form-urlencoded byte serializer over UTF-8 (A-Z a-z 0-9 * - . _ raw, a space as +, every other byte %XX with upper-case hex). Go's url.QueryEscape is NOT this serializer (it differs on * and ~): the generator uses its own.",
+		"Canonical writing: prefix `FMSEXCH1:`, then `x`, `fp`, `n`, `u`, `i` in that order, `&`-separated; each value is escaped with the WHATWG application/x-www-form-urlencoded byte serializer over UTF-8 (A-Z a-z 0-9 * - . _ raw, a space as +, every other byte %XX with upper-case hex). Go's url.QueryEscape is NOT this serializer (it differs on * and ~): the generator uses its own.",
 		"The reader drops one leading U+FEFF and the white space around the text, then needs the exact prefix `FMSEXCH1:` (case-sensitive). 512 is counted on that trimmed text; 64 on the decoded name in Unicode scalar values; control characters are category Cc.",
 		"`x` is a DNS name (labels of letters, digits and hyphen, 1-63 characters, no trailing dot; written lower case), an IPv4 dotted quad or an IPv6 literal in brackets without a zone (written in RFC 5952 form), then `:` and a port of 1 to 5 digits, 1-65535 (a leading zero is tolerated and dropped on writing). A name of digits and dots is read as IPv4 or refused.",
 		"`fp` is `SHA256:` and exactly 43 characters of the standard base64 alphabet without padding, the last one carrying no stray bits. The URL-safe alphabet, a padded value, a lower-case prefix and a raw + (which form decoding reads as a space) are refused.",
 		"`u` is the login form of 5.1 (3-64 of a-z 0-9 . _ -); an upper-case input is tolerated and written lower case. An unknown key is ignored whatever its value; a known key that repeats or breaks its rule, a field with no = or no key, and an empty field refuse the string.",
+		"`i` (an invitation string, 19 item AR) is a one-time invitation code: exactly 22 characters of the URL-safe base64 alphabet that decode to 16 bytes with no stray bits. It is a secret to the person who holds the string - the one that the string exists to carry - and reads like every other known key; the standard alphabet, a padded value, a short or a long one, and one that carries stray bits are refused with `bad-i`.",
 		"A file is UTF-8, at most 4096 bytes, one non-empty line; one leading byte-order mark and the line breaks around the line are tolerated. A writer writes no byte-order mark and no trailing line break.",
 		"The reasons are the vocabulary of this file (not-a-string, newer-major, too-long, whitespace, not-ascii, bad-escape, bad-utf8, malformed-field, repeated-key, missing-x, bad-x, bad-fp, bad-n, bad-u, file-too-long, file-lines); `looks` names what a not-a-string text resembles (share-code, url).",
 		"The fingerprints are fixed test values (SHA-256 of fixed words); the second one contains both + and / in its base64.",
@@ -108,12 +110,12 @@ func connVectors() connFile {
 		return connstr.Parse(string(raw))
 	}
 	fields := func(c connstr.Conn) *connFields {
-		return &connFields{X: c.Endpoint(), Host: c.Host, Port: c.Port, FP: c.Fingerprint, N: c.Name, U: c.Login}
+		return &connFields{X: c.Endpoint(), Host: c.Host, Port: c.Port, FP: c.Fingerprint, N: c.Name, U: c.Login, I: c.Invitation}
 	}
 
 	// valid: built from the members, so the vector shows what a writer writes.
-	valid := func(name, note, endpoint, fp, n, u string) string {
-		c, err := connstr.New(endpoint, fp, n, u)
+	validInv := func(name, note, endpoint, fp, n, u, inv string) string {
+		c, err := connstr.NewWithInvitation(endpoint, fp, n, u, inv)
 		if err != nil {
 			failf("%s: %v", name, err)
 		}
@@ -129,6 +131,9 @@ func connVectors() connFile {
 		input(&cs, []byte(text))
 		cases = append(cases, cs)
 		return text
+	}
+	valid := func(name, note, endpoint, fp, n, u string) string {
+		return validInv(name, note, endpoint, fp, n, u, "")
 	}
 	// tolerated: a reader accepts, a writer writes the canonical text.
 	tolerated := func(name, note, kind string, raw []byte) {
@@ -176,6 +181,18 @@ func connVectors() connFile {
 	valid("with-login", "the login hint, upper case never written", dns, "", "", "alice")
 	valid("all-members", "x, fp, n and u in the one order", dns, fpB, "Office", "bob.smith")
 	valid("ipv6-with-fp-name-login", "an IPv6 endpoint with every member", v6, fpA, "Studio", "carol_2")
+	// invitation strings: an invitation code is 16 bytes of base64url, 22 characters, none of them padded
+	sumI := sha256.Sum256([]byte("fms exchange vectors: an invitation"))
+	invA := base64.RawURLEncoding.EncodeToString(sumI[:16])
+	rawB := []byte{0xfb, 0xff, 0xbf, 0xfe, 0xff, 0xef, 0xfb, 0xff, 0xbf, 0xfe, 0xff, 0xef, 0xfb, 0xff, 0xbf, 0xfe}
+	invB := base64.RawURLEncoding.EncodeToString(rawB)
+	if !strings.Contains(invB, "-") || !strings.Contains(invB, "_") {
+		failf("the second invitation must hold - and _")
+	}
+	validInv("with-invitation", "an invitation string: the address and the one-time code (22 characters of base64url)", dns, "", "", "", invA)
+	validInv("invitation-url-safe-alphabet", "an invitation code holding - and _, written raw: both belong to the form-urlencoded unreserved set", dns, "", "", "", invB)
+	validInv("invitation-all-members", "x, fp, n, u and i in the one order; the login is the one the operator expects the person to take", dns, fpA, "Office", "carol", invA)
+	validInv("invitation-ipv6", "an IPv6 endpoint with an invitation", v6, fpB, "", "", invB)
 	valid("name-64-ascii", "a name of exactly 64 characters", dns, "", strings.Repeat("n", 64), "")
 	valid("name-64-cyrillic", "64 scalar values of two bytes each: 64 characters, 384 once encoded", dns, "", strings.Repeat("ж", 64), "")
 	valid("name-4-byte-scalars", "a name of 4-byte scalar values (the count is scalar values, not bytes or UTF-16 units)", dns, "", strings.Repeat("\U0001F600", 12), "")
@@ -218,6 +235,8 @@ func connVectors() connFile {
 	T2("login-upper-case", "5.1 compares logins case-insensitively: written lower case", xdns+"&u=Alice")
 	T2("ipv6-expanded", "an IPv6 literal is written in its RFC 5952 form", pre+"x="+esc("[2001:0DB8:0:0:0:0:0:7]:22022"))
 	T2("tilde-raw", "a raw ~ is read; the WHATWG serializer writes %7E", xdns+"&n=Home~NAS")
+	T2("invitation-first", "the invitation before x: read, written last", pre+"i="+invA+"&x="+esc(dns))
+	T2("invitation-escaped", "%2D and %5F for - and _ are read; a writer writes them raw", xdns+"&i="+strings.NewReplacer("-", "%2D", "_", "%5F").Replace(invB))
 	T2("star-escaped", "%2A for * is read; the WHATWG serializer writes * raw", xdns+"&n=Home%2ANAS")
 
 	// ---- refused: the text is not this ---------------------------------------------------------
@@ -293,6 +312,24 @@ func connVectors() connFile {
 	T("login-space", "a space", xdns+"&u=al%20ce", connstr.RefusedBadLogin)
 	T("login-at", "an @", xdns+"&u="+esc("alice@example.org"), connstr.RefusedBadLogin)
 	T("login-empty", "u with no value", xdns+"&u=", connstr.RefusedBadLogin)
+
+	// ---- refused: i ----------------------------------------------------------------------------------
+	const urlAlphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_"
+	li := strings.IndexByte(urlAlphabet, invA[21])
+	if li < 0 {
+		failf("not a base64url character: %q", invA[21])
+	}
+	invStray := invA[:21] + string(urlAlphabet[li|1])
+	if invStray == invA {
+		invStray = invA[:21] + string(urlAlphabet[li|2])
+	}
+	T("i-empty", "i with no value", xdns+"&i=", connstr.RefusedBadInv)
+	T("i-21", "one character short", xdns+"&i="+invA[:21], connstr.RefusedBadInv)
+	T("i-23", "one character long", xdns+"&i="+invA+"A", connstr.RefusedBadInv)
+	T("i-standard-alphabet", "the standard alphabet (+ and /) is not the one of the code", xdns+"&i="+esc(base64.RawStdEncoding.EncodeToString(rawB)), connstr.RefusedBadInv)
+	T("i-padded", "a padded value of 24 characters", xdns+"&i="+esc(base64.URLEncoding.EncodeToString(sumI[:16])), connstr.RefusedBadInv)
+	T("i-stray-bits", "the last character carries bits no 16-byte value has", xdns+"&i="+invStray, connstr.RefusedBadInv)
+	T("i-repeated", "a known key twice", xdns+"&i="+invA+"&i="+invB, connstr.RefusedRepeatedKey)
 
 	// ---- files -------------------------------------------------------------------------------------
 	line := xdns

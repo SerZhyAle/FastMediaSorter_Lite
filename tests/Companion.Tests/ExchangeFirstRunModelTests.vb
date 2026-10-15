@@ -46,6 +46,9 @@ Public Class ExchangeFirstRunModelTests
         Assert.Equal(22022, ExchangeSettings.DefaultPort)
         Assert.Equal("40000-40100", ServerWelcomeModel.DefaultThirdPartyRange)
         Assert.False((New ExchangeSettings()).KeepAccountPasswords)
-        Assert.False(ExchangeFeatures.Offered)
+        ' ticket 223 T-3 (2026-10-14): the clients are offered by the build; the first-run welcome still needs the component
+        ' (ShouldOpen's first argument), so this opens nothing of the server side on its own
+        Assert.True(ExchangeFeatures.Offered)
+        Assert.False(ExchangeFirstRunModel.ShouldOpen(False, True, True, 0, False, False, False))
     End Sub
 End Class

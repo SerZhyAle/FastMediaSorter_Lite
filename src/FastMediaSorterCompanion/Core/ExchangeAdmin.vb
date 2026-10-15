@@ -67,22 +67,43 @@ Friend NotInheritable Class ExchangeAdminRequest
     ''' <summary>A single-use pairing code of an account, so this PC can enroll as a device of it without the password (the local
     ''' join). Only the running server's pipe answers it: a code lives in the memory of that server.</summary>
     Friend Const OpDevicePairingCode As String = "device.pairing-code"
+    Friend Const OpInvitationCreate As String = "invitation.create"
+    Friend Const OpInvitationList As String = "invitation.list"
+    Friend Const OpInvitationWithdraw As String = "invitation.withdraw"
+    Friend Const OpSharedInvitationStatus As String = "shared_invitation.status"
+    Friend Const OpSharedInvitationSet As String = "shared_invitation.set"
+    Friend Const OpAccountLimits As String = "account.limits"
+    Friend Const OpGrantAdd As String = "grant.add"
+    Friend Const OpGrantRemove As String = "grant.remove"
+    Friend Const OpGrantList As String = "grant.list"
 
     ''' <summary>The channel's bound on one request (<c>admin.MaxRequest</c>).</summary>
     Friend Const MaxBytes As Integer = 4096
 
+    Public Property KeepAwake As Boolean?
+    Public Property LogRetentionDays As Integer?
     Public ReadOnly Op As String
     Public ReadOnly Login As String
     Public ReadOnly Password As String
     Public ReadOnly DeviceId As String
     Public ReadOnly SignOut As Boolean
+    Public ReadOnly Kind As String
+    Public ReadOnly CodeHash As String
+    Public ReadOnly TargetId As String
+    Public ReadOnly GuestAccount As String
+    Public ReadOnly Limits As ExchangeAccountLimits
 
-    Public Sub New(op As String, Optional login As String = "", Optional password As String = "", Optional deviceId As String = "", Optional signOut As Boolean = False)
+    Public Sub New(op As String, Optional login As String = "", Optional password As String = "", Optional deviceId As String = "", Optional signOut As Boolean = False, Optional kind As String = "", Optional codeHash As String = "", Optional targetId As String = "", Optional guestAccount As String = "", Optional limits As ExchangeAccountLimits = Nothing)
         Me.Op = op
         Me.Login = If(login, "")
         Me.Password = If(password, "")
         Me.DeviceId = If(deviceId, "")
         Me.SignOut = signOut
+        Me.Kind = If(kind, "")
+        Me.CodeHash = If(codeHash, "")
+        Me.TargetId = If(targetId, "")
+        Me.GuestAccount = If(guestAccount, "")
+        Me.Limits = limits
     End Sub
 
     Public Overrides Function ToString() As String
@@ -96,10 +117,25 @@ Friend NotInheritable Class ExchangeAdminRequest
             Using w As New Utf8JsonWriter(ms)
                 w.WriteStartObject()
                 w.WriteString("op", Op)
+                If KeepAwake.HasValue Then w.WriteBoolean("keepAwake", KeepAwake.Value)
+                If LogRetentionDays.HasValue Then w.WriteNumber("logRetentionDays", LogRetentionDays.Value)
                 If Login.Length > 0 Then w.WriteString("login", Login)
                 If Password.Length > 0 Then w.WriteString("password", Password)
                 If DeviceId.Length > 0 Then w.WriteString("deviceId", DeviceId)
                 If SignOut Then w.WriteBoolean("signOut", True)
+                If Kind.Length > 0 Then w.WriteString("kind", Kind)
+                If CodeHash.Length > 0 Then w.WriteString("codeHash", CodeHash)
+                If TargetId.Length > 0 Then w.WriteString("targetId", TargetId)
+                If GuestAccount.Length > 0 Then w.WriteString("guestAccount", GuestAccount)
+                If Limits IsNot Nothing Then
+                    w.WriteStartObject("limits")
+                    If Limits.DevicesPerAccount.HasValue Then w.WriteNumber("devicesPerAccount", Limits.DevicesPerAccount.Value)
+                    If Limits.ResourcesPerAccount.HasValue Then w.WriteNumber("resourcesPerAccount", Limits.ResourcesPerAccount.Value)
+                    If Limits.BroadcastsPerAccount.HasValue Then w.WriteNumber("broadcastsPerAccount", Limits.BroadcastsPerAccount.Value)
+                    If Limits.BroadcastsPerDevice.HasValue Then w.WriteNumber("broadcastsPerDevice", Limits.BroadcastsPerDevice.Value)
+                    If Limits.ClipboardMaxBytes.HasValue Then w.WriteNumber("clipboardMaxBytes", Limits.ClipboardMaxBytes.Value)
+                    w.WriteEndObject()
+                End If
                 w.WriteEndObject()
             End Using
             Return ms.ToArray()
@@ -107,10 +143,40 @@ Friend NotInheritable Class ExchangeAdminRequest
     End Function
 End Class
 
+Friend NotInheritable Class ExchangeAccountLimits
+    Public Property DevicesPerAccount As Nullable(Of Integer)
+    Public Property ResourcesPerAccount As Nullable(Of Integer)
+    Public Property BroadcastsPerAccount As Nullable(Of Integer)
+    Public Property BroadcastsPerDevice As Nullable(Of Integer)
+    Public Property ClipboardMaxBytes As Nullable(Of Long)
+End Class
+
 Friend NotInheritable Class ExchangeAdminAccount
     Public Property Login As String = ""
     Public Property CreatedAt As String = ""
     Public Property Devices As Integer
+    Public Property Kind As String = "member"
+    Public Property Limits As ExchangeAccountLimits
+End Class
+
+Friend NotInheritable Class ExchangeAdminInvitation
+    Public Property CodeHash As String = ""
+    Public Property Kind As String = "member"
+    Public Property CreatedAt As String = ""
+    Public Property CreatedBy As String = ""
+    Public Property Used As Boolean
+    Public Property UsedAt As String = ""
+    Public Property UsedBy As String = ""
+End Class
+
+Friend NotInheritable Class ExchangeAdminInvitationCreated
+    Public Property Code As String = ""
+    Public Property Invitation As ExchangeAdminInvitation
+End Class
+
+Friend NotInheritable Class ExchangeAdminSharedInvitation
+    Public Property Enabled As Boolean
+    Public Property Kind As String = ""
 End Class
 
 Friend NotInheritable Class ExchangeAdminDevice
@@ -131,6 +197,14 @@ Friend NotInheritable Class ExchangeAdminStatus
     Public Property Online As Integer
     Public Property Resources As Integer
     Public Property Broadcasts As Integer
+    ''' <summary>Accounts holding a clipboard value now (ticket 229).</summary>
+    Public Property Clipboards As Integer
+    ''' <summary>Bytes the clipboard slots hold now: values and uploads in flight (ticket 229).</summary>
+    Public Property ClipboardBytes As Long
+    Public Property KeepAwakeActive As Boolean
+    Public Property KeepAwakeReported As Boolean
+    Public Property KeepAwake As Boolean
+    Public Property LogRetentionDays As Integer
 End Class
 
 ''' <summary>Reading the data of an answer. Pure: a text in, a list out; a member that is missing is the zero value
@@ -142,9 +216,82 @@ Friend NotInheritable Class ExchangeAdminParser
     Friend Shared Function Accounts(dataJson As String) As List(Of ExchangeAdminAccount)
         Dim list As New List(Of ExchangeAdminAccount)()
         For Each el As JsonElement In Items(dataJson)
-            list.Add(New ExchangeAdminAccount With {.Login = Str(el, "login"), .CreatedAt = Str(el, "createdAt"), .Devices = Num(el, "devices")})
+            Dim acct As New ExchangeAdminAccount With {
+                .Login = Str(el, "login"),
+                .CreatedAt = Str(el, "createdAt"),
+                .Devices = Num(el, "devices"),
+                .Kind = KindOrDefault(Str(el, "kind"))
+            }
+            Dim limEl As JsonElement
+            If el.TryGetProperty("limits", limEl) AndAlso limEl.ValueKind = JsonValueKind.Object Then
+                Dim l As New ExchangeAccountLimits()
+                Dim v As JsonElement
+                If limEl.TryGetProperty("devicesPerAccount", v) AndAlso v.ValueKind = JsonValueKind.Number Then l.DevicesPerAccount = v.GetInt32()
+                If limEl.TryGetProperty("resourcesPerAccount", v) AndAlso v.ValueKind = JsonValueKind.Number Then l.ResourcesPerAccount = v.GetInt32()
+                If limEl.TryGetProperty("broadcastsPerAccount", v) AndAlso v.ValueKind = JsonValueKind.Number Then l.BroadcastsPerAccount = v.GetInt32()
+                If limEl.TryGetProperty("broadcastsPerDevice", v) AndAlso v.ValueKind = JsonValueKind.Number Then l.BroadcastsPerDevice = v.GetInt32()
+                If limEl.TryGetProperty("clipboardMaxBytes", v) AndAlso v.ValueKind = JsonValueKind.Number Then l.ClipboardMaxBytes = v.GetInt64()
+                acct.Limits = l
+            End If
+            list.Add(acct)
         Next
         Return list
+    End Function
+
+    Friend Shared Function Invitations(dataJson As String) As List(Of ExchangeAdminInvitation)
+        Dim list As New List(Of ExchangeAdminInvitation)()
+        For Each el As JsonElement In Items(dataJson)
+            list.Add(New ExchangeAdminInvitation With {
+                .CodeHash = Str(el, "codeHash"),
+                .Kind = Str(el, "kind"),
+                .CreatedAt = Str(el, "createdAt"),
+                .CreatedBy = Str(el, "createdBy"),
+                .Used = Bool(el, "used"),
+                .UsedAt = Str(el, "usedAt"),
+                .UsedBy = Str(el, "usedBy")
+            })
+        Next
+        Return list
+    End Function
+
+    Friend Shared Function InvitationCreated(dataJson As String) As ExchangeAdminInvitationCreated
+        If String.IsNullOrWhiteSpace(dataJson) Then Return Nothing
+        Try
+            Using doc As JsonDocument = JsonDocument.Parse(dataJson)
+                If doc.RootElement.ValueKind <> JsonValueKind.Object Then Return Nothing
+                Dim res As New ExchangeAdminInvitationCreated With {.Code = Str(doc.RootElement, "code")}
+                Dim invEl As JsonElement
+                If doc.RootElement.TryGetProperty("invitation", invEl) AndAlso invEl.ValueKind = JsonValueKind.Object Then
+                    res.Invitation = New ExchangeAdminInvitation With {
+                        .CodeHash = Str(invEl, "codeHash"),
+                        .Kind = Str(invEl, "kind"),
+                        .CreatedAt = Str(invEl, "createdAt"),
+                        .CreatedBy = Str(invEl, "createdBy"),
+                        .Used = Bool(invEl, "used"),
+                        .UsedAt = Str(invEl, "usedAt"),
+                        .UsedBy = Str(invEl, "usedBy")
+                    }
+                End If
+                Return res
+            End Using
+        Catch ex As JsonException
+            Return Nothing
+        End Try
+    End Function
+
+    Friend Shared Function SharedInvitation(dataJson As String) As ExchangeAdminSharedInvitation
+        Dim s As New ExchangeAdminSharedInvitation()
+        If String.IsNullOrWhiteSpace(dataJson) Then Return s
+        Try
+            Using doc As JsonDocument = JsonDocument.Parse(dataJson)
+                If doc.RootElement.ValueKind <> JsonValueKind.Object Then Return s
+                s.Enabled = Bool(doc.RootElement, "enabled")
+                s.Kind = Str(doc.RootElement, "kind")
+                Return s
+            End Using
+        Catch ex As JsonException
+            Return s
+        End Try
     End Function
 
     Friend Shared Function Devices(dataJson As String) As List(Of ExchangeAdminDevice)
@@ -181,6 +328,13 @@ Friend NotInheritable Class ExchangeAdminParser
                 s.Online = Num(doc.RootElement, "online")
                 s.Resources = Num(doc.RootElement, "resources")
                 s.Broadcasts = Num(doc.RootElement, "broadcasts")
+                s.Clipboards = Num(doc.RootElement, "clipboards")
+                s.ClipboardBytes = NumL(doc.RootElement, "clipboardBytes")
+                s.KeepAwakeActive = Bool(doc.RootElement, "keepAwakeActive")
+                Dim awakeField As JsonElement
+                s.KeepAwakeReported = doc.RootElement.TryGetProperty("keepAwakeActive", awakeField) AndAlso (awakeField.ValueKind = JsonValueKind.True OrElse awakeField.ValueKind = JsonValueKind.False)
+                s.KeepAwake = Bool(doc.RootElement, "keepAwake")
+                s.LogRetentionDays = Num(doc.RootElement, "logRetentionDays")
             End Using
         Catch ex As JsonException
         End Try
@@ -202,6 +356,11 @@ Friend NotInheritable Class ExchangeAdminParser
         Return list
     End Function
 
+    ''' <summary>An account that carries no kind is a member (the server omits the default).</summary>
+    Private Shared Function KindOrDefault(kind As String) As String
+        Return If(String.IsNullOrEmpty(kind), "member", kind)
+    End Function
+
     Private Shared Function Str(el As JsonElement, name As String) As String
         Dim v As JsonElement = Nothing
         If el.TryGetProperty(name, v) AndAlso v.ValueKind = JsonValueKind.String Then Return If(v.GetString(), "")
@@ -213,6 +372,14 @@ Friend NotInheritable Class ExchangeAdminParser
         Dim n As Integer
         If el.TryGetProperty(name, v) AndAlso v.ValueKind = JsonValueKind.Number AndAlso v.TryGetInt32(n) Then Return n
         Return 0
+    End Function
+
+    ''' <summary>A whole number that may exceed 32 bits (the clipboard bytes of ticket 229).</summary>
+    Private Shared Function NumL(el As JsonElement, name As String) As Long
+        Dim v As JsonElement = Nothing
+        Dim n As Long
+        If el.TryGetProperty(name, v) AndAlso v.ValueKind = JsonValueKind.Number AndAlso v.TryGetInt64(n) Then Return n
+        Return 0L
     End Function
 
     Private Shared Function Bool(el As JsonElement, name As String) As Boolean
@@ -423,15 +590,40 @@ Friend Module ExchangeAdmin
             Case ExchangeAdminRequest.OpDeviceList
                 args = {"device", "list", "--json", "--", request.Login}
             Case ExchangeAdminRequest.OpAccountAdd
-                args = {"account", "add", "--", request.Login}
+                If String.Equals(request.Kind, "guest", StringComparison.OrdinalIgnoreCase) Then
+                    args = {"account", "add", "--kind", "guest", "--", request.Login}
+                Else
+                    args = {"account", "add", "--", request.Login}
+                End If
                 stdin = request.Password
             Case ExchangeAdminRequest.OpAccountPasswd
-                args = If(request.SignOut, {"account", "passwd", "--sign-out", "--", request.Login}, {"account", "passwd", "--", request.Login})
+                If request.SignOut Then
+                    args = {"account", "passwd", "--sign-out", "--", request.Login}
+                Else
+                    args = {"account", "passwd", "--", request.Login}
+                End If
                 stdin = request.Password
             Case ExchangeAdminRequest.OpAccountRemove
                 args = {"account", "remove", "--", request.Login}
             Case ExchangeAdminRequest.OpDeviceRevoke
                 args = {"device", "revoke", "--", request.Login, request.DeviceId}
+            Case ExchangeAdminRequest.OpInvitationCreate
+                args = {"invitation", "create", "--json", "--kind", If(request.Kind.Length > 0, request.Kind, "member")}
+            Case ExchangeAdminRequest.OpInvitationList
+                args = {"invitation", "list", "--json"}
+            Case ExchangeAdminRequest.OpInvitationWithdraw
+                args = {"invitation", "withdraw", "--", request.CodeHash}
+            Case ExchangeAdminRequest.OpSharedInvitationStatus
+                args = {"shared-invitation", "status", "--json"}
+            Case ExchangeAdminRequest.OpSharedInvitationSet
+                If request.Password.Length = 0 Then
+                    args = {"shared-invitation", "off"}
+                Else
+                    args = {"shared-invitation", "set", "--kind", If(request.Kind.Length > 0, request.Kind, "member")}
+                    stdin = request.Password
+                End If
+            Case ExchangeAdminRequest.OpAccountLimits
+                Return SendOfflineLimits(request)
             Case ExchangeAdminRequest.OpStatus
                 Return OfflineStatus()
             Case ExchangeAdminRequest.OpDevicePairingCode
@@ -444,6 +636,35 @@ Friend Module ExchangeAdmin
         Return OfflineReply(request.Op, r)
     End Function
 
+    ''' <summary>The limits the request names, as the options of the binary's <c>account limits</c> verb (ticket 224 rule 5).</summary>
+    Friend Function LimitOptions(limits As ExchangeAccountLimits) As List(Of String)
+        Dim opts As New List(Of String)()
+        If limits Is Nothing Then Return opts
+        Dim inv As Globalization.CultureInfo = Globalization.CultureInfo.InvariantCulture
+        If limits.DevicesPerAccount.HasValue Then opts.AddRange({"--devices", limits.DevicesPerAccount.Value.ToString(inv)})
+        If limits.ResourcesPerAccount.HasValue Then opts.AddRange({"--resources", limits.ResourcesPerAccount.Value.ToString(inv)})
+        If limits.BroadcastsPerAccount.HasValue Then opts.AddRange({"--broadcasts", limits.BroadcastsPerAccount.Value.ToString(inv)})
+        If limits.BroadcastsPerDevice.HasValue Then opts.AddRange({"--broadcasts-per-device", limits.BroadcastsPerDevice.Value.ToString(inv)})
+        If limits.ClipboardMaxBytes.HasValue Then opts.AddRange({"--clipboard-bytes", limits.ClipboardMaxBytes.Value.ToString(inv)})
+        Return opts
+    End Function
+
+    ''' <summary>The offline <c>account.limits</c>. The channel's operation REPLACES the account's own limits (a limit
+    ''' left out is dropped), while the binary's <c>account limits</c> verb merges what it is given into them and
+    ''' <c>--reset</c> cannot be combined with a limit. So the replace is a reset followed by the named limits, which
+    ''' leaves the account exactly as the channel route would. The options go BEFORE <c>--</c>: everything after it is
+    ''' a login.</summary>
+    Private Function SendOfflineLimits(request As ExchangeAdminRequest) As ExchangeAdminReply
+        Dim named As List(Of String) = LimitOptions(request.Limits)
+        Dim resetRun As ExchangeProcess.RunResult = ExchangeProcess.Run({"account", "limits", "--reset", "--", request.Login}, Nothing, ExchangeProcess.CommandTimeoutMs)
+        Dim reply As ExchangeAdminReply = OfflineReply(request.Op, resetRun)
+        If Not reply.Ok OrElse named.Count = 0 Then Return reply
+        Dim setArgs As New List(Of String)({"account", "limits"})
+        setArgs.AddRange(named)
+        setArgs.AddRange({"--", request.Login})
+        Return OfflineReply(request.Op, ExchangeProcess.Run(setArgs.ToArray(), Nothing, ExchangeProcess.CommandTimeoutMs))
+    End Function
+
     ''' <summary>Maps one run of an account or device verb onto an admin answer. The exit codes are the binary's
     ''' (0 ok, 3 a refused password, 2 a bad login or request, 1 the account or the device is not as asked, 4 the
     ''' stores cannot be read); the stderr sentence only tells the two kinds of exit 1 apart and is never kept.</summary>
@@ -451,7 +672,8 @@ Friend Module ExchangeAdmin
         If Not r.Started OrElse r.TimedOut Then Return ExchangeAdminReply.Failure(ExchangeAdminCodes.NotReached, ExchangeAdminRoute.NotReached)
         Select Case r.ExitCode
             Case ExchangeProcess.ExitOk
-                Dim list As Boolean = op = ExchangeAdminRequest.OpAccountList OrElse op = ExchangeAdminRequest.OpDeviceList
+                Dim list As Boolean = op = ExchangeAdminRequest.OpAccountList OrElse op = ExchangeAdminRequest.OpDeviceList OrElse
+                                      op = ExchangeAdminRequest.OpInvitationList OrElse op = ExchangeAdminRequest.OpInvitationCreate OrElse op = ExchangeAdminRequest.OpSharedInvitationStatus
                 Return ExchangeAdminReply.Success(If(list, If(r.StdOut, "").Trim(), ""), ExchangeAdminRoute.Offline)
             Case ExchangeProcess.ExitPolicy
                 Return ExchangeAdminReply.Failure(ExchangeAdminCodes.WeakPassword, ExchangeAdminRoute.Offline)
@@ -489,8 +711,8 @@ Friend Module ExchangeAdmin
         Return SendAsync(New ExchangeAdminRequest(ExchangeAdminRequest.OpDeviceList, login), ct)
     End Function
 
-    Friend Function AddAccountAsync(login As String, password As String, ct As CancellationToken) As Task(Of ExchangeAdminReply)
-        Return SendAsync(New ExchangeAdminRequest(ExchangeAdminRequest.OpAccountAdd, login, password), ct)
+    Friend Function AddAccountAsync(login As String, password As String, ct As CancellationToken, Optional kind As String = "member") As Task(Of ExchangeAdminReply)
+        Return SendAsync(New ExchangeAdminRequest(ExchangeAdminRequest.OpAccountAdd, login, password, kind:=kind), ct)
     End Function
 
     Friend Function ResetPasswordAsync(login As String, password As String, signOutEveryDevice As Boolean, ct As CancellationToken) As Task(Of ExchangeAdminReply)
@@ -501,6 +723,30 @@ Friend Module ExchangeAdmin
     ''' read it with <see cref="ExchangeAdminParser.PairingCode"/> and drop it.</summary>
     Friend Function PairingCodeAsync(login As String, ct As CancellationToken) As Task(Of ExchangeAdminReply)
         Return SendAsync(New ExchangeAdminRequest(ExchangeAdminRequest.OpDevicePairingCode, login), ct)
+    End Function
+
+    Friend Function CreateInvitationAsync(kind As String, ct As CancellationToken) As Task(Of ExchangeAdminReply)
+        Return SendAsync(New ExchangeAdminRequest(ExchangeAdminRequest.OpInvitationCreate, kind:=kind), ct)
+    End Function
+
+    Friend Function ListInvitationsAsync(ct As CancellationToken) As Task(Of ExchangeAdminReply)
+        Return SendAsync(New ExchangeAdminRequest(ExchangeAdminRequest.OpInvitationList), ct)
+    End Function
+
+    Friend Function WithdrawInvitationAsync(codeHash As String, ct As CancellationToken) As Task(Of ExchangeAdminReply)
+        Return SendAsync(New ExchangeAdminRequest(ExchangeAdminRequest.OpInvitationWithdraw, codeHash:=codeHash), ct)
+    End Function
+
+    Friend Function GetSharedInvitationStatusAsync(ct As CancellationToken) As Task(Of ExchangeAdminReply)
+        Return SendAsync(New ExchangeAdminRequest(ExchangeAdminRequest.OpSharedInvitationStatus), ct)
+    End Function
+
+    Friend Function SetSharedInvitationAsync(password As String, kind As String, enabled As Boolean, ct As CancellationToken) As Task(Of ExchangeAdminReply)
+        Return SendAsync(New ExchangeAdminRequest(ExchangeAdminRequest.OpSharedInvitationSet, password:=If(enabled, password, ""), kind:=If(enabled, kind, "")), ct)
+    End Function
+
+    Friend Function SetAccountLimitsAsync(login As String, limits As ExchangeAccountLimits, ct As CancellationToken) As Task(Of ExchangeAdminReply)
+        Return SendAsync(New ExchangeAdminRequest(ExchangeAdminRequest.OpAccountLimits, login:=login, limits:=limits), ct)
     End Function
 
     Friend Function RemoveAccountAsync(login As String, ct As CancellationToken) As Task(Of ExchangeAdminReply)

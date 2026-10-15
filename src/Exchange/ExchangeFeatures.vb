@@ -3,25 +3,31 @@ Option Strict On
 
 ' Ticket 180 T-5 and rule 2 of the ticket. The one switch every client surface of the device exchange reads.
 '
-' <see cref="Offered"/> is a compile-time constant and it is FALSE until the owner opens the clients (198 rule 3: nothing
-' ships before rung 2). A developer turns the development tree on with the machine environment variable
-' FMS_EXCHANGE_CLIENT=1 (the first check of ticket 182 sets it on the test host); the released default is untouched, so
-' a build with the constant False and no variable shows no row, opens no connection, creates no pipe and writes no value.
+' <see cref="Offered"/> is a compile-time constant. It was FALSE until the owner opened the clients (198 rule 3: nothing
+' ships before rung 2); ticket 223 T-3 opened it on the owner's word of 2026-10-14, recorded in
+' docs\specifications\exchange-gate-evidence.md - ahead of the joint rung 2 run, which that file says in plain words.
+' With it True the CLIENT side of the exchange (the Share Manager's "Exchange account" page, the viewer's "Add from an
+' exchange server.." entry, devices, tunnels, `.fmsexch`) exists on every install with no server component and no switch.
+' It is still dormant (198 rule 2): with no account configured nothing connects, listens, writes or starts.
+' The SERVER side is not behind this class at all: its pages, tray item, first-run welcome, wizard and local join ask the Share
+' Manager's server-administration module whether the component is installed - the component is the only thing that offers them,
+' and this library never names that module (ExchangeClientGuardTests, ticket 223 T-1).
 '
-' Since 2026-10-12 (owner: the person who runs a server must not look for a switch or a terminal) the features are also on where the
-' server component is installed WITH the program (ComponentInstalled): the component is in no released package while the shipping
-' gate is shut, so a released install is unchanged, and a PC that has the server has its client side.
+' A developer can still turn the features on in a tree that sets the constant False with the machine environment variable
+' FMS_EXCHANGE_CLIENT=1 (the first check of ticket 182 sets it on the test host), and, since 2026-10-12, the features are also on
+' where the server component is installed WITH the program (ComponentInstalled). Both are harmless supersets of True.
 '
-' ExchangeFeaturesGuardTests holds the constant in both directions: it stays False unless a reviewed evidence file names
-' the rung it was opened at (204 section 3 item 3), and no surface is reachable through anything but this class.
+' ExchangeClientGuardTests holds the constant in both directions: it can be True only with a reviewed evidence file that names
+' the rung (204 section 3 item 3), and no surface is reachable through anything but this class.
 
 Friend NotInheritable Class ExchangeFeatures
 
     Private Sub New()
     End Sub
 
-    ''' <summary>The build offers the exchange client features to everybody. False until the owner opens the gate.</summary>
-    Public Const Offered As Boolean = False
+    ''' <summary>The build offers the exchange client features to everybody. Opened 2026-10-14 on the owner's word (ticket 223 T-3, the
+    ''' evidence file names what was and was not reached). The one line to take it back is this constant.</summary>
+    Public Const Offered As Boolean = True
 
     ''' <summary>The developer switch: set to "1" (process, user or machine environment) to show the client features
     ''' while <see cref="Offered"/> is False.</summary>
@@ -42,8 +48,57 @@ Friend NotInheritable Class ExchangeFeatures
         Return False
     End Function
 
-    ''' <summary>The real environment.</summary>
+    ' Test seam of ticket 223: the gate's two inputs for the CURRENT flow of execution only (and the threads it starts - the
+    ' ExecutionContext follows a new Thread). A process-wide value - the environment variable, ComponentProbeOverride - is seen by
+    ' every test class running in parallel, and one that reads the live gate (check the switch, build a form a few ms later) saw it
+    ' turn on in between. A flow value cannot be seen from another test. Friend: no program surface can set it.
+    Private Shared ReadOnly _flowSwitch As New System.Threading.AsyncLocal(Of Boolean?)()
+    Private Shared ReadOnly _flowComponent As New System.Threading.AsyncLocal(Of Boolean?)()
+    Private Shared ReadOnly _flowOffered As New System.Threading.AsyncLocal(Of Boolean?)()
+
+    Private NotInheritable Class FlowScope
+        Implements IDisposable
+
+        Private ReadOnly _previousSwitch As Boolean?
+        Private ReadOnly _previousComponent As Boolean?
+        Private ReadOnly _previousOffered As Boolean?
+
+        Public Sub New(previousSwitch As Boolean?, previousComponent As Boolean?, previousOffered As Boolean?)
+            _previousSwitch = previousSwitch
+            _previousComponent = previousComponent
+            _previousOffered = previousOffered
+        End Sub
+
+        Public Sub Dispose() Implements IDisposable.Dispose
+            _flowSwitch.Value = _previousSwitch
+            _flowComponent.Value = _previousComponent
+            _flowOffered.Value = _previousOffered
+        End Sub
+    End Class
+
+    ''' <summary>Sets what the developer switch, the installed component and the build's own declaration answer for the calling flow
+    ''' until the returned scope is disposed (Nothing leaves that input as it is). For a test of the opened state:
+    ''' <c>Using ForFlow(switchOn:=True, componentInstalled:=False)</c>; for the state of a build whose constant is False (the
+    ''' shut gate, which the released build no longer is): <c>Using ForFlow(offered:=False, switchOn:=False, componentInstalled:=False)</c>.</summary>
+    Friend Shared Function ForFlow(Optional switchOn As Boolean? = Nothing, Optional componentInstalled As Boolean? = Nothing,
+                                   Optional offered As Boolean? = Nothing) As IDisposable
+        Dim scope As New FlowScope(_flowSwitch.Value, _flowComponent.Value, _flowOffered.Value)
+        If switchOn.HasValue Then _flowSwitch.Value = switchOn
+        If componentInstalled.HasValue Then _flowComponent.Value = componentInstalled
+        If offered.HasValue Then _flowOffered.Value = offered
+        Return scope
+    End Function
+
+    ''' <summary>The build's declaration (<see cref="Offered"/>), or the value a test set for its own flow. Every production reader asks
+    ''' this and never the constant, so a test of the shut gate does not need a second build.</summary>
+    Public Shared Function BuildOffers() As Boolean
+        If _flowOffered.Value.HasValue Then Return _flowOffered.Value.Value
+        Return Offered
+    End Function
+
+    ''' <summary>The real environment (or the value a test set for its own flow, see <see cref="ForFlow"/>).</summary>
     Public Shared Function DeveloperSwitchOn() As Boolean
+        If _flowSwitch.Value.HasValue Then Return _flowSwitch.Value.Value
         Return DeveloperSwitchOn(AddressOf Environment.GetEnvironmentVariable)
     End Function
 
@@ -62,6 +117,7 @@ Friend NotInheritable Class ExchangeFeatures
     ''' on a PC where someone installed the server, its own client side is offered with it - a person who runs a server has not
     ''' to find a switch, and nothing is asked of a terminal. Read once per run (a file does not appear mid-session).</summary>
     Public Shared Function ComponentInstalled() As Boolean
+        If _flowComponent.Value.HasValue Then Return _flowComponent.Value.Value
         If ComponentProbeOverride IsNot Nothing Then Return ComponentProbeOverride()
         If _componentInstalled.HasValue Then Return _componentInstalled.Value
         Dim found As Boolean = False
@@ -82,12 +138,12 @@ Friend NotInheritable Class ExchangeFeatures
 
     ''' <summary>True when the client features exist in this run: offered by the build, or the developer switch.</summary>
     Public Shared Function IsEnabled(read As Func(Of String, EnvironmentVariableTarget, String)) As Boolean
-        Return Offered OrElse DeveloperSwitchOn(read)
+        Return BuildOffers() OrElse DeveloperSwitchOn(read)
     End Function
 
     ''' <summary>The same, plus the server component installed with this program (<see cref="ComponentInstalled"/>).</summary>
     Public Shared Function IsEnabled() As Boolean
-        Return Offered OrElse DeveloperSwitchOn() OrElse ComponentInstalled()
+        Return BuildOffers() OrElse DeveloperSwitchOn() OrElse ComponentInstalled()
     End Function
 
 End Class

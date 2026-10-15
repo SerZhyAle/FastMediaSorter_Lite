@@ -72,14 +72,16 @@ Friend NotInheritable Class ExchangeAccount
     Public ReadOnly Server As String
     Public ReadOnly Login As String
     Public ReadOnly Pin As String
+    Public ReadOnly KeyPin As String
     Public ReadOnly Certificate As ExchangeCertificateKind
     Public ReadOnly DeviceId As String
     Public ReadOnly DeviceName As String
 
-    Public Sub New(server As String, login As String, pin As String, certificate As ExchangeCertificateKind, deviceId As String, deviceName As String)
+    Public Sub New(server As String, login As String, pin As String, certificate As ExchangeCertificateKind, deviceId As String, deviceName As String, Optional keyPin As String = "")
         Me.Server = If(server, "")
         Me.Login = If(login, "")
         Me.Pin = If(pin, "")
+        Me.KeyPin = If(ExchangeTrust.IsFingerprint(keyPin), keyPin, "")
         Me.Certificate = certificate
         Me.DeviceId = If(deviceId, "")
         Me.DeviceName = If(deviceName, "")
@@ -90,12 +92,12 @@ Friend NotInheritable Class ExchangeAccount
         Return ExchangeServerAddress.TryParse(Server, address)
     End Function
 
-    Public Function WithPin(newPin As String, kind As ExchangeCertificateKind) As ExchangeAccount
-        Return New ExchangeAccount(Server, Login, newPin, kind, DeviceId, DeviceName)
+    Public Function WithPin(newPin As String, kind As ExchangeCertificateKind, Optional newKeyPin As String = "") As ExchangeAccount
+        Return New ExchangeAccount(Server, Login, newPin, kind, DeviceId, DeviceName, newKeyPin)
     End Function
 
     Public Function WithDeviceName(name As String) As ExchangeAccount
-        Return New ExchangeAccount(Server, Login, Pin, Certificate, DeviceId, name)
+        Return New ExchangeAccount(Server, Login, Pin, Certificate, DeviceId, name, KeyPin)
     End Function
 
     ''' <summary>The login and the server are not secrets, but the text still names no member.</summary>
@@ -112,13 +114,14 @@ Friend NotInheritable Class ExchangeAccountStore
     Friend Const ServerName As String = "Exchange_AccountServer"
     Friend Const LoginName As String = "Exchange_AccountLogin"
     Friend Const PinName As String = "Exchange_AccountPin"
+    Friend Const KeyPinName As String = "Exchange_AccountKeyPin"
     Friend Const CertificateName As String = "Exchange_AccountCertificate"
     ''' <summary>"1" once the person disconnected the account of a server that runs on this very PC: the local join (this PC enrolling itself
     ''' in that server) does not run again by itself, or "Disconnect" would be undone at the next start. An explicit sign-in clears it.</summary>
     Friend Const LocalJoinDeclinedName As String = "Exchange_LocalJoinDeclined"
 
     ''' <summary>Every value this store owns, so a test can assert that a dormant run wrote none of them.</summary>
-    Friend Shared ReadOnly AllNames As String() = {DeviceIdName, DeviceNameName, ServerName, LoginName, PinName, CertificateName, LocalJoinDeclinedName}
+    Friend Shared ReadOnly AllNames As String() = {DeviceIdName, DeviceNameName, ServerName, LoginName, PinName, KeyPinName, CertificateName, LocalJoinDeclinedName}
 
     Private ReadOnly _port As IExchangeSettingsPort
 
@@ -143,7 +146,7 @@ Friend NotInheritable Class ExchangeAccountStore
         End Select
         Dim pin As String = _port.GetValue(PinName)
         If Not ExchangeTrust.IsFingerprint(pin) Then pin = ""
-        Return New ExchangeAccount(server, login, pin, kind, deviceId, _port.GetValue(DeviceNameName))
+        Return New ExchangeAccount(server, login, pin, kind, deviceId, _port.GetValue(DeviceNameName), _port.GetValue(KeyPinName))
     End Function
 
     Public Function IsConfigured() As Boolean
@@ -172,6 +175,7 @@ Friend NotInheritable Class ExchangeAccountStore
         _port.SetValue(ServerName, account.Server)
         _port.SetValue(LoginName, account.Login)
         _port.SetValue(PinName, account.Pin)
+        _port.SetValue(KeyPinName, account.KeyPin)
         _port.SetValue(CertificateName, If(account.Certificate = ExchangeCertificateKind.CaSigned, "ca-signed", If(account.Certificate = ExchangeCertificateKind.Pinned, "pinned", "")))
         ' an account is configured again: whatever the person declined before is over
         _port.DeleteValue(LocalJoinDeclinedName)
@@ -189,14 +193,25 @@ Friend NotInheritable Class ExchangeAccountStore
     ''' <summary>"Disconnect": the entry is forgotten. The device id stays - it identifies this Windows user, not the account, and a
     ''' later enrollment with the same id rotates the token instead of adding a second device.</summary>
     Public Sub Forget()
-        For Each name As String In {DeviceNameName, ServerName, LoginName, PinName, CertificateName}
+        For Each name As String In {DeviceNameName, ServerName, LoginName, PinName, KeyPinName, CertificateName}
             _port.DeleteValue(name)
         Next
     End Sub
 
-    ''' <summary>Replaces only the pin: the one explicit act that lets a changed certificate in (item D).</summary>
+    ''' <summary>Pairs the entry's accepted leaf with its key; a renewal updates only this entry (19 AY).</summary>
+    Public Function TransportFor(account As ExchangeAccount, inner As IExchangeTransport) As IExchangeTransport
+        Dim persisted As ExchangeAccount = If(Load(), account)
+        Return New ExchangeRenewalTransport(inner, persisted.Pin, persisted.KeyPin,
+            Sub(leaf, key)
+                Dim current As ExchangeAccount = Load()
+                If current Is Nothing OrElse current.Server <> persisted.Server OrElse current.Login <> persisted.Login OrElse (current.Pin <> persisted.Pin AndAlso current.Pin <> leaf AndAlso current.KeyPin <> key) Then Throw New IO.IOException("pin-entry-changed")
+                If current.Pin <> leaf OrElse current.KeyPin <> key Then Save(current.WithPin(leaf, ExchangeCertificateKind.Pinned, key))
+            End Sub)
+    End Function
+
     Public Sub ReplacePin(pin As String, kind As ExchangeCertificateKind)
         _port.SetValue(PinName, pin)
+        _port.DeleteValue(KeyPinName)
         _port.SetValue(CertificateName, If(kind = ExchangeCertificateKind.CaSigned, "ca-signed", If(kind = ExchangeCertificateKind.Pinned, "pinned", "")))
     End Sub
 

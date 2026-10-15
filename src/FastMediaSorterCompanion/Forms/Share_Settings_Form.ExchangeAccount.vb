@@ -1,4 +1,4 @@
-﻿Option Strict On
+Option Strict On
 
 Imports System.Drawing
 Imports System.Globalization
@@ -46,7 +46,11 @@ Partial Public NotInheritable Class Share_Settings_Form
     Private _accDevicesTitle As Label
     Private _accDevices As ListView
     Private _btnAccRevoke As Button
+    ''' <summary>226 rule 4: change the account's password from this device's own control stream.</summary>
+    Private _btnAccChangePassword As Button
     Private _btnAccDisconnect As Button
+    ''' <summary>226 rule 7: link to the portal page 'how to delete an account' (FMS_A S4243).</summary>
+    Private _lnkAccDelete As LinkLabel
     Private _accTimer As System.Windows.Forms.Timer
     Private _accBoldFont As Font
     Private _accAgent As ExchangeDeviceAgent
@@ -157,9 +161,20 @@ Partial Public NotInheritable Class Share_Settings_Form
         revokeRow.Controls.Add(_btnAccRevoke)
         sec.AddBodyRow(revokeRow)
 
-        _btnAccDisconnect = AccButton(Localization.T("Отключиться"), AddressOf OnAccountDisconnect, "system.network-off")
+        _btnAccChangePassword = AccButton(Localization.T("Сменить пароль.."), AddressOf OnAccountChangePassword, "action.edit")
+        Dim changePasswordRow As FlowLayoutPanel = AccFlow()
+        changePasswordRow.Controls.Add(_btnAccChangePassword)
+        sec.AddBodyRow(changePasswordRow)
+
+        ' the owner's М10 word (226 rule 5): the sign-out of THIS device - the entry and the key are forgotten here, the device record stays on the server
+        _btnAccDisconnect = AccButton(Localization.T("Выйти на этом устройстве"), AddressOf OnAccountDisconnect, "system.network-off")
+        _lnkAccDelete = New LinkLabel With {.AutoSize = True, .Margin = New Padding(0, 4, 0, 2),
+            .LinkColor = ThemeService.Palette.Link, .ActiveLinkColor = ThemeService.Palette.Link, .VisitedLinkColor = ThemeService.Palette.Link,
+            .Text = Localization.T("Как удалить учётную запись (портал)")}
+        AddHandler _lnkAccDelete.LinkClicked, AddressOf OnAccountDeleteLinkClicked
         Dim disconnectRow As FlowLayoutPanel = AccFlow()
         disconnectRow.Controls.Add(_btnAccDisconnect)
+        disconnectRow.Controls.Add(_lnkAccDelete)
         sec.AddBodyRow(disconnectRow)
 
         _accResult = AccNote("")
@@ -249,6 +264,8 @@ Partial Public NotInheritable Class Share_Settings_Form
         _accDevicesTitle.Visible = model.ShowDevices
         _accDevices.Visible = model.ShowDevices
         _btnAccRevoke.Parent.Visible = model.ShowRevoke
+        _btnAccChangePassword.Parent.Visible = model.ShowChangePassword
+        _btnAccChangePassword.Visible = model.ShowChangePassword
         _btnAccDisconnect.Parent.Visible = model.ShowDisconnect
         _btnAccDisconnect.Visible = model.ShowDisconnect
 
@@ -476,23 +493,65 @@ Partial Public NotInheritable Class Share_Settings_Form
         If Not IsDisposed Then ApplyAccountState()
     End Sub
 
+    ''' <summary>226 rule 4: the old password and the new one twice; on success this device keeps working with the fresh key of the
+    ''' answer while the account's OTHER devices sign in again (224 rule 9) - the sentence the page shows says so.</summary>
+    Private Async Sub OnAccountChangePassword()
+        Dim agent As ExchangeDeviceAgent = ExchangeDeviceHost.Current
+        If agent Is Nothing OrElse _accBusy Then Return
+        Dim status As ExchangeDeviceStatus = agent.GetStatus()
+        If status Is Nothing OrElse Not status.Configured Then Return
+        Dim accountName As String = status.Login & " @ " & status.Server
+        Using dlg As New Exchange_Password_Change_Form(accountName)
+            If dlg.ShowDialog(Me) <> DialogResult.OK OrElse dlg.NewPassword.Length = 0 Then Return
+            Dim oldPassword As String = dlg.OldPassword
+            Dim newPassword As String = dlg.NewPassword
+            _accBusy = True
+            Try
+                Dim result As ExchangePasswordChangeResult = Await agent.ChangePasswordAsync(oldPassword, newPassword, Threading.CancellationToken.None)
+                Select Case result.Outcome
+                    Case ExchangePasswordChangeOutcome.Changed
+                        ShowAccountResult(ExchangePasswordChangeText.Success())
+                        _accResult.ForeColor = ThemeService.Palette.TextMuted
+                    Case ExchangePasswordChangeOutcome.Refused
+                        ShowAccountResult(ExchangePasswordChangeText.Failure(result.Refusal))
+                        _accResult.ForeColor = CollapsibleSection.AttentionColor
+                    Case Else
+                        ShowAccountResult(ExchangePasswordChangeText.NoStream())
+                        _accResult.ForeColor = CollapsibleSection.AttentionColor
+                End Select
+            Finally
+                _accBusy = False
+            End Try
+            If Not IsDisposed Then ApplyAccountState()
+        End Using
+    End Sub
+
+    ''' <summary>226 rule 5: "Sign out on this device" forgets this PC's entry and token, leaves the device record
+    ''' on the server (it shows offline until the operator deletes it), and leaves attached resources in place.</summary>
     Private Async Sub OnAccountDisconnect()
         Dim agent As ExchangeDeviceAgent = ExchangeDeviceHost.Current
         If agent Is Nothing OrElse _accBusy Then Return
-        ' ticket 187 rule 9: the clean leave - every resource unpublished, the device revokes itself, then it forgets locally - and it never
-        ' depends on the server being reachable (with it down: forgotten here, and the window says the old record stays until another device
-        ' revokes it)
         If MessageBox.Show(Me, ExchangeJoinText.DisconnectQuestion(),
                            ExchangeDeviceText.GroupTitle(), MessageBoxButtons.YesNo, MessageBoxIcon.Warning, MessageBoxDefaultButton.Button2) <> DialogResult.Yes Then Return
         _accBusy = True
         Try
             ClearPairingCode()
-            Dim told As Boolean = Await agent.LeaveAccountAsync(Threading.CancellationToken.None)
-            ShowAccountResult(If(told, ExchangeJoinText.LeftCleanly(), ExchangeJoinText.LeftLocally()))
+            Await agent.DisconnectAsync()
+            ShowAccountResult(ExchangeJoinText.LeftLocally())
         Finally
             _accBusy = False
         End Try
         If Not IsDisposed Then ApplyAccountState()
+    End Sub
+
+    ''' <summary>226 rule 7: opens the media exchange portal page 'how to delete an account' (FMS_A S4243).</summary>
+    Private Sub OnAccountDeleteLinkClicked(sender As Object, e As LinkLabelLinkClickedEventArgs)
+        Try
+            Dim url As String = SitePages.ExchangePortalUrl("account-deletion", Localization.CurrentCode)
+            Process.Start(New ProcessStartInfo(url) With {.UseShellExecute = True})
+        Catch ex As Exception
+            AppFileLogger.WriteLine("Exchange account deletion link error: " & ex.Message)
+        End Try
     End Sub
 
 End Class

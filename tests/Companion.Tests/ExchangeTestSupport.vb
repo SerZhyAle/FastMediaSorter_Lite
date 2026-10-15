@@ -20,6 +20,7 @@ Friend Module ExchangeTestSupport
     Friend Sub Reset()
         ExchangeProcess.ExeDirectoryOverride = Nothing
         ExchangeProcess.DataDirOverride = Nothing
+        ExchangeFeatures.ComponentProbeOverride = Nothing
         ExchangeProcess.RunOverride = Nothing
         ExchangeProcess.ForgetDataDir()
         ExchangeAdmin.PipeNameOverride = Nothing

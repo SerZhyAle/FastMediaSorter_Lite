@@ -1,4 +1,4 @@
-﻿Option Strict On
+Option Strict On
 
 ' <summary>
 ' Strings of remote resources (007: a saved remote place - an SFTP server, or a network
@@ -1299,6 +1299,293 @@ Partial Public NotInheritable Class Localization
             "«{0}»: নো অ্যাক্সেস কম্পিউটারের এই ফোল্ডারে - এটি পরিষেবা দ্বারা মাউন্ট করা। শেয়ার করা ফোল্ডারটি Share Manager-এ দেখুন",
             "«{0}»: اس فولڈر تک رسائی نہیں اس کمپیوٹر پر - یہ سروس نے ماؤنٹ کیا ہے۔ مشترک فولڈر کی Share Manager میں تصدیق کریں",
             "「{0}」：无法访问此计算机上的该文件夹 - 它由服务挂载。请在 Share Manager 中检查此共享文件夹")
+
+        ' Spec 227: phone connection code and QR intake
+        Add("Сканировать камерой..",
+            "Scan with camera..",
+            "Сканувати камерою..",
+            "Mit Kamera scannen..",
+            "Scansiona con la fotocamera..",
+            "Escanear con cámara..",
+            "Scanner avec la caméra..",
+            "Escanear com câmera..",
+            "مسح بالكاميرا..",
+            "कैमरे से स्कैन करें..",
+            "ক্যামেরা দিয়ে স্ক্যান করুন..",
+            "کیمرے سے اسکین کریں..",
+            "使用摄像头扫描..")
+
+        Add("Показать код для телефона..",
+            "Show code for phone..",
+            "Показати код для телефону..",
+            "Code für Telefon anzeigen..",
+            "Mostra codice per telefono..",
+            "Mostrar código para el teléfono..",
+            "Afficher le code pour le téléphone..",
+            "Mostrar código para o telefone..",
+            "إظهار الرمز للهاتف..",
+            "फ़ोन के लिए कोड दिखाएं..",
+            "ফোনের জন্য কোড দেখান..",
+            "فون کے لیے کوڈ دکھائیں..",
+            "显示手机连接码..")
+
+        Add("Файлы настроек и изображений QR (*.fmscfg;*.json;*.txt;*.png;*.jpg;*.jpeg;*.bmp;*.webp)|*.fmscfg;*.json;*.txt;*.png;*.jpg;*.jpeg;*.bmp;*.webp|Файлы настроек (*.fmscfg;*.json;*.txt)|*.fmscfg;*.json;*.txt|Изображения с QR-кодом (*.png;*.jpg;*.jpeg;*.bmp;*.webp)|*.png;*.jpg;*.jpeg;*.bmp;*.webp|Все файлы (*.*)|*.*",
+            "Config and QR image files (*.fmscfg;*.json;*.txt;*.png;*.jpg;*.jpeg;*.bmp;*.webp)|*.fmscfg;*.json;*.txt;*.png;*.jpg;*.jpeg;*.bmp;*.webp|Config files (*.fmscfg;*.json;*.txt)|*.fmscfg;*.json;*.txt|QR code images (*.png;*.jpg;*.jpeg;*.bmp;*.webp)|*.png;*.jpg;*.jpeg;*.bmp;*.webp|All files (*.*)|*.*",
+            "Файли налаштувань та зображень QR (*.fmscfg;*.json;*.txt;*.png;*.jpg;*.jpeg;*.bmp;*.webp)|*.fmscfg;*.json;*.txt;*.png;*.jpg;*.jpeg;*.bmp;*.webp|Файли налаштувань (*.fmscfg;*.json;*.txt)|*.fmscfg;*.json;*.txt|Зображення з QR-кодом (*.png;*.jpg;*.jpeg;*.bmp;*.webp)|*.png;*.jpg;*.jpeg;*.bmp;*.webp|Усі файли (*.*)|*.*",
+            "Konfigurations- und QR-Bilddateien (*.fmscfg;*.json;*.txt;*.png;*.jpg;*.jpeg;*.bmp;*.webp)|*.fmscfg;*.json;*.txt;*.png;*.jpg;*.jpeg;*.bmp;*.webp|Konfigurationsdateien (*.fmscfg;*.json;*.txt)|*.fmscfg;*.json;*.txt|QR-Code-Bilder (*.png;*.jpg;*.jpeg;*.bmp;*.webp)|*.png;*.jpg;*.jpeg;*.bmp;*.webp|Alle Dateien (*.*)|*.*",
+            "File di configurazione e immagini QR (*.fmscfg;*.json;*.txt;*.png;*.jpg;*.jpeg;*.bmp;*.webp)|*.fmscfg;*.json;*.txt;*.png;*.jpg;*.jpeg;*.bmp;*.webp|File di configurazione (*.fmscfg;*.json;*.txt)|*.fmscfg;*.json;*.txt|Immagini codice QR (*.png;*.jpg;*.jpeg;*.bmp;*.webp)|*.png;*.jpg;*.jpeg;*.bmp;*.webp|Tutti i file (*.*)|*.*",
+            "Archivos de configuración e imágenes QR (*.fmscfg;*.json;*.txt;*.png;*.jpg;*.jpeg;*.bmp;*.webp)|*.fmscfg;*.json;*.txt;*.png;*.jpg;*.jpeg;*.bmp;*.webp|Archivos de configuración (*.fmscfg;*.json;*.txt)|*.fmscfg;*.json;*.txt|Imágenes de código QR (*.png;*.jpg;*.jpeg;*.bmp;*.webp)|*.png;*.jpg;*.jpeg;*.bmp;*.webp|Todos los archivos (*.*)|*.*",
+            "Fichiers de configuration et d'images QR (*.fmscfg;*.json;*.txt;*.png;*.jpg;*.jpeg;*.bmp;*.webp)|*.fmscfg;*.json;*.txt;*.png;*.jpg;*.jpeg;*.bmp;*.webp|Fichiers de configuration (*.fmscfg;*.json;*.txt)|*.fmscfg;*.json;*.txt|Images de code QR (*.png;*.jpg;*.jpeg;*.bmp;*.webp)|*.png;*.jpg;*.jpeg;*.bmp;*.webp|Tous les fichiers (*.*)|*.*",
+            "Arquivos de configuração e imagens QR (*.fmscfg;*.json;*.txt;*.png;*.jpg;*.jpeg;*.bmp;*.webp)|*.fmscfg;*.json;*.txt;*.png;*.jpg;*.jpeg;*.bmp;*.webp|Arquivos de configuração (*.fmscfg;*.json;*.txt)|*.fmscfg;*.json;*.txt|Imagens de código QR (*.png;*.jpg;*.jpeg;*.bmp;*.webp)|*.png;*.jpg;*.jpeg;*.bmp;*.webp|Todos os arquivos (*.*)|*.*",
+            "ملفات الإعدادات وصور رمز QR (*.fmscfg;*.json;*.txt;*.png;*.jpg;*.jpeg;*.bmp;*.webp)|*.fmscfg;*.json;*.txt;*.png;*.jpg;*.jpeg;*.bmp;*.webp|ملفات الإعدادات (*.fmscfg;*.json;*.txt)|*.fmscfg;*.json;*.txt|صور رمز QR (*.png;*.jpg;*.jpeg;*.bmp;*.webp)|*.png;*.jpg;*.jpeg;*.bmp;*.webp|كافة الملفات (*.*)|*.*",
+            "कॉन्फ़िग और QR इमेज फ़ाइलें (*.fmscfg;*.json;*.txt;*.png;*.jpg;*.jpeg;*.bmp;*.webp)|*.fmscfg;*.json;*.txt;*.png;*.jpg;*.jpeg;*.bmp;*.webp|कॉन्फ़िग फ़ाइलें (*.fmscfg;*.json;*.txt)|*.fmscfg;*.json;*.txt|QR कोड इमेज (*.png;*.jpg;*.jpeg;*.bmp;*.webp)|*.png;*.jpg;*.jpeg;*.bmp;*.webp|सभी फ़ाइलें (*.*)|*.*",
+            "কনফিগ এবং QR ইমেজ ফাইল (*.fmscfg;*.json;*.txt;*.png;*.jpg;*.jpeg;*.bmp;*.webp)|*.fmscfg;*.json;*.txt;*.png;*.jpg;*.jpeg;*.bmp;*.webp|কনফিগ ফাইল (*.fmscfg;*.json;*.txt)|*.fmscfg;*.json;*.txt|QR কোড ইমেজ (*.png;*.jpg;*.jpeg;*.bmp;*.webp)|*.png;*.jpg;*.jpeg;*.bmp;*.webp|সমস্ত ফাইল (*.*)|*.*",
+            "کنفگ اور QR تصویر فائلیں (*.fmscfg;*.json;*.txt;*.png;*.jpg;*.jpeg;*.bmp;*.webp)|*.fmscfg;*.json;*.txt;*.png;*.jpg;*.jpeg;*.bmp;*.webp|کنفگ فائلیں (*.fmscfg;*.json;*.txt)|*.fmscfg;*.json;*.txt|QR کوڈ تصاویر (*.png;*.jpg;*.jpeg;*.bmp;*.webp)|*.png;*.jpg;*.jpeg;*.bmp;*.webp|تمام فائلیں (*.*)|*.*",
+            "配置文件和二维码图片 (*.fmscfg;*.json;*.txt;*.png;*.jpg;*.jpeg;*.bmp;*.webp)|*.fmscfg;*.json;*.txt;*.png;*.jpg;*.jpeg;*.bmp;*.webp|配置文件 (*.fmscfg;*.json;*.txt)|*.fmscfg;*.json;*.txt|二维码图片 (*.png;*.jpg;*.jpeg;*.bmp;*.webp)|*.png;*.jpg;*.jpeg;*.bmp;*.webp|所有文件 (*.*)|*.*")
+
+        Add("В буфере обмена нет текста или изображения",
+            "Clipboard does not contain text or an image",
+            "В буфері обміну немає тексту або зображення",
+            "Zwischenablage enthält keinen Text oder kein Bild",
+            "Gli appunti non contengono testo o un'immagine",
+            "El portapapeles no contiene texto ni una imagen",
+            "Le presse-papiers ne contient pas de texte ou d'image",
+            "A área de transferência não contém texto ou imagem",
+            "الحافظة لا تحتوي على نص أو صورة",
+            "क्लिपबोर्ड में कोई टेक्स्ट या छवि नहीं है",
+            "ক্লিপবোর্ডে কোনো টেক্সট বা ছবি নেই",
+            "کلپ بورڈ میں کوئی متن یا تصویر نہیں ہے",
+            "剪贴板中没有文本或图片")
+
+        Add("В изображении не найден QR-код",
+            "No QR code found in the image",
+            "У зображенні не знайдено QR-код",
+            "Kein QR-Code im Bild gefunden",
+            "Nessun codice QR trovato nell'immagine",
+            "No se encontró ningún código QR en la imagen",
+            "Aucun code QR trouvé dans l'image",
+            "Nenhum código QR encontrado na imagem",
+            "لم يتم العثور على رمز QR في الصورة",
+            "छवि में कोई QR कोड नहीं मिला",
+            "ছবিতে কোনো QR কোড পাওয়া যায়নি",
+            "تصویر میں کوئی QR کوڈ نہیں ملا",
+            "图片中未找到二维码")
+
+        Add("Изображение слишком велико для поиска QR-кода",
+            "The image is too large for QR code detection",
+            "Зображення занадто велике для пошуку QR-коду",
+            "Das Bild ist zu groß für die QR-Code-Erkennung",
+            "L'immagine è troppo grande per il rilevamento del codice QR",
+            "La imagen es demasiado grande para detectar el código QR",
+            "L'image est trop grande pour la détection du code QR",
+            "A imagem é muito grande para detecção do código QR",
+            "الصورة كبيرة جدًا للبحث عن رمز QR",
+            "QR कोड खोजने के लिए छवि बहुत बड़ी है",
+            "QR কোড সনাক্তকরণের জন্য ছবিটি খুব বড়",
+            "QR کوڈ کی تلاش کے لیے تصویر بہت بڑی ہے",
+            "图片太大，无法检测二维码")
+
+        Add("В изображении найдено несколько QR-кодов",
+            "Multiple QR codes found in the image",
+            "У зображенні знайдено кілька QR-кодів",
+            "Mehrere QR-Codes im Bild gefunden",
+            "Trovati più codici QR nell'immagine",
+            "Se encontraron varios códigos QR en la imagen",
+            "Plusieurs codes QR trouvés dans l'image",
+            "Vários códigos QR encontrados na imagem",
+            "تم العثور على رموز QR متعددة في الصورة",
+            "छवि में कई QR कोड मिले",
+            "ছবিতে একাধিক QR কোড পাওয়া গেছে",
+            "تصویر میں ایک سے زیادہ QR کوڈز ملے",
+            "图片中找到多个二维码")
+
+        Add("Не удалось распознать QR-код",
+            "Failed to decode QR code",
+            "Не вдалося розпізнати QR-код",
+            "QR-Code konnte nicht dekodiert werden",
+            "Impossibile decodificare il codice QR",
+            "No se pudo decodificar el código QR",
+            "Impossible de décoder le code QR",
+            "Falha ao decodificar o código QR",
+            "تعذر فك تشفير رمز QR",
+            "QR कोड डिकोड करने में विफल",
+            "QR কোড ডিকোড করতে ব্যর্থ হয়েছে",
+            "QR کوڈ کو ڈی کوڈ کرنے میں ناکام",
+            "无法识别二维码")
+
+        Add("Не удалось прочитать файл изображения",
+            "Failed to read image file",
+            "Не вдалося прочитати файл зображення",
+            "Bilddatei konnte nicht gelesen werden",
+            "Impossibile leggere il file immagine",
+            "No se pudo leer el archivo de imagen",
+            "Impossible de lire le fichier image",
+            "Falha ao ler o arquivo de imagem",
+            "تعذر قراءة ملف الصورة",
+            "छवि फ़ाइल पढ़ने में विफल",
+            "ইমেজ ফাইল পড়তে ব্যর্থ হয়েছে",
+            "تصویر فائل پڑھنے میں ناکام",
+            "无法读取图片文件")
+
+        Add("Буфер обмена занят другой программой",
+            "Clipboard is busy with another program",
+            "Буфер обміну зайнятий іншою програмою",
+            "Zwischenablage wird von einem anderen Programm verwendet",
+            "Gli appunti sono occupati da un altro programma",
+            "El portapapeles está ocupado por otro programa",
+            "Le presse-papiers est occupé par un autre programme",
+            "A área de transferência está ocupada por outro programa",
+            "الحافظة مشغولة ببرنامج آخر",
+            "क्लिपबोर्ड किसी अन्य प्रोग्राम द्वारा व्यस्त है",
+            "ক্লিপবোর্ড অন্য একটি প্রোগ্রামে ব্যস্ত রয়েছে",
+            "کلپ بورڈ کسی دوسرے پروگرام کے استعمال میں ہے",
+            "剪贴板正被其他程序占用")
+
+        Add("Подключение телефона",
+            "Phone connection",
+            "Підключення телефону",
+            "Telefonverbindung",
+            "Connessione del telefono",
+            "Conexión del teléfono",
+            "Connexion du téléphone",
+            "Conexão do telefone",
+            "اتصال الهاتف",
+            "फ़ोन कनेक्शन",
+            "ফোন সংযোগ",
+            "فون کنکشن",
+            "手机连接")
+
+        Add("Отсканируйте этот QR-код телефоном, чтобы передать настройки папки",
+            "Scan this QR code with your phone to transfer folder settings",
+            "Відскануйте цей QR-код телефоном, щоб передати налаштування папки",
+            "Scannen Sie diesen QR-Code mit Ihrem Telefon, um Ordnereinstellungen zu übertragen",
+            "Scansiona questo codice QR con il telefono per trasferire le impostazioni della cartella",
+            "Escanea este código QR con el teléfono para transferir la configuración de la carpeta",
+            "Scannez ce code QR avec votre téléphone pour transférer les paramètres du dossier",
+            "Digitalize este código QR com o telefone para transferir as configurações da pasta",
+            "امسح رمز QR هذا بهاتفك لنقل إعدادات المجلد",
+            "फ़ोल्डर सेटिंग्स स्थानांतरित करने के लिए अपने फ़ोन से इस QR कोड को स्कैन करें",
+            "ফোল্ডার সেটিংস স্থানান্তর করতে আপনার ফোন দিয়ে এই QR কোডটি স্ক্যান করুন",
+            "فولڈر کی ترتیبات منتقل کرنے کے لیے اپنے فون سے اس QR کوڈ کو اسکین کریں",
+            "用手机扫描此二维码以传输文件夹设置")
+
+        Add("Ожидание подключения телефона..",
+            "Waiting for phone connection..",
+            "Очікування підключення телефону..",
+            "Warten auf Telefonverbindung..",
+            "In attesa della connessione del telefono..",
+            "Esperando la conexión del teléfono..",
+            "En attente de la connexion du téléphone..",
+            "Aguardando conexão do telefone..",
+            "في انتظار اتصال الهاتف..",
+            "फ़ोन कनेक्शन की प्रतीक्षा की जा रही है..",
+            "ফোন সংযোগের জন্য অপেক্ষা করা হচ্ছে..",
+            "فون کے کنکشن کا انتظار کیا جا رہا ہے..",
+            "正在等待手机连接..")
+
+        Add("Вставить из буфера..",
+            "Paste from clipboard..",
+            "Вставити з буфера..",
+            "Aus Zwischenablage einfügen..",
+            "Incolla dagli appunti..",
+            "Pegar desde el portapapeles..",
+            "Coller depuis le presse-papiers..",
+            "Colar da área de transferência..",
+            "لصق من الحافظة..",
+            "क्लिपबोर्ड से चिपकाएं..",
+            "ক্লিপবোর্ড থেকে পেস্ট করুন..",
+            "کلپ بورڈ سے چسپاں کریں..",
+            "从剪贴板粘贴..")
+
+        Add("Код получен",
+            "Code received",
+            "Код отримано",
+            "Code empfangen",
+            "Codice ricevuto",
+            "Código recibido",
+            "Code reçu",
+            "Código recebido",
+            "تم استلام الرمز",
+            "कोड प्राप्त हुआ",
+            "কোড গৃহীত হয়েছে",
+            "کوڈ موصول ہو گیا",
+            "已接收连接码")
+
+        Add("Не удалось запустить локальный приём",
+            "Failed to start local listener",
+            "Не вдалося запустити локальний прийом",
+            "Lokaler Empfang konnte nicht gestartet werden",
+            "Impossibile avviare la ricezione locale",
+            "No se pudo iniciar la recepción local",
+            "Impossible de démarrer l'écoute locale",
+            "Falha ao iniciar a recepção local",
+            "تعذر بدء الاستماع المحلي",
+            "स्थानीय श्रोता प्रारंभ करने में विफल",
+            "স্থানীয় লিসেনার শুরু করতে ব্যর্থ হয়েছে",
+            "مقامی وصول شروع کرنے میں ناکام",
+            "无法启动本地接收服务")
+
+        ' --- spec 228 outward access, channels and PIN strings ---
+
+        Add("гость",
+            "guest", "гість", "Gast", "ospite", "invitado",
+            "invité", "convidado", "ضيف", "अतिथि", "অতিথি",
+            "مہمان", "访客")
+
+        Add("ссылка с паролем",
+            "link with a password", "посилання з паролем", "Link mit Passwort", "collegamento con password", "enlace con contraseña",
+            "lien avec mot de passe", "link com senha", "رابط بكلمة مرور", "पासवर्ड वाला लिंक", "পাসওয়ার্ড সহ লিঙ্ক",
+            "پاس ورڈ کے ساتھ لنک", "带密码的链接")
+
+        Add("через Google Drive",
+            "through Google Drive", "через Google Drive", "über Google Drive", "tramite Google Drive", "a través de Google Drive",
+            "via Google Drive", "pelo Google Drive", "عبر Google Drive", "Google Drive के माध्यम से", "Google Drive-এর মাধ্যমে",
+            "Google Drive کے ذریعے", "通过 Google Drive")
+
+        Add("через GD",
+            "through GD", "через GD", "über GD", "tramite GD", "a través de GD",
+            "via GD", "pelo GD", "عبر GD", "GD के माध्यम से", "GD-এর মাধ্যমে",
+            "GD کے ذریعے", "通过 GD")
+
+        Add("Дать доступ наружу..",
+            "Give access outside..", "Дати доступ назовні..", "Zugriff nach außen geben..", "Dai accesso esterno..", "Dar acceso externo..",
+            "Donner l'accès extérieur..", "Dar acesso externo..", "منح وصول خارجي..", "बाहरी पहुंच दें..", "বাইরের অ্যাক্সেস দিন..",
+            "باہر رسائی دیں..", "提供外部访问..")
+
+        Add("PIN-код изменился",
+            "the PIN has changed", "PIN-код змінився", "die PIN wurde geändert", "il PIN è cambiato", "el PIN ha cambiado",
+            "le code PIN a changé", "o PIN foi alterado", "تم تغيير رمز PIN", "पिन बदल गया है", "পিন পরিবর্তিত হয়েছে",
+            "پن تبدیل ہو گیا ہے", "PIN 码已更改")
+
+        ' --- spec 227 T-4: the landing page a browser shows when a person opens the one-time receive address ---
+
+        Add("Эта страница - адрес однократного приёма кода.",
+            "This page is a one-time address for receiving a code.",
+            "Ця сторінка - адреса однократного прийому коду.",
+            "Diese Seite ist eine einmalige Adresse für den Empfang eines Codes.",
+            "Questa pagina è un indirizzo monouso per la ricezione di un codice.",
+            "Esta página es una dirección de un solo uso para recibir un código.",
+            "Cette page est une adresse à usage unique pour recevoir un code.",
+            "Esta página é um endereço de uso único para receber um código.",
+            "هذه الصفحة عنوان للاستخدام مرة واحدة لاستلام رمز.",
+            "यह पृष्ठ एक कोड प्राप्त करने का एक बार का पता है।",
+            "এই পৃষ্ঠাটি একটি কোড গ্রহণের এককালীন ঠিকানা।",
+            "یہ صفحہ کوڈ وصول کرنے کا ایک بار استعمال ہونے والا پتہ ہے۔",
+            "此页面是接收代码的一次性地址。")
+
+        Add("Отсканируйте QR-код из приложения Fast Media Sorter на компьютере телефоном.",
+            "Scan the QR code shown by the Fast Media Sorter program on the computer with your phone.",
+            "Відскануйте QR-код із програми Fast Media Sorter на комп'ютері телефоном.",
+            "Scannen Sie den QR-Code, den das Programm Fast Media Sorter auf dem Computer zeigt, mit Ihrem Telefon.",
+            "Scansiona con il telefono il codice QR mostrato dal programma Fast Media Sorter sul computer.",
+            "Escanea con el teléfono el código QR que muestra el programa Fast Media Sorter en el ordenador.",
+            "Numérisez avec le téléphone le code QR affiché par le programme Fast Media Sorter sur l'ordinateur.",
+            "Digitalize com o telefone o código QR exibido pelo programa Fast Media Sorter no computador.",
+            "امسح رمز QR الذي يعرضه برنامج Fast Media Sorter على الكمبيوتر بهاتفك.",
+            "कंप्यूटर पर Fast Media Sorter प्रोग्राम द्वारा दिखाए गए QR कोड को अपने फ़ोन से स्कैन करें।",
+            "কম্পিউটারে Fast Media Sorter প্রোগ্রামের দেখানো QR কোডটি আপনার ফোন দিয়ে স্ক্যান করুন।",
+            "کمپیوٹر پر Fast Media Sorter پروگرام کے دکھائے گئے QR کوڈ کو اپنے فون سے اسکین کریں۔",
+            "请用手机扫描电脑上 Fast Media Sorter 程序显示的二维码。")
     End Sub
 
 End Class

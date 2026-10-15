@@ -5,6 +5,7 @@ Imports System.Collections.Generic
 Imports System.Drawing
 Imports System.IO
 Imports System.Windows.Forms
+Imports System.Threading
 
 ' 023_SPECIFICATION_FMS_LIVE_BROADCAST_CONSUMER.md §1, §4, §5.
 ' Dialog to open or import live broadcast descriptors, paste links, or select recent devices.
@@ -26,6 +27,17 @@ Friend NotInheritable Class LiveBroadcast_Form
     Private recentDescriptors As List(Of LiveBroadcastDescriptor)
     Private selectedRecent As LiveBroadcastDescriptor
     Private scriptFont As Font
+    Private ReadOnly directoryCancellation As New CancellationTokenSource()
+    Private ReadOnly directoryIds As New Dictionary(Of LiveBroadcastDescriptor, String)()
+    Private directoryStarted As Boolean
+    Private accepting As Boolean
+    Private ReadOnly autoCast As CheckBox
+
+    Friend ReadOnly Property AutoAcceptCast As Boolean
+        Get
+            Return autoCast.Checked
+        End Get
+    End Property
 
     ''' <summary>The broadcast to play. Set when the text was a descriptor, a link, a file or a marked-live address.</summary>
     <System.ComponentModel.Browsable(False), System.ComponentModel.DesignerSerializationVisibility(System.ComponentModel.DesignerSerializationVisibility.Hidden)>
@@ -38,7 +50,7 @@ Friend NotInheritable Class LiveBroadcast_Form
     <System.ComponentModel.Browsable(False), System.ComponentModel.DesignerSerializationVisibility(System.ComponentModel.DesignerSerializationVisibility.Hidden)>
     Public Property ResultOnDemandUrl As String
 
-    Public Sub New()
+    Public Sub New(Optional autoAcceptCast As Boolean = False)
         Me.Text = Localization.T("Открыть live-трансляцию")
         Me.FormBorderStyle = FormBorderStyle.FixedDialog
         Me.MaximizeBox = False
@@ -154,6 +166,32 @@ Friend NotInheritable Class LiveBroadcast_Form
 
         LoadRecentList()
 
+        autoCast = New CheckBox With {.Text = Localization.T("Принимать трансляции автоматически"), .Checked = autoAcceptCast,
+                                     .Location = New Point(14, 94), .AutoSize = True, .Visible = ExchangeFeatures.IsEnabled()}
+        If autoCast.Visible Then lblLanHint.Visible = False
+        Me.Controls.Add(autoCast)
+
+        Dim paste As New Button With {.Text = Localization.T("Вставить"), .Location = New Point(420, 66), .Size = New Size(106, 26)}
+        AddHandler paste.Click, Sub()
+                                   Dim qr As QrDecodeResult = QrCodeDecoder.DecodeClipboard()
+                                   If qr.Succeeded Then
+                                       txtInput.Text = qr.Text
+                                   Else
+                                       lblStatus.Text = qr.FailureMessage
+                                   End If
+                               End Sub
+        Me.Controls.Add(paste)
+
+        If ExchangeFeatures.IsEnabled() Then
+            Dim devices As New Button With {.Text = Localization.T("Мои устройства"), .Location = New Point(310, 120), .Size = New Size(216, 26)}
+            AddHandler devices.Click, Sub()
+                                          lblRecentTitle.Text = Localization.T("Мои устройства")
+                                          lblRecentNote.Text = ""
+                                          LoadDevicesAsync()
+                                      End Sub
+            Me.Controls.Add(devices)
+        End If
+
         ' LAST line of the builder: scaling touches only the children that exist by now (124 UX-202).
         DialogLayout.ApplyAutoScale(Me)
     End Sub
@@ -168,6 +206,7 @@ Friend NotInheritable Class LiveBroadcast_Form
 
     Protected Overrides Sub Dispose(disposing As Boolean)
         If disposing Then
+            directoryCancellation.Cancel()
             If scriptFont IsNot Nothing Then
                 scriptFont.Dispose()
                 scriptFont = Nothing
@@ -196,11 +235,80 @@ Friend NotInheritable Class LiveBroadcast_Form
     End Function
 
     ''' <summary>Takes a descriptor as the result, remembers it and closes.</summary>
-    Private Sub Accept(descriptor As LiveBroadcastDescriptor)
+    Private Async Sub Accept(descriptor As LiveBroadcastDescriptor)
+        If accepting Then Return
+        accepting = True
+        Dim broadcastId As String = Nothing
+        If directoryIds.TryGetValue(descriptor, broadcastId) Then
+            Dim client As New ExchangeAgentClient()
+            Dim reply As ExchangeAgentReply = Await client.SendAsync(ExchangeAgentPipe.BuildRequest(ExchangeAgentPipe.RequestGetBroadcast,
+                Sub(o) o("broadcastId") = broadcastId), 4000, directoryCancellation.Token)
+            If IsDisposed Then Return
+            If Not reply.IsOk Then
+                accepting = False
+                ShowReadError(LiveReadStatus.NotBroadcast)
+                Return
+            End If
+            Dim parsed As LiveBroadcastReadResult = LiveBroadcastRecords.ReadRecord(reply.DataJson)
+            If parsed.Status <> LiveReadStatus.Ok Then
+                accepting = False
+                ShowReadError(parsed.Status)
+                Return
+            End If
+            descriptor = parsed.Descriptor
+        End If
         ResultDescriptor = descriptor
         store.Upsert(descriptor)
         Me.DialogResult = DialogResult.OK
         Me.Close()
+    End Sub
+
+    Private Async Sub LoadDevicesAsync()
+        If directoryStarted Then Return
+        directoryStarted = True
+        Dim client As New ExchangeAgentClient()
+        Dim revision As Long = -1
+        Try
+            While Not directoryCancellation.IsCancellationRequested
+                Dim result As ExchangeAgentDirectoryResult = Await client.GetDirectoryAsync(revision, If(revision < 0, 0, 20000), directoryCancellation.Token, liveBroadcasts:=True)
+                If IsDisposed OrElse directoryCancellation.IsCancellationRequested Then Return
+                If Not result.Reply.IsOk OrElse result.Snapshot Is Nothing Then
+                    lblStatus.Text = Localization.T("Подключение..")
+                    Return
+                End If
+                revision = result.Snapshot.Revision
+                Dim selectedId As String = Nothing
+                If selectedRecent IsNot Nothing Then directoryIds.TryGetValue(selectedRecent, selectedId)
+                lstRecent.BeginUpdate()
+                lstRecent.Items.Clear()
+                lstRecent.Groups.Clear()
+                directoryIds.Clear()
+                For Each device As ExchangeDeviceRecord In result.Snapshot.Devices
+                    lstRecent.Groups.Add(device.DeviceId, device.DeviceName)
+                Next
+                For Each record As ExchangeBroadcastRecord In result.Snapshot.Broadcasts
+                    Dim parsed As LiveBroadcastReadResult = LiveBroadcastRecords.ReadRecord(record.Raw)
+                    If parsed.Status <> LiveReadStatus.Ok Then Continue For
+                    Dim d As LiveBroadcastDescriptor = parsed.Descriptor
+                    directoryIds(d) = record.BroadcastId
+                    Dim item As New ListViewItem(If(d.Title, record.Title)) With {.Tag = d, .Group = lstRecent.Groups(record.DeviceId)}
+                    item.SubItems.Add(HostOf(d.Url))
+                    lstRecent.Items.Add(item)
+                    If selectedId IsNot Nothing AndAlso record.BroadcastId = selectedId Then
+                        selectedRecent = d
+                        item.Selected = True
+                    End If
+                Next
+                If selectedId IsNot Nothing AndAlso Not directoryIds.ContainsKey(selectedRecent) Then
+                    selectedRecent = Nothing
+                    txtInput.Clear()
+                End If
+                lstRecent.EndUpdate()
+            End While
+        Catch ex As OperationCanceledException
+        Finally
+            directoryStarted = False
+        End Try
     End Sub
 
     Private Sub OnBrowseFileClick(sender As Object, e As EventArgs)
@@ -208,7 +316,17 @@ Friend NotInheritable Class LiveBroadcast_Form
             ofd.Filter = Localization.T("Файлы трансляций (*.fmsbcast)|*.fmsbcast|Все файлы (*.*)|*.*")
             ofd.Title = Localization.T("Выбрать файл .fmsbcast")
             If ofd.ShowDialog(Me) = DialogResult.OK Then
-                Dim res As LiveBroadcastReadResult = LiveBroadcastReader.ReadFile(ofd.FileName)
+                Dim res As LiveBroadcastReadResult
+                If PhoneConnectionIntake.IsImageFile(ofd.FileName) Then
+                    Dim qr As QrDecodeResult = QrCodeDecoder.DecodeFile(ofd.FileName)
+                    If Not qr.Succeeded Then
+                        lblStatus.Text = qr.FailureMessage
+                        Return
+                    End If
+                    res = Read(qr.Text)
+                Else
+                    res = LiveBroadcastReader.ReadFile(ofd.FileName)
+                End If
                 If res.Status = LiveReadStatus.Ok AndAlso res.Descriptor IsNot Nothing Then
                     Accept(res.Descriptor)
                 Else

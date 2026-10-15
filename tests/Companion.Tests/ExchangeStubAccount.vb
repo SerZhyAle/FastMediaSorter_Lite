@@ -19,6 +19,11 @@ Friend NotInheritable Class ExchangeStubAccount
     Public Const Login As String = "alice"
     Public Const Password As String = "Correct-Horse-Battery-9"
     Public Const PairingCode As String = "ABCD2345"
+    ''' <summary>A one-time invitation code in the wire's id form (22 characters that decode to 16 bytes), as an operator's
+    ''' invitation string carries it (ticket 224 rule 1). A secret holder.</summary>
+    Public Const Invitation As String = "QPmYv_VdgvQYk9Y5TS241A"
+    ''' <summary>The operator's shared invitation password (224 rule 2), off by default: "" until a test turns it on.</summary>
+    Public Property SharedInvitationPassword As String = ""
 
     Private ReadOnly _gate As New Object()
     Private ReadOnly _tokens As New Dictionary(Of String, String)(StringComparer.Ordinal)   ' deviceId -> token
@@ -32,9 +37,62 @@ Friend NotInheritable Class ExchangeStubAccount
     Private ReadOnly _enrollCapabilities As New List(Of String)
     Private ReadOnly _enrollNames As New List(Of String)
     Private ReadOnly _enrollDeviceIds As New List(Of String)
+    Private ReadOnly _registerPasswords As New List(Of String)
+    Private ReadOnly _registerCodes As New List(Of String)
+    Private ReadOnly _registerRefusals As New ConcurrentQueue(Of String)
+    Private ReadOnly _deviceByConnection As New Dictionary(Of Integer, String)()
+    Private _password As String = Password
+    Private _usedInvitation As Boolean
 
     ''' <summary>Further logins that share the account password (ticket 187: two logins on one server).</summary>
     Public ReadOnly ExtraLogins As New HashSet(Of String)(StringComparer.OrdinalIgnoreCase)
+
+    ''' <summary>Ticket 224 rule 4: registrations past this count of accounts are refused with `capacity`. 0 = the default of ten.</summary>
+    Public Property MaxAccounts As Integer = 10
+
+    Private ReadOnly _registeredLogins As New List(Of String)
+
+    ''' <summary>The logins that REGISTERED on this stub, in arrival order.</summary>
+    Public Function RegisteredLogins() As List(Of String)
+        SyncLock _gate
+            Return New List(Of String)(_registeredLogins)
+        End SyncLock
+    End Function
+
+    ''' <summary>Every invitation code a `register` presented, in arrival order (a wrong one too: what the no-oracle tests compare).</summary>
+    Public Function RegisterCodesSeen() As List(Of String)
+        SyncLock _gate
+            Return New List(Of String)(_registerCodes)
+        End SyncLock
+    End Function
+
+    ''' <summary>The next `register` is refused with this reason (queued: one per register), before anything is looked at.</summary>
+    Public Sub RefuseNextRegister(reason As String)
+        _registerRefusals.Enqueue(reason)
+    End Sub
+
+    ''' <summary>Spends the invitation (a second use is a wrong code: the same `bad-credentials`, no oracle - 224 rule 6).</summary>
+    Public Sub UseInvitation()
+        SyncLock _gate
+            _usedInvitation = True
+        End SyncLock
+    End Sub
+
+    ''' <summary>Ticket 224 rules 8-9: the password changes OUTSIDE this device (on the phone, by the operator's reset): every
+    ''' token dies, so every device's next `hello` is `bad-credentials`.</summary>
+    Public Sub ChangePasswordFromElsewhere(newPassword As String)
+        SyncLock _gate
+            _password = newPassword
+            _tokens.Clear()
+        End SyncLock
+    End Sub
+
+    ''' <summary>Every `register`'s password, in arrival order (what the secrets tests assert never reached a store or a log).</summary>
+    Public Function RegisterPasswordsSeen() As List(Of String)
+        SyncLock _gate
+            Return New List(Of String)(_registerPasswords)
+        End SyncLock
+    End Function
 
     ''' <summary>The next `enroll` is refused with this reason (queued: one per enroll), before the credentials are looked at.</summary>
     Public Sub RefuseNextEnroll(reason As String)
@@ -75,6 +133,7 @@ Friend NotInheritable Class ExchangeStubAccount
     Public Property Revision As Long = 7
     Public Property Devices As New List(Of String)
     Public Property Resources As New List(Of String)
+    Public Property Broadcasts As New List(Of String)
 
     Public Sub New(Optional certificate As System.Security.Cryptography.X509Certificates.X509Certificate2 = Nothing)
         Server = New ExchangeStubTlsServer(AddressOf HandleAsync, certificate)
@@ -218,8 +277,16 @@ Friend NotInheritable Class ExchangeStubAccount
         End SyncLock
     End Sub
 
+    ''' <summary>The device id of the stream a connection index carries ("" when none): which device asked for the change.</summary>
+    Private Function DeviceOfConnection(connection As Integer) As String
+        SyncLock _gate
+            Dim d As String = Nothing
+            Return If(_deviceByConnection.TryGetValue(connection, d), d, "")
+        End SyncLock
+    End Function
+
     Private Function DirectoryEnvelope() As ExchangeEnvelope
-        Return New ExchangeEnvelope("directory").SetNumber("revision", Revision).SetRecords("devices", Devices).SetRecords("resources", Resources)
+        Return New ExchangeEnvelope("directory").SetNumber("revision", Revision).SetRecords("devices", Devices).SetRecords("resources", Resources).SetRecords("broadcasts", Broadcasts)
     End Function
 
     Private Async Function HandleAsync(c As ExchangeStubConnection) As Task
@@ -240,7 +307,7 @@ Friend NotInheritable Class ExchangeStubAccount
                     Return
                 End If
                 Dim ok As Boolean = (String.Equals(first.Text("login"), Login, StringComparison.OrdinalIgnoreCase) OrElse ExtraLogins.Contains(first.Text("login"))) AndAlso
-                    (first.Text("password") = Password OrElse (first.Text("pairingCode").Length > 0 AndAlso first.Text("pairingCode") = PairingCode))
+                    (first.Text("password") = _password OrElse (first.Text("pairingCode").Length > 0 AndAlso first.Text("pairingCode") = PairingCode))
                 If Not ok Then
                     Await c.Refuse("bad-credentials")
                     Return
@@ -250,6 +317,9 @@ Friend NotInheritable Class ExchangeStubAccount
                 SyncLock _gate
                     _tokens(deviceId) = token
                     _revoked.Remove(deviceId)
+                End SyncLock
+                SyncLock _gate
+                    _deviceByConnection(c.Index) = deviceId
                 End SyncLock
                 Await c.WriteAsync(New ExchangeEnvelope("enrolled").SetText("deviceToken", token).SetText("account", Login).SetText("publicEndpoint", "203.0.113.5:22022").
                                    SetNumber("keepaliveSeconds", KeepaliveSeconds).SetTextList("features", Features).SetText("serverVersion", "26.10.7.1200"))
@@ -267,7 +337,63 @@ Friend NotInheritable Class ExchangeStubAccount
                     Await c.Refuse(If(IsRevoked(deviceId), "device-revoked", "bad-credentials"))
                     Return
                 End If
+                SyncLock _gate
+                    _deviceByConnection(c.Index) = deviceId
+                End SyncLock
                 Await c.WriteAsync(c.Welcome(KeepaliveSeconds, Features))
+                c.Authenticated()
+                Await ControlLoopAsync(c)
+            Case "register"
+                ' ticket 224 rules 4-6: a wrong code and an already used code answer the SAME (no oracle); a full server
+                ' says `capacity`; the answer is `enrolled` - the account and its first device in one exchange
+                Dim deviceId As String = first.Text("deviceId")
+                SyncLock _gate
+                    _registerPasswords.Add(first.Text("password"))
+                    _registerCodes.Add(first.Text("invitationCode"))
+                    _enrollRoles.Add(String.Join(",", first.TextList("roles")))
+                    _enrollCapabilities.Add(String.Join(",", first.TextList("capabilities")))
+                    _enrollNames.Add(first.Text("deviceName"))
+                    _enrollDeviceIds.Add(first.Text("deviceId"))
+                End SyncLock
+                Dim registerRefusal As String = Nothing
+                If _registerRefusals.TryDequeue(registerRefusal) Then
+                    Await c.Refuse(registerRefusal)
+                    Return
+                End If
+                Dim accounts As Integer
+                SyncLock _gate
+                    accounts = 1 + ExtraLogins.Count + _registeredLogins.Count
+                End SyncLock
+                Dim limit As Integer = If(MaxAccounts <= 0, 10, MaxAccounts)
+                If accounts >= limit Then
+                    Await c.Refuse("capacity")
+                    Return
+                End If
+                Dim invitation As String = first.Text("invitationCode")
+                If invitation.Length = 0 Then invitation = first.Text("sharedPassword")
+                Dim codeOk As Boolean
+                SyncLock _gate
+                    codeOk = (Not _usedInvitation AndAlso String.Equals(invitation, Invitation, StringComparison.Ordinal)) OrElse
+                             (first.Text("invitationCode").Length = 0 AndAlso invitation.Length > 0 AndAlso invitation = SharedInvitationPassword)
+                End SyncLock
+                If Not codeOk OrElse ExchangePasswordPolicy.Check(first.Text("password")) <> ExchangePasswordPolicy.Verdict.Accepted Then
+                    Await c.Refuse("bad-credentials")
+                    Return
+                End If
+                SyncLock _gate
+                    _usedInvitation = True
+                    _registeredLogins.Add(first.Text("login"))
+                End SyncLock
+                Dim token As String = NewToken()
+                SyncLock _gate
+                    _tokens(deviceId) = token
+                    _revoked.Remove(deviceId)
+                End SyncLock
+                SyncLock _gate
+                    _deviceByConnection(c.Index) = deviceId
+                End SyncLock
+                Await c.WriteAsync(New ExchangeEnvelope("enrolled").SetText("deviceToken", token).SetText("account", first.Text("login")).SetText("publicEndpoint", "203.0.113.5:22022").
+                                   SetNumber("keepaliveSeconds", KeepaliveSeconds).SetTextList("features", Features).SetText("serverVersion", "26.10.7.1200"))
                 c.Authenticated()
                 Await ControlLoopAsync(c)
             Case Else
@@ -456,6 +582,25 @@ Friend NotInheritable Class ExchangeStubAccount
                             _revoked.Add(env.Text("deviceId"))
                             _tokens.Remove(env.Text("deviceId"))
                         End SyncLock
+                    Case "password-change"
+                        ' ticket 224 rule 9: the old password decides; on success THIS device gets a fresh token and every
+                        ' OTHER device's token dies (they sign in again); a wrong old password is the common refusal
+                        Dim oldOk As Boolean
+                        SyncLock _gate
+                            oldOk = String.Equals(env.Text("oldPassword"), _password, StringComparison.Ordinal)
+                        End SyncLock
+                        If Not oldOk Then
+                            Await c.Refuse("bad-credentials")
+                            Continue While
+                        End If
+                        Dim fresh As String = NewToken()
+                        Dim thisDevice As String = DeviceOfConnection(c.Index)
+                        SyncLock _gate
+                            _password = env.Text("newPassword")
+                            _tokens.Clear()
+                            If thisDevice.Length > 0 Then _tokens(thisDevice) = fresh
+                        End SyncLock
+                        Await c.WriteAsync(New ExchangeEnvelope("password-changed").SetText("deviceToken", fresh))
                     Case "bye"
                         Return
                 End Select
@@ -463,6 +608,7 @@ Friend NotInheritable Class ExchangeStubAccount
         Finally
             SyncLock _gate
                 _live.Remove(c.Index)
+                _deviceByConnection.Remove(c.Index)
             End SyncLock
         End Try
     End Function

@@ -1,7 +1,7 @@
 ICONOGRAPHY VENDORED ARTIFACT
 Do not hand-edit SVG files in this folder. Regenerate with tools/Sync-IconGlyphs.ps1.
 Catalog versions: ICON-SET 0.30; ICON-RENDER 0.19; ICON-EXTERNAL 0.12
-Vocabulary SHA-256: 2ee1c3c79155bd3d9fdeed70ddbe34a475fbbfdd0c3a5c7566ab6d15aa18f48b
+Vocabulary SHA-256: 108a0f93b45d52230e23826ad1b4ff54c2714e7ff2d492e5c62b0d09b0fbc428
 
 action.confirm.svg  ca97ceac8371975e7f8d21d26ef404858bb137a0b18d80ed0a64d34a20903f69
 action.cancel.svg  0b2ee602dece67950e801b3df344297e311e8bc33c592c7ae8cc9f5d4195c873
@@ -61,6 +61,8 @@ action.search.svg  e57b0f6083efdd7398cc80a690f953bc2d3f9d8fe388a9bbf5ed330f87223
 action.send-to.svg  a7a85fb6afb994b9515bd6032ce5cd52e874e41eb4cc0d280ba6afd6ef2b8447
 action.share.svg  bd2d4c1601b79c8069fcc0dfaabed52784489a6783e0d62d950044331cbf9301
 action.translate.svg  df11c775889f6dbf6a1e2136695cc98502b3b75d2a8c7ac7f1fcf05a951997a1
+action.pin.svg  62266eaa0a24617c7ef568e30ed1d9bb1416af2808ddb1dbec9327f64b744985
+action.pin--off.svg  0375c7525456730de7dc9f8ec359e51da09ef8ee65a08605763f6eb53507b6e3
 app.info.svg  bee8e268059d56aeda5b1c0c64f186c24809c9407301a81f5a76a5cccff14b14
 app.settings.svg  0f527bd938c6c5cbfd2c7d544dcb9ee38ba5ea1287491ac7e2b1d4bf2c2df7de
 content.apps.svg  1c8177f6f61abd75eefaa8ea52dcd48f90e02e21089ae2f284936dce170202f1

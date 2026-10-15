@@ -61,6 +61,7 @@
 <header class="site-header">
   <nav class="site-nav" aria-label="Navigation principale">
   <a class="brand" href="https://serzhyale.github.io/FastMediaSorter_Lite/lang/fr/" aria-label="Fast Media Sorter &amp; Sharing for Windows">Fast Media Sorter &amp; Sharing for Windows</a>
+  <a class="nav-doc" href="https://serzhyale.github.io/FastMediaSorter_Lite/topics.html">Documentation (en anglais)</a>
   <details class="lang-menu">
     <summary>Français</summary>
     <div class="lang-pop">
@@ -86,14 +87,15 @@
 
 <main class="container" id="main" tabindex="-1">
   <section class="hero">
-    <div class="hero-id">
-      <img class="app-icon" src="../../assets/icons/store-icon-256.png" alt="" width="168" height="168">
-      <div class="hero-copy">
-        <span class="eyebrow">Windows desktop app</span>
-        <h1>Fast Media Sorter &amp; Sharing for Windows</h1>
-        <span class="kicker">Free &amp; open-source</span>
+    <div class="identity">
+      <img class="product-icon" src="../../assets/icons/store-icon-256.png" alt="" width="104" height="104">
+      <div>
+        <p class="product-name">Fast Media Sorter &amp; Sharing for Windows</p>
+        <p class="kicker" lang="en" dir="ltr">Windows desktop app</p>
+        <p class="kicker" lang="en" dir="ltr">Free &amp; open-source</p>
       </div>
     </div>
+    <h1>Triez photos et vidéos avec une touche par fichier</h1>
     <p class="lead lead-narrow">Affichez et triez vos médias ; au besoin, le même programme est aussi un serveur de partage de dossiers et un hôte de disques virtuels FileDO - chacun de ces rôles est facultatif et reste désactivé tant que vous ne l'activez pas.</p>
     <p class="lead lead-narrow">Parcourez à toute vitesse d'énormes dossiers de photos et de vidéos, puis déplacez, copiez, renommez ou supprimez chaque fichier d'une seule touche.</p>
     <p class="lead lead-narrow">«Sharing» dans le nom signifie donner vos médias à quelqu'un d'autre : votre téléphone Android, une autre copie du programme ou n'importe quel client SFTP. Désactivé tant que vous ne l'activez pas. <a href="https://serzhyale.github.io/FastMediaSorter_Lite/publish-folders-android.html" lang="en" dir="ltr">Share folders to Android over SFTP</a></p>
@@ -171,6 +173,7 @@
         <a class="btn btn-ghost" id="dl-zip" href="https://github.com/SerZhyAle/FastMediaSorter_Lite/releases/latest">Portable (.zip)</a>
         <a class="btn btn-ghost btn-sm" href="https://github.com/SerZhyAle/FastMediaSorter_Lite/releases/latest">All releases</a>
         <a class="btn btn-ghost btn-sm" href="https://apps.microsoft.com/detail/9N59Z73WZ53C" target="_blank" rel="noopener"><span>Microsoft Store</span></a>
+        <a class="btn btn-ghost btn-sm" href="https://serzhyale.github.io/FastMediaSorter_Lite/server.html">Édition Serveur : partage sans session ouverte (en anglais)</a>
         <span class="dl-meta" id="dlMeta">Offline-ready bundles - VLC runtimes and OCR packs included. Windows 10 1607+ / 11; a 32-bit build for Windows 7/8.1 is in the same download.</span>
       </div>
       <p class="dl-meta">Dans le paquet complet, tout est facultatif et désactivé tant que vous ne l'activez pas : le serveur de partage de dossiers (Share Manager et worker SFTP), l'hébergement de disques virtuels FileDO, les codecs vidéo hors ligne et les modèles OCR. Choisissez le type « Compact » pour laisser le serveur de côté.</p>
@@ -178,7 +181,6 @@
         <a href="https://serzhyale.github.io/FastMediaSorter_Lite/lang/fr/trust.html">Pourquoi Windows met en garde à propos de ce téléchargement</a>
       </p>
       <p class="note">Cette page et l'interface française sont des traductions automatiques non relues. Les corrections sont les bienvenues.</p>
-      <p><a href="https://serzhyale.github.io/FastMediaSorter_Lite/server.html">Édition Serveur : partage sans session ouverte (en anglais)</a></p>
     </div>
   </section>
 
@@ -226,6 +228,10 @@
       <article class="card">
         <h3>Partagez des dossiers via SFTP</h3>
         <p>Publiez les dossiers de votre choix via SFTP et ouvrez-les dans l'application Android - ou dans n'importe quel client SFTP. Désactivé tant que vous ne l'activez pas.</p>
+      </article>
+      <article class="card">
+        <h3>Diffusions pour StreamsPlayer</h3>
+        <p>Dans le lecteur 64 bits, faites un clic droit sur une vidéo, un fichier audio ou son dossier et choisissez la diffusion. Share Manager exporte un fichier .spres, un code QR ou un lien rapide pour StreamsPlayer. Un dossier devient un canal avec une liste figée ; Actualiser remplace la liste et Révoquer désactive le lien. La passerelle HTTP a son propre interrupteur, désactivé par défaut. Chaque jeton permet seulement de lire une diffusion, normalement pendant 24 heures. HTTP n’est pas chiffré : partagez le document en privé et activez internet seulement si nécessaire.</p>
       </article>
       <article class="card">
         <h3>Annuler, et une vraie Corbeille</h3>

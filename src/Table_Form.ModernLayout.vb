@@ -455,6 +455,7 @@ Partial Public Class Table_Form
         modernSettingsShell.BringToFront()
 
         AddHandler Tab_Control.SelectedIndexChanged, AddressOf ModernSettingsTabChanged
+        AddHandler Tab_Control.Selecting, AddressOf ModernSettingsTabSelecting
         AddHandler Tab_Control.Deselecting, Sub(sender, e) CaptureSettingsPage(e.TabPage)
         AddHandler modernSettingsContent.Resize, AddressOf ModernSettingsContentResized
         AddHandler VisibleChanged, AddressOf ModernSettingsVisibleChanged
@@ -571,12 +572,19 @@ Partial Public Class Table_Form
         If meaning Is Nothing OrElse String.IsNullOrEmpty(meaning.GlyphId) Then Return
         Dim tier As Integer = Sp(20)
         Dim gap As Integer = Sp(10)
+        Dim ink As Color = SettingsNavIconPalette.ResolveInk(button.Name, settingsDarkMode,
+            {button.BackColor, button.FlatAppearance.MouseOverBackColor, button.FlatAppearance.MouseDownBackColor},
+            button.ForeColor, SystemInformation.HighContrast)
+        ' The picture is a function of the glyph, its size, the gap and the resolved ink and of nothing else: a
+        ' page switch changes the ink of two rows, so the other nine keep the bitmap they have (WINDOWS-UI
+        ' section 5, amended 0.2 - the page switch does only the work the switch needs).
+        Dim stamp As String = meaning.GlyphId & ":" & tier.ToString(Globalization.CultureInfo.InvariantCulture) & ":" &
+            gap.ToString(Globalization.CultureInfo.InvariantCulture) & ":" & ink.ToArgb().ToString(Globalization.CultureInfo.InvariantCulture)
+        Dim previousStamp As String = Nothing
+        If button.Image IsNot Nothing AndAlso modernNavGlyphStamps.TryGetValue(button, previousStamp) AndAlso previousStamp = stamp Then Return
         Dim padded As New Bitmap(tier + gap, tier)
         Try
             padded.SetResolution(96.0F, 96.0F)
-            Dim ink As Color = SettingsNavIconPalette.ResolveInk(button.Name, settingsDarkMode,
-                {button.BackColor, button.FlatAppearance.MouseOverBackColor, button.FlatAppearance.MouseDownBackColor},
-                button.ForeColor, SystemInformation.HighContrast)
             Using glyph As Bitmap = GlyphRenderer.Render(meaning.GlyphId, tier, ink, AddressOf RuntimeBootstrap.OpenBundledAsset)
                 Using g As Graphics = Graphics.FromImage(padded)
                     g.DrawImageUnscaled(glyph, 0, 0)
@@ -588,8 +596,12 @@ Partial Public Class Table_Form
         End Try
         Dim previous As Image = button.Image
         button.Image = padded
+        modernNavGlyphStamps(button) = stamp
         If previous IsNot Nothing Then previous.Dispose()
     End Sub
+
+    ''' <summary>What each navigation picture was drawn from (<see cref="RenderModernNavGlyph"/>).</summary>
+    Private ReadOnly modernNavGlyphStamps As New Dictionary(Of Button, String)()
 
     Private Sub BuildExtraModernSettingsPages()
         modernGeneralPage = New TabPage With {.Name = "Tab_Page_General", .Text = "General"}
@@ -615,13 +627,49 @@ Partial Public Class Table_Form
         If index >= 0 AndAlso index < Tab_Control.TabCount Then Tab_Control.SelectedIndex = index
     End Sub
 
+    ' The opt-in timing of FMS_UI_TIMING=1 (UiTiming, WINDOWS-UI section 9 amended 0.2): the page switch starts at
+    ' Selecting - the one event every way of changing the page raises - and is reported at the next idle moment
+    ' after the tab has changed. Zero unless the switch is on.
+    Private pageSwitchStarted As Long
+    Private ReadOnly pagesShownBefore As New HashSet(Of TabPage)()
+
+    ''' <summary>Set by the viewer when it asks for this window to be opened (0 unless FMS_UI_TIMING=1), and
+    ''' consumed by the window's first <c>Shown</c> - so the open is timed from the person's action.</summary>
+    Friend OpenTimingStarted As Long
+
+    Private Sub ModernSettingsTabSelecting(sender As Object, e As TabControlCancelEventArgs)
+        If UiTiming.Enabled Then pageSwitchStarted = UiTiming.Begin()
+    End Sub
+
     Private Sub ModernSettingsTabChanged(sender As Object, e As EventArgs)
+        If UiTiming.Enabled AndAlso pageSwitchStarted <> 0 AndAlso Tab_Control.SelectedTab IsNot Nothing Then
+            Dim shownPage As TabPage = Tab_Control.SelectedTab
+            Dim kind As UiTimingKind = If(pagesShownBefore.Add(shownPage), UiTimingKind.PageFirst, UiTimingKind.PageRepeat)
+            Dim pageName As String = Nothing
+            If Not pageIds.TryGetValue(shownPage, pageName) Then pageName = shownPage.Name
+            UiTiming.CompleteAtIdle("settings/" & pageName, kind, pageSwitchStarted)
+            pageSwitchStarted = 0
+        End If
         If Not restoringSettingsContext AndAlso Tab_Control.SelectedTab Is modernTranslationPage Then OnEnterOcrTab()
-        RefreshModernSettingsHeader()
+        ' The header takes its new page in one pass (WINDOWS-UI section 5, amended 0.2): which tools the page
+        ' has, then its title, subtitle and tool bounds, then the navigation - held, and laid out once.
+        modernSettingsHeader.SuspendLayout()
+        Try
+            UpdateSettingsToolVisibility()
+            RefreshModernSettingsHeader()
+        Finally
+            modernSettingsHeader.ResumeLayout(True)
+        End Try
         ChangeSettingsContextPage()
     End Sub
 
     Private Sub ModernSettingsShown(sender As Object, e As EventArgs)
+        If UiTiming.Enabled Then
+            ' The page the window opens on is part of the window's own time, not a page visit of its own.
+            If Tab_Control.SelectedTab IsNot Nothing Then pagesShownBefore.Add(Tab_Control.SelectedTab)
+            UiTiming.CompleteAtIdle("settings/window", UiTimingKind.Dialog, OpenTimingStarted)
+            OpenTimingStarted = 0
+        End If
         PositionModernSettingsOnOwnerMonitor()
         ' The recipients overlay's edit door (219 §4): one open-at entry, honoured when the
         ' window is shown - a plain open never sees it.
@@ -712,8 +760,20 @@ Partial Public Class Table_Form
 
     Private Sub ModernSettingsContentResized(sender As Object, e As EventArgs)
         CaptureSettingsPage(Tab_Control.SelectedTab)
-        LayoutModernSettingsPages()
+        ' The shown page only. The TabControl resizes every page with the content, and each page's flow
+        ' re-measures itself on ClientSizeChanged (CreateModernPageFlow), so the pages out of sight are
+        ' current already - and a page switch may change the header's height, which comes through here: it
+        ' must not turn into eleven page measurements (WINDOWS-UI section 5, amended 0.2).
+        LayoutShownSettingsPage()
         QueueRestoreSettingsContext()
+    End Sub
+
+    ''' <summary>One layout pass of the page that is on screen - see <see cref="LayoutModernSettingsPage"/>.</summary>
+    Private Sub LayoutShownSettingsPage()
+        If Not modernSettingsBuilt OrElse Tab_Control Is Nothing OrElse Tab_Control.SelectedTab Is Nothing Then Return
+        Dim shown As TabPage = Tab_Control.SelectedTab
+        Dim flow As FlowLayoutPanel = modernPageFlows.FirstOrDefault(Function(candidate) candidate.Parent Is shown)
+        If flow IsNot Nothing Then LayoutModernSettingsPage(flow)
     End Sub
 
     ''' <summary>Selects button caption based on packaged (MSIX) status (057.S14-2).</summary>
@@ -834,7 +894,37 @@ Partial Public Class Table_Form
         End If
     End Sub
 
+    ''' <summary>Runs a rewrite of many rows - text, choices, captions - with the layout of every page and of
+    ''' every group body held, and lays each out once when it is done (WINDOWS-UI section 5, amended 0.2: a page
+    ''' is changed with its layout held and laid out once). Bodies are released first, so each group takes its
+    ''' height from the finished rows once and the page, released last, places the groups once.</summary>
+    Private Sub HoldSettingsPages(change As Action)
+        Dim flows As FlowLayoutPanel() = modernPageFlows.ToArray()
+        Dim bodies As FlowLayoutPanel() = settingsGroups.Values.Select(Function(group) group.Body).ToArray()
+        For Each flow As FlowLayoutPanel In flows
+            flow.SuspendLayout()
+        Next
+        For Each body As FlowLayoutPanel In bodies
+            body.SuspendLayout()
+        Next
+        Try
+            change()
+        Finally
+            For Each body As FlowLayoutPanel In bodies
+                body.ResumeLayout(True)
+            Next
+            For Each flow As FlowLayoutPanel In flows
+                flow.ResumeLayout(True)
+            Next
+        End Try
+    End Sub
+
     Private Sub LocalizeModernSettingRows()
+        HoldSettingsPages(AddressOf RewriteModernSettingRows)
+        LayoutModernSettingsPages()
+    End Sub
+
+    Private Sub RewriteModernSettingRows()
         For Each row As ModernSettingRow In modernSettingsRows
             row.Title.Text = ModernSettingTitle(row.Key)
             If row.Description IsNot Nothing Then row.Description.Text = ModernSettingDescription(row.Key)
@@ -891,7 +981,6 @@ Partial Public Class Table_Form
             If row.Description IsNot Nothing AndAlso toolTip IsNot Nothing Then toolTip.SetToolTip(row.Description, row.Description.Text)
             SizeModernSettingRow(row)
         Next
-        LayoutModernSettingsPages()
     End Sub
 
     Private Shared Function FindModernControls(Of T As Control)(parent As Control) As IEnumerable(Of T)
@@ -1356,6 +1445,26 @@ Partial Public Class Table_Form
     ''' and is recomputed here from the widest editor it has to hold
     ''' (127 §3.1.3), before the groups pass it down to their rows.</summary>
     Private Sub ResizeModernPageItems(flow As FlowLayoutPanel)
+        ' One layout pass (WINDOWS-UI section 5, amended 0.2): every row is sized with the page and the bodies
+        ' of its groups held, and each is laid out once afterwards - a body first (its group measures the
+        ' finished rows once and takes its height), the page last. Row by row with the layout live, each
+        ' height change re-measured the body, its group and the page again.
+        Dim held As SettingsCollapsibleGroup() = flow.Controls.OfType(Of SettingsCollapsibleGroup)().ToArray()
+        flow.SuspendLayout()
+        For Each group As SettingsCollapsibleGroup In held
+            group.Body.SuspendLayout()
+        Next
+        Try
+            SizeModernPageItems(flow)
+        Finally
+            For Each group As SettingsCollapsibleGroup In held
+                group.Body.ResumeLayout(True)
+            Next
+            flow.ResumeLayout(True)
+        End Try
+    End Sub
+
+    Private Sub SizeModernPageItems(flow As FlowLayoutPanel)
         Dim width As Integer = Math.Max(1, flow.ClientSize.Width - flow.Padding.Horizontal - Sp(18))
         Dim widestEditor As Integer = 0
         For Each row As ModernSettingRow In modernSettingsRows
@@ -1667,6 +1776,9 @@ Partial Public Class Table_Form
     Private Sub SizeModernSettingRow(row As ModernSettingRow)
         If row.Description Is Nothing OrElse row.Arranging Then Return
         row.Arranging = True
+        ' The row places its caption, hint, editor and unit by explicit rectangles: its own layout is held while
+        ' it does (WINDOWS-UI section 5, amended 0.2), and nothing is left to perform - one row, no passes.
+        row.Host.SuspendLayout()
         Try
             Dim host As Panel = DirectCast(row.Host, Panel)
             Dim hostWidth As Integer = host.ClientSize.Width
@@ -1736,6 +1848,7 @@ Partial Public Class Table_Form
                 host.Height = Math.Max(row.Description.Bottom + Sp(7), editor.Top + editor.Height + Sp(8))
             End If
         Finally
+            row.Host.ResumeLayout(False)
             row.Arranging = False
         End Try
     End Sub
@@ -1844,7 +1957,9 @@ Partial Public Class Table_Form
         AddInformationBlock(flow, "resources_intro")
 
         resourcesPanel = New Resource_List_Panel(settingsScale, withPrimaryOpen:=True, deviceScale:=True,
-                                                 openShareManager:=Sub() Main_Form.OpenShareManagerWindow()) With {
+                                                 openShareManager:=Sub() Main_Form.OpenShareManagerWindow(),
+                                                 shareInstalledProbe:=AddressOf Main_Form.ShareComponentInstalled,
+                                                 scanPhoneCodeCamera:=Sub() Main_Form.ActivateShareEntryPoint(True, True, True)) With {
             .Dock = DockStyle.Fill, .Tag = "modern:full", .BackColor = SettingsSurface}
         AddHandler resourcesPanel.ResourcesChanged,
             Sub(removedIds As IReadOnlyList(Of String))
@@ -2418,28 +2533,49 @@ Partial Public Class Table_Form
         Next
     End Sub
 
+    ''' <summary>Every page, one pass each - for what changes every page at once: the first build, a DPI change,
+    ''' a language switch, the window's width, opening the window again. A page switch and a group toggle do NOT
+    ''' come through here: they touch one page, and lay out that page only (<see cref="LayoutModernSettingsPage"/>;
+    ''' <c>SettingsLayoutPassTests</c> holds both entry points to it).</summary>
     Private Sub LayoutModernSettingsPages()
         If Not modernSettingsBuilt OrElse Tab_Control Is Nothing Then Return
         For Each flow As FlowLayoutPanel In modernPageFlows
-            ResizeModernPageItems(flow)
-            ' WinForms can retain the old horizontal extent after a font/language or width
-            ' change, even though every current group fits. Recompute it without losing Y.
-            If flow.HorizontalScroll.Visible Then
-                Dim offset = flow.AutoScrollPosition.Y
-                Dim wasRestoring = restoringSettingsContext
-                restoringSettingsContext = True
-                Try
-                    flow.AutoScroll = False
-                    ResizeModernPageItems(flow)
-                    flow.AutoScroll = True
-                    ResizeModernPageItems(flow)
-                    flow.PerformLayout()
-                    flow.AutoScrollPosition = New Point(0, Math.Max(0, -offset))
-                Finally
-                    restoringSettingsContext = wasRestoring
-                End Try
-            End If
+            LayoutModernSettingsPage(flow)
         Next
+    End Sub
+
+    ''' <summary>One page, one layout pass (WINDOWS-UI section 5, amended 0.2): the rows are sized with the page
+    ''' held (<see cref="ResizeModernPageItems"/>), and the remembered scroll position is only ever restored by
+    ''' the caller AFTER this returns, from the finished layout. The pages that are not shown are not touched:
+    ''' nothing that happened since they were last laid out can have changed them (every cause that reaches
+    ''' all pages - width, DPI, language - goes through <see cref="LayoutModernSettingsPages"/>), and each is
+    ''' laid out when it is shown.</summary>
+    Private Sub LayoutModernSettingsPage(flow As FlowLayoutPanel)
+        If flow Is Nothing OrElse Not modernSettingsBuilt Then Return
+        ResizeModernPageItems(flow)
+        ' WinForms can retain the old horizontal extent after a font/language or width
+        ' change, even though every current group fits. Recompute it without losing Y.
+        If flow.HorizontalScroll.Visible Then
+            Dim offset = flow.AutoScrollPosition.Y
+            Dim wasRestoring = restoringSettingsContext
+            restoringSettingsContext = True
+            Try
+                flow.AutoScroll = False
+                ResizeModernPageItems(flow)
+                flow.AutoScroll = True
+                ResizeModernPageItems(flow)
+                flow.PerformLayout()
+                flow.AutoScrollPosition = New Point(0, Math.Max(0, -offset))
+            Finally
+                restoringSettingsContext = wasRestoring
+            End Try
+        End If
+        ' The settling pass. A vertical scrollbar that appears or goes away narrows or widens the page in the
+        ' MIDDLE of its own layout, and the rows re-wrap at once (ClientSizeChanged, above); WinForms finishes the
+        ' outer pass from the extent it had measured before that, so the scroll range of a page whose content
+        ' has just changed height can come out a few rows short. One pass from here, outside any layout, measures
+        ' the final heights; it is cheap because every size is already final.
+        flow.PerformLayout()
     End Sub
 End Class
 #End If

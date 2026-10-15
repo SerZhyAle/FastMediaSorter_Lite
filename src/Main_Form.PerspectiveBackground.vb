@@ -91,94 +91,16 @@ Partial Public Class Main_Form
         End Try
     End Sub
 
-    Private Function CheckCornerColorsAndSetBeginPoint(list_of_corner_colors As List(Of System.Drawing.Color)) As Long
-
-        Dim corner_colors_Count As Integer = list_of_corner_colors.Count
-        If corner_colors_Count > percent_of_color_smooth_To_Remove Then
-            Dim color_Trim_Count As Integer = CInt(Math.Floor(corner_colors_Count * percent_of_color_smooth_To_Remove / 100))
-
-            ' Prepare sorted lists for each channel
-            Dim sorted_R = list_of_corner_colors.Select(Function(c) CInt(c.R)).OrderBy(Function(v) v).ToList()
-            Dim sorted_G = list_of_corner_colors.Select(Function(c) CInt(c.G)).OrderBy(Function(v) v).ToList()
-            Dim sorted_B = list_of_corner_colors.Select(Function(c) CInt(c.B)).OrderBy(Function(v) v).ToList()
-
-            ' Remove bottom and top 10%
-            sorted_R = sorted_R.Skip(color_Trim_Count).Take(sorted_R.Count - 2 * color_Trim_Count).ToList()
-            sorted_G = sorted_G.Skip(color_Trim_Count).Take(sorted_G.Count - 2 * color_Trim_Count).ToList()
-            sorted_B = sorted_B.Skip(color_Trim_Count).Take(sorted_B.Count - 2 * color_Trim_Count).ToList()
-
-            ' Calculate min, max, and diffSum on trimmed lists
-            Dim maxR As Integer = sorted_R.Max()
-            Dim minR As Integer = sorted_R.Min()
-            Dim maxG As Integer = sorted_G.Max()
-            Dim minG As Integer = sorted_G.Min()
-            Dim maxB As Integer = sorted_B.Max()
-            Dim minB As Integer = sorted_B.Min()
-
-            Return (maxR - minR) + (maxG - minG) + (maxB - minB)
-
-        Else
-            ' Fallback to original logic if not enough data
-            Dim maxR As Integer = list_of_corner_colors.Max(Function(c) CInt(c.R))
-            Dim maxG As Integer = list_of_corner_colors.Max(Function(c) CInt(c.G))
-            Dim maxB As Integer = list_of_corner_colors.Max(Function(c) CInt(c.B))
-
-            Dim minR As Integer = list_of_corner_colors.Min(Function(c) CInt(c.R))
-            Dim minG As Integer = list_of_corner_colors.Min(Function(c) CInt(c.G))
-            Dim minB As Integer = list_of_corner_colors.Min(Function(c) CInt(c.B))
-
-            Return (maxR - minR) + (maxG - minG) + (maxB - minB)
-        End If
-
-    End Function
-
-    Private Function SmoothColorList(colors As List(Of Color), radius As Integer) As List(Of Color)
-        If radius < 1 OrElse colors.Count < 3 Then Return colors
-        Dim result As New List(Of Color)(colors.Count)
-        For i As Integer = 0 To colors.Count - 1
-            Dim r_sum As Integer = 0, g_sum As Integer = 0, b_sum As Integer = 0
-            Dim j_start As Integer = Math.Max(0, i - radius)
-            Dim j_end As Integer = Math.Min(colors.Count - 1, i + radius)
-            For j As Integer = j_start To j_end
-                r_sum += colors(j).R
-                g_sum += colors(j).G
-                b_sum += colors(j).B
-            Next
-            Dim count As Integer = j_end - j_start + 1
-            result.Add(Color.FromArgb(255, r_sum \ count, g_sum \ count, b_sum \ count))
-        Next
-        Return result
-    End Function
+    ' The arithmetic of the bars - which axis, the fitted rectangle, the sampled edge, the spread and
+    ' the uniform-or-perspective decision, the trimmed mean, the smoothing, the bands and the seam -
+    ' lives once in LetterboxFillMath (LETTERBOX-BARS 0.1 rules 1-7, held to the catalog's vectors by
+    ' LetterboxFillConformanceTests). This file keeps only the GDI+ glue that paints what it returns.
 
     Private Function GetEdgeSampleDepth(scale As Double, sourceSize As Integer) As Integer
         Dim safeScale As Double = Math.Max(scale, 0.0001)
         Dim scaledSampleDepth As Integer = CInt(Math.Ceiling(1.0 / safeScale))
         Dim maxDepth As Integer = Math.Min(sourceSize, 8)
         Return Math.Min(Math.Max(scaledSampleDepth, 2), maxDepth)
-    End Function
-
-    Private Function GetTrimmedChannelAverage(channelValues As IEnumerable(Of Integer)) As Integer
-        Dim sortedValues = channelValues.OrderBy(Function(v) v).ToList()
-        If sortedValues.Count = 0 Then Return 0
-
-        Dim trimCount As Integer = CInt(Math.Floor(sortedValues.Count * percent_of_color_smooth_To_Remove / 100.0))
-        Dim maxAllowedTrim As Integer = Math.Max(0, (sortedValues.Count - 1) \ 2)
-        trimCount = Math.Min(trimCount, maxAllowedTrim)
-
-        Dim trimmedValues = sortedValues.Skip(trimCount).Take(sortedValues.Count - 2 * trimCount).ToList()
-        If trimmedValues.Count = 0 Then trimmedValues = sortedValues
-
-        Return CInt(Math.Round(trimmedValues.Average()))
-    End Function
-
-    Private Function GetTrimmedAverageColor(colors As List(Of Color)) As Color
-        If colors.Count = 0 Then Return Color.Black
-
-        Dim avgR As Integer = GetTrimmedChannelAverage(colors.Select(Function(c) CInt(c.R)))
-        Dim avgG As Integer = GetTrimmedChannelAverage(colors.Select(Function(c) CInt(c.G)))
-        Dim avgB As Integer = GetTrimmedChannelAverage(colors.Select(Function(c) CInt(c.B)))
-
-        Return Color.FromArgb(255, avgR, avgG, avgB)
     End Function
 
     Private Function GetZoomedImageRectangle(sourceWidth As Integer, sourceHeight As Integer, targetWidth As Integer, targetHeight As Integer) As Rectangle
@@ -188,21 +110,9 @@ Partial Public Class Main_Form
         ' its bars from FitBounds put their edges inside those photos.
         Return ZoomMath.PictureBoxZoomBounds(sourceWidth, sourceHeight, New Size(targetWidth, targetHeight))
 #Else
-        If sourceWidth <= 0 OrElse
-            sourceHeight <= 0 OrElse
-            targetWidth <= 0 OrElse
-            targetHeight <= 0 Then
-
-            Return Rectangle.Empty
-        End If
-
-        Dim scale As Double = Math.Min(targetWidth / CDbl(sourceWidth), targetHeight / CDbl(sourceHeight))
-        Dim scaledWidth As Integer = Math.Max(1, Math.Min(targetWidth, CInt(Math.Round(sourceWidth * scale))))
-        Dim scaledHeight As Integer = Math.Max(1, Math.Min(targetHeight, CInt(Math.Round(sourceHeight * scale))))
-        Dim left As Integer = (targetWidth - scaledWidth) \ 2
-        Dim top As Integer = (targetHeight - scaledHeight) \ 2
-
-        Return New Rectangle(left, top, scaledWidth, scaledHeight)
+        ' LETTERBOX-BARS rule 2. The modern branch above reaches the same arithmetic through
+        ' ZoomMath.PictureBoxZoomBounds (the conformance test holds both to the vectors).
+        Return LetterboxFillMath.FitRectangle(sourceWidth, sourceHeight, targetWidth, targetHeight)
 #End If
     End Function
 
@@ -233,21 +143,6 @@ Partial Public Class Main_Form
         Return displayedBitmap
     End Function
 
-    Private Function GetSteppedColors(colors As List(Of Color), stepSize As Integer) As List(Of Color)
-        Dim samples As New List(Of Color)
-        Dim safeStep As Integer = Math.Max(1, stepSize)
-
-        For i As Integer = 0 To colors.Count - 1 Step safeStep
-            samples.Add(colors(i))
-        Next
-
-        If samples.Count = 0 AndAlso colors.Count > 0 Then
-            samples.Add(colors(colors.Count - 1))
-        End If
-
-        Return samples
-    End Function
-
     ' The sampler is made once per frame by the caller (018 U-15) and shared by both edges. It
     ' wraps the displayed bitmap without copying it (see EdgeSampler: a copy costs more than
     ' the reads); Nothing - an unusable bitmap - means no colors, which the painters below
@@ -262,7 +157,7 @@ Partial Public Class Main_Form
         Return sampler.GetDisplayedHorizontalEdgeColors(targetWidth, imageRect, isTopEdge)
     End Function
 
-    Private Function PaintVerticalPerspectiveBackground(g As Graphics, edgeColors As List(Of Color), targetRect As Rectangle, colorDeviationThreshold As Double) As Boolean
+    Private Function PaintVerticalPerspectiveBackground(g As Graphics, edgeColors As List(Of Color), targetRect As Rectangle) As Boolean
         If targetRect.Width <= 0 OrElse
             targetRect.Height <= 0 OrElse
             edgeColors.Count = 0 Then
@@ -270,14 +165,17 @@ Partial Public Class Main_Form
             Return False
         End If
 
-        Dim sampledColors As List(Of Color) = GetSteppedColors(edgeColors, step_size_while_color_Search)
+        ' LETTERBOX-BARS rule 4: sampled colours, spread, uniform or perspective.
+        Dim sampledColors As List(Of Color) = LetterboxFillMath.SteppedColors(edgeColors)
 
-        If CheckCornerColorsAndSetBeginPoint(sampledColors) < colorDeviationThreshold Then
-            Using brush As New SolidBrush(GetTrimmedAverageColor(sampledColors))
+        If LetterboxFillMath.ModeOf(sampledColors) = LetterboxFillMath.LetterboxBandMode.Uniform Then
+            ' Rule 5: one colour, the trimmed mean of the same samples.
+            Using brush As New SolidBrush(LetterboxFillMath.TrimmedMeanColor(sampledColors))
                 g.FillRectangle(brush, targetRect)
             End Using
         Else
-            Dim smoothedColors As List(Of Color) = SmoothColorList(edgeColors, CInt(edgeColors.Count * smoothIndex) + 1)
+            ' Rule 6: the smoothed edge, row by row.
+            Dim smoothedColors As List(Of Color) = LetterboxFillMath.SmoothColors(edgeColors, LetterboxFillMath.SmoothRadius(edgeColors.Count))
 
             For y As Integer = targetRect.Top To targetRect.Bottom - 1
                 Dim colorIndex As Integer = Math.Max(0, Math.Min(y, smoothedColors.Count - 1))
@@ -290,7 +188,7 @@ Partial Public Class Main_Form
         Return True
     End Function
 
-    Private Function PaintHorizontalPerspectiveBackground(g As Graphics, edgeColors As List(Of Color), targetRect As Rectangle, colorDeviationThreshold As Double) As Boolean
+    Private Function PaintHorizontalPerspectiveBackground(g As Graphics, edgeColors As List(Of Color), targetRect As Rectangle) As Boolean
         If targetRect.Width <= 0 OrElse
             targetRect.Height <= 0 OrElse
             edgeColors.Count = 0 Then
@@ -298,14 +196,15 @@ Partial Public Class Main_Form
             Return False
         End If
 
-        Dim sampledColors As List(Of Color) = GetSteppedColors(edgeColors, step_size_while_color_Search)
+        ' LETTERBOX-BARS rules 4-6, the same three steps as the vertical painter (transposed).
+        Dim sampledColors As List(Of Color) = LetterboxFillMath.SteppedColors(edgeColors)
 
-        If CheckCornerColorsAndSetBeginPoint(sampledColors) < colorDeviationThreshold Then
-            Using brush As New SolidBrush(GetTrimmedAverageColor(sampledColors))
+        If LetterboxFillMath.ModeOf(sampledColors) = LetterboxFillMath.LetterboxBandMode.Uniform Then
+            Using brush As New SolidBrush(LetterboxFillMath.TrimmedMeanColor(sampledColors))
                 g.FillRectangle(brush, targetRect)
             End Using
         Else
-            Dim smoothedColors As List(Of Color) = SmoothColorList(edgeColors, CInt(edgeColors.Count * smoothIndex) + 1)
+            Dim smoothedColors As List(Of Color) = LetterboxFillMath.SmoothColors(edgeColors, LetterboxFillMath.SmoothRadius(edgeColors.Count))
 
             For x As Integer = targetRect.Left To targetRect.Right - 1
                 Dim colorIndex As Integer = Math.Max(0, Math.Min(x, smoothedColors.Count - 1))
@@ -361,8 +260,7 @@ Partial Public Class Main_Form
             Is_Pespective AndAlso
             (is_PictureBox1_Visible OrElse
             is_PictureBox2_Visible) AndAlso
-            (Not Is_slide_show_mode Or
-            SlideShowTimer.Interval >= slideshow_limit_to_change_color)
+            LetterboxFillMath.SlideshowAllowsBars(Is_slide_show_mode, SlideShowTimer.Interval)
 
 #If Not NETFRAMEWORK Then
         ' A zoomed picture has no bars: the viewport covers the whole panel, so the
@@ -438,10 +336,11 @@ Partial Public Class Main_Form
 
                 'Try
 
-                Dim bitmap_proportion = (bW + 1.0) / (bH + 1.0)
-                Dim pictureBox_proportion = (w + 1.0) / (h + 1.0)
+                ' LETTERBOX-BARS rule 1: bars exist only when the aspect ratios differ at two
+                ' decimals (half to even); a pillarbox when the image is the narrower one.
+                Dim bars_Axis As LetterboxFillMath.LetterboxAxis = LetterboxFillMath.AxisOf(bW + 1, bH + 1, w + 1, h + 1)
 
-                If Not Math.Round(bitmap_proportion, 2) = Math.Round(pictureBox_proportion, 2) Then
+                If bars_Axis <> LetterboxFillMath.LetterboxAxis.None Then
 
 
                     Dim targetWidth As Integer = w + 1
@@ -461,53 +360,53 @@ Partial Public Class Main_Form
                                 g_bg.Clear(Color.FromArgb(255, Me.BackColor.R, Me.BackColor.G, Me.BackColor.B))
                             End Using
 
-                            Dim color_deviation_threshold As Double = (percent_of_color_deviation / 100) * 255 * 3
-                            Dim edgeOverlap As Integer = 2
-
                             Using displayedBitmap As Bitmap = CreateDisplayedImageBitmap(active_Bitmap, imageRect.Size, Me.BackColor),
                                   edgeSampler As EdgeSampler = EdgeSampler.TryCreate(displayedBitmap)
                                 Using g As Graphics = Graphics.FromImage(Perspective_Bitmap)
                                     g.CompositingMode = Drawing2D.CompositingMode.SourceCopy
 
-                                    If bitmap_proportion < pictureBox_proportion Then
+                                    If bars_Axis = LetterboxFillMath.LetterboxAxis.Pillarbox Then
+                                        ' LETTERBOX-BARS rules 5 and 7: the two bars (each reaches 2 px under the
+                                        ' photo) and the seam bands outside it, in x.
+                                        Dim bands As LetterboxFillMath.LetterboxBands =
+                                            LetterboxFillMath.BarBands(targetWidth, imageRect.Left, imageRect.Width)
+
                                         Dim leftColors As List(Of Color) = GetDisplayedVerticalEdgeColors(edgeSampler, targetHeight, imageRect, True)
                                         Dim rightColors As List(Of Color) = GetDisplayedVerticalEdgeColors(edgeSampler, targetHeight, imageRect, False)
-                                        Dim leftRect As New Rectangle(0, 0, Math.Min(targetWidth, imageRect.Left + edgeOverlap), targetHeight)
-                                        Dim rightStart As Integer = Math.Max(0, imageRect.Right - edgeOverlap)
-                                        Dim rightRect As New Rectangle(rightStart, 0, targetWidth - rightStart, targetHeight)
+                                        Dim leftRect As New Rectangle(bands.NearBarStart, 0, bands.NearBarLength, targetHeight)
+                                        Dim rightRect As New Rectangle(bands.FarBarStart, 0, bands.FarBarLength, targetHeight)
 
-                                        Dim didDrawLeft As Boolean = PaintVerticalPerspectiveBackground(g, leftColors, leftRect, color_deviation_threshold)
-                                        Dim didDrawRight As Boolean = PaintVerticalPerspectiveBackground(g, rightColors, rightRect, color_deviation_threshold)
+                                        Dim didDrawLeft As Boolean = PaintVerticalPerspectiveBackground(g, leftColors, leftRect)
+                                        Dim didDrawRight As Boolean = PaintVerticalPerspectiveBackground(g, rightColors, rightRect)
 
-                                        Dim leftSeamWidth As Integer = Math.Min(edgeOverlap, imageRect.Left)
-                                        If leftSeamWidth > 0 Then
-                                            PaintVerticalSeamBand(g, leftColors, targetHeight, imageRect.Left - leftSeamWidth, leftSeamWidth)
+                                        If bands.NearSeamLength > 0 Then
+                                            PaintVerticalSeamBand(g, leftColors, targetHeight, bands.NearSeamStart, bands.NearSeamLength)
                                         End If
 
-                                        Dim rightSeamWidth As Integer = Math.Min(edgeOverlap, targetWidth - imageRect.Right)
-                                        If rightSeamWidth > 0 Then
-                                            PaintVerticalSeamBand(g, rightColors, targetHeight, imageRect.Right, rightSeamWidth)
+                                        If bands.FarSeamLength > 0 Then
+                                            PaintVerticalSeamBand(g, rightColors, targetHeight, bands.FarSeamStart, bands.FarSeamLength)
                                         End If
 
                                         is_perspective_drown = didDrawLeft OrElse didDrawRight
                                     Else
+                                        ' The same, transposed: the bands in y.
+                                        Dim bands As LetterboxFillMath.LetterboxBands =
+                                            LetterboxFillMath.BarBands(targetHeight, imageRect.Top, imageRect.Height)
+
                                         Dim topColors As List(Of Color) = GetDisplayedHorizontalEdgeColors(edgeSampler, targetWidth, imageRect, True)
                                         Dim bottomColors As List(Of Color) = GetDisplayedHorizontalEdgeColors(edgeSampler, targetWidth, imageRect, False)
-                                        Dim topRect As New Rectangle(0, 0, targetWidth, Math.Min(targetHeight, imageRect.Top + edgeOverlap))
-                                        Dim bottomStart As Integer = Math.Max(0, imageRect.Bottom - edgeOverlap)
-                                        Dim bottomRect As New Rectangle(0, bottomStart, targetWidth, targetHeight - bottomStart)
+                                        Dim topRect As New Rectangle(0, bands.NearBarStart, targetWidth, bands.NearBarLength)
+                                        Dim bottomRect As New Rectangle(0, bands.FarBarStart, targetWidth, bands.FarBarLength)
 
-                                        Dim didDrawTop As Boolean = PaintHorizontalPerspectiveBackground(g, topColors, topRect, color_deviation_threshold)
-                                        Dim didDrawBottom As Boolean = PaintHorizontalPerspectiveBackground(g, bottomColors, bottomRect, color_deviation_threshold)
+                                        Dim didDrawTop As Boolean = PaintHorizontalPerspectiveBackground(g, topColors, topRect)
+                                        Dim didDrawBottom As Boolean = PaintHorizontalPerspectiveBackground(g, bottomColors, bottomRect)
 
-                                        Dim topSeamHeight As Integer = Math.Min(edgeOverlap, imageRect.Top)
-                                        If topSeamHeight > 0 Then
-                                            PaintHorizontalSeamBand(g, topColors, targetWidth, imageRect.Top - topSeamHeight, topSeamHeight)
+                                        If bands.NearSeamLength > 0 Then
+                                            PaintHorizontalSeamBand(g, topColors, targetWidth, bands.NearSeamStart, bands.NearSeamLength)
                                         End If
 
-                                        Dim bottomSeamHeight As Integer = Math.Min(edgeOverlap, targetHeight - imageRect.Bottom)
-                                        If bottomSeamHeight > 0 Then
-                                            PaintHorizontalSeamBand(g, bottomColors, targetWidth, imageRect.Bottom, bottomSeamHeight)
+                                        If bands.FarSeamLength > 0 Then
+                                            PaintHorizontalSeamBand(g, bottomColors, targetWidth, bands.FarSeamStart, bands.FarSeamLength)
                                         End If
 
                                         is_perspective_drown = didDrawTop OrElse didDrawBottom
@@ -526,7 +425,7 @@ Partial Public Class Main_Form
                                 halo_Took_Over = TryStartPerspectiveHalo(Perspective_Bitmap,
                                                                         imageRect,
                                                                         active_PictureBox_Index,
-                                                                        bitmap_proportion < pictureBox_proportion,
+                                                                        bars_Axis = LetterboxFillMath.LetterboxAxis.Pillarbox,
                                                                         animate_This_Draw)
 #End If
                                 If Not halo_Took_Over Then

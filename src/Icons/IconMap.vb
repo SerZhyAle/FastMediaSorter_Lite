@@ -1,4 +1,4 @@
-﻿#If Not NETFRAMEWORK Then
+#If Not NETFRAMEWORK Then
 Option Strict On
 
 Imports System.Collections.Generic
@@ -110,6 +110,7 @@ Public Module IconMap
         {"managerSettingsNav_hosting", New IconMeaning("managerSettingsNav_hosting", "system.internet", "Сеть", IconRole.Content, surface:=SM)},
         {"managerSettingsNav_exchange", New IconMeaning("managerSettingsNav_exchange", "system.internet", "Сеть", IconRole.Content, surface:=SM)},
         {"managerSettingsNav_exchange-account", New IconMeaning("managerSettingsNav_exchange-account", "device.phone", "Android / SFTP", IconRole.Content, surface:=SM)},
+        {"managerSettingsNav_scheduled", New IconMeaning("managerSettingsNav_scheduled", "action.run", "Файловые операции по расписанию", IconRole.Content, surface:=SM)},
         {"managerSettingsNav_help", New IconMeaning("managerSettingsNav_help", "app.info", "О программе", IconRole.Content, surface:=SM)},
         {"managerSettingsSearch", New IconMeaning("managerSettingsSearch", "action.search", "Поиск настроек", IconRole.Content, surface:=SM)},
         {"btnShare", New IconMeaning("btnShare", "action.share", "Поделиться", IconRole.Content, surface:=SM)},

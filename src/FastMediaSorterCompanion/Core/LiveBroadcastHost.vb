@@ -43,7 +43,27 @@ Public Module LiveBroadcastHost
                                      Return New ScreenCaptureSource(sourceSettings.ScreenMonitorIndex, sourceSettings.ScreenCursor)
                                  End Function,
             .ClockMs = AddressOf MonotonicClock.NowMs,
-            .NewToken = AddressOf LiveProducerTokens.NewToken
+            .NewToken = AddressOf LiveProducerTokens.NewToken,
+            .NewId = AddressOf LiveProducerTokens.NewId,
+            .ExchangeEndpointInfo = Function()
+                                        Dim agent As ExchangeDeviceAgent = ExchangeDeviceHost.Current
+                                        If agent Is Nothing Then Return Nothing
+                                        Dim status As ExchangeDeviceStatus = agent.GetStatus()
+                                        If status Is Nothing OrElse String.IsNullOrEmpty(status.PublicEndpoint) Then Return Nothing
+                                        Return Tuple.Create(status.PublicEndpoint, status.Fingerprint)
+                                    End Function,
+            .BroadcastStarted = Sub(state, audioHub, videoHub)
+                                    Dim agent As ExchangeDeviceAgent = ExchangeDeviceHost.Current
+                                    If agent IsNot Nothing Then
+                                        agent.OnBroadcastStarted(state, audioHub, videoHub)
+                                    End If
+                                End Sub,
+            .BroadcastStopped = Sub(broadcastId)
+                                    Dim agent As ExchangeDeviceAgent = ExchangeDeviceHost.Current
+                                    If agent IsNot Nothing Then
+                                        agent.OnBroadcastStopped(broadcastId)
+                                    End If
+                                End Sub
         }
     End Function
 

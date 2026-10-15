@@ -1,4 +1,4 @@
-﻿#If Not NETFRAMEWORK Then
+#If Not NETFRAMEWORK Then
 Option Strict On
 
 Imports System.Collections.Generic
@@ -31,6 +31,12 @@ Friend NotInheritable Class ResourceDescriptor
     Public Property SecretHandle As String = ""
     <JsonIgnore(Condition:=JsonIgnoreCondition.WhenWritingDefault)>
     Public Property PinRequired As Boolean
+    ''' <summary>Names the DPAPI blob of the stored root access PIN (spec 228 rule 8); never the PIN itself.</summary>
+    <JsonIgnore(Condition:=JsonIgnoreCondition.WhenWritingNull)>
+    Public Property PinSecretHandle As String
+    ''' <summary>True when the stored PIN stopped working (auth failure); unattended operations stop at the wall and never retry (spec 228 rule 8).</summary>
+    <JsonIgnore(Condition:=JsonIgnoreCondition.WhenWritingDefault)>
+    Public Property PinChanged As Boolean
     <JsonIgnore(Condition:=JsonIgnoreCondition.WhenWritingDefault)>
     Public Property ProtectionUnsupported As Boolean
     ''' <summary>The SSH host key this resource is pinned to, canonical <c>SHA256:..</c>, or ""
@@ -130,6 +136,8 @@ Friend Module ResourceOrigin
         built.TunnelSecretHandle = source.TunnelSecretHandle
         built.TunnelPin = source.TunnelPin
         built.PinRequired = source.PinRequired
+        built.PinSecretHandle = source.PinSecretHandle
+        built.PinChanged = source.PinChanged
         built.ProtectionUnsupported = source.ProtectionUnsupported
     End Sub
 
@@ -445,26 +453,213 @@ Friend Module ResourceRegistry
     ''' <summary>The hive value the list lives under. Friend so a host that takes an injected
     ''' hive reader (the resource panel's tests) can name the same value the real Load reads.</summary>
     Friend Const Value_Name As String = "Resources"
+    ''' <summary>Backup created before the first duplicate merge under spec 228 (T-1).</summary>
+    Friend Const PreMerge_Value_Name As String = "Resources.premerge.bak"
 
     Friend Function Load() As List(Of ResourceDescriptor)
-        Dim raw As String = Microsoft.VisualBasic.Interaction.GetSetting(App_name, Second_App_Name, Value_Name, "[]")
+        Return Load(AddressOf HiveRead, AddressOf HiveWrite)
+    End Function
+
+    Friend Function Load(readValue As Func(Of String, String), writeValue As Action(Of String, String)) As List(Of ResourceDescriptor)
+        Dim raw As String = readValue(Value_Name)
+        If String.IsNullOrEmpty(raw) Then raw = "[]"
         Dim lossy As Boolean
         Dim result As List(Of ResourceDescriptor) = ParseStored(raw, lossy)
         
         ' If parsing was lossy, try to restore from backup (057.S07-9)
         If lossy Then
-            Dim backup As String = Microsoft.VisualBasic.Interaction.GetSetting(App_name, Second_App_Name, Value_Name & ".bak", "")
+            Dim backup As String = readValue(Value_Name & ".bak")
             If Not String.IsNullOrEmpty(backup) AndAlso Not String.Equals(backup, raw, StringComparison.Ordinal) Then
-                ' Restore from backup and retry parsing
                 lossy = False
                 result = ParseStored(backup, lossy)
                 If Not lossy Then
-                    ' Backup was good, save it back to the main value for next time
-                    Microsoft.VisualBasic.Interaction.SaveSetting(App_name, Second_App_Name, Value_Name, backup)
+                    writeValue(Value_Name, backup)
                 End If
             End If
         End If
+
+        ' Spec 228 rule 1: Merge proven duplicates, creating premerge backup before first merge
+        Dim merged As List(Of ResourceDescriptor) = MergeDuplicates(result)
+        If merged.Count < result.Count Then
+            Dim premergeBackup As String = readValue(PreMerge_Value_Name)
+            If String.IsNullOrEmpty(premergeBackup) Then
+                writeValue(PreMerge_Value_Name, raw)
+            End If
+            Save(merged, readValue, writeValue)
+            result = merged
+        End If
         
+        Return result
+    End Function
+
+    ''' <summary>Restores the pre-merge backup created by duplicate merging under spec 228 (T-1).</summary>
+    Friend Function RestorePreMergeBackup(readValue As Func(Of String, String), writeValue As Action(Of String, String)) As Boolean
+        Dim backup As String = readValue(PreMerge_Value_Name)
+        If String.IsNullOrEmpty(backup) Then Return False
+        Dim lossy As Boolean
+        Dim restored As List(Of ResourceDescriptor) = ParseStored(backup, lossy)
+        If lossy Then Return False
+        Save(restored, readValue, writeValue)
+        Return True
+    End Function
+
+    Friend Function RestorePreMergeBackup() As Boolean
+        Return RestorePreMergeBackup(AddressOf HiveRead, AddressOf HiveWrite)
+    End Function
+
+    Private Function NormalizeRootPath(p As String) As String
+        If String.IsNullOrEmpty(p) Then Return "/"
+        Dim s As String = p.Replace("\"c, "/"c).Trim()
+        If Not s.StartsWith("/"c) Then s = "/" & s
+        If s.Length > 1 AndAlso s.EndsWith("/"c) Then s = s.TrimEnd("/"c)
+        Dim canonical As String = FmsConfigReader.CanonicalVirtualPath(s)
+        Return If(canonical, s)
+    End Function
+
+    ''' <summary>
+    ''' Spec 228 rule 1: Proves whether two resource descriptors are the same resource.
+    ''' Identity is the producer's host-key fingerprint plus root path, or matching ExchangeResourceId + ExchangeEntryId.
+    ''' If proof cannot be established, returns False (VERSIONING.md 4.5: absence is not authority).
+    ''' </summary>
+    Friend Function CanProveSameResource(a As ResourceDescriptor, b As ResourceDescriptor) As Boolean
+        If a Is Nothing OrElse b Is Nothing Then Return False
+        If Object.ReferenceEquals(a, b) Then Return True
+        If a.Kind <> b.Kind Then Return False
+
+        If a.Kind = ResourceKind.Sftp Then
+            ' Fingerprint + Canonical Root Path match
+            If Not String.IsNullOrEmpty(a.PinnedFingerprint) AndAlso Not String.IsNullOrEmpty(b.PinnedFingerprint) AndAlso
+               String.Equals(a.PinnedFingerprint, b.PinnedFingerprint, StringComparison.OrdinalIgnoreCase) Then
+                Dim pathA As String = NormalizeRootPath(a.RootPath)
+                Dim pathB As String = NormalizeRootPath(b.RootPath)
+                If Not String.IsNullOrEmpty(pathA) AndAlso String.Equals(pathA, pathB, StringComparison.Ordinal) Then
+                    Return True
+                End If
+            End If
+
+            ' ExchangeResourceId + ExchangeEntryId match
+            If Not String.IsNullOrEmpty(a.ExchangeResourceId) AndAlso Not String.IsNullOrEmpty(b.ExchangeResourceId) AndAlso
+               String.Equals(a.ExchangeResourceId, b.ExchangeResourceId, StringComparison.Ordinal) AndAlso
+               String.Equals(If(a.ExchangeEntryId, ""), If(b.ExchangeEntryId, ""), StringComparison.Ordinal) Then
+                Return True
+            End If
+
+            Return False
+        ElseIf a.Kind = ResourceKind.Unc OrElse a.Kind = ResourceKind.Smb Then
+            Return String.Equals(a.RootPath, b.RootPath, StringComparison.OrdinalIgnoreCase)
+        End If
+
+        Return False
+    End Function
+
+    ''' <summary>
+    ''' Merges an incoming proven duplicate into the target descriptor, preserving the person's name,
+    ''' read-only choice, and accumulating all connection channels/endpoints.
+    ''' </summary>
+    Friend Sub MergeInto(target As ResourceDescriptor, incoming As ResourceDescriptor)
+        If target Is Nothing OrElse incoming Is Nothing OrElse Object.ReferenceEquals(target, incoming) Then Return
+
+        ' Preserves user's name: keep target's if non-empty, otherwise take incoming
+        If String.IsNullOrWhiteSpace(target.DisplayName) AndAlso Not String.IsNullOrWhiteSpace(incoming.DisplayName) Then
+            target.DisplayName = incoming.DisplayName
+        End If
+
+        ' Read-only is the consumer's choice, identical on every channel (rule 7)
+        target.ReadOnlyHint = target.ReadOnlyHint Or incoming.ReadOnlyHint
+
+        ' Protection / PIN fields
+        target.PinRequired = target.PinRequired Or incoming.PinRequired
+        If String.IsNullOrEmpty(target.PinSecretHandle) AndAlso Not String.IsNullOrEmpty(incoming.PinSecretHandle) Then
+            target.PinSecretHandle = incoming.PinSecretHandle
+        End If
+        target.PinChanged = target.PinChanged Or incoming.PinChanged
+        target.ProtectionUnsupported = target.ProtectionUnsupported And incoming.ProtectionUnsupported
+
+        ' Pinned host key fingerprint
+        If String.IsNullOrEmpty(target.PinnedFingerprint) AndAlso Not String.IsNullOrEmpty(incoming.PinnedFingerprint) Then
+            target.PinnedFingerprint = incoming.PinnedFingerprint
+        End If
+
+        ' Credential
+        If String.IsNullOrEmpty(target.SecretHandle) AndAlso Not String.IsNullOrEmpty(incoming.SecretHandle) Then
+            target.SecretHandle = incoming.SecretHandle
+        End If
+
+        ' Merge Endpoints
+        If target.Endpoints Is Nothing Then target.Endpoints = New List(Of ResourceEndpoint)()
+        
+        ' Ensure incoming's primary address is in endpoints if different
+        If Not String.IsNullOrEmpty(incoming.Host) AndAlso (Not String.Equals(target.Host, incoming.Host, StringComparison.OrdinalIgnoreCase) OrElse target.Port <> incoming.Port) Then
+            AddEndpointUnique(target.Endpoints, New ResourceEndpoint With {.Host = incoming.Host, .Port = incoming.Port, .Kind = "portforward"})
+        End If
+
+        If incoming.Endpoints IsNot Nothing Then
+            For Each ep In incoming.Endpoints
+                AddEndpointUnique(target.Endpoints, ep)
+            Next
+        End If
+
+        ' Exchange fields
+        If String.IsNullOrEmpty(target.ExchangeResourceId) AndAlso Not String.IsNullOrEmpty(incoming.ExchangeResourceId) Then
+            target.Origin = incoming.Origin
+            target.ExchangeResourceId = incoming.ExchangeResourceId
+            target.ExchangeDeviceId = incoming.ExchangeDeviceId
+            target.ExchangeEntryId = incoming.ExchangeEntryId
+            target.ExchangeDeviceName = incoming.ExchangeDeviceName
+            target.ExchangeNotice = incoming.ExchangeNotice
+        End If
+
+        ' Tunnel fields
+        If String.IsNullOrEmpty(target.TunnelHost) AndAlso Not String.IsNullOrEmpty(incoming.TunnelHost) Then
+            target.TunnelHost = incoming.TunnelHost
+            target.TunnelPort = incoming.TunnelPort
+            target.TunnelSecretHandle = incoming.TunnelSecretHandle
+            target.TunnelPin = incoming.TunnelPin
+        End If
+
+        ' Last used & include subfolders
+        If Not target.IncludeSubfolders.HasValue AndAlso incoming.IncludeSubfolders.HasValue Then
+            target.IncludeSubfolders = incoming.IncludeSubfolders
+        End If
+        If incoming.LastUsedUtc.HasValue Then
+            If Not target.LastUsedUtc.HasValue OrElse incoming.LastUsedUtc.Value > target.LastUsedUtc.Value Then
+                target.LastUsedUtc = incoming.LastUsedUtc
+            End If
+        End If
+    End Sub
+
+    Private Sub AddEndpointUnique(endpoints As List(Of ResourceEndpoint), ep As ResourceEndpoint)
+        If ep Is Nothing OrElse String.IsNullOrEmpty(ep.Host) Then Return
+        Dim port As Integer = If(ep.Port > 0, ep.Port, 22)
+        For Each existing In endpoints
+            Dim exPort As Integer = If(existing.Port > 0, existing.Port, 22)
+            If String.Equals(existing.Host, ep.Host, StringComparison.OrdinalIgnoreCase) AndAlso exPort = port Then
+                Return
+            End If
+        Next
+        endpoints.Add(New ResourceEndpoint With {.Kind = ep.Kind, .Host = ep.Host, .Port = port})
+    End Sub
+
+    ''' <summary>
+    ''' Merges any proven duplicate resources in the collection, returning the consolidated list.
+    ''' </summary>
+    Friend Function MergeDuplicates(resources As IEnumerable(Of ResourceDescriptor)) As List(Of ResourceDescriptor)
+        Dim result As New List(Of ResourceDescriptor)()
+        If resources Is Nothing Then Return result
+        For Each item In resources
+            If item Is Nothing Then Continue For
+            Dim merged As Boolean = False
+            For Each existing In result
+                If CanProveSameResource(existing, item) Then
+                    MergeInto(existing, item)
+                    merged = True
+                    Exit For
+                End If
+            Next
+            If Not merged Then
+                result.Add(item)
+            End If
+        Next
         Return result
     End Function
 

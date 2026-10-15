@@ -192,8 +192,9 @@ Public Class ExchangeFirstRunUiTests
     <Fact>
     Public Sub Shut_gate_rejects_the_exchange_frame_and_replay_opens_done_without_writes()
         Isolated(Sub()
-            Environment.SetEnvironmentVariable(ExchangeFeatures.DeveloperSwitchName, Nothing)
-            Assert.Throws(Of InvalidOperationException)(Function() New Server_Welcome_Form(WelcomeHalf.Exchange))
+            Using ExchangeFeatures.ForFlow(offered:=False, switchOn:=False)
+                Assert.Throws(Of InvalidOperationException)(Function() New Server_Welcome_Form(WelcomeHalf.Exchange))
+            End Using
             Environment.SetEnvironmentVariable(ExchangeFeatures.DeveloperSwitchName, "1")
             Dim ports As New Actions()
             Using form As New Server_Welcome_Form(WelcomeHalf.Exchange, ports, ports.Snapshot, replay:=True)

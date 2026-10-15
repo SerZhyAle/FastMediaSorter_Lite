@@ -57,7 +57,7 @@ Friend NotInheritable Class Ask_Dialog
     ''' <summary>A one-line text question.</summary>
     Friend Sub New(question As PromptSpec)
         prompt = question
-        field = New TextBox()
+        field = New TextBox() With {.UseSystemPasswordChar = question.IsPassword}
         Dim buttons As New List(Of AskButton) From {
             New AskButton(question.OkCaption, role:=ButtonGlyphRole.Affirmative),
             New AskButton(Localization.T("Отмена"), role:=ButtonGlyphRole.Dismissing)}

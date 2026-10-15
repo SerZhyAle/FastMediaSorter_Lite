@@ -1,0 +1,33 @@
+INPUT-CHORD token vectors - vendored artifact, not a vendored contract
+======================================================================
+
+What this folder is
+-------------------
+The committed rung 1 vectors of the INPUT-CHORD contract (section 6 of its document: "Token vectors,
+rules 1-4"), copied here so that InputChordConformanceTests can run for anyone who clones this
+repository. A test that depends on a drive letter cannot run for anybody else.
+
+What this folder is NOT
+-----------------------
+A copy of a contract. INPUT-CHORD stays in the shared catalog and is CITED, never duplicated (see
+docs/contracts/INPUT-CONTROLS.md, and the first line of CLAUDE.md for where the catalog lives).
+Copying an artifact so a test can run is a different act from copying a document so a repository can
+disagree with it. This product is a consumer: the owner is CyrFlip, and a disagreement with a vector
+is a dated exception in the registry or a proposal to the owner, never a local edit of this file.
+
+Source
+------
+  contract id  : INPUT-CHORD 0.3 (draft; owner CyrFlip)
+  artifact     : input-controls/vectors/chord-tokens.jsonl, in the shared contracts catalog
+  generator    : CyrFlip's InputChordContractTests (not vendored)
+  rows         : 52 (34 keyboard, 18 mouse); the mouse rows bind nothing in this product
+  taken on     : 2026-10-13
+
+Digest
+------
+The test asserts this before it trusts a byte, so a vector file that changed under us fails loudly
+instead of quietly redefining what "conformant" means. Re-taking the artifact is a deliberate act and
+updates this file, and the test's table of recorded deviations, with it. The bytes are the catalog's
+own (LF, as generated), which is why .gitattributes marks this folder -text.
+
+  SHA-256  10fa0a6ab6a07ab5f8a722884d389e6934ae0a1d465e1eb6e1292a9bfe532a99  chord-tokens.jsonl

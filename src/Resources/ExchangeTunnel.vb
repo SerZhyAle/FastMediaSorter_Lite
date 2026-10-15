@@ -211,7 +211,7 @@ Friend NotInheritable Class ExchangeAccountTunnelSource
         Dim trust As ExchangeTunnelFailure = Await ExchangeTunnelTrust.CheckKnownAsync(_probe, address, account.Pin, ct).ConfigureAwait(False)
         If trust <> ExchangeTunnelFailure.None Then Return ExchangeTunnelOpen.Failed(trust)
 
-        Dim opener As New ExchangeConnectOpener(_transport, address, account.Pin, New ExchangeDeviceCredentials(account.DeviceId, token), _productVersion,
+        Dim opener As New ExchangeConnectOpener(_accounts.TransportFor(account, _transport), address, account.Pin, New ExchangeDeviceCredentials(account.DeviceId, token), _productVersion,
                                                 ExchangeConnectOpener.Target.Resource, _resourceId, "")
         Dim lease As New ExchangeTunnelLease(opener, _idleCloseMs)
         lease.Start()
@@ -255,7 +255,7 @@ Friend NotInheritable Class ExchangeEntryTunnelSource
         Dim trust As ExchangeTunnelFailure = Await ExchangeTunnelTrust.CheckKnownAsync(_probe, address, entry.Pin, ct).ConfigureAwait(False)
         If trust <> ExchangeTunnelFailure.None Then Return ExchangeTunnelOpen.Failed(trust)
 
-        Dim opener As New ExchangeConnectOpener(_transport, address, entry.Pin, New ExchangeDeviceCredentials(entry.DeviceId, token), _productVersion,
+        Dim opener As New ExchangeConnectOpener(_entries.TransportFor(entry, _transport), address, entry.Pin, New ExchangeDeviceCredentials(entry.DeviceId, token), _productVersion,
                                                 ExchangeConnectOpener.Target.Resource, _resourceId, "")
         Dim lease As New ExchangeTunnelLease(opener, _idleCloseMs)
         lease.Start()

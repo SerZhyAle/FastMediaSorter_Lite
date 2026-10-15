@@ -121,6 +121,22 @@ Partial Public Class Main_Form
             Return
         End If
 
+#If Not NETFRAMEWORK Then
+        ' Spec 227 T-3: the Share Manager's relayed phone connection code (or a document path it opened).
+        ' The payload is a secret holder - it is never written anywhere on this side, and the import runs
+        ' through the Resources panel's one door.
+        If argument.StartsWith(PhoneCodeCommandPrefix, StringComparison.Ordinal) Then
+            RestoreMainWindow()
+            OpenPhoneConnectionCode(argument.Substring(PhoneCodeCommandPrefix.Length))
+            Return
+        End If
+        If argument.StartsWith(PhoneCodeFileCommandPrefix, StringComparison.Ordinal) Then
+            RestoreMainWindow()
+            OpenPhoneConnectionCodeFile(argument.Substring(PhoneCodeFileCommandPrefix.Length))
+            Return
+        End If
+#End If
+
         Dim is_Form_Minimized As Boolean = (Me.WindowState = FormWindowState.Minimized)
         Dim prev_Foreground_Window_Handle As IntPtr = IntPtr.Zero
 

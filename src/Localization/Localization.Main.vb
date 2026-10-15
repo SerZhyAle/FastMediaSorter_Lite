@@ -320,6 +320,39 @@ Partial Public NotInheritable Class Localization
             "打开 Share Manager 并把此文件夹共享给 Android")
 
         ' --- video controls / tracks -------------------------------------------
+        Add("Запланировать операцию для этой папки..",
+            "Schedule an operation for this folder..", "Запланувати операцію для цієї теки..",
+            "Vorgang für diesen Ordner planen..", "Pianifica un'operazione per questa cartella..",
+            "Programar una operación para esta carpeta..", "Planifier une opération pour ce dossier..",
+            "Agendar uma operação para esta pasta..", "جدولة عملية لهذا المجلد..",
+            "इस फ़ोल्डर के लिए एक ऑपरेशन शेड्यूल करें..", "এই ফোল্ডারের জন্য একটি অপারেশন নির্ধারণ করুন..",
+            "اس فولڈر کے لیے ایک آپریشن شیڈول کریں..", "为此文件夹安排计划操作..")
+        Add("Открыть Share Manager: новая операция по расписанию с этой папкой в качестве источника",
+            "Open the Share Manager: a new scheduled operation with this folder as the source",
+            "Відкрити Share Manager: нова операція за розкладом із цією текою як джерелом",
+            "Share Manager öffnen: neuer geplanter Vorgang mit diesem Ordner als Quelle",
+            "Apri Share Manager: nuova operazione pianificata con questa cartella come origine",
+            "Abrir Share Manager: nueva operación programada con esta carpeta como origen",
+            "Ouvrir Share Manager : nouvelle opération planifiée avec ce dossier comme source",
+            "Abrir o Share Manager: nova operação agendada com esta pasta como origem",
+            "فتح Share Manager: عملية مجدولة جديدة مع هذا المجلد كمصدر",
+            "Share Manager खोलें: इस फ़ोल्डर को स्रोत बनाकर नया निर्धारित ऑपरेशन",
+            "Share Manager খুলুন: এই ফোল্ডারকে উৎস করে একটি নতুন নির্ধারিত অপারেশন",
+            "Share Manager کھولیں: اس فولڈر کو ماخذ بنا کر نیا طے شدہ آپریشن",
+            "打开 Share Manager：以此文件夹为源的新计划操作")
+        Add("Share Manager старой версии не умеет открывать расписание отсюда. Обновите его.",
+            "An older Share Manager cannot open the schedule from here. Update it.",
+            "Старіша версія Share Manager не вміє відкривати розклад звідси. Оновіть її.",
+            "Eine ältere Version des Share Manager kann den Zeitplan von hier nicht öffnen. Aktualisieren Sie sie.",
+            "Una versione precedente di Share Manager non può aprire la pianificazione da qui. Aggiornala.",
+            "Una versión anterior de Share Manager no puede abrir la programación desde aquí. Actualízala.",
+            "Une ancienne version de Share Manager ne peut pas ouvrir la planification d'ici. Mettez-la à jour.",
+            "Uma versão mais antiga do Share Manager não consegue abrir o agendamento daqui. Atualize-a.",
+            "إصدار أقدم من Share Manager لا يستطيع فتح الجدولة من هنا. قم بتحديثه.",
+            "Share Manager का पुराना संस्करण यहाँ से शेड्यूल नहीं खोल सकता। इसे अपडेट करें।",
+            "Share Manager-এর পুরনো সংস্করণ এখান থেকে সময়সূচি খুলতে পারে না। এটি আপডেট করুন।",
+            "Share Manager کا پرانا ورژن یہاں سے شیڈول نہیں کھول سکتا۔ اسے اپ ڈیٹ کریں۔",
+            "旧版 Share Manager 无法从这里打开计划。请更新它。")
         Add("Перемотка", "Seek", "Перемотування", "Suchlauf", "Ricerca", "Búsqueda", "Recherche",
             "Busca", "التقديم", "सीक", "সিক", "سیک", "进度")
         Add("Воспроизвести", "Play", "Відтворити", "Wiedergeben", "Riproduci", "Reproducir", "Lire", "Reproduzir",

@@ -127,23 +127,6 @@ Partial Public Class Main_Form
         If notify_Toast IsNot Nothing AndAlso Not notify_Toast.IsDisposed Then notify_Toast.DismissNow()
     End Sub
 
-    ''' <summary>Paints the status panel NOW, for the few places that are about to block the UI thread (the container
-    ''' password check): the chrome follows its carrier on a timer tick, and a tick cannot run during the block.</summary>
-    Private Sub ChromeRepaintStatusNow()
-        Try
-            For Each panel As ChromePanel In chrome_Panels
-                For Each pair In panel.Legacy
-                    If pair.Value Is lbl_Status AndAlso SyncChromeItem(pair.Key, pair.Value) Then
-                        panel.Host.Surface.LayoutItems()
-                        panel.Host.Surface.Refresh()
-                    End If
-                Next
-            Next
-        Catch ex As Exception
-            AppFileLogger.LogException("Notify: repainting the status panel", ex)
-        End Try
-    End Sub
-
     ' --- the empty state (UX-209) ---------------------------------------------------------------
 
     ''' <summary>The two lines drawn on the surface while no file is shown; empty when the surface is not empty.</summary>

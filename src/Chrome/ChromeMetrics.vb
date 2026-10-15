@@ -47,9 +47,10 @@ Friend NotInheritable Class ChromeMetrics
     ''' at the start edge (left; right in a right-to-left language) and the top (status: bottom) of the
     ''' media area, the way the docked toolbar did.</summary>
     Public Const PanelEdgeInset As Integer = 0
-    ''' <summary>The glyph of the pin button in a panel's corner (the button itself is a
+    ''' <summary>The glyph of the pin button in a panel's corner - the side of the catalog glyph's 24-unit
+    ''' square, so the push-pin itself inks about 8 x 14 px (the button itself is a
     ''' <see cref="MinTarget"/> wide slot, so the hit target stays at the floor).</summary>
-    Public Const PinGlyphSize As Integer = 12
+    Public Const PinGlyphSize As Integer = 16
     ''' <summary>The visual size of the corner pin button (a small unobtrusive button).</summary>
     Public Const PinButtonSize As Integer = 20
     ''' <summary>How far past a panel the pointer still counts as "near it" - the reveal zone.</summary>
@@ -128,6 +129,10 @@ Friend NotInheritable Class ChromeMetrics
     ''' after the pointer leaves it (117 Ф-1/Ф-2). A fixed number, on purpose NOT the video controls'
     ''' <c>VideoControlsHideDelaySec</c>: the panels stopped borrowing that setting.</summary>
     Public Const PanelHideDelayMilliseconds As Integer = 5000
+    ''' <summary>How long a window must have shown no media before its panels are held up (125 UX-313m). Longer
+    ''' than the gap between two files of different kinds (a picture hands over to a video, a video to a picture),
+    ''' which is a few hundred milliseconds at most - the panels must not flash up on every such switch.</summary>
+    Public Const EmptyWindowHoldDelayMilliseconds As Integer = 700
 
     ' --- the destructive family (the recipients overlay's delete row; one colour = "this destroys") ---
     Public Shared ReadOnly DestructiveRest As Color = Color.FromArgb(96, 32, 32)

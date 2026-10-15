@@ -30,6 +30,12 @@ Friend Class LiveDescriptorInput
     Public Property BitrateBps As Long?
     ''' <summary>Item H (0.16): an endpoints entry gains an optional member channels beside sampleRate.</summary>
     Public Property Channels As Integer?
+    Public Property AllowLanViewers As Boolean = True
+    Public Property RelayUrl As String = ""
+    Public Property TunnelUrl As String = ""
+    Public Property CertFingerprint As String = ""
+    Public Property InnerUrl As String = ""
+    Public Property AuthUser As String = ""
 End Class
 
 Friend NotInheritable Class LiveProducerDescriptorWriter
@@ -38,38 +44,115 @@ Friend NotInheritable Class LiveProducerDescriptorWriter
     End Sub
 
     ''' <summary>The descriptor JSON of section 3, field by field: schemaVersion first, then the required
-    ''' url and mode, then the optional members, then the endpoints array with the one LAN HTTP endpoint.
-    ''' Member names and spellings are the contract's, verified by the round-trip test.</summary>
+    ''' url and mode, then the optional members, then the endpoints array with the endpoints in order:
+    ''' LAN (HTTP) -> RELAY -> TUNNEL. Member names and spellings are the contract's, verified by the
+    ''' round-trip test.</summary>
     Public Shared Function BuildJson(input As LiveDescriptorInput) As String
         If input Is Nothing Then Return ""
-        If String.IsNullOrWhiteSpace(input.Url) OrElse String.IsNullOrWhiteSpace(input.Mode) Then Return ""
+
+        Dim topUrl As String = ""
+        If input.AllowLanViewers AndAlso Not String.IsNullOrWhiteSpace(input.Url) Then
+            topUrl = input.Url
+        ElseIf Not String.IsNullOrWhiteSpace(input.RelayUrl) Then
+            topUrl = input.RelayUrl
+        ElseIf Not String.IsNullOrWhiteSpace(input.TunnelUrl) Then
+            topUrl = input.TunnelUrl
+        Else
+            topUrl = input.Url
+        End If
+        If String.IsNullOrWhiteSpace(topUrl) OrElse String.IsNullOrWhiteSpace(input.Mode) Then Return ""
 
         Using ms As New MemoryStream()
             Using w As New Utf8JsonWriter(ms)
                 w.WriteStartObject()
                 w.WriteNumber("schemaVersion", LiveProducerContract.DescriptorSchemaVersion)
-                w.WriteString("url", input.Url)
+                w.WriteString("url", topUrl)
                 w.WriteString("mode", input.Mode)
                 If Not String.IsNullOrWhiteSpace(input.Title) Then w.WriteString("title", input.Title.Trim())
                 If Not String.IsNullOrEmpty(input.SourceId) Then w.WriteString("sourceId", input.SourceId)
                 w.WriteBoolean("isLive", True)
                 w.WriteNumber("targetLatencyMs", input.TargetLatencyMs)
+                If Not String.IsNullOrEmpty(input.AuthUser) Then
+                    w.WriteStartObject("auth")
+                    w.WriteString("scheme", "password-v1")
+                    w.WriteString("user", input.AuthUser)
+                    w.WriteEndObject()
+                End If
 
                 w.WriteStartArray("endpoints")
-                w.WriteStartObject()
-                w.WriteString("url", input.Url)
-                w.WriteString("transport", "HTTP")
-                w.WriteString("mode", input.Mode)
-                If Not String.IsNullOrEmpty(input.VideoCodec) Then w.WriteString("videoCodec", input.VideoCodec)
-                If Not String.IsNullOrEmpty(input.AudioCodec) Then w.WriteString("audioCodec", input.AudioCodec)
-                If input.SampleRateHz.HasValue Then w.WriteNumber("sampleRate", input.SampleRateHz.Value)
-                If input.BitrateBps.HasValue Then w.WriteNumber("bitrate", input.BitrateBps.Value)
-                If input.Channels.HasValue Then w.WriteNumber("channels", input.Channels.Value)
-                w.WriteBoolean("isLive", True)
-                w.WriteNumber("targetLatencyMs", input.TargetLatencyMs)
-                w.WriteEndObject()
+
+                ' 1. LAN HTTP endpoint (when LAN listener is allowed and has a URL)
+                If input.AllowLanViewers AndAlso Not String.IsNullOrWhiteSpace(input.Url) Then
+                    w.WriteStartObject()
+                    w.WriteString("url", input.Url)
+                    w.WriteString("transport", "HTTP")
+                    w.WriteString("mode", input.Mode)
+                    If Not String.IsNullOrEmpty(input.VideoCodec) Then w.WriteString("videoCodec", input.VideoCodec)
+                    If Not String.IsNullOrEmpty(input.AudioCodec) Then w.WriteString("audioCodec", input.AudioCodec)
+                    If input.SampleRateHz.HasValue Then w.WriteNumber("sampleRate", input.SampleRateHz.Value)
+                    If input.BitrateBps.HasValue Then w.WriteNumber("bitrate", input.BitrateBps.Value)
+                    If input.Channels.HasValue Then w.WriteNumber("channels", input.Channels.Value)
+                    w.WriteBoolean("isLive", True)
+                    w.WriteNumber("targetLatencyMs", input.TargetLatencyMs)
+                    w.WriteEndObject()
+                End If
+
+                ' 2. RELAY endpoint
+                If Not String.IsNullOrWhiteSpace(input.RelayUrl) Then
+                    w.WriteStartObject()
+                    w.WriteString("url", input.RelayUrl)
+                    w.WriteString("transport", "RELAY")
+                    w.WriteString("mode", input.Mode)
+                    If Not String.IsNullOrEmpty(input.CertFingerprint) Then w.WriteString("certFingerprint", input.CertFingerprint)
+                    If Not String.IsNullOrEmpty(input.VideoCodec) Then w.WriteString("videoCodec", input.VideoCodec)
+                    If Not String.IsNullOrEmpty(input.AudioCodec) Then w.WriteString("audioCodec", input.AudioCodec)
+                    If input.SampleRateHz.HasValue Then w.WriteNumber("sampleRate", input.SampleRateHz.Value)
+                    If input.BitrateBps.HasValue Then w.WriteNumber("bitrate", input.BitrateBps.Value)
+                    If input.Channels.HasValue Then w.WriteNumber("channels", input.Channels.Value)
+                    w.WriteBoolean("isLive", True)
+                    w.WriteNumber("targetLatencyMs", 2000L)
+                    w.WriteEndObject()
+                End If
+
+                ' 3. TUNNEL endpoint
+                If Not String.IsNullOrWhiteSpace(input.TunnelUrl) Then
+                    w.WriteStartObject()
+                    w.WriteString("url", input.TunnelUrl)
+                    w.WriteString("transport", "TUNNEL")
+                    w.WriteString("mode", input.Mode)
+                    If Not String.IsNullOrEmpty(input.InnerUrl) Then w.WriteString("inner", input.InnerUrl)
+                    If Not String.IsNullOrEmpty(input.CertFingerprint) Then w.WriteString("certFingerprint", input.CertFingerprint)
+                    If Not String.IsNullOrEmpty(input.VideoCodec) Then w.WriteString("videoCodec", input.VideoCodec)
+                    If Not String.IsNullOrEmpty(input.AudioCodec) Then w.WriteString("audioCodec", input.AudioCodec)
+                    If input.SampleRateHz.HasValue Then w.WriteNumber("sampleRate", input.SampleRateHz.Value)
+                    If input.BitrateBps.HasValue Then w.WriteNumber("bitrate", input.BitrateBps.Value)
+                    If input.Channels.HasValue Then w.WriteNumber("channels", input.Channels.Value)
+                    w.WriteBoolean("isLive", True)
+                    w.WriteNumber("targetLatencyMs", 2000L)
+                    w.WriteEndObject()
+                End If
+
                 w.WriteEndArray()
 
+                w.WriteEndObject()
+            End Using
+            Return Encoding.UTF8.GetString(ms.ToArray())
+        End Using
+    End Function
+
+    ''' <summary>Builds the broadcast record JSON for publication on the exchange (broadcast-start, broadcast-update).</summary>
+    Public Shared Function BuildBroadcastRecord(broadcastId As String, deviceId As String, title As String, mode As String, descriptorJson As String) As String
+        Using ms As New MemoryStream()
+            Using w As New Utf8JsonWriter(ms)
+                w.WriteStartObject()
+                w.WriteString("broadcastId", If(broadcastId, ""))
+                If Not String.IsNullOrEmpty(deviceId) Then w.WriteString("deviceId", deviceId)
+                If Not String.IsNullOrWhiteSpace(title) Then w.WriteString("title", title.Trim())
+                w.WriteString("mode", If(mode, ""))
+                w.WritePropertyName("descriptor")
+                Using doc As JsonDocument = JsonDocument.Parse(If(descriptorJson, "{}"))
+                    doc.RootElement.WriteTo(w)
+                End Using
                 w.WriteEndObject()
             End Using
             Return Encoding.UTF8.GetString(ms.ToArray())

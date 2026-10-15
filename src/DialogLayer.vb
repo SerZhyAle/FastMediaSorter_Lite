@@ -53,16 +53,22 @@ Friend NotInheritable Class DialogLayer
 
     ''' <summary>Shows a modal window through the viewer's layer.</summary>
     Friend Shared Function ShowViewerDialog(dialog As Form, owner As IWin32Window) As DialogResult
+        ' The person's action starts here (0 unless FMS_UI_TIMING=1); the window is timed to its first complete
+        ' frame - WINDOWS-UI section 9 (amended 0.2). This one entry is why every secondary window is measured.
+        Dim started As Long = UiTiming.Begin()
         Dim parent As IWin32Window = OwnerOrViewer(owner)
         Prepare(dialog, parent)
+        UiTiming.WatchWindow(dialog, started)
         If parent Is Nothing Then Return dialog.ShowDialog()
         Return dialog.ShowDialog(parent)
     End Function
 
     ''' <summary>Shows a modeless window through the viewer's layer (the file details).</summary>
     Friend Shared Sub ShowViewerWindow(window As Form, owner As IWin32Window)
+        Dim started As Long = UiTiming.Begin()
         Dim parent As IWin32Window = OwnerOrViewer(owner)
         Prepare(window, parent)
+        UiTiming.WatchWindow(window, started)
         If parent Is Nothing Then window.Show() Else window.Show(parent)
     End Sub
 

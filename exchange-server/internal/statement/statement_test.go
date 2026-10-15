@@ -15,6 +15,10 @@ func TestTheStatementSaysWhatTheContractSaysTheOperatorCanSee(t *testing.T) {
 		"sftp-opaque":            {"SSH", "cannot read"},
 		"multi-user-limit":       {"other people's accounts", "limit", "end to end", "open"},
 		"flat-trust":             {"every other device", "remove", "pairing codes", "access details", "remove itself"},
+		// ticket 229 (22 items BU and CC): the operator sees a clipboard value in the clear, in
+		// memory only, and it is one per account within its limit
+		"clipboard-visible": {"memory", "nowhere else", "never written to disk", "lost when the server restarts",
+			"operator can read it in the clear", "one value", "size limit"},
 	}
 	if len(Points) != len(must) {
 		t.Fatalf("the statement has %d points, the test knows %d", len(Points), len(must))
@@ -49,5 +53,11 @@ func TestTheStatementIsPlainText(t *testing.T) {
 	}
 	if !strings.Contains(Text(), "\n\n") {
 		t.Fatal("the paragraphs are separated")
+	}
+}
+
+func TestRetentionComesFromTheSetting(t *testing.T) {
+	if !strings.Contains(WithRetention(7), "7 days") || strings.Contains(WithRetention(7), "31 days") {
+		t.Fatal("retention is not configured")
 	}
 }

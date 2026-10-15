@@ -121,26 +121,52 @@ func TestAddAccountAppliesThePolicyAndStoresOnlyARecord(t *testing.T) {
 	}
 }
 
-func TestSetPasswordKeepsTokens(t *testing.T) {
+func TestSetPasswordSignsOutEveryDevice(t *testing.T) {
 	s, _, _ := withAccounts(t)
 	e, err := s.Enroll(spec(alice, devA))
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err := s.SetPassword(alice, "N3wPassword!x"); err != nil {
+	f, err := s.Enroll(spec(alice, devB))
+	if err != nil {
 		t.Fatal(err)
+	}
+	ids, err := s.SetPassword(alice, "N3wPassword!x")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(ids) != 2 || ids[0] != devA || ids[1] != devB {
+		t.Fatalf("every device is reported as signed out: %v", ids)
 	}
 	if s.VerifyPassword(alice, pw1) || !s.VerifyPassword(alice, "N3wPassword!x") {
 		t.Fatal("the password did not change")
 	}
-	if _, st := s.Hello(devA, e.Token); st != HelloOK {
-		t.Fatal("a password change must leave tokens alone")
+	// signed out, not removed (19 items AT and AV): the token is dead, the record stays
+	if _, st := s.Hello(devA, e.Token); st != HelloSignedOut {
+		t.Fatalf("a password reset signs out every device, got %v", st)
 	}
-	if err := s.SetPassword("nobody", pw1); !errors.Is(err, ErrNoAccount) {
+	if _, st := s.Hello(devB, f.Token); st != HelloSignedOut {
+		t.Fatalf("a password reset spares no device, got %v", st)
+	}
+	if len(s.Devices(alice)) != 2 {
+		t.Fatal("a sign-out must keep the device records")
+	}
+	if s.Tombstones() != 0 {
+		t.Fatal("a sign-out is not a revoke: nothing moves to a tombstone")
+	}
+	if _, err := s.SetPassword("nobody", pw1); !errors.Is(err, ErrNoAccount) {
 		t.Fatalf("%v", err)
 	}
-	if err := s.SetPassword(alice, "weak"); err == nil {
+	if _, err := s.SetPassword(alice, "weak"); err == nil {
 		t.Fatal("a weak password was accepted")
+	}
+	// the device that signs in again with the new password is enrolled under the same id: record kept
+	g, err := s.Enroll(spec(alice, devA))
+	if err != nil || !g.Rotated {
+		t.Fatalf("re-enrolling a signed-out device rotates it: %+v %v", g, err)
+	}
+	if _, st := s.Hello(devA, g.Token); st != HelloOK {
+		t.Fatalf("the fresh token must work, got %v", st)
 	}
 }
 
@@ -234,7 +260,7 @@ func TestIDCollisionAcrossAccountsAndCapacity(t *testing.T) {
 	small.AddAccount(alice, pw1)
 	small.Enroll(spec(alice, devA))
 	small.Enroll(spec(alice, devB))
-	if _, err := small.Enroll(spec(alice, devC)); !errors.Is(err, ErrCapacity) {
+	if _, err := small.Enroll(spec(alice, devC)); !errors.Is(err, ErrLimit) {
 		t.Fatalf("the third device: %v", err)
 	}
 	if _, err := small.Enroll(spec(alice, devA)); err != nil {
@@ -553,5 +579,628 @@ func TestAtMostFiveOutstandingCodes(t *testing.T) {
 	ck.Add(11 * time.Minute)
 	if _, _, err := s.NewPairingCode(alice); err != nil {
 		t.Fatalf("expired codes must free their slots: %v", err)
+	}
+}
+
+// --- invitations, registration, password change, grants, limits and pace (ticket 224) ---
+
+// register runs the store half of a registration the way the engine does: one-time code, then the
+// account and its first device in one step.
+func register(t *testing.T, s *Store, login, pw, kind, code, dev string) (Enrolled, error) {
+	t.Helper()
+	rec, err := s.HashPassword(pw)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return s.RegisterAccount(RegisterSpec{Login: login, PasswordRecord: rec, Kind: kind, InvitationCode: code, Device: spec(login, dev)})
+}
+
+func TestOneTimeInvitationRegistersOnceAndNeverExpires(t *testing.T) {
+	s, ck, dir := withAccounts(t)
+	code, inv, err := s.CreateInvitation("guest", "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(code) != 22 {
+		t.Fatalf("an invitation code is 16 random bytes in the 22-character id form, got %d (%s)", len(code), code)
+	}
+	if inv.Kind != KindGuest || inv.Used || inv.CodeHash != InvitationHash(code) {
+		t.Fatalf("unexpected invitation: %+v", inv)
+	}
+
+	// only the hash is on disk (19 item AP)
+	raw, err := os.ReadFile(filepath.Join(dir, InvitationsFile))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if strings.Contains(string(raw), code) || !strings.Contains(string(raw), inv.CodeHash) {
+		t.Fatal("the invitations file must hold the hash and never the code")
+	}
+
+	ck.Add(366 * 24 * time.Hour) // no expiry: a year and a day later it still registers
+	kind, err := s.OneTimeInvitation(code)
+	if err != nil || kind != KindGuest {
+		t.Fatalf("a year-old invitation: %q %v", kind, err)
+	}
+	e, err := register(t, s, "carol", "C4rolPassw0rd", kind, code, devC)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !s.IsGuest("carol") || e.Token == "" || e.Device.Account != "carol" {
+		t.Fatalf("the account was not created as a guest with its first device: %+v", e.Device)
+	}
+	if !s.VerifyPassword("carol", "C4rolPassw0rd") {
+		t.Fatal("the chosen password does not verify")
+	}
+
+	// used: the same answer as a code that never existed
+	_, errUsed := register(t, s, "dave", "D4vePassw0rd", kind, code, devB)
+	_, errWrong := register(t, s, "dave", "D4vePassw0rd", kind, "wrongcode1234567890123", devB)
+	if !errors.Is(errUsed, ErrInvitationInvalid) || !errors.Is(errWrong, ErrInvitationInvalid) {
+		t.Fatalf("a used and a wrong code are one answer: %v / %v", errUsed, errWrong)
+	}
+	if _, err := s.OneTimeInvitation(code); !errors.Is(err, ErrInvitationInvalid) {
+		t.Fatalf("a used code looks up as invalid: %v", err)
+	}
+	if s.Exists("dave") {
+		t.Fatal("a refused registration created an account")
+	}
+
+	// the record stays, as a used one, and names who used it
+	list := s.ListInvitations()
+	if len(list) != 1 || !list[0].Used || list[0].UsedBy != "carol" || list[0].UsedAt == "" {
+		t.Fatalf("the used invitation is listed as used by carol: %+v", list)
+	}
+}
+
+func TestAFailedRegistrationConsumesNothing(t *testing.T) {
+	dir := t.TempDir()
+	ck := newClock()
+	pol := DefaultPolicy()
+	pol.MaxAccounts = 2
+	s := open(t, dir, ck, func(o *Options) { o.Policy = &pol })
+	for _, l := range []string{alice, bob} {
+		if _, err := s.AddAccount(l, pw1); err != nil {
+			t.Fatal(err)
+		}
+	}
+	code, _, _ := s.CreateInvitation("member", "")
+
+	// the cap
+	if _, err := register(t, s, "carol", "C4rolPassw0rd", KindMember, code, devC); !errors.Is(err, ErrLimit) {
+		t.Fatalf("the cap refuses the registration: %v", err)
+	}
+	if _, err := s.OneTimeInvitation(code); err != nil {
+		t.Fatalf("the refused registration must not use the code: %v", err)
+	}
+
+	// the operator is never refused by the cap; it only counts (19 item AS)
+	if _, err := s.AddAccount("opsadded", pw1); err != nil {
+		t.Fatalf("the operator adds past the cap: %v", err)
+	}
+	if got := s.AccountCount(); got != 3 {
+		t.Fatalf("count %d", got)
+	}
+	pol.MaxAccounts = 10
+	s.SetPolicy(pol)
+
+	// a taken login
+	if _, err := register(t, s, alice, "C4rolPassw0rd", KindMember, code, devC); !errors.Is(err, ErrExists) {
+		t.Fatalf("a taken login: %v", err)
+	}
+	// a deviceId that belongs to another account
+	if _, err := s.Enroll(spec(alice, devA)); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := register(t, s, "carol", "C4rolPassw0rd", KindMember, code, devA); !errors.Is(err, ErrIDCollision) {
+		t.Fatalf("a foreign deviceId: %v", err)
+	}
+	if s.Exists("carol") {
+		t.Fatal("a failed registration left an account behind")
+	}
+	if _, err := s.OneTimeInvitation(code); err != nil {
+		t.Fatalf("no refusal may use the code: %v", err)
+	}
+
+	// and now it works, once
+	if _, err := register(t, s, "carol", "C4rolPassw0rd", KindMember, code, devC); err != nil {
+		t.Fatal(err)
+	}
+	if got := s.AccountCount(); got != 4 {
+		t.Fatalf("count %d", got)
+	}
+}
+
+func TestRegistrationIsAllOrNothingWhenAWriteFails(t *testing.T) {
+	dir := t.TempDir()
+	ck := newClock()
+	failInvitations := false
+	s := open(t, dir, ck, func(o *Options) {
+		o.WriteTemp = func(name string, data []byte, perm os.FileMode) error {
+			if failInvitations && strings.HasSuffix(name, InvitationsFile+".tmp") {
+				failInvitations = false // once: the rollback rewrites the file
+				return errors.New("disk full")
+			}
+			return os.WriteFile(name, data, perm)
+		}
+	})
+	code, _, err := s.CreateInvitation("member", "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	failInvitations = true
+	if _, err := register(t, s, "carol", "C4rolPassw0rd", KindMember, code, devC); err == nil {
+		t.Fatal("a failed write was reported as a registration")
+	}
+	if s.Exists("carol") || len(s.Devices("carol")) != 0 {
+		t.Fatal("the account or its device survived the failed registration")
+	}
+	if _, err := s.OneTimeInvitation(code); err != nil {
+		t.Fatalf("the code must be unused: %v", err)
+	}
+	again := open(t, dir, ck, nil)
+	if again.Exists("carol") || len(again.AllDevices()) != 0 {
+		t.Fatal("a restart found a half-registered account")
+	}
+	if _, err := again.OneTimeInvitation(code); err != nil {
+		t.Fatalf("a restart found the code used: %v", err)
+	}
+}
+
+func TestInvitationWithdrawalByPrefix(t *testing.T) {
+	s, _, _ := withAccounts(t)
+	code, inv, err := s.CreateInvitation("member", "newcomer")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if inv.ExpectedLogin != "newcomer" {
+		t.Fatalf("the login the operator expects is kept as a hint: %+v", inv)
+	}
+	if ok, _ := s.WithdrawInvitation(inv.CodeHash[:3]); ok {
+		t.Fatal("a prefix of three characters must name nothing")
+	}
+	ok, err := s.WithdrawInvitation(inv.CodeHash[:8])
+	if err != nil || !ok {
+		t.Fatalf("withdraw by the eight characters the list shows: %v %v", ok, err)
+	}
+	if _, err := s.OneTimeInvitation(code); !errors.Is(err, ErrInvitationInvalid) {
+		t.Fatalf("a withdrawn code is one more way to be invalid: %v", err)
+	}
+	if ok, _ := s.WithdrawInvitation(inv.CodeHash[:8]); ok {
+		t.Fatal("a second withdrawal removes nothing")
+	}
+	if _, _, err := s.CreateInvitation("member", "no spaces!"); !errors.Is(err, ErrBadLogin) {
+		t.Fatalf("an expected login is a login of 5.1: %v", err)
+	}
+	if _, _, err := s.CreateInvitation("admin", ""); !errors.Is(err, ErrBadKind) {
+		t.Fatalf("a kind is member or guest: %v", err)
+	}
+}
+
+func TestSharedInvitationPasswordOnlyWhileOnAndStopsAtOnce(t *testing.T) {
+	s, _, dir := withAccounts(t)
+	if on, _ := s.SharedInvitationStatus(); on {
+		t.Fatal("the shared invitation password is off by default")
+	}
+	if _, err := s.VerifySharedInvitation("SharedSecret123!"); !errors.Is(err, ErrInvitationInvalid) {
+		t.Fatalf("a shared password while it is off: %v", err)
+	}
+	const first, second = "SharedSecret123!", "OtherSecret456!x"
+	if err := s.SetSharedInvitation(first, KindGuest); err != nil {
+		t.Fatal(err)
+	}
+	on, kind := s.SharedInvitationStatus()
+	if !on || kind != KindGuest {
+		t.Fatalf("status %v %q", on, kind)
+	}
+	raw, _ := os.ReadFile(filepath.Join(dir, InvitationsFile))
+	if strings.Contains(string(raw), first) {
+		t.Fatal("the shared password is on disk in clear")
+	}
+	if k, err := s.VerifySharedInvitation(first); err != nil || k != KindGuest {
+		t.Fatalf("the shared password: %q %v", k, err)
+	}
+	if _, err := s.VerifySharedInvitation("not-the-password"); !errors.Is(err, ErrInvitationInvalid) {
+		t.Fatalf("a wrong shared password: %v", err)
+	}
+
+	// a one-time code keeps working whatever the shared password does
+	code, _, _ := s.CreateInvitation("member", "")
+
+	// changing it stops the old one at once and touches no account
+	if err := s.SetSharedInvitation(second, KindMember); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := s.VerifySharedInvitation(first); !errors.Is(err, ErrInvitationInvalid) {
+		t.Fatalf("the old shared password must stop at once: %v", err)
+	}
+	if k, err := s.VerifySharedInvitation(second); err != nil || k != KindMember {
+		t.Fatalf("%q %v", k, err)
+	}
+	// off
+	if err := s.SetSharedInvitation("", ""); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := s.VerifySharedInvitation(second); !errors.Is(err, ErrInvitationInvalid) {
+		t.Fatalf("a switched-off shared password: %v", err)
+	}
+	if _, err := s.OneTimeInvitation(code); err != nil {
+		t.Fatalf("a one-time code is independent of the shared password: %v", err)
+	}
+	// a weak shared password is not accepted
+	if err := s.SetSharedInvitation("weak", KindMember); err == nil {
+		t.Fatal("a weak shared password was accepted")
+	}
+	// a registration by the shared password has no code to consume
+	if err := s.SetSharedInvitation(first, KindMember); err != nil {
+		t.Fatal(err)
+	}
+	auth, err := s.AuthorizeSharedInvitation(first)
+	if err != nil {
+		t.Fatal(err)
+	}
+	registerShared := func(login, pw, dev string) (Enrolled, error) {
+		rec, err := s.HashPassword(pw)
+		if err != nil {
+			t.Fatal(err)
+		}
+		return s.RegisterAccount(RegisterSpec{Login: login, PasswordRecord: rec, SharedInvitation: auth, Device: spec(login, dev)})
+	}
+	if _, err := registerShared("frank", "Fr4nkPassw0rd", devC); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := registerShared("gina", "G1naPassw0rd", devB); err != nil {
+		t.Fatal("a shared password registers many accounts, not one")
+	}
+}
+
+func TestChangePasswordKeepsTheCallerAndSignsOutTheRest(t *testing.T) {
+	s, _, _ := withAccounts(t)
+	eA, _ := s.Enroll(spec(alice, devA))
+	eB, _ := s.Enroll(spec(alice, devB))
+	eC, _ := s.Enroll(spec(bob, devC))
+
+	rec, err := s.HashPassword("BrandNewPass123!")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, _, err := s.ChangePassword(alice, rec, devC); !errors.Is(err, ErrNoDevice) {
+		t.Fatalf("a device of another account is no caller: %v", err)
+	}
+	if _, _, err := s.ChangePassword(alice, rec, "ZZZZZZZZZZZZZZZZZZZZZA"); !errors.Is(err, ErrNoDevice) {
+		t.Fatalf("an unknown caller: %v", err)
+	}
+	if !s.VerifyPassword(alice, pw1) {
+		t.Fatal("a refused change altered the password")
+	}
+
+	newToken, out, err := s.ChangePassword(alice, rec, devA)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if newToken == "" || newToken == eA.Token {
+		t.Fatalf("the caller gets a fresh token: %q", newToken)
+	}
+	if len(out) != 1 || out[0] != devB {
+		t.Fatalf("exactly the other devices of the account are signed out: %v", out)
+	}
+	if _, st := s.Hello(devA, newToken); st != HelloOK {
+		t.Fatalf("the calling device stays signed in with its new token: %v", st)
+	}
+	if _, st := s.Hello(devA, eA.Token); st != HelloBad {
+		t.Fatalf("its old token is dead: %v", st)
+	}
+	if _, st := s.Hello(devB, eB.Token); st != HelloSignedOut {
+		t.Fatalf("the other device is told it was signed out: %v", st)
+	}
+	if len(s.Devices(alice)) != 2 {
+		t.Fatal("the device record stays after a sign-out (19 item AV)")
+	}
+	if _, st := s.Hello(devC, eC.Token); st != HelloOK {
+		t.Fatal("another account's device was touched")
+	}
+	if s.VerifyPassword(alice, pw1) || !s.VerifyPassword(alice, "BrandNewPass123!") {
+		t.Fatal("the password did not change")
+	}
+}
+
+func TestDevicesAreKeptWhateverTheirSilence(t *testing.T) {
+	s, ck, _ := withAccounts(t)
+	e, _ := s.Enroll(spec(alice, devA))
+	ck.Add(400 * 24 * time.Hour)
+	if err := s.Sweep(ck.Now()); err != nil {
+		t.Fatal(err)
+	}
+	if len(s.Devices(alice)) != 1 {
+		t.Fatal("a device silent for more than a year is still listed (19 item AV)")
+	}
+	if _, st := s.Hello(devA, e.Token); st != HelloOK {
+		t.Fatal("and its token still works")
+	}
+}
+
+func TestRemoveAccountErasesEverythingTheStoreHoldsOfIt(t *testing.T) {
+	s, _, dir := withAccounts(t)
+	if _, err := s.AddAccountWithKind("guest1", pw1, KindGuest); err != nil {
+		t.Fatal(err)
+	}
+	s.Enroll(spec(alice, devA))
+	s.Enroll(spec(alice, devB))
+	s.Revoke(alice, devB) // a tombstone of alice's
+	if _, _, err := s.NewPairingCode(alice); err != nil {
+		t.Fatal(err)
+	}
+	const res = "RRRRRRRRRRRRRRRRRRRRRA"
+	if err := s.AddGrant(alice, res, GrantResource, "guest1"); err != nil {
+		t.Fatal(err)
+	}
+	// alice registered through an invitation of her own: its used record names her
+	code, _, _ := s.CreateInvitation("member", "")
+	if _, err := register(t, s, "aliceb", "Al1ceBPassw0rd", KindMember, code, "DDDDDDDDDDDDDDDDDDDDDA"); err != nil {
+		t.Fatal(err)
+	}
+
+	gone, err := s.RemoveAccount("aliceb")
+	if err != nil || len(gone) != 1 {
+		t.Fatalf("%v %v", gone, err)
+	}
+	if len(s.ListInvitations()) != 0 {
+		t.Fatal("the used invitation record of a deleted account must go with it")
+	}
+
+	gone, err = s.RemoveAccount(alice)
+	if err != nil || len(gone) != 1 || gone[0].ID != devA {
+		t.Fatalf("%v %v", gone, err)
+	}
+	if s.HasGrant(res, "guest1") || len(s.GrantsForGuest("guest1")) != 0 {
+		t.Fatal("a grant the account made must go with it")
+	}
+	if s.OutstandingCodes(alice) != 0 {
+		t.Fatal("a pairing code of the account survived")
+	}
+	// the whole data directory: no file mentions the login any more
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, en := range entries {
+		raw, err := os.ReadFile(filepath.Join(dir, en.Name()))
+		if err != nil {
+			t.Fatal(err)
+		}
+		if strings.Contains(string(raw), `"alice"`) || strings.Contains(string(raw), devA) || strings.Contains(string(raw), devB) {
+			t.Fatalf("%s still names the deleted account or its devices", en.Name())
+		}
+	}
+	// the login is free again, and so are the device ids
+	if _, err := s.AddAccount(alice, pw1); err != nil {
+		t.Fatalf("a deleted login is free: %v", err)
+	}
+	if _, err := s.Enroll(spec(bob, devA)); err != nil {
+		t.Fatalf("a deleted account's device id is free: %v", err)
+	}
+}
+
+func TestGrantRules(t *testing.T) {
+	s, _, _ := withAccounts(t)
+	if _, err := s.AddAccountWithKind("guest1", pw1, KindGuest); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := s.AddAccountWithKind("guest2", pw1, KindGuest); err != nil {
+		t.Fatal(err)
+	}
+	if !s.IsGuest("guest1") || s.IsGuest(alice) || s.KindOf(alice) != KindMember {
+		t.Fatal("kinds")
+	}
+	const res, brd = "RRRRRRRRRRRRRRRRRRRRRA", "BBBBBBBBBBBBBBBBBBBBBA"
+
+	if err := s.AddGrant(alice, res, GrantResource, "guest1"); err != nil {
+		t.Fatal(err)
+	}
+	if err := s.AddGrant(alice, res, GrantResource, "guest1"); !errors.Is(err, ErrGrantHeld) {
+		t.Fatalf("a grant twice: %v", err)
+	}
+	if err := s.AddGrant(alice, res, GrantResource, bob); !errors.Is(err, ErrNotGuest) {
+		t.Fatalf("giving to a member: %v", err)
+	}
+	if err := s.AddGrant("guest1", res, GrantResource, "guest2"); !errors.Is(err, ErrNotMember) {
+		t.Fatalf("a guest gives nothing: %v", err)
+	}
+	if err := s.AddGrant(alice, "short", GrantResource, "guest1"); !errors.Is(err, ErrBadGrantTarget) {
+		t.Fatalf("a malformed target: %v", err)
+	}
+	if err := s.AddGrant(alice, res, "folder", "guest1"); !errors.Is(err, ErrBadGrantTarget) {
+		t.Fatalf("an unknown grant kind: %v", err)
+	}
+	if err := s.AddGrant("nobody", res, GrantResource, "guest1"); !errors.Is(err, ErrNoAccount) {
+		t.Fatalf("an unknown giver: %v", err)
+	}
+	if err := s.AddGrant(alice, brd, GrantBroadcast, "guest1"); err != nil {
+		t.Fatal(err)
+	}
+	if err := s.AddGrant(bob, res, GrantResource, "guest1"); err != nil {
+		t.Fatalf("two members may hold the same resource id: %v", err)
+	}
+	got := s.GrantsForGuest("guest1")
+	if len(got) != 3 || got[0].GrantedBy != alice || got[0].TargetID != brd || got[0].Kind != GrantBroadcast {
+		t.Fatalf("what guest1 holds: %+v", got)
+	}
+	if guests := s.GuestsOf(alice, res); len(guests) != 1 || guests[0] != "guest1" {
+		t.Fatalf("%v", guests)
+	}
+	if len(s.GrantsBy(alice)) != 2 {
+		t.Fatalf("%+v", s.GrantsBy(alice))
+	}
+
+	if _, err := s.RemoveGrant(alice, res, "guest1"); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := s.RemoveGrant(alice, res, "guest1"); !errors.Is(err, ErrNoGrant) {
+		t.Fatalf("a grant taken back twice: %v", err)
+	}
+	if !s.HasGrant(res, "guest1") {
+		t.Fatal("bob's grant of the same id must survive alice's removal")
+	}
+
+	// alice becomes a guest: what she gave means nothing any more
+	changed, err := s.SetKind(alice, KindGuest)
+	if err != nil || !changed {
+		t.Fatalf("%v %v", changed, err)
+	}
+	if len(s.GrantsBy(alice)) != 0 {
+		t.Fatal("a guest holds no grant it made")
+	}
+	if _, err := s.SetKind(alice, "root"); !errors.Is(err, ErrBadKind) {
+		t.Fatalf("%v", err)
+	}
+}
+
+func TestStoreSurvivesAReopenWithInvitationsGrantsAndTheSharedPassword(t *testing.T) {
+	s, ck, dir := withAccounts(t)
+	if _, err := s.AddAccountWithKind("guest1", pw1, KindGuest); err != nil {
+		t.Fatal(err)
+	}
+	const res = "RRRRRRRRRRRRRRRRRRRRRA"
+	s.AddGrant(alice, res, GrantResource, "guest1")
+	unused, _, _ := s.CreateInvitation("member", "")
+	used, _, _ := s.CreateInvitation("guest", "")
+	if _, err := register(t, s, "carol", "C4rolPassw0rd", KindGuest, used, devC); err != nil {
+		t.Fatal(err)
+	}
+	s.SetSharedInvitation("SharedSecret123!", KindMember)
+
+	again := open(t, dir, ck, nil)
+	if k, err := again.OneTimeInvitation(unused); err != nil || k != KindMember {
+		t.Fatalf("an unused code survives a restart: %q %v", k, err)
+	}
+	if _, err := again.OneTimeInvitation(used); !errors.Is(err, ErrInvitationInvalid) {
+		t.Fatalf("a used code stays used across a restart: %v", err)
+	}
+	if _, err := again.VerifySharedInvitation("SharedSecret123!"); err != nil {
+		t.Fatalf("the shared password survives a restart: %v", err)
+	}
+	if !again.HasGrant(res, "guest1") || !again.IsGuest("carol") {
+		t.Fatal("grants or kinds did not survive")
+	}
+}
+
+func TestPolicyAndPerAccountLimits(t *testing.T) {
+	s, _, _ := withAccounts(t)
+	p := s.Policy()
+	if p.MaxAccounts != 10 || p.Defaults.ClipboardBytes != 5<<30 {
+		t.Fatalf("the defaults of item AS are ten accounts and 5 GiB: %+v", p)
+	}
+	if s.LimitsFor(alice).ClipboardBytes != 5<<30 || s.LimitsFor("nobody").Devices != p.Defaults.Devices {
+		t.Fatal("an account without overrides gets the defaults")
+	}
+
+	zero, three := int64(0), 3
+	if err := s.SetAccountLimits(alice, &AccountLimits{ClipboardMaxBytes: &zero, DevicesPerAccount: &three}); err != nil {
+		t.Fatal(err)
+	}
+	l := s.LimitsFor(alice)
+	if l.ClipboardBytes != 0 || l.Devices != 3 || l.Resources != p.Defaults.Resources {
+		t.Fatalf("overrides lay over the defaults: %+v", l)
+	}
+	if s.LimitsFor(bob).ClipboardBytes != 5<<30 {
+		t.Fatal("an override leaked to another account")
+	}
+	neg := -1
+	if err := s.SetAccountLimits(alice, &AccountLimits{DevicesPerAccount: &neg}); !errors.Is(err, ErrBadLimit) {
+		t.Fatalf("a negative limit: %v", err)
+	}
+	if err := s.SetAccountLimits("nobody", nil); !errors.Is(err, ErrNoAccount) {
+		t.Fatalf("%v", err)
+	}
+	if err := s.SetAccountLimits(alice, nil); err != nil || s.AccountLimitsFor(alice) != nil {
+		t.Fatalf("nil clears the overrides: %v", err)
+	}
+
+	// a limit lowered under the holdings refuses only the next enrollment, nothing is trimmed
+	s.Enroll(spec(alice, devA))
+	s.Enroll(spec(alice, devB))
+	one := 1
+	s.SetAccountLimits(alice, &AccountLimits{DevicesPerAccount: &one})
+	if len(s.Devices(alice)) != 2 {
+		t.Fatal("lowering a limit removed devices")
+	}
+	if _, err := s.Enroll(spec(alice, devC)); !errors.Is(err, ErrLimit) {
+		t.Fatalf("the next device is refused: %v", err)
+	}
+	if _, err := s.Enroll(spec(alice, devA)); err != nil {
+		t.Fatalf("a device already enrolled re-enrolls at the limit: %v", err)
+	}
+
+	if k, err := NormalizeKind("family"); err != nil || k != KindMember {
+		t.Fatalf("an earlier build's word reads as member: %q %v", k, err)
+	}
+}
+
+func TestPacerIsOnePasswordCheckASecondAndNeverALockout(t *testing.T) {
+	ck := newClock()
+	var slept time.Duration
+	sleep := func(d time.Duration) {
+		slept += d
+		ck.Add(d)
+	}
+	p := newPacer(ck.Now, sleep, 0)
+
+	// first check: no wait; second right behind it waits its turn; a third would wait two slots and is
+	// turned away without claiming anything
+	k := LoginKey("alice")
+	if w, ok := p.Reserve(k); !ok || w != 0 {
+		t.Fatalf("first: %v %v", w, ok)
+	}
+	if w, ok := p.Reserve(k); !ok || w != time.Second {
+		t.Fatalf("second waits one slot: %v %v", w, ok)
+	}
+	if _, ok := p.Reserve(k); ok {
+		t.Fatal("a third check inside the window is turned away, not queued")
+	}
+	// a turned-away check claimed nothing: a second later the next one is only one slot behind
+	ck.Add(time.Second)
+	if w, ok := p.Reserve(k); !ok || w != time.Second {
+		t.Fatalf("after the window: %v %v", w, ok)
+	}
+
+	// the login and the address are independent keys, and a check is paced by both
+	q := newPacer(ck.Now, sleep, 0)
+	if !q.Wait("alice", "10.0.0.1") {
+		t.Fatal("first")
+	}
+	before := slept
+	if !q.Wait("bob", "10.0.0.2") || slept != before {
+		t.Fatal("another login from another address is not paced by the first")
+	}
+	if !q.Wait("carol", "10.0.0.1") || slept-before != time.Second {
+		t.Fatalf("another login from the same address waits its second: slept %v", slept-before)
+	}
+	if !q.Wait("alice", "10.0.0.3") {
+		t.Fatal("alice from a new address still waits only her own slot")
+	}
+
+	// nothing remembers a failure: a hundred checks in a row are all evaluated, one a second, and the
+	// right password still verifies at the end
+	r := newPacer(ck.Now, sleep, 0)
+	start := ck.Now()
+	for i := 0; i < 100; i++ {
+		if !r.Wait("alice", "10.0.0.9") {
+			t.Fatalf("check %d was turned away: there is no lockout", i)
+		}
+	}
+	if got := ck.Now().Sub(start); got != 99*time.Second {
+		t.Fatalf("a hundred checks take 99 slots of waiting, got %v", got)
+	}
+	s, _, _ := withAccounts(t)
+	if !s.VerifyPassword(alice, pw1) {
+		t.Fatal("the right password is evaluated whatever came before it")
+	}
+
+	// off: a test that is not about the pace
+	off := newPacer(ck.Now, sleep, -1)
+	for i := 0; i < 5; i++ {
+		if w, ok := off.Reserve(k); !ok || w != 0 {
+			t.Fatalf("pacing off: %v %v", w, ok)
+		}
 	}
 }

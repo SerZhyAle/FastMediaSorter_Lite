@@ -118,7 +118,7 @@ Partial Public Class Main_Form
         ' container is not offered a password dialog it could never use.
         If IsSecurePlaceholderLocked() Then
             AddMenuItem(image_Menu.Items, Localization.T("Открыть защищённый файл.. (Enter)"),
-                        Sub() SecureUnlockCurrent())
+                        Sub() SecureUnlockCurrent(), actionId:="openContent")
             image_Menu.Items.Add(New ToolStripSeparator())
         ElseIf IsCurrentFileSecureContainer() AndAlso IsSecureContentOnScreen() Then
             AddMenuItem(image_Menu.Items, Localization.T("Проверить контейнер целиком"),

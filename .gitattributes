@@ -1,9 +1,11 @@
 # Auto detect text files and perform LF normalization
 * text=auto
 
-# Partner Center's own CSV export: CRLF between rows, but bare LF for embedded
-# newlines inside quoted multi-line cells. text=auto would rewrite those embedded
-# LFs to CRLF on checkout and corrupt the format Partner Center expects on import.
+# The Partner Center listing import file (WINDOWS-STORE rule 8): UTF-8 without a BOM, CRLF as the only line
+# break - between records and inside a quoted cell - and no trailing newline. -text keeps git from normalising
+# the line endings of a file whose exact bytes are the contract (publishing/store/Build-ListingData.ps1 -Check
+# compares them byte for byte). This entry used to say the export carries a bare LF inside cells; rule 8
+# measured that as a refusal, and the file was rewritten to CRLF everywhere on 2026-10-13.
 publishing/store/listingData.csv -text
 
 # Vendored iconography artifacts are byte-for-byte copies of the contracts catalog, pinned by
@@ -27,3 +29,15 @@ tests/Lite.Tests/TestData/fdsec-vectors/** -text
 # Dual-mode baseline (ticket 177): captures and reference-share exports pinned byte for byte by PROVENANCE.txt;
 # a CRLF rewrite on checkout would break every hash.
 tests/Lite.Tests/TestData/dual-mode/** -text
+
+# LETTERBOX conformance vectors (ticket 183): the catalog's file byte for byte, CRLF as generated, pinned by
+# SHA-256 in tests/Lite.Tests/TestData/letterbox-vectors/PROVENANCE.txt; a rewrite on checkout would break the hash.
+tests/Lite.Tests/TestData/letterbox-vectors/** -text
+
+# INPUT-CHORD token vectors (ticket 183): the catalog's file byte for byte, LF as generated, pinned by SHA-256 in
+# tests/Lite.Tests/TestData/input-chord-vectors/PROVENANCE.txt.
+tests/Lite.Tests/TestData/input-chord-vectors/** -text
+
+# OCR-PIPELINE 1.7 A / 1.8 shared cases (ticket 183): the reference implementation's two fixtures byte for byte,
+# LF as written, pinned by SHA-256 in tests/Lite.Tests/TestData/ocr-pipeline-vectors/PROVENANCE.txt.
+tests/Lite.Tests/TestData/ocr-pipeline-vectors/** -text

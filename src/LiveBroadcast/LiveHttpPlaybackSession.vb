@@ -6,6 +6,8 @@ Imports System.IO
 Imports System.Net
 Imports System.Net.Http
 Imports System.Net.Http.Headers
+Imports System.Net.Security
+Imports System.Security.Cryptography
 Imports System.Threading
 Imports System.Threading.Tasks
 
@@ -116,12 +118,19 @@ Friend NotInheritable Class LiveHttpPlaybackSession
     Private requestsSent As Integer
     Private connectionsMade As Integer
     Private contentTypeValue As String = ""
+    Private certificateRejected As Boolean
 
     Public Sub New(endpoint As LiveBroadcastEndpoint, Optional options As LivePlaybackOptions = Nothing)
         If endpoint Is Nothing Then Throw New ArgumentNullException(NameOf(endpoint))
         Me.endpoint = endpoint
         Me.options = If(options, New LivePlaybackOptions())
     End Sub
+
+    Public ReadOnly Property PlaybackEndpoint As LiveBroadcastEndpoint
+        Get
+            Return endpoint
+        End Get
+    End Property
 
     ''' <summary>The byte stream of the body (valid once <see cref="OpenAsync"/> returned Connected).</summary>
     Public ReadOnly Property Stream As Stream
@@ -175,7 +184,7 @@ Friend NotInheritable Class LiveHttpPlaybackSession
     ''' <summary>How many TCP connections this session asked for. Never more than one: a second is refused.</summary>
     Public ReadOnly Property ConnectionCount As Integer
         Get
-            Return Math.Min(1, Volatile.Read(connectionsMade))
+            Return Math.Min(If(endpoint.Password Is Nothing, 1, 2), Volatile.Read(connectionsMade))
         End Get
     End Property
 
@@ -213,9 +222,31 @@ Friend NotInheritable Class LiveHttpPlaybackSession
             .ConnectTimeout = TimeSpan.FromMilliseconds(options.ConnectTimeoutMs),
             .ConnectCallback = AddressOf ConnectOnce
         }
+        If endpoint.Password IsNot Nothing Then
+            ' Restrict authentication schemes: Basic is permitted only inside relay TLS.
+            Dim credentials As New CredentialCache()
+            Dim authUri As New Uri(If(endpoint.Transport = "TUNNEL", endpoint.Inner, endpoint.Url))
+            Dim scheme As String = If(endpoint.Transport = "RELAY", "Basic", "Digest")
+            credentials.Add(authUri, scheme, New NetworkCredential(endpoint.AuthUser, endpoint.Password))
+            handler.Credentials = credentials
+        End If
+        If Not String.IsNullOrEmpty(endpoint.CertFingerprint) AndAlso endpoint.Transport <> "TUNNEL" Then
+            handler.SslOptions.RemoteCertificateValidationCallback =
+                Function(sender, certificate, chain, errors)
+                    If certificate Is Nothing Then
+                        certificateRejected = True
+                        Return False
+                    End If
+                    Dim actual As String = "SHA256:" & Convert.ToBase64String(SHA256.HashData(certificate.GetRawCertData())).TrimEnd("="c)
+                    Dim matches As Boolean = String.Equals(actual, endpoint.CertFingerprint, StringComparison.Ordinal)
+                    certificateRejected = Not matches
+                    Return matches
+                End Function
+        End If
         httpClient = New HttpClient(handler, disposeHandler:=True) With {.Timeout = System.Threading.Timeout.InfiniteTimeSpan}
 
-        Using request As New HttpRequestMessage(HttpMethod.Get, endpoint.Url)
+        Using request As New HttpRequestMessage(HttpMethod.Get, If(endpoint.Transport = "TUNNEL", endpoint.Inner, endpoint.Url))
+            request.Headers.Accept.Add(New MediaTypeWithQualityHeaderValue("video/mp2t"))
             request.Headers.Accept.Add(New MediaTypeWithQualityHeaderValue("audio/aac"))
             request.Headers.Accept.Add(New MediaTypeWithQualityHeaderValue("audio/*", 0.8))
             request.Headers.UserAgent.Add(New ProductInfoHeaderValue("FastMediaSorter", "1"))
@@ -233,6 +264,7 @@ Friend NotInheritable Class LiveHttpPlaybackSession
                 Catch ex As ObjectDisposedException
                     Return New LiveOpenResult(LiveOpenOutcome.Cancelled)
                 Catch ex As HttpRequestException
+                    If certificateRejected Then Return New LiveOpenResult(LiveOpenOutcome.AccessDenied)
                     Return New LiveOpenResult(If(IsDisposed, LiveOpenOutcome.Cancelled, LiveOpenOutcome.NetworkError))
                 Catch ex As Exception
                     AppFileLogger.LogException("Live HTTP connection failed", ex)
@@ -243,9 +275,11 @@ Friend NotInheritable Class LiveHttpPlaybackSession
 
         Dim status As Integer = CInt(httpResponse.StatusCode)
         Dim outcome As LiveOpenOutcome = ClassifyStatus(status)
+        ' A password throttle is an explicit refusal, not a reason to replay credentials five times.
+        If status = 429 AndAlso endpoint.Password IsNot Nothing Then outcome = LiveOpenOutcome.HttpRefused
         If outcome = LiveOpenOutcome.Connected Then
             contentTypeValue = If(httpResponse.Content.Headers.ContentType?.MediaType, "")
-            If Not IsAudioContentType(contentTypeValue) Then outcome = LiveOpenOutcome.NotAudioStream
+            If Not IsAudioContentType(contentTypeValue) AndAlso Not IsMpegTs Then outcome = LiveOpenOutcome.NotAudioStream
         End If
 
         If outcome <> LiveOpenOutcome.Connected Then
@@ -265,7 +299,7 @@ Friend NotInheritable Class LiveHttpPlaybackSession
             Return New LiveOpenResult(If(IsDisposed, LiveOpenOutcome.Cancelled, LiveOpenOutcome.NetworkError))
         End Try
 
-        progressStream.Observer = AddressOf frameCounter.Feed
+        If IsAdtsAac Then progressStream.Observer = AddressOf frameCounter.Feed
         AddHandler progressStream.StreamEnded, Sub(kind As LiveStreamEnd) endedSource.TrySetResult(kind)
         AddHandler progressStream.BytesRead,
             Sub(count As Integer)
@@ -290,8 +324,22 @@ Friend NotInheritable Class LiveHttpPlaybackSession
     End Function
 
     Private Async Function ConnectOnceAsync(context As SocketsHttpConnectionContext, token As CancellationToken) As Task(Of Stream)
-        If Interlocked.Increment(connectionsMade) > 1 Then
+        If Interlocked.Increment(connectionsMade) > If(endpoint.Password Is Nothing, 1, 2) Then
             Throw New IOException("A live session opens one connection; the handler's own retry is refused.")
+        End If
+        If endpoint.Transport = "TUNNEL" Then
+            Dim address As New Uri(endpoint.Url)
+            Dim segments As String() = address.AbsolutePath.Trim("/"c).Split("/"c)
+            If segments.Length <> 3 OrElse segments(0) <> "b" OrElse segments(2) <> "http" Then Throw New IOException("Invalid broadcast tunnel.")
+            Dim server As New ExchangeServerAddress(address.Host, If(address.IsDefaultPort OrElse address.Port < 0, 443, address.Port))
+            Dim opened As ExchangeOpenResult = Await ExchangeDataStreams.ConnectBroadcastAsync(ExchangeTlsTransport.Instance, server,
+                endpoint.CertFingerprint, segments(1), "http", token).ConfigureAwait(False)
+            If Not opened.IsConnected Then
+                certificateRejected = opened.Outcome = ExchangeOpenOutcome.PinMismatch OrElse opened.Outcome = ExchangeOpenOutcome.Untrusted
+                opened.Dispose()
+                Throw New IOException("Broadcast tunnel refused: " & opened.Outcome.ToString())
+            End If
+            Return opened.Stream
         End If
         Dim socket As New Sockets.Socket(Sockets.SocketType.Stream, Sockets.ProtocolType.Tcp) With {.NoDelay = True}
         Try
@@ -314,6 +362,12 @@ Friend NotInheritable Class LiveHttpPlaybackSession
     Public ReadOnly Property IsAdtsAac As Boolean
         Get
             Return IsAdtsAacContentType(contentTypeValue)
+        End Get
+    End Property
+
+    Public ReadOnly Property IsMpegTs As Boolean
+        Get
+            Return String.Equals(contentTypeValue.Split(";"c)(0).Trim(), "video/mp2t", StringComparison.OrdinalIgnoreCase)
         End Get
     End Property
 

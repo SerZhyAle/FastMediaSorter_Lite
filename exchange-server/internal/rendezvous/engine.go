@@ -8,6 +8,7 @@ import (
 	"fms/exchange-server/internal/accounts"
 	"fms/exchange-server/internal/admin"
 	"fms/exchange-server/internal/cast"
+	"fms/exchange-server/internal/clipboard"
 	"fms/exchange-server/internal/directory"
 	"fms/exchange-server/internal/limits"
 	"fms/exchange-server/internal/logx"
@@ -62,6 +63,9 @@ type Engine struct {
 	cast    *cast.Table
 	book    *portBook
 	closing chan struct{}
+	// clip is the clipboard slot of every account (ticket 229): memory only, one value plus at
+	// most one upload in flight per account.
+	clip *clipboard.Table
 
 	mu      sync.Mutex
 	ctl     map[string]*ctlEntry            // control streams by deviceId, for their keepalive windows
@@ -82,8 +86,9 @@ func NewEngine(cfg EngineConfig) *Engine {
 	}
 	e := &Engine{cfg: cfg, p: cfg.Params, now: cfg.Now, tunnels: tunnel.NewTable(), closing: make(chan struct{}),
 		cast: cast.New(cfg.Now, cfg.Params.CastTimeout, cfg.Params.CastPerAccount),
+		clip: clipboard.NewTable(cfg.Now, cfg.Rand),
 		ctl:  map[string]*ctlEntry{}, streams: map[string]map[*Stream]struct{}{}}
-	e.ops = &admin.Ops{Accounts: cfg.Accounts, Dir: cfg.Dir, Log: cfg.Log, Live: true}
+	e.ops = &admin.Ops{Accounts: cfg.Accounts, Dir: cfg.Dir, Log: cfg.Log, Live: true, Clipboard: e.clip}
 	if cfg.Rand != nil {
 		e.tunnels.SetRand(cfg.Rand)
 	}
@@ -101,8 +106,47 @@ func NewEngine(cfg EngineConfig) *Engine {
 		BroadcastGone: e.broadcastGone,
 		CloseDevice:   e.closeDevice,
 	})
+	// what members gave to guests, and the limits of each account (19 items AO and AS): both are the
+	// accounts store's to say, and both are asked under the directory's lock, so neither calls back
+	cfg.Dir.SetGrants(grantSource{cfg.Accounts})
+	cfg.Dir.SetCapsFor(func(account string) directory.Caps {
+		l := cfg.Accounts.LimitsFor(account)
+		return directory.Caps{ResourcesPerAccount: l.Resources, BroadcastsPerAccount: l.Broadcasts, BroadcastsPerDevice: l.BroadcastsPerDevice}
+	})
 	return e
 }
+
+// grantSource gives the directory the accounts store's grants in the directory's own shape.
+type grantSource struct{ s *accounts.Store }
+
+func (g grantSource) GrantsTo(guest string) []directory.Grant {
+	given := g.s.GrantsForGuest(guest)
+	out := make([]directory.Grant, 0, len(given))
+	for _, x := range given {
+		out = append(out, directory.Grant{Owner: x.GrantedBy, Target: x.TargetID, Broadcast: x.Kind == accounts.GrantBroadcast})
+	}
+	return out
+}
+
+func (g grantSource) GrantsBy(owner string) []struct {
+	Guest string
+	directory.Grant
+} {
+	made := g.s.GrantsBy(owner)
+	out := make([]struct {
+		Guest string
+		directory.Grant
+	}, 0, len(made))
+	for _, x := range made {
+		out = append(out, struct {
+			Guest string
+			directory.Grant
+		}{Guest: x.Account, Grant: directory.Grant{Owner: x.GrantedBy, Target: x.TargetID, Broadcast: x.Kind == accounts.GrantBroadcast}})
+	}
+	return out
+}
+
+func (g grantSource) GuestsOf(owner, target string) []string { return g.s.GuestsOf(owner, target) }
 
 // Ops are the operator's operations over this engine's stores, for the admin channel.
 func (e *Engine) Ops() *admin.Ops { return e.ops }
@@ -110,7 +154,7 @@ func (e *Engine) Ops() *admin.Ops { return e.ops }
 // Tunnels is the number of tunnels, pending or bridged (a count, never a list).
 func (e *Engine) Tunnels() int { return e.tunnels.Total() }
 
-// features is the `welcome.features` list in the order of the contract (7.2).
+// features is the `welcome.features` list in the order of the contract (7.2, 22 item BV).
 func (e *Engine) features() []string {
 	out := []string{"directory"}
 	if e.cfg.PublicEndpoint != "" {
@@ -122,8 +166,12 @@ func (e *Engine) features() []string {
 	if e.cfg.Features.Cast {
 		out = append(out, "cast")
 	}
-	return append(out, "pairing")
+	return append(out, "pairing", "clipboard")
 }
+
+// Clipboard is the engine's clipboard table (ticket 229), for the tests that count its bytes and
+// for a test that wants a value erased the way the operator's removal does.
+func (e *Engine) Clipboard() *clipboard.Table { return e.clip }
 
 // --- hooks of the directory ---
 

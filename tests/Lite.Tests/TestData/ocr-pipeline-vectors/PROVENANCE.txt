@@ -1,0 +1,41 @@
+OCR-PIPELINE 1.7 A and 1.8 A/B shared cases - vendored artifacts, not a vendored contract
+=========================================================================================
+
+What this folder is
+-------------------
+The two shared fixtures the reference implementation of OCR-PIPELINE reads in BOTH of its editions
+(Go desktop, JavaScript extension) to hold the two rules this product ported on 2026-10-13
+(ticket 183): the line split's tall-word cut (amendment 1.7 A) and the CJK word and line join
+(amendment 1.8 A and B). They are copied here so that OcrPipelineVectorTests can run for anyone who
+clones this repository - a test that depends on a sibling checkout or a drive letter runs for nobody
+else.
+
+What this folder is NOT
+-----------------------
+A copy of a contract. OCR-PIPELINE stays in the shared catalog and is CITED, never duplicated (see
+docs/contracts/OCR-PIPELINE.md and the first line of CLAUDE.md for where the catalog lives). The
+catalog itself ships no vector for 1.7 or 1.8: the contract names these two files as its pins
+("Pinned by the shared fixture tests/testdata/ocr_cjk_join_cases.json", and the split cases of
+ocr_balloon_stitch_cases.json for 1.7 A), and they live in the reference implementation's
+repository. This product does not own either rule: a case that disagrees with them is a question for
+the contract's owner (doc-html-translate), never a local edit of these files.
+
+Source
+------
+  contract ids : OCR-PIPELINE 1.7 (amendment of 2026-09-29, item A), 1.8 (amendment of 2026-09-29,
+                 items A and B); owner doc-html-translate
+  artifacts    : tests/testdata/ocr_balloon_stitch_cases.json  (3 cases: 2 stitches, 1 negative)
+                 tests/testdata/ocr_cjk_join_cases.json        (10 word cases, 4 line cases)
+                 in the doc-html-translate repository (github.com/SerZhyAle/doc-html-translate)
+  last changed : 2026-09-29 (both files, by their file times)
+  taken on     : 2026-10-13
+
+Digest
+------
+The test asserts these before it trusts a byte, so a case file that changed under us fails loudly
+instead of quietly redefining what "conformant" means. Re-taking an artifact is a deliberate act and
+updates this file with it. The bytes are the reference's own (LF), which is why .gitattributes marks
+this folder -text.
+
+  SHA-256  6657e8d75e41cdb36266c184b385df0a2ad3fe1453c2c636a1040bae5d4b112d  ocr_balloon_stitch_cases.json
+  SHA-256  b036ba7fd854522a83d700accddf14a211ebfaf3604d8513d24b827b001d9be4  ocr_cjk_join_cases.json

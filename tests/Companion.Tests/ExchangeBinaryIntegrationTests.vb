@@ -1,4 +1,4 @@
-﻿Option Strict On
+Option Strict On
 
 Imports System.Collections.Generic
 Imports System.IO
@@ -589,4 +589,47 @@ Public Class ExchangeBinaryIntegrationTests
         End Try
     End Sub
 
+    <Fact>
+    Public Async Function Same_key_renewal_is_accepted_by_the_real_client_and_a_replacement_is_refused() As Task
+        If Not _hasBinary Then Return
+        Assert.True(AddOffline("alice").Ok)
+        Dim port As Integer = FreePort()
+        Assert.Equal(ExchangeProcess.ListenOutcome.Saved, ExchangeProcess.SetListen("127.0.0.1:" & port.ToString()))
+        Assert.Equal(ExchangeProcess.StartOutcome.Started, ExchangeProcess.Start())
+        Dim pin As String = ExchangeProcess.Inspect().Fingerprint
+        Dim keyPin As String = ""
+        Dim transport As New ExchangeRenewalTransport(ExchangeTlsTransport.Instance, pin, "",
+            Sub(leaf, key)
+                pin = leaf
+                keyPin = key
+            End Sub)
+        Dim keyPath As String = Path.Combine(_dataDir, "tls", "key.pem")
+        Try
+            Using cts As CancellationTokenSource = ExchangeWireTestKit.Cts()
+                Using first As ExchangeTlsConnection = Await transport.ConnectAsync("127.0.0.1", port, pin, cts.Token)
+                    Assert.NotEmpty(keyPin)
+                End Using
+                Dim originalKey As String = keyPin
+                Dim originalLeaf As String = pin
+                Dim keyBytes As Byte() = File.ReadAllBytes(keyPath)
+                Assert.Equal(ExchangeProcess.StopOutcome.Stopped, ExchangeProcess.StopServer())
+                Assert.Equal(ExchangeProcess.CertificateOutcome.Done, ExchangeProcess.RenewCertificate().Outcome)
+                Assert.Equal(keyBytes, File.ReadAllBytes(keyPath))
+                Assert.Equal(ExchangeProcess.StartOutcome.Started, ExchangeProcess.Start())
+                Using renewed As ExchangeTlsConnection = Await transport.ConnectAsync("127.0.0.1", port, pin, cts.Token)
+                    Assert.Equal(ExchangeTrustVerdict.PinMatch, renewed.Verdict)
+                    Assert.NotEqual(originalLeaf, pin)
+                    Assert.Equal(originalKey, keyPin)
+                End Using
+                Assert.Equal(ExchangeProcess.StopOutcome.Stopped, ExchangeProcess.StopServer())
+                Assert.Equal(ExchangeProcess.CertificateOutcome.Done, ExchangeProcess.ReplaceCertificate().Outcome)
+                Assert.Equal(ExchangeProcess.StartOutcome.Started, ExchangeProcess.Start())
+                Dim ex As ExchangeConnectException = Await Assert.ThrowsAsync(Of ExchangeConnectException)(
+                    Function() transport.ConnectAsync("127.0.0.1", port, pin, cts.Token))
+                Assert.Equal(ExchangeConnectFailure.PinMismatch, ex.Failure)
+            End Using
+        Finally
+            ExchangeProcess.StopServer()
+        End Try
+    End Function
 End Class

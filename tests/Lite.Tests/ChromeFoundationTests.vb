@@ -241,6 +241,76 @@ Public Class ChromeFoundationTests
         Assert.True(none.HasOverflow)
     End Sub
 
+    ' --- kept places: a conditional item that is away still holds its slot (125 UX-313b) ---------
+
+    <Fact>
+    Public Sub A_kept_place_holds_the_items_after_it_where_they_are_while_the_row_has_room()
+        Dim items As New List(Of ChromeSlot) From {
+            New ChromeSlot("a", 28), New ChromeSlot("away", 40, soft:=True), New ChromeSlot("b", 28)}
+        Dim layout As ChromeRowLayout = ChromeLayout.ArrangeRow(items, 400, 28, 4, 28)
+        Assert.False(layout.HasOverflow)
+        ' a at 0, the kept place at 32 (40 wide), b right after it at 76.
+        Assert.Equal(32, layout.Rects(1).X)
+        Assert.Equal(76, layout.Rects(2).X)
+        ' Without the place b would stand at 32: the place is what keeps b still when the item comes back.
+        Dim without As ChromeRowLayout = ChromeLayout.ArrangeRow(Slots(28, 28), 400, 28, 4, 28)
+        Assert.Equal(32, without.Rects(1).X)
+    End Sub
+
+    <Fact>
+    Public Sub Kept_places_go_first_the_last_one_first_before_the_path_shrinks_or_anything_overflows()
+        Dim items As New List(Of ChromeSlot) From {
+            New ChromeSlot("a", 28), New ChromeSlot("path", 320, 90), New ChromeSlot("away1", 40, soft:=True),
+            New ChromeSlot("b", 28), New ChromeSlot("away2", 40, soft:=True), New ChromeSlot("c", 28)}
+        ' Natural 28+320+40+28+40+28 + 5*4 = 504. At 460 the LAST place goes (460 - 40 - 4 = fits) and the first stays.
+        Dim layout As ChromeRowLayout = ChromeLayout.ArrangeRow(items, 460, 28, 4, 28)
+        Assert.False(layout.HasOverflow)
+        Assert.Equal(320, layout.Rects(1).Width)
+        Assert.Equal(40, layout.Rects(2).Width)
+        Assert.Equal(Rectangle.Empty, layout.Rects(4))
+        Assert.False(layout.Overflowed(4))
+        ' At 416 both are gone and the path is still at its full width - nothing was narrowed or sent to the menu.
+        Dim tighter As ChromeRowLayout = ChromeLayout.ArrangeRow(items, 416, 28, 4, 28)
+        Assert.False(tighter.HasOverflow)
+        Assert.Equal(320, tighter.Rects(1).Width)
+        Assert.Equal(Rectangle.Empty, tighter.Rects(2))
+        Assert.Equal(Rectangle.Empty, tighter.Rects(4))
+        Assert.Equal(416, tighter.Rects(5).Right)
+        ' Only below that does the path give width up, exactly as it did before places existed.
+        Dim narrow As ChromeRowLayout = ChromeLayout.ArrangeRow(items, 300, 28, 4, 28)
+        Assert.False(narrow.HasOverflow)
+        Assert.Equal(204, narrow.Rects(1).Width)
+        AssertNoOverlap(narrow)
+    End Sub
+
+    <Fact>
+    Public Sub A_kept_place_is_never_what_goes_into_the_more_menu_and_the_real_tail_still_does()
+        Dim items As New List(Of ChromeSlot) From {
+            New ChromeSlot("core", 28, pinned:=True), New ChromeSlot("away", 60, soft:=True),
+            New ChromeSlot("x", 28), New ChromeSlot("y", 28)}
+        ' Room for core + x + y only: 28+4+28+4+28 = 92. The place is dropped, nothing overflows.
+        Dim fits As ChromeRowLayout = ChromeLayout.ArrangeRow(items, 92, 28, 4, 20)
+        Assert.False(fits.HasOverflow)
+        Assert.False(fits.Overflowed(1))
+        ' Narrower than that the REAL last item collapses (core + x + the 20 px button = 84), in reading order,
+        ' and the place stays out of the list.
+        Dim narrower As ChromeRowLayout = ChromeLayout.ArrangeRow(items, 90, 28, 4, 20)
+        Assert.True(narrower.HasOverflow)
+        Assert.Equal(New List(Of Integer) From {3}, narrower.OverflowIndexes())
+        AssertNoOverlap(narrower)
+    End Sub
+
+    <Fact>
+    Public Sub A_kept_place_is_not_a_droppable_item_for_the_pinned_core_floor()
+        Dim onlyPlaces As New List(Of ChromeSlot) From {
+            New ChromeSlot("core", 28, pinned:=True), New ChromeSlot("away", 60, soft:=True)}
+        ' No real item can collapse, so no "more" button is reserved for it.
+        Assert.Equal(28, ChromeLayout.PinnedCoreWidth(onlyPlaces, 4, 28))
+        Dim withTail As New List(Of ChromeSlot) From {
+            New ChromeSlot("core", 28, pinned:=True), New ChromeSlot("x", 28)}
+        Assert.Equal(28 + 4 + 28, ChromeLayout.PinnedCoreWidth(withTail, 4, 28))
+    End Sub
+
     <Fact>
     Public Sub Natural_width_counts_the_gaps_between_items_only()
         Assert.Equal(0, ChromeLayout.NaturalWidth(New List(Of ChromeSlot)(), 4))

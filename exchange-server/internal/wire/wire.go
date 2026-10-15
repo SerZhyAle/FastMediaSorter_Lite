@@ -125,3 +125,18 @@ func ValidToken(s string) bool {
 	b, err := base64.RawURLEncoding.Strict().DecodeString(s)
 	return err == nil && len(b) == 32
 }
+
+// ValidSHA256 reports whether s is a SHA-256 in the value's own lower-case hex form (22 item BU:
+// the value's `sha256` member).
+func ValidSHA256(s string) bool {
+	if len(s) != 64 {
+		return false
+	}
+	for i := 0; i < len(s); i++ {
+		c := s[i]
+		if !(c >= '0' && c <= '9' || c >= 'a' && c <= 'f') {
+			return false
+		}
+	}
+	return true
+}

@@ -44,6 +44,7 @@ type Rate struct {
 // Limits are the deployment's caps and rates (working defaults until rung 2, ticket 167 rule 6).
 type Limits struct {
 	Comment              string `json:"_comment,omitempty"`
+	MaxAccounts          int    `json:"maxAccounts"`
 	MaxConnections       int    `json:"maxConnections"`
 	TunnelsPerResource   int    `json:"tunnelsPerResource"`
 	PreAuthSlots         int    `json:"preAuthSlots"`
@@ -53,15 +54,18 @@ type Limits struct {
 	BroadcastsPerAccount int    `json:"broadcastsPerAccount"`
 	BroadcastsPerDevice  int    `json:"broadcastsPerDevice"`
 	CodesPerAccount      int    `json:"codesPerAccount"`
-	Connection           Rate   `json:"connectionRate"`     // accepted connections, per address
-	UnknownID            Rate   `json:"unknownIdRate"`      // connects naming an id nobody holds, per address
-	FailedAuth           Rate   `json:"failedAuthRate"`     // failed enroll or hello, per address
-	AttachMiss           Rate   `json:"attachMissRate"`     // attaches naming no pending tunnel, per address
-	FailedEnroll         Rate   `json:"failedEnrollRate"`   // failed enroll, per login
-	FailedHello          Rate   `json:"failedHelloRate"`    // failed hello, per account
-	PairingRequest       Rate   `json:"pairingRequestRate"` // pairing-request, per account
-	BroadcastStart       Rate   `json:"broadcastStartRate"` // broadcast-start, per device
-	Cast                 Rate   `json:"castRate"`           // cast, per device (ticket 166)
+	// ClipboardBytes is the clipboard limit a new account starts with (DEVICE-EXCHANGE 19 item AS, 22 item
+	// BZ): 5 GiB, 0 turns the clipboard off. An account's own override sits on top (accounts.json).
+	ClipboardBytes int64 `json:"clipboardBytes"`
+	Connection     Rate  `json:"connectionRate"`     // accepted connections, per address
+	UnknownID      Rate  `json:"unknownIdRate"`      // connects naming an id nobody holds, per address
+	FailedAuth     Rate  `json:"failedAuthRate"`     // failed enroll or hello, per address
+	AttachMiss     Rate  `json:"attachMissRate"`     // attaches naming no pending tunnel, per address
+	FailedEnroll   Rate  `json:"failedEnrollRate"`   // failed enroll, per login
+	FailedHello    Rate  `json:"failedHelloRate"`    // failed hello, per account
+	PairingRequest Rate  `json:"pairingRequestRate"` // pairing-request, per account
+	BroadcastStart Rate  `json:"broadcastStartRate"` // broadcast-start, per device
+	Cast           Rate  `json:"castRate"`           // cast, per device (ticket 166)
 	// The relay (ticket 165): what a hostile or mislabelled stream can cost a deployment.
 	RelayUploadMbit        int `json:"relayUploadMbit"`            // sustained upload ceiling, Mbit/s over 5 s
 	RelayListenersPerBcast int `json:"relayListenersPerBroadcast"` // relay listeners and tunnels of one broadcast
@@ -85,10 +89,11 @@ type TLS struct {
 	KeyFile  string `json:"keyFile"`
 }
 
-// Log is the log's rotation bound.
+// Log is the daily log's per-file byte bound and UTC retention window.
 type Log struct {
-	Comment  string `json:"_comment,omitempty"`
-	MaxBytes int64  `json:"maxBytes"`
+	Comment       string `json:"_comment,omitempty"`
+	MaxBytes      int64  `json:"maxBytes"`
+	RetentionDays int    `json:"retentionDays"`
 }
 
 // Admin configures the local admin channel (ticket 162 section 4).
@@ -114,6 +119,7 @@ type Config struct {
 	TLS            TLS       `json:"tls"`
 	Log            Log       `json:"log"`
 	Admin          Admin     `json:"admin"`
+	KeepAwake      bool      `json:"keepAwake"`
 
 	// ObsoletePasswordHash is set by Load when the file still carries the single server password of
 	// the superseded design (ticket 162 section 3): it is ignored, logged once, and gone from the file
@@ -129,6 +135,7 @@ func Default() Config {
 		PortRange: "40000-40100",
 		Limits: Limits{
 			Comment:              "Caps and per-address rates. A device over a limit is refused; nothing here is kept on disk as state.",
+			MaxAccounts:          10,
 			MaxConnections:       1000,
 			TunnelsPerResource:   16,
 			PreAuthSlots:         16,
@@ -138,6 +145,7 @@ func Default() Config {
 			BroadcastsPerAccount: 16,
 			BroadcastsPerDevice:  4,
 			CodesPerAccount:      5,
+			ClipboardBytes:       5 << 30,
 			Connection:           Rate{PerMinute: 120, Burst: 40},
 			UnknownID:            Rate{PerMinute: 10, Burst: 3},
 			FailedAuth:           Rate{PerMinute: 5, Burst: 2},
@@ -161,7 +169,7 @@ func Default() Config {
 			WindowMultiplier: 3,
 		},
 		TLS:   TLS{Comment: "Leave empty to use the generated self-signed identity. Set both files to serve a CA-signed certificate."},
-		Log:   Log{Comment: "The log is renamed to exchange.log.1 when it reaches maxBytes.", MaxBytes: 4 << 20},
+		Log:   Log{Comment: "UTC day files, swept at start and every 24 hours. maxBytes caps each file; keep the newest retentionDays days.", MaxBytes: 4 << 20, RetentionDays: 31},
 		Admin: Admin{Comment: "SIDs (Windows) that may use the local admin channel besides the owner of this directory, SYSTEM and Administrators.", ManageSIDs: []string{}},
 	}
 }
@@ -231,7 +239,7 @@ func (c Config) Validate() error {
 	caps := []struct {
 		name string
 		n    int
-	}{{"maxConnections", l.MaxConnections}, {"tunnelsPerResource", l.TunnelsPerResource}, {"preAuthSlots", l.PreAuthSlots},
+	}{{"maxAccounts", l.MaxAccounts}, {"maxConnections", l.MaxConnections}, {"tunnelsPerResource", l.TunnelsPerResource}, {"preAuthSlots", l.PreAuthSlots},
 		{"verifierConcurrency", l.VerifierConcurrency}, {"devicesPerAccount", l.DevicesPerAccount},
 		{"resourcesPerAccount", l.ResourcesPerAccount}, {"broadcastsPerAccount", l.BroadcastsPerAccount},
 		{"broadcastsPerDevice", l.BroadcastsPerDevice}, {"codesPerAccount", l.CodesPerAccount},
@@ -241,6 +249,9 @@ func (c Config) Validate() error {
 		if c.n < 1 {
 			return fmt.Errorf("limits.%s: every cap must be at least 1", c.name)
 		}
+	}
+	if l.ClipboardBytes < 0 {
+		return errors.New("limits.clipboardBytes: must be 0 (clipboard off) or a number of bytes")
 	}
 	rates := []struct {
 		name string
@@ -258,6 +269,9 @@ func (c Config) Validate() error {
 	}
 	if c.Log.MaxBytes < 4096 {
 		return errors.New("log.maxBytes must be at least 4096")
+	}
+	if c.Log.RetentionDays < 1 || c.Log.RetentionDays > 36500 {
+		return errors.New("log.retentionDays must be 1..36500 whole days")
 	}
 	for _, s := range c.Admin.ManageSIDs {
 		if !strings.HasPrefix(s, "S-1-") {

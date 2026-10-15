@@ -161,16 +161,17 @@ Public Class ExchangeAccountGroupTests
 
     <Fact>
     Public Sub With_the_gate_shut_the_window_has_no_exchange_account_group()
-        Assert.False(ExchangeFeatures.Offered)
-        If ExchangeFeatures.DeveloperSwitchOn() Then Return   ' a developer machine with the switch set shows the group, by design
-        ExchangeTestSupport.OnUi(Sub()
-                                     Using form As New Share_Settings_Form()
-                                         Dim sections As CollapsibleSection() = DirectCast(GetType(Share_Settings_Form).GetMethod("AllSettingsSections", BindingFlags.Instance Or BindingFlags.NonPublic).Invoke(form, Nothing), CollapsibleSection())
-                                         Assert.DoesNotContain(sections, Function(s) s.Key = "exchange-account")
-                                         Dim field As FieldInfo = GetType(Share_Settings_Form).GetField("_secAccount", BindingFlags.Instance Or BindingFlags.NonPublic)
-                                         Assert.Null(field.GetValue(form))
-                                     End Using
-                                 End Sub)
+        ' the state of a build whose constant is False (since ticket 223 T-3 the shipped build is not one), set for this flow only
+        Using ExchangeFeatures.ForFlow(offered:=False, switchOn:=False, componentInstalled:=False)
+            ExchangeTestSupport.OnUi(Sub()
+                                         Using form As New Share_Settings_Form()
+                                             Dim sections As CollapsibleSection() = DirectCast(GetType(Share_Settings_Form).GetMethod("AllSettingsSections", BindingFlags.Instance Or BindingFlags.NonPublic).Invoke(form, Nothing), CollapsibleSection())
+                                             Assert.DoesNotContain(sections, Function(s) s.Key = "exchange-account")
+                                             Dim field As FieldInfo = GetType(Share_Settings_Form).GetField("_secAccount", BindingFlags.Instance Or BindingFlags.NonPublic)
+                                             Assert.Null(field.GetValue(form))
+                                         End Using
+                                     End Sub)
+        End Using
     End Sub
 
     ''' <summary>Builds the group on a form WITHOUT flipping the gate (a process-wide switch would leak into parallel tests): the builder is called by hand.</summary>
@@ -323,15 +324,16 @@ Public Class ExchangeAccountGroupTests
 
     <Fact>
     Public Sub Without_the_gate_or_an_account_the_host_creates_no_agent()
-        ' On a machine with the developer switch set (the test host of ticket 182) the production start WOULD start the real agent, so this case
-        ' only runs where the gate is shut.
-        If ExchangeFeatures.DeveloperSwitchOn() Then Return
-        Dim before As Integer = ExchangeDeviceAgent.Constructed
-        Assert.Null(ExchangeDeviceHost.Current)
-        ExchangeDeviceHost.StartIfConfigured()   ' the production start with this machine's own state: the gate is shut
-        Assert.Null(ExchangeDeviceHost.Current)
-        Assert.Equal(before, ExchangeDeviceAgent.Constructed)
-        Assert.Null(ExchangeDeviceHost.GetOrCreate())   ' the sign-in cannot even create one while the gate is shut
+        ' The shut gate is set for this flow only (ticket 223 T-3 opened the shipped build; the opened state with no account is
+        ' ExchangeDependencySplitTests.The_features_on_and_no_account_configured_construct_no_agent).
+        Using ExchangeFeatures.ForFlow(offered:=False, switchOn:=False, componentInstalled:=False)
+            Dim before As Integer = ExchangeDeviceAgent.Constructed
+            Assert.Null(ExchangeDeviceHost.Current)
+            ExchangeDeviceHost.StartIfConfigured()   ' the production start with the gate shut
+            Assert.Null(ExchangeDeviceHost.Current)
+            Assert.Equal(before, ExchangeDeviceAgent.Constructed)
+            Assert.Null(ExchangeDeviceHost.GetOrCreate())   ' the sign-in cannot even create one while the gate is shut
+        End Using
     End Sub
 
 End Class

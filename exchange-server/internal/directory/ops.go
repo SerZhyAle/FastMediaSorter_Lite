@@ -331,9 +331,9 @@ func (d *Dir) Publish(account, deviceID string, raw json.RawMessage) (PublishRes
 			return PublishResult{}, ErrIDCollision
 		}
 	}
-	if existing == nil && len(h.resources) >= d.opt.Caps.ResourcesPerAccount {
+	if lim := d.capsFor(account).ResourcesPerAccount; existing == nil && lim > 0 && len(h.resources) >= lim {
 		d.mu.Unlock()
-		return PublishResult{}, ErrCapacity
+		return PublishResult{}, ErrLimit
 	}
 
 	// the candidate, and whether the account's directory would still fit one frame
@@ -470,9 +470,11 @@ func (d *Dir) BroadcastStart(account, deviceID string, raw json.RawMessage, maxL
 				perDevice++
 			}
 		}
-		if perDevice >= d.opt.Caps.BroadcastsPerDevice || len(h.broadcasts) >= d.opt.Caps.BroadcastsPerAccount {
+		caps := d.capsFor(account)
+		if (caps.BroadcastsPerDevice > 0 && perDevice >= caps.BroadcastsPerDevice) ||
+			(caps.BroadcastsPerAccount > 0 && len(h.broadcasts) >= caps.BroadcastsPerAccount) {
 			d.mu.Unlock()
-			return "", ErrCapacity
+			return "", ErrLimit
 		}
 	}
 	rec.SetStr("deviceId", deviceID)
@@ -727,6 +729,21 @@ func (d *Dir) LiveBroadcast(account, broadcastID string) (record json.RawMessage
 	return append(json.RawMessage(nil), b.raw...), b.device, true
 }
 
+// ResourceRecord returns the raw record of a resource in ONE account.
+func (d *Dir) ResourceRecord(account, resourceID string) (json.RawMessage, bool) {
+	d.mu.Lock()
+	defer d.mu.Unlock()
+	h := d.hubs[account]
+	if h == nil {
+		return nil, false
+	}
+	r := h.resources[resourceID]
+	if r == nil {
+		return nil, false
+	}
+	return append(json.RawMessage(nil), r.raw...), true
+}
+
 // Peer returns the control stream of a device of the account that is online. An unknown device, a
 // device of another account and an offline one are all "not found" - one answer.
 func (d *Dir) Peer(account, deviceID string) (Sink, bool) {
@@ -808,6 +825,14 @@ func (d *Dir) Revision(account string) int64 {
 func (d *Dir) SetHooks(h Hooks) {
 	d.mu.Lock()
 	d.opt.Hooks = h
+	d.mu.Unlock()
+}
+
+// SetCapsFor installs the resolver of one account's caps (the operator's per-account limits, 19 item AS).
+// It is called under the directory's lock, so it must not call back into the directory.
+func (d *Dir) SetCapsFor(f func(account string) Caps) {
+	d.mu.Lock()
+	d.opt.CapsFor = f
 	d.mu.Unlock()
 }
 

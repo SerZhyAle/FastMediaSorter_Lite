@@ -58,6 +58,20 @@ func Tunnel(id string) Field { return hashed("tunnel", id) }
 // is hashed because a person who types a password into the login field must not leave it in a log.
 func Login(login string) Field { return hashed("login", strings.ToLower(login)) }
 
+// Invitation names an invitation by the first 8 hex characters of the SHA-256 of its capability code.
+func Invitation(codeOrHash string) Field {
+	if len(codeOrHash) == 64 {
+		for i := 0; i < 64; i++ {
+			c := codeOrHash[i]
+			if !(c >= '0' && c <= '9' || c >= 'a' && c <= 'f' || c >= 'A' && c <= 'F') {
+				return hashed("invitation", codeOrHash)
+			}
+		}
+		return Field{"invitation", strings.ToLower(codeOrHash[:8])}
+	}
+	return hashed("invitation", codeOrHash)
+}
+
 // Addr renders a client address. Only the IP is kept: a port tells nothing a log needs.
 func Addr(a string) Field {
 	if host, _, err := net.SplitHostPort(a); err == nil {
@@ -112,13 +126,19 @@ func clean(s string, max int) string {
 
 // Logger writes tab-separated lines: time, level, event, then key=value fields.
 type Logger struct {
-	mu   sync.Mutex
-	w    io.Writer
-	file *os.File
-	path string
-	max  int64
-	size int64
-	now  func() time.Time
+	mu        sync.Mutex
+	w         io.Writer
+	file      *os.File
+	path      string
+	max       int64
+	size      int64
+	now       func() time.Time
+	dailyDir  string
+	days      int
+	stop      chan struct{}
+	stopped   chan struct{}
+	lastSweep time.Time
+	closeOnce sync.Once
 }
 
 // New writes to w with no rotation.
@@ -151,11 +171,16 @@ func (l *Logger) Close() error {
 	if l == nil {
 		return nil
 	}
+	if l.stop != nil {
+		l.closeOnce.Do(func() { close(l.stop) })
+		<-l.stopped
+	}
 	l.mu.Lock()
 	defer l.mu.Unlock()
 	if l.file != nil {
 		err := l.file.Close()
 		l.file = nil
+		l.w = nil
 		return err
 	}
 	return nil
@@ -170,8 +195,12 @@ func (l *Logger) write(level, event string, fields []Field) {
 	if l == nil {
 		return
 	}
+	if l.dailyDir != "" {
+		_ = l.Sweep()
+	}
+	at := l.now()
 	var b strings.Builder
-	b.WriteString(l.now().UTC().Format("2006-01-02T15:04:05.000Z"))
+	b.WriteString(at.UTC().Format("2006-01-02T15:04:05.000Z"))
 	b.WriteByte('\t')
 	b.WriteString(level)
 	b.WriteByte('\t')
@@ -187,11 +216,25 @@ func (l *Logger) write(level, event string, fields []Field) {
 
 	l.mu.Lock()
 	defer l.mu.Unlock()
+	if l.dailyDir != "" {
+		if l.file == nil {
+			return
+		}
+		if err := l.dayFile(at); err != nil {
+			return
+		}
+		if l.max > 0 && int64(len(line)) > l.max {
+			return
+		}
+	}
 	if l.w == nil {
 		return
 	}
 	if l.file != nil && l.max > 0 && l.size+int64(len(line)) > l.max && l.size > 0 {
 		l.rotate()
+	}
+	if l.w == nil || (l.dailyDir != "" && l.max > 0 && l.size+int64(len(line)) > l.max) {
+		return
 	}
 	n, _ := io.WriteString(l.w, line)
 	l.size += int64(n)

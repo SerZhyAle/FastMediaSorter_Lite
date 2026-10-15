@@ -506,18 +506,35 @@ End Class
 
 ''' <summary>A broadcast record served by the HTTP gateway in the worker.</summary>
 Public Class WorkerBroadcast
+    Private _itemCount As Integer
     Public Property Id As String = ""
     Public Property Token As String = ""
     Public Property Kind As String = ""
+    Public Property MediaKind As String = ""
     Public Property HostPath As String = ""
     Public Property Title As String = ""
     Public Property Recursive As Boolean
+    Public Property Items As List(Of WorkerBroadcastItem)
     Public Property ItemCount As Integer
+        Get
+            ' The first broadcast worker serialized items but omitted its computed count.
+            Return If(_itemCount > 0, _itemCount, If(Items Is Nothing, 0, Items.Count))
+        End Get
+        Set(value As Integer)
+            _itemCount = value
+        End Set
+    End Property
     Public Property DurationSeconds As Long
     Public Property CreatedAt As String = ""
     Public Property ExpiresAt As String = ""
     Public Property Hits As Long
     Public Property BytesServed As Long
+End Class
+
+Public Class WorkerBroadcastItem
+    Public Property Name As String = ""
+    Public Property HostPath As String = ""
+    Public Property Size As Long
 End Class
 
 ' --- response DTOs (WORKER-IPC section 3 envelope + section 5 status) ---------
@@ -621,6 +638,7 @@ Public Class WorkerStatus
     ''' <see cref="PortSupported"/>: a worker that predates the verbs omits it, so absent is False. The host never infers support
     ''' from a refusal's wording.</summary>
     Public Property BroadcastSupported As Boolean
+    Public Property BroadcastReachability As WorkerReachability
     ' No `exchange` / `exchangeSupported` member (ticket 170 section 5): the worker is not told about an exchange server, so its status
     ' has nothing to say about one. A worker that still reports such a member has it ignored (an unknown member is never an error).
 End Class

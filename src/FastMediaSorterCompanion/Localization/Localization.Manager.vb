@@ -1,4 +1,4 @@
-﻿Option Strict On
+Option Strict On
 
 ' <summary>
 ' The Share Manager main window: header, server grid, options, usage counters,
@@ -156,6 +156,13 @@ Partial Public NotInheritable Class Localization
             "Como funciona o servidor de troca (portal)", "كيف يعمل خادم التبادل (البوابة)",
             "आदान-प्रदान सर्वर कैसे काम करता है (पोर्टल)", "বিনিময় সার্ভার কীভাবে কাজ করে (পোর্টাল)",
             "تبادلہ سرور کیسے کام کرتا ہے (پورٹل)", "交换服务器的工作方式（门户）")
+        Add("Как удалить учётную запись (портал)",
+            "How to delete an account (portal)", "Як видалити обліковий запис (портал)",
+            "Konto löschen (Portal)", "Come eliminare un account (portale)",
+            "Cómo eliminar una cuenta (portal)", "Comment supprimer un compte (portail)",
+            "Como eliminar uma conta (portal)", "كيفية حذف الحساب (البوابة)",
+            "खाता कैसे हटाएँ (पोर्टल)", "কীভাবে অ্যাকাউন্ট মুছবেন (পোর্টাল)",
+            "اکاؤنٹ کیسے حذف کریں (پورٹل)", "如何删除账户（门户）")
 
         Add("Инструкция для моей модели роутера",
             "Guide for my router model", "Інструкція для моєї моделі роутера",

@@ -309,6 +309,14 @@ Partial Public NotInheritable Class Localization
             "उपकरण ने उत्तर दिया: HTTP {0}", "ডিভাইস উত্তর দিয়েছে: HTTP {0}",
             "ڈیوائس نے جواب دیا: HTTP {0}", "设备返回：HTTP {0}")
 
+        Add("Принять входящую трансляцию?", "Accept the incoming broadcast?", "Прийняти вхідну трансляцію?",
+            "Eingehende Übertragung annehmen?", "Accettare la trasmissione in arrivo?", "¿Aceptar la transmisión entrante?",
+            "Accepter la diffusion entrante ?", "Aceitar a transmissão recebida?", "قبول البث الوارد؟", "आने वाला प्रसारण स्वीकार करें?",
+            "আগত সম্প্রচার গ্রহণ করবেন?", "آنے والی نشریات قبول کریں؟", "接受传入的直播？")
+        Add("Принимать трансляции автоматически", "Accept broadcasts automatically", "Приймати трансляції автоматично",
+            "Übertragungen automatisch annehmen", "Accetta automaticamente le trasmissioni", "Aceptar transmisiones automáticamente",
+            "Accepter les diffusions automatiquement", "Aceitar transmissões automaticamente", "قبول البث تلقائيًا", "प्रसारण स्वचालित रूप से स्वीकार करें",
+            "স্বয়ংক্রিয়ভাবে সম্প্রচার গ্রহণ করুন", "نشریات خودکار طور پر قبول کریں", "自动接受直播")
     End Sub
 
 End Class

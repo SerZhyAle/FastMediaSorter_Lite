@@ -13,6 +13,59 @@ Imports Xunit
 ''' </summary>
 Public Class RecipientsOverlayPlacementTests
 
+    ' ------------------------------------------------------------------ the rows (125 UX-332) ----
+
+    <Theory>
+    <InlineData(0, 24, 0)>
+    <InlineData(1, 24, 12)>
+    <InlineData(10, 31, 15)>
+    <InlineData(3, 1, 1)>
+    <InlineData(3, 0, 0)>
+    Public Sub The_delete_row_stands_half_a_row_apart_from_the_folders_above_it(folders As Integer, rowHeight As Integer, expected As Integer)
+        ' Nothing above it, nothing to be apart from; otherwise half a row of air, never less than a pixel.
+        Assert.Equal(expected, RecipientsOverlayRows.DeleteRowGap(folders, rowHeight))
+    End Sub
+
+    <Fact>
+    Public Sub The_move_verb_is_drawn_only_while_the_folder_keeps_its_room()
+        ' A row 300 wide, the caption starting at 28 after the glyph, 6 px of padding at the far end, a verb
+        ' of 60 px with its space, and a folder that needs 96 px to stay readable.
+        Assert.True(RecipientsOverlayRows.ShowsMoveVerb(300, 28, 6, 60, 96))
+        Assert.True(RecipientsOverlayRows.ShowsMoveVerb(190, 28, 6, 60, 96))
+        Assert.False(RecipientsOverlayRows.ShowsMoveVerb(189, 28, 6, 60, 96))
+        ' No verb at all (an empty word) is never drawn.
+        Assert.False(RecipientsOverlayRows.ShowsMoveVerb(300, 28, 6, 0, 96))
+        Assert.False(RecipientsOverlayRows.ShowsMoveVerb(300, 28, 6, -5, 96))
+    End Sub
+
+    <Theory>
+    <InlineData(24, 17)>
+    <InlineData(71, 50)>
+    <InlineData(14, 12)>
+    <InlineData(13, 11)>
+    <InlineData(3, 1)>
+    <InlineData(0, 0)>
+    <InlineData(-5, 0)>
+    Public Sub A_row_picture_is_seven_tenths_of_the_row_never_below_the_floor_and_never_touching_the_edges(rowHeight As Integer, expected As Integer)
+        ' 24 px (the default font at 100 %) lands where the old fixed 16 px picture did; the floor of 12 px keeps a
+        ' drawing from becoming a smudge, but a row too short for it wins (two pixels of air); no row, no picture.
+        Assert.Equal(expected, RecipientsOverlayRows.GlyphSide(rowHeight))
+    End Sub
+
+    <Fact>
+    Public Sub A_row_picture_follows_the_row_when_the_table_font_grows()
+        ' The font is a setting and the row follows it; a picture with a size of its own stayed a stamp beside a
+        ' large caption (the delete row's bin at 225 % was a third of its row).
+        Dim previous As Integer = 0
+        For rowHeight As Integer = 20 To 120 Step 4
+            Dim side As Integer = RecipientsOverlayRows.GlyphSide(rowHeight)
+            Assert.True(side >= previous, "the picture shrank while the row grew at " & rowHeight)
+            Assert.True(side <= rowHeight - 2, "the picture touches the row's edge at " & rowHeight)
+            previous = side
+        Next
+        Assert.True(RecipientsOverlayRows.GlyphSide(96) >= 2 * RecipientsOverlayRows.GlyphSide(40) - 2)
+    End Sub
+
     ' ------------------------------------------------------------------ the anchored corner ----
 
     <Theory>

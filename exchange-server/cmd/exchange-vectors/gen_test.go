@@ -396,7 +396,7 @@ func TestConnectionStringVectorsReplayThroughTheCodec(t *testing.T) {
 			continue
 		}
 		if c.Fields == nil || got.Endpoint() != c.Fields.X || got.Host != c.Fields.Host || got.Port != c.Fields.Port ||
-			got.Fingerprint != c.Fields.FP || got.Name != c.Fields.N || got.Login != c.Fields.U {
+			got.Fingerprint != c.Fields.FP || got.Name != c.Fields.N || got.Login != c.Fields.U || got.Invitation != c.Fields.I {
 			t.Errorf("%s: members differ: %+v vs %+v", c.Name, got, c.Fields)
 		}
 		text, err := got.String()

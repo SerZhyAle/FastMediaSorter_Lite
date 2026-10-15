@@ -160,6 +160,70 @@ Public Class HelpCardRowsTests
         Assert.Equal("Menu, Shift+F10, Ctrl+M", RowFor(HelpCardRows.Build(map), "mediaMenu").Keys)
     End Sub
 
+    ' --- UX-113: the main row, UX-112: Enter ----------------------------------------------------
+
+    <Fact>
+    Public Sub Zoom_lists_the_main_row_as_printed_on_the_keycaps()
+        Dim groups As List(Of HelpCardGroup) = HelpCardRows.Build(Nothing)
+        Assert.Equal("Num +, =, +", RowFor(groups, "zoomIn").Keys)
+        Assert.Equal("Num -, -", RowFor(groups, "zoomOut").Keys)
+        Assert.Equal("Num /", RowFor(groups, "zoomFit").Keys)
+        Assert.Equal("+", HelpCardRows.DisplayKey("Shift+Oemplus"))
+        Assert.Equal("=", HelpCardRows.DisplayKey("Oemplus"))
+        Assert.Equal("Ctrl+-", HelpCardRows.DisplayKey("Ctrl+OemMinus"))
+    End Sub
+
+    <Fact>
+    Public Sub Enter_is_on_the_card_as_the_open_action_and_follows_a_rebinding()
+        Assert.Equal("Enter", RowFor(HelpCardRows.Build(Nothing), "openContent").Keys)
+        Dim map As Dictionary(Of String, String) = CustomHotkeys.Load("{""openContent"":""F8""}")
+        Assert.Equal("F8", RowFor(HelpCardRows.Build(map), "openContent").Keys)
+    End Sub
+
+    ' --- UX-114: what a key works on ---------------------------------------------------------
+
+    <Theory>
+    <InlineData("playPause", "VideoAudio")>
+    <InlineData("volumeUp", "VideoAudio")>
+    <InlineData("seekFwdLong", "VideoAudio")>
+    <InlineData("audioTrack", "VideoAudio")>
+    <InlineData("frameStep", "Video")>
+    <InlineData("subtitleTrack", "Video")>
+    <InlineData("rotateCw", "Picture")>
+    <InlineData("ocrTranslate", "Picture")>
+    <InlineData("zoomActual", "Picture")>
+    <InlineData("zoomIn", "PictureAndText")>
+    <InlineData("zoomFit", "PictureAndText")>
+    <InlineData("nextFile", "Everywhere")>
+    <InlineData("deleteFile", "Everywhere")>
+    <InlineData("openContent", "Everywhere")>
+    Public Sub A_row_carries_the_scope_of_its_action(actionId As String, scopeName As String)
+        ' By name: the scope enum is internal, and a public test signature may not expose it.
+        Dim expected As HelpKeyScope = DirectCast([Enum].Parse(GetType(HelpKeyScope), scopeName), HelpKeyScope)
+        Assert.Equal(expected, HelpCardRows.ScopeOf(actionId))
+        Assert.Equal(expected, RowFor(HelpCardRows.Build(Nothing), actionId).Scope)
+    End Sub
+
+    ''' <summary>A playback or zoom key added to the catalogue later cannot ship unmarked: the card would go
+    ''' back to saying nothing about which media the key works on.</summary>
+    <Fact>
+    Public Sub Every_playback_and_zoom_action_is_marked()
+        For Each action As HotkeyAction In CustomHotkeys.Catalog
+            If CustomHotkeys.IsPlaybackAction(action.Id) OrElse CustomHotkeys.IsZoomAction(action.Id) _
+               OrElse action.Id = "audioTrack" OrElse action.Id = "subtitleTrack" OrElse action.Id = "frameStep" Then
+                Assert.NotEqual(HelpKeyScope.Everywhere, HelpCardRows.ScopeOf(action.Id))
+            End If
+        Next
+    End Sub
+
+    <Fact>
+    Public Sub Only_the_unmarked_scope_has_no_mark_text()
+        Assert.Equal(String.Empty, HelpCardRows.ScopeMark(HelpKeyScope.Everywhere))
+        For Each scope As HelpKeyScope In {HelpKeyScope.VideoAudio, HelpKeyScope.Video, HelpKeyScope.Picture, HelpKeyScope.PictureAndText}
+            Assert.False(String.IsNullOrWhiteSpace(HelpCardRows.ScopeMark(scope)))
+        Next
+    End Sub
+
     ' --- text -------------------------------------------------------------------------------
 
     <Theory>
@@ -195,6 +259,7 @@ Public Class HelpCardRowsTests
             For Each row As HelpCardRow In group.Rows
                 keys.Add(row.Description)
                 If row.KeysAreWords Then keys.Add(row.Keys)
+                If row.Scope <> HelpKeyScope.Everywhere Then keys.Add(HelpCardRows.ScopeMark(row.Scope))
             Next
         Next
         For Each key As String In keys.Distinct()

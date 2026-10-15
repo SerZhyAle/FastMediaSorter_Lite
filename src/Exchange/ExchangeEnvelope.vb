@@ -288,11 +288,11 @@ Friend NotInheritable Class ExchangeEnvelopeTable
             T("deviceId", True), T("deviceName", True), T("product", True), T("productVersion", omit:=WhenEmpty),
             T("platform", omit:=WhenEmpty), L("roles", WhenEmpty), L("capabilities", WhenEmpty), R("receiver", omit:=WhenEmpty),
             N("keepaliveSeconds", WhenEmpty))
-        Row("enrolled", T("deviceToken", True), T("account"), T("publicEndpoint"), N("keepaliveSeconds"),
+        Row("enrolled", T("deviceToken", True), T("account"), T("accountKind", omit:=WhenEmpty), T("publicEndpoint"), N("keepaliveSeconds"),
             L("features"), T("serverVersion"))
         Row("hello", T("deviceId", True), T("deviceToken", True), T("productVersion", omit:=WhenEmpty),
             N("keepaliveSeconds", WhenEmpty))
-        Row("welcome", T("account"), T("publicEndpoint"), N("keepaliveSeconds"), L("features"), T("serverVersion"))
+        Row("welcome", T("account"), T("accountKind", omit:=WhenEmpty), T("publicEndpoint"), N("keepaliveSeconds"), L("features"), T("serverVersion"))
         Row("refused", T("reason", True))
         ' --- the control stream (7.3, 7.4) ---
         Row("keepalive")
@@ -333,6 +333,28 @@ Friend NotInheritable Class ExchangeEnvelopeTable
             New ExchangeMemberSpec("accepted", ExchangeMemberKind.Flag, False, ExchangeOmit.Never),
             T("reason", omit:=WhenEmpty))
         Row("cast-stop", T("broadcastId", True), T("receiverDeviceId", True))
+        ' --- ticket 224 account lifecycle: registration, passwords, deletion ---
+        Row("register", T("invitationCode", omit:=WhenEmpty), T("sharedPassword", omit:=WhenEmpty),
+            T("login", True), T("password", True), T("deviceId", True), T("deviceName", True),
+            T("product", True), T("productVersion", omit:=WhenEmpty), T("platform", omit:=WhenEmpty),
+            L("roles", WhenEmpty), L("capabilities", WhenEmpty), R("receiver", omit:=WhenEmpty),
+            N("keepaliveSeconds", WhenEmpty))
+        Row("password-change", T("oldPassword", True), T("newPassword", True))
+        Row("password-changed", T("deviceToken", True))
+        Row("account-delete", T("password", True))
+        Row("account-deleted")
+        ' --- spec 230 / DEVICE-EXCHANGE section 22 items BW-BY: the clipboard. The value itself is never an envelope
+        ' member: after `clipboard-ready` (a put) or `clipboard-value` (a get) exactly `size` raw bytes follow. ---
+        Row("clipboard-put", T("kind", True), N("size"), T("mimeType", omit:=WhenEmpty), T("name", omit:=WhenEmpty))
+        Row("clipboard-ready")
+        Row("clipboard-stored", T("clipId", True), T("sha256", True), T("storedAt"))
+        Row("clipboard-info")
+        Row("clipboard-state", R("value", omit:=WhenEmpty))
+        Row("clipboard-get", T("clipId", omit:=WhenEmpty))
+        Row("clipboard-value", T("clipId", True), N("size"), T("sha256", True), T("storedAt"),
+            T("sourceDeviceId", omit:=WhenEmpty), T("sourceDeviceName", omit:=WhenEmpty), T("kind", True),
+            T("mimeType", omit:=WhenEmpty), T("name", omit:=WhenEmpty))
+        Row("clipboard-empty")
     End Sub
 
     ''' <summary>The members of a type in wire order, or Nothing for a type this wire does not define.</summary>

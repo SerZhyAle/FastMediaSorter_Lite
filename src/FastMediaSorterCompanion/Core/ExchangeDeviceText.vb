@@ -18,40 +18,65 @@ Friend NotInheritable Class ExchangeAccountGroupModel
     Public ReadOnly ShowDevices As Boolean
     ''' <summary>Revoke acts on the selected device; it exists wherever the list does.</summary>
     Public ReadOnly ShowRevoke As Boolean
+    ''' <summary>226 rule 4: the password change speaks over the live control stream, so it exists wherever the account is on line.</summary>
+    Public ReadOnly ShowChangePassword As Boolean
     Public ReadOnly ShowDisconnect As Boolean
 
-    Private Sub New(visible As Boolean, signIn As Boolean, acceptCertificate As Boolean, addDevice As Boolean, devices As Boolean, revoke As Boolean, disconnect As Boolean)
+    Private Sub New(visible As Boolean, signIn As Boolean, acceptCertificate As Boolean, addDevice As Boolean, devices As Boolean, revoke As Boolean, changePassword As Boolean, disconnect As Boolean)
         Me.Visible = visible
         ShowSignIn = signIn
         ShowAcceptCertificate = acceptCertificate
         ShowAddDevice = addDevice
         ShowDevices = devices
         ShowRevoke = revoke
+        ShowChangePassword = changePassword
         ShowDisconnect = disconnect
     End Sub
 
     ''' <summary>The rows for a status. <paramref name="status"/> may be Nothing (no agent: nothing configured).</summary>
     Public Shared Function Build(status As ExchangeDeviceStatus, gateOpen As Boolean) As ExchangeAccountGroupModel
-        If Not gateOpen Then Return New ExchangeAccountGroupModel(False, False, False, False, False, False, False)
+        If Not gateOpen Then Return New ExchangeAccountGroupModel(False, False, False, False, False, False, False, False)
         If status Is Nothing OrElse Not status.Configured Then
-            Return New ExchangeAccountGroupModel(True, True, False, False, False, False, False)
+            Return New ExchangeAccountGroupModel(True, True, False, False, False, False, False, False)
         End If
         Select Case status.State
             Case ExchangeAgentState.Online
                 Dim pairing As Boolean = status.HasFeature(ExchangeWire.FeaturePairing)
                 Dim directory As Boolean = status.HasFeature(ExchangeWire.FeatureDirectory)
-                Return New ExchangeAccountGroupModel(True, False, False, pairing, directory, directory, True)
+                Return New ExchangeAccountGroupModel(True, False, False, pairing, directory, directory, True, True)
             Case ExchangeAgentState.SignInAgain
-                Return New ExchangeAccountGroupModel(True, True, False, False, False, False, True)
+                Return New ExchangeAccountGroupModel(True, True, False, False, False, False, False, True)
             Case ExchangeAgentState.PinMismatch
-                Return New ExchangeAccountGroupModel(True, False, True, False, False, False, True)
+                Return New ExchangeAccountGroupModel(True, False, True, False, False, False, False, True)
             Case Else
                 ' connecting, waiting to reconnect, update needed, a defect, stopped: the account can still be forgotten
-                Return New ExchangeAccountGroupModel(True, False, False, False, False, False, True)
+                Return New ExchangeAccountGroupModel(True, False, False, False, False, False, False, True)
         End Select
     End Function
 
 End Class
+
+''' <summary>226 rule 4: the refusals and the success of a password change, one sentence each. The success names the
+''' consequence the owner decided: this device stays signed in, the account's OTHER devices sign in again (224 rule 9).</summary>
+Friend Module ExchangePasswordChangeText
+
+    Friend Function Success() As String
+        Return Localization.T("Пароль сменён. Этот компьютер продолжает работать, а другие устройства учётной записи должны войти заново.")
+    End Function
+
+    Friend Function Failure(refusal As ExchangeRefusal) As String
+        Select Case refusal
+            Case ExchangeRefusal.BadCredentials : Return Localization.T("Старый пароль не подошёл.")
+            Case ExchangeRefusal.RateLimited : Return Localization.T("Слишком много попыток. Подождите минуту и повторите.")
+            Case Else : Return Localization.T("Сервер отказал в смене пароля.")
+        End Select
+    End Function
+
+    Friend Function NoStream() As String
+        Return Localization.T("Нет связи с сервером. Подключитесь и повторите.")
+    End Function
+
+End Module
 
 Friend Module ExchangeDeviceText
 

@@ -40,6 +40,7 @@ Public NotInheritable Class ModernViewerPreferences
     ''' which is what filing one picture into several folders wants
     ''' (SPECIFICATION_COPY_ACTIONS_REWORK.md §3.2).</summary>
     Public Property AdvanceAfterCopy As Boolean = True
+    Public Property AutoAcceptLiveCast As Boolean = False
     ''' <summary>Whether DEL aims for the Recycle Bin at all
     ''' (017_SPECIFICATION_RECYCLE_BIN_AND_UNDO_DOTNET10.md §3.9). Off means every deletion is
     ''' permanent and SAYS so - the same wording Shift+DEL produces, because it is the same
@@ -323,6 +324,7 @@ Public NotInheritable Class ModernViewerPreferences
         p.NameCollisionPolicy = ReadChoice("NameCollisionPolicy", p.NameCollisionPolicy, "ask", "skip", "rename", "replace")
         p.AfterFileOperation = ReadChoice("AfterFileOperation", p.AfterFileOperation, "next", "stay", "closeIfEmpty")
         p.AdvanceAfterCopy = ReadBool("AdvanceAfterCopy", p.AdvanceAfterCopy)
+        p.AutoAcceptLiveCast = ReadBool("AutoAcceptLiveCast", p.AutoAcceptLiveCast)
         p.DeleteToRecycleBin = ReadBool("DeleteToRecycleBin", p.DeleteToRecycleBin)
         p.ConfirmDelete = ReadConfirmDelete()
         p.CreateMissingDestination = ReadBool("CreateMissingDestination", p.CreateMissingDestination)
@@ -414,6 +416,7 @@ Public NotInheritable Class ModernViewerPreferences
         WriteString("NameCollisionPolicy", NameCollisionPolicy)
         WriteString("AfterFileOperation", AfterFileOperation)
         WriteBool("AdvanceAfterCopy", AdvanceAfterCopy)
+        WriteBool("AutoAcceptLiveCast", AutoAcceptLiveCast)
         WriteBool("DeleteToRecycleBin", DeleteToRecycleBin)
         WriteString("ConfirmDelete", ConfirmDelete)
         WriteBool("CreateMissingDestination", CreateMissingDestination)

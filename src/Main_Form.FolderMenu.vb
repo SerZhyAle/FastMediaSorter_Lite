@@ -27,6 +27,9 @@ Partial Public Class Main_Form
     Private folder_Menu_Close_Archive_Item As ToolStripMenuItem
     Private folder_Menu_Share_Item As ToolStripMenuItem
     Private folder_Menu_Broadcast_Item As ToolStripMenuItem
+    ''' <summary>Ticket 222 (7.4): the viewer's ONE entry into scheduled file operations - a launcher that wakes
+    ''' the Share Manager, which owns the list, the editor and the history. Nothing else of the feature is here.</summary>
+    Private folder_Menu_Schedule_Item As ToolStripMenuItem
     Private folder_Menu_Resources_Item As ToolStripMenuItem
     Private folder_Menu_StreamCatalog_Item As ToolStripMenuItem
     Private folder_Combo_Edit_Hook As ComboEditContextMenuHook
@@ -74,6 +77,10 @@ Partial Public Class Main_Form
             AddHandler folder_Menu_Share_Item.Click, Sub() ActivateShareEntryPoint()
             folder_Context_Menu.Items.Add(folder_Menu_Share_Item)
 
+            folder_Menu_Schedule_Item = New ToolStripMenuItem()
+            AddHandler folder_Menu_Schedule_Item.Click, Sub() ActivateScheduleEntryPoint()
+            folder_Context_Menu.Items.Add(folder_Menu_Schedule_Item)
+
             folder_Menu_Broadcast_Item = New ToolStripMenuItem()
             AddHandler folder_Menu_Broadcast_Item.Click, Sub() ActivateBroadcastEntryPoint(ResolveCurrentFolder())
             folder_Context_Menu.Items.Add(folder_Menu_Broadcast_Item)
@@ -113,6 +120,7 @@ Partial Public Class Main_Form
         folder_Menu_Close_Archive_Item.Visible = IsArchiveMode()
         folder_Menu_Resources_Item.Visible = plainFolder
         folder_Menu_Share_Item.Visible = plainFolder
+        folder_Menu_Schedule_Item.Visible = plainFolder
         folder_Menu_Broadcast_Item.Visible = plainFolder
         folder_Menu_StreamCatalog_Item.Visible = plainFolder
     End Sub
@@ -166,6 +174,11 @@ Partial Public Class Main_Form
             ' other end is the Android one, and a tablet is not a phone.
             folder_Menu_Share_Item.Text = Localization.T("Поделиться этой папкой с Android..")
             folder_Menu_Share_Item.ToolTipText = Localization.T("Открыть Share Manager и раздать эту папку на Android")
+        End If
+
+        If folder_Menu_Schedule_Item IsNot Nothing Then
+            folder_Menu_Schedule_Item.Text = Localization.T("Запланировать операцию для этой папки..")
+            folder_Menu_Schedule_Item.ToolTipText = Localization.T("Открыть Share Manager: новая операция по расписанию с этой папкой в качестве источника")
         End If
 
         If folder_Menu_Broadcast_Item IsNot Nothing Then

@@ -490,7 +490,10 @@ Public Class TesseractOcrEngine
             ' only so the column grouping can see - and exclude - it.
             If line.Text.Length = 0 Then Continue For
 
-            Dim rejection As String = OcrTextFilter.LineRejection(line.Text, line.Confidence)
+            ' The verdict reads the SPACED line, not the joined one: the threshold was measured on
+            ' it, and a joined CJK line is one long letter run where the spaced one was many short
+            ' ones - the same drift 1.8 F fixes in the reference. The join changes what is drawn.
+            Dim rejection As String = OcrTextFilter.LineRejection(line.SpacedText, line.Confidence)
             If rejection.Length = 0 Then
                 lines.Add(line)
             ElseIf dropped IsNot Nothing Then
@@ -545,6 +548,14 @@ Public Class TesseractOcrEngine
                         End If
                     Loop While iter.Next(PageIteratorLevel.TextLine, PageIteratorLevel.Word)
 
+                    ' The line's text is made from its words, now that all of them are known - the
+                    ' Hangul gap of the join weighs against the line's MEDIAN word height
+                    ' (`OCR-PIPELINE` 1.8 A). Words are joined with a space except where they meet
+                    ' on Han, kana or CJK punctuation; a line with no usable words keeps the
+                    ' engine's own text, as the contract says.
+                    Dim lineText As String = cleaned
+                    If words.Count > 0 Then lineText = OcrTextJoin.JoinLineWords(words)
+
                     ' A line the engine returned with no usable words keeps the stub it has
                     ' always had, so nothing downstream that reads Words meets an empty list
                     ' where it used to meet one entry.
@@ -553,7 +564,7 @@ Public Class TesseractOcrEngine
                     End If
 
                     lines.Add(New OcrLine With {
-                        .Text = cleaned,
+                        .Text = lineText,
                         .Box = box,
                         .Confidence = conf,
                         .Words = words
@@ -827,8 +838,13 @@ Public Class TesseractOcrEngine
         Dim expectedScript As TextScriptFamily = ExpectedScriptForLanguage(profile.Language)
 
         For Each line As OcrLine In result.Lines
-            totalChars += line.Text.Length
-            Dim lineUseful As Integer = OcrTextFilter.CountLettersAndDigits(line.Text)
+            ' Every measure below reads the SPACED line (OcrLine.SpacedText), the text the score
+            ' was tuned on: this score picks the winning attempt and the language, and joining
+            ' CJK words (`OCR-PIPELINE` 1.8) would otherwise move both - by way of a useful
+            ' ratio and a letter run that the line's own spaces used to hold down.
+            Dim spaced As String = line.SpacedText
+            totalChars += spaced.Length
+            Dim lineUseful As Integer = OcrTextFilter.CountLettersAndDigits(spaced)
             usefulChars += lineUseful
             If lineUseful >= 3 Then goodLines += 1
 
@@ -836,11 +852,11 @@ Public Class TesseractOcrEngine
             Dim dominantShare As Double = 0.0
             Dim mixedLetters As Integer = 0
             Dim dominantScript As TextScriptFamily = TextScriptFamily.Unknown
-            Dim hasDominantScript As Boolean = TryGetDominantScript(line.Text, dominantScript, dominantShare, letters, mixedLetters)
-            Dim usefulRatio As Double = lineUseful / CDbl(Math.Max(1, line.Text.Length))
-            Dim symbolNoise As Double = SymbolRatio(line.Text)
-            Dim digitNoise As Double = DigitRatio(line.Text)
-            Dim longestRun As Integer = OcrTextFilter.LongestLetterRun(line.Text)
+            Dim hasDominantScript As Boolean = TryGetDominantScript(spaced, dominantScript, dominantShare, letters, mixedLetters)
+            Dim usefulRatio As Double = lineUseful / CDbl(Math.Max(1, spaced.Length))
+            Dim symbolNoise As Double = SymbolRatio(spaced)
+            Dim digitNoise As Double = DigitRatio(spaced)
+            Dim longestRun As Integer = OcrTextFilter.LongestLetterRun(spaced)
 
             Dim looksNatural As Boolean =
                 lineUseful >= 4 AndAlso
@@ -855,7 +871,7 @@ Public Class TesseractOcrEngine
             Dim looksSuspicious As Boolean =
                 (lineUseful >= 4 AndAlso Not looksNatural) OrElse
                 (hasDominantScript AndAlso letters >= 4 AndAlso dominantShare < 0.55) OrElse
-                (line.Text.Length >= 8 AndAlso symbolNoise >= 0.28)
+                (spaced.Length >= 8 AndAlso symbolNoise >= 0.28)
 
             If looksSuspicious Then suspiciousLines += 1
             If hasDominantScript AndAlso letters >= 4 AndAlso dominantShare < 0.72 Then mixedScriptLines += 1

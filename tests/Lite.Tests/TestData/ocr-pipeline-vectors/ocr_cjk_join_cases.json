@@ -1,0 +1,77 @@
+{
+  "_comment": "Shared OCR CJK join cases, read by internal/ocr (joinLineWords, joinPlateLines) and extension/src/ocr-text.js (joinLineWords, joinPlateLines). A word is [text, x0, y0, x1, y1] in recognizer pixels. Words that meet on Han, kana or CJK punctuation join with no space; a pair involving Hangul joins only when the gap between the boxes is under OCR_HANGUL_JOIN_GAP_RATIO (0.33) x the median word height; every other pair keeps its space. Plate lines join the same way on Han, kana and CJK punctuation; a Hangul line break keeps its space (OCR-PIPELINE amendment 1.8). See docs/PARITY.md, CJK word join.",
+  "words": [
+    {
+      "about": "ja-comic-peppercarrot-p03: the recognizer cut one Japanese line into single characters",
+      "words": [["コモ", 0, 0, 40, 30], ["ナ", 42, 0, 60, 30], ["市", 62, 0, 90, 30], ["長", 92, 0, 120, 30], ["の", 122, 0, 140, 30], ["私", 142, 0, 170, 30], ["が", 172, 0, 190, 30]],
+      "want": "コモナ市長の私が"
+    },
+    {
+      "about": "zh-comic-peppercarrot-p03: a fullwidth comma joins like the Han around it; the ASCII exclamation mark keeps its space",
+      "words": [["市", 0, 0, 30, 30], ["长", 32, 0, 62, 30], ["，", 64, 0, 80, 30], ["我", 82, 0, 112, 30], ["宣布", 114, 0, 174, 30], ["!", 176, 0, 186, 30]],
+      "want": "市长，我宣布 !"
+    },
+    {
+      "about": "ko-comic-peppercarrot-p03: syllables 2 px apart join, the real word space (16 px on a 30 px median) stays",
+      "words": [["코", 0, 0, 24, 30], ["모", 26, 0, 50, 30], ["나", 52, 0, 76, 30], ["시", 92, 0, 116, 30], ["장", 118, 0, 142, 30], ["으로서,", 144, 0, 220, 30]],
+      "want": "코모나 시장으로서,"
+    },
+    {
+      "about": "Hangul just under the bound: a 9 px gap on a 30 px median is under 9.9 px",
+      "words": [["시", 0, 0, 24, 30], ["장", 33, 0, 57, 30]],
+      "want": "시장"
+    },
+    {
+      "about": "Hangul at the bound: a 10 px gap on a 30 px median is not under 9.9 px",
+      "words": [["시", 0, 0, 24, 30], ["장", 34, 0, 58, 30]],
+      "want": "시 장"
+    },
+    {
+      "about": "Hangul beside Han (hanja) is judged on the gap, like Hangul beside Hangul",
+      "words": [["大韓", 0, 0, 60, 30], ["민국", 62, 0, 122, 30]],
+      "want": "大韓민국"
+    },
+    {
+      "about": "Hangul with no measurable word height keeps its space - there is nothing to measure the gap against",
+      "words": [["시", 0, 0, 24, 0], ["장", 25, 0, 49, 0]],
+      "want": "시 장"
+    },
+    {
+      "about": "the prolonged sound mark is Common script but joins like the katakana around it",
+      "words": [["ケ", 0, 0, 30, 30], ["ー", 32, 0, 62, 30], ["キ", 64, 0, 94, 30]],
+      "want": "ケーキ"
+    },
+    {
+      "about": "a space between a CJK character and a Latin word or a digit is kept",
+      "words": [["東京", 0, 0, 60, 30], ["Tower", 70, 0, 150, 30], ["第", 160, 0, 190, 30], ["3", 192, 0, 210, 30], ["章", 212, 0, 242, 30]],
+      "want": "東京 Tower 第 3 章"
+    },
+    {
+      "about": "a Latin line is untouched, however tight its gaps",
+      "words": [["Hello", 0, 0, 80, 30], ["world", 81, 0, 160, 30]],
+      "want": "Hello world"
+    }
+  ],
+  "lines": [
+    {
+      "about": "a Japanese balloon wraps with no space at its line breaks",
+      "lines": ["コモナ市長の私が", "魔法薬コンテストの", "開会を宣言します!"],
+      "want": "コモナ市長の私が魔法薬コンテストの開会を宣言します!"
+    },
+    {
+      "about": "a Chinese line that ends on a fullwidth comma",
+      "lines": ["身为科魔那市长，", "我宣布魔药大赛拉开序幕！"],
+      "want": "身为科魔那市长，我宣布魔药大赛拉开序幕！"
+    },
+    {
+      "about": "a Korean line break is a word break and keeps its space",
+      "lines": ["코모나 시장으로서,", "포션 대회의 개최를..."],
+      "want": "코모나 시장으로서, 포션 대회의 개최를..."
+    },
+    {
+      "about": "a Latin line meeting a CJK line keeps the space",
+      "lines": ["I SAID", "市長"],
+      "want": "I SAID 市長"
+    }
+  ]
+}

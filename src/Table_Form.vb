@@ -23,6 +23,10 @@ Public Class Table_Form
     End Sub
 
     Private Sub Form2_FormClosing(sender As Object, e As FormClosingEventArgs) Handles Me.FormClosing
+#If Not NETFRAMEWORK Then
+        ' A preparation made while the window was already open (a language switch) is not one for the next Load.
+        preparedBeforeLoad = False
+#End If
         ' Destination folders may have been edited on the grid - rebuild the
         ' recipients overlay so it reflects the current set (the show/hide flag is
         ' persisted by Main_Form, not here anymore).
@@ -136,8 +140,27 @@ Public Class Table_Form
 
     End Sub
 
+#If Not NETFRAMEWORK Then
+    ''' <summary>True from the end of an explicit <see cref="PrepareForDisplay"/> until the window's next Load. Every
+    ''' way of opening the window (F2, the toolbar button, the OCR settings door) prepares it BEFORE it shows it - to
+    ''' place it while it has no handle - and the Load that follows then prepared it a second time: the same rows,
+    ''' localization and grid again, 130 to 150 ms of every open. The flag lets that Load stand down; a window
+    ''' shown without a prior preparation (the one restored at startup) still prepares itself in Load.</summary>
+    Private preparedBeforeLoad As Boolean
+#End If
+
     Private Sub Form2_Load(sender As Object, e As EventArgs) Handles MyBase.Load
+#If Not NETFRAMEWORK Then
+        If preparedBeforeLoad Then
+            preparedBeforeLoad = False
+            Return
+        End If
         PrepareForDisplay()
+        ' This preparation IS the Load's own: it must not make the next Load stand down.
+        preparedBeforeLoad = False
+#Else
+        PrepareForDisplay()
+#End If
     End Sub
 
     Protected Overrides Sub OnShown(e As EventArgs)
@@ -155,6 +178,9 @@ Public Class Table_Form
         CaptureSettingsPage(Tab_Control.SelectedTab)
 #End If
         Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " n00-2: the_Table_Form_Load")
+#If Not NETFRAMEWORK Then
+        Dim shellWasBuilt As Boolean = modernSettingsBuilt
+#End If
 
         ' Direction from the language table, like every other window (APP-BEHAVIOUR rule 8,
         ' ticket 028 Ф-7) - this one set none. RightToLeft only, never RightToLeftLayout.
@@ -437,8 +463,18 @@ Public Class Table_Form
         ' built by Table_Form.ModernLayout.vb.  Calling this after localization
         ' gives the navigation/header the same RU/EN wording as the page content.
         BuildModernSettingsLayout()
-        LocalizeModernSettingsLayout()
-        RefreshExpandedSettingsRows()
+        ' Two passes, and which of them does the localizing depends on whether the shell existed on entry.
+        '  - First open of this instance: the shell was built just now, with the grid's rows re-created BEFORE
+        '    its template was styled and the window not yet sized or shown. The Load that follows runs a full
+        '    second pass (a shown window is the only place the rows' heights settle - the layout scene compares
+        '    316 differences without it), so localizing here would be thrown away: it is skipped.
+        '  - Shell already built (a reopen, a language switch, the wizard closing): this pass is the only one
+        '    and does everything, and the Load that follows has nothing left to do.
+        If shellWasBuilt Then
+            LocalizeModernSettingsLayout()
+            RefreshExpandedSettingsRows()
+        End If
+        preparedBeforeLoad = shellWasBuilt
 #End If
     End Sub
 

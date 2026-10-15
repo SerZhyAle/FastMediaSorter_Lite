@@ -1,4 +1,4 @@
-﻿#If Not NETFRAMEWORK Then
+#If Not NETFRAMEWORK Then
 Option Explicit On
 Option Strict On
 Option Infer On
@@ -74,6 +74,7 @@ Public Module SettingsNavIconPalette
             Case "managerSettingsNav_hosting" : controlName = "settingsNavStorage"
             Case "managerSettingsNav_exchange" : controlName = "settingsNavTranslation"
             Case "managerSettingsNav_exchange-account" : controlName = "settingsNavRecipients"
+            Case "managerSettingsNav_scheduled" : controlName = "settingsNavFiles"
             Case "managerSettingsNav_help" : controlName = "settingsNavAudio"
         End Select
         For Each entry As NavInk In table

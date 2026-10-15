@@ -15,12 +15,19 @@ Friend Structure ChromeSlot
     Public ReadOnly MinWidth As Integer
     ''' <summary>A pinned item is the row's priority core and never collapses into the menu.</summary>
     Public ReadOnly Pinned As Boolean
+    ''' <summary>Empty air kept where a conditional item is away (125 UX-313b): nothing is drawn in it, it only
+    ''' holds the items after it in place. It is the FIRST thing a row gives up when it runs short of width -
+    ''' before the flexible item shrinks and before anything collapses into the "more" menu - and it never
+    ''' counts as something that could overflow.</summary>
+    Public ReadOnly Soft As Boolean
 
-    Public Sub New(id As String, width As Integer, Optional minWidth As Integer = -1, Optional pinned As Boolean = False)
+    Public Sub New(id As String, width As Integer, Optional minWidth As Integer = -1, Optional pinned As Boolean = False,
+                   Optional soft As Boolean = False)
         Me.Id = id
         Me.Width = Math.Max(0, width)
         Me.MinWidth = If(minWidth < 0, Me.Width, Math.Min(Math.Max(0, minWidth), Me.Width))
         Me.Pinned = pinned
+        Me.Soft = soft
     End Sub
 
     Public ReadOnly Property IsFlexible As Boolean
@@ -107,6 +114,17 @@ Friend NotInheritable Class ChromeLayout
         Dim overflowed(count - 1) As Boolean
         Dim hasOverflow As Boolean = False
 
+        ' 1b. Kept-empty places (a conditional button that is away) are air: the last of them goes first, one by
+        '     one, until the row fits - the path box keeps its width and nothing is sent to the menu for them.
+        '     A dropped place is neither placed nor overflowed.
+        If Not Fits(widths, kept, gap, availableWidth, 0) Then
+            For k As Integer = kept.Count - 1 To 0 Step -1
+                If Not slots(kept(k)).Soft Then Continue For
+                kept.RemoveAt(k)
+                If Fits(widths, kept, gap, availableWidth, 0) Then Exit For
+            Next
+        End If
+
         If Not Fits(widths, kept, gap, availableWidth, 0) Then
             ' 2. The flexible items give up width first, down to their minimum.
             For i As Integer = 0 To count - 1
@@ -187,7 +205,7 @@ Friend NotInheritable Class ChromeLayout
                 Dim width As Integer = If(slot.IsFlexible, slot.MinWidth, slot.Width)
                 total += If(pinnedCount > 0, gapValue, 0) + Math.Max(0, width)
                 pinnedCount += 1
-            Else
+            ElseIf Not slot.Soft Then
                 droppable = True
             End If
         Next

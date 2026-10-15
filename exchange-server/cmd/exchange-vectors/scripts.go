@@ -39,6 +39,13 @@ func (r *rig) control(s *sess, devID string) {
 	r.online(account, devID)
 }
 
+// controlAs is control for a device of a login other than the scenario's default account.
+func (r *rig) controlAs(login string, s *sess, devID string) {
+	s.send(&wire.Keepalive{})
+	s.expect(wire.TypeKeepalive)
+	r.online(login, devID)
+}
+
 // scenarioEnrollAndHello: enroll with the password on the first stream, a keepalive, a bye; then a
 // second stream of the same device with hello.
 func scenarioEnrollAndHello() *transcript {
@@ -91,12 +98,15 @@ func scenarioPairing() *transcript {
 
 // scenarioRefusals produces every reason of 7.10 the way the server produces it.
 func scenarioRefusals() *transcript {
-	r := newRig("refusals", rigOpts{logins: []string{account, "bobby"}, params: func(p *rendezvousParams) { p.ResourcesPerAccount = 1 }})
+	r := newRig("refusals", rigOpts{logins: []string{account, "bobby"},
+		params: func(p *rendezvousParams) { p.ResourcesPerAccount = 1; p.CodesPerAccount = 1 }})
 	defer mustClose(r)
 	tr := r.newTranscript("refusals",
-		"Every refusal reason of DEVICE-EXCHANGE 7.10 produced by the real server: tls-required and version-unsupported on a plain stream, "+
-			"id-collision, capacity, port-unavailable, unavailable, device-revoked, bad-credentials and rate-limited. "+
-			"The failed-authentication bucket of this server holds 2 and does not refill during the run, so the last three steps are the ones that spend it.")
+		"The refusal reasons of DEVICE-EXCHANGE 7.10 that are not about registration or passwords, produced by the real server: tls-required and "+
+			"version-unsupported on a plain stream, id-collision, limit-reached, capacity, port-unavailable, unavailable, protection-unsupported, "+
+			"device-revoked, bad-credentials and rate-limited. The failed-authentication bucket of this server holds 2 and does not refill during "+
+			"the run, so the last three steps are the ones that spend it. (The refusals of registration, passwords and guests are in the "+
+			"`registration`, `password` and `pace` transcripts.)")
 
 	p1 := r.open(tr, "plain-enroll", "plain", "an enroll on a stream with no TLS")
 	p1.send(&wire.Enroll{Login: account, Password: testkit.TestPassword, DeviceID: r.newID(), DeviceName: "Plain", Product: "fms-windows"})
@@ -122,11 +132,16 @@ func scenarioRefusals() *transcript {
 	a.send(&wire.Publish{Resource: json.RawMessage(fmt.Sprintf(`{"resourceId":%q,"kind":"sftp-share","name":"First"}`, res1))})
 	a.expect(wire.TypePublished)
 	a.send(&wire.Publish{Resource: json.RawMessage(fmt.Sprintf(`{"resourceId":%q,"kind":"sftp-share","name":"Second"}`, res2))})
-	a.expectRefused(wire.ReasonCapacity)
-	tr.note("this server allows one resource per account; the stream stays open after a refusal")
+	a.expectRefused(wire.ReasonLimitReached)
+	tr.note("this server allows one resource per account: a count limit of the account is limit-reached; the stream stays open after a refusal")
 	a.send(&wire.Publish{Resource: json.RawMessage(fmt.Sprintf(`{"resourceId":%q,"kind":"sftp-share","name":"First","publicPort":0}`, res1))})
 	a.expectRefused(wire.ReasonPortUnavailable)
 	tr.note("this server has no third-party port pool")
+	a.send(&wire.PairingRequest{})
+	a.expect(wire.TypePairingCode)
+	a.send(&wire.PairingRequest{})
+	a.expectRefused(wire.ReasonCapacity)
+	tr.note("this server holds one outstanding pairing code per account: a second request is capacity (the server cannot take more), and the first code stays valid")
 
 	c := r.hello(tr, "unknown-id", "a connect for an id nobody holds: the one answer of every connect that cannot be served", aDev, aToken)
 	c.send(&wire.Connect{ResourceID: r.newID()})
@@ -148,8 +163,8 @@ func scenarioRefusals() *transcript {
 	h2.send(&wire.Hello{DeviceID: aDev, DeviceToken: strings.Repeat("A", 43)})
 	h2.expectRefused(wire.ReasonBadCredentials)
 	h2.expectClosed()
-	h3 := r.open(tr, "enroll-limited", "tls", "a third failure from the same address: the bucket is empty")
-	h3.send(&wire.Enroll{Login: account, Password: "Wrongpass1", DeviceID: r.newID(), DeviceName: "Guesser", Product: "fms-windows"})
+	h3 := r.open(tr, "hello-limited", "tls", "a third failure from the same address: the bucket is empty")
+	h3.send(&wire.Hello{DeviceID: aDev, DeviceToken: strings.Repeat("B", 43)})
 	h3.expectRefused(wire.ReasonRateLimited)
 	h3.expectClosed()
 	return tr
@@ -411,5 +426,346 @@ func scenarioCast() *transcript {
 	a.send(&wire.BroadcastEnd{BroadcastID: bid})
 	a.send(&wire.Keepalive{})
 	a.expect(wire.TypeKeepalive)
+	return tr
+}
+
+// scenarioRegistration: a person registers with a one-time invitation code or with the shared invitation
+// password (19 items AQ and AR), and what a guest account may not do (item AV).
+func scenarioRegistration() *transcript {
+	r := newRig("registration", rigOpts{logins: []string{account}})
+	defer mustClose(r)
+	tr := r.newTranscript("registration",
+		"Registration: a person with an invitation code (single use, no expiry) or the shared invitation password chooses a login and a password "+
+			"and enrolls the first device in one frame; `enrolled` carries the kind of the new account. A code that was used, withdrawn or never "+
+			"made is one answer (invitation-invalid). The invitation is consumed only by a registration that succeeded: a taken login or a weak "+
+			"password costs nothing. A guest account is refused publish and broadcast-start with not-permitted; the cap on accounts is "+
+			"limit-reached and leaves the invitation unused.")
+	mk := func(kind string) string {
+		inv, err := r.env.Ops.CreateInvitation(kind, "")
+		if err != nil {
+			failf("create invitation: %v", err)
+		}
+		return inv.Code
+	}
+	member, guest := mk("member"), mk("guest")
+	frame := func(code, shared, login, pw string) *wire.Register {
+		return &wire.Register{InvitationCode: code, SharedPassword: shared, Login: login, Password: pw, DeviceID: r.newID(),
+			DeviceName: "Vector phone", Product: "fms-android", ProductVersion: "1.0.0", Platform: "vector",
+			Roles: roles("resource-consumer"), KeepaliveSeconds: 30}
+	}
+	refused := func(id, purpose string, m *wire.Register, reason wire.Reason) {
+		s := r.open(tr, id, "tls", purpose)
+		s.send(m)
+		s.expectRefused(reason)
+		s.expectClosed()
+	}
+	registered := func(id, purpose string, m *wire.Register, kind string) *sess {
+		s := r.open(tr, id, "tls", purpose)
+		s.send(m)
+		en := s.expect(wire.TypeEnrolled).(*wire.Enrolled)
+		if en.AccountKind != kind {
+			failf("%s: the account is %q, expected %q", id, en.AccountKind, kind)
+		}
+		s.auth()
+		return s
+	}
+
+	refused("unknown-code", "a code nobody made: invitation-invalid, and the answer a used or a withdrawn code gets too",
+		frame(r.newID(), "", "carol", testkit.TestPassword), wire.ReasonInvitationInvalid)
+	refused("login-taken", "a valid code, a login that is taken: told only now that the invitation is proven",
+		frame(member, "", account, testkit.TestPassword), wire.ReasonLoginTaken)
+	refused("weak-password", "a valid code, a password the policy of 1.2 refuses",
+		frame(member, "", "carol", "short"), wire.ReasonPasswordPolicy)
+	tr.note("neither refusal consumed the invitation: the same code registers below")
+
+	carol := frame(member, "", "carol", testkit.TestPassword)
+	s := registered("member", "the first device of a new member account", carol, "member")
+	s.send(&wire.Keepalive{})
+	s.expect(wire.TypeKeepalive)
+	r.online("carol", carol.DeviceID)
+	refused("code-used", "the same code a second time: byte for byte the answer of a code nobody made",
+		frame(member, "", "dave", testkit.TestPassword), wire.ReasonInvitationInvalid)
+
+	// a guest invitation: the account is a guest and holds nothing of its own
+	g := registered("guest", "a guest invitation: the account is a guest, it publishes nothing and starts no broadcast",
+		frame(guest, "", "visitor", testkit.TestPassword), "guest")
+	g.send(&wire.Publish{Resource: json.RawMessage(fmt.Sprintf(`{"resourceId":%q,"kind":"sftp-share","name":"Guest share"}`, r.newID()))})
+	g.expectRefused(wire.ReasonNotPermitted)
+	tr.note("the stream stays open after the refusal")
+	g.send(&wire.BroadcastStart{Broadcast: json.RawMessage(fmt.Sprintf(
+		`{"broadcastId":%q,"mode":"AUDIO_ONLY","title":"Guest","descriptor":{"endpoints":[]}}`, r.newID()))})
+	g.expectRefused(wire.ReasonNotPermitted)
+
+	// the shared invitation password: off until the operator sets it, not used up, one kind for everyone who uses it
+	if err := r.env.Ops.SetSharedInvitation("Shared-vector-pw-1", "member"); err != nil {
+		failf("shared invitation: %v", err)
+	}
+	registered("shared-password", "registration by the shared invitation password: the kind is the one it was set for",
+		frame("", "Shared-vector-pw-1", "erin", testkit.TestPassword), "member")
+
+	// the cap on accounts: four accounts exist, the cap is four
+	if _, err := r.env.Ops.SetPolicy(intPtr(4), nil); err != nil {
+		failf("policy: %v", err)
+	}
+	another := mk("member")
+	refused("over-cap", "the account cap is reached: limit-reached, and the invitation stays unused",
+		frame(another, "", "dave", testkit.TestPassword), wire.ReasonLimitReached)
+	if _, err := r.env.Ops.SetPolicy(intPtr(10), nil); err != nil {
+		failf("policy: %v", err)
+	}
+	registered("after-cap-raised", "the cap raised: the same invitation registers", frame(another, "", "dave", testkit.TestPassword), "member")
+	return tr
+}
+
+// scenarioPasswordAndSignOut: a password change signs the other devices out (their records stay), a
+// signed-out device signs in again, and a person deletes their own account (19 items AT and AU).
+func scenarioPasswordAndSignOut() *transcript {
+	r := newRig("password", rigOpts{logins: []string{account}})
+	defer mustClose(r)
+	tr := r.newTranscript("password",
+		"Changing a password needs the old one; the device that changed it keeps working with a new token and every other device of the account is "+
+			"signed out: its streams are closed, its record stays, and its next hello is signed-out. A signed-out device signs in again with the new "+
+			"password. Deleting the account needs the password too, is answered before the account goes, and removes everything the operator's "+
+			"removal removes.")
+	const newPW = "Vector-new-pw-2"
+	a, aDev, _ := r.enroll(tr, "a-enroll", account, "Vector PC", "fms-windows", roles("resource-producer"), "")
+	r.control(a, aDev)
+	b, bDev, bToken := r.enroll(tr, "b-enroll", account, "Vector phone", "fms-android", roles("resource-consumer"), "")
+	r.control(b, bDev)
+
+	a.send(&wire.PasswordChange{OldPassword: "Wrongpass1", NewPassword: newPW})
+	a.expectRefused(wire.ReasonBadCredentials)
+	tr.note("a wrong old password changes nothing and signs nobody out")
+	a.send(&wire.PasswordChange{OldPassword: testkit.TestPassword, NewPassword: "short"})
+	a.expectRefused(wire.ReasonPasswordPolicy)
+	a.send(&wire.PasswordChange{OldPassword: testkit.TestPassword, NewPassword: newPW})
+	changed := a.expect(wire.TypePasswordChanged).(*wire.PasswordChanged)
+	tr.note("the answer carries a new device token for the caller; its old token is dead")
+	b.expectClosed()
+
+	h := r.open(tr, "b-signed-out", "tls", "hello of the signed-out device with its old token: the record stays, the answer says it is signed out")
+	h.send(&wire.Hello{DeviceID: bDev, DeviceToken: bToken})
+	h.expectRefused(wire.ReasonSignedOut)
+	h.expectClosed()
+
+	r.hello(tr, "a-new-token", "the changing device says hello with its new token", aDev, changed.DeviceToken).close()
+
+	again := r.open(tr, "b-sign-in", "tls", "the signed-out device signs in again with the new password, keeping its device id")
+	again.send(&wire.Enroll{Login: account, Password: newPW, DeviceID: bDev, DeviceName: "Vector phone", Product: "fms-android",
+		ProductVersion: "1.0.0", Platform: "vector", Roles: roles("resource-consumer"), KeepaliveSeconds: 30})
+	en := again.expect(wire.TypeEnrolled).(*wire.Enrolled)
+	again.auth()
+	again.close()
+
+	a.send(&wire.AccountDelete{Password: "Wrongpass1"})
+	a.expectRefused(wire.ReasonBadCredentials)
+	a.send(&wire.AccountDelete{Password: newPW})
+	a.expect(wire.TypeAccountDeleted)
+	tr.note("answered first, then the account goes: every stream of it is closed")
+	a.expectClosed()
+
+	gone := r.open(tr, "b-after-delete", "tls", "a device of a deleted account: the answer of any stranger")
+	gone.send(&wire.Hello{DeviceID: bDev, DeviceToken: en.DeviceToken})
+	gone.expectRefused(wire.ReasonBadCredentials)
+	gone.expectClosed()
+	return tr
+}
+
+// scenarioClipboard: the clipboard slot of section 22 (ticket 229). A put is clipboard-put, then
+// clipboard-ready, then exactly size raw bytes, then clipboard-stored; a get answers
+// clipboard-value plus the bytes; clipboard-info on the control stream shows what sits there; a
+// guest is refused both directions with not-permitted; the declared and the actual size limits and
+// the account's one upload in flight are refused with the old value kept.
+func scenarioClipboard() *transcript {
+	r := newRig("clipboard", rigOpts{logins: []string{account, "bobby"},
+		params: func(p *rendezvousParams) {
+			p.ClipboardBytes = 64 // the account's limit, small so a refusal is one byte away
+			p.ClipboardProbe = 100 * time.Millisecond
+		}})
+	defer mustClose(r)
+	tr := r.newTranscript("clipboard",
+		"The clipboard on the server: one value per member account, in memory only, the latest complete upload the value. "+
+			"A put declares kind and size on a data stream, the server answers clipboard-ready, the sender writes exactly size raw bytes - no "+
+			"frames, no chunk headers - and the server answers clipboard-stored (clipId, sha256, storedAt) and closes. A get answers the members "+
+			"and the bytes; clipboard-info on the control stream answers the members alone. `welcome.features` carries `clipboard`.")
+
+	a, aDev, aToken := r.enroll(tr, "phone-control", account, "Vector phone", "fms-android",
+		roles("resource-consumer"), "")
+	r.control(a, aDev)
+	a.send(&wire.ClipboardInfo{})
+	a.expect(wire.TypeClipboardState)
+	tr.note("the clipboard starts empty: clipboard-state carries no value")
+
+	// a complete put: ready, exactly size raw bytes, half-close, stored
+	put1 := r.hello(tr, "put-1", "the sender's data stream: clipboard-put declares kind and size", aDev, aToken)
+	put1.send(&wire.ClipboardPut{Kind: "text", Size: 16})
+	put1.expect(wire.TypeClipboardReady)
+	put1.stopRecording()
+	first := []byte("clipboard-one-16")
+	put1.sendRaw("exactly the 16 declared bytes follow clipboard-ready: raw, no frames, no chunk headers", first)
+	put1.halfClose()
+	put1.startRecording()
+	stored1 := put1.expect(wire.TypeClipboardStored).(*wire.ClipboardStored)
+	tr.note("the value replaced the slot at its last byte; the answer names the clipId, the SHA-256 of the bytes and the server's clock")
+
+	a.send(&wire.ClipboardInfo{})
+	st := a.expect(wire.TypeClipboardState).(*wire.ClipboardState)
+	if st.Value == nil || st.Value.ClipID != stored1.ClipID || st.Value.Size != 16 || st.Value.SourceDeviceID != aDev {
+		failf("clipboard-state: %+v", st)
+	}
+	tr.note("clipboard-info answers the members alone: what the server set, then kind, mimeType and name")
+
+	// a get: the members, then exactly size raw bytes, then the server closes the stream
+	get1 := r.hello(tr, "get-1", "a reader's data stream: clipboard-get", aDev, aToken)
+	get1.send(&wire.ClipboardGet{})
+	val := get1.expect(wire.TypeClipboardValue).(*wire.ClipboardValue)
+	if val.ClipID != stored1.ClipID || val.Size != 16 || val.SHA256 != stored1.SHA256 {
+		failf("clipboard-value: %+v", val)
+	}
+	get1.stopRecording()
+	if got := get1.readRaw("exactly the value's 16 bytes follow the members; the server closes the stream after them", 16); string(got) != string(first) {
+		failf("the value's bytes: %q", got)
+	}
+	get1.expectClosed()
+
+	// a second put replaces the value; the first clipId is no longer the value
+	put2 := r.hello(tr, "put-2", "the next complete put replaces the value", aDev, aToken)
+	put2.send(&wire.ClipboardPut{Kind: "text", Size: 8})
+	put2.expect(wire.TypeClipboardReady)
+	put2.stopRecording()
+	put2.sendRaw("8 declared bytes", []byte("replaced"))
+	put2.halfClose()
+	put2.startRecording()
+	stored2 := put2.expect(wire.TypeClipboardStored).(*wire.ClipboardStored)
+
+	stale := r.hello(tr, "get-stale", "a get naming the clipId the client showed before: it never receives another value in its place", aDev, aToken)
+	stale.send(&wire.ClipboardGet{ClipID: stored1.ClipID})
+	stale.expectRefused(wire.ReasonUnavailable)
+	stale.expectClosed()
+
+	// an interrupted put changes nothing
+	short := r.hello(tr, "put-short", "a put of 64 declared bytes that stops after 4: what it carried is dropped, the value stays", aDev, aToken)
+	short.send(&wire.ClipboardPut{Kind: "text", Size: 64})
+	short.expect(wire.TypeClipboardReady)
+	short.stopRecording()
+	short.sendRaw("4 of the 64 declared bytes; the sender's side closes here and the server drops what arrived", []byte("half"))
+	r.until("the interrupted put's bytes to be counted", func() bool {
+		_, held := r.env.Engine.Clipboard().Counts()
+		return held == 8+4
+	})
+	short.halfClose()
+	r.until("the interrupted put to be dropped", func() bool {
+		_, held := r.env.Engine.Clipboard().Counts()
+		return held == 8
+	})
+	tr.note("no clipboard-stored follows: the stream is closed and the value from put-2 is still the value")
+
+	// an actual oversize put: two bytes beyond the declaration, written in one piece so the byte
+	// beyond the size is already there when the server looks
+	over := r.hello(tr, "put-over", "a put of 4 declared bytes that sends 6: the stream is closed and dropped", aDev, aToken)
+	over.send(&wire.ClipboardPut{Kind: "text", Size: 4})
+	over.expect(wire.TypeClipboardReady)
+	over.stopRecording()
+	over.sendRaw("6 bytes for a declared 4: one byte beyond the size is enough", []byte("sixby!"))
+	over.expectClosed()
+	tr.note("the stream is dropped and the old value is whole; no clipboard-stored answers an oversize put")
+
+	// the declared limit: one byte above the account's clipboardBytes, refused before a byte flows
+	big := r.hello(tr, "put-too-big", "a put declaring 65 bytes: the account's clipboardBytes is 64", aDev, aToken)
+	big.send(&wire.ClipboardPut{Kind: "text", Size: 65})
+	big.expectRefused(wire.ReasonLimitReached)
+	big.expectClosed()
+	tr.note("refused before a byte flows; the value being replaced does not count against the new one")
+
+	// the account's one upload in flight: a second overlapping put is capacity, the first finishes whole
+	c1 := r.hello(tr, "put-capacity-first", "the first of two overlapping puts is taken", aDev, aToken)
+	c1.send(&wire.ClipboardPut{Kind: "text", Size: 8})
+	c1.expect(wire.TypeClipboardReady)
+	c1.stopRecording()
+	c1.sendRaw("2 of the 8 declared bytes; the upload is in flight", []byte("12"))
+	c2 := r.hello(tr, "put-capacity-second", "the account's second overlapping put", aDev, aToken)
+	c2.send(&wire.ClipboardPut{Kind: "text", Size: 8})
+	c2.expectRefused(wire.ReasonCapacity)
+	c2.expectClosed()
+	tr.note("this server takes at most one upload per account at a time (ticket 229 T-1); the wire's word is capacity (item BZ)")
+	c1.sendRaw("the remaining 6 declared bytes", []byte("345678"))
+	c1.halfClose()
+	c1.startRecording()
+	if s := c1.expect(wire.TypeClipboardStored).(*wire.ClipboardStored); s.ClipID == stored2.ClipID {
+		failf("a stored value has a clipId new for every stored value")
+	}
+	tr.note("the completion that landed later is the value (item BX)")
+
+	// a guest is refused both directions with not-permitted; its state is an empty one
+	if _, _, err := r.env.Ops.AddAccountKind("visitor", testkit.TestPassword, "guest"); err != nil {
+		failf("guest account: %v", err)
+	}
+	g, gDev, gToken := r.enroll(tr, "guest-enroll", "visitor", "Vector guest", "fms-windows", roles("resource-consumer"), "")
+	r.controlAs("visitor", g, gDev)
+	g.send(&wire.ClipboardInfo{})
+	gst := g.expect(wire.TypeClipboardState).(*wire.ClipboardState)
+	if gst.Value != nil {
+		failf("a guest's clipboard-state carries a value: %+v", gst)
+	}
+	tr.note("a guest is answered an empty state: it holds no slot and announces nothing")
+	gp := r.hello(tr, "guest-put", "a guest account's put", gDev, gToken)
+	gp.send(&wire.ClipboardPut{Kind: "text", Size: 8})
+	gp.expectRefused(wire.ReasonNotPermitted)
+	gp.expectClosed()
+	gg := r.hello(tr, "guest-get", "a guest account's get", gDev, gToken)
+	gg.send(&wire.ClipboardGet{})
+	gg.expectRefused(wire.ReasonNotPermitted)
+	gg.expectClosed()
+	tr.note("both directions are refused with one reason: a guest announces nothing")
+
+	// another account never reads the slot: an empty clipboard, never a stranger's value
+	b, bDev, bToken := r.enroll(tr, "bobby-control", "bobby", "Vector PC", "fms-windows", roles("resource-consumer"), "")
+	r.controlAs("bobby", b, bDev)
+	b.send(&wire.ClipboardInfo{})
+	bst := b.expect(wire.TypeClipboardState).(*wire.ClipboardState)
+	if bst.Value != nil {
+		failf("another account's clipboard-state carries a value: %+v", bst)
+	}
+	bg := r.hello(tr, "bobby-get", "another account's get", bDev, bToken)
+	bg.send(&wire.ClipboardGet{})
+	bg.expect(wire.TypeClipboardEmpty)
+	bg.expectClosed()
+	tr.note("the slot is personal: another account sees an empty clipboard")
+
+	_ = aToken
+	return tr
+}
+
+// scenarioPace: a password check of one login or one address is paced, never counted into a lockout
+// (19 item AW). The pacer's sleep is a no-op in the generator and its clock is the scenario's.
+func scenarioPace() *transcript {
+	r := newRig("pace", rigOpts{logins: []string{account}, pace: true})
+	defer mustClose(r)
+	tr := r.newTranscript("pace",
+		"Password checks are paced: one check per second per login and per address, a check right behind the last waits for its slot, and a "+
+			"check that would have to wait for a second slot is turned away with rate-limited before the password is looked at. Nothing remembers a "+
+			"failure: there is no lockout, and the right password is evaluated as soon as its slot comes. (The server of this transcript uses an "+
+			"interval of 2 s and an injected clock, so the bytes do not depend on the machine.)")
+	wrong := func(id, purpose string) *sess {
+		s := r.open(tr, id, "tls", purpose)
+		s.send(&wire.Enroll{Login: account, Password: "Wrongpass1", DeviceID: r.newID(), DeviceName: "Guesser", Product: "fms-windows"})
+		return s
+	}
+	for _, step := range []struct {
+		id, purpose string
+		reason      wire.Reason
+	}{
+		{"first", "a first wrong password: evaluated at once", wire.ReasonBadCredentials},
+		{"second", "a second right behind it: waits for its slot, then evaluated", wire.ReasonBadCredentials},
+		{"third", "a third inside the window: turned away before the password is looked at", wire.ReasonRateLimited},
+	} {
+		s := wrong(step.id, step.purpose)
+		s.expectRefused(step.reason)
+		s.expectClosed()
+	}
+	r.clock.Add(10 * time.Second)
+	s, _, _ := r.enroll(tr, "right-password", account, "Vector PC", "fms-windows", roles("resource-producer"), "")
+	tr.note("the window passed; no failure was remembered, so the right password is welcome at once")
+	s.close()
 	return tr
 }

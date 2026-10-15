@@ -36,6 +36,19 @@ const (
 	TypeCastAnswer       = "cast-answer"
 	TypeCastResult       = "cast-result"
 	TypeCastStop         = "cast-stop"
+	TypeClipboardPut     = "clipboard-put"
+	TypeClipboardReady   = "clipboard-ready"
+	TypeClipboardStored  = "clipboard-stored"
+	TypeClipboardInfo    = "clipboard-info"
+	TypeClipboardState   = "clipboard-state"
+	TypeClipboardGet     = "clipboard-get"
+	TypeClipboardValue   = "clipboard-value"
+	TypeClipboardEmpty   = "clipboard-empty"
+	TypeRegister         = "register"
+	TypePasswordChange   = "password-change"
+	TypePasswordChanged  = "password-changed"
+	TypeAccountDelete    = "account-delete"
+	TypeAccountDeleted   = "account-deleted"
 )
 
 // Head is the first two members of every envelope. It is embedded first in every typed envelope, so
@@ -104,6 +117,7 @@ func (*Enroll) TypeName() string { return TypeEnroll }
 // WelcomeBody is the members `welcome` and `enrolled` share (7.2).
 type WelcomeBody struct {
 	Account          string   `json:"account"`
+	AccountKind      string   `json:"accountKind"`
 	PublicEndpoint   string   `json:"publicEndpoint"`
 	KeepaliveSeconds int      `json:"keepaliveSeconds"`
 	Features         []string `json:"features"`
@@ -419,3 +433,162 @@ type CastStop struct {
 
 // TypeName is "cast-stop".
 func (*CastStop) TypeName() string { return TypeCastStop }
+
+// --- the clipboard (section 22) ---
+
+// ClipboardPut opens a clipboard upload on a data stream (22 item BW): the kind, the exact size of
+// the raw bytes that follow `clipboard-ready`, and, for an image or a file, their media type and
+// name.
+type ClipboardPut struct {
+	Head
+	Kind     string `json:"kind"`
+	Size     int64  `json:"size"`
+	MimeType string `json:"mimeType,omitempty"`
+	Name     string `json:"name,omitempty"`
+}
+
+// TypeName is "clipboard-put".
+func (*ClipboardPut) TypeName() string { return TypeClipboardPut }
+
+// ClipboardReady answers a `clipboard-put` that the server will take; exactly Size raw bytes follow.
+type ClipboardReady struct{ Head }
+
+// TypeName is "clipboard-ready".
+func (*ClipboardReady) TypeName() string { return TypeClipboardReady }
+
+// ClipboardStored answers a finished upload: the value replaced the slot at its last byte (22
+// items BW and BX).
+type ClipboardStored struct {
+	Head
+	ClipID   string `json:"clipId"`
+	SHA256   string `json:"sha256"`
+	StoredAt string `json:"storedAt"`
+}
+
+// TypeName is "clipboard-stored".
+func (*ClipboardStored) TypeName() string { return TypeClipboardStored }
+
+// ClipboardInfo asks what is on the account's clipboard, on the control stream (22 item BY).
+type ClipboardInfo struct{ Head }
+
+// TypeName is "clipboard-info".
+func (*ClipboardInfo) TypeName() string { return TypeClipboardInfo }
+
+// ClipboardValueBody are the members `clipboard-state`'s `value` and `clipboard-value` share (22
+// items BU and BY): what the server set, then the sender's metadata. The server never looks inside
+// a value; the kind is metadata.
+type ClipboardValueBody struct {
+	ClipID           string `json:"clipId,omitempty"`
+	Size             int64  `json:"size,omitempty"`
+	SHA256           string `json:"sha256,omitempty"`
+	StoredAt         string `json:"storedAt,omitempty"`
+	SourceDeviceID   string `json:"sourceDeviceId,omitempty"`
+	SourceDeviceName string `json:"sourceDeviceName,omitempty"`
+	Kind             string `json:"kind,omitempty"`
+	MimeType         string `json:"mimeType,omitempty"`
+	Name             string `json:"name,omitempty"`
+}
+
+// ClipboardState answers a `clipboard-info`: the one value, or no `value` when it is empty. A
+// guest's clipboard is answered empty (22 item BY).
+type ClipboardState struct {
+	Head
+	Value *ClipboardValueBody `json:"value,omitempty"`
+}
+
+// TypeName is "clipboard-state".
+func (*ClipboardState) TypeName() string { return TypeClipboardState }
+
+// ClipboardGet asks for the value on a data stream, optionally naming the clipId a client saw
+// before (22 item BY). The answer is `clipboard-value` with the raw bytes after it,
+// `clipboard-empty`, or `refused`.
+type ClipboardGet struct {
+	Head
+	ClipID string `json:"clipId,omitempty"`
+}
+
+// TypeName is "clipboard-get".
+func (*ClipboardGet) TypeName() string { return TypeClipboardGet }
+
+// ClipboardValue answers a `clipboard-get`: the members of `clipboard-state`'s value, then exactly
+// Size raw bytes, then the server closes the stream.
+type ClipboardValue struct {
+	Head
+	ClipboardValueBody
+}
+
+// TypeName is "clipboard-value".
+func (*ClipboardValue) TypeName() string { return TypeClipboardValue }
+
+// ClipboardEmpty answers a `clipboard-get` on an empty clipboard; the server closes the stream.
+type ClipboardEmpty struct{ Head }
+
+// TypeName is "clipboard-empty".
+func (*ClipboardEmpty) TypeName() string { return TypeClipboardEmpty }
+
+// --- ticket 224 account lifecycle: registration, passwords, deletion ---
+
+// Register is the account and its first device in one exchange, by invitation (DEVICE-EXCHANGE 19 item AQ):
+// exactly one of InvitationCode (a one-time invitation, 22 characters that decode to 16 bytes) or
+// SharedPassword (the shared invitation password), then the login and password chosen and every
+// device member of `enroll`. The names are the S4214 fold's (invitationCode, sharedPassword - the shape
+// the generated transcripts of 205 already carry). The contract's own prose of item AQ calls the same
+// two members `invitation` and `invitationPassword`; a frame that uses those is folded into the two
+// above by validate, so a client built to either reading registers (the engine reads only the two).
+type Register struct {
+	Head
+	InvitationCode     string          `json:"invitationCode,omitempty"`
+	SharedPassword     string          `json:"sharedPassword,omitempty"`
+	Invitation         string          `json:"invitation,omitempty"`         // alias of InvitationCode, folded by validate
+	InvitationPassword string          `json:"invitationPassword,omitempty"` // alias of SharedPassword, folded by validate
+	Login              string          `json:"login"`
+	Password           string          `json:"password"`
+	DeviceID           string          `json:"deviceId"`
+	DeviceName         string          `json:"deviceName"`
+	Product            string          `json:"product"`
+	ProductVersion     string          `json:"productVersion,omitempty"`
+	Platform           string          `json:"platform,omitempty"`
+	Roles              []string        `json:"roles,omitempty"`
+	Capabilities       []string        `json:"capabilities,omitempty"`
+	Receiver           json.RawMessage `json:"receiver,omitempty"`
+	KeepaliveSeconds   int             `json:"keepaliveSeconds,omitempty"`
+}
+
+// TypeName is "register".
+func (*Register) TypeName() string { return TypeRegister }
+
+// PasswordChange changes an account's password from an authenticated control stream (ticket 224).
+type PasswordChange struct {
+	Head
+	OldPassword string `json:"oldPassword"`
+	NewPassword string `json:"newPassword"`
+}
+
+// TypeName is "password-change".
+func (*PasswordChange) TypeName() string { return TypePasswordChange }
+
+// PasswordChanged answers a successful password change, providing a fresh device token for this device (ticket 224).
+type PasswordChanged struct {
+	Head
+	DeviceToken string `json:"deviceToken"`
+}
+
+// TypeName is "password-changed".
+func (*PasswordChanged) TypeName() string { return TypePasswordChanged }
+
+// AccountDelete deletes the caller's account, confirmed by the current password (ticket 224).
+type AccountDelete struct {
+	Head
+	Password string `json:"password"`
+}
+
+// TypeName is "account-delete".
+func (*AccountDelete) TypeName() string { return TypeAccountDelete }
+
+// AccountDeleted answers a successful account deletion right before streams close (ticket 224).
+type AccountDeleted struct {
+	Head
+}
+
+// TypeName is "account-deleted".
+func (*AccountDeleted) TypeName() string { return TypeAccountDeleted }

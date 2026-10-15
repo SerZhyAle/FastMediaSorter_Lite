@@ -18,6 +18,9 @@ Imports Xunit
 '''   - no log call of the client takes a token, a password, a pairing code, an `access` or a raw id (the 148 scan, extended): an id reaches
 '''     a log only through ExchangeIds.ForLog.
 '''   - the number 1 of the superseded wire is not in the client at all.
+'''   - ticket 223 T-1: no client surface of EITHER program reads <c>ExchangeProcess</c> - the server-administration module
+'''     of the Share Manager. The installed component is a shipping-gate marker, never a functional dependency of a client
+'''     that joins a REMOTE server.
 ''' </summary>
 Public Class ExchangeClientGuardTests
 
@@ -105,9 +108,12 @@ Public Class ExchangeClientGuardTests
     End Sub
 
     <Fact>
-    Public Sub The_default_stays_False_the_released_build_offers_nothing()
-        ' The test above allows True WITH evidence. This one states the present decision: nothing ships before rung 2 (198 rule 3, 133 section 8).
-        Assert.False(ExchangeFeatures.Offered, "the owner has not opened the exchange clients; flip the constant only on his word, with the evidence file")
+    Public Sub The_build_offers_the_clients_on_the_owners_word_of_2026_10_14()
+        ' The test above allows True WITH evidence. This one states the present decision (ticket 223 T-3): the owner opened the exchange CLIENTS
+        ' on 2026-10-14, ahead of the joint rung 2 run, so every install can join a remote exchange server with no server component. Taking it
+        ' back is the constant and this line together - exchange-gate-evidence.md says how.
+        Assert.True(ExchangeFeatures.Offered, "ticket 223 T-3 opened the exchange clients; closing them again is the owner's word, recorded in the evidence file")
+        Assert.True(ExchangeFeatures.BuildOffers())
     End Sub
 
     Private Shared Function Reader(process As String, user As String, machine As String) As Func(Of String, EnvironmentVariableTarget, String)
@@ -136,9 +142,14 @@ Public Class ExchangeClientGuardTests
 
     <Fact>
     Public Sub With_the_gate_shut_the_features_exist_only_through_the_switch()
-        Assert.False(ExchangeFeatures.Offered)
-        Assert.False(ExchangeFeatures.IsEnabled(Reader(Nothing, Nothing, Nothing)))
-        Assert.True(ExchangeFeatures.IsEnabled(Reader(Nothing, Nothing, "1")))
+        ' the state of a build whose constant is False, set for this flow only
+        Using ExchangeFeatures.ForFlow(offered:=False)
+            Assert.False(ExchangeFeatures.BuildOffers())
+            Assert.False(ExchangeFeatures.IsEnabled(Reader(Nothing, Nothing, Nothing)))
+            Assert.True(ExchangeFeatures.IsEnabled(Reader(Nothing, Nothing, "1")))
+        End Using
+        ' and the build as it is: on with no switch at all
+        Assert.True(ExchangeFeatures.IsEnabled(Reader(Nothing, Nothing, Nothing)))
     End Sub
 
     <Fact>
@@ -256,6 +267,53 @@ Public Class ExchangeClientGuardTests
             Assert.False(Regex.IsMatch(text, "(?i)schemaVersion\W{0,6}[=:]\W{0,3}1\b"), Path.GetFileName(f) & " writes or reads schemaVersion 1")
             Assert.False(Regex.IsMatch(text, "(?i)LegacySchema|schemaVersion1"), Path.GetFileName(f) & " names a legacy schema")
         Next
+    End Sub
+
+    ' ---------------------------------------------------------------- ticket 223: the dependency split
+
+    ''' <summary>The client surfaces of BOTH programs: the library and the agent (<see cref="ClientFiles"/>), the account
+    ''' and connect windows, and the viewer's resource surfaces that read the gate.</summary>
+    Private Shared Function ClientSurfacesOfBothPrograms() As List(Of String)
+        Dim list As New List(Of String)(ClientFiles())
+        Dim src As String = Path.Combine(Root(), "src")
+        For Each name As String In {"Exchange_Connect_Form.vb", "Exchange_Devices_Panel.vb", "Resource_List_Panel.vb", "Main_Form.ResourceOpen.vb"}
+            Dim f As String = Path.Combine(src, name)
+            If File.Exists(f) Then list.Add(f)
+        Next
+        Dim resources As String = Path.Combine(src, "Resources")
+        For Each name As String In {"ExchangeDevices.vb", "ExchangeTunnel.vb", "FmsTunnelPaths.vb"}
+            Dim f As String = Path.Combine(resources, name)
+            If File.Exists(f) Then list.Add(f)
+        Next
+        Return list
+    End Function
+
+    ''' <summary>Ticket 223 T-1: joining a REMOTE server is the client path, and it never reads the server-administration
+    ''' module of the Share Manager. A client surface that reaches ExchangeProcess couples itself to a local server binary
+    ''' it does not need - the day the gate opens for every install (223 T-3), the client must already be component-free.</summary>
+    <Fact>
+    Public Sub No_client_surface_reads_the_server_administration_module()
+        Dim problems As New List(Of String)
+        For Each f As String In ClientSurfacesOfBothPrograms()
+            If File.ReadAllText(f).Contains("ExchangeProcess") Then problems.Add(Path.GetFileName(f))
+        Next
+        Assert.True(problems.Count = 0,
+                    "a client surface references ExchangeProcess (the server-administration module of the Share Manager; the client of a remote server never reads it):" & vbLf & String.Join(vbLf, problems))
+    End Sub
+
+    <Fact>
+    Public Sub The_split_scan_itself_sees_a_reference()
+        ' proof the scan above is not blind: a line with the reference is caught, one without it is not
+        Dim scanPath As String = Path.Combine(Path.GetTempPath(), "fms-split-scan-" & Guid.NewGuid().ToString("N") & ".vb")
+        Try
+            System.IO.File.WriteAllText(scanPath, "If ExchangeProcess.IsAvailable() Then Return Nothing" & vbLf &
+                                        "If ExchangeFeatures.IsEnabled() Then Return Nothing")
+            Dim lines As String() = System.IO.File.ReadAllLines(scanPath)
+            Assert.True(lines(0).Contains("ExchangeProcess"), "the scan must see the reference")
+            Assert.False(lines(1).Contains("ExchangeProcess"), "the scan must not see a clean line")
+        Finally
+            If System.IO.File.Exists(scanPath) Then System.IO.File.Delete(scanPath)
+        End Try
     End Sub
 
 End Class

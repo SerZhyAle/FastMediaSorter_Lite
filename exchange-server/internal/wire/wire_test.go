@@ -30,6 +30,8 @@ const (
 	sampleResource  = `{"resourceId":"` + idB + `","deviceId":"` + idA + `","kind":"sftp-share","name":"Photos","access":{"descriptor":"FMSSFTP2.secret","root":"/"},"future":{"a":{"b":{"c":1}}}}`
 	sampleBroadcast = `{"broadcastId":"` + idC + `","deviceId":"` + idA + `","mode":"AUDIO_ONLY","title":"Mic","descriptor":{"endpoints":[]}}`
 	sampleDevice    = `{"deviceId":"` + idA + `","deviceName":"Phone","product":"fms-android","presence":"online"}`
+	// 64 lower-case hex characters: the form of a clipboard value's `sha256` (22 item BU).
+	sampleSHA = "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
 )
 
 // samples is one envelope of every type the wire defines, with members that exercise the codec.
@@ -37,7 +39,7 @@ func samples() []struct {
 	name string
 	e    Envelope
 } {
-	body := WelcomeBody{Account: "alice", PublicEndpoint: "203.0.113.5:22022", KeepaliveSeconds: 30,
+	body := WelcomeBody{Account: "alice", AccountKind: "member", PublicEndpoint: "203.0.113.5:22022", KeepaliveSeconds: 30,
 		Features: []string{"directory", "tunnel", "pairing"}, ServerVersion: "26.10.7.1200"}
 	return []struct {
 		name string
@@ -82,6 +84,25 @@ func samples() []struct {
 		{"cast-answer", &CastAnswer{BroadcastID: idC, Accepted: false, Reason: CastDeclined}},
 		{"cast-result", &CastResult{BroadcastID: idC, ReceiverDeviceID: idB, Accepted: false, Reason: CastUnavailable}},
 		{"cast-stop", &CastStop{BroadcastID: idC, ReceiverDeviceID: idB}},
+		{"clipboard-put-text", &ClipboardPut{Kind: "text", Size: 11}},
+		{"clipboard-put-image", &ClipboardPut{Kind: "image", Size: 4096, MimeType: "image/png", Name: "screenshot"}},
+		{"clipboard-put-file", &ClipboardPut{Kind: "file", Size: 123456, MimeType: "application/pdf", Name: "notes.txt"}},
+		{"clipboard-ready", &ClipboardReady{}},
+		{"clipboard-stored", &ClipboardStored{ClipID: idB, SHA256: sampleSHA, StoredAt: "2026-10-07T12:00:00Z"}},
+		{"clipboard-info", &ClipboardInfo{}},
+		{"clipboard-state", &ClipboardState{Value: &ClipboardValueBody{ClipID: idB, Size: 123456, SHA256: sampleSHA,
+			StoredAt: "2026-10-07T12:00:00Z", SourceDeviceID: idA, SourceDeviceName: "Phone",
+			Kind: "file", MimeType: "application/pdf", Name: "notes.txt"}}},
+		{"clipboard-get", &ClipboardGet{ClipID: idB}},
+		{"clipboard-get-unnamed", &ClipboardGet{}},
+		{"clipboard-value", &ClipboardValue{ClipboardValueBody: ClipboardValueBody{ClipID: idB, Size: 11, SHA256: sampleSHA,
+			StoredAt: "2026-10-07T12:00:00Z", SourceDeviceID: idA, SourceDeviceName: "Phone", Kind: "text"}}},
+		{"clipboard-empty", &ClipboardEmpty{}},
+		{"register", &Register{InvitationCode: idC, Login: "bob", Password: "Passw0rdTest", DeviceID: idB, DeviceName: "Phone", Product: "fms-android"}},
+		{"password-change", &PasswordChange{OldPassword: "OldPassw0rd1", NewPassword: "NewPassw0rd1"}},
+		{"password-changed", &PasswordChanged{DeviceToken: tok}},
+		{"account-delete", &AccountDelete{Password: "Passw0rdTest"}},
+		{"account-deleted", &AccountDeleted{}},
 	}
 }
 
@@ -382,10 +403,11 @@ func TestVersionRefusalCarriesTheServersOwnSchemaVersion(t *testing.T) {
 	}
 }
 
-func TestReasonsAreTheTenOfTheContract(t *testing.T) {
+func TestReasonsAreTheSixteenOfTheContract(t *testing.T) {
 	want := []string{"bad-credentials", "device-revoked", "version-unsupported", "tls-required", "id-collision",
-		"capacity", "port-unavailable", "unavailable", "rate-limited", "protection-unsupported"}
-	if len(AllReasons) != 10 {
+		"capacity", "port-unavailable", "unavailable", "rate-limited", "protection-unsupported",
+		"invitation-invalid", "login-taken", "password-policy", "limit-reached", "not-permitted", "signed-out"}
+	if len(AllReasons) != 16 {
 		t.Fatalf("%d reasons", len(AllReasons))
 	}
 	for i, r := range AllReasons {
@@ -394,11 +416,11 @@ func TestReasonsAreTheTenOfTheContract(t *testing.T) {
 		}
 	}
 	if Reason("nope").Valid() {
-		t.Error("a tenth reason is valid")
+		t.Error("an unlisted reason is valid")
 	}
 	defer func() {
 		if recover() == nil {
-			t.Error("Refuse accepted a reason outside the ten")
+			t.Error("Refuse accepted a reason outside the sixteen")
 		}
 	}()
 	Refuse(Reason("nope"))

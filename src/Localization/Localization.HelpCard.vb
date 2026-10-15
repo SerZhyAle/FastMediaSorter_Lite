@@ -165,6 +165,33 @@ Partial Public NotInheritable Class Localization
             "Ficheiro seguinte / anterior", "الملف التالي / السابق", "अगली / पिछली फ़ाइल",
             "পরের / আগের ফাইল", "اگلی / پچھلی فائل", "下一个 / 上一个文件")
 
+        ' --- 123 UX-112 / UX-114: the open action's caption and the "works on" marks under a row ---
+        Add("Открыть документ в программе или защищённый файл",
+            "Open a document in its program, or a protected file", "Відкрити документ у програмі або захищений файл", "Dokument im Programm öffnen oder geschützte Datei öffnen",
+            "Apri un documento nel programma o un file protetto", "Abrir un documento en su programa o un archivo protegido", "Ouvrir un document dans son programme ou un fichier protégé",
+            "Abrir um documento no programa ou um ficheiro protegido", "فتح مستند في برنامجه أو فتح ملف محمي", "दस्तावेज़ को उसके प्रोग्राम में या सुरक्षित फ़ाइल खोलें",
+            "নথি তার প্রোগ্রামে বা সুরক্ষিত ফাইল খুলুন", "دستاویز کو اس کے پروگرام میں یا محفوظ فائل کھولیں", "在对应程序中打开文档，或打开受保护的文件")
+        Add("Только видео и аудио",
+            "Video and audio only", "Лише відео та аудіо", "Nur Video und Audio",
+            "Solo video e audio", "Solo vídeo y audio", "Vidéo et audio uniquement",
+            "Apenas vídeo e áudio", "للفيديو والصوت فقط", "केवल वीडियो और ऑडियो",
+            "শুধু ভিডিও ও অডিও", "صرف ویڈیو اور آڈیو", "仅限视频和音频")
+        Add("Только видео",
+            "Video only", "Лише відео", "Nur Video",
+            "Solo video", "Solo vídeo", "Vidéo uniquement",
+            "Apenas vídeo", "للفيديو فقط", "केवल वीडियो",
+            "শুধু ভিডিও", "صرف ویڈیو", "仅限视频")
+        Add("Только картинки",
+            "Pictures only", "Лише картинки", "Nur Bilder",
+            "Solo immagini", "Solo imágenes", "Images uniquement",
+            "Apenas imagens", "للصور فقط", "केवल चित्र",
+            "শুধু ছবি", "صرف تصاویر", "仅限图片")
+        Add("Картинки и текстовые файлы",
+            "Pictures and text files", "Картинки та текстові файли", "Bilder und Textdateien",
+            "Immagini e file di testo", "Imágenes y archivos de texto", "Images et fichiers texte",
+            "Imagens e ficheiros de texto", "الصور والملفات النصية", "चित्र और टेक्स्ट फ़ाइलें",
+            "ছবি ও টেক্সট ফাইল", "تصاویر اور ٹیکسٹ فائلیں", "图片和文本文件")
+
     End Sub
 
 End Class

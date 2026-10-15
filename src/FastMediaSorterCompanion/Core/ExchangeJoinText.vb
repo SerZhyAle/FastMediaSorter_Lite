@@ -50,6 +50,31 @@ Friend NotInheritable Class ExchangeJoinText
         Return Localization.TF("Покинуть сервер обмена на этом ПК?{0}{0}Публикация общих папок на нём прекратится, это устройство будет удалено из списка устройств учётной записи, а токен и настройки сотрутся. Сами общие папки, их пароль и QR-коды не меняются.", vbLf)
     End Function
 
+    ''' <summary>226 rule 1: the policy's own sentence of a password that does not pass (the registration's immediate feedback,
+    ''' beside the field and before anything is sent; the server still has the last word).</summary>
+    Friend Shared Function PolicyFailure(verdict As ExchangePasswordPolicy.Verdict) As String
+        Select Case verdict
+            Case ExchangePasswordPolicy.Verdict.TooShort : Return Localization.T("Пароль короче 10 символов.")
+            Case ExchangePasswordPolicy.Verdict.NoUpper : Return Localization.T("В пароле нет заглавной латинской буквы.")
+            Case ExchangePasswordPolicy.Verdict.NoLower : Return Localization.T("В пароле нет строчной латинской буквы.")
+            Case Else : Return Localization.T("В пароле нет цифры.")
+        End Select
+    End Function
+
+    ''' <summary>226 rule 1: the refusals of a registration, one sentence each - a used code and a wrong code say the same
+    ''' (224 rule 6, no oracle).</summary>
+    Friend Shared Function RegisterFailure(result As ExchangeEnrollResult) As String
+        If result.Outcome = ExchangeEnrollOutcome.Refused Then
+            Select Case result.Refusal
+                Case ExchangeRefusal.BadCredentials : Return Localization.T("Приглашение не подошло, уже использовано, или такой логин уже занят.")
+                Case ExchangeRefusal.RateLimited : Return Localization.T("Слишком много попыток. Подождите минуту и повторите.")
+                Case ExchangeRefusal.Capacity : Return Localization.T("На сервере не осталось мест для учётных записей.")
+                Case Else : Return Localization.T("Сервер отказал в регистрации.")
+            End Select
+        End If
+        Return ExchangeDeviceText.EnrollFailure(result)
+    End Function
+
     Friend Shared Function LeftCleanly() As String
         Return Localization.T("Это устройство покинуло сервер обмена и удалено из списка учётной записи.")
     End Function

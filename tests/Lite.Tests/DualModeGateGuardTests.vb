@@ -68,8 +68,14 @@ Public Class DualModeGateGuardTests
         ' suites green in fms_companion (range/partial content, method refusal, unknown/expired/revoked
         ' token, no traversal, snapshot immutability, limits, the five IPC verbs), and the same-change
         ' host guard BroadcastWorkerCapabilityTests holds the page and the image together.
+        '
+        ' OPEN GATE (223 T-3, 2026-10-14): ExchangeFeatures.Offered is True on the owner's word - the exchange CLIENTS on every
+        ' install, ahead of the joint rung 2 run. docs\specifications\exchange-gate-evidence.md records the decision and what was
+        ' reached; ExchangeClientGuardTests holds the constant and that file together. The server component stays gated (141).
         Dim openGates As New Dictionary(Of String, String)(StringComparer.OrdinalIgnoreCase) From {
-            {"BroadcastPage.vb", "196 phase 1: worker half built and re-vendored 2026-10-12; BroadcastWorkerCapabilityTests holds page and image together"}
+            {"BroadcastPage.vb", "196 phase 1: worker half built and re-vendored 2026-10-12; BroadcastWorkerCapabilityTests holds page and image together"},
+            {"ExchangeFeatures.vb", "223 T-3: owner's word 2026-10-14; exchange-gate-evidence.md, held by ExchangeClientGuardTests"},
+            {"LiveBroadcastFeatures.vb", "199: owner's word 2026-10-15; live-broadcast-gate-evidence.md, held by LiveBroadcastGateGuardTests"}
         }
         Dim switchedOn As New List(Of String)
         Dim found As Integer = 0

@@ -56,6 +56,9 @@ $glyphIds = @(
     'action.add', 'action.choose-file', 'action.choose-folder', 'action.convert-to-video', 'action.copy', 'action.crop', 'action.delete', 'action.download', 'action.edit',
     'action.extract-text', 'action.refresh', 'action.rename', 'action.search', 'action.send-to',
     'action.share', 'action.translate',
+    # The recipients table's and the chrome panels' pin button: the catalog's push-pin, filled while pinned and
+    # its outlined state variant while free (a line-drawn tilted pin read as a second pencil next to action.edit).
+    'action.pin', 'action.pin--off',
     'app.info', 'app.settings', 'content.apps', 'content.audio', 'content.disk-container', 'content.folder', 'content.image',
     'content.video', 'device.phone', 'view.screen',
     'media.exit-fullscreen', 'media.fullscreen', 'media.mute', 'media.next', 'media.pause',

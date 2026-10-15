@@ -277,7 +277,7 @@ Public Class ExchangeLocalChannelTests
                         Assert.Equal("no-access", (Await client.GetAccessAsync("R2", CancellationToken.None)).Reply.Error)
                         Assert.Equal("unknown-resource", (Await client.GetAccessAsync("nope", CancellationToken.None)).Reply.Error)
                         Assert.Equal("bad-request", (Await client.SendAsync(ExchangeAgentPipe.BuildRequest("GetAccess"), 3000, CancellationToken.None)).Error)
-                        Assert.Equal("unsupported", (Await client.SendAsync(ExchangeAgentPipe.BuildRequest("CastAnswer"), 3000, CancellationToken.None)).Error)
+                        Assert.Equal("bad-request", (Await client.SendAsync(ExchangeAgentPipe.BuildRequest("CastAnswer"), 3000, CancellationToken.None)).Error)
                         Assert.Equal("unsupported", (Await client.SendAsync(ExchangeAgentPipe.BuildRequest("CastPolicy"), 3000, CancellationToken.None)).Error)
                     End Using
                 End Using

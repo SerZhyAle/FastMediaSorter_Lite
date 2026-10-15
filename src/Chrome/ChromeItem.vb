@@ -101,6 +101,13 @@ Friend NotInheritable Class ChromeItem
     ''' length - a counter, a zoom value; 125 UX-313b). Empty = the caption's own width.</summary>
     Public Property ReservedText As String = ""
 
+    ''' <summary>A conditional button (it comes and goes with the kind of the file on screen) keeps its place in the
+    ''' row while it is away, so the buttons after it stay where the pointer found them (125 UX-313b). The place is
+    ''' empty air: nothing is painted or hit there. It is a SOFT slot (<see cref="ChromeSlot.Soft"/>) - the first
+    ''' thing a row that runs out of width gives up, before the path box shrinks or anything collapses into the
+    ''' "more" menu - and one with no visible item after it is not kept at all (nothing to hold in place).</summary>
+    Public Property KeepsSlotWhenHidden As Boolean
+
     ''' <summary>True when caption text should align to the start/left edge rather than centered.</summary>
     Public Property AlignLeft As Boolean
 

@@ -60,7 +60,7 @@ func runConnectionString(cmd command, stdout, stderr io.Writer) int {
 	if trusted {
 		fp = "" // a CA-signed deployment renews its leaf on the CA's schedule: no pin travels
 	}
-	c, err := connstr.New(cfg.PublicEndpoint, fp, cmd.label, cmd.login)
+	c, err := connstr.NewWithInvitation(cfg.PublicEndpoint, fp, cmd.label, cmd.login, cmd.invitation)
 	if err != nil {
 		printf(stderr, "%v\n", err)
 		return exitUsage

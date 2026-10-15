@@ -50,6 +50,18 @@ Partial Public Class Main_Form
     ''' <summary>Spec 215: "show your window and open the guided add-resource flow". An intent with no path in it.</summary>
     Private Const CompanionAddResourceCommand As String = "::fms-add-resource::"
     Private Const CompanionAddResourceFlag As String = "--add-resource"
+    Private Const CompanionAddResourceCameraCommand As String = "::fms-add-resource-camera::"
+    Private Const CompanionAddResourceCameraFlag As String = "--add-resource-camera"
+    ''' <summary>Ticket 222 (7.4): "open the scheduled operations page, with this folder as the source of a new
+    ''' operation" - a prefix plus a folder. It never travels to a Share Manager that is not known to understand it.</summary>
+    Private Const CompanionScheduleCommandPrefix As String = "::fms-schedule::"
+    ''' <summary>Spec 227 T-3: "this is the phone's connection code the Share Manager read - import it here",
+    ''' a prefix plus the code text. The mirror image of the wake above: the Share Manager sends it, only to a
+    ''' viewer proven to understand it, and the code is a secret holder - never logged on either side.</summary>
+    Friend Const PhoneCodeCommandPrefix As String = "::fms-phone-code::"
+    ''' <summary>Spec 227 T-3: the same hand-over for a document the user opened as a file in the Share Manager;
+    ''' the payload is the file's PATH, and this side reads it through the same bounded door as an import.</summary>
+    Friend Const PhoneCodeFileCommandPrefix As String = "::fms-phone-code-file::"
     Private Const WM_COPYDATA_SHARE As Integer = &H4A
 
     <StructLayout(LayoutKind.Sequential)>
@@ -132,9 +144,9 @@ Partial Public Class Main_Form
     ''' <param name="addResource">Spec 215: the wake carries the add-resource intent, so the Share Manager opens its
     ''' guided add flow (214) instead of only its window. It implies <paramref name="managerOnly"/> - no folder is ever
     ''' sent with it - and it travels only to a receiver known to understand it; any other gets the plain wake.</param>
-    Friend Async Sub ActivateShareEntryPoint(Optional managerOnly As Boolean = False, Optional addResource As Boolean = False)
+    Friend Async Sub ActivateShareEntryPoint(Optional managerOnly As Boolean = False, Optional addResource As Boolean = False, Optional addResourceCamera As Boolean = False)
         Try
-            Await ActivateShareEntryPointAsync(managerOnly OrElse addResource, addResource)
+            Await ActivateShareEntryPointAsync(managerOnly OrElse addResource OrElse addResourceCamera, addResource, addResourceCamera)
         Catch ex As Exception
             AppFileLogger.LogException("ShareLauncher", ex)
         End Try
@@ -151,6 +163,25 @@ Partial Public Class Main_Form
         End Try
     End Function
 
+    ''' <summary>Spec 227 T-3: the Share Manager read the phone's connection code - with its camera, a paste
+    ''' or a clipboard image in the add-resource manager - and hands the text back over WM_COPYDATA. The
+    ''' import is the ONE door the Resources panel uses: the same preview, confirmation and password question
+    ''' as pasted text, and one stored resource opens at once (acceptance 1: the phone's folder opens).
+    ''' The code is a secret holder - it is never logged anywhere on this side.</summary>
+    Friend Sub OpenPhoneConnectionCode(code As String)
+        Dim payload As String = If(code, "").Trim()
+        If payload.Length = 0 Then Return
+        FinishResourceImport(Function() PhoneConnectionIntake.ReadText(payload))
+    End Sub
+
+    ''' <summary>The same hand-over for a document the user opened as a file in the Share Manager: the
+    ''' payload is a path, and the read is the panel's own bounded door (config document or QR image).</summary>
+    Friend Sub OpenPhoneConnectionCodeFile(path As String)
+        Dim file As String = If(path, "").Trim()
+        If file.Length = 0 Then Return
+        FinishResourceImport(Function() ResourceImportFlow.ReadFile(file))
+    End Sub
+
     ''' <summary>The window dialogs of the wake answer to: the welcome wizard while it is on screen (spec 215 - its
     ''' finish screen is where the wake comes from, and a box owned by the disabled main window would open behind it),
     ''' otherwise the main window.</summary>
@@ -158,6 +189,55 @@ Partial Public Class Main_Form
         Dim wizard As Form = welcome_Dialog
         If wizard IsNot Nothing AndAlso Not wizard.IsDisposed AndAlso wizard.Visible Then Return wizard
         Return Me
+    End Function
+
+    ''' <summary>
+    ''' The viewer's one entry into scheduled file operations (ticket 222, 7.4): wakes the Share Manager - which owns
+    ''' the feature (the list, the editor, the history, the timers) - with the folder being viewed as the source of a
+    ''' new operation. There is nothing of the feature in the viewer beyond this launcher. A Share Manager that is
+    ''' not known to understand the request is woken plainly and told to be updated; a missing one gets the same
+    ''' "install the component" offer as the share entry, never a silent no-op.
+    ''' </summary>
+    Friend Async Sub ActivateScheduleEntryPoint()
+        Try
+            Await ActivateScheduleEntryPointAsync()
+        Catch ex As Exception
+            AppFileLogger.LogException("ScheduleLauncher", ex)
+        End Try
+    End Sub
+
+    Private Async Function ActivateScheduleEntryPointAsync() As Task
+        Dim folder As String = ResolveCurrentFolder()
+        Dim exePath As String = CompanionExePath()
+        If String.IsNullOrEmpty(exePath) OrElse Not File.Exists(exePath) Then
+            AppFileLogger.WriteLine("ScheduleLauncher: Companion exe not found at '" & If(exePath, "") & "'")
+            OfferShareComponentDownload()
+            Return
+        End If
+
+        Dim running As Boolean? = ProbeCompanionMutex()
+        Dim receiver As Version = If(running = True, RunningCompanionVersion(), FileVersionOfExe(exePath))
+        Dim understands As Boolean = ShareActivationPolicy.IsScheduleCapable(receiver)
+        Dim payload As String = If(understands, CompanionScheduleCommandPrefix & If(folder, ""), CompanionShowWindowCommand)
+
+        If running = True Then
+            AppFileLogger.WriteLine("ScheduleLauncher: Companion running - " & If(understands, "schedule intent", "plain wake"))
+            Dim outcome As ForwardOutcome = Await Task.Run(Function() ForwardToCompanion(payload))
+            If outcome = ForwardOutcome.Delivered Then
+                If Not understands Then
+                    Notify(Localization.T("Share Manager старой версии не умеет открывать расписание отсюда. Обновите его."), NotifyLevel.Warning)
+                End If
+                Return
+            End If
+            AppFileLogger.WriteLine("ScheduleLauncher: Companion running but not reachable (" & outcome.ToString() & ")")
+            ReportShareManagerSilent()
+            Return
+        End If
+
+        ColdStartCompanion(exePath, If(understands, payload, ""))
+        If Not understands Then
+            Notify(Localization.T("Share Manager старой версии не умеет открывать расписание отсюда. Обновите его."), NotifyLevel.Warning)
+        End If
     End Function
 
     ''' <summary>
@@ -197,7 +277,7 @@ Partial Public Class Main_Form
         ColdStartCompanion(exePath, payload)
     End Function
 
-    Private Async Function ActivateShareEntryPointAsync(managerOnly As Boolean, Optional addResource As Boolean = False) As Task
+    Private Async Function ActivateShareEntryPointAsync(managerOnly As Boolean, Optional addResource As Boolean = False, Optional addResourceCamera As Boolean = False) As Task
         Dim folder As String = If(managerOnly, "", ResolveCurrentFolder())
         Dim exePath As String = CompanionExePath()
         If String.IsNullOrEmpty(exePath) OrElse Not File.Exists(exePath) Then
@@ -213,13 +293,14 @@ Partial Public Class Main_Form
         Dim receiver As Version = If(running = True, RunningCompanionVersion(), FileVersionOfExe(exePath))
         Dim plan As ActivationPlan = ShareActivationPolicy.PlanFor(folder, receiver)
         Dim sentFolder As String = If(plan = ActivationPlan.SendFolder, folder, "")
-        ' Spec 215: the add-resource intent is a payload of its own and never travels beside a folder. A receiver that is
-        ' not known to understand it (unknown is not proof) gets the plain wake - its window opens as it always did.
-        Dim sendIntent As Boolean = addResource AndAlso sentFolder.Length = 0 AndAlso ShareActivationPolicy.IsAddResourceCapable(receiver)
+        Dim sendIntent As Boolean = (addResource AndAlso sentFolder.Length = 0) OrElse (addResourceCamera AndAlso sentFolder.Length = 0)
+        sendIntent = sendIntent AndAlso ShareActivationPolicy.IsAddResourceCapable(receiver)
+        Dim cameraIntent As Boolean = addResourceCamera AndAlso sendIntent
 
         If running = True Then
-            AppFileLogger.WriteLine("ShareLauncher: Companion running - " & plan.ToString() & If(sendIntent, " + add-resource", ""))
-            Dim payload As String = If(sentFolder.Length > 0, sentFolder, If(sendIntent, CompanionAddResourceCommand, CompanionShowWindowCommand))
+            AppFileLogger.WriteLine("ShareLauncher: Companion running - " & plan.ToString() & If(cameraIntent, " + add-resource-camera", If(sendIntent, " + add-resource", "")))
+            Dim cmd As String = If(cameraIntent, CompanionAddResourceCameraCommand, If(sendIntent, CompanionAddResourceCommand, CompanionShowWindowCommand))
+            Dim payload As String = If(sentFolder.Length > 0, sentFolder, cmd)
             Dim outcome As ForwardOutcome = Await Task.Run(Function() ForwardToCompanion(payload))
             If outcome = ForwardOutcome.Delivered Then
                 If plan = ActivationPlan.WakeAndAdvise Then AdviseManualAdd(folder)
@@ -233,7 +314,7 @@ Partial Public Class Main_Form
             Return
         End If
 
-        ColdStartCompanion(exePath, sentFolder, sendIntent)
+        ColdStartCompanion(exePath, sentFolder, sendIntent, cameraIntent)
         If plan = ActivationPlan.WakeAndAdvise Then AdviseManualAdd(folder)
     End Function
 
@@ -316,7 +397,7 @@ Partial Public Class Main_Form
         End Try
         Return oldest
     End Function
-    Private Sub ColdStartCompanion(exePath As String, folder As String, Optional addResource As Boolean = False)
+    Private Sub ColdStartCompanion(exePath As String, folder As String, Optional addResource As Boolean = False, Optional addResourceCamera As Boolean = False)
         Try
             ' Let the freshly-launched Companion raise its window in front of us
             ' (we don't have its PID yet, so grant to any process).
@@ -330,7 +411,8 @@ Partial Public Class Main_Form
             ' --add-resource is the same request with the intent of what to open in that window (spec 215); it is
             ' only passed to a build that was found to understand it, so an older exe never sees an unknown flag.
             psi.Arguments = If(folder.Length > 0, Utils.QuoteArgument(folder),
-                               If(addResource, CompanionAddResourceFlag, CompanionShowWindowCommand))
+                               If(addResourceCamera, CompanionAddResourceCameraFlag,
+                               If(addResource, CompanionAddResourceFlag, CompanionShowWindowCommand)))
             AppFileLogger.WriteLine("ShareLauncher: cold-starting Companion '" & exePath & "'")
             ' We never wait on it - release the handle instead of leaving it to the
             ' finalizer (this runs per user click).

@@ -88,11 +88,6 @@
   .footer-langs a{text-decoration:none}
   .site-header>.brand{margin-right:auto}
   .hero{text-align:left;padding:1.2rem 0}
-  .hero-copy{min-width:0}
-  .hero .eyebrow{display:block;color:var(--muted);font-family:var(--font-heading);font-size:.76rem;
-    font-weight:700;letter-spacing:.08em;text-transform:uppercase;margin:0 0 .55rem}
-  .hero h1{margin:0}
-  .hero .kicker{display:block;margin:.35rem 0 0}
   .hero .lead{max-width:none;margin:0 0 .9rem}
   .button-group{display:flex;flex-wrap:wrap;justify-content:flex-start;gap:.7rem;margin-top:.2rem}
   .lead-narrow{max-width:none}
@@ -146,6 +141,7 @@
 
 <header class="site-header"><span id="site-nav-label" class="sr-only"><span data-l="en">Main navigation</span><span data-l="ru">Основная навигация</span><span data-l="ua">Основна навігація</span></span><nav class="site-nav" aria-labelledby="site-nav-label">
   <a class="brand" href="#top" aria-label="Fast Media Sorter &amp; Sharing for Windows">Fast Media Sorter &amp; Sharing for Windows</a>
+  <a class="nav-doc" href="topics.html"><span data-l="en">Documentation</span><span data-l="ru">Документация</span><span data-l="ua">Документація</span></a>
   <div class="seg" role="group" aria-label="Language">
     <button data-setlang="ru">RU</button><button data-setlang="en" aria-pressed="true">EN</button><button data-setlang="ua">UA</button>
   </div>
@@ -171,18 +167,15 @@
 <main class="container" id="top" tabindex="-1">
 
   <section class="hero">
-    <div class="hero-id">
-    <img class="app-icon" src="assets/icons/store-icon-256.png" alt="" width="168" height="168">
-    <div class="hero-copy">
-      <span class="eyebrow"><span data-l="en">Windows desktop app</span><span data-l="ru">Приложение для Windows</span><span data-l="ua">Застосунок для Windows</span></span>
-      <h1>Fast Media Sorter &amp; Sharing for Windows</h1>
-      <span class="kicker">
-        <span data-l="en">Free &amp; open-source</span>
-        <span data-l="ru">Бесплатно и с открытым кодом</span>
-        <span data-l="ua">Безкоштовно та з відкритим кодом</span>
-      </span>
+    <div class="identity">
+      <img class="product-icon" src="assets/icons/store-icon-256.png" alt="" width="104" height="104">
+      <div>
+        <p class="product-name">Fast Media Sorter &amp; Sharing for Windows</p>
+        <p class="kicker"><span data-l="en">Windows desktop app</span><span data-l="ru">Приложение для Windows</span><span data-l="ua">Застосунок для Windows</span></p>
+        <p class="kicker"><span data-l="en">Free &amp; open-source</span><span data-l="ru">Бесплатно и с открытым кодом</span><span data-l="ua">Безкоштовно та з відкритим кодом</span></p>
+      </div>
     </div>
-    </div>
+    <h1><span data-l="en">Sort photos and videos with one key per file</span><span data-l="ru">Сортируйте фото и видео одной клавишей на файл</span><span data-l="ua">Сортуйте фото та відео одним натисканням клавіші на файл</span></h1>
     <p class="lead lead-narrow family">
       <span data-l="en">View and sort your media; when you need it, the same program is also a folder-share server and a host for FileDO virtual disks - each of those ships optional, off until you ask for it.</span>
       <span data-l="ru">Просматривайте и сортируйте медиа; когда понадобится, эта же программа - ещё и сервер раздачи папок и хост виртуальных дисков FileDO: каждая из этих ролей необязательна и выключена, пока вы её не включите.</span>
@@ -198,6 +191,7 @@
       <span data-l="ru">«Sharing» в названии - это передача ваших медиафайлов другому: телефону с Android, другой копии программы или любому SFTP-клиенту. Пока вы не включите, она выключена. <a href="publish-folders-android.html">Как работает SFTP-сервис →</a> · <a href="publish-folders-android.html">Сеть и роутер по шагам →</a></span>
       <span data-l="ua">«Sharing» у назві - це передача ваших медіафайлів комусь іншому: телефону з Android, іншій копії програми або будь-якому SFTP-клієнту. Доки ви не ввімкнете, вона вимкнена. <a href="publish-folders-android.html">Як працює SFTP-сервіс →</a> · <a href="publish-folders-android.html">Мережа і роутер крок за кроком →</a></span>
     </p>
+    <p><span data-l="en">In the 64-bit viewer, right-click a video or audio file or its folder and choose Broadcast. Share Manager exports a .spres file, QR code or quick link for import in StreamsPlayer. A folder is one playlist channel with a frozen list; Refresh replaces that list and Revoke stops its link. The HTTP gateway has its own switch, off by default. Each token grants read-only access to one broadcast and normally expires after 24 hours. HTTP is unencrypted: share the document privately and keep internet access off unless you need it.</span><span data-l="ru">В 64-битном просмотрщике нажмите правой кнопкой на видео, аудиофайл или его папку и выберите трансляцию. Менеджер общего доступа выдаёт файл .spres, QR-код или быструю ссылку для импорта в StreamsPlayer. Папка становится одним каналом с зафиксированным списком: обновление заменяет список, отзыв отключает ссылку. HTTP-шлюз имеет отдельный переключатель и по умолчанию выключен. Токен даёт доступ только для чтения одной трансляции, обычно на 24 часа. HTTP не шифруется: передавайте документ лично и включайте интернет-доступ только при необходимости.</span><span data-l="ua">У 64-бітному переглядачі натисніть правою кнопкою на відео, аудіофайл або його теку й виберіть трансляцію. Менеджер спільного доступу видає файл .spres, QR-код або швидке посилання для імпорту в StreamsPlayer. Тека стає одним каналом із зафіксованим списком: оновлення замінює список, відкликання вимикає посилання. HTTP-шлюз має окремий перемикач і типово вимкнений. Токен надає доступ лише для читання однієї трансляції, зазвичай на 24 години. HTTP не шифрується: передавайте документ особисто й вмикайте інтернет-доступ лише за потреби.</span></p>
     <div class="button-group">
       <a class="btn btn-primary" href="#get"><span data-l="en">Download for Windows</span><span data-l="ru">Скачать для Windows</span><span data-l="ua">Завантажити для Windows</span></a>
       <a class="btn btn-ghost" href="#features"><span data-l="en">Explore features</span><span data-l="ru">Посмотреть возможности</span><span data-l="ua">Переглянути можливості</span></a>
@@ -258,6 +252,9 @@
       </a>
       <a class="btn btn-ghost btn-sm" href="https://apps.microsoft.com/detail/9N59Z73WZ53C" target="_blank" rel="noopener">
         <span>Microsoft Store</span>
+      </a>
+      <a class="btn btn-ghost btn-sm" href="server.html">
+        <span data-l="en">Always-on Folder Share Server</span><span data-l="ru">Серверная редакция: раздача без входа в систему</span><span data-l="ua">Серверна редакція: роздача без входу в систему</span>
       </a>
       <span class="dl-meta" id="dlMeta">
         <span data-l="en">Offline-ready bundles - VLC runtimes and OCR packs included. Windows 10 1607+ / 11; a 32-bit build for Windows 7/8.1 is in the same download.</span>
@@ -437,9 +434,9 @@
       <article class="card">
         <h3><span data-l="en">Zoom &amp; pan</span><span data-l="ru">Масштаб и перетаскивание</span><span data-l="ua">Масштаб і перетягування</span></h3>
         <p>
-          <span data-l="en">The grey NumPad block does the zooming: + and - zoom at the mouse cursor, / fits the window, * shows actual size (100 %). Ctrl+wheel zooms, Shift+wheel jumps to 100 %, Alt+wheel fits. The plain wheel keeps browsing files - a "Wheel zooms" checkbox in Settings > Viewing switches it to zoom instead. Drag a zoomed picture with the left button to pan around it.</span>
-          <span data-l="ru">Масштабом управляет серый блок NumPad: + и - меняют масштаб от курсора мыши, / вписывает в окно, * показывает реальный размер (100 %). Ctrl+колесо - масштаб, Shift+колесо - сразу 100 %, Alt+колесо - вписать. Обычное колесо по-прежнему листает файлы - галочка "Колесо масштабирует" в Настройках > Просмотр переключает его на масштаб. Увеличенное изображение можно таскать левой кнопкой.</span>
-          <span data-l="ua">Масштабом керує сірий блок NumPad: + і - змінюють масштаб від курсора миші, / вписує у вікно, * показує реальний розмір (100 %). Ctrl+колесо - масштаб, Shift+колесо - одразу 100 %, Alt+колесо - вписати. Звичайне колесо, як і раніше, гортає файли - галочка "Колесо масштабує" в Налаштуваннях > Перегляд перемикає його на масштаб. Збільшене зображення можна тягнути лівою кнопкою.</span>
+          <span data-l="en">The grey NumPad block does the zooming: + and - zoom at the mouse cursor, / fits the window, * shows actual size (100 %). On a laptop with no numeric block, = (or +) and - on the main row zoom in and out. Ctrl+wheel zooms, Shift+wheel jumps to 100 %, Alt+wheel fits. The plain wheel keeps browsing files - a "Wheel zooms" checkbox in Settings > Viewing switches it to zoom instead. Drag a zoomed picture with the left button to pan around it.</span>
+          <span data-l="ru">Масштабом управляет серый блок NumPad: + и - меняют масштаб от курсора мыши, / вписывает в окно, * показывает реальный размер (100 %). На ноутбуке без цифрового блока масштаб меняют = (или +) и - основного ряда. Ctrl+колесо - масштаб, Shift+колесо - сразу 100 %, Alt+колесо - вписать. Обычное колесо по-прежнему листает файлы - галочка "Колесо масштабирует" в Настройках > Просмотр переключает его на масштаб. Увеличенное изображение можно таскать левой кнопкой.</span>
+          <span data-l="ua">Масштабом керує сірий блок NumPad: + і - змінюють масштаб від курсора миші, / вписує у вікно, * показує реальний розмір (100 %). На ноутбуці без цифрового блока масштаб змінюють = (або +) і - основного ряду. Ctrl+колесо - масштаб, Shift+колесо - одразу 100 %, Alt+колесо - вписати. Звичайне колесо, як і раніше, гортає файли - галочка "Колесо масштабує" в Налаштуваннях > Перегляд перемикає його на масштаб. Збільшене зображення можна тягнути лівою кнопкою.</span>
         </p>
         <div class="pills"><span class="pill gold"><span data-l="en">64-bit build only</span><span data-l="ru">только 64-битная сборка</span><span data-l="ua">тільки 64-бітна збірка</span></span></div>
       </article>

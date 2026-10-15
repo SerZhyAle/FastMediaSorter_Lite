@@ -1,9 +1,9 @@
-﻿# Pointer - `WORKER-IPC`
+# Pointer - `WORKER-IPC`
 
 | | |
 | --- | --- |
 | **Id** | `WORKER-IPC` |
-| **Version** | 0.15, draft (read 2026-10-07: items A-D of section 10 read and audited; legacy requests stay schema 1, the six `DISK-SHARE` request types use schema 2). Owner: FMS Companion (the Go worker repository) |
+| **Version** | 0.16, draft (read 2026-10-07: items A-D of section 10 read and audited; legacy requests stay schema 1, the six `DISK-SHARE` request types use schema 2). Owner: FMS Companion (the Go worker repository) |
 | **Home** | `sidecar-control/README.md` + `worker-ipc.md` in the shared contracts catalog |
 | **Role here** | consumer - the Share Manager host half, `src/FastMediaSorterCompanion/Core/WorkerIpc.vb` and `WorkerProcess.vb` (and `DiskSharing`/`DiskOperations` for the schema-2 disk requests) |
 
@@ -66,7 +66,7 @@ a channel spanning two repositories and two languages ended up with no shared ho
 - Legacy (schema 1) responses are bounded in time (the 5-6 s deadline and the pipe-server identity check) but not in
   bytes; disk responses are bounded at 256 KiB and 1024 records. Nothing in the contract asks more.
 
-## Resource PIN amendment read at 0.15
+## Resource PIN amendment read at 0.16
 
 Schema 3 carries protected `SetSharedFolders` and `InvalidatePinSessions`; a worker status
 reports `resourcePinSupported` and per-root `pinProtected` without returning the original PIN.

@@ -37,6 +37,9 @@ Friend Class LiveServerConfig
     ''' Empty means the bare path (the microphone's own secret-link-by-obscurity is the port itself, as
     ''' on the phone).</summary>
     Public Property VideoToken As String = ""
+
+    ''' <summary>Optional password protecting the broadcast (spec 199 section 3.4).</summary>
+    Public Property Password As String = ""
 End Class
 
 Friend Enum LiveServerStartResult
@@ -58,9 +61,11 @@ Friend Class LiveBroadcastServer
     Private _listener As TcpListener
     Private _acceptThread As Thread
     Private ReadOnly _cursors As New Dictionary(Of TcpClient, LiveHubCursor)()
+    Private ReadOnly _clients As New HashSet(Of TcpClient)()
     Private ReadOnly _lock As New Object()
     Private _stopping As Boolean
     Private _disposed As Boolean
+    Private ReadOnly _digest As New LiveProducerDigest()
 
     Public Sub New(bindAddress As IPAddress, port As Integer, config As LiveServerConfig)
         _bindAddress = bindAddress
@@ -131,6 +136,13 @@ Friend Class LiveBroadcastServer
                 Catch ex As Exception
                     Exit While
                 End Try
+                SyncLock _lock
+                    If _stopping Then
+                        client.Dispose()
+                        Exit While
+                    End If
+                    _clients.Add(client)
+                End SyncLock
                 Dim t As New Task(Sub() ServeClient(client), TaskCreationOptions.LongRunning)
                 t.Start()
             End While
@@ -147,6 +159,15 @@ Friend Class LiveBroadcastServer
             If request Is Nothing Then
                 CloseClient(client)
                 Return
+            End If
+
+            If Not String.IsNullOrEmpty(_config.Password) Then
+                Dim source As String = DirectCast(client.Client.RemoteEndPoint, IPEndPoint).Address.ToString()
+                If Not _digest.Verify(request, _config.Password, source) Then
+                    WriteAll(client, _digest.Challenge())
+                    CloseClient(client)
+                    Return
+                End If
             End If
 
             If IsAudioPath(request.Path) AndAlso _config.AudioHub IsNot Nothing Then
@@ -179,6 +200,10 @@ Friend Class LiveBroadcastServer
         ' permanent hole for a listener that joined in that window. Attaching first closes it.
         Dim cursor As LiveHubCursor = hub.Attach()
         SyncLock _lock
+            If _stopping Then
+                cursor.Detach()
+                Return Nothing
+            End If
             _cursors(client) = cursor
         End SyncLock
         RaiseListenersChanged()
@@ -250,10 +275,13 @@ Friend Class LiveBroadcastServer
         End Try
 
         SyncLock _lock
-            Dim snapshot As List(Of TcpClient) = New List(Of TcpClient)(_cursors.Keys)
+            Dim snapshot As List(Of TcpClient) = New List(Of TcpClient)(_clients)
+            For Each cursor As LiveHubCursor In _cursors.Values
+                cursor.Detach()
+            Next
             _cursors.Clear()
-            ' The clients are closed outside the lock; each stream loop notices _stopping, writes its
-            ' final chunk or resets, and exits.
+            _clients.Clear()
+            ' Include clients still reading a request or answering authentication.
             For Each c As TcpClient In snapshot
                 Try
                     c.Close()
@@ -273,7 +301,10 @@ Friend Class LiveBroadcastServer
 
     Private Sub CloseClient(client As TcpClient)
         SyncLock _lock
+            Dim cursor As LiveHubCursor = Nothing
+            If _cursors.TryGetValue(client, cursor) Then cursor.Detach()
             _cursors.Remove(client)
+            _clients.Remove(client)
         End SyncLock
         Try
             client.Close()

@@ -885,7 +885,7 @@ func TestCaps(t *testing.T) {
 	for i := 0; i < 3; i++ {
 		e.publish(alice, devA1, resource(wire.NewID(), devA1, ""))
 	}
-	if _, err := e.d.Publish(alice, devA1, resource(wire.NewID(), devA1, "")); !errors.Is(err, ErrCapacity) {
+	if _, err := e.d.Publish(alice, devA1, resource(wire.NewID(), devA1, "")); !errors.Is(err, ErrLimit) {
 		t.Fatalf("the fourth resource: %v", err)
 	}
 	// replacing at the cap is fine
@@ -898,13 +898,13 @@ func TestCaps(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
-	if _, err := e.d.BroadcastStart(alice, devA1, broadcast(wire.NewID(), ""), nil); !errors.Is(err, ErrCapacity) {
+	if _, err := e.d.BroadcastStart(alice, devA1, broadcast(wire.NewID(), ""), nil); !errors.Is(err, ErrLimit) {
 		t.Fatalf("the third broadcast of a device: %v", err)
 	}
 	if _, err := e.d.BroadcastStart(alice, devA2, broadcast(wire.NewID(), ""), nil); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := e.d.BroadcastStart(alice, devA2, broadcast(wire.NewID(), ""), nil); !errors.Is(err, ErrCapacity) {
+	if _, err := e.d.BroadcastStart(alice, devA2, broadcast(wire.NewID(), ""), nil); !errors.Is(err, ErrLimit) {
 		t.Fatalf("the fourth broadcast of the account: %v", err)
 	}
 }

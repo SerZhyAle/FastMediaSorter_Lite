@@ -18,6 +18,14 @@ import (
 	"fms/exchange-server/internal/wire"
 )
 
+// Clipboard is what the operator's operations touch of the clipboard slots (ticket 229): the
+// erasure that goes with an account removal and with an account becoming a guest, and the counts
+// of the status. Nil for an offline command line, which holds no slots of its own.
+type Clipboard interface {
+	Erase(account string)
+	Counts() (values int, bytes int64)
+}
+
 // Ops are the operator's operations.
 type Ops struct {
 	Accounts *accounts.Store
@@ -26,11 +34,26 @@ type Ops struct {
 	// Live is true only for the Ops of a running engine. What lives in the memory of the engine's store (the
 	// pairing codes) is meaningless to an offline command that opens a store of its own, so those operations
 	// refuse there instead of handing out a code that dies with the process.
-	Live bool
+	Live             bool
+	KeepAwakeActive  bool
+	SaveHostSettings func(bool, int) error
+	ReadHostSettings func() (bool, int)
+	// SaveLimits writes the deployment-wide policy (the cap on accounts and the defaults a new account
+	// starts with) where the server reads it at start, exchange.json. Nil: the policy is kept for this run
+	// only, and the answer says so.
+	SaveLimits func(accounts.Policy) error
+	// Clipboard is the running server's clipboard table (ticket 229); nil offline.
+	Clipboard Clipboard
 }
 
 // ErrNotLive is the refusal of an operation that needs the running server.
 var ErrNotLive = errors.New("this operation needs the running server")
+
+// ErrBadPolicy is a deployment policy that is not at least one account and limits of at least zero.
+var ErrBadPolicy = errors.New("the cap on accounts is at least 1 and every limit at least 0")
+
+// ErrNoTarget is a grant that names a resource or a broadcast the giving account does not hold.
+var ErrNoTarget = errors.New("the account holds no such resource or broadcast")
 
 // PairingCodeView is what the operator gets: the code, once, and when it stops being valid.
 type PairingCodeView struct {
@@ -56,48 +79,107 @@ func (o *Ops) PairingCode(login string) (string, time.Time, error) {
 	return code, expires, nil
 }
 
-// AddAccount creates an account under the password policy and returns its normalised login.
+// AddAccount creates a member account under the password policy and returns its normalised login.
 func (o *Ops) AddAccount(login, pw string) (string, error) {
-	l, err := o.Accounts.AddAccount(login, pw)
-	if err == nil {
-		o.Log.Info("account-added", logx.Login(l))
-	}
+	l, _, err := o.AddAccountKind(login, pw, accounts.KindMember)
 	return l, err
 }
 
-// SetPassword changes an account's password. Tokens are left alone unless signOut is true, which
-// revokes every device of the account (ticket 162 rule 9).
-func (o *Ops) SetPassword(login, pw string, signOut bool) error {
-	l, ok := accounts.NormalizeLogin(login)
-	if !ok || !o.Accounts.Exists(l) {
-		return accounts.ErrNoAccount
+// AddAccountKind creates an account of a kind. The operator is never refused for the cap of 19 item AS
+// (it binds `register`): overCap says that the count now exceeds it, so a surface can tell the operator.
+func (o *Ops) AddAccountKind(login, pw, kind string) (l string, overCap bool, err error) {
+	l, err = o.Accounts.AddAccountWithKind(login, pw, kind)
+	if err != nil {
+		return l, false, err
 	}
-	if err := o.Accounts.SetPassword(l, pw); err != nil {
-		return err
-	}
-	o.Log.Info("password-changed", logx.Login(l))
-	if signOut {
-		for _, d := range o.Accounts.Devices(l) {
-			if _, err := o.RevokeDevice(l, d.ID); err != nil {
-				return err
-			}
-		}
-	}
-	return nil
+	k := o.Accounts.KindOf(l)
+	o.Log.Info("account-added", logx.Login(l), logx.Text("kind", k))
+	return l, o.Accounts.AccountCount() > o.Accounts.Policy().MaxAccounts, nil
 }
 
-// RemoveAccount deletes an account: every device is revoked in one go, its records and streams go.
+// SetPassword is the operator's reset: a new password, and EVERY device of the account signed out, no
+// device spared (19 item AT). The devices stay; their streams close and their next `hello` is answered
+// `signed-out`. It reports how many devices were signed out.
+func (o *Ops) SetPassword(login, pw string) (int, error) {
+	l, ok := accounts.NormalizeLogin(login)
+	if !ok || !o.Accounts.Exists(l) {
+		return 0, accounts.ErrNoAccount
+	}
+	ids, err := o.Accounts.SetPassword(l, pw)
+	if err != nil {
+		return 0, err
+	}
+	for _, id := range ids {
+		o.Dir.SignOutDevice(l, id)
+	}
+	o.Log.Info("password-reset", logx.Login(l), logx.Int("signedOut", len(ids)))
+	return len(ids), nil
+}
+
+// SetKind changes the kind of an account (19 item AO). An account that becomes a guest stops offering: what
+// it published is withdrawn at once and what it gave goes; an account that becomes a member loses what it
+// was given. Every guest concerned is told through its directory stream.
+func (o *Ops) SetKind(login, kind string) (changed bool, err error) {
+	l, ok := accounts.NormalizeLogin(login)
+	if !ok || !o.Accounts.Exists(l) {
+		return false, accounts.ErrNoAccount
+	}
+	k, err := accounts.NormalizeKind(kind)
+	if err != nil {
+		return false, err
+	}
+	if o.Accounts.KindOf(l) == k {
+		return false, nil
+	}
+	received := o.Accounts.GrantsForGuest(l)
+	if k == accounts.KindGuest {
+		o.Dir.OwnerGone(l) // the guests of this account are told before the store forgets who they are
+	}
+	changed, err = o.Accounts.SetKind(l, k)
+	if err != nil || !changed {
+		return changed, err
+	}
+	if k == accounts.KindGuest {
+		o.Dir.WithdrawAll(l)
+		// a guest holds no clipboard slot: erased when the kind becomes a guest (22 item BU)
+		if o.Clipboard != nil {
+			o.Clipboard.Erase(l)
+		}
+	}
+	for _, g := range received {
+		o.Dir.GrantRemoved(l, g.TargetID, g.Kind == accounts.GrantBroadcast)
+	}
+	o.Log.Info("account-kind-changed", logx.Login(l), logx.Text("kind", k))
+	return true, nil
+}
+
+// RemoveAccount deletes an account: every device is revoked in one go, its records and streams go, and
+// every guest that was given something of it is told. A person's own deletion ends in the same place (19
+// item AU), so the two can never erase different sets.
 func (o *Ops) RemoveAccount(login string) error {
 	l, ok := accounts.NormalizeLogin(login)
 	if !ok {
 		return accounts.ErrNoAccount
 	}
+	if !o.Accounts.Exists(l) {
+		return accounts.ErrNoAccount
+	}
+	received := o.Accounts.GrantsForGuest(l)
+	o.Dir.OwnerGone(l)
 	_, err := o.Accounts.RemoveAccount(l)
 	if errors.Is(err, accounts.ErrNoAccount) {
 		return err
 	}
 	// even when the store could not be written the account is gone from memory: take it out of the directory too
 	o.Dir.RemoveAccount(l)
+	// the clipboard is erased with the account, the same code path for the holder's deletion and
+	// the operator's removal (22 item BU, ticket 229 rule 8)
+	if o.Clipboard != nil {
+		o.Clipboard.Erase(l)
+	}
+	for _, g := range received {
+		o.Dir.GrantRemoved(l, g.TargetID, g.Kind == accounts.GrantBroadcast)
+	}
 	if err != nil {
 		return err
 	}
@@ -125,11 +207,29 @@ func (o *Ops) RevokeDevice(login, deviceID string) (bool, error) {
 	return true, nil
 }
 
+// LimitsView is a set of limits as the operator sees them. For the four counts 0 is "no cap"; for
+// clipboardBytes 0 turns the clipboard off (22 item BZ).
+type LimitsView struct {
+	Devices             int   `json:"devices"`
+	Resources           int   `json:"resources"`
+	Broadcasts          int   `json:"broadcasts"`
+	BroadcastsPerDevice int   `json:"broadcastsPerDevice"`
+	ClipboardBytes      int64 `json:"clipboardBytes"`
+}
+
+func limitsView(l accounts.Limits) LimitsView {
+	return LimitsView{Devices: l.Devices, Resources: l.Resources, Broadcasts: l.Broadcasts,
+		BroadcastsPerDevice: l.BroadcastsPerDevice, ClipboardBytes: l.ClipboardBytes}
+}
+
 // AccountView is what the operator sees of an account: never a record.
 type AccountView struct {
-	Login     string `json:"login"`
-	CreatedAt string `json:"createdAt"`
-	Devices   int    `json:"devices"`
+	Login     string                  `json:"login"`
+	CreatedAt string                  `json:"createdAt"`
+	Devices   int                     `json:"devices"`
+	Kind      string                  `json:"kind,omitempty"`
+	Limits    *accounts.AccountLimits `json:"limits,omitempty"`    // the account's own overrides
+	Effective LimitsView              `json:"effective,omitempty"` // what is in force: overrides over the defaults
 }
 
 // DeviceView is what the operator sees of a device: never a token or its hash.
@@ -143,13 +243,19 @@ type DeviceView struct {
 	EnrolledAt     string   `json:"enrolledAt"`
 	LastSeen       string   `json:"lastSeen,omitempty"`
 	Online         bool     `json:"online"`
+	// SignedOut is true while the device's token is dead through a password change or a reset (19 item AT):
+	// the record stays until the operator or the account deletes it (item AV).
+	SignedOut bool `json:"signedOut,omitempty"`
 }
 
 // ListAccounts lists the accounts by login.
 func (o *Ops) ListAccounts() []AccountView {
 	out := []AccountView{}
 	for _, a := range o.Accounts.Accounts() {
-		out = append(out, AccountView{Login: a.Login, CreatedAt: a.CreatedAt, Devices: a.Devices})
+		out = append(out, AccountView{
+			Login: a.Login, CreatedAt: a.CreatedAt, Devices: a.Devices,
+			Kind: a.Kind, Limits: a.Limits, Effective: limitsView(o.Accounts.LimitsFor(a.Login)),
+		})
 	}
 	return out
 }
@@ -164,7 +270,7 @@ func (o *Ops) ListDevices(login string) ([]DeviceView, error) {
 	for _, d := range o.Accounts.Devices(l) {
 		out = append(out, DeviceView{DeviceID: d.ID, Name: d.Name, Product: d.Product, ProductVersion: d.ProductVersion,
 			Platform: d.Platform, Roles: d.Roles, EnrolledAt: d.EnrolledAt, LastSeen: d.LastSeen,
-			Online: o.Dir.DeviceOnline(l, d.ID)})
+			Online: o.Dir.DeviceOnline(l, d.ID), SignedOut: d.SignedOutAt != ""})
 	}
 	sort.Slice(out, func(i, j int) bool { return out[i].DeviceID < out[j].DeviceID })
 	return out, nil
@@ -172,21 +278,283 @@ func (o *Ops) ListDevices(login string) ([]DeviceView, error) {
 
 // Status is what a status request may show: counts, never a list and never a secret.
 type Status struct {
-	Accounts   int    `json:"accounts"`
-	Devices    int    `json:"devices"`
-	Online     int    `json:"online"`
-	Resources  int    `json:"resources"`
-	Broadcasts int    `json:"broadcasts"`
-	Tombstones int    `json:"tombstones"`
-	Version    string `json:"version,omitempty"`
+	Accounts         int    `json:"accounts"`
+	MaxAccounts      int    `json:"maxAccounts"`
+	Devices          int    `json:"devices"`
+	Online           int    `json:"online"`
+	Resources        int    `json:"resources"`
+	Broadcasts       int    `json:"broadcasts"`
+	Tombstones       int    `json:"tombstones"`
+	Clipboards       int    `json:"clipboards"`     // accounts holding a clipboard value now (ticket 229)
+	ClipboardBytes   int64  `json:"clipboardBytes"` // bytes the slots hold now: values and uploads in flight
+	Version          string `json:"version,omitempty"`
+	KeepAwakeActive  bool   `json:"keepAwakeActive"`
+	KeepAwake        bool   `json:"keepAwake"`
+	LogRetentionDays int    `json:"logRetentionDays"`
 }
 
 // Status returns the totals.
 func (o *Ops) Status() Status {
 	c := o.Dir.Counts()
-	return Status{Accounts: len(o.Accounts.Accounts()), Devices: len(o.Accounts.AllDevices()), Online: c.Online,
-		Resources: c.Resources, Broadcasts: c.Broadcasts, Tombstones: o.Accounts.Tombstones()}
+	s := Status{Accounts: o.Accounts.AccountCount(), MaxAccounts: o.Accounts.Policy().MaxAccounts,
+		Devices: len(o.Accounts.AllDevices()), Online: c.Online,
+		Resources: c.Resources, Broadcasts: c.Broadcasts, Tombstones: o.Accounts.Tombstones(), KeepAwakeActive: o.KeepAwakeActive}
+	if o.Clipboard != nil {
+		s.Clipboards, s.ClipboardBytes = o.Clipboard.Counts()
+	}
+	if o.ReadHostSettings != nil {
+		s.KeepAwake, s.LogRetentionDays = o.ReadHostSettings()
+	}
+	return s
 }
 
 // DeviceIDOK reports whether s has the form of a deviceId (the CLI checks it before asking).
 func DeviceIDOK(s string) bool { return wire.ValidID(s) }
+
+// --- invitations (19 items AP and AQ) ---
+
+// InvitationView is what the operator sees of an invitation: never the plaintext code.
+type InvitationView struct {
+	CodeHash      string `json:"codeHash"`
+	Kind          string `json:"kind"`
+	CreatedAt     string `json:"createdAt"`
+	ExpectedLogin string `json:"expectedLogin,omitempty"`
+	Used          bool   `json:"used"`
+	UsedAt        string `json:"usedAt,omitempty"`
+	UsedBy        string `json:"usedBy,omitempty"`
+}
+
+func invitationView(inv accounts.Invitation) InvitationView {
+	return InvitationView{CodeHash: inv.CodeHash, Kind: inv.Kind, CreatedAt: inv.CreatedAt,
+		ExpectedLogin: inv.ExpectedLogin, Used: inv.Used, UsedAt: inv.UsedAt, UsedBy: inv.UsedBy}
+}
+
+// CreateInvitationResult is returned once upon creation: the code, which the server keeps no copy of.
+type CreateInvitationResult struct {
+	Code       string         `json:"code"`
+	Invitation InvitationView `json:"invitation"`
+}
+
+// SharedInvitationView is the status of the shared invitation password.
+type SharedInvitationView struct {
+	Enabled bool   `json:"enabled"`
+	Kind    string `json:"kind,omitempty"`
+}
+
+// CreateInvitation creates a one-time invitation of a kind, with the login the operator expects the
+// person to take (optional, a hint written into the invitation string as `u`, never enforced).
+func (o *Ops) CreateInvitation(kind, expectedLogin string) (CreateInvitationResult, error) {
+	code, inv, err := o.Accounts.CreateInvitation(kind, expectedLogin)
+	if err != nil {
+		return CreateInvitationResult{}, err
+	}
+	o.Log.Info("invitation-created", logx.Text("kind", inv.Kind), logx.Invitation(code))
+	return CreateInvitationResult{Code: code, Invitation: invitationView(inv)}, nil
+}
+
+// ListInvitations lists all invitations, oldest first.
+func (o *Ops) ListInvitations() []InvitationView {
+	invs := o.Accounts.ListInvitations()
+	out := make([]InvitationView, 0, len(invs))
+	for _, inv := range invs {
+		out = append(out, invitationView(inv))
+	}
+	return out
+}
+
+// WithdrawInvitation deletes an invitation named by its hash or an unambiguous prefix of it.
+func (o *Ops) WithdrawInvitation(codeHashOrPrefix string) (bool, error) {
+	ok, err := o.Accounts.WithdrawInvitation(codeHashOrPrefix)
+	if err != nil {
+		return false, err
+	}
+	if ok {
+		o.Log.Info("invitation-withdrawn", logx.Text("hash", shortHash(codeHashOrPrefix)))
+	}
+	return ok, nil
+}
+
+func shortHash(h string) string {
+	if len(h) > 8 {
+		return h[:8]
+	}
+	return h
+}
+
+// SharedInvitationStatus returns whether the shared invitation password is on and the kind it registers.
+func (o *Ops) SharedInvitationStatus() SharedInvitationView {
+	enabled, kind := o.Accounts.SharedInvitationStatus()
+	return SharedInvitationView{Enabled: enabled, Kind: kind}
+}
+
+// SetSharedInvitation sets the shared invitation password (under the policy of 1.2) and the kind it
+// registers, or turns it off with an empty password. It touches no account already registered.
+func (o *Ops) SetSharedInvitation(pw, kind string) error {
+	if err := o.Accounts.SetSharedInvitation(pw, kind); err != nil {
+		return err
+	}
+	if pw == "" {
+		o.Log.Info("shared-invitation-off")
+	} else {
+		_, k := o.Accounts.SharedInvitationStatus()
+		o.Log.Info("shared-invitation-set", logx.Text("kind", k))
+	}
+	return nil
+}
+
+// --- limits (19 item AS) ---
+
+// SetAccountLimits sets the overrides of one account; nil clears them. A limit lowered below what the
+// account holds refuses only the next request and trims nothing.
+func (o *Ops) SetAccountLimits(login string, lim *accounts.AccountLimits) error {
+	l, ok := accounts.NormalizeLogin(login)
+	if !ok || !o.Accounts.Exists(l) {
+		return accounts.ErrNoAccount
+	}
+	if err := o.Accounts.SetAccountLimits(l, lim); err != nil {
+		return err
+	}
+	o.Log.Info("account-limits-changed", logx.Login(l))
+	return nil
+}
+
+// PolicyView is the deployment policy and how full it is.
+type PolicyView struct {
+	MaxAccounts int        `json:"maxAccounts"`
+	Accounts    int        `json:"accounts"`
+	Defaults    LimitsView `json:"defaults"`
+	// Persisted is false when the change was made for this run only (nothing to write it to).
+	Persisted bool `json:"persisted"`
+}
+
+// PolicyStatus is the policy in force.
+func (o *Ops) PolicyStatus() PolicyView {
+	p := o.Accounts.Policy()
+	return PolicyView{MaxAccounts: p.MaxAccounts, Accounts: o.Accounts.AccountCount(), Defaults: limitsView(p.Defaults), Persisted: true}
+}
+
+// SetPolicy changes the cap on accounts and the defaults a new account starts with. Members left nil
+// stay. It never trims what exists: a cap lowered below the count refuses only the next registration.
+func (o *Ops) SetPolicy(maxAccounts *int, defaults *accounts.AccountLimits) (PolicyView, error) {
+	cur := o.Accounts.Policy()
+	next := cur
+	if maxAccounts != nil {
+		if *maxAccounts < 1 {
+			return PolicyView{}, ErrBadPolicy
+		}
+		next.MaxAccounts = *maxAccounts
+	}
+	if err := defaults.Validate(); err != nil {
+		return PolicyView{}, ErrBadPolicy
+	}
+	if defaults != nil {
+		if defaults.DevicesPerAccount != nil {
+			next.Defaults.Devices = *defaults.DevicesPerAccount
+		}
+		if defaults.ResourcesPerAccount != nil {
+			next.Defaults.Resources = *defaults.ResourcesPerAccount
+		}
+		if defaults.BroadcastsPerAccount != nil {
+			next.Defaults.Broadcasts = *defaults.BroadcastsPerAccount
+		}
+		if defaults.BroadcastsPerDevice != nil {
+			next.Defaults.BroadcastsPerDevice = *defaults.BroadcastsPerDevice
+		}
+		if defaults.ClipboardMaxBytes != nil {
+			next.Defaults.ClipboardBytes = *defaults.ClipboardMaxBytes
+		}
+	}
+	persisted := true
+	if o.SaveLimits != nil {
+		if err := o.SaveLimits(next); err != nil {
+			return PolicyView{}, err
+		}
+	} else {
+		persisted = false
+	}
+	o.Accounts.SetPolicy(next)
+	o.Log.Info("policy-changed", logx.Int("maxAccounts", next.MaxAccounts))
+	v := o.PolicyStatus()
+	v.Persisted = persisted
+	return v, nil
+}
+
+// --- grants (19 item AO, 20 item BD) ---
+
+// GrantView is one thing given to a guest account.
+type GrantView struct {
+	TargetID  string `json:"targetId"`
+	Kind      string `json:"kind"`
+	Guest     string `json:"guest"`
+	GrantedBy string `json:"grantedBy"`
+	GrantedAt string `json:"grantedAt"`
+}
+
+func grantView(g accounts.Grant) GrantView {
+	return GrantView{TargetID: g.TargetID, Kind: g.Kind, Guest: g.Account, GrantedBy: g.GrantedBy, GrantedAt: g.GrantedAt}
+}
+
+// AddGrant gives a resource or a broadcast of a member account to a guest account. The target must be
+// held by the giving account right now; the guest is told through its directory stream.
+func (o *Ops) AddGrant(owner, targetID, kind, guest string) error {
+	ol, ok := accounts.NormalizeLogin(owner)
+	if !ok || !o.Accounts.Exists(ol) {
+		return accounts.ErrNoAccount
+	}
+	gl, ok := accounts.NormalizeLogin(guest)
+	if !ok || !o.Accounts.Exists(gl) {
+		return accounts.ErrNoAccount
+	}
+	broadcast := kind == accounts.GrantBroadcast
+	switch kind {
+	case accounts.GrantResource:
+		if _, held := o.Dir.ResourceRecord(ol, targetID); !held {
+			return ErrNoTarget
+		}
+	case accounts.GrantBroadcast:
+		if _, _, held := o.Dir.LiveBroadcast(ol, targetID); !held {
+			return ErrNoTarget
+		}
+	}
+	if err := o.Accounts.AddGrant(ol, targetID, kind, gl); err != nil {
+		return err
+	}
+	o.Dir.GrantAdded(ol, gl, targetID, broadcast)
+	o.Log.Info("grant-added", logx.Login(ol), grantTarget(kind, targetID))
+	return nil
+}
+
+// RemoveGrant takes a grant back; the guest is told.
+func (o *Ops) RemoveGrant(owner, targetID, guest string) error {
+	g, err := o.Accounts.RemoveGrant(owner, targetID, guest)
+	if err != nil {
+		return err
+	}
+	o.Dir.GrantRemoved(g.Account, g.TargetID, g.Kind == accounts.GrantBroadcast)
+	o.Log.Info("grant-removed", logx.Login(g.GrantedBy), grantTarget(g.Kind, g.TargetID))
+	return nil
+}
+
+// ListGrants lists what a guest account was given (guest set) or what a member account gave (owner set).
+func (o *Ops) ListGrants(owner, guest string) []GrantView {
+	var src []accounts.Grant
+	switch {
+	case guest != "":
+		src = o.Accounts.GrantsForGuest(guest)
+	case owner != "":
+		src = o.Accounts.GrantsBy(owner)
+	}
+	out := make([]GrantView, 0, len(src))
+	for _, g := range src {
+		out = append(out, grantView(g))
+	}
+	return out
+}
+
+// grantTarget names what a grant gives in a log line, by the hashed form of its id.
+func grantTarget(kind, id string) logx.Field {
+	if kind == accounts.GrantBroadcast {
+		return logx.Broadcast(id)
+	}
+	return logx.Resource(id)
+}

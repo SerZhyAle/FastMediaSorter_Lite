@@ -59,6 +59,16 @@ Friend Module ResourceMessages
         End Select
     End Function
 
+    ''' <summary>Why a document was not read, without ever quoting it. A read result that carries a Detail
+    ''' (spec 227: the QR decoder's own sentence for its outcomes) says that instead of the reader's
+    ''' generic mapping, so an image with no QR and one with several do not both say "damaged file".</summary>
+    Friend Function ImportFailureText(read As FmsConfigReadResult) As String
+        If read IsNot Nothing AndAlso read.Detail IsNot Nothing AndAlso read.Detail.Length > 0 Then
+            Return read.Detail
+        End If
+        Return ForImportFailure(If(read, New FmsConfigReadResult()).Failure)
+    End Function
+
     ''' <summary>Why a document was not read, without ever quoting it. A document made by a newer program is
     ''' the one case that names a way out; every other refusal says only that the file is not usable.</summary>
     Friend Function ForImportFailure(failure As FmsConfigFailure) As String

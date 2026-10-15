@@ -137,6 +137,13 @@ Partial Public Class Main_Form
             last_Media_Area_Click_Button = e.Button
         End If
 
+#If Not NETFRAMEWORK Then
+        ' A text document: the press may be the start of a selection, so whether it was a click is decided at the
+        ' release (124 UX-216). Modifier chords and the double click above never get here - they are decided on
+        ' the press, as they always were.
+        If e.Button = MouseButtons.Left AndAlso TextSelectionMouseDown(e) Then Return
+#End If
+
         ' PRIORITY 3: DELAY LEFT-CLICK to allow double-click detection
         If e.Button = MouseButtons.Left AndAlso MediaIsAtFit() Then
             ' Always delay to allow double-click detection (enter/exit fullscreen)
@@ -414,6 +421,9 @@ Partial Public Class Main_Form
     ''' box back to where the previous drag had begun.</summary>
     Private Sub Picture_Box_MouseUp(sender As Object, e As MouseEventArgs) Handles Picture_Box_1.MouseUp, Picture_Box_2.MouseUp
         EndPan()
+#If Not NETFRAMEWORK Then
+        If e.Button = MouseButtons.Left Then TextSelectionMouseUp(e)
+#End If
     End Sub
 
     Private Sub Pic_MouseMove(sender As Object, e As MouseEventArgs)
@@ -427,6 +437,10 @@ Partial Public Class Main_Form
 #End If
 
         If e.Button = MouseButtons.Left Then
+#If Not NETFRAMEWORK Then
+            ' A press on a text document that is being dragged is a selection, not a pan (124 UX-216).
+            If TextSelectionMouseMove(TryCast(sender, PictureBox), e) Then Exit Sub
+#End If
             If Not is_PictureBox1_Visible AndAlso Not is_PictureBox2_Visible Then
                 Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w2470: pic_MouseMove - no picture box visible")
                 Exit Sub

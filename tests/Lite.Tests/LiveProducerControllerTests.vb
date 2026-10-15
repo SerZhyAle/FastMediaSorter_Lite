@@ -348,6 +348,105 @@ Public Class LiveProducerControllerTests
     End Sub
 
     <Fact>
+    Public Sub Exchange_only_video_uses_a_private_listener_and_cleans_up_after_publication_errors()
+        Dim harness As New FakeHarness()
+        harness.VideoSource.FramesPerSecond = 15
+        harness.Encoder.EmitVideoOnStart = True
+        Dim ports As LiveProducerPorts = harness.Ports()
+        ports.ExchangeEndpointInfo = Function() Tuple.Create("relay.example:443", "sha256:" & New String("a"c, 64))
+        ports.BroadcastStarted = Sub(state, audio, video)
+                                     Assert.Equal(0, audio.RetainedSegments)
+                                     Assert.Equal(1, video.RetainedSegments)
+                                 End Sub
+        Dim controller As New LiveBroadcastController(ports)
+        Try
+            Dim result As LiveStartResult = controller.Start(New LiveStartRequest With {.Kind = LiveProducerSourceKind.Camera, .Mode = "VIDEO_ONLY"})
+            Assert.True(result.Ok, result.SeamReason)
+            Assert.Equal("127.0.0.1", controller.State.ListenerAddress)
+            Assert.Equal(15, harness.Encoder.LastOptions.VideoFps)
+            Dim descriptor As LiveBroadcastReadResult = LiveBroadcastReader.ReadText(controller.State.DescriptorJson)
+            Assert.DoesNotContain(descriptor.Descriptor.Endpoints, Function(endpoint) endpoint.Transport = "HTTP")
+            Using client As New TcpClient()
+                client.Connect(IPAddress.Loopback, harness.Port)
+            End Using
+            Using client As New TcpClient()
+                Assert.Throws(Of SocketException)(Sub() client.Connect(IPAddress.Parse(harness.Address), harness.Port))
+            End Using
+            ports.BroadcastStopped = Sub(id)
+                                         Throw New IO.IOException("publication unavailable")
+                                     End Sub
+        Finally
+            controller.Stop()
+        End Try
+        Assert.True(harness.VideoSource.Stopped)
+        Assert.True(harness.Encoder.Stopped)
+        Assert.False(controller.State.Running)
+        Using client As New TcpClient()
+            Assert.Throws(Of SocketException)(Sub() client.Connect(IPAddress.Loopback, harness.Port))
+        End Using
+    End Sub
+
+    <Fact>
+    Public Sub A_protected_exchange_broadcast_never_advertises_the_unprotected_relay()
+        Dim harness As New FakeHarness()
+        Dim ports As LiveProducerPorts = harness.Ports()
+        ports.ExchangeEndpointInfo = Function() Tuple.Create("relay.example:443", "sha256:" & New String("a"c, 64))
+        Dim controller As New LiveBroadcastController(ports)
+        Try
+            Dim result As LiveStartResult = controller.Start(New LiveStartRequest With {.Kind = LiveProducerSourceKind.Screen,
+                .Mode = "VIDEO_ONLY", .Password = "separate-secret"})
+            Assert.True(result.Ok, result.SeamReason)
+            Dim descriptor As LiveBroadcastReadResult = LiveBroadcastReader.ReadText(controller.State.DescriptorJson)
+            Assert.Equal("password-v1", descriptor.Descriptor.AuthScheme)
+            Assert.Equal("", controller.State.RelayUrl)
+            Assert.Single(descriptor.Descriptor.Endpoints)
+            Assert.Equal("TUNNEL", descriptor.Descriptor.Endpoints(0).Transport)
+            Assert.DoesNotContain("separate-secret", controller.State.BarcodeText)
+            Assert.DoesNotContain("separate-secret", controller.State.DescriptorJson)
+        Finally
+            controller.Stop()
+        End Try
+    End Sub
+
+    <Fact>
+    Public Sub A_throwing_source_factory_does_not_leave_an_encoder_or_listener_open()
+        Dim harness As New FakeHarness()
+        Dim ports As LiveProducerPorts = harness.Ports()
+        ports.ExchangeEndpointInfo = Function() Tuple.Create("relay.example:443", "sha256:" & New String("a"c, 64))
+        ports.CreateVideoSource = Function(kind)
+                                      Throw New InvalidOperationException("capture unavailable")
+                                  End Function
+        Dim controller As New LiveBroadcastController(ports)
+        Dim result As LiveStartResult = controller.Start(New LiveStartRequest With {.Kind = LiveProducerSourceKind.Screen, .Mode = "VIDEO_ONLY"})
+        Assert.False(result.Ok)
+        Assert.False(controller.State.Running)
+        Assert.Equal("", controller.State.DescriptorJson)
+        Assert.True(harness.Encoder.Stopped)
+        Using client As New TcpClient()
+            Assert.Throws(Of SocketException)(Sub() client.Connect(IPAddress.Loopback, harness.Port))
+        End Using
+    End Sub
+
+    <Fact>
+    Public Sub Exchange_only_start_without_a_lan_address_uses_the_documentation_host_in_inner()
+        Dim harness As New FakeHarness With {.Address = ""}
+        Dim ports As LiveProducerPorts = harness.Ports()
+        ports.ExchangeEndpointInfo = Function() Tuple.Create("relay.example:443", "sha256:" & New String("a"c, 64))
+        Dim controller As New LiveBroadcastController(ports)
+        Try
+            Dim result As LiveStartResult = controller.Start(New LiveStartRequest With {.Kind = LiveProducerSourceKind.Screen, .Mode = "VIDEO_ONLY"})
+            Assert.True(result.Ok, result.SeamReason)
+            Assert.Equal("127.0.0.1", controller.State.ListenerAddress)
+            Dim descriptor As LiveBroadcastReadResult = LiveBroadcastReader.ReadText(controller.State.DescriptorJson)
+            Assert.DoesNotContain(descriptor.Descriptor.Endpoints, Function(endpoint) endpoint.Transport = "HTTP")
+            Assert.Contains("http://192.0.2.1:", controller.State.DescriptorJson)
+            Assert.DoesNotContain("127.0.0.1", controller.State.DescriptorJson)
+        Finally
+            controller.Stop()
+        End Try
+    End Sub
+
+    <Fact>
     Public Sub A_camera_start_opens_the_camera_source_of_the_asked_kind()
         ' Phase B3: the camera is a video source like the screen - the same seam carries the KIND
         ' to the host's factory, so the source that opens is the camera's and nothing else, and

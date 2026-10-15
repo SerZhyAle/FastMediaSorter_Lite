@@ -201,8 +201,9 @@ Public Class ResourceAddTests
             Using form As New Resource_Add_Form(New Actions(), ResourceAddEntry.Exchange, currentPublish:=True)
                 Assert.True(Field(Of CheckBox)(form, "publish").Checked)
             End Using
-            Environment.SetEnvironmentVariable(ExchangeFeatures.DeveloperSwitchName, Nothing)
-            Assert.Throws(Of InvalidOperationException)(Function() New Resource_Add_Form(New Actions(), ResourceAddEntry.Exchange))
+            Using ExchangeFeatures.ForFlow(offered:=False, switchOn:=False)
+                Assert.Throws(Of InvalidOperationException)(Function() New Resource_Add_Form(New Actions(), ResourceAddEntry.Exchange))
+            End Using
             For Each block In {ExchangePublishBlock.ServerDown, ExchangePublishBlock.PinLocked, ExchangePublishBlock.NoAddress, ExchangePublishBlock.NoShares}
                 Dim result As New ResourceAddResult With {.Added = True, .Delivery = ResourceAddDelivery.NoPhone, .Publication = ExchangePublishText.StateBlocked(block)}
                 Assert.Contains(ExchangePublishText.StateBlocked(block), ResourceAddText.Finish(result))

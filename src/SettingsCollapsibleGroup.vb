@@ -136,12 +136,26 @@ Friend NotInheritable Class SettingsCollapsibleGroup
             If expandedValue = value Then Return
             RaiseEvent ExpansionChanging(Me, EventArgs.Empty)
             If Not value AndAlso Body.ContainsFocus Then Header.Focus()
-            expandedValue = value
-            Body.Visible = value
-            Caption = captionValue
-            RefreshDisclosure()
-            ArrangeContents()
-            DirectCast(Header, GroupHeader).NotifyState()
+            ' One layout pass (WINDOWS-UI section 5, amended 0.2): the group and the page it stands in are held
+            ' while the group changes state - body visibility, caption, disclosure picture, header and body
+            ' bounds, its own height - and laid out once when the change is complete. Each of those used to
+            ' re-measure the page as it happened. ExpansionChanged is raised only after that pass, so a listener
+            ' that measures the group or restores a scroll position reads the finished layout, never a
+            ' half-built one (the same section: a remembered position is restored after layout).
+            Dim page As Control = Parent
+            If page IsNot Nothing Then page.SuspendLayout()
+            SuspendLayout()
+            Try
+                expandedValue = value
+                Body.Visible = value
+                Caption = captionValue
+                RefreshDisclosure()
+                ArrangeContents()
+                DirectCast(Header, GroupHeader).NotifyState()
+            Finally
+                ResumeLayout(True)
+                If page IsNot Nothing Then page.ResumeLayout(True)
+            End Try
             RaiseEvent ExpansionChanged(Me, EventArgs.Empty)
         End Set
     End Property

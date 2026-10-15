@@ -48,12 +48,12 @@ Public Class LiveBroadcastReaderTests
     End Sub
 
     <Fact>
-    Public Sub Fixture3_VideoAudio_Mode_Returns_UnsupportedMode()
+    Public Sub Fixture3_HttpVideoAudio_Mode_Is_Playable()
         Dim json As String = "{""schemaVersion"":1,""url"":""http://192.168.1.50:8080/video"",""mode"":""VIDEO_AUDIO""}"
         Dim res As LiveBroadcastReadResult = LiveBroadcastReader.ReadText(json)
 
-        Assert.Equal(LiveReadStatus.UnsupportedMode, res.Status)
-        Assert.Null(res.Descriptor)
+        Assert.Equal(LiveReadStatus.Ok, res.Status)
+        Assert.Equal(LiveBroadcastMode.VideoAudio, res.Descriptor.ModeValue)
     End Sub
 
     <Fact>

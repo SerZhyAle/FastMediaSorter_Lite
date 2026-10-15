@@ -143,6 +143,8 @@ type rigOpts struct {
 	pool   bool
 	params func(*rendezvous.Params)
 	logins []string
+	// pace turns the password pacer on with an interval of 2 s and a sleep that does not sleep, on the scenario's clock.
+	pace bool
 }
 
 // rig is one server of one scenario.
@@ -171,6 +173,9 @@ func newRig(seed string, o rigOpts) *rig {
 		Now: r.clock.Now, Params: &params, Logins: o.logins, PublicEndpoint: publicEndpoint,
 		WithRelay: o.relay, Cast: o.cast, ServerVersion: "vectors",
 		AccountsRand: newSeeded(seed + "/accounts"), EngineRand: newSeeded(seed + "/tunnels"),
+	}
+	if o.pace {
+		opt.PaceInterval, opt.Sleep = 2*time.Second, func(time.Duration) {}
 	}
 	if o.relay {
 		opt.RelayConfig = func(c *rendezvous.RelayConfig) { c.Grace = 30 * time.Second }

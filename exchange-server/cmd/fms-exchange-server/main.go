@@ -58,12 +58,22 @@ func run(ctx context.Context, args []string, stdin io.Reader, stdout, stderr io.
 		return runSetEndpoint(cmd, stdout, stderr)
 	case "set-port-range":
 		return runSetPortRange(cmd, stdout, stderr)
+	case "set-keep-awake", "set-log-retention", "set-max-accounts":
+		return runSetHost(cmd, stdout, stderr)
 	case "tls":
 		return runTLS(cmd, stdout, stderr)
 	case "inspect":
 		return runInspect(cmd, stdout, stderr)
 	case "connection-string":
 		return runConnectionString(cmd, stdout, stderr)
+	case "invitation":
+		return runInvitation(cmd, stdout, stderr)
+	case "shared-invitation":
+		return runSharedInvitation(cmd, stdin, stdout, stderr)
+	case "grant":
+		return runGrant(cmd, stdout, stderr)
+	case "policy":
+		return runPolicy(cmd, stdout, stderr)
 	case "stop":
 		return runStop(cmd, stdout, stderr)
 	}

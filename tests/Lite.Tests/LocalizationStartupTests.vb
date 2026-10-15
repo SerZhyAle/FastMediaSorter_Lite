@@ -19,6 +19,7 @@ Imports Xunit
 ''' boxes. Hardcoding thirteen languages here would fail the net48 leg by design and
 ''' leave a permanently red pre-flight (canon invariant 5).
 ''' </summary>
+<Collection("LocalizationState")>
 Public Class LocalizationStartupTests
 
     ''' <summary>Does THIS build carry that language? RU+EN on net48, all 13 on modern.</summary>

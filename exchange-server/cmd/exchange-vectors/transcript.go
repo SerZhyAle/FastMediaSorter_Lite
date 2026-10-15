@@ -149,6 +149,23 @@ func (t *tapConn) stop() {
 	t.mu.Unlock()
 }
 
+func (t *tapConn) start() {
+	t.mu.Lock()
+	t.parsing = true
+	t.in.buf, t.out.buf = nil, nil // bytes the record missed are not frames
+	t.mu.Unlock()
+}
+
+// CloseWrite forwards the write-side close of the underlying connection (a clipboard sender says
+// "that was all of it" this way); net.Conn does not carry it, so sess.halfClose would not find it
+// through the embedding alone.
+func (t *tapConn) CloseWrite() error {
+	if cw, ok := t.Conn.(interface{ CloseWrite() error }); ok {
+		return cw.CloseWrite()
+	}
+	return nil
+}
+
 // sess is one scripted stream.
 type sess struct {
 	r   *rig
@@ -250,7 +267,43 @@ func (s *sess) expectClosed() {
 // stopRecording ends the frame record: what follows on this stream is not envelopes.
 func (s *sess) stopRecording() { s.tap.stop() }
 
+// startRecording resumes the frame record (a clipboard stream is frames again once the raw byte
+// run has crossed: the `clipboard-stored` answer is recorded like any frame).
+func (s *sess) startRecording() { s.tap.start() }
+
 func (s *sess) close() { _ = s.c.Close() }
+
+// sendRaw writes bytes as they are and records them as one step: after `clipboard-ready` a
+// clipboard value's bytes are raw - no frames, no chunk headers (22 item BW).
+func (s *sess) sendRaw(note string, b []byte) {
+	s.tr.add(step{Stream: s.id, Direction: c2s, Note: note, Hex: hexOf(b)})
+	if err := s.c.SendRaw(b); err != nil {
+		failf("%s: send raw: %v", s.id, err)
+	}
+}
+
+// readRaw reads exactly n bytes the server wrote as they are and records them (the raw byte run of
+// a `clipboard-value`).
+func (s *sess) readRaw(note string, n int) []byte {
+	_ = s.c.SetReadDeadline(time.Now().Add(5 * time.Second))
+	b := make([]byte, n)
+	if _, err := io.ReadFull(s.c.Conn, b); err != nil {
+		failf("%s: read raw: %v", s.id, err)
+	}
+	_ = s.c.SetReadDeadline(time.Time{})
+	s.tr.add(step{Stream: s.id, Direction: s2c, Note: note, Hex: hexOf(b)})
+	return b
+}
+
+// halfClose closes the write side: the way a sender says "that was all of it" after a clipboard
+// value's raw bytes. The server sees EOF after what it has.
+func (s *sess) halfClose() {
+	if cw, ok := s.c.Conn.(interface{ CloseWrite() error }); ok {
+		if err := cw.CloseWrite(); err != nil {
+			failf("%s: close write: %v", s.id, err)
+		}
+	}
+}
 
 // --- common scripted steps ---
 

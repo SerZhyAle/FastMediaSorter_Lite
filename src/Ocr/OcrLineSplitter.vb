@@ -29,6 +29,7 @@ Imports System.Drawing
 ''' | Constant | Status | Bracket |
 ''' | --- | --- | --- |
 ''' | <see cref="MaxWordGapRatio"/> | derived here | SPECIFICATION_OCR_OVERLAY_ACCURACY.md section 18.2: 2.06x is the widest gap inside a line that really is one line, 5.29x the narrowest cross-region stitch, and 3.5 sits 1.70x above the first and 1.51x below the second. The band between them is recorded as UNDECIDED on the constant itself, per rule 15. It happens to equal the sibling product's number, and the condition for carrying it over - same engine family, same page-segmentation mode - is stated there too. |
+''' | <see cref="MaxWordHeightRatio"/> | inherited | `OCR-PIPELINE` amendment 1.7 A, whose number is section 5's "Type size ratio" 1.6 (`derived` THERE: 1.42x the widest spread inside one text, 1.86x the narrowest step between two, amendment 1.2 item M) - the very constant <see cref="OcrBlockBuilder.TypeSizeRatio"/> already inherits, taken by reference so there is one number and not two. The 1.7 text prints "(2.5)" after the words "type-size ratio": that is the SECTION that defines it; the value is fixed by the same amendment's examples (a token at 2.3x and one at 2.1x the median are cut, which 2.5 would not do), by its C item ("inherits `ocrTypeSizeRatio` (1.6)") and by the producer's shared fixture, whose header says 1.6. Not measured on this product's corpus. Ticket 033. |
 ''' </summary>
 Public Module OcrLineSplitter
 
@@ -55,6 +56,21 @@ Public Module OcrLineSplitter
     ''' not look at and must not pretend to have.
     ''' </summary>
     Public Const MaxWordGapRatio As Double = 3.5
+
+    ''' <summary>
+    ''' How many median WORD heights a word's box may stand tall before it is no lettering of this
+    ''' line (`OCR-PIPELINE` amendment 1.7 A). Where two speech balloons touch, the recognizer reads
+    ''' their touching outlines as tokens of the stitched line, so no gap between words holds the
+    ''' boundary - the stroke runs INSIDE the boundary token's box: a "J" at 2.3x and a lone "A" at
+    ''' 2.1x the line's word height on the producer's own page. A word box that tall reaches into the
+    ''' neighbouring row, which no lettering of one line does, and the split cuts BEFORE it: the token
+    ''' is the boundary, and it leads the next run.
+    '''
+    ''' The same 1.6 as <see cref="OcrBlockBuilder.TypeSizeRatio"/>, by reference. INHERITED - see
+    ''' the constant status table on the module, which also says why the amendment's "(2.5)" is a
+    ''' section number and not this value.
+    ''' </summary>
+    Public Const MaxWordHeightRatio As Double = OcrBlockBuilder.TypeSizeRatio
 
     ''' <summary>
     ''' Cuts every stitched line in <paramref name="lines"/> and, if anything was cut, puts
@@ -110,6 +126,25 @@ Public Module OcrLineSplitter
     ''' exactly where it started.</item>
     ''' </list>
     ''' Overlapping boxes give a negative gap and never cut.
+    '''
+    ''' A line is also cut BEFORE a word whose box is taller than
+    ''' <see cref="MaxWordHeightRatio"/> times the line's median word height (`OCR-PIPELINE`
+    ''' amendment 1.7 A) - the one boundary the gap test cannot see, because a balloon outline read
+    ''' as a token holds the stroke inside its own box. Edges, each fixed by the amendment's text
+    ''' or by its shared fixture:
+    ''' <list type="bullet">
+    ''' <item>strictly taller - a word exactly at the limit stays;</item>
+    ''' <item>the median is the one the gap rule uses, over ALL the line's words including the
+    ''' tall one, and an even count takes the upper middle (<see cref="MedianWordHeight"/>) - so
+    ''' a two-word line is never cut by this rule, the taller word being its own median;</item>
+    ''' <item>the cut is before the word, never after, and the token leads the NEXT run: it is
+    ''' not dropped and not made a run of its own (the reference parks it as an orphan under
+    ''' 1.1 D, which this product has no stage for - the runs then go through the same
+    ''' confidence and translatability filters as every other);</item>
+    ''' <item>the first word of a line has nothing before it, so it is never a cut;</item>
+    ''' <item>a line of one size, a one-word line and a line with no word geometry are never
+    ''' cut by it.</item>
+    ''' </list>
     ''' </summary>
     Public Function SplitLine(line As OcrLine) As List(Of OcrLine)
         Dim unchanged As New List(Of OcrLine) From {line}
@@ -124,9 +159,11 @@ Public Module OcrLineSplitter
         If median <= 0 Then Return unchanged
 
         Dim limit As Double = median * MaxWordGapRatio
+        Dim tallLimit As Double = median * MaxWordHeightRatio
         Dim cutAfter As New List(Of Integer)
         For i As Integer = 1 To words.Count - 1
-            If GapBetween(words(i - 1).Box, words(i).Box) > limit Then cutAfter.Add(i - 1)
+            If GapBetween(words(i - 1).Box, words(i).Box) > limit OrElse
+               words(i).Box.Height > tallLimit Then cutAfter.Add(i - 1)
         Next
         If cutAfter.Count = 0 Then Return unchanged
 
@@ -154,8 +191,20 @@ Public Module OcrLineSplitter
     ''' too, and a second implementation of it would be free to drift from this one.
     ''' </summary>
     Public Function MedianWordHeight(line As OcrLine) As Integer
-        If line Is Nothing OrElse line.Words Is Nothing OrElse line.Words.Count = 0 Then Return 0
-        Dim heights As List(Of Integer) = line.Words.
+        If line Is Nothing Then Return 0
+        Return MedianWordHeightOf(line.Words)
+    End Function
+
+    ''' <summary>
+    ''' The same median over a bare list of words - what the text join (`OCR-PIPELINE` 1.8 A) weighs
+    ''' its Hangul gap against, and it must be THIS one: a second median would be free to disagree
+    ''' with the one the split cuts by. Words with no height are not counted; an even count takes
+    ''' the upper middle.
+    ''' </summary>
+    Public Function MedianWordHeightOf(words As IEnumerable(Of OcrWord)) As Integer
+        If words Is Nothing Then Return 0
+        Dim heights As List(Of Integer) = words.
+            Where(Function(w) w IsNot Nothing).
             Select(Function(w) w.Box.Height).
             Where(Function(h) h > 0).
             OrderBy(Function(h) h).ToList()
@@ -189,7 +238,7 @@ Public Module OcrLineSplitter
         Dim eligible As New List(Of OcrLine)
         Dim parked As New List(Of OcrLine)
         For Each l As OcrLine In lines
-            If OcrTextFilter.LineRejection(l.Text, l.Confidence).Length = 0 Then
+            If OcrTextFilter.LineRejection(l.SpacedText, l.Confidence).Length = 0 Then
                 eligible.Add(l)
             Else
                 parked.Add(l)
@@ -250,7 +299,7 @@ Public Module OcrLineSplitter
             .Words = own,
             .Box = box,
             .Confidence = CSng(confSum / own.Count),
-            .Text = String.Join(" ", own.Select(Function(w) w.Text)).Trim()
+            .Text = OcrTextJoin.JoinLineWords(own)
         }
     End Function
 

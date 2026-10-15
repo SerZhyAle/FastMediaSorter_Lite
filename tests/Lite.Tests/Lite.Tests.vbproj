@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
   <!-- Unit tests for viewer-unique pure logic (net48). The Share subsystem is covered
        by Companion.Tests (same ported code); this project targets code that lives
        ONLY in the viewer - currently Utils (array ops, contrast colour, and the header-only
@@ -55,6 +55,12 @@
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.12.0" />
     <PackageReference Include="xunit" Version="2.9.2" />
     <PackageReference Include="xunit.runner.visualstudio" Version="2.8.2" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetFramework)' != 'net48'">
+    <PackageReference Include="ZXing.Net" Version="0.16.11" />
+    <PackageReference Include="ZXing.Net.Bindings.Windows.Compatibility" Version="0.16.16" />
+    <PackageReference Include="QRCoder" Version="1.4.3" />
   </ItemGroup>
 
   <ItemGroup>
@@ -176,6 +182,12 @@
     <Compile Include="..\..\src\ZoomMath.vb">
       <Link>Linked\ZoomMath.vb</Link>
     </Compile>
+    <!-- LETTERBOX-BARS / LETTERBOX-HALO 0.1 (ticket 183): the pure math of the perspective bars and the halo,
+         held to the catalog's vectors by LetterboxFillConformanceTests on BOTH legs - the bars are shared code
+         that both shipped exes compile. Not a whole-file seam; needs only System.Drawing value types. -->
+    <Compile Include="..\..\src\LetterboxFillMath.vb">
+      <Link>Linked\LetterboxFillMath.vb</Link>
+    </Compile>
     <!-- The pure half of the floating chrome (002): scale, row layout, theme arithmetic and the one
          table of metrics. The painted surface, the host window and the controller stay out - they are
          WinForms glue, and the tests that matter (overflow, RTL mirroring, the 24 px minimum, high
@@ -204,9 +216,14 @@
          itself. DialogLayer.Viewer.vb names Main_Form and the theme service, so it stays out (the layer's hook is
          simply not installed here), and its source is read by the scan test instead. -->
     <Compile Include="..\..\src\DialogRules.vb"><Link>Linked\DialogRules.vb</Link></Compile>
+    <!-- Ticket 124 UX-216: the pure rules of the text view's selection and scroll cue. -->
+    <Compile Include="..\..\src\TextViewRules.vb"><Link>Linked\TextViewRules.vb</Link></Compile>
     <Compile Include="..\..\src\NotifyToast.vb"><Link>Linked\NotifyToast.vb</Link></Compile>
     <Compile Include="..\..\src\DialogLayout.vb"><Link>Linked\DialogLayout.vb</Link></Compile>
     <Compile Include="..\..\src\DialogLayer.vb"><Link>Linked\DialogLayer.vb</Link></Compile>
+    <!-- WINDOWS-UI section 9 (amended 0.2): the opt-in timing of a window and its pure budget; DialogLayer calls both. -->
+    <Compile Include="..\..\src\UiTimingBudget.vb"><Link>Linked\UiTimingBudget.vb</Link></Compile>
+    <Compile Include="..\..\src\UiTiming.vb"><Link>Linked\UiTiming.vb</Link></Compile>
     <Compile Include="..\..\src\ViewerBox.vb"><Link>Linked\ViewerBox.vb</Link></Compile>
     <Compile Include="..\..\src\AskModel.vb"><Link>Linked\AskModel.vb</Link></Compile>
     <Compile Include="..\..\src\Welcome\WelcomeRules.vb"><Link>Linked\WelcomeRules.vb</Link></Compile>
@@ -241,6 +258,11 @@
     </Compile>
     <Compile Include="..\..\src\Backdrop\WaveParticlesSession.vb">
       <Link>Linked\Backdrop\WaveParticlesSession.vb</Link>
+    </Compile>
+    <!-- The audio plate's colours: a content overlay declared outside the theme (APP-STYLE rule 5), held at
+         4.5 : 1 for text and 3 : 1 for strokes by AudioOverlayContrastTests. Whole-file modern-only. -->
+    <Compile Include="..\..\src\AudioOverlayColours.vb">
+      <Link>Linked\AudioOverlayColours.vb</Link>
     </Compile>
     <!-- Window geometry (APP-BEHAVIOUR rule 10, ticket 028 Ф-2): which rectangle to
          remember and where a remembered one goes when its monitor is gone. Pure, and
@@ -486,6 +508,9 @@
     <Compile Include="..\..\src\Resources\EndpointResolver.vb">
       <Link>Linked\Resources\EndpointResolver.vb</Link>
     </Compile>
+    <Compile Include="..\..\src\Resources\NetworkChangeTracker.vb">
+      <Link>Linked\Resources\NetworkChangeTracker.vb</Link>
+    </Compile>
     <Compile Include="..\..\src\Resources\ResourceSession.vb">
       <Link>Linked\Resources\ResourceSession.vb</Link>
     </Compile>
@@ -510,6 +535,18 @@
     <Compile Include="..\..\src\Resources\ResourceImport.vb">
       <Link>Linked\Resources\ResourceImport.vb</Link>
     </Compile>
+    <Compile Include="..\..\src\Resources\PhoneConnectionIntake.vb">
+      <Link>Linked\Resources\PhoneConnectionIntake.vb</Link>
+    </Compile>
+    <Compile Include="..\..\src\Resources\QrCodeDecoder.vb">
+      <Link>Linked\Resources\QrCodeDecoder.vb</Link>
+    </Compile>
+    <Compile Include="..\..\src\Resources\QrCodeGenerator.vb">
+      <Link>Linked\Resources\QrCodeGenerator.vb</Link>
+    </Compile>
+    <Compile Include="..\..\src\Resources\CameraPresence.vb">
+      <Link>Linked\Resources\CameraPresence.vb</Link>
+    </Compile>
     <Compile Include="..\..\src\Resources\ResourceConnect.vb">
       <Link>Linked\Resources\ResourceConnect.vb</Link>
     </Compile>
@@ -527,6 +564,7 @@
     <Compile Include="..\..\src\Resources\ExchangeEntryApi.vb"><Link>Linked\Resources\ExchangeEntryApi.vb</Link></Compile>
     <Compile Include="..\..\src\Resources\ExchangeViewerEntries.vb"><Link>Linked\Resources\ExchangeViewerEntries.vb</Link></Compile>
     <Compile Include="..\..\src\Exchange_Connect_Form.vb"><Link>Linked\Exchange_Connect_Form.vb</Link></Compile>
+    <Compile Include="..\..\src\Exchange_Password_Change_Form.vb"><Link>Linked\Exchange_Password_Change_Form.vb</Link></Compile>
     <Compile Include="..\..\src\Resources\ExchangeTunnel.vb"><Link>Linked\Resources\ExchangeTunnel.vb</Link></Compile>
     <Compile Include="..\..\src\Resources\FmsTunnelPaths.vb"><Link>Linked\Resources\FmsTunnelPaths.vb</Link></Compile>
     <Compile Include="..\..\src\Exchange_Devices_Panel.vb"><Link>Linked\Exchange_Devices_Panel.vb</Link></Compile>
@@ -550,6 +588,9 @@
     </Compile>
     <Compile Include="..\..\src\Resource_Export_Form.vb">
       <Link>Linked\Resource_Export_Form.vb</Link>
+    </Compile>
+    <Compile Include="..\..\src\Resources\Resource_Phone_Code_Form.vb">
+      <Link>Linked\Resources\Resource_Phone_Code_Form.vb</Link>
     </Compile>
     <Compile Include="..\..\src\Common_Module.vb">
       <Link>Linked\Common_Module.vb</Link>
@@ -701,6 +742,9 @@
     <Compile Include="..\..\src\BatchSelection.vb">
       <Link>Linked\BatchSelection.vb</Link>
     </Compile>
+    <Compile Include="..\..\src\FreeNameRule.vb">
+      <Link>Linked\FreeNameRule.vb</Link>
+    </Compile>
     <Compile Include="..\..\src\BatchPlan.vb">
       <Link>Linked\BatchPlan.vb</Link>
     </Compile>
@@ -820,6 +864,12 @@
          OcrLineSplitterTests are the engine's own output, recorded. -->
     <Compile Include="..\..\src\Ocr\OcrLineSplitter.vb">
       <Link>Linked\Ocr\OcrLineSplitter.vb</Link>
+    </Compile>
+    <!-- The word and line join of OCR-PIPELINE 1.8 (ticket 183): where a line's and a plate's text
+         is made out of its parts. Pure, so it is held by the producer's own shared cases
+         (OcrPipelineVectorTests) and by OcrTextJoinTests, on both runtimes. -->
+    <Compile Include="..\..\src\Ocr\OcrTextJoin.vb">
+      <Link>Linked\Ocr\OcrTextJoin.vb</Link>
     </Compile>
     <Compile Include="..\..\src\Ocr\OcrOverlayFit.vb">
       <Link>Linked\Ocr\OcrOverlayFit.vb</Link>
@@ -952,6 +1002,9 @@
     <Compile Include="..\..\src\MediaKind.vb">
       <Link>Linked\MediaKind.vb</Link>
     </Compile>
+    <Compile Include="..\..\src\SortableContentKinds.vb">
+      <Link>Linked\SortableContentKinds.vb</Link>
+    </Compile>
     <Compile Include="..\..\src\Documents\TextFileReader.vb">
       <Link>Linked\Documents\TextFileReader.vb</Link>
     </Compile>
@@ -999,6 +1052,24 @@
     <None Include="TestData\user-playlist-vectors\**">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <Link>TestData\user-playlist-vectors\%(Filename)%(Extension)</Link>
+    </None>
+    <!-- LETTERBOX-BARS / LETTERBOX-HALO rung 1 vectors (ticket 183), beside their PROVENANCE.txt, which
+         LetterboxFillConformanceTests checks before it trusts a byte. -->
+    <None Include="TestData\letterbox-vectors\**">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <Link>TestData\letterbox-vectors\%(Filename)%(Extension)</Link>
+    </None>
+    <!-- INPUT-CHORD rung 1 token vectors (ticket 183), beside their PROVENANCE.txt, which
+         InputChordConformanceTests checks before it trusts a byte. -->
+    <None Include="TestData\input-chord-vectors\**">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <Link>TestData\input-chord-vectors\%(Filename)%(Extension)</Link>
+    </None>
+    <!-- OCR-PIPELINE 1.7 A / 1.8 shared cases (ticket 183), beside their PROVENANCE.txt, which
+         OcrPipelineVectorTests checks before it trusts a byte. -->
+    <None Include="TestData\ocr-pipeline-vectors\**">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <Link>TestData\ocr-pipeline-vectors\%(Filename)%(Extension)</Link>
     </None>
     <!-- Ticket 170 T-1: the ANYWHERE-ACCESS rung 1 vectors (the FMSSFTP1/2 code), beside their PROVENANCE.txt. -->
     <None Include="TestData\anywhere-descriptor-vectors\**">

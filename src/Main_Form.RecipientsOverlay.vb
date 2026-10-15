@@ -1,4 +1,4 @@
-﻿Option Strict On
+Option Strict On
 
 Imports System.Collections.Generic
 Imports System.Diagnostics
@@ -34,24 +34,29 @@ Partial Public Class Main_Form
     End Function
 
 #If Not NETFRAMEWORK Then
-    ''' <summary>Whether the rows carry a catalog glyph before their caption (WINDOWS-UI 0.4 section 11 item 1). Not in a
-    ''' right-to-left layout: the row control paints its picture and caption itself and does not yet mirror the pair, so
-    ''' those languages keep the text-only rows rather than an overlapped caption.</summary>
+    ''' <summary>Whether the rows that carry a catalog glyph (the delete row's bin and the copy zone's sheets - never the
+    ''' folder rows, which say it with the word at their end) draw it before their caption (WINDOWS-UI 0.4 section 11
+    ''' item 1). Not in a right-to-left layout: the row control paints its picture and caption itself and does not yet
+    ''' mirror the pair, so those languages keep the text-only rows rather than an overlapped caption.</summary>
     Private ReadOnly Property recipients_Row_Glyphs As Boolean
         Get
             Return Not Localization.IsRightToLeft()
         End Get
     End Property
 
-    ''' <summary>One glyph, 16 logical px at the overlay's scale, and the 6 px gap to the caption in the same bitmap,
-    ''' in the row's current ink. Re-run whenever the row's ink changes.</summary>
+    ''' <summary>One glyph, as tall as the row allows (<see cref="RecipientsOverlayRows.GlyphSide"/> - it follows the
+    ''' row, which follows the table's font), and the 6 px gap to the caption in the same bitmap, in the row's current
+    ''' ink. Re-run whenever the row's ink changes.</summary>
     Private Sub ApplyRecipientRowGlyph(row As Button, glyphId As String)
-        Dim size As Integer = RecipientPx(ButtonGlyphs.GlyphLogicalSize)
-        Dim composed As New Bitmap(size + RecipientPx(ButtonGlyphs.GapLogicalSize), size)
+        Dim size As Integer = RecipientsOverlayRows.GlyphSide(row.Height)
+        Dim gap As Integer = RecipientPx(ButtonGlyphs.GapLogicalSize)
+        Dim composed As New Bitmap(size + gap, size)
         Try
+            composed.SetResolution(96.0F, 96.0F)
             Using glyph As Bitmap = GlyphRenderer.Render(glyphId, size, row.ForeColor, AddressOf RuntimeBootstrap.OpenBundledAsset)
                 Using g As Graphics = Graphics.FromImage(composed)
-                    g.DrawImageUnscaled(glyph, 0, 0)
+                    g.Clear(Color.Transparent)
+                    g.DrawImage(glyph, New Rectangle(0, 0, size, size), 0, 0, glyph.Width, glyph.Height, GraphicsUnit.Pixel)
                 End Using
             End Using
         Catch ex As Exception
@@ -264,9 +269,15 @@ Partial Public Class Main_Form
         ' which is why the table never appeared. A borderless owned top-level window is
         ' layered by the shell in the normal way - and it also floats over the LibVLC
         ' VideoView, which a sibling control cannot reliably do.
+#If Not NETFRAMEWORK Then
+        Dim theme As ChromeTheme = RecipientsOverlayTheme()
+        Dim shellFill As Color = theme.PanelFill
+#Else
+        Dim shellFill As Color = Color.FromArgb(32, 32, 32)
+#End If
         Dim overlay As New RecipientsOverlayWindow With {
             .Name = Recipients_Overlay_Panel_Name,
-            .BackColor = Color.FromArgb(32, 32, 32),
+            .BackColor = shellFill,
             .Opacity = Math.Max(0.15R, Math.Min(1.0R, RecipientsOverlayAlpha() / 255.0R)),
             .Padding = New Padding(0)
         }
@@ -279,8 +290,14 @@ Partial Public Class Main_Form
         Dim copy_Caption As String = ""
         Dim copyW As Integer = 0
 #If Not NETFRAMEWORK Then
+        ' The move zone says its verb too, at its end, dimmed (125 UX-332): the copy zone had a word and the move
+        ' zone, which is most of the row, had only its tooltip. Drawn only while the folder still has room.
+        Dim move_Verb As String = Localization.T("переместить")
         copy_Caption = Localization.T("копия")
-        copyW = Math.Max(RecipientPx(38), MeasureRowText(copy_Caption, ui_Font) + RecipientPx(14) + If(recipients_Row_Glyphs, RecipientPx(16 + 6), 0))
+        If move_Verb.Length > 0 Then move_Verb = Char.ToUpperInvariant(move_Verb(0)) & move_Verb.Substring(1)
+        If copy_Caption.Length > 0 Then copy_Caption = Char.ToUpperInvariant(copy_Caption(0)) & copy_Caption.Substring(1)
+        copyW = Math.Max(RecipientPx(42), MeasureRowText(copy_Caption, ui_Font) + RecipientPx(16) +
+                         If(recipients_Row_Glyphs, RecipientsOverlayRows.GlyphSide(rowH) + RecipientPx(ButtonGlyphs.GapLogicalSize), 0))
         ' A narrow window must not lose the path to the copy zone: below a usable width the
         ' row goes back to move-only, and the copy stays reachable by Shift+digit.
         If copyW > panelW - RecipientPx(80) Then copyW = 0
@@ -307,6 +324,7 @@ Partial Public Class Main_Form
         Dim strip As New Panel With {
             .Name = "recipients_Overlay_Strip",
             .Size = New Size(panelW, pinSize),
+            .BackColor = shellFill,
             .BorderStyle = BorderStyle.None,
             .Cursor = Cursors.SizeAll,
             .AccessibleRole = AccessibleRole.TitleBar}
@@ -338,6 +356,7 @@ Partial Public Class Main_Form
         Dim rowsPanel As New Panel With {
             .Location = New Point(0, pinSize),
             .Size = New Size(panelW, 0),
+            .BackColor = shellFill,
             .BorderStyle = BorderStyle.None}
         overlay.Controls.Add(rowsPanel)
         recipients_Overlay_Rows = rowsPanel
@@ -349,29 +368,50 @@ Partial Public Class Main_Form
         For Each r In rows
             Dim isDelete As Boolean = (r.Item1 = -1)
             Dim showCopy As Boolean = Not isDelete AndAlso copyW > 0
+#If Not NETFRAMEWORK Then
+            ' The delete row stands apart from the folder rows: the one row that destroys is not flush under the
+            ' last folder, one slip of the pointer from "move there" (125 UX-332).
+            If isDelete Then y += RecipientsOverlayRows.DeleteRowGap(rows.Count - 1, rowH)
+#End If
+#If Not NETFRAMEWORK Then
+            Dim deleteFill As Color = If(ThemeService.IsDark, Color.FromArgb(96, 32, 32), Color.FromArgb(250, 224, 224))
+            Dim deleteHover As Color = If(ThemeService.IsDark, Color.FromArgb(140, 44, 44), Color.FromArgb(240, 196, 196))
+            Dim deletePress As Color = If(ThemeService.IsDark, Color.FromArgb(170, 50, 50), Color.FromArgb(230, 172, 172))
+#Else
+            Dim deleteFill As Color = Color.FromArgb(96, 32, 32)
+            Dim deleteHover As Color = Color.FromArgb(140, 44, 44)
+            Dim deletePress As Color = Color.FromArgb(170, 50, 50)
+#End If
             Dim b As New NonFocusButton() With {
                 .Text = r.Item2,
                 .Tag = r.Item1,
                 .Font = ui_Font,
                 .FlatStyle = FlatStyle.Flat,
                 .TextAlign = ContentAlignment.MiddleLeft,
-                .Padding = New Padding(RecipientPx(6), 0, RecipientPx(2), 0),
+                .Padding = New Padding(RecipientPx(6), 0, RecipientPx(8), 0),
                 .AutoEllipsis = True,
                 .TabStop = False,
                 .UseVisualStyleBackColor = False,
                 .Location = New Point(0, y),
                 .Size = New Size(If(showCopy, rowW - copyW, rowW), rowH),
                 .ForeColor = If(isDelete, RecipientDeleteRowInk(), RecipientRowInk()),
-                .BackColor = If(isDelete, Color.FromArgb(96, 32, 32), RecipientRowFill(r.Item1))
+                .BackColor = If(isDelete, deleteFill, RecipientRowFill(r.Item1))
             }
             b.FlatAppearance.BorderSize = 0
 #If Not NETFRAMEWORK Then
             b.RowFont = ui_Font
-            If recipients_Row_Glyphs Then ApplyRecipientRowGlyph(b, If(isDelete, "action.delete", "action.move"))
+            If Not isDelete Then
+                b.TrailingText = move_Verb
+                b.MinimumCaptionWidth = RecipientPx(96)
+            End If
+            ' Only the delete row carries a picture. The folder rows used to start with the catalog's folder-and-arrow
+            ' on every line: one drawing repeated down the table, before a path that already says "folder" and a verb
+            ' that says the rest - symbols with nothing left to tell.
+            If recipients_Row_Glyphs AndAlso isDelete Then ApplyRecipientRowGlyph(b, "action.delete")
 #End If
             ' Hover deepens the row's own blend (129 §3.3); only the DEL row keeps its own reds.
-            b.FlatAppearance.MouseOverBackColor = If(isDelete, Color.FromArgb(140, 44, 44), RecipientRowHoverFill(r.Item1))
-            b.FlatAppearance.MouseDownBackColor = If(isDelete, Color.FromArgb(170, 50, 50), RecipientRowHoverFill(r.Item1))
+            b.FlatAppearance.MouseOverBackColor = If(isDelete, deleteHover, RecipientRowHoverFill(r.Item1))
+            b.FlatAppearance.MouseDownBackColor = If(isDelete, deletePress, RecipientRowHoverFill(r.Item1))
             ' Full path in the tooltip - the caption may be ellipsized.
             If Not isDelete Then
 #If Not NETFRAMEWORK Then
@@ -386,27 +426,35 @@ Partial Public Class Main_Form
 
 #If Not NETFRAMEWORK Then
             If showCopy Then
+                Dim copyFill As Color = If(theme.IsHighContrast, theme.PanelFill,
+                                           If(ThemeService.IsDark, Color.FromArgb(38, 62, 38), Color.FromArgb(224, 240, 224)))
+                Dim copyHover As Color = If(theme.IsHighContrast, theme.PanelFill,
+                                            If(ThemeService.IsDark, Color.FromArgb(52, 88, 52), Color.FromArgb(204, 230, 204)))
+                Dim copyPress As Color = If(theme.IsHighContrast, theme.PanelFill,
+                                            If(ThemeService.IsDark, Color.FromArgb(66, 112, 66), Color.FromArgb(184, 220, 184)))
+                Dim copyInk As Color = If(theme.IsHighContrast, theme.Foreground,
+                                          If(ThemeService.IsDark, Color.Gainsboro, RecipientRowInk()))
                 Dim c As New NonFocusButton() With {
                     .Text = copy_Caption,
                     .Tag = r.Item1,
                     .Font = ui_Font,
                     .FlatStyle = FlatStyle.Flat,
                     .TextAlign = ContentAlignment.MiddleCenter,
-                    .Padding = New Padding(0),
+                    .Padding = New Padding(RecipientPx(4), 0, RecipientPx(4), 0),
                     .AutoEllipsis = True,
                     .TabStop = False,
                     .UseVisualStyleBackColor = False,
                     .Location = New Point(rowW - copyW, y),
                     .Size = New Size(copyW, rowH),
-                    .ForeColor = Color.Gainsboro,
-                    .BackColor = Color.FromArgb(38, 62, 38)
+                    .ForeColor = copyInk,
+                    .BackColor = copyFill
                 }
                 c.Name = Recipients_Copy_Row_Name
                 c.RowFont = ui_Font
                 If recipients_Row_Glyphs Then ApplyRecipientRowGlyph(c, "action.copy")
                 c.FlatAppearance.BorderSize = 0
-                c.FlatAppearance.MouseOverBackColor = Color.FromArgb(52, 88, 52)
-                c.FlatAppearance.MouseDownBackColor = Color.FromArgb(66, 112, 66)
+                c.FlatAppearance.MouseOverBackColor = copyHover
+                c.FlatAppearance.MouseDownBackColor = copyPress
                 recipients_ToolTip.SetToolTip(c, Localization.TF("Скопировать в: {0}", Hardkeys_to_move_mediafile(r.Item1)))
                 AddHandler c.Click, AddressOf RecipientOverlayCopyButton_Click
                 rowsHost.Controls.Add(c)
@@ -461,8 +509,14 @@ Partial Public Class Main_Form
     ''' flipped view), flipped here only when the overlay's own knob is below the threshold. The
     ''' fills are identical in both views; only the ink differs.</summary>
     Private Function RecipientsOverlayTheme() As ChromeTheme
-        If RecipientsOverlayInkInverted() Then Return chrome_Base_Theme.WithInvertedInk()
-        Return chrome_Base_Theme
+        Dim theme As ChromeTheme = chrome_Base_Theme
+        If (Not ThemeService.IsDark OrElse Not ChromeTheme.IsDark(theme.PanelFill)) AndAlso Not theme.IsHighContrast Then
+            theme = ChromeTheme.FromScheme(ThemePalette.ForDark(False).SurfaceWindow,
+                                          ThemePalette.ForDark(False).TextPrimary,
+                                          False)
+        End If
+        If RecipientsOverlayInkInverted() Then Return theme.WithInvertedInk()
+        Return theme
     End Function
 #End If
 
@@ -477,6 +531,7 @@ Partial Public Class Main_Form
 #Else
         Dim theme As ChromeTheme = RecipientsOverlayTheme()
         If theme.IsHighContrast Then Return theme.PanelFill
+        If Not ChromeTheme.IsDark(theme.PanelFill) Then Return RecipientPalette.ColorFor(slot, False)
         Return RecipientPalette.ColorFor(slot, ThemeService.IsDark)
 #End If
     End Function
@@ -488,6 +543,7 @@ Partial Public Class Main_Form
 #Else
         Dim theme As ChromeTheme = RecipientsOverlayTheme()
         If theme.IsHighContrast Then Return theme.ItemHover
+        If Not ChromeTheme.IsDark(theme.PanelFill) Then Return RecipientPalette.HoverColorFor(slot, False)
         Return RecipientPalette.HoverColorFor(slot, ThemeService.IsDark)
 #End If
     End Function
@@ -501,6 +557,11 @@ Partial Public Class Main_Form
 #Else
         Dim theme As ChromeTheme = RecipientsOverlayTheme()
         If theme.IsHighContrast Then Return theme.Foreground
+        If Not ChromeTheme.IsDark(theme.PanelFill) Then
+            Return If(RecipientsOverlayInkInverted(),
+                      ChromeTheme.InvertedTone(ThemePalette.ForDark(False).TextPrimary),
+                      ThemePalette.ForDark(False).TextPrimary)
+        End If
         If RecipientsOverlayInkInverted() Then Return ChromeTheme.InvertedTone(ThemePalette.ForDark(ThemeService.IsDark).TextPrimary)
         Return ThemePalette.ForDark(ThemeService.IsDark).TextPrimary
 #End If
@@ -512,7 +573,9 @@ Partial Public Class Main_Form
 #If NETFRAMEWORK Then
         Return Color.White
 #Else
-        Return RecipientsOverlayTheme().DestructiveForeground
+        Dim theme As ChromeTheme = RecipientsOverlayTheme()
+        If theme.IsHighContrast Then Return theme.DestructiveForeground
+        Return If(ChromeTheme.IsDark(theme.PanelFill), theme.DestructiveForeground, Color.FromArgb(160, 20, 20))
 #End If
     End Function
 
@@ -543,10 +606,15 @@ Partial Public Class Main_Form
                 Dim slot As Integer = CInt(row.Tag)
                 If slot = -1 Then
                     ' The delete row: its own colours, as BuildRecipientsOverlay paints them.
-                    row.ForeColor = If(delete_Allowed, theme.DestructiveForeground, theme.DisabledForeground)
-                    row.BackColor = If(delete_Allowed, theme.DestructiveRest, theme.PanelFill)
-                    row.FlatAppearance.MouseOverBackColor = If(delete_Allowed AndAlso Not theme.IsHighContrast, theme.DestructiveHover, theme.PanelFill)
-                    row.FlatAppearance.MouseDownBackColor = If(delete_Allowed AndAlso Not theme.IsHighContrast, theme.DestructivePressed, theme.PanelFill)
+                    Dim delFill As Color = If(delete_Allowed,
+                                              If(ChromeTheme.IsDark(theme.PanelFill), theme.DestructiveRest, Color.FromArgb(250, 224, 224)),
+                                              theme.PanelFill)
+                    Dim delHover As Color = If(ChromeTheme.IsDark(theme.PanelFill), theme.DestructiveHover, Color.FromArgb(240, 196, 196))
+                    Dim delPress As Color = If(ChromeTheme.IsDark(theme.PanelFill), theme.DestructivePressed, Color.FromArgb(230, 172, 172))
+                    row.ForeColor = If(delete_Allowed, RecipientDeleteRowInk(), theme.DisabledForeground)
+                    row.BackColor = delFill
+                    row.FlatAppearance.MouseOverBackColor = If(delete_Allowed AndAlso Not theme.IsHighContrast, delHover, theme.PanelFill)
+                    row.FlatAppearance.MouseDownBackColor = If(delete_Allowed AndAlso Not theme.IsHighContrast, delPress, theme.PanelFill)
                     If recipients_Row_Glyphs Then ApplyRecipientRowGlyph(row, "action.delete")
                     Continue For
                 End If
@@ -563,7 +631,9 @@ Partial Public Class Main_Form
                 ' the DEL row its destructive red - states of the panel, not recipients.
                 If is_Copy_Zone Then
                     row.BackColor = If(unusable OrElse theme.IsHighContrast, theme.PanelFill,
-                                       ChromeTheme.Blend(theme.PanelFill, theme.Accent, ChromeMetrics.HoverPercent / 100.0F))
+                                       If(ChromeTheme.IsDark(theme.PanelFill),
+                                          ChromeTheme.Blend(theme.PanelFill, theme.Accent, ChromeMetrics.HoverPercent / 100.0F),
+                                          Color.FromArgb(224, 240, 224)))
                 Else
                     row.BackColor = RecipientRowFill(slot)
                 End If
@@ -575,10 +645,15 @@ Partial Public Class Main_Form
                                                    ThemePalette.ForDark(ThemeService.IsDark).TextDisabled)
 
                 row.FlatAppearance.MouseOverBackColor = If(unusable OrElse theme.IsHighContrast, row.BackColor,
-                                                            If(is_Copy_Zone, theme.ItemHover, RecipientRowHoverFill(slot)))
+                                                            If(is_Copy_Zone,
+                                                               If(ChromeTheme.IsDark(theme.PanelFill), theme.ItemHover, Color.FromArgb(204, 230, 204)),
+                                                               RecipientRowHoverFill(slot)))
                 row.FlatAppearance.MouseDownBackColor = If(unusable OrElse theme.IsHighContrast, row.BackColor,
-                                                            If(is_Copy_Zone, theme.ItemPressed, RecipientRowHoverFill(slot)))
-                If recipients_Row_Glyphs Then ApplyRecipientRowGlyph(row, If(is_Copy_Zone, "action.copy", "action.move"))
+                                                            If(is_Copy_Zone,
+                                                               If(ChromeTheme.IsDark(theme.PanelFill), theme.ItemPressed, Color.FromArgb(184, 220, 184)),
+                                                               RecipientRowHoverFill(slot)))
+                ' The folder rows carry no picture (see BuildRecipientsOverlay); the copy zone keeps its sheets.
+                If recipients_Row_Glyphs AndAlso is_Copy_Zone Then ApplyRecipientRowGlyph(row, "action.copy")
                 If recipients_ToolTip IsNot Nothing Then
                     Dim note As String = SlotHealthNote(verdict)
                     Dim tip As String = If(is_Copy_Zone,
@@ -597,6 +672,9 @@ Partial Public Class Main_Form
     Private Sub PositionRecipientsOverlay()
         If recipients_Overlay Is Nothing OrElse panel_Media Is Nothing Then Return
 #If Not NETFRAMEWORK Then
+        ' The native move loop owns geometry until drop; timer/resize callbacks must not
+        ' persist its intermediate position as a recovery or move it under the pointer.
+        If recipients_Drag_Active Then Return
         If is_Super_Full_Screen_Mode Then
             recipients_Overlay.Hide()
             Return
@@ -741,7 +819,10 @@ Partial Public Class Main_Form
         End Try
         If recipients_Overlay Is Nothing OrElse recipients_Overlay.IsDisposed Then Return
         ' Saved on drop, not per pixel - and a drag that ends where it began writes nothing (219 §3).
-        If recipients_Overlay.Location <> before Then SaveRecipientsOverlayDraggedPosition()
+        If recipients_Overlay.Location <> before Then
+            SaveRecipientsOverlayDraggedPosition()
+            PositionRecipientsOverlay()
+        End If
     End Sub
 
     ''' <summary>Writes the dropped position as the custom point (219 §3): logical px relative to the
@@ -766,6 +847,7 @@ Partial Public Class Main_Form
     ''' needs a second repair on the next start. Silent: no dialog, no toast, nothing beyond the
     ''' ordinary trace; the panel is simply where the user last saw it work.</summary>
     Private Sub PersistRecipientsOverlayRepairedPosition(applied As Point)
+        If recipients_Drag_Active Then Return
         If recipients_Overlay Is Nothing OrElse recipients_Overlay.IsDisposed OrElse panel_Media Is Nothing Then Return
         Dim prefs As ModernViewerPreferences = modern_Preferences
         If prefs Is Nothing OrElse Not prefs.RecipientsOverlayHasCustomPosition Then Return
@@ -798,8 +880,16 @@ Partial Public Class Main_Form
     ''' the click changes neither the pin, nor the visibility, nor the position, and the button
     ''' itself never takes the keyboard from the viewer.</summary>
     Private Sub RecipientsOverlayEditRequested()
-        ShowSettingsWindowAtRecipientsGrid()
+        recipients_Edit_Active = True
+        Try
+            ShowSettingsWindowAtRecipientsGrid()
+        Finally
+            recipients_Edit_Active = False
+            recipients_LastActivity = chrome_Clock.ElapsedMilliseconds
+        End Try
     End Sub
+
+    Private recipients_Edit_Active As Boolean
 
     ''' <summary>The settings' reset row (219 §5): clears the custom point and repositions the
     ''' overlay at once - no restart, no settings reopen - from any state (visible, auto-hidden,
@@ -927,6 +1017,14 @@ Partial Public Class Main_Form
         ''' and the table's captions overflowed their rows.</summary>
         Public Property RowFont As Font
 
+        ''' <summary>A word drawn dimmed at the row's end (the move zone's verb, 125 UX-332); empty = none. It is
+        ''' not part of <c>Text</c>: the caption keeps being the slot and the folder, and it is the first thing a
+        ''' narrow row gives up.</summary>
+        Public Property TrailingText As String = ""
+
+        ''' <summary>The room the caption must keep before the trailing word may be drawn at all.</summary>
+        Public Property MinimumCaptionWidth As Integer
+
         Protected Overrides Sub OnMouseEnter(e As EventArgs)
             MyBase.OnMouseEnter(e)
             hovering = True
@@ -973,7 +1071,7 @@ Partial Public Class Main_Form
             Dim imageEnd As Integer = 0
             If Image IsNot Nothing Then
                 Dim box As Rectangle = ImageBox(Image.Size)
-                g.DrawImage(Image, box)
+                g.DrawImage(Image, box, 0, 0, Image.Width, Image.Height, GraphicsUnit.Pixel)
                 imageEnd = box.Right
             End If
             If String.IsNullOrEmpty(Text) Then Return
@@ -985,8 +1083,34 @@ Partial Public Class Main_Form
                 format.Alignment = If(TextAlign = ContentAlignment.MiddleCenter, StringAlignment.Center, StringAlignment.Near)
                 If RightToLeft = RightToLeft.Yes Then format.FormatFlags = format.FormatFlags Or StringFormatFlags.DirectionRightToLeft
                 Dim left As Single = If(imageEnd > 0, imageEnd, Padding.Left)
-                Dim area As New RectangleF(left, 0, Math.Max(0, Width - left - Padding.Right), Height)
-                ChromeInkOutline.DrawText(g, Text, captionFont, area, ForeColor, format, ChromeInkOutline.RadiusFor(DeviceDpi / 96.0F))
+                Dim areaLeft As Single = left
+                Dim areaRight As Single = Width - Padding.Right
+                Dim radius As Integer = ChromeInkOutline.RadiusFor(DeviceDpi / 96.0F)
+                ' The verb at the row's far end, dimmed, while the folder keeps its room (125 UX-332). It is drawn
+                ' at the end the text finishes at: the left in a right-to-left language.
+                If Not String.IsNullOrEmpty(TrailingText) Then
+                    Using verbFormat As New StringFormat(StringFormat.GenericTypographic)
+                        verbFormat.LineAlignment = StringAlignment.Center
+                        verbFormat.FormatFlags = verbFormat.FormatFlags Or StringFormatFlags.NoWrap
+                        If RightToLeft = RightToLeft.Yes Then verbFormat.FormatFlags = verbFormat.FormatFlags Or StringFormatFlags.DirectionRightToLeft
+                        Dim verbWidth As Integer = CInt(Math.Ceiling(g.MeasureString(TrailingText, captionFont, Integer.MaxValue, verbFormat).Width)) + 1
+                        Dim verbGap As Integer = Math.Max(4, DeviceDpi \ 16)
+                        If RecipientsOverlayRows.ShowsMoveVerb(Width, CInt(left), Padding.Right, verbWidth + verbGap, MinimumCaptionWidth) Then
+                            Dim verbInk As Color = ChromeTheme.Blend(fill, ForeColor, 0.7F)
+                            Dim verbLeft As Single
+                            If RightToLeft = RightToLeft.Yes Then
+                                verbLeft = areaLeft
+                                areaLeft += verbWidth + verbGap
+                            Else
+                                verbLeft = areaRight - verbWidth
+                                areaRight -= verbWidth + verbGap
+                            End If
+                            ChromeInkOutline.DrawText(g, TrailingText, captionFont, New RectangleF(verbLeft, 0, verbWidth, Height), verbInk, verbFormat, radius)
+                        End If
+                    End Using
+                End If
+                Dim area As New RectangleF(areaLeft, 0, Math.Max(0, areaRight - areaLeft), Height)
+                ChromeInkOutline.DrawText(g, Text, captionFont, area, ForeColor, format, radius)
             End Using
         End Sub
 
@@ -1069,6 +1193,9 @@ Partial Public Class Main_Form
             Dim theme As ChromeTheme = owner.RecipientsOverlayTheme()
             Dim scale As Single = owner.ChromeScale()
             Dim r As Rectangle = ClientRectangle
+            Using bgBrush As New SolidBrush(theme.PanelFill)
+                g.FillRectangle(bgBrush, r)
+            End Using
             Dim size As Integer = Math.Min(r.Width, Math.Min(r.Height, UiScale.Px(ChromeMetrics.PinButtonSize, scale)))
             If hovering OrElse pressing Then
                 Dim fill As Color = If(pressing, theme.ItemPressed, theme.ItemHover)
@@ -1089,7 +1216,7 @@ Partial Public Class Main_Form
         ''' High contrast hands the choice to the system.</summary>
         Protected Overridable Function Ink(theme As ChromeTheme) As Color
             If theme.IsHighContrast Then Return SystemColors.WindowText
-            Dim restInk As Color = ChromeTheme.Blend(theme.PanelFill, theme.Foreground, 0.35F)
+            Dim restInk As Color = ChromeTheme.Blend(theme.PanelFill, theme.Foreground, 0.55F)
             Return If(hovering, ChromeTheme.Blend(restInk, theme.Foreground, 1.0F), restInk)
         End Function
 
@@ -1125,7 +1252,7 @@ Partial Public Class Main_Form
 
         Protected Overrides Function Ink(theme As ChromeTheme) As Color
             If theme.IsHighContrast Then Return If(checkedState, SystemColors.HighlightText, SystemColors.WindowText)
-            Dim restInk As Color = ChromeTheme.Blend(theme.PanelFill, theme.Foreground, If(checkedState, 0.5F, 0.35F))
+            Dim restInk As Color = ChromeTheme.Blend(theme.PanelFill, theme.Foreground, If(checkedState, 0.8F, 0.55F))
             Return If(hovering, ChromeTheme.Blend(restInk, theme.Foreground, 1.0F), restInk)
         End Function
 
@@ -1149,7 +1276,7 @@ Partial Public Class Main_Form
         Protected Overrides Sub PaintGlyph(g As Graphics, bounds As Rectangle, ink As Color, scale As Single)
             Try
                 Using glyph As Bitmap = GlyphRenderer.Render("action.edit", bounds.Width, ink, AddressOf RuntimeBootstrap.OpenBundledAsset)
-                    g.DrawImageUnscaled(glyph, bounds.X, bounds.Y)
+                    g.DrawImage(glyph, bounds, 0, 0, glyph.Width, glyph.Height, GraphicsUnit.Pixel)
                 End Using
             Catch ex As Exception
                 AppFileLogger.LogException("Recipients overlay: edit glyph", ex)

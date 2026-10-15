@@ -25,6 +25,7 @@ Partial Public Class Table_Form
     Private contextTimer As Timer
     Private contextFlush As SettingsFlushScheduler
     Private contextSaveFailed As Boolean
+    Private openAtRememberedContext As SettingsUiContext
 
     Private Sub BuildSettingsGroups()
         Dim invalid As Boolean
@@ -171,6 +172,7 @@ Partial Public Class Table_Form
                                          contextFlush.OnTimerTick()
                                      End Sub
         AddHandler FormClosing, AddressOf SaveSettingsContextOnClose
+        AddHandler FormClosed, Sub() RestoreContextAfterRecipientsOpen()
         AddHandler Application.ApplicationExit, AddressOf SaveSettingsContextOnExit
         AddHandler Disposed, Sub()
                                  RemoveHandler Application.ApplicationExit, AddressOf SaveSettingsContextOnExit
@@ -214,7 +216,10 @@ Partial Public Class Table_Form
             Sub()
                 If Not settingsContextReady OrElse restoringSettingsContext Then Return
                 settingsContext.Page(pageId).Groups(groupId) = group.Expanded
-                LayoutModernSettingsPages()
+                ' The group has been laid out once by its own setter (held, then performed); this page is
+                ' measured once more for the new height and ONLY this page - a toggle cannot have changed
+                ' another one. The header position is read and the scroll restored after that layout.
+                LayoutModernSettingsPage(PageFlow(page))
                 Dim flow As FlowLayoutPanel = PageFlow(page)
                 Dim top As Integer = group.Header.PointToScreen(Point.Empty).Y - flow.PointToScreen(Point.Empty).Y - flow.AutoScrollPosition.Y
                 flow.AutoScrollPosition = New Point(0, Math.Max(0, top - headerY))
@@ -225,9 +230,12 @@ Partial Public Class Table_Form
 
     Private Sub LocalizeSettingsGroups()
         If Not settingsContextReady Then Return
-        For Each item In settingsGroups
-            item.Value.Caption = Localization.T(groupCaptionKeys(item.Key))
-        Next
+        HoldSettingsPages(
+            Sub()
+                For Each item In settingsGroups
+                    item.Value.Caption = Localization.T(groupCaptionKeys(item.Key))
+                Next
+            End Sub)
         LayoutModernSettingsPages()
     End Sub
 
@@ -307,6 +315,18 @@ Partial Public Class Table_Form
     ''' focused and scrolled to. The next plain settings open lands where it always did.</summary>
     Friend Sub RevealModernRecipientsGrid()
         If Not settingsContextReady Then Return
+        ' Work on a separate navigation context for this open. Timer and close flushes
+        ' keep writing the remembered context, including its page, folds and scroll.
+        If openAtRememberedContext Is Nothing Then
+            CaptureSettingsPage(Tab_Control.SelectedTab)
+            For Each item In settingsGroups
+                Dim ids As String() = item.Key.Split("/"c)
+                settingsContext.Page(ids(0)).Groups(ids(1)) = item.Value.Expanded
+            Next
+            openAtRememberedContext = settingsContext
+            Dim invalid As Boolean
+            settingsContext = SettingsUiContext.Read(settingsContext.ToJson(), invalid)
+        End If
         Tab_Control.SelectedTab = pageIds.First(Function(p) p.Value = "recipients").Key
         settingsGroups("recipients/basic").Expanded = True
         Dim state As SettingsPageContext = settingsContext.Page("recipients")
@@ -317,14 +337,33 @@ Partial Public Class Table_Form
         QueueRestoreSettingsContext()
     End Sub
 
+    Private Sub RestoreContextAfterRecipientsOpen()
+        If openAtRememberedContext Is Nothing Then Return
+        restoreGeneration += 1
+        settingsContext = openAtRememberedContext
+        openAtRememberedContext = Nothing
+        restoringSettingsContext = True
+        Try
+            For Each item In settingsGroups
+                Dim ids As String() = item.Key.Split("/"c)
+                item.Value.Expanded = settingsContext.Page(ids(0)).Expanded(ids(1), item.Value.Expanded)
+            Next
+            Tab_Control.SelectedTab = pageIds.First(Function(p) p.Value = settingsContext.ResolvePage(pageIds.Values)).Key
+        Finally
+            restoringSettingsContext = False
+        End Try
+        QueueRestoreSettingsContext()
+    End Sub
+
     ''' <summary>Set when the viewer asks for one open-at before showing the window (219 §4);
     ''' consumed by the first Shown, so a plain open never sees it.</summary>
     Private pendingOpenAtRecipientsGrid As Boolean
 
-    ''' <summary>The viewer's entry: an already-visible window reveals the grid at once; a window
-    ''' still hidden takes the request with it and honours it when it is shown.</summary>
+    ''' <summary>A built window reveals immediately, even when hidden between modal opens.
+    ''' Only the first, not-yet-built window defers the request until Shown.</summary>
     Friend Sub RequestOpenAtRecipientsGrid()
-        If Visible AndAlso settingsContextReady Then
+        If settingsContextReady Then
+            pendingOpenAtRecipientsGrid = False
             RevealModernRecipientsGrid()
         Else
             pendingOpenAtRecipientsGrid = True
@@ -341,7 +380,10 @@ Partial Public Class Table_Form
                 If IsDisposed OrElse Not Visible OrElse generation <> restoreGeneration OrElse Tab_Control.SelectedTab IsNot page Then Return
                 restoringSettingsContext = True
                 Try
-                    LayoutModernSettingsPages()
+                    ' The shown page is laid out once, and only then are its anchors read and the remembered
+                    ' position restored (WINDOWS-UI section 5, amended 0.2). The other ten pages are not
+                    ' re-measured for a page switch: each is laid out when it is shown.
+                    LayoutModernSettingsPage(PageFlow(page))
                     Dim anchors As Dictionary(Of String, Control) = ContextAnchors(page)
                     Dim state As SettingsPageContext = settingsContext.Page(pageIds(page))
                     Dim id As String = state.ResolveAnchor(anchors.Keys, rowGroups)
@@ -380,6 +422,12 @@ Partial Public Class Table_Form
 
     Private Sub SaveSettingsContext()
         If Not settingsContextReady Then Return
+        ' A hidden form has no meaningful viewport/focus to capture. An explicit grid
+        ' open also flushes only the remembered context, never its temporary navigation.
+        If Not Visible OrElse openAtRememberedContext IsNot Nothing Then
+            contextFlush.SaveNow()
+            Return
+        End If
         CaptureSettingsPage(Tab_Control.SelectedTab)
         settingsContext.LastPageId = pageIds(Tab_Control.SelectedTab)
         For Each item In settingsGroups
@@ -392,7 +440,7 @@ Partial Public Class Table_Form
     Private Function WriteSettingsContext() As Boolean
         If MultiWindowPolicy.IsSecondaryInstance() Then Return True
         Try
-            SaveSetting(App_name, Second_App_Name, "ModernSettingsContext", settingsContext.ToJson())
+            SaveSetting(App_name, Second_App_Name, "ModernSettingsContext", If(openAtRememberedContext, settingsContext).ToJson())
             contextSaveFailed = False
             Return True
         Catch ex As Exception

@@ -85,6 +85,29 @@ string, the string is an anchor and no naming change touches it.
 
 `pwsh -NoProfile -File .\tools\Test-ProductNaming.ps1` scans the tracked files for a forbidden form
 (`FastMediaSorter LITE`, `Fast Media Sorter LITE`, `Fast Media Sorter Lite`, the previous full name
-`Fast Media Sorter for Windows`, a bare `LITE` or `Lite` word) that no allow-list record covers, and for a
-required form that is missing. It ends in the shared one-line verdict (`CHECK-VERDICT`). An allow-list record
+`Fast Media Sorter for Windows`, a bare `LITE` or `Lite` word), for the exchange-vocabulary forms of
+section 6, and for a required form that is missing - each time skipping what no allow-list record covers.
+It ends in the shared one-line verdict (`CHECK-VERDICT`). An allow-list record
 without a reason is itself a failure.
+
+## 6. The exchange and live-broadcast vocabulary
+
+Specification 206 section 3. One row per concept; cite a row, never restate it. The words are carried once
+per language in the localization table of the ticket that introduces the surface - never translated ad hoc
+in a second place.
+
+| Say | Never say |
+| --- | --- |
+| **Live broadcast** (a device capturing now) | "Broadcast" alone, "stream", "transmission" for the producer concept. The Share Manager's "Broadcasts for StreamsPlayer" (196, 159) is a different thing and keeps its name |
+| **Exchange account**, **My devices**, **Add a device**, **Pairing code** | "cloud", "sync", "login to Fast Media Sorter" |
+| **Media Exchange Server** (unchanged, Latin, not translated; never shortened - see the row in section 1) | "relay server", "FMS server" in a visible string |
+| **Publish my shares**, **Attach**, **Cast** / **Play on another device** | "upload my folders" (nothing is uploaded) |
+| **Google Drive**, named, whenever it is meant | "the cloud" |
+| **Connection string**, **Add from an exchange server**, **Get connection string**, **Disconnect** (206 addendum, 187) | calling a connection string a secret - it is an address with the certificate pin, carrying no password, token or pairing code |
+
+The gate keeps the mechanically separable forms: a `relay server` not preceded by `exchange` (the sanctioned
+role description "Fast Media Sorter exchange relay server" stays), `FMS server`, `the cloud` (not "the cloud
+clipboard"), a `cloud account` outside a negative claim, `login to Fast Media Sorter`, `upload my folders`,
+a Latin `transmission`, and a `start/stop broadcast` not preceded by `live`. The contextual rule - no visible
+string says "broadcast" where it means a live one without the word "live" - is held per surface by the ticket's
+own parity tests and by review, not by the scan.

@@ -121,6 +121,7 @@ End Class
 
 ''' <summary>The pipe's name and the request vocabulary, shared by both ends.</summary>
 Friend NotInheritable Class ExchangeAgentPipe
+    Public Const ReceiverJson As String = "{""modes"":[""AUDIO_ONLY"",""VIDEO_AUDIO"",""VIDEO_ONLY""],""transports"":[""HTTP"",""RELAY"",""TUNNEL""]}"
 
     Private Sub New()
     End Sub
@@ -131,10 +132,13 @@ Friend NotInheritable Class ExchangeAgentPipe
     Public Const RequestGetState As String = "GetState"
     Public Const RequestGetDirectory As String = "GetDirectory"
     Public Const RequestGetAccess As String = "GetAccess"
-    ''' <summary>Ticket 201: the answer to a cast offer. Named here so the vocabulary is whole; the agent answers `unsupported` until 174 lands.</summary>
+    ''' <summary>Ticket 201: answer the pending cast offer once, by broadcast id.</summary>
     Public Const RequestCastAnswer As String = "CastAnswer"
-    ''' <summary>Ticket 201: whether an incoming cast asks or plays at once.</summary>
+    ''' <summary>Reserved agent request. The viewer persists its cast preference in ModernViewerPreferences.</summary>
     Public Const RequestCastPolicy As String = "CastPolicy"
+    Public Const RequestGetCastOffer As String = "GetCastOffer"
+    Public Const RequestGetBroadcast As String = "GetBroadcast"
+    Public Const RequestGetLiveDirectory As String = "GetLiveDirectory"
 
     ' --- the machine errors of a refused request ---
     Public Const ErrorNotConfigured As String = "not-configured"
@@ -390,8 +394,8 @@ Friend NotInheritable Class ExchangeAgentClient
     ''' <summary>The snapshot without this device's own records and without any `access`. With <paramref name="waitMs"/> above 0 the
     ''' call long-polls up to that long for a revision newer than <paramref name="sinceRevision"/> (a pipe with one request per
     ''' connection cannot push).</summary>
-    Public Async Function GetDirectoryAsync(sinceRevision As Long, waitMs As Integer, ct As CancellationToken) As Task(Of ExchangeAgentDirectoryResult)
-        Dim req As String = ExchangeAgentPipe.BuildRequest(ExchangeAgentPipe.RequestGetDirectory,
+    Public Async Function GetDirectoryAsync(sinceRevision As Long, waitMs As Integer, ct As CancellationToken, Optional liveBroadcasts As Boolean = False) As Task(Of ExchangeAgentDirectoryResult)
+        Dim req As String = ExchangeAgentPipe.BuildRequest(If(liveBroadcasts, ExchangeAgentPipe.RequestGetLiveDirectory, ExchangeAgentPipe.RequestGetDirectory),
             Sub(o As JsonObject)
                 o("sinceRevision") = sinceRevision
                 o("waitMs") = waitMs

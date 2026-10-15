@@ -93,6 +93,30 @@ Public Class EscapeLadderTests
         Assert.Equal(EscapeLadder.Rung.Close, EscapeLadder.Next(state))
     End Sub
 
+    ''' <summary>124 UX-216: a text selection is the lightest layer there is - Esc lets go of it first, under the popup,
+    ''' the F1 card and the F10 mode, and above everything that costs the user a view.</summary>
+    <Fact>
+    Public Sub Esc_lets_go_of_a_text_selection_before_zoom_slideshow_and_full_screen()
+        Dim state As New EscapeLadder.State With {.TextSelectionShown = True, .ZoomedOrPanned = True, .SlideshowRunning = True, .FullScreen = True}
+        Assert.Equal(EscapeLadder.Rung.ClearTextSelection, EscapeLadder.Next(state))
+        state.TextSelectionShown = False
+        Assert.Equal(EscapeLadder.Rung.ZoomToFit, EscapeLadder.Next(state))
+
+        Assert.Equal(EscapeLadder.Rung.CloseHelpCard, EscapeLadder.Next(New EscapeLadder.State With {.TextSelectionShown = True, .HelpCardShown = True}))
+        Assert.Equal(EscapeLadder.Rung.LeaveKeyboardMode, EscapeLadder.Next(New EscapeLadder.State With {.TextSelectionShown = True, .KeyboardModeOn = True}))
+        Assert.Equal(EscapeLadder.Rung.ClearTextSelection, EscapeLadder.Next(New EscapeLadder.State With {.TextSelectionShown = True, .OcrOverlayShown = True}))
+        Assert.Equal(EscapeLadder.Rung.Close, EscapeLadder.Next(New EscapeLadder.State With {.TextSelectionShown = False}))
+    End Sub
+
+    ''' <summary>The selection rung is answered by the same Esc step that answers every other (one layer per press).</summary>
+    <Fact>
+    Public Sub The_selection_rung_is_acted_on_and_the_state_reads_the_selection()
+        Dim source As String = KeyboardSource()
+        Assert.Contains("state.TextSelectionShown = HasTextSelection()", source)
+        Assert.Contains("Case EscapeLadder.Rung.ClearTextSelection", source)
+        Assert.Contains("ClearTextSelection()", source)
+    End Sub
+
     ' --- where KeybUse answers it -------------------------------------------------------
 
     ''' <summary>124 UX-211: while a connection is being dialled, Esc cancels it - after a popup, before the card and the rest.</summary>

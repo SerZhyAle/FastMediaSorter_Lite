@@ -236,6 +236,8 @@ Friend NotInheritable Class ChromeMenuRules
             Case "OemOpenBrackets" : rest = "["
             Case "OemCloseBrackets" : rest = "]"
             Case "OemPipe" : rest = "\"
+            Case "Oemplus" : rest = "="
+            Case "OemMinus" : rest = "-"
         End Select
         Return prefix & rest
     End Function
@@ -353,6 +355,25 @@ Friend NotInheritable Class ChromeMenuRules
     ''' through files (125 UX-309).</summary>
     Public Shared Function PanelRevealsOnTextChange(panelName As String) As Boolean
         Return String.Equals(panelName, "chrome_Status", StringComparison.Ordinal)
+    End Function
+
+    ''' <summary>Whether the control with this name keeps its place in its row while it is away (125 UX-313b): the
+    ''' buttons and readouts that come and go with the kind of the file on screen - a translate or edit button
+    ''' only for a still picture, tracks only for a video that offers a choice, the conversion only for an
+    ''' animation, the file menu only for a picture, the zoom value only while zoomed, the slideshow timer only
+    ''' while one runs. NOT the ones that follow a setting or a registry (the resource button, rename and delete
+    ''' inside an archive): they change on a decision, not while paging, and a place kept for them would be a
+    ''' permanent hole. The browser-translate button depends on a companion that may not be installed: with none,
+    ''' the button never appears and no place is kept.</summary>
+    Public Shared Function KeepsSlotWhenHidden(controlName As String, browserCompanionAvailable As Boolean) As Boolean
+        Select Case controlName
+            Case "lbl_Zoom", "lbl_Slideshow_Time", "btn_Translate", "btn_Edit", "btn_Tracks", "btn_ToVideo", "btn_Image_Menu"
+                Return True
+            Case "btn_TranslateBrowser"
+                Return browserCompanionAvailable
+            Case Else
+                Return False
+        End Select
     End Function
 
     ''' <summary>The sort button's words: the localization key of the order's name and the arrow for its

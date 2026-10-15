@@ -42,19 +42,23 @@ func TestIPv6EndpointAndHost(t *testing.T) {
 
 func TestRefusalsNameTheirReason(t *testing.T) {
 	for in, want := range map[string]string{
-		"hello":                                          RefusedNotAString,
-		"FMSEXCH2:x=a.b%3A1":                             RefusedNewerMajor,
-		"FMSEXCH1:":                                      RefusedMissingX,
-		"FMSEXCH1:x=a.b%3A0":                             RefusedBadX,
-		"FMSEXCH1:x=a.b%3A1&x=a.b%3A2":                   RefusedRepeatedKey,
-		"FMSEXCH1:x=a.b%3A1&n=":                          RefusedBadName,
-		"FMSEXCH1:x=a.b%3A1&fp=SHA256%3Aabc":             RefusedBadFP,
-		"FMSEXCH1:x=a.b%3A1&u=ab":                        RefusedBadLogin,
-		"FMSEXCH1:x=a.b%3A1&n=%G1":                       RefusedBadEscape,
-		"FMSEXCH1:x=a.b%3A1 ":                            "", // the trailing space is trimmed: valid
-		"FMSEXCH1:x=a.b%3A1&n=a b":                       RefusedWhitespace,
-		"FMSEXCH1:x=a.b%3A1&n=é":                         RefusedNotASCII,
-		"FMSEXCH1:x=a.b%3A1&z=%ZZ":                       "", // an unknown key is ignored
+		"hello":                              RefusedNotAString,
+		"FMSEXCH2:x=a.b%3A1":                 RefusedNewerMajor,
+		"FMSEXCH1:":                          RefusedMissingX,
+		"FMSEXCH1:x=a.b%3A0":                 RefusedBadX,
+		"FMSEXCH1:x=a.b%3A1&x=a.b%3A2":       RefusedRepeatedKey,
+		"FMSEXCH1:x=a.b%3A1&n=":              RefusedBadName,
+		"FMSEXCH1:x=a.b%3A1&fp=SHA256%3Aabc": RefusedBadFP,
+		"FMSEXCH1:x=a.b%3A1&u=ab":            RefusedBadLogin,
+		"FMSEXCH1:x=a.b%3A1&n=%G1":           RefusedBadEscape,
+		"FMSEXCH1:x=a.b%3A1 ":                "", // the trailing space is trimmed: valid
+		"FMSEXCH1:x=a.b%3A1&n=a b":           RefusedWhitespace,
+		"FMSEXCH1:x=a.b%3A1&n=é":             RefusedNotASCII,
+		"FMSEXCH1:x=a.b%3A1&z=%ZZ":           "", // an unknown key is ignored
+		"FMSEXCH1:x=a.b%3A1&i=":              RefusedBadInv,
+		"FMSEXCH1:x=a.b%3A1&i=bad":           RefusedBadInv,
+		"FMSEXCH1:x=a.b%3A1&i=AAAAAAAAAAAAAAAAAAAAAA&i=BBBBBBBBBBBBBBBBBBBBBB": RefusedRepeatedKey,
+		"FMSEXCH1:x=a.b%3A1&i=AAAAAAAAAAAAAAAAAAAAAA":                          "", // valid invitation code
 		"FMSEXCH1:x=a.b%3A1&":                            RefusedMalformedField,
 		"FMSEXCH1:x=a.b%3A1&" + strings.Repeat("z", 600): RefusedTooLong,
 	} {
@@ -93,5 +97,44 @@ func TestFileReading(t *testing.T) {
 	}
 	if _, err := ParseFile([]byte{0xff, 0xfe}); RefusedOf(err) != RefusedBadUTF8 {
 		t.Errorf("not utf-8: %v", err)
+	}
+}
+
+func TestAnInvitationStringWritesIAfterUAndRoundTrips(t *testing.T) {
+	const inv = "AAAAAAAAAAAAAAAAAAAAAA"
+	c, err := NewWithInvitation("a.b:1", fpA, "home", "alice", inv)
+	if err != nil {
+		t.Fatal(err)
+	}
+	s, err := c.String()
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := "FMSEXCH1:x=a.b%3A1&fp=" + escape(fpA) + "&n=home&u=alice&i=" + inv
+	if s != want {
+		t.Fatalf("got %q, want %q", s, want)
+	}
+	back, err := Parse(s)
+	if err != nil || back != c {
+		t.Fatalf("round trip: %v %+v", err, back)
+	}
+	// a key order of another writer reads the same
+	if again, err := Parse("FMSEXCH1:i=" + inv + "&x=a.b%3A1"); err != nil || again.Invitation != inv {
+		t.Fatalf("any order: %v %+v", err, again)
+	}
+}
+
+func TestTheInvitationMustDecodeToSixteenBytes(t *testing.T) {
+	for name, v := range map[string]string{
+		"short":          "AAAAAAAAAAAAAAAAAAAAA",
+		"long":           "AAAAAAAAAAAAAAAAAAAAAAA",
+		"not-url-safe":   "AAAAAAAAAAAAAAAAAAAA+/",
+		"stray-bits":     "AAAAAAAAAAAAAAAAAAAAAB", // the last character carries bits past 16 bytes
+		"standard-pad":   "AAAAAAAAAAAAAAAAAAAAA=",
+		"percent-ascii?": "AAAAAAAAAAAAAAAAAAAA%2B",
+	} {
+		if _, err := Parse("FMSEXCH1:x=a.b%3A1&i=" + v); RefusedOf(err) != RefusedBadInv {
+			t.Errorf("%s: %v", name, err)
+		}
 	}
 }

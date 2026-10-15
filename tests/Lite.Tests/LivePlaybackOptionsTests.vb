@@ -71,7 +71,7 @@ Public Class LivePlaybackOptionsTests
     <Fact>
     Public Sub The_Deadlines_Are_The_Ones_Of_Section_6_2()
         Dim options As New LivePlaybackOptions()
-        Assert.Equal(2000, options.ConnectTimeoutMs)   ' the 2 s LAN headers deadline
+        Assert.Equal(1500, options.ConnectTimeoutMs)   ' ticket 201: fail over promptly to the next candidate
         Assert.Equal(3000, options.StallTimeoutMs)     ' bytes stop for 3 s
     End Sub
 

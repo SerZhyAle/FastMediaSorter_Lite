@@ -135,8 +135,8 @@ Partial Public NotInheritable Class Share_Settings_Form
 
     Private Function MakeAction(text As String, onClick As Action, Optional glyph As String = "") As Button
         Dim b As New Button With {.AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink,
-            .Dock = DockStyle.Fill, .Padding = New Padding(12, 6, 12, 6),
-            .Margin = New Padding(0, 2, 0, 2), .Text = text}
+            .Padding = New Padding(12, 6, 12, 6),
+            .Margin = New Padding(0, 2, 8, 2), .Text = text}
         AddHandler b.Click, Sub() onClick()
         If glyph.Length > 0 Then ButtonGlyphs.Apply(b, glyph)
         Return b

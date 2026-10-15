@@ -344,6 +344,7 @@ Public Class ImportedSettingsLimitsTests
             .NameCollisionPolicy = "rename",
             .AfterFileOperation = "stay",
             .AdvanceAfterCopy = False,
+            .AutoAcceptLiveCast = True,
             .DeleteToRecycleBin = False,
             .ConfirmDelete = "never",
             .CreateMissingDestination = False,
@@ -486,7 +487,7 @@ Public Class ImportedSettingsLimitsTests
         ' A Boolean can only be true or false, so there is nothing to fold - the list
         ' exists so a NEW property cannot slip past the inventory unnoticed.
         Dim listed As New HashSet(Of String) From {
-            "AdvanceAfterCopy", "AllowNewWindows", "AudioControlsAlwaysVisible", "AudioVisualiser",
+            "AdvanceAfterCopy", "AllowNewWindows", "AudioControlsAlwaysVisible", "AudioVisualiser", "AutoAcceptLiveCast",
             "CreateMissingDestination", "DeleteToRecycleBin", "IncludeAudioInNavigation",
             "IncludeDocumentInNavigation", "IncludeSubfolders", "IncludeVideoInNavigation", "ModernChrome", "ChromePinned", "ChromeRow1Pinned", "ChromeRow2Pinned", "ChromeStatusPinned", "RecipientsOverlayPinned", "ChromeWindowControlsPinned",
             "ReduceMotion", "RememberVideoPosition", "ResumeLastPlayback", "SortOtherFiles", "SecureIncludeInNavigation",
@@ -504,6 +505,7 @@ Public Class ImportedSettingsLimitsTests
         Dim p As New ModernViewerPreferences() With {
             .NameCollisionPolicy = "rename", .AfterFileOperation = "closeIfEmpty",
             .AdvanceAfterCopy = False, .DeleteToRecycleBin = False, .ConfirmDelete = "never",
+            .AutoAcceptLiveCast = True,
             .CreateMissingDestination = False, .IncludeSubfolders = True,
             .IncludedExtensions = "[""jpg"", ""png""]", .SortOtherFiles = True,
             .DocumentExtensions = "[""txt"", ""pdf""]", .OtherExtensions = "[""xyz""]",

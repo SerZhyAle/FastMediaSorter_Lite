@@ -61,6 +61,23 @@ Friend NotInheritable Class ChromeAutoHide
         Return True
     End Function
 
+    ''' <summary>A window with nothing to show holds its panels up (125 UX-313m): on the first run, or after the
+    ''' last file of a folder has gone, there is no picture for a panel to cover and the window's only commands
+    ''' (choose a file, choose a folder) are on them - a bar that waits for the pointer to find a 48 px band at
+    ''' the top is a window with no way in. It is a HOLD, not a pin: it keeps the panels up while the window is
+    ''' in use, the pin buttons keep telling the stored preference, and the ordinary countdown takes over from the
+    ''' moment media appears. <paramref name="emptySinceMs"/> is the caller's own field (-1 = media is on screen):
+    ''' a window is "empty" only after it has been so for <see cref="ChromeMetrics.EmptyWindowHoldDelayMilliseconds"/>,
+    ''' so the gap while one file hands over to a file of another kind never raises the panels.</summary>
+    Public Shared Function HoldsForEmptyWindow(mediaOnScreen As Boolean, nowMs As Long, ByRef emptySinceMs As Long) As Boolean
+        If mediaOnScreen Then
+            emptySinceMs = -1L
+            Return False
+        End If
+        If emptySinceMs < 0L Then emptySinceMs = nowMs
+        Return nowMs - emptySinceMs >= ChromeMetrics.EmptyWindowHoldDelayMilliseconds
+    End Function
+
     ''' <summary>Where the reveal zone of the TOP rows ends: the bottom of the lowest of them plus the zone
     ''' margin, for every top row alike. Each row used to measure from its own bottom, so row 2 (which sits
     ''' below row 1) hung alone in the band between the two zones (125 UX-308).</summary>

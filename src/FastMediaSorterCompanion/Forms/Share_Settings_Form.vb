@@ -1,4 +1,4 @@
-﻿Option Explicit On
+Option Explicit On
 Option Strict On
 Option Infer On
 Option Compare Binary
@@ -139,6 +139,9 @@ Partial Public NotInheritable Class Share_Settings_Form
         ' server-administration group and before Help (AllSettingsSections), and is a partial of its own.
         _secAccount = CreateAccountSection()
         SettingsBuildTimings("account") = settingsBuildWatch.ElapsedMilliseconds
+        ' Scheduled file operations (ticket 222): a page of the Share Manager's own, not behind the Share opt-in.
+        _secScheduled = CreateScheduledSection()
+        SettingsBuildTimings("scheduled") = settingsBuildWatch.ElapsedMilliseconds
         BuildHelpSection(_secHelp)
         BuildAboutRows(_secHelp)
         BuildSettingsPages()

@@ -20,8 +20,8 @@ Friend NotInheritable Class LiveBroadcastFeatures
     Private Sub New()
     End Sub
 
-    ''' <summary>The build offers the live-broadcast producer features to everybody. False until the owner opens the gate.</summary>
-    Public Const Offered As Boolean = False
+    ''' <summary>Offered on the owner's ticket 199 instruction. The evidence file records verified checks and pending acceptance.</summary>
+    Public Const Offered As Boolean = True
 
     ''' <summary>The developer switch: set to "1" (process, user or machine environment) to show the producer
     ''' features while <see cref="Offered"/> is False.</summary>
@@ -29,6 +29,7 @@ Friend NotInheritable Class LiveBroadcastFeatures
 
     ''' <summary>The switch, read through an injected reader (process first, then user, then machine).</summary>
     Public Shared Function DeveloperSwitchOn(read As Func(Of String, EnvironmentVariableTarget, String)) As Boolean
+        If _flowSwitch.Value.HasValue Then Return _flowSwitch.Value.Value
         If read Is Nothing Then Return False
         For Each target As EnvironmentVariableTarget In {EnvironmentVariableTarget.Process, EnvironmentVariableTarget.User, EnvironmentVariableTarget.Machine}
             Dim v As String = Nothing
@@ -42,18 +43,51 @@ Friend NotInheritable Class LiveBroadcastFeatures
         Return False
     End Function
 
+    Private Shared ReadOnly _flowSwitch As New System.Threading.AsyncLocal(Of Boolean?)()
+    Private Shared ReadOnly _flowOffered As New System.Threading.AsyncLocal(Of Boolean?)()
+
+    Private NotInheritable Class FlowScope
+        Implements IDisposable
+
+        Private ReadOnly _previousSwitch As Boolean?
+        Private ReadOnly _previousOffered As Boolean?
+
+        Public Sub New(previousSwitch As Boolean?, previousOffered As Boolean?)
+            _previousSwitch = previousSwitch
+            _previousOffered = previousOffered
+        End Sub
+
+        Public Sub Dispose() Implements IDisposable.Dispose
+            _flowSwitch.Value = _previousSwitch
+            _flowOffered.Value = _previousOffered
+        End Sub
+    End Class
+
+    Friend Shared Function ForFlow(Optional switchOn As Boolean? = Nothing, Optional offered As Boolean? = Nothing) As IDisposable
+        Dim scope As New FlowScope(_flowSwitch.Value, _flowOffered.Value)
+        If switchOn.HasValue Then _flowSwitch.Value = switchOn
+        If offered.HasValue Then _flowOffered.Value = offered
+        Return scope
+    End Function
+
+    Public Shared Function BuildOffers() As Boolean
+        If _flowOffered.Value.HasValue Then Return _flowOffered.Value.Value
+        Return Offered
+    End Function
+
     ''' <summary>The real environment.</summary>
     Public Shared Function DeveloperSwitchOn() As Boolean
+        If _flowSwitch.Value.HasValue Then Return _flowSwitch.Value.Value
         Return DeveloperSwitchOn(AddressOf Environment.GetEnvironmentVariable)
     End Function
 
     ''' <summary>True when the producer features exist in this run: offered by the build, or the developer switch.</summary>
     Public Shared Function IsEnabled(read As Func(Of String, EnvironmentVariableTarget, String)) As Boolean
-        Return Offered OrElse DeveloperSwitchOn(read)
+        Return BuildOffers() OrElse DeveloperSwitchOn(read)
     End Function
 
     Public Shared Function IsEnabled() As Boolean
-        Return Offered OrElse DeveloperSwitchOn()
+        Return BuildOffers() OrElse DeveloperSwitchOn()
     End Function
 
 End Class

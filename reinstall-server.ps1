@@ -64,6 +64,14 @@
 .PARAMETER NoLaunch
     Do not open the Share Manager afterwards.
 
+.PARAMETER SkipExchange
+    Leave the Media Exchange Server component out of the package. By default it is IN, like
+    in build.ps1 (a local build is not a release, so the shipping gate does not apply): the
+    exe is built from exchange-server\ (Go) and the package is compiled with -IncludeExchange.
+    Without the component the Share Manager shows neither the "Media Exchange Server" page
+    nor the "Exchange account" page, so there is no way to join an exchange server from it
+    (ExchangeFeatures.ComponentInstalled looks for exchange\fms-exchange-server.exe).
+
 .PARAMETER Force
     Skip the confirmation asked for a FIRST migration (see below). Nothing else prompts.
 
@@ -84,6 +92,7 @@ param(
     [switch]$SkipBuild,
     [switch]$Clean,
     [switch]$NoLaunch,
+    [switch]$SkipExchange,
     [switch]$Force
 )
 
@@ -214,8 +223,35 @@ if ($SkipBuild) {
     Write-Host "Reusing the existing package: $setupPath" -ForegroundColor Cyan
 } else {
     if (-not $Version) { $Version = Get-Date -Format 'yy.M.d.HHmm' }
+    $buildArgs = @{ Version = $Version }
+
+    if (-not $SkipExchange) {
+        # The exchange server is a Go program, built apart from the .NET side. Build-ServerInstaller
+        # takes it from bin\Release\exchange, so a fresh exe is put there - otherwise a previous
+        # build's binary would be packaged without a word.
+        $exchangeOut = Join-Path $root 'bin\ExchangePublish'
+        $exchangeBin = Join-Path $root 'bin\Release\exchange'
+        Write-Host "Building the exchange server (Go, windows/amd64).." -ForegroundColor Cyan
+        Remove-Item -LiteralPath $exchangeOut -Recurse -Force -ErrorAction SilentlyContinue
+        & (Join-Path $root 'exchange-server\build.ps1') -Version $Version -OutDir $exchangeOut
+        $exchangeExit = $LASTEXITCODE
+        if ($exchangeExit -eq 0) {
+            New-Item -ItemType Directory -Path $exchangeBin -Force | Out-Null
+            foreach ($f in 'fms-exchange-server.exe', 'fms-exchange-server.exe.sha256') {
+                Copy-Item -LiteralPath (Join-Path $exchangeOut $f) -Destination $exchangeBin -Force
+            }
+        } elseif ($exchangeExit -eq 2 -and (Test-Path -LiteralPath (Join-Path $exchangeBin 'fms-exchange-server.exe'))) {
+            Write-Warning "No 64-bit Go - packaging the exchange server already in bin\Release\exchange (not rebuilt)."
+        } else {
+            Write-Error "The exchange server could not be built (exit $exchangeExit). Install Go, or pass -SkipExchange to build the package without it."
+            exit 1
+        }
+        $buildArgs.IncludeExchange = $true
+        Write-Host ""
+    }
+
     Write-Host "Building the Server installer, version $Version.." -ForegroundColor Cyan
-    & (Join-Path $root 'tools\Build-ServerInstaller.ps1') -Version $Version
+    & (Join-Path $root 'tools\Build-ServerInstaller.ps1') @buildArgs
     if ($LASTEXITCODE -ne 0) { Write-Error "tools\Build-ServerInstaller.ps1 failed (exit $LASTEXITCODE) - nothing installed."; exit $LASTEXITCODE }
     $setupPath = Join-Path $root ("dist\FastMediaSorter-$Version-windows-x64-server-setup.exe")
     if (-not (Test-Path -LiteralPath $setupPath)) { Write-Error "Expected package not found: $setupPath"; exit 1 }
@@ -280,6 +316,16 @@ $arpAfter = Get-ServerArp
 Check "the installed package is the one just built" `
       ($null -ne $arpAfter -and (-not $Version -or $arpAfter.DisplayVersion -eq $Version)) `
       ("expected $Version, ARP says $(if ($arpAfter) { $arpAfter.DisplayVersion } else { '(not installed)' })")
+
+# Without exchange\fms-exchange-server.exe beside the Share Manager its settings window has no
+# "Media Exchange Server" page and no "Exchange account" page - the installed build then looks
+# complete and simply offers no way to join an exchange server.
+if (-not $SkipExchange) {
+    $exchangeExe = if ($arpAfter -and $arpAfter.InstallLocation) { Join-Path $arpAfter.InstallLocation 'exchange\fms-exchange-server.exe' } else { $null }
+    Check "the exchange server component is installed (the Share Manager's exchange pages need it)" `
+          ($null -ne $exchangeExe -and (Test-Path -LiteralPath $exchangeExe)) `
+          ("expected $exchangeExe" + $(if ($SkipBuild) { " - this package was reused with -SkipBuild; rebuild without it" } else { "" }))
+}
 
 $svc = Get-Service -Name $ServiceName -ErrorAction SilentlyContinue
 Check "the Windows service is registered and running" `

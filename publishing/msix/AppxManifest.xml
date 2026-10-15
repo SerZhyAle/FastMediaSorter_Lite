@@ -158,8 +158,12 @@
   </Extensions>
 
   <Capabilities>
-    <!-- Full-trust desktop app: keeps the IE WebBrowser control, native LibVLC playback, GDI+,
+    <!-- Full-trust desktop app: keeps native LibVLC playback, GDI+,
          user-level file access for media sorting, and optional local translation HTTP calls. -->
     <rescap:Capability Name="runFullTrust" />
+    <!-- Live broadcaster audio capture from microphone for live streams. -->
+    <DeviceCapability Name="microphone" />
+    <!-- Live broadcaster camera capture from webcam for live streams. -->
+    <DeviceCapability Name="webcam" />
   </Capabilities>
 </Package>

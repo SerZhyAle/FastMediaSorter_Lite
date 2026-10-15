@@ -364,6 +364,102 @@ Public Class InputModelTests
         Assert.Contains("ChromeMenu.PopupVisible", playback)
     End Sub
 
+    ' --- UX-113: zoom on the main row ------------------------------------------------------
+
+    <Theory>
+    <InlineData(CInt(Keys.Add), "zoomIn")>
+    <InlineData(CInt(Keys.Subtract), "zoomOut")>
+    <InlineData(CInt(Keys.Divide), "zoomFit")>
+    <InlineData(CInt(Keys.Multiply), "zoomActual")>
+    <InlineData(CInt(Keys.Oemplus), "zoomIn")>
+    <InlineData(CInt(Keys.Shift Or Keys.Oemplus), "zoomIn")>
+    <InlineData(CInt(Keys.OemMinus), "zoomOut")>
+    Public Sub The_numeric_block_and_the_main_row_are_the_factory_keys_of_zoom(keyData As Integer, expected As String)
+        Assert.Equal(expected, CustomHotkeys.ZoomActionOfFactoryKey(CType(keyData, Keys)))
+    End Sub
+
+    ''' <summary>Exact combinations only: "_" (Shift+minus) is nobody's zoom, "/" and "*" on the main row are
+    ''' Shift+7 and Shift+8, which COPY into slots 7 and 8, and a Ctrl chord belongs to the user.</summary>
+    <Theory>
+    <InlineData(CInt(Keys.Shift Or Keys.OemMinus))>
+    <InlineData(CInt(Keys.Shift Or Keys.D7))>
+    <InlineData(CInt(Keys.Shift Or Keys.D8))>
+    <InlineData(CInt(Keys.Control Or Keys.Oemplus))>
+    <InlineData(CInt(Keys.D7))>
+    <InlineData(CInt(Keys.None))>
+    Public Sub Nothing_else_on_the_main_row_zooms(keyData As Integer)
+        Assert.Equal(String.Empty, CustomHotkeys.ZoomActionOfFactoryKey(CType(keyData, Keys)))
+    End Sub
+
+    <Fact>
+    Public Sub Moving_zoom_in_retires_every_factory_key_of_it_and_leaves_zoom_out_alone()
+        Dim map As Dictionary(Of String, String) = CustomHotkeys.Load("{""zoomIn"":""F8""}")
+        Assert.True(CustomHotkeys.IsRetiredDefault(map, "Num +"))
+        Assert.True(CustomHotkeys.IsRetiredDefault(map, "Oemplus"))
+        Assert.True(CustomHotkeys.IsRetiredDefault(map, "Shift+Oemplus"))
+        Assert.False(CustomHotkeys.IsRetiredDefault(map, "OemMinus"))
+        Assert.False(CustomHotkeys.IsRetiredDefault(map, "Num -"))
+    End Sub
+
+    <Fact>
+    Public Sub A_key_the_user_gave_to_another_action_wins_over_the_main_row_zoom()
+        Dim map As Dictionary(Of String, String) = CustomHotkeys.Load("{""undo"":""OemMinus""}")
+        Assert.Equal("undo", CustomHotkeys.OwnerOfOverride(map, "OemMinus"))
+    End Sub
+
+    <Fact>
+    Public Sub The_historical_map_no_longer_claims_the_main_row_keys_itself()
+        ' The three text-only cases that used to sit in KeybUse ended in the zoom dispatch, which now
+        ' answers for the whole family (picture and text) through one implementation.
+        Dim body As String = KeybUseBody()
+        Assert.DoesNotContain("Keys.Oemplus", body)
+        Assert.DoesNotContain("Keys.OemMinus", body)
+        Assert.DoesNotContain("ZoomText(", body)
+        Assert.Contains("TryHandleZoomKey(e)", body)
+        Assert.Contains("Case ""zoomIn"", ""zoomOut"", ""zoomFit"", ""zoomActual"" : RunZoomAction(actionId)", SourceOf("Main_Form.CustomHotkeys.vb"))
+    End Sub
+
+    <Fact>
+    Public Sub Only_the_four_zoom_actions_are_zoom_actions()
+        For Each id As String In {"zoomIn", "zoomOut", "zoomFit", "zoomActual"}
+            Assert.True(CustomHotkeys.IsZoomAction(id))
+        Next
+        Assert.False(CustomHotkeys.IsZoomAction("rotateCw"))
+        Assert.False(CustomHotkeys.IsZoomAction(String.Empty))
+        Assert.False(CustomHotkeys.IsZoomAction(Nothing))
+    End Sub
+
+    ' --- UX-112: Enter is an action ---------------------------------------------------------
+
+    <Fact>
+    Public Sub Enter_is_the_open_action_and_can_be_moved()
+        Dim action As HotkeyAction = CustomHotkeys.Find("openContent")
+        Assert.NotNull(action)
+        Assert.Equal("Enter", CustomHotkeys.Canonical(action.DefaultCombo))
+        Assert.Equal(Keys.Return, CustomHotkeys.Parse("Enter"))
+        Assert.False(CustomHotkeys.IsReserved(Keys.Return))
+        Assert.False(CustomHotkeys.IsPlaybackAction("openContent"), "it keeps the historical slideshow stop")
+        Dim map As Dictionary(Of String, String) = CustomHotkeys.Load("{""openContent"":""F8""}")
+        Assert.Equal("openContent", CustomHotkeys.OwnerOfOverride(map, "F8"))
+        Assert.True(CustomHotkeys.IsRetiredDefault(map, "Enter"), "the old key must do nothing once the action moved")
+    End Sub
+
+    <Fact>
+    Public Sub Enter_ends_in_the_same_implementation_whether_factory_or_moved()
+        Assert.Contains("If Not RunOpenContentAction() Then key_Handled = False", KeybUseBody())
+        Assert.Contains("Case ""openContent"" : RunOpenContentAction()", SourceOf("Main_Form.CustomHotkeys.vb"))
+    End Sub
+
+    <Fact>
+    Public Sub The_on_screen_hints_name_the_live_key_not_a_hard_coded_Enter()
+        Dim placeholder As String = SourceOf("Main_Form.PlaceholderView.vb")
+        Assert.DoesNotContain("T(""Enter - ", placeholder)
+        Assert.Contains("OpenContentKeyLabel()", placeholder)
+        Dim text As String = SourceOf("Main_Form.TextView.vb")
+        Assert.DoesNotContain("Enter - открыть файл целиком", text)
+        Assert.Contains("OpenContentKeyLabel()", text)
+    End Sub
+
     ' --- helpers -------------------------------------------------------------------------
 
     Private Shared Function SourceOf(fileName As String) As String

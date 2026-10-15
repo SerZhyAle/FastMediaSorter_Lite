@@ -98,8 +98,12 @@ html[data-theme="light"] .seg{background:rgba(16,40,20,.05)}
 .seg button{font-family:var(--font-heading);font-size:11px;font-weight:700;letter-spacing:.04em;
   padding:5px 10px;border:none;border-radius:14px;background:transparent;color:var(--muted);cursor:pointer}
 .seg button[aria-pressed="true"],.seg button.on{background:var(--acc);color:var(--acc-ink)}
-.theme-btn{width:32px;height:32px;border:1px solid var(--border);border-radius:50%;background:transparent;
-  color:var(--muted);cursor:pointer;display:grid;place-items:center;font-size:14px}
+/* PAGE-STYLE 4.3 (1.4): the control is labelled - its name is visible text beside the app.theme glyph -
+   so this is a pill in the .seg family, not a bare round glyph. A page still carrying the 1.0 bare-glyph
+   markup renders the same pill with the glyph alone until it adopts the label. */
+.theme-btn{display:inline-flex;align-items:center;gap:.45rem;padding:5px 12px;border:1px solid var(--border);
+  border-radius:var(--radius-pill);background:transparent;color:var(--muted);cursor:pointer;
+  font-family:var(--font-heading);font-size:11px;font-weight:700;letter-spacing:.04em}
 .theme-btn:hover{color:var(--text);border-color:var(--border-hover)}
 
 /* ---------- BUTTONS ---------- */
@@ -153,8 +157,11 @@ details.sec{background:var(--card);border:1px solid var(--border);border-radius:
 details.sec[open]{border-color:var(--border-hover)}
 details.sec>summary{list-style:none;cursor:pointer;display:flex;align-items:baseline;gap:.8rem;padding:1.1rem 0;font-family:var(--font-heading);font-weight:700;font-size:1.05rem}
 details.sec>summary::-webkit-details-marker{display:none}
-details.sec>summary::after{content:"▸";margin-left:auto;color:var(--muted);transition:transform .2s}
-details.sec[open]>summary::after{transform:rotate(90deg)}
+details.sec>summary::after{content:"";width:20px;height:20px;margin-left:auto;flex:none;align-self:center;
+  background:var(--muted);transition:transform .2s;
+  -webkit-mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M16.59 8.59L12 13.17 7.41 8.59 6 10l6 6 6-6z'/%3E%3C/svg%3E") center/contain no-repeat;
+  mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M16.59 8.59L12 13.17 7.41 8.59 6 10l6 6 6-6z'/%3E%3C/svg%3E") center/contain no-repeat}
+details.sec[open]>summary::after{transform:rotate(180deg)}
 .secnum{font-family:var(--font-heading);font-weight:800;font-size:.8rem;color:var(--acc);font-variant-numeric:tabular-nums;min-width:2ch}
 details.sec>*:not(summary){margin-bottom:1.1rem}
 
@@ -205,11 +212,16 @@ kbd{font-size:.8em;padding:.12em .45em;border-radius:5px;background:var(--bg-3);
   background:var(--acc);color:var(--acc-ink);border:none;cursor:pointer;display:none;place-items:center;box-shadow:var(--shadow)}
 .to-top.show{display:grid}
 
-/* ---------- RESPONSIVE / A11Y ---------- */
+/* ---------- RESPONSIVE / A11Y ----------
+   44px targets (PAGE-STYLE section 5, 1.4): .btn, .seg button and .theme-btn for every pointer;
+   .copybox .copy and .tools-grid a keep the coarse-pointer rule, which was not asked to widen;
+   .to-top is drawn 44px. */
 @media(max-width:480px){.site-header .btn{display:none}}
-@media(pointer:coarse){.btn,.seg button,.theme-btn,.copybox .copy,.tools-grid a{min-height:44px}
+.btn,.seg button,.theme-btn{min-height:44px}
+.seg button,.theme-btn{min-width:44px}
+@media(pointer:coarse){.copybox .copy,.tools-grid a{min-height:44px}
   .copybox .copy{min-width:44px;top:50%;transform:translateY(-50%)}}
-@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
 
 /* ---------- PRINT (optional; PAGE-STYLE 4.13) ----------
    Dark ink on white; chrome hidden; URL after each external link.

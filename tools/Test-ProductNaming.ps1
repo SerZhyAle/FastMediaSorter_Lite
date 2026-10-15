@@ -89,7 +89,21 @@ $forbidden = @(
     # Owner rule, specification 133 section 4: the exchange server is never named by its last two words
     # alone, which reads as Microsoft's product. Only a sentence that genuinely means Microsoft's product
     # may carry it, through an allow-list record that says so.
-    @{ Name = 'bare Exchange Server (not preceded by Media)'; Rx = [regex]::new('(?<!Media )Exchange Server') }
+    @{ Name = 'bare Exchange Server (not preceded by Media)'; Rx = [regex]::new('(?<!Media )Exchange Server') },
+    # Specification 206 section 3, the exchange and live-broadcast vocabulary (PRODUCT_NAMING section 6).
+    # The forms below are the mechanically separable ones; the contextual rule (never "broadcast" for a
+    # live one without "live") is held per surface by the ticket's own parity tests. The sanctioned role
+    # description "Fast Media Sorter exchange relay server" (PRODUCT_NAMING section 1) carries its
+    # allowance in the lookbehind, and the vocabulary section that quotes the forbidden forms to define
+    # them is allow-listed.
+    @{ Name = 'relay server (not preceded by exchange)'; Rx = [regex]::new('(?<!exchange )relay servers?\b', 'IgnoreCase') },
+    @{ Name = 'FMS server'; Rx = [regex]::new('\bFMS servers?\b', 'IgnoreCase') },
+    @{ Name = 'the cloud (not the cloud clipboard)'; Rx = [regex]::new('\bthe cloud\b(?!\s+clipboard)', 'IgnoreCase') },
+    @{ Name = 'cloud account'; Rx = [regex]::new('\bcloud accounts?\b', 'IgnoreCase') },
+    @{ Name = 'login to Fast Media Sorter'; Rx = [regex]::new('log ?in to Fast Media Sorter', 'IgnoreCase') },
+    @{ Name = 'upload my folders'; Rx = [regex]::new('upload my folders', 'IgnoreCase') },
+    @{ Name = 'transmission'; Rx = [regex]::new('\btransmissions?\b', 'IgnoreCase') },
+    @{ Name = 'start/stop broadcast (not a live one)'; Rx = [regex]::new('(?<!live )(start|stop) broadcast(s|ing)?\b', 'IgnoreCase') }
 )
 
 $hits = 0; $allowedHits = 0
@@ -137,7 +151,13 @@ $required = @(
     @{ Path = 'publishing/msix/AppxManifest.xml';            Text = '<DisplayName>FastMediaSorter LITE</DisplayName>' },
     @{ Path = 'publishing/msix/AppxManifest.xml';            Rx = '(?s)VisualElements[^>]*DisplayName="FastMediaSorter LITE"' },
     @{ Path = 'publishing/store/listingData.csv';            Rx = '(?m)^Title,\d+,Text,,FastMediaSorter LITE,' },
-    @{ Path = 'docs/guides/PRODUCT_NAMING.md';              Text = 'Fast Media Sorter & Sharing for Windows' }
+    @{ Path = 'docs/guides/PRODUCT_NAMING.md';              Text = 'Fast Media Sorter & Sharing for Windows' },
+    # The vocabulary section of 206 section 3 must stay: the table is the one place the exchange and
+    # live-broadcast words are defined, and the gate's own forbidden forms cite it.
+    @{ Path = 'docs/guides/PRODUCT_NAMING.md';              Text = '## 6. The exchange and live-broadcast vocabulary' },
+    @{ Path = 'docs/guides/PRODUCT_NAMING.md';              Text = '**Live broadcast**' },
+    @{ Path = 'docs/guides/PRODUCT_NAMING.md';              Text = '**Exchange account**' },
+    @{ Path = 'docs/guides/PRODUCT_NAMING.md';              Text = '**Connection string**' }
 )
 foreach ($req in $required) {
     $p = Join-Path $Root $req.Path

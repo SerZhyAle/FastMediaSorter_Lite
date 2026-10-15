@@ -45,6 +45,17 @@ func runTLS(cmd command, stdout, stderr io.Writer) int {
 
 	var fp string
 	switch cmd.sub {
+	case "renew":
+		if cfg.TLS.CertFile != "" {
+			printf(stderr, "renew applies only to the generated self-signed identity\n")
+			return exitUsage
+		}
+		id, err := tlsid.Renew(paths.Cert, paths.Key, time.Now())
+		if err != nil {
+			return tlsRefusal(err, stderr)
+		}
+		printf(stdout, "fingerprint %s\n", id.Fingerprint)
+		return exitOK
 	case "import":
 		dstCert := filepath.Join(paths.TLSDir, importedCertName)
 		dstKey := filepath.Join(paths.TLSDir, importedKeyName)

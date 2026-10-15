@@ -147,14 +147,16 @@ foreach ($r in $records) {
     foreach ($m in [regex]::Matches($links, '(?i)<(a|img)\b[^>]*?\b(?:href|src)\s*=\s*["'']([^"'']+)["'']')) { Check-Link $r.path $m.Groups[2].Value ($m.Groups[1].Value -eq 'img') }
 }
 # Numeric claims in CLAUDE are source facts, not a hand-maintained second list.
-$claude = Get-Content (Join-Path $Root 'CLAUDE.md') -Raw
+$claudeFile = Join-Path $Root '.claude/rules/settings-window.md'
+if (!(Test-Path -LiteralPath $claudeFile)) { $claudeFile = Join-Path $Root 'CLAUDE.md' }
+$claude = Get-Content $claudeFile -Raw
 $designer = Get-Content (Join-Path $Root 'src/Table_Form.Designer.vb') -Raw
 $modern = Get-Content (Join-Path $Root 'src/Table_Form.ModernLayout.vb') -Raw
 $sharedCount = [regex]::Matches($designer, 'Me\.Tab_Control\.Controls\.Add\(Me\.Tab_Page_\d+\)').Count
 $extraCount = [regex]::Matches($modern, 'Tab_Control\.TabPages\.(?:Add|Insert)\(').Count
 $numbers = @('zero','one','two','three','four','five','six','seven','eight','nine','ten','eleven','twelve')
 if (!$sharedCount -or !$extraCount -or $sharedCount + $extraCount -ge $numbers.Count) { Problem 'settings page source model changed; update fact extraction' }
-elseif ($claude -notmatch "same $($numbers[$sharedCount]) Designer pages" -or $claude -notmatch "layout of $($numbers[$sharedCount + $extraCount]) pages" -or $claude -notmatch "plus $($numbers[$extraCount]) that exist only there") { Problem 'CLAUDE.md: settings page counts drifted from source' }
+elseif ($claude -notmatch "same $($numbers[$sharedCount]) Designer pages" -or $claude -notmatch "layout of $($numbers[$sharedCount + $extraCount]) pages" -or $claude -notmatch "plus $($numbers[$extraCount]) that exist only there") { Problem 'settings-window rule: settings page counts drifted from source' }
 $warningLists = foreach ($project in 'src/FastMediaSorter.vbproj','src/Modern/FastMediaSorter.Modern.vbproj') {
     [regex]::Matches((Get-Content (Join-Path $Root $project) -Raw), '<WarningsAsErrors>([^<]+)</WarningsAsErrors>') | ForEach-Object { $_.Groups[1].Value }
 }

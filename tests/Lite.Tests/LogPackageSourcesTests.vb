@@ -137,7 +137,10 @@ Public Class LogPackageSourcesTests
             Dim specs As Dictionary(Of String, String()) = LogPackage.PlanLogSources(l.Roots()).ToDictionary(Function(s) s.EntryName, Function(s) s.Candidates)
 
             Dim exchangeLogs As String() = specs("exchange/exchange.log")
-            Assert.Equal({Path.Combine(l.Common, "FastMediaSorterExchange", "logs", "exchange.log"),
+            Dim day As String = "exchange-" & DateTime.UtcNow.ToString("yyyy-MM-dd", Globalization.CultureInfo.InvariantCulture) & ".log"
+            Assert.Equal({Path.Combine(l.Common, "FastMediaSorterExchange", "logs", day),
+                          Path.Combine(l.Common, "FastMediaSorterExchange", "logs", "exchange.log"),
+                          Path.Combine(l.Local, "FastMediaSorterExchange", "logs", day),
                           Path.Combine(l.Local, "FastMediaSorterExchange", "logs", "exchange.log")}, exchangeLogs)
 
             ' A helper that could not trust the data directory leaves its log in the administrator's %TEMP%.
@@ -158,8 +161,23 @@ Public Class LogPackageSourcesTests
             Dim overrideDir As String = Path.Combine(l.Root, "xd")
             Dim specs As Dictionary(Of String, String()) =
                 LogPackage.PlanLogSources(l.Roots(exchangeOverride:=overrideDir)).ToDictionary(Function(s) s.EntryName, Function(s) s.Candidates)
-            Assert.Equal(Path.Combine(overrideDir, "logs", "exchange.log"), specs("exchange/exchange.log")(0))
-            Assert.Equal(3, specs("exchange/exchange.log").Length)
+            Dim day As String = "exchange-" & DateTime.UtcNow.ToString("yyyy-MM-dd", Globalization.CultureInfo.InvariantCulture) & ".log"
+            Assert.Equal(Path.Combine(overrideDir, "logs", day), specs("exchange/exchange.log")(0))
+            Assert.Equal(6, specs("exchange/exchange.log").Length)
+        End Using
+    End Sub
+
+    <Fact>
+    Public Sub A_stopped_server_contributes_its_latest_owned_day_log()
+        Using l As New Layout()
+            Dim folder As String = Path.Combine(l.Common, "FastMediaSorterExchange", "logs")
+            Directory.CreateDirectory(folder)
+            Dim last As String = Path.Combine(folder, "exchange-2020-01-02.log")
+            File.WriteAllText(last, "latest")
+            File.WriteAllText(Path.Combine(folder, "exchange-2020-01-01.log"), "older")
+            File.WriteAllText(Path.Combine(folder, "exchange-invalid.log"), "unrelated")
+            Dim spec As LogPackage.LogSourceSpec = LogPackage.PlanLogSources(l.Roots()).Single(Function(s) s.EntryName = "exchange/exchange.log")
+            Assert.Equal(last, spec.Candidates(0))
         End Using
     End Sub
 

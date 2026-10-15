@@ -143,7 +143,8 @@ Partial Public Class Table_Form
         modernSettingsRows.Last().Host.Name = "settingsRow_shared_audio_settings"
         Tab_Control.BringToFront()
         Tab_Control.TabIndex = 1
-        AddHandler Tab_Control.SelectedIndexChanged, Sub() RefreshSettingsTools()
+        ' (The tools of the shown page are decided by ModernSettingsTabChanged, in the one pass that arranges
+        ' the header for a page switch - not by a second handler that arranged it again.)
         ' 130 §3.3: opening the Storage page re-measures the caches, so the sizes never
         ' only say what was true when the window was built.
         AddHandler Tab_Control.SelectedIndexChanged,
@@ -300,11 +301,18 @@ Partial Public Class Table_Form
 
     Private Sub RefreshSettingsTools()
         If searchSettingsButton Is Nothing OrElse Tab_Control.SelectedTab Is Nothing Then Return
+        UpdateSettingsToolVisibility()
+        ArrangeSettingsDiscoveryHeader()
+    End Sub
+
+    ''' <summary>Which header tools the shown page has - without arranging them. A page switch decides this
+    ''' first and arranges the header once (<c>ModernSettingsTabChanged</c>).</summary>
+    Private Sub UpdateSettingsToolVisibility()
+        If searchSettingsButton Is Nothing OrElse Tab_Control.SelectedTab Is Nothing Then Return
         Dim hasGroups = settingsGroups.Values.Any(Function(g) g.Parent Is PageFlow(Tab_Control.SelectedTab))
         settingsPageHasGroups = hasGroups
         expandSettingsButton.Visible = hasGroups
         collapseSettingsButton.Visible = hasGroups
-        ArrangeSettingsDiscoveryHeader()
     End Sub
 
     Private Sub RefreshSettingsDependencies()
@@ -406,15 +414,21 @@ Partial Public Class Table_Form
         If Not settingsContextReady Then Return
         CaptureSettingsPage(Tab_Control.SelectedTab)
         restoringSettingsContext = True
+        ' Expand or collapse all is ONE change of the page: the page is held while every group takes its state
+        ' (each group holds it again for itself - the layout is performed only when the outermost hold is
+        ' released) and is laid out once; the remembered position is restored from that layout.
+        Dim flow As FlowLayoutPanel = PageFlow(Tab_Control.SelectedTab)
+        flow.SuspendLayout()
         Try
-            For Each group In settingsGroups.Values.Where(Function(g) g.Parent Is PageFlow(Tab_Control.SelectedTab))
+            For Each group In settingsGroups.Values.Where(Function(g) g.Parent Is flow).ToArray()
                 group.Expanded = expanded
                 settingsContext.Page(pageIds(Tab_Control.SelectedTab)).Groups(group.GroupId.Split("/"c)(1)) = expanded
             Next
         Finally
+            flow.ResumeLayout(True)
             restoringSettingsContext = False
         End Try
-        LayoutModernSettingsPages()
+        LayoutModernSettingsPage(flow)
         contextFlush.MarkDirty()
         QueueRestoreSettingsContext()
     End Sub

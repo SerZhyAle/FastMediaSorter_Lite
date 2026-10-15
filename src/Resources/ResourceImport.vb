@@ -129,9 +129,16 @@ Friend Module ResourceImport
             descriptor.Port = primary.Port
             descriptor.UserName = plan.UserName
             descriptor.RootPath = root.VirtualPath
-            descriptor.ReadOnlyHint = Not root.EffectiveWritable
+            If matched Is Nothing Then descriptor.ReadOnlyHint = Not root.EffectiveWritable
             descriptor.IncludeSubfolders = root.ScanSubdirectories
-            descriptor.Endpoints = plan.Endpoints.Select(Function(e) New ResourceEndpoint With {.Kind = e.Kind, .Host = e.Host, .Port = e.Port}).ToList()
+            ' Spec 227 rule 7: merge incoming endpoints/channels with existing instead of replacing
+            Dim mergedEndpoints As New List(Of ResourceEndpoint)(If(descriptor.Endpoints, Enumerable.Empty(Of ResourceEndpoint)()))
+            For Each ep As FmsEndpoint In plan.Endpoints
+                If Not mergedEndpoints.Any(Function(existingEp) String.Equals(existingEp.Host, ep.Host, StringComparison.OrdinalIgnoreCase) AndAlso existingEp.Port = ep.Port) Then
+                    mergedEndpoints.Add(New ResourceEndpoint With {.Kind = ep.Kind, .Host = ep.Host, .Port = ep.Port})
+                End If
+            Next
+            descriptor.Endpoints = mergedEndpoints
             ' Without an explicit yes a changed pin is never taken, and absence never clears one.
             descriptor.PinnedFingerprint = decision.PinToPersist(confirmed:=False)
             ' Ticket 171 C4: a document that carries an exchange tunnel makes the resource a LINK (no account; the share id opens it). An
@@ -223,6 +230,16 @@ Friend Module ResourceImport
                 Next
             Next
         Next
+        ' Spec 227 rule 7: the same producer host key and the same root merges into existing record
+        If Not String.IsNullOrEmpty(plan.PinnedFingerprint) Then
+            For Each d As ResourceDescriptor In existing
+                If d.Kind = ResourceKind.Sftp AndAlso
+                   String.Equals(d.PinnedFingerprint, plan.PinnedFingerprint, StringComparison.OrdinalIgnoreCase) AndAlso
+                   String.Equals(FmsConfigReader.CanonicalVirtualPath(d.RootPath), canonical, StringComparison.Ordinal) Then
+                    Return d
+                End If
+            Next
+        End If
         Return Nothing
     End Function
 

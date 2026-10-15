@@ -14,6 +14,7 @@ Public NotInheritable Class Broadcast_Create_Form
     Private _iconHandle As IntPtr
     Private ReadOnly _targetPath As String
     Private ReadOnly _isFolder As Boolean
+    Private ReadOnly _settings As ShareSettings
 
     Private txtTitle As TextBox
     Private cboLifetime As ComboBox
@@ -42,9 +43,10 @@ Public NotInheritable Class Broadcast_Create_Form
         End Get
     End Property
 
-    Public Sub New(targetPath As String)
+    Public Sub New(targetPath As String, Optional settings As ShareSettings = Nothing)
         _targetPath = If(targetPath, "").Trim()
         _isFolder = Directory.Exists(_targetPath)
+        _settings = settings
         BuildUi()
     End Sub
 
@@ -61,11 +63,11 @@ Public NotInheritable Class Broadcast_Create_Form
         Me.AutoSize = True
         Me.AutoSizeMode = AutoSizeMode.GrowAndShrink
 
-        Dim settings As New ShareSettings()
-        Try
+        Dim settings As ShareSettings = _settings
+        If settings Is Nothing Then
+            settings = New ShareSettings()
             settings.Load()
-        Catch
-        End Try
+        End If
 
         Dim defaultTitle As String = ""
         Try
@@ -190,6 +192,7 @@ Public NotInheritable Class Broadcast_Create_Form
                                                        cboLifetime.SelectedIndex = 1
                                                    End If
                                                End Sub
+        If chkExternal.Checked Then cboLifetime.SelectedIndex = 1
         tlp.Controls.Add(lblWarning, 0, r)
         CheckBoxLayout.BindHint(chkExternal, lblWarning)
         tlp.SetColumnSpan(lblWarning, 2)

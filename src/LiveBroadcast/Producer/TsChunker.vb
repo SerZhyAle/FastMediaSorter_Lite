@@ -102,6 +102,45 @@ End Class
 
 ''' <summary>The stateful half the hub feeds: remembers the last PAT and PMT (the header block of a
 ''' join) and the pids they define, and emits one event per notable packet.</summary>
+''' <summary>One relay cut; a joinable payload always STARTS at an IDR TS packet.</summary>
+Friend Class LiveRelayCut
+    Public Property Header As Boolean
+    Public Property Joinable As Boolean
+    Public Property Payload As Byte()
+End Class
+
+''' <summary>Retains PAT/PMT across hub pulls and cuts at IDRs before assigning relay flags.</summary>
+Friend NotInheritable Class LiveRelayTsChunker
+    Private ReadOnly _state As New TsChunkerState()
+    Private _headerSent As Boolean
+
+    Public Function Feed(segment As Byte()) As List(Of LiveRelayCut)
+        Dim cuts As New List(Of LiveRelayCut)()
+        If Not TsChunker.IsAligned(segment) Then Return cuts
+        Dim joins As New HashSet(Of Integer)()
+        For Each e As TsChunkEvent In _state.Feed(segment)
+            If e.EventKind = TsChunkEvent.Kind.JoinPoint Then joins.Add(e.PacketOffset)
+        Next
+        If Not _headerSent Then
+            Dim header As Byte() = _state.HeaderBlock()
+            If header Is Nothing Then Return cuts
+            cuts.Add(New LiveRelayCut With {.Header = True, .Payload = header})
+            _headerSent = True
+        End If
+        Dim start As Integer = 0
+        For offset As Integer = LiveProducerContract.TsPacketSize To segment.Length Step LiveProducerContract.TsPacketSize
+            If offset = segment.Length OrElse joins.Contains(offset) OrElse offset - start >= 188 * 256 Then
+                cuts.Add(New LiveRelayCut With {
+                    .Joinable = joins.Contains(start),
+                    .Payload = segment.AsSpan(start, offset - start).ToArray()
+                })
+                start = offset
+            End If
+        Next
+        Return cuts
+    End Function
+End Class
+
 Friend Class TsChunkerState
 
     Private _lastPatPacket As Byte()

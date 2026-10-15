@@ -86,6 +86,94 @@ Public Class LiveProducerWireTests
 
 End Class
 
+Public Class LiveProducerDigestTests
+    <Theory>
+    <InlineData("SHA-256")>
+    <InlineData("MD5")>
+    Public Sub Digest_checks_the_pair_path_replays_and_source_rate_without_lockout(algorithm As String)
+        Dim now As Long = 0
+        Dim auth As New LiveProducerDigest(Function() now)
+        Dim challenge As String = Encoding.ASCII.GetString(auth.Challenge())
+        Assert.True(challenge.IndexOf("algorithm=SHA-256", StringComparison.Ordinal) < challenge.IndexOf("algorithm=MD5", StringComparison.Ordinal))
+        Dim nonce As String = System.Text.RegularExpressions.Regex.Match(challenge, "nonce=""([^""]+)""").Groups(1).Value
+        Dim request As New LiveProducerWire.LiveWireRequest With {.Method = "GET", .RawPath = "/live.ts", .Path = "/live.ts"}
+        request.Headers("Authorization") = Answer(algorithm, nonce, "wrong", "00000001", "/live.ts")
+        Assert.False(auth.Verify(request, "secret", "client"))
+        request.Headers("Authorization") = Answer(algorithm, nonce, "secret", "00000002", "/live.ts")
+        Assert.False(auth.Verify(request, "secret", "client"))
+        now = 1000
+        Assert.True(auth.Verify(request, "secret", "client"))
+        now = 2000
+        Assert.False(auth.Verify(request, "secret", "client")) ' Replay of nc=2.
+        now = 3000
+        request.RawPath = "/live-audio.aac"
+        request.Headers("Authorization") = Answer(algorithm, nonce, "secret", "00000003", "/live.ts")
+        Assert.False(auth.Verify(request, "secret", "client"))
+        now = 4000
+        request.RawPath = "/live.ts"
+        request.Headers("Authorization") = Answer(algorithm, nonce, "secret", "00000004", "/live.ts")
+        Assert.True(auth.Verify(request, "secret", "client"))
+        Assert.False(auth.Verify(request, "secret", "another-client")) ' Replaying from another address also fails.
+        now = 61000
+        request.Headers("Authorization") = Answer(algorithm, nonce, "secret", "00000005", "/live.ts")
+        Assert.False(auth.Verify(request, "secret", "client")) ' Expired nonces cannot outlive the replay cache.
+    End Sub
+
+    <Fact>
+    Public Sub Basic_and_query_passwords_never_authenticate_a_producer()
+        Dim auth As New LiveProducerDigest()
+        Dim request As New LiveProducerWire.LiveWireRequest With {.QueryString = "pwd=secret"}
+        request.Headers("Authorization") = "Basic " & Convert.ToBase64String(Encoding.UTF8.GetBytes("listener:secret"))
+        Assert.False(auth.Verify(request, "secret", "client"))
+    End Sub
+
+    Private Shared Function Answer(algorithm As String, nonce As String, password As String, nc As String, path As String) As String
+        Dim hash As Func(Of String, String) = Function(value)
+                                                 Dim data As Byte() = Encoding.UTF8.GetBytes(value)
+                                                 Dim digest As Byte() = If(algorithm = "SHA-256", Global.System.Security.Cryptography.SHA256.HashData(data), Global.System.Security.Cryptography.MD5.HashData(data))
+                                                 Return Convert.ToHexString(digest).ToLowerInvariant()
+                                             End Function
+        Dim response As String = hash(hash("listener:fms-broadcast:" & password) & ":" & nonce & ":" & nc & ":client:auth:" & hash("GET:" & path))
+        Return "Digest username=""listener"", realm=""fms-broadcast"", nonce=""" & nonce & """, uri=""" & path &
+               """, algorithm=" & algorithm & ", qop=auth, nc=" & nc & ", cnonce=""client"", response=""" & response & """"
+    End Function
+End Class
+
+Public Class LiveEncodedFramerTests
+    <Theory>
+    <InlineData(True)>
+    <InlineData(False)>
+    Public Sub Arbitrarily_split_pipe_reads_preserve_whole_packets_or_frames(video As Boolean)
+        Dim input As Byte() = If(video, LiveTsBuilder.PatPacket().Concat(LiveTsBuilder.PmtPacket()).ToArray(), LiveAdtsBuilder.AdtsStream(44100, 1, 3, 30))
+        For split As Integer = 1 To input.Length - 1
+            Dim framer As New LiveEncodedFramer(video)
+            Dim first As Byte() = framer.Feed(input.Take(split).ToArray())
+            Dim second As Byte() = framer.Feed(input.Skip(split).ToArray())
+            Assert.Equal(input, first.Concat(second).ToArray())
+            If video Then
+                Assert.Equal(0, first.Length Mod 188)
+                Assert.Equal(0, second.Length Mod 188)
+            Else
+                Assert.Equal(3, LiveAdtsFrames.CountFrames(first) + LiveAdtsFrames.CountFrames(second))
+            End If
+        Next
+    End Sub
+
+    <Fact>
+    Public Sub Relay_retains_tables_across_pulls_and_splits_before_a_later_keyframe()
+        Dim chunker As New LiveRelayTsChunker()
+        Assert.Empty(chunker.Feed(LiveTsBuilder.PatPacket()))
+        Dim headerCuts As List(Of LiveRelayCut) = chunker.Feed(LiveTsBuilder.PmtPacket())
+        Assert.True(headerCuts(0).Header)
+        Dim video As Byte() = LiveTsBuilder.VideoPesPacket(False).Concat(LiveTsBuilder.VideoPesPacket(True)).ToArray()
+        Dim cuts As List(Of LiveRelayCut) = chunker.Feed(video)
+        Assert.Equal(2, cuts.Count)
+        Assert.False(cuts(0).Joinable)
+        Assert.True(cuts(1).Joinable)
+        Assert.Equal(LiveTsBuilder.VideoPesPacket(True), cuts(1).Payload)
+    End Sub
+End Class
+
 Public Class LiveBroadcastServerTests
     Implements IDisposable
 
@@ -267,6 +355,54 @@ Public Class LiveBroadcastServerTests
             refused = True
         End Try
         Assert.True(refused, "acceptance 3: after the stop no port remains")
+    End Function
+
+    <Fact>
+    Public Async Function Password_protected_server_authenticates_requests() As Threading.Tasks.Task
+        Dim now As Long = 0
+        Dim hub As New LiveBroadcastHub(New LiveAudioJoinPolicy(), Function() now)
+        Dim port As Integer = LiveTestPorts.FreePort()
+        Dim config As New LiveServerConfig With {
+            .IcyName = "Protected PC",
+            .AudioHub = hub,
+            .Password = "secret123"
+        }
+        Dim server As LiveBroadcastServer = StartServer(IPAddress.Loopback, port, config)
+        Assert.Equal(LiveServerStartResult.Ok, server.Start())
+
+        ' No password -> 401 Unauthorized
+        Dim noAuthHead As String = Await RequestResponseHeadAsync(port, "/live-audio.aac", "")
+        Assert.StartsWith("HTTP/1.1 401 Unauthorized", noAuthHead)
+        Assert.Contains("WWW-Authenticate: Digest", noAuthHead)
+
+        ' Wrong password -> 401 Unauthorized
+        Dim wrongAuthHead As String = Await RequestResponseHeadAsync(port, "/live-audio.aac?pwd=wrong", "")
+        Assert.StartsWith("HTTP/1.1 401 Unauthorized", wrongAuthHead)
+
+        ' Passwords in URLs are not an authentication mechanism (LIVE-BROADCAST item M).
+        Dim queryHead As String = Await RequestResponseHeadAsync(port, "/live-audio.aac?pwd=secret123", "")
+        Assert.StartsWith("HTTP/1.1 401 Unauthorized", queryHead)
+
+        ' Basic is allowed only inside TLS at the relay, never at producer HTTP.
+        Dim basicCred As String = Convert.ToBase64String(Encoding.UTF8.GetBytes(":secret123"))
+        Dim basicHead As String = Await RequestResponseHeadAsync(port, "/live-audio.aac", "Authorization: Basic " & basicCred & ControlChars.CrLf)
+        Assert.StartsWith("HTTP/1.1 401 Unauthorized", basicHead)
+    End Function
+
+    <Fact>
+    Public Async Function A_real_http_client_answers_the_producers_digest_challenge() As Threading.Tasks.Task
+        Dim port As Integer = LiveTestPorts.FreePort()
+        Dim config As LiveServerConfig = AudioConfig(New LiveBroadcastHub(New LiveAudioJoinPolicy(), Function() 0L))
+        config.Password = "secret123"
+        Dim server As LiveBroadcastServer = StartServer(IPAddress.Loopback, port, config)
+        Assert.Equal(LiveServerStartResult.Ok, server.Start())
+        Using handler As New Http.HttpClientHandler With {.UseProxy = False, .Credentials = New NetworkCredential("listener", "secret123")}
+            Using client As New Http.HttpClient(handler) With {.Timeout = TimeSpan.FromSeconds(5)}
+                Using response As Http.HttpResponseMessage = Await client.GetAsync("http://127.0.0.1:" & port.ToString(Globalization.CultureInfo.InvariantCulture) & "/live-audio.aac", Http.HttpCompletionOption.ResponseHeadersRead)
+                    Assert.Equal(HttpStatusCode.OK, response.StatusCode)
+                End Using
+            End Using
+        End Using
     End Function
 
 End Class

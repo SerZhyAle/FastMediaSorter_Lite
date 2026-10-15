@@ -212,6 +212,8 @@ Friend NotInheritable Class ExchangeRecordReader
         If obj Is Nothing Then Return raw
         obj.Remove("access")
         obj.Remove("shareId")
+        obj.Remove("credentials")
+        obj.Remove("sealed")
         Return obj.ToJsonString()
     End Function
 

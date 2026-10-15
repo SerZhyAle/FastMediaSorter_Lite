@@ -2,6 +2,7 @@ package wire
 
 import (
 	"bytes"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"unicode/utf8"
@@ -235,3 +236,258 @@ func (e *CastStop) validate() error {
 	}
 	return required("receiverDeviceId", e.ReceiverDeviceID, maxTunnelID)
 }
+
+func (e *Register) validate() error {
+	// The contract's prose names (`invitation`, `invitationPassword`) are folded into the fold's names; the
+	// same member twice, under both names, is a malformed frame like "an invitation and a password".
+	if e.Invitation != "" {
+		if e.InvitationCode != "" {
+			return errors.New("invitation given twice")
+		}
+		e.InvitationCode, e.Invitation = e.Invitation, ""
+	}
+	if e.InvitationPassword != "" {
+		if e.SharedPassword != "" {
+			return errors.New("invitationPassword given twice")
+		}
+		e.SharedPassword, e.InvitationPassword = e.InvitationPassword, ""
+	}
+	if err := required("login", e.Login, maxLogin); err != nil {
+		return err
+	}
+	switch {
+	case e.InvitationCode != "" && e.SharedPassword != "":
+		return errors.New("an invitation and an invitationPassword together")
+	case e.InvitationCode == "" && e.SharedPassword == "":
+		return errors.New("an invitation or an invitationPassword is required")
+	case e.InvitationCode != "" && !ValidID(e.InvitationCode):
+		return errors.New("invitation is not 22 characters of 16 bytes")
+	case len(e.SharedPassword) > maxPassword || !utf8.ValidString(e.SharedPassword):
+		return errors.New("invitationPassword is out of bounds")
+	}
+	if len(e.Password) == 0 || len(e.Password) > maxPassword || !utf8.ValidString(e.Password) {
+		return errors.New("password is out of bounds")
+	}
+	if !ValidID(e.DeviceID) {
+		return errors.New("deviceId is not an id")
+	}
+	if err := required("deviceName", e.DeviceName, maxDeviceName); err != nil {
+		return err
+	}
+	if err := required("product", e.Product, maxProduct); err != nil {
+		return err
+	}
+	if !textOK(e.ProductVersion, maxVersion) || !textOK(e.Platform, maxPlatform) {
+		return errors.New("productVersion or platform is out of bounds")
+	}
+	if len(e.Capabilities) > maxRoles {
+		return errors.New("too many capabilities")
+	}
+	for _, capability := range e.Capabilities {
+		if !textOK(capability, 32) {
+			return errors.New("a capability is out of bounds")
+		}
+	}
+	if len(e.Roles) > maxRoles {
+		return errors.New("too many roles")
+	}
+	for _, r := range e.Roles {
+		if !textOK(r, 32) {
+			return errors.New("a role is out of bounds")
+		}
+	}
+	if t := bytes.TrimSpace(e.Receiver); string(t) == "null" {
+		e.Receiver = nil
+	}
+	if len(e.Receiver) > 0 {
+		var m map[string]json.RawMessage
+		if err := json.Unmarshal(e.Receiver, &m); err != nil {
+			return errors.New("receiver is not a JSON object")
+		}
+	}
+	return nil
+}
+
+func (e *PasswordChange) validate() error {
+	if len(e.OldPassword) == 0 || len(e.OldPassword) > maxPassword || !utf8.ValidString(e.OldPassword) {
+		return errors.New("oldPassword is out of bounds")
+	}
+	if len(e.NewPassword) == 0 || len(e.NewPassword) > maxPassword || !utf8.ValidString(e.NewPassword) {
+		return errors.New("newPassword is out of bounds")
+	}
+	return nil
+}
+
+func (e *PasswordChanged) validate() error {
+	if !ValidToken(e.DeviceToken) {
+		return errors.New("deviceToken is not a token")
+	}
+	return nil
+}
+
+func (e *AccountDelete) validate() error {
+	if len(e.Password) == 0 || len(e.Password) > maxPassword || !utf8.ValidString(e.Password) {
+		return errors.New("password is out of bounds")
+	}
+	return nil
+}
+
+func (e *AccountDeleted) validate() error { return nil }
+
+// --- the clipboard (section 22) ---
+
+// Bounds of item BW: a name is at most 255 bytes of UTF-8, a mimeType at most 127 in the
+// type/subtype form. A clipboard-put that breaks any of these is an invalid envelope and closes
+// the stream (7.1) - the same treatment as every member outside its bounds (item AN).
+const (
+	maxClipName = 255
+	maxMimeType = 127
+)
+
+// ClipKinds are the kinds of one clipboard value (item BU). A fourth kind arrives with the sealed
+// amendment and is not this server's until then.
+var ClipKinds = []string{"text", "image", "file"}
+
+// ValidClipName reports whether s is a name a clipboard value may carry: at most 255 bytes of
+// UTF-8, no slash, no backslash, no control character, never "." or "..".
+func ValidClipName(s string) bool {
+	if s == "" || len(s) > maxClipName || !utf8.ValidString(s) || s == "." || s == ".." {
+		return false
+	}
+	for i := 0; i < len(s); i++ {
+		if c := s[i]; c < 0x20 || c == 0x7f || c == '/' || c == '\\' {
+			return false
+		}
+	}
+	return true
+}
+
+// ValidClipMimeType reports whether s is a media type in the type/subtype form, at most 127 bytes
+// of printable ASCII with exactly one slash and no empty side.
+func ValidClipMimeType(s string) bool {
+	if s == "" || len(s) > maxMimeType {
+		return false
+	}
+	slash := -1
+	for i := 0; i < len(s); i++ {
+		c := s[i]
+		switch {
+		case c == '/':
+			if slash >= 0 {
+				return false
+			}
+			slash = i
+		case c < '!' || c > '~':
+			return false // space and control characters are not a media type
+		}
+	}
+	return slash > 0 && slash < len(s)-1
+}
+
+func (e *ClipboardPut) validate() error {
+	switch e.Kind {
+	case "text":
+		if e.MimeType != "" {
+			return errors.New("a text carries no mimeType")
+		}
+		if e.Name != "" {
+			return errors.New("a text carries no name")
+		}
+	case "image":
+		if !ValidClipMimeType(e.MimeType) {
+			return errors.New("an image needs a mimeType")
+		}
+		if e.Name != "" && !ValidClipName(e.Name) {
+			return errors.New("name is out of bounds")
+		}
+	case "file":
+		if !ValidClipMimeType(e.MimeType) {
+			return errors.New("a file needs a mimeType")
+		}
+		if !ValidClipName(e.Name) {
+			return errors.New("a file needs a name")
+		}
+	default:
+		return errors.New("kind is text, image or file")
+	}
+	if e.Size < 1 {
+		return errors.New("size is at least 1")
+	}
+	return nil
+}
+
+func (e *ClipboardStored) validate() error {
+	if !ValidID(e.ClipID) {
+		return errors.New("clipId is not an id")
+	}
+	if !ValidSHA256(e.SHA256) {
+		return errors.New("sha256 is not a SHA-256")
+	}
+	if _, err := ParseTime(e.StoredAt); err != nil {
+		return errors.New("storedAt is not a time")
+	}
+	return nil
+}
+
+func (e *ClipboardGet) validate() error {
+	if e.ClipID != "" && !ValidID(e.ClipID) {
+		return errors.New("clipId is not an id")
+	}
+	return nil
+}
+
+func bodyValidate(v *ClipboardValueBody) error {
+	if v.ClipID != "" && !ValidID(v.ClipID) {
+		return errors.New("clipId is not an id")
+	}
+	if v.Size < 0 {
+		return errors.New("size is out of bounds")
+	}
+	if v.SHA256 != "" && !ValidSHA256(v.SHA256) {
+		return errors.New("sha256 is not a SHA-256")
+	}
+	if v.StoredAt != "" {
+		if _, err := ParseTime(v.StoredAt); err != nil {
+			return errors.New("storedAt is not a time")
+		}
+	}
+	if !textOK(v.SourceDeviceID, maxTunnelID) || !textOK(v.SourceDeviceName, maxDeviceName) {
+		return errors.New("a source device member is out of bounds")
+	}
+	switch v.Kind {
+	case "":
+		if v.MimeType != "" || v.Name != "" {
+			return errors.New("metadata without a kind")
+		}
+	case "text":
+		if v.MimeType != "" || v.Name != "" {
+			return errors.New("a text carries no mimeType and no name")
+		}
+	case "image":
+		if !ValidClipMimeType(v.MimeType) {
+			return errors.New("an image needs a mimeType")
+		}
+		if v.Name != "" && !ValidClipName(v.Name) {
+			return errors.New("name is out of bounds")
+		}
+	case "file":
+		if !ValidClipMimeType(v.MimeType) {
+			return errors.New("a file needs a mimeType")
+		}
+		if !ValidClipName(v.Name) {
+			return errors.New("a file needs a name")
+		}
+	default:
+		return errors.New("kind is text, image or file")
+	}
+	return nil
+}
+
+func (e *ClipboardState) validate() error {
+	if e.Value == nil {
+		return nil
+	}
+	return bodyValidate(e.Value)
+}
+
+func (e *ClipboardValue) validate() error { return bodyValidate(&e.ClipboardValueBody) }

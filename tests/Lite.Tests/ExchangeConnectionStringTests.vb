@@ -66,6 +66,7 @@ Friend NotInheritable Class ExchangeConnectionStringCorpus
         Public Fp As String = ""
         Public N As String = ""
         Public U As String = ""
+        Public I As String = ""
     End Class
 
     Friend Shared Function Load() As List(Of VectorCase)
@@ -90,6 +91,7 @@ Friend NotInheritable Class ExchangeConnectionStringCorpus
                     c.Fp = Str(f, "fp")
                     c.N = Str(f, "n")
                     c.U = Str(f, "u")
+                    c.I = Str(f, "i")
                 End If
                 list.Add(c)
             Next
@@ -146,7 +148,7 @@ Public Class ExchangeConnectionStringTests
                 Continue For
             End If
             Dim v As ExchangeConnectionStringValue = r.Value
-            If Not c.HasFields OrElse v.Endpoint <> c.X OrElse v.Host <> c.Host OrElse v.Port <> c.Port OrElse v.Fingerprint <> c.Fp OrElse v.Name <> c.N OrElse v.Login <> c.U Then
+            If Not c.HasFields OrElse v.Endpoint <> c.X OrElse v.Host <> c.Host OrElse v.Port <> c.Port OrElse v.Fingerprint <> c.Fp OrElse v.Name <> c.N OrElse v.Login <> c.U OrElse v.Invitation <> c.I Then
                 failures.Add(c.Name & ": members differ (" & v.Endpoint & " / " & v.Fingerprint & " / " & v.Name & " / " & v.Login & ")")
             End If
             Dim refusal As ExchangeConnectionStringResult = Nothing
@@ -203,6 +205,55 @@ Public Class ExchangeConnectionStringTests
         Assert.Equal("[2001:db8::7]:22022", r.Value.Endpoint)
         Assert.False(ExchangeConnectionString.Build("[fe80::1%eth0]:22022", "", "", "").Succeeded)
         Assert.False(ExchangeConnectionString.Build("2001:db8::7:22022", "", "", "").Succeeded)
+    End Sub
+
+    ' ---- ticket 224 rule 1 / 226 rule 1: the invitation the string carries ---------------------------------
+
+    ''' <summary>An invitation id in the wire's own form: 22 characters of base64url that decode to 16 bytes.</summary>
+    Private Const InvitationId As String = "QPmYv_VdgvQYk9Y5TS241A"
+
+    <Fact>
+    Public Sub An_invitation_string_parses_and_round_trips_with_the_code_last()
+        Dim text As String = "FMSEXCH1:x=exchange.example.org%3A22022&fp=SHA256%3AAAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8&n=Home+NAS&u=carol&i=" & InvitationId
+        Dim r As ExchangeConnectionStringResult = ExchangeConnectionString.Parse(text)
+        Assert.True(r.Succeeded, r.Reason)
+        Assert.Equal(InvitationId, r.Value.Invitation)
+        Assert.Equal("carol", r.Value.Login)
+        Dim refusal As ExchangeConnectionStringResult = Nothing
+        Assert.Equal(text, ExchangeConnectionString.Format(r.Value, refusal))
+        ' a value built the operator's way carries the same code
+        Dim built As ExchangeConnectionStringResult = ExchangeConnectionString.Build("Exchange.Example.org:22022", "SHA256:AAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8", "Home NAS", "carol", InvitationId)
+        Assert.True(built.Succeeded, built.Reason)
+        Assert.Equal(InvitationId, built.Value.Invitation)
+    End Sub
+
+    <Fact>
+    Public Sub A_plain_string_carries_no_invitation()
+        Dim r As ExchangeConnectionStringResult = ExchangeConnectionString.Parse("FMSEXCH1:x=192.0.2.10%3A22022")
+        Assert.True(r.Succeeded)
+        Assert.Equal("", r.Value.Invitation)
+        Assert.Equal("", ExchangeConnectionString.Build("192.0.2.10:22022", "", "", "").Value.Invitation)
+    End Sub
+
+    <Fact>
+    Public Sub A_bad_invitation_is_refused_by_name()
+        Assert.Equal("bad-i", ExchangeConnectionStringReason.BadInv)
+        Assert.Equal(ExchangeConnectionStringReason.BadInv, ExchangeConnectionString.Parse("FMSEXCH1:x=a.b%3A1&i=short").Reason)
+        Assert.Equal(ExchangeConnectionStringReason.BadInv, ExchangeConnectionString.Parse("FMSEXCH1:x=a.b%3A1&i=" & New String("A"c, 23)).Reason)
+        Assert.Equal(ExchangeConnectionStringReason.BadInv, ExchangeConnectionString.Parse("FMSEXCH1:x=a.b%3A1&i=QPmYv_VdgvQYk9Y5TS241%2F").Reason)
+        ' a second spelling of the same 16 bytes (the last character's low bits set) is not an id either
+        Assert.Equal(ExchangeConnectionStringReason.BadInv, ExchangeConnectionString.Parse("FMSEXCH1:x=a.b%3A1&i=" & InvitationId.Substring(0, 21) & "B").Reason)
+        Assert.Equal(ExchangeConnectionStringReason.BadInv, ExchangeConnectionString.Parse("FMSEXCH1:x=a.b%3A1&i=").Reason)
+        Assert.Equal(ExchangeConnectionStringReason.RepeatedKey, ExchangeConnectionString.Parse("FMSEXCH1:x=a.b%3A1&i=" & InvitationId & "&i=" & InvitationId).Reason)
+        Assert.False(ExchangeConnectionString.Build("a.b:1", "", "", "", "not-an-invitation").Succeeded)
+    End Sub
+
+    <Fact>
+    Public Sub The_invitation_code_is_a_capability_id_not_a_secret_of_other_families()
+        ' the member is named `i` (DEVICE-EXCHANGE item AR) and no other spelling is read
+        Dim r As ExchangeConnectionStringResult = ExchangeConnectionString.Parse("FMSEXCH1:x=a.b%3A1&invitation=" & InvitationId)
+        Assert.True(r.Succeeded)
+        Assert.Equal("", r.Value.Invitation)
     End Sub
 End Class
 #End If

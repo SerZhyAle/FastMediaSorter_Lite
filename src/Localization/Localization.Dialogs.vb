@@ -270,6 +270,81 @@ Partial Public NotInheritable Class Localization
             "Don't save", "Не зберігати", "Nicht speichern", "Non salvare", "No guardar",
             "Ne pas enregistrer", "Não salvar", "عدم الحفظ", "सहेजें नहीं",
             "সংরক্ষণ করবেন না", "محفوظ نہ کریں", "不保存")
+
+        ' --- values that used to be glued to a translated fragment (124 UX-217, the sweep of 2026-10-13) ----------
+        ' Each is ONE sentence with its value in a placeholder: where the value goes, and in which direction the
+        ' words read around it, is the translator's to decide - a concatenation decides it for all 13 languages.
+        Add("{0} · {1}",
+            "{0} · {1}", "{0} · {1}", "{0} · {1}", "{0} · {1}", "{0} · {1}", "{0} · {1}",
+            "{0} · {1}", "{0} · {1}", "{0} · {1}", "{0} · {1}", "{0} · {1}", "{0} · {1}")
+        ' The "Save as.." default name: the stem, a translated marker, the extension.
+        Add("{0} (ред.){1}",
+            "{0} (edited){1}", "{0} (ред.){1}", "{0} (bearbeitet){1}", "{0} (modificata){1}", "{0} (editada){1}",
+            "{0} (modifiée){1}", "{0} (editada){1}", "{0} (معدَّل){1}", "{0} (संपादित){1}", "{0} (সম্পাদিত){1}",
+            "{0} (ترمیم شدہ){1}", "{0}（已编辑）{1}")
+        ' A file dialog filter pair: the label, the bar, the pattern list - one string, so the label is not glued.
+        Add("Архивы|{0}",
+            "Archives|{0}", "Архіви|{0}", "Archive|{0}", "Archivi|{0}", "Archivos comprimidos|{0}", "Archives|{0}",
+            "Arquivos compactados|{0}", "الأرشيفات|{0}", "संग्रह|{0}", "আর্কাইভ|{0}", "آرکائیوز|{0}", "压缩包|{0}")
+        Add("Проверка контейнера.. {0}/{1}",
+            "Verifying the container.. {0}/{1}", "Перевірка контейнера.. {0}/{1}", "Container wird geprüft.. {0}/{1}",
+            "Verifica del contenitore.. {0}/{1}", "Verificando el contenedor.. {0}/{1}", "Vérification du conteneur.. {0}/{1}",
+            "Verificando o contêiner.. {0}/{1}", "جارٍ التحقّق من الحاوية.. {0}/{1}", "कंटेनर की जाँच हो रही है.. {0}/{1}",
+            "কন্টেইনার যাচাই করা হচ্ছে.. {0}/{1}", "کنٹینر کی جانچ ہو رہی ہے.. {0}/{1}", "正在校验容器.. {0}/{1}")
+        Add("Модель установлена: {0}",
+            "Model installed: {0}", "Модель встановлено: {0}", "Modell installiert: {0}",
+            "Modello installato: {0}", "Modelo instalado: {0}", "Modèle installé : {0}",
+            "Modelo instalado: {0}", "تم تثبيت النموذج: {0}", "मॉडल इंस्टॉल हुआ: {0}",
+            "মডেল ইনস্টল হয়েছে: {0}", "ماڈل انسٹال ہوا: {0}", "模型已安装：{0}")
+        Add("Готово: пакет {0}",
+            "Ready: pack {0}", "Готово: пакет {0}", "Fertig: Paket {0}",
+            "Pronto: pacchetto {0}", "Listo: paquete {0}", "Prêt : pack {0}",
+            "Pronto: pacote {0}", "جاهز: الحزمة {0}", "तैयार: पैक {0}",
+            "প্রস্তুত: প্যাক {0}", "تیار: پیک {0}", "完成：语言包 {0}")
+
+        ' --- the text document: select, copy, and the F1 rows that say so (124 UX-216) ------------------------
+        Add("Нечего копировать - выделите текст мышью или нажмите Ctrl+A",
+            "Nothing to copy - select text with the mouse or press Ctrl+A", "Нічого копіювати - виділіть текст мишею або натисніть Ctrl+A",
+            "Nichts zu kopieren - Text mit der Maus markieren oder Strg+A drücken",
+            "Niente da copiare - seleziona il testo con il mouse o premi Ctrl+A", "Nada que copiar - seleccione texto con el ratón o pulse Ctrl+A",
+            "Rien à copier - sélectionnez du texte à la souris ou appuyez sur Ctrl+A",
+            "Nada para copiar - selecione o texto com o rato ou prima Ctrl+A", "لا شيء لنسخه - حدّد النص بالفأرة أو اضغط Ctrl+A",
+            "कॉपी करने के लिए कुछ नहीं - माउस से पाठ चुनें या Ctrl+A दबाएँ",
+            "কপি করার কিছু নেই - মাউস দিয়ে লেখা বেছে নিন বা Ctrl+A চাপুন", "کاپی کرنے کو کچھ نہیں - ماؤس سے متن منتخب کریں یا Ctrl+A دبائیں",
+            "没有可复制的内容 - 请用鼠标选择文本或按 Ctrl+A")
+        Add("Скопировано символов: {0}",
+            "Characters copied: {0}", "Скопійовано символів: {0}", "Zeichen kopiert: {0}",
+            "Caratteri copiati: {0}", "Caracteres copiados: {0}", "Caractères copiés : {0}",
+            "Caracteres copiados: {0}", "عدد الأحرف المنسوخة: {0}", "कॉपी किए गए वर्ण: {0}",
+            "কপি করা অক্ষর: {0}", "کاپی کیے گئے حروف: {0}", "已复制字符数：{0}")
+        Add("Выделено символов: {0}",
+            "Characters selected: {0}", "Виділено символів: {0}", "Zeichen markiert: {0}",
+            "Caratteri selezionati: {0}", "Caracteres seleccionados: {0}", "Caractères sélectionnés : {0}",
+            "Caracteres selecionados: {0}", "عدد الأحرف المحدّدة: {0}", "चुने गए वर्ण: {0}",
+            "নির্বাচিত অক্ষর: {0}", "منتخب حروف: {0}", "已选择字符数：{0}")
+        Add("Текстовый файл: выделить всё / копировать выделенное",
+            "Text file: select all / copy the selection", "Текстовий файл: виділити все / копіювати виділене",
+            "Textdatei: alles markieren / Markierung kopieren",
+            "File di testo: seleziona tutto / copia la selezione", "Archivo de texto: seleccionar todo / copiar la selección",
+            "Fichier texte : tout sélectionner / copier la sélection",
+            "Ficheiro de texto: selecionar tudo / copiar a seleção", "ملف نصي: تحديد الكل / نسخ المحدّد",
+            "पाठ फ़ाइल: सब चुनें / चुना हुआ कॉपी करें",
+            "টেক্সট ফাইল: সব নির্বাচন / নির্বাচিত অংশ কপি", "متنی فائل: سب منتخب کریں / منتخب کاپی کریں",
+            "文本文件：全选 / 复制所选内容")
+        Add("Протяжка по тексту",
+            "Drag over text", "Перетягування по тексту", "Über Text ziehen",
+            "Trascina sul testo", "Arrastrar sobre el texto", "Glisser sur le texte",
+            "Arrastar sobre o texto", "السحب فوق النص", "पाठ पर खींचना",
+            "লেখার উপর টানা", "متن پر گھسیٹنا", "在文本上拖动")
+        Add("Выделить текст в текстовом файле (Esc - снять)",
+            "Select text in a text file (Esc clears)", "Виділити текст у текстовому файлі (Esc - зняти)",
+            "Text in einer Textdatei markieren (Esc hebt auf)",
+            "Seleziona il testo in un file di testo (Esc annulla)", "Seleccionar texto en un archivo de texto (Esc lo quita)",
+            "Sélectionner du texte dans un fichier texte (Échap annule)",
+            "Selecionar texto num ficheiro de texto (Esc remove)", "تحديد النص في ملف نصي (Esc للإلغاء)",
+            "पाठ फ़ाइल में पाठ चुनें (Esc हटाता है)",
+            "টেক্সট ফাইলে লেখা নির্বাচন করুন (Esc সরায়)", "متنی فائل میں متن منتخب کریں (Esc ہٹاتا ہے)",
+            "在文本文件中选择文本（Esc 取消选择）")
     End Sub
 
 End Class

@@ -1,4 +1,4 @@
-﻿Option Explicit On
+Option Explicit On
 Option Strict On
 Option Infer On
 Option Compare Binary
@@ -142,6 +142,7 @@ Partial Public NotInheritable Class Share_Settings_Form
             Case "hosting" : Return Localization.T("Режим работы и служба общего доступа.")
             Case "exchange" : Return Localization.T("Сервер обмена, порты и учётные записи.")
             Case "exchange-account" : Return Localization.T("Подключение этого ПК к серверу обмена.")
+            Case "scheduled" : Return Localization.T("Копирование, перенос, удаление и архивация файлов по расписанию или вручную.")
             Case Else : Return Localization.T("Версия, лицензия, документация и помощь.")
         End Select
     End Function
@@ -289,6 +290,10 @@ Partial Public NotInheritable Class Share_Settings_Form
     ''' filter instead of leaking into the sub-menu's view.</summary>
     Private Sub ApplySettingsItemFilter(pageId As String)
         Dim suppressed = _filteredOut(pageId)
+        ' One layout pass for the whole filter: every row's Visible used to relayout the page tree on its
+        ' own, so choosing a sub-menu item repainted the pane dozens of times (seconds at a high DPI).
+        Dim body = SettingsSections().First(Function(s As CollapsibleSection) s.Key = pageId).Body
+        body.SuspendLayout()
         _applyingItemFilter = True
         Try
             For Each row In suppressed
@@ -305,6 +310,7 @@ Partial Public NotInheritable Class Share_Settings_Form
             Next
         Finally
             _applyingItemFilter = False
+            body.ResumeLayout(True)
         End Try
     End Sub
 

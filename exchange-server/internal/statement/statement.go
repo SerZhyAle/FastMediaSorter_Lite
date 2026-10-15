@@ -7,7 +7,15 @@
 // deployment that hosts other people's accounts it is a limit they must know.
 package statement
 
-import "strings"
+import (
+	"fmt"
+	"strings"
+)
+
+// WithRetention includes the deployment's actual retention, never a hardcoded operator claim.
+func WithRetention(days int) string {
+	return Text() + fmt.Sprintf("\n\nLogs use UTC day files and are kept for %d days, with daily cleanup and a per-file size cap.", days)
+}
 
 // Point is one sentence-sized fact of the statement.
 type Point struct {
@@ -33,6 +41,10 @@ var Points = []Point{
 	{"flat-trust", "Every device of an account trusts every other device of that account fully: any device can remove " +
 		"another, ask for pairing codes and read the access details of every shared folder of the account. A device " +
 		"can always remove itself."},
+	{"clipboard-visible", "The last value sent to a clipboard of this server - a text, a picture or one file, within " +
+		"the account's size limit - sits in this server's memory and nowhere else: never written to disk, never logged, " +
+		"and lost when the server restarts. While it sits there the operator can read it in the clear; one account holds " +
+		"one value, the newest that arrived whole."},
 }
 
 // Text is the whole statement as plain paragraphs.

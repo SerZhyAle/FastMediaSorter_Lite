@@ -1,4 +1,4 @@
-﻿#If Not NETFRAMEWORK Then
+#If Not NETFRAMEWORK Then
 Option Strict On
 
 Imports System.Collections.Generic
@@ -191,6 +191,10 @@ Friend Module ResourceCommit
         If Not String.IsNullOrEmpty(target.TunnelSecretHandle) AndAlso Not IsReferenced(remaining, target.TunnelSecretHandle) Then
             SafeDelete(secrets, target.TunnelSecretHandle)
         End If
+        ' a stored root PIN goes with the resource if no other resource references it (spec 228 rule 8)
+        If Not String.IsNullOrEmpty(target.PinSecretHandle) AndAlso Not IsReferenced(remaining, target.PinSecretHandle) Then
+            SafeDelete(secrets, target.PinSecretHandle)
+        End If
         Return New ResourceCommitResult(ResourceCommitOutcome.Committed)
     End Function
 
@@ -206,6 +210,80 @@ Friend Module ResourceCommit
         Return If(opened.Succeeded, New CredentialReadResult(CredentialReadOutcome.Ok, opened.Value),
                   New CredentialReadResult(CredentialReadOutcome.NeedsReentry))
     End Function
+
+    ''' <summary>Reads a resource's stored PIN (spec 228 rule 8). Returns Missing if no PIN is stored.</summary>
+    Friend Function ReadPin(descriptor As ResourceDescriptor, secrets As IResourceSecretStore,
+                            Optional unprotect As Func(Of String, SecretProtectionResult) = Nothing) As CredentialReadResult
+        If descriptor Is Nothing OrElse String.IsNullOrEmpty(descriptor.PinSecretHandle) Then Return New CredentialReadResult(CredentialReadOutcome.Missing)
+        Dim blob As String = secrets.GetBlob(descriptor.PinSecretHandle)
+        If String.IsNullOrEmpty(blob) Then Return New CredentialReadResult(CredentialReadOutcome.Missing)
+        Dim opener As Func(Of String, SecretProtectionResult) = If(unprotect, Function(s As String) DpapiSecretChecks.UnprotectChecked(s))
+        Dim opened As SecretProtectionResult = opener(blob)
+        Return If(opened.Succeeded, New CredentialReadResult(CredentialReadOutcome.Ok, opened.Value),
+                  New CredentialReadResult(CredentialReadOutcome.NeedsReentry))
+    End Function
+
+    ''' <summary>Saves a resource's PIN under DPAPI (spec 228 rule 8) and updates the registry.</summary>
+    Friend Function SavePin(descriptor As ResourceDescriptor, pin As String,
+                            readValue As Func(Of String, String), writeValue As Action(Of String, String),
+                            secrets As IResourceSecretStore,
+                            Optional protect As Func(Of String, SecretProtectionResult) = Nothing) As Boolean
+        If descriptor Is Nothing OrElse String.IsNullOrEmpty(pin) Then Return False
+        Dim protector As Func(Of String, SecretProtectionResult) = If(protect, Function(s As String) DpapiSecretChecks.ProtectChecked(s))
+        Dim protectedPin As SecretProtectionResult = protector(pin)
+        If Not protectedPin.Succeeded Then Return False
+
+        Dim newHandle As String = "pin:" & Guid.NewGuid().ToString("N")
+        Try
+            secrets.PutBlob(newHandle, protectedPin.Value)
+        Catch ex As Exception
+            SafeDelete(secrets, newHandle)
+            Return False
+        End Try
+
+        Dim oldHandle As String = descriptor.PinSecretHandle
+        descriptor.PinSecretHandle = newHandle
+        descriptor.PinChanged = False
+
+        Dim current As List(Of ResourceDescriptor) = ResourceRegistry.Parse(readValue("Resources"))
+        Dim existing As ResourceDescriptor = current.FirstOrDefault(Function(r) String.Equals(r.Id, descriptor.Id, StringComparison.OrdinalIgnoreCase))
+        If existing IsNot Nothing Then
+            existing.PinSecretHandle = newHandle
+            existing.PinChanged = False
+        Else
+            current.Add(descriptor)
+        End If
+
+        Try
+            ResourceRegistry.Save(current, readValue, writeValue)
+        Catch ex As Exception
+            SafeDelete(secrets, newHandle)
+            descriptor.PinSecretHandle = oldHandle
+            Return False
+        End Try
+
+        If Not String.IsNullOrEmpty(oldHandle) AndAlso Not IsReferenced(current, oldHandle) Then
+            SafeDelete(secrets, oldHandle)
+        End If
+        Return True
+    End Function
+
+    ''' <summary>Marks a resource's stored PIN as changed after authentication failure (spec 228 rule 8).</summary>
+    Friend Sub MarkPinChanged(descriptor As ResourceDescriptor, readValue As Func(Of String, String), writeValue As Action(Of String, String))
+        If descriptor Is Nothing Then Return
+        descriptor.PinChanged = True
+        ResourcePinMemory.Forget(descriptor)
+        Try
+            Dim current As List(Of ResourceDescriptor) = ResourceRegistry.Parse(readValue("Resources"))
+            Dim existing As ResourceDescriptor = current.FirstOrDefault(Function(r) String.Equals(r.Id, descriptor.Id, StringComparison.OrdinalIgnoreCase))
+            If existing IsNot Nothing Then
+                existing.PinChanged = True
+                ResourceRegistry.Save(current, readValue, writeValue)
+            End If
+        Catch ex As Exception
+            AppFileLogger.LogException("Resource: marking PinChanged", ex)
+        End Try
+    End Sub
 
     ''' <summary>Deletes secrets no registry record references. Run explicitly, never from a
     ''' failure path: an orphan is harmless, a deleted live credential is not.</summary>
@@ -223,7 +301,8 @@ Friend Module ResourceCommit
 
     Private Function IsReferenced(resources As IEnumerable(Of ResourceDescriptor), handle As String) As Boolean
         Return resources.Any(Function(r) String.Equals(r.SecretHandle, handle, StringComparison.Ordinal) OrElse
-                                         String.Equals(r.TunnelSecretHandle, handle, StringComparison.Ordinal))
+                                         String.Equals(r.TunnelSecretHandle, handle, StringComparison.Ordinal) OrElse
+                                         String.Equals(r.PinSecretHandle, handle, StringComparison.Ordinal))
     End Function
 
     Private Sub SafeDelete(secrets As IResourceSecretStore, handle As String)

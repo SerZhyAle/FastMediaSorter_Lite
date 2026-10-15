@@ -36,21 +36,13 @@ Imports System.Windows.Forms
 ' what the static painter does once per image, would be ~30x that work per second).
 Partial Public Class Main_Form
 
-    ''' <summary>Time the halo takes to grow from the photo edge out to the screen edge
-    ''' at the SLOW setting - the timing this effect shipped with. Medium (the default)
-    ''' halves it and Fast quarters it; see HaloDurationMs.</summary>
-    Private Const halo_Duration_Slow_Ms As Double = 350
-
-    Private Const halo_Frame_Interval_Ms As Integer = 15
-
-    ''' <summary>Shape of the fade across the halo: alpha(background) = distance ^ gamma,
-    ''' distance being 0 at the photo edge and 1 at the screen edge. Above 1 the edge
-    ''' colour holds near the photo and drops off further out (a glow); 1.0 would be a
-    ''' flat linear wash across the whole bar.</summary>
-    Private Const halo_Falloff_Gamma As Double = 1.4
-
-    ''' <summary>Stops used to approximate the gamma curve in the gradient brush.</summary>
-    Private Const halo_Blend_Stops As Integer = 12
+    ' THE NUMBERS ARE NOT HERE. The growth time (350 ms at Slow, halved for Medium, quartered for
+    ' Fast), the 15 ms frame, the fade's shape - alpha(background) = distance ^ 1.4, distance 0 at
+    ' the photo edge and 1 at the screen edge, so the edge colour holds near the photo and drops
+    ' off further out - and its 12 gradient stops, the ease-out, the reach and the underlay's
+    ' opacity all live once in LetterboxFillMath (LETTERBOX-HALO 0.1 rules 2-7), held to the
+    ' catalog's vectors by LetterboxFillConformanceTests. This file keeps the GDI+ painting and the
+    ' timer.
 
     ''' <summary>The full-strength bars from Draw_Perspective - the clean source every
     ''' frame is recomposed from. We own it; Nothing once the halo is at rest.</summary>
@@ -84,7 +76,7 @@ Partial Public Class Main_Form
     ''' <summary>Duration of the RUNNING growth, snapshotted when it started. Read from
     ''' the setting once per animation rather than once per frame, so switching the speed
     ''' mid-flight cannot make a halo jump: the change lands on the next photo.</summary>
-    Private halo_Running_Duration_Ms As Double = halo_Duration_Slow_Ms / 2.0
+    Private halo_Running_Duration_Ms As Double = LetterboxFillMath.HaloDurationMs("medium")
 
     ''' <summary>True = pillarbox (left/right bars), False = letterbox (top/bottom).
     ''' Mirrors the branch Draw_Perspective actually painted, so we never fade an axis
@@ -93,7 +85,7 @@ Partial Public Class Main_Form
 
     Private ReadOnly halo_Clock As New Stopwatch()
 
-    Private WithEvents halo_Timer As New System.Windows.Forms.Timer() With {.Interval = halo_Frame_Interval_Ms}
+    Private WithEvents halo_Timer As New System.Windows.Forms.Timer() With {.Interval = LetterboxFillMath.FrameIntervalMs}
 
     ''' <summary>Picture box the running halo is painting into, or Nothing.</summary>
     Private Function HaloTargetBox() As PictureBox
@@ -102,23 +94,13 @@ Partial Public Class Main_Form
         Return Nothing
     End Function
 
-    ''' <summary>How long the growth should take at the user's chosen speed: the shipped
-    ''' 350 ms as Slow, half of it as Medium (the default) and a quarter as Fast. Only the
-    ''' duration changes - the 15 ms frame cap stays, so Fast simply draws fewer frames
-    ''' (about six plus the starting one) instead of drawing them harder.</summary>
+    ''' <summary>How long the growth should take at the user's chosen speed (LETTERBOX-HALO rule 5,
+    ''' LetterboxFillMath.HaloDurationMs): the shipped 350 ms as Slow, half of it as Medium (the
+    ''' default) and a quarter as Fast. Only the duration changes - the 15 ms frame cap stays, so
+    ''' Fast simply draws fewer frames (about six plus the starting one) instead of drawing them
+    ''' harder.</summary>
     Private Shared Function HaloDurationMs() As Double
-        Select Case Halo_Animation_Speed
-            Case HaloAnimationSpeed.Slow : Return halo_Duration_Slow_Ms
-            Case HaloAnimationSpeed.Fast : Return halo_Duration_Slow_Ms / 4.0
-            Case Else : Return halo_Duration_Slow_Ms / 2.0
-        End Select
-    End Function
-
-    ''' <summary>Ease-out: the halo springs out and settles, instead of crawling at a
-    ''' constant rate and stopping dead at the screen edge.</summary>
-    Private Shared Function HaloEase(progress As Double) As Double
-        Dim p As Double = Math.Max(0.0, Math.Min(1.0, progress))
-        Return 1.0 - (1.0 - p) * (1.0 - p)
+        Return LetterboxFillMath.HaloDurationMs(HaloSpeedToSetting(Halo_Animation_Speed))
     End Function
 
     ''' <summary>Takes over the finished perspective bars and drives the surface from
@@ -273,11 +255,10 @@ Partial Public Class Main_Form
         End If
 
         ' Against the clock, not against a tick count: a frame the system timer skipped is
-        ' caught up by the elapsed time, and the last frame is always exactly 1.0.
-        Dim duration As Double = If(halo_Running_Duration_Ms > 0.0, halo_Running_Duration_Ms, halo_Duration_Slow_Ms)
-        Dim progress As Double = halo_Clock.Elapsed.TotalMilliseconds / duration
-        Dim finished As Boolean = progress >= 1.0
-        If finished Then progress = 1.0
+        ' caught up by the elapsed time, and the last frame is always exactly 1.0
+        ' (LETTERBOX-HALO rule 6).
+        Dim finished As Boolean
+        Dim progress As Double = LetterboxFillMath.HaloProgress(halo_Clock.Elapsed.TotalMilliseconds, halo_Running_Duration_Ms, finished)
 
         Try
             RenderHaloFrame(progress)
@@ -304,7 +285,7 @@ Partial Public Class Main_Form
     ''' <summary>Repaints the frame for one point in the growth: the clean bars, then a
     ''' background ramp over each bar reaching `eased * barWidth` out from the photo.</summary>
     Private Sub RenderHaloFrame(progress As Double)
-        Dim eased As Double = HaloEase(progress)
+        Dim eased As Double = LetterboxFillMath.HaloEase(progress)
         Dim background As Color = Color.FromArgb(255, Me.BackColor.R, Me.BackColor.G, Me.BackColor.B)
         Dim width As Integer = halo_Frame.Width
         Dim height As Integer = halo_Frame.Height
@@ -348,7 +329,7 @@ Partial Public Class Main_Form
     Private Sub PaintHaloUnderlay(g As Graphics, eased As Double)
         If halo_Underlay Is Nothing Then Return
 
-        Dim fade As Single = CSng(Math.Max(0.0, Math.Min(1.0, 1.0 - eased)))
+        Dim fade As Single = CSng(LetterboxFillMath.UnderlayOpacity(eased))
         If fade <= 0.0F Then Return
 
         Dim area As New Rectangle(0, 0, halo_Frame.Width, halo_Frame.Height)
@@ -374,7 +355,7 @@ Partial Public Class Main_Form
         If barRect.Width <= 0 OrElse barRect.Height <= 0 Then Return
 
         Dim maxDistance As Integer = If(horizontal, barRect.Width, barRect.Height)
-        Dim reach As Integer = CInt(Math.Floor(maxDistance * Math.Max(0.0, Math.Min(1.0, eased))))
+        Dim reach As Integer = LetterboxFillMath.HaloReach(maxDistance, eased)
 
         ' Past the front the halo simply has not arrived yet - that untouched
         ' background is what makes it read as growing out of the photo.
@@ -426,20 +407,22 @@ Partial Public Class Main_Form
     ''' <summary>The gamma falloff as gradient stops: transparent at the photo edge (the
     ''' bar colour shows through untouched) to opaque background at the halo's front.</summary>
     Private Shared Function BuildHaloBlend(background As Color, photoEdgeAtFarEnd As Boolean) As ColorBlend
-        Dim positions(halo_Blend_Stops - 1) As Single
-        Dim colors(halo_Blend_Stops - 1) As Color
+        Dim stopCount As Integer = LetterboxFillMath.BlendStops
+        Dim positions(stopCount - 1) As Single
+        Dim colors(stopCount - 1) As Color
 
-        For i As Integer = 0 To halo_Blend_Stops - 1
+        For i As Integer = 0 To stopCount - 1
             ' Position runs along the gradient; distance runs out from the photo.
-            Dim position As Double = i / (halo_Blend_Stops - 1.0)
+            Dim position As Double = i / (stopCount - 1.0)
             Dim distance As Double = If(photoEdgeAtFarEnd, 1.0 - position, position)
-            Dim alpha As Integer = CInt(Math.Round(255.0 * Math.Pow(distance, halo_Falloff_Gamma)))
+            ' LETTERBOX-HALO rule 2: round(255 * d^1.4), half to even, clamped.
+            Dim alpha As Integer = LetterboxFillMath.HaloStopAlpha(distance)
 
             positions(i) = CSng(position)
-            colors(i) = Color.FromArgb(Math.Max(0, Math.Min(255, alpha)), background)
+            colors(i) = Color.FromArgb(alpha, background)
         Next
 
-        Dim blend As New ColorBlend(halo_Blend_Stops)
+        Dim blend As New ColorBlend(stopCount)
         blend.Positions = positions
         blend.Colors = colors
         Return blend

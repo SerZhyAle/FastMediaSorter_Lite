@@ -1,4 +1,4 @@
-﻿#If Not NETFRAMEWORK Then
+#If Not NETFRAMEWORK Then
 Option Strict On
 
 Imports System.Collections.Generic
@@ -99,12 +99,15 @@ Friend Module ResourceConnect
                                        ct As CancellationToken,
                                        Optional dialerOverride As IEndpointDialer = Nothing,
                                        Optional tunnelSource As IExchangeTunnelSource = Nothing,
-                                       Optional resourcePin As String = Nothing) As Task(Of ConnectOutcome)
+                                       Optional resourcePin As String = Nothing,
+                                       Optional clockOverride As IResolutionClock = Nothing,
+                                       Optional secretsOverride As IResourceSecretStore = Nothing,
+                                       Optional unprotectOverride As Func(Of String, SecretProtectionResult) = Nothing) As Task(Of ConnectOutcome)
         If descriptor Is Nothing Then Throw New ArgumentNullException(NameOf(descriptor))
         If descriptor.ProtectionUnsupported Then Return New ConnectOutcome(Nothing, New ResourceFailure(ResourceFailureKind.Unsupported))
         Select Case descriptor.Kind
             Case ResourceKind.Sftp
-                Return Await ConnectSftpAsync(descriptor, password, consent, persistPin, includeSubfolders, ct, dialerOverride, tunnelSource, resourcePin).ConfigureAwait(False)
+                Return Await ConnectSftpAsync(descriptor, password, consent, persistPin, includeSubfolders, ct, dialerOverride, tunnelSource, resourcePin, clockOverride, secretsOverride, unprotectOverride).ConfigureAwait(False)
             Case ResourceKind.Smb
                 Return Await Task.Run(Function() ConnectSmb(descriptor, password, includeSubfolders)).ConfigureAwait(False)
             Case Else
@@ -118,10 +121,26 @@ Friend Module ResourceConnect
                                             includeSubfolders As Func(Of Boolean),
                                             ct As CancellationToken,
                                             dialerOverride As IEndpointDialer,
-                                            tunnelSource As IExchangeTunnelSource, resourcePin As String) As Task(Of ConnectOutcome)
-        Dim clock As New SystemResolutionClock()
+                                            tunnelSource As IExchangeTunnelSource, resourcePin As String,
+                                            clockOverride As IResolutionClock,
+                                            secretsOverride As IResourceSecretStore,
+                                            unprotectOverride As Func(Of String, SecretProtectionResult)) As Task(Of ConnectOutcome)
+        NetworkChangeTracker.EnsureListening()
+        Dim clock As IResolutionClock = If(clockOverride, New SystemResolutionClock())
         Dim gate As New HostKeyGate(descriptor.PinnedFingerprint, consent, persistPin, Function() clock.NowMs)
-        Dim pin As String = If(resourcePin, ResourcePinMemory.GetPin(descriptor))
+        Dim pin As String = resourcePin
+        If String.IsNullOrEmpty(pin) Then
+            If descriptor.PinChanged Then
+                ResourcePinMemory.Forget(descriptor)
+            Else
+                pin = ResourcePinMemory.GetPin(descriptor)
+                If String.IsNullOrEmpty(pin) AndAlso Not String.IsNullOrEmpty(descriptor.PinSecretHandle) Then
+                    Dim secretStore As IResourceSecretStore = If(secretsOverride, New RegistryResourceSecretStore())
+                    Dim pinRead As CredentialReadResult = ResourceCommit.ReadPin(descriptor, secretStore, unprotectOverride)
+                    If pinRead.Outcome = CredentialReadOutcome.Ok Then pin = pinRead.Secret
+                End If
+            End If
+        End If
         If descriptor.PinRequired AndAlso String.IsNullOrEmpty(pin) Then Return New ConnectOutcome(Nothing, New ResourceFailure(ResourceFailureKind.Auth))
         Dim dialer As IEndpointDialer = If(dialerOverride, New SftpEndpointDialer(descriptor, password, gate, includeSubfolders, pin))
 
@@ -132,6 +151,8 @@ Friend Module ResourceConnect
             candidates.Add(ExchangeTunnelRules.Candidate())
             dialer = New ExchangeTunnelDialer(dialer, tunnelSource)
         End If
+        ' Spec 228 rule 2: Fastest to slowest: LAN -> IPv6 -> port forward -> tunnel -> drive
+        candidates = ChannelPriorityRules.SortCandidates(candidates)
         ' One handshake at a time while the server is unpinned: one trust prompt, never two.
         Dim lanes As Integer = If(descriptor.PinRequired OrElse String.IsNullOrEmpty(descriptor.PinnedFingerprint), 1, ResolutionLimits.MaxLanes)
         Dim outcome As ResolutionOutcome = Await EndpointResolver.ResolveAsync(
@@ -141,19 +162,24 @@ Friend Module ResourceConnect
             If descriptor.PinRequired Then ResourcePinMemory.SetPin(descriptor, pin)
             Return New ConnectOutcome(DirectCast(outcome.Session, IFileSystemProvider), Nothing)
         End If
-        Dim failure As ResourceFailure = If(outcome.Failure, New ResourceFailure(ResourceFailureKind.Transport))
+        Dim failure As ResourceFailure = outcome.Failure
+        If failure Is Nothing Then
+            failure = New ResourceFailure(ResourceFailureKind.Transport, Nothing, "no connection")
+        ElseIf Not failure.IsFatalForAttempt Then
+            failure = New ResourceFailure(failure.Kind, failure.StatusCode, "no connection")
+        End If
         Return New ConnectOutcome(Nothing, failure, gate.LastRefusal)
     End Function
 
-    ''' <summary>The addresses to race: the imported ones in the producer's order, or the one the user typed.</summary>
+    ''' <summary>The addresses to race: primary candidate first, then endpoints in descriptor.</summary>
     Friend Function CandidatesOf(descriptor As ResourceDescriptor) As List(Of FmsEndpoint)
         Dim list As New List(Of FmsEndpoint)()
         Dim port As Integer = If(descriptor.Port > 0, descriptor.Port, 22)
         If descriptor.Endpoints IsNot Nothing AndAlso descriptor.Endpoints.Count > 0 Then
-            ' The address the resource is named by goes first; the rest keep the producer's order.
             list.Add(New FmsEndpoint With {.Kind = "primary", .Host = descriptor.Host, .Port = port})
             For Each e As ResourceEndpoint In descriptor.Endpoints
-                list.Add(New FmsEndpoint With {.Kind = e.Kind, .Host = e.Host, .Port = If(e.Port > 0, e.Port, 22)})
+                Dim k As String = ChannelPriorityRules.NormalizeKind(e.Kind, e.Host)
+                list.Add(New FmsEndpoint With {.Kind = k, .Host = e.Host, .Port = If(e.Port > 0, e.Port, 22)})
             Next
         Else
             list.Add(New FmsEndpoint With {.Kind = "manual", .Host = descriptor.Host, .Port = port})
@@ -257,4 +283,33 @@ Friend NotInheritable Class ResourcePinMemory
         End SyncLock
     End Sub
 End Class
+
+''' <summary>Spec 228 rule 2: Fastest to slowest channel order (LAN -> IPv6 -> port forward -> tunnel -> drive).</summary>
+Friend Module ChannelPriorityRules
+    Friend Function ChannelRank(kind As String) As Integer
+        Select Case If(kind, "").ToLowerInvariant()
+            Case "lan" : Return 1
+            Case "ipv6" : Return 2
+            Case "portforward", "wan" : Return 3
+            Case "tunnel" : Return 4
+            Case "drive", "gd", "googledrive" : Return 5
+            Case Else : Return 10
+        End Select
+    End Function
+
+    Friend Function NormalizeKind(kind As String, host As String) As String
+        Dim k As String = If(kind, "").ToLowerInvariant()
+        If k = "lan" OrElse k = "ipv6" OrElse k = "portforward" OrElse k = "wan" OrElse k = "tunnel" OrElse k = "drive" Then
+            Return k
+        End If
+        Return ExchangeAttach.KindOfHost(host)
+    End Function
+
+    Friend Function SortCandidates(candidates As IEnumerable(Of FmsEndpoint)) As List(Of FmsEndpoint)
+        Return If(candidates, Enumerable.Empty(Of FmsEndpoint)()).OrderBy(Function(e)
+            Dim k As String = NormalizeKind(e.Kind, e.Host)
+            Return ChannelRank(k)
+        End Function).ToList()
+    End Function
+End Module
 #End If

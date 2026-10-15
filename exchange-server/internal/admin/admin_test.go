@@ -115,10 +115,6 @@ func TestTheChannelDoesTheSevenOperationsAndNeverReturnsASecret(t *testing.T) {
 	if !r.OK || st.Accounts != 1 || st.Devices != 2 {
 		t.Fatalf("%+v", st)
 	}
-	r, _ = call(Request{Op: OpAccountPasswd, Login: "alice", Password: "N3wPassword!x"})
-	if !r.OK {
-		t.Fatalf("%+v", r)
-	}
 	r, _ = call(Request{Op: OpDeviceRevoke, Login: "alice", DeviceID: devA})
 	if !r.OK {
 		t.Fatalf("%+v", r)
@@ -126,6 +122,10 @@ func TestTheChannelDoesTheSevenOperationsAndNeverReturnsASecret(t *testing.T) {
 	r, _ = call(Request{Op: OpDeviceRevoke, Login: "alice", DeviceID: devA})
 	if r.OK || r.Code != CodeNotFound {
 		t.Fatalf("a second revoke: %+v", r)
+	}
+	r, _ = call(Request{Op: OpAccountPasswd, Login: "alice", Password: "N3wPassword!x"})
+	if !r.OK {
+		t.Fatalf("%+v", r)
 	}
 	r, _ = call(Request{Op: OpAccountRemove, Login: "alice"})
 	if !r.OK || o.Accounts.Exists("alice") {
@@ -190,17 +190,13 @@ func TestPasswordChangeSignOutRevokesEveryDeviceOfTheAccountOnly(t *testing.T) {
 	e1 := enroll(t, o, "alice", a1)
 	enroll(t, o, "alice", a2)
 	eb := enroll(t, o, "bobby", b1)
-	// without signOut: tokens survive
+	// From release 46 a reset signs every device of the account out (19 item AT) and keeps the records
 	call(Request{Op: OpAccountPasswd, Login: "alice", Password: "N3wPassword!x"})
-	if _, st := o.Accounts.Hello(a1, e1.Token); st != accounts.HelloOK {
-		t.Fatal("a password change must leave tokens alone")
+	if _, st := o.Accounts.Hello(a1, e1.Token); st != accounts.HelloSignedOut {
+		t.Fatalf("a reset must sign the devices out: %v", st)
 	}
-	call(Request{Op: OpAccountPasswd, Login: "alice", Password: "N3wPassword!y", SignOut: true})
-	if _, st := o.Accounts.Hello(a1, e1.Token); st != accounts.HelloRevoked {
-		t.Fatalf("signOut must revoke: %v", st)
-	}
-	if len(o.Accounts.Devices("alice")) != 0 || len(o.Accounts.Devices("bobby")) != 1 {
-		t.Fatal("signOut touched the wrong account")
+	if len(o.Accounts.Devices("alice")) != 2 || len(o.Accounts.Devices("bobby")) != 1 {
+		t.Fatal("a reset must keep the device records and touch no other account")
 	}
 	if _, st := o.Accounts.Hello(b1, eb.Token); st != accounts.HelloOK {
 		t.Fatal("another account's device was signed out")
@@ -381,5 +377,222 @@ func TestThePairingCodeOperationIssuesASingleUseCodeAndNeverLogsIt(t *testing.T)
 	log.AssertNone(t, v.Code, pw1)
 	if !strings.Contains(strings.Join(log.Lines(), "\n"), "pairing-code-issued") {
 		t.Error("the issue is logged (by the account's short hash)")
+	}
+}
+
+func TestAdminInvitations(t *testing.T) {
+	o, log := newOps(t)
+	call := serve(t, o, log.Logger)
+
+	// Create a member invitation
+	r, raw := call(Request{Op: OpInvitationCreate, Kind: "member"})
+	if !r.OK {
+		t.Fatalf("create invitation failed: %+v", r)
+	}
+	var iv CreateInvitationResult
+	if err := json.Unmarshal(r.Data, &iv); err != nil || len(iv.Code) != 22 || iv.Invitation.Kind != "member" {
+		t.Fatalf("unexpected invitation view: %s (%v)", r.Data, err)
+	}
+
+	// Create guest invitation
+	r, _ = call(Request{Op: OpInvitationCreate, Kind: "guest"})
+	if !r.OK {
+		t.Fatalf("create guest invitation failed: %+v", r)
+	}
+	var iv2 CreateInvitationResult
+	_ = json.Unmarshal(r.Data, &iv2)
+	if iv2.Invitation.Kind != "guest" {
+		t.Fatalf("unexpected guest invitation: %+v", iv2)
+	}
+
+	// List invitations
+	r, rawList := call(Request{Op: OpInvitationList})
+	if !r.OK {
+		t.Fatalf("list invitations failed: %+v", r)
+	}
+	var list []InvitationView
+	if err := json.Unmarshal(r.Data, &list); err != nil || len(list) != 2 {
+		t.Fatalf("unexpected list: %s (%v)", r.Data, err)
+	}
+
+	// Code must NEVER be in list response
+	if strings.Contains(string(rawList), iv.Code) || strings.Contains(string(rawList), iv2.Code) {
+		t.Fatalf("raw list response leaked plaintext code: %s", rawList)
+	}
+
+	// Withdraw first invitation
+	r, _ = call(Request{Op: OpInvitationWithdraw, CodeHash: iv.Invitation.CodeHash[:8]})
+	if !r.OK {
+		t.Fatalf("withdraw invitation failed: %+v", r)
+	}
+
+	// List again - withdrawn invitation should be removed from invitations list
+	r, _ = call(Request{Op: OpInvitationList})
+	_ = json.Unmarshal(r.Data, &list)
+	for _, it := range list {
+		if it.CodeHash == iv.Invitation.CodeHash {
+			t.Fatalf("withdrawn invitation still in list: %+v", it)
+		}
+	}
+
+	// Logs must never leak code
+	log.AssertNone(t, iv.Code, iv2.Code)
+	_ = raw
+}
+
+func TestAdminSharedInvitation(t *testing.T) {
+	o, log := newOps(t)
+	call := serve(t, o, log.Logger)
+
+	// Status initially off
+	r, _ := call(Request{Op: OpSharedInvitationStatus})
+	if !r.OK {
+		t.Fatalf("status failed: %+v", r)
+	}
+	var st SharedInvitationView
+	_ = json.Unmarshal(r.Data, &st)
+	if st.Enabled {
+		t.Fatal("shared invitation should initially be disabled")
+	}
+
+	// Set shared invitation
+	secretPW := "SharedSecret123!"
+	r, _ = call(Request{Op: OpSharedInvitationSet, Password: secretPW, Kind: "guest"})
+	if !r.OK {
+		t.Fatalf("set shared invitation failed: %+v", r)
+	}
+
+	// Check status
+	r, rawSt := call(Request{Op: OpSharedInvitationStatus})
+	if !r.OK {
+		t.Fatalf("status failed: %+v", r)
+	}
+	_ = json.Unmarshal(r.Data, &st)
+	if !st.Enabled || st.Kind != "guest" {
+		t.Fatalf("unexpected status view: %+v", st)
+	}
+	if strings.Contains(string(rawSt), secretPW) {
+		t.Fatal("status response leaked shared password")
+	}
+
+	// Turn off
+	r, _ = call(Request{Op: OpSharedInvitationSet, Password: ""})
+	if !r.OK {
+		t.Fatalf("turn off failed: %+v", r)
+	}
+	r, _ = call(Request{Op: OpSharedInvitationStatus})
+	_ = json.Unmarshal(r.Data, &st)
+	if st.Enabled {
+		t.Fatal("shared invitation should now be disabled")
+	}
+
+	log.AssertNone(t, secretPW)
+}
+
+func TestAdminAccountLimits(t *testing.T) {
+	o, log := newOps(t)
+	call := serve(t, o, log.Logger)
+
+	call(Request{Op: OpAccountAdd, Login: "carol", Password: pw1, Kind: "member"})
+
+	devs := 5
+	res := 25
+	bcasts := 3
+	clip := int64(1048576)
+
+	r, _ := call(Request{
+		Op:    OpAccountLimits,
+		Login: "carol",
+		Limits: &accounts.AccountLimits{
+			DevicesPerAccount:    &devs,
+			ResourcesPerAccount:  &res,
+			BroadcastsPerAccount: &bcasts,
+			ClipboardMaxBytes:    &clip,
+		},
+	})
+	if !r.OK {
+		t.Fatalf("set limits failed: %+v", r)
+	}
+
+	r, _ = call(Request{Op: OpAccountList})
+	if !r.OK {
+		t.Fatalf("list accounts failed: %+v", r)
+	}
+	var accts []AccountView
+	_ = json.Unmarshal(r.Data, &accts)
+	var carol *AccountView
+	for i := range accts {
+		if accts[i].Login == "carol" {
+			carol = &accts[i]
+		}
+	}
+	if carol == nil || carol.Limits == nil || carol.Limits.DevicesPerAccount == nil || *carol.Limits.DevicesPerAccount != 5 || *carol.Limits.ResourcesPerAccount != 25 {
+		t.Fatalf("carol limits not reflected: %+v", carol)
+	}
+}
+
+type sink struct{ frames int }
+
+func (s *sink) Send(wire.Envelope) error { s.frames++; return nil }
+func (s *sink) SendFrame([]byte) error   { s.frames++; return nil }
+func (s *sink) Close()                   {}
+
+func TestAdminGrants(t *testing.T) {
+	o, log := newOps(t)
+	call := serve(t, o, log.Logger)
+
+	call(Request{Op: OpAccountAdd, Login: "host1", Password: pw1, Kind: "member"})
+	call(Request{Op: OpAccountAdd, Login: "guest1", Password: pw1, Kind: "guest"})
+	dev := wire.NewID()
+	enroll(t, o, "host1", dev)
+	o.Dir.Online("host1", dev, &sink{})
+	resID := wire.NewID()
+	rec := `{"resourceId":"` + resID + `","deviceId":"` + dev + `","kind":"sftp-share","name":"Photos",` +
+		`"access":{"descriptor":"FMSSFTP2.secret-descriptor","root":"/"}}`
+	if _, err := o.Dir.Publish("host1", dev, json.RawMessage(rec)); err != nil {
+		t.Fatal(err)
+	}
+
+	// a resource the account does not hold, and an account that does not exist, are named failures
+	r, _ := call(Request{Op: OpGrantAdd, Login: "host1", GuestAccount: "guest1", TargetID: wire.NewID(), Kind: "resource"})
+	if r.OK {
+		t.Fatal("a grant of what the account does not hold must be refused")
+	}
+	r, _ = call(Request{Op: OpGrantAdd, Login: "host1", GuestAccount: "nobody", TargetID: resID, Kind: "resource"})
+	if r.OK || r.Code != CodeNoAccount {
+		t.Fatalf("a grant to an unknown account: %+v", r)
+	}
+
+	// Grant resource
+	r, _ = call(Request{Op: OpGrantAdd, Login: "host1", GuestAccount: "guest1", TargetID: resID, Kind: "resource"})
+	if !r.OK {
+		t.Fatalf("add grant failed: %+v", r)
+	}
+
+	// List grants (what the guest was given)
+	r, _ = call(Request{Op: OpGrantList, GuestAccount: "guest1"})
+	if !r.OK {
+		t.Fatalf("list grants failed: %+v", r)
+	}
+	var grants []GrantView
+	if err := json.Unmarshal(r.Data, &grants); err != nil || len(grants) != 1 {
+		t.Fatalf("unexpected grants: %s (%v)", r.Data, err)
+	}
+	if grants[0].TargetID != resID || grants[0].Kind != "resource" || grants[0].Guest != "guest1" {
+		t.Fatalf("grant details wrong: %+v", grants[0])
+	}
+
+	// Remove grant
+	r, _ = call(Request{Op: OpGrantRemove, Login: "host1", GuestAccount: "guest1", TargetID: resID})
+	if !r.OK {
+		t.Fatalf("remove grant failed: %+v", r)
+	}
+
+	// List grants again
+	r, _ = call(Request{Op: OpGrantList, GuestAccount: "guest1"})
+	grants = nil
+	_ = json.Unmarshal(r.Data, &grants)
+	if len(grants) != 0 {
+		t.Fatalf("grants not empty after remove: %+v", grants)
 	}
 }

@@ -1,4 +1,4 @@
-﻿#If Not NETFRAMEWORK Then
+#If Not NETFRAMEWORK Then
 Option Strict On
 
 Imports System.Collections.Generic
@@ -72,7 +72,9 @@ Friend NotInheritable Class Exchange_Devices_Panel
     Private ReadOnly _addButton As Button
     Private ReadOnly _attachAllButton As Button
     Private ReadOnly _signOutButton As Button
+    Private ReadOnly _changePasswordButton As Button
     Private ReadOnly _signInButton As Button
+    Private ReadOnly _diagnoseButton As Button
     Private ReadOnly _updateAddressButton As Button
     Private ReadOnly _handOnButton As Button
     Private ReadOnly _autoBox As CheckBox
@@ -126,14 +128,18 @@ Friend NotInheritable Class Exchange_Devices_Panel
         _addButton = MakeButton("res_DevicesAdd", ExchangeEntryText.AddButton(), AddressOf OnAddClicked)
         _attachAllButton = MakeButton("res_DevicesAttachAll", ExchangeEntryText.AttachAllButton(), AddressOf OnAttachAllClicked)
         _signOutButton = MakeButton("res_DevicesSignOut", ExchangeEntryText.SignOutButton(), AddressOf OnSignOutClicked)
+        _changePasswordButton = MakeButton("res_DevicesChangePassword", ExchangeEntryText.ChangePasswordButton(), AddressOf OnChangePasswordClicked)
         _signInButton = MakeButton("res_DevicesSignIn", ExchangeEntryText.SignInAgainButton(), AddressOf OnSignInClicked)
+        _diagnoseButton = MakeButton("res_DevicesDiagnose", ConnectionDiagnosisLocalization.DoorButtonText(Localization.CurrentCultureLanguage), AddressOf OnDiagnoseClicked)
         _updateAddressButton = MakeButton("res_DevicesUpdateAddress", ExchangeEntryText.UpdateAddressButton(), AddressOf OnUpdateAddressClicked)
         _handOnButton = MakeButton("res_DevicesHandOn", ExchangeEntryText.HandOnButton(), AddressOf OnHandOnClicked)
         ' WINDOWS-UI section 11: every command carries the glyph of its verb, mono (panel commands are never answers).
         ButtonGlyphs.Apply(_addButton, "action.add")
         ButtonGlyphs.Apply(_attachAllButton, "action.reconnect")
         ButtonGlyphs.Apply(_signOutButton, "nav.exit")
+        ButtonGlyphs.Apply(_changePasswordButton, "action.edit")
         ButtonGlyphs.Apply(_signInButton, "action.reconnect")
+        ButtonGlyphs.Apply(_diagnoseButton, "action.test-connection")
         ButtonGlyphs.Apply(_updateAddressButton, "action.refresh")
         ButtonGlyphs.Apply(_handOnButton, "action.copy")
         _autoBox = New CheckBox With {.Name = "res_DevicesAuto", .AutoSize = False, .Text = ExchangeEntryText.AutoAttachCheckbox(), .Visible = False}
@@ -153,6 +159,8 @@ Friend NotInheritable Class Exchange_Devices_Panel
         Controls.Add(_autoNote)
         Controls.Add(_autoBox)
         Controls.Add(_signInButton)
+        Controls.Add(_diagnoseButton)
+        Controls.Add(_changePasswordButton)
         Controls.Add(_signOutButton)
         Controls.Add(_updateAddressButton)
         Controls.Add(_handOnButton)
@@ -198,7 +206,7 @@ Friend NotInheritable Class Exchange_Devices_Panel
         _list.BackColor = theme.EditorBack
         _list.ForeColor = theme.EditorText
         _list.BorderStyle = If(theme.Dark, BorderStyle.None, BorderStyle.Fixed3D)
-        For Each b As Button In New Button() {_addButton, _attachAllButton, _signOutButton, _signInButton, _updateAddressButton, _handOnButton}
+        For Each b As Button In New Button() {_addButton, _attachAllButton, _signOutButton, _changePasswordButton, _signInButton, _diagnoseButton, _updateAddressButton, _handOnButton}
             b.FlatStyle = FlatStyle.Flat
             b.BackColor = theme.Surface
             b.ForeColor = theme.Text
@@ -214,7 +222,9 @@ Friend NotInheritable Class Exchange_Devices_Panel
         _addButton.Text = ExchangeEntryText.AddButton()
         _attachAllButton.Text = ExchangeEntryText.AttachAllButton()
         _signOutButton.Text = ExchangeEntryText.SignOutButton()
+        _changePasswordButton.Text = ExchangeEntryText.ChangePasswordButton()
         _signInButton.Text = ExchangeEntryText.SignInAgainButton()
+        _diagnoseButton.Text = ConnectionDiagnosisLocalization.DoorButtonText(Localization.CurrentCultureLanguage)
         _updateAddressButton.Text = ExchangeEntryText.UpdateAddressButton()
         _handOnButton.Text = ExchangeEntryText.HandOnButton()
         _autoBox.Text = ExchangeEntryText.AutoAttachCheckbox()
@@ -381,7 +391,7 @@ Friend NotInheritable Class Exchange_Devices_Panel
         Dim x As Integer = 0
         Dim rowTop As Integer = y + Dv(2)
         Dim gap As Integer = Dv(6)
-        For Each b As Button In New Button() {_addButton, _attachAllButton, _signInButton, _signOutButton, _updateAddressButton, _handOnButton}
+        For Each b As Button In New Button() {_addButton, _attachAllButton, _signInButton, _diagnoseButton, _changePasswordButton, _signOutButton, _updateAddressButton, _handOnButton}
             If Not b.Visible Then Continue For
             ' The caption, its padding and the verb's glyph with its gap (WINDOWS-UI section 11 item 3).
             Dim glyphWidth As Integer = Math.Max(Dv(ButtonGlyphs.GlyphLogicalSize + ButtonGlyphs.GapLogicalSize), ButtonGlyphs.ExtraWidth(b))
@@ -621,9 +631,11 @@ Friend NotInheritable Class Exchange_Devices_Panel
         Dim state As ExchangeAgentState = If(src Is Nothing, ExchangeAgentState.NotConfigured, StateOfSource(src))
         _attachAllButton.Visible = src IsNot Nothing AndAlso state = ExchangeAgentState.Online
         _signOutButton.Visible = src IsNot Nothing
+        _changePasswordButton.Visible = src IsNot Nothing AndAlso state = ExchangeAgentState.Online
         Dim needsPinEnrollment As Boolean = src IsNot Nothing AndAlso src.Feed.Current.Snapshot IsNot Nothing AndAlso
             src.Feed.Current.Snapshot.Resources.Any(Function(r) ExchangeAttach.NeedsPinEnrollment(r))
         _signInButton.Visible = src IsNot Nothing AndAlso (state = ExchangeAgentState.SignInAgain OrElse state = ExchangeAgentState.PinMismatch OrElse needsPinEnrollment)
+        _diagnoseButton.Visible = src IsNot Nothing AndAlso (state = ExchangeAgentState.SignInAgain OrElse state = ExchangeAgentState.PinMismatch OrElse state = ExchangeAgentState.Reconnecting OrElse (src.Session IsNot Nothing AndAlso Not src.Session.IsConnected))
         _updateAddressButton.Visible = src IsNot Nothing AndAlso src.Moved.Length > 0
         _handOnButton.Visible = src IsNot Nothing AndAlso state = ExchangeAgentState.Online
         _autoBox.Visible = src IsNot Nothing
@@ -638,6 +650,8 @@ Friend NotInheritable Class Exchange_Devices_Panel
         End If
         _addButton.Enabled = Not _busy
         _attachAllButton.Enabled = Not _busy
+        _changePasswordButton.Enabled = Not _busy
+        _diagnoseButton.Enabled = Not _busy
         _updateAddressButton.Enabled = Not _busy
         _handOnButton.Enabled = Not _busy
         Relayout()
@@ -760,6 +774,43 @@ Friend NotInheritable Class Exchange_Devices_Panel
         RebuildSources()
         RaiseEvent StatusSaid(ExchangeEntryText.Added(entry.DisplayName), True)
         RaiseEvent ResourcesChanged(Me, EventArgs.Empty)
+    End Sub
+
+    ''' <summary>226 rule 4: change the account's password from the entry's own control stream. The sentence on success says
+    ''' that the account's OTHER devices must sign in again; this one keeps working with the fresh key of the answer. A wrong
+    ''' old password is the common refusal and changes nothing.</summary>
+    Private Async Sub OnChangePasswordClicked(sender As Object, e As EventArgs)
+        Dim src As ServerSource = CurrentSource()
+        If src Is Nothing OrElse _busy Then Return
+        Dim entry As ExchangeEntry = src.Entry
+        Using dlg As New Exchange_Password_Change_Form(entry.DisplayName & " (" & entry.Login & ")")
+            DialogLayer.ShowViewerDialog(dlg, FindForm())
+            If dlg.DialogResult <> DialogResult.OK OrElse dlg.NewPassword.Length = 0 Then Return
+            Dim oldPassword As String = dlg.OldPassword
+            Dim newPassword As String = dlg.NewPassword
+            _busy = True
+            UpdateButtons()
+            Try
+                Dim token As CancellationToken = If(src.Cts IsNot Nothing, src.Cts.Token, CancellationToken.None)
+                Dim result As ExchangePasswordChangeResult = Await src.Session.ChangePasswordAsync(oldPassword, newPassword, token).ConfigureAwait(True)
+                Select Case result.Outcome
+                    Case ExchangePasswordChangeOutcome.Changed
+                        ' the fresh key is stored; the session is rebuilt so a reconnect speaks with it
+                        StopSource(src)
+                        _hub.Forget(entry.Id)
+                        RebuildSources()
+                        RaiseEvent StatusSaid(ExchangeEntryText.PasswordChanged(), True)
+                    Case ExchangePasswordChangeOutcome.Refused
+                        RaiseEvent StatusSaid(ExchangeEntryText.ChangePasswordFailure(result.Refusal), False)
+                    Case Else
+                        RaiseEvent StatusSaid(ExchangeEntryText.ChangePasswordNoStream(), False)
+                End Select
+            Catch ex As OperationCanceledException
+            Finally
+                _busy = False
+                If Not IsDisposed Then Render()
+            End Try
+        End Using
     End Sub
 
     Private Sub OnSignInClicked(sender As Object, e As EventArgs)

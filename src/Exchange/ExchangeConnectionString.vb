@@ -8,9 +8,10 @@ Imports System.Text
 
 ' Ticket 187 T-1. The exchange connection string of the proposal PROPOSAL-2026-10-10-exchange-connection-string.md:
 '
-'     FMSEXCH1:x=host%3Aport&fp=SHA256%3A<43 base64>&n=<name>&u=<login>
+'     FMSEXCH1:x=host%3Aport&fp=SHA256%3A<43 base64>&n=<name>&u=<login>&i=<22 base64url>
 '
-' It names ONE server and the pin of its certificate. It is not a credential and carries none, so nothing in this file
+' It names ONE server and the pin of its certificate; `i` (ticket 224, DEVICE-EXCHANGE item AR) carries the one-time invitation code when the
+' string is an invitation - a secret holder: never logged, never stored after use. It is not a credential and carries
 ' touches a secret store, a log or the network: it is a pure codec, a second implementation of the Go package
 ' exchange-server/internal/connstr. The conformance artifact is the Go module's generated
 ' exchange-server/testdata/vectors/connection-string-v1.json, replayed by ExchangeConnectionStringVectorTests; a reading
@@ -45,6 +46,8 @@ Friend NotInheritable Class ExchangeConnectionStringReason
     Public Const BadFingerprint As String = "bad-fp"
     Public Const BadName As String = "bad-n"
     Public Const BadLogin As String = "bad-u"
+    ''' <summary>`i` is not a valid invitation capability id (ticket 224, DEVICE-EXCHANGE item AR).</summary>
+    Public Const BadInv As String = "bad-i"
     Public Const FileTooLong As String = "file-too-long"
     Public Const FileLines As String = "file-lines"
 
@@ -63,13 +66,17 @@ Friend NotInheritable Class ExchangeConnectionStringValue
     Public ReadOnly Fingerprint As String
     Public ReadOnly Name As String
     Public ReadOnly Login As String
+    ''' <summary>The one-time invitation code the string carries (ticket 224 rule 1), or "". A secret holder: it is shown
+    ''' to nobody, logged never, and left behind nowhere once the registration is done.</summary>
+    Public ReadOnly Invitation As String
 
-    Public Sub New(host As String, port As Integer, fingerprint As String, name As String, login As String)
+    Public Sub New(host As String, port As Integer, fingerprint As String, name As String, login As String, Optional invitation As String = "")
         Me.Host = If(host, "")
         Me.Port = port
         Me.Fingerprint = If(fingerprint, "")
         Me.Name = If(name, "")
         Me.Login = If(login, "")
+        Me.Invitation = If(invitation, "")
     End Sub
 
     ''' <summary>host:port, an IPv6 literal in brackets - the shape of the server's publicEndpoint.</summary>
@@ -167,7 +174,7 @@ Friend NotInheritable Class ExchangeConnectionString
             Dim eq As Integer = field.IndexOf("="c)
             If eq <= 0 Then Return ExchangeConnectionStringResult.Refused(ExchangeConnectionStringReason.MalformedField, "a field with no key or no =")
             Dim key As String = field.Substring(0, eq)
-            If key = "x" OrElse key = "fp" OrElse key = "n" OrElse key = "u" Then
+            If key = "x" OrElse key = "fp" OrElse key = "n" OrElse key = "u" OrElse key = "i" Then
                 If values.ContainsKey(key) Then Return ExchangeConnectionStringResult.Refused(ExchangeConnectionStringReason.RepeatedKey, key & " given twice")
                 Dim decoded As String = Nothing
                 Dim failure As ExchangeConnectionStringResult = Unescape(field.Substring(eq + 1), decoded)
@@ -179,11 +186,12 @@ Friend NotInheritable Class ExchangeConnectionString
         Dim x As String = Nothing
         If Not values.TryGetValue("x", x) Then Return ExchangeConnectionStringResult.Refused(ExchangeConnectionStringReason.MissingX, "no x field")
         ' a known key that is present must carry a value: an empty one breaks its rule, it is not "absent"
-        Dim fp As String = Nothing, n As String = Nothing, u As String = Nothing
+        Dim fp As String = Nothing, n As String = Nothing, u As String = Nothing, iv As String = Nothing
         If values.TryGetValue("fp", fp) AndAlso fp.Length = 0 Then Return ExchangeConnectionStringResult.Refused(ExchangeConnectionStringReason.BadFingerprint, "fp has no value")
         If values.TryGetValue("n", n) AndAlso n.Length = 0 Then Return ExchangeConnectionStringResult.Refused(ExchangeConnectionStringReason.BadName, "n has no value")
         If values.TryGetValue("u", u) AndAlso u.Length = 0 Then Return ExchangeConnectionStringResult.Refused(ExchangeConnectionStringReason.BadLogin, "u has no value")
-        Return Build(x, fp, n, u)
+        If values.TryGetValue("i", iv) AndAlso iv.Length = 0 Then Return ExchangeConnectionStringResult.Refused(ExchangeConnectionStringReason.BadInv, "i has no value")
+        Return Build(x, fp, n, u, iv)
     End Function
 
     ''' <summary>Reads the bytes of a .fmsexch file: UTF-8, at most 4096 bytes, one non-empty line, one optional
@@ -225,6 +233,12 @@ Friend NotInheritable Class ExchangeConnectionString
     ''' <summary>Validates the members an operator surface or an entry has and returns the canonical value. An empty
     ''' fingerprint, name or login is absent.</summary>
     Public Shared Function Build(endpoint As String, fingerprint As String, name As String, login As String) As ExchangeConnectionStringResult
+        Return Build(endpoint, fingerprint, name, login, "")
+    End Function
+
+    ''' <summary>Ticket 224 rule 1: the invitation string is the connection string carrying the invitation - `i` is
+    ''' the capability id of the one-time code.</summary>
+    Public Shared Function Build(endpoint As String, fingerprint As String, name As String, login As String, invitation As String) As ExchangeConnectionStringResult
         Dim host As String = Nothing
         Dim port As Integer = 0
         Dim failure As ExchangeConnectionStringResult = SplitEndpoint(If(endpoint, ""), host, port)
@@ -254,7 +268,41 @@ Friend NotInheritable Class ExchangeConnectionString
                 End If
             Next
         End If
-        Return ExchangeConnectionStringResult.Ok(New ExchangeConnectionStringValue(host, port, fp, nm, lg))
+        Dim iv As String = ""
+        If Not String.IsNullOrEmpty(invitation) Then
+            If Not IsValidInvitation(invitation) Then
+                Return ExchangeConnectionStringResult.Refused(ExchangeConnectionStringReason.BadInv, "i is not a valid invitation id")
+            End If
+            iv = invitation
+        End If
+        Return ExchangeConnectionStringResult.Ok(New ExchangeConnectionStringValue(host, port, fp, nm, lg, iv))
+    End Function
+
+    ''' <summary>The invitation's form (ticket 224 rule 1): 22 characters of base64url that decode to 16 bytes - the
+    ''' id form of the wire, the same spelling the Go reader accepts (its <c>checkInvitation</c>). The URL-safe alphabet
+    ''' only: a '/' or '+' is not an id.</summary>
+    Public Shared Function IsValidInvitation(text As String) As Boolean
+        If text Is Nothing OrElse text.Length <> 22 Then Return False
+        For Each c As Char In text
+            Dim ok As Boolean = (c >= "A"c AndAlso c <= "Z"c) OrElse (c >= "a"c AndAlso c <= "z"c) OrElse
+                                (c >= "0"c AndAlso c <= "9"c) OrElse c = "-"c OrElse c = "_"c
+            If Not ok Then Return False
+        Next
+        Dim padded As String = text.Replace("-"c, "+"c).Replace("_"c, "/"c) & "=="
+        Try
+            Dim raw As Byte() = Convert.FromBase64String(padded)
+            If raw.Length <> 16 Then Return False
+            ' 22 characters carry 132 bits for 128: the last character's four low bits must be zero (the Go reader is
+            ' strict, and .NET alone would accept a second spelling of the same id)
+            Dim last As Char = text(21)
+            Dim v As Integer = If(last >= "A"c AndAlso last <= "Z"c, AscW(last) - AscW("A"c),
+                                If(last >= "a"c AndAlso last <= "z"c, AscW(last) - AscW("a"c) + 26,
+                                If(last >= "0"c AndAlso last <= "9"c, AscW(last) - AscW("0"c) + 52,
+                                If(last = "-"c, 62, 63))))
+            Return (v And 15) = 0
+        Catch ex As FormatException
+            Return False
+        End Try
     End Function
 
     ''' <summary>True for "SHA256:" and exactly 43 characters of the standard base64 alphabet, no padding, the last one
@@ -489,7 +537,7 @@ Friend NotInheritable Class ExchangeConnectionString
             refusal = ExchangeConnectionStringResult.Refused(ExchangeConnectionStringReason.MissingX, "no value")
             Return Nothing
         End If
-        Dim check As ExchangeConnectionStringResult = Build(value.Endpoint, value.Fingerprint, value.Name, value.Login)
+        Dim check As ExchangeConnectionStringResult = Build(value.Endpoint, value.Fingerprint, value.Name, value.Login, value.Invitation)
         If Not check.Succeeded Then
             refusal = check
             Return Nothing
@@ -499,6 +547,7 @@ Friend NotInheritable Class ExchangeConnectionString
         If value.Fingerprint.Length > 0 Then sb.Append("&fp=").Append(Escape(value.Fingerprint))
         If value.Name.Length > 0 Then sb.Append("&n=").Append(Escape(value.Name))
         If value.Login.Length > 0 Then sb.Append("&u=").Append(Escape(value.Login.ToLowerInvariant()))
+        If value.Invitation.Length > 0 Then sb.Append("&i=").Append(Escape(value.Invitation))
         If sb.Length > MaxText Then
             refusal = ExchangeConnectionStringResult.Refused(ExchangeConnectionStringReason.TooLong, sb.Length.ToString(CultureInfo.InvariantCulture) & " characters once encoded")
             Return Nothing

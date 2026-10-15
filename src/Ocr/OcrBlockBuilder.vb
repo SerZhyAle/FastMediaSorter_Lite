@@ -261,7 +261,10 @@ Public Module OcrBlockBuilder
             box = Rectangle.Union(box, lines(i).Box)
         Next
 
-        Dim text As String = String.Join(" ", lines.Select(Function(l) l.Text)).Trim()
+        ' A space between two lines except where they meet on Han, kana or CJK punctuation: a
+        ' Japanese or Chinese phrase wraps with no space at the break (`OCR-PIPELINE` 1.8 B). Any
+        ' other plate is exactly what it always was.
+        Dim text As String = OcrTextJoin.JoinPlateLines(lines.Select(Function(l) l.Text).ToList())
 
         Return New OcrBlock With {
             .Lines = lines,

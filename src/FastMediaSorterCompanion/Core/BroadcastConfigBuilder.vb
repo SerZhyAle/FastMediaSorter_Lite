@@ -58,10 +58,20 @@ Public Module BroadcastConfigBuilder
         If broadcast Is Nothing Then Return Nothing
         If status Is Nothing Then Return Nothing
 
-        Dim port As Integer = If(status.BroadcastPort > 0, status.BroadcastPort, status.ListenPort)
-        If port <= 0 Then port = 55272
+        Dim port As Integer = status.BroadcastPort
+        If Not status.BroadcastEnabled OrElse port < 1 OrElse port > 65535 Then Return Nothing
+        If String.IsNullOrEmpty(broadcast.Token) OrElse broadcast.ItemCount < 1 Then Return Nothing
 
-        Dim reach As WorkerReachability = status.Reachability
+        Dim reach As WorkerReachability = status.BroadcastReachability
+        If reach Is Nothing AndAlso status.Reachability IsNot Nothing Then
+            ' Older workers know the addresses, but their port and probe belong to SFTP.
+            reach = New WorkerReachability With {
+                .LanAddress = status.Reachability.LanAddress,
+                .Ipv6Address = status.Reachability.Ipv6Address,
+                .ExternalHost = status.Reachability.ExternalHost,
+                .IsCgnat = status.Reachability.IsCgnat
+            }
+        End If
         Dim lanFromReach As String = If(reach IsNot Nothing, If(reach.LanAddress, ""), "")
         Dim lanFallback As String = NetworkInfo.LocalIPv4()
         Dim lan As String = If(lanFromReach.Length > 0, lanFromReach, lanFallback)
@@ -104,7 +114,8 @@ Public Module BroadcastConfigBuilder
         End If
 
         Dim isPlaylist As Boolean = String.Equals(broadcast.Kind, "folder", StringComparison.OrdinalIgnoreCase) OrElse broadcast.ItemCount > 1
-        Dim mediaKind As String = ClassifyMediaKind(broadcast.HostPath, broadcast.Kind)
+        Dim mediaKind As String = broadcast.MediaKind
+        If mediaKind <> "audio" AndAlso mediaKind <> "video" Then mediaKind = ClassifyMediaKind(broadcast.HostPath, broadcast.Kind)
         Dim bcastPath As String = If(broadcast.Token.StartsWith("/b/", StringComparison.Ordinal), broadcast.Token, "/b/" & broadcast.Token)
         Dim itemCount As Integer = Math.Max(1, broadcast.ItemCount)
         Dim note As String = ShareText.AccessNote(reach, port, includeExternal)
@@ -228,7 +239,7 @@ Public Module BroadcastConfigBuilder
         Return JsonSerializer.Serialize(If(s, ""), JsonStringOpts)
     End Function
 
-    Private Function QrPayload(json As String) As String
+    Friend Function QrPayload(json As String) As String
         Dim raw As Byte() = Encoding.UTF8.GetBytes(json)
         If raw.Length <= QrComfortLimit Then Return json
         Using ms As New MemoryStream()

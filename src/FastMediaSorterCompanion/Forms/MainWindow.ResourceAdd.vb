@@ -1,4 +1,4 @@
-﻿Option Explicit On
+Option Explicit On
 Option Strict On
 Option Infer On
 Option Compare Binary
@@ -12,6 +12,14 @@ Partial Public NotInheritable Class MainWindow
     Private _resourceAddOpen As Boolean
     Private _focusHostingSettings As Boolean
     Private _focusPublishSettings As Boolean
+    ''' <summary>The tray owner's viewer probe (TrayContext.ViewerExePath), handed in after construction
+    ''' so the phone-code relay stays out of the where-is-the-viewer business. Nothing until then.</summary>
+    Private _viewerExeProbe As Func(Of String)
+
+    ''' <summary>Spec 227: where a viewer exe is looked for, by the relay and the door. Nothing is a
+    ''' probe that answers "" - NoViewer - and the clipboard fallback answers instead.</summary>
+    <System.ComponentModel.DesignerSerializationVisibility(System.ComponentModel.DesignerSerializationVisibility.Hidden)>
+    Friend Property ViewerExePathForPhoneRelay As Func(Of String)
 
     Friend Async Function OpenResourceAddAsync(owner As Form, entry As ResourceAddEntry, Optional path As String = Nothing) As Task
         If _busy OrElse _resourceAddOpen OrElse ResourceAddModel.Steps(entry, ExchangeFirstRunModel.GateOpen()).Length = 0 Then Return
@@ -36,11 +44,59 @@ Partial Public NotInheritable Class MainWindow
     ''' (<c>wake_Ready</c>) and the Add button is enabled. When it is not - no worker, a busy window, the server surface
     ''' off - the plain window stays, which is what an older Share Manager does with the same wake.
     ''' </summary>
-    Friend Async Function OpenResourceAddFromWakeAsync() As Task
+    Friend Async Function OpenResourceAddFromWakeAsync(Optional camera As Boolean = False) As Task
         If Not Await wake_Ready.Task OrElse IsDisposed Then Return
+        If camera Then
+            ' Spec 227 T-3: the viewer's "Scan with the camera.." hands over here. What the camera reads is the
+            ' phone's connection code, and the code belongs to the viewer's import door - it is relayed back.
+            Dim decoded As String = ""
+            Using camDlg As New Camera_Scan_Form()
+                If camDlg.ShowDialog(Me) = DialogResult.OK Then decoded = camDlg.DecodedText
+            End Using
+            Await RelayPhoneCodeAsync(decoded)
+            Return
+        End If
         If Not ServerFeatures.IsEnabled() OrElse Not WorkerProcess.IsAvailable() OrElse Not btnAdd.Enabled Then Return
         Await OpenResourceAddAsync(Me, ResourceAddEntry.AddButton)
     End Function
+
+    ''' <summary>Spec 227 rule 1: the intake door in the manager - the same readers as the viewer's panel,
+    ''' the answer relayed to the viewer's import. The viewer probe is handed in by the tray owner.</summary>
+    Friend Async Function OpenPhoneCodeIntakeAsync() As Task
+        Using door As New Phone_Code_Intake_Form()
+            door.ViewerExeProbe = ViewerExePathForPhoneRelay
+            door.ShowDialog(Me)
+        End Using
+        Await Task.CompletedTask
+    End Function
+
+    ''' <summary>Scans, pastes or files arrive here once read: the code goes to the viewer over the
+    ''' mirror-image wake, and the one sentence says what became of it. The fallback is the clipboard
+    ''' door with its privacy markers, on this thread - never a second importer in this program.</summary>
+    Friend Async Function RelayPhoneCodeAsync(code As String) As Task
+        If String.IsNullOrWhiteSpace(code) OrElse IsDisposed Then Return
+        Dim payload As String = code.Trim()
+        Dim outcome As PhoneCodeRelay.RelayOutcome = Await System.Threading.Tasks.Task.Run(
+            Function() New PhoneCodeRelay(ViewerExePathForPhoneRelay).RelayCode(payload))
+        Select Case outcome
+            Case PhoneCodeRelay.RelayOutcome.Delivered
+                MessageBox.Show(Me, Localization.T("Код передан: подтвердите добавление в окне Fast Media Sorter."),
+                                ProductNames.ShareManager, MessageBoxButtons.OK, MessageBoxIcon.Information)
+            Case PhoneCodeRelay.RelayOutcome.NoViewer
+                PhoneCodeClipboardFallback(payload, Localization.T("Fast Media Sorter не найден на этом компьютере. Код помещён в буфер обмена - установите программу и вставьте код через «Импорт из буфера» в панели ресурсов."))
+            Case Else
+                PhoneCodeClipboardFallback(payload, Localization.T("Не удалось передать код: Fast Media Sorter старой версии или не ответил. Код помещён в буфер обмена - вставьте его через «Импорт из буфера» в панели ресурсов."))
+        End Select
+    End Function
+
+    Private Sub PhoneCodeClipboardFallback(code As String, message As String)
+        If Not SecureClipboard.SetSecret(code) Then
+            MessageBox.Show(Me, Localization.T("Буфер обмена занят другой программой"),
+                            ProductNames.ShareManager, MessageBoxButtons.OK, MessageBoxIcon.Warning)
+            Return
+        End If
+        MessageBox.Show(Me, message, ProductNames.ShareManager, MessageBoxButtons.OK, MessageBoxIcon.Information)
+    End Sub
 
     Private Sub RefreshEmptyResourceHint()
         If _emptyResourceHint Is Nothing OrElse lvFolders Is Nothing Then Return

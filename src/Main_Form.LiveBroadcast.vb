@@ -2,6 +2,7 @@
 Option Strict On
 
 Imports System.IO
+Imports System.Text.Json
 Imports System.Threading
 Imports System.Threading.Tasks
 Imports System.Windows.Forms
@@ -12,6 +13,68 @@ Imports System.Windows.Forms
 ' lives here is only what needs the window: the audio surface, the player, the status line, the control bar.
 
 Partial Public Class Main_Form
+
+    Private Function AskLivePassword() As String
+        Dim question As New PromptSpec(Localization.T("Открыть live-трансляцию"), Localization.T("Пароль:"), "",
+                                       Localization.T("Подключиться"), Nothing) With {.IsPassword = True}
+        Return AskDialogs.Prompt(Me, question)
+    End Function
+
+    Private WithEvents live_Cast_Timer As New System.Windows.Forms.Timer() With {.Interval = 2000}
+    Private ReadOnly live_Cast_Cancellation As New CancellationTokenSource()
+    Private live_Cast_Busy As Boolean
+
+    Private Sub StartCastReceiver(sender As Object, e As EventArgs) Handles MyBase.Shown
+        If modern_Preferences IsNot Nothing Then live_Options.AutoAcceptCast = modern_Preferences.AutoAcceptLiveCast
+        If ExchangeFeatures.IsEnabled() Then live_Cast_Timer.Start()
+    End Sub
+
+    Private Sub CloseCastReceiver(sender As Object, e As FormClosedEventArgs) Handles MyBase.FormClosed
+        live_Cast_Timer.Dispose()
+        live_Cast_Cancellation.Cancel()
+    End Sub
+
+    Private Async Sub PollCastOffer(sender As Object, e As EventArgs) Handles live_Cast_Timer.Tick
+        If live_Cast_Busy OrElse Not ExchangeFeatures.IsEnabled() OrElse Not ExchangeAccountStore.CreateDefault().IsConfigured() Then Return
+        live_Cast_Busy = True
+        Try
+            Dim client As New ExchangeAgentClient()
+            Dim reply As ExchangeAgentReply = Await client.SendAsync(ExchangeAgentPipe.BuildRequest(ExchangeAgentPipe.RequestGetCastOffer), 3000, live_Cast_Cancellation.Token)
+            If IsDisposed OrElse Not reply.IsOk OrElse reply.DataJson = "null" Then Return
+            Using doc As JsonDocument = JsonDocument.Parse(reply.DataJson)
+                Dim stopId As JsonElement = Nothing
+                If doc.RootElement.TryGetProperty("stopBroadcastId", stopId) AndAlso stopId.ValueKind = JsonValueKind.String Then
+                    If live_Current_Descriptor IsNot Nothing AndAlso live_Current_Descriptor.BroadcastId = stopId.GetString() Then StopLivePlayback()
+                    Return
+                End If
+            End Using
+            Dim record As ExchangeBroadcastRecord = Nothing
+            If Not ExchangeRecordReader.TryReadBroadcast(reply.DataJson, record) Then Return
+            Dim parsed As LiveBroadcastReadResult = LiveBroadcastRecords.ReadRecord(record.Raw)
+            Dim accepted As Boolean = parsed.Status = LiveReadStatus.Ok
+            If accepted AndAlso Not live_Options.AutoAcceptCast Then
+                Dim question As New AskSpec(Localization.T("Открыть live-трансляцию"), Localization.T("Принять входящую трансляцию?"), AskIcon.None,
+                    New AskButton() {New AskButton(Localization.T("Подключиться")), New AskButton(Localization.T("Отмена"))}, 1, 1)
+                accepted = AskDialogs.Choose(Me, question) = 0
+            End If
+            If accepted AndAlso parsed.Descriptor.AuthScheme.Length > 0 AndAlso parsed.Descriptor.Password Is Nothing Then
+                parsed.Descriptor.Password = AskLivePassword()
+                accepted = parsed.Descriptor.Password IsNot Nothing
+            End If
+            Dim answer As ExchangeAgentReply = Await client.SendAsync(ExchangeAgentPipe.BuildRequest(ExchangeAgentPipe.RequestCastAnswer,
+                Sub(o)
+                    o("broadcastId") = record.BroadcastId
+                    o("accepted") = accepted
+                    o("reason") = If(parsed.Status = LiveReadStatus.Ok, "declined", "unsupported")
+                End Sub), 3000, live_Cast_Cancellation.Token)
+            If accepted AndAlso answer.IsOk AndAlso Not IsDisposed Then PlayLiveBroadcast(parsed.Descriptor)
+        Catch ex As OperationCanceledException
+        Catch ex As JsonException
+            AppFileLogger.WriteLine("Live cast: malformed local reply")
+        Finally
+            live_Cast_Busy = False
+        End Try
+    End Sub
 
     ''' <summary>A live session is on screen: connecting, playing, reconnecting, stopped or failed. Cleared when the viewer moves on.</summary>
     Private live_Broadcast_Active As Boolean = False
@@ -44,7 +107,7 @@ Partial Public Class Main_Form
     ''' </summary>
     Friend Sub ShowLiveBroadcastDialog()
         SlideShowStop()
-        Using dlg As New LiveBroadcast_Form()
+        Using dlg As New LiveBroadcast_Form(live_Options.AutoAcceptCast)
             If DialogLayer.ShowViewerDialog(dlg, Me) = DialogResult.OK Then
                 If dlg.ResultDescriptor IsNot Nothing Then
                     PlayLiveBroadcast(dlg.ResultDescriptor)
@@ -52,6 +115,11 @@ Partial Public Class Main_Form
                     ' The user did not mark the address as live: the ordinary "Open URL.." path, unchanged.
                     OpenMediaUrl(dlg.ResultOnDemandUrl)
                 End If
+            End If
+            live_Options.AutoAcceptCast = dlg.AutoAcceptCast
+            If modern_Preferences IsNot Nothing AndAlso modern_Preferences.AutoAcceptLiveCast <> dlg.AutoAcceptCast Then
+                modern_Preferences.AutoAcceptLiveCast = dlg.AutoAcceptCast
+                modern_Preferences.Save()
             End If
         End Using
     End Sub
@@ -83,12 +151,19 @@ Partial Public Class Main_Form
     Friend Sub PlayLiveBroadcast(descriptor As LiveBroadcastDescriptor)
         If descriptor Is Nothing Then Return
 
+        If descriptor.AuthScheme.Length > 0 AndAlso descriptor.Password Is Nothing Then
+            Dim password As String = AskLivePassword()
+            If password Is Nothing Then Return
+            descriptor.Password = password
+        End If
+
         Dim endpoint As LiveBroadcastEndpoint = LiveEndpointSelector.SelectEndpoint(descriptor)
         If endpoint Is Nothing Then
             lbl_Status.Text = Localization.T("Этот режим пока не поддерживается")
             Return
         End If
 
+        If Not ReferenceEquals(live_Current_Descriptor, descriptor) Then ClearLivePassword()
         CancelLiveRunner(finishVisibly:=False)
         live_Current_Descriptor = descriptor
         live_Current_Endpoint = endpoint
@@ -114,16 +189,18 @@ Partial Public Class Main_Form
         ResetPlaybackExtrasForNewMedia()
 
         ClearAudioSurface()
-        SetMediaDisplayKind(MediaKind.Audio)
+        Dim audioOnly As Boolean = live_Current_Descriptor.ModeValue = LiveBroadcastMode.AudioOnly
+        SetMediaDisplayKind(If(audioOnly, MediaKind.Audio, MediaKind.Video))
 
         is_Stream_On_Screen = True
         live_Broadcast_Active = True
 
         ' Live audio uses Picture_Box_1 for artwork/visualizer
-        is_PictureBox1_Visible = True
+        is_PictureBox1_Visible = audioOnly
         is_PictureBox2_Visible = False
+        is_WebBrowser_Visible = False
         Web_Browser.Visible = False
-        Picture_Box_1.Visible = True
+        Picture_Box_1.Visible = audioOnly
         Picture_Box_2.Visible = False
 
         vlc_Playing_Path = live_Current_Endpoint.Url
@@ -143,6 +220,15 @@ Partial Public Class Main_Form
         live_Broadcast_Active = False
         live_Runner_Running = False
         CancelLiveRunner(finishVisibly:=False)
+        ClearLivePassword()
+    End Sub
+
+    Private Sub ClearLivePassword()
+        If live_Current_Descriptor Is Nothing Then Return
+        live_Current_Descriptor.Password = Nothing
+        For Each ep As LiveBroadcastEndpoint In live_Current_Descriptor.Endpoints
+            ep.Password = Nothing
+        Next
     End Sub
 
     ''' <summary>
@@ -180,7 +266,8 @@ Partial Public Class Main_Form
 
         Dim policy As New LiveReconnectPolicy()
         Dim target As Long? = LiveEndpointSelector.TargetLatencyOf(live_Current_Descriptor, live_Current_Endpoint)
-        Dim runner As New LiveBroadcastRunner(live_Current_Endpoint, policy, New LiveHost(Me, generation), live_Options, target)
+        Dim runner As New LiveBroadcastRunner(live_Current_Endpoint, policy, New LiveHost(Me, generation), live_Options, target,
+                                             endpoints:=LiveEndpointSelector.Candidates(live_Current_Descriptor))
         Dim cts As New CancellationTokenSource()
         live_Runner = runner
         live_Runner_Cts = cts
@@ -212,6 +299,12 @@ Partial Public Class Main_Form
         End If
 
         If ended = LiveRunEnd.Failed Then
+            If policy.TerminationReason = LiveTerminationKind.AccessDenied Then
+                live_Current_Descriptor.Password = Nothing
+                For Each ep As LiveBroadcastEndpoint In live_Current_Descriptor.Endpoints
+                    ep.Password = Nothing
+                Next
+            End If
             Notify(policy.GetTerminalStatusText(), NotifyLevel.Warning)
         Else
             lbl_Status.Text = Localization.T("Трансляция остановлена")
@@ -251,6 +344,8 @@ Partial Public Class Main_Form
         If generation <> media_Generation OrElse Not live_Broadcast_Active OrElse IsDisposed Then Return
         If libVlc Is Nothing OrElse vlc_Media_Player Is Nothing Then Return
 
+        live_Current_Endpoint = session.PlaybackEndpoint
+
         vlc_Play_Serial += 1
         Dim target As Long? = LiveEndpointSelector.TargetLatencyOf(live_Current_Descriptor, live_Current_Endpoint)
         Dim previousMedia As LiveVlcMedia = live_Vlc_Media
@@ -258,7 +353,9 @@ Partial Public Class Main_Form
 
         vlc_Video_View.Location = Picture_Box_1.Location
         vlc_Video_View.Size = Picture_Box_1.Size
-        vlc_Video_View.Visible = False ' the audio surface paints Picture_Box_1
+        Dim audioOnly As Boolean = live_Current_Descriptor.ModeValue = LiveBroadcastMode.AudioOnly
+        vlc_Video_View.Visible = Not audioOnly
+        If Not audioOnly Then vlc_Video_View.BringToFront()
         KeepRecipientsOverlayOnTop()
 
         ' Ticket 115: a pool-thread stop may still be inside the player; Play is legal only after it left.
@@ -271,7 +368,7 @@ Partial Public Class Main_Form
         is_Vlc_Playing = True
         vlc_Play_Generation = generation
 
-        BeginAudioPlayback()
+        If audioOnly Then BeginAudioPlayback()
         ShowVideoControls()
     End Sub
 

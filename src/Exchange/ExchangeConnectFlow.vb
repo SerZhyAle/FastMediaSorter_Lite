@@ -53,6 +53,22 @@ Friend NotInheritable Class ExchangeConnectResult
     End Sub
 End Class
 
+Friend NotInheritable Class ExchangeTrustOutcome
+
+    ''' <summary>The trust anchor the string or the entry held, or the fingerprint the person accepted ("" when the platform validated).</summary>
+    Public ReadOnly Pin As String
+    Public ReadOnly PlatformValid As Boolean
+    ''' <summary>The failure that ends the flow (Nothing when the trust is established and the pin is the anchor).</summary>
+    Public ReadOnly Failure As ExchangeConnectResult
+
+    Public Sub New(pin As String, platformValid As Boolean, failure As ExchangeConnectResult)
+        Me.Pin = If(pin, "")
+        Me.PlatformValid = platformValid
+        Me.Failure = failure
+    End Sub
+
+End Class
+
 Friend NotInheritable Class ExchangeConnectFlow
 
     Private Sub New()
@@ -77,7 +93,60 @@ Friend NotInheritable Class ExchangeConnectFlow
             Return New ExchangeConnectResult(ExchangeConnectResultKind.Failed, Nothing, input, ExchangeConsumerEnrollOutcome.BadInput, ExchangeRefusal.Unknown, "", "")
         End If
 
-        ' the trust rule
+        Dim trust As ExchangeTrustOutcome = Await TrustOfAsync(input, ports, pinOfEntry, confirmTrust, ct).ConfigureAwait(False)
+        If trust.Failure IsNot Nothing Then
+            request.Wipe()
+            Return trust.Failure
+        End If
+        request.TrustedFingerprint = trust.Pin
+        request.PlatformValid = trust.PlatformValid
+
+        Dim result As ExchangeConsumerEnrollResult = Await ExchangeConsumer.EnrollAsync(request, ports, ct).ConfigureAwait(False)
+        Return Finished(input, result, trust.Pin)
+    End Function
+
+    ''' <summary>226 rule 1: register with an INVITATION string - the third way beside a sign-in and a pairing code. The string's
+    ''' `i` is the one-time code (a secret holder), or the person types the operator's shared invitation password; the login and the
+    ''' password are chosen here. On success the entry is stored in exactly a sign-in's shape. A refusal is the common table's own
+    ''' sentence (232) - a used code and a wrong code answer the same (224 rule 6).</summary>
+    ''' <param name="sharedPassword">The operator's shared invitation password, when no one-time code is used: "" with a code in the string.</param>
+    Public Shared Async Function RegisterAsync(inputText As String, login As String, password As String, sharedPassword As String,
+                                                deviceName As String, ports As ExchangeConsumerPorts,
+                                                confirmTrust As Func(Of String, String, Boolean), ct As CancellationToken) As Task(Of ExchangeConnectResult)
+        Dim input As ExchangeConnectInput = ExchangeConnectInput.Classify(inputText)
+        If Not input.IsUsable Then
+            Return New ExchangeConnectResult(ExchangeConnectResultKind.InputRefused, Nothing, input, ExchangeConsumerEnrollOutcome.BadInput, ExchangeRefusal.Unknown, "", "")
+        End If
+        ' the registration is offered only where the string is an invitation (rule 1): a plain string stays a sign-in
+        If Not input.HasInvitation AndAlso String.IsNullOrEmpty(sharedPassword) Then
+            Return New ExchangeConnectResult(ExchangeConnectResultKind.InputRefused, Nothing, input, ExchangeConsumerEnrollOutcome.BadInput, ExchangeRefusal.Unknown, "", "")
+        End If
+        Dim endpoint As String = input.Value.Endpoint
+        Dim request As New ExchangeConsumerRegisterRequest With {
+            .Server = endpoint, .Login = If(login, "").Trim(), .Password = If(password, ""),
+            .InvitationCode = If(input.HasInvitation, input.Value.Invitation, ""), .SharedPassword = If(sharedPassword, ""),
+            .ServerName = input.Value.Name, .DeviceName = If(deviceName, "")}
+        If request.Login.Length = 0 OrElse request.Password.Length = 0 Then
+            request.Wipe()
+            Return New ExchangeConnectResult(ExchangeConnectResultKind.Failed, Nothing, input, ExchangeConsumerEnrollOutcome.BadInput, ExchangeRefusal.Unknown, "", "")
+        End If
+
+        Dim trust As ExchangeTrustOutcome = Await TrustOfAsync(input, ports, "", confirmTrust, ct).ConfigureAwait(False)
+        If trust.Failure IsNot Nothing Then
+            request.Wipe()
+            Return trust.Failure
+        End If
+        request.TrustedFingerprint = trust.Pin
+        request.PlatformValid = trust.PlatformValid
+
+        Dim result As ExchangeConsumerEnrollResult = Await ExchangeConsumer.RegisterAsync(request, ports, ct).ConfigureAwait(False)
+        Return Finished(input, result, trust.Pin)
+    End Function
+
+    ''' <summary>The trust rule of both flows: `fp` (or an entry's own pin) is the anchor with no prompt; otherwise the platform
+    ''' first and, for a leaf it rejects, ONE question with the fingerprint shown and "No" as the default.</summary>
+    Private Shared Async Function TrustOfAsync(input As ExchangeConnectInput, ports As ExchangeConsumerPorts, pinOfEntry As String,
+                                               confirmTrust As Func(Of String, String, Boolean), ct As CancellationToken) As Task(Of ExchangeTrustOutcome)
         Dim expected As String = ""
         If input.HasPin Then
             expected = input.Value.Fingerprint
@@ -85,36 +154,32 @@ Friend NotInheritable Class ExchangeConnectFlow
             expected = pinOfEntry
         End If
         If expected.Length > 0 Then
-            request.TrustedFingerprint = expected
-        Else
-            Dim info As ExchangeCertificateInfo
-            Try
-                info = Await ExchangeConsumer.ProbeAsync(endpoint, ports, ct).ConfigureAwait(False)
-            Catch ex As ExchangeConnectException
-                request.Wipe()
-                Return New ExchangeConnectResult(ExchangeConnectResultKind.Failed, Nothing, input, OutcomeOf(ex.Failure), ExchangeRefusal.Unknown, "", ex.Fingerprint)
-            Catch ex As OperationCanceledException
-                request.Wipe()
-                Return New ExchangeConnectResult(ExchangeConnectResultKind.Cancelled, Nothing, input, ExchangeConsumerEnrollOutcome.Cancelled, ExchangeRefusal.Unknown, "", "")
-            End Try
-            If info.PlatformValid Then
-                request.PlatformValid = True
-            Else
-                ' only an explicit yes pins it; the question's default is No (the delegate is the window's)
-                If confirmTrust Is Nothing OrElse Not confirmTrust.Invoke(endpoint, info.Fingerprint) Then
-                    request.Wipe()
-                    Return New ExchangeConnectResult(ExchangeConnectResultKind.TrustDeclined, Nothing, input, ExchangeConsumerEnrollOutcome.Untrusted, ExchangeRefusal.Unknown, "", info.Fingerprint)
-                End If
-                request.TrustedFingerprint = info.Fingerprint
-            End If
+            Return New ExchangeTrustOutcome(expected, False, Nothing)
         End If
+        Dim info As ExchangeCertificateInfo
+        Try
+            info = Await ExchangeConsumer.ProbeAsync(input.Value.Endpoint, ports, ct).ConfigureAwait(False)
+        Catch ex As ExchangeConnectException
+            Return New ExchangeTrustOutcome("", False, New ExchangeConnectResult(ExchangeConnectResultKind.Failed, Nothing, input, OutcomeOf(ex.Failure), ExchangeRefusal.Unknown, "", ex.Fingerprint))
+        Catch ex As OperationCanceledException
+            Return New ExchangeTrustOutcome("", False, New ExchangeConnectResult(ExchangeConnectResultKind.Cancelled, Nothing, input, ExchangeConsumerEnrollOutcome.Cancelled, ExchangeRefusal.Unknown, "", ""))
+        End Try
+        If info.PlatformValid Then
+            Return New ExchangeTrustOutcome("", True, Nothing)
+        End If
+        ' only an explicit yes pins it; the question's default is No (the delegate is the window's)
+        If confirmTrust Is Nothing OrElse Not confirmTrust.Invoke(input.Value.Endpoint, info.Fingerprint) Then
+            Return New ExchangeTrustOutcome("", False, New ExchangeConnectResult(ExchangeConnectResultKind.TrustDeclined, Nothing, input, ExchangeConsumerEnrollOutcome.Untrusted, ExchangeRefusal.Unknown, "", info.Fingerprint))
+        End If
+        Return New ExchangeTrustOutcome(info.Fingerprint, False, Nothing)
+    End Function
 
-        Dim result As ExchangeConsumerEnrollResult = Await ExchangeConsumer.EnrollAsync(request, ports, ct).ConfigureAwait(False)
+    Private Shared Function Finished(input As ExchangeConnectInput, result As ExchangeConsumerEnrollResult, expected As String) As ExchangeConnectResult
         Select Case result.Outcome
             Case ExchangeConsumerEnrollOutcome.Enrolled
                 Return New ExchangeConnectResult(ExchangeConnectResultKind.Added, result.Entry, input, result.Outcome, ExchangeRefusal.Unknown, expected, result.Fingerprint)
             Case ExchangeConsumerEnrollOutcome.PinMismatch
-                Return New ExchangeConnectResult(ExchangeConnectResultKind.PinMismatch, Nothing, input, result.Outcome, ExchangeRefusal.Unknown, request.TrustedFingerprint, result.Fingerprint)
+                Return New ExchangeConnectResult(ExchangeConnectResultKind.PinMismatch, Nothing, input, result.Outcome, ExchangeRefusal.Unknown, expected, result.Fingerprint)
             Case ExchangeConsumerEnrollOutcome.Cancelled
                 Return New ExchangeConnectResult(ExchangeConnectResultKind.Cancelled, Nothing, input, result.Outcome, ExchangeRefusal.Unknown, "", result.Fingerprint)
             Case Else

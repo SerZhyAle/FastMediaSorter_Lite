@@ -21,25 +21,17 @@ Friend NotInheritable Class ResourceImportFlow
     Private Sub New()
     End Sub
 
-    Friend Const MaxFileBytes As Long = 2L * 1024L * 1024L
+    Friend Const MaxFileBytes As Long = PhoneConnectionIntake.MaxFileBytes
 
-    ''' <summary>Reads a file for import. Bounded BEFORE it is read, because the reader's own limits count
-    ''' bytes it already holds: a multi-gigabyte file named .fmscfg must not be pulled into memory first.</summary>
+    ''' <summary>Reads a file for import (config document or QR image). Bounded BEFORE it is read (spec 227 rule 1).</summary>
     Friend Shared Function ReadFile(path As String) As FmsConfigReadResult
-        Try
-            Dim info As New FileInfo(path)
-            If info.Length > MaxFileBytes Then Return New FmsConfigReadResult With {.Failure = FmsConfigFailure.TooLarge}
-            Return FmsConfigReader.ReadBytes(File.ReadAllBytes(path))
-        Catch ex As Exception When TypeOf ex Is IOException OrElse TypeOf ex Is UnauthorizedAccessException
-            Return New FmsConfigReadResult With {.Failure = FmsConfigFailure.Empty}
-        End Try
+        Return PhoneConnectionIntake.ReadFile(path)
     End Function
 
-    ''' <summary>The extensions an import accepts from the open dialog and from a drop. A producer's own
-    ''' name for the file is .fmscfg; the others are what a copied document tends to be saved as.</summary>
+    ''' <summary>The extensions an import accepts from the open dialog and from a drop.
+    ''' Spec 227 rule 1: .fmscfg, .json, .txt, .png, .jpg, .jpeg, .bmp, .webp.</summary>
     Friend Shared Function IsImportFile(path As String) As Boolean
-        Dim ext As String = System.IO.Path.GetExtension(If(path, "")).ToLowerInvariant()
-        Return ext = ".fmscfg" OrElse ext = ".json" OrElse ext = ".txt"
+        Return PhoneConnectionIntake.IsSupportedFile(path)
     End Function
 
     ''' <summary>Runs the whole flow for one document. Returns the ids of the resources that were stored
@@ -47,7 +39,7 @@ Friend NotInheritable Class ResourceImportFlow
     Friend Shared Function Run(owner As IWin32Window, read As FmsConfigReadResult) As IReadOnlyList(Of String)
         Dim title As String = Localization.T("Импорт ресурса")
         If read Is Nothing OrElse Not read.Succeeded Then
-            ViewerBox.Show(owner, ResourceMessages.ForImportFailure(If(read, New FmsConfigReadResult()).Failure), title,
+            ViewerBox.Show(owner, ResourceMessages.ImportFailureText(read), title,
                             MessageBoxButtons.OK, MessageBoxIcon.Warning)
             Return New List(Of String)()
         End If

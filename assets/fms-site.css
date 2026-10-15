@@ -36,20 +36,23 @@
 @media(min-width:1300px){.grid{grid-template-columns:repeat(4,1fr)}.tools-grid{grid-template-columns:repeat(6,1fr)}}
 @media(max-width:480px){.container{width:100%;max-width:100%;padding:0 12px}.site-header{max-width:calc(100% - 24px);min-width:0;padding:8px 10px;gap:6px}.brand-mark{flex:1 1 0;min-width:0}.brand{min-width:0;font-size:13px;line-height:1.2;white-space:normal}.seg button{padding:5px 8px}.hero .lead,.sec-head p,.scenarios .card p{overflow-wrap:anywhere}}
 
-/* First screen: the recognisable program icon, the full name in a prominent size (owner request 2026-10-06). */
-.hero-id{display:flex;align-items:center;gap:clamp(16px,2.4vw,36px);margin:0 0 1.2rem}
-.app-icon{flex:none;width:clamp(88px,11vw,168px);height:auto;aspect-ratio:1;border-radius:22%;
-  box-shadow:0 10px 30px rgba(0,0,0,.35)}
-.hero h1{font-size:clamp(2.2rem,6vw,4.6rem);line-height:1.05;letter-spacing:-.01em;overflow-wrap:anywhere}
-@media(max-width:560px){.hero-id{flex-direction:column;align-items:flex-start}}
+/* First screen (owner request 2026-10-06: the recognisable program icon next to the full name): the kit's identity block,
+   PAGE-STYLE 4.1b - the application icon and the full name in display type (.identity, .product-icon, .product-name, all
+   the kit's), then the one h1, which states the outcome. This layer styles none of them; it only lets a long word of a
+   long language break instead of widening the page. */
+.hero h1{overflow-wrap:anywhere}
 
 /* Every language, in the header, one control (<details>, no script needed to open it). */
 .lang-menu{position:relative}
-.lang-menu>summary{list-style:none;cursor:pointer;font-family:var(--font-heading);font-size:11px;font-weight:700;
+.lang-menu>summary,.site-nav .nav-doc{list-style:none;cursor:pointer;font-family:var(--font-heading);font-size:11px;font-weight:700;
   letter-spacing:.04em;padding:7px 12px;border:1px solid var(--border);border-radius:20px;color:var(--muted);white-space:nowrap}
 .lang-menu>summary::-webkit-details-marker{display:none}
 .lang-menu>summary::after{content:" \25BE"}
-.lang-menu[open]>summary,.lang-menu>summary:hover{color:var(--text);border-color:var(--border-hover)}
+.lang-menu[open]>summary,.lang-menu>summary:hover,.site-nav .nav-doc:hover{color:var(--text);border-color:var(--border-hover)}
+/* The documentation link of the landing's header (PAGE-CONTENT "The landing always carries" item 4). A text link in the
+   language control's pill and not a .btn: the kit hides every .btn of the header under 480 px, and the documentation has
+   to stay one click away at 360 px. */
+.site-nav .nav-doc{display:inline-flex;align-items:center;text-decoration:none}
 .lang-pop{position:absolute;inset-inline-end:0;top:calc(100% + 8px);z-index:40;display:grid;
   grid-template-columns:repeat(3,minmax(8rem,1fr));gap:2px;padding:8px;min-width:26rem;
   background:var(--bg-2);border:1px solid var(--border);border-radius:var(--radius-sm);box-shadow:0 12px 32px rgba(0,0,0,.35)}
@@ -88,13 +91,15 @@ main:focus{outline:none}
 html[data-theme="light"]{--acc:#216f2b;--acc-strong:#1a5d24;--gold:#7e560f;--gold-strong:#6b4709}
 
 /* Touch targets (rule 17, ticket 158 T-4, owner ruling 2026-10-07): 44 px for EVERY pointer, by padding and not by a larger
-   font (PAGE-STYLE section 1: "44px touch targets"; the kit itself lifts only on a coarse pointer, so this page layer carries
-   the fine-pointer half and the kit file stays byte-identical to the catalog copy). */
-.brand,.lang-menu>summary,.lang-pop a,.footer-bottom a,.footer-langs a,.link-row a,.author-card a,.xlinks a{display:inline-flex;align-items:center;justify-content:center;min-height:44px;min-width:44px}
+   font (PAGE-STYLE section 1: "44px touch targets"). Since the kit revision of 2026-10-07 (PAGE-STYLE 1.4, vendored
+   2026-10-13) the kit carries the `.btn`, `.seg button` and `.theme-btn` half of this for every pointer, and `.to-top` was
+   always 44 px; what stays here is what the kit does not size: the links and the summary of the page's own chrome, and the
+   two controls the kit lifts only under a coarse pointer (`.tools-grid a`, `.copybox .copy`), which this page holds to 44 px
+   for a fine pointer too. */
+.brand,.lang-menu>summary,.site-nav .nav-doc,.lang-pop a,.footer-bottom a,.footer-langs a,.link-row a,.author-card a,.xlinks a{display:inline-flex;align-items:center;justify-content:center;min-height:44px;min-width:44px}
 .lang-pop a{display:flex}
 .xlinks a{justify-content:flex-start}
-.btn,.seg button,.theme-btn,.tools-grid a{min-height:44px}
-.seg button,.theme-btn{min-width:44px}
+.tools-grid a{min-height:44px}
 .copybox .copy{min-height:44px;min-width:44px;top:50%;transform:translateY(-50%)}
 
 /* 360 px (SITE-EXPERIENCE rule 17, ticket 152 T-5): a grid or flex child may be narrower than its content, so a long
@@ -134,7 +139,6 @@ ul.flush-list{margin:0}
    is 2 px past the page and the Arabic landing scrolled sideways (specification 158 F-3). Keep the marker inside the box. */
 .section>ul{padding-inline-start:1.25em}
 
-/* Reduced motion reaches the pseudo-elements too (PAGE-STYLE 1.5, section 5). The kit's own rule selects only `*`, which does
-   not match ::before or ::after, while the kit transitions details.sec>summary::after. The catalog still owes the kit revision
-   that selects `*,*::before,*::after`; this page-layer copy of the same declarations drops out when that revision is vendored. */
-@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
+/* Reduced motion needs nothing here: since the kit revision of 2026-10-07 (PAGE-STYLE 1.5, vendored 2026-10-13) the kit's own
+   rule selects `*,*::before,*::after`, so the transition of the disclosure marker stops with the preference on. This file used
+   to carry a copy of that rule until the kit answered it; the copy was dropped with the re-vendoring. */

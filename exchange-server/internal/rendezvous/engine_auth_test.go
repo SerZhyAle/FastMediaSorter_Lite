@@ -103,7 +103,7 @@ func TestEnrollThenHelloWithTheToken(t *testing.T) {
 		en.KeepaliveSeconds != 30 || en.ServerVersion != "test" {
 		t.Fatalf("enrolled: %+v", en)
 	}
-	if strings.Join(en.Features, ",") != "directory,tunnel,pairing" {
+	if strings.Join(en.Features, ",") != "directory,tunnel,pairing,clipboard" {
 		t.Fatalf("features are what is built and configured: %v", en.Features)
 	}
 
@@ -113,7 +113,7 @@ func TestEnrollThenHelloWithTheToken(t *testing.T) {
 	}
 	defer c.Close()
 	w := r.(*wire.Welcome)
-	if w.Account != "alice" || strings.Join(w.Features, ",") != "directory,tunnel,pairing" {
+	if w.Account != "alice" || strings.Join(w.Features, ",") != "directory,tunnel,pairing,clipboard" {
 		t.Fatalf("welcome: %+v", w)
 	}
 	// the stream continues authenticated: a role-fixing envelope works
@@ -128,12 +128,12 @@ func TestEnrollThenHelloWithTheToken(t *testing.T) {
 func TestWithoutAPublicEndpointTheServerServesButHidesTunnelAndRelay(t *testing.T) {
 	env := testkit.StartServer(t, looseOpts("alice"))
 	en := mustEnroll(t, env.NewDevice("alice"))
-	if en.PublicEndpoint != "" || strings.Join(en.Features, ",") != "directory,pairing" {
+	if en.PublicEndpoint != "" || strings.Join(en.Features, ",") != "directory,pairing,clipboard" {
 		t.Fatalf("%+v", en)
 	}
 	env2 := testkit.StartServer(t, func() testkit.Options { o := looseOpts("alice"); o.PublicEndpoint = "h:1"; o.Cast = true; return o }())
 	en2 := mustEnroll(t, env2.NewDevice("alice"))
-	if strings.Join(en2.Features, ",") != "directory,tunnel,cast,pairing" {
+	if strings.Join(en2.Features, ",") != "directory,tunnel,cast,pairing,clipboard" {
 		t.Fatalf("%v", en2.Features)
 	}
 }
@@ -317,8 +317,13 @@ func scanDataDir(t *testing.T, env *testkit.Env, needles []string) []string {
 
 // --- the buckets and the verifier ---
 
-func TestFailedEnrollsAreRateLimitedBeforeTheHash(t *testing.T) {
-	env := testkit.StartServer(t, testkit.Options{LoginLimits: loose(), Logins: []string{"alice"}}) // failed-auth per address: 5/min, burst 2
+// A password check is paced (19 item AW), not charged to a bucket of failures: a check right behind the
+// first waits one slot, a third inside the window is turned away BEFORE the hash runs, and a right
+// password is never charged anything. The test clock is real; the pacer's sleep is a no-op, so the
+// "waited" check costs nothing and the interval is long next to the test's own latency.
+func TestPasswordChecksArePacedBeforeTheHash(t *testing.T) {
+	env := testkit.StartServer(t, testkit.Options{LoginLimits: loose(), Logins: []string{"alice"},
+		PaceInterval: 2 * time.Second, Sleep: func(time.Duration) {}})
 	bad := func() wire.Envelope {
 		r, err := env.NewDevice("alice").EnrollWith("Wrongpass1")
 		if err != nil {
@@ -326,14 +331,14 @@ func TestFailedEnrollsAreRateLimitedBeforeTheHash(t *testing.T) {
 		}
 		return r
 	}
-	refusedWith(t, bad(), wire.ReasonBadCredentials)
-	refusedWith(t, bad(), wire.ReasonBadCredentials)
+	refusedWith(t, bad(), wire.ReasonBadCredentials) // evaluated at once
+	refusedWith(t, bad(), wire.ReasonBadCredentials) // waited one slot, then evaluated
 	callsBefore := env.Verifier.Calls()
 	refusedWith(t, bad(), wire.ReasonRateLimited)
 	if env.Verifier.Calls() != callsBefore {
-		t.Fatal("a rate-limited address must be turned away BEFORE the hash runs")
+		t.Fatal("a check that is turned away must not reach the hash")
 	}
-	// a correct password does not use the bucket up: it is refunded
+	// nothing remembers a failure: a right password is never charged a token, a lockout or a delay
 	env2 := testkit.StartServer(t, testkit.Options{LoginLimits: loose(), Logins: []string{"alice"}})
 	for i := 0; i < 20; i++ {
 		mustEnroll(t, env2.NewDevice("alice"))
@@ -341,30 +346,24 @@ func TestFailedEnrollsAreRateLimitedBeforeTheHash(t *testing.T) {
 }
 
 func TestFailedEnrollsAreRateLimitedPerLoginToo(t *testing.T) {
-	lc := loose()
-	lc.Rates[limits.FailedEnroll] = limits.Rate{PerMinute: 1, Burst: 3}
-	env := testkit.StartServer(t, testkit.Options{Limits: loose(), LoginLimits: lc, Logins: []string{"alice", "bobby"}})
+	env := testkit.StartServer(t, testkit.Options{Limits: loose(), LoginLimits: loose(), Logins: []string{"alice", "bobby"}})
 	for i := 0; i < 3; i++ {
 		r, _ := env.NewDevice("alice").EnrollWith("Wrongpass1")
 		refusedWith(t, r, wire.ReasonBadCredentials)
 	}
-	before := env.Verifier.Calls()
-	r, _ := env.NewDevice("alice").EnrollWith("Wrongpass1")
-	refusedWith(t, r, wire.ReasonRateLimited)
-	if env.Verifier.Calls() != before {
-		t.Fatal("the per-login bucket is charged before the hash")
-	}
-	// the price: the owner is delayed too, for as long as the bucket is empty - but another login is not
+	// Under ticket 224 rule 11 there is no lockout: right password succeeds within a second of its turn
+	time.Sleep(1100 * time.Millisecond)
+	mustEnroll(t, env.NewDevice("alice"))
 	mustEnroll(t, env.NewDevice("bobby"))
-	// and the bucket is only for failures: the right password is turned away only while the bucket is empty
-	r, _ = env.NewDevice("alice").Enroll()
-	refusedWith(t, r, wire.ReasonRateLimited)
 }
 
-func TestPasswordFloodRunsAtMostBurstVerificationsAndTwoAtOnce(t *testing.T) {
+// A flood of wrong passwords from one address runs at most two verifications (the first, and the one
+// that waits one slot), never more than two at once; the rest are turned away before the hash.
+func TestPasswordFloodRunsAtMostTwoVerificationsAndTwoAtOnce(t *testing.T) {
 	lc := limits.DefaultConfig()
 	lc.Rates[limits.Connection] = limits.Rate{PerMinute: 6000, Burst: 1000}
-	env := testkit.StartServer(t, testkit.Options{Limits: &lc, LoginLimits: loose(), Logins: []string{"alice"}})
+	env := testkit.StartServer(t, testkit.Options{Limits: &lc, LoginLimits: loose(), Logins: []string{"alice"},
+		PaceInterval: 2 * time.Second, Sleep: func(time.Duration) {}})
 	var wg sync.WaitGroup
 	var mu sync.Mutex
 	reasons := map[string]int{}
@@ -388,7 +387,7 @@ func TestPasswordFloodRunsAtMostBurstVerificationsAndTwoAtOnce(t *testing.T) {
 	}
 	wg.Wait()
 	if c := env.Verifier.Calls(); c > 2 {
-		t.Errorf("%d verifications ran from one address, the burst is 2", c)
+		t.Errorf("%d verifications ran from one address, the window holds 2", c)
 	}
 	if env.Verifier.Peak() > 2 {
 		t.Errorf("%d verifications at once, the bound is 2", env.Verifier.Peak())
@@ -533,7 +532,7 @@ func TestDeviceIDCollisionAcrossAccountsAndTheDeviceCap(t *testing.T) {
 		mustEnroll(t, env2.NewDevice("alice"))
 	}
 	r, _ = env2.NewDevice("alice").Enroll()
-	refusedWith(t, r, wire.ReasonCapacity)
+	refusedWith(t, r, wire.ReasonLimitReached) // a count limit of the account (19 item AS)
 }
 
 func TestEnrollKeepsOnlyKnownRolesAndTheReceiverVerbatim(t *testing.T) {
@@ -823,25 +822,27 @@ func TestADeviceMayRevokeItselfAndTheAccountRemovalTakesEveryone(t *testing.T) {
 	refusedWith(t, r, wire.ReasonBadCredentials)
 }
 
-func TestAPasswordChangeSignsOutOnlyWhenAsked(t *testing.T) {
+func TestAPasswordResetSignsEveryDeviceOut(t *testing.T) {
 	env := testkit.StartServer(t, looseOpts("alice"))
 	d := env.NewDevice("alice")
 	mustEnroll(t, d)
-	if err := env.Ops.SetPassword("alice", "N3wPassword!x", false); err != nil {
-		t.Fatal(err)
+	// From release 46 a reset ALWAYS signs out every device of the account (19 item AT); the record stays.
+	n, err := env.Ops.SetPassword("alice", "N3wPassword!x")
+	if err != nil || n != 1 {
+		t.Fatalf("reset: %d %v", n, err)
 	}
-	if c, _, _ := d.Hello(); c == nil {
-		t.Fatal("a password change must leave tokens alone")
-	} else {
-		c.Close()
+	_, r, _ := d.Hello()
+	refusedWith(t, r, wire.ReasonSignedOut)
+	if len(env.Accounts.Devices("alice")) != 1 {
+		t.Fatal("a signed-out device record must stay")
 	}
-	r, _ := env.NewDevice("alice").Enroll()
+
+	r, _ = env.NewDevice("alice").Enroll()
 	refusedWith(t, r, wire.ReasonBadCredentials)
-	if err := env.Ops.SetPassword("alice", testkit.TestPassword, true); err != nil {
+	if _, err := env.Ops.SetPassword("alice", testkit.TestPassword); err != nil {
 		t.Fatal(err)
 	}
-	_, r, _ = d.Hello()
-	refusedWith(t, r, wire.ReasonDeviceRevoked)
+	mustEnroll(t, env.NewDevice("alice"))
 }
 
 func TestEnrollAndHelloOverlongLoginsAreJustUnknown(t *testing.T) {

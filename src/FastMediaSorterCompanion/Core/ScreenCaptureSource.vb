@@ -43,6 +43,7 @@ Friend NotInheritable Class ScreenCaptureSource
     Private _started As Boolean
     Private _stop As Boolean
     Private _pacing As Thread
+    Private _copyBusy As Integer
 
     Private _device As IDirect3DDevice
     Private _item As GraphicsCaptureItem
@@ -110,6 +111,7 @@ Friend NotInheritable Class ScreenCaptureSource
         Try
             CreateDevice(reason)
         Catch
+            ReleaseDevice()
             reason = "the capture device could not be created (" & reason & ")"
             Return False
         End Try
@@ -186,6 +188,10 @@ Friend NotInheritable Class ScreenCaptureSource
             Return
         End Try
         If frame Is Nothing Then Return
+        If Interlocked.CompareExchange(_copyBusy, 1, 0) <> 0 Then
+            frame.Dispose()
+            Return
+        End If
         CopyFrameAsync(frame)
     End Sub
 
@@ -202,10 +208,13 @@ Friend NotInheritable Class ScreenCaptureSource
             End Using
         Catch
             ' A dropped frame is a dropped frame; the pacer keeps sending the previous one.
+        Finally
+            Interlocked.Exchange(_copyBusy, 0)
         End Try
     End Sub
 
     Private Sub FoldBitmap(bitmap As SoftwareBitmap)
+        If _stop Then Return
         Dim width As Integer = bitmap.PixelWidth
         Dim height As Integer = bitmap.PixelHeight
         If width <= 0 OrElse height <= 0 Then Return
@@ -337,9 +346,13 @@ Friend NotInheritable Class ScreenCaptureSource
         ' MarshalInterface.FromAbi - a TryCast of the raw RCW produces a wrapper that fails the
         ' moment the runtime marshals it back into WinRT (CreateFreeThreaded).
         Dim d3dPtr As IntPtr = IntPtr.Zero
-        Marshal.ThrowExceptionForHR(Marshal.QueryInterface(inspectable, GetType(IDirect3DDevice).GUID, d3dPtr))
-        _device = WinRT.MarshalInterface(Of IDirect3DDevice).FromAbi(d3dPtr)
         _devicePtr = inspectable
+        Marshal.ThrowExceptionForHR(Marshal.QueryInterface(inspectable, GetType(IDirect3DDevice).GUID, d3dPtr))
+        Try
+            _device = WinRT.MarshalInterface(Of IDirect3DDevice).FromAbi(d3dPtr)
+        Finally
+            Marshal.Release(d3dPtr)
+        End Try
     End Sub
 
     Private Function CreateItemForMonitor(hMonitor As IntPtr, ByRef detail As String) As GraphicsCaptureItem

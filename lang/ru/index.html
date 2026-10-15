@@ -61,6 +61,7 @@
 <header class="site-header">
   <nav class="site-nav" aria-label="Основная навигация">
   <a class="brand" href="https://serzhyale.github.io/FastMediaSorter_Lite/lang/ru/" aria-label="Fast Media Sorter &amp; Sharing for Windows">Fast Media Sorter &amp; Sharing for Windows</a>
+  <a class="nav-doc" href="https://serzhyale.github.io/FastMediaSorter_Lite/topics.html">Документация</a>
   <details class="lang-menu">
     <summary>Русский</summary>
     <div class="lang-pop">
@@ -86,14 +87,15 @@
 
 <main class="container" id="main" tabindex="-1">
   <section class="hero">
-    <div class="hero-id">
-      <img class="app-icon" src="../../assets/icons/store-icon-256.png" alt="" width="168" height="168">
-      <div class="hero-copy">
-        <span class="eyebrow">Windows desktop app</span>
-        <h1>Fast Media Sorter &amp; Sharing for Windows</h1>
-        <span class="kicker">Free &amp; open-source</span>
+    <div class="identity">
+      <img class="product-icon" src="../../assets/icons/store-icon-256.png" alt="" width="104" height="104">
+      <div>
+        <p class="product-name">Fast Media Sorter &amp; Sharing for Windows</p>
+        <p class="kicker" lang="en" dir="ltr">Windows desktop app</p>
+        <p class="kicker" lang="en" dir="ltr">Free &amp; open-source</p>
       </div>
     </div>
+    <h1>Сортируйте фото и видео одной клавишей на файл</h1>
     <p class="lead lead-narrow">Просматривайте и сортируйте медиа; когда понадобится, эта же программа - ещё и сервер раздачи папок и хост виртуальных дисков FileDO: каждая из этих ролей необязательна и выключена, пока вы её не включите.</p>
     <p class="lead lead-narrow">Быстро листайте огромные папки с фото и видео и раскладывайте файлы по каталогам одним нажатием клавиши.</p>
     <p class="lead lead-narrow">«Sharing» в названии - это передача ваших медиафайлов другому: телефону с Android, другой копии программы или любому SFTP-клиенту. Пока вы не включите, она выключена. <a href="https://serzhyale.github.io/FastMediaSorter_Lite/publish-folders-android.html" lang="en" dir="ltr">Share folders to Android over SFTP</a></p>
@@ -171,13 +173,13 @@
         <a class="btn btn-ghost" id="dl-zip" href="https://github.com/SerZhyAle/FastMediaSorter_Lite/releases/latest">Portable (.zip)</a>
         <a class="btn btn-ghost btn-sm" href="https://github.com/SerZhyAle/FastMediaSorter_Lite/releases/latest">All releases</a>
         <a class="btn btn-ghost btn-sm" href="https://apps.microsoft.com/detail/9N59Z73WZ53C" target="_blank" rel="noopener"><span>Microsoft Store</span></a>
+        <a class="btn btn-ghost btn-sm" href="https://serzhyale.github.io/FastMediaSorter_Lite/server.html">Серверная редакция: раздача без входа в систему</a>
         <span class="dl-meta" id="dlMeta">Offline-ready bundles - VLC runtimes and OCR packs included. Windows 10 1607+ / 11; a 32-bit build for Windows 7/8.1 is in the same download.</span>
       </div>
       <p class="dl-meta">Внутри полного пакета, всё необязательное и выключенное, пока вы не включите: сервер раздачи папок (Менеджер общего доступа и SFTP-воркер), хост виртуальных дисков FileDO, видео-кодеки и модели OCR для работы без интернета. Выберите тип «Компактная», чтобы сервер не ставился.</p>
       <p class="dl-meta">
         <a href="https://serzhyale.github.io/FastMediaSorter_Lite/lang/ru/trust.html">Почему Windows предупреждает об этой загрузке</a>
       </p>
-      <p><a href="https://serzhyale.github.io/FastMediaSorter_Lite/server.html">Серверная редакция: раздача без входа в систему</a></p>
     </div>
   </section>
 
@@ -225,6 +227,10 @@
       <article class="card">
         <h3>Раздача папок по SFTP</h3>
         <p>Опубликуйте выбранные папки по SFTP и откройте их в приложении для Android - или в любом SFTP-клиенте. Выключено, пока не включите.</p>
+      </article>
+      <article class="card">
+        <h3>Трансляции для StreamsPlayer</h3>
+        <p>В 64-битном просмотрщике нажмите правой кнопкой на видео, аудиофайл или его папку и выберите трансляцию. Менеджер общего доступа выдаёт файл .spres, QR-код или быструю ссылку для импорта в StreamsPlayer. Папка становится одним каналом с зафиксированным списком: обновление заменяет список, отзыв отключает ссылку. HTTP-шлюз имеет отдельный переключатель и по умолчанию выключен. Токен даёт доступ только для чтения одной трансляции, обычно на 24 часа. HTTP не шифруется: передавайте документ лично и включайте интернет-доступ только при необходимости.</p>
       </article>
       <article class="card">
         <h3>Отмена и настоящая Корзина</h3>

@@ -43,11 +43,11 @@ var (
 	stdout    = regexp.MustCompile(`fmt\.Fprint\w*\(\s*os\.Std(?:out|err)\b|\bos\.Std(?:out|err)\.Write`)
 	// an id, a token, a password, a pairing code, a login, an `access` or a descriptor handed to Text
 	textArg = regexp.MustCompile(`logx\.Text\([^)]*(?:[Ss]hareI[Dd]|[Tt]unnelI[Dd]|[Dd]eviceI[Dd]|[Rr]esourceI[Dd]|[Bb]roadcastI[Dd]|` +
-		`[Pp]assword|[Tt]oken|ResumeToken|PairingCode|[Pp]airing[Cc]ode|[Aa]ccess|[Dd]escriptor|\.Login|[Ll]ogin\b)`)
+		`[Pp]assword|[Tt]oken|ResumeToken|PairingCode|[Pp]airing[Cc]ode|[Aa]ccess|[Dd]escriptor|\.Login|[Ll]ogin\b|[Ii]nvitationCode|[Ss]haredPassword)`)
 	// a wire envelope, a record or a string built from one handed to the logger
 	envelopeArg = regexp.MustCompile(`logx\.\w+\([^)]*(?:\bwire\.(?:Encode|Frame|Record|Envelope)|\.Marshal\(|json\.|Encode\(|\.Raw\b|Envelope)`)
 	// a forbidden field KEY (DEVICE-EXCHANGE 7.9: a log never carries these)
-	badKey = regexp.MustCompile(`logx\.(?:Text|Int)\(\s*"(?:token|password|pairingCode|access|shareId|broadcastId|deviceToken|resourceId|deviceId|tunnelId|secret)"`)
+	badKey = regexp.MustCompile(`logx\.(?:Text|Int)\(\s*"(?:token|password|pairingCode|access|shareId|broadcastId|deviceToken|resourceId|deviceId|tunnelId|secret|invitationCode)"`)
 )
 
 // TestStaticGuard is DEVICE-EXCHANGE 7.9 as a source scan (tickets 139 T-4 and 167 rules 4 and 5):
@@ -145,7 +145,7 @@ func TestOnlyTheKnownFieldConstructorsExist(t *testing.T) {
 		}
 	}
 	sort.Strings(got)
-	want := []string{"Addr", "Broadcast", "Device", "Int", "Login", "Port", "Resource", "Share", "Text", "Tunnel"}
+	want := []string{"Addr", "Broadcast", "Device", "Int", "Invitation", "Login", "Port", "Resource", "Share", "Text", "Tunnel"}
 	if strings.Join(got, ",") != strings.Join(want, ",") {
 		t.Fatalf("the Field constructors are %v, want %v", got, want)
 	}

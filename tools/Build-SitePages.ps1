@@ -267,6 +267,9 @@ function RenderIndexChannels {
       <a class="btn btn-ghost btn-sm" href="$($copy._channels.store.url)" target="_blank" rel="noopener">
         <span>Microsoft Store</span>
       </a>
+      <a class="btn btn-ghost btn-sm" href="server.html">
+        <span data-l="en">$(Esc $copy.en.serverLink)</span><span data-l="ru">$(Esc $copy.ru.serverLink)</span><span data-l="ua">$(Esc $copy.uk.serverLink)</span>
+      </a>
       <span class="dl-meta" id="dlMeta">
         <span data-l="en">Offline-ready bundles - VLC runtimes and OCR packs included. Windows 10 1607+ / 11; a 32-bit build for Windows 7/8.1 is in the same download.</span>
         <span data-l="ru">Готовы к работе офлайн - библиотеки VLC и пакеты OCR уже внутри. Windows 10 1607+ / 11; 32-битная сборка для Windows 7/8.1 - в том же файле.</span>
@@ -400,6 +403,7 @@ $(TwitterImageMeta $e.ogAlt)
 <header class="site-header">
   <nav class="site-nav" aria-label="$(Esc $e.navLabel)">
   <a class="brand" href="$(PageUrl $code)" aria-label="$(Esc $ProductFull)">$(Body $ProductFull)</a>
+  <a class="nav-doc" href="$BaseUrl/topics.html">$(Esc $e.docsLink)</a>
   <details class="lang-menu">
     <summary>$(Esc $e.name)</summary>
     <div class="lang-pop">
@@ -413,14 +417,15 @@ $(TwitterImageMeta $e.ogAlt)
 
 <main class="container" id="main" tabindex="-1">
   <section class="hero">
-    <div class="hero-id">
-      <img class="app-icon" src="${A}assets/icons/store-icon-256.png" alt="" width="168" height="168">
-      <div class="hero-copy">
-        <span class="eyebrow">Windows desktop app</span>
-        <h1>$(Body $e.title)</h1>
-        <span class="kicker">Free &amp; open-source</span>
+    <div class="identity">
+      <img class="product-icon" src="${A}assets/icons/store-icon-256.png" alt="" width="104" height="104">
+      <div>
+        <p class="product-name">$(Body $e.title)</p>
+        <p class="kicker" lang="en" dir="ltr">Windows desktop app</p>
+        <p class="kicker" lang="en" dir="ltr">Free &amp; open-source</p>
       </div>
     </div>
+    <h1>$(Body $e.outcome)</h1>
     <p class="lead lead-narrow">$(Body $e.family)</p>
     <p class="lead lead-narrow">$(Body $e.tagline)</p>
     <p class="lead lead-narrow">$(Body $e.sharing) <a href="$BaseUrl/publish-folders-android.html" lang="en" dir="ltr">$(Esc $howtoAndroid)</a></p>
@@ -467,14 +472,14 @@ $scenarioCards
         <a class="btn btn-ghost" id="dl-zip" href="$($copy._channels.github.url)">Portable (.zip)</a>
         <a class="btn btn-ghost btn-sm" href="$($copy._channels.github.url)">All releases</a>
         <a class="btn btn-ghost btn-sm" href="$($copy._channels.store.url)" target="_blank" rel="noopener"><span>Microsoft Store</span></a>
+        <a class="btn btn-ghost btn-sm" href="$BaseUrl/server.html">$(Esc $e.serverLink)</a>
         <span class="dl-meta" id="dlMeta">Offline-ready bundles - VLC runtimes and OCR packs included. Windows 10 1607+ / 11; a 32-bit build for Windows 7/8.1 is in the same download.</span>
       </div>
       <p class="dl-meta">$(Body $e.insideNote)</p>
       <p class="dl-meta">
         <a href="$(TrustUrl $code)">$(Esc $trust.$code.title)</a>
       </p>
-$note      <p><a href="$BaseUrl/server.html">$(Esc $e.serverLink)</a></p>
-    </div>
+$note    </div>
   </section>
 
   <section class="section" id="features">
@@ -1358,12 +1363,13 @@ if ($Check) {
     }
 
     # --- 12 Contract Conformance Checks (ticket 030 section 5, DOC-EXTERNAL-QUALITY), then 13-14 (specification 154) ---
-    # 1. Kit identity - the catalog's reference/sza-kit.css as re-vendored 2026-10-07 (the PAGE-STYLE 1.3 revision:
-    # 14521 bytes; the 1.4/1.5 revision the catalog still owes is NOT in it - re-pin when that one lands).
+    # 1. Kit identity - the catalog's reference/sza-kit.css as re-vendored 2026-10-13 (the revision the PAGE-STYLE 1.4/1.5
+    # amendments owed and the catalog published on 2026-10-07: 15661 bytes; it replaced the 1.3 file, 14521 bytes,
+    # SHA-256 AEA958F8..). Re-pin when the catalog moves the file again, never by hand-editing the kit.
     # Hashed with CRLF folded to LF: the catalog file is LF, and a text=auto checkout with
     # core.autocrlf turns the working copy CRLF without changing a single character of the kit.
     # assets/sza-kit.css is also marked -text in .gitattributes (PAGE-STYLE section 0 step 1), so a new clone is LF.
-    $pinnedKitSha = 'AEA958F805249D300B7417373E4CAD18B44D7EED9765954DF19ED710276C4C9E'
+    $pinnedKitSha = '27501A1078653B78A7150250857313625BFE884BCC41A1272B7D7D483CEF2895'
     $kitFile = Join-Path $Root 'assets/sza-kit.css'
     if (-not (Test-Path $kitFile)) {
         $problems += "Kit identity: missing assets/sza-kit.css"

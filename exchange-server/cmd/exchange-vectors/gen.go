@@ -20,7 +20,7 @@ const (
 	// connFileName (connection-string-v1.json) is declared in connstr.go
 
 	contractID      = "DEVICE-EXCHANGE"
-	contractVersion = "0.19"
+	contractVersion = "1.1"
 	producerName    = "Media Exchange Server (Go) of Fast Media Sorter & Sharing for Windows, cmd/exchange-vectors"
 )
 
@@ -115,7 +115,12 @@ func frameNotes() []string {
 		"After `connected` and after `upload-accepted` the bytes are not envelopes: tunnels are recorded up to `connected` and never beyond; an upload continues as `chunk` steps (a 4-byte length counting the flag byte plus the payload, the flag byte, the payload) and the listener's HTTP exchange is an `http` step.",
 		"`chunks` lists every flag combination of the two defined bits, a zero length (the clean end of a broadcast) and the chunks that close a stream (an undefined flag bit, a length above 1048576, the largest length word); a chunk of exactly 1048576 bytes of length is the largest accepted and is not listed because of its size.",
 		"The frame limit is 16384 bytes of JSON until a stream is authenticated (up to and including welcome or enrolled) and 262144 after it, both ways; a record is at most 16384 bytes of JSON.",
-		"Reasons: bad-credentials, device-revoked, version-unsupported, tls-required, id-collision, capacity, port-unavailable, unavailable and rate-limited are all produced in the `refusals` transcript; the refusal that answers a schemaVersion 1 frame carries schemaVersion 2.",
+		"Reasons: bad-credentials, device-revoked, version-unsupported, tls-required, id-collision, capacity, port-unavailable, unavailable and rate-limited are produced in the `refusals` transcript (with limit-reached and protection-unsupported); invitation-invalid, login-taken, password-policy, limit-reached (the cap on accounts) and not-permitted are produced in `registration`, signed-out in `password`, and rate-limited by the pace of password checks in `pace`. The refusal that answers a schemaVersion 1 frame carries schemaVersion 2.",
+		"`limit-reached` is a count limit of the server or of the account (resources, broadcasts, devices, accounts); `capacity` is the server unable to take more - a record or a frame over its size, the work queue of the password hash full, no room for another pairing code. A client that retries later is right for the second and wrong for the first.",
+		"Registration (`register`) carries an invitation by `invitationCode` (one-time) or `sharedPassword` (the shared invitation password), exactly one of them; the contract's prose also names them `invitation` and `invitationPassword`, and the server reads both spellings. `enrolled` carries `accountKind` (`member` or `guest`).",
+		"`limit-reached` is a count limit of the server or of the account (resources, broadcasts, devices, accounts, and the clipboard's `clipboardBytes`); `capacity` is the server unable to take more - a record or a frame over its size, the work queue of the password hash full, no room for another pairing code, the account's second overlapping clipboard put. A client that retries later is right for the second and wrong for the first.",
+		"The `clipboard` transcript is section 22 (ticket 229): after `clipboard-ready` and after the members of `clipboard-value` the bytes are RAW - one step per byte run, whose `hex` is the bytes exactly as they crossed the stream; a frame assembler stops there. A put's completion is judged against a short probe for bytes beyond the declared size, and a sender that half-closes is judged at once.",
+		"This corpus is evidence for sections 5 to 7 and 22 at edition 1.1. It is no evidence for section 27 (the sealed content amendment, item DP): the server of this corpus does not implement the capability, its `welcome.features` carries no `sealed`, and its clipboard kinds are `text`, `image` and `file` only.",
 	}
 }
 
@@ -142,11 +147,12 @@ func generate(commit string) (files map[string][]byte, err error) {
 	}()
 	var transcripts []*transcript
 	for _, sc := range []func() *transcript{scenarioEnrollAndHello, scenarioPairing, scenarioRefusals, scenarioDirectory,
-		scenarioTunnels, scenarioRelay, scenarioCast} {
+		scenarioTunnels, scenarioRelay, scenarioCast, scenarioRegistration, scenarioPasswordAndSignOut, scenarioPace,
+		scenarioClipboard} {
 		transcripts = append(transcripts, sc())
 	}
 	frames := framesFile{
-		Contract: contractID, ContractVersion: contractVersion, Sections: "5, 6, 7.1-7.10", Rung: 2, Producer: producerName,
+		Contract: contractID, ContractVersion: contractVersion, Sections: "5, 6, 7.1-7.10, 22", Rung: 2, Producer: producerName,
 		Notes: frameNotes(),
 		Constants: map[string]int{"maxFrame": wire.MaxFrame, "maxFrameAuth": wire.MaxFrameAuth, "maxRecord": wire.MaxRecord,
 			"maxChunkLength": wire.MaxChunkLen, "schemaVersion": wire.SchemaVersion},
@@ -196,7 +202,7 @@ func provenance(files map[string][]byte, commit string) string {
 		commit = "not recorded"
 	}
 	var b strings.Builder
-	fmt.Fprintf(&b, "Exchange conformance vectors for %s %s (rungs 1 and 2, and the connection string of ticket 187).\n\n", contractID, contractVersion)
+	fmt.Fprintf(&b, "Exchange conformance vectors for %s %s (rungs 1 and 2, the connection string of ticket 187, the clipboard of section 22).\n\n", contractID, contractVersion)
 	b.WriteString("generator: cmd/exchange-vectors in the exchange-server module of the Fast Media Sorter & Sharing for Windows repository\n")
 	b.WriteString("command:   go run ./cmd/exchange-vectors -out testdata/vectors\n")
 	fmt.Fprintf(&b, "commit:    %s\n\n", commit)

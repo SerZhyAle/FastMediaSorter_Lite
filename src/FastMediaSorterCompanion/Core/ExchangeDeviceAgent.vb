@@ -1,5 +1,8 @@
 Option Strict On
 
+Imports System.Collections.Generic
+Imports System.IO
+Imports System.Net.Sockets
 Imports System.Text.Json
 Imports System.Text.Json.Nodes
 Imports System.Threading
@@ -63,11 +66,11 @@ Friend NotInheritable Class ExchangeProductionRoleFacts
     End Function
 
     Public Function CanReceive() As Boolean Implements IExchangeRoleFacts.CanReceive
-        Return False
+        Return ExchangeFeatures.IsEnabled() AndAlso ViewerAttaches()
     End Function
 
     Public Function LiveBroadcastEnabled() As Boolean Implements IExchangeRoleFacts.LiveBroadcastEnabled
-        Return False
+        Return LiveBroadcastFeatures.IsEnabled()
     End Function
 End Class
 
@@ -147,6 +150,33 @@ Friend NotInheritable Class ExchangeEnrollRequest
 
 End Class
 
+''' <summary>What the user gave to REGISTER (226 rule 1): the invitation code of the string (or the operator's shared invitation
+''' password) and the login and password the person chose. The secrets are cleared by the agent as soon as the frame is built;</summary>
+Friend NotInheritable Class ExchangeRegisterRequest
+
+    Public Property Server As String = ""
+    Public Property Login As String = ""
+    Public Property Password As String = ""
+    ''' <summary>The one-time code the invitation string carried; "" when the person typed the shared password instead.</summary>
+    Public Property InvitationCode As String = ""
+    ''' <summary>The operator's shared invitation password; "" when a one-time code is used.</summary>
+    Public Property SharedPassword As String = ""
+    Public Property PlatformValid As Boolean
+    Public Property AcceptedFingerprint As String = ""
+    Public Property DeviceName As String = ""
+
+    Public Sub Wipe()
+        Password = ""
+        InvitationCode = ""
+        SharedPassword = ""
+    End Sub
+
+    Public Overrides Function ToString() As String
+        Return "ExchangeRegisterRequest"
+    End Function
+
+End Class
+
 ''' <summary>What the settings window and the viewer's state request need to know, in one immutable value.</summary>
 Friend NotInheritable Class ExchangeDeviceStatus
 
@@ -222,6 +252,13 @@ Friend NotInheritable Class ExchangeDeviceAgent
     Private ReadOnly _ports As ExchangeAgentPorts
     Private ReadOnly _gate As New Object()
     Private _session As ExchangeControlSession
+    Private _castOffer As String
+    Private _castId As String
+    Private _castSequence As Long
+    Private _castPlayingId As String
+    Private _castStopId As String
+    Private _viewerSeenMs As Long = Long.MinValue
+    Friend Property CastAnswerTimeoutMs As Integer = 55000
     Private _cts As CancellationTokenSource
     Private _runTask As Task
     Private _channel As IDisposable
@@ -229,6 +266,14 @@ Friend NotInheritable Class ExchangeDeviceAgent
     Private _idleReason As String = ""
     Private _changeWaiters As New List(Of TaskCompletionSource(Of Boolean))
     Private _disposed As Boolean
+
+    ' Live broadcast state (spec 199 section 3.3)
+    Private _liveBroadcastRecordJson As String
+    Private _liveBroadcastId As String
+    Private _liveBroadcastState As LiveProducerState
+    Private _liveUploadCts As CancellationTokenSource
+    Private ReadOnly _castPendingLock As New Object()
+    Private ReadOnly _pendingCasts As New Dictionary(Of String, TaskCompletionSource(Of Tuple(Of Boolean, String)))(StringComparer.Ordinal)
 
     ''' <summary>The state or its reason changed (any thread).</summary>
     Public Event StatusChanged As EventHandler
@@ -282,7 +327,7 @@ Friend NotInheritable Class ExchangeDeviceAgent
         StopSessionOnly()
         Dim options As New ExchangeControlOptions With {
             .Server = address, .Pin = account.Pin, .Credentials = creds, .ProductVersion = _ports.ProductVersion,
-            .Transport = _ports.Transport, .Log = _ports.Log}
+            .Transport = _ports.Accounts.TransportFor(account, _ports.Transport), .Log = _ports.Log}
         _ports.ConfigureSession.Invoke(options)
         Dim session As New ExchangeControlSession(options, Me)
         AddHandler session.StateChanged, AddressOf OnSessionStateChanged
@@ -314,6 +359,10 @@ Friend NotInheritable Class ExchangeDeviceAgent
             cts = _cts
             run = _runTask
             _session = Nothing
+            _castId = Nothing
+            _castOffer = Nothing
+            _castPlayingId = Nothing
+            _castStopId = Nothing
             _cts = Nothing
             _runTask = Nothing
         End SyncLock
@@ -460,6 +509,68 @@ Friend NotInheritable Class ExchangeDeviceAgent
         End Using
     End Function
 
+    ''' <summary>226 rule 1: registers this PC by invitation - `register` with the one-time code (or the shared invitation password), the
+    ''' chosen login and password, then `enrolled`. The completion is a sign-in's own: the token is stored under DPAPI, the account entry is
+    ''' written, the control stream stays open and the local channel starts. The request's secrets are wiped whatever happens.</summary>
+    Public Async Function RegisterAsync(request As ExchangeRegisterRequest, ct As CancellationToken) As Task(Of ExchangeEnrollResult)
+        Try
+            Dim address As ExchangeServerAddress = Nothing
+            Dim login As String = request.Login.Trim()
+            Dim hasCode As Boolean = request.InvitationCode.Trim().Length > 0
+            Dim hasShared As Boolean = request.SharedPassword.Length > 0
+            If Not ExchangeServerAddress.TryParse(request.Server, address) OrElse login.Length = 0 OrElse
+               request.Password.Length = 0 OrElse hasCode = hasShared Then
+                Return New ExchangeEnrollResult(ExchangeEnrollOutcome.BadInput, ExchangeRefusal.Unknown, "")
+            End If
+            Dim pin As String = If(request.PlatformValid, "", request.AcceptedFingerprint)
+            If Not request.PlatformValid AndAlso Not ExchangeTrust.IsFingerprint(pin) Then
+                Return New ExchangeEnrollResult(ExchangeEnrollOutcome.Untrusted, ExchangeRefusal.Unknown, "")
+            End If
+
+            Dim deviceId As String = _ports.Accounts.ProposeDeviceId()
+            Dim name As String = ExchangeDeviceDescription.Clip(If(request.DeviceName.Trim().Length > 0, request.DeviceName, _ports.MachineName.Invoke()), 64)
+            If name.Length = 0 Then name = "Windows PC"
+            Dim description As New ExchangeDeviceDescription(deviceId, name, ExchangeWire.ProductWindows,
+                ExchangeDeviceDescription.Clip(_ports.ProductVersion, 64), ExchangeDeviceDescription.PlatformText(),
+                ExchangeRoles.Compute(_ports.RoleFacts), If(_ports.RoleFacts.CanReceive(), ExchangeAgentPipe.ReceiverJson, ""))
+            Dim code As String = request.InvitationCode.Trim()
+            Dim sharedPw As String = request.SharedPassword
+            Dim password As String = request.Password
+            request.Wipe()
+            Dim register As ExchangeEnvelope = ExchangeMessages.Register(code, sharedPw, login, password, description, ExchangeWire.ProposedKeepaliveSeconds)
+            Dim opened As ExchangeOpenResult
+            Try
+                ' the answer of `register` is `enrolled`, the same frame a sign-in answers with (224 rule 6)
+                opened = Await ExchangeSessions.EnrollAsync(_ports.Transport, address, pin, register, ct).ConfigureAwait(False)
+            Finally
+                register.SetText("password", "").SetText("invitationCode", "").SetText("sharedPassword", "")
+            End Try
+
+            Select Case opened.Outcome
+                Case ExchangeOpenOutcome.Connected
+                    Dim shim As New ExchangeEnrollRequest With {.PlatformValid = request.PlatformValid}
+                    Return CompleteEnrollment(opened, address, login, shim, description, pin)
+                Case ExchangeOpenOutcome.Refused
+                    Return New ExchangeEnrollResult(ExchangeEnrollOutcome.Refused, opened.Refusal, opened.Fingerprint)
+                Case ExchangeOpenOutcome.PinMismatch
+                    Return New ExchangeEnrollResult(ExchangeEnrollOutcome.PinMismatch, ExchangeRefusal.Unknown, opened.Fingerprint)
+                Case ExchangeOpenOutcome.Untrusted
+                    Return New ExchangeEnrollResult(ExchangeEnrollOutcome.Untrusted, ExchangeRefusal.Unknown, opened.Fingerprint)
+                Case ExchangeOpenOutcome.TlsFailed
+                    Return New ExchangeEnrollResult(ExchangeEnrollOutcome.TlsFailed, ExchangeRefusal.Unknown, opened.Fingerprint)
+                Case ExchangeOpenOutcome.Network
+                    Return New ExchangeEnrollResult(ExchangeEnrollOutcome.Network, ExchangeRefusal.Unknown, opened.Fingerprint)
+                Case ExchangeOpenOutcome.TimedOut
+                    Return New ExchangeEnrollResult(ExchangeEnrollOutcome.TimedOut, ExchangeRefusal.Unknown, opened.Fingerprint)
+                Case ExchangeOpenOutcome.Cancelled
+                    Return New ExchangeEnrollResult(ExchangeEnrollOutcome.Cancelled, ExchangeRefusal.Unknown, opened.Fingerprint)
+                Case Else
+                    Return New ExchangeEnrollResult(ExchangeEnrollOutcome.Protocol, ExchangeRefusal.Unknown, opened.Fingerprint)
+            End Select
+        Finally
+            request.Wipe()
+        End Try
+    End Function
     ''' <summary>Enrolls this PC: `enroll` with the password OR a pairing code, then `enrolled`. On success the token is stored under DPAPI, the
     ''' account entry is written, the control stream stays open (the very stream that enrolled becomes the control stream) and the local
     ''' channel starts. The request's secrets are wiped whatever happens.</summary>
@@ -483,7 +594,7 @@ Friend NotInheritable Class ExchangeDeviceAgent
             If name.Length = 0 Then name = "Windows PC"
             Dim description As New ExchangeDeviceDescription(deviceId, name, ExchangeWire.ProductWindows,
                 ExchangeDeviceDescription.Clip(_ports.ProductVersion, 64), ExchangeDeviceDescription.PlatformText(),
-                ExchangeRoles.Compute(_ports.RoleFacts), "")
+                ExchangeRoles.Compute(_ports.RoleFacts), If(_ports.RoleFacts.CanReceive(), ExchangeAgentPipe.ReceiverJson, ""))
             Dim enroll As ExchangeEnvelope = ExchangeMessages.Enroll(login, request.Password, request.PairingCode.Trim().ToUpperInvariant(), description,
                                                                     ExchangeWire.ProposedKeepaliveSeconds)
             Dim opened As ExchangeOpenResult
@@ -533,7 +644,7 @@ Friend NotInheritable Class ExchangeDeviceAgent
             Return New ExchangeEnrollResult(ExchangeEnrollOutcome.StoreFailed, ExchangeRefusal.Unknown, opened.Fingerprint)
         End If
         Dim kind As ExchangeCertificateKind = If(request.PlatformValid, ExchangeCertificateKind.CaSigned, ExchangeCertificateKind.Pinned)
-        Dim account As New ExchangeAccount(address.ToString(), login, pin, kind, description.DeviceId, description.DeviceName)
+        Dim account As New ExchangeAccount(address.ToString(), login, pin, kind, description.DeviceId, description.DeviceName, If(request.PlatformValid, "", opened.KeyPin))
         _ports.Accounts.Save(account)
         _ports.Log.Invoke("Exchange agent: enrolled as device " & ExchangeIds.ForLog(description.DeviceId))
         StartSession(account, address, New ExchangeDeviceCredentials(description.DeviceId, token), opened)
@@ -552,6 +663,28 @@ Friend NotInheritable Class ExchangeDeviceAgent
         Return session.RequestPairingCodeAsync(ct)
     End Function
 
+    ''' <summary>226 rule 4: change the account's password over this device's own control stream. On success the fresh key of the answer
+    ''' is stored and the stream restarts with it; the account's OTHER devices are signed out by the server (224 rule 9) - the window's
+    ''' sentence says so. A wrong old password is the common refusal, and nothing is retried on its own (218).</summary>
+    Public Async Function ChangePasswordAsync(oldPassword As String, newPassword As String, ct As CancellationToken) As Task(Of ExchangePasswordChangeResult)
+        Dim session As ExchangeControlSession
+        SyncLock _gate
+            session = _session
+        End SyncLock
+        If session Is Nothing Then Return New ExchangePasswordChangeResult(ExchangePasswordChangeOutcome.NoStream, ExchangeRefusal.Unknown, "")
+        Dim result As ExchangePasswordChangeResult = Await session.ChangePasswordAsync(oldPassword, newPassword, ct).ConfigureAwait(False)
+        If result.Outcome = ExchangePasswordChangeOutcome.Changed Then
+            Dim account As ExchangeAccount = _ports.Accounts.Load()
+            If account Is Nothing OrElse Not _ports.Credentials.Save(account.DeviceId, result.FreshToken) Then
+                _ports.Log.Invoke("Exchange agent: this account's key changed, but the new one could not be stored on this computer")
+                Return New ExchangePasswordChangeResult(ExchangePasswordChangeOutcome.NoStream, ExchangeRefusal.Unknown, "")
+            End If
+            _ports.Log.Invoke("Exchange agent: this account's key was changed - the other devices sign in again")
+            StopSessionOnly()
+            Start()
+        End If
+        Return result
+    End Function
     ''' <summary>Revokes another device of the account. Revoking THIS device is leaving the account (<see cref="LeaveAccountAsync"/>).</summary>
     Public Async Function RevokeAsync(deviceId As String, ct As CancellationToken) As Task(Of Boolean)
         Dim account As ExchangeAccount = _ports.Accounts.Load()
@@ -628,7 +761,7 @@ Friend NotInheritable Class ExchangeDeviceAgent
         Dim address As ExchangeServerAddress = Nothing
         If Not ExchangeServerAddress.TryParse(server, address) Then Return
         _ports.Accounts.Save(New ExchangeAccount(New ExchangeServerAddress(address.Host.ToLowerInvariant(), address.Port).ToString(),
-                                                 account.Login, account.Pin, account.Certificate, account.DeviceId, account.DeviceName))
+                                                 account.Login, account.Pin, account.Certificate, account.DeviceId, account.DeviceName, account.KeyPin))
         _ports.Log.Invoke("Exchange agent: the stored server address was updated after a welcome named another one")
         StopSessionOnly()
         Start()
@@ -637,6 +770,19 @@ Friend NotInheritable Class ExchangeDeviceAgent
     ' --- hooks of the control session ---
 
     Public Async Function OnWelcomeAsync(session As ExchangeControlSession, ct As CancellationToken) As Task Implements IExchangeSessionHooks.OnWelcomeAsync
+        Dim activeRecord As String = Nothing
+        SyncLock _gate
+            _castId = Nothing
+            _castOffer = Nothing
+            activeRecord = _liveBroadcastRecordJson
+        End SyncLock
+        ' Spec 200 rule 6: After a reconnect the agent sends broadcast-start again with the same id
+        If Not String.IsNullOrEmpty(activeRecord) Then
+            Try
+                Await session.SendAsync(New ExchangeEnvelope(ExchangeEnvelopeTypes.BroadcastStart).SetRecord("broadcast", activeRecord), ct).ConfigureAwait(False)
+            Catch
+            End Try
+        End If
         ' The republish of this device's resources (170) plugs in here; the broadcasts (173) join it. A device with no producer
         ' (the default of the ports) publishes nothing.
         Dim producer As IExchangeProducerHooks = _ports.Producer
@@ -644,14 +790,378 @@ Friend NotInheritable Class ExchangeDeviceAgent
     End Function
 
     Public Sub OnMessage(session As ExchangeControlSession, message As ExchangeEnvelope) Implements IExchangeSessionHooks.OnMessage
-        ' `open` is the producer's (170: a tunnel to attach); everything else goes to whoever listens (174: `cast-offer`, ..)
-        Dim producer As IExchangeProducerHooks = _ports.Producer
-        If producer IsNot Nothing AndAlso message IsNot Nothing AndAlso message.Is(ExchangeEnvelopeTypes.Open) Then
-            producer.OnServerMessage(session, message)
+        If message IsNot Nothing AndAlso message.Is(ExchangeEnvelopeTypes.CastStop) Then
+            SyncLock _gate
+                If message.Text("broadcastId") = _castPlayingId AndAlso _castPlayingId IsNot Nothing Then
+                    _castStopId = _castPlayingId
+                    _castPlayingId = Nothing
+                End If
+            End SyncLock
             Return
+        End If
+        If message IsNot Nothing AndAlso message.Is(ExchangeEnvelopeTypes.CastResult) Then
+            Dim bId As String = message.Text("broadcastId")
+            Dim rId As String = message.Text("receiverDeviceId")
+            Dim accepted As Boolean = message.Flag("accepted")
+            Dim reason As String = message.Text("reason")
+            Dim tcs As TaskCompletionSource(Of Tuple(Of Boolean, String)) = Nothing
+            SyncLock _castPendingLock
+                If _pendingCasts.TryGetValue(bId & ":" & rId, tcs) Then
+                    tcs.TrySetResult(Tuple.Create(accepted, reason))
+                End If
+            End SyncLock
+            Return
+        End If
+        If message IsNot Nothing AndAlso message.Is(ExchangeEnvelopeTypes.CastOffer) Then
+            Dim pending As Task = ReceiveCastAsync(session, message)
+            Return
+        End If
+        ' `open` is either for the live broadcast tunnel or the resource producer's tunnel
+        If message IsNot Nothing AndAlso message.Is(ExchangeEnvelopeTypes.Open) Then
+            Dim broadcastId As String = message.Text("broadcastId")
+            If Not String.IsNullOrEmpty(broadcastId) Then
+                Dim tunnelId As String = message.Text("tunnelId")
+                Dim ct As CancellationToken = If(_cts IsNot Nothing, _cts.Token, CancellationToken.None)
+                Dim t As Task = Task.Run(Function() HandleBroadcastOpenAsync(session, tunnelId, broadcastId, ct))
+                Return
+            End If
+            Dim producer As IExchangeProducerHooks = _ports.Producer
+            If producer IsNot Nothing Then
+                producer.OnServerMessage(session, message)
+                Return
+            End If
         End If
         RaiseEvent ServerMessage(message)
     End Sub
+
+    Private Async Function ReceiveCastAsync(session As ExchangeControlSession, message As ExchangeEnvelope) As Task
+        Dim raw As String = message.Record("broadcast")
+        Dim record As ExchangeBroadcastRecord = Nothing
+        If Not ExchangeRecordReader.TryReadBroadcast(raw, record) Then Return
+        Dim queued As Boolean
+        Dim sequence As Long
+        SyncLock _gate
+            queued = _castId Is Nothing AndAlso ReferenceEquals(_session, session) AndAlso
+                _viewerSeenMs <> Long.MinValue AndAlso Environment.TickCount64 - _viewerSeenMs < 8000
+            If queued Then
+                _castSequence += 1
+                _castId = record.BroadcastId
+                _castOffer = raw
+            End If
+            sequence = _castSequence
+        End SyncLock
+        If Not queued Then
+            Await session.SendAsync(New ExchangeEnvelope(ExchangeEnvelopeTypes.CastAnswer).SetText("broadcastId", record.BroadcastId).
+                SetFlag("accepted", False).SetText("reason", "unavailable"), CancellationToken.None).ConfigureAwait(False)
+            Return
+        End If
+        ' An absent viewer must not leave the caster waiting indefinitely. No automatic launch or focus theft.
+        Await Task.Delay(CastAnswerTimeoutMs).ConfigureAwait(False)
+        Dim expired As Boolean
+        SyncLock _gate
+            expired = _castId = record.BroadcastId AndAlso _castSequence = sequence
+            If expired Then
+                _castId = Nothing
+                _castOffer = Nothing
+            End If
+        End SyncLock
+        If expired Then
+            Await session.SendAsync(New ExchangeEnvelope(ExchangeEnvelopeTypes.CastAnswer).SetText("broadcastId", record.BroadcastId).
+                SetFlag("accepted", False).SetText("reason", "timeout"), CancellationToken.None).ConfigureAwait(False)
+        End If
+    End Function
+
+    ' --- live broadcast publication, relay upload, tunnel bridging, and cast out (spec 199 section 3.3) ---
+
+    Friend Sub OnBroadcastStarted(state As LiveProducerState, audioHub As LiveBroadcastHub, videoHub As LiveBroadcastHub)
+        If state Is Nothing Then Return
+        Dim session As ExchangeControlSession
+        SyncLock _gate
+            _liveBroadcastId = state.BroadcastId
+            _liveBroadcastState = state
+            _liveUploadCts?.Cancel()
+            _liveUploadCts = New CancellationTokenSource()
+            session = _session
+        End SyncLock
+
+        Dim status As ExchangeDeviceStatus = Me.GetStatus()
+        Dim deviceId As String = If(status IsNot Nothing, status.DeviceId, "")
+        Dim recordJson As String = LiveProducerDescriptorWriter.BuildBroadcastRecord(state.BroadcastId, deviceId, state.SourceName, state.Mode, state.DescriptorJson)
+        SyncLock _gate
+            _liveBroadcastRecordJson = recordJson
+        End SyncLock
+
+        If session IsNot Nothing Then
+            Dim unused As Task = Task.Run(
+                Async Function()
+                    Try
+                        Await session.SendAsync(New ExchangeEnvelope(ExchangeEnvelopeTypes.BroadcastStart).SetRecord("broadcast", recordJson), CancellationToken.None).ConfigureAwait(False)
+                    Catch
+                    End Try
+                End Function)
+        End If
+
+        Dim uploadCts As CancellationTokenSource
+        SyncLock _gate
+            uploadCts = _liveUploadCts
+        End SyncLock
+        If uploadCts IsNot Nothing Then
+            Dim unusedUpload As Task = Task.Run(Function() RunUploadLoopAsync(state, audioHub, videoHub, uploadCts.Token))
+        End If
+    End Sub
+
+    Friend Sub OnBroadcastStopped(broadcastId As String)
+        Dim session As ExchangeControlSession
+        Dim uploadCts As CancellationTokenSource
+        SyncLock _gate
+            If _liveBroadcastId = broadcastId Then
+                _liveBroadcastId = Nothing
+                _liveBroadcastRecordJson = Nothing
+                _liveBroadcastState = Nothing
+                uploadCts = _liveUploadCts
+                _liveUploadCts = Nothing
+            End If
+            session = _session
+        End SyncLock
+        Try
+            uploadCts?.Cancel()
+        Catch
+        End Try
+        If session IsNot Nothing AndAlso Not String.IsNullOrEmpty(broadcastId) Then
+            Dim unused As Task = Task.Run(
+                Async Function()
+                    Try
+                        Await session.SendAsync(New ExchangeEnvelope(ExchangeEnvelopeTypes.BroadcastEnd).SetText("broadcastId", broadcastId), CancellationToken.None).ConfigureAwait(False)
+                    Catch
+                    End Try
+                End Function)
+        End If
+    End Sub
+
+    Private Async Function RunUploadLoopAsync(state As LiveProducerState, audioHub As LiveBroadcastHub, videoHub As LiveBroadcastHub, ct As CancellationToken) As Task
+        If String.IsNullOrEmpty(state.RelayUrl) OrElse Not String.IsNullOrEmpty(state.Password) Then Return
+        Dim isVideo As Boolean = String.Equals(state.Mode, "VIDEO_AUDIO", StringComparison.OrdinalIgnoreCase) OrElse
+                                 String.Equals(state.Mode, "VIDEO_ONLY", StringComparison.OrdinalIgnoreCase)
+        Dim contentType As String = If(isVideo, "video/mp2t", "audio/aac")
+        Dim hub As LiveBroadcastHub = If(isVideo, videoHub, audioHub)
+        If hub Is Nothing Then Return
+
+        While Not ct.IsCancellationRequested
+            Dim session As ExchangeControlSession
+            SyncLock _gate
+                session = _session
+            End SyncLock
+            If session Is Nothing OrElse session.ConnectionOptions Is Nothing Then
+                Try
+                    Await Task.Delay(1000, ct).ConfigureAwait(False)
+                Catch
+                    Return
+                End Try
+                Continue While
+            End If
+
+            Dim opts As ExchangeControlOptions = session.ConnectionOptions
+            Dim uploadSession As ExchangeOpenResult = Nothing
+            Dim cursor As LiveHubCursor = Nothing
+            Dim shouldDelay As Boolean = False
+            Try
+                uploadSession = Await ExchangeDataStreams.UploadAsync(
+                    opts.Transport, opts.Server, opts.Pin, opts.Credentials, opts.ProductVersion, state.BroadcastId, contentType, ct).ConfigureAwait(False)
+                If uploadSession Is Nothing OrElse Not uploadSession.IsConnected Then
+                    shouldDelay = True
+                Else
+                    cursor = hub.Attach()
+                    Dim netStream As Stream = uploadSession.Stream
+
+                    Dim chunker As New LiveRelayTsChunker()
+
+                    ' Streaming loop
+                    While Not ct.IsCancellationRequested AndAlso Not cursor.Detached
+                        Dim chunk As Byte() = cursor.Pull()
+                        If chunk Is Nothing Then
+                            Await Task.Delay(10, ct).ConfigureAwait(False)
+                            Continue While
+                        End If
+
+                        If isVideo Then
+                            For Each cut As LiveRelayCut In chunker.Feed(chunk)
+                                Dim flags As Byte = If(cut.Header, ExchangeChunks.FlagHeader,
+                                                       If(cut.Joinable, ExchangeChunks.FlagJoinable, CByte(0)))
+                                Await WriteLiveChunkAsync(netStream, ExchangeChunks.Build(flags, cut.Payload), ct).ConfigureAwait(False)
+                            Next
+                        Else
+                            Await WriteLiveChunkAsync(netStream, ExchangeChunks.Build(ExchangeChunks.FlagJoinable, chunk), ct).ConfigureAwait(False)
+                        End If
+                    End While
+
+                    ' Clean teardown: zero-length end marker
+                    Try
+                        Dim endMarker As Byte() = ExchangeChunks.EndMarker()
+                        Await WriteLiveChunkAsync(netStream, endMarker, ct).ConfigureAwait(False)
+                    Catch
+                    End Try
+                End If
+            Catch ex As OperationCanceledException When ct.IsCancellationRequested
+                Return
+            Catch ex As Exception
+                ' Lost stream: reconnect within 15s grace
+                shouldDelay = True
+            Finally
+                cursor?.Detach()
+                Try
+                    uploadSession?.Dispose()
+                Catch
+                End Try
+            End Try
+
+            If shouldDelay Then
+                Try
+                    Await Task.Delay(1000, ct).ConfigureAwait(False)
+                Catch
+                    Return
+                End Try
+            End If
+        End While
+    End Function
+
+    Private Shared Async Function WriteLiveChunkAsync(stream As Stream, bytes As Byte(), ct As CancellationToken) As Task
+        Using deadline As CancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(ct)
+            deadline.CancelAfter(TimeSpan.FromSeconds(5))
+            Await stream.WriteAsync(bytes, 0, bytes.Length, deadline.Token).ConfigureAwait(False)
+        End Using
+    End Function
+
+    Private Async Function HandleBroadcastOpenAsync(session As ExchangeControlSession, tunnelId As String, broadcastId As String, ct As CancellationToken) As Task
+        If String.IsNullOrEmpty(tunnelId) OrElse session Is Nothing Then Return
+        Dim state As LiveProducerState
+        SyncLock _gate
+            state = _liveBroadcastState
+        End SyncLock
+        If state Is Nothing OrElse state.BroadcastId <> broadcastId OrElse Not state.Running Then Return
+
+        Dim localClient As New TcpClient()
+        Dim attached As ExchangeOpenResult = Nothing
+        Try
+            Await localClient.ConnectAsync(state.ListenerAddress, state.Port, ct).ConfigureAwait(False)
+            Dim opts As ExchangeControlOptions = session.ConnectionOptions
+            attached = Await ExchangeDataStreams.AttachAsync(opts.Transport, opts.Server, opts.Pin, opts.Credentials, opts.ProductVersion, tunnelId, ct).ConfigureAwait(False)
+            If attached Is Nothing OrElse Not attached.IsConnected Then Return
+
+            Await ExchangeBridge.RunAsync(attached.Stream, localClient.GetStream(), New ExchangeBridgeOptions With {.IdleTimeout = TimeSpan.FromSeconds(30)}, ct).ConfigureAwait(False)
+        Catch
+        Finally
+            Try : localClient.Dispose() : Catch : End Try
+            Try : attached?.Dispose() : Catch : End Try
+        End Try
+    End Function
+
+    ''' <summary>Initiates a cast offer to a receiver device (spec 199 section 3.3 item 5).</summary>
+    Public Async Function CastAsync(broadcastId As String, receiverDeviceId As String, ct As CancellationToken) As Task(Of Tuple(Of Boolean, String))
+        Dim session As ExchangeControlSession
+        SyncLock _gate
+            session = _session
+        End SyncLock
+        If session Is Nothing Then Return Tuple.Create(False, "unavailable")
+
+        Dim key As String = broadcastId & ":" & receiverDeviceId
+        Dim tcs As New TaskCompletionSource(Of Tuple(Of Boolean, String))()
+        SyncLock _castPendingLock
+            _pendingCasts(key) = tcs
+        End SyncLock
+
+        Try
+            Dim sent As Boolean = Await session.SendAsync(New ExchangeEnvelope(ExchangeEnvelopeTypes.Cast).
+                SetText("broadcastId", broadcastId).SetText("receiverDeviceId", receiverDeviceId), ct).ConfigureAwait(False)
+            If Not sent Then Return Tuple.Create(False, "unavailable")
+
+            Using reg As CancellationTokenRegistration = ct.Register(Sub() tcs.TrySetResult(Tuple.Create(False, "timeout")))
+                Return Await tcs.Task.ConfigureAwait(False)
+            End Using
+        Finally
+            SyncLock _castPendingLock
+                _pendingCasts.Remove(key)
+            End SyncLock
+        End Try
+    End Function
+
+    ''' <summary>Stops an active cast session on the receiver (spec 199 section 3.3 item 5).</summary>
+    Public Async Function CastStopAsync(broadcastId As String, receiverDeviceId As String, ct As CancellationToken) As Task(Of Boolean)
+        Dim session As ExchangeControlSession
+        SyncLock _gate
+            session = _session
+        End SyncLock
+        If session Is Nothing Then Return False
+        Return Await session.SendAsync(New ExchangeEnvelope(ExchangeEnvelopeTypes.CastStop).
+            SetText("broadcastId", broadcastId).SetText("receiverDeviceId", receiverDeviceId), ct).ConfigureAwait(False)
+    End Function
+
+    ''' <summary>Finds qualifying candidate receiver devices on the account (spec 200 rule 8).</summary>
+    Public Function GetCastCandidates(mode As String, descriptorJson As String) As List(Of ExchangeDeviceRecord)
+        Dim result As New List(Of ExchangeDeviceRecord)()
+        Dim snapshot As ExchangeDirectorySnapshot = GetFullDirectory()
+        If snapshot Is Nothing OrElse snapshot.Devices Is Nothing Then Return result
+
+        Dim transports As New HashSet(Of String)(StringComparer.OrdinalIgnoreCase)
+        If Not String.IsNullOrEmpty(descriptorJson) Then
+            Try
+                Using doc As JsonDocument = JsonDocument.Parse(descriptorJson)
+                    Dim endpointsEl As JsonElement = Nothing
+                    If doc.RootElement.TryGetProperty("endpoints", endpointsEl) AndAlso endpointsEl.ValueKind = JsonValueKind.Array Then
+                        For Each ep In endpointsEl.EnumerateArray()
+                            Dim tEl As JsonElement = Nothing
+                            If ep.TryGetProperty("transport", tEl) AndAlso tEl.ValueKind = JsonValueKind.String Then
+                                transports.Add(tEl.GetString())
+                            End If
+                        Next
+                    End If
+                End Using
+            Catch
+            End Try
+        End If
+        If transports.Count = 0 Then transports.Add("HTTP")
+
+        For Each d As ExchangeDeviceRecord In snapshot.Devices
+            If Not d.IsOnline Then Continue For
+            If Not d.Roles.Contains(ExchangeWire.RoleReceiver, StringComparer.OrdinalIgnoreCase) Then Continue For
+
+            Dim qualified As Boolean = False
+            Try
+                Using doc As JsonDocument = JsonDocument.Parse(d.Raw)
+                    Dim recEl As JsonElement = Nothing
+                    If doc.RootElement.TryGetProperty("receiver", recEl) AndAlso recEl.ValueKind = JsonValueKind.Object Then
+                        Dim modesEl As JsonElement = Nothing
+                        Dim modeMatch As Boolean = False
+                        If recEl.TryGetProperty("modes", modesEl) AndAlso modesEl.ValueKind = JsonValueKind.Array Then
+                            For Each m In modesEl.EnumerateArray()
+                                If String.Equals(m.GetString(), mode, StringComparison.OrdinalIgnoreCase) Then
+                                    modeMatch = True
+                                    Exit For
+                                End If
+                            Next
+                        End If
+
+                        Dim transMatch As Boolean = False
+                        Dim transEl As JsonElement = Nothing
+                        If recEl.TryGetProperty("transports", transEl) AndAlso transEl.ValueKind = JsonValueKind.Array Then
+                            For Each tr In transEl.EnumerateArray()
+                                If transports.Contains(tr.GetString()) Then
+                                    transMatch = True
+                                    Exit For
+                                End If
+                            Next
+                        End If
+
+                        If modeMatch AndAlso transMatch Then qualified = True
+                    End If
+                End Using
+            Catch
+            End Try
+
+            If qualified Then result.Add(d)
+        Next
+
+        Return result
+    End Function
 
     ''' <summary>The producer (170) when this agent has one; the window reads its snapshot and drives the links through it.</summary>
     Public ReadOnly Property Publisher As ExchangePublisher
@@ -711,7 +1221,7 @@ Friend NotInheritable Class ExchangeDeviceAgent
                 Dim st As ExchangeDeviceStatus = GetStatus()
                 Return ExchangeLocalResult.Success(New ExchangeAgentStateInfo(st.Configured, st.State, st.Features, st.DeviceId, st.DeviceName, st.LastReason).ToJson())
 
-            Case ExchangeAgentPipe.RequestGetDirectory
+            Case ExchangeAgentPipe.RequestGetDirectory, ExchangeAgentPipe.RequestGetLiveDirectory
                 Dim status As ExchangeDeviceStatus = GetStatus()
                 If Not status.Configured Then Return ExchangeLocalResult.Failure(ExchangeAgentPipe.ErrorNotConfigured)
                 Dim since As Long = ReadLong(request, "sinceRevision", 0)
@@ -726,7 +1236,7 @@ Friend NotInheritable Class ExchangeDeviceAgent
                     revision = CurrentRevision()
                 End If
                 If revision < 0 Then Return ExchangeLocalResult.Failure(ExchangeAgentPipe.ErrorNotConnected)
-                Return ExchangeLocalResult.Success(GetDirectory().ToLocalJson())
+                Return ExchangeLocalResult.Success(If(requestType = ExchangeAgentPipe.RequestGetLiveDirectory, GetFullDirectory(), GetDirectory()).ToLocalJson())
 
             Case ExchangeAgentPipe.RequestGetAccess
                 Dim id As String = ReadString(request, "resourceId")
@@ -740,8 +1250,50 @@ Friend NotInheritable Class ExchangeDeviceAgent
                 If Not found.HasAccess Then Return ExchangeLocalResult.Failure(ExchangeAgentPipe.ErrorNoAccess)
                 Return ExchangeLocalResult.Success(found.AccessJson)
 
-            Case ExchangeAgentPipe.RequestCastAnswer, ExchangeAgentPipe.RequestCastPolicy
-                ' ticket 201 owns both; until it lands the agent says so rather than pretending
+            Case ExchangeAgentPipe.RequestGetBroadcast
+                Dim id As String = ReadString(request, "broadcastId")
+                For Each broadcast As ExchangeBroadcastRecord In GetFullDirectory().Broadcasts
+                    If broadcast.BroadcastId = id Then Return ExchangeLocalResult.Success(broadcast.Raw)
+                Next
+                Return ExchangeLocalResult.Failure(ExchangeAgentPipe.ErrorUnknownResource)
+
+            Case ExchangeAgentPipe.RequestGetCastOffer
+                SyncLock _gate
+                    _viewerSeenMs = Environment.TickCount64
+                    If _castStopId IsNot Nothing Then
+                        Dim stopRecord As New JsonObject()
+                        stopRecord("stopBroadcastId") = _castStopId
+                        _castStopId = Nothing
+                        Return ExchangeLocalResult.Success(stopRecord.ToJsonString())
+                    End If
+                    Return ExchangeLocalResult.Success(If(_castOffer, "null"))
+                End SyncLock
+
+            Case ExchangeAgentPipe.RequestCastAnswer
+                Dim id As String = ReadString(request, "broadcastId")
+                Dim session As ExchangeControlSession
+                SyncLock _gate
+                    If _castId Is Nothing OrElse id <> _castId Then Return ExchangeLocalResult.Failure(ExchangeAgentPipe.ErrorBadRequest)
+                    session = _session
+                    _castId = Nothing
+                    _castOffer = Nothing
+                End SyncLock
+                If session Is Nothing Then Return ExchangeLocalResult.Failure(ExchangeAgentPipe.ErrorNotConnected)
+                Dim acceptedEl As JsonElement = Nothing
+                Dim accepted As Boolean = request.TryGetProperty("accepted", acceptedEl) AndAlso acceptedEl.ValueKind = JsonValueKind.True
+                If accepted Then
+                    SyncLock _gate
+                        _castPlayingId = id
+                    End SyncLock
+                End If
+                Dim reason As String = If(accepted, "", ReadString(request, "reason"))
+                If Not accepted AndAlso reason <> "unsupported" AndAlso reason <> "unavailable" Then reason = "declined"
+                Dim sent As Boolean = Await session.SendAsync(New ExchangeEnvelope(ExchangeEnvelopeTypes.CastAnswer).
+                    SetText("broadcastId", id).SetFlag("accepted", accepted).SetText("reason", reason), ct).ConfigureAwait(False)
+                Return If(sent, ExchangeLocalResult.Success("null"), ExchangeLocalResult.Failure(ExchangeAgentPipe.ErrorNotConnected))
+
+            Case ExchangeAgentPipe.RequestCastPolicy
+                ' The persisted preference belongs to the viewer, not to the agent's local protocol.
                 Return ExchangeLocalResult.Failure(ExchangeAgentPipe.ErrorUnsupported)
 
             Case Else

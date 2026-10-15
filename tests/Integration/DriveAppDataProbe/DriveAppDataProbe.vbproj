@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Specification 203 step 1 (the premise experiment of done\202, steps T-2/T-3): a console probe that signs
+       in to Google Drive with the installed-app flow (PKCE loopback on 127.0.0.1), lists the appDataFolder
+       space, hashes a file the owner names, and with its write switch round-trips and deletes its own probe
+       record. Hand-run only, never part of a default or -Integration run (tools/check-placement.jsonl): the
+       consent screen needs the owner's Google account, and the client id and secret travel in this one shell's
+       environment (FMS_DRIVE_CLIENT_ID / FMS_DRIVE_CLIENT_SECRET) - never in a file of any repository.
+       No dependency beyond HttpClient: the drive REST calls, the JSON and the loopback listener are in-box;
+       the only linked source is the scope constant's own file (ExchangeDriveAuth). -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <PlatformTarget>x64</PlatformTarget>
+    <RootNamespace>DriveAppDataProbe</RootNamespace>
+    <AssemblyName>DriveAppDataProbe</AssemblyName>
+    <OptionExplicit>On</OptionExplicit>
+    <OptionStrict>On</OptionStrict>
+    <OptionInfer>On</OptionInfer>
+    <OptionCompare>Binary</OptionCompare>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="..\..\..\src\Exchange\ExchangeDriveAuth.vb"><Link>Linked\ExchangeDriveAuth.vb</Link></Compile>
+  </ItemGroup>
+</Project>

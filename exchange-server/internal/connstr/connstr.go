@@ -2,7 +2,7 @@
 // PROPOSAL-2026-10-10-exchange-connection-string.md; ticket 187 T-1): the text an operator hands out to
 // name one server and the pin of its certificate. It is NOT a credential and carries none.
 //
-//	FMSEXCH1:x=host%3Aport&fp=SHA256%3A<43 base64>&n=<name>&u=<login>
+//	FMSEXCH1:x=host%3Aport&fp=SHA256%3A<43 base64>&n=<name>&u=<login>&i=<invitation>
 //
 // The package is pure: no network, no file, no clock. Its readings of the points the proposal left open
 // follow PROPOSAL-2026-10-10-connection-string-grammar-and-handling.md (StreamsPlayer) and
@@ -49,6 +49,7 @@ const (
 	keyFP     = "fp"
 	keyName   = "n"
 	keyLogin  = "u"
+	keyInv    = "i"
 	shareCode = "FMSSFTP"
 )
 
@@ -69,6 +70,7 @@ const (
 	RefusedBadFP          = "bad-fp"          // fp is not SHA256: plus 43 canonical standard base64 characters
 	RefusedBadName        = "bad-n"           // n is empty, longer than 64 scalar values, or holds a control character
 	RefusedBadLogin       = "bad-u"           // u is not a login of 5.1
+	RefusedBadInv         = "bad-i"           // i is not 22 characters of base64url that decode to 16 bytes (19 item AR)
 	RefusedFileTooLong    = "file-too-long"   // a file over 4096 bytes
 	RefusedFileLines      = "file-lines"      // a file with more than one non-empty line
 )
@@ -116,6 +118,7 @@ type Conn struct {
 	Fingerprint string // "SHA256:" + 43 characters, or empty
 	Name        string // display name, a hint
 	Login       string // login hint
+	Invitation  string // the one-time invitation of an invitation string, 22 characters of base64url (19 item AR)
 }
 
 // Endpoint is the host:port form (an IPv6 literal in brackets) - the shape of publicEndpoint.
@@ -130,6 +133,11 @@ func (c Conn) Endpoint() string {
 // New validates the members an operator surface has and returns the canonical Conn. An empty fp, name or
 // login is absent.
 func New(endpoint, fingerprint, name, login string) (Conn, error) {
+	return NewWithInvitation(endpoint, fingerprint, name, login, "")
+}
+
+// NewWithInvitation validates all members including the optional one-time invitation `i` (19 item AR).
+func NewWithInvitation(endpoint, fingerprint, name, login, invitation string) (Conn, error) {
 	host, port, err := splitEndpoint(endpoint)
 	if err != nil {
 		return Conn{}, err
@@ -154,12 +162,18 @@ func New(endpoint, fingerprint, name, login string) (Conn, error) {
 		}
 		c.Login = l
 	}
+	if invitation != "" {
+		if err := checkInvitation(invitation); err != nil {
+			return Conn{}, err
+		}
+		c.Invitation = invitation
+	}
 	return c, nil
 }
 
 // String is the canonical text. It fails when the text would exceed 512 characters.
 func (c Conn) String() (string, error) {
-	if _, err := New(c.Endpoint(), c.Fingerprint, c.Name, c.Login); err != nil {
+	if _, err := NewWithInvitation(c.Endpoint(), c.Fingerprint, c.Name, c.Login, c.Invitation); err != nil {
 		return "", err
 	}
 	var b strings.Builder
@@ -173,6 +187,9 @@ func (c Conn) String() (string, error) {
 	}
 	if c.Login != "" {
 		b.WriteString("&" + keyLogin + "=" + escape(c.Login))
+	}
+	if c.Invitation != "" {
+		b.WriteString("&" + keyInv + "=" + escape(c.Invitation))
 	}
 	if b.Len() > MaxText {
 		return "", refuse(RefusedTooLong, "%d characters once encoded, the limit is %d", b.Len(), MaxText)
@@ -213,7 +230,7 @@ func Parse(text string) (Conn, error) {
 			return Conn{}, refuse(RefusedMalformedField, "a field with no key or no =")
 		}
 		switch k {
-		case keyX, keyFP, keyName, keyLogin:
+		case keyX, keyFP, keyName, keyLogin, keyInv:
 			if _, dup := vals[k]; dup {
 				return Conn{}, refuse(RefusedRepeatedKey, "%s given twice", k)
 			}
@@ -230,12 +247,28 @@ func Parse(text string) (Conn, error) {
 		return Conn{}, refuse(RefusedMissingX, "no x field")
 	}
 	// a known key that is present must carry a value: an empty one breaks its rule, it is not "absent"
-	for _, k := range []struct{ key, reason string }{{keyFP, RefusedBadFP}, {keyName, RefusedBadName}, {keyLogin, RefusedBadLogin}} {
+	for _, k := range []struct{ key, reason string }{
+		{keyFP, RefusedBadFP}, {keyName, RefusedBadName}, {keyLogin, RefusedBadLogin}, {keyInv, RefusedBadInv},
+	} {
 		if v, present := vals[k.key]; present && v == "" {
 			return Conn{}, refuse(k.reason, "%s has no value", k.key)
 		}
 	}
-	return New(x, vals[keyFP], vals[keyName], vals[keyLogin])
+	return NewWithInvitation(x, vals[keyFP], vals[keyName], vals[keyLogin], vals[keyInv])
+}
+
+func checkInvitation(s string) error {
+	if s == "" {
+		return refuse(RefusedBadInv, "empty")
+	}
+	if len(s) != 22 {
+		return refuse(RefusedBadInv, "i is not 22 characters")
+	}
+	b, err := base64.RawURLEncoding.Strict().DecodeString(s)
+	if err != nil || len(b) != 16 {
+		return refuse(RefusedBadInv, "i is not the base64url of 16 bytes")
+	}
+	return nil
 }
 
 // ParseFile reads the content of a .fmsexch file: UTF-8, one optional byte-order mark, one line, one

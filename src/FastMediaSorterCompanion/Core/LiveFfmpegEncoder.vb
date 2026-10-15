@@ -40,7 +40,7 @@ Friend NotInheritable Class LiveFfmpegEncoder
         End If
 
         Dim arguments As String
-        If options.WithVideo Then
+        If options.WithVideo AndAlso options.WithAudio Then
             ' The video modes feed raw frames on stdin and PCM through a named pipe the wrapper owns;
             ' the pipe path is passed to FFmpeg as the second input's file name.
             Dim pipeName As String = "fms-live-" & Guid.NewGuid().ToString("N")
@@ -48,6 +48,8 @@ Friend NotInheritable Class LiveFfmpegEncoder
                                                                   System.IO.Pipes.PipeTransmissionMode.Byte,
                                                                   System.IO.Pipes.PipeOptions.Asynchronous)
             arguments = LiveFfmpegArgs.VideoToMpegts(options, "\\.\pipe\" & pipeName)
+        ElseIf options.WithVideo Then
+            arguments = LiveFfmpegArgs.VideoToMpegts(options, "")
         Else
             arguments = LiveFfmpegArgs.AudioToAdts(options)
         End If
@@ -64,6 +66,8 @@ Friend NotInheritable Class LiveFfmpegEncoder
         }
         Try
             _process = Process.Start(info)
+            ' Drain stderr continuously: a full redirected pipe otherwise stalls the encoder.
+            _process?.BeginErrorReadLine()
         Catch
             ' The window shows one sentence for EncoderUnavailable; the exception's own words go to
             ' the log, not to the user (APP-BEHAVIOUR rule 6).
@@ -151,13 +155,15 @@ Friend NotInheritable Class LiveFfmpegEncoder
             Dim p As Process = _process
             If p Is Nothing Then Return
             Using stdout As Stream = p.StandardOutput.BaseStream
+                Dim framer As New LiveEncodedFramer(_options.WithVideo)
                 Dim buffer(16383) As Byte
                 While Not _stopped
                     Dim read As Integer = stdout.Read(buffer, 0, buffer.Length)
                     If read <= 0 Then Exit While
                     Dim data(read - 1) As Byte
                     Array.Copy(buffer, data, read)
-                    _output?.Invoke(data)
+                    Dim complete As Byte() = framer.Feed(data)
+                    If complete.Length > 0 Then _output?.Invoke(complete)
                 End While
             End Using
         Catch

@@ -1,4 +1,4 @@
-﻿Option Strict On
+Option Strict On
 
 Imports System.Drawing
 Imports System.Globalization
@@ -61,6 +61,7 @@ Partial Public NotInheritable Class Share_Settings_Form
     Private _rowXAccButtons As FlowLayoutPanel
     Private _btnXAddAccount As Button
     Private _btnXResetPw As Button
+    Private _btnXAccountLimits As Button
     Private _btnXRemoveAccount As Button
     Private _btnXShowPw As Button
     Private _chkXKeepPasswords As CheckBox
@@ -70,6 +71,17 @@ Partial Public NotInheritable Class Share_Settings_Form
     Private _lvXDevices As ListView
     Private _rowXRevoke As FlowLayoutPanel
     Private _btnXRevoke As Button
+    Private _lblXInvTitle As Label
+    Private _chkXSharedInv As CheckBox
+    Private _btnXSetSharedInv As Button
+    Private _lblXSharedInvStatus As Label
+    Private _rowXSharedInv As FlowLayoutPanel
+    Private _loadingXSharedInv As Boolean
+    Private _lvXInvitations As ListView
+    Private _btnXCreateInvitation As Button
+    Private _btnXWithdrawInvitation As Button
+    Private _rowXInvButtons As FlowLayoutPanel
+    Private _exInvFilling As Boolean
     Private _lnkXStatement As LinkLabel
     Private _txtXStatement As TextBox
     Private _exAccTimer As System.Windows.Forms.Timer
@@ -114,8 +126,9 @@ Partial Public NotInheritable Class Share_Settings_Form
     ''' <summary>Every button that an action disables while it runs (the Hosting precedent): one list, so a new button is
     ''' not forgotten by <see cref="SetXBusy"/>.</summary>
     Private Function ExchangeBusyButtons() As Button()
-        Return New Button() {_btnXApplyPort, _btnXApplyEndpoint, _btnXApplyRange, _btnXWizard, _btnXCopyFp, _btnXReplaceCert, _btnXImportCert,
-                             _btnXAddAccount, _btnXResetPw, _btnXRemoveAccount, _btnXRevoke, _btnXStart, _btnXStop,
+        Return New Button() {_btnXApplyHost, _btnXRenewCert, _btnXApplyPort, _btnXApplyEndpoint, _btnXApplyRange, _btnXWizard, _btnXCopyFp, _btnXReplaceCert, _btnXImportCert,
+                             _btnXAddAccount, _btnXResetPw, _btnXAccountLimits, _btnXRemoveAccount, _btnXCreateInvitation, _btnXWithdrawInvitation, _btnXSetSharedInv,
+                             _btnXRevoke, _btnXStart, _btnXStop,
                              _btnXFwEnable, _btnXFwRemove, _btnXSvcStart, _btnXSvcStop, _btnXRegister, _btnXRemove}
     End Function
 
@@ -178,6 +191,8 @@ Partial Public NotInheritable Class Share_Settings_Form
         _pnlXConfig.Controls.Add(_lblXRangeProblem)
         _lblXRangeNote = rangeSetting.Hint
 
+        BuildXHostSettings()
+
         ' the certificate (168 section 3.4): its kind, the fingerprint to hand out, replace, import
         _lblXCertKind = New Label With {.AutoSize = True, .Margin = New Padding(0, 10, 0, 2), .MaximumSize = New Size(ExchangeAdminWidth, 0)}
         _pnlXConfig.Controls.Add(_lblXCertKind)
@@ -204,6 +219,8 @@ Partial Public NotInheritable Class Share_Settings_Form
         _btnXReplaceCert = XButton(ExchangeAdminText.ReplaceCertificateButton(), AddressOf OnXReplaceCertificate, "action.replace")
         _btnXImportCert = XButton(ExchangeAdminText.ImportCertificateButton(), AddressOf OnXImportCertificate, "action.import")
         _rowXCert = AdminFlow()
+        _btnXRenewCert = XButton(Localization.T("Продлить сертификат с тем же ключом"), AddressOf OnXRenewCertificate, "action.confirm")
+        _rowXCert.Controls.Add(_btnXRenewCert)
         _rowXCert.Controls.Add(_btnXImportCert)
         _rowXCert.Controls.Add(_btnXReplaceCert)
         _pnlXConfig.Controls.Add(_rowXCert)
@@ -233,20 +250,24 @@ Partial Public NotInheritable Class Share_Settings_Form
         _lvXAccounts = New ListView With {.View = View.Details, .FullRowSelect = True, .HideSelection = False, .MultiSelect = False,
             .Width = ExchangeAdminWidth, .Height = 110, .Margin = New Padding(0, 2, 0, 2), .Visible = False,
             .AccessibleName = ExchangeAdminText.AccountsTitle()}
-        _lvXAccounts.Columns.Add(ExchangeAdminText.ColumnLogin(), Me.LogicalToDeviceUnits(200))
-        _lvXAccounts.Columns.Add(ExchangeAdminText.ColumnDevices(), Me.LogicalToDeviceUnits(90))
-        _lvXAccounts.Columns.Add(ExchangeAdminText.ColumnCreated(), Me.LogicalToDeviceUnits(180))
+        _lvXAccounts.Columns.Add(ExchangeAdminText.ColumnLogin(), Me.LogicalToDeviceUnits(160))
+        _lvXAccounts.Columns.Add(Localization.T("Тип"), Me.LogicalToDeviceUnits(70))
+        _lvXAccounts.Columns.Add(ExchangeAdminText.ColumnDevices(), Me.LogicalToDeviceUnits(70))
+        _lvXAccounts.Columns.Add(ExchangeAdminText.ColumnCreated(), Me.LogicalToDeviceUnits(160))
         AddHandler _lvXAccounts.SelectedIndexChanged, AddressOf OnXAccountSelected
         _pnlXAccounts.Controls.Add(_lvXAccounts)
 
         _btnXAddAccount = XButton(ExchangeAdminText.AddAccountButton(), AddressOf OnXAddAccount, "action.add")
         _btnXResetPw = XButton(ExchangeAdminText.ResetPasswordButton(), AddressOf OnXResetPassword, "action.change-password")
+        _btnXAccountLimits = XButton(Localization.T("Лимиты.."), AddressOf OnXAccountLimits, "action.edit")
+        _btnXAccountLimits.Visible = False
         _btnXRemoveAccount = XButton(ExchangeAdminText.RemoveAccountButton(), AddressOf OnXRemoveAccount, "action.delete")
         _btnXShowPw = XButton(ExchangeAdminText.ShowPasswordButton(), AddressOf OnXShowPassword, "action.secure")
         _btnXShowPw.Visible = False
         _rowXAccButtons = AdminFlow()
         _rowXAccButtons.Controls.Add(_btnXAddAccount)
         _rowXAccButtons.Controls.Add(_btnXResetPw)
+        _rowXAccButtons.Controls.Add(_btnXAccountLimits)
         _rowXAccButtons.Controls.Add(_btnXShowPw)
         _rowXAccButtons.Controls.Add(_btnXRemoveAccount)
         _pnlXAccounts.Controls.Add(_rowXAccButtons)
@@ -276,6 +297,41 @@ Partial Public NotInheritable Class Share_Settings_Form
         _rowXRevoke = AdminFlow()
         _rowXRevoke.Controls.Add(_btnXRevoke)
         _pnlXAccounts.Controls.Add(_rowXRevoke)
+
+        ' Invitations (ticket 224)
+        _lblXInvTitle = XBold(Localization.T("Приглашения"))
+        _lblXInvTitle.Visible = False
+        _pnlXAccounts.Controls.Add(_lblXInvTitle)
+        _pnlXAccounts.Controls.Add(AdminNote(Localization.T("Одноразовые приглашения для регистрации новых пользователей на сервере.")))
+
+        _chkXSharedInv = New CheckBox With {.AutoSize = True, .Margin = New Padding(0, 4, 0, 0),
+            .Text = Localization.T("Общий пароль приглашения")}
+        AddHandler _chkXSharedInv.CheckedChanged, AddressOf OnXSharedInvCheckChanged
+        _btnXSetSharedInv = XButton(Localization.T("Задать общий пароль.."), AddressOf OnXSetSharedInvitation, "action.edit")
+        _rowXSharedInv = AdminFlow()
+        _rowXSharedInv.Controls.Add(_chkXSharedInv)
+        _rowXSharedInv.Controls.Add(_btnXSetSharedInv)
+        _pnlXAccounts.Controls.Add(_rowXSharedInv)
+        _lblXSharedInvStatus = AdminNote("")
+        _pnlXAccounts.Controls.Add(_lblXSharedInvStatus)
+
+        _lvXInvitations = New ListView With {.View = View.Details, .FullRowSelect = True, .HideSelection = False, .MultiSelect = False,
+            .Width = ExchangeAdminWidth, .Height = 110, .Margin = New Padding(0, 4, 0, 2), .Visible = False,
+            .AccessibleName = Localization.T("Приглашения")}
+        _lvXInvitations.Columns.Add(Localization.T("Тип"), Me.LogicalToDeviceUnits(80))
+        _lvXInvitations.Columns.Add(ExchangeAdminText.ColumnCreated(), Me.LogicalToDeviceUnits(140))
+        _lvXInvitations.Columns.Add(Localization.T("Состояние"), Me.LogicalToDeviceUnits(110))
+        _lvXInvitations.Columns.Add(Localization.T("Хеш"), Me.LogicalToDeviceUnits(110))
+        AddHandler _lvXInvitations.SelectedIndexChanged, Sub() ApplyAccountsView(refill:=False)
+        _pnlXAccounts.Controls.Add(_lvXInvitations)
+
+        _btnXCreateInvitation = XButton(Localization.T("Создать приглашение.."), AddressOf OnXCreateInvitation, "action.add")
+        _btnXWithdrawInvitation = XButton(Localization.T("Отозвать"), AddressOf OnXWithdrawInvitation, "action.remove")
+        _btnXWithdrawInvitation.Visible = False
+        _rowXInvButtons = AdminFlow()
+        _rowXInvButtons.Controls.Add(_btnXCreateInvitation)
+        _rowXInvButtons.Controls.Add(_btnXWithdrawInvitation)
+        _pnlXAccounts.Controls.Add(_rowXInvButtons)
 
         ' The statement of what the operator can see (DEVICE-EXCHANGE 7.9): always part of this group, never dismissible;
         ' only folded. It is shown once more at the first account (Exchange_Account_Admin_Form).
@@ -348,6 +404,9 @@ Partial Public NotInheritable Class Share_Settings_Form
             _exBaselineHigh = CInt(numXRangeHigh.Value)
         End If
         UpdateXRangeFeedback()
+
+        ApplyXHostSettings(snap)
+        _btnXRenewCert.Visible = Not m.CertImported
 
         ' the certificate
         _lblXCertKind.Text = If(m.ShowFingerprint, ExchangeAdminText.CertificateKind(m.CertImported), "")
@@ -612,14 +671,17 @@ Partial Public NotInheritable Class Share_Settings_Form
     Private Sub ApplyReadAccounts(view As ExchangeAccountsView)
         If IsDisposed OrElse Disposing Then Return
         _exAccView = view
+        If _lblXAwakeState IsNot Nothing Then
+            Dim stopped As Boolean = _exModel IsNot Nothing AndAlso (_exModel.Kind = ExchangeRunKind.Stopped OrElse _exModel.Kind = ExchangeRunKind.ServiceStopped OrElse _exModel.Kind = ExchangeRunKind.NotConfigured)
+            _lblXAwakeState.Text = If(view.KeepAwakeKnown OrElse stopped, If(view.KeepAwakeActive, Localization.T("Запрос удержания от сна действует"), Localization.T("Запрос удержания от сна не действует")), ExchangeAdminText.NotReached())
+        End If
         ApplyAccountsView()
     End Sub
 
     ''' <summary>Redraws the lists and which buttons exist from the last view and the selection, through the pure model.</summary>
     Private Sub ApplyAccountsView(Optional refill As Boolean = True)
         If _lvXAccounts Is Nothing Then Return
-        Dim m As ExchangeAccountsModel = ExchangeAccountsModel.Build(_exAccView, SelectedXAccountLogin(), SelectedXDeviceId())
-
+        Dim m As ExchangeAccountsModel = ExchangeAccountsModel.Build(_exAccView, SelectedXAccountLogin(), SelectedXDeviceId(), SelectedXInvitationHash())
 
         _lblXAccTotals.Text = If(m.Reached, ExchangeAdminText.Totals(m.AccountCount, m.DeviceTotal), "")
         _lblXAccTotals.Visible = m.Reached
@@ -630,6 +692,7 @@ Partial Public NotInheritable Class Share_Settings_Form
         _rowXAccButtons.Visible = m.ShowAdd
         _btnXAddAccount.Visible = m.ShowAdd
         _btnXResetPw.Visible = m.ShowReset
+        _btnXAccountLimits.Visible = m.ShowLimits
         _btnXShowPw.Visible = m.ShowReset AndAlso _exSettings.KeepAccountPasswords
         _btnXRemoveAccount.Visible = m.ShowRemove
 
@@ -640,6 +703,21 @@ Partial Public NotInheritable Class Share_Settings_Form
         If refill AndAlso m.ShowDevices Then FillXDevices(_exAccView)
         _btnXRevoke.Visible = m.ShowRevoke
         _rowXRevoke.Visible = m.ShowRevoke
+
+        ' Invitations
+        _lblXInvTitle.Visible = m.Reached
+        _rowXSharedInv.Visible = m.Reached
+        _lblXSharedInvStatus.Visible = m.Reached
+        _lvXInvitations.Visible = m.Reached
+        _rowXInvButtons.Visible = m.Reached
+        _btnXCreateInvitation.Visible = m.Reached
+        _btnXWithdrawInvitation.Visible = m.ShowWithdrawInvitation
+
+        If refill AndAlso _exAccView IsNot Nothing AndAlso _exAccView.Reached Then
+            FillXInvitations(_exAccView)
+            ApplySharedInvState(_exAccView.SharedInvitation)
+        End If
+
         If _built Then _root.PerformLayout()
     End Sub
 
@@ -658,8 +736,9 @@ Partial Public NotInheritable Class Share_Settings_Form
         If SameKeys(_lvXAccounts, keys) Then
             For i As Integer = 0 To keys.Count - 1
                 Dim a As ExchangeAdminAccount = view.Accounts(i)
-                SetSubItem(_lvXAccounts.Items(i), 1, a.Devices.ToString(CultureInfo.CurrentCulture))
-                SetSubItem(_lvXAccounts.Items(i), 2, FormatLastSeen(a.CreatedAt))
+                SetSubItem(_lvXAccounts.Items(i), 1, If(a.Kind = "guest", Localization.T("Гость"), Localization.T("Семья")))
+                SetSubItem(_lvXAccounts.Items(i), 2, a.Devices.ToString(CultureInfo.CurrentCulture))
+                SetSubItem(_lvXAccounts.Items(i), 3, FormatLastSeen(a.CreatedAt))
             Next
             Return
         End If
@@ -672,6 +751,7 @@ Partial Public NotInheritable Class Share_Settings_Form
             _lvXAccounts.Items.Clear()
             For Each a As ExchangeAdminAccount In view.Accounts
                 Dim item As New ListViewItem(a.Login) With {.Tag = a.Login}
+                item.SubItems.Add(If(a.Kind = "guest", Localization.T("Гость"), Localization.T("Семья")))
                 item.SubItems.Add(a.Devices.ToString(CultureInfo.CurrentCulture))
                 item.SubItems.Add(FormatLastSeen(a.CreatedAt))
                 _lvXAccounts.Items.Add(item)
@@ -925,6 +1005,216 @@ Partial Public NotInheritable Class Share_Settings_Form
             Await RefreshExchangeAsync()
         Catch ex As Exception When TypeOf ex Is InvalidOperationException OrElse TypeOf ex Is IO.IOException
             AppFileLogger.LogException("Exchange: revoking a device", ex)
+        Finally
+            If Not (IsDisposed OrElse Disposing) Then SetXBusy(False)
+        End Try
+    End Sub
+
+    Private Function SelectedXInvitationHash() As String
+        If _lvXInvitations Is Nothing OrElse _lvXInvitations.SelectedItems.Count = 0 Then Return ""
+        Return If(TryCast(_lvXInvitations.SelectedItems(0).Tag, String), "")
+    End Function
+
+    Private Sub ApplySharedInvState(sharedInv As ExchangeAdminSharedInvitation)
+        If _chkXSharedInv Is Nothing Then Return
+        _loadingXSharedInv = True
+        Try
+            Dim enabled As Boolean = sharedInv IsNot Nothing AndAlso sharedInv.Enabled
+            _chkXSharedInv.Checked = enabled
+            If enabled Then
+                Dim kindText As String = If(String.Equals(sharedInv.Kind, "guest", StringComparison.OrdinalIgnoreCase), Localization.T("Гость"), Localization.T("Член семьи"))
+                _lblXSharedInvStatus.Text = Localization.TF("Общий пароль включён (тип аккаунта: {0}).", kindText)
+            Else
+                _lblXSharedInvStatus.Text = Localization.T("Общий пароль выключен.")
+            End If
+        Finally
+            _loadingXSharedInv = False
+        End Try
+    End Sub
+
+    Private Sub FillXInvitations(view As ExchangeAccountsView)
+        If _lvXInvitations Is Nothing Then Return
+        Dim keys As List(Of String) = view.Invitations.Select(Function(inv) inv.CodeHash).ToList()
+        If SameKeys(_lvXInvitations, keys) Then
+            For i As Integer = 0 To keys.Count - 1
+                Dim inv As ExchangeAdminInvitation = view.Invitations(i)
+                Dim item As ListViewItem = _lvXInvitations.Items(i)
+                SetSubItem(item, 0, If(String.Equals(inv.Kind, "guest", StringComparison.OrdinalIgnoreCase), Localization.T("Гость"), Localization.T("Семья")))
+                SetSubItem(item, 1, FormatLastSeen(inv.CreatedAt))
+                SetSubItem(item, 2, If(inv.Used, Localization.T("Использовано"), Localization.T("Активно")))
+                SetSubItem(item, 3, If(inv.CodeHash.Length >= 8, inv.CodeHash.Substring(0, 8), inv.CodeHash))
+            Next
+            Return
+        End If
+        Dim selected As String = SelectedXInvitationHash()
+        Dim restore As ListViewItem = Nothing
+        _exInvFilling = True
+        _lvXInvitations.BeginUpdate()
+        Try
+            _lvXInvitations.Items.Clear()
+            For Each inv As ExchangeAdminInvitation In view.Invitations
+                Dim item As New ListViewItem(If(String.Equals(inv.Kind, "guest", StringComparison.OrdinalIgnoreCase), Localization.T("Гость"), Localization.T("Семья"))) With {.Tag = inv.CodeHash}
+                item.SubItems.Add(FormatLastSeen(inv.CreatedAt))
+                item.SubItems.Add(If(inv.Used, Localization.T("Использовано"), Localization.T("Активно")))
+                item.SubItems.Add(If(inv.CodeHash.Length >= 8, inv.CodeHash.Substring(0, 8), inv.CodeHash))
+                _lvXInvitations.Items.Add(item)
+                If String.Equals(inv.CodeHash, selected, StringComparison.Ordinal) Then restore = item
+            Next
+        Finally
+            _lvXInvitations.EndUpdate()
+        End Try
+        If restore IsNot Nothing Then restore.Selected = True
+        _exInvFilling = False
+    End Sub
+
+    Private Async Sub OnXAccountLimits()
+        If _exBusy Then Return
+        Dim login As String = SelectedXAccountLogin()
+        If login.Length = 0 OrElse _exAccView Is Nothing Then Return
+        Dim acc As ExchangeAdminAccount = _exAccView.Accounts.FirstOrDefault(Function(a) String.Equals(a.Login, login, StringComparison.Ordinal))
+        If acc Is Nothing Then Return
+        Dim newLimits As ExchangeAccountLimits
+        Using dlg As New Exchange_Account_Limits_Form(login, acc.Limits)
+            If dlg.ShowDialog(Me) <> DialogResult.OK Then Return
+            newLimits = dlg.Limits
+        End Using
+        SetXBusy(True)
+        Try
+            Dim reply As ExchangeAdminReply = Await ExchangeAdmin.SetAccountLimitsAsync(login, newLimits, CancellationToken.None)
+            If IsDisposed OrElse Disposing Then Return
+            ShowXResult(If(reply.Ok, Localization.TF("Лимиты аккаунта {0} сохранены.", login), ExchangeAdminText.Failure(reply.Code)), reply.Ok)
+            Await RefreshExchangeAsync()
+        Catch ex As Exception When TypeOf ex Is InvalidOperationException OrElse TypeOf ex Is IO.IOException
+            AppFileLogger.LogException("Exchange: updating account limits", ex)
+        Finally
+            If Not (IsDisposed OrElse Disposing) Then SetXBusy(False)
+        End Try
+    End Sub
+
+    Private Async Sub OnXCreateInvitation()
+        If _exBusy Then Return
+        Dim kind As String = "member"
+        Using dlg As New Exchange_Invitation_Create_Form()
+            If dlg.ShowDialog(Me) <> DialogResult.OK Then Return
+            kind = dlg.Kind
+        End Using
+        SetXBusy(True)
+        Try
+            Dim reply As ExchangeAdminReply = Await ExchangeAdmin.CreateInvitationAsync(kind, CancellationToken.None)
+            If IsDisposed OrElse Disposing Then Return
+            If reply.Ok Then
+                Dim created As ExchangeAdminInvitationCreated = ExchangeAdminParser.InvitationCreated(reply.DataJson)
+                If created Is Nothing OrElse created.Code.Length = 0 Then
+                    ' the invitation exists but its code did not arrive: it can only be withdrawn and made again
+                    ShowXResult(ExchangeAdminText.Failure(ExchangeAdminCodes.Internal), False)
+                    Await RefreshExchangeAsync()
+                    Return
+                End If
+                Dim connStrResult As ExchangeProcess.ConnectionStringResult = Await Task.Run(Function() ExchangeProcess.ConnectionString("", "", created.Code))
+                Dim connStrText As String = If(connStrResult.Outcome = ExchangeProcess.ConnectionStringOutcome.Made, connStrResult.Text, "")
+                ShowXResult(Localization.T("Приглашение успешно создано."), True)
+                Using showDlg As New Exchange_Invitation_Created_Form(created.Code, connStrText, kind)
+                    showDlg.ShowDialog(Me)
+                End Using
+            Else
+                ShowXResult(ExchangeAdminText.Failure(reply.Code), False)
+            End If
+            Await RefreshExchangeAsync()
+        Catch ex As Exception When TypeOf ex Is InvalidOperationException OrElse TypeOf ex Is IO.IOException
+            AppFileLogger.LogException("Exchange: creating invitation", ex)
+        Finally
+            If Not (IsDisposed OrElse Disposing) Then SetXBusy(False)
+        End Try
+    End Sub
+
+    Private Async Sub OnXWithdrawInvitation()
+        If _exBusy Then Return
+        Dim hash As String = SelectedXInvitationHash()
+        If hash.Length = 0 Then Return
+        If MessageBox.Show(Me, Localization.T("Отозвать выбранное приглашение? Код перестанет действовать."), Me.Text,
+                           MessageBoxButtons.YesNo, MessageBoxIcon.Warning, MessageBoxDefaultButton.Button2) <> DialogResult.Yes Then Return
+        SetXBusy(True)
+        Try
+            Dim reply As ExchangeAdminReply = Await ExchangeAdmin.WithdrawInvitationAsync(hash, CancellationToken.None)
+            If IsDisposed OrElse Disposing Then Return
+            ShowXResult(If(reply.Ok, Localization.T("Приглашение отозвано."), ExchangeAdminText.Failure(reply.Code)), reply.Ok)
+            Await RefreshExchangeAsync()
+        Catch ex As Exception When TypeOf ex Is InvalidOperationException OrElse TypeOf ex Is IO.IOException
+            AppFileLogger.LogException("Exchange: withdrawing invitation", ex)
+        Finally
+            If Not (IsDisposed OrElse Disposing) Then SetXBusy(False)
+        End Try
+    End Sub
+
+    Private Sub OnXSharedInvCheckChanged(sender As Object, e As EventArgs)
+        If _loadingXSharedInv OrElse _exBusy Then Return
+        Dim wanted As Boolean = _chkXSharedInv.Checked
+        If Not wanted Then
+            If MessageBox.Show(Me, Localization.T("Отключить общий пароль приглашения? Новые регистрации по нему станут невозможны."),
+                               Me.Text, MessageBoxButtons.YesNo, MessageBoxIcon.Warning, MessageBoxDefaultButton.Button2) <> DialogResult.Yes Then
+                _loadingXSharedInv = True
+                _chkXSharedInv.Checked = True
+                _loadingXSharedInv = False
+                Return
+            End If
+            DisableSharedInvitation()
+        Else
+            OnXSetSharedInvitation()
+        End If
+    End Sub
+
+    Private Async Sub DisableSharedInvitation()
+        SetXBusy(True)
+        Try
+            Dim reply As ExchangeAdminReply = Await ExchangeAdmin.SetSharedInvitationAsync("", "", False, CancellationToken.None)
+            If IsDisposed OrElse Disposing Then Return
+            ShowXResult(If(reply.Ok, Localization.T("Общий пароль приглашения отключён."), ExchangeAdminText.Failure(reply.Code)), reply.Ok)
+            Await RefreshExchangeAsync()
+        Catch ex As Exception When TypeOf ex Is InvalidOperationException OrElse TypeOf ex Is IO.IOException
+            AppFileLogger.LogException("Exchange: disabling shared invitation", ex)
+        Finally
+            If Not (IsDisposed OrElse Disposing) Then SetXBusy(False)
+        End Try
+    End Sub
+
+    Private Async Sub OnXSetSharedInvitation()
+        If _exBusy Then Return
+        Dim curKind As String = If(_exAccView IsNot Nothing AndAlso _exAccView.SharedInvitation IsNot Nothing, _exAccView.SharedInvitation.Kind, "member")
+        Dim pw As String
+        Dim kind As String
+        Dim generated As Boolean
+        Using dlg As New Exchange_Shared_Invitation_Form(curKind)
+            If dlg.ShowDialog(Me) <> DialogResult.OK Then
+                If _exAccView IsNot Nothing AndAlso _exAccView.SharedInvitation IsNot Nothing Then
+                    _loadingXSharedInv = True
+                    _chkXSharedInv.Checked = _exAccView.SharedInvitation.Enabled
+                    _loadingXSharedInv = False
+                End If
+                Return
+            End If
+            pw = dlg.Password
+            kind = dlg.Kind
+            generated = dlg.Generated
+            dlg.WipePassword()
+        End Using
+        SetXBusy(True)
+        Try
+            Dim reply As ExchangeAdminReply = Await ExchangeAdmin.SetSharedInvitationAsync(pw, kind, True, CancellationToken.None)
+            If IsDisposed OrElse Disposing Then Return
+            If reply.Ok Then
+                ShowXResult(Localization.T("Общий пароль приглашения сохранён и активирован."), True)
+                If generated Then
+                    Dim shownOnce As String = pw
+                    pw = Nothing
+                    ShowPasswordOnce(shownOnce, False, Localization.T("общий пароль"))
+                End If
+            Else
+                ShowXResult(ExchangeAdminText.Failure(reply.Code), False)
+            End If
+            pw = Nothing
+            Await RefreshExchangeAsync()
+        Catch ex As Exception When TypeOf ex Is InvalidOperationException OrElse TypeOf ex Is IO.IOException
+            AppFileLogger.LogException("Exchange: setting shared invitation", ex)
         Finally
             If Not (IsDisposed OrElse Disposing) Then SetXBusy(False)
         End Try

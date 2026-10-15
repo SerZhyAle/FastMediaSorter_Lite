@@ -1,4 +1,4 @@
-﻿#If Not NETFRAMEWORK Then
+#If Not NETFRAMEWORK Then
 Option Strict On
 
 Imports System.Collections.Generic
@@ -77,7 +77,14 @@ Partial Public Class Main_Form
     ''' drop was for; several are left in the manager, where the user picks.</summary>
     Private Sub ImportResourceFile(path As String)
         SlideShowStop()
-        Dim stored As IReadOnlyList(Of String) = ResourceImportFlow.Run(Me, ResourceImportFlow.ReadFile(path))
+        FinishResourceImport(Function() ResourceImportFlow.ReadFile(path))
+    End Sub
+
+    ''' <summary>The tail every import that arrives from outside shares: one stored resource opens at once
+    ''' (that is what the drop, the pasted line or the scanned code was for), several are left in the
+    ''' manager, nothing stored says nothing further. Spec 227's relayed phone code comes here too.</summary>
+    Friend Sub FinishResourceImport(read As Func(Of FmsConfigReadResult))
+        Dim stored As IReadOnlyList(Of String) = ResourceImportFlow.Run(Me, read())
         If stored.Count = 0 Then Return
         RefreshResourceButton()
         If stored.Count = 1 Then
@@ -97,7 +104,9 @@ Partial Public Class Main_Form
     ''' the same way the Settings window's panel does.</summary>
     Friend Sub ShowResourceManager(Optional draft As ResourceDescriptor = Nothing)
         SlideShowStop()
-        Using dialog As New Resource_Manager_Form(draft, AddressOf OpenShareManagerWindow)
+        Using dialog As New Resource_Manager_Form(draft, AddressOf OpenShareManagerWindow,
+                                                  AddressOf ShareComponentInstalled,
+                                                  Sub() ActivateShareEntryPoint(managerOnly:=True, addResource:=True, addResourceCamera:=True))
             Dim answer As DialogResult = DialogLayer.ShowViewerDialog(dialog, Me)
             ApplyResourceChanges(dialog.RemovedIds)
             If answer = DialogResult.OK AndAlso dialog.ToOpen IsNot Nothing Then ConnectAndEnterResource(dialog.ToOpen, "")
@@ -276,8 +285,16 @@ Partial Public Class Main_Form
                 Dim chosen As ResourceDescriptor = descriptor
                 Dim resourcePin As String = ResourcePinMemory.GetPin(chosen)
                 If chosen.PinRequired AndAlso Not chosen.ProtectionUnsupported AndAlso resourcePin Is Nothing Then
-                    resourcePin = ResourcePinPromptUi.Ask(Me, chosen.DisplayName, retry)
-                    If resourcePin Is Nothing Then Return
+                    If Not String.IsNullOrEmpty(chosen.PinSecretHandle) AndAlso Not chosen.PinChanged Then
+                        Dim pinRead As CredentialReadResult = ResourceCommit.ReadPin(chosen, resource_Secrets)
+                        If pinRead.Outcome = CredentialReadOutcome.Ok Then
+                            resourcePin = pinRead.Secret
+                        End If
+                    End If
+                    If resourcePin Is Nothing Then
+                        resourcePin = ResourcePinPromptUi.Ask(Me, chosen.DisplayName, retry)
+                        If resourcePin Is Nothing Then Return
+                    End If
                 End If
                 ' Ticket 171 rule 6: the tunnel is one more candidate of the race, last; Nothing for a resource of any other origin or while the
                 ' exchange client features are not offered
@@ -293,12 +310,20 @@ Partial Public Class Main_Form
                     DirectCast(outcome.Provider, IDisposable)?.Dispose()
                     Return
                 End If
-                If outcome.Succeeded Then Exit Do
+                If outcome.Succeeded Then
+                    If descriptor.PinRequired AndAlso Not String.IsNullOrEmpty(resourcePin) Then
+                        ResourceCommit.SavePin(descriptor, resourcePin, AddressOf ResourceRegistry.HiveRead, AddressOf ResourceRegistry.HiveWrite, resource_Secrets)
+                    End If
+                    Exit Do
+                End If
 
                 ' A refused password is asked for again - once per answer, never in a loop of its own.
                 If outcome.Failure.Kind = ResourceFailureKind.Auth Then
                     If descriptor.PinRequired Then
                         ResourcePinMemory.Forget(descriptor)
+                        If Not String.IsNullOrEmpty(descriptor.PinSecretHandle) Then
+                            ResourceCommit.MarkPinChanged(descriptor, AddressOf ResourceRegistry.HiveRead, AddressOf ResourceRegistry.HiveWrite)
+                        End If
                         retry = True
                         Continue Do
                     End If
@@ -480,6 +505,23 @@ Partial Public Class Main_Form
             Return
         End If
         lbl_Status.Text = Localization.TF("«{0}»: {1}", descriptor.DisplayName, ResourceMessages.ForFailure(outcome.Failure))
+
+        ' Spec 232 T-2: launch connection diagnosis on connection failure
+        Dim msgCode As String = ConnectionDiagnosisMessageCode.UnreachableServer
+        If outcome.Failure.Kind = ResourceFailureKind.Auth Then
+            msgCode = ConnectionDiagnosisMessageCode.BadCredentials
+        ElseIf outcome.Failure.Kind = ResourceFailureKind.Unavailable Then
+            msgCode = ConnectionDiagnosisMessageCode.Unavailable
+        End If
+        Dim host As String = If(descriptor IsNot Nothing, descriptor.Host, "")
+        Dim port As Integer = If(descriptor IsNot Nothing, descriptor.Port, 0)
+        Dim ctx As New ConnectionDiagnosisContext With {
+            .Host = host,
+            .Port = port,
+            .LastMessageCode = msgCode,
+            .Language = Localization.CurrentCultureLanguage
+        }
+        Dim ignoredTask = Connection_Diagnosis_Dialog.RunAndShowAsync(Me, ctx)
     End Sub
 
 End Class

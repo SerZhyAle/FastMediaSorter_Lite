@@ -159,7 +159,7 @@ them lands (ticket 207 T-8) and are listed in the block's `applied`.
 | README first paragraph | the tagline plus who it is for | - | with the README pass |
 | winget `ShortDescription`, `Tags` | the tagline in the full name's context; `discoverability.wingetTags` (16, each a topic or one of `wingetOnlyTags`); `Moniker` stays `fastmediasorter` | 3 to 256 characters; 16 tags | next version PR (T-8) |
 | Store description opening, features | the value sentence of 6.3, then the attributes of 6.2 | features 20 x 200 | next submission (T-8) |
-| Store search terms | `discoverability.storeSearchTerms` (en-us, 7); other locales are researched per locale, never translated literally | 7 per locale | T-8 |
+| Store search terms | `discoverability.storeSearchTerms` (en-us and ru, 7 each, written into the listing file by `publishing/store/Build-ListingData.ps1`); other locales are researched per locale, never translated literally | 7 per locale | en-us and ru in the listing file since 2026-10-13; the next submission carries them (T-8) |
 | Social card | one artwork, `tools/New-SocialCard.ps1`: 1200x630 (every page's `og:image`, with `og:image:width`, `og:image:height`, `og:image:alt`) and 1280x640 (the repository's social preview, under 1 MB) | - | done; the preview is uploaded in the owner's browser |
 
 **The frozen names stay frozen.** The Store title and the winget `PackageName` keep the name they were reserved and

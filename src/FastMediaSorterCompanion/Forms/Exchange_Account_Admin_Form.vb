@@ -68,7 +68,7 @@ Friend NotInheritable Class Exchange_Account_Admin_Form
 
     Friend ReadOnly Property SignOutEveryDevice As Boolean
         Get
-            Return _chkSignOut IsNot Nothing AndAlso _chkSignOut.Checked
+            Return If(_chkSignOut IsNot Nothing, _chkSignOut.Checked, True)
         End Get
     End Property
 
@@ -127,7 +127,7 @@ Friend NotInheritable Class Exchange_Account_Admin_Form
         body.Controls.Add(_rbType)
 
         If _mode = DialogMode.Reset Then
-            _chkSignOut = New CheckBox With {.AutoSize = True, .Margin = New Padding(0, 10, 0, 0), .Text = ExchangeAdminText.SignOutEverywhere()}
+            _chkSignOut = New CheckBox With {.AutoSize = True, .Checked = True, .Margin = New Padding(0, 8, 0, 0), .Text = ExchangeAdminText.SignOutEverywhere()}
             body.Controls.Add(_chkSignOut)
         End If
 

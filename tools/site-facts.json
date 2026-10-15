@@ -91,7 +91,8 @@
     "wingetTags": ["photo-sorter", "photo-organizer", "image-sorter", "image-viewer", "video-viewer", "media-sorter", "media-player", "slideshow", "sftp", "ocr", "heic", "webp", "photos", "videos", "hotkeys", "sharing"],
     "wingetOnlyTags": ["photos", "videos", "hotkeys", "sharing"],
     "storeSearchTerms": {
-      "en-us": ["photo sorter", "image viewer", "video sorter", "media organizer", "photo organizer", "slideshow viewer", "heic avif viewer"]
+      "en-us": ["photo sorter", "image viewer", "video sorter", "media organizer", "photo organizer", "slideshow viewer", "heic avif viewer"],
+      "ru": ["сортировщик фото", "просмотрщик изображений", "сортировка фотографий", "просмотр фото и видео", "органайзер фото", "слайд-шоу фото", "просмотр heic"]
     },
     "limits": { "taglineWordsMin": 6, "taglineWordsMax": 10, "githubDescription": 350, "topics": 20, "topicLength": 50, "wingetTags": 16, "storeSearchTerms": 7, "title": 60, "metaDescription": 160 },
     "titles": { "separator": " | ", "suffix": "Fast Media Sorter & Sharing" },

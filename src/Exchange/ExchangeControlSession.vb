@@ -76,6 +76,38 @@ Friend NotInheritable Class ExchangePairingResult
 
 End Class
 
+''' <summary>The outcome of a `password-change` (ticket 224 rule 9).</summary>
+Friend Enum ExchangePasswordChangeOutcome
+    ''' <summary>The server answered `password-changed`: <see cref="ExchangePasswordChangeResult.FreshToken"/> is this device's new key.</summary>
+    Changed = 0
+    ''' <summary>The server answered `refused` (a wrong old password is `bad-credentials`).</summary>
+    Refused = 1
+    ''' <summary>No stream, no answer in time, or the stream died: nothing changed anywhere.</summary>
+    NoStream = 2
+    ''' <summary>The answer was not a `password-changed` a client can use: nothing changed anywhere.</summary>
+    Protocol = 3
+End Enum
+
+Friend NotInheritable Class ExchangePasswordChangeResult
+
+    Public ReadOnly Outcome As ExchangePasswordChangeOutcome
+    Public ReadOnly Refusal As ExchangeRefusal
+    ''' <summary>The fresh token of this device on success ("" otherwise): the caller stores it at once.</summary>
+    Public ReadOnly FreshToken As String
+
+    Public Sub New(outcome As ExchangePasswordChangeOutcome, refusal As ExchangeRefusal, freshToken As String)
+        Me.Outcome = outcome
+        Me.Refusal = refusal
+        Me.FreshToken = If(freshToken, "")
+    End Sub
+
+    ''' <summary>The fresh key is a secret: never printed.</summary>
+    Public Overrides Function ToString() As String
+        Return "ExchangePasswordChangeResult " & Outcome.ToString()
+    End Function
+
+End Class
+
 Friend NotInheritable Class ExchangeControlSession
 
     Private ReadOnly _options As ExchangeControlOptions
@@ -300,6 +332,12 @@ Friend NotInheritable Class ExchangeControlSession
 
     Private Sub Handle(env As ExchangeEnvelope)
         Select Case env.Type
+            Case ExchangeEnvelopeTypes.PasswordChanged
+                ' The read loop may reconnect before the awaiting window persists the token and rebuilds its hub.
+                Dim token As String = env.Text("deviceToken")
+                If ExchangeIds.IsValidToken(token) Then
+                    _options.Credentials = New ExchangeDeviceCredentials(_options.Credentials.DeviceId, token)
+                End If
             Case ExchangeEnvelopeTypes.Keepalive
                 _lastEcho = _options.Clock.Invoke()
                 Return
@@ -408,6 +446,26 @@ Friend NotInheritable Class ExchangeControlSession
         If reply Is Nothing Then Return New ExchangePairingResult(False, "", "", ExchangeRefusal.Unknown, False)
         If reply.Is(ExchangeEnvelopeTypes.Refused) Then Return New ExchangePairingResult(False, "", "", reply.Refusal(), True)
         Return New ExchangePairingResult(True, reply.Text("code"), reply.Text("expiresAt"), ExchangeRefusal.Unknown, True)
+    End Function
+
+    ''' <summary>`password-change` -> `password-changed` (ticket 224 rule 9, the client half 226): the old password and the new
+    ''' one, on this authenticated control stream. On success the answer carries this device's FRESH token - the caller stores it
+    ''' before anything else - and the account's OTHER devices are signed out; the surface says so. A wrong old password is the
+    ''' common refusal. The secrets live in the caller's fields and in this one frame, and are wiped as soon as it is built.</summary>
+    Public Async Function ChangePasswordAsync(oldPassword As String, newPassword As String, ct As CancellationToken) As Task(Of ExchangePasswordChangeResult)
+        Dim env As ExchangeEnvelope = ExchangeMessages.PasswordChange(oldPassword, newPassword)
+        Dim reply As ExchangeEnvelope
+        Try
+            reply = Await RequestAsync(env, {ExchangeEnvelopeTypes.PasswordChanged}, 15000, ct).ConfigureAwait(False)
+        Finally
+            ' the frame's buffer was overwritten in the writer; the envelope's copies go too
+            env.SetText("oldPassword", "").SetText("newPassword", "")
+        End Try
+        If reply Is Nothing Then Return New ExchangePasswordChangeResult(ExchangePasswordChangeOutcome.NoStream, ExchangeRefusal.Unknown, "")
+        If reply.Is(ExchangeEnvelopeTypes.Refused) Then Return New ExchangePasswordChangeResult(ExchangePasswordChangeOutcome.Refused, reply.Refusal(), "")
+        Dim token As String = reply.Text("deviceToken")
+        If Not ExchangeIds.IsValidToken(token) Then Return New ExchangePasswordChangeResult(ExchangePasswordChangeOutcome.Protocol, ExchangeRefusal.Unknown, "")
+        Return New ExchangePasswordChangeResult(ExchangePasswordChangeOutcome.Changed, ExchangeRefusal.Unknown, token)
     End Function
 
     ''' <summary>`revoke`: the token of another device (or this one) dies; the change arrives as `changed`.</summary>

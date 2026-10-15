@@ -17,6 +17,7 @@ import (
 	"time"
 
 	"fms/exchange-server/internal/limits"
+	"fms/exchange-server/internal/logx"
 	"fms/exchange-server/internal/rendezvous"
 	"fms/exchange-server/internal/testkit"
 	"fms/exchange-server/internal/wire"
@@ -40,7 +41,7 @@ func dataDirViolations(dir string, allowed map[string]bool, needles, logNeedles 
 		}
 		rel, _ := filepath.Rel(dir, p)
 		rel = filepath.ToSlash(rel)
-		if !allowed[rel] {
+		if !allowed[rel] && !(strings.HasPrefix(rel, "logs/") && logx.IsDayFile(strings.TrimPrefix(rel, "logs/"))) {
 			out = append(out, "unexpected file: "+rel)
 		}
 		b, _ := os.ReadFile(p)
@@ -70,6 +71,7 @@ func dataDirViolations(dir string, allowed map[string]bool, needles, logNeedles 
 // with its one rotation. Never content, never a broadcast, never a tunnel, never a pairing code.
 var manifestAllowed = map[string]bool{
 	"accounts.json": true, "devices.json": true, "directory.json": true,
+	"invitations.json": true, "grants.json": true,
 	"tls/cert.pem": true, "tls/key.pem": true,
 	"logs/exchange.log": true, "logs/exchange.log.1": true,
 }
@@ -236,7 +238,13 @@ func TestTheDataDirectoryManifestHoldsForEveryMessage(t *testing.T) {
 	}
 	env2.Engine.Close()
 
-	diskNeedles := []string{testkit.TestPassword, accessSecret, shareID, bid, descNeedle, titleNeedle, payload, code,
+	// an invitation, shared invitation and a grant (ticket 224 rule 16)
+	invCode, _, _ := env.Accounts.CreateInvitation("guest", "alice")
+	const sharedPWNeedle = "SharedTestPassword123!"
+	_ = env.Accounts.SetSharedInvitation(sharedPWNeedle, "family")
+	_ = env.Accounts.AddGrant(resID, "resource", "bobby", "alice")
+
+	diskNeedles := []string{testkit.TestPassword, sharedPWNeedle, invCode, accessSecret, shareID, bid, descNeedle, titleNeedle, payload, code,
 		prodToken, secondToken, otherToken, "broadcast-access-needle"}
 	tunnelMu.Lock()
 	diskNeedles = append(diskNeedles, tunnelIDs...)
@@ -448,8 +456,8 @@ func TestTheUnknownIDLimitOfTheListenURLIsExhaustedAndAnotherAddressStillListens
 	}
 }
 
-// resources, live broadcasts per account and per device, devices per account: capped and `capacity`,
-// another account untouched
+// resources, live broadcasts per account and per device, devices per account: capped and `limit-reached`
+// (19 item AS), another account untouched
 func TestAccountCapsAreExhaustedAndAnotherAccountIsUntouched(t *testing.T) {
 	p := testkit.TestParams()
 	p.ResourcesPerAccount, p.BroadcastsPerAccount, p.BroadcastsPerDevice, p.DevicesPerAccount = 3, 3, 2, 3
@@ -464,7 +472,7 @@ func TestAccountCapsAreExhaustedAndAnotherAccountIsUntouched(t *testing.T) {
 		}
 	}
 	_, _, ans, _ := a.PublishShare(false, nil)
-	refusedWith(t, ans, wire.ReasonCapacity)
+	refusedWith(t, ans, wire.ReasonLimitReached)
 	start := func(d *testkit.Producer) wire.Envelope {
 		r, err := d.Control().Request(&wire.BroadcastStart{Broadcast: castBroadcast(env.NewID())}, 3*time.Second, wire.TypeBroadcastStarted, wire.TypeRefused)
 		if err != nil {
@@ -477,13 +485,13 @@ func TestAccountCapsAreExhaustedAndAnotherAccountIsUntouched(t *testing.T) {
 			t.Fatalf("%+v", r)
 		}
 	}
-	refusedWith(t, start(a), wire.ReasonCapacity) // 2 per device
+	refusedWith(t, start(a), wire.ReasonLimitReached) // 2 per device
 	a2 := startProducer(t, env, "alice")
 	defer a2.Close()
 	if r := start(a2); r.TypeName() != wire.TypeBroadcastStarted {
 		t.Fatalf("%+v", r) // a third live broadcast of the account, on another device
 	}
-	refusedWith(t, start(a2), wire.ReasonCapacity) // 3 per account
+	refusedWith(t, start(a2), wire.ReasonLimitReached) // 3 per account
 	// devices: the account has alice's two producers; a third enrolls, the fourth is refused
 	third := env.NewDevice("alice")
 	mustEnroll(t, third)
@@ -491,7 +499,7 @@ func TestAccountCapsAreExhaustedAndAnotherAccountIsUntouched(t *testing.T) {
 	if r, _ := fourth.Enroll(); r == nil {
 		t.Fatal("no answer")
 	} else {
-		refusedWith(t, r, wire.ReasonCapacity)
+		refusedWith(t, r, wire.ReasonLimitReached)
 	}
 	// another account has its own counts for all of them
 	b := startProducer(t, env, "bobby")
@@ -547,9 +555,9 @@ func TestEveryKeyedLimitIsExhaustedAndAnUnrelatedPartyIsStillServed(t *testing.T
 		return a, b
 	}
 
-	t.Run("failed enroll or hello, per address", func(t *testing.T) {
-		lc, _ := small(limits.FailedAuth, 2)
-		env := testkit.StartServer(t, testkit.Options{Limits: lc, LoginLimits: loose(), Logins: []string{"alice"}})
+	t.Run("password check, per address and per login", func(t *testing.T) {
+		env := testkit.StartServer(t, testkit.Options{Limits: loose(), LoginLimits: loose(), Logins: []string{"alice", "bobby"},
+			PaceInterval: 2 * time.Second, Sleep: func(time.Duration) {}})
 		ip := secondAddress(t, env)
 		bad := func() wire.Envelope {
 			c, err := testkit.DialTLSFrom(env.Addr, env.Fingerprint, ip)
@@ -567,19 +575,29 @@ func TestEveryKeyedLimitIsExhaustedAndAnUnrelatedPartyIsStillServed(t *testing.T
 		refusedWith(t, bad(), wire.ReasonBadCredentials)
 		refusedWith(t, bad(), wire.ReasonBadCredentials)
 		refusedWith(t, bad(), wire.ReasonRateLimited)
-		mustEnroll(t, env.NewDevice("alice")) // 127.0.0.1 is another address
+		mustEnroll(t, env.NewDevice("bobby")) // another login from another address is not paced by the first
+	})
+
+	t.Run("failed hello, per address", func(t *testing.T) {
+		lc, _ := small(limits.FailedAuth, 2)
+		env := testkit.StartServer(t, testkit.Options{Limits: lc, LoginLimits: loose(), Logins: []string{"alice"}})
+		d := env.NewDevice("alice")
+		mustEnroll(t, d)
+		bad := func() wire.Envelope { _, r, _ := d.HelloWith("a-wrong-token"); return r }
+		refusedWith(t, bad(), wire.ReasonBadCredentials)
+		refusedWith(t, bad(), wire.ReasonBadCredentials)
+		refusedWith(t, bad(), wire.ReasonRateLimited)
 	})
 
 	t.Run("failed enroll, per login", func(t *testing.T) {
-		_, llc := small(limits.FailedEnroll, 2)
-		env := testkit.StartServer(t, testkit.Options{Limits: loose(), LoginLimits: llc, Logins: []string{"alice", "bobby"}})
-		for i := 0; i < 2; i++ {
+		env := testkit.StartServer(t, testkit.Options{Limits: loose(), LoginLimits: loose(), Logins: []string{"alice", "bobby"}})
+		for i := 0; i < 3; i++ {
 			r, _ := env.NewDevice("alice").EnrollWith("Wrongpass1")
 			refusedWith(t, r, wire.ReasonBadCredentials)
 		}
-		r, _ := env.NewDevice("alice").EnrollWith("Wrongpass1")
-		refusedWith(t, r, wire.ReasonRateLimited)
-		mustEnroll(t, env.NewDevice("bobby")) // another login
+		time.Sleep(1100 * time.Millisecond)
+		mustEnroll(t, env.NewDevice("alice"))
+		mustEnroll(t, env.NewDevice("bobby"))
 	})
 
 	t.Run("failed hello, per account", func(t *testing.T) {

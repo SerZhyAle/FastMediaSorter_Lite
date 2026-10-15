@@ -61,6 +61,7 @@
 <header class="site-header">
   <nav class="site-nav" aria-label="主导航">
   <a class="brand" href="https://serzhyale.github.io/FastMediaSorter_Lite/lang/zh/" aria-label="Fast Media Sorter &amp; Sharing for Windows">Fast Media Sorter &amp; Sharing for Windows</a>
+  <a class="nav-doc" href="https://serzhyale.github.io/FastMediaSorter_Lite/topics.html">文档（英文）</a>
   <details class="lang-menu">
     <summary>中文</summary>
     <div class="lang-pop">
@@ -86,14 +87,15 @@
 
 <main class="container" id="main" tabindex="-1">
   <section class="hero">
-    <div class="hero-id">
-      <img class="app-icon" src="../../assets/icons/store-icon-256.png" alt="" width="168" height="168">
-      <div class="hero-copy">
-        <span class="eyebrow">Windows desktop app</span>
-        <h1>Fast Media Sorter &amp; Sharing for Windows</h1>
-        <span class="kicker">Free &amp; open-source</span>
+    <div class="identity">
+      <img class="product-icon" src="../../assets/icons/store-icon-256.png" alt="" width="104" height="104">
+      <div>
+        <p class="product-name">Fast Media Sorter &amp; Sharing for Windows</p>
+        <p class="kicker" lang="en" dir="ltr">Windows desktop app</p>
+        <p class="kicker" lang="en" dir="ltr">Free &amp; open-source</p>
       </div>
     </div>
+    <h1>用一个按键整理每个照片和视频文件</h1>
     <p class="lead lead-narrow">查看并整理您的媒体；需要时，同一个程序还是文件夹共享服务器，也是 FileDO 虚拟磁盘的宿主——这些角色都是可选的，在您启用之前保持关闭。</p>
     <p class="lead lead-narrow">飞快地翻阅海量照片和视频文件夹，一个按键就能移动、复制、重命名或删除每个文件。</p>
     <p class="lead lead-narrow">名称中的「Sharing」指把你的媒体交给别人：你的 Android 手机、本程序的另一份副本，或任何 SFTP 客户端。你不开启它，它就保持关闭。 <a href="https://serzhyale.github.io/FastMediaSorter_Lite/publish-folders-android.html" lang="en" dir="ltr">Share folders to Android over SFTP</a></p>
@@ -171,6 +173,7 @@
         <a class="btn btn-ghost" id="dl-zip" href="https://github.com/SerZhyAle/FastMediaSorter_Lite/releases/latest">Portable (.zip)</a>
         <a class="btn btn-ghost btn-sm" href="https://github.com/SerZhyAle/FastMediaSorter_Lite/releases/latest">All releases</a>
         <a class="btn btn-ghost btn-sm" href="https://apps.microsoft.com/detail/9N59Z73WZ53C" target="_blank" rel="noopener"><span>Microsoft Store</span></a>
+        <a class="btn btn-ghost btn-sm" href="https://serzhyale.github.io/FastMediaSorter_Lite/server.html">服务器版：无需登录的共享（英文）</a>
         <span class="dl-meta" id="dlMeta">Offline-ready bundles - VLC runtimes and OCR packs included. Windows 10 1607+ / 11; a 32-bit build for Windows 7/8.1 is in the same download.</span>
       </div>
       <p class="dl-meta">完整安装包内含以下内容，全部可选，启用前保持关闭：文件夹共享服务器（Share Manager 和 SFTP 工作进程）、FileDO 虚拟磁盘托管、离线视频编解码器和 OCR 模型。选择「精简」类型即可不安装服务器。</p>
@@ -178,7 +181,6 @@
         <a href="https://serzhyale.github.io/FastMediaSorter_Lite/lang/zh/trust.html">为什么 Windows 会对这个下载发出警告</a>
       </p>
       <p class="note">本页面与中文界面为机器翻译，未经校对。欢迎指正。</p>
-      <p><a href="https://serzhyale.github.io/FastMediaSorter_Lite/server.html">服务器版：无需登录的共享（英文）</a></p>
     </div>
   </section>
 
@@ -226,6 +228,10 @@
       <article class="card">
         <h3>用 SFTP 分享文件夹</h3>
         <p>把你挑选的文件夹通过 SFTP 发布，在 Android 应用里打开 - 也可以用任何 SFTP 客户端连接。默认关闭，你不开它就不动。</p>
+      </article>
+      <article class="card">
+        <h3>StreamsPlayer 广播</h3>
+        <p>在 64 位查看器中，右键点击视频、音频文件或其文件夹并选择广播。Share Manager 导出 .spres 文件、二维码或快速链接，供 StreamsPlayer 导入。文件夹成为一个包含固定播放列表的频道；刷新会替换列表，撤销会停用链接。HTTP 网关有独立开关，默认关闭。每个令牌只允许读取一个广播，通常在 24 小时后过期。HTTP 未加密：请私下分享文档，仅在需要时启用互联网访问。</p>
       </article>
       <article class="card">
         <h3>撤销，以及真正的回收站</h3>

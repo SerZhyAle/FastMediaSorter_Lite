@@ -207,6 +207,7 @@
     <Compile Include="Resources\ResourceCommit.vb" />
     <Compile Include="Resources\HostKeyGate.vb" />
     <Compile Include="Resources\EndpointResolver.vb" />
+    <Compile Include="Resources\NetworkChangeTracker.vb" />
     <Compile Include="Resources\TransferPlan.vb" />
     <Compile Include="Resources\ResourceSession.vb" />
     <Compile Include="Resources\ResourceTransfer.vb" />
@@ -215,6 +216,13 @@
     <Compile Include="Resources\SmbConnectionLease.vb" />
     <Compile Include="Resources\SmbProvider.vb" />
     <Compile Include="Resources\SftpProvider.vb" />
+    <Compile Include="Resources\QrCodeDecoder.vb" />
+    <Compile Include="Resources\QrCodeGenerator.vb" />
+    <Compile Include="Resources\CameraPresence.vb" />
+    <Compile Include="Resources\PhoneConnectionIntake.vb" />
+    <Compile Include="Resources\Resource_Phone_Code_Form.vb">
+      <SubType>Form</SubType>
+    </Compile>
     <Compile Include="Main_Form.Resource.vb">
       <DependentUpon>Main_Form.vb</DependentUpon>
       <SubType>Form</SubType>
@@ -327,6 +335,7 @@
     <Compile Include="AudioMetadata.vb" />
     <Compile Include="FileDetails.vb" />
     <Compile Include="MediaKind.vb" />
+    <Compile Include="SortableContentKinds.vb" />
     <Compile Include="Main_Form.DragDrop.vb">
       <DependentUpon>Main_Form.vb</DependentUpon>
       <SubType>Form</SubType>
@@ -490,8 +499,10 @@
          the two projects' file sets stay identical and a divergence is always a seam. -->
     <Compile Include="DeletePolicy.vb" />
     <Compile Include="DeleteVolumeProbe.vb" />
+    <Compile Include="DeleteText.vb" />
     <Compile Include="RecycleBinIndex.vb" />
     <Compile Include="RecycleBinIo.vb" />
+    <Compile Include="RecycleBinIo.Delete.vb" />
     <!-- FileOpKind is SHARED - it left Main_Form so that UndoPolicy could be a pure,
          tested table instead of a Select Case inside the form. UndoStack.vb next to it is
          whole-file "#If Not NETFRAMEWORK": this build keeps its three history fields and
@@ -503,6 +514,7 @@
          compile to nothing here and are listed only so the two projects' file sets stay identical. -->
     <Compile Include="BatchSelection.vb" />
     <Compile Include="BatchPlan.vb" />
+    <Compile Include="FreeNameRule.vb" />
     <Compile Include="BatchReport.vb" />
     <Compile Include="BatchRunner.vb" />
     <Compile Include="DiskCacheTrim.vb" />
@@ -510,6 +522,11 @@
     <Compile Include="CacheMaintenance.vb" />
     <Compile Include="DocHtmlTranslateLauncher.vb" />
     <Compile Include="ZoomMath.vb" />
+    <!-- LETTERBOX-BARS / LETTERBOX-HALO 0.1: the pure math of the perspective bars and the halo, once.
+         NOT a whole-file seam - the bars are shared code and the x86 exe compiles them through it
+         (Main_Form.PerspectiveBackground.vb, Imaging\EdgeSampler.vb); only the halo callers are
+         mainline-only. Held to the catalog's vectors by LetterboxFillConformanceTests. -->
+    <Compile Include="LetterboxFillMath.vb" />
     <!-- The "particles and lines" audio backdrop (WAVE-PARTICLES, ticket 029). Whole-file
          "#If Not NETFRAMEWORK": the x86 fallback has no visualiser, so all three compile to
          nothing here and are listed only so the two project lists stay comparable. -->
@@ -643,6 +660,7 @@
     <Compile Include="Ocr\IOcrEngine.vb" />
     <Compile Include="Ocr\OcrBlockBuilder.vb" />
     <Compile Include="Ocr\OcrLineSplitter.vb" />
+    <Compile Include="Ocr\OcrTextJoin.vb" />
     <Compile Include="Ocr\OcrOverlayFit.vb" />
     <Compile Include="Ocr\OcrTextFilter.vb" />
     <Compile Include="Ocr\OcrLanguageGuard.vb" />
@@ -677,6 +695,9 @@
     <Compile Include="Documents\TextFileReader.vb" />
     <Compile Include="Documents\PdfDocumentSource.vb" />
     <Compile Include="Documents\EpubMetadata.vb" />
+    <!-- Ticket 124 UX-216: the pure rules of the text view's selection and scroll cue - whole-file
+         "#If Not NETFRAMEWORK", so it compiles to nothing here; listed so the two projects keep one source tree. -->
+    <Compile Include="TextViewRules.vb" />
     <Compile Include="Main_Form.TextView.vb">
       <DependentUpon>Main_Form.vb</DependentUpon>
       <SubType>Form</SubType>
@@ -853,6 +874,9 @@
     <Compile Include="DialogLayout.vb" />
     <Compile Include="DialogLayer.vb" />
     <Compile Include="DialogLayer.Viewer.vb" />
+    <Compile Include="UiTimingBudget.vb" />
+    <Compile Include="UiTiming.vb" />
+    <Compile Include="AudioOverlayColours.vb" />
     <Compile Include="AskModel.vb" />
     <Compile Include="AskSpecs.vb" />
     <Compile Include="Ask_Dialog.vb" />

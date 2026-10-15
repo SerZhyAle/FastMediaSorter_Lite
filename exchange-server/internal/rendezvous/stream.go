@@ -14,10 +14,11 @@ import (
 //
 //	opening        enroll, hello, connect(shareId | broadcastId) are valid
 //	authenticated  after enrolled / welcome: the first envelope fixes the role -
-//	               attach, connect or upload make a DATA stream, anything else the CONTROL stream
+//	               attach, connect, upload, clipboard-put or clipboard-get make a DATA stream,
+//	               anything else the CONTROL stream
 //	control        the device's messages and the server's pushes, envelopes only, for its whole life
-//	data           no envelope after the first one; after connected / upload-accepted the bytes
-//	               are not envelopes
+//	data           no envelope after the first one; after connected / upload-accepted /
+//	               clipboard-ready / clipboard-value the bytes are not envelopes
 //
 // An envelope invalid in the current state closes the stream; an unknown type or member is ignored.
 
@@ -55,18 +56,24 @@ type Result struct {
 // Backend is what the state machine hands a stream to once it knows what the stream is. The
 // engine of engine.go is the real one; a test of this layer supplies a fake.
 type Backend interface {
-	// Enroll and Hello authenticate. They are called on the stream's own goroutine.
+	// Enroll, Register and Hello authenticate. They are called on the stream's own goroutine.
 	Enroll(st *Stream, e *wire.Enroll) Result
+	Register(st *Stream, e *wire.Register) Result
 	Hello(st *Stream, e *wire.Hello) Result
 	// Control serves a device's control stream until it ends; first is its first envelope.
 	Control(cs *ControlStream, first wire.Envelope)
-	// Attach, Connect and Upload serve a data stream. sess is nil for an outsider: a stream that
-	// never said hello, which may only connect by shareId or broadcastId. THEY OWN THE STREAM: the
-	// state machine does not close it when they return, because a bridge may outlive the call (an
-	// attach hands its stream to the consumer waiting for it); the backend closes it.
+	// Attach, Connect, Upload, ClipboardPut and ClipboardGet serve a data stream. sess is nil for
+	// an outsider: a stream that never said hello, which may only connect by shareId or
+	// broadcastId. THEY OWN THE STREAM: the state machine does not close it when they return,
+	// because a bridge may outlive the call (an attach hands its stream to the consumer waiting
+	// for it); the backend closes it.
 	Attach(st *Stream, sess *Session, e *wire.Attach)
 	Connect(st *Stream, sess *Session, e *wire.Connect)
 	Upload(st *Stream, sess *Session, e *wire.Upload)
+	// ClipboardPut and ClipboardGet are the clipboard's data streams (22 items BW and BY, ticket
+	// 229); they own the stream like the three above.
+	ClipboardPut(st *Stream, sess *Session, e *wire.ClipboardPut)
+	ClipboardGet(st *Stream, sess *Session, e *wire.ClipboardGet)
 	// Listen serves GET /v2/b/<broadcastId>/stream inside TLS and owns the stream like the three above.
 	Listen(st *Stream, broadcastID string)
 	// Sweep runs every SweepInterval with the server's clock: keepalive windows, tombstones, codes.
@@ -244,6 +251,12 @@ func (s *Server) envelopes(raw *trackedConn, conn net.Conn, secure bool, key str
 			return
 		}
 		res = s.cfg.Backend.Enroll(st, e)
+	case *wire.Register:
+		if !secure {
+			st.Refuse(wire.ReasonTLSRequired)
+			return
+		}
+		res = s.cfg.Backend.Register(st, e)
 	case *wire.Hello:
 		if !secure {
 			st.Refuse(wire.ReasonTLSRequired)
@@ -301,6 +314,12 @@ func (s *Server) envelopes(raw *trackedConn, conn net.Conn, secure bool, key str
 	case *wire.Upload:
 		owned = true
 		s.cfg.Backend.Upload(st, res.Session, e)
+	case *wire.ClipboardPut:
+		owned = true
+		s.cfg.Backend.ClipboardPut(st, res.Session, e)
+	case *wire.ClipboardGet:
+		owned = true
+		s.cfg.Backend.ClipboardGet(st, res.Session, e)
 	default:
 		cs := newControl(st, res.Session)
 		defer cs.Close()
@@ -328,6 +347,8 @@ type ControlStream struct {
 	out  chan []byte
 	done chan struct{}
 	once sync.Once
+	// wmu makes one frame one write: the writer goroutine and SendSync never interleave.
+	wmu sync.Mutex
 }
 
 func newControl(st *Stream, sess *Session) *ControlStream {
@@ -342,7 +363,10 @@ func (cs *ControlStream) writer() {
 		case <-cs.done:
 			return
 		case frame := <-cs.out:
-			if err := cs.st.WriteRaw(frame); err != nil {
+			cs.wmu.Lock()
+			err := cs.st.WriteRaw(frame)
+			cs.wmu.Unlock()
+			if err != nil {
 				cs.Close()
 				return
 			}
@@ -371,6 +395,24 @@ func (cs *ControlStream) Send(e wire.Envelope) error {
 		return err
 	}
 	return cs.SendFrame(frame)
+}
+
+// SendSync writes one envelope to the connection before it returns, for the answer after which the
+// caller ends the stream (`account-deleted`): a queued frame could be lost to the close that follows.
+// It waits at most the write deadline of WriteRaw.
+func (cs *ControlStream) SendSync(e wire.Envelope) error {
+	frame, err := wire.EncodeFrame(e, wire.MaxFrameAuth)
+	if err != nil {
+		return err
+	}
+	cs.wmu.Lock()
+	defer cs.wmu.Unlock()
+	select {
+	case <-cs.done:
+		return ErrClosed
+	default:
+	}
+	return cs.st.WriteRaw(frame)
 }
 
 // SendFrame queues a frame that was already encoded: a fan-out encodes once and queues many times.

@@ -105,4 +105,35 @@ Friend NotInheritable Class LiveAdtsFrames
     End Function
 
 End Class
+
+''' <summary>Pipe reads are arbitrary bytes, not TS packets or AAC frames. Retain only the unfinished tail.</summary>
+Friend NotInheritable Class LiveEncodedFramer
+    Private ReadOnly _video As Boolean
+    Private _pending As Byte() = Array.Empty(Of Byte)()
+
+    Public Sub New(video As Boolean)
+        _video = video
+    End Sub
+
+    Public Function Feed(bytes As Byte()) As Byte()
+        If bytes Is Nothing OrElse bytes.Length = 0 Then Return Array.Empty(Of Byte)()
+        Dim combined(_pending.Length + bytes.Length - 1) As Byte
+        Array.Copy(_pending, combined, _pending.Length)
+        Array.Copy(bytes, 0, combined, _pending.Length, bytes.Length)
+        Dim length As Integer = 0
+        If _video Then
+            length = combined.Length - (combined.Length Mod LiveProducerContract.TsPacketSize)
+        Else
+            While length + 7 <= combined.Length
+                Dim header As LiveAdtsFrames.AdtsHeader = LiveAdtsFrames.ReadHeader(combined, length)
+                If Not header.IsValid Then Exit While
+                length += header.FrameLengthBytes
+            End While
+            If combined.Length - length > 8191 Then Throw New IO.InvalidDataException("Invalid encoder ADTS output")
+        End If
+        Dim result As Byte() = combined.AsSpan(0, length).ToArray()
+        _pending = combined.AsSpan(length).ToArray()
+        Return result
+    End Function
+End Class
 #End If

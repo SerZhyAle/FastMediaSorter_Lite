@@ -190,6 +190,29 @@ Public NotInheritable Class CollapsibleSection
     ''' <summary>Appends a control on a new auto-height row of the body.</summary>
     Public Sub AddBodyRow(c As Control)
         If c Is Nothing Then Return
+        Dim button = TryCast(c, Button)
+        If button IsNot Nothing Then
+            ' WINDOWS-UI section 11 item 3: adjacent commands share a wrapping row.
+            ' A note or editor ends the row, keeping each explanation beside its action.
+            button.Dock = DockStyle.None
+            button.Anchor = AnchorStyles.Top Or AnchorStyles.Left
+            button.AutoSize = True
+            button.AutoSizeMode = AutoSizeMode.GrowAndShrink
+            Dim commands As FlowLayoutPanel = Nothing
+            If _body.RowCount > 0 Then
+                commands = TryCast(_body.GetControlFromPosition(0, _body.RowCount - 1), FlowLayoutPanel)
+                If commands IsNot Nothing AndAlso Not Object.Equals(commands.Tag, "sectionCommands") Then commands = Nothing
+            End If
+            If commands Is Nothing Then
+                commands = New FlowLayoutPanel With {
+                    .Tag = "sectionCommands", .AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink,
+                    .Dock = DockStyle.Top, .FlowDirection = FlowDirection.LeftToRight,
+                    .WrapContents = True, .Margin = Padding.Empty}
+                AddBodyRow(commands)
+            End If
+            commands.Controls.Add(button)
+            Return
+        End If
         Dim row As Integer = _body.RowCount
         _body.RowCount = row + 1
         _body.RowStyles.Add(New RowStyle(SizeType.AutoSize))

@@ -284,6 +284,10 @@ Public Class ExchangeLocalJoinTests
             ExchangeFeatures.ComponentProbeOverride = Nothing
         End Try
         ' the reader overload, which the guard tests pin, does not look at folders: gate shut + no switch = off
-        Assert.False(ExchangeFeatures.IsEnabled(Function(name, target) ""))
+        Using ExchangeFeatures.ForFlow(offered:=False)
+            Assert.False(ExchangeFeatures.IsEnabled(Function(name, target) ""))
+        End Using
+        ' and the build as it ships since ticket 223 T-3: on with no switch and no component
+        Assert.True(ExchangeFeatures.IsEnabled(Function(name, target) ""))
     End Sub
 End Class

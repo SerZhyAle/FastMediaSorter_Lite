@@ -166,6 +166,7 @@ Partial Public Class Main_Form
     Private Sub BuildChromePanels()
         AddHandler chrome_Timer.Tick, AddressOf Chrome_Timer_Tick
         AddHandler ChromeMenu.FocusKeyConsumed, AddressOf ChromePopupFocusKeyConsumed
+        AddHandler ThemeService.Changed, AddressOf ChromeThemeServiceChanged
         ' The language button is not on the panel: the settings window is the one surface that
         ' offers the 13 languages on this build (120, AddUiLanguageRow) and the row needs the room.
         BuildChromeRow("chrome_Row1", New Control() {
@@ -361,11 +362,7 @@ Partial Public Class Main_Form
                 AddHandler chrome_Path.EditingEnded,
                     Sub()
                         panel.Host.AllowActivation = False
-                        ' Windows redirects activation of an owner to its last active popup.
-                        ' Remove the editing host from that choice before returning the keyboard.
-                        panel.Host.Hide()
-                        Me.Activate()
-                        If panel.Alpha > 0 Then panel.Host.Show()
+                        ChromeReturnKeyboardToViewer(panel)
                     End Sub
             End If
             panel.Legacy.Add(New KeyValuePair(Of ChromeItem, Control)(item, carrier))
@@ -403,6 +400,37 @@ Partial Public Class Main_Form
                 Exit For
             End If
         Next
+    End Sub
+
+    <System.Runtime.InteropServices.DllImport("user32.dll")>
+    Private Shared Function SetActiveWindow(hWnd As IntPtr) As IntPtr
+    End Function
+
+    <System.Runtime.InteropServices.DllImport("user32.dll")>
+    Private Shared Function GetActiveWindow() As IntPtr
+    End Function
+
+    ''' <summary>Gives the keyboard back to the viewer after the path box let go of it (125 UX-313i). The panel's
+    ''' window was activated for the typing, and Windows hands an owner's activation to the owner's LAST ACTIVE
+    ''' POPUP - the panel again - so the old code took the panel off the screen, activated the viewer and put the
+    ''' panel back: the path panel blinked at every end of an edit. The viewer is activated directly instead
+    ''' (<c>SetActiveWindow</c> makes the owner its own last active window and does not redirect), and the panel
+    ''' never leaves the screen. Only when that did not land - the viewer is not the active window of this thread
+    ''' afterwards - the earlier hide, activate, show sequence runs, which is exactly the old behaviour.</summary>
+    Private Sub ChromeReturnKeyboardToViewer(panel As ChromePanel)
+        Try
+            If IsHandleCreated Then
+                SetActiveWindow(Me.Handle)
+                If GetActiveWindow() = Me.Handle Then Return
+            End If
+        Catch ex As Exception
+            AppFileLogger.LogException("Chrome: returning the keyboard to the viewer", ex)
+        End Try
+        ' Windows redirects activation of an owner to its last active popup. Remove the editing host from
+        ' that choice before returning the keyboard.
+        panel.Host.Hide()
+        Me.Activate()
+        If panel.Alpha > 0 Then panel.Host.Show()
     End Sub
 
     Private Sub ChromeAcceptPath()
@@ -776,7 +804,10 @@ Partial Public Class Main_Form
             PositionVideoControls()
         End If
         If recipients_Overlay IsNot Nothing Then
-            recipients_Overlay.BackColor = chrome_Theme.PanelFill
+            Dim recTheme As ChromeTheme = RecipientsOverlayTheme()
+            recipients_Overlay.BackColor = recTheme.PanelFill
+            If recipients_Overlay_Strip IsNot Nothing Then recipients_Overlay_Strip.BackColor = recTheme.PanelFill
+            If recipients_Overlay_Rows IsNot Nothing Then recipients_Overlay_Rows.BackColor = recTheme.PanelFill
             recipients_Overlay.SetCornerRadius(UiScale.Px(ChromeCorner(), ChromeScale()))
             ' The pin paints from the current theme, so a re-check (and the Invalidate that comes
             ' with it) is all its recolouring takes.
@@ -791,6 +822,12 @@ Partial Public Class Main_Form
 
     Private Sub ChromeRefreshText()
         If chrome_Panels.Count > 0 Then ChromeConfigure()
+    End Sub
+
+    Private Sub ChromeThemeServiceChanged(sender As Object, e As EventArgs)
+        If IsDisposed OrElse Disposing Then Return
+        If chrome_Panels.Count > 0 Then ChromeConfigure()
+        If Is_Show_Recipients_Overlay Then ApplyRecipientsOverlay()
     End Sub
 
     ' --- state of the items ----------------------------------------------------------------------
@@ -867,6 +904,9 @@ Partial Public Class Main_Form
         If carrier Is lbl_File_Number Then item.ReservedText = Localization.TF("{0} из {1}", 9999, 9999)
         If carrier Is lbl_Zoom Then item.ReservedText = "1600 %"
         If carrier Is lbl_Slideshow_Time Then item.ReservedText = "99.9s"
+        ' A button that comes and goes with the kind of the file keeps its place while it is away, so the ones after
+        ' it do not jump when paging reaches a video (125 UX-313b).
+        item.KeepsSlotWhenHidden = ChromeMenuRules.KeepsSlotWhenHidden(carrier.Name, DocHtmlTranslate.IsAvailableCached())
         Dim changed As Boolean = previousGlyph <> item.GlyphId OrElse item.Caption <> caption OrElse item.Visible <> visible OrElse
             item.Checked <> checked OrElse item.Enabled <> carrier.Enabled OrElse item.Tooltip <> tip OrElse item.AccessibleName <> name OrElse
             item.Tone <> tone
@@ -1063,6 +1103,9 @@ Partial Public Class Main_Form
             ' The toolbar panels' holds: an open chrome popup, path editing, the F10 keyboard mode (117 §2.6).
             Dim hold As Boolean = ChromeMenu.PopupVisible OrElse chrome_Keyboard_Mode OrElse
                                   (chrome_Path IsNot Nothing AndAlso chrome_Path.ContainsFocus)
+            ' A window with no media (the first run, an emptied folder) has nothing for a panel to cover and its
+            ' commands are ON the panels: they stay up while the window is in use (125 UX-313m).
+            If ChromeAutoHide.HoldsForEmptyWindow(ChromeMediaOnScreen(), now, chrome_Empty_Since) Then hold = True
             Dim animating As Boolean = False
 
             For Each p As ChromePanel In chrome_Panels
@@ -1134,6 +1177,16 @@ Partial Public Class Main_Form
     End Sub
 
     Private chrome_Recent_Signature As String = Nothing
+
+    ''' <summary>The chrome clock's reading when the window last became empty; -1 while media is on screen
+    ''' (see <see cref="ChromeAutoHide.HoldsForEmptyWindow"/>).</summary>
+    Private chrome_Empty_Since As Long = -1L
+
+    ''' <summary>A picture, a text, a page or a playing video/audio fills the media area. The first-run label
+    ''' and the empty-folder message do not count: they are what the empty window shows.</summary>
+    Private Function ChromeMediaOnScreen() As Boolean
+        Return is_PictureBox1_Visible OrElse is_PictureBox2_Visible OrElse is_Vlc_Playing
+    End Function
 
     ''' <summary>Cheap fingerprint of the folder box's list: its size and its two ends. The list only ever changes by
     ''' moving a folder to the front or dropping one off the back, so an unchanged fingerprint is an unchanged list.</summary>
@@ -1241,13 +1294,19 @@ Partial Public Class Main_Form
                                                  pointerMoved As Boolean, elapsedMs As Integer, usable As Boolean,
                                                  snapAlpha As Boolean) As Boolean
         If recipients_Overlay Is Nothing OrElse recipients_Overlay.IsDisposed Then Return False
+        ' Opening the grid is a door: keep the overlay's current fade/visibility through
+        ' the modal editor and the close-time rebuild, then resume its normal hide delay.
+        If recipients_Edit_Active Then
+            ApplyRecipientsOverlayVisibility()
+            Return False
+        End If
         Try
             Dim wanted As Boolean = False
             If usable AndAlso Is_Show_Recipients_Overlay AndAlso Not SlideshowHidesToolbar() Then
                 Dim pinned As Boolean = ChromeAutoHide.PanelPinned(ChromePinSnapshot(), Recipients_Overlay_Panel_Name)
                 ' The placed rectangle, not the window's bounds: the overlay may not have been
                 ' shown yet, and its geometry is where the cycle would show it anyway.
-                Dim over As Boolean = RecipientsOverlayPlacedRect().Contains(pointer)
+                Dim over As Boolean = recipients_Drag_Active OrElse RecipientsOverlayPlacedRect().Contains(pointer)
                 ' The overlay is its own floating surface (117 revision): it carries no popups,
                 ' no path editor and no F10 ring, and toolbar popups (such as btn_Resource) must
                 ' never summon or hold the unpinned table.

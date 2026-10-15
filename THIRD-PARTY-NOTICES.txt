@@ -1,4 +1,4 @@
-﻿THIRD-PARTY NOTICES
+THIRD-PARTY NOTICES
 Fast Media Sorter & Sharing for Windows and Share Manager - Fast Media Sorter & Sharing
 https://github.com/SerZhyAle/FastMediaSorter_Lite
 
@@ -123,6 +123,14 @@ QRCoder
   License: MIT
   Copyright (c) Raffael Herrmann
 
+ZXing.Net, ZXing.Net.Bindings.Windows.Compatibility (64-bit viewer and Share Manager)
+  Version 0.16.11 / 0.16.16, https://github.com/micjahn/ZXing.Net
+  License: Apache License 2.0
+  Copyright (c) 2012-2024 Michael Jahn, ZXing.Net authors
+
+  Reads 2D barcodes (QR codes) from images, screenshots and camera streams.
+  Fully managed - no native library ships with it.
+
 SharpCompress (64-bit viewer only)
   Version 0.50.4, https://github.com/adamhathcock/sharpcompress
   License: MIT
@@ -169,6 +177,16 @@ executables)
   https://github.com/dotnet/runtime
   License: MIT
   Copyright (c) .NET Foundation and Contributors
+
+Microsoft.Windows.SDK.NET.dll and WinRT.Runtime.dll (the Windows SDK and WinRT
+projections the .NET runtime ships beside a program that targets Windows;
+64-bit Share Manager and modern 64-bit viewer)
+  https://github.com/microsoft/CsWinRT
+  License: MIT
+  Copyright (c) Microsoft Corporation
+
+  Part of the .NET runtime's Windows support, redistributed with the
+  self-contained builds that carry it; not a separate product download.
 
 ================================================================================
 5. Folder Share worker (fms-share-worker.exe)

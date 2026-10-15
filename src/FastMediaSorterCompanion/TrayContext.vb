@@ -1,4 +1,4 @@
-﻿Imports System.Drawing
+Imports System.Drawing
 Imports System.Runtime.InteropServices
 Imports System.Text
 Imports System.Windows.Forms
@@ -22,6 +22,9 @@ Friend NotInheritable Class TrayContext
     Private _disposed As Boolean
     Private _pendingStartupProposals As Boolean
     Private _pendingStartupAddResource As Boolean
+    Private _pendingStartupAddResourceCamera As Boolean
+    Private _pendingStartupSchedule As Boolean
+    Private _pendingStartupScheduleFolder As String = ""
     Private ReadOnly _statsTimer As Timer   ' keeps the tooltip's usage counters reasonably fresh while serving
     Private ReadOnly _diskLetterTimer As Timer
     Private _diskLetterFetchInFlight As Boolean
@@ -33,8 +36,12 @@ Friend NotInheritable Class TrayContext
     ''' <param name="addResourceRequested">Spec 215: the launch also asked for the guided add-resource flow (the viewer's
     ''' welcome wizard, on a green server row). It follows the window the same way a folder follows it - after the message
     ''' loop runs - and yields to the manager's own first-run welcome, whose handover leads to the same flow.</param>
+    ''' <param name="schedulePayload">Ticket 222: the viewer's schedule launcher cold-started this exe with
+    ''' "::fms-schedule::" + a folder; the page opens once the message loop runs, the folder pre-filling an editor.</param>
+    ''' <param name="addResourceCameraRequested">Spec 227: the launch asked to scan a QR code with the PC's camera.</param>
     Friend Sub New(initialFolder As String, Optional windowRequested As Boolean = False, Optional silentLaunch As Boolean = False,
-                   Optional addResourceRequested As Boolean = False)
+                   Optional addResourceRequested As Boolean = False, Optional schedulePayload As String = "",
+                   Optional addResourceCameraRequested As Boolean = False)
         ' Capture before resume or a window can write any manager settings. Silent/folder launches only leave the pending marker.
         Dim fresh As Boolean = ManagerWelcomeStore.CaptureFreshProfile()
         Dim welcomeDue As Boolean = ManagerWelcomeModel.ShouldOpen(ManagerWelcomeStore.State(), fresh,
@@ -71,6 +78,9 @@ Friend NotInheritable Class TrayContext
         ' A PC that runs the exchange server joins it by itself: one silent, bounded background effort, only where the server component is
         ' installed, no account is configured and the person has not disconnected on purpose (ExchangeLocalJoin).
         ExchangeLocalJoinHost.Start()
+        ' Scheduled file operations (ticket 222): the engine lives in this tray process and nowhere else - it
+        ' loads the stored operations and arms them. Not behind the Share opt-in (no port, no firewall).
+        ScheduledHost.Start()
 
         ' Who gets a window. An EXPLICIT gesture always does: a folder argument ("share
         ' this folder", jumps to the package wizard) or windowRequested (the viewer's Share
@@ -94,6 +104,11 @@ Friend NotInheritable Class TrayContext
             ShowMainWindow(Nothing, welcomeDue, Not silentLaunch)
             ' The welcome greets a fresh manager (212); its own handover opens the add flow (214 E-3). Never both.
             If addResourceRequested AndAlso Not welcomeDue Then _pendingStartupAddResource = True
+            If addResourceCameraRequested AndAlso Not welcomeDue Then _pendingStartupAddResourceCamera = True
+            If Not String.IsNullOrEmpty(schedulePayload) AndAlso Not welcomeDue Then
+                _pendingStartupSchedule = True
+                _pendingStartupScheduleFolder = CompanionCommand.Parse(schedulePayload).TargetPath
+            End If
         ElseIf Not silentLaunch Then
             ShowTrayHint()
         End If
@@ -191,6 +206,8 @@ Friend NotInheritable Class TrayContext
         AddHandler miExchange.Click, Sub() ShowMainWindow(Nothing)
         menu.Items.Add(miExchange)
         AddHandler menu.Opening, Sub() RefreshExchangeTrayItem(miExchange)
+
+        BuildScheduledMenuItems(menu)
 
         ' Online "publish your folders for Android" guide.
         Dim miDesc As New ToolStripMenuItem(Localization.T("Описание.."))
@@ -442,6 +459,7 @@ Friend NotInheritable Class TrayContext
             Dim reused As Boolean = _mainWindow IsNot Nothing AndAlso Not _mainWindow.IsDisposed
             If Not reused Then
                 _mainWindow = New MainWindow(initialFolder)
+                _mainWindow.ViewerExePathForPhoneRelay = AddressOf ViewerExePath
                 AddHandler _mainWindow.ServerStateChanged, AddressOf RefreshTrayState
                 AddHandler _mainWindow.WelcomeDeclined, Sub() ShowTrayHint()
             End If
@@ -621,25 +639,34 @@ Friend NotInheritable Class TrayContext
                 BeginInvokeProposals()
             Case CompanionCommandKind.Broadcast
                 ShowBroadcastsWindow(command.TargetPath)
+            Case CompanionCommandKind.Schedule
+                ' Ticket 222 (7.4): the viewer's one launcher entry. The folder only PRE-FILLS the editor of a new
+                ' operation; nothing is scheduled until the user saves it.
+                ShowScheduledOperations(command.TargetPath)
             Case CompanionCommandKind.AddResource
                 ' Spec 215: the window is shown exactly as a show-window wake shows it; when the manager's own welcome
                 ' is due it greets and the add flow waits for its handover (214 E-3) instead of stacking on it.
                 Dim welcomeDue As Boolean = ManagerWelcomeModel.ShouldOpen(ManagerWelcomeStore.State(), False, False, False)
                 ShowMainWindow(Nothing, welcomeDue, True)
                 If Not welcomeDue Then BeginOpenAddResource()
+            Case CompanionCommandKind.AddResourceCamera
+                ' Spec 227: camera QR scan
+                Dim welcomeDue As Boolean = ManagerWelcomeModel.ShouldOpen(ManagerWelcomeStore.State(), False, False, False)
+                ShowMainWindow(Nothing, welcomeDue, True)
+                If Not welcomeDue Then BeginOpenAddResource(camera:=True)
         End Select
     End Sub
 
     ''' <summary>Posts the guided add-resource flow to the window's own UI turn, after the wake handler has returned
     ''' its acknowledgement. The window decides whether it can open it (a worker that is missing or a busy window
     ''' leaves the plain window, never an error).</summary>
-    Private Sub BeginOpenAddResource()
+    Private Sub BeginOpenAddResource(Optional camera As Boolean = False)
         If _disposed OrElse _mainWindow Is Nothing OrElse _mainWindow.IsDisposed Then Return
         Dim live As MainWindow = _mainWindow
         Try
             live.BeginInvoke(New Action(Sub()
                                             If live.IsDisposed Then Return
-                                            Dim t As Task = live.OpenResourceAddFromWakeAsync()
+                                            Dim t As Task = live.OpenResourceAddFromWakeAsync(camera:=camera)
                                         End Sub))
         Catch ex As Exception
             AppFileLogger.LogException("Companion add-resource wake", ex)
@@ -711,6 +738,14 @@ Friend NotInheritable Class TrayContext
         If _pendingStartupAddResource Then
             _pendingStartupAddResource = False
             BeginOpenAddResource()
+        End If
+        If _pendingStartupAddResourceCamera Then
+            _pendingStartupAddResourceCamera = False
+            BeginOpenAddResource(camera:=True)
+        End If
+        If _pendingStartupSchedule Then
+            _pendingStartupSchedule = False
+            ShowScheduledOperations(_pendingStartupScheduleFolder)
         End If
     End Sub
     ''' <summary>The receiver's decision for a validated folder request, taken synchronously so
@@ -790,6 +825,8 @@ Friend NotInheritable Class TrayContext
     End Function
     ''' <summary>
     ''' The viewer exe to open from the tray, or "" when this machine has none.
+    ''' Friend since spec 227: the phone-code relay asks the same question through
+    ''' <c>MainWindow.ViewerExePathForPhoneRelay</c>, handed in once when the window is built.
     '''
     ''' Next to us FIRST - that is the User edition, where both programs share one
     ''' folder. The Server edition installs the Share Manager on its own, into its own
@@ -798,7 +835,7 @@ Friend NotInheritable Class TrayContext
     ''' did nothing at all on a Server machine that has the viewer installed normally -
     ''' silently, because the old code just skipped a missing file.
     ''' </summary>
-    Private Function ViewerExePath() As String
+    Friend Function ViewerExePath() As String
         Try
             Dim beside As String = FirstViewerIn(IO.Path.GetDirectoryName(Application.ExecutablePath))
             If beside.Length > 0 Then Return beside
@@ -849,6 +886,74 @@ Friend NotInheritable Class TrayContext
         End Try
     End Sub
 
+    ' --- scheduled file operations (ticket 222, 7.3) ---------------------------------------------------
+
+    ''' <summary>Run all now, Pause all / Resume all, and the page. The last failure rides as the item's hint.
+    ''' What is offered is decided on Opening, from the engine - nothing is started by showing the menu.</summary>
+    Private Sub BuildScheduledMenuItems(menu As ContextMenuStrip)
+        Dim miRunAll As New ToolStripMenuItem(Localization.T("Запустить все операции сейчас")) With {.Visible = False}
+        AddHandler miRunAll.Click, Sub()
+                                       Select Case ScheduledHost.Engine.RunAllNow()
+                                           Case TriggerOutcome.Paused
+                                               ShowTrayNotice(Localization.T("Расписание приостановлено: сначала возобновите его."))
+                                           Case TriggerOutcome.NothingToRun
+                                               ShowTrayNotice(Localization.T("Нет включённых операций."))
+                                       End Select
+                                   End Sub
+        menu.Items.Add(miRunAll)
+
+        Dim miPause As New ToolStripMenuItem(Localization.T("Приостановить расписание")) With {.Visible = False}
+        AddHandler miPause.Click, Sub()
+                                      Dim engine As ScheduledEngine = ScheduledHost.Engine
+                                      engine.Paused = Not engine.Paused
+                                  End Sub
+        menu.Items.Add(miPause)
+
+        Dim miOpen As New ToolStripMenuItem(Localization.T("Файловые операции по расписанию.."))
+        AddHandler miOpen.Click, Sub() ShowScheduledOperations("")
+        menu.Items.Add(miOpen)
+
+        AddHandler menu.Opening,
+            Sub()
+                Try
+                    Dim engine As ScheduledEngine = ScheduledHost.Engine
+                    Dim any As Boolean = engine.Snapshot().Count > 0
+                    miRunAll.Visible = any
+                    miPause.Visible = any
+                    miPause.Text = If(engine.Paused, Localization.T("Возобновить расписание"), Localization.T("Приостановить расписание"))
+                    ' The last failure as the hint, so the tray alone says that something did not run.
+                    Dim failure As ScheduledFailureInfo = engine.LastFailure
+                    miOpen.ToolTipText = If(failure Is Nothing, "", ScheduledText.FailureHint(failure))
+                Catch ex As Exception
+                    AppFileLogger.LogException("Tray: scheduled operations items", ex)
+                End Try
+            End Sub
+    End Sub
+
+    ''' <summary>Opens the Scheduled file operations page of the settings, on top of the manager window.</summary>
+    Private Sub ShowScheduledOperations(folder As String)
+        Try
+            ShowMainWindow(Nothing)
+            If _mainWindow IsNot Nothing AndAlso Not _mainWindow.IsDisposed Then
+                Dim live As MainWindow = _mainWindow
+                ' Posted: a wake handler returns its acknowledgement before a modal page opens.
+                live.BeginInvoke(New Action(Sub()
+                                                If live.IsDisposed Then Return
+                                                live.OpenScheduledOperations(folder)
+                                            End Sub))
+            End If
+        Catch ex As Exception
+            AppFileLogger.LogException("Tray: scheduled operations", ex)
+        End Try
+    End Sub
+
+    Private Sub ShowTrayNotice(text As String)
+        Try
+            _notifyIcon.ShowBalloonTip(3000, ProductNames.ShareManager, text, ToolTipIcon.Info)
+        Catch
+        End Try
+    End Sub
+
     Private Sub ExitApplication()
         ' Close the window while the message loop still runs, so its FormClosing writes
         ' the geometry; Dispose below repeats the Close as a backstop.
@@ -877,6 +982,12 @@ Friend NotInheritable Class TrayContext
                 _statsTimer.Stop()
                 _statsTimer.Dispose()
             Catch
+            End Try
+            ' The scheduler: timers stood down, a run in flight cancelled (a half-copied file never carries its final name).
+            Try
+                ScheduledHost.Shutdown()
+            Catch e As Exception
+                AppFileLogger.LogException("Scheduled operations: stopping at exit", e)
             End Try
             ' A clean exit says `bye` (presence goes offline at once) and closes the agent's stream and local channel.
             Try

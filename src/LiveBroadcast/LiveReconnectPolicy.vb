@@ -188,6 +188,7 @@ Friend NotInheritable Class LiveReconnectPolicy
             Case LiveTerminationKind.LoopbackAddress
                 Return Localization.T("Устройство передало локальный адрес (loopback), недоступный с ПК")
             Case LiveTerminationKind.HttpStatus
+                If HttpStatusCode = 429 Then Return Localization.T("Слишком много попыток. Подождите минуту и повторите.")
                 Return Localization.TF("Устройство ответило: HTTP {0}", HttpStatusCode)
             Case LiveTerminationKind.BudgetExhausted
                 If HasEverPlayed Then

@@ -143,6 +143,28 @@ Public Class ExchangeAdminModelTests
         Return v
     End Function
 
+    ''' <summary>Ticket 224 rule 1: only an invitation nobody has used can be withdrawn; the list itself is always there.</summary>
+    <Fact>
+    Public Sub Only_an_unused_invitation_can_be_withdrawn()
+        Dim v As ExchangeAccountsView = View({"alice"})
+        v.Invitations = {New ExchangeAdminInvitation With {.CodeHash = "open", .Kind = "member", .Used = False},
+                         New ExchangeAdminInvitation With {.CodeHash = "spent", .Kind = "guest", .Used = True, .UsedBy = "visitor"}}
+        Assert.True(ExchangeAccountsModel.Build(v, "", "").ShowInvitations)
+        Assert.False(ExchangeAccountsModel.Build(v, "", "").ShowWithdrawInvitation)
+        Assert.True(ExchangeAccountsModel.Build(v, "", "", "open").ShowWithdrawInvitation)
+        Assert.False(ExchangeAccountsModel.Build(v, "", "", "spent").ShowWithdrawInvitation)
+        Assert.False(ExchangeAccountsModel.Build(v, "", "", "nobody").ShowWithdrawInvitation)
+    End Sub
+
+    ''' <summary>Ticket 224 rule 5: the limits button belongs to a selected account, as reset and remove do.</summary>
+    <Fact>
+    Public Sub The_limits_of_an_account_are_offered_only_for_a_selected_account()
+        Dim v As ExchangeAccountsView = View({"alice", "bob"})
+        Assert.False(ExchangeAccountsModel.Build(v, "", "").ShowLimits)
+        Assert.True(ExchangeAccountsModel.Build(v, "alice", "").ShowLimits)
+        Assert.False(ExchangeAccountsModel.Build(v, "carol", "").ShowLimits)
+    End Sub
+
     <Fact>
     Public Sub A_server_that_cannot_be_reached_draws_the_notice_and_no_list()
         Dim m As ExchangeAccountsModel = ExchangeAccountsModel.Build(New ExchangeAccountsView(), "", "")
@@ -219,7 +241,7 @@ Public Class ExchangeAdminModelTests
         Dim go As List(Of String) = GoStatementIds()
         If go Is Nothing Then Return   ' a clone without the exchange-server tree has nothing to compare with
         Assert.Equal(go, ExchangeStatement.Ids.ToList())
-        Assert.Equal(6, ExchangeStatement.Ids.Length)
+        Assert.Equal(7, ExchangeStatement.Ids.Length)
     End Sub
 
     <Fact>
@@ -229,9 +251,9 @@ Public Class ExchangeAdminModelTests
             For Each code As String In Localization.Codes
                 Localization.CurrentCode = code
                 Dim texts As List(Of String) = ExchangeStatement.Paragraphs()
-                Assert.Equal(6, texts.Count)
+                Assert.Equal(8, texts.Count)
                 Assert.All(texts, Sub(t) Assert.False(String.IsNullOrWhiteSpace(t), code))
-                Assert.Equal(6, texts.Distinct().Count())
+                Assert.Equal(8, texts.Distinct().Count())
                 If code <> "ru" Then
                     ' a translation, never the Russian source showing through (the layer returns the key for a missing entry)
                     Dim russian As List(Of String)
@@ -250,7 +272,7 @@ Public Class ExchangeAdminModelTests
     End Sub
 
     ''' <summary>DEVICE-EXCHANGE 7.9 in substance, in English: relayed broadcast, plain tunnel, access in memory, opaque SFTP, the open
-    ''' multi-user limit and flat trust - the facts an operator must not be left unaware of.</summary>
+    ''' multi-user limit, flat trust and the clipboard value in memory (ticket 229) - the facts an operator must not be left unaware of.</summary>
     <Fact>
     Public Sub The_english_statement_says_what_the_contract_says_the_operator_can_see()
         Dim saved As String = Localization.CurrentCode
@@ -262,7 +284,9 @@ Public Class ExchangeAdminModelTests
                 {"access-visible", {"access details", "memory", "operator", "never written to disk", "never logged"}},
                 {"sftp-opaque", {"SSH", "cannot read"}},
                 {"multi-user-limit", {"other people's accounts", "limit", "end to end", "open work"}},
-                {"flat-trust", {"every other device", "remove", "pairing codes", "access details", "remove itself"}}}
+                {"flat-trust", {"every other device", "remove", "pairing codes", "access details", "remove itself"}},
+                {"clipboard-visible", {"memory", "nowhere else", "never written to disk", "lost when the server restarts",
+                                       "operator can read it in the clear", "one value", "size limit"}}}
             For Each id As String In ExchangeStatement.Ids
                 Dim text As String = ExchangeStatement.Text(id)
                 For Each k As String In must(id)

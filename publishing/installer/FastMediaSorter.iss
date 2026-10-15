@@ -134,7 +134,7 @@ english.CompCore=Core - image & video viewer and sorter (required)
 english.CompCodecs=Video codecs (VLC) - offline playback of AVI, MKV, VP9 and other formats
 english.CompPdf=PDF preview (PDFium, 5 MB) - pages and OCR inside the sorter
 english.CompOcr=OCR & translation models - offline on-image text recognition
-english.CompShare=Folder share server (Share Manager + SFTP worker) - optional; gives folders to your phone, off until you enable it (bundles its own .NET runtime)
+english.CompShare=Folder share server and scheduled file operations (Share Manager + SFTP worker) - optional; gives folders to your phone and runs copy, move, delete and archive on a schedule; sharing is off until you enable it (bundles its own .NET runtime)
 english.ShareManagerComment=Share folders from this PC to an Android phone over Wi-Fi
 english.ShareDesktopIcon=Create a desktop shortcut for the Share Manager
 
@@ -145,7 +145,7 @@ russian.CompCore=Ядро - просмотр и сортировка изобр�
 russian.CompCodecs=Видео-кодеки (VLC) - оффлайн-воспроизведение AVI, MKV, VP9 и других форматов
 russian.CompPdf=Просмотр PDF (PDFium, 5 МБ) - страницы и OCR в сортировщике
 russian.CompOcr=Модели OCR и перевода - распознавание текста на изображении без интернета
-russian.CompShare=Сервер раздачи папок (Менеджер общего доступа + SFTP-воркер) - необязательно; отдаёт папки на телефон, выключен, пока вы его не включите (включает свой рантайм .NET)
+russian.CompShare=Сервер раздачи папок и файловые операции по расписанию (Менеджер общего доступа + SFTP-воркер) - необязательно; отдаёт папки на телефон и по расписанию копирует, переносит, удаляет и архивирует файлы; раздача выключена, пока вы её не включите (включает свой рантайм .NET)
 russian.ShareManagerComment=Раздача папок этого ПК на телефон Android по Wi-Fi
 russian.ShareDesktopIcon=Создать ярлык Менеджера общего доступа на рабочем столе
 
@@ -156,7 +156,7 @@ ukrainian.CompCore=Ядро - перегляд і сортування зобр�
 ukrainian.CompCodecs=Відео-кодеки (VLC) - офлайн-відтворення AVI, MKV, VP9 та інших форматів
 ukrainian.CompPdf=Перегляд PDF (PDFium, 5 МБ) - сторінки та OCR у сортувальнику
 ukrainian.CompOcr=Моделі OCR та перекладу - розпізнавання тексту на зображенні без інтернету
-ukrainian.CompShare=Сервер роздачі тек (Менеджер спільного доступу + SFTP-воркер) - необов’язково; віддає теки на телефон, вимкнений, доки ви його не ввімкнете (містить власний рантайм .NET)
+ukrainian.CompShare=Сервер роздачі тек і файлові операції за розкладом (Менеджер спільного доступу + SFTP-воркер) - необов’язково; віддає теки на телефон і за розкладом копіює, переносить, видаляє та архівує файли; роздача вимкнена, доки ви її не ввімкнете (містить власний рантайм .NET)
 ukrainian.ShareManagerComment=Роздача тек цього ПК на телефон Android через Wi-Fi
 ukrainian.ShareDesktopIcon=Створити ярлик Менеджера спільного доступу на робочому столі
 

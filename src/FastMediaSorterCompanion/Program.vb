@@ -55,9 +55,11 @@ Friend Module Program
     ''' viewer's welcome wizard, on a server row that is green). An intent with no path in it; a receiver that does not
     ''' know it is never sent it (<see cref="ShareActivationPolicy.IsAddResourceCapable"/>).</summary>
     Public Const AddResourceCommand As String = "::fms-add-resource::"
+    Public Const AddResourceCameraCommand As String = "::fms-add-resource-camera::"
 
     ''' <summary>Command line form of <see cref="AddResourceCommand"/>, for a cold start.</summary>
     Public Const AddResourceFlag As String = "--add-resource"
+    Public Const AddResourceCameraFlag As String = "--add-resource-camera"
 
     <STAThread>
     Friend Sub Main(args As String())
@@ -69,12 +71,21 @@ Friend Module Program
         Dim silentTray As Boolean = False
         Dim windowRequested As Boolean = False
         Dim addResourceRequested As Boolean = False
+        Dim addResourceCameraRequested As Boolean = False
+        ' Ticket 222: the viewer's schedule launcher passes ONE token ("::fms-schedule::" + a folder) - never a bare
+        ' folder, which this program would take for a folder to share.
+        Dim schedulePayload As String = ""
         Dim folder As String = Nothing
         If args IsNot Nothing Then
             For Each a As String In args
                 If String.Equals(a, TrayFlag, StringComparison.OrdinalIgnoreCase) OrElse
                    String.Equals(a, "/tray", StringComparison.OrdinalIgnoreCase) Then
                     silentTray = True
+                ElseIf String.Equals(a, AddResourceCameraFlag, StringComparison.OrdinalIgnoreCase) OrElse
+                       String.Equals(a, "/add-resource-camera", StringComparison.OrdinalIgnoreCase) OrElse
+                       String.Equals(a, AddResourceCameraCommand, StringComparison.Ordinal) Then
+                    windowRequested = True
+                    addResourceCameraRequested = True
                 ElseIf String.Equals(a, AddResourceFlag, StringComparison.OrdinalIgnoreCase) OrElse
                        String.Equals(a, "/add-resource", StringComparison.OrdinalIgnoreCase) OrElse
                        String.Equals(a, AddResourceCommand, StringComparison.Ordinal) Then
@@ -82,6 +93,10 @@ Friend Module Program
                     ' intent of what to open in it. Checked before the folder branch for the same reason.
                     windowRequested = True
                     addResourceRequested = True
+                ElseIf a.StartsWith(CompanionCommand.ScheduleCommandPrefix, StringComparison.Ordinal) Then
+                    ' Validated by the same parser a running instance applies; an invalid one is just a show-window.
+                    windowRequested = True
+                    If CompanionCommand.Parse(a).Kind = CompanionCommandKind.Schedule Then schedulePayload = a
                 ElseIf String.Equals(a, ShowWindowFlag, StringComparison.OrdinalIgnoreCase) OrElse
                        String.Equals(a, "/show", StringComparison.OrdinalIgnoreCase) OrElse
                        String.Equals(a, ShowWindowCommand, StringComparison.Ordinal) Then
@@ -101,8 +116,12 @@ Friend Module Program
         Dim payload As String
         If Not String.IsNullOrEmpty(folder) Then
             payload = folder
+        ElseIf addResourceCameraRequested Then
+            payload = AddResourceCameraCommand
         ElseIf addResourceRequested Then
             payload = AddResourceCommand
+        ElseIf schedulePayload.Length > 0 Then
+            payload = schedulePayload
         ElseIf windowRequested Then
             payload = ShowWindowCommand
         ElseIf silentTray Then
@@ -207,7 +226,7 @@ Friend Module Program
             ' folder to share, or --show from the viewer's Share Manager button), and every
             ' other launch - logon autostart, a double-click on the exe, a script -
             ' obeys the "Open the manager window at startup" option, off by default.
-            Using ctx As New TrayContext(folder, windowRequested, silentTray, addResourceRequested)
+            Using ctx As New TrayContext(folder, windowRequested, silentTray, addResourceRequested, schedulePayload, addResourceCameraRequested)
                 Application.Run(ctx)
             End Using
         Finally
@@ -314,6 +333,8 @@ Friend Module Program
         ' Spec 215: the add-resource intent never reaches a receiver that is not known to understand it - the plain
         ' wake is what an older Share Manager gets, and it opens its window as it always did.
         If command.Kind = CompanionCommandKind.AddResource AndAlso Not ShareActivationPolicy.IsAddResourceCapable(receiverVersion) Then Return ShowWindowCommand
+        ' Ticket 222: the schedule intent likewise never reaches a receiver that is not known to understand it.
+        If command.Kind = CompanionCommandKind.Schedule AndAlso Not ShareActivationPolicy.IsScheduleCapable(receiverVersion) Then Return ShowWindowCommand
         Return payload
     End Function
 

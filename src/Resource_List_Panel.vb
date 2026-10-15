@@ -110,6 +110,10 @@ Friend NotInheritable Class Resource_List_Panel
     ''' command only says where the folder is managed), so the panel never grows a
     ''' dependency on a form.</summary>
     Private ReadOnly manageSharesAction As Action
+    ''' <summary>Spec 227 rule 2: the host's "Share Manager installed" probe; Nothing keeps the file probe.</summary>
+    Private ReadOnly shareInstalledSource As Func(Of Boolean)
+    ''' <summary>Spec 227 rule 2: the host's camera hand-over; Nothing keeps the item absent.</summary>
+    Private ReadOnly scanCameraAction As Action
     ''' <summary>The "My devices" section (ticket 171). Nothing unless the exchange client features are offered and the Share Manager is installed;
     ''' never in an injected world (a test's custom hive), where the agent's channel must not be asked. Once the Settings page has taken the
     ''' section over through <see cref="DetachDevices"/>, the field keeps the wiring (the metrics, the palette, the per-row states) while the
@@ -135,6 +139,11 @@ Friend NotInheritable Class Resource_List_Panel
     ''' the settings window's own scale for the Settings page.</param>
     ''' <param name="withPrimaryOpen">The Settings page's Open action lives in the row as the
     ''' primary button; the manager dialog keeps Open in its own chrome and passes nothing.</param>
+    ''' <param name="shareInstalledProbe">Spec 227 rule 2: the host's answer to "is the Share Manager
+    ''' installed" (its own file probe). Nothing keeps the panel's quiet file probe.</param>
+    ''' <param name="scanPhoneCodeCamera">Spec 227 rule 2: the host's hand-over of the camera scan to
+    ''' the Share Manager's add-resource flow. Nothing keeps the item absent - the panel has no camera
+    ''' door of its own to offer.</param>
     Friend Sub New(Optional scale As Single = 1.0F,
                    Optional readValue As Func(Of String, String) = Nothing,
                    Optional writeValue As Action(Of String, String) = Nothing,
@@ -143,7 +152,9 @@ Friend NotInheritable Class Resource_List_Panel
                    Optional withPrimaryOpen As Boolean = False,
                    Optional deviceScale As Boolean = False,
                    Optional managedShares As Func(Of IEnumerable(Of ResourceDescriptor)) = Nothing,
-                   Optional openShareManager As Action = Nothing)
+                   Optional openShareManager As Action = Nothing,
+                   Optional shareInstalledProbe As Func(Of Boolean) = Nothing,
+                   Optional scanPhoneCodeCamera As Action = Nothing)
         panelScale = If(scale > 0.0F, scale, 1.0F)
         scaleIncludesDpi = deviceScale
         customStore = readValue IsNot Nothing OrElse writeValue IsNot Nothing OrElse secretStore IsNot Nothing
@@ -153,6 +164,8 @@ Friend NotInheritable Class Resource_List_Panel
         confirmRemove = If(removeConfirmation, AddressOf AskRemoveConfirmation)
         managedShareSource = managedShares
         manageSharesAction = openShareManager
+        shareInstalledSource = shareInstalledProbe
+        scanCameraAction = scanPhoneCodeCamera
 
         If Localization.IsRightToLeft() Then RightToLeft = RightToLeft.Yes
 
@@ -188,6 +201,22 @@ Friend NotInheritable Class Resource_List_Panel
             Sub()
                 Dim chosen As ResourceDescriptor = Selected()
                 If chosen IsNot Nothing Then RaiseEvent ItemActivated(chosen)
+            End Sub
+        ' Spec 227 rule 1: the door takes a dropped file too - a .fmscfg document or a QR image
+        ' dragged straight onto the list reads through the same intake as the open dialog.
+        AllowDrop = True
+        AddHandler DragEnter,
+            Sub(sender As Object, e As DragEventArgs)
+                If DroppedIntakeFile(e) IsNot Nothing Then
+                    e.Effect = DragDropEffects.Copy
+                Else
+                    e.Effect = DragDropEffects.None
+                End If
+            End Sub
+        AddHandler DragDrop,
+            Sub(sender As Object, e As DragEventArgs)
+                Dim path As String = DroppedIntakeFile(e)
+                If path IsNot Nothing Then ImportAndRefresh(PhoneConnectionIntake.ReadFile(path))
             End Sub
 
         summary = New Label With {
@@ -388,6 +417,17 @@ Friend NotInheritable Class Resource_List_Panel
     ''' 700x372 dialog and a settings page that fills the window) need no layout code of their
     ''' own; the minimum list height of 320 logical px is the Settings host's decision.</summary>
     Private Sub Relayout()
+        ' Everything below places a child by an explicit rectangle, so the panel is held while it is done (one
+        ' layout pass, WINDOWS-UI section 5 amended 0.2) - each SetBounds used to run the panel's layout again.
+        SuspendLayout()
+        Try
+            RelayoutHeld()
+        Finally
+            ResumeLayout(False)
+        End Try
+    End Sub
+
+    Private Sub RelayoutHeld()
         ' Dv, not Sp: this runs after the window has its DPI (a Resize), where a logical 96-dpi pixel has to be
         ' turned into a device one - the constants used to stay small beside a font 1.75x larger (124 UX-202).
         Dim width As Integer = Math.Max(Dv(160), ClientSize.Width)
@@ -1110,7 +1150,7 @@ Friend NotInheritable Class Resource_List_Panel
         Dim exportReason As String = If(managedNote.Length > 0, managedNote, reason)
         Dim export As New ChromeMenuItem("res_Export") With {
             .GlyphId = "action.share", .Caption = Localization.T("Экспорт.."),
-            .AccessibleName = If(exportReason.Length = 0, Localization.T("Экспорт.."), Localization.T("Экспорт..") & " - " & exportReason),
+            .AccessibleName = If(exportReason.Length = 0, Localization.T("Экспорт.."), Localization.TF("{0} - {1}", Localization.T("Экспорт.."), exportReason)),
             .Enabled = exportReason.Length = 0, .DisabledReason = exportReason}
         If hasSelection Then export.Action = Sub() OnExport(Nothing, EventArgs.Empty)
         Dim importFile As New ChromeMenuItem("res_ImportFile") With {
@@ -1121,7 +1161,76 @@ Friend NotInheritable Class Resource_List_Panel
             .GlyphId = "action.copy", .Caption = Localization.T("Импорт из буфера"),
             .AccessibleName = Localization.T("Импорт из буфера")}
         importClipboard.Action = Sub() OnImportClipboard(Nothing, EventArgs.Empty)
-        Return New List(Of ChromeMenuItem) From {export, importFile, importClipboard}
+
+        Dim items As New List(Of ChromeMenuItem) From {export, importFile, importClipboard}
+
+        ' Spec 227 rule 2: "Scan with the camera.." lives in the Share Manager's add-resource manager;
+        ' the panel offers the hand-over only when a camera door was handed in, the Share Manager is
+        ' installed and a camera is present. With either missing the item is absent, not disabled.
+        If scanCameraAction IsNot Nothing AndAlso ShareComponentInstalled() AndAlso CameraPresence.IsCameraPresent() Then
+            Dim scanCamera As New ChromeMenuItem("res_ScanCamera") With {
+                .GlyphId = "device.phone", .Caption = Localization.T("Сканировать камерой.."),
+                .AccessibleName = Localization.T("Сканировать камерой..")}
+            scanCamera.Action = Sub() OnScanCamera(Nothing, EventArgs.Empty)
+            items.Add(scanCamera)
+        End If
+
+        ' Spec 227 rule 3: a QR the phone scans, carrying a one-time receive address for its code
+        Dim showPhoneCode As New ChromeMenuItem("res_ShowPhoneCode") With {
+            .GlyphId = "action.share", .Caption = Localization.T("Показать код для телефона.."),
+            .AccessibleName = Localization.T("Показать код для телефона..")}
+        showPhoneCode.Action = Sub() OnShowPhoneCode(Nothing, EventArgs.Empty)
+        items.Add(showPhoneCode)
+
+#If Not NETFRAMEWORK Then
+        If hasSelection Then
+            Dim sel = Selected()
+            If sel IsNot Nothing Then
+                Dim diagnoseItem As New ChromeMenuItem("res_Diagnose") With {
+                    .GlyphId = "action.test-connection",
+                    .Caption = ConnectionDiagnosisLocalization.DoorButtonText(Localization.CurrentCultureLanguage),
+                    .AccessibleName = ConnectionDiagnosisLocalization.DoorButtonText(Localization.CurrentCultureLanguage)
+                }
+                diagnoseItem.Action = Sub()
+                    Dim ctx As New ConnectionDiagnosisContext With {
+                        .Host = sel.Host,
+                        .Port = sel.Port,
+                        .Language = Localization.CurrentCultureLanguage,
+                        .LastMessageCode = ConnectionDiagnosisMessageCode.UnreachableServer
+                    }
+                    Dim ignored = Connection_Diagnosis_Dialog.RunAndShowAsync(FindForm(), ctx)
+                End Sub
+                items.Add(diagnoseItem)
+            End If
+        End If
+#End If
+
+        Return items
+    End Function
+
+    ''' <summary>The host's installed probe, or the panel's own file probe when no host one was handed
+    ''' in (the tests construct without one) - the same probe spec 215 rule 3 uses.</summary>
+    Private Function ShareComponentInstalled() As Boolean
+        If shareInstalledSource IsNot Nothing Then
+            Try
+                Return shareInstalledSource()
+            Catch
+                Return False
+            End Try
+        End If
+        Try
+            Dim baseDir As String = AppDomain.CurrentDomain.BaseDirectory
+            Dim companionPath As String = System.IO.Path.Combine(baseDir, "FastMediaSorterCompanion.exe")
+            If System.IO.File.Exists(companionPath) Then Return True
+            Dim parentDir As String = System.IO.Path.GetDirectoryName(baseDir.TrimEnd(System.IO.Path.DirectorySeparatorChar))
+            If Not String.IsNullOrEmpty(parentDir) Then
+                companionPath = System.IO.Path.Combine(parentDir, "FastMediaSorterCompanion.exe")
+                If System.IO.File.Exists(companionPath) Then Return True
+            End If
+            Return False
+        Catch
+            Return False
+        End Try
     End Function
 
     Private Sub OnMore(sender As Object, e As EventArgs)
@@ -1138,35 +1247,56 @@ Friend NotInheritable Class Resource_List_Panel
 
     ' --------------------------------------------------------------------------- import ----
 
+    ''' <summary>The one supported intake file in a drop, or Nothing - the door takes one file at a
+    ''' time, the first of the list that names something the intake reads.</summary>
+    Private Shared Function DroppedIntakeFile(e As DragEventArgs) As String
+        If e Is Nothing OrElse Not e.Data.GetDataPresent(DataFormats.FileDrop) Then Return Nothing
+        Dim paths As String() = TryCast(e.Data.GetData(DataFormats.FileDrop), String())
+        If paths Is Nothing Then Return Nothing
+        For Each path As String In paths
+            If PhoneConnectionIntake.IsSupportedFile(path) Then Return path
+        Next
+        Return Nothing
+    End Function
+
     Private Sub OnImportFile(sender As Object, e As EventArgs)
         Dim owner As IWin32Window = If(FindForm(), DirectCast(Me, IWin32Window))
         Using dialog As New OpenFileDialog With {
             .Title = Localization.T("Импорт ресурса"),
-            .Filter = Localization.T("Файл настроек ресурса (*.fmscfg;*.json;*.txt)|*.fmscfg;*.json;*.txt|Все файлы (*.*)|*.*"),
+            .Filter = Localization.T("Файлы настроек и изображений QR (*.fmscfg;*.json;*.txt;*.png;*.jpg;*.jpeg;*.bmp;*.webp)|*.fmscfg;*.json;*.txt;*.png;*.jpg;*.jpeg;*.bmp;*.webp|Файлы настроек (*.fmscfg;*.json;*.txt)|*.fmscfg;*.json;*.txt|Изображения с QR-кодом (*.png;*.jpg;*.jpeg;*.bmp;*.webp)|*.png;*.jpg;*.jpeg;*.bmp;*.webp|Все файлы (*.*)|*.*"),
             .CheckFileExists = True}
             If dialog.ShowDialog(owner) <> DialogResult.OK Then Return
-            ImportAndRefresh(ResourceImportFlow.ReadFile(dialog.FileName))
+            ImportAndRefresh(PhoneConnectionIntake.ReadFile(dialog.FileName))
         End Using
     End Sub
 
     Private Sub OnImportClipboard(sender As Object, e As EventArgs)
-        Dim text As String = Nothing
-        Try
-            If Clipboard.ContainsText() Then text = Clipboard.GetText()
-        Catch ex As Exception
-            ' The clipboard can be held by another process for a moment; "nothing there" is the honest answer.
-        End Try
-        If String.IsNullOrWhiteSpace(text) Then
-            Say(Localization.T("В буфере обмена нет настроек ресурса"), ResourceStatusSeverity.Warning)
+        Dim read As FmsConfigReadResult = PhoneConnectionIntake.ReadClipboard()
+        If read Is Nothing OrElse (Not read.Succeeded AndAlso read.Failure = FmsConfigFailure.Empty) Then
+            ' An image that held no QR, or too many, carries the decoder's own sentence in Detail; only a
+            ' clipboard with neither text nor a picture gets the generic one.
+            Dim sentence As String = If(read IsNot Nothing AndAlso Not String.IsNullOrEmpty(read.Detail), read.Detail,
+                                        Localization.T("В буфере обмена нет текста или изображения"))
+            Say(sentence, ResourceStatusSeverity.Warning)
             Return
         End If
-        ' Ticket 171 C1: an FMSSFTP1/FMSSFTP2 pairing code is accepted here too (where the exchange client features are offered), through the same
-        ' preview and confirmation as a file
-        If ExchangeFeatures.IsEnabled() AndAlso FmsSftpPlans.LooksLikeCode(text) Then
-            ImportAndRefresh(FmsSftpPlans.Read(text))
-        Else
-            ImportAndRefresh(FmsConfigReader.ReadText(text))
-        End If
+        ImportAndRefresh(read)
+    End Sub
+
+    ''' <summary>Spec 227 rule 2: hand the camera scan over to the Share Manager's add-resource flow
+    ''' (the program that owns the camera code) through the host's delegate. Never a silent no-op:
+    ''' the item is only built when a delegate exists.</summary>
+    Private Sub OnScanCamera(sender As Object, e As EventArgs)
+        scanCameraAction?.Invoke()
+    End Sub
+
+    Private Sub OnShowPhoneCode(sender As Object, e As EventArgs)
+        Dim owner As IWin32Window = If(FindForm(), DirectCast(Me, IWin32Window))
+        Using form As New Resource_Phone_Code_Form()
+            If DialogLayer.ShowViewerDialog(form, owner) = DialogResult.OK AndAlso Not String.IsNullOrWhiteSpace(form.ReceivedCode) Then
+                ImportAndRefresh(PhoneConnectionIntake.ReadText(form.ReceivedCode))
+            End If
+        End Using
     End Sub
 
     Private Sub ImportAndRefresh(read As FmsConfigReadResult)

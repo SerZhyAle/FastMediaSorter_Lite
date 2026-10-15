@@ -5,6 +5,8 @@ Imports System.Collections.Generic
 Imports System.Net
 Imports System.Net.Sockets
 Imports System.Text
+Imports System.Security.Cryptography
+Imports System.Text.RegularExpressions
 
 ' Ticket 199 section 3 and section 8: the LAN responses, byte for byte.
 '
@@ -29,6 +31,7 @@ Friend NotInheritable Class LiveProducerWire
     Public Const OkStatusLine As String = "HTTP/1.1 200 OK"
     Public Const NotFoundStatusLine As String = "HTTP/1.1 404 Not Found"
     Public Const UnavailableStatusLine As String = "HTTP/1.1 503 Service Unavailable"
+    Public Const UnauthorizedStatusLine As String = "HTTP/1.1 401 Unauthorized"
 
     ''' <summary>The 2.1 response head, exactly: status line, the five headers of the shape in the
     ''' contract's order, never icy-metaint. The icy values come from the broadcast's own settings.</summary>
@@ -60,7 +63,6 @@ Friend NotInheritable Class LiveProducerWire
 
     ''' <summary>The plain refusal answers, with Content-Length 0 and a body that carries no information.</summary>
     Public Shared Function SimpleResponse(statusLine As String) As Byte()
-        Dim body As String = ""
         Dim sb As New StringBuilder()
         sb.Append(statusLine).Append(CrLf)
         sb.Append("Content-Length: 0").Append(CrLf)
@@ -101,6 +103,8 @@ Friend NotInheritable Class LiveProducerWire
     Friend Class LiveWireRequest
         Public Property Method As String = ""
         Public Property Path As String = ""
+        Public Property RawPath As String = ""
+        Public Property QueryString As String = ""
         Public ReadOnly Property Headers As New Dictionary(Of String, String)(StringComparer.OrdinalIgnoreCase)
 
         ''' <summary>The client asked for in-stream metadata (Icy-MetaData: 1). The shape never offers
@@ -111,6 +115,7 @@ Friend NotInheritable Class LiveProducerWire
                 Return Headers.TryGetValue("Icy-MetaData", v) AndAlso v.Trim() = "1"
             End Get
         End Property
+
     End Class
 
     ''' <summary>Reads the request head from the socket, bounded: at most 8 KiB and at most 5 seconds -
@@ -138,10 +143,16 @@ Friend NotInheritable Class LiveProducerWire
         Dim parts As String() = lines(0).Split(" "c)
         If parts.Length < 2 Then Return Nothing
         request.Method = parts(0).Trim().ToUpperInvariant()
-        Dim path As String = parts(1).Trim()
-        Dim queryAt As Integer = path.IndexOf("?"c)
-        If queryAt >= 0 Then path = path.Substring(0, queryAt)
-        request.Path = path
+        Dim rawPath As String = parts(1).Trim()
+        request.RawPath = rawPath
+        Dim queryAt As Integer = rawPath.IndexOf("?"c)
+        If queryAt >= 0 Then
+            request.Path = rawPath.Substring(0, queryAt)
+            request.QueryString = rawPath.Substring(queryAt + 1)
+        Else
+            request.Path = rawPath
+            request.QueryString = ""
+        End If
 
         For i As Integer = 1 To lines.Length - 1
             Dim line As String = lines(i)
@@ -162,5 +173,96 @@ Friend NotInheritable Class LiveProducerWire
         Return -1
     End Function
 
+End Class
+
+''' <summary>LIVE-BROADCAST item M: Digest only on producer HTTP, with bounded replay state.</summary>
+Friend NotInheritable Class LiveProducerDigest
+    Friend Const Realm As String = "fms-broadcast"
+    Private ReadOnly _nonceKey As Byte() = RandomNumberGenerator.GetBytes(32)
+    Private ReadOnly _clock As Func(Of Long)
+    Private ReadOnly _attempts As New Dictionary(Of String, Long)(StringComparer.Ordinal)
+    Private ReadOnly _counts As New Dictionary(Of String, Tuple(Of UInteger, Long))(StringComparer.Ordinal)
+    Private ReadOnly _gate As New Object()
+
+    Public Sub New(Optional clock As Func(Of Long) = Nothing)
+        _clock = If(clock, Function() Environment.TickCount64)
+    End Sub
+
+    Public Function Challenge() As Byte()
+        Dim stamp As String = _clock().ToString(Globalization.CultureInfo.InvariantCulture)
+        Dim nonce As String = stamp & "." & Sign(stamp)
+        Dim header As New StringBuilder("HTTP/1.1 401 Unauthorized" & ControlChars.CrLf)
+        For Each algorithm As String In {"SHA-256", "MD5"}
+            header.Append("WWW-Authenticate: Digest realm=""").Append(Realm).
+                Append(""", nonce=""").Append(nonce).Append(""", algorithm=").Append(algorithm).
+                Append(", qop=""auth"", charset=UTF-8").Append(ControlChars.CrLf)
+        Next
+        header.Append("Content-Length: 0" & ControlChars.CrLf & "Connection: close" & ControlChars.CrLf & ControlChars.CrLf)
+        Return Encoding.ASCII.GetBytes(header.ToString())
+    End Function
+
+    Public Function Verify(request As LiveProducerWire.LiveWireRequest, password As String, source As String) As Boolean
+        Dim authorization As String = Nothing
+        If request Is Nothing OrElse Not request.Headers.TryGetValue("Authorization", authorization) Then Return False
+        If Not authorization.StartsWith("Digest ", StringComparison.OrdinalIgnoreCase) Then Return False
+        SyncLock _gate
+            Dim now As Long = _clock()
+            Dim last As Long
+            If _attempts.TryGetValue(source, last) AndAlso now - last < 1000 Then Return False
+            ' Keep the rate limit bounded under scans with many source addresses.
+            For Each key As String In New List(Of String)(_attempts.Keys)
+                If now - _attempts(key) >= 60000 Then _attempts.Remove(key)
+            Next
+            If _attempts.Count >= 4096 AndAlso Not _attempts.ContainsKey(source) Then Return False
+            _attempts(source) = now
+
+            Dim fields As New Dictionary(Of String, String)(StringComparer.OrdinalIgnoreCase)
+            For Each match As Match In Regex.Matches(authorization.Substring(7), "([a-zA-Z][a-zA-Z0-9_-]*)\s*=\s*(?:""([^""\r\n]*)""|([^,\s]+))")
+                If fields.ContainsKey(match.Groups(1).Value) Then Return False
+                fields(match.Groups(1).Value) = If(match.Groups(2).Success, match.Groups(2).Value, match.Groups(3).Value)
+            Next
+            For Each key As String In {"username", "realm", "nonce", "uri", "response", "qop", "nc", "cnonce"}
+                If Not fields.ContainsKey(key) Then Return False
+            Next
+            If fields("username") <> "listener" OrElse fields("realm") <> Realm OrElse Not ValidNonce(fields("nonce"), now) OrElse
+               fields("uri") <> request.RawPath OrElse fields("qop") <> "auth" OrElse fields("cnonce").Length = 0 Then Return False
+            Dim algorithm As String = If(fields.ContainsKey("algorithm"), fields("algorithm"), "MD5")
+            If algorithm <> "SHA-256" AndAlso algorithm <> "MD5" Then Return False
+            Dim count As UInteger
+            If fields("nc").Length <> 8 OrElse Not UInteger.TryParse(fields("nc"), Globalization.NumberStyles.HexNumber,
+                Globalization.CultureInfo.InvariantCulture, count) OrElse count = 0 Then Return False
+            For Each key As String In New List(Of String)(_counts.Keys)
+                If now - _counts(key).Item2 > 60000 Then _counts.Remove(key)
+            Next
+            Dim replayKey As String = fields("nonce") & ":" & fields("cnonce") & ":" & algorithm
+            Dim prior As Tuple(Of UInteger, Long) = Nothing
+            If _counts.TryGetValue(replayKey, prior) AndAlso count <= prior.Item1 Then Return False
+            If _counts.Count >= 8192 AndAlso Not _counts.ContainsKey(replayKey) Then Return False
+            Dim ha1 As String = Hash(algorithm, "listener:" & Realm & ":" & password)
+            Dim ha2 As String = Hash(algorithm, request.Method & ":" & request.RawPath)
+            Dim expected As String = Hash(algorithm, ha1 & ":" & fields("nonce") & ":" & fields("nc") & ":" & fields("cnonce") & ":auth:" & ha2)
+            If Not CryptographicOperations.FixedTimeEquals(Encoding.ASCII.GetBytes(expected),
+                    Encoding.ASCII.GetBytes(fields("response").ToLowerInvariant())) Then Return False
+            _counts(replayKey) = Tuple.Create(count, now)
+            Return True
+        End SyncLock
+    End Function
+
+    Private Function Sign(stamp As String) As String
+        Return Convert.ToHexString(HMACSHA256.HashData(_nonceKey, Encoding.ASCII.GetBytes(stamp))).ToLowerInvariant()
+    End Function
+
+    Private Function ValidNonce(nonce As String, now As Long) As Boolean
+        Dim parts As String() = nonce.Split("."c)
+        Dim issued As Long
+        If parts.Length <> 2 OrElse Not Long.TryParse(parts(0), Globalization.NumberStyles.Integer,
+            Globalization.CultureInfo.InvariantCulture, issued) OrElse issued > now OrElse now - issued > 60000 Then Return False
+        Return CryptographicOperations.FixedTimeEquals(Encoding.ASCII.GetBytes(Sign(parts(0))), Encoding.ASCII.GetBytes(parts(1)))
+    End Function
+
+    Friend Shared Function Hash(algorithm As String, value As String) As String
+        Dim bytes As Byte() = Encoding.UTF8.GetBytes(value)
+        Return Convert.ToHexString(If(algorithm = "SHA-256", SHA256.HashData(bytes), MD5.HashData(bytes))).ToLowerInvariant()
+    End Function
 End Class
 #End If

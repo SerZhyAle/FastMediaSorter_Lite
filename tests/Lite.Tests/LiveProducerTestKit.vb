@@ -215,7 +215,7 @@ Friend Class FakeVideoSource
 
     Public ReadOnly Property Height As Integer = 720 Implements ILiveVideoSource.Height
 
-    Public ReadOnly Property FramesPerSecond As Integer = 25 Implements ILiveVideoSource.FramesPerSecond
+    Public Property FramesPerSecond As Integer = 25 Implements ILiveVideoSource.FramesPerSecond
 
     Public Function Start(sink As Action(Of LiveVideoFrame), ByRef reason As String) As Boolean Implements ILiveVideoSource.Start
         If sink Is Nothing Then
@@ -245,6 +245,7 @@ Friend Class FakeEncoder
     Public Property LastOptions As LiveEncoderOptions
     Public Property PcmIn As Integer
     Public Property FailAtStart As String = ""
+    Public Property EmitVideoOnStart As Boolean
     Private _output As Action(Of Byte())
 
     Public Function Start(options As LiveEncoderOptions, output As Action(Of Byte()), ByRef reason As String) As Boolean Implements ILiveEncoder.Start
@@ -255,6 +256,9 @@ Friend Class FakeEncoder
         LastOptions = options
         _output = output
         Started = True
+        If EmitVideoOnStart Then
+            _output(LiveTsBuilder.PatPacket().Concat(LiveTsBuilder.PmtPacket()).Concat(LiveTsBuilder.VideoPesPacket(True)).ToArray())
+        End If
         Return True
     End Function
 

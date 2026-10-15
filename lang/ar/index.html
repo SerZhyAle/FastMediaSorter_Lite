@@ -61,6 +61,7 @@
 <header class="site-header">
   <nav class="site-nav" aria-label="التنقل الرئيسي">
   <a class="brand" href="https://serzhyale.github.io/FastMediaSorter_Lite/lang/ar/" aria-label="Fast Media Sorter &amp; Sharing for Windows"><bdi>Fast Media Sorter &amp; Sharing for Windows</bdi></a>
+  <a class="nav-doc" href="https://serzhyale.github.io/FastMediaSorter_Lite/topics.html">الوثائق (بالإنجليزية)</a>
   <details class="lang-menu">
     <summary>العربية</summary>
     <div class="lang-pop">
@@ -86,14 +87,15 @@
 
 <main class="container" id="main" tabindex="-1">
   <section class="hero">
-    <div class="hero-id">
-      <img class="app-icon" src="../../assets/icons/store-icon-256.png" alt="" width="168" height="168">
-      <div class="hero-copy">
-        <span class="eyebrow">Windows desktop app</span>
-        <h1><bdi>Fast Media Sorter &amp; Sharing for Windows</bdi></h1>
-        <span class="kicker">Free &amp; open-source</span>
+    <div class="identity">
+      <img class="product-icon" src="../../assets/icons/store-icon-256.png" alt="" width="104" height="104">
+      <div>
+        <p class="product-name"><bdi>Fast Media Sorter &amp; Sharing for Windows</bdi></p>
+        <p class="kicker" lang="en" dir="ltr">Windows desktop app</p>
+        <p class="kicker" lang="en" dir="ltr">Free &amp; open-source</p>
       </div>
     </div>
+    <h1>فرز الصور والفيديو بمفتاح واحد لكل ملف</h1>
     <p class="lead lead-narrow">اعرض وسائطك ورتّبها؛ وعند الحاجة يكون البرنامج نفسه أيضًا خادمًا لمشاركة المجلدات ومضيفًا للأقراص الافتراضية FileDO - وكل دور من هذه الأدوار اختياري ويبقى متوقفًا حتى تُشغّله.</p>
     <p class="lead lead-narrow">تصفّح مجلدات ضخمة من الصور والفيديو بسرعة، ثم انقل أو انسخ أو أعد تسمية أو احذف كل ملف بمفتاح واحد.</p>
     <p class="lead lead-narrow"><bdi>«Sharing»</bdi> في الاسم تعني تسليم وسائطك إلى طرف آخر: هاتف Android الخاص بك أو نسخة أخرى من البرنامج أو أي عميل SFTP. يبقى معطّلًا حتى تفعّله بنفسك. <a href="https://serzhyale.github.io/FastMediaSorter_Lite/publish-folders-android.html" lang="en" dir="ltr">Share folders to Android over SFTP</a></p>
@@ -171,6 +173,7 @@
         <a class="btn btn-ghost" id="dl-zip" href="https://github.com/SerZhyAle/FastMediaSorter_Lite/releases/latest">Portable (.zip)</a>
         <a class="btn btn-ghost btn-sm" href="https://github.com/SerZhyAle/FastMediaSorter_Lite/releases/latest">All releases</a>
         <a class="btn btn-ghost btn-sm" href="https://apps.microsoft.com/detail/9N59Z73WZ53C" target="_blank" rel="noopener"><span>Microsoft Store</span></a>
+        <a class="btn btn-ghost btn-sm" href="https://serzhyale.github.io/FastMediaSorter_Lite/server.html">إصدارة الخادم: مشاركة دون تسجيل دخول (بالإنجليزية)</a>
         <span class="dl-meta" id="dlMeta">Offline-ready bundles - VLC runtimes and OCR packs included. Windows 10 1607+ / 11; a 32-bit build for Windows 7/8.1 is in the same download.</span>
       </div>
       <p class="dl-meta">داخل الحزمة الكاملة، وكله اختياري ومتوقف حتى تُشغّله: خادم مشاركة المجلدات (Share Manager وعامل SFTP)، واستضافة الأقراص الافتراضية FileDO، وترميزات الفيديو دون اتصال، ونماذج OCR. اختر النوع «مضغوط» لتستبعد الخادم.</p>
@@ -178,7 +181,6 @@
         <a href="https://serzhyale.github.io/FastMediaSorter_Lite/lang/ar/trust.html">لماذا يحذّر Windows من هذا التنزيل</a>
       </p>
       <p class="note">هذه الصفحة والواجهة العربية ترجمة آلية غير مراجعة. التصحيحات مرحّب بها.</p>
-      <p><a href="https://serzhyale.github.io/FastMediaSorter_Lite/server.html">إصدارة الخادم: مشاركة دون تسجيل دخول (بالإنجليزية)</a></p>
     </div>
   </section>
 
@@ -226,6 +228,10 @@
       <article class="card">
         <h3>شارك المجلدات عبر SFTP</h3>
         <p>انشر المجلدات التي تختارها عبر SFTP وافتحها في تطبيق أندرويد - أو في أي عميل SFTP. معطّل حتى تفعّله بنفسك.</p>
+      </article>
+      <article class="card">
+        <h3>عمليات البث لـ StreamsPlayer</h3>
+        <p>في العارض ذي 64 بت، انقر بزر الفأرة الأيمن على فيديو أو ملف صوتي أو مجلده واختر البث. يصدر Share Manager ملف .spres أو رمز QR أو رابطاً سريعاً للاستيراد في StreamsPlayer. يصبح المجلد قناة واحدة بقائمة ثابتة؛ التحديث يستبدل القائمة والإلغاء يعطل الرابط. لبوابة HTTP مفتاح مستقل وهي متوقفة افتراضياً. يتيح كل رمز قراءة بث واحد فقط، عادة لمدة 24 ساعة. HTTP غير مشفر: شارك المستند بشكل خاص ولا تفعل الوصول عبر الإنترنت إلا عند الحاجة.</p>
       </article>
       <article class="card">
         <h3>تراجع، وسلة محذوفات حقيقية</h3>

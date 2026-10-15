@@ -79,26 +79,8 @@ Public Module MediaKindClassifier
     End Function
 End Module
 
-Friend Module SortableContentKinds
-    Friend Function BuildExtensions(images As IEnumerable(Of String), playback As IEnumerable(Of String),
-                                    unsupportedImages As IEnumerable(Of String), preferences As ModernViewerPreferences) As HashSet(Of String)
-        Dim result As New HashSet(Of String)(images, StringComparer.OrdinalIgnoreCase)
-        result.UnionWith(unsupportedImages)
-        For Each extension As String In playback
-            Dim kind As MediaKind = KindOf(extension)
-            If kind = MediaKind.Audio AndAlso Not preferences.IncludeAudioInNavigation Then Continue For
-            If kind = MediaKind.Video AndAlso Not preferences.IncludeVideoInNavigation Then Continue For
-            result.Add(extension)
-        Next
-        If preferences.IncludeDocumentInNavigation Then result.UnionWith(preferences.DocumentExtensionSet())
-        If preferences.SortOtherFiles Then result.UnionWith(preferences.OtherExtensionSet())
-        Return result
-    End Function
-
-    Friend Function CanDecodeImage(path As String, decoderExtensions As IEnumerable(Of String)) As Boolean
-        Return KindOf(path) = MediaKind.Image AndAlso decoderExtensions.Contains(MediaKindClassifier.ExtensionOf(path), StringComparer.OrdinalIgnoreCase)
-    End Function
-End Module
+' SortableContentKinds moved to SortableContentKinds.vb (ticket 222): MediaKind.vb is linked into the Share Manager,
+' which has no ModernViewerPreferences, so the preference-dependent module cannot live beside the classifier.
 
 ''' <summary>Rule 5 excludes junk before browsing/classification, never from storage verbs.</summary>
 Friend Module MediaBrowsing

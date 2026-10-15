@@ -475,6 +475,91 @@ Public Class ChromeMenuRulesTests
     End Sub
 
     <Fact>
+    Public Sub A_zoom_value_that_is_away_still_measures_its_reserved_text_and_not_a_bare_square()
+        OnSta(Sub()
+                  Using surface As New ChromeSurface()
+                      Dim font As New Font("Segoe UI", 12.0F, FontStyle.Regular, GraphicsUnit.Pixel)
+                      surface.Configure(ChromeTheme.FromScheme(Color.Black, Color.White, False), 1.0F, False, font, font)
+                      Dim zoom As New ChromeItem("lbl_Zoom", ChromeItemKind.Text) With {.Caption = "", .ReservedText = "1600 %", .Visible = False}
+                      Dim bare As New ChromeItem("x", ChromeItemKind.Text) With {.Caption = ""}
+                      Assert.True(surface.MeasureItemWidth(zoom) > surface.MeasureItemWidth(bare),
+                                  "an empty caption with a reserved text must reserve the text's width")
+                  End Using
+              End Sub)
+    End Sub
+
+    <Fact>
+    Public Sub A_conditional_button_that_is_away_keeps_its_place_so_the_next_one_does_not_move()
+        OnSta(Sub()
+                  Using surface As New ChromeSurface()
+                      Dim font As New Font("Segoe UI", 12.0F, FontStyle.Regular, GraphicsUnit.Pixel)
+                      surface.Configure(ChromeTheme.FromScheme(Color.Black, Color.White, False), 1.0F, False, font, font)
+                      surface.Size = New Size(900, 44)
+                      Dim first As New ChromeItem("first", ChromeItemKind.Button) With {.Caption = "First"}
+                      Dim edit As New ChromeItem("btn_Edit", ChromeItemKind.Button) With {.Caption = "Edit", .Visible = False, .KeepsSlotWhenHidden = True}
+                      Dim menu As New ChromeItem("menu", ChromeItemKind.Button) With {.Caption = "Menu"}
+                      surface.SetItems({first, edit, menu})
+                      Dim whileAway As Integer = menu.Bounds.X
+                      ' Away: nothing is placed, painted or hit in its place - it is air.
+                      Assert.True(edit.Bounds.IsEmpty)
+                      Assert.Null(surface.HitTest(New Point(edit.Bounds.X + 1, 10)))
+                      Assert.DoesNotContain(edit, surface.OverflowItems)
+                      ' It comes back: the next one is exactly where it was.
+                      edit.Visible = True
+                      surface.LayoutItems()
+                      Assert.False(edit.Bounds.IsEmpty)
+                      Assert.Equal(whileAway, menu.Bounds.X)
+                      ' An item that does NOT keep its place lets the next one close up - the old behaviour.
+                      edit.Visible = False
+                      edit.KeepsSlotWhenHidden = False
+                      surface.LayoutItems()
+                      Assert.True(menu.Bounds.X < whileAway)
+                  End Using
+              End Sub)
+    End Sub
+
+    <Fact>
+    Public Sub A_kept_place_with_nothing_visible_after_it_holds_nothing_and_adds_no_width()
+        OnSta(Sub()
+                  Using surface As New ChromeSurface()
+                      Dim font As New Font("Segoe UI", 12.0F, FontStyle.Regular, GraphicsUnit.Pixel)
+                      surface.Configure(ChromeTheme.FromScheme(Color.Black, Color.White, False), 1.0F, False, font, font)
+                      surface.Size = New Size(900, 44)
+                      Dim first As New ChromeItem("first", ChromeItemKind.Button) With {.Caption = "First"}
+                      Dim menu As New ChromeItem("menu", ChromeItemKind.Button) With {.Caption = "Menu"}
+                      surface.SetItems({first, menu})
+                      Dim plain As Size = surface.PreferredPanelSize()
+                      Dim tracks As New ChromeItem("btn_Tracks", ChromeItemKind.Button) With {.Caption = "Tracks", .Visible = False, .KeepsSlotWhenHidden = True}
+                      Dim toVideo As New ChromeItem("btn_ToVideo", ChromeItemKind.Button) With {.Caption = "To video", .Visible = False, .KeepsSlotWhenHidden = True}
+                      surface.SetItems({first, menu, tracks, toVideo})
+                      Assert.Equal(plain.Width, surface.PreferredPanelSize().Width)
+                      ' With something visible after them they are kept, and the panel is as wide as the row it holds.
+                      Dim last As New ChromeItem("last", ChromeItemKind.Button) With {.Caption = "Last"}
+                      surface.SetItems({first, tracks, toVideo, last})
+                      Assert.True(surface.PreferredPanelSize().Width > plain.Width + surface.MeasureItemWidth(tracks))
+                  End Using
+              End Sub)
+    End Sub
+
+    <Theory>
+    <InlineData("lbl_Zoom", False, True)>
+    <InlineData("lbl_Slideshow_Time", False, True)>
+    <InlineData("btn_Translate", False, True)>
+    <InlineData("btn_Edit", False, True)>
+    <InlineData("btn_Tracks", False, True)>
+    <InlineData("btn_ToVideo", False, True)>
+    <InlineData("btn_Image_Menu", False, True)>
+    <InlineData("btn_TranslateBrowser", False, False)>
+    <InlineData("btn_TranslateBrowser", True, True)>
+    <InlineData("btn_Resource", True, False)>
+    <InlineData("btn_Rename", True, False)>
+    <InlineData("bt_Delete", True, False)>
+    <InlineData("cmbox_Media_Folder", True, False)>
+    Public Sub Only_what_comes_and_goes_with_the_kind_of_the_file_keeps_its_place(name As String, companion As Boolean, expected As Boolean)
+        Assert.Equal(expected, ChromeMenuRules.KeepsSlotWhenHidden(name, companion))
+    End Sub
+
+    <Fact>
     Public Sub The_small_size_never_goes_under_the_28_pixel_floor_and_the_touch_size_reaches_44()
         OnSta(Sub()
                   Using surface As New ChromeSurface()

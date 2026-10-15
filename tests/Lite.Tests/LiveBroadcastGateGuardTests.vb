@@ -54,10 +54,11 @@ Public Class LiveBroadcastGateGuardTests
     End Sub
 
     <Fact>
-    Public Sub The_default_stays_False_no_build_offers_a_live_broadcast_producer()
-        ' The test above allows True WITH evidence. This one states the present decision: the owner has not
-        ' opened the producer, and the [PROPOSED] video shape is not his word until he gives it (206 section 2).
-        Assert.False(LiveBroadcastFeatures.Offered, "the owner has not opened the live-broadcast producer; flip the constant only on his word, with the evidence file")
+    Public Sub The_build_offers_the_producer_on_the_owners_word_of_2026_10_15()
+        ' The test above allows True WITH evidence. This one states the present decision: the owner opened the
+        ' live-broadcast producer on 2026-10-15 per ticket 199 milestone S4203.
+        Assert.True(LiveBroadcastFeatures.Offered, "ticket 199 opened the live broadcast producer; closing it again is the owner's word, recorded in the evidence file")
+        Assert.True(LiveBroadcastFeatures.BuildOffers())
     End Sub
 
     Private Shared Function Reader(process As String, user As String, machine As String) As Func(Of String, EnvironmentVariableTarget, String)
@@ -88,20 +89,23 @@ Public Class LiveBroadcastGateGuardTests
     Public Sub With_the_gate_shut_the_features_exist_only_through_the_own_switch()
         ' Q199-5: the exchange's developer switch (FMS_EXCHANGE_CLIENT, the one the first check of 182 sets
         ' on the test host) must not light the producer up - the two gates are separate.
-        Assert.False(LiveBroadcastFeatures.Offered)
-        Assert.False(LiveBroadcastFeatures.IsEnabled(Reader(Nothing, Nothing, Nothing)))
-        Assert.True(LiveBroadcastFeatures.IsEnabled(Reader(Nothing, Nothing, "1")))
-        Dim exchangeSwitchOnly As Func(Of String, EnvironmentVariableTarget, String) =
-            Function(name, target)
-                If name = "FMS_LIVE_BROADCAST" AndAlso target = EnvironmentVariableTarget.Machine Then Return "1"
-                Return Nothing
-            End Function
-        Assert.True(LiveBroadcastFeatures.IsEnabled(exchangeSwitchOnly))
-        Dim exchangeOnly As Func(Of String, EnvironmentVariableTarget, String) =
-            Function(name, target)
-                Return If(name = "FMS_EXCHANGE_CLIENT", "1", Nothing)
-            End Function
-        Assert.False(LiveBroadcastFeatures.IsEnabled(exchangeOnly))
+        Using LiveBroadcastFeatures.ForFlow(offered:=False)
+            Assert.False(LiveBroadcastFeatures.BuildOffers())
+            Assert.False(LiveBroadcastFeatures.IsEnabled(Reader(Nothing, Nothing, Nothing)))
+            Assert.True(LiveBroadcastFeatures.IsEnabled(Reader(Nothing, Nothing, "1")))
+            Dim exchangeSwitchOnly As Func(Of String, EnvironmentVariableTarget, String) =
+                Function(name, target)
+                    If name = "FMS_LIVE_BROADCAST" AndAlso target = EnvironmentVariableTarget.Machine Then Return "1"
+                    Return Nothing
+                End Function
+            Assert.True(LiveBroadcastFeatures.IsEnabled(exchangeSwitchOnly))
+            Dim exchangeOnly As Func(Of String, EnvironmentVariableTarget, String) =
+                Function(name, target)
+                    Return If(name = "FMS_EXCHANGE_CLIENT", "1", Nothing)
+                End Function
+            Assert.False(LiveBroadcastFeatures.IsEnabled(exchangeOnly))
+        End Using
+        Assert.True(LiveBroadcastFeatures.IsEnabled(Reader(Nothing, Nothing, Nothing)))
     End Sub
 
     <Fact>

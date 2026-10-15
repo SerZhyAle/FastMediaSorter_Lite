@@ -43,6 +43,8 @@ type fakeBackend struct {
 	attached     chan fakeCall
 	connected    chan fakeCall
 	uploaded     chan fakeCall
+	clipPut      chan fakeCall
+	clipGet      chan fakeCall
 	listened     chan string
 	rawGot       chan string
 
@@ -62,6 +64,7 @@ func newFake() *fakeBackend {
 	return &fakeBackend{
 		controlFirst: make(chan wire.Envelope, 4), controlDone: make(chan struct{}, 4),
 		attached: make(chan fakeCall, 4), connected: make(chan fakeCall, 4), uploaded: make(chan fakeCall, 4),
+		clipPut: make(chan fakeCall, 4), clipGet: make(chan fakeCall, 4),
 		listened: make(chan string, 4), rawGot: make(chan string, 4),
 	}
 }
@@ -71,6 +74,19 @@ func (f *fakeBackend) body() wire.WelcomeBody {
 }
 
 func (f *fakeBackend) Enroll(st *rendezvous.Stream, e *wire.Enroll) rendezvous.Result {
+	f.mu.Lock()
+	f.enrolls++
+	f.mu.Unlock()
+	if e.Login != "alice" || e.Password != "Passw0rdTest" {
+		return rendezvous.Result{Refuse: wire.ReasonBadCredentials}
+	}
+	return rendezvous.Result{
+		Session: &rendezvous.Session{Account: "alice", DeviceID: e.DeviceID, Keepalive: 30 * time.Second},
+		Reply:   &wire.Enrolled{DeviceToken: fakeToken, WelcomeBody: f.body()},
+	}
+}
+
+func (f *fakeBackend) Register(st *rendezvous.Stream, e *wire.Register) rendezvous.Result {
 	f.mu.Lock()
 	f.enrolls++
 	f.mu.Unlock()
@@ -146,6 +162,18 @@ func (f *fakeBackend) Upload(st *rendezvous.Stream, sess *rendezvous.Session, e 
 	defer st.Close()
 	f.uploaded <- fakeCall{sess, e}
 	_ = st.Send(&wire.UploadAccepted{})
+}
+
+func (f *fakeBackend) ClipboardPut(st *rendezvous.Stream, sess *rendezvous.Session, e *wire.ClipboardPut) {
+	defer st.Close()
+	f.clipPut <- fakeCall{sess, e}
+	_ = st.Send(&wire.ClipboardReady{})
+}
+
+func (f *fakeBackend) ClipboardGet(st *rendezvous.Stream, sess *rendezvous.Session, e *wire.ClipboardGet) {
+	defer st.Close()
+	f.clipGet <- fakeCall{sess, e}
+	_ = st.Send(&wire.ClipboardEmpty{})
 }
 
 func (f *fakeBackend) Listen(st *rendezvous.Stream, id string) {

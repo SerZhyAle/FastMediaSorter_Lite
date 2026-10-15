@@ -4,14 +4,34 @@ Option Strict On
 Imports System.Collections.Generic
 Imports System.Text
 
+''' <summary>
+''' What a key works on (UX-114 of 123: "keys differ per media kind and nothing says so"). <c>Everywhere</c> is the
+''' common case and carries no mark; the other values put one muted line under the row, so a reader does not
+''' press the volume key over a picture, or a zoom key over a film, and wonder.
+''' </summary>
+Friend Enum HelpKeyScope
+    ''' <summary>Works on whatever is on screen - no mark.</summary>
+    Everywhere = 0
+    ''' <summary>Only while a video or an audio file is the current media.</summary>
+    VideoAudio = 1
+    ''' <summary>Only while a video is playing (a frame step and subtitles mean nothing to a song).</summary>
+    Video = 2
+    ''' <summary>Only on a picture.</summary>
+    Picture = 3
+    ''' <summary>On a picture and on a text document, which has a zoom of its own.</summary>
+    PictureAndText = 4
+End Enum
+
 ''' <summary>One line of the F1 reference card: the keys, and what they do.</summary>
 Friend NotInheritable Class HelpCardRow
 
-    Public Sub New(keys As String, description As String, Optional keysAreWords As Boolean = False, Optional actionId As String = "")
+    Public Sub New(keys As String, description As String, Optional keysAreWords As Boolean = False, Optional actionId As String = "",
+                   Optional scope As HelpKeyScope = HelpKeyScope.Everywhere)
         Me.Keys = keys
         Me.Description = description
         Me.KeysAreWords = keysAreWords
         Me.ActionId = actionId
+        Me.Scope = scope
     End Sub
 
     ''' <summary>The key column as shown. Empty means "no key assigned" - the card says so in words.</summary>
@@ -22,6 +42,8 @@ Friend NotInheritable Class HelpCardRow
     Public ReadOnly KeysAreWords As Boolean
     ''' <summary>The catalogue action behind the row, or "" for a fixed key the user cannot rebind.</summary>
     Public ReadOnly ActionId As String
+    ''' <summary>What the key works on; <see cref="HelpKeyScope.Everywhere"/> carries no mark on the card.</summary>
+    Public ReadOnly Scope As HelpKeyScope
 End Class
 
 ''' <summary>A titled block of rows. The title is a registered Russian key.</summary>
@@ -69,7 +91,7 @@ Friend NotInheritable Class HelpCardRows
         Dim files As New HelpCardGroup("Файлы")
         files.Rows.Add(New HelpCardRow(SlotKeys(map, copy:=False), "Переместить в папку-получатель"))
         files.Rows.Add(New HelpCardRow(SlotKeys(map, copy:=True), "Копировать в папку-получатель"))
-        For Each id As String In {"deleteFile", "deletePermanent", "undo", "renameFile"}
+        For Each id As String In {"deleteFile", "deletePermanent", "undo", "renameFile", "openContent"}
             AddAction(files, map, id)
         Next
         groups.Add(files)
@@ -80,6 +102,7 @@ Friend NotInheritable Class HelpCardRows
             AddAction(view, map, id)
         Next
         view.Rows.Add(New HelpCardRow("F11", "Во весь экран без панелей"))
+        view.Rows.Add(New HelpCardRow("Ctrl+A / Ctrl+C", "Текстовый файл: выделить всё / копировать выделенное"))
         groups.Add(view)
 
         Dim video As New HelpCardGroup("Видео и аудио")
@@ -102,6 +125,7 @@ Friend NotInheritable Class HelpCardRows
         mouse.Rows.Add(New HelpCardRow("Клик по видео", "Пауза / продолжить", keysAreWords:=True))
         mouse.Rows.Add(New HelpCardRow("Правая кнопка по видео", "Меню видео со всеми действиями над ним", keysAreWords:=True))
         mouse.Rows.Add(New HelpCardRow("Боковые кнопки мыши", "Следующий / предыдущий файл", keysAreWords:=True))
+        mouse.Rows.Add(New HelpCardRow("Протяжка по тексту", "Выделить текст в текстовом файле (Esc - снять)", keysAreWords:=True))
         groups.Add(mouse)
 
         Dim panels As New HelpCardGroup("Панели и окна")
@@ -131,8 +155,44 @@ Friend NotInheritable Class HelpCardRows
     Private Shared Sub AddAction(group As HelpCardGroup, map As Dictionary(Of String, String), actionId As String)
         Dim action As HotkeyAction = CustomHotkeys.Find(actionId)
         If action Is Nothing Then Return
-        group.Rows.Add(New HelpCardRow(KeysOf(map, action), action.Caption, actionId:=action.Id))
+        group.Rows.Add(New HelpCardRow(KeysOf(map, action), action.Caption, actionId:=action.Id, scope:=ScopeOf(action.Id)))
     End Sub
+
+    ''' <summary>
+    ''' What a catalogue action works on, by the same gates the dispatch uses: the video basics and the 119
+    ''' playback keys need a LibVLC media (<c>PlaybackActionApplicable</c>), a frame step excludes audio, the
+    ''' subtitle key is a film's, rotate / OCR / real size need a picture, and the zoom steps also drive a text
+    ''' document. Everything else - navigation, files, panels - works anywhere and carries no mark.
+    ''' </summary>
+    Public Shared Function ScopeOf(actionId As String) As HelpKeyScope
+        Select Case actionId
+            Case "playPause", "mute", "volumeUp", "volumeDown",
+                 "speedSlower", "speedFaster", "speedReset",
+                 "seekBackShort", "seekFwdShort", "seekBackMedium", "seekFwdMedium", "seekBackLong", "seekFwdLong",
+                 "abLoop", "audioTrack"
+                Return HelpKeyScope.VideoAudio
+            Case "frameStep", "subtitleTrack"
+                Return HelpKeyScope.Video
+            Case "zoomActual", "rotateCw", "rotateCcw", "ocrTranslate", "ocrAuto"
+                Return HelpKeyScope.Picture
+            Case "zoomIn", "zoomOut", "zoomFit"
+                Return HelpKeyScope.PictureAndText
+            Case Else
+                Return HelpKeyScope.Everywhere
+        End Select
+    End Function
+
+    ''' <summary>The registered Russian key of a scope's mark, or "" for <see cref="HelpKeyScope.Everywhere"/>. The text
+    ''' lives in the localization tables (013); the card passes it through <c>T</c>.</summary>
+    Public Shared Function ScopeMark(scope As HelpKeyScope) As String
+        Select Case scope
+            Case HelpKeyScope.VideoAudio : Return "Только видео и аудио"
+            Case HelpKeyScope.Video : Return "Только видео"
+            Case HelpKeyScope.Picture : Return "Только картинки"
+            Case HelpKeyScope.PictureAndText : Return "Картинки и текстовые файлы"
+            Case Else : Return String.Empty
+        End Select
+    End Function
 
     ''' <summary>What an action answers to right now, spelled for reading. A rebound action shows its one new
     ''' key (or nothing, when the user cleared it); an untouched one shows its factory keys, except those another
@@ -188,7 +248,12 @@ Friend NotInheritable Class HelpCardRows
     ''' characters on the keycap, and PageUp / PageDown the short forms keyboards print.</summary>
     Public Shared Function DisplayKey(combo As String) As String
         If String.IsNullOrEmpty(combo) Then Return String.Empty
+        ' "+" is the keycap of Shift+"=" on most layouts (UX-113 of 123): the card prints what is pressed to
+        ' type it, not the enum spelling of the physical key.
+        If String.Equals(combo, "Shift+Oemplus", StringComparison.Ordinal) Then Return "+"
         Dim text As New StringBuilder(combo)
+        text.Replace("Oemplus", "=")
+        text.Replace("OemMinus", "-")
         text.Replace("OemOpenBrackets", "[")
         text.Replace("OemCloseBrackets", "]")
         text.Replace("OemPipe", "\")

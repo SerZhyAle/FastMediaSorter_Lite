@@ -4,6 +4,7 @@ Option Infer On
 Option Compare Binary
 
 Imports System.Drawing
+Imports System.Linq
 Imports System.Windows.Forms
 
 ' WINDOWS-UI section 4: the editor spans the caption and hint in the trailing column.
@@ -51,7 +52,19 @@ Friend NotInheritable Class ManagerSettingRow
     End Sub
 
     Private Function ValueWidth(width As Integer) As Integer
-        Return Math.Min(LogicalToDeviceUnits(220), Math.Max(2, width - Padding.Horizontal) \ 2)
+        Dim available = Math.Max(2, width - Padding.Horizontal)
+        Dim value = Math.Min(LogicalToDeviceUnits(220), available \ 2)
+        Dim flow = TryCast(Editor, FlowLayoutPanel)
+        If flow IsNot Nothing Then
+            ' Keep a whole command in the value column; wrapping moves buttons, not part of a caption.
+            For Each button In flow.Controls.OfType(Of Button)()
+                Dim needed = TextRenderer.MeasureText(button.Text, button.Font, Size.Empty, TextFormatFlags.SingleLine).Width +
+                    button.Padding.Horizontal + If(button.Image Is Nothing, 0, button.Image.Width) + LogicalToDeviceUnits(10) +
+                    button.Margin.Horizontal + flow.Padding.Horizontal
+                value = Math.Max(value, Math.Min(needed, Math.Max(1, available - Caption.Margin.Horizontal - LogicalToDeviceUnits(80))))
+            Next
+        End If
+        Return value
     End Function
 
     Public Overrides Function GetPreferredSize(proposedSize As Size) As Size
@@ -102,6 +115,9 @@ Friend NotInheritable Class ManagerSettingRow
                 flow.MaximumSize = New Size(editorWidth, 0)
                 flow.MinimumSize = New Size(editorWidth, 0)
                 flow.WrapContents = True
+                For Each button In flow.Controls.OfType(Of Button)()
+                    button.MaximumSize = New Size(Math.Max(1, editorWidth - flow.Padding.Horizontal - button.Margin.Horizontal), 0)
+                Next
             End If
             Dim rtl = RightToLeft = RightToLeft.Yes
             Dim textLeft = If(rtl, Padding.Left + value + Caption.Margin.Right, Padding.Left + Caption.Margin.Left)

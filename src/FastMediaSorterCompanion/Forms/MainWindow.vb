@@ -1,4 +1,4 @@
-﻿Option Strict On
+Option Strict On
 
 Imports System.Collections.Generic
 Imports System.Diagnostics
@@ -92,7 +92,10 @@ Partial Public NotInheritable Class MainWindow
     Private btnAddCurrent As Button
     Private btnRemove As Button
     Private btnParams As Button
+    Private btnOutsideAccess As Button
     Private btnBroadcasts As Button
+    ''' <summary>Spec 227 rule 1: the phone's connection code door (paste, file, clipboard, camera).</summary>
+    Private btnPhoneCode As Button
     Private btnToggle As Button
     Private btnShare As Button
     Private btnSettings As Button
@@ -473,6 +476,9 @@ Partial Public NotInheritable Class MainWindow
             If _focusExchangeSettings Then dlg.FocusExchangePage()
             If _focusHostingSettings Then dlg.FocusHostingPage()
             If _focusPublishSettings Then dlg.FocusPublishPage()
+            If _focusScheduledSettings Then dlg.FocusScheduledPage(_scheduledPrefill)
+            _focusScheduledSettings = False
+            _scheduledPrefill = ""
             _focusPublishSettings = False
             _focusHostingSettings = False
             _focusExchangeSettings = False

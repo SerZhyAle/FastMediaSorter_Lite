@@ -43,6 +43,7 @@
     <!-- Ticket 180: the TLS stub server and the scripted connection of the exchange client tests, one kit for the library
          (Lite.Tests) and the device agent (here). Whole-file "#If Not NETFRAMEWORK". -->
     <Compile Include="..\Lite.Tests\ExchangeWireTestKit.vb" Link="Linked\ExchangeWireTestKit.vb" />
+    <Compile Include="..\Lite.Tests\ExchangeRenewalTests.vb" Link="Linked\ExchangeRenewalTests.vb" />
     <Compile Include="..\Lite.Tests\ExchangeVectorReplayTests.vb" Link="Linked\ExchangeVectorReplayTests.vb" />
     <Compile Include="..\Lite.Tests\ExchangeRecordReplayTests.vb" Link="Linked\ExchangeRecordReplayTests.vb" />
     <None Include="..\Lite.Tests\TestData\exchange-vectors\**" Link="TestData\exchange-vectors\%(RecursiveDir)%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
@@ -64,6 +65,7 @@
     <None Include="TestData\worker-ipc\**">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
+    <None Update="TestData\broadcast\**" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
 </Project>

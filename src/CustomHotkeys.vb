@@ -80,6 +80,12 @@ Public NotInheritable Class CustomHotkeys
         ' entry to rebind; their defaults were checked free against KeybUse and the reserved list
         ' (Q123-3): K and M are unused letters, Ctrl+Up / Ctrl+Down are Ctrl chords the historical
         ' map throws away. The four basics live only while a video or audio file is the current media.
+        '
+        ' The rest of 123 (UX-112, UX-113): "openContent" is what Enter always did - open the document in its
+        ' program, unlock a locked container - now an action of its own, so it can be moved and the key it is
+        ' moved off is retired like any other. Zoom also answers to the MAIN row ("=" and "+", "-"): a laptop has
+        ' no numeric block, and "/" and "*" are Shift+7 / Shift+8 there, which are already "copy to slot 7 / 8",
+        ' so only the two zoom steps get a second home. "+" is Shift+"=" on most layouts, hence both spellings.
         Dim actions As New List(Of HotkeyAction) From {
             New HotkeyAction("nextFile", "Следующий файл", "Right", "Space", "PageDown", "BrowserForward"),
             New HotkeyAction("prevFile", "Предыдущий файл", "Left", "P", "B", "Backspace", "PageUp", "BrowserBack"),
@@ -94,6 +100,7 @@ Public NotInheritable Class CustomHotkeys
             New HotkeyAction("forward100", "Вперёд на 100 файлов", "Shift+PageDown"),
             New HotkeyAction("chooseFile", "Выбрать файл", "F4", "F"),
             New HotkeyAction("jumpToNumber", "Перейти к номеру файла", "N"),
+            New HotkeyAction("openContent", "Открыть документ в программе или защищённый файл", "Enter"),
             New HotkeyAction("renameFile", "Переименовать файл", "F6"),
             New HotkeyAction("deleteFile", "Удалить файл", "Delete", "D"),
             New HotkeyAction("deletePermanent", "Удалить безвозвратно", "Shift+Delete", "Shift+D"),
@@ -106,8 +113,8 @@ Public NotInheritable Class CustomHotkeys
             New HotkeyAction("settings", "Настройки", "F2"),
             New HotkeyAction("imagePanel", "Панель изображений", "F3"),
             New HotkeyAction("help", "Справка", "F1"),
-            New HotkeyAction("zoomIn", "Увеличить масштаб", "Num +"),
-            New HotkeyAction("zoomOut", "Уменьшить масштаб", "Num -"),
+            New HotkeyAction("zoomIn", "Увеличить масштаб", "Num +", "Oemplus", "Shift+Oemplus"),
+            New HotkeyAction("zoomOut", "Уменьшить масштаб", "Num -", "OemMinus"),
             New HotkeyAction("zoomFit", "Вписать в окно", "Num /"),
             New HotkeyAction("zoomActual", "Реальный размер", "Num *"),
             New HotkeyAction("speedSlower", "Медленнее", "OemOpenBrackets"),
@@ -518,6 +525,37 @@ Public NotInheritable Class CustomHotkeys
         Dim combo As String = Format(keyData)
         If combo.Length = 0 Then Return String.Empty
         For Each id As String In PlaybackActionIds
+            Dim action As HotkeyAction = Find(id)
+            If action Is Nothing Then Continue For
+            For Each factory As String In FactoryCombos(action)
+                If String.Equals(factory, combo, StringComparison.OrdinalIgnoreCase) Then Return id
+            Next
+        Next
+        Return String.Empty
+    End Function
+
+    ''' <summary>The four zoom actions, in catalogue order (the zoom keys of the picture and of a text document).</summary>
+    Private Shared ReadOnly ZoomActionIds As String() = {"zoomIn", "zoomOut", "zoomFit", "zoomActual"}
+
+    ''' <summary>True for the four zoom actions.</summary>
+    Public Shared Function IsZoomAction(actionId As String) As Boolean
+        If String.IsNullOrEmpty(actionId) Then Return False
+        For Each id As String In ZoomActionIds
+            If String.Equals(id, actionId, StringComparison.Ordinal) Then Return True
+        Next
+        Return False
+    End Function
+
+    ''' <summary>
+    ''' The zoom action whose FACTORY key is this exact combination, or "" (UX-113 of 123): the numeric block
+    ''' and the main-row "=" / "+" / "-". Exact key data on purpose - Shift+"-" is "_" and is nobody's zoom.
+    ''' Like <see cref="PlaybackActionOfFactoryKey"/> it answers only for factory spellings: a moved action
+    ''' is handled through the override map and its abandoned keys are swallowed as retired defaults first.
+    ''' </summary>
+    Public Shared Function ZoomActionOfFactoryKey(keyData As Keys) As String
+        Dim combo As String = Format(keyData)
+        If combo.Length = 0 Then Return String.Empty
+        For Each id As String In ZoomActionIds
             Dim action As HotkeyAction = Find(id)
             If action Is Nothing Then Continue For
             For Each factory As String In FactoryCombos(action)

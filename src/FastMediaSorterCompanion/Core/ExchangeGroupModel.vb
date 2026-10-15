@@ -28,6 +28,16 @@ Friend NotInheritable Class ExchangeSnapshot
     Friend Shared Function Read() As ExchangeSnapshot
         Dim s As ExchangeSnapshot = ReadCheap()
         s.Report = ExchangeProcess.Inspect()
+        If s.ServiceExists Then
+            Dim reply As ExchangeAdminReply = ExchangeAdmin.SendAsync(New ExchangeAdminRequest(ExchangeAdminRequest.OpStatus), Threading.CancellationToken.None).GetAwaiter().GetResult()
+            If reply.Ok Then
+                Dim status As ExchangeAdminStatus = ExchangeAdminParser.Status(reply.DataJson)
+                If status.LogRetentionDays > 0 Then
+                    s.Report.KeepAwake = status.KeepAwake
+                    s.Report.LogRetentionDays = status.LogRetentionDays
+                End If
+            End If
+        End If
         s.ConsolePid = ExchangeProcess.RunningPid()
         s.Firewall = ExchangeFirewall.QueryRule()
         Return s

@@ -1,4 +1,4 @@
-﻿Option Explicit On
+Option Explicit On
 Option Strict On
 Option Infer On
 Option Compare Binary
@@ -77,16 +77,22 @@ Partial Public NotInheritable Class Share_Settings_Form
             Case "hosting" : Return Localization.T("Хостинг")
             Case "exchange" : Return ExchangeText.Title()
             Case "exchange-account" : Return ExchangeDeviceText.GroupTitle()
+            Case "scheduled" : Return ScheduledPageCaption()
             Case Else : Return Localization.T("О программе")
         End Select
     End Function
 
+    ''' <summary>The licence's name as the About rows show it - a name, not a sentence, so it is not translated; it is
+    ''' a constant (and not a literal argument) so that a placeholder can carry it and the parity scan does not read it
+    ''' as a key.</summary>
+    Private Const LicenseName As String = "MIT"
+
     Private Sub BuildAboutRows(section As CollapsibleSection)
         _aboutStart = New Label With {.Text = ProductNames.FullForLabel, .AutoSize = True, .Dock = DockStyle.Top}
         section.AddBodyRow(_aboutStart)
-        section.AddBodyRow(New Label With {.Text = Localization.T("Версия") & ": " & Application.ProductVersion,
+        section.AddBodyRow(New Label With {.Text = Localization.TF("Версия: {0}", Application.ProductVersion),
             .AutoSize = True, .Dock = DockStyle.Top, .Name = "managerVersion"})
-        section.AddBodyRow(New Label With {.Text = Localization.T("Лицензия") & ": MIT", .AutoSize = True,
+        section.AddBodyRow(New Label With {.Text = Localization.TF("Лицензия: {0}", LicenseName), .AutoSize = True,
             .Dock = DockStyle.Top, .Name = "managerLicense"})
         Dim licenseText As String
         Using stream = CompanionAssets.OpenBundledAsset("LICENSE"), reader As New IO.StreamReader(stream)
@@ -107,7 +113,12 @@ Partial Public NotInheritable Class Share_Settings_Form
     ' The page owns the old section's editors; the inner groups are one static heading each
     ' (210 section 5): the fold lives in the left menu, the content never hides a row.
     Private Sub BuildContractGroups(section As CollapsibleSection)
-        Dim rows = section.Body.Controls.Cast(Of Control)().ToArray()
+        ' Group classification uses the original controls, before adjacent commands are packed.
+        Dim commandRows = section.Body.Controls.OfType(Of FlowLayoutPanel)().
+            Where(Function(flow) Object.Equals(flow.Tag, "sectionCommands")).ToArray()
+        Dim rows = section.Body.Controls.Cast(Of Control)().
+            SelectMany(Function(control) If(commandRows.Contains(TryCast(control, FlowLayoutPanel)),
+                control.Controls.Cast(Of Control)(), {control}.AsEnumerable())).ToArray()
         Dim groups As New List(Of SettingsNavGroup)()
         section.Body.SuspendLayout()
         section.Body.Controls.Clear()
@@ -142,6 +153,11 @@ Partial Public NotInheritable Class Share_Settings_Form
                     Else
                         nextId = "server" : caption = Function() ExchangeText.Title()
                     End If
+                Case "scheduled"
+                    ' The list and its commands, then what applies to this PC (4.4).
+                    Dim machine = Array.IndexOf(rows, row) >= Array.IndexOf(rows, DirectCast(_schedFeature, Control))
+                    nextId = If(machine, "machine", "operations")
+                    caption = If(machine, Function() Localization.T("Для этого компьютера"), Function() Localization.T("Операции"))
                 Case "help"
                     Dim about = Array.IndexOf(rows, row) >= Array.IndexOf(rows, _aboutStart)
                     nextId = If(about, "about", "documentation")
@@ -162,6 +178,9 @@ Partial Public NotInheritable Class Share_Settings_Form
             section.AddBodyRow(row)
         Next
         _pageGroups.Add(section.Key, groups)
+        For Each commands In commandRows
+            commands.Dispose()
+        Next
         section.Body.ResumeLayout(False)
     End Sub
 
@@ -227,6 +246,8 @@ Partial Public NotInheritable Class Share_Settings_Form
         Next
         If _chkXKeep IsNot Nothing Then SetBooleanHint(_chkXKeep,
             Localization.T("После закрытия менеджера сервер обмена продолжит работать. Выключите, чтобы останавливать его при выходе."))
+        If _schedFeature IsNot Nothing Then SetBooleanHint(_schedFeature,
+            Localization.T("Выключите, чтобы остановить все расписания. Запуск вручную остаётся доступным."))
         NormalizeSettingsControls(Me)
         _wheelSafety = New SettingsWheelSafety(Me)
         Application.AddMessageFilter(_wheelSafety)
@@ -274,6 +295,9 @@ Partial Public NotInheritable Class Share_Settings_Form
                 button.MinimumSize = New Size(0, 44)
                 button.Padding = New Padding(16, 5, 16, 5)
                 button.AutoSize = True
+                button.AutoSizeMode = AutoSizeMode.GrowAndShrink
+                button.Dock = DockStyle.None
+                button.Anchor = AnchorStyles.Top Or AnchorStyles.Left
             End If
             Dim check = TryCast(control, CheckBox)
             If check IsNot Nothing Then
@@ -331,6 +355,9 @@ Partial Public NotInheritable Class Share_Settings_Form
                         Dim flow = TryCast(control, FlowLayoutPanel)
                         If flow IsNot Nothing Then
                             flow.MaximumSize = New Size(available, 0)
+                            For Each commandButton In flow.Controls.OfType(Of Button)()
+                                commandButton.MaximumSize = New Size(Math.Max(1, available - flow.Padding.Horizontal - commandButton.Margin.Horizontal), 0)
+                            Next
                             If flow.FlowDirection = FlowDirection.TopDown OrElse flow.Controls.OfType(Of ManagerSettingRow)().Any() Then
                                 flow.MinimumSize = New Size(available, 0)
                             End If
@@ -399,6 +426,7 @@ Partial Public NotInheritable Class Share_Settings_Form
             If _exchangeSnapshot IsNot Nothing Then ApplyExchangeState(_exchangeSnapshot)
             ApplyAccountState()
             ApplyProducerState()
+            RefreshScheduledLanguage()
             UpdateSummaries()
             For Each section In AllSettingsSections()
                 _navButtons(section.Key).Text = SettingsPageCaption(section)
@@ -414,9 +442,9 @@ Partial Public NotInheritable Class Share_Settings_Form
                 End If
             Next
             Dim version = Descendants(Me).FirstOrDefault(Function(control) control.Name = "managerVersion")
-            If version IsNot Nothing Then version.Text = Localization.T("Версия") & ": " & Application.ProductVersion
+            If version IsNot Nothing Then version.Text = Localization.TF("Версия: {0}", Application.ProductVersion)
             Dim license = Descendants(Me).FirstOrDefault(Function(control) control.Name = "managerLicense")
-            If license IsNot Nothing Then license.Text = Localization.T("Лицензия") & ": MIT"
+            If license IsNot Nothing Then license.Text = Localization.TF("Лицензия: {0}", LicenseName)
             For Each row In Descendants(Me).OfType(Of ManagerSettingRow)()
                 row.Editor.AccessibleName = row.Caption.Text
                 row.Editor.AccessibleDescription = row.Hint.Text

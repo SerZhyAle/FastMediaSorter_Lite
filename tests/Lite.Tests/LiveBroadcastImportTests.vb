@@ -125,11 +125,11 @@ Public Class LiveBroadcastImportTests
 
     <Fact>
     Public Sub An_Unsupported_Mode_Wins_Over_A_Playable_Endpoint_And_Over_A_Loopback_Address()
-        Dim withEndpoint As String = "{""schemaVersion"":1,""url"":""rtsp://192.168.1.60:8554/"",""mode"":""VIDEO_AUDIO"",""endpoints"":[" &
+        Dim withEndpoint As String = "{""schemaVersion"":1,""url"":""rtsp://192.168.1.60:8554/"",""mode"":""HOLOGRAM"",""endpoints"":[" &
             "{""url"":""http://192.168.1.60:8000/live.aac"",""transport"":""HTTP"",""mode"":""AUDIO_ONLY""}]}"
         Assert.Equal(LiveReadStatus.UnsupportedMode, LiveBroadcastReader.ReadText(withEndpoint).Status)
 
-        Dim loopbackVideo As String = "{""schemaVersion"":1,""url"":""rtsp://127.0.0.1:8554/"",""mode"":""VIDEO_ONLY""}"
+        Dim loopbackVideo As String = "{""schemaVersion"":1,""url"":""rtsp://127.0.0.1:8554/"",""mode"":""HOLOGRAM""}"
         Assert.Equal(LiveReadStatus.UnsupportedMode, LiveBroadcastReader.ReadText(loopbackVideo).Status)
     End Sub
 

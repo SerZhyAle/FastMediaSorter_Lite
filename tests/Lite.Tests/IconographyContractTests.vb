@@ -101,6 +101,29 @@ Public Class IconographyContractTests
     End Sub
 
     <Fact>
+    Public Sub The_pin_has_its_catalog_drawing_and_its_outlined_state_and_neither_is_the_pencil()
+        ' The recipients table's header carries the pin and the edit pencil side by side (219): the catalog's
+        ' own push-pin, filled while pinned and outlined (action.pin--off) while free.
+        Dim ids = VocabularyIds()
+        Assert.True(ids.ContainsKey("action.pin"), "action.pin is not in the vendored vocabulary")
+        Dim pin As String = Path.Combine(GlyphDir, "action.pin.svg")
+        Dim off As String = Path.Combine(GlyphDir, "action.pin--off.svg")
+        Assert.True(File.Exists(pin), "action.pin.svg is not vendored")
+        Assert.True(File.Exists(off), "action.pin--off.svg is not vendored")
+        Dim d As Func(Of String, String) = Function(svgPath) Regex.Match(File.ReadAllText(svgPath), "\bd=""([^""]+)""").Groups(1).Value
+        Dim pencil As String = d(Path.Combine(GlyphDir, "action.edit.svg"))
+        Assert.NotEqual(pencil, d(pin))
+        Assert.NotEqual(pencil, d(off))
+        ' The state variant is an outline: its centre is empty where the filled pin's is inked.
+        Using filled As Bitmap = GlyphRenderer.RenderSvg(File.ReadAllText(pin), 24, Color.Black)
+            Using outlined As Bitmap = GlyphRenderer.RenderSvg(File.ReadAllText(off), 24, Color.Black)
+                Assert.True(filled.GetPixel(12, 7).A > 128, "the filled pin's head is not painted")
+                Assert.True(outlined.GetPixel(12, 7).A < 64, "the outlined pin is filled")
+            End Using
+        End Using
+    End Sub
+
+    <Fact>
     Public Sub One_glyph_never_stands_for_two_meanings()
         ' ICON-SET rule 1: controls that share a glyph must share its name too (the two
         ' overflow buttons are one meaning on two rows).

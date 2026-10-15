@@ -14,7 +14,10 @@
     159 section 3.2, held by BroadcastWorkerCapabilityTests) are read here, and the rule is one sentence:
     a gate that is OPEN must name, in a committed evidence file, the rung (the live-broadcast gate: the
     rung or the phase of 172) and the date it was opened at; a gate that is shut, and any switch that is
-    on without a gate of the table behind it, is a defect.
+    on without a gate of the table behind it, is a defect. A shipped switch that is not a gate of the
+    206 program - today only the StreamsPlayer broadcasts page, a different thing by 206 section 3 -
+    is named in the $shipped table below together with the test that holds it; a switch missing from
+    both tables is still a defect.
 
     The evidence files are docs\specifications\exchange-gate-evidence.md and
     docs\specifications\live-broadcast-gate-evidence.md - the same files the suite half of the guard
@@ -27,9 +30,16 @@
     without the evidence naming the rung and the date, or an offer switch is on that no gate names),
     2 COULD NOT VERIFY (the workflow file or a gate's source cannot be read).
     The last line is `Test-FeatureGates: <WORD> (..)`.
+
+.PARAMETER Root
+    The tree to read instead of the repository this script lives in. tools\Test-FeatureGatesFixture.ps1
+    builds small synthetic trees and points the check at them to prove both directions of the rule; a
+    real run never passes it.
 #>
 [CmdletBinding()]
-param()
+param(
+    [string]$Root = ''
+)
 
 $ErrorActionPreference = 'Stop'
 . (Join-Path $PSScriptRoot 'lib\Verdict.ps1')
@@ -40,7 +50,8 @@ trap {
     Exit-Verdict $check 2 'the check itself failed'
 }
 
-$root = Split-Path $PSScriptRoot -Parent
+if (-not $Root) { $Root = Split-Path $PSScriptRoot -Parent }
+$Root = [IO.Path]::GetFullPath($Root)
 Write-Subject $check "the exchange and live-broadcast gates against their evidence; $(Get-TreeLabel $root)"
 
 # The gates of the table, with the evidence file each one needs when it is open. A switch that is on
@@ -70,6 +81,11 @@ $open['INCLUDE_EXCHANGE'] = ($includeMatches[0].Groups[1].Value -eq 'true')
 $known = @{}
 $known['src\Exchange\ExchangeFeatures.vb'] = 'ExchangeFeatures.Offered'
 $known['src\LiveBroadcast\LiveBroadcastFeatures.vb'] = 'LiveBroadcastFeatures.Offered'
+# Offer switches that are already shipped and are NOT gates of the 206 table. Each row names the test
+# that holds the switch to its other half; this is a registry, not an allowance - a switch in neither
+# table is a defect, and removing the shipped feature's switch means removing its row here.
+$shipped = @{}
+$shipped['src\FastMediaSorterCompanion\Core\BroadcastPage.vb'] = 'BroadcastWorkerCapabilityTests'
 $scanned = 0
 $switches = @{}
 foreach ($f in @(Get-ChildItem -LiteralPath (Join-Path $root 'src') -Filter *.vb -File -Recurse)) {
@@ -112,8 +128,8 @@ foreach ($g in $gates) {
     if ($problems.Count -eq 0) { $opened.Add($g.Name) }
 }
 foreach ($rel in $switches.Keys) {
-    if ($switches[$rel] -and -not $known.ContainsKey($rel)) {
-        $problems.Add("$rel holds an offer switch that is ON but no gate of the table (206 section 2) names it")
+    if ($switches[$rel] -and -not $known.ContainsKey($rel) -and -not $shipped.ContainsKey($rel)) {
+        $problems.Add("$rel holds an offer switch that is ON but no gate of the table (206 section 2) names it and no row of the shipped registry holds it")
     }
 }
 
@@ -122,4 +138,6 @@ if ($problems.Count -gt 0) {
     Exit-Verdict $check 1 "$($problems.Count) gate problem(s); $($shut.Count) shut, $($opened.Count) open with evidence, $scanned source files scanned"
 }
 $state = if ($opened.Count -gt 0) { "open with evidence: $($opened -join ', ')" } else { "shut" }
-Exit-Verdict $check 0 "$($gates.Count) gates $state; $($shut.Count) shut; every other offer switch off; $scanned source files scanned"
+$shippedOn = @($switches.Keys | Where-Object { $switches[$_] -and $shipped.ContainsKey($_) })
+$shippedNote = if ($shippedOn.Count -gt 0) { "; shipped switches on: $($shippedOn -join ', ')" } else { "" }
+Exit-Verdict $check 0 "$($gates.Count) gates $state; $($shut.Count) shut$shippedNote; every unowned offer switch off; $scanned source files scanned"

@@ -156,6 +156,10 @@ Friend NotInheritable Class FmsConfigReadResult
     Friend Property Failure As FmsConfigFailure = FmsConfigFailure.None
     ''' <summary>The field the failure is about ("" for a whole-document failure). Never a value.</summary>
     Friend Property FieldPath As String = ""
+    ''' <summary>The one already-localized sentence that says what failed, set when the failure came from
+    ''' a step before this reader (spec 227: the QR decoder's own no-code / several-codes / oversized
+    ''' sentences). Empty when the generic mapping of <see cref="Failure"/> is the right sentence.</summary>
+    Friend Property Detail As String = ""
     Friend ReadOnly Property Succeeded As Boolean
         Get
             Return Failure = FmsConfigFailure.None AndAlso Plan IsNot Nothing

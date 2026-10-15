@@ -47,7 +47,7 @@ func TestStopRoundTripInProcess(t *testing.T) {
 	case <-time.After(10 * time.Second):
 		t.Fatal("serve did not stop on the stop request")
 	}
-	if !hasStopLine(filepath.Join(filepath.Dir(cfgFile), config.LogsDir, config.LogName)) {
+	if !hasStopLine(filepath.Join(filepath.Dir(cfgFile), config.LogsDir, "exchange-"+time.Now().UTC().Format("2006-01-02")+".log")) {
 		t.Fatal("the log has no stop line")
 	}
 	// the event is gone with the server: a second stop finds nothing
@@ -145,8 +145,8 @@ func TestStopRoundTripWithTheBuiltBinary(t *testing.T) {
 	case <-time.After(15 * time.Second):
 		t.Fatal("the server process did not exit after stop")
 	}
-	if !hasStopLine(filepath.Join(dir, config.LogsDir, config.LogName)) {
-		b, _ := os.ReadFile(filepath.Join(dir, config.LogsDir, config.LogName))
+	if !hasStopLine(filepath.Join(dir, config.LogsDir, "exchange-"+time.Now().UTC().Format("2006-01-02")+".log")) {
+		b, _ := os.ReadFile(filepath.Join(dir, config.LogsDir, "exchange-"+time.Now().UTC().Format("2006-01-02")+".log"))
 		t.Fatalf("the log has no stop line:\n%s", b)
 	}
 }

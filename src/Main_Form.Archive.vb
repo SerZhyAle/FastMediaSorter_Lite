@@ -516,7 +516,7 @@ Partial Public Class Main_Form
         Using dialog As New OpenFileDialog()
             Dim archiveExtensions As String = String.Join(";",
                 ArchiveEntryFilter.Openable_Extensions.Select(Function(ext) "*" & ext))
-            dialog.Filter = Localization.T("Архивы") & "|" & archiveExtensions
+            dialog.Filter = Localization.TF("Архивы|{0}", archiveExtensions)
             ' Inside an archive the "folder" is the archive file itself - start next to it.
             Dim folder As String = If(IsArchiveMode(), archive_Return_Folder, Current_Folder_Path)
             dialog.InitialDirectory = If(String.IsNullOrEmpty(folder),

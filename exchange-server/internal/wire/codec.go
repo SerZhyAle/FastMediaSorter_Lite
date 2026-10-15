@@ -60,6 +60,19 @@ var registry = map[string]func() Envelope{
 	TypeCastAnswer:       func() Envelope { return new(CastAnswer) },
 	TypeCastResult:       func() Envelope { return new(CastResult) },
 	TypeCastStop:         func() Envelope { return new(CastStop) },
+	TypeClipboardPut:     func() Envelope { return new(ClipboardPut) },
+	TypeClipboardReady:   func() Envelope { return new(ClipboardReady) },
+	TypeClipboardStored:  func() Envelope { return new(ClipboardStored) },
+	TypeClipboardInfo:    func() Envelope { return new(ClipboardInfo) },
+	TypeClipboardState:   func() Envelope { return new(ClipboardState) },
+	TypeClipboardGet:     func() Envelope { return new(ClipboardGet) },
+	TypeClipboardValue:   func() Envelope { return new(ClipboardValue) },
+	TypeClipboardEmpty:   func() Envelope { return new(ClipboardEmpty) },
+	TypeRegister:         func() Envelope { return new(Register) },
+	TypePasswordChange:   func() Envelope { return new(PasswordChange) },
+	TypePasswordChanged:  func() Envelope { return new(PasswordChanged) },
+	TypeAccountDelete:    func() Envelope { return new(AccountDelete) },
+	TypeAccountDeleted:   func() Envelope { return new(AccountDeleted) },
 }
 
 // Types lists every type this wire defines, sorted as the table of ticket 161 section 4.
@@ -68,7 +81,10 @@ func Types() []string {
 		TypeList, TypeDirectory, TypeSubscribe, TypeChanged, TypePublish, TypePublished, TypeUnpublish,
 		TypeBroadcastStart, TypeBroadcastStarted, TypeBroadcastUpdate, TypeBroadcastEnd,
 		TypePairingRequest, TypePairingCode, TypeRevoke, TypeConnect, TypeConnected, TypeOpen, TypeAttach,
-		TypeUpload, TypeUploadAccepted, TypeCast, TypeCastOffer, TypeCastAnswer, TypeCastResult, TypeCastStop}
+		TypeUpload, TypeUploadAccepted, TypeCast, TypeCastOffer, TypeCastAnswer, TypeCastResult, TypeCastStop,
+		TypeClipboardPut, TypeClipboardReady, TypeClipboardStored, TypeClipboardInfo, TypeClipboardState,
+		TypeClipboardGet, TypeClipboardValue, TypeClipboardEmpty,
+		TypeRegister, TypePasswordChange, TypePasswordChanged, TypeAccountDelete, TypeAccountDeleted}
 }
 
 // New returns a zero typed envelope of the given type, or nil for a type this wire does not define.

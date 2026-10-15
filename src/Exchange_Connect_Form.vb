@@ -36,6 +36,11 @@ Friend NotInheritable Class Exchange_Connect_Form
     Private ReadOnly passwordLabel As Label
     Private ReadOnly passwordBox As TextBox
     Private ReadOnly revealBox As CheckBox
+    ''' <summary>226 rule 1: registration by invitation asks for the password TWICE and states the server's policy in words
+    ''' before the first refusal. Both live only in the register mode.</summary>
+    Private ReadOnly password2Label As Label
+    Private ReadOnly password2Box As TextBox
+    Private ReadOnly policyNote As Label
     Private ReadOnly statusLabel As Label
     Private ReadOnly connectButton As Button
     Private ReadOnly cancelButton_ As Button
@@ -46,6 +51,10 @@ Friend NotInheritable Class Exchange_Connect_Form
     Private _busy As Boolean
     Private _added As ExchangeEntry
     Private _loginHintApplied As String = ""
+    ''' <summary>True while the input is an INVITATION string (226 rule 1): the window asks for a login and a password typed
+    ''' twice and registers instead of signing in.</summary>
+    Private _register As Boolean
+    Private ReadOnly layoutBaseline As New Dictionary(Of Control, Rectangle)()
 
     ''' <summary>The entry that was added (or signed in again); Nothing when the window was closed without one.</summary>
     Friend ReadOnly Property Added As ExchangeEntry
@@ -95,7 +104,17 @@ Friend NotInheritable Class Exchange_Connect_Form
         passwordBox = New TextBox With {.Name = "xc_Password", .Location = New Point(130, 213), .Size = New Size(376, 24), .UseSystemPasswordChar = True,
                                         .AccessibleName = Localization.T("Пароль:")}
         revealBox = New CheckBox With {.Name = "xc_Reveal", .AutoSize = True, .Location = New Point(130, 241), .Text = Localization.T("Показать пароль")}
-        AddHandler revealBox.CheckedChanged, Sub() passwordBox.UseSystemPasswordChar = Not revealBox.Checked
+        AddHandler revealBox.CheckedChanged, Sub()
+                                                  passwordBox.UseSystemPasswordChar = Not revealBox.Checked
+                                                  password2Box.UseSystemPasswordChar = Not revealBox.Checked
+                                              End Sub
+        password2Label = New Label With {.Name = "xc_Password2Label", .AutoSize = False, .Location = New Point(14, 267), .Size = New Size(110, 16),
+                                         .Text = ExchangeEntryText.PasswordTwiceLabel(), .Visible = False}
+        password2Box = New TextBox With {.Name = "xc_Password2", .Location = New Point(130, 264), .Size = New Size(376, 24), .UseSystemPasswordChar = True,
+                                         .AccessibleName = ExchangeEntryText.PasswordTwiceLabel(), .Visible = False}
+        AddHandler password2Box.TextChanged, Sub() statusLabel.Text = ""
+        policyNote = New Label With {.Name = "xc_Policy", .AutoSize = False, .Location = New Point(14, 291), .Size = New Size(492, 18),
+                                     .ForeColor = SystemColors.GrayText, .Text = ExchangeEntryText.PasswordPolicyNote(), .Visible = False}
 
         statusLabel = New Label With {.Name = "xc_Status", .AutoSize = False, .Location = New Point(14, 268), .Size = New Size(492, 18),
                                       .ForeColor = Color.Firebrick, .Text = ""}
@@ -107,9 +126,12 @@ Friend NotInheritable Class Exchange_Connect_Form
         ButtonGlyphs.Apply(cancelButton_, "action.cancel", ButtonGlyphRole.Dismissing)
 
         Me.Controls.AddRange(New Control() {intro, inputLabel, inputBox, pasteButton, openButton, destination, loginLabel, loginBox,
-                                            passwordLabel, passwordBox, revealBox, statusLabel, connectButton, cancelButton_})
+                                            passwordLabel, passwordBox, revealBox, password2Label, password2Box, policyNote, statusLabel, connectButton, cancelButton_})
         Me.AcceptButton = connectButton
         Me.CancelButton = cancelButton_
+        For Each child As Control In Me.Controls
+            layoutBaseline(child) = child.Bounds
+        Next
 
         If signInAgain IsNot Nothing Then
             inputBox.Text = signInAgain.Server
@@ -127,11 +149,6 @@ Friend NotInheritable Class Exchange_Connect_Form
         DialogLayout.ApplyAutoScale(Me)
     End Sub
 
-    Protected Overrides Sub OnLoad(e As EventArgs)
-        MyBase.OnLoad(e)
-        DialogLayout.FitContent(Me)
-    End Sub
-
     Protected Overrides Sub OnShown(e As EventArgs)
         MyBase.OnShown(e)
         ' the destination is on screen first; focus goes to the field that is still empty, the password last
@@ -146,6 +163,7 @@ Friend NotInheritable Class Exchange_Connect_Form
 
     Protected Overrides Sub OnFormClosed(e As FormClosedEventArgs)
         passwordBox.Text = ""
+        password2Box.Text = ""
         Try : _cts.Cancel() : Catch ex As ObjectDisposedException : End Try
         MyBase.OnFormClosed(e)
     End Sub
@@ -182,11 +200,62 @@ Friend NotInheritable Class Exchange_Connect_Form
             Case Else
                 destination.Text = ""
         End Select
+        ApplyMode(input.HasInvitation)
+    End Sub
+
+    ''' <summary>226 rule 1: the registration is offered only where the string is an invitation. The mode changes the
+    ''' intro, asks for the password twice, states the server's policy in words and renames the button; the layout is
+    ''' the window's own in both modes (nothing is sent in either until the button is pressed).</summary>
+    Private Sub ApplyMode([register] As Boolean)
+        If _register = register AndAlso _laidOut Then Return
+        _register = register
+        If _laidOut Then layoutScale = CSng(inputBox.Width) / layoutBaseline(inputBox).Width
+        ' Reflow starts from authored bounds. Reusing a previous language/mode's expanded rows accumulates offsets.
+        For Each row As KeyValuePair(Of Control, Rectangle) In layoutBaseline
+            Dim bounds As Rectangle = row.Value
+            row.Key.SetBounds(LayoutUnit(bounds.X), LayoutUnit(bounds.Y), LayoutUnit(bounds.Width), LayoutUnit(bounds.Height))
+        Next
+        password2Label.Visible = register
+        password2Box.Visible = register
+        policyNote.Visible = register
+        intro.Text = If(register, ExchangeEntryText.RegisterIntro(), ExchangeEntryText.ConnectIntro())
+        connectButton.Text = If(register, ExchangeEntryText.RegisterButton(), ExchangeEntryText.ConnectButton())
+        If register Then
+            statusLabel.SetBounds(LayoutUnit(14), LayoutUnit(313), LayoutUnit(492), LayoutUnit(18))
+            connectButton.SetBounds(LayoutUnit(296), LayoutUnit(337), LayoutUnit(120), LayoutUnit(28))
+            cancelButton_.SetBounds(LayoutUnit(424), LayoutUnit(337), LayoutUnit(82), LayoutUnit(28))
+            ClientSize = New Size(LayoutUnit(520), LayoutUnit(375))
+        Else
+            statusLabel.SetBounds(LayoutUnit(14), LayoutUnit(268), LayoutUnit(492), LayoutUnit(18))
+            connectButton.SetBounds(LayoutUnit(296), LayoutUnit(292), LayoutUnit(120), LayoutUnit(28))
+            cancelButton_.SetBounds(LayoutUnit(424), LayoutUnit(292), LayoutUnit(82), LayoutUnit(28))
+            ClientSize = New Size(LayoutUnit(520), LayoutUnit(330))
+        End If
+        DialogLayout.FitContent(Me)
+    End Sub
+
+    Private _laidOut As Boolean
+    Private layoutScale As Single = 1.0F
+
+    Private Function LayoutUnit(value As Integer) As Integer
+        Return CInt(Math.Round(value * layoutScale))
+    End Function
+
+    Protected Overrides Sub OnLoad(e As EventArgs)
+        MyBase.OnLoad(e)
+        _laidOut = True
+        DialogLayout.FitContent(Me)
     End Sub
 
     Private Sub OnPaste(sender As Object, e As EventArgs)
         Try
-            If Clipboard.ContainsText() Then inputBox.Text = Clipboard.GetText().Trim()
+            Dim decoded As QrDecodeResult = QrCodeDecoder.DecodeClipboard()
+            If decoded.Succeeded Then
+                inputBox.Text = decoded.Text
+            Else
+                destination.ForeColor = Color.Firebrick
+                destination.Text = decoded.FailureMessage
+            End If
         Catch ex As Exception When TypeOf ex Is System.Runtime.InteropServices.ExternalException OrElse TypeOf ex Is Threading.ThreadStateException
             statusLabel.Text = Localization.T("Не удалось прочитать буфер обмена.")
         End Try
@@ -195,6 +264,17 @@ Friend NotInheritable Class Exchange_Connect_Form
     Private Sub OnOpenFile(sender As Object, e As EventArgs)
         Using dlg As New OpenFileDialog With {.Filter = ExchangeEntryText.OpenFileFilter(), .CheckFileExists = True, .Multiselect = False}
             If dlg.ShowDialog(Me) <> DialogResult.OK Then Return
+            If ExchangeQrDecoder.IsImageFile(dlg.FileName) Then
+                Dim decoded As QrDecodeResult = QrCodeDecoder.DecodeFile(dlg.FileName)
+                If decoded.Succeeded Then
+                    inputBox.Text = decoded.Text
+                    Return
+                Else
+                    destination.ForeColor = Color.Firebrick
+                    destination.Text = decoded.FailureMessage
+                    Return
+                End If
+            End If
             Dim bytes As Byte() = ReadBounded(dlg.FileName)
             Dim input As ExchangeConnectInput = ExchangeConnectInput.ClassifyFile(bytes)
             If input.Kind = ExchangeConnectInputKind.Refused Then
@@ -233,6 +313,11 @@ Friend NotInheritable Class Exchange_Connect_Form
         connectButton.Enabled = Not value
         inputBox.Enabled = Not value
         passwordBox.Enabled = Not value
+        password2Box.Enabled = Not value
+        loginBox.Enabled = Not value
+        pasteButton.Enabled = Not value AndAlso Not inputBox.ReadOnly
+        openButton.Enabled = Not value AndAlso Not inputBox.ReadOnly
+        revealBox.Enabled = Not value
         If value Then statusLabel.ForeColor = SystemColors.GrayText : statusLabel.Text = ExchangeEntryText.Connecting()
     End Sub
 
@@ -242,9 +327,30 @@ Friend NotInheritable Class Exchange_Connect_Form
         Dim result As ExchangeConnectResult = Nothing
         Try
             Dim typed As String = passwordBox.Text
-            passwordBox.Text = ""                                     ' the field is empty before the first byte leaves
-            result = Await ExchangeConnectFlow.RunAsync(inputBox.Text, loginBox.Text, typed, _pinOfEntry, "", _ports,
-                                                       AddressOf ConfirmTrust, _cts.Token)
+            Dim typedAgain As String = password2Box.Text
+            passwordBox.Text = ""                                     ' the fields are empty before the first byte leaves
+            password2Box.Text = ""
+            If _register Then
+                ' the twins must match and the policy must pass before anything is sent (226 rule 1)
+                If Not String.Equals(typed, typedAgain, StringComparison.Ordinal) Then
+                    statusLabel.ForeColor = Color.Firebrick
+                    statusLabel.Text = ExchangeEntryText.PasswordsDiffer()
+                    passwordBox.Focus()
+                    Return
+                End If
+                Dim verdict As Integer = ExchangePasswordVerdict.Of(typed)
+                If verdict >= 0 Then
+                    statusLabel.ForeColor = Color.Firebrick
+                    statusLabel.Text = ExchangeEntryText.PasswordPolicyFailure(verdict)
+                    passwordBox.Focus()
+                    Return
+                End If
+                result = Await ExchangeConnectFlow.RegisterAsync(inputBox.Text, loginBox.Text, typed, "", "", _ports,
+                                                                AddressOf ConfirmTrust, _cts.Token)
+            Else
+                result = Await ExchangeConnectFlow.RunAsync(inputBox.Text, loginBox.Text, typed, _pinOfEntry, "", _ports,
+                                                            AddressOf ConfirmTrust, _cts.Token)
+            End If
         Catch ex As OperationCanceledException
             Return
         Catch ex As Exception When TypeOf ex Is InvalidOperationException OrElse TypeOf ex Is IOException
@@ -272,7 +378,8 @@ Friend NotInheritable Class Exchange_Connect_Form
             Case ExchangeConnectResultKind.Cancelled
                 statusLabel.Text = ""
             Case Else
-                statusLabel.Text = ExchangeEntryText.EnrollFailure(result.Enroll, result.Refusal)
+                statusLabel.Text = If(_register, ExchangeEntryText.RegisterFailure(result.Enroll, result.Refusal),
+                                       ExchangeEntryText.EnrollFailure(result.Enroll, result.Refusal))
         End Select
         If Not IsDisposed AndAlso passwordBox.Enabled Then passwordBox.Focus()
     End Sub

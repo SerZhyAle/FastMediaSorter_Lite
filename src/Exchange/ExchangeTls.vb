@@ -14,13 +14,14 @@ Imports System.Threading.Tasks
 ' There is no plain stream anywhere in the client (DEVICE-EXCHANGE 7.1 and item V of section 15): not for an
 ' outsider `connect`, not on a failed handshake, not when an endpoint states no fingerprint.
 '
-' Trust is item D of section 14.3 and nothing else:
+' Trust is item D of section 14.3 with the paired pin of section 19 AY:
 '   - the platform trust store judges the chain for the host name first; a leaf it accepts is NOT pinned (a
 '     renewal on the CA's schedule must never lock the device out);
 '   - a leaf it rejects (self-signed, a private CA, a name mismatch) is accepted only when its fingerprint
 '     (SHA256: plus base64 without padding, over the DER leaf) equals the pin the user accepted, so the pin is
 '     checked on the very connection that carries the secret and not on an earlier probe;
-'   - a pin that exists and differs is a named stop (PinMismatch) with both fingerprints, never re-pinned here.
+'   - an entry that already knows the accepted leaf's key accepts a renewed leaf with that key and updates
+'     its stored leaf; a changed key is a named stop (PinMismatch), never silently accepted.
 
 ''' <summary>What the trust decision came to.</summary>
 Friend Enum ExchangeTrustVerdict
@@ -84,11 +85,13 @@ Friend NotInheritable Class ExchangeTlsConnection
     Public ReadOnly Stream As Stream
     Public ReadOnly Fingerprint As String
     Public ReadOnly Verdict As ExchangeTrustVerdict
+    Public ReadOnly KeyPin As String
 
-    Public Sub New(stream As Stream, fingerprint As String, verdict As ExchangeTrustVerdict)
+    Public Sub New(stream As Stream, fingerprint As String, verdict As ExchangeTrustVerdict, Optional keyPin As String = "")
         Me.Stream = stream
         Me.Fingerprint = fingerprint
         Me.Verdict = verdict
+        Me.KeyPin = keyPin
     End Sub
 
     Public Sub Dispose() Implements IDisposable.Dispose
@@ -134,9 +137,12 @@ Friend NotInheritable Class ExchangeTrust
 
     ''' <summary>Item D: the platform first, then the pin. A pin that exists and differs wins over a platform acceptance,
     ''' because the pin is a property of the account entry and only the user may replace it.</summary>
-    Public Shared Function Evaluate(platformAccepted As Boolean, fingerprint As String, pin As String) As ExchangeTrustVerdict
+    Public Shared Function Evaluate(platformAccepted As Boolean, fingerprint As String, pin As String,
+                                    Optional presentedKey As String = "", Optional keyPin As String = "") As ExchangeTrustVerdict
         If Not String.IsNullOrEmpty(pin) Then
-            Return If(String.Equals(pin, fingerprint, StringComparison.Ordinal), ExchangeTrustVerdict.PinMatch, ExchangeTrustVerdict.PinMismatch)
+            Dim accepted As Boolean = String.Equals(pin, fingerprint, StringComparison.Ordinal) OrElse
+                (IsFingerprint(keyPin) AndAlso String.Equals(keyPin, presentedKey, StringComparison.Ordinal))
+            Return If(accepted, ExchangeTrustVerdict.PinMatch, ExchangeTrustVerdict.PinMismatch)
         End If
         Return If(platformAccepted, ExchangeTrustVerdict.PlatformValid, ExchangeTrustVerdict.Unpinned)
     End Function
@@ -198,7 +204,7 @@ Friend NotInheritable Class ExchangeTlsTransport
     End Sub
 
     Public Function ConnectAsync(host As String, port As Integer, pin As String, ct As CancellationToken) As Task(Of ExchangeTlsConnection) Implements IExchangeTransport.ConnectAsync
-        Return OpenAsync(host, port, pin, False, ct)
+        Return OpenAsync(host, port, pin, False, ct, "")
     End Function
 
     ''' <summary>The handshake alone: what certificate does this server show, and does the platform accept it? Not a
@@ -210,11 +216,16 @@ Friend NotInheritable Class ExchangeTlsTransport
         End Using
     End Function
 
-    Private Shared Async Function OpenAsync(host As String, port As Integer, pin As String, acceptAny As Boolean, ct As CancellationToken) As Task(Of ExchangeTlsConnection)
+    Friend Function ConnectPinnedAsync(host As String, port As Integer, pin As String, keyPin As String, ct As CancellationToken) As Task(Of ExchangeTlsConnection)
+        Return OpenAsync(host, port, pin, False, ct, keyPin)
+    End Function
+
+    Private Shared Async Function OpenAsync(host As String, port As Integer, pin As String, acceptAny As Boolean, ct As CancellationToken, Optional keyPin As String = "") As Task(Of ExchangeTlsConnection)
         Dim target As String = If(host.StartsWith("[", StringComparison.Ordinal) AndAlso host.EndsWith("]", StringComparison.Ordinal), host.Substring(1, host.Length - 2), host)
         Dim fingerprint As String = ""
         Dim verdict As ExchangeTrustVerdict = ExchangeTrustVerdict.Unpinned
         Dim sawCertificate As Boolean = False
+        Dim presentedKey As String = ""
 
         Using timeout As New CancellationTokenSource(ConnectTimeout)
             Using linked As CancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(ct, timeout.Token)
@@ -228,8 +239,11 @@ Friend NotInheritable Class ExchangeTlsTransport
                     ssl = New SslStream(net, False, Function(sender As Object, cert As X509Certificate, chain As X509Chain, errors As SslPolicyErrors) As Boolean
                                                         If cert Is Nothing Then Return False
                                                         fingerprint = ExchangeTrust.FingerprintOf(cert.GetRawCertData())
+                                                        Using leaf As X509Certificate2 = X509CertificateLoader.LoadCertificate(cert.GetRawCertData())
+                                                            presentedKey = ExchangeTrust.FingerprintOf(leaf.PublicKey.ExportSubjectPublicKeyInfo())
+                                                        End Using
                                                         sawCertificate = True
-                                                        verdict = ExchangeTrust.Evaluate(errors = SslPolicyErrors.None, fingerprint, pin)
+                                                        verdict = ExchangeTrust.Evaluate(errors = SslPolicyErrors.None, fingerprint, pin, presentedKey, keyPin)
                                                         If acceptAny Then Return True
                                                         Return verdict = ExchangeTrustVerdict.PlatformValid OrElse verdict = ExchangeTrustVerdict.PinMatch
                                                     End Function)
@@ -239,7 +253,7 @@ Friend NotInheritable Class ExchangeTlsTransport
                         .CertificateRevocationCheckMode = X509RevocationMode.NoCheck
                     }
                     Await ssl.AuthenticateAsClientAsync(options, linked.Token).ConfigureAwait(False)
-                    Dim result As New ExchangeTlsConnection(ssl, fingerprint, verdict)
+                    Dim result As New ExchangeTlsConnection(ssl, fingerprint, verdict, presentedKey)
                     ssl = Nothing
                     handedOver = True
                     Return result
@@ -271,5 +285,52 @@ Friend NotInheritable Class ExchangeTlsTransport
         End Using
     End Function
 
+End Class
+
+''' <summary>Entry-scoped paired pins (DEVICE-EXCHANGE 19 AY). Legacy leaf-only entries learn the key
+''' only after a matching TLS handshake. Probes and mismatches never change stored trust.</summary>
+Friend NotInheritable Class ExchangeRenewalTransport
+    Implements IExchangeTransport
+
+    Private ReadOnly _inner As IExchangeTransport
+    Private ReadOnly _save As Action(Of String, String)
+    Private ReadOnly _gate As New Object()
+    Private _key As String
+    Private _leaf As String
+
+    Public Sub New(inner As IExchangeTransport, leaf As String, key As String, save As Action(Of String, String))
+        _inner = inner
+        _leaf = leaf
+        _key = key
+        _save = save
+    End Sub
+
+    Public Async Function ConnectAsync(host As String, port As Integer, pin As String, ct As CancellationToken) As Task(Of ExchangeTlsConnection) Implements IExchangeTransport.ConnectAsync
+        Dim leaf As String, key As String
+        SyncLock _gate
+            leaf = _leaf
+            key = _key
+        End SyncLock
+        Dim tls As ExchangeTlsTransport = TryCast(_inner, ExchangeTlsTransport)
+        Dim conn As ExchangeTlsConnection
+        If tls Is Nothing Then
+            conn = Await _inner.ConnectAsync(host, port, pin, ct).ConfigureAwait(False)
+        Else
+            conn = Await tls.ConnectPinnedAsync(host, port, leaf, key, ct).ConfigureAwait(False)
+        End If
+        If conn.Verdict = ExchangeTrustVerdict.PinMatch AndAlso ExchangeTrust.IsFingerprint(conn.KeyPin) Then
+            Try
+                SyncLock _gate
+                    _save.Invoke(conn.Fingerprint, conn.KeyPin)
+                    _leaf = conn.Fingerprint
+                    _key = conn.KeyPin
+                End SyncLock
+            Catch
+                conn.Dispose()
+                Throw
+            End Try
+        End If
+        Return conn
+    End Function
 End Class
 #End If

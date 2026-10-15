@@ -10,7 +10,7 @@ Imports System.Threading
 ' the product asks for nothing the OS does not let it have.
 '
 ' Feedback loop: a PC whose own viewer plays a broadcast would hear itself through loopback. Windows
-' 10 2004 (build 19041) offers process-loopback exclusion, and the system-audio source uses it where
+' build 20348 and later offer process-loopback exclusion, and the system-audio source uses it where
 ' the OS offers it: the capture is ACTIVATED as "everything the render device plays EXCEPT one
 ' process tree", the tree being this product's viewer when one is running (the process that would
 ' feed back) and otherwise the Share Manager's own tree. The API excludes exactly one tree, so a
@@ -69,14 +69,13 @@ Friend NotInheritable Class WasapiAudioSource
 
     Private _exclusionFailure As String = ""
 
-    ''' <summary>True when this Windows offers process-loopback exclusion (Windows 10 2004, build
-    ''' 19041): the window shows its warning sentence only where the OS cannot exclude.</summary>
+    ''' <summary>True when Windows offers process-loopback exclusion (build 20348 and later).</summary>
     Friend Shared ReadOnly Property SupportsProcessLoopbackExclusion As Boolean
         Get
             Dim info As New OSVERSIONINFOW()
             info.dwOSVersionInfoSize = Marshal.SizeOf(GetType(OSVERSIONINFOW))
             If RtlGetVersion(info) <> 0 Then Return False
-            Return info.dwBuildNumber >= 19041
+            Return info.dwBuildNumber >= 20348
         End Get
     End Property
 
@@ -130,7 +129,10 @@ Friend NotInheritable Class WasapiAudioSource
         _thread = New Thread(AddressOf CaptureLoop) With {.IsBackground = True, .Name = If(_loopback, "LiveSystemAudio", "LiveMicrophone")}
         _thread.SetApartmentState(ApartmentState.STA)
         _thread.Start()
-        _started.WaitOne(5000)
+        If Not _started.WaitOne(5000) Then
+            reason = "audio capture did not start in time"
+            Return False
+        End If
         If _startFailed.Length > 0 Then
             reason = _startFailed
             Return False
@@ -402,7 +404,7 @@ Friend NotInheritable Class WasapiAudioSource
         Return subFirst = 3
     End Function
 
-    ' --- the process-loopback exclusion (section 4, Windows 10 2004+) -----------------------------
+    ' --- the process-loopback exclusion (section 4, Windows build 20348+) ------------------------
 
     ''' <summary>Activates the system-audio client as "everything the render device plays EXCEPT one
     ''' process tree" and initializes it. Returns Nothing on ANY failure - the caller falls back to

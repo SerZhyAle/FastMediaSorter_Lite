@@ -3,7 +3,7 @@
 | | |
 | --- | --- |
 | **Ids** | `APP-BEHAVIOUR`, `APP-STYLE`, `APP-SETTINGS`, `WINDOWS-UI` |
-| **Version** | catalog 0.12 / 0.12 / 0.4 / 0.4, draft (settings/profile read 2026-10-08; `WINDOWS-UI` 0.4 section 11 read 2026-10-11). Behaviour and style keep their 2026-10-02 audit (`APP-BEHAVIOUR` is unchanged since 0.12, `APP-STYLE` 0.12 section 10 was read 2026-10-05); the 0.2 / 0.3 amendments of `WINDOWS-UI` and `APP-SETTINGS` were read 2026-10-07. Owners: StreamsPlayer (the first two), CyrFlip, and this Windows reference respectively |
+| **Version** | catalog 0.12 / 0.12 / 0.4 / 0.4, draft (settings/profile read 2026-10-08; `WINDOWS-UI` 0.4 section 11 read 2026-10-11). Behaviour and style keep their 2026-10-02 audit (`APP-BEHAVIOUR` is unchanged since 0.12, `APP-STYLE` 0.12 section 10 was read 2026-10-05); the 0.2 / 0.3 amendments of `WINDOWS-UI` and `APP-SETTINGS` were read 2026-10-07, and `WINDOWS-UI` 0.2 sections 5 and 9 and `APP-STYLE` section 5 (the audio overlay) were worked against the viewer on 2026-10-13. Owners: StreamsPlayer (the first two), CyrFlip, and this Windows reference respectively |
 | **Home** | `desktop-app-ux/README.md` in the shared contracts catalog |
 | **Role here** | consumer, twice - the viewer (.NET 10 mainline) and the Share Manager each have their own registry row; audit and phases in `specification 028` (local specification) |
 
@@ -40,6 +40,14 @@
   outside the theme implements `IThemeAware` and says why where it is defined. The viewer's main window and
   thumbnail panel are content-coloured windows, accepted by the contract's own amendment (APP-STYLE 0.10
   section 5, from this product's proposal).
+- **The audio surface is a declared content overlay** (APP-STYLE 0.10 section 5, condition 3; `WINDOWS-UI`
+  0.4 section 6 item 7, 2026-10-13): the plate and the ink over a cover or the WAVE-PARTICLES backdrop are one
+  table, `AudioOverlayColours`, which says where it is defined that it follows the content and not the theme;
+  `Main_Form.AudioView.vb` carries no colour literal. `AudioOverlayContrastTests` holds the pair to 4.5 : 1 for
+  text and 3 : 1 for strokes over a white and a black cover and every grey and cube corner between (white ink
+  8.06 : 1 and the quieter format line 5.88 : 1 over the worst, a white cover). The backdrop's own lines and
+  particles are the catalog's colours and opacities and are not gated - measured and recorded, a finding for the
+  contract's owner, not a local edit.
 - **The palette roles are contract vocabulary, product values** (APP-STYLE 0.11 section 4):
   `danger` marks an irreversible action, `warning` a "may not do what you expect" caveat, `success` a
   positive mark; on a confirmation the role marks the acting button, never the focus. The shared day tone
@@ -74,10 +82,22 @@ record is in the registry rows and in the addendum of the [Windows UI audit](../
 - `WINDOWS-UI` 0.3 section 2 item 6 (destinations under a navigation group header stand one indent in): not
   applicable today - the viewer and Share Manager settings both use flat navigation lists. It binds the day either gets a group header.
 - `WINDOWS-UI` 0.2 section 5 (a page is laid out once; a scroll position is restored only after that layout)
-  and section 9 (every page and secondary window is timed): in both settings windows the restore already runs
-  after layout and the viewer's window is built under one suspended layout, but a page switch and a group toggle
-  are not held and re-measure every page, and no first-visit, repeat-visit or dialog time has been measured.
-  A dated exception in the registry, until 2026-12-31.
+  and section 9 (every page and secondary window is timed), viewer, 2026-10-13: **a page switch and a group
+  toggle hold their layout and lay out the shown page once.** A group holds its own layout and its page's while
+  it changes and raises `ExpansionChanged` only after that pass (`SettingsCollapsibleGroup.Expanded`); a page
+  is sized with the page and its group bodies held (`Table_Form.ResizeModernPageItems`,
+  `LayoutModernSettingsPage`), the other ten pages are not re-measured, and the remembered position is read
+  and restored after the layout. Gated by `SettingsLayoutPassTests` (the group runtime half and a source scan
+  of the entry points, each with a self-test) and, by hand, by `tests/Integration/SettingsLayoutScenes`, which
+  counts Layout events and compares every control's bounds, scroll range and rendered pixels with another
+  build (identical at 100 % and at this machine's 175 %, 110 snapshots). **Every page and every window the
+  dialog layer opens is timed on request**: `FMS_UI_TIMING=1` makes the viewer append one line per shown
+  surface to its own `current.log` (`UiTiming`, `UiTimingBudget`; nothing else, nothing leaves the machine;
+  `UiTimingBudgetTests`), and `tests/Integration/SettingsTimingScenes.ps1` (hand-run) drives the built viewer
+  and prints the table. Measured 2026-10-13 on this machine: every page is within 500 / 150 ms and every
+  dialog within 500 ms; **the settings window itself opens in 0.5 to 2.4 s (cold, then warm), over its 500 ms
+  budget** - all eleven pages are still built in the constructor; the registry keeps that, and the physical
+  reference-hardware measurement, as a dated exception (until 2026-12-31). The Share Manager keeps its own row.
 - `APP-SETTINGS` 0.3 section 9 (an irreversible operation on a page of a surface with no Commit): the viewer's
   settings apply on touch and close with Close, so the section applies. Its cache Clear buttons, "restore
   defaults" and the settings import are buttons with their own confirmation (safe answer focused), and no value

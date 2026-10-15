@@ -1,6 +1,7 @@
 Option Strict On
 
 Imports System.Drawing
+Imports System.Linq
 Imports System.Windows.Forms
 
 ''' <summary>
@@ -43,6 +44,51 @@ Friend Module DpiLayout
         If f Is Nothing Then Return
         f.AutoScaleDimensions = New SizeF(96.0F, 96.0F)
         f.AutoScaleMode = AutoScaleMode.Dpi
+        ' Settings has its own held layout pass and viewport-width fitting.
+        If Not TypeOf f Is Share_Settings_Form Then ConfigureCommandRows(f)
+    End Sub
+
+    ' WINDOWS-UI section 11 item 3: command rows wrap whole content-sized buttons.
+    ' Apply this to the shared window setup so secondary dialogs follow the same rule.
+    Friend Sub ConfigureCommandRows(parent As Control)
+        For Each child As Control In parent.Controls
+            ConfigureCommandRows(child)
+        Next
+        Dim flow = TryCast(parent, FlowLayoutPanel)
+        If flow Is Nothing OrElse flow.FlowDirection = FlowDirection.TopDown OrElse
+           flow.FlowDirection = FlowDirection.BottomUp OrElse Not flow.Controls.OfType(Of Button)().Any() Then Return
+        flow.WrapContents = True
+        For Each button In flow.Controls.OfType(Of Button)()
+            button.Dock = DockStyle.None
+            button.Anchor = AnchorStyles.Top Or AnchorStyles.Left
+            button.AutoSize = True
+            button.AutoSizeMode = AutoSizeMode.GrowAndShrink
+        Next
+        If flow.Parent Is Nothing OrElse TypeOf flow.Parent Is ManagerSettingRow Then Return
+        Dim owner = flow.Parent
+        Dim fit As Action =
+            Sub()
+                If flow.IsDisposed Then Return
+                Dim width = owner.ClientSize.Width - owner.Padding.Horizontal
+                Dim table = TryCast(owner, TableLayoutPanel)
+                If table IsNot Nothing Then
+                    Dim column = table.GetColumn(flow)
+                    Dim widths = table.GetColumnWidths()
+                    If column >= 0 AndAlso column < widths.Length Then
+                        width = widths.Skip(column).Take(table.GetColumnSpan(flow)).Sum()
+                    End If
+                End If
+                Dim limit As New Size(Math.Max(1, width - flow.Margin.Horizontal), 0)
+                If flow.MaximumSize <> limit Then flow.MaximumSize = limit
+                For Each button In flow.Controls.OfType(Of Button)()
+                    Dim buttonLimit As New Size(Math.Max(1, limit.Width - flow.Padding.Horizontal - button.Margin.Horizontal), 0)
+                    If button.MaximumSize <> buttonLimit Then button.MaximumSize = buttonLimit
+                Next
+            End Sub
+        Dim handler As LayoutEventHandler = Sub(sender, e) fit()
+        AddHandler owner.Layout, handler
+        AddHandler flow.Disposed, Sub() RemoveHandler owner.Layout, handler
+        fit()
     End Sub
 
     ''' <summary>Working area of the monitor the form sits on (falls back to the primary

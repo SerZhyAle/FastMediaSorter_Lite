@@ -1,4 +1,4 @@
-﻿#If Not NETFRAMEWORK Then
+#If Not NETFRAMEWORK Then
 Option Strict On
 
 Imports System.Collections.Generic
@@ -211,7 +211,7 @@ Friend Module EndpointResolver
                     If Attempts(i).Failure IsNot Nothing Then Return Attempts(i).Failure
                 Next
             End SyncLock
-            Return New ResourceFailure(ResourceFailureKind.Transport, Nothing, "no endpoint")
+            Return New ResourceFailure(ResourceFailureKind.Transport, Nothing, "no connection")
         End Function
     End Class
 
@@ -344,7 +344,7 @@ Friend Module EndpointResolver
         round.StartMs = clock.NowMs
 
         If list.Count = 0 Then
-            Return New ResolutionOutcome(Nothing, Nothing, New ResourceFailure(ResourceFailureKind.Transport, Nothing, "no endpoint"), New List(Of EndpointAttempt)())
+            Return New ResolutionOutcome(Nothing, Nothing, New ResourceFailure(ResourceFailureKind.Transport, Nothing, "no connection"), New List(Of EndpointAttempt)())
         End If
 
         Dim userCancel As CancellationTokenRegistration = ct.Register(Sub() round.Settle(Nothing, Nothing, New ResourceFailure(ResourceFailureKind.Cancelled)))

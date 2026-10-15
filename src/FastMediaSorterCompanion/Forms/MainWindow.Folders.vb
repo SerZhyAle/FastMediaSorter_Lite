@@ -1,8 +1,9 @@
-﻿Option Strict On
+Option Strict On
 
 Imports System.Collections.Generic
 Imports System.Drawing
 Imports System.IO
+Imports System.Threading
 Imports System.Threading.Tasks
 Imports System.Windows.Forms
 
@@ -265,14 +266,28 @@ Partial Public NotInheritable Class MainWindow
     ''' </summary>
     Private Sub RefreshRowActionButtons()
         If btnParams Is Nothing OrElse lvFolders Is Nothing Then Return
-        btnParams.Enabled = Not _busy AndAlso WorkerProcess.IsAvailable() AndAlso
-                            lvFolders.Enabled AndAlso lvFolders.SelectedItems.Count > 0
+        Dim hasSelected As Boolean = Not _busy AndAlso WorkerProcess.IsAvailable() AndAlso
+                                     lvFolders.Enabled AndAlso lvFolders.SelectedItems.Count > 0
+        btnParams.Enabled = hasSelected
+        If btnOutsideAccess IsNot Nothing Then btnOutsideAccess.Enabled = hasSelected
         If lvFolders.SelectedItems.Count > 0 AndAlso TypeOf lvFolders.SelectedItems(0).Tag Is ShareFolder Then
             btnParams.Enabled = btnParams.Enabled AndAlso DirectCast(lvFolders.SelectedItems(0).Tag, ShareFolder).owner = "filedo"
             btnRemove.Enabled = False
+            If btnOutsideAccess IsNot Nothing Then btnOutsideAccess.Enabled = False
         Else
             btnRemove.Enabled = Not _busy AndAlso WorkerProcess.IsAvailable() AndAlso lvFolders.SelectedItems.Count > 0
         End If
+    End Sub
+
+    Private Sub OnOutsideAccessClicked(sender As Object, e As EventArgs)
+        If lvFolders.SelectedItems.Count = 0 Then Return
+        Dim it As ListViewItem = lvFolders.SelectedItems(0)
+        Dim host As String = Convert.ToString(it.Tag)
+        Dim shareName As String = it.Text
+        Dim publisher As ExchangePublisher = ExchangeDeviceHost.Current?.Publisher
+        Using dlg As New Folder_Outside_Access_Form(shareName, host, publisher)
+            dlg.ShowDialog(Me)
+        End Using
     End Sub
 
     Private Sub OnListSelectionChanged(sender As Object, e As EventArgs)
@@ -579,6 +594,10 @@ Partial Public NotInheritable Class MainWindow
         ' The window may have closed while the worker was busy (ticket 054 H-11).
         If IsDisposed Then Return
         ApplyStatusToUi()
+        Dim pub As ExchangePublisher = ExchangeDeviceHost.Current?.Publisher
+        If pub IsNot Nothing Then
+            Dim unused As Task = pub.ApplyNowAsync(System.Threading.CancellationToken.None)
+        End If
         SetBusy(False)
         If refused = "" Then _pinClearedHost = Nothing
         If refused <> "" Then SetHint(refused)

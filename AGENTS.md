@@ -10,6 +10,10 @@ to the canon. `CLAUDE.md` is the authoritative agent contract, carries the full 
 where both files exist the stricter wins. Adoption record: `contrib/fastmediasorter_lite.md` in the
 canon repo; stamp: `.sza-canon.json`.
 
+## Where the detail lives
+
+`CLAUDE.md` is the small core every session loads (always-on rules, a layout table). Area detail is in `.claude/rules/*.md`, one file per area; Claude Code loads a file when it first touches a matching path, **Codex does not auto-load them**, so read the row of the layout table in `CLAUDE.md` for the area you are about to change before editing. Inner loop: `tools/Invoke-Tests.ps1` (bounded digest, kept log), `tools/Get-Spec.ps1` (ledger answers). Cost baseline and the measurement scripts: `tools/agent-cost/README.md`.
+
 ## Product naming
 
 The product is **Fast Media Sorter & Sharing for Windows**. Every name, its spelling rules and the list of
@@ -48,7 +52,7 @@ Run from the repository root in PowerShell:
 
 Every check ends in one verdict line and exits 0 (pass), 1 (defect) or 2 (could not verify - never a pass); `-SkipGo` is reported as skipped. Which runner owns which check is `tools/check-placement.jsonl`.
 
-`build.ps1` packages installers and deploys to configured local destinations unless skipped; read its parameters before a release build. For focused work, use `dotnet test tests\Lite.Tests\Lite.Tests.vbproj` or the Companion equivalent.
+`build.ps1` packages installers and deploys to configured local destinations unless skipped; read its parameters before a release build. For focused work, use `.\tools\Invoke-Tests.ps1 -Suite lite -Filter <TestName>` (or `-Suite companion`, `-Build modern`): it prints a bounded digest and keeps the full log under `%TEMP%\fms-tests`.
 
 ## Coding Style & Naming Conventions
 

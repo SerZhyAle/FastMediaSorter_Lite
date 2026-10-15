@@ -98,6 +98,7 @@ Partial Public Class Main_Form
 #End If
         LocalizeToolbarOverflow()
         LocalizeBrowserTranslate()
+        If Is_Show_Recipients_Overlay Then ApplyRecipientsOverlay()
 
         ' Button captions just changed width - re-flow the single-row toolbar.
         LayoutToolbar()

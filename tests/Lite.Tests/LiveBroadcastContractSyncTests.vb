@@ -7,16 +7,14 @@ Imports Xunit
 
 ' Contract synchronization, round 2026-10-07 (specification 181): what LIVE-BROADCAST 0.15 to 0.18 asks of a
 ' CONSUMER, read against the consumer in src/LiveBroadcast. Nothing here changes behaviour: every test pins a
-' reading the consumer already has, so a later change (the receiver of specification 201 adds RELAY and
-' TUNNEL playback) cannot lose it quietly.
+' reading the consumer already has, including specification 201's RELAY and TUNNEL playback.
 '
 '   0.15 item G  - sourceId names a SOURCE; "<deviceSourceId>:<source>" is one opaque string, and a stored
 '                  broadcast is replaced only by the same string.
 '   0.16 item H  - channel count and sample rate are producer settings; an endpoint may carry "channels".
 '   0.18 item J  - TUNNEL.inner is never read for a destination; the documentation host 192.0.2.1 is never
-'                  dialled (this build plays no TUNNEL endpoint at all).
-'   0.17 item I  - the first picture of a VIDEO stream: this build refuses the video modes by name (2.5 and
-'                  section 3.1), so the video budget has nothing to bind here yet (see LiveBroadcastReaderTests).
+'                  dialled: the HTTP connection is carried by the exchange tunnel.
+'   0.17 item I  - HTTP video descriptors are playable; first-picture timing still needs live acceptance.
 
 Public Class LiveBroadcastContractSyncTests
 
@@ -130,14 +128,15 @@ Public Class LiveBroadcastContractSyncTests
         "'inner':'http://192.0.2.1:8768/live-audio.aac','certFingerprint':'SHA256:8f6TQvCbXjDMOyu4A9JzKcWlEHmR5pNsGgVaU2wYqhk'}]}"
 
     <Fact>
-    Public Sub Exchange_Endpoints_Are_Candidates_That_Are_Never_Played_And_Inner_Is_Never_A_Destination()
+    Public Sub Exchange_Endpoints_Keep_Producer_Order_And_Inner_Is_Never_The_Exchange_Destination()
         Dim res As LiveBroadcastReadResult = LiveBroadcastReader.ReadText(Json(ExchangeDescriptor))
 
         Assert.Equal(LiveReadStatus.Ok, res.Status)
         Assert.Equal(3, res.Descriptor.Endpoints.Count)
         Assert.Equal({"HTTP", "RELAY", "TUNNEL"}, res.Descriptor.Endpoints.ConvertAll(Function(e) e.Transport).ToArray())
 
-        ' The producer's order is LAN first; this build plays the LAN endpoint and skips RELAY and TUNNEL.
+        Assert.Equal(3, LiveEndpointSelector.Candidates(res.Descriptor).Count)
+        ' The producer's order is LAN first, followed by relay and tunnel.
         Dim chosen As LiveBroadcastEndpoint = LiveEndpointSelector.SelectEndpoint(res.Descriptor)
         Assert.Equal("http://192.168.1.50:8768/live-audio.aac", chosen.Url)
 
@@ -148,14 +147,14 @@ Public Class LiveBroadcastContractSyncTests
     End Sub
 
     <Fact>
-    Public Sub A_Descriptor_Whose_Only_Endpoint_Is_A_Tunnel_Is_Refused_As_Unsupported_And_Never_Dialled()
+    Public Sub A_Tunnel_With_A_Documentation_Inner_Host_Is_Playable_Through_The_Exchange()
         Dim res As LiveBroadcastReadResult = LiveBroadcastReader.ReadText(Json(
             "{'schemaVersion':1,'url':'fmsx://relay.example.net:44022/b/q3Vb7YtK0xP2mN9sLfR4wA/http','mode':'AUDIO_ONLY','endpoints':[" &
             "{'url':'fmsx://relay.example.net:44022/b/q3Vb7YtK0xP2mN9sLfR4wA/http','transport':'TUNNEL','mode':'AUDIO_ONLY'," &
             "'inner':'http://192.0.2.1:8768/live-audio.aac'}]}"))
 
-        Assert.Equal(LiveReadStatus.UnsupportedMode, res.Status)
-        Assert.Null(res.Descriptor)
+        Assert.Equal(LiveReadStatus.Ok, res.Status)
+        Assert.Equal("TUNNEL", LiveEndpointSelector.SelectEndpoint(res.Descriptor).Transport)
     End Sub
 
 End Class

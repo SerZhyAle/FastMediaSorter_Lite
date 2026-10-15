@@ -48,11 +48,19 @@ Friend Enum CompanionCommandKind
     ''' <summary>Spec 215: the viewer's wizard asks for the guided add-resource flow (214). An intent, never a path -
     ''' it carries nothing to share, so no consent queue and no staging are involved.</summary>
     AddResource = 5
+    ''' <summary>Ticket 222 (7.4): the viewer's one launcher entry - open the Scheduled file operations page, with a
+    ''' folder as the source of a new operation. A folder here is only ever the PRE-FILLED source of an editor the
+    ''' user must save; nothing is staged, shared or scheduled by receiving it.</summary>
+    Schedule = 6
+    ''' <summary>Spec 227: scan QR code with camera intent from viewer.</summary>
+    AddResourceCamera = 7
 End Enum
 
 ''' <summary>What a WM_COPYDATA payload asks of the Share Manager, parsed strictly.</summary>
 Friend NotInheritable Class CompanionCommand
     Public Const BroadcastCommandPrefix As String = "::fms-broadcast::"
+    ''' <summary>"::fms-schedule::" plus a folder (or nothing: just the page). Frozen once it ships.</summary>
+    Public Const ScheduleCommandPrefix As String = "::fms-schedule::"
 
     Friend ReadOnly Property Kind As CompanionCommandKind
     ''' <summary>The canonical folder or target path (fully qualified, no trailing separator) for ShareFolder / Broadcast.</summary>
@@ -87,6 +95,16 @@ Friend NotInheritable Class CompanionCommand
         End If
         If String.Equals(payload, Program.AddResourceCommand, StringComparison.Ordinal) Then
             Return New CompanionCommand(CompanionCommandKind.AddResource, "")
+        End If
+        If String.Equals(payload, Program.AddResourceCameraCommand, StringComparison.Ordinal) Then
+            Return New CompanionCommand(CompanionCommandKind.AddResourceCamera, "")
+        End If
+        If payload.StartsWith(ScheduleCommandPrefix, StringComparison.Ordinal) Then
+            Dim rawFolder As String = payload.Substring(ScheduleCommandPrefix.Length).Trim()
+            If rawFolder.Length = 0 Then Return New CompanionCommand(CompanionCommandKind.Schedule, "")
+            Dim canonicalSchedule As String = CanonicalFolder(rawFolder)
+            If canonicalSchedule.Length = 0 Then Return Invalid
+            Return New CompanionCommand(CompanionCommandKind.Schedule, canonicalSchedule)
         End If
         If payload.StartsWith(BroadcastCommandPrefix, StringComparison.Ordinal) Then
             Dim rawPath As String = payload.Substring(BroadcastCommandPrefix.Length).Trim()

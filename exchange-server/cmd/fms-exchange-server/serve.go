@@ -23,6 +23,9 @@ import (
 	"fms/exchange-server/internal/tlsid"
 )
 
+// Both hosts use this seam; tests verify their lifetime without changing the machine's power state.
+var holdHostAwake = deploy.KeepAwake
+
 // runServe runs the exchange server until ctx ends. With --service it hands the process to the
 // Windows service control manager instead and runs the same server under it.
 func runServe(ctx context.Context, cmd command, stdout, stderr io.Writer) int {
@@ -127,8 +130,9 @@ func serveCore(ctx context.Context, cmd command, console bool, stdout, stderr io
 	}
 	defer release()
 
+	policy := policyOf(cfg.Limits)
 	store, err := accounts.Open(accounts.Options{Dir: paths.Dir, DevicesPerAccount: cfg.Limits.DevicesPerAccount,
-		CodesPerAccount: cfg.Limits.CodesPerAccount})
+		CodesPerAccount: cfg.Limits.CodesPerAccount, Policy: &policy})
 	if err != nil {
 		printf(stderr, "cannot open the accounts: %v\n", err)
 		return exitConfig
@@ -163,9 +167,9 @@ func serveCore(ctx context.Context, cmd command, console bool, stdout, stderr io
 	}
 
 	_ = os.MkdirAll(paths.LogsDir, 0o700) // see serviceLog.Write: the helper normally made it already
-	logger, err := logx.Open(paths.Log, cfg.Log.MaxBytes)
+	logger, err := logx.OpenDaily(paths.LogsDir, cfg.Log.MaxBytes, cfg.Log.RetentionDays, nil)
 	if err != nil {
-		printf(stderr, "cannot open the log %s: %v\n", paths.Log, err)
+		printf(stderr, "cannot open the daily log in %s: %v\n", paths.LogsDir, err)
 		return exitConfig
 	}
 	defer logger.Close()
@@ -213,6 +217,7 @@ func serveCore(ctx context.Context, cmd command, console bool, stdout, stderr io
 	params.DevicesPerAccount, params.ResourcesPerAccount = l.DevicesPerAccount, l.ResourcesPerAccount
 	params.BroadcastsPerAccount, params.BroadcastsPerDevice, params.CodesPerAccount = l.BroadcastsPerAccount, l.BroadcastsPerDevice, l.CodesPerAccount
 	params.CastPerAccount = l.CastPendingPerAccount
+	params.MaxAccounts, params.ClipboardBytes = l.MaxAccounts, l.ClipboardBytes
 
 	// the relay of ticket 165: it shares the engine's per-address limiter and the directory
 	relayHandler := rendezvous.NewRelay(rendezvous.RelayConfig{Dir: dir, Log: logger, Limiter: limiter,
@@ -236,6 +241,35 @@ func serveCore(ctx context.Context, cmd command, console bool, stdout, stderr io
 		printf(stderr, "cannot listen on %s: %v\n", cfg.Listen, err)
 		logger.Error("listen-failed", logx.Text("listen", cfg.Listen))
 		return exitFailure
+	}
+	releaseAwake, awake, awakeErr := holdHostAwake(cfg.KeepAwake)
+	defer releaseAwake()
+	engine.Ops().KeepAwakeActive = awake
+	engine.Ops().ReadHostSettings = func() (bool, int) {
+		configMu.Lock()
+		defer configMu.Unlock()
+		current, err := config.Load(paths.Config)
+		if err != nil {
+			return cfg.KeepAwake, cfg.Log.RetentionDays
+		}
+		return current.KeepAwake, current.Log.RetentionDays
+	}
+	engine.Ops().SaveHostSettings = func(on bool, days int) error {
+		configMu.Lock()
+		defer configMu.Unlock()
+		current, err := config.Load(paths.Config)
+		if err != nil {
+			return err
+		}
+		current.KeepAwake, current.Log.RetentionDays = on, days
+		if err := current.Validate(); err != nil {
+			return err
+		}
+		return config.Save(paths.Config, current)
+	}
+	engine.Ops().SaveLimits = saveLimitsTo(paths.Config)
+	if awakeErr != nil {
+		logger.Warn("keep-awake-failed", logx.Text("error", awakeErr.Error()))
 	}
 
 	// the local admin channel: how the Share Manager and the account commands reach a running server

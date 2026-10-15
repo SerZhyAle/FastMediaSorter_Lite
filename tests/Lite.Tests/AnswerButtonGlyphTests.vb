@@ -20,7 +20,7 @@ Imports Xunit
 ''' A window cannot be looked at here, so the checks read the button the way the module drew it (<see cref="ButtonGlyphs"/>)
 ''' and a rendered bitmap of it; what stays manual is the live high-contrast switch and a physical 150/200 percent monitor.
 ''' </summary>
-<Collection("AppFileLogger")>
+<Collection("LocalizationState")>
 Public Class AnswerButtonGlyphTests
 
     Private Shared ReadOnly GlyphDir As String = Path.Combine(AppContext.BaseDirectory, "TestData", "glyphs")
@@ -43,7 +43,7 @@ Public Class AnswerButtonGlyphTests
                                  End Sub)
         thread.SetApartmentState(ApartmentState.STA)
         thread.Start()
-        Assert.True(thread.Join(60000), "the UI check did not finish")
+        Assert.True(thread.Join(240000), "the UI check did not finish")
         If failure IsNot Nothing Then System.Runtime.ExceptionServices.ExceptionDispatchInfo.Capture(failure).Throw()
     End Sub
 

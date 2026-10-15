@@ -1,17 +1,18 @@
 {
   "contract": "DEVICE-EXCHANGE",
-  "contractVersion": "0.19",
+  "contractVersion": "0.28",
   "proposal": "PROPOSAL-2026-10-10-exchange-connection-string.md (read with the grammar and canonical-bytes points of the proposals filed by StreamsPlayer and FastMediaSorter Android the same day)",
   "sections": "5.5 (proposed)",
   "producer": "Media Exchange Server (Go) of Fast Media Sorter & Sharing for Windows, cmd/exchange-vectors",
   "notes": [
     "The cases were run against the codec of the exchange-server module (internal/connstr) and each one was checked against the verdict this file states before it was written: a disagreement stops the generator.",
     "verdict `valid`: the input is the canonical text; a writer given `fields` produces exactly `input`. `tolerated`: a reader accepts it and a writer given `fields` produces `canonical`, which differs from the input. `refused`: a reader refuses the WHOLE string with `reason`; nothing is partially read.",
-    "Canonical writing: prefix `FMSEXCH1:`, then `x`, `fp`, `n`, `u` in that order, `&`-separated; each value is escaped with the WHATWG application/x-www-form-urlencoded byte serializer over UTF-8 (A-Z a-z 0-9 * - . _ raw, a space as +, every other byte %XX with upper-case hex). Go's url.QueryEscape is NOT this serializer (it differs on * and ~): the generator uses its own.",
+    "Canonical writing: prefix `FMSEXCH1:`, then `x`, `fp`, `n`, `u`, `i` in that order, `&`-separated; each value is escaped with the WHATWG application/x-www-form-urlencoded byte serializer over UTF-8 (A-Z a-z 0-9 * - . _ raw, a space as +, every other byte %XX with upper-case hex). Go's url.QueryEscape is NOT this serializer (it differs on * and ~): the generator uses its own.",
     "The reader drops one leading U+FEFF and the white space around the text, then needs the exact prefix `FMSEXCH1:` (case-sensitive). 512 is counted on that trimmed text; 64 on the decoded name in Unicode scalar values; control characters are category Cc.",
     "`x` is a DNS name (labels of letters, digits and hyphen, 1-63 characters, no trailing dot; written lower case), an IPv4 dotted quad or an IPv6 literal in brackets without a zone (written in RFC 5952 form), then `:` and a port of 1 to 5 digits, 1-65535 (a leading zero is tolerated and dropped on writing). A name of digits and dots is read as IPv4 or refused.",
     "`fp` is `SHA256:` and exactly 43 characters of the standard base64 alphabet without padding, the last one carrying no stray bits. The URL-safe alphabet, a padded value, a lower-case prefix and a raw + (which form decoding reads as a space) are refused.",
     "`u` is the login form of 5.1 (3-64 of a-z 0-9 . _ -); an upper-case input is tolerated and written lower case. An unknown key is ignored whatever its value; a known key that repeats or breaks its rule, a field with no = or no key, and an empty field refuse the string.",
+    "`i` (an invitation string, 19 item AR) is a one-time invitation code: exactly 22 characters of the URL-safe base64 alphabet that decode to 16 bytes with no stray bits. It is a secret to the person who holds the string - the one that the string exists to carry - and reads like every other known key; the standard alphabet, a padded value, a short or a long one, and one that carries stray bits are refused with `bad-i`.",
     "A file is UTF-8, at most 4096 bytes, one non-empty line; one leading byte-order mark and the line breaks around the line are tolerated. A writer writes no byte-order mark and no trailing line break.",
     "The reasons are the vocabulary of this file (not-a-string, newer-major, too-long, whitespace, not-ascii, bad-escape, bad-utf8, malformed-field, repeated-key, missing-x, bad-x, bad-fp, bad-n, bad-u, file-too-long, file-lines); `looks` names what a not-a-string text resembles (share-code, url).",
     "The fingerprints are fixed test values (SHA-256 of fixed words); the second one contains both + and / in its base64."
@@ -187,6 +188,66 @@
         "fp": "SHA256:Ul2rC03A44auS8B7ibLjJaAApHooIx/4R+SSgDTXUtY",
         "n": "Studio",
         "u": "carol_2"
+      }
+    },
+    {
+      "name": "with-invitation",
+      "kind": "text",
+      "note": "an invitation string: the address and the one-time code (22 characters of base64url)",
+      "input": "FMSEXCH1:x=exchange.example.org%3A22022&i=a3gPp-pvQPdQN7qwDDVbyQ",
+      "verdict": "valid",
+      "canonical": "FMSEXCH1:x=exchange.example.org%3A22022&i=a3gPp-pvQPdQN7qwDDVbyQ",
+      "fields": {
+        "x": "exchange.example.org:22022",
+        "host": "exchange.example.org",
+        "port": 22022,
+        "i": "a3gPp-pvQPdQN7qwDDVbyQ"
+      }
+    },
+    {
+      "name": "invitation-url-safe-alphabet",
+      "kind": "text",
+      "note": "an invitation code holding - and _, written raw: both belong to the form-urlencoded unreserved set",
+      "input": "FMSEXCH1:x=exchange.example.org%3A22022&i=-_-__v_v-_-__v_v-_-__g",
+      "verdict": "valid",
+      "canonical": "FMSEXCH1:x=exchange.example.org%3A22022&i=-_-__v_v-_-__v_v-_-__g",
+      "fields": {
+        "x": "exchange.example.org:22022",
+        "host": "exchange.example.org",
+        "port": 22022,
+        "i": "-_-__v_v-_-__v_v-_-__g"
+      }
+    },
+    {
+      "name": "invitation-all-members",
+      "kind": "text",
+      "note": "x, fp, n, u and i in the one order; the login is the one the operator expects the person to take",
+      "input": "FMSEXCH1:x=exchange.example.org%3A22022&fp=SHA256%3AUl2rC03A44auS8B7ibLjJaAApHooIx%2F4R%2BSSgDTXUtY&n=Office&u=carol&i=a3gPp-pvQPdQN7qwDDVbyQ",
+      "verdict": "valid",
+      "canonical": "FMSEXCH1:x=exchange.example.org%3A22022&fp=SHA256%3AUl2rC03A44auS8B7ibLjJaAApHooIx%2F4R%2BSSgDTXUtY&n=Office&u=carol&i=a3gPp-pvQPdQN7qwDDVbyQ",
+      "fields": {
+        "x": "exchange.example.org:22022",
+        "host": "exchange.example.org",
+        "port": 22022,
+        "fp": "SHA256:Ul2rC03A44auS8B7ibLjJaAApHooIx/4R+SSgDTXUtY",
+        "n": "Office",
+        "u": "carol",
+        "i": "a3gPp-pvQPdQN7qwDDVbyQ"
+      }
+    },
+    {
+      "name": "invitation-ipv6",
+      "kind": "text",
+      "note": "an IPv6 endpoint with an invitation",
+      "input": "FMSEXCH1:x=%5B2001%3Adb8%3A%3A7%5D%3A22022&fp=SHA256%3A%2B%2B%2B%2B%2F%2F%2F%2FNA%2BxR01JbXXB5CJm2pgMG7SRVTB8msjcGFw&i=-_-__v_v-_-__v_v-_-__g",
+      "verdict": "valid",
+      "canonical": "FMSEXCH1:x=%5B2001%3Adb8%3A%3A7%5D%3A22022&fp=SHA256%3A%2B%2B%2B%2B%2F%2F%2F%2FNA%2BxR01JbXXB5CJm2pgMG7SRVTB8msjcGFw&i=-_-__v_v-_-__v_v-_-__g",
+      "fields": {
+        "x": "[2001:db8::7]:22022",
+        "host": "2001:db8::7",
+        "port": 22022,
+        "fp": "SHA256:++++////NA+xR01JbXXB5CJm2pgMG7SRVTB8msjcGFw",
+        "i": "-_-__v_v-_-__v_v-_-__g"
       }
     },
     {
@@ -420,6 +481,34 @@
         "host": "exchange.example.org",
         "port": 22022,
         "n": "Home~NAS"
+      }
+    },
+    {
+      "name": "invitation-first",
+      "kind": "text",
+      "note": "the invitation before x: read, written last",
+      "input": "FMSEXCH1:i=a3gPp-pvQPdQN7qwDDVbyQ&x=exchange.example.org%3A22022",
+      "verdict": "tolerated",
+      "canonical": "FMSEXCH1:x=exchange.example.org%3A22022&i=a3gPp-pvQPdQN7qwDDVbyQ",
+      "fields": {
+        "x": "exchange.example.org:22022",
+        "host": "exchange.example.org",
+        "port": 22022,
+        "i": "a3gPp-pvQPdQN7qwDDVbyQ"
+      }
+    },
+    {
+      "name": "invitation-escaped",
+      "kind": "text",
+      "note": "%2D and %5F for - and _ are read; a writer writes them raw",
+      "input": "FMSEXCH1:x=exchange.example.org%3A22022&i=%2D%5F%2D%5F%5Fv%5Fv%2D%5F%2D%5F%5Fv%5Fv%2D%5F%2D%5F%5Fg",
+      "verdict": "tolerated",
+      "canonical": "FMSEXCH1:x=exchange.example.org%3A22022&i=-_-__v_v-_-__v_v-_-__g",
+      "fields": {
+        "x": "exchange.example.org:22022",
+        "host": "exchange.example.org",
+        "port": 22022,
+        "i": "-_-__v_v-_-__v_v-_-__g"
       }
     },
     {
@@ -940,6 +1029,62 @@
       "input": "FMSEXCH1:x=exchange.example.org%3A22022&u=",
       "verdict": "refused",
       "reason": "bad-u"
+    },
+    {
+      "name": "i-empty",
+      "kind": "text",
+      "note": "i with no value",
+      "input": "FMSEXCH1:x=exchange.example.org%3A22022&i=",
+      "verdict": "refused",
+      "reason": "bad-i"
+    },
+    {
+      "name": "i-21",
+      "kind": "text",
+      "note": "one character short",
+      "input": "FMSEXCH1:x=exchange.example.org%3A22022&i=a3gPp-pvQPdQN7qwDDVby",
+      "verdict": "refused",
+      "reason": "bad-i"
+    },
+    {
+      "name": "i-23",
+      "kind": "text",
+      "note": "one character long",
+      "input": "FMSEXCH1:x=exchange.example.org%3A22022&i=a3gPp-pvQPdQN7qwDDVbyQA",
+      "verdict": "refused",
+      "reason": "bad-i"
+    },
+    {
+      "name": "i-standard-alphabet",
+      "kind": "text",
+      "note": "the standard alphabet (+ and /) is not the one of the code",
+      "input": "FMSEXCH1:x=exchange.example.org%3A22022&i=%2B%2F%2B%2F%2Fv%2Fv%2B%2F%2B%2F%2Fv%2Fv%2B%2F%2B%2F%2Fg",
+      "verdict": "refused",
+      "reason": "bad-i"
+    },
+    {
+      "name": "i-padded",
+      "kind": "text",
+      "note": "a padded value of 24 characters",
+      "input": "FMSEXCH1:x=exchange.example.org%3A22022&i=a3gPp-pvQPdQN7qwDDVbyQ%3D%3D",
+      "verdict": "refused",
+      "reason": "bad-i"
+    },
+    {
+      "name": "i-stray-bits",
+      "kind": "text",
+      "note": "the last character carries bits no 16-byte value has",
+      "input": "FMSEXCH1:x=exchange.example.org%3A22022&i=a3gPp-pvQPdQN7qwDDVbyR",
+      "verdict": "refused",
+      "reason": "bad-i"
+    },
+    {
+      "name": "i-repeated",
+      "kind": "text",
+      "note": "a known key twice",
+      "input": "FMSEXCH1:x=exchange.example.org%3A22022&i=a3gPp-pvQPdQN7qwDDVbyQ&i=-_-__v_v-_-__v_v-_-__g",
+      "verdict": "refused",
+      "reason": "repeated-key"
     },
     {
       "name": "file-canonical",

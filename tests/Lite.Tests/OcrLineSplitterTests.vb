@@ -243,6 +243,133 @@ Public Class OcrLineSplitterTests
         Assert.Single(OcrLineSplitter.SplitLine(line))
     End Sub
 
+    ' --- the tall-word cut (OCR-PIPELINE 1.7 A) --------------------------------
+    ' The reference's own split cases are replayed in OcrPipelineVectorTests; what follows are the
+    ' edges the amendment's text leaves to a reader, each one decided the way its words read.
+
+    ''' <summary>A row of equal-looking words, 20 px tall, packed with 8 px gaps - so the gap rule
+    ''' (3.5 x 20 = 70 px) has nothing to say and any cut in these tests is the height rule's.</summary>
+    Private Shared Function Row(ParamArray heights As Integer()) As OcrLine
+        Dim words As New List(Of OcrWord)
+        Dim x As Integer = 10
+        For i As Integer = 0 To heights.Length - 1
+            words.Add(W("w" & i.ToString(), x, 100, 40, heights(i), 0.9F))
+            x += 48
+        Next
+        Dim box As Rectangle = words(0).Box
+        For Each word As OcrWord In words
+            box = Rectangle.Union(box, word.Box)
+        Next
+        Return New OcrLine With {
+            .Words = words, .Box = box, .Confidence = 0.9F,
+            .Text = String.Join(" ", words.Select(Function(w) w.Text))
+        }
+    End Function
+
+    <Fact>
+    Public Sub TallWord_CutsBeforeItself_AndLeadsTheNextRun()
+        ' "GEE, TH-THANKS, J OON'T DEPEND": the touching outlines of two balloons read as a 36 px
+        ' token on a 15 px line (2.4x). No gap holds the boundary - the stroke is INSIDE the token's
+        ' box - so the cut is before the token, and the token starts the run after it.
+        Dim line As OcrLine = MakeLine("GEE, TH-THANKS, J OON'T DEPEND", Rectangle.FromLTRB(49, 602, 430, 637), 0.7F,
+            W("GEE,", 49, 610, 63, 16, 0.95F),
+            W("TH-THANKS,", 106, 610, 124, 15, 0.79F),
+            W("J", 249, 602, 27, 35, 0.02F),
+            W("OON'T", 283, 610, 61, 15, 0.83F),
+            W("DEPEND", 351, 610, 79, 15, 0.88F))
+        Assert.True(WidestRatio(line) < OcrLineSplitter.MaxWordGapRatio, "the gap rule must have nothing to say here")
+
+        Dim runs As List(Of OcrLine) = OcrLineSplitter.SplitLine(line)
+
+        Assert.Equal(2, runs.Count)
+        Assert.Equal("GEE, TH-THANKS,", runs(0).Text)
+        Assert.Equal("J OON'T DEPEND", runs(1).Text)
+        ' Each run is boxed to its own words: the tall token is in the second, not shared.
+        Assert.Equal(Rectangle.FromLTRB(49, 610, 230, 626), runs(0).Box)
+        Assert.Equal(Rectangle.FromLTRB(249, 602, 430, 637), runs(1).Box)
+    End Sub
+
+    <Fact>
+    Public Sub TallWord_IsCutOnlyWhenStrictlyTallerThanTheRatioTimesTheMedian()
+        ' Median 20, limit 1.6 x 20 = 32. A word of exactly 32 stays; 33 goes.
+        Assert.Equal(20, OcrLineSplitter.MedianWordHeight(Row(20, 20, 32, 20, 20)))
+        Assert.Single(OcrLineSplitter.SplitLine(Row(20, 20, 32, 20, 20)))
+        Assert.Equal(2, OcrLineSplitter.SplitLine(Row(20, 20, 33, 20, 20)).Count)
+    End Sub
+
+    <Fact>
+    Public Sub HeightRatio_IsTheTypeSizeRatio_ByReference_NotACopy()
+        ' 1.7's text prints "(2.5)" after "type-size ratio" - the section that defines it. The value
+        ' is 1.6: a token at 2.3x and one at 2.1x the median are cut in the reference's own page,
+        ' which a 2.5 would leave stitched. One number, taken by reference.
+        Assert.Equal(1.6, OcrLineSplitter.MaxWordHeightRatio, 6)
+        Assert.Equal(OcrBlockBuilder.TypeSizeRatio, OcrLineSplitter.MaxWordHeightRatio)
+        Assert.True(2.1 > OcrLineSplitter.MaxWordHeightRatio AndAlso 2.1 < 2.5)
+    End Sub
+
+    <Fact>
+    Public Sub FirstWordOfALine_IsNeverACut_EvenWhenItIsTall()
+        ' Nothing stands before it: the cut is BEFORE a word, and a line that opens on a tall token
+        ' already starts where the token starts. Returned by identity, like any uncut line.
+        Dim line As OcrLine = Row(60, 20, 20, 20, 20)
+        Dim runs As List(Of OcrLine) = OcrLineSplitter.SplitLine(line)
+        Assert.Single(runs)
+        Assert.Same(line, runs(0))
+    End Sub
+
+    <Fact>
+    Public Sub TwoWordLine_IsNeverCutByTheHeightRule()
+        ' An even count takes the upper middle as the median (the median the gap rule uses), so in
+        ' a pair the taller word IS the median and is not taller than 1.6 times itself.
+        Assert.Equal(40, OcrLineSplitter.MedianWordHeight(Row(15, 40)))
+        Assert.Single(OcrLineSplitter.SplitLine(Row(15, 40)))
+        Assert.Single(OcrLineSplitter.SplitLine(Row(40, 15)))
+    End Sub
+
+    <Fact>
+    Public Sub LineOfOneSize_IsNeverCut_AndAOneWordLineHasNothingToCut()
+        ' The guard case of the reference's own fixture: a real line whose words vary by a pixel or
+        ' two (14-17 px here) is one size.
+        Assert.Single(OcrLineSplitter.SplitLine(Row(15, 17, 16, 15, 14, 16)))
+        Assert.Single(OcrLineSplitter.SplitLine(Row(90)))
+    End Sub
+
+    <Fact>
+    Public Sub MostlyTallWords_AreTheLinesOwnSize()
+        ' The median is over ALL the words, the tall ones included. A line set mostly in large type
+        ' has a large median, and its one small word is not an "outlier" by this rule - which only
+        ' ever looks for a word TALLER than the line.
+        Dim line As OcrLine = Row(20, 100, 100, 100, 100)
+        Assert.Equal(100, OcrLineSplitter.MedianWordHeight(line))
+        Assert.Single(OcrLineSplitter.SplitLine(line))
+    End Sub
+
+    <Fact>
+    Public Sub ConsecutiveTallWords_EachStartTheirOwnRun_TheLiteralReading()
+        ' "cuts before such a word" read literally: every word over the limit has a cut before it,
+        ' so two tall tokens in a row make a run of one between the neighbours. The amendment says
+        ' nothing about a pair; the reading closest to the text is kept and recorded here.
+        Dim runs As List(Of OcrLine) = OcrLineSplitter.SplitLine(Row(20, 20, 20, 60, 60, 20, 20, 20))
+        Assert.Equal(3, runs.Count)
+        Assert.Equal({"w0 w1 w2", "w3", "w4 w5 w6 w7"}, runs.Select(Function(r) r.Text).ToArray())
+    End Sub
+
+    <Fact>
+    Public Sub TallToken_OnAPage_ReportsRegrouped_SoTheClusteringIsToldToKeepTheOrder()
+        ' A cut by the height rule is a cut like any other to the stage that follows: the runs are
+        ' regrouped into columns and the clustering must not re-sort them.
+        Dim regrouped As Boolean = False
+        Dim lines As List(Of OcrLine) = OcrLineSplitter.SplitStitchedLines(
+            New List(Of OcrLine) From {Row(20, 20, 60, 20, 20)}, regrouped)
+        Assert.True(regrouped)
+        Assert.Equal(2, lines.Count)
+
+        ' ..and a page of ordinary lines is still returned by identity.
+        Dim plain As New List(Of OcrLine) From {Row(20, 20, 21, 20, 20)}
+        Assert.Same(plain, OcrLineSplitter.SplitStitchedLines(plain, regrouped))
+        Assert.False(regrouped)
+    End Sub
+
     ' --- the reading order -----------------------------------------------------
 
     <Fact>

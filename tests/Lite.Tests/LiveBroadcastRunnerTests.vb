@@ -65,6 +65,32 @@ Public Class LiveBroadcastRunnerTests
         Return New LivePlaybackOptions With {.ConnectTimeoutMs = 500, .StallTimeoutMs = 400, .WatchdogPeriodMs = 50}
     End Function
 
+    <Fact>
+    Public Async Function Failed_Lan_Falls_Through_And_Every_Reconnect_Starts_With_Lan() As Task
+        Dim events As New ConcurrentQueue(Of String)()
+        Using lan As LiveMockDevice = ResettingDevice(),
+              relay As New LiveMockDevice(Function(c, t) LiveMockDevice.PhoneChunked(c, 3, 0, t))
+            Dim first As LiveBroadcastEndpoint = EndpointOf(lan.Url())
+            Dim second As LiveBroadcastEndpoint = EndpointOf(relay.Url())
+            Dim tried As New List(Of String)()
+            Dim host As New RecordingHost(events)
+            Dim runner As New LiveBroadcastRunner(first, New LiveReconnectPolicy(), host, Quick(),
+                sessionFactory:=Function(ep, options)
+                                    tried.Add(ep.Url)
+                                    Return New LiveHttpPlaybackSession(ep, options)
+                                End Function,
+                delayAsync:=AddressOf NoDelay, endpoints:=New LiveBroadcastEndpoint() {first, second})
+            Using cts As New CancellationTokenSource(TimeSpan.FromSeconds(5))
+                Dim running As Task(Of LiveRunEnd) = runner.RunAsync(cts.Token)
+                Await WaitUntil(Function() host.StartCount >= 2)
+                cts.Cancel()
+                Await running.WaitAsync(TimeSpan.FromSeconds(5))
+            End Using
+            Assert.True(tried.Count >= 4)
+            Assert.Equal(New String() {first.Url, second.Url, first.Url, second.Url}, tried.Take(4).ToArray())
+        End Using
+    End Function
+
     Private Shared Function EndpointOf(url As String) As LiveBroadcastEndpoint
         Return New LiveBroadcastEndpoint With {.Url = url, .Mode = "AUDIO_ONLY", .ModeValue = LiveBroadcastMode.AudioOnly, .Transport = "HTTP"}
     End Function

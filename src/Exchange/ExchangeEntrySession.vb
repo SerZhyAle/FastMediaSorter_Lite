@@ -112,7 +112,7 @@ Friend NotInheritable Class ExchangeEntrySession
         End If
         Dim options As New ExchangeControlOptions With {
             .Server = address, .Pin = _entry.Pin, .Credentials = New ExchangeDeviceCredentials(_entry.DeviceId, token),
-            .ProductVersion = _ports.ProductVersion, .Transport = _ports.Transport, .Log = _ports.Log}
+            .ProductVersion = _ports.ProductVersion, .Transport = _ports.Entries.TransportFor(_entry, _ports.Transport), .Log = _ports.Log}
         If _configure IsNot Nothing Then _configure.Invoke(options)
         Dim session As New ExchangeControlSession(options, Nothing)
         AddHandler session.StateChanged, AddressOf OnChanged
@@ -279,6 +279,23 @@ Friend NotInheritable Class ExchangeEntrySession
         Return notRunning
     End Function
 
+    ''' <summary>226 rule 4: change the account's password over this entry's own control stream. On success the fresh key of the answer
+    ''' replaces the stored one (224 rule 9: THIS device stays signed in), and the account's other devices are signed out - the
+    ''' surface's sentence says so. The caller rebuilds the session afterwards, so a later reconnect speaks with the fresh key.
+    ''' Nothing is deleted on a refusal, and the agent never retries it on its own (218: one outcome per failure class).</summary>
+    Friend Async Function ChangePasswordAsync(oldPassword As String, newPassword As String, ct As CancellationToken) As Task(Of ExchangePasswordChangeResult)
+        Dim session As ExchangeControlSession = Current()
+        If session Is Nothing Then Return New ExchangePasswordChangeResult(ExchangePasswordChangeOutcome.NoStream, ExchangeRefusal.Unknown, "")
+        Dim result As ExchangePasswordChangeResult = Await session.ChangePasswordAsync(oldPassword, newPassword, ct).ConfigureAwait(False)
+        If result.Outcome = ExchangePasswordChangeOutcome.Changed Then
+            If Not _ports.Entries.TokenStoreFor(_entry.Id).Save(_entry.DeviceId, result.FreshToken) Then
+                _ports.Log.Invoke("Exchange: the account's key changed, but the new one could not be stored on this computer")
+                Return New ExchangePasswordChangeResult(ExchangePasswordChangeOutcome.NoStream, ExchangeRefusal.Unknown, "")
+            End If
+            _ports.Log.Invoke("Exchange: this account's key was changed - the other devices sign in again")
+        End If
+        Return result
+    End Function
     Public Sub Dispose() Implements IDisposable.Dispose
         SyncLock _gate
             _disposed = True

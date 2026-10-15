@@ -50,7 +50,8 @@ What 1.1-1.3 added, and where this product stands:
   the measurements they sit between). Refusing more than the amendment asks is conformant. The registry row
   now names the second route (2026-10-07); whether the catalog should name engine confidence as an evidence
   kind of rule 10 is a question for the contract's owner, to be raised as a proposal
-  (`OcrPipelineVersion` is 10 for the same change).
+  (`OcrPipelineVersion` was 10 for the same change, and is 11 since 2026-10-13, when `OCR-PIPELINE` 1.7 A and
+  1.8 reached the pipeline - see its pointer).
 
 Dated exceptions still carried, each a written decision rather than an omission:
 

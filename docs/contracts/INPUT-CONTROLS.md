@@ -11,7 +11,12 @@
 
 - **The stored token is rule 1's, or inert (rules 1 to 3).** Held: modifiers and the trigger joined by `+`,
   case-insensitive reading, whitespace around `+` tolerated, a repeated modifier tolerated, two triggers or an
-  unknown trigger make the chord unusable and never another chord. **Not held, a dated registry exception
+  unknown trigger make the chord unusable and never another chord. The catalog's token vectors are vendored
+  (`tests/Lite.Tests/TestData/input-chord-vectors/`, digest asserted first) and run through
+  `CustomHotkeys.Canonical` by `InputChordConformanceTests` (since 2026-10-13): 17 of the 34 keyboard rows
+  conform, the other 17 are a **recorded table of what the model answers today** - the test fails the day an
+  answer moves either way, so the table and the registry exception shrink together; the 18 mouse rows bind
+  nothing here and are not run. **Not held, a dated registry exception
   (17 of the 34 keyboard rows of the catalog's token vectors fail when run through `CustomHotkeys`):** the
   modifier order is `Ctrl, Alt, Shift` (rule 1 says `Ctrl, Shift, Alt, Win`); the `Win` modifier and the
   aliases `Meta`, `Super`, `Esc`, `Return`, `Del`, `Ins`, `PgUp`, `PgDn`, `PrtSc`, `PrtScn` are not read; an

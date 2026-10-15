@@ -56,7 +56,14 @@ Public Module OcrPipeline
     '''     line confidence instead of taking the first "strong" reading, so an English page is no
     '''     longer read by the Russian model into Cyrillic debris. The recognized text of an
     '''     existing document changes, and a cached wrong-language document must not be served again.
-    Public Const OcrPipelineVersion As Integer = 10
+    ''' 11 - 2026-10-13, ticket 183, `OCR-PIPELINE` 1.7 A and 1.8 A/B, one bump for two changes to
+    '''     content: the line split also cuts before a word taller than 1.6 median word heights (a
+    '''     balloon outline read as a token), so which lines exist and what a plate holds change; and
+    '''     a line's and a plate's text carries no space where words meet on Han, kana or CJK
+    '''     punctuation (Hangul only under a gap bound), so every CJK plate's source text - which is
+    '''     what the translator is sent and what is cached - changes. Nothing that is DECIDED reads
+    '''     the joined text (<see cref="OcrLine.SpacedText"/>); only what is drawn and translated.
+    Public Const OcrPipelineVersion As Integer = 11
 End Module
 
 Public Class OcrWord
@@ -87,6 +94,24 @@ Public Class OcrLine
     ''' run's OWN words, never the stitched line's.
     ''' </summary>
     Public Property Confidence As Single
+
+    ''' <summary>
+    ''' The line as the recognizer's own words with ONE SPACE between every two - the reading every
+    ''' threshold of this pipeline was measured on. <see cref="Text"/> is for people and for the
+    ''' translator, and since `OCR-PIPELINE` amendment 1.8 it carries no space where words meet on
+    ''' CJK text (<see cref="OcrTextJoin"/>); a decision that read that text would move with a
+    ''' cosmetic change - a joined Japanese line is one unbroken letter run where the spaced one was
+    ''' many short ones, which is exactly how the reference's rescue admission changed its verdicts
+    ''' before it learned to read the words (1.8 F). So the line filter and the attempt scorer read
+    ''' this instead, and the join alters what is DRAWN and TRANSLATED and nothing that is DECIDED.
+    ''' A line with no words has nothing to rebuild from and is its own text.
+    ''' </summary>
+    Public ReadOnly Property SpacedText As String
+        Get
+            If Words Is Nothing OrElse Words.Count = 0 Then Return Text
+            Return String.Join(" ", Words.Select(Function(w) If(w Is Nothing, "", w.Text))).Trim()
+        End Get
+    End Property
 End Class
 
 ''' <summary>

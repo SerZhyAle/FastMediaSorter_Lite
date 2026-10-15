@@ -97,9 +97,21 @@ func (e *Engine) Connect(st *Stream, sess *Session, m *wire.Connect) {
 			return
 		}
 		target, found = e.cfg.Dir.ResolveResource(sess.Account, id) // the account is fixed before the lookup
+		if !found && e.cfg.Accounts.IsGuest(sess.Account) {
+			if g, ok := e.cfg.Accounts.GrantFor(id, sess.Account); ok {
+				target, found = e.cfg.Dir.ResolveResource(g.GrantedBy, id)
+			}
+		}
 	case m.ShareID != "":
 		target, found = e.cfg.Dir.ResolveShare(id)
 	default:
+		if sess != nil && e.cfg.Accounts.IsGuest(sess.Account) {
+			if !e.cfg.Accounts.HasGrant(id, sess.Account) {
+				e.cfg.Log.Info("connect-unavailable", logx.Addr(addr))
+				e.unavailable(st, t0)
+				return
+			}
+		}
 		target, found = e.cfg.Dir.ResolveBroadcast(id)
 	}
 	if !found {
@@ -194,6 +206,11 @@ func (e *Engine) Attach(st *Stream, sess *Session, m *wire.Attach) {
 // Upload and Listen are the relay's (ticket 165, relay_handler.go); without a handler an upload
 // closes the stream and a listen is a 404.
 func (e *Engine) Upload(st *Stream, sess *Session, m *wire.Upload) {
+	if sess != nil && e.cfg.Accounts.IsGuest(sess.Account) { // a guest broadcasts nothing (19 item AO)
+		e.cfg.Log.Info("upload-refused", logx.Device(sess.DeviceID), logx.Text("why", "guest"))
+		st.Refuse(wire.ReasonNotPermitted)
+		return
+	}
 	if e.cfg.Relay == nil {
 		st.Close()
 		return

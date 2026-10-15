@@ -260,12 +260,25 @@ Partial Public Class Main_Form
     ''' pipe or claims a port; a lookup that cannot tell is amber, never green.
     ''' </summary>
     Friend Function WelcomeServerBlock() As IReadOnlyList(Of WelcomeServerRow)
+        Dim injected As Boolean?() = WelcomeServerFactsOverride
+        If injected IsNot Nothing AndAlso injected.Length = 4 Then
+            Return WelcomeRules.ServerBlock(injected(0).GetValueOrDefault(), injected(1),
+                                            injected(2).GetValueOrDefault(), injected(3))
+        End If
         Dim shareInstalled As Boolean = ShareComponentInstalled()
         Dim exchangeInstalled As Boolean = ExchangeFeatures.ComponentInstalled()
         Dim shareUp As Boolean? = If(shareInstalled, ProcessIsUp(WelcomeRules.ShareWorkerProcessName), Nothing)
         Dim exchangeUp As Boolean? = If(exchangeInstalled, ProcessIsUp(WelcomeRules.ExchangeServerProcessName), Nothing)
         Return WelcomeRules.ServerBlock(shareInstalled, shareUp, exchangeInstalled, exchangeUp)
     End Function
+
+    ''' <summary>
+    ''' The window scenes' seam (spec 215 section 7): four facts in the order of <see cref="WelcomeRules.ServerBlock"/> -
+    ''' share installed, share process up, exchange installed, exchange process up - used INSTEAD of reading the machine
+    ''' when it is set. A null "up" is the lookup that could not tell. Never set by the program itself; Nothing (the
+    ''' default) reads the real facts, so a shipped viewer cannot be made to claim a server is running.
+    ''' </summary>
+    Friend WelcomeServerFactsOverride As Boolean?()
 
     ''' <summary>Whether a process of that name exists; Nothing when the lookup failed. Every returned handle is released.</summary>
     Private Shared Function ProcessIsUp(processName As String) As Boolean?

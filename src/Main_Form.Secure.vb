@@ -38,6 +38,94 @@ Partial Public Class Main_Form
         secure_Verify_Cancellation = Nothing
     End Sub
 
+    ' ------------------------------------------------- the open attempt in flight (124 UX-213) ----
+
+    ''' <summary>Attempts started so far; the next one takes the next number.</summary>
+    Private secure_Open_Seq As Integer
+
+    ''' <summary>The one attempt that may still put something on screen, 0 when none. Starting another attempt,
+    ''' forgetting the credential and closing all move it, and an attempt whose number is no longer this one
+    ''' finishes silently: it releases what it opened and draws nothing.</summary>
+    Private secure_Open_Active As Integer
+
+    ''' <summary>The container the active attempt is opening. While it is set the placeholder of that file is not
+    ''' an "unlock" surface - a second password window on top of a check that is still running is the one thing
+    ''' the wait must never allow.</summary>
+    Private secure_Open_Path As String = ""
+
+    ''' <summary>Attempts that are waiting for a pool thread, for the wait cursor.</summary>
+    Private secure_Open_Waiting As Integer
+
+    ''' <summary>How long the derivation may run before the surface says what the window is busy with. A key
+    ''' already in the session cache answers in milliseconds, and a placeholder flashed for one frame on every
+    ''' flip would be worse than none (the same reasoning as the loading badge, Main_Form.LoadingIndicator.vb).</summary>
+    Private Const Secure_Wait_Placeholder_Ms As Integer = 150
+
+    Private Enum SecureOpenVerdict
+        ''' <summary>Something is on screen.</summary>
+        Shown = 0
+        ''' <summary>A placeholder says why not; <see cref="SecureOpenResult.Attempt"/> says which class it was.</summary>
+        Refused = 1
+        ''' <summary>The user moved on while the check ran: nothing was drawn and what was opened is released.</summary>
+        Superseded = 2
+    End Enum
+
+    ''' <summary>What one open attempt came to. The attempt class travels with it: the field that used to carry it
+    ''' (<c>secure_Last_Attempt</c>) can be overwritten by another attempt between this one's last line and its
+    ''' caller's next.</summary>
+    Private NotInheritable Class SecureOpenResult
+        Public Verdict As SecureOpenVerdict = SecureOpenVerdict.Superseded
+        Public Attempt As SecureAttempt = SecureAttempt.NotTried
+        ''' <summary>The container opened with this credential, so the password is the right one - whatever then
+        ''' happened to the display, and even when the user had already moved on.</summary>
+        Public CredentialAccepted As Boolean
+    End Class
+
+    ''' <summary>What the pool half of an attempt hands back: the container, or why there is none, and - for a
+    ''' picture - its content already decrypted into a buffer that is wiped when released.</summary>
+    Private NotInheritable Class SecureOpenWork
+        Public Container As FdSecContainer
+        Public Failure As Exception
+        Public Kind As MediaKind = MediaKind.Other
+        Public ImageBuffer As MemoryStream
+        Public ImageFailure As Exception
+
+        ''' <summary>Releases whatever the attempt still holds - for a result nobody will show.</summary>
+        Public Sub Discard()
+            Try
+                ImageBuffer?.Dispose()
+            Catch
+            End Try
+            ImageBuffer = Nothing
+            Try
+                Container?.Dispose()
+            Catch
+            End Try
+            Container = Nothing
+        End Sub
+    End Class
+
+    Private Sub CancelSecureOpen()
+        secure_Open_Active = 0
+        secure_Open_Path = ""
+    End Sub
+
+    ''' <summary>True while the check of THIS file's password is running.</summary>
+    Private Function IsSecureOpenRunningFor(filePath As String) As Boolean
+        Return secure_Open_Active <> 0 AndAlso secure_Open_Path.Length > 0 AndAlso
+               String.Equals(secure_Open_Path, filePath, StringComparison.OrdinalIgnoreCase)
+    End Function
+
+    Private Sub BeginSecureWait()
+        secure_Open_Waiting += 1
+        If secure_Open_Waiting = 1 AndAlso Not IsDisposed Then UseWaitCursor = True
+    End Sub
+
+    Private Sub EndSecureWait()
+        secure_Open_Waiting = Math.Max(0, secure_Open_Waiting - 1)
+        If secure_Open_Waiting = 0 AndAlso Not IsDisposed Then UseWaitCursor = False
+    End Sub
+
     ' ------------------------------------------------------------------ state ----
 
     ''' <summary>The credential held for the running process, as its normalised UTF-8
@@ -185,6 +273,9 @@ Partial Public Class Main_Form
     ''' </summary>
     Friend Sub SecureForgetCredential(Optional announce As Boolean = True)
         CancelSecureVerification()
+        ' A check still running with this credential must not put its container on screen after the password was put
+        ' down (124 UX-213): its result is released unseen.
+        CancelSecureOpen()
         Dim held As FdSecCredential = secure_Session_Credential
         secure_Session_Credential = Nothing
         held?.Dispose()
@@ -237,6 +328,9 @@ Partial Public Class Main_Form
     Friend Function IsSecurePlaceholderLocked() As Boolean
         If Not secure_Placeholder_Locked OrElse IsSecureContentOnScreen() Then Return False
         If Not IsCurrentFileSecureContainer() Then Return False
+        ' A check is running for this very file: the password was just given (or the session one is being tried), and
+        ' a second window on top of it would ask for it twice (124 UX-213).
+        If IsSecureOpenRunningFor(Current_File_Name) Then Return False
         Return String.Equals(secure_Placeholder_Path, Current_File_Name, StringComparison.OrdinalIgnoreCase)
     End Function
 
@@ -291,10 +385,21 @@ Partial Public Class Main_Form
         ' honest placeholder it just drew STAYS: asking again for the password that already
         ' worked would be the lie G-07 found.
         If SecureHasCredential() Then
-            If TryShowSecureContent(filePath, secure_Session_Credential) Then Return
-            If Not SecurePolicy.ShouldAskForPassword(screenPassed:=True, attempt:=secure_Last_Attempt) Then Return
+            ' The check runs off the UI thread (124 UX-213): this call returns at once, and what the synchronous code
+            ' used to do after a failed silent try - the slideshow skip, the locked placeholder, the prompt - is the
+            ' continuation.
+            TrySessionCredentialThen(filePath, Sub() AskAfterSilentAttempt(filePath))
+            Return
         End If
 
+        AskAfterSilentAttempt(filePath)
+    End Sub
+
+    ''' <summary>
+    ''' What follows when the session credential did not open the container, or there was none: the slideshow
+    ''' skip, the locked placeholder and the (deferred) password prompt.
+    ''' </summary>
+    Private Sub AskAfterSilentAttempt(filePath As String)
         ' A slideshow never prompts. A modal dialog inside an unattended slideshow is a
         ' trap, so the file is skipped and the status line says how many were skipped.
         If is_Slide_Show_Mode Then
@@ -368,28 +473,56 @@ Partial Public Class Main_Form
 
         secure_Declined.Remove(Current_File_Name)
         If SecureHasCredential() Then
-            If TryShowSecureContent(Current_File_Name, secure_Session_Credential) Then Return
-            If Not SecurePolicy.ShouldAskForPassword(screenPassed:=True, attempt:=secure_Last_Attempt) Then Return
+            Dim target As String = Current_File_Name
+            TrySessionCredentialThen(target, Sub() AskForPasswordAndOpen(target, retry:=False))
+            Return
         End If
         AskForPasswordAndOpen(Current_File_Name, retry:=False)
     End Sub
 
-    Private Sub AskForPasswordAndOpen(filePath As String, retry As Boolean)
+    ''' <summary>
+    ''' Tries the credential held for the session on <paramref name="filePath"/>, off the UI thread, and - only when
+    ''' that ends in the one class another password could change - hands over to <paramref name="ask"/>. Every other
+    ''' ending is final: the honest placeholder the attempt drew stays (asking again for a password that already
+    ''' worked would be the lie G-07 found), and an attempt the user has moved on from does nothing at all.
+    ''' </summary>
+    Private Async Sub TrySessionCredentialThen(filePath As String, ask As Action)
+        Try
+            Dim result As SecureOpenResult = Await TryShowSecureContentAsync(filePath, secure_Session_Credential)
+            If result.Verdict <> SecureOpenVerdict.Refused Then Return
+            If Not SecurePolicy.ShouldAskForPassword(screenPassed:=True, attempt:=result.Attempt) Then Return
+            ask()
+        Catch ex As Exception
+            AppFileLogger.LogException("Secure container: opening with the session password", ex)
+        End Try
+    End Sub
+
+    ''' <summary>
+    ''' The password window and what follows it. The window is the only part that holds
+    ''' <see cref="secure_Prompting"/>: the check after "Open" runs off the UI thread (124 UX-213), and the user may
+    ''' go on to another container while it does - which must be able to ask for its own password, so a second
+    ''' window is refused only while the first is actually up.
+    ''' </summary>
+    Private Async Sub AskForPasswordAndOpen(filePath As String, retry As Boolean)
         If secure_Prompting Then Return
-        secure_Prompting = True
         Try
             Dim attemptRetry As Boolean = retry
             Do
                 Dim answer As DialogResult
                 Dim credential As FdSecCredential = Nothing
                 Dim remember As Boolean
-                Using dialog As New Secure_Password_Form(Path.GetFileName(filePath), attemptRetry)
-                    answer = DialogLayer.ShowViewerDialog(dialog, Me)
-                    ' Normalised to bytes at once (G-19): the String the TextBox hands back
-                    ' is the one copy this code cannot wipe, so it is not kept.
-                    If answer = DialogResult.OK Then credential = FdSecCredential.FromText(dialog.Credential)
-                    remember = dialog.RememberForSession
-                End Using
+                secure_Prompting = True
+                Try
+                    Using dialog As New Secure_Password_Form(Path.GetFileName(filePath), attemptRetry)
+                        answer = DialogLayer.ShowViewerDialog(dialog, Me)
+                        ' Normalised to bytes at once (G-19): the String the TextBox hands back
+                        ' is the one copy this code cannot wipe, so it is not kept.
+                        If answer = DialogResult.OK Then credential = FdSecCredential.FromText(dialog.Credential)
+                        remember = dialog.RememberForSession
+                    End Using
+                Finally
+                    secure_Prompting = False
+                End Try
 
                 ' Escape, the close box and Cancel are one path and change nothing.
                 If answer <> DialogResult.OK Then
@@ -398,18 +531,22 @@ Partial Public Class Main_Form
                 End If
 
                 Dim kept As Boolean = False
+                Dim result As SecureOpenResult = Nothing
                 Try
                     ' The user may have navigated away while the dialog was up - the window
                     ' is modal to us, not to the world (a forwarded file opens through
                     ' WM_COPYDATA).
                     If Not String.Equals(filePath, Current_File_Name, StringComparison.OrdinalIgnoreCase) Then Return
 
-                    If TryShowSecureContent(filePath, credential) Then
-                        If remember Then
-                            SecureRememberCredential(credential)
-                            kept = True
-                        End If
-                        Return
+                    result = Await TryShowSecureContentAsync(filePath, credential)
+
+                    ' Remembered when the container opened with it - shown, or the user had moved on while it was
+                    ' checked (the synchronous code could not be moved on from, and would have shown it).
+                    Dim worked As Boolean = result.Verdict = SecureOpenVerdict.Shown OrElse
+                                            (result.Verdict = SecureOpenVerdict.Superseded AndAlso result.CredentialAccepted)
+                    If worked AndAlso remember AndAlso Not IsDisposed Then
+                        SecureRememberCredential(credential)
+                        kept = True
                     End If
                 Finally
                     If Not kept Then credential.Dispose()
@@ -417,91 +554,213 @@ Partial Public Class Main_Form
 
                 ' Only the first outcome class is worth asking again about: a damaged or
                 ' unsupported container will not open however many passwords are tried, and
-                ' TryShowSecureContent has already said which one it was.
-                If secure_Last_Attempt <> SecureAttempt.CredentialOrTamper Then Return
+                ' the attempt has already said which one it was.
+                If result Is Nothing OrElse result.Verdict <> SecureOpenVerdict.Refused Then Return
+                If result.Attempt <> SecureAttempt.CredentialOrTamper Then Return
                 attemptRetry = True
             Loop
-        Finally
-            secure_Prompting = False
+        Catch ex As Exception
+            AppFileLogger.LogException("Secure container: asking for the password", ex)
         End Try
     End Sub
 
     ''' <summary>
-    ''' Opens the container and shows what is inside, or reports the failure in the one
-    ''' message its outcome class deserves. Returns True only when something is on screen;
-    ''' <see cref="secure_Last_Attempt"/> then says how it ended, so the callers can tell
-    ''' "try another password" from "this will never open" (G-07).
+    ''' The pool half of one attempt: opens the container (the Argon2id derivation, 64 MiB over four lanes, and the
+    ''' head and metadata authentication) and, for a picture, decrypts its whole content into a buffer that is wiped
+    ''' when released - the two things that held the UI thread for as long as they took. It never throws: what went
+    ''' wrong travels in the result so the UI half classifies it exactly as the synchronous code did, and it reads
+    ''' no field of the form (the key cache and the credential come in as arguments).
     ''' </summary>
-    Private Function TryShowSecureContent(filePath As String, credential As FdSecCredential) As Boolean
-        secure_Last_Attempt = SecureAttempt.Shown
-        Dim container As FdSecContainer = Nothing
-        ' Argon2id (64 MiB, 4 lanes) and the full decrypt run synchronously below: say so first, and show the wait
-        ' cursor, so the pause after "Open" is not a window that looks hung (124 UX-213). The derivation itself stays
-        ' on this thread for now - moving it off needs its own re-entrancy design around the display path.
-        Notify(Localization.T("Проверяю пароль.."), NotifyLevel.Info)
-        ChromeRepaintStatusNow()
-        Dim previousCursor As Cursor = Cursor.Current
-        Cursor.Current = Cursors.WaitCursor
+    Private Shared Function OpenSecureContainerOffThread(filePath As String, credential As FdSecCredential,
+                                                         cache As FdSecKeyCache) As SecureOpenWork
+        Dim work As New SecureOpenWork()
         Try
-            container = FdSecContainer.OpenFile(filePath, credential, keyCache:=SecureKeyCacheFor(credential))
-        Catch ex As FdSecException
-            secure_Last_Attempt = SecurePolicy.AttemptFromOpen(ex.Outcome)
-            ' The raw reason goes to the log; the sealed true name never does, and neither
-            ' does the credential (FDSEC-BEHAVIOUR §6 rule 8).
-            AppFileLogger.WriteLine("Secure container refused (" & ex.Outcome.ToString() & "): " & filePath)
-            ShowSecurePlaceholder(filePath, SecureOutcomeMessage(ex.Outcome),
-                                  locked:=(ex.Outcome = FdSecOutcome.CredentialOrTamper))
-            Return False
-        Catch ex As ObjectDisposedException
-            ' The credential was forgotten underneath this call (the idle timer): nothing
-            ' was tried with it, so the container is simply locked again.
-            secure_Last_Attempt = SecureAttempt.NotTried
-            ShowSecurePlaceholder(filePath, Localization.T("Нужен пароль - нажмите Enter или щёлкните по файлу"), locked:=True)
-            Return False
+            work.Container = FdSecContainer.OpenFile(filePath, credential, keyCache:=cache)
+            work.Kind = KindOf(work.Container.Metadata.ContentExtension())
         Catch ex As Exception
-            ' An I/O failure is NOT one of the three classes and must never be dressed up
-            ' as one: "the share went away" is a different fact from "your password is
-            ' wrong", and the list must survive it the way every other read does.
-            secure_Last_Attempt = SecureAttempt.ReadFailure
-            AppFileLogger.LogException("Secure container: opening " & filePath, ex)
-            ShowSecurePlaceholder(filePath, ReadFailureText(PathFailure.Classify(ex), filePath), locked:=False)
-            Return False
-        Finally
-            Cursor.Current = previousCursor
+            work.Failure = ex
+            Return work
         End Try
 
+        If work.Kind <> MediaKind.Image Then Return work
+
+        ' Sized up front so it never grows - a MemoryStream that grows leaves its earlier copies behind unwiped.
+        Try
+            Dim buffer As MemoryStream = New FdSecWipingMemoryStream(CInt(Math.Min(work.Container.ContentLength, Integer.MaxValue)))
+            work.ImageBuffer = buffer
+            Using content As Stream = work.Container.OpenContentStream()
+                content.CopyTo(buffer)
+            End Using
+            buffer.Position = 0
+        Catch ex As Exception
+            work.ImageFailure = ex
+            Try
+                work.ImageBuffer?.Dispose()
+            Catch
+            End Try
+            work.ImageBuffer = Nothing
+        End Try
+        Return work
+    End Function
+
+    ''' <summary>Has the user moved on from the attempt <paramref name="id"/> made for <paramref name="filePath"/>?
+    ''' Four ways to be moved on from: another attempt or a cancel took the number, new media was displayed, the
+    ''' current file is a different one, or the window is gone.</summary>
+    Private Function IsSecureOpenSuperseded(id As Integer, generation As Integer, filePath As String) As Boolean
+        If IsDisposed OrElse Disposing Then Return True
+        If id <> secure_Open_Active OrElse generation <> media_Generation Then Return True
+        Return Not String.Equals(Current_File_Name, filePath, StringComparison.OrdinalIgnoreCase)
+    End Function
+
+    ''' <summary>
+    ''' Opens the container and shows what is inside, or reports the failure in the one message its outcome class
+    ''' deserves (G-07: the result says how it ended, so a caller can tell "try another password" from "this will
+    ''' never open"). The check itself runs on a pool thread (124 UX-213): the window keeps painting and taking input
+    ''' while Argon2id runs, and an attempt the user has moved on from releases what it opened and draws nothing.
+    '''
+    ''' Everything that touches the screen or a field of the form happens on the UI thread, in the one block after the
+    ''' await - there is no second await in it, so a decision made there cannot be overtaken by another message.
+    ''' </summary>
+    Private Async Function TryShowSecureContentAsync(filePath As String, credential As FdSecCredential) As Task(Of SecureOpenResult)
+        Dim result As New SecureOpenResult()
+
+        secure_Open_Seq += 1
+        Dim id As Integer = secure_Open_Seq
+        secure_Open_Active = id
+        secure_Open_Path = filePath
+        Dim generation As Integer = media_Generation
+        ' The wait is not "locked": Enter or a click now must not open a second password window over the check.
+        secure_Placeholder_Locked = False
+
+        Dim previousStatus As String = lbl_Status.Text
+        Dim waitText As String = Localization.T("Проверяю пароль..")
+        Notify(waitText, NotifyLevel.Info)
+
+        Dim cache As FdSecKeyCache = SecureKeyCacheFor(credential)
+        Dim work As SecureOpenWork = Nothing
+        BeginSecureWait()
+        Try
+            Dim pool As Task(Of SecureOpenWork) = Task.Run(Function() OpenSecureContainerOffThread(filePath, credential, cache))
+            If Not pool.IsCompleted Then
+                ' A key in the cache answers in milliseconds. Only a check that is really running says so on the
+                ' surface - and replaces the previous file's picture, which no longer belongs under this name.
+                Await Task.WhenAny(pool, Task.Delay(Secure_Wait_Placeholder_Ms))
+                If Not pool.IsCompleted AndAlso Not IsSecureOpenSuperseded(id, generation, filePath) AndAlso
+                   Not String.Equals(secure_Placeholder_Path, filePath, StringComparison.OrdinalIgnoreCase) Then
+                    ShowSecurePlaceholder(filePath, waitText, locked:=False)
+                End If
+            End If
+            work = Await pool
+        Finally
+            EndSecureWait()
+        End Try
+
+        ' ---- back on the UI thread; nothing below awaits ----
+        Dim superseded As Boolean = IsSecureOpenSuperseded(id, generation, filePath)
+        If id = secure_Open_Active Then
+            secure_Open_Active = 0
+            secure_Open_Path = ""
+        End If
+        result.CredentialAccepted = work.Failure Is Nothing
+
+        If superseded Then
+            work.Discard()
+            ' The wait line is only true while the wait is: put back what was there if nothing has replaced it.
+            If Not IsDisposed AndAlso String.Equals(lbl_Status.Text, waitText, StringComparison.Ordinal) Then lbl_Status.Text = previousStatus
+            ' Put down IN PLACE - the password was forgotten while the check ran, nothing newer is checking this file and
+            ' the user has not moved on: the container is simply locked again, and the surface says so and can be
+            ' unlocked (the wait left it neither showing the content nor an "unlock" placeholder).
+            If Not IsDisposed AndAlso Not Disposing AndAlso secure_Open_Active = 0 AndAlso generation = media_Generation AndAlso
+               String.Equals(Current_File_Name, filePath, StringComparison.OrdinalIgnoreCase) AndAlso Not IsSecureContentOnScreen() Then
+                ShowSecurePlaceholder(filePath, Localization.T("Нужен пароль - нажмите Enter или щёлкните по файлу"), locked:=True)
+            End If
+            result.Verdict = SecureOpenVerdict.Superseded
+            Return result
+        End If
+
+        If work.Failure IsNot Nothing Then
+            Dim ex As Exception = work.Failure
+            Dim sealedRefusal As FdSecException = TryCast(ex, FdSecException)
+            If sealedRefusal IsNot Nothing Then
+                secure_Last_Attempt = SecurePolicy.AttemptFromOpen(sealedRefusal.Outcome)
+                ' The raw reason goes to the log; the sealed true name never does, and neither
+                ' does the credential (FDSEC-BEHAVIOUR §6 rule 8).
+                AppFileLogger.WriteLine("Secure container refused (" & sealedRefusal.Outcome.ToString() & "): " & filePath)
+                ShowSecurePlaceholder(filePath, SecureOutcomeMessage(sealedRefusal.Outcome),
+                                      locked:=(sealedRefusal.Outcome = FdSecOutcome.CredentialOrTamper))
+            ElseIf TypeOf ex Is ObjectDisposedException Then
+                ' The credential was forgotten underneath this call (the idle timer): nothing
+                ' was tried with it, so the container is simply locked again.
+                secure_Last_Attempt = SecureAttempt.NotTried
+                ShowSecurePlaceholder(filePath, Localization.T("Нужен пароль - нажмите Enter или щёлкните по файлу"), locked:=True)
+            Else
+                ' An I/O failure is NOT one of the three classes and must never be dressed up
+                ' as one: "the share went away" is a different fact from "your password is
+                ' wrong", and the list must survive it the way every other read does.
+                secure_Last_Attempt = SecureAttempt.ReadFailure
+                AppFileLogger.LogException("Secure container: opening " & filePath, ex)
+                ShowSecurePlaceholder(filePath, ReadFailureText(PathFailure.Classify(ex), filePath), locked:=False)
+            End If
+            result.Verdict = SecureOpenVerdict.Refused
+            result.Attempt = secure_Last_Attempt
+            Return result
+        End If
+
+        Dim container As FdSecContainer = work.Container
         Try
             secure_Credential_Touched = Date.UtcNow
             ' Already held to the 1.1 name rule: an unsafe name never gets this far.
             Dim trueName As String = container.Metadata.Name
-            Dim kind As MediaKind = KindOf(container.Metadata.ContentExtension())
+            Dim kind As MediaKind = work.Kind
 
             Select Case kind
                 Case MediaKind.Image
-                    If Not ShowSecureImage(container, filePath, trueName) Then
+                    Dim content As MemoryStream = work.ImageBuffer
+                    work.ImageBuffer = Nothing      ' the display path owns it from here, whatever it does with it
+                    work.Container = Nothing        ' ... and the container: closed here when the display refuses it
+                    If Not ShowSecureImage(container, filePath, trueName, content, work.ImageFailure) Then
                         container.Dispose()
-                        Return False
+                        result.Verdict = SecureOpenVerdict.Refused
+                        result.Attempt = secure_Last_Attempt
+                        Return result
                     End If
                 Case MediaKind.Video, MediaKind.Audio
+                    work.Container = Nothing        ' the playback owns it, released by SecureReleaseCurrent
                     ShowSecurePlayback(container, filePath, trueName, kind)
                 Case Else
                     ' Opened, and not media (a sealed PDF). Not a password problem - the
                     ' credential just worked - so this placeholder is not a locked one.
                     secure_Last_Attempt = SecureAttempt.NotMedia
-                    container.Dispose()
+                    work.Discard()
                     ShowSecurePlaceholder(filePath,
                                           Localization.TF("Формат не поддерживается: {0}", SecureShownName(trueName, filePath)),
                                           locked:=False)
-                    Return False
+                    result.Verdict = SecureOpenVerdict.Refused
+                    result.Attempt = secure_Last_Attempt
+                    Return result
             End Select
-            Return True
         Catch ex As Exception
             secure_Last_Attempt = SecureAttempt.DisplayFailure
             AppFileLogger.LogException("Secure container: displaying " & filePath, ex)
-            container.Dispose()
+            work.Discard()
+            Try
+                container.Dispose()
+            Catch
+            End Try
             ShowSecurePlaceholder(filePath, Localization.T("Не удалось показать содержимое"), locked:=False)
-            Return False
+            result.Verdict = SecureOpenVerdict.Refused
+            result.Attempt = secure_Last_Attempt
+            Return result
         End Try
+
+        ' What the dispatcher did synchronously after a container came up, and now cannot: it ran before the
+        ' content arrived. The title and the translate buttons are a function of what is on screen.
+        UpdateContentWindowTitle()
+        OnMediaDisplayed()
+        secure_Last_Attempt = SecureAttempt.Shown
+        result.Verdict = SecureOpenVerdict.Shown
+        result.Attempt = SecureAttempt.Shown
+        Return result
     End Function
 
     ''' <summary>The cache belongs to the held credential. A dialog attempt with some other
@@ -530,16 +789,18 @@ Partial Public Class Main_Form
     ''' decoded payloads to .fmsdec files for exactly the formats a container is most
     ''' likely to hold, and a cache file IS the plaintext.
     ''' </summary>
-    Private Function ShowSecureImage(container As FdSecContainer, filePath As String, trueName As String) As Boolean
-        ' Zeroed when the picture box lets go of it (G-19), and sized up front so it never
-        ' grows - a MemoryStream that grows leaves its earlier copies behind unwiped.
-        Dim buffer As MemoryStream = Nothing
+    Private Function ShowSecureImage(container As FdSecContainer, filePath As String, trueName As String,
+                                     content As MemoryStream, contentFailure As Exception) As Boolean
+        ' The content was decrypted on the pool thread (124 UX-213) into a buffer that is zeroed when the picture box
+        ' lets go of it (G-19) and was sized up front so it never grew - a MemoryStream that grows leaves its earlier
+        ' copies behind unwiped. A chunk that failed its tag there arrives as the exception, and is raised HERE, so
+        ' the handlers below say what they always said.
+        Dim buffer As MemoryStream = content
         Dim picture As Image = Nothing
         Try
-            buffer = New FdSecWipingMemoryStream(CInt(Math.Min(container.ContentLength, Integer.MaxValue)))
-            Using content As Stream = container.OpenContentStream()
-                content.CopyTo(buffer)
-            End Using
+            If contentFailure IsNot Nothing Then
+                System.Runtime.ExceptionServices.ExceptionDispatchInfo.Capture(contentFailure).Throw()
+            End If
             buffer.Position = 0
 
             Dim extension As String = container.Metadata.ContentExtension()
@@ -969,8 +1230,8 @@ Partial Public Class Main_Form
         Dim progress As New Progress(Of (Completed As Long, Total As Long))(
             Sub(value)
                 If stillCurrent() AndAlso Not cancellation.IsCancellationRequested Then
-                    lbl_Status.Text = Localization.T("Проверка контейнера..") & " " &
-                                      value.Completed.ToString() & "/" & value.Total.ToString()
+                    lbl_Status.Text = Localization.TF("Проверка контейнера.. {0}/{1}",
+                                                      value.Completed.ToString(), value.Total.ToString())
                 End If
             End Sub)
         lbl_Status.Text = Localization.T("Проверка контейнера..")

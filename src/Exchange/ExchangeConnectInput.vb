@@ -47,6 +47,14 @@ Friend NotInheritable Class ExchangeConnectInput
         End Get
     End Property
 
+    ''' <summary>True when the string is an INVITATION (ticket 224 rule 1): it carries `i`, so the dialog offers
+    ''' registration instead of sign-in (226 rule 1). The code itself is a secret holder.</summary>
+    Public ReadOnly Property HasInvitation As Boolean
+        Get
+            Return Kind = ExchangeConnectInputKind.ConnectionString AndAlso Value IsNot Nothing AndAlso Value.Invitation.Length > 0
+        End Get
+    End Property
+
     ''' <summary>Classifies text from a clipboard, a field or a file's content.</summary>
     Public Shared Function Classify(text As String) As ExchangeConnectInput
         Dim t As String = If(text, "").Trim()

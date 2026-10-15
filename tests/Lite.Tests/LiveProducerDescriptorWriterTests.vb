@@ -132,15 +132,73 @@ Public Class LiveProducerDescriptorWriterTests
         Assert.Contains("""videoCodec"":""h264""", json)
         Assert.Contains("""targetLatencyMs"":1000", json)
 
-        ' Our own viewer today refuses the video modes (UnsupportedMode, ticket 201 R2 is not built):
-        ' the refusal itself proves the descriptor is a well-formed document the reader can parse.
+        ' Ticket 201 consumes the producer's HTTP MPEG-TS descriptor without translation.
         Dim result As LiveBroadcastReadResult = LiveBroadcastReader.ReadText(json)
-        Assert.Equal(LiveReadStatus.UnsupportedMode, result.Status)
+        Assert.Equal(LiveReadStatus.Ok, result.Status)
     End Sub
 
     <Fact>
     Public Sub A_title_with_a_line_break_cannot_inject_a_header_later()
         Assert.Equal("Kitchen PC", LiveProducerWire.SanitizeHeaderValue("Kitchen" & ControlChars.CrLf & "PC"))
+    End Sub
+
+    <Fact>
+    Public Sub Endpoints_are_ordered_LAN_then_RELAY_then_TUNNEL()
+        Dim input As LiveDescriptorInput = Sample()
+        input.AllowLanViewers = True
+        input.RelayUrl = "fmsx://relay.example.com:443/bcast-123"
+        input.TunnelUrl = "fmsx://tunnel.example.com:443/bcast-123"
+        input.CertFingerprint = "0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF"
+        input.InnerUrl = input.Url
+
+        Dim json As String = LiveProducerDescriptorWriter.BuildJson(input)
+        Dim result As LiveBroadcastReadResult = LiveBroadcastReader.ReadText(json)
+        Assert.Equal(LiveReadStatus.Ok, result.Status)
+        Assert.Equal(3, result.Descriptor.Endpoints.Count)
+        Assert.Equal("HTTP", result.Descriptor.Endpoints(0).Transport)
+        Assert.Equal("RELAY", result.Descriptor.Endpoints(1).Transport)
+        Assert.Equal("TUNNEL", result.Descriptor.Endpoints(2).Transport)
+    End Sub
+
+    <Fact>
+    Public Sub AllowLanViewers_false_omits_LAN_endpoint_and_picks_relay_url()
+        Dim input As LiveDescriptorInput = Sample()
+        input.AllowLanViewers = False
+        input.RelayUrl = "https://relay.example.com:443/bcast-123"
+        input.TunnelUrl = "fmsx://tunnel.example.com:443/b/bcast-123/http"
+        input.InnerUrl = input.Url
+
+        Dim json As String = LiveProducerDescriptorWriter.BuildJson(input)
+        Dim result As LiveBroadcastReadResult = LiveBroadcastReader.ReadText(json)
+        Assert.Equal(LiveReadStatus.Ok, result.Status)
+        Assert.Equal(input.RelayUrl, result.Descriptor.Url)
+        Assert.Equal(2, result.Descriptor.Endpoints.Count)
+        Assert.Equal("RELAY", result.Descriptor.Endpoints(0).Transport)
+        Assert.Equal("TUNNEL", result.Descriptor.Endpoints(1).Transport)
+    End Sub
+
+    <Fact>
+    Public Sub Protected_descriptor_round_trips_auth_without_a_password()
+        Dim input As LiveDescriptorInput = Sample()
+        input.AuthUser = "listener"
+        Dim json As String = LiveProducerDescriptorWriter.BuildJson(input)
+        Dim result As LiveBroadcastReadResult = LiveBroadcastReader.ReadText(json)
+        Assert.Equal(LiveReadStatus.Ok, result.Status)
+        Assert.Equal("password-v1", result.Descriptor.AuthScheme)
+        Assert.Equal("listener", result.Descriptor.AuthUser)
+        Assert.DoesNotContain("""password""", json)
+        Dim link As String = "fmsbcast://live?payload=" & Uri.EscapeDataString(LiveProducerDescriptorWriter.BarcodePayload(json))
+        Assert.Equal("listener", LiveBroadcastLinkReader.ReadLink(link).Descriptor.AuthUser)
+    End Sub
+
+    <Fact>
+    Public Sub BuildBroadcastRecord_creates_valid_json()
+        Dim record As String = LiveProducerDescriptorWriter.BuildBroadcastRecord("bc-01", "dev-99", "Kitchen", "AUDIO_ONLY", "{""test"":1}")
+        Assert.Contains("""broadcastId"":""bc-01""", record)
+        Assert.Contains("""deviceId"":""dev-99""", record)
+        Assert.Contains("""title"":""Kitchen""", record)
+        Assert.Contains("""mode"":""AUDIO_ONLY""", record)
+        Assert.Contains("""descriptor"":{""test"":1}", record)
     End Sub
 
 End Class

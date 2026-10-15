@@ -454,6 +454,184 @@ Public Class ExchangeAdminTests
         Next
     End Sub
 
+    ' --- ticket 224: invitations, the shared invitation password, kinds and limits ------------------------
+
+    <Fact>
+    Public Sub An_invitation_request_names_the_kind_the_contract_names_and_carries_no_login_or_password()
+        Dim create As JsonElement = Json(New ExchangeAdminRequest(ExchangeAdminRequest.OpInvitationCreate, kind:="guest"))
+        Assert.Equal("invitation.create", create.GetProperty("op").GetString())
+        Assert.Equal("guest", create.GetProperty("kind").GetString())
+        Assert.False(Has(create, "password"))
+        Assert.False(Has(create, "login"))
+
+        Dim withdraw As JsonElement = Json(New ExchangeAdminRequest(ExchangeAdminRequest.OpInvitationWithdraw, codeHash:="abc123"))
+        Assert.Equal("invitation.withdraw", withdraw.GetProperty("op").GetString())
+        Assert.Equal("abc123", withdraw.GetProperty("codeHash").GetString())
+
+        Dim sharedSet As JsonElement = Json(New ExchangeAdminRequest(ExchangeAdminRequest.OpSharedInvitationSet, password:="Shared-pw-123456", kind:="member"))
+        Assert.Equal("shared_invitation.set", sharedSet.GetProperty("op").GetString())
+        Assert.Equal("Shared-pw-123456", sharedSet.GetProperty("password").GetString())
+        Assert.Equal("member", sharedSet.GetProperty("kind").GetString())
+    End Sub
+
+    <Fact>
+    Public Sub An_account_limits_request_carries_only_the_overrides_that_were_set()
+        Dim limits As New ExchangeAccountLimits With {.DevicesPerAccount = 3, .ClipboardMaxBytes = 5L * 1024L * 1024L * 1024L}
+        Dim el As JsonElement = Json(New ExchangeAdminRequest(ExchangeAdminRequest.OpAccountLimits, login:="alice", limits:=limits))
+        Assert.Equal("account.limits", el.GetProperty("op").GetString())
+        Dim lim As JsonElement = el.GetProperty("limits")
+        Assert.Equal(3, lim.GetProperty("devicesPerAccount").GetInt32())
+        Assert.Equal(5L * 1024L * 1024L * 1024L, lim.GetProperty("clipboardMaxBytes").GetInt64())
+        Assert.False(Has(lim, "resourcesPerAccount"))
+        Assert.False(Has(lim, "broadcastsPerAccount"))
+        Assert.False(Has(lim, "broadcastsPerDevice"))
+    End Sub
+
+    <Fact>
+    Public Sub Offline_a_created_invitation_asks_for_json_and_hands_its_one_time_code_back()
+        ExchangeAdmin.PipeNameOverride = "fms-exchange-admin-test-" & Guid.NewGuid().ToString("N").Substring(0, 12)
+        Dim seenArgs As String() = Nothing
+        ExchangeProcess.RunOverride = Function(args, stdin)
+                                          seenArgs = args
+                                          Return Result(0, "{""code"":""AAAAAAAAAAAAAAAAAAAAAA"",""invitation"":{""codeHash"":""h1"",""kind"":""guest"",""createdAt"":""c"",""used"":false}}")
+                                      End Function
+        Dim reply As ExchangeAdminReply = ExchangeAdmin.CreateInvitationAsync("guest", CancellationToken.None).GetAwaiter().GetResult()
+        Assert.True(reply.Ok)
+        Assert.Equal(ExchangeAdminRoute.Offline, reply.Route)
+        Assert.Equal({"invitation", "create", "--json", "--kind", "guest"}, seenArgs)
+        Dim created As ExchangeAdminInvitationCreated = ExchangeAdminParser.InvitationCreated(reply.DataJson)
+        Assert.NotNull(created)
+        Assert.Equal("AAAAAAAAAAAAAAAAAAAAAA", created.Code)
+        Assert.Equal("h1", created.Invitation.CodeHash)
+        Assert.Equal("guest", created.Invitation.Kind)
+    End Sub
+
+    <Fact>
+    Public Sub Offline_the_shared_password_goes_over_stdin_and_switching_it_off_sends_none()
+        Dim all As New List(Of Tuple(Of String(), String))()
+        ExchangeProcess.RunOverride = Function(args, stdin)
+                                          all.Add(Tuple.Create(args, stdin))
+                                          Return Result(0)
+                                      End Function
+        ExchangeAdmin.SendOffline(New ExchangeAdminRequest(ExchangeAdminRequest.OpSharedInvitationSet, password:="Shared-pw-123456", kind:="guest"))
+        ExchangeAdmin.SendOffline(New ExchangeAdminRequest(ExchangeAdminRequest.OpSharedInvitationSet))
+        ExchangeAdmin.SendOffline(New ExchangeAdminRequest(ExchangeAdminRequest.OpInvitationWithdraw, codeHash:="-dashed-hash"))
+        ExchangeAdmin.SendOffline(New ExchangeAdminRequest(ExchangeAdminRequest.OpAccountAdd, "visitor", "Abcdefghi1", kind:="guest"))
+        ExchangeAdmin.SendOffline(New ExchangeAdminRequest(ExchangeAdminRequest.OpAccountAdd, "carol", "Abcdefghi1", kind:="member"))
+
+        Assert.Equal({"shared-invitation", "set", "--kind", "guest"}, all(0).Item1)
+        Assert.Equal("Shared-pw-123456", all(0).Item2)
+        Assert.DoesNotContain("Shared-pw-123456", String.Join(" ", all(0).Item1))
+        Assert.Equal({"shared-invitation", "off"}, all(1).Item1)
+        Assert.Null(all(1).Item2)
+        Assert.Equal({"invitation", "withdraw", "--", "-dashed-hash"}, all(2).Item1)
+        Assert.Equal({"account", "add", "--kind", "guest", "--", "visitor"}, all(3).Item1)
+        Assert.Equal({"account", "add", "--", "carol"}, all(4).Item1)
+    End Sub
+
+    ''' <summary>The binary takes everything after <c>--</c> as a login, so a limit option placed there is a usage error; and
+    ''' its verb MERGES into the account's own limits while the channel's <c>account.limits</c> replaces them, so the offline
+    ''' replace is a reset followed by the named limits.</summary>
+    <Fact>
+    Public Sub Offline_every_limit_the_dialog_can_set_has_its_flag_before_the_double_dash_after_a_reset()
+        Dim all As New List(Of Tuple(Of String(), String))()
+        ExchangeProcess.RunOverride = Function(args, stdin)
+                                          all.Add(Tuple.Create(args, stdin))
+                                          Return Result(0)
+                                      End Function
+        Dim limits As New ExchangeAccountLimits With {.DevicesPerAccount = 2, .ResourcesPerAccount = 7, .BroadcastsPerAccount = 4,
+                                                      .BroadcastsPerDevice = 1, .ClipboardMaxBytes = 1048576L}
+        Dim reply As ExchangeAdminReply = ExchangeAdmin.SendOffline(New ExchangeAdminRequest(ExchangeAdminRequest.OpAccountLimits, login:="alice", limits:=limits))
+        Assert.True(reply.Ok)
+        Assert.Equal(2, all.Count)
+        Assert.Equal({"account", "limits", "--reset", "--", "alice"}, all(0).Item1)
+        Assert.Equal({"account", "limits", "--devices", "2", "--resources", "7", "--broadcasts", "4",
+                      "--broadcasts-per-device", "1", "--clipboard-bytes", "1048576", "--", "alice"}, all(1).Item1)
+    End Sub
+
+    <Fact>
+    Public Sub Offline_clearing_the_limits_is_a_single_reset()
+        Dim all As New List(Of String())()
+        ExchangeProcess.RunOverride = Function(args, stdin)
+                                          all.Add(args)
+                                          Return Result(0)
+                                      End Function
+        Assert.True(ExchangeAdmin.SendOffline(New ExchangeAdminRequest(ExchangeAdminRequest.OpAccountLimits, login:="-dash", limits:=Nothing)).Ok)
+        Assert.True(ExchangeAdmin.SendOffline(New ExchangeAdminRequest(ExchangeAdminRequest.OpAccountLimits, login:="alice", limits:=New ExchangeAccountLimits())).Ok)
+        Assert.Equal(2, all.Count)
+        Assert.Equal({"account", "limits", "--reset", "--", "-dash"}, all(0))
+        Assert.Equal({"account", "limits", "--reset", "--", "alice"}, all(1))
+    End Sub
+
+    <Fact>
+    Public Sub Offline_a_failed_reset_stops_the_limits_and_answers_with_its_code()
+        Dim runs As Integer = 0
+        ExchangeProcess.RunOverride = Function(args, stdin)
+                                          runs += 1
+                                          Return Result(1, "", "no such account")
+                                      End Function
+        Dim reply As ExchangeAdminReply = ExchangeAdmin.SendOffline(New ExchangeAdminRequest(ExchangeAdminRequest.OpAccountLimits, login:="nobody",
+                                                                    limits:=New ExchangeAccountLimits With {.DevicesPerAccount = 2}))
+        Assert.False(reply.Ok)
+        Assert.Equal(ExchangeAdminCodes.NoAccount, reply.Code)
+        Assert.Equal(1, runs)
+    End Sub
+
+    <Fact>
+    Public Sub The_parsers_read_what_the_go_side_writes_for_invitations_kinds_and_limits()
+        Dim accounts As List(Of ExchangeAdminAccount) = ExchangeAdminParser.Accounts(
+            "[{""login"":""alice"",""createdAt"":""c"",""devices"":2,""kind"":""guest"",""limits"":{""devicesPerAccount"":3,""clipboardMaxBytes"":1048576}}," &
+            "{""login"":""bob"",""createdAt"":""c"",""devices"":0}]")
+        Assert.Equal("guest", accounts(0).Kind)
+        Assert.Equal(3, accounts(0).Limits.DevicesPerAccount.Value)
+        Assert.Equal(1048576L, accounts(0).Limits.ClipboardMaxBytes.Value)
+        Assert.False(accounts(0).Limits.ResourcesPerAccount.HasValue)
+        Assert.Equal("member", accounts(1).Kind)
+        Assert.Null(accounts(1).Limits)
+
+        Dim invs As List(Of ExchangeAdminInvitation) = ExchangeAdminParser.Invitations(
+            "[{""codeHash"":""aa"",""kind"":""member"",""createdAt"":""c1"",""used"":false}," &
+            "{""codeHash"":""bb"",""kind"":""guest"",""createdAt"":""c2"",""used"":true,""usedAt"":""u"",""usedBy"":""visitor""}]")
+        Assert.Equal(2, invs.Count)
+        Assert.False(invs(0).Used)
+        Assert.True(invs(1).Used)
+        Assert.Equal("visitor", invs(1).UsedBy)
+
+        Dim sharedOn As ExchangeAdminSharedInvitation = ExchangeAdminParser.SharedInvitation("{""enabled"":true,""kind"":""guest""}")
+        Assert.True(sharedOn.Enabled)
+        Assert.Equal("guest", sharedOn.Kind)
+        Assert.False(ExchangeAdminParser.SharedInvitation("{""enabled"":false}").Enabled)
+        Assert.False(ExchangeAdminParser.SharedInvitation("not json").Enabled)
+        Assert.Null(ExchangeAdminParser.InvitationCreated("not json"))
+        Assert.Null(ExchangeAdminParser.InvitationCreated(""))
+    End Sub
+
+    ''' <summary>The windows that show or take a one-time code or the shared password are held to the same scan as the page that
+    ''' opens them: no store, no log of a value, no command line, and the clipboard only through SecureClipboard.</summary>
+    <Fact>
+    Public Sub The_invitation_windows_never_store_log_or_pass_a_code_on_a_command_line()
+        For Each file As String In {"Forms\Exchange_Invitation_Create_Form.vb", "Forms\Exchange_Invitation_Created_Form.vb",
+                                    "Forms\Exchange_Shared_Invitation_Form.vb", "Forms\Exchange_Account_Limits_Form.vb"}
+            Dim code As String = ExchangeTestSupport.CodeOnly(ExchangeTestSupport.ReadSource(file))
+            For Each forbidden As String In {"SaveSetting(", "GetSetting(", "File.Write", "File.Append", "File.Create", "StreamWriter", "Registry", "My.Settings",
+                                             "ProcessStartInfo", "ArgumentList.Add", "Clipboard.SetText", "Debug.WriteLine", "Console.Write", "AppFileLogger."}
+                Assert.False(code.Contains(forbidden), file & " touches " & forbidden & " in a window that handles a code or a password")
+            Next
+        Next
+    End Sub
+
+    ''' <summary>The limits dialog's result REPLACES the account's own limits as a whole, so a limit with no field in it would be
+    ''' dropped by every save. Each override of <see cref="ExchangeAccountLimits"/> must be read into the dialog and written out
+    ''' of it.</summary>
+    <Fact>
+    Public Sub The_limits_dialog_has_a_field_for_every_override_the_account_can_carry()
+        Dim code As String = ExchangeTestSupport.CodeOnly(ExchangeTestSupport.ReadSource("Forms\Exchange_Account_Limits_Form.vb"))
+        For Each p As Reflection.PropertyInfo In GetType(ExchangeAccountLimits).GetProperties()
+            Assert.True(code.Contains("_limits." & p.Name), "the dialog never shows " & p.Name & " of the account's current limits")
+            Assert.True(code.Contains("res." & p.Name & " ="), "the dialog never writes " & p.Name & " back: a save would drop it")
+        Next
+    End Sub
+
     ''' <summary>The test host's own public address never appears in a tracked file (ticket 182: documentation addresses only).</summary>
     <Fact>
     Public Sub No_new_source_or_table_names_a_real_hosts_address()

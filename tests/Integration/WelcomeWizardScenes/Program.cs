@@ -132,7 +132,11 @@ static class Program
             {
                 Console.WriteLine($"UI DPI={form.DeviceDpi}; all languages, every step, light/dark, repeated script changes");
                 // Spec 211 section 4.1: every step carries the four named parts - what, why, how, where.
-                Assert(((System.Collections.ICollection)Field(form, "headings")).Count == 4 * ((System.Collections.ICollection)Field(form, "panels")).Count,
+                // Plus the installed-servers block of spec 215: its title and one name per prepared server row also
+                // register as headings (the contrast check below reads them), whether or not the row is shown.
+                int namedParts = 4 * ((System.Collections.ICollection)Field(form, "panels")).Count
+                    + 1 + ((System.Collections.ICollection)Field(form, "serverRows")).Count;
+                Assert(((System.Collections.ICollection)Field(form, "headings")).Count == namedParts,
                     "The steps do not carry the four named parts");
                 // Two cycles cross each script boundary, including switching back to the default font.
                 foreach (string theme in controlsOnly ? Array.Empty<string>() : new[] { "Light", "Dark" })
@@ -238,6 +242,99 @@ static class Program
                 Assert(Interaction.GetSetting(scratchApp, section, "DeleteToRecycleBin", "") == "0", "Close clobbered the delete choice");
                 form.Close();
             }
+            // Spec 215 section 7: the finish screen's installed-servers block, from facts the scene supplies (the host's
+            // seam WelcomeServerFactsOverride: share installed, share up, exchange installed, exchange up; null = could not tell).
+            Console.WriteLine("Checking the installed-servers block on the finish screen (spec 215 section 7)");
+            string pillRunning = Localization.T("Работает");
+            string pillStopped = Localization.T("Не запущен - менеджер включит его по вашему выбору");
+            string actAdd = Localization.T("Добавить ресурс");
+            string actOpen = Localization.T("Открыть менеджер");
+            var serverCases = new (string Name, bool?[] Facts, (bool Visible, string Word, string Button)[] Rows)[]
+            {
+                ("both-green", new bool?[] { true, true, true, true },
+                    new[] { (true, pillRunning, actAdd), (true, pillRunning, actAdd) }),
+                ("one-amber", new bool?[] { true, true, true, false },
+                    new[] { (true, pillRunning, actAdd), (true, pillStopped, actOpen) }),
+                ("unknown-is-amber", new bool?[] { true, null, true, null },
+                    new[] { (true, pillStopped, actOpen), (true, pillStopped, actOpen) }),
+                ("share-only", new bool?[] { true, true, false, null },
+                    new[] { (true, pillRunning, actAdd), (false, (string)null, (string)null) }),
+                ("exchange-only", new bool?[] { false, null, true, false },
+                    new[] { (false, (string)null, (string)null), (true, pillStopped, actOpen) }),
+                ("none", new bool?[] { false, null, false, null },
+                    new[] { (false, (string)null, (string)null), (false, (string)null, (string)null) }),
+            };
+            int serverScenes = 0;
+            try
+            {
+                foreach (string themeName in new[] { "Light", "Dark" })
+                {
+                    App.GetType("fmsl.ThemeService", true).GetMethod("SetMode", Static)
+                        .Invoke(null, new[] { Enum.Parse(App.GetType("fmsl.ThemeMode", true), themeName) });
+                    foreach (var serverCase in serverCases)
+                    {
+                        Set(viewer, "WelcomeServerFactsOverride", serverCase.Facts);
+                        foreach (string code in new[] { "en", "ar" })
+                        {
+                            string label = $"{serverCase.Name}/{themeName}/{code}";
+                            using var form = Open(viewer);
+                            Call(form, "PreviewLanguage", code);
+                            Call(form, "ShowStep", (int)Field(form, "finishIndex"));
+                            Application.DoEvents();
+                            form.Refresh();
+
+                            var block = (Control)Field(form, "serversBlock");
+                            bool expectBlock = serverCase.Rows.Any(row => row.Visible);
+                            Assert(block.Visible == expectBlock,
+                                $"[{label}] block visible={block.Visible}, expected {expectBlock}");
+                            Assert(form.RightToLeft == (code == "ar" ? RightToLeft.Yes : RightToLeft.No),
+                                $"[{label}] reading direction is wrong");
+
+                            var views = ((System.Collections.IEnumerable)Field(form, "serverRows")).Cast<object>().ToList();
+                            Assert(views.Count == 2, $"[{label}] expected two prepared rows, found {views.Count}");
+                            for (int index = 0; index < views.Count; index++)
+                            {
+                                var expected = serverCase.Rows[index];
+                                var container = (Control)Field(views[index], "Container");
+                                Assert(container.Visible == expected.Visible,
+                                    $"[{label}] row {index} visible={container.Visible}, expected {expected.Visible}");
+                                if (!expected.Visible) continue;
+
+                                var word = (Label)Field(views[index], "Word");
+                                var dot = (Label)Field(views[index], "Dot");
+                                var button = (Button)Field(views[index], "ActButton");
+                                // The word is the meaning and the dot only decoration (section 5): text compared in
+                                // English, structure and reach compared in every language.
+                                if (code == "en")
+                                {
+                                    Assert(word.Text == expected.Word, $"[{label}] row {index} pill word '{word.Text}', expected '{expected.Word}'");
+                                    Assert(button.Text == expected.Button, $"[{label}] row {index} button '{button.Text}', expected '{expected.Button}'");
+                                }
+                                else
+                                {
+                                    Assert(!string.IsNullOrWhiteSpace(word.Text) && !string.IsNullOrWhiteSpace(button.Text),
+                                        $"[{label}] row {index} has an empty pill word or button");
+                                }
+                                Assert(button.Visible && button.Enabled && button.TabStop && button.CanSelect,
+                                    $"[{label}] row {index} button is not keyboard reachable");
+                                Assert((double)App.GetType("fmsl.Utils", true).GetMethod("ContrastRatio", Static).Invoke(null,
+                                    new object[] { dot.ForeColor, form.BackColor }) >= 4.5,
+                                    $"[{label}] row {index} pill dot does not meet 4.5:1 on the window");
+                            }
+                            CheckTargets(form);
+                            Capture(form, evidence, $"servers-{serverCase.Name}-{themeName}-{code}");
+                            form.Close();
+                            serverScenes++;
+                        }
+                    }
+                }
+            }
+            finally
+            {
+                Set(viewer, "WelcomeServerFactsOverride", null);
+            }
+            Console.WriteLine($"  {serverScenes} server-block scenes at {viewer.DeviceDpi} DPI (both themes, left-to-right and right-to-left)");
+
             using (var form = Open(viewer, packaged: true))
             {
                 Console.WriteLine("Checking packaged steps, Enter, dropdown Escape and preview cancellation");
@@ -385,7 +482,7 @@ static class Program
                 Assert((bool)Call(card, "TryWelcomeKey", Keys.Enter) && requested, "Enter did not activate F1 welcome link");
                 window.Close();
             }
-            Console.WriteLine($"WelcomeWizardScenes: PASS ({rendered} language/theme scenes; isolated persistence, the W-4 delete question, the invitation button, skip, MSIX, Enter/Escape and F1; evidence: {evidence})");
+            Console.WriteLine($"WelcomeWizardScenes: PASS ({rendered} language/theme scenes; isolated persistence, the W-4 delete question, the installed-servers block ({serverScenes} scenes), the invitation button, skip, MSIX, Enter/Escape and F1; evidence: {evidence})");
             return 0;
         }
         catch (Exception ex)

@@ -313,7 +313,9 @@ Public Module LogPackage
         If common.Length > 0 Then exchangeDirs.Add(Path.Combine(common, "FastMediaSorterExchange"))
         If local.Length > 0 Then exchangeDirs.Add(Path.Combine(local, "FastMediaSorterExchange"))
         For Each file As String In {"exchange.log", "exchange.log.1", "service.log"}
-            specs.Add(Spec("exchange/" & file, exchangeDirs.Select(Function(d) Path.Combine(d, "logs", file)).ToArray()))
+            specs.Add(Spec("exchange/" & file, exchangeDirs.SelectMany(Function(d) If(file.StartsWith("exchange.log", StringComparison.Ordinal),
+                {LatestExchangeDayLog(d, file.EndsWith(".1", StringComparison.Ordinal)), Path.Combine(d, "logs", file)},
+                {Path.Combine(d, "logs", file)})).ToArray()))
         Next
         ' The helpers' logs: only the machine store's logs\ and the %TEMP% fallback - a helper never writes
         ' into a per-user store.
@@ -328,6 +330,28 @@ Public Module LogPackage
         specs.Add(Spec("share/service.log", Under(shareMachine, "service.log"), Under(shareUser, "service.log")))
         specs.Add(Spec("share/install-share-service.log", Under(shareMachine, "install-share-service.log"), Under(temp, "install-share-service.log")))
         Return specs
+    End Function
+
+    ''' <summary>Include the last serving day's log even when the server is stopped today. Only owned
+    ''' day names qualify; the current day is the unreadable-folder fallback, preserving source diagnostics.</summary>
+    Private Function LatestExchangeDayLog(dataDir As String, rolled As Boolean) As String
+        Dim suffix As String = If(rolled, ".log.1", ".log")
+        Dim folder As String = Path.Combine(dataDir, "logs")
+        Dim fallback As String = Path.Combine(folder, "exchange-" & DateTime.UtcNow.ToString("yyyy-MM-dd", Globalization.CultureInfo.InvariantCulture) & suffix)
+        Try
+            If Not Directory.Exists(folder) Then Return fallback
+            Dim candidates As New List(Of String)()
+            For Each candidate As String In Directory.GetFiles(folder, "exchange-*" & suffix)
+                Dim name As String = Path.GetFileName(candidate)
+                If name.Length <> 9 + 10 + suffix.Length Then Continue For
+                Dim day As DateTime
+                If DateTime.TryParseExact(name.Substring(9, 10), "yyyy-MM-dd", Globalization.CultureInfo.InvariantCulture,
+                    Globalization.DateTimeStyles.None, day) Then candidates.Add(candidate)
+            Next
+            Return If(candidates.OrderByDescending(Function(p) p, StringComparer.Ordinal).FirstOrDefault(), fallback)
+        Catch ex As Exception When TypeOf ex Is IOException OrElse TypeOf ex Is UnauthorizedAccessException
+            Return fallback
+        End Try
     End Function
 
     Private Function Under(root As String, ParamArray parts As String()) As String

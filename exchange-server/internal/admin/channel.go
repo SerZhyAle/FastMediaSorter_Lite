@@ -37,23 +37,50 @@ const (
 	OpAccountPasswd = "account.passwd"
 	OpAccountRemove = "account.remove"
 	OpAccountList   = "account.list"
+	OpAccountKind   = "account.kind"
 	OpDeviceList    = "device.list"
 	OpDeviceRevoke  = "device.revoke"
 	OpStatus        = "status"
+	OpHostSettings  = "host.settings"
 
 	// OpDevicePairingCode issues a single-use pairing code of an account to the operator, so a program on the
 	// operator's own PC can enroll as a device of that account without the password (the local join of the Share
 	// Manager, ticket 187). It is live-only: the code exists in the memory of the running server.
 	OpDevicePairingCode = "device.pairing-code"
+
+	// Ticket 224: invitations, shared invitation, limits, and grants.
+	OpInvitationCreate       = "invitation.create"
+	OpInvitationList         = "invitation.list"
+	OpInvitationWithdraw     = "invitation.withdraw"
+	OpSharedInvitationStatus = "shared_invitation.status"
+	OpSharedInvitationSet    = "shared_invitation.set"
+	OpAccountLimits          = "account.limits"
+	OpPolicyStatus           = "policy.status"
+	OpPolicySet              = "policy.set"
+	OpGrantAdd               = "grant.add"
+	OpGrantRemove            = "grant.remove"
+	OpGrantList              = "grant.list"
 )
 
 // Request is one request. It holds a password, so it prints as its operation only.
 type Request struct {
-	Op       string `json:"op"`
-	Login    string `json:"login,omitempty"`
-	Password string `json:"password,omitempty"`
-	DeviceID string `json:"deviceId,omitempty"`
-	SignOut  bool   `json:"signOut,omitempty"`
+	Op               string `json:"op"`
+	Login            string `json:"login,omitempty"`
+	Password         string `json:"password,omitempty"`
+	DeviceID         string `json:"deviceId,omitempty"`
+	KeepAwake        *bool  `json:"keepAwake,omitempty"`
+	LogRetentionDays *int   `json:"logRetentionDays,omitempty"`
+
+	// Ticket 224
+	Kind string `json:"kind,omitempty"`
+	// ExpectedLogin is the login an invitation is written for (a hint, never enforced).
+	ExpectedLogin string `json:"expectedLogin,omitempty"`
+	// MaxAccounts is the cap on accounts of policy.set; Limits then holds the defaults of a new account.
+	MaxAccounts  *int                    `json:"maxAccounts,omitempty"`
+	CodeHash     string                  `json:"codeHash,omitempty"`
+	TargetID     string                  `json:"targetId,omitempty"`
+	GuestAccount string                  `json:"guestAccount,omitempty"`
+	Limits       *accounts.AccountLimits `json:"limits,omitempty"`
 }
 
 // String never prints a member.
@@ -79,6 +106,8 @@ const (
 	CodeWeak       = "weak-password"
 	CodeNotFound   = "not-found"
 	CodeCapacity   = "capacity"
+	CodeBadKind    = "bad-kind"
+	CodeBadLimit   = "bad-limit"
 	CodeInternal   = "internal"
 )
 
@@ -122,6 +151,16 @@ func failFrom(err error) Response {
 		return fail(CodeCapacity, "the account is at its limit of outstanding pairing codes; one expires in ten minutes")
 	case errors.Is(err, ErrNotLive):
 		return fail(CodeBadRequest, err.Error())
+	case errors.Is(err, accounts.ErrBadKind):
+		return fail(CodeBadKind, "an account kind is member or guest")
+	case errors.Is(err, accounts.ErrBadLimit), errors.Is(err, ErrBadPolicy):
+		return fail(CodeBadLimit, err.Error())
+	case errors.Is(err, ErrNoTarget), errors.Is(err, accounts.ErrNoGrant):
+		return fail(CodeNotFound, err.Error())
+	case errors.Is(err, accounts.ErrGrantHeld):
+		return fail(CodeExists, err.Error())
+	case errors.Is(err, accounts.ErrNotGuest), errors.Is(err, accounts.ErrNotMember), errors.Is(err, accounts.ErrBadGrantTarget):
+		return fail(CodeBadRequest, err.Error())
 	case errors.Is(err, password.ErrTooShort), errors.Is(err, password.ErrNoUpper),
 		errors.Is(err, password.ErrNoLower), errors.Is(err, password.ErrNoDigit):
 		return fail(CodeWeak, err.Error())
@@ -132,17 +171,35 @@ func failFrom(err error) Response {
 // Handle runs one request. It never returns a secret.
 func (o *Ops) Handle(req Request) Response {
 	switch req.Op {
+	case OpHostSettings:
+		if req.KeepAwake == nil || req.LogRetentionDays == nil || *req.LogRetentionDays < 1 || *req.LogRetentionDays > 36500 {
+			return fail(CodeBadRequest, "invalid host settings")
+		}
+		if o.SaveHostSettings == nil {
+			return fail(CodeBadRequest, "host settings unavailable")
+		}
+		if err := o.SaveHostSettings(*req.KeepAwake, *req.LogRetentionDays); err != nil {
+			return fail(CodeInternal, "could not save host settings")
+		}
+		return okData(nil)
 	case OpAccountAdd:
-		login, err := o.AddAccount(req.Login, req.Password)
+		login, overCap, err := o.AddAccountKind(req.Login, req.Password, req.Kind)
 		if err != nil {
 			return failFrom(err)
 		}
-		return okData(map[string]string{"login": login})
+		return okData(map[string]any{"login": login, "overCap": overCap})
 	case OpAccountPasswd:
-		if err := o.SetPassword(req.Login, req.Password, req.SignOut); err != nil {
+		n, err := o.SetPassword(req.Login, req.Password)
+		if err != nil {
 			return failFrom(err)
 		}
-		return okData(nil)
+		return okData(map[string]int{"signedOut": n})
+	case OpAccountKind:
+		changed, err := o.SetKind(req.Login, req.Kind)
+		if err != nil {
+			return failFrom(err)
+		}
+		return okData(map[string]bool{"changed": changed})
 	case OpAccountRemove:
 		if err := o.RemoveAccount(req.Login); err != nil {
 			return failFrom(err)
@@ -173,6 +230,55 @@ func (o *Ops) Handle(req Request) Response {
 			return failFrom(err)
 		}
 		return okData(PairingCodeView{Code: code, ExpiresAt: expires.UTC().Format(time.RFC3339)})
+	case OpInvitationCreate:
+		res, err := o.CreateInvitation(req.Kind, req.ExpectedLogin)
+		if err != nil {
+			return failFrom(err)
+		}
+		return okData(res)
+	case OpInvitationList:
+		return okData(o.ListInvitations())
+	case OpInvitationWithdraw:
+		ok, err := o.WithdrawInvitation(req.CodeHash)
+		if err != nil {
+			return failFrom(err)
+		}
+		if !ok {
+			return fail(CodeNotFound, "no such invitation")
+		}
+		return okData(nil)
+	case OpSharedInvitationStatus:
+		return okData(o.SharedInvitationStatus())
+	case OpSharedInvitationSet:
+		if err := o.SetSharedInvitation(req.Password, req.Kind); err != nil {
+			return failFrom(err)
+		}
+		return okData(nil)
+	case OpAccountLimits:
+		if err := o.SetAccountLimits(req.Login, req.Limits); err != nil {
+			return failFrom(err)
+		}
+		return okData(nil)
+	case OpPolicyStatus:
+		return okData(o.PolicyStatus())
+	case OpPolicySet:
+		v, err := o.SetPolicy(req.MaxAccounts, req.Limits)
+		if err != nil {
+			return failFrom(err)
+		}
+		return okData(v)
+	case OpGrantAdd:
+		if err := o.AddGrant(req.Login, req.TargetID, req.Kind, req.GuestAccount); err != nil {
+			return failFrom(err)
+		}
+		return okData(nil)
+	case OpGrantRemove:
+		if err := o.RemoveGrant(req.Login, req.TargetID, req.GuestAccount); err != nil {
+			return failFrom(err)
+		}
+		return okData(nil)
+	case OpGrantList:
+		return okData(o.ListGrants(req.Login, req.GuestAccount))
 	}
 	return fail(CodeBadRequest, "unknown operation")
 }
