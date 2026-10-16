@@ -40,6 +40,14 @@ Friend NotInheritable Class LiveBroadcastEndpoint
     Public Property CertFingerprint As String = ""
     Public Property Inner As String = ""
     Public Property IsSealed As Boolean
+    ''' <summary>The <c>seal.v</c> of a sealed endpoint (0 when absent or unreadable). A receiver plays only a version it knows (1);
+    ''' any other value leaves the endpoint skippable (LIVE-BROADCAST item Q).</summary>
+    Public Property SealVersion As Integer
+    ''' <summary>The group key of THIS link, base64url, from a RELAY endpoint's <c>seal.key</c> (an outward descriptor only).
+    ''' A secret: never logged, never shown, never put in a ToString.</summary>
+    Public Property SealKey As String = ""
+    ''' <summary>The tunnel pin, base64url, from a TUNNEL endpoint's <c>seal.pin</c> (an outward descriptor only).</summary>
+    Public Property SealPin As String = ""
     Public Property AuthUser As String = ""
     Public Property Password As String
     Public Property Mode As String = ""

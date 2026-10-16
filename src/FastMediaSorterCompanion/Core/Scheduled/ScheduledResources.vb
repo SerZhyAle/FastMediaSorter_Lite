@@ -39,11 +39,15 @@ Friend Module ScheduledResourceRegistry
     Friend Function Lookup(resourceId As String) As ScheduledResourceFacts
         Dim descriptor As ResourceDescriptor = Find(resourceId)
         If descriptor Is Nothing Then Return New ScheduledResourceFacts With {.Exists = False}
+        Return FactsOf(descriptor)
+    End Function
+
+    Friend Function FactsOf(descriptor As ResourceDescriptor) As ScheduledResourceFacts
+        If descriptor Is Nothing Then Return New ScheduledResourceFacts With {.Exists = False}
         Return New ScheduledResourceFacts With {
             .Exists = True, .DisplayName = descriptor.DisplayName, .IsReadOnly = descriptor.ReadOnlyHint,
             .IsPinLocked = (descriptor.PinRequired AndAlso (String.IsNullOrEmpty(descriptor.PinSecretHandle) OrElse descriptor.PinChanged)) OrElse descriptor.ProtectionUnsupported,
-            .IsUnsupported = ResourceOrigin.IsExchange(descriptor) OrElse ResourceOrigin.IsLink(descriptor) OrElse
-                             (descriptor.Kind <> ResourceKind.Sftp AndAlso descriptor.Kind <> ResourceKind.Smb),
+            .IsUnsupported = descriptor.Kind <> ResourceKind.Sftp AndAlso descriptor.Kind <> ResourceKind.Smb,
             .RootPath = descriptor.RootPath, .IsSmb = descriptor.Kind = ResourceKind.Smb}
     End Function
 
@@ -62,13 +66,39 @@ Friend Module ScheduledResourceRegistry
     Friend Function Offered() As List(Of ResourceDescriptor)
         Try
             Return ResourceRegistry.Load().
-                Where(Function(r As ResourceDescriptor) Not ResourceOrigin.IsExchange(r) AndAlso Not ResourceOrigin.IsLink(r) AndAlso
-                                                        (r.Kind = ResourceKind.Sftp OrElse r.Kind = ResourceKind.Smb)).
+                Where(Function(r As ResourceDescriptor) (r.Kind = ResourceKind.Sftp OrElse r.Kind = ResourceKind.Smb) AndAlso
+                                                        Not r.ProtectionUnsupported).
                 OrderBy(Function(r As ResourceDescriptor) r.DisplayName, StringComparer.CurrentCultureIgnoreCase).ToList()
         Catch ex As Exception
             AppFileLogger.LogException("Scheduled operations: listing the resources", ex)
             Return New List(Of ResourceDescriptor)()
         End Try
+    End Function
+
+End Module
+
+''' <summary>Google Drive exchange channel discovery and unattended opening (ticket 231, 3.2).</summary>
+Friend Module ScheduledDriveRegistry
+
+    Friend Property IsSignedInOverride As Func(Of Boolean)
+    Friend Property OpenSideOverride As Func(Of ScheduledLocation, ScheduledSideOpen)
+
+    Friend Function IsSignedIn() As Boolean
+        If IsSignedInOverride IsNot Nothing Then Return IsSignedInOverride.Invoke()
+        Try
+            Dim raw As String = ResourceRegistry.HiveRead("Exchange_GoogleSignedIn")
+            Return raw = "1"
+        Catch
+            Return False
+        End Try
+    End Function
+
+    Friend Function OpenSide(location As ScheduledLocation) As ScheduledSideOpen
+        If OpenSideOverride IsNot Nothing Then Return OpenSideOverride.Invoke(location)
+        If Not IsSignedIn() Then
+            Return ScheduledSideOpen.Failed(New SideProblem(SideProblemKind.SignedOut, location.Describe()))
+        End If
+        Return ScheduledSideOpen.Failed(New SideProblem(SideProblemKind.Offline, location.Describe()))
     End Function
 
 End Module
@@ -108,19 +138,21 @@ Friend NotInheritable Class ProviderSide
 
     Friend ReadOnly Provider As IFileSystemProvider
     Friend ReadOnly ResourceId As String
+    Friend ReadOnly IsDrive As Boolean
     Private ReadOnly rootFolder As String
     Private ReadOnly display As String
     Private ReadOnly flag As RecursionFlag
     Private ReadOnly owner As IDisposable
 
     Friend Sub New(provider As IFileSystemProvider, resourceId As String, rootFolder As String, display As String,
-                   flag As RecursionFlag, Optional owner As IDisposable = Nothing)
+                   flag As RecursionFlag, Optional owner As IDisposable = Nothing, Optional isDrive As Boolean = False)
         Me.Provider = provider
         Me.ResourceId = If(resourceId, "")
-        Me.rootFolder = If(rootFolder, "/")
+        Me.rootFolder = If(String.IsNullOrEmpty(rootFolder), "/", rootFolder)
         Me.display = If(display, "")
         Me.flag = If(flag, New RecursionFlag())
         Me.owner = owner
+        Me.IsDrive = isDrive
     End Sub
 
     Public ReadOnly Property IsLocalPath As Boolean Implements IScheduledSide.IsLocalPath
@@ -184,12 +216,27 @@ Friend NotInheritable Class ProviderSide
         End Try
     End Function
 
-    Friend Shared Function ProblemOf(failure As ResourceFailure, place As String) As SideProblem
+    Friend Shared Function ProblemOf(failure As ResourceFailure, place As String, Optional forConnect As Boolean = False) As SideProblem
+        If failure Is Nothing Then
+            Return New SideProblem(If(forConnect, SideProblemKind.Offline, SideProblemKind.Unreachable), place)
+        End If
+        Select Case failure.Detail
+            Case "device-revoked"
+                Return New SideProblem(SideProblemKind.DeviceRevoked, place)
+            Case ExchangeTunnelRules.CertificateDetail
+                Return New SideProblem(SideProblemKind.ExchangeCertificateChanged, place)
+            Case "signed-out"
+                Return New SideProblem(SideProblemKind.SignedOut, place)
+            Case "pin-locked"
+                Return New SideProblem(SideProblemKind.PinLocked, place)
+        End Select
         Select Case failure.Kind
             Case ResourceFailureKind.Auth : Return New SideProblem(SideProblemKind.NoCredential, place)
             Case ResourceFailureKind.KeyMismatch : Return New SideProblem(SideProblemKind.KeyNotPinned, place)
             Case ResourceFailureKind.SftpStatus
                 Return New SideProblem(If(failure.StatusCode = 3, SideProblemKind.Denied, SideProblemKind.Unreachable), place)
+            Case ResourceFailureKind.Transport, ResourceFailureKind.Timeout
+                Return New SideProblem(If(forConnect, SideProblemKind.Offline, SideProblemKind.Unreachable), place)
             Case Else : Return New SideProblem(SideProblemKind.Unreachable, place)
         End Select
     End Function
@@ -348,36 +395,44 @@ End Class
 ''' <summary>Opens a resource location as a connected side, asking nothing.</summary>
 Friend Module ScheduledResourceSides
 
-    Friend Function Open(location As ScheduledLocation, recursive As Boolean, ct As CancellationToken) As ScheduledSideOpen
-        Dim descriptor As ResourceDescriptor = ScheduledResourceRegistry.Find(location.ResourceId)
+    Friend Function Open(location As ScheduledLocation, recursive As Boolean, ct As CancellationToken,
+                         Optional descriptorOverride As ResourceDescriptor = Nothing,
+                         Optional secretStoreOverride As IResourceSecretStore = Nothing,
+                         Optional dialerOverride As IEndpointDialer = Nothing,
+                         Optional tunnelOverride As IExchangeTunnelSource = Nothing,
+                         Optional clockOverride As IResolutionClock = Nothing,
+                         Optional hiveReadOverride As Func(Of String, String) = Nothing,
+                         Optional hiveWriteOverride As Action(Of String, String) = Nothing) As ScheduledSideOpen
+        Dim descriptor As ResourceDescriptor = If(descriptorOverride, ScheduledResourceRegistry.Find(location.ResourceId))
         If descriptor Is Nothing Then
             Return ScheduledSideOpen.Failed(New SideProblem(SideProblemKind.ResourceRemoved,
                 If(String.IsNullOrEmpty(location.ResourceName), location.ResourceId, location.ResourceName)))
         End If
-        If ResourceOrigin.IsExchange(descriptor) OrElse ResourceOrigin.IsLink(descriptor) Then
-            Return ScheduledSideOpen.Failed(New SideProblem(SideProblemKind.Unreachable, descriptor.DisplayName))
-        End If
         If descriptor.ProtectionUnsupported Then
             Return ScheduledSideOpen.Failed(New SideProblem(SideProblemKind.Denied, descriptor.DisplayName))
         End If
+        Dim secretStore As IResourceSecretStore = If(secretStoreOverride, New RegistryResourceSecretStore())
         Dim pinValue As String = Nothing
         If descriptor.PinRequired Then
             If String.IsNullOrEmpty(descriptor.PinSecretHandle) OrElse descriptor.PinChanged Then
-                Return ScheduledSideOpen.Failed(New SideProblem(SideProblemKind.Denied, descriptor.DisplayName))
+                Return ScheduledSideOpen.Failed(New SideProblem(SideProblemKind.PinLocked, descriptor.DisplayName))
             End If
-            Dim pinRead As CredentialReadResult = ResourceCommit.ReadPin(descriptor, New RegistryResourceSecretStore())
-            If pinRead.Outcome <> CredentialReadOutcome.Ok Then
-                Return ScheduledSideOpen.Failed(New SideProblem(SideProblemKind.Denied, descriptor.DisplayName))
+            Dim pinRead As CredentialReadResult = ResourceCommit.ReadPin(descriptor, secretStore)
+            If pinRead.Outcome <> CredentialReadOutcome.Ok OrElse String.IsNullOrEmpty(pinRead.Secret) Then
+                Return ScheduledSideOpen.Failed(New SideProblem(SideProblemKind.PinLocked, descriptor.DisplayName))
             End If
             pinValue = pinRead.Secret
         End If
 
         ' The credential is READ - from the viewer's own DPAPI store - never asked for. Missing or unreadable
         ' is the wall: the user fixes it in the viewer's resource manager.
-        Dim read As CredentialReadResult = ResourceCommit.ReadCredential(descriptor, New RegistryResourceSecretStore())
+        Dim read As CredentialReadResult = ResourceCommit.ReadCredential(descriptor, secretStore)
         If read.Outcome <> CredentialReadOutcome.Ok Then
             Return ScheduledSideOpen.Failed(New SideProblem(SideProblemKind.NoCredential, descriptor.DisplayName))
         End If
+
+        Dim tunnel As IExchangeTunnelSource = If(tunnelOverride,
+            ExchangeTunnelSources.[For](descriptor, secretStore, Nothing, Nothing))
 
         Dim flag As New RecursionFlag With {.Value = recursive}
         Dim outcome As ConnectOutcome
@@ -386,21 +441,30 @@ Friend Module ScheduledResourceSides
             outcome = ResourceConnect.ConnectAsync(descriptor, read.Secret,
                                                    Function(fingerprint As String, token As CancellationToken) False,
                                                    Function(fingerprint As String) False,
-                                                   Function() flag.Value, ct, resourcePin:=pinValue).GetAwaiter().GetResult()
+                                                   Function() flag.Value, ct,
+                                                   dialerOverride:=dialerOverride,
+                                                   tunnelSource:=tunnel,
+                                                   resourcePin:=pinValue,
+                                                   clockOverride:=clockOverride,
+                                                   secretsOverride:=secretStore).GetAwaiter().GetResult()
         Catch ex As OperationCanceledException
             Throw
         Catch ex As Exception
             AppFileLogger.LogException("Scheduled operations: connecting " & descriptor.DisplayName, ex)
-            Return ScheduledSideOpen.Failed(ProviderSide.ProblemOf(ResourceFailure.FromException(ex), descriptor.DisplayName))
+            Return ScheduledSideOpen.Failed(ProviderSide.ProblemOf(ResourceFailure.FromException(ex), descriptor.DisplayName, forConnect:=True))
         End Try
         If Not outcome.Succeeded Then
-            If outcome.Failure IsNot Nothing AndAlso outcome.Failure.Kind = ResourceFailureKind.Auth AndAlso descriptor.PinRequired Then
-                ResourceCommit.MarkPinChanged(descriptor, AddressOf ResourceRegistry.HiveRead, AddressOf ResourceRegistry.HiveWrite)
+            If outcome.Failure IsNot Nothing AndAlso outcome.Failure.Kind = ResourceFailureKind.Auth AndAlso
+               descriptor.PinRequired AndAlso String.IsNullOrEmpty(outcome.Failure.Detail) Then
+                Dim readHive As Func(Of String, String) = If(hiveReadOverride, New Func(Of String, String)(AddressOf ResourceRegistry.HiveRead))
+                Dim writeHive As Action(Of String, String) = If(hiveWriteOverride, New Action(Of String, String)(AddressOf ResourceRegistry.HiveWrite))
+                ResourceCommit.MarkPinChanged(descriptor, readHive, writeHive)
+                Return ScheduledSideOpen.Failed(New SideProblem(SideProblemKind.PinLocked, descriptor.DisplayName))
             End If
             If outcome.HostKeyRefusal IsNot Nothing Then
                 Return ScheduledSideOpen.Failed(New SideProblem(SideProblemKind.KeyNotPinned, descriptor.DisplayName))
             End If
-            Return ScheduledSideOpen.Failed(ProviderSide.ProblemOf(outcome.Failure, descriptor.DisplayName))
+            Return ScheduledSideOpen.Failed(ProviderSide.ProblemOf(outcome.Failure, descriptor.DisplayName, forConnect:=True))
         End If
 
         Dim folder As String = If(String.IsNullOrWhiteSpace(location.Path), descriptor.RootPath, location.Path)

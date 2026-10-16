@@ -34,6 +34,7 @@ type framesFile struct {
 	Constants       map[string]int `json:"constants"`
 	Transcripts     []*transcript  `json:"transcripts"`
 	Chunks          []chunkExample `json:"chunks"`
+	Sealed          sealedFile     `json:"sealed"`
 }
 
 type recordsFile struct {
@@ -120,7 +121,8 @@ func frameNotes() []string {
 		"Registration (`register`) carries an invitation by `invitationCode` (one-time) or `sharedPassword` (the shared invitation password), exactly one of them; the contract's prose also names them `invitation` and `invitationPassword`, and the server reads both spellings. `enrolled` carries `accountKind` (`member` or `guest`).",
 		"`limit-reached` is a count limit of the server or of the account (resources, broadcasts, devices, accounts, and the clipboard's `clipboardBytes`); `capacity` is the server unable to take more - a record or a frame over its size, the work queue of the password hash full, no room for another pairing code, the account's second overlapping clipboard put. A client that retries later is right for the second and wrong for the first.",
 		"The `clipboard` transcript is section 22 (ticket 229): after `clipboard-ready` and after the members of `clipboard-value` the bytes are RAW - one step per byte run, whose `hex` is the bytes exactly as they crossed the stream; a frame assembler stops there. A put's completion is judged against a short probe for bytes beyond the declared size, and a sender that half-closes is judged at once.",
-		"This corpus is evidence for sections 5 to 7 and 22 at edition 1.1. It is no evidence for section 27 (the sealed content amendment, item DP): the server of this corpus does not implement the capability, its `welcome.features` carries no `sealed`, and its clipboard kinds are `text`, `image` and `file` only.",
+		"This corpus is evidence for sections 5 to 7, 22 and 27 at edition 1.1. The transcripts `sealed-devices`, `sealed-folder`, `sealed-grant` and `sealed-clipboard` run against a server that advertises `sealed` (item DP); every other transcript runs against one that does not, so its `welcome.features` carries no `sealed` and its clipboard kinds are `text`, `image` and `file`.",
+		"The `sealed` member of this file lists every box of the `sealed-*` transcripts with the context it was sealed under, the devices it is from and to, and the clear payload it opens to. The server did not make, open or check a box (item DH): the boxes are sealed by the generator over the fixed device keys of the shared vector file e2e-v1.json, so a product that holds that file's private keys opens every one of them. See `sealed.notes`.",
 	}
 }
 
@@ -146,17 +148,18 @@ func generate(commit string) (files map[string][]byte, err error) {
 		}
 	}()
 	var transcripts []*transcript
+	sealedCases = nil
 	for _, sc := range []func() *transcript{scenarioEnrollAndHello, scenarioPairing, scenarioRefusals, scenarioDirectory,
 		scenarioTunnels, scenarioRelay, scenarioCast, scenarioRegistration, scenarioPasswordAndSignOut, scenarioPace,
-		scenarioClipboard} {
+		scenarioClipboard, scenarioSealedDevices, scenarioSealedFolder, scenarioSealedGrant, scenarioSealedClipboard} {
 		transcripts = append(transcripts, sc())
 	}
 	frames := framesFile{
-		Contract: contractID, ContractVersion: contractVersion, Sections: "5, 6, 7.1-7.10, 22", Rung: 2, Producer: producerName,
+		Contract: contractID, ContractVersion: contractVersion, Sections: "5, 6, 7.1-7.10, 22, 27", Rung: 2, Producer: producerName,
 		Notes: frameNotes(),
 		Constants: map[string]int{"maxFrame": wire.MaxFrame, "maxFrameAuth": wire.MaxFrameAuth, "maxRecord": wire.MaxRecord,
 			"maxChunkLength": wire.MaxChunkLen, "schemaVersion": wire.SchemaVersion},
-		Transcripts: transcripts, Chunks: chunkExamples(),
+		Transcripts: transcripts, Chunks: chunkExamples(), Sealed: sealedMember(),
 	}
 	records := recordsFile{
 		Contract: contractID, ContractVersion: contractVersion, Sections: "6, 7.4, 8.1", Rung: 1, Producer: producerName,
@@ -202,7 +205,7 @@ func provenance(files map[string][]byte, commit string) string {
 		commit = "not recorded"
 	}
 	var b strings.Builder
-	fmt.Fprintf(&b, "Exchange conformance vectors for %s %s (rungs 1 and 2, the connection string of ticket 187, the clipboard of section 22).\n\n", contractID, contractVersion)
+	fmt.Fprintf(&b, "Exchange conformance vectors for %s %s (rungs 1 and 2, the connection string of ticket 187, the clipboard of section 22, the sealed content of section 27).\n\n", contractID, contractVersion)
 	b.WriteString("generator: cmd/exchange-vectors in the exchange-server module of the Fast Media Sorter & Sharing for Windows repository\n")
 	b.WriteString("command:   go run ./cmd/exchange-vectors -out testdata/vectors\n")
 	fmt.Fprintf(&b, "commit:    %s\n\n", commit)

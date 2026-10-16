@@ -422,10 +422,18 @@ foreach ($k in $captures.Keys) {
     $fresh = $captures[$k]
     if (-not (Test-Path -LiteralPath $basePath)) {
         Write-Host "  no committed baseline for $k ($($fileFor[$k])) - nothing to compare against" -ForegroundColor DarkGray
+        $notRun += "$k (no committed baseline)"
         continue
     }
-    if (-not $fresh.captured) { $notRun += "$k ($($fresh.reason))"; continue }
+    if (-not $fresh.captured) {
+        $notRun += "$k ($($fresh.reason))"
+        Write-Host "  NOT compared: $k - $($fresh.reason)" -ForegroundColor Magenta
+        continue
+    }
     $compared++
+    Write-Host ("  observed {0}: listeners/UDP={1}, connections={2}, children={3}, exchange values={4}, new files={5}" -f
+        $k, $fresh.network.maxListeningOrUdpEndpoints, $fresh.network.maxConnections,
+        @($fresh.childProcesses).Count, @($fresh.registry.forbiddenValueNames).Count, @($fresh.files.created).Count)
     $base = Get-Content -LiteralPath $basePath -Raw | ConvertFrom-Json
     foreach ($n in @($fresh.registry.added)) {
         if (@($base.registry.added) -notcontains $n) { $problems.Add("${k}: new registry value name '$n'") }

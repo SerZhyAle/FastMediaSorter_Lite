@@ -265,11 +265,15 @@ Friend NotInheritable Class ExchangeEntrySession
                 If session Is Nothing Then Return notRunning
                 Dim waiter As TaskCompletionSource(Of Boolean) = RegisterWaiter()
                 If StateOf(session) = ExchangeAgentState.Online AndAlso session.Model.HasSnapshot Then
-                    Dim json As String = session.Model.AccessOf(resourceId)
-                    If json.Length > 0 Then Return New ExchangeAgentAccessResult(New ExchangeAgentReply(ExchangeAgentReplyKind.Ok, "", ""), json)
-                    Dim listed As Boolean = session.Model.Snapshot().Resources.Any(Function(r) String.Equals(r.ResourceId, resourceId, StringComparison.Ordinal))
-                    Return New ExchangeAgentAccessResult(New ExchangeAgentReply(ExchangeAgentReplyKind.Refused,
-                        If(listed, ExchangeAgentPipe.ErrorNoAccess, ExchangeAgentPipe.ErrorUnknownResource), ""), "")
+                    Dim record As ExchangeResourceRecord = session.Model.Snapshot().Resources.FirstOrDefault(Function(r) String.Equals(r.ResourceId, resourceId, StringComparison.Ordinal))
+                    ' spec 234 items DI and DP: this per-entry session has no device key (it enrolls without an `e2eKey`, so no producer seals to
+                    ' it), and a clear `access` that came through the server is never used - not even from an older producer. A record that carries
+                    ' an access of either kind is answered with the typed state (`e2e-missing`, or `server-no-e2e` on a server without `sealed`)
+                    ' instead of "no access". Resolve with no key never opens anything.
+                    Dim resolved As ExchangeSealedAccessResult = If(record Is Nothing, Nothing, ExchangeSealedAccess.Resolve(record, session.Sealed, Nothing, Nothing))
+                    Dim token As String = If(record Is Nothing, ExchangeAgentPipe.ErrorUnknownResource,
+                                             If(resolved IsNot Nothing AndAlso resolved.State IsNot Nothing, resolved.State.Code, ExchangeAgentPipe.ErrorNoAccess))
+                    Return New ExchangeAgentAccessResult(New ExchangeAgentReply(ExchangeAgentReplyKind.Refused, token, ""), "")
                 ElseIf StateOf(session) <> ExchangeAgentState.Online AndAlso StateOf(session) <> ExchangeAgentState.Connecting AndAlso StateOf(session) <> ExchangeAgentState.Reconnecting Then
                     Return notRunning
                 End If

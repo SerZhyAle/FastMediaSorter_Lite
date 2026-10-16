@@ -488,6 +488,7 @@ Public Class ImportedSettingsLimitsTests
         ' exists so a NEW property cannot slip past the inventory unnoticed.
         Dim listed As New HashSet(Of String) From {
             "AdvanceAfterCopy", "AllowNewWindows", "AudioControlsAlwaysVisible", "AudioVisualiser", "AutoAcceptLiveCast",
+            "RevealStatusOnFileOperation",
             "CreateMissingDestination", "DeleteToRecycleBin", "IncludeAudioInNavigation",
             "IncludeDocumentInNavigation", "IncludeSubfolders", "IncludeVideoInNavigation", "ModernChrome", "ChromePinned", "ChromeRow1Pinned", "ChromeRow2Pinned", "ChromeStatusPinned", "RecipientsOverlayPinned", "ChromeWindowControlsPinned",
             "ReduceMotion", "RememberVideoPosition", "ResumeLastPlayback", "SortOtherFiles", "SecureIncludeInNavigation",
@@ -504,7 +505,7 @@ Public Class ImportedSettingsLimitsTests
     Public Sub Export_then_import_round_trips_every_property()
         Dim p As New ModernViewerPreferences() With {
             .NameCollisionPolicy = "rename", .AfterFileOperation = "closeIfEmpty",
-            .AdvanceAfterCopy = False, .DeleteToRecycleBin = False, .ConfirmDelete = "never",
+            .AdvanceAfterCopy = False, .RevealStatusOnFileOperation = True, .DeleteToRecycleBin = False, .ConfirmDelete = "never",
             .AutoAcceptLiveCast = True,
             .CreateMissingDestination = False, .IncludeSubfolders = True,
             .IncludedExtensions = "[""jpg"", ""png""]", .SortOtherFiles = True,

@@ -810,6 +810,7 @@
     <!-- Spec 060 (application theme). The strings are registered by both builds like the
          tables above; the theme itself is .NET 10 only, so the four Theming files compile
          to nothing here. -->
+    <Compile Include="Localization\Localization.DeviceVocabulary.vb" />
     <Compile Include="Localization\Localization.Theme.vb" />
     <!-- Ticket 182 L-3/L-6: the strings of the "send the log" flow when a log cannot be included and
          when there is no mail program. Registered by both builds like the tables above. -->

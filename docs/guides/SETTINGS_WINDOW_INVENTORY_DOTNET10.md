@@ -390,6 +390,7 @@ Actions are entry points, not preferences: no stored default/range, and opening 
 | `resume_last_playback` | general / startup | ModernViewerPreferences.ResumeLastPlayback; Boolean; default False; Load/Save key ResumeLastPlayback | Bound property type; matching row constructor / Normalize |
 | `allow_new_windows` | general / startup | ModernViewerPreferences.AllowNewWindows; Boolean; default False; Load/Save key AllowNewWindows | Bound property type; matching row constructor / Normalize |
 | `secondary_instance_warning` | general / startup | Action/information; matching row constructor (no preference default) | Matching row constructor |
+| `welcome_replay` | general / startup | Action/information; matching row constructor (no preference default) | Matching row constructor |
 | `settings_export_personal` | general / advanced | Per-export choice; False; not persisted | Matching row constructor |
 | `settings_export` | general / advanced | Action/information; matching row constructor (no preference default) | Matching row constructor |
 | `settings_import` | general / advanced | Action/information; matching row constructor (no preference default) | Matching row constructor |
@@ -400,6 +401,7 @@ Actions are entry points, not preferences: no stored default/range, and opening 
 | `recipients_font` | recipients / overlay | ModernViewerPreferences.RecipientsOverlayFontSize; Integer; default 9; Load/Save key RecipientsOverlayFontSize | range: 9, 18 |
 | `recipients_opacity` | recipients / overlay | ModernViewerPreferences.RecipientsOverlayOpacity; Integer; default 88; Load/Save key RecipientsOverlayOpacity | range: 40, 100 |
 | `recipients_rows` | recipients / overlay | ModernViewerPreferences.RecipientsOverlayVisibleRows; Integer; default 11   ' ten slots + Delete fit without scrolling (audit B-13); Load/Save key RecipientsOverlayVisibleRows | range: 3, 11 |
+| `recipients_position_reset` | recipients / overlay | Action/information; matching row constructor (no preference default) | Matching row constructor |
 | `new_image_scale` | images / basic | ModernViewerPreferences.NewImageScaleMode; String; default "fit"; Load/Save key NewImageScaleMode | tokens: fit, actual, perFolder |
 | `exif_rotate` | images / basic | Main_Form.Lifecycle; key ExifAutoRotate; storage default '1' | Original native editor bounds/choices; Lifecycle loader validation |
 | `wheel_zooms` | images / basic | Main_Form.Lifecycle; key WheelZooms; storage default '0' | Original native editor bounds/choices; Lifecycle loader validation |
@@ -440,6 +442,7 @@ Actions are entry points, not preferences: no stored default/range, and opening 
 | `advance_after_copy` | files / basic | ModernViewerPreferences.AdvanceAfterCopy; Boolean; default True; Load/Save key AdvanceAfterCopy | Bound property type; matching row constructor / Normalize |
 | `name_collision` | files / basic | ModernViewerPreferences.NameCollisionPolicy; String; default "ask"; Load/Save key NameCollisionPolicy | tokens: ask, skip, rename, replace |
 | `after_file_operation` | files / basic | ModernViewerPreferences.AfterFileOperation; String; default "next"; Load/Save key AfterFileOperation | tokens: next, stay, closeIfEmpty |
+| `reveal_status_on_file_op` | files / basic | ModernViewerPreferences.RevealStatusOnFileOperation; Boolean; default False; Load/Save key RevealStatusOnFileOperation | Bound property type; matching row constructor / Normalize |
 | `create_missing_destination` | files / basic | ModernViewerPreferences.CreateMissingDestination; Boolean; default True; Load/Save key CreateMissingDestination | Bound property type; matching row constructor / Normalize |
 | `delete_to_recycle_bin` | files / basic | ModernViewerPreferences.DeleteToRecycleBin; Boolean; default True; Load/Save key DeleteToRecycleBin | Bound property type; matching row constructor / Normalize |
 | `confirm_delete` | files / basic | ModernViewerPreferences.ConfirmDelete; String; default "always"; Load/Save key ConfirmDelete | tokens: always, permanentOnly, never |

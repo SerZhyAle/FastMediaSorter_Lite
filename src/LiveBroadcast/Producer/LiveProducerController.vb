@@ -84,6 +84,13 @@ Friend Class LiveProducerState
     Public Property RelayUrl As String = ""
     Public Property TunnelUrl As String = ""
     Public Property ListenerAddress As String = ""
+    ''' <summary>True when the RELAY / TUNNEL endpoints of this broadcast are sealed (DEVICE-EXCHANGE items DK, DL): the agent then
+    ''' uploads sealed records, never clear bytes. <see cref="DescriptorJson"/> is then the OUTWARD descriptor (keys in its endpoints).</summary>
+    Public Property Sealed As Boolean
+    ''' <summary>The descriptor of the directory record: the same endpoints, `seal: {v}` and no key. Empty when the descriptor needs no split.</summary>
+    Public Property RecordDescriptorJson As String = ""
+    ''' <summary>The user name of a protected broadcast's credentials ("" when it is open); the password is <see cref="Password"/>.</summary>
+    Public Property AuthUser As String = ""
 End Class
 
 ''' <summary>Every external fact the controller needs, injected.</summary>
@@ -117,6 +124,10 @@ Friend Class LiveProducerPorts
     Public Property BroadcastStarted As Action(Of LiveProducerState, LiveBroadcastHub, LiveBroadcastHub)
     ''' <summary>Notifies when broadcast stops with its broadcastId.</summary>
     Public Property BroadcastStopped As Action(Of String)
+    ''' <summary>The sealed layer of the exchange agent (spec 234, items DK and DL), or Nothing when none is wired: the descriptor is
+    ''' then built without `seal`, as before. When set, a RELAY or TUNNEL endpoint is listed only while the layer
+    ''' <see cref="ILiveBroadcastSealing.CanSealThroughServer"/>, and each carries `seal`.</summary>
+    Public Property Sealing As ILiveBroadcastSealing
 End Class
 
 Friend Class LiveBroadcastController
@@ -165,6 +176,9 @@ Friend Class LiveBroadcastController
                 Dim address As String = If(_ports.PickAddress?.Invoke(), "")
                 Dim hasLanAddress As Boolean = LiveProducerAddressPolicy.IsPublishablePicked(address)
                 Dim exchangeInfo As Tuple(Of String, String) = _ports.ExchangeEndpointInfo?.Invoke()
+                ' DEVICE-EXCHANGE item DP: with a sealing layer wired, nothing is offered through a server that cannot seal (or
+                ' while not connected) - no RELAY, no TUNNEL, no clear fallback. What is left is the LAN.
+                If _ports.Sealing IsNot Nothing AndAlso exchangeInfo IsNot Nothing AndAlso Not _ports.Sealing.CanSealThroughServer Then exchangeInfo = Nothing
                 If Not hasLanAddress AndAlso (exchangeInfo Is Nothing OrElse String.IsNullOrEmpty(exchangeInfo.Item1)) Then
                     ' Producer rule 1: neither source opens and no descriptor exists.
                     Return LiveStartResult.Failed(LiveStartRefusal.NoLanAddress)
@@ -195,6 +209,21 @@ Friend Class LiveBroadcastController
                     ' be uploaded to its unauthenticated relay; Digest remains enforced over TUNNEL.
                     If String.IsNullOrEmpty(request.Password) Then relayUrl = "https://" & publicEndpoint & "/v2/b/" & broadcastId & "/stream"
                     tunnelUrl = "fmsx://" & publicEndpoint & "/b/" & broadcastId & "/http"
+                End If
+
+                ' Items DK and DL: the RELAY and TUNNEL endpoints are sealed. The key of the first outward link is made now and goes
+                ' only into the descriptor the person hands out; the agent keeps it for the key ring of the upload.
+                Dim isSealed As Boolean = _ports.Sealing IsNot Nothing AndAlso (relayUrl.Length > 0 OrElse tunnelUrl.Length > 0)
+                Dim relayLinkKey As String = ""
+                If isSealed AndAlso relayUrl.Length > 0 Then
+                    relayLinkKey = If(_ports.Sealing.NewLinkKey(broadcastId), "")
+                    If relayLinkKey.Length = 0 Then relayUrl = ""
+                End If
+                ' Item DM: the TUNNEL runs TLS inside. Its endpoint is listed only with the pin of the leaf the agent will answer with.
+                Dim tunnelPin As String = ""
+                If isSealed AndAlso tunnelUrl.Length > 0 Then
+                    tunnelPin = If(_ports.Sealing.NewTunnelPin(broadcastId), "")
+                    If tunnelPin.Length = 0 Then tunnelUrl = ""
                 End If
 
                 ' Section 3.4: a LAN listener for video is off by default and video starts exchange-only
@@ -326,9 +355,20 @@ Friend Class LiveBroadcastController
                     .TunnelUrl = tunnelUrl,
                     .CertFingerprint = certFingerprint,
                     .InnerUrl = url,
-                    .AuthUser = If(String.IsNullOrEmpty(request.Password), "", "listener")
+                    .AuthUser = If(String.IsNullOrEmpty(request.Password), "", "listener"),
+                    .Sealed = isSealed,
+                    .Outward = True,
+                    .RelayKey = relayLinkKey,
+                    .TunnelPin = tunnelPin
                 }
+                ' The descriptor the person hands out carries the link key; the one the directory record carries has `seal: {v}` alone.
                 Dim json As String = LiveProducerDescriptorWriter.BuildJson(input)
+                Dim recordJson As String = If(isSealed, LiveProducerDescriptorWriter.BuildJson(input.ForRecord()), "")
+                If isSealed AndAlso (json.Length = 0 OrElse recordJson.Length = 0) Then
+                    ' No endpoint of any transport could be handed out (a sealed TUNNEL has no pin before its TLS exists, item DM).
+                    StopOpened()
+                    Return LiveStartResult.Failed(LiveStartRefusal.NoLanAddress)
+                End If
 
                 _state = New LiveProducerState With {
                     .Running = True,
@@ -345,7 +385,10 @@ Friend Class LiveBroadcastController
                     .BroadcastId = broadcastId,
                     .Password = request.Password,
                     .RelayUrl = relayUrl,
-                    .TunnelUrl = tunnelUrl
+                    .TunnelUrl = tunnelUrl,
+                    .Sealed = isSealed,
+                    .RecordDescriptorJson = recordJson,
+                    .AuthUser = input.AuthUser
                 }
                 _state.ListenerAddress = bindAddress.ToString()
                 _ports.BroadcastStarted?.Invoke(_state, _audioHub, _videoHub)

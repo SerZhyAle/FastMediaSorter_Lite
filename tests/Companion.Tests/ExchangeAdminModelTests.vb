@@ -279,7 +279,7 @@ Public Class ExchangeAdminModelTests
         Try
             Localization.CurrentCode = "en"
             Dim must As New Dictionary(Of String, String()) From {
-                {"relay-visible", {"relay", "operator", "in the clear", "never written to disk"}},
+                {"relay-visible", {"broadcast", "through this exchange server", "operator", "in the clear", "never written to disk"}},
                 {"tunnel-broadcast-plain", {"tunnel", "RTSP", "HTTP", "operator"}},
                 {"access-visible", {"access details", "memory", "operator", "never written to disk", "never logged"}},
                 {"sftp-opaque", {"SSH", "cannot read"}},

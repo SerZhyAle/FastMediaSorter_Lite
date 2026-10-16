@@ -9,6 +9,7 @@ Option Strict On
 Partial Public NotInheritable Class Localization
 
     Private Shared Sub RegisterStrings()
+        AddExchangeVocabularyStrings()
         AddChromeStrings()      ' main-window captions + the first-run help
         AddRuntimeStrings()     ' strings carrying a {0} value + multi-line messages
         AddMainStrings()        ' -> AddMediaStrings, AddFileStrings -> AddFileDetailsStrings

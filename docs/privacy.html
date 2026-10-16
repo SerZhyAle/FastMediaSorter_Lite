@@ -57,7 +57,7 @@ main:focus{outline:none}
 <main class="container" id="main" tabindex="-1">
         <div data-l="en">
         <h1>Privacy Policy</h1>
-        <p class="note">Last updated: 14 October 2026</p>
+        <p class="note">Last updated: 16 October 2026</p>
 
         <p><strong>Fast Media Sorter &amp; Sharing for Windows collects no personal data.</strong> There is no advertising,
         and no telemetry or analytics. It runs entirely on your own device, and the developer
@@ -154,11 +154,38 @@ main:focus{outline:none}
             server's address and its certificate fingerprint, and refuses a server whose certificate ever
             changes. A connection string that another device of the account can show you is that address with
             the fingerprint: it carries no password and no token, and it never enters the logs or the support
-            archive. What whoever runs the server can see: the accounts as password hashes, the devices enrolled
-            in them, the records of the shares published to the server and - while a share is being published
-            from one of its devices - the access key of that share, held in the server's memory; folders you
-            open through the exchange reach the PC as encrypted sessions between the two ends, and the server's
-            own log names a share or a device only by a short one-way fingerprint.</li>
+            archive. <strong>What the exchange server sees, and what it does not.</strong>
+            With compatible end-to-end encryption, file contents, live-broadcast payloads and clipboard
+            contents are encrypted on the sending device and opened on authorized recipient devices.
+            This does not hide metadata: the operator sees account and device identifiers and names,
+            folder and broadcast names, presence, timestamps, and transfer and chunk sizes. Folder names
+            are not encrypted content. Verify a changed device key before trusting it; the server's
+            certificate fingerprint and a device's encryption key are separate identities.
+            The server stores password and token hashes, device public keys and published-share records
+            on disk. Sealed share access, broadcast/access-grant key boxes and clipboard values stay in
+            memory; sealed payloads and keys do not belong in its logs.
+            <strong>Clipboard transfers.</strong> Choose "Send the clipboard to the server" in Share
+            Manager, its tray menu or its desktop shortcut to send the current text, image or one file
+            to each joined member account. "Get the clipboard from the server" retrieves its newest value.
+            This transfer is explicit, not continuous clipboard monitoring. The server holds only the
+            last complete value in memory, never on disk. A new complete upload replaces it; an interrupted
+            upload leaves the previous value. Restarting the server or deleting the account clears it.
+            Logs record only the kind and size class, never the clipboard contents or file name.
+            <strong>Outside visibility check.</strong> "Is my server visible from outside" explicitly
+            asks <a href="https://check-host.net">check-host.net</a> to check the public host and port;
+            that third party receives the endpoint you asked it to check.</li>
+
+            <li id="exchange-account-deletion-en"><strong>Leaving or deleting an exchange account.</strong>
+            "Sign out on this device" in Share Manager's exchange account settings forgets this PC's
+            sign-in; it does not delete the account or sign out its other devices. To delete the account,
+            use "Delete my account" on its server card in the Android app's My devices page and confirm
+            with the account password, or ask the server operator to remove it. If you run the server,
+            remove the account from its administration page in Share Manager. Deletion erases the password hash, enrolled devices and token
+            hashes (including revoked-device records), published folder and broadcast records, outstanding
+            pairing codes, access grants to and from the account, and its in-memory clipboard. Active
+            sessions end. Source files and copies already delivered are not erased; files in your
+            Google Drive and operational logs kept for the operator's configured retention period remain.
+            Uninstalling the app does not delete an account.</li>
 
             <li><strong>Network - only when you use a feature that needs it.</strong> The on-image translation
             feature is off until you enable and configure it. When you use it, the app sends the recognized text
@@ -227,7 +254,7 @@ main:focus{outline:none}
         <p>None with the developer - the kind of "none" that is actually none, and no telemetry or analytics
         ever. The only things that leave your device do so at your explicit choice and go where you direct them,
         not to us: the text you translate goes to the translation endpoint you configured; shared files go
-        directly to your own phone over SFTP; the folders of an exchange account pass through the exchange
+        directly to your own phone over SFTP; the folders of an exchange account, and the clipboard value when you press its send button, pass through the exchange
         server you chose, exactly as described above; when a share starts, your public IP address is seen by
         api.ipify.org and icanhazip.com (which return it to the program) and, unless LAN only is on, your public address
         and port are shown to check-host.net solely to test reachability; and the log archive reaches the developer only
@@ -272,7 +299,7 @@ main:focus{outline:none}
         </div>
         <div data-l="ru">
         <h1>Политика конфиденциальности</h1>
-        <p class="note">Последнее обновление: 14 октября 2026 г.</p>
+        <p class="note">Последнее обновление: 16 октября 2026 г.</p>
 
         <p><strong>Fast Media Sorter &amp; Sharing for Windows не собирает персональные данные.</strong> В нём нет рекламы,
         телеметрии и аналитики. Программа работает целиком на вашем устройстве, и разработчик
@@ -365,11 +392,38 @@ main:focus{outline:none}
             устройства, на вашем ПК он зашифрован так же; сервер хранит только хеш токена. Программа помнит адрес сервера и отпечаток
             его сертификата и отказывается подключаться к серверу, чей сертификат изменился. Строка подключения, которую может показать
             другое устройство учётной записи, - это тот же адрес с отпечатком: в ней нет ни пароля, ни токена, и в логи и в архив
-            поддержки она не попадает никогда. Что видит тот, кто запускает сервер: учётные записи в виде хешей паролей,
-            зарегистрированные в них устройства, записи об опубликованных на сервере общих папках и - пока папка публикуется с одного
-            из его устройств - ключ доступа этой папки, который держится в памяти сервера; папки, открытые через сервер обмена,
-            доходят до ПК зашифрованными сеансами между двумя концами, а собственный журнал сервера называет папку или устройство
-            только коротким односторонним отпечатком.</li>
+            поддержки она не попадает никогда. <strong>Что видит сервер обмена и чего не видит.</strong>
+            При совместимом сквозном шифровании содержимое файлов, live-трансляций и буфера шифруется
+            на отправляющем устройстве и открывается на устройствах разрешённых получателей.
+            Метаданные остаются видимыми: идентификаторы и имена записей и устройств, имена папок и
+            трансляций, присутствие в сети, время и размеры передач и блоков. Имена папок не зашифрованы.
+            До доверия изменённому ключу устройства проверьте его; отпечаток сертификата сервера и ключ
+            шифрования устройства обозначают разные сущности. На диске сервер хранит хеши паролей
+            и токенов, открытые ключи устройств и записи опубликованных папок. Зашифрованные данные
+            доступа, «конверты» ключей трансляций и выдач доступа и значения буфера остаются в памяти;
+            зашифрованное содержимое и ключи не записываются в журналы.
+            <strong>Передача буфера.</strong> Команда «Отправить буфер на сервер» в Share Manager,
+            его меню в области уведомлений или ярлыком отправляет текущий текст, изображение или один
+            файл в каждую подключённую обычную запись. «Получить буфер с сервера» получает последнее
+            значение. Это явная передача, без постоянного наблюдения за буфером. Сервер хранит лишь
+            последнее завершённое значение в памяти, никогда на диске. Новая завершённая загрузка
+            заменяет его; прерванная оставляет прежнее. Перезапуск сервера или удаление записи очищает
+            значение. Журналы содержат лишь вид и класс размера, без содержимого буфера и имени файла.
+            <strong>Проверка снаружи.</strong> Кнопка «Виден ли мой сервер снаружи» явно обращается к
+            <a href="https://check-host.net">check-host.net</a> для проверки публичного адреса и порта;
+            сторонний сервис получает адрес, который вы поручили проверить.</li>
+
+            <li id="exchange-account-deletion-ru"><strong>Выход и удаление учётной записи обмена.</strong>
+            «Выйти на этом устройстве» в настройках записи обмена Share Manager удаляет вход на этом ПК,
+            но не запись и не вход на других устройствах. Для удаления выберите удаление записи в меню
+            карточки сервера в разделе «Мои устройства» приложения Android и подтвердите паролем записи
+            либо попросите оператора сервера удалить её. На своём сервере удалите запись со страницы
+            администрирования сервера в Share Manager.
+            Удаляются хеш пароля, зарегистрированные устройства и хеши токенов, включая отозванные,
+            записи опубликованных папок и трансляций, неиспользованные коды сопряжения, доступ,
+            выданный записью и ей самой, и буфер в памяти сервера. Активные сеансы завершаются.
+            Исходные файлы и полученные копии не удаляются; файлы Google Drive и служебные журналы
+            за установленный оператором срок хранения остаются. Удаление программы не удаляет запись.</li>
 
             <li><strong>Сеть - только когда вы используете функцию, которой она нужна.</strong> Функция перевода текста на картинке
             выключена, пока вы её не включите и не настроите. Когда вы ею пользуетесь, программа отправляет распознанный текст
@@ -438,7 +492,7 @@ main:focus{outline:none}
         <p>Разработчику - ничего, причём такое «ничего», которое действительно ничего, и никакой телеметрии или аналитики
         никогда. Единственное, что покидает ваше устройство, делает это по вашему явному выбору и идёт туда, куда вы укажете,
         а не к нам: переводимый вами текст уходит на настроенную вами конечную точку перевода; общие файлы идут
-        напрямую на ваш собственный телефон по SFTP; папки учётной записи обмена проходят через выбранный вами сервер обмена -
+        напрямую на ваш собственный телефон по SFTP; папки учётной записи обмена и значение буфера обмена, когда вы нажимаете кнопку его отправки, проходят через выбранный вами сервер обмена -
         ровно как описано выше; при запуске общего доступа ваш публичный IP-адрес видят api.ipify.org
         и icanhazip.com (они возвращают его программе), а если не включён режим «Только локальная сеть», ваш публичный адрес и порт
         показываются check-host.net исключительно для проверки доступности; а архив логов попадает к разработчику, только
@@ -483,7 +537,7 @@ main:focus{outline:none}
         </div>
         <div data-l="ua">
         <h1>Політика конфіденційності</h1>
-        <p class="note">Останнє оновлення: 14 жовтня 2026 р.</p>
+        <p class="note">Останнє оновлення: 16 жовтня 2026 р.</p>
 
         <p><strong>Fast Media Sorter &amp; Sharing for Windows не збирає персональних даних.</strong> У ній немає реклами,
         телеметрії та аналітики. Програма працює цілком на вашому пристрої, і розробник
@@ -576,11 +630,38 @@ main:focus{outline:none}
             токен пристрою, на вашому ПК він зашифрований так само; сервер зберігає лише хеш токена. Програма пам'ятає адресу сервера
             і відбиток його сертифіката та відмовляється підключатися до сервера, чий сертифікат змінився. Рядок підключення, який
             може показати інший пристрій облікового запису, - це та сама адреса з відбитком: у ній немає ні пароля, ні токена, і до
-            журналів та архіву підтримки вона не потрапляє ніколи. Що бачить той, хто запускає сервер: облікові записи у вигляді хешів
-            паролів, зареєстровані в них пристрої, записи про опубліковані на сервері спільні теки та - поки тека публікується з одного
-            з його пристроїв - ключ доступу цієї теки, який тримається в пам'яті сервера; теки, відкриті крізь сервер обміну,
-            доходять до ПК зашифрованими сеансами між двома кінцями, а власний журнал сервера називає теку або пристрій
-            лише коротким одностороннім відбитком.</li>
+            журналів та архіву підтримки вона не потрапляє ніколи. <strong>Що бачить сервер обміну й чого не бачить.</strong>
+            За сумісного наскрізного шифрування вміст файлів, live-трансляцій і буфера шифрується
+            на пристрої відправника та відкривається на пристроях дозволених одержувачів.
+            Метадані залишаються видимими: ідентифікатори й імена записів і пристроїв, назви тек і
+            трансляцій, присутність у мережі, час і розміри передач та блоків. Назви тек не зашифровані.
+            Перш ніж довіряти зміненому ключу пристрою, перевірте його; відбиток сертифіката сервера й
+            ключ шифрування пристрою позначають різні сутності. На диску сервер зберігає хеші паролів
+            і токенів, відкриті ключі пристроїв та записи опублікованих тек. Зашифровані дані доступу,
+            «конверти» ключів трансляцій і наданого доступу та значення буфера залишаються в пам'яті;
+            зашифрований вміст і ключі не записуються до журналів.
+            <strong>Передавання буфера.</strong> Команда «Надіслати буфер на сервер» у Share Manager,
+            його меню в області сповіщень або ярликом надсилає поточний текст, зображення чи один
+            файл до кожного підключеного звичайного запису. «Отримати буфер із сервера» отримує останнє
+            значення. Це явне передавання, без постійного спостереження за буфером. Сервер зберігає лише
+            останнє завершене значення в пам'яті, ніколи на диску. Нове завершене завантаження замінює
+            його; перерване залишає попереднє. Перезапуск сервера чи видалення запису очищує значення.
+            Журнали містять лише вид і клас розміру, без вмісту буфера та імені файлу.
+            <strong>Перевірка ззовні.</strong> Кнопка «Чи видно мій сервер ззовні» явно звертається до
+            <a href="https://check-host.net">check-host.net</a> для перевірки публічної адреси та порту;
+            сторонній сервіс отримує адресу, яку ви доручили перевірити.</li>
+
+            <li id="exchange-account-deletion-uk"><strong>Вихід і видалення облікового запису обміну.</strong>
+            «Вийти на цьому пристрої» в налаштуваннях запису обміну Share Manager видаляє вхід на цьому ПК,
+            але не запис і не вхід на інших пристроях. Для видалення оберіть видалення запису в меню
+            картки сервера в розділі «Мої пристрої» застосунку Android і підтвердьте паролем запису
+            або попросіть оператора сервера видалити його. На своєму сервері видаліть запис зі сторінки
+            адміністрування сервера в Share Manager.
+            Видаляються хеш пароля, зареєстровані пристрої та хеші токенів, включно з відкликаними,
+            записи опублікованих тек і трансляцій, невикористані коди сполучення, доступ, наданий
+            записом і йому самому, та буфер у пам'яті сервера. Активні сеанси завершуються.
+            Вихідні файли й отримані копії не видаляються; файли Google Drive та службові журнали
+            за встановлений оператором строк зберігання залишаються. Видалення програми не видаляє запис.</li>
 
             <li><strong>Мережа - лише коли ви користуєтеся функцією, якій вона потрібна.</strong> Функція перекладу тексту на зображенні
             вимкнена, поки ви її не ввімкнете й не налаштуєте. Коли ви нею користуєтеся, програма надсилає розпізнаний текст
@@ -649,7 +730,7 @@ main:focus{outline:none}
         <p>Розробнику - нічого, причому таке «нічого», яке справді нічого, і жодної телеметрії чи аналітики
         ніколи. Єдине, що залишає ваш пристрій, робить це за вашим явним вибором і йде туди, куди ви вкажете,
         а не до нас: текст, який ви перекладаєте, іде на налаштовану вами кінцеву точку перекладу; спільні файли йдуть
-        напряму на ваш власний телефон через SFTP; теки облікового запису обміну проходять через обраний вами сервер обміну -
+        напряму на ваш власний телефон через SFTP; теки облікового запису обміну та значення буфера обміну, коли ви натискаєте кнопку його надсилання, проходять через обраний вами сервер обміну -
         рівно як описано вище; під час запуску спільного доступу вашу публічну IP-адресу бачать api.ipify.org
         та icanhazip.com (вони повертають її програмі), а якщо не ввімкнено режим «Лише локальна мережа», вашу публічну адресу та порт
         показують check-host.net виключно для перевірки доступності; а архів журналів потрапляє до розробника, лише

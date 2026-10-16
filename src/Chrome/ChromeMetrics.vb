@@ -133,6 +133,11 @@ Friend NotInheritable Class ChromeMetrics
     ''' than the gap between two files of different kinds (a picture hands over to a video, a video to a picture),
     ''' which is a few hundred milliseconds at most - the panels must not flash up on every such switch.</summary>
     Public Const EmptyWindowHoldDelayMilliseconds As Integer = 700
+    ''' <summary>How long the status panel stays up after the LAST copy, move or delete when the viewer is set to
+    ''' show file operations there (<c>RevealStatusOnFileOperation</c>). Each further operation restarts the
+    ''' count and, while the panel is already up, shows nothing new - it just stays; operations still running keep it
+    ''' up whatever the count says.</summary>
+    Public Const FileOperationRevealMilliseconds As Integer = 3000
 
     ' --- the destructive family (the recipients overlay's delete row; one colour = "this destroys") ---
     Public Shared ReadOnly DestructiveRest As Color = Color.FromArgb(96, 32, 32)

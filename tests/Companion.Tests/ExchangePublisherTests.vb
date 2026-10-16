@@ -91,6 +91,8 @@ Public Class ExchangePublisherTests
         Public ReadOnly Settings As ExchangePublishSettings
         Public ReadOnly Store As ExchangeProducerStore
         Public ReadOnly Worker As New FakeWorker()
+        ''' <summary>The device keys of the agent, in memory: a test opens the boxes the producer made.</summary>
+        Public ReadOnly Keys As New ExchangeMemoryDeviceKeyStore()
         Public ReadOnly Publisher As ExchangePublisher
         Public Status As WorkerStatus
         Public StatusCalls As Integer
@@ -124,6 +126,7 @@ Public Class ExchangePublisherTests
             If idle > TimeSpan.Zero Then options.TunnelIdleTimeout = idle
             Publisher = New ExchangePublisher(options)
             Rig.Ports.Producer = Publisher
+            Rig.Ports.DeviceKeys = Keys
         End Sub
 
         Public Shared Function StatusOf(ParamArray names As String()) As WorkerStatus
@@ -154,11 +157,37 @@ Public Class ExchangePublisherTests
         Return IdOf(raw, "name")
     End Function
 
-    Private Shared Function Latest(acc As ExchangeStubAccount, name As String) As String
+    Friend Shared Function Latest(acc As ExchangeStubAccount, name As String) As String
         Return acc.PublishLog().LastOrDefault(Function(r) NameOf_(r) = name)
     End Function
 
-    Private Shared Async Function EnrollOnlineAsync(kit As Kit, acc As ExchangeStubAccount) As Task(Of ExchangeDeviceAgent)
+    ''' <summary>The `access` JSON inside the `sealedAccess` box of a published record, opened as the producer itself (it is a recipient of
+    ''' its own entry), under the context the READER builds from the record's resourceId.</summary>
+    Friend Shared Function OpenOwnBox(kit As Kit, deviceId As String, recordJson As String) As String
+        Using doc As JsonDocument = JsonDocument.Parse(recordJson)
+            Dim resourceId As String = doc.RootElement.GetProperty("resourceId").GetString()
+            Dim box As ExchangeSealedBox = Nothing
+            Assert.True(ExchangeSealedBox.TryParse(doc.RootElement.GetProperty("sealedAccess").GetRawText(), box))
+            Using key As ExchangeDeviceKey = kit.Keys.TryLoad(deviceId)
+                Dim ownKem As String = key.Kem
+                Dim opened As ExchangeSealedOpenResult = ExchangeSealedBoxes.Open(box, deviceId, key, ExchangeSealedContext.Access(resourceId), Function(fromDevice) ownKem)
+                Assert.True(opened.Succeeded)
+                Try
+                    Return Encoding.UTF8.GetString(opened.Payload)
+                Finally
+                    opened.Wipe()
+                End Try
+            End Using
+        End Using
+    End Function
+
+    ''' <summary>Spec 234 item DP: a folder goes through the server sealed or not at all, so a publishing test needs a server that lists
+    ''' `sealed` and a directory that lists this device with its key. <paramref name="sealedServer"/> False is the older server.</summary>
+    Friend Shared Async Function EnrollOnlineAsync(kit As Kit, acc As ExchangeStubAccount, Optional sealedServer As Boolean = True) As Task(Of ExchangeDeviceAgent)
+        If sealedServer Then
+            acc.Features = {"directory", "tunnel", "pairing", ExchangeSealedNames.FeatureSealed}
+            acc.ListEnrolledDevices = True
+        End If
         Dim agent As ExchangeDeviceAgent = kit.Rig.NewAgent()
         Dim result As ExchangeEnrollResult = Await agent.EnrollAsync(kit.Rig.Request(acc), CancellationToken.None)
         Assert.Equal(ExchangeEnrollOutcome.Enrolled, result.Outcome)
@@ -218,10 +247,14 @@ Public Class ExchangePublisherTests
                     Assert.False(photos.Contains("presence", StringComparison.Ordinal))     ' the server's to stamp
                     Assert.False(photos.Contains("shareId", StringComparison.Ordinal))      ' nothing is made by publishing alone
                     Assert.False(photos.Contains("publicPort", StringComparison.Ordinal))
+                    ' spec 234 item DI: the record carries the box and no `access`; the box opens on this device (it is a recipient of its own entry)
                     Dim info As ExchangeAccessInfo = Nothing
                     Using doc As JsonDocument = JsonDocument.Parse(photos)
-                        Assert.True(ExchangeResourceAccess.TryRead(doc.RootElement.GetProperty("access").GetRawText(), "Photos", info))
+                        Dim member As JsonElement
+                        Assert.False(doc.RootElement.TryGetProperty("access", member))
+                        Assert.True(doc.RootElement.TryGetProperty("sealedAccess", member))
                     End Using
+                    Assert.True(ExchangeResourceAccess.TryRead(OpenOwnBox(kit, agent.GetStatus().DeviceId, photos), "Photos", info))
                     Assert.Equal("/Photos", info.Root)
                     Assert.Equal({"192.168.1.50", "203.0.113.9"}, info.Code.Hosts.ToArray())
                     Assert.Equal(WorkerPassword, info.Code.Password)

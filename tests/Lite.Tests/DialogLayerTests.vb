@@ -23,7 +23,9 @@ Public Class DialogLayerTests
     ''' <summary>Shows that are allowed without the layer, each with the reason.</summary>
     Private Shared ReadOnly Allowed As (File As String, Fragment As String, Reason As String)() = {
         ("Main_Form.FileDetails.vb", "file_Details_Dialog.Show(Me)",
-         "the #Else branch: the net48 fallback keeps its stock show (maintenance policy); the mainline branch above uses the layer")
+         "the #Else branch: the net48 fallback keeps its stock show (maintenance policy); the mainline branch above uses the layer"),
+        ("Connection_Diagnosis_Dialog.vb", "dlg.ShowDialog(owner)",
+         "shared diagnosis dialog shown modally with caller-supplied owner across viewer and companion")
     }
 
     Private Shared ReadOnly ShowCall As New Regex("(?<recv>[A-Za-z_][A-Za-z0-9_]*)\.(?:ShowDialog\(|Show\((?:Me|owner)\))", RegexOptions.Compiled)

@@ -129,7 +129,8 @@ Friend NotInheritable Class ExchangeResourceRecordBuilder
     ''' the third-party port REQUEST (0 = any, N = that one, Nothing = none; ANYWHERE-ACCESS 5.5). Nothing is returned when the
     ''' record would break a rule of section 6 (an id out of its form, an empty name, a record above 16 KiB).</summary>
     Public Shared Function TryBuild(resourceId As String, deviceId As String, name As String, accessJson As String, shareId As String,
-                                    publicPortRequest As Integer?, updatedAtUtc As DateTime, ByRef json As String, Optional pinProtected As Boolean = False) As Boolean
+                                    publicPortRequest As Integer?, updatedAtUtc As DateTime, ByRef json As String, Optional pinProtected As Boolean = False,
+                                    Optional sealedAccessJson As String = "", Optional hostKeyFingerprint As String = "", Optional root As String = "") As Boolean
         json = ""
         If Not ExchangeIds.IsValidId(resourceId) OrElse Not ExchangeIds.IsValidId(deviceId) Then Return False
         If String.IsNullOrWhiteSpace(name) OrElse name.Length > 256 Then Return False
@@ -152,6 +153,20 @@ Friend NotInheritable Class ExchangeResourceRecordBuilder
             If TypeOf access IsNot JsonObject Then Return False
             o("access") = access
         End If
+        ' item DI: a sealed record carries the box in place of `access`; items BA/DI: the pair (hostKeyFingerprint, root) is the
+        ' resource's identity and stays in clear (not secrets)
+        If Not String.IsNullOrEmpty(sealedAccessJson) Then
+            Dim box As JsonNode = Nothing
+            Try
+                box = JsonNode.Parse(sealedAccessJson)
+            Catch ex As JsonException
+                Return False
+            End Try
+            If TypeOf box IsNot JsonObject Then Return False
+            o("sealedAccess") = box
+        End If
+        If Not String.IsNullOrEmpty(hostKeyFingerprint) Then o("hostKeyFingerprint") = hostKeyFingerprint
+        If Not String.IsNullOrEmpty(root) Then o("root") = root
         If Not String.IsNullOrEmpty(shareId) Then o("shareId") = shareId
         If publicPortRequest.HasValue Then o("publicPort") = publicPortRequest.Value
         Dim text As String = o.ToJsonString(New JsonSerializerOptions With {.Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping})

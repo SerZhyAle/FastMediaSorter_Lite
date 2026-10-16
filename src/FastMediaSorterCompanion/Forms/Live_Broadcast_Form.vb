@@ -668,7 +668,7 @@ Public Class Live_Broadcast_Form
         Dim state As LiveProducerState = _controller.State
         If Not state.Running Then Return
 
-        Dim candidates As List(Of ExchangeDeviceRecord) = currentAgent.GetCastCandidates(state.Mode, state.DescriptorJson)
+        Dim candidates As List(Of ExchangeDeviceRecord) = currentAgent.GetCastCandidates(state.Mode, If(String.IsNullOrEmpty(state.RecordDescriptorJson), state.DescriptorJson, state.RecordDescriptorJson))
         If candidates Is Nothing OrElse candidates.Count = 0 Then
             _lblState.Text = Localization.T("Нет доступных устройств для воспроизведения.")
             Return

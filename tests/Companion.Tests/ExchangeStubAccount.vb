@@ -37,6 +37,7 @@ Friend NotInheritable Class ExchangeStubAccount
     Private ReadOnly _enrollCapabilities As New List(Of String)
     Private ReadOnly _enrollNames As New List(Of String)
     Private ReadOnly _enrollDeviceIds As New List(Of String)
+    Private ReadOnly _enrollE2eKeys As New List(Of String)
     Private ReadOnly _registerPasswords As New List(Of String)
     Private ReadOnly _registerCodes As New List(Of String)
     Private ReadOnly _registerRefusals As New ConcurrentQueue(Of String)
@@ -121,6 +122,14 @@ Friend NotInheritable Class ExchangeStubAccount
     Public Function EnrollDeviceIdsSeen() As List(Of String)
         SyncLock _gate
             Return New List(Of String)(_enrollDeviceIds)
+        End SyncLock
+    End Function
+
+    ''' <summary>The raw JSON of the `e2eKey` member of every `enroll` and `register`, in arrival order; "" when the frame carried none
+    ''' (spec 234 item DF).</summary>
+    Public Function EnrollE2eKeysSeen() As List(Of String)
+        SyncLock _gate
+            Return New List(Of String)(_enrollE2eKeys)
         End SyncLock
     End Function
 
@@ -286,7 +295,45 @@ Friend NotInheritable Class ExchangeStubAccount
     End Function
 
     Private Function DirectoryEnvelope() As ExchangeEnvelope
-        Return New ExchangeEnvelope("directory").SetNumber("revision", Revision).SetRecords("devices", Devices).SetRecords("resources", Resources).SetRecords("broadcasts", Broadcasts)
+        ' VB is case-insensitive: a local named `devices` would shadow the property `Devices` inside its own initializer (and read as Nothing)
+        Dim listed As List(Of String) = Devices
+        If ListEnrolledDevices Then
+            listed = New List(Of String)(Devices)
+            SyncLock _gate
+                listed.AddRange(_enrolledRecords.Values)
+            End SyncLock
+        End If
+        Return New ExchangeEnvelope("directory").SetNumber("revision", Revision).SetRecords("devices", listed).SetRecords("resources", Resources).SetRecords("broadcasts", Broadcasts)
+    End Function
+
+    ''' <summary>Spec 234: a real server lists every enrolled device, this one included, with the capabilities and the `e2eKey` it sent.
+    ''' Off by default so the older tests keep the directory they built by hand; a sealed-folder test turns it on.</summary>
+    Public Property ListEnrolledDevices As Boolean
+
+    Private ReadOnly _enrolledRecords As New Dictionary(Of String, String)(StringComparer.Ordinal)   ' deviceId -> record as the directory lists it
+
+    ''' <summary>The directory record of a device from its `enroll` or `register`: id, name, product, online, capabilities, `e2eKey`.</summary>
+    Private Shared Function EnrolledRecordOf(frame As ExchangeEnvelope) As String
+        Dim o As New System.Text.Json.Nodes.JsonObject()
+        o("deviceId") = frame.Text("deviceId")
+        o("deviceName") = frame.Text("deviceName")
+        o("product") = If(frame.Text("product").Length > 0, frame.Text("product"), "fms-win")
+        o("presence") = "online"
+        Dim caps As New System.Text.Json.Nodes.JsonArray()
+        For Each c As String In frame.TextList("capabilities")
+            caps.Add(System.Text.Json.Nodes.JsonValue.Create(c))
+        Next
+        o("capabilities") = caps
+        Dim key As String = frame.Record("e2eKey")
+        If key.Length > 0 Then o("e2eKey") = System.Text.Json.Nodes.JsonNode.Parse(key)
+        Return o.ToJsonString()
+    End Function
+
+    ''' <summary>The directory changed (a device joined, left, or changed its key): the revision moves and every live control stream gets the
+    ''' whole directory again, as a server that lists after a change does.</summary>
+    Public Async Function PushDirectoryAsync() As Task
+        Revision += 1
+        Await PushAsync(DirectoryEnvelope())
     End Function
 
     Private Async Function HandleAsync(c As ExchangeStubConnection) As Task
@@ -300,6 +347,8 @@ Friend NotInheritable Class ExchangeStubAccount
                     _enrollCapabilities.Add(String.Join(",", first.TextList("capabilities")))
                     _enrollNames.Add(first.Text("deviceName"))
                     _enrollDeviceIds.Add(first.Text("deviceId"))
+                    _enrollE2eKeys.Add(first.Record("e2eKey"))
+                    _enrolledRecords(first.Text("deviceId")) = EnrolledRecordOf(first)
                 End SyncLock
                 Dim enrollRefusal As String = Nothing
                 If _enrollRefusals.TryDequeue(enrollRefusal) Then
@@ -354,6 +403,8 @@ Friend NotInheritable Class ExchangeStubAccount
                     _enrollCapabilities.Add(String.Join(",", first.TextList("capabilities")))
                     _enrollNames.Add(first.Text("deviceName"))
                     _enrollDeviceIds.Add(first.Text("deviceId"))
+                    _enrollE2eKeys.Add(first.Record("e2eKey"))
+                    _enrolledRecords(first.Text("deviceId")) = EnrolledRecordOf(first)
                 End SyncLock
                 Dim registerRefusal As String = Nothing
                 If _registerRefusals.TryDequeue(registerRefusal) Then
@@ -434,6 +485,7 @@ Friend NotInheritable Class ExchangeStubAccount
     Private ReadOnly _publishLog As New List(Of String)               ' every publish, as the raw resource JSON, in arrival order
     Private ReadOnly _published As New Dictionary(Of String, String)(StringComparer.Ordinal)   ' resourceId -> latest raw JSON
     Private ReadOnly _unpublished As New List(Of String)
+    Private ReadOnly _broadcastLog As New List(Of String)             ' every broadcast-start / broadcast-update: "type|raw record JSON", in arrival order
     Private ReadOnly _publishRefusals As New ConcurrentQueue(Of String)
     Private ReadOnly _tunnels As New Dictionary(Of String, TaskCompletionSource(Of Attached))(StringComparer.Ordinal)
     Private _tunnelSeq As Integer
@@ -450,6 +502,14 @@ Friend NotInheritable Class ExchangeStubAccount
     Public Function PublishLog() As List(Of String)
         SyncLock _gate
             Return New List(Of String)(_publishLog)
+        End SyncLock
+    End Function
+
+    ''' <summary>Spec 234 item DK: the record of every `broadcast-start` and `broadcast-update` the account received, raw, in arrival order
+    ''' (the type first, then a bar, then the record).</summary>
+    Public Function BroadcastLog() As List(Of String)
+        SyncLock _gate
+            Return New List(Of String)(_broadcastLog)
         End SyncLock
     End Function
 
@@ -562,6 +622,10 @@ Friend NotInheritable Class ExchangeStubAccount
                         answer.SetText("resourceId", id)
                         If requested >= 0 Then answer.SetNumber("publicPort", If(requested > 0, requested, GrantedPort))
                         Await c.WriteAsync(answer)
+                    Case "broadcast-start", "broadcast-update"
+                        SyncLock _gate
+                            _broadcastLog.Add(env.Type & "|" & env.Record("broadcast"))
+                        End SyncLock
                     Case "unpublish"
                         SyncLock _gate
                             _unpublished.Add(env.Text("resourceId"))

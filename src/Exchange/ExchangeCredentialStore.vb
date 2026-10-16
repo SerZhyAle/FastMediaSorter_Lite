@@ -73,6 +73,14 @@ Friend NotInheritable Class ExchangeCredentialStore
         End Get
     End Property
 
+    ''' <summary>The folder of the token. The device key and the kept keys of the sealed scheme (spec 234) sit beside it, so an
+    ''' entry or a test that owns this folder owns them too.</summary>
+    Public ReadOnly Property FolderPath As String
+        Get
+            Return _directory
+        End Get
+    End Property
+
     ''' <summary>True when a token file exists. A pure read: it creates nothing.</summary>
     Public Function Exists() As Boolean
         Try

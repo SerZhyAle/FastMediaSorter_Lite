@@ -31,6 +31,26 @@ Public Class IconographyContractTests
         Return result
     End Function
 
+    <Fact>
+    Public Sub Exchange_controls_use_the_catalog_exchange_meanings()
+        Dim expected As New Dictionary(Of String, String) From {
+            {"managerSettingsNav_exchange", "source.exchange-server"},
+            {"managerSettingsNav_exchange-account", "action.connect-device"},
+            {"res_DevicesAdd", "source.exchange-server"},
+            {"xc_Connect", "action.connect-device"},
+            {"btnClipboardSend", "action.send-clipboard"},
+            {"btnClipboardGet", "action.receive-clipboard"},
+            {"clipboardTraySend", "action.send-clipboard"},
+            {"clipboardTrayGet", "action.receive-clipboard"},
+            {"_btnAccAdd", "action.connect-device"},
+            {"_btnXCreateInvitation", "content.invitation"},
+            {"_rbGuest", "content.guest"}}
+        For Each entry In expected
+            Assert.Equal(entry.Value, IconMap.GetMeaning(entry.Key).GlyphId)
+        Next
+        Assert.True(File.Exists(Path.Combine(GlyphDir, "feature.server-relay.svg")))
+    End Sub
+
     ' --- 5.1 the map ---------------------------------------------------------------
 
     <Fact>

@@ -80,9 +80,9 @@ Friend NotInheritable Class Exchange_Shared_Invitation_Form
             .Margin = New Padding(0, 4, 0, 2), .Text = Localization.T("Тип создаваемого аккаунта:")})
         Dim isGuest As Boolean = String.Equals(currentKind, "guest", StringComparison.OrdinalIgnoreCase)
         _rbFamily = New RadioButton With {.AutoSize = True, .Checked = Not isGuest, .Margin = New Padding(0, 2, 0, 2),
-            .Text = Localization.T("Член семьи / Своё устройство (полный доступ)")}
+            .Text = Localization.T("Своё устройство или семья")}
         _rbGuest = New RadioButton With {.AutoSize = True, .Checked = isGuest, .Margin = New Padding(0, 0, 0, 8),
-            .Text = Localization.T("Гость (ограниченный доступ)")}
+            .Text = Localization.T("Гость")}
         body.Controls.Add(_rbFamily)
         body.Controls.Add(_rbGuest)
 

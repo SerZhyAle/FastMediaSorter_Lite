@@ -52,7 +52,7 @@ func withRunner(paths config.Paths, stderr io.Writer, f func(opRunner) int) int 
 		var infos []directory.DeviceInfo
 		for _, d := range store.AllDevices() {
 			infos = append(infos, directory.DeviceInfo{ID: d.ID, Account: d.Account, Name: d.Name, Product: d.Product,
-				ProductVersion: d.ProductVersion, Platform: d.Platform, Roles: d.Roles, Capabilities: d.Capabilities, Receiver: d.Receiver})
+				ProductVersion: d.ProductVersion, Platform: d.Platform, Roles: d.Roles, Capabilities: d.Capabilities, Receiver: d.Receiver, E2EKey: d.E2EKey})
 		}
 		if err := dir.Load(infos); err != nil {
 			printf(stderr, "cannot open the directory: %v\n", err)
@@ -100,7 +100,7 @@ func readPassword(cmd command, stdin io.Reader, stderr io.Writer) (pw string, co
 		printf(stderr, "cannot read the password from stdin: %v\n", err)
 		return "", exitUsage
 	}
-	pw = strings.TrimRight(line, "\r\n")
+	pw = strings.TrimPrefix(strings.TrimRight(line, "\r\n"), "\ufeff")
 	if err := password.Check(pw); err != nil {
 		printf(stderr, "%v\n", err)
 		return "", exitPolicy

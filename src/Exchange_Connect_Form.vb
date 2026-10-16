@@ -120,7 +120,7 @@ Friend NotInheritable Class Exchange_Connect_Form
                                       .ForeColor = Color.Firebrick, .Text = ""}
         connectButton = New Button With {.Name = "xc_Connect", .Location = New Point(296, 292), .Size = New Size(120, 28), .Text = Localization.T("Подключиться")}
         AddHandler connectButton.Click, AddressOf OnConnect
-        ButtonGlyphs.Apply(connectButton, "action.confirm", ButtonGlyphRole.Affirmative)
+        ButtonGlyphs.Apply(connectButton, IconMap.GetMeaning("xc_Connect").GlyphId, ButtonGlyphRole.Affirmative)
         cancelButton_ = New Button With {.Name = "xc_Cancel", .Location = New Point(424, 292), .Size = New Size(82, 28), .Text = Localization.T("Отмена"),
                                          .DialogResult = DialogResult.Cancel}
         ButtonGlyphs.Apply(cancelButton_, "action.cancel", ButtonGlyphRole.Dismissing)

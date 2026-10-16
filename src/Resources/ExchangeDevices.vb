@@ -273,6 +273,16 @@ Friend Enum ExchangeAttachOutcome
     ConnectionFailed = 6
     ''' <summary>The online protected resource has no access for this device's older enrollment.</summary>
     SignInAgain = 7
+    ' Spec 234 items DI, DJ, DG, DP: the four typed states of a sealed folder. Each is its own outcome so the sentence names the cause
+    ' (the text is the row of the common connection-message table of the same code); none of them is retried with a clear descriptor.
+    ''' <summary>This device holds no key of its own (or the record's producer has none): `e2e-missing`.</summary>
+    E2eMissing = 8
+    ''' <summary>A device key differs from the one kept (item DG), or a guest's grant key moved (item DJ): `key-changed`.</summary>
+    KeyChanged = 9
+    ''' <summary>The server does not list `sealed`: `server-no-e2e`; the folder opens on the producer's own network only.</summary>
+    ServerNoE2e = 10
+    ''' <summary>The box did not open, or the opened descriptor is not the record's resource (context, sender, key, fingerprint): `sealed-failed`.</summary>
+    SealedFailed = 11
 End Enum
 
 ''' <summary>Attaching, and following the producer. The registry and the credential go through ResourceCommit (the secret first, the reference
@@ -328,6 +338,14 @@ Friend NotInheritable Class ExchangeSync
             AddressOf ResourceImport.NewResourceId)
     End Function
 
+    ''' <summary>Item DI: the record names its own `hostKeyFingerprint`; the descriptor the agent opened must carry the same `fp`. True when
+    ''' they differ - a record without the member (a clear LAN-era record) cannot differ.</summary>
+    Private Shared Function IsOtherResource(record As ExchangeResourceRecord, openedAccessJson As String) As Boolean
+        If record Is Nothing OrElse record.HostKeyFingerprint.Length = 0 Then Return False
+        Dim opened As String = ExchangeSealedAccess.FingerprintOf(openedAccessJson, record.Name)
+        Return Not String.Equals(opened, record.HostKeyFingerprint, StringComparison.Ordinal)
+    End Function
+
     ''' <summary>The user ticked a resource: ask the agent for its access, build the resource, store it (the credential through the DPAPI blob).</summary>
     Friend Async Function AttachAsync(record As ExchangeResourceRecord, deviceName As String, ct As CancellationToken, Optional resourcePin As String = Nothing,
                                      Optional reportFailure As Action(Of ResourceFailure) = Nothing) As Task(Of ExchangeAttachOutcome)
@@ -345,9 +363,16 @@ Friend NotInheritable Class ExchangeSync
                     Return If(record.IsProtected AndAlso String.Equals(record.Presence, ExchangeWire.PresenceOnline, StringComparison.Ordinal),
                               ExchangeAttachOutcome.SignInAgain, ExchangeAttachOutcome.NoAccess)
                 Case ExchangeAgentPipe.ErrorUnknownResource : Return ExchangeAttachOutcome.NoAccess
+                Case ExchangeAgentPipe.ErrorE2eMissing : Return ExchangeAttachOutcome.E2eMissing
+                Case ExchangeAgentPipe.ErrorKeyChanged : Return ExchangeAttachOutcome.KeyChanged
+                Case ExchangeAgentPipe.ErrorServerNoE2e : Return ExchangeAttachOutcome.ServerNoE2e
+                Case ExchangeAgentPipe.ErrorSealedFailed : Return ExchangeAttachOutcome.SealedFailed
                 Case Else : Return If(access.Reply.Kind = ExchangeAgentReplyKind.Refused, ExchangeAttachOutcome.Unusable, ExchangeAttachOutcome.AgentUnavailable)
             End Select
         End If
+        ' item DI: the pinned host key is the OPENED descriptor's `fp`; a record that names another fingerprint is not that resource, so nothing
+        ' is attached (the agent checks the same, this is the second line against an agent that did not)
+        If IsOtherResource(record, access.AccessJson) Then Return ExchangeAttachOutcome.SealedFailed
         Dim draft As ExchangeAttachDraft = ExchangeAttach.BuildDraft(record.ResourceId, record.DeviceId, deviceName, record.Name, access.AccessJson, _newId, _entryId)
         If draft Is Nothing Then Return ExchangeAttachOutcome.Unusable
         draft.Descriptor.PinRequired = record.IsProtected
@@ -374,7 +399,7 @@ Friend NotInheritable Class ExchangeSync
         If state Is Nothing OrElse state.Snapshot Is Nothing Then Return 0
         For Each record As ExchangeResourceRecord In state.Snapshot.Resources
             If only IsNot Nothing AndAlso Not only.Contains(record.ResourceId) Then Continue For
-            If Not record.IsSupportedKind OrElse Not record.HasAccess Then Continue For
+            If Not record.IsSupportedKind OrElse Not (record.HasAccess OrElse record.HasSealedAccess) Then Continue For
             Dim outcome As ExchangeAttachOutcome = Await AttachAsync(record, DeviceNameOf(state.Snapshot, record.ResourceId), ct).ConfigureAwait(False)
             If outcome = ExchangeAttachOutcome.Attached Then attached += 1
         Next
@@ -412,7 +437,8 @@ Friend NotInheritable Class ExchangeSync
         Catch ex As OperationCanceledException
             Return New ExchangeFollowOutcome(resource, False)
         End Try
-        If Not access.Reply.IsOk Then Return New ExchangeFollowOutcome(resource, False)     ' no access now (offline) or no agent: nothing to follow
+        If Not access.Reply.IsOk Then Return New ExchangeFollowOutcome(resource, False)     ' no access now (offline), a sealed state or no agent: nothing to follow
+        If IsOtherResource(listed, access.AccessJson) Then Return New ExchangeFollowOutcome(resource, False)     ' item DI: not merged
         ' a producer whose access names no root keeps the root the resource already has: the name that would rebuild "/" + name is that root's
         Dim draft As ExchangeAttachDraft = ExchangeAttach.BuildDraft(resource.ExchangeResourceId, resource.ExchangeDeviceId, deviceName,
                                                                      If(resource.RootPath, "").Trim("/"c), access.AccessJson, _newId, _entryId)

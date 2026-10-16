@@ -196,15 +196,17 @@ Public Class ScheduledUiTests
                                              Assert.Contains(Localization.T("Файловые операции по расписанию - часть менеджера общего доступа: устанавливаются вместе с ним, выполняются им и настраиваются в его настройках. Расписание работает только пока менеджер запущен."), note.Text)
                                              For Each name As String In {"managerSchedList", "managerSchedNew", "managerSchedEdit", "managerSchedDelete",
                                                                          "managerSchedRunNow", "managerSchedRunAll", "managerSchedPause", "managerSchedHistory",
-                                                                         "managerSchedFeature", "managerSchedMissed", "managerSchedAutostart"}
+                                                                         "managerSchedExport", "managerSchedImport",
+                                                                         "managerSchedFeature", "managerSchedAutostart"}
                                                  Assert.NotNull(Find(Of Control)(form, name))
                                              Next
                                              ' Nothing to edit or run until a row is chosen.
                                              Assert.False(Find(Of Button)(form, "managerSchedEdit").Enabled)
                                              Assert.False(Find(Of Button)(form, "managerSchedRunNow").Enabled)
-                                             ' The two machine switches' defaults (4.4).
+                                             ' The one machine switch left is the feature switch (4.4); ticket 231 rule 5 moved
+                                             ' the missed-run rule into each operation, so the machine-level control is gone.
                                              Assert.True(Find(Of CheckBox)(form, "managerSchedFeature").Checked)
-                                             Assert.Equal(0, Find(Of ComboBox)(form, "managerSchedMissed").SelectedIndex)
+                                             Assert.Null(Find(Of Control)(form, "managerSchedMissed"))
                                          End Using
                                      End Using
                                  End Sub)

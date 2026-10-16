@@ -31,13 +31,6 @@ Partial Public NotInheritable Class Localization
             "StreamsPlayer के लिए इस फ़ोल्डर का प्रसारण खोलें", "StreamsPlayer এর জন্য এই ফোল্ডারের সম্প্রচার খুলুন",
             "کے لیے اس فولڈر کی نشریات کھولیں StreamsPlayer", "为 StreamsPlayer 打开此文件夹的广播")
 
-        Add("Трансляция",
-            "Broadcast", "Трансляція",
-            "Übertragung", "Trasmissione",
-            "Transmisión", "Diffusion",
-            "Transmissão", "بث",
-            "प्रसारण", "সম্প্রচার",
-            "نشریات", "广播")
 
     End Sub
 

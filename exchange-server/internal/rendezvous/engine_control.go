@@ -73,8 +73,8 @@ func (e *Engine) handle(cs *ControlStream, sess *Session, env wire.Envelope) boo
 			rev, ds, rs, bs := e.cfg.Dir.GuestSnapshot(acct)
 			return cs.Send(&wire.Directory{Revision: rev, Devices: ds, Resources: rs, Broadcasts: bs}) == nil
 		}
-		rev, ds, rs, bs := e.cfg.Dir.SnapshotFor(acct, dev)
-		return cs.Send(&wire.Directory{Revision: rev, Devices: ds, Resources: rs, Broadcasts: bs}) == nil
+		rev, ds, rs, bs, gs := e.cfg.Dir.SnapshotFull(acct, dev)
+		return cs.Send(&wire.Directory{Revision: rev, Devices: ds, Resources: rs, Broadcasts: bs, Grants: gs}) == nil
 	case *wire.Subscribe:
 		e.cfg.Dir.Subscribe(acct, dev, cs)
 		return true
@@ -141,6 +141,11 @@ func (e *Engine) handle(cs *ControlStream, sess *Session, env wire.Envelope) boo
 		if _, err := e.ops.RevokeDevice(acct, m.DeviceID); err != nil {
 			e.cfg.Log.Error("revoke-failed", logx.Device(dev), logx.Text("error", err.Error()))
 		}
+		return true
+	case *wire.Grant:
+		return e.handleGrant(cs, sess, m)
+	case *wire.Ungrant:
+		e.handleUngrant(sess, m)
 		return true
 	case *wire.PasswordChange:
 		return e.handlePasswordChange(cs, sess, m)

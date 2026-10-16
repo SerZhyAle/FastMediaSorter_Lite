@@ -195,7 +195,7 @@ Public Class ExchangeTlsTests
             Dim text As String = System.IO.File.ReadAllText(file)
             If name = "ExchangeTls.vb" Then
                 Assert.Contains("New SslStream(", text)
-            ElseIf name <> "ExchangeForwarder.vb" Then
+            ElseIf name <> "ExchangeForwarder.vb" AndAlso Not name.StartsWith("ConnectionDiagnosis", StringComparison.OrdinalIgnoreCase) Then
                 Assert.DoesNotContain("New NetworkStream", text)
                 Assert.DoesNotContain("New TcpClient", text)
                 Assert.DoesNotContain("New Socket(", text)

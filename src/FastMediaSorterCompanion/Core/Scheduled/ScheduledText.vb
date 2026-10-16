@@ -136,6 +136,16 @@ Friend Module ScheduledText
                 Return Localization.TF("для ресурса не сохранён пароль: {0}", argument)
             Case "source-key-not-pinned", "destination-key-not-pinned"
                 Return Localization.TF("ключ сервера не подтверждён: {0}", argument)
+            Case "source-device-revoked", "destination-device-revoked"
+                Return Localization.TF("устройство отозвано: {0}", argument)
+            Case "source-exchange-certificate", "destination-exchange-certificate"
+                Return Localization.TF("сертификат сервера обмена изменился: {0}", argument)
+            Case "source-signed-out", "destination-signed-out"
+                Return Localization.TF("выполнен выход из учётной записи обмена: {0}", argument)
+            Case "source-pin-locked", "destination-pin-locked"
+                Return Localization.TF("требуется PIN-код или он изменился: {0}", argument)
+            Case "source-offline", "destination-offline"
+                Return Localization.TF("устройство сейчас не в сети: {0}", argument)
             Case "resource-removed" : Return Localization.TF("ресурс удалён из списка ресурсов: {0}", argument)
             Case "invalid-definition" : Return Localization.T("определение не читается этой версией менеджера")
             Case Else
@@ -188,6 +198,10 @@ Friend Module ScheduledText
                 Return If(fragment.Length > 0, Char.ToUpperInvariant(fragment(0)) & fragment.Substring(1) & ".", fragment)
             Case ScheduledIssueCode.ResourceUnsupported
                 Return Localization.T("Этот вид ресурса (ссылка обмена) пока нельзя использовать в операциях по расписанию.")
+            Case ScheduledIssueCode.DriveBothSides
+                Return Localization.T("Google Диск нельзя выбрать одновременно как источник и как назначение.")
+            Case ScheduledIssueCode.DriveDeleteUnsupported
+                Return Localization.T("Удаление по расписанию через Google Диск не поддерживается.")
             Case Else : Return Localization.T("Определение не прошло проверку.")
         End Select
     End Function
@@ -231,6 +245,11 @@ Friend Module ScheduledText
 
     ' --- a row of the page -----------------------------------------------------------------------------
 
+    ''' <summary>The operation's name cell on the page: prefixed with "! " while a run was skipped since the last success.</summary>
+    Friend Function RowTitleText(op As ScheduledOperation) As String
+        Return If(op.Record.SkippedSinceSuccess, "! " & op.DisplayName(), op.DisplayName())
+    End Function
+
     Friend Function ShortLocation(location As ScheduledLocation) As String
         Return location.Describe()
     End Function
@@ -255,9 +274,11 @@ Friend Module ScheduledText
                 Return Localization.TF("Остановлена: {0}", DescribeDetail("invalid-definition"))
         End Select
         Dim record As ScheduledRunRecord = op.Record
+        ' The exclamation mark of a skipped run is on the name cell (RowTitleText), once; the result column only words the last run.
         Select Case record.LastOutcome
             Case ScheduledRunOutcome.None : Return Localization.T("Ещё не запускалась")
             Case ScheduledRunOutcome.Ok : Return Localization.TF("Выполнено: {0} файл(ов)", record.LastFileCount)
+            Case ScheduledRunOutcome.Skipped : Return Localization.T("Пропущена: устройство не в сети")
             Case ScheduledRunOutcome.Cancelled : Return Localization.T("Прервана")
             Case ScheduledRunOutcome.Refused : Return Localization.T("Не запущена: определение не прошло проверку")
             Case Else : Return Localization.T("Последний запуск не удался. Откройте журнал, чтобы увидеть подробности.")
@@ -299,6 +320,7 @@ Friend Module ScheduledText
                 Dim first As String = DescribeDetail(entry.Detail)
                 If first.Length > 0 Then text &= ". " & first
                 Return text
+            Case "skipped" : Return Localization.TF("Пропущено: {0}", DescribeDetail(entry.Detail))
             Case "wall" : Return Localization.TF("Остановлено: {0}", DescribeDetail(entry.Detail))
             Case "refused" : Return Localization.TF("Не запущено: {0}", DescribeDetail(entry.Detail))
             Case "cancelled" : Return Localization.T("Прервано")

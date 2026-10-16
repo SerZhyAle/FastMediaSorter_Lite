@@ -1,4 +1,4 @@
-﻿#If Not NETFRAMEWORK Then
+#If Not NETFRAMEWORK Then
 Option Strict On
 
 Imports System.Collections.Generic
@@ -386,7 +386,11 @@ Friend Module TransferExecutor
             run.State = TransferState.Published
             Return Nothing
         End If
-        If landed.Outcome = StatOutcome.Found OrElse landed.Outcome = StatOutcome.Missing Then
+        If landed.Outcome = StatOutcome.Found Then
+            RestoreBackup(run)
+            Return run.Outcome(TransferResult.Failed, TransferReason.VerificationFailed)
+        End If
+        If landed.Outcome = StatOutcome.Missing Then
             RestoreBackup(run)
             Return run.Outcome(TransferResult.Failed, TransferReason.PublishFailed)
         End If

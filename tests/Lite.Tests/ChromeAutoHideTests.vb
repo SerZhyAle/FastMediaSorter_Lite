@@ -39,6 +39,48 @@ Public Class ChromeAutoHideTests
         Assert.False(Step_(state, 2500 + ChromeMetrics.PanelHideDelayMilliseconds, False, False, False, False, True))
     End Sub
 
+    ' --- the status panel held up by a file operation (RevealStatusOnFileOperation) ---
+
+    <Fact>
+    Public Sub File_operation_reveal_does_nothing_while_the_setting_is_off()
+        Assert.False(ChromeAutoHide.FileOperationRevealHeld(False, 1000, 900, 0))
+        Assert.False(ChromeAutoHide.FileOperationRevealHeld(False, 1000, 900, 3))
+    End Sub
+
+    <Fact>
+    Public Sub File_operation_reveal_ends_exactly_three_seconds_after_the_last_operation()
+        Assert.Equal(3000, ChromeMetrics.FileOperationRevealMilliseconds)
+        Assert.True(ChromeAutoHide.FileOperationRevealHeld(True, 5000 + 2999, 5000, 0))
+        Assert.False(ChromeAutoHide.FileOperationRevealHeld(True, 5000 + 3000, 5000, 0))
+    End Sub
+
+    <Fact>
+    Public Sub A_quick_run_of_operations_ends_three_seconds_after_the_final_one()
+        ' Presses at 0, 400 and 900 ms: each restarts the count, none starts a second showing.
+        Dim last As Long = 0
+        Assert.True(ChromeAutoHide.FileOperationRevealHeld(True, 100, last, 0))
+        last = 400
+        Assert.True(ChromeAutoHide.FileOperationRevealHeld(True, 3300, last, 0), "the first press's 3 s are over, the second's are not")
+        last = 900
+        Assert.True(ChromeAutoHide.FileOperationRevealHeld(True, 900 + 2999, last, 0))
+        Assert.False(ChromeAutoHide.FileOperationRevealHeld(True, 900 + 3000, last, 0))
+    End Sub
+
+    <Fact>
+    Public Sub An_operation_still_running_holds_the_panel_whatever_the_clock_says()
+        Assert.True(ChromeAutoHide.FileOperationRevealHeld(True, 60000, 1000, 1))
+        Assert.True(ChromeAutoHide.FileOperationRevealHeld(True, 60000, -1L, 2))
+        ' The count starts again when it finishes (the caller stamps the finish).
+        Assert.True(ChromeAutoHide.FileOperationRevealHeld(True, 60000 + 2999, 60000, 0))
+        Assert.False(ChromeAutoHide.FileOperationRevealHeld(True, 60000 + 3000, 60000, 0))
+    End Sub
+
+    <Fact>
+    Public Sub File_operation_reveal_needs_an_operation_to_have_happened()
+        Assert.False(ChromeAutoHide.FileOperationRevealHeld(True, 0, -1L, 0))
+        Assert.False(ChromeAutoHide.FileOperationRevealHeld(True, 123456, -1L, 0))
+    End Sub
+
     <Fact>
     Public Sub Re_entry_cancels_the_countdown_and_restarts_it_on_the_next_leave()
         Dim state As New TickState With {.Wanted = True, .LastActivity = 0}

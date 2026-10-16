@@ -30,6 +30,12 @@ Friend Enum ExchangePublishBlock
     NoAddress = 4
     ''' <summary>The server serves, and nothing is shared.</summary>
     NoShares = 5
+    ''' <summary>Spec 234 item DP: the connected exchange server does not list `sealed`, so no folder goes through it - not even without
+    ''' `access` (state `server-no-e2e`). The folder keeps serving on the person's own network.</summary>
+    ServerNoE2e = 6
+    ''' <summary>Spec 234 items DF, DP: this device holds no key of its own (or is not connected yet), so it cannot seal a folder
+    ''' (state `e2e-missing`).</summary>
+    NoOwnKey = 7
 End Enum
 
 Friend NotInheritable Class ExchangePlannedShare
@@ -76,6 +82,12 @@ Friend NotInheritable Class ExchangePublishInputs
     Public Property HasPin As Func(Of String, Boolean) = Function(hostPath) False
     Public Property State As ExchangeProducerState = ExchangeProducerState.Empty
     Public Property NewId As Func(Of String) = AddressOf ExchangeIds.NewId
+    ''' <summary>Spec 234 item DP: False when the connected server does not list `sealed`. Then nothing is published through it - not even
+    ''' without `access` (state `server-no-e2e`). True while the server's features are not known yet.</summary>
+    Public Property ServerSealed As Boolean = True
+    ''' <summary>Spec 234 items DF, DG: False when this device cannot seal a folder - no key of its own, or its own device is not a ready
+    ''' recipient in the directory (yet) - so a `sealedAccess` cannot be made (state `e2e-missing`).</summary>
+    Public Property OwnKeyReady As Boolean = True
 
 End Class
 
@@ -147,6 +159,11 @@ Friend NotInheritable Class ExchangePublishPlan
             Next
         End If
         If roots.Count = 0 Then Return New ExchangePublishPlan(ExchangePublishBlock.NoShares, none, state, "")
+
+        ' item DP: a folder goes through the server sealed or not at all - there is no clear fallback. The folder keeps serving on the
+        ' person's own network (the .fmscfg and the QR are not touched by this).
+        If Not inputs.ServerSealed Then Return New ExchangePublishPlan(ExchangePublishBlock.ServerNoE2e, none, state, "")
+        If Not inputs.OwnKeyReady Then Return New ExchangePublishPlan(ExchangePublishBlock.NoOwnKey, none, state, "")
 
         For Each r As ShareFolder In roots
             If (inputs.HasPin(If(r.hostPath, "")) OrElse r.pinProtected) AndAlso

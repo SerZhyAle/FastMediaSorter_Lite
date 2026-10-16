@@ -58,19 +58,25 @@ Friend Enum ExchangeTunnelFailure
     ''' <summary>A pin exists and the certificate presented is another one: a named stop, never re-pinned here.</summary>
     CertificateChanged = 3
     Cancelled = 4
+    ''' <summary>The account or entry is signed out (token absent or removed).</summary>
+    SignedOut = 5
+    ''' <summary>The exchange server rejected the device token as revoked.</summary>
+    DeviceRevoked = 6
 End Enum
 
 Friend NotInheritable Class ExchangeTunnelOpen
     Friend ReadOnly Property Lease As ExchangeTunnelLease
     Friend ReadOnly Property Failure As ExchangeTunnelFailure
+    Friend ReadOnly Property Detail As String
 
-    Friend Sub New(lease As ExchangeTunnelLease, failure As ExchangeTunnelFailure)
+    Friend Sub New(lease As ExchangeTunnelLease, failure As ExchangeTunnelFailure, Optional detail As String = "")
         Me.Lease = lease
         Me.Failure = failure
+        Me.Detail = If(detail, "")
     End Sub
 
-    Friend Shared Function Failed(failure As ExchangeTunnelFailure) As ExchangeTunnelOpen
-        Return New ExchangeTunnelOpen(Nothing, failure)
+    Friend Shared Function Failed(failure As ExchangeTunnelFailure, Optional detail As String = "") As ExchangeTunnelOpen
+        Return New ExchangeTunnelOpen(Nothing, failure, detail)
     End Function
 End Class
 
@@ -97,8 +103,11 @@ Friend NotInheritable Class ExchangeTunnelLease
 
     ''' <summary>Binds 127.0.0.1 on a port the system chooses and starts watching for idleness. Never reachable from another machine: the
     ''' listener is the library's loopback listener.</summary>
-    Friend Sub Start()
-        _forwarder = New ExchangeForwarder(_opener)
+    ''' <param name="tunnelPin">Ticket 234 E1b (item DM): the `SHA256:` pin of a SEALED broadcast tunnel's leaf. Given, the forwarder runs the
+    ''' pinned TLS client inside every tunnel connection (the player still speaks plain HTTP to the loopback port); Nothing keeps
+    ''' today's clear tunnel. Not a property, so the lease still has no member that rebinds it after it started.</param>
+    Friend Sub Start(Optional tunnelPin As String = Nothing)
+        _forwarder = New ExchangeForwarder(_opener, tunnelPin)
         _forwarder.Start()
         Dim watch As Task = Task.Run(Function() WatchAsync(_cts.Token))
     End Sub
@@ -118,6 +127,25 @@ Friend NotInheritable Class ExchangeTunnelLease
     Friend ReadOnly Property ActiveBridges As Integer
         Get
             Return If(_forwarder Is Nothing, 0, _forwarder.ActiveBridges)
+        End Get
+    End Property
+
+    Friend ReadOnly Property LastOpenOutcome As ExchangeOpenOutcome
+        Get
+            Return If(_forwarder Is Nothing, ExchangeOpenOutcome.Closed, _forwarder.LastOutcome)
+        End Get
+    End Property
+
+    Friend ReadOnly Property LastOpenRefusal As ExchangeRefusal
+        Get
+            Return If(_forwarder Is Nothing, ExchangeRefusal.Unknown, _forwarder.LastRefusal)
+        End Get
+    End Property
+
+    ''' <summary>`sealed-failed` when the most recent pinned TLS attempt of a sealed tunnel ended in that state, "" otherwise.</summary>
+    Friend ReadOnly Property LastSealedState As String
+        Get
+            Return If(_forwarder Is Nothing, "", _forwarder.LastSealedState)
         End Get
     End Property
 
@@ -203,10 +231,11 @@ Friend NotInheritable Class ExchangeAccountTunnelSource
 
     Public Async Function OpenAsync(ct As CancellationToken) As Task(Of ExchangeTunnelOpen) Implements IExchangeTunnelSource.OpenAsync
         Dim account As ExchangeAccount = _accounts.Load()
-        If account Is Nothing Then Return ExchangeTunnelOpen.Failed(ExchangeTunnelFailure.Unavailable)
+        If account Is Nothing Then Return ExchangeTunnelOpen.Failed(ExchangeTunnelFailure.Unavailable, "signed-out")
         Dim address As ExchangeServerAddress = Nothing
         Dim token As String = ""
-        If Not account.TryGetAddress(address) OrElse Not _credentials.TryLoad(account.DeviceId, token) Then Return ExchangeTunnelOpen.Failed(ExchangeTunnelFailure.Unavailable)
+        If Not account.TryGetAddress(address) Then Return ExchangeTunnelOpen.Failed(ExchangeTunnelFailure.Unavailable)
+        If Not _credentials.TryLoad(account.DeviceId, token) Then Return ExchangeTunnelOpen.Failed(ExchangeTunnelFailure.Unavailable, "signed-out")
 
         Dim trust As ExchangeTunnelFailure = Await ExchangeTunnelTrust.CheckKnownAsync(_probe, address, account.Pin, ct).ConfigureAwait(False)
         If trust <> ExchangeTunnelFailure.None Then Return ExchangeTunnelOpen.Failed(trust)
@@ -247,10 +276,11 @@ Friend NotInheritable Class ExchangeEntryTunnelSource
 
     Public Async Function OpenAsync(ct As CancellationToken) As Task(Of ExchangeTunnelOpen) Implements IExchangeTunnelSource.OpenAsync
         Dim entry As ExchangeEntry = _entries.Find(_entryId)
-        If entry Is Nothing Then Return ExchangeTunnelOpen.Failed(ExchangeTunnelFailure.Unavailable)
+        If entry Is Nothing Then Return ExchangeTunnelOpen.Failed(ExchangeTunnelFailure.Unavailable, "signed-out")
         Dim address As ExchangeServerAddress = Nothing
         Dim token As String = ""
-        If Not entry.TryGetAddress(address) OrElse Not _entries.TokenStoreFor(entry.Id).TryLoad(entry.DeviceId, token) Then Return ExchangeTunnelOpen.Failed(ExchangeTunnelFailure.Unavailable)
+        If Not entry.TryGetAddress(address) Then Return ExchangeTunnelOpen.Failed(ExchangeTunnelFailure.Unavailable)
+        If Not _entries.TokenStoreFor(entry.Id).TryLoad(entry.DeviceId, token) Then Return ExchangeTunnelOpen.Failed(ExchangeTunnelFailure.Unavailable, "signed-out")
 
         Dim trust As ExchangeTunnelFailure = Await ExchangeTunnelTrust.CheckKnownAsync(_probe, address, entry.Pin, ct).ConfigureAwait(False)
         If trust <> ExchangeTunnelFailure.None Then Return ExchangeTunnelOpen.Failed(trust)
@@ -375,7 +405,10 @@ Friend NotInheritable Class ExchangeTunnelDialer
         Catch ex As OperationCanceledException
             Return DialResult.Failed(New ResourceFailure(ResourceFailureKind.Cancelled))
         End Try
-        If opened Is Nothing OrElse opened.Lease Is Nothing Then Return DialResult.Failed(FailureOf(If(opened Is Nothing, ExchangeTunnelFailure.Unavailable, opened.Failure)))
+        If opened Is Nothing OrElse opened.Lease Is Nothing Then
+            Return DialResult.Failed(FailureOf(If(opened Is Nothing, ExchangeTunnelFailure.Unavailable, opened.Failure),
+                                               If(opened Is Nothing, "", opened.Detail)))
+        End If
         Dim lease As ExchangeTunnelLease = opened.Lease
         Dim result As DialResult = Nothing
         Try
@@ -385,7 +418,16 @@ Friend NotInheritable Class ExchangeTunnelDialer
             Throw
         End Try
         If result Is Nothing OrElse result.Session Is Nothing Then
+            Dim openOutcome As ExchangeOpenOutcome = lease.LastOpenOutcome
+            Dim openRefusal As ExchangeRefusal = lease.LastOpenRefusal
             lease.Dispose()
+            If openOutcome = ExchangeOpenOutcome.PinMismatch Then
+                Return DialResult.Failed(New ResourceFailure(ResourceFailureKind.KeyMismatch, Nothing, ExchangeTunnelRules.CertificateDetail))
+            End If
+            If openOutcome = ExchangeOpenOutcome.Refused AndAlso
+               (openRefusal = ExchangeRefusal.DeviceRevoked OrElse openRefusal = ExchangeRefusal.BadCredentials) Then
+                Return DialResult.Failed(New ResourceFailure(ResourceFailureKind.Auth, Nothing, "device-revoked"))
+            End If
             Return If(result, DialResult.Failed(New ResourceFailure(ResourceFailureKind.Transport)))
         End If
         Dim provider As SftpProvider = TryCast(result.Session, SftpProvider)
@@ -397,14 +439,22 @@ Friend NotInheritable Class ExchangeTunnelDialer
         Return result
     End Function
 
-    Private Shared Function FailureOf(failure As ExchangeTunnelFailure) As ResourceFailure
+    Private Shared Function FailureOf(failure As ExchangeTunnelFailure, Optional detail As String = "") As ResourceFailure
         Select Case failure
             Case ExchangeTunnelFailure.CertificateChanged
                 Return New ResourceFailure(ResourceFailureKind.KeyMismatch, Nothing, ExchangeTunnelRules.CertificateDetail)
+            Case ExchangeTunnelFailure.SignedOut
+                Return New ResourceFailure(ResourceFailureKind.Auth, Nothing, "signed-out")
+            Case ExchangeTunnelFailure.DeviceRevoked
+                Return New ResourceFailure(ResourceFailureKind.Auth, Nothing, "device-revoked")
             Case ExchangeTunnelFailure.Cancelled, ExchangeTunnelFailure.Declined
                 Return New ResourceFailure(ResourceFailureKind.Cancelled)
             Case Else
-                Return New ResourceFailure(ResourceFailureKind.Transport, Nothing, "exchange")
+                If String.Equals(detail, "signed-out", StringComparison.Ordinal) OrElse
+                   String.Equals(detail, "device-revoked", StringComparison.Ordinal) Then
+                    Return New ResourceFailure(ResourceFailureKind.Auth, Nothing, detail)
+                End If
+                Return New ResourceFailure(ResourceFailureKind.Transport, Nothing, If(String.IsNullOrEmpty(detail), "exchange", detail))
         End Select
     End Function
 

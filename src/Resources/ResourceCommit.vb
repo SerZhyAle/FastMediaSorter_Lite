@@ -126,6 +126,15 @@ Friend Module ResourceCommit
 
         Dim current As List(Of ResourceDescriptor) = ResourceRegistry.Parse(readValue("Resources"))
         Dim previous As ResourceDescriptor = current.FirstOrDefault(Function(r) String.Equals(r.Id, descriptor.Id, StringComparison.OrdinalIgnoreCase))
+        If previous Is Nothing Then
+            Dim proven As ResourceDescriptor = current.FirstOrDefault(Function(r) ResourceRegistry.CanProveSameResource(r, descriptor))
+            If proven IsNot Nothing Then
+                previous = proven
+                descriptor.Id = proven.Id
+                ResourceRegistry.MergeInto(proven, descriptor)
+                descriptor = proven
+            End If
+        End If
         Dim oldHandle As String = If(previous IsNot Nothing, previous.SecretHandle, If(descriptor.SecretHandle, ""))
 
         Dim newHandle As String = ""

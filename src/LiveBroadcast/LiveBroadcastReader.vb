@@ -491,6 +491,13 @@ Friend Module LiveBroadcastReader
         If elem.TryGetProperty("certFingerprint", extra) AndAlso extra.ValueKind = JsonValueKind.String Then ep.CertFingerprint = extra.GetString()
         If elem.TryGetProperty("inner", extra) AndAlso extra.ValueKind = JsonValueKind.String Then ep.Inner = extra.GetString()
         ep.IsSealed = elem.TryGetProperty("seal", extra)
+        If ep.IsSealed AndAlso extra.ValueKind = JsonValueKind.Object Then
+            Dim sealMember As JsonElement = Nothing
+            Dim sealV As Integer
+            If extra.TryGetProperty("v", sealMember) AndAlso sealMember.ValueKind = JsonValueKind.Number AndAlso sealMember.TryGetInt32(sealV) Then ep.SealVersion = sealV
+            If extra.TryGetProperty("key", sealMember) AndAlso sealMember.ValueKind = JsonValueKind.String Then ep.SealKey = sealMember.GetString()
+            If extra.TryGetProperty("pin", sealMember) AndAlso sealMember.ValueKind = JsonValueKind.String Then ep.SealPin = sealMember.GetString()
+        End If
 
         Dim transProp As JsonElement = Nothing
         If elem.TryGetProperty("transport", transProp) AndAlso transProp.ValueKind = JsonValueKind.String Then

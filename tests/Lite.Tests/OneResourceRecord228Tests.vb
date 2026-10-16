@@ -438,6 +438,97 @@ Public Class OneResourceRecord228Tests
     End Sub
 
     <Fact>
+    Public Sub ImportLan_ThenAttachFromExchange_GivesOneRecordWithBothChannels()
+        Dim mem As New MemoryValues()
+        Dim store As New MemorySecrets()
+        Dim protect As Func(Of String, SecretProtectionResult) =
+            Function(plain) New SecretProtectionResult(SecretProtectionStatus.Success, "enc:" & plain)
+
+        Dim validFp As String = "SHA256:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+
+        ' Step 1: Import LAN resource
+        Dim doc1 As String = "{""schemaVersion"":1,""resourceName"":""My Photos"",""protocol"":""sftp""," &
+            """accessPaths"":[{""kind"":""lan"",""host"":""192.168.1.100"",""port"":22}]," &
+            """username"":""fms"",""password"":""secret"",""hostKeyFingerprintSha256"":""" & validFp & """," &
+            """roots"":[{""virtualPath"":""/Photos"",""label"":""Photos"",""readOnly"":true}]}"
+        Dim plan1 As FmsConfigPlan = FmsConfigReader.ReadText(doc1).Plan
+        Dim preview1 As ImportPreview = ResourceImport.Preview(plan1, ResourceRegistry.Parse(mem.Read("Resources")), Function() "res1")
+        Dim applyRes1 As ImportApplyResult = ResourceImport.Apply(preview1, "secret", False, AddressOf mem.Read, AddressOf mem.Write, store, protect)
+        Assert.Equal(ImportApplyOutcome.Applied, applyRes1.Outcome)
+
+        Dim list1 As List(Of ResourceDescriptor) = ResourceRegistry.Parse(mem.Read("Resources"))
+        Assert.Single(list1)
+        Assert.True(list1(0).ReadOnlyHint)
+
+        ' Step 2: Attach the SAME share from Exchange directory (same host key fingerprint and same root)
+        Dim code As New FmsSftpCode(New String() {"wan.example.com"}, 2222, "fms", "secret", validFp, "", "", False)
+        Dim accessJson As String = ""
+        Assert.True(ExchangeResourceAccess.TryBuild(code, "/Photos", accessJson))
+
+        Dim draft As ExchangeAttachDraft = ExchangeAttach.BuildDraft("ex-share-100", "dev-100", "Desktop PC", "Photos", accessJson, Function() "res-ex")
+        Assert.NotNull(draft)
+        Dim commitRes As ResourceCommitResult = ResourceCommit.Commit(draft.Descriptor, draft.Password, AddressOf mem.Read, AddressOf mem.Write, store, protect)
+        Assert.True(commitRes.Succeeded)
+
+        ' Verify: Exactly ONE record remains, holding both LAN and Exchange channels, keeping display name and read-only choice
+        Dim list2 As List(Of ResourceDescriptor) = ResourceRegistry.Parse(mem.Read("Resources"))
+        Assert.Single(list2)
+        Dim merged As ResourceDescriptor = list2(0)
+        Assert.Equal("res1", merged.Id) ' Preserves original ID
+        Assert.Equal("My Photos - Photos", merged.DisplayName) ' Preserves user's name
+        Assert.True(merged.ReadOnlyHint) ' Preserves read-only choice
+        Assert.Equal("ex-share-100", merged.ExchangeResourceId) ' Acquired Exchange channel
+        Assert.Equal(ResourceOrigin.Exchange, merged.Origin)
+        Assert.Contains(merged.Endpoints, Function(e) e.Host = "192.168.1.100" AndAlso e.Port = 22)
+        Assert.Contains(merged.Endpoints, Function(e) e.Host = "wan.example.com" AndAlso e.Port = 2222)
+    End Sub
+
+    <Fact>
+    Public Sub AttachFromExchange_ThenImportLan_GivesOneRecordWithBothChannels()
+        Dim mem As New MemoryValues()
+        Dim store As New MemorySecrets()
+        Dim protect As Func(Of String, SecretProtectionResult) =
+            Function(plain) New SecretProtectionResult(SecretProtectionStatus.Success, "enc:" & plain)
+
+        Dim validFp As String = "SHA256:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+
+        ' Step 1: Attach from Exchange directory first
+        Dim code As New FmsSftpCode(New String() {"wan.example.com"}, 2222, "fms", "secret", validFp, "", "", False)
+        Dim accessJson As String = ""
+        Assert.True(ExchangeResourceAccess.TryBuild(code, "/Photos", accessJson))
+
+        Dim draft As ExchangeAttachDraft = ExchangeAttach.BuildDraft("ex-share-200", "dev-200", "Server PC", "Family Photos", accessJson, Function() "res-ex-first")
+        Assert.NotNull(draft)
+        draft.Descriptor.ReadOnlyHint = True
+        Dim commitRes As ResourceCommitResult = ResourceCommit.Commit(draft.Descriptor, draft.Password, AddressOf mem.Read, AddressOf mem.Write, store, protect)
+        Assert.True(commitRes.Succeeded)
+
+        Dim list1 As List(Of ResourceDescriptor) = ResourceRegistry.Parse(mem.Read("Resources"))
+        Assert.Single(list1)
+        Assert.Equal("res-ex-first", list1(0).Id)
+
+        ' Step 2: Import from LAN for the same share
+        Dim doc2 As String = "{""schemaVersion"":1,""resourceName"":""Family Photos"",""protocol"":""sftp""," &
+            """accessPaths"":[{""kind"":""lan"",""host"":""192.168.1.150"",""port"":22}]," &
+            """username"":""fms"",""password"":""secret"",""hostKeyFingerprintSha256"":""" & validFp & """," &
+            """roots"":[{""virtualPath"":""/Photos"",""label"":""Photos"",""readOnly"":false}]}"
+        Dim plan2 As FmsConfigPlan = FmsConfigReader.ReadText(doc2).Plan
+        Dim preview2 As ImportPreview = ResourceImport.Preview(plan2, ResourceRegistry.Parse(mem.Read("Resources")), Function() "res-lan-second")
+        Dim applyRes2 As ImportApplyResult = ResourceImport.Apply(preview2, "secret", False, AddressOf mem.Read, AddressOf mem.Write, store, protect)
+        Assert.Equal(ImportApplyOutcome.Applied, applyRes2.Outcome)
+
+        ' Verify: Still ONE record, now holding both channels
+        Dim list2 As List(Of ResourceDescriptor) = ResourceRegistry.Parse(mem.Read("Resources"))
+        Assert.Single(list2)
+        Dim merged As ResourceDescriptor = list2(0)
+        Assert.Equal("res-ex-first", merged.Id)
+        Assert.Equal("ex-share-200", merged.ExchangeResourceId)
+        Assert.Equal(ResourceOrigin.Exchange, merged.Origin)
+        Assert.Contains(merged.Endpoints, Function(e) e.Host = "192.168.1.150" AndAlso e.Port = 22)
+        Assert.Contains(merged.Endpoints, Function(e) e.Host = "wan.example.com" AndAlso e.Port = 2222)
+    End Sub
+
+    <Fact>
     Public Sub Race_TakesFirstChannelThatAnswers_AndReportsNoConnectionOnlyAfterAll()
         Dim descriptor As New ResourceDescriptor With {
             .Id = "res-race", .Kind = ResourceKind.Sftp, .Host = "192.168.1.50", .Port = 22,

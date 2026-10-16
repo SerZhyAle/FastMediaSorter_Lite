@@ -240,6 +240,10 @@ Friend NotInheritable Class ExchangeEnvelopeTypes
     Public Const ClipboardGet As String = "clipboard-get"
     Public Const ClipboardValue As String = "clipboard-value"
     Public Const ClipboardEmpty As String = "clipboard-empty"
+    ' spec 234 / DEVICE-EXCHANGE section 20 items BD-BE and section 27 item DJ: a member account gives a resource or a broadcast to a guest
+    Public Const Grant As String = "grant"
+    Public Const Granted As String = "granted"
+    Public Const Ungrant As String = "ungrant"
 
 End Class
 
@@ -266,9 +270,23 @@ Friend NotInheritable Class ExchangeMessages
             SetText("platform", description.Platform).SetTextList("roles", description.Roles).
             SetNumber("keepaliveSeconds", keepaliveSeconds)
         If description.ReceiverJson.Length > 0 Then env.SetRecord("receiver", description.ReceiverJson)
-        If description.Roles.Contains(ExchangeWire.RoleResourceConsumer) Then env.SetTextList("capabilities", New String() {"pin-v1"})
+        DeclareCapabilities(env, description)
         Return env
     End Function
+
+    ''' <summary>`capabilities` (item AG) and `e2eKey` (item DF) of an `enroll` or `register`: `pin-v1` for a resource consumer,
+    ''' and, for a device that has a key, `e2e-v1` with `e2eKey {v, kem}`. A device without the key sends neither of the two.</summary>
+    Private Shared Sub DeclareCapabilities(env As ExchangeEnvelope, description As ExchangeDeviceDescription)
+        Dim capabilities As New List(Of String)
+        If description.Roles.Contains(ExchangeWire.RoleResourceConsumer) Then capabilities.Add("pin-v1")
+        Dim point As Byte() = Nothing
+        If ExchangeDeviceKey.TryParseKem(description.E2eKem, point) Then
+            capabilities.Add(ExchangeSealedNames.CapabilityE2e)
+            env.SetRecord("e2eKey", "{""v"":" & ExchangeDeviceKey.E2eKeyVersion.ToString(Globalization.CultureInfo.InvariantCulture) &
+                                    ",""kem"":""" & description.E2eKem & """}")
+        End If
+        If capabilities.Count > 0 Then env.SetTextList("capabilities", capabilities)
+    End Sub
 
     Public Shared Function Simple(typeName As String) As ExchangeEnvelope
         Return New ExchangeEnvelope(typeName)
@@ -288,7 +306,7 @@ Friend NotInheritable Class ExchangeMessages
             SetText("platform", description.Platform).SetTextList("roles", description.Roles).
             SetNumber("keepaliveSeconds", keepaliveSeconds)
         If description.ReceiverJson.Length > 0 Then env.SetRecord("receiver", description.ReceiverJson)
-        If description.Roles.Contains(ExchangeWire.RoleResourceConsumer) Then env.SetTextList("capabilities", New String() {"pin-v1"})
+        DeclareCapabilities(env, description)
         Return env
     End Function
 
@@ -335,6 +353,29 @@ Friend NotInheritable Class ExchangeMessages
     Public Shared Function ClipboardPut(kind As String, size As Long, mimeType As String, name As String) As ExchangeEnvelope
         Return New ExchangeEnvelope(ExchangeEnvelopeTypes.ClipboardPut).SetText("kind", kind).SetNumber("size", size).
             SetText("mimeType", mimeType).SetText("name", name)
+    End Function
+
+    ''' <summary>A sealed `clipboard-put` (27 item DN): `kind` `sealed`, `size` the number of SEALED bytes that follow `clipboard-ready`, and
+    ''' `sealed` the box with the context `clipboard` as one JSON object. A sealed put carries no `mimeType` and no `name` in clear.</summary>
+    Public Shared Function ClipboardPutSealed(sealedSize As Long, boxJson As String) As ExchangeEnvelope
+        Return New ExchangeEnvelope(ExchangeEnvelopeTypes.ClipboardPut).SetText("kind", ExchangeClipboardKinds.Sealed).SetNumber("size", sealedSize).
+            SetRecord("sealed", boxJson)
+    End Function
+
+    ''' <summary>A `grant` to a guest account (20 items BD/BE, 27 item DJ): the resource OR the broadcast, and exactly one payload
+    ''' member as raw JSON - `access` (a resource) or `credentials` (a broadcast) in the clear for a guest device without the
+    ''' capability, or `sealed` (a box with the context `grant:&lt;grantId&gt;`) for one that has it. A `grant` with a `grantId` the
+    ''' account already holds replaces that grant's box. The payload is a secret holder: it lives in the caller's field and in this frame.</summary>
+    Public Shared Function GrantTo(grantId As String, guest As String, resourceId As String, broadcastId As String,
+                                   accessJson As String, credentialsJson As String, sealedJson As String) As ExchangeEnvelope
+        Return New ExchangeEnvelope(ExchangeEnvelopeTypes.Grant).SetText("grantId", grantId).SetText("guest", guest).
+            SetText("resourceId", resourceId).SetText("broadcastId", broadcastId).
+            SetRecord("access", accessJson).SetRecord("credentials", credentialsJson).SetRecord("sealed", sealedJson)
+    End Function
+
+    ''' <summary>An `ungrant` (20 item BD): takes a grant back; not answered.</summary>
+    Public Shared Function Ungrant(grantId As String) As ExchangeEnvelope
+        Return New ExchangeEnvelope(ExchangeEnvelopeTypes.Ungrant).SetText("grantId", grantId)
     End Function
 
     ''' <summary>A `clipboard-get` (item BY): the `clipId` of the value the person was told about, or "" for the current one.</summary>

@@ -218,7 +218,7 @@ email (1-3 business days).
 > name changed, **the Store name did not**. The **title stays "FastMediaSorter LITE"** in Partner Center
 > (the `Title` row of `listingData.csv`, which the generator below does not own, and the manifest
 > `DisplayName`: frozen reserved name = the update anchor, do NOT change it; nothing is reserved anew).
-> Only the **Description** text below is refreshed to lead with the new full name and with sharing, and
+> Only the **Description** text below uses the compact name without a platform suffix (233) and sharing, and
 > the sentence "On the Microsoft Store this app is published as .." stays, because it is true. The
 > compact form "Fast Media Sorter & Sharing" is not a Store name. `Identity Name` and `Publisher` are
 > the update anchors as before. Paste the EN block into the listing's Description at the next
@@ -236,7 +236,7 @@ email (1-3 business days).
 > text leads with sorting AND sharing, since that is what the product now says it is.
 ```
 Sort thousands of photos and videos in minutes - and share them with your phone. Fast Media Sorter &
-Sharing for Windows is a fast, keyboard-driven viewer and sorter for images and video, with a bundled
+Sharing is a fast, keyboard-driven viewer and sorter for images and video, with a bundled
 Share Manager that can also share the folders you pick - optional, off until you switch it on.
 
 Open a folder and fly through it: full-screen slideshow, quick panel navigation, and one-key Move /
@@ -288,8 +288,7 @@ On the Microsoft Store this app is published as "FastMediaSorter LITE".
 
 ### Description (RU - optional Russian-market listing)
 ```
-Разберите тысячи фото и видео за минуты - и делитесь ими с телефоном. Fast Media Sorter & Sharing for
-Windows - быстрый просмотрщик и сортировщик изображений и видео, управляемый с клавиатуры, со
+Разберите тысячи фото и видео за минуты - и делитесь ими с телефоном. Fast Media Sorter & Sharing - быстрый просмотрщик и сортировщик изображений и видео, управляемый с клавиатуры, со
 встроенным Share Manager, который может ещё и раздавать выбранные вами папки - по желанию,
 выключено, пока вы не включите.
 

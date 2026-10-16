@@ -33,3 +33,4 @@
 {"reason":"The same cloud translation API key as OcrTranslateSettings, in a wrapped comment line (206 section 3).","path":"src/Security/DpapiSecrets.vb","pattern":"the cloud API"}
 {"reason":"A wrapped line of a cloud-clipboard comment; the check works line by line, so its clipboard lookahead cannot see across the wrap (206 section 3).","path":"src/FastMediaSorterCompanion/Forms/Exchange_Password_Form.vb","pattern":"history and the cloud"}
 {"path":".claude/rules/naming-and-positioning.md","pattern":"FastMediaSorter LITE|\\bLite\\b|\\bLITE\\b","reason":"The area rule file that carries the naming rule of CLAUDE.md moved verbatim: it names the frozen package-name anchors and the forbidden word for coding agents."}
+{"path":"tests/Lite.Tests/ExchangeVocabularyTests.vb","pattern":"FastMediaSorter LITE","reason":"Specification 233 regression assertions preserve the reserved Store title and the two MSIX DisplayName anchors while descriptions change."}

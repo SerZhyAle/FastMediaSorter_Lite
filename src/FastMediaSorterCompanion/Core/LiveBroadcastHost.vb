@@ -63,9 +63,33 @@ Public Module LiveBroadcastHost
                                     If agent IsNot Nothing Then
                                         agent.OnBroadcastStopped(broadcastId)
                                     End If
-                                End Sub
+                                End Sub,
+            .Sealing = New AgentSealing()
         }
     End Function
+
+    ''' <summary>The producer's sealing port, answered by the current exchange agent (spec 234, DEVICE-EXCHANGE items DK and DL):
+    ''' the keys and the sealed directory live in the agent, the controller only asks.</summary>
+    Private NotInheritable Class AgentSealing
+        Implements ILiveBroadcastSealing
+
+        Public ReadOnly Property CanSealThroughServer As Boolean Implements ILiveBroadcastSealing.CanSealThroughServer
+            Get
+                Dim agent As ExchangeDeviceAgent = ExchangeDeviceHost.Current
+                Return agent IsNot Nothing AndAlso agent.CanSealBroadcast()
+            End Get
+        End Property
+
+        Public Function NewLinkKey(broadcastId As String) As String Implements ILiveBroadcastSealing.NewLinkKey
+            Dim agent As ExchangeDeviceAgent = ExchangeDeviceHost.Current
+            Return If(agent Is Nothing, "", agent.NewBroadcastLinkKey(broadcastId))
+        End Function
+
+        Public Function NewTunnelPin(broadcastId As String) As String Implements ILiveBroadcastSealing.NewTunnelPin
+            Dim agent As ExchangeDeviceAgent = ExchangeDeviceHost.Current
+            Return If(agent Is Nothing, "", agent.NewBroadcastTunnelPin(broadcastId))
+        End Function
+    End Class
 
     ''' <summary>The one controller instance of the Share Manager - one live broadcast per device at a
     ''' time (section 2) means one object, owned by the tray context and shown by the window.</summary>

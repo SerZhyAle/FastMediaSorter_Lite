@@ -52,6 +52,14 @@ Friend Module ShareActivationPolicy
     ''' </summary>
     Friend ReadOnly MinPhoneCodeVersion As New Version(26, 10, 15, 0)
 
+    ''' <summary>
+    ''' The first build that understands the clipboard intents (spec 230: <c>::fms-clipboard-send::</c> and
+    ''' <c>::fms-clipboard-get::</c> over the wake, or <c>--clipboard-send</c> / <c>--clipboard-get</c> on a cold start).
+    ''' The same written-decision shape. An older receiver would refuse the unknown payload (a pre-gate one could take
+    ''' any string for a folder), so the intent never travels to it: the plain wake raises its window instead.
+    ''' </summary>
+    Friend ReadOnly MinClipboardVersion As New Version(26, 10, 16, 0)
+
     ''' <summary>Spec 227 T-3: phone connection code command prefix.</summary>
     Friend Const PhoneCodeCommandPrefix As String = "::fms-phone-code::"
     ''' <summary>Spec 227 T-3: phone connection code file command prefix.</summary>
@@ -71,6 +79,12 @@ Friend Module ShareActivationPolicy
     ''' version is not proof - the plain wake is the fallback, never an error.</summary>
     Friend Function IsScheduleCapable(companionVersion As Version) As Boolean
         Return companionVersion IsNot Nothing AndAlso companionVersion >= MinScheduleVersion
+    End Function
+
+    ''' <summary>The clipboard intents travel only to a Share Manager proven to know them (spec 230); an unknown version
+    ''' is not proof - the plain wake is the fallback, never an error.</summary>
+    Friend Function IsClipboardCapable(companionVersion As Version) As Boolean
+        Return companionVersion IsNot Nothing AndAlso companionVersion >= MinClipboardVersion
     End Function
 
     ''' <summary>The phone code travels only to a viewer proven to know it (spec 227); an unknown version is not

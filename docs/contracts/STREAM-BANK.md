@@ -7,7 +7,7 @@
 | **Home** | `stream-catalog/README.md` in the shared contracts catalog |
 | **Role here** | **producer** - implemented under specification 022 (`src/Streams/`), on `main` since 2026-10-03 and in **no release yet** (the latest release predates it); the contract's own header still lists this product as "planned" |
 
-Specification 022 implements Fast Media Sorter & Sharing for Windows (FMS_W) as a conforming producer of `stream-catalog.zip`
+Specification 022 implements Fast Media Sorter & Sharing for Windows (FMS_Win) as a conforming producer of `stream-catalog.zip`
 from `.m3u` and `.m3u8` playlists on the PC. The registry row for this product used to read "planned
 consumer", then "planned producer, not started"; it is a producer, and the row says so since 2026-10-07.
 The producer's own version tag (`StreamCatalogSchema.ContractTag`, printed in its report and held by a test)

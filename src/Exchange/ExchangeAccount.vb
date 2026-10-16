@@ -228,9 +228,13 @@ Friend NotInheritable Class ExchangeDeviceDescription
     Public ReadOnly Roles As IReadOnlyList(Of String)
     ''' <summary>The `receiver` block as raw JSON, or "" when the device does not declare the role.</summary>
     Public ReadOnly ReceiverJson As String
+    ''' <summary>The `kem` of this device's key for the sealed scheme (DEVICE-EXCHANGE 27 item DF), or "" when the device has
+    ''' none: then `enroll` and `register` carry neither the `e2eKey` member nor the capability `e2e-v1`. A public value.</summary>
+    Public ReadOnly E2eKem As String
 
     Public Sub New(deviceId As String, deviceName As String, product As String, productVersion As String, platform As String,
-                   roles As IEnumerable(Of String), receiverJson As String)
+                   roles As IEnumerable(Of String), receiverJson As String, Optional e2eKem As String = "")
+        Me.E2eKem = If(e2eKem, "")
         Me.DeviceId = deviceId
         Me.DeviceName = deviceName
         Me.Product = product

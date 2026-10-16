@@ -40,6 +40,10 @@ Public NotInheritable Class ModernViewerPreferences
     ''' which is what filing one picture into several folders wants
     ''' (SPECIFICATION_COPY_ACTIONS_REWORK.md §3.2).</summary>
     Public Property AdvanceAfterCopy As Boolean = True
+    ''' <summary>A copy, move or delete raises the status panel even when it is not pinned, and holds it
+    ''' <see cref="ChromeMetrics.FileOperationRevealMilliseconds"/> after the last operation (see
+    ''' <c>ChromeAutoHide.FileOperationRevealHeld</c>). Off by default: an upgrade changes nothing.</summary>
+    Public Property RevealStatusOnFileOperation As Boolean = False
     Public Property AutoAcceptLiveCast As Boolean = False
     ''' <summary>Whether DEL aims for the Recycle Bin at all
     ''' (017_SPECIFICATION_RECYCLE_BIN_AND_UNDO_DOTNET10.md §3.9). Off means every deletion is
@@ -324,6 +328,7 @@ Public NotInheritable Class ModernViewerPreferences
         p.NameCollisionPolicy = ReadChoice("NameCollisionPolicy", p.NameCollisionPolicy, "ask", "skip", "rename", "replace")
         p.AfterFileOperation = ReadChoice("AfterFileOperation", p.AfterFileOperation, "next", "stay", "closeIfEmpty")
         p.AdvanceAfterCopy = ReadBool("AdvanceAfterCopy", p.AdvanceAfterCopy)
+        p.RevealStatusOnFileOperation = ReadBool("RevealStatusOnFileOperation", p.RevealStatusOnFileOperation)
         p.AutoAcceptLiveCast = ReadBool("AutoAcceptLiveCast", p.AutoAcceptLiveCast)
         p.DeleteToRecycleBin = ReadBool("DeleteToRecycleBin", p.DeleteToRecycleBin)
         p.ConfirmDelete = ReadConfirmDelete()
@@ -416,6 +421,7 @@ Public NotInheritable Class ModernViewerPreferences
         WriteString("NameCollisionPolicy", NameCollisionPolicy)
         WriteString("AfterFileOperation", AfterFileOperation)
         WriteBool("AdvanceAfterCopy", AdvanceAfterCopy)
+        WriteBool("RevealStatusOnFileOperation", RevealStatusOnFileOperation)
         WriteBool("AutoAcceptLiveCast", AutoAcceptLiveCast)
         WriteBool("DeleteToRecycleBin", DeleteToRecycleBin)
         WriteString("ConfirmDelete", ConfirmDelete)

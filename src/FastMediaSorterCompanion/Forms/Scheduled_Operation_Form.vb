@@ -35,10 +35,12 @@ Friend NotInheritable Class Scheduled_Operation_Form
     Private txtSource As TextBox
     Private btnSourcePick As Button
     Private btnSourceResource As Button
+    Private btnSourceDrive As Button
     ''' <summary>The two sides as chosen: a path typed or picked, or a registered resource and a folder in it.</summary>
     Private sourceLocation As New ScheduledLocation()
     Private destinationLocation As New ScheduledLocation()
     Private btnDestinationResource As Button
+    Private btnDestinationDrive As Button
     Private chkRecursive As CheckBox
     Private lblDestination As Label
     Private txtDestination As TextBox
@@ -75,6 +77,8 @@ Friend NotInheritable Class Scheduled_Operation_Form
     Private numEveryMinutes As NumericUpDown
     Private lblNextRun As Label
     Private chkEnabled As CheckBox
+    Private chkRetryMissed As CheckBox
+    Private chkBalloonOnError As CheckBox
     Private lblAutostart As Label
 
     Private btnPreview As Button
@@ -182,7 +186,10 @@ Friend NotInheritable Class Scheduled_Operation_Form
         btnSourceResource = New Button With {.Text = Localization.T("Ресурс.."), .AutoSize = True, .Name = "btnSchedSourceResource", .Margin = New Padding(6, 2, 0, 0)}
         ButtonGlyphs.Apply(btnSourceResource, "source.resource")
         AddHandler btnSourceResource.Click, Sub() PickResource(txtSource, sourceLocation)
-        AddRow(page, Caption(Localization.T("Источник")), PairRow(txtSource, btnSourcePick, btnSourceResource))
+        btnSourceDrive = New Button With {.Text = Localization.T("Через Google Диск"), .AutoSize = True, .Name = "btnSchedSourceDrive", .Margin = New Padding(6, 2, 0, 0)}
+        ButtonGlyphs.Apply(btnSourceDrive, "system.internet")
+        AddHandler btnSourceDrive.Click, Sub() PickDrive(txtSource, sourceLocation)
+        AddRow(page, Caption(Localization.T("Источник")), PairRow(txtSource, btnSourcePick, btnSourceResource, btnSourceDrive))
 
         chkRecursive = New CheckBox With {.Text = Localization.T("Включая вложенные папки"), .AutoSize = True, .Checked = True,
             .Margin = New Padding(0, 2, 0, 2), .Name = "chkSchedRecursive"}
@@ -198,8 +205,11 @@ Friend NotInheritable Class Scheduled_Operation_Form
         btnDestinationResource = New Button With {.Text = Localization.T("Ресурс.."), .AutoSize = True, .Name = "btnSchedDestinationResource", .Margin = New Padding(6, 2, 0, 0)}
         ButtonGlyphs.Apply(btnDestinationResource, "source.resource")
         AddHandler btnDestinationResource.Click, Sub() PickResource(txtDestination, destinationLocation)
+        btnDestinationDrive = New Button With {.Text = Localization.T("Через Google Диск"), .AutoSize = True, .Name = "btnSchedDestinationDrive", .Margin = New Padding(6, 2, 0, 0)}
+        ButtonGlyphs.Apply(btnDestinationDrive, "system.internet")
+        AddHandler btnDestinationDrive.Click, Sub() PickDrive(txtDestination, destinationLocation)
         page.Controls.Add(lblDestination)
-        page.Controls.Add(PairRow(txtDestination, btnDestinationPick, btnDestinationResource))
+        page.Controls.Add(PairRow(txtDestination, btnDestinationPick, btnDestinationResource, btnDestinationDrive))
 
         lblConflict = Caption(Localization.T("Если имя занято"))
         cmbConflict = New ComboBox With {.DropDownStyle = ComboBoxStyle.DropDownList, .Width = 220, .Margin = New Padding(0, 4, 0, 0), .Name = "cmbSchedConflict"}
@@ -259,6 +269,16 @@ Friend NotInheritable Class Scheduled_Operation_Form
         AddHandler chkEnabled.CheckedChanged, AddressOf OnScheduleChanged
         page.Controls.Add(New Label With {.AutoSize = True, .Margin = New Padding(0)})
         page.Controls.Add(chkEnabled)
+
+        chkRetryMissed = New CheckBox With {.Text = Localization.T("Выполнить пропущенный запуск при старте программы"), .AutoSize = True, .Checked = True,
+            .Margin = New Padding(0, 2, 0, 2), .Name = "chkSchedRetryMissed"}
+        page.Controls.Add(New Label With {.AutoSize = True, .Margin = New Padding(0)})
+        page.Controls.Add(chkRetryMissed)
+
+        chkBalloonOnError = New CheckBox With {.Text = Localization.T("Показывать уведомление при ошибке"), .AutoSize = True, .Checked = False,
+            .Margin = New Padding(0, 2, 0, 2), .Name = "chkSchedBalloonOnError"}
+        page.Controls.Add(New Label With {.AutoSize = True, .Margin = New Padding(0)})
+        page.Controls.Add(chkBalloonOnError)
 
         lblAutostart = Note("")
         lblAutostart.Name = "lblSchedAutostart"
@@ -346,15 +366,17 @@ Friend NotInheritable Class Scheduled_Operation_Form
         table.Controls.Add(right)
     End Sub
 
-    Private Shared Function PairRow(box As TextBox, pick As Button, resource As Button) As Control
-        Dim table As New TableLayoutPanel With {.AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink, .ColumnCount = 3, .Dock = DockStyle.Top,
+    Private Shared Function PairRow(box As TextBox, pick As Button, resource As Button, drive As Button) As Control
+        Dim table As New TableLayoutPanel With {.AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink, .ColumnCount = 4, .Dock = DockStyle.Top,
             .Margin = New Padding(0)}
         table.ColumnStyles.Add(New ColumnStyle(SizeType.Percent, 100))
+        table.ColumnStyles.Add(New ColumnStyle(SizeType.AutoSize))
         table.ColumnStyles.Add(New ColumnStyle(SizeType.AutoSize))
         table.ColumnStyles.Add(New ColumnStyle(SizeType.AutoSize))
         table.Controls.Add(box)
         table.Controls.Add(pick)
         table.Controls.Add(resource)
+        table.Controls.Add(drive)
         Return table
     End Function
 
@@ -395,6 +417,8 @@ Friend NotInheritable Class Scheduled_Operation_Form
             numEveryHours.Value = Math.Min(numEveryHours.Maximum, op.IntervalMinutes \ 60)
             numEveryMinutes.Value = op.IntervalMinutes Mod 60
             chkEnabled.Checked = op.Enabled
+            chkRetryMissed.Checked = op.RetryMissedRunsAtStart
+            chkBalloonOnError.Checked = op.ShowBalloonOnError
         Finally
             _loading = False
         End Try
@@ -455,6 +479,8 @@ Friend NotInheritable Class Scheduled_Operation_Form
         op.AnchorMinutes = dtpStart.Value.Hour * 60 + dtpStart.Value.Minute
         op.IntervalMinutes = CInt(numEveryHours.Value) * 60 + CInt(numEveryMinutes.Value)
         op.Enabled = chkEnabled.Checked
+        op.RetryMissedRunsAtStart = chkRetryMissed.Checked
+        op.ShowBalloonOnError = chkBalloonOnError.Checked
         Return op
     End Function
 
@@ -482,9 +508,12 @@ Friend NotInheritable Class Scheduled_Operation_Form
         lblConflict.Visible = showConflict
         cmbConflict.Visible = showConflict
         chkDeleteOriginals.Visible = action = ScheduledAction.Archive
-        ' An archive takes folders of this PC only for now (12.2 default 7).
+        ' An archive takes folders of this PC (or Google Drive) only for now (12.2 default 7).
         btnSourceResource.Visible = action <> ScheduledAction.Archive
         btnDestinationResource.Visible = action <> ScheduledAction.Archive
+        Dim driveOffered As Boolean = ScheduledDriveRegistry.IsSignedIn()
+        btnSourceDrive.Visible = (driveOffered OrElse sourceLocation.Kind = ScheduledLocationKind.Drive) AndAlso action <> ScheduledAction.Delete
+        btnDestinationDrive.Visible = (driveOffered OrElse destinationLocation.Kind = ScheduledLocationKind.Drive) AndAlso hasDestination
         UpdateVerdict(action)
     End Sub
 
@@ -494,7 +523,8 @@ Friend NotInheritable Class Scheduled_Operation_Form
         lblVerdict.Visible = removes
         If Not removes Then Return
         Dim location As ScheduledLocation = ReadLocation(txtSource, sourceLocation)
-        Dim canonical As String = If(location.Kind = ScheduledLocationKind.Resource, location.ResourceId, CompanionCommand.CanonicalFolder(location.Path))
+        Dim canonical As String = If(location.Kind = ScheduledLocationKind.Resource, location.ResourceId,
+                                     If(location.Kind = ScheduledLocationKind.Drive, "drive", CompanionCommand.CanonicalFolder(location.Path)))
         If canonical.Length = 0 Then
             lblVerdict.Text = Localization.T("Удаление: куда пойдут файлы, станет известно, когда будет указан источник.")
             Return
@@ -531,10 +561,13 @@ Friend NotInheritable Class Scheduled_Operation_Form
         Return ScheduledText.AutostartLine(enabled, ScheduledSettings.Paused)
     End Function
 
-    ''' <summary>The text box shows a path, or - for a resource - its name and folder, read-only.</summary>
+    ''' <summary>The text box shows a path, or - for a resource or Google Drive - its name and folder, read-only.</summary>
     Private Shared Sub ShowLocation(box As TextBox, location As ScheduledLocation)
         If location.Kind = ScheduledLocationKind.Resource Then
             box.Text = location.Describe()
+            box.ReadOnly = True
+        ElseIf location.Kind = ScheduledLocationKind.Drive Then
+            box.Text = If(location.ResourceName.Length > 0, location.ResourceName, Localization.T("Через Google Диск"))
             box.ReadOnly = True
         Else
             box.Text = location.Path
@@ -542,9 +575,9 @@ Friend NotInheritable Class Scheduled_Operation_Form
         End If
     End Sub
 
-    ''' <summary>What the box means now: the picked resource, or the path typed into it.</summary>
+    ''' <summary>What the box means now: the picked resource or Google Drive, or the path typed into it.</summary>
     Private Shared Function ReadLocation(box As TextBox, location As ScheduledLocation) As ScheduledLocation
-        If location.Kind = ScheduledLocationKind.Resource Then Return location.Clone()
+        If location.Kind = ScheduledLocationKind.Resource OrElse location.Kind = ScheduledLocationKind.Drive Then Return location.Clone()
         Return New ScheduledLocation With {.Kind = ScheduledLocationKind.Path, .Path = box.Text.Trim()}
     End Function
 
@@ -572,6 +605,15 @@ Friend NotInheritable Class Scheduled_Operation_Form
             location.Path = dialog.ChosenFolder
             ShowLocation(target, location)
         End Using
+    End Sub
+
+    Private Sub PickDrive(target As TextBox, location As ScheduledLocation)
+        location.Kind = ScheduledLocationKind.Drive
+        location.ResourceId = ""
+        location.ResourceName = Localization.T("Через Google Диск")
+        location.Path = ""
+        ShowLocation(target, location)
+        OnShapeChanged(Nothing, EventArgs.Empty)
     End Sub
 
     ' --- save and preview ------------------------------------------------------------------------------

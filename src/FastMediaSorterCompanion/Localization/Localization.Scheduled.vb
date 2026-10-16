@@ -1,4 +1,4 @@
-﻿Option Strict On
+Option Strict On
 ' Columns: Russian key, en, uk, de, it, es, fr, pt, ar, hi, bn, ur, zh.
 ' Ticket 222: scheduled file operations - the page, the editor, the history, the tray items and the sentences of
 ' every outcome. Part of the Share Manager's own tables: the feature lives in this program and nowhere else.
@@ -728,5 +728,81 @@ Partial Public NotInheritable Class Localization
             "This kind of resource (an exchange link) cannot be used in scheduled operations yet.", "Цей вид ресурсу (посилання обміну) поки що не можна використовувати в операціях за розкладом.", "Diese Art von Ressource (ein Austauschlink) kann in geplanten Vorgängen noch nicht verwendet werden.", "Questo tipo di risorsa (un link di scambio) non può ancora essere usato nelle operazioni pianificate.",
             "Este tipo de recurso (un enlace de intercambio) todavía no se puede usar en operaciones programadas.", "Ce type de ressource (un lien d'échange) ne peut pas encore être utilisé dans les opérations planifiées.", "Este tipo de recurso (um link de troca) ainda não pode ser usado em operações agendadas.", "لا يمكن استخدام هذا النوع من الموارد (رابط تبادل) في العمليات المجدولة حاليًا.",
             "इस प्रकार के संसाधन (एक्सचेंज लिंक) का उपयोग अभी शेड्यूल किए गए ऑपरेशन में नहीं किया जा सकता.", "এই ধরনের রিসোর্স (এক্সচেঞ্জ লিংক) এখনও সময়সূচিবদ্ধ অপারেশনে ব্যবহার করা যায় না।", "اس قسم کے وسیلے (ایکسچینج لنک) کو ابھی شیڈول شدہ آپریشنز میں استعمال نہیں کیا جا سکتا۔", "此类资源（交换链接）目前还不能用于计划操作。")
+        Add("устройство отозвано: {0}",
+            "the device has been revoked: {0}", "пристрій відкликано: {0}", "das Gerät wurde widerrufen: {0}", "il dispositivo è stato revocato: {0}",
+            "el dispositivo ha sido revocado: {0}", "l'appareil a été révoqué : {0}", "o dispositivo foi revogado: {0}", "تم إلغاء تفويض الجهاز: {0}",
+            "डिवाइस निरस्त कर दिया गया है: {0}", "ডিভাইসটি প্রত্যাহার করা হয়েছে: {0}", "ڈیوائس منسوخ کر دی گئی ہے: {0}", "设备已被撤销：{0}")
+        Add("сертификат сервера обмена изменился: {0}",
+            "the exchange server certificate has changed: {0}", "сертифікат сервера обміну змінився: {0}", "das Zertifikat des Austauschservers hat sich geändert: {0}", "il certificato del server di scambio è cambiato: {0}",
+            "el certificado del servidor de intercambio ha cambiado: {0}", "le certificat du serveur d'échange a changé : {0}", "o certificado do servidor de troca mudou: {0}", "تغيرت شهادة خادم التبادل: {0}",
+            "एक्सचेंज सर्वर का प्रमाणपत्र बदल गया है: {0}", "এক্সচেঞ্জ সার্ভারের সার্টিফিকেট পরিবর্তিত হয়েছে: {0}", "ایکسچینج سرور کا سرٹیفکیٹ تبدیل ہو گیا ہے: {0}", "交换服务器证书已更改：{0}")
+        Add("выполнен выход из учётной записи обмена: {0}",
+            "signed out of the exchange account: {0}", "виконано вихід з облікового запису обміну: {0}", "vom Austauschkonto abgemeldet: {0}", "disconnesso dall'account di scambio: {0}",
+            "se cerró la sesión de la cuenta de intercambio: {0}", "déconnecté du compte d'échange : {0}", "saiu da conta de troca: {0}", "تم تسجيل الخروج من حساب التبادل: {0}",
+            "एक्सचेंज खाते से साइन आउट किया गया: {0}", "এক্সচেঞ্জ অ্যাকাউন্ট থেকে সাইন আউট করা হয়েছে: {0}", "ایکسچینج اکاؤنٹ سے سائن آؤٹ ہو گیا: {0}", "已退出交换账户：{0}")
+        Add("требуется PIN-код или он изменился: {0}",
+            "a PIN is required or has changed: {0}", "потрібен PIN-код або він змінився: {0}", "eine PIN ist erforderlich oder hat sich geändert: {0}", "è richiesto un PIN oppure è cambiato: {0}",
+            "se requiere un PIN o ha cambiado: {0}", "un code PIN est requis ou a changé : {0}", "um PIN é necessário ou foi alterado: {0}", "رمز PIN مطلوب أو تم تغييره: {0}",
+            "PIN आवश्यक है या बदल गया है: {0}", "PIN প্রয়োজন বা পরিবর্তিত হয়েছে: {0}", "PIN درکار ہے یا تبدیل ہو گیا ہے: {0}", "需要 PIN 码或 PIN 码已更改：{0}")
+        Add("устройство сейчас не в сети: {0}",
+            "the device is offline right now: {0}", "пристрій зараз не в мережі: {0}", "das Gerät ist derzeit offline: {0}", "il dispositivo è attualmente offline: {0}",
+            "el dispositivo está desconectado ahora mismo: {0}", "l'appareil est hors ligne pour le moment : {0}", "o dispositivo está offline no momento: {0}", "الجهاز غير متصل حاليًا: {0}",
+            "डिवाइस अभी ऑफ़लाइन है: {0}", "ডিভাইসটি এখন অফলাইনে আছে: {0}", "ڈیوائس اس وقت آف لائن ہے: {0}", "设备当前不在线：{0}")
+        Add("Google Диск нельзя выбрать одновременно как источник и как назначение.",
+            "Google Drive cannot be chosen as both the source and the destination.", "Google Диск не можна вибрати одночасно як джерело і як призначення.", "Google Drive kann nicht gleichzeitig als Quelle und als Ziel ausgewählt werden.", "Google Drive non può essere scelto contemporaneamente come origine e come destinazione.",
+            "No se puede elegir Google Drive como origen y como destino al mismo tiempo.", "Google Drive ne peut pas être choisi à la fois comme source et comme destination.", "O Google Drive não pode ser escolhido como origem e destino ao mesmo tempo.", "لا يمكن اختيار Google Drive كمصدر ووجهة في الوقت نفسه.",
+            "Google ड्राइव को एक साथ स्रोत और गंतव्य दोनों के रूप में नहीं चुना जा सकता.", "Google ড্রাইভকে একই সঙ্গে উৎস ও গন্তব্য হিসেবে বেছে নেওয়া যাবে না।", "Google ڈرائیو کو بیک وقت ماخذ اور منزل دونوں کے طور پر منتخب نہیں کیا جا سکتا۔", "不能同时将 Google 云端硬盘选为来源和目标。")
+        Add("Удаление по расписанию через Google Диск не поддерживается.",
+            "Scheduled deletion via Google Drive is not supported.", "Видалення за розкладом через Google Диск не підтримується.", "Geplantes Löschen über Google Drive wird nicht unterstützt.", "L'eliminazione pianificata tramite Google Drive non è supportata.",
+            "La eliminación programada a través de Google Drive no es compatible.", "La suppression planifiée via Google Drive n'est pas prise en charge.", "A exclusão agendada pelo Google Drive não é suportada.", "الحذف المجدول عبر Google Drive غير مدعوم.",
+            "Google ड्राइव के माध्यम से शेड्यूल किया गया हटाना समर्थित नहीं है.", "Google ড্রাইভের মাধ্যমে সময়সূচিবদ্ধ মুছে ফেলা সমর্থিত নয়।", "Google ڈرائیو کے ذریعے شیڈول شدہ حذف معاونت یافتہ نہیں ہے۔", "不支持通过 Google 云端硬盘按计划删除。")
+        Add("Пропущена: устройство не в сети",
+            "Skipped: device is offline", "Пропущена: пристрій не в мережі", "Übersprungen: Gerät ist offline", "Saltata: dispositivo offline",
+            "Omitida: el dispositivo está desconectado", "Ignorée : l'appareil est hors ligne", "Ignorada: dispositivo offline", "تم التخطي: الجهاز غير متصل",
+            "छोड़ा गया: डिवाइस ऑफ़लाइन है", "বাদ দেওয়া হয়েছে: ডিভাইস অফলাইনে আছে", "چھوڑ دیا گیا: ڈیوائس آف لائن ہے", "已跳过：设备不在线")
+        Add("Пропущено: {0}",
+            "Skipped: {0}", "Пропущено: {0}", "Übersprungen: {0}", "Saltato: {0}",
+            "Omitido: {0}", "Ignoré : {0}", "Ignorado: {0}", "تم التخطي: {0}",
+            "छोड़ा गया: {0}", "বাদ দেওয়া হয়েছে: {0}", "چھوڑ دیا گیا: {0}", "已跳过：{0}")
+        Add("Через Google Диск",
+            "Through Google Drive", "Через Google Диск", "Über Google Drive", "Tramite Google Drive",
+            "A través de Google Drive", "Via Google Drive", "Pelo Google Drive", "عبر Google Drive",
+            "Google ड्राइव के माध्यम से", "Google ড্রাইভের মাধ্যমে", "Google ڈرائیو کے ذریعے", "通过 Google 云端硬盘")
+        Add("Выполнить пропущенный запуск при старте программы",
+            "Run a missed schedule once when the program starts", "Виконати пропущений запуск під час старту програми", "Verpasste Ausführung beim Programmstart einmal nachholen", "Esegui una volta l'avvio mancato all'apertura del programma",
+            "Ejecutar una vez el inicio omitido al abrir el programa", "Exécuter une fois le lancement manqué au démarrage du programme", "Executar uma vez a execução perdida ao iniciar o programa", "تنفيذ التشغيل الفائت مرة واحدة عند بدء البرنامج",
+            "प्रोग्राम शुरू होने पर छूटा हुआ रन एक बार चलाएँ", "প্রোগ্রাম চালু হলে বাদ পড়া রান একবার চালান", "پروگرام شروع ہونے پر چھوٹا ہوا رن ایک بار چلائیں", "程序启动时补执行一次错过的计划")
+        Add("Показывать уведомление при ошибке",
+            "Show a notification on error", "Показувати сповіщення у разі помилки", "Benachrichtigung bei Fehler anzeigen", "Mostra una notifica in caso di errore",
+            "Mostrar una notificación en caso de error", "Afficher une notification en cas d'erreur", "Mostrar uma notificação em caso de erro", "إظهار إشعار عند حدوث خطأ",
+            "त्रुटि होने पर सूचना दिखाएँ", "ত্রুটি হলে বিজ্ঞপ্তি দেখান", "خرابی کی صورت میں اطلاع دکھائیں", "出错时显示通知")
+        Add("Экспорт..",
+            "Export..", "Експорт..", "Exportieren..", "Esporta..",
+            "Exportar..", "Exporter..", "Exportar..", "تصدير..",
+            "निर्यात..", "এক্সপোর্ট..", "ایکسپورٹ..", "导出..")
+        Add("Импорт..",
+            "Import..", "Імпорт..", "Importieren..", "Importa..",
+            "Importar..", "Importer..", "Importar..", "استيراد..",
+            "आयात..", "ইম্পোর্ট..", "امپورٹ..", "导入..")
+        Add("Экспорт операций по расписанию",
+            "Export scheduled operations", "Експорт операцій за розкладом", "Geplante Vorgänge exportieren", "Esporta operazioni pianificate",
+            "Exportar operaciones programadas", "Exporter les opérations planifiées", "Exportar operações agendadas", "تصدير العمليات المجدولة",
+            "शेड्यूल किए गए ऑपरेशन निर्यात करें", "সময়সূচিবদ্ধ অপারেশন এক্সপোর্ট করুন", "شیڈول شدہ آپریشنز ایکسپورٹ کریں", "导出计划操作")
+        Add("Импорт операций по расписанию",
+            "Import scheduled operations", "Імпорт операцій за розкладом", "Geplante Vorgänge importieren", "Importa operazioni pianificate",
+            "Importar operaciones programadas", "Importer les opérations planifiées", "Importar operações agendadas", "استيراد العمليات المجدولة",
+            "शेड्यूल किए गए ऑपरेशन आयात करें", "সময়সূচিবদ্ধ অপারেশন ইম্পোর্ট করুন", "شیڈول شدہ آپریشنز امپورٹ کریں", "导入计划操作")
+        Add("Импорт не удался: файл не читается как экспорт операций по расписанию.",
+            "Import failed: the file is not a readable export of scheduled operations.", "Імпорт не вдався: файл не читається як експорт операцій за розкладом.", "Import fehlgeschlagen: Die Datei ist kein lesbarer Export geplanter Vorgänge.", "Importazione non riuscita: il file non è un'esportazione leggibile delle operazioni pianificate.",
+            "La importación falló: el archivo no es una exportación legible de operaciones programadas.", "Échec de l'importation : le fichier n'est pas une exportation lisible d'opérations planifiées.", "A importação falhou: o arquivo não é uma exportação legível de operações agendadas.", "فشل الاستيراد: الملف ليس تصديرًا قابلًا للقراءة للعمليات المجدولة.",
+            "आयात विफल: फ़ाइल शेड्यूल किए गए ऑपरेशन का पढ़ने योग्य निर्यात नहीं है।", "ইম্পোর্ট ব্যর্থ: ফাইলটি সময়সূচিবদ্ধ অপারেশনের পড়ার যোগ্য এক্সপোর্ট নয়।", "امپورٹ ناکام: فائل شیڈول شدہ آپریشنز کی قابلِ مطالعہ ایکسپورٹ نہیں ہے۔", "导入失败：该文件不是可读取的计划操作导出文件。")
+        Add("Импортировано операций: {0}. Не импортировано: {1}.",
+            "Operations imported: {0}. Not imported: {1}.", "Імпортовано операцій: {0}. Не імпортовано: {1}.", "Importierte Vorgänge: {0}. Nicht importiert: {1}.", "Operazioni importate: {0}. Non importate: {1}.",
+            "Operaciones importadas: {0}. No importadas: {1}.", "Opérations importées : {0}. Non importées : {1}.", "Operações importadas: {0}. Não importadas: {1}.", "العمليات المستوردة: {0}. غير المستوردة: {1}.",
+            "आयात किए गए ऑपरेशन: {0}। आयात नहीं हुए: {1}।", "ইম্পোর্ট করা অপারেশন: {0}। ইম্পোর্ট হয়নি: {1}।", "امپورٹ شدہ آپریشنز: {0}۔ امپورٹ نہ ہوئے: {1}۔", "已导入的操作：{0}。未导入：{1}。")
+        Add("Не удалось записать файл экспорта.",
+            "The export file could not be written.", "Не вдалося записати файл експорту.", "Die Exportdatei konnte nicht geschrieben werden.", "Impossibile scrivere il file di esportazione.",
+            "No se pudo escribir el archivo de exportación.", "Impossible d'écrire le fichier d'exportation.", "Não foi possível gravar o arquivo de exportação.", "تعذّرت كتابة ملف التصدير.",
+            "निर्यात फ़ाइल लिखी नहीं जा सकी।", "এক্সপোর্ট ফাইলটি লেখা যায়নি।", "ایکسپورٹ فائل لکھی نہیں جا سکی۔", "无法写入导出文件。")
     End Sub
 End Class

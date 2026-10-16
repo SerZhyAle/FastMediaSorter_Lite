@@ -111,7 +111,7 @@ Partial Friend NotInheritable Class Server_Welcome_Form
 
     Private Sub BuildAddress(panel As FlowLayoutPanel)
         ExplainExchange(panel, ExchangeAdminText.EndpointLabel(),
-            Localization.T("Пустой адрес оставляет локальный первый запуск допустимым, но скрывает RELAY и TUNNEL для других устройств."),
+            Localization.T("Пустой адрес оставляет локальный первый запуск допустимым, но скрывает трансляции и доступ к папкам для других устройств."),
             ExchangeAdminText.EndpointNote(),
             Localization.T("Группа сервера обмена: адрес для других устройств. Подсказка заполняет поле только по нажатию."))
         _endpointBaseline = If(_exchangeSnapshot.Report?.PublicEndpoint, "")

@@ -109,6 +109,7 @@ type Enroll struct {
 	Capabilities     []string        `json:"capabilities,omitempty"`
 	Receiver         json.RawMessage `json:"receiver,omitempty"`
 	KeepaliveSeconds int             `json:"keepaliveSeconds,omitempty"`
+	E2EKey           *E2EKey         `json:"e2eKey,omitempty"` // DEVICE-EXCHANGE 27 item DF
 }
 
 // TypeName is "enroll".
@@ -191,6 +192,9 @@ type Directory struct {
 	Devices    []json.RawMessage `json:"devices"`
 	Resources  []json.RawMessage `json:"resources"`
 	Broadcasts []json.RawMessage `json:"broadcasts"`
+	// Grants are what a member account gave to guests (20 item BD, 27 item DJ): no secret, and the guest's
+	// devices. The member is absent from the body of an account that gave nothing.
+	Grants []json.RawMessage `json:"grants,omitempty"`
 }
 
 // TypeName is "directory".
@@ -207,6 +211,7 @@ type Upserts struct {
 	Devices    []json.RawMessage `json:"devices"`
 	Resources  []json.RawMessage `json:"resources"`
 	Broadcasts []json.RawMessage `json:"broadcasts"`
+	Grants     []json.RawMessage `json:"grants,omitempty"` // a member account's grants, added or changed (item DJ)
 }
 
 // Removals are the ids a `changed` takes out.
@@ -214,6 +219,7 @@ type Removals struct {
 	DeviceIDs    []string `json:"deviceIds"`
 	ResourceIDs  []string `json:"resourceIds"`
 	BroadcastIDs []string `json:"broadcastIds"`
+	GrantIDs     []string `json:"grantIds,omitempty"` // a member account's grants, taken back
 }
 
 // Changed is pushed to a subscriber: one per directory transaction, each with its own revision.
@@ -438,13 +444,15 @@ func (*CastStop) TypeName() string { return TypeCastStop }
 
 // ClipboardPut opens a clipboard upload on a data stream (22 item BW): the kind, the exact size of
 // the raw bytes that follow `clipboard-ready`, and, for an image or a file, their media type and
-// name.
+// name. The kind `sealed` (27 item DN) carries no media type or name: Size is the sealed bytes and
+// Sealed the box that opens them - one opaque JSON object the server stores and delivers, never reads.
 type ClipboardPut struct {
 	Head
-	Kind     string `json:"kind"`
-	Size     int64  `json:"size"`
-	MimeType string `json:"mimeType,omitempty"`
-	Name     string `json:"name,omitempty"`
+	Kind     string          `json:"kind"`
+	Size     int64           `json:"size"`
+	MimeType string          `json:"mimeType,omitempty"`
+	Name     string          `json:"name,omitempty"`
+	Sealed   json.RawMessage `json:"sealed,omitempty"`
 }
 
 // TypeName is "clipboard-put".
@@ -478,15 +486,16 @@ func (*ClipboardInfo) TypeName() string { return TypeClipboardInfo }
 // items BU and BY): what the server set, then the sender's metadata. The server never looks inside
 // a value; the kind is metadata.
 type ClipboardValueBody struct {
-	ClipID           string `json:"clipId,omitempty"`
-	Size             int64  `json:"size,omitempty"`
-	SHA256           string `json:"sha256,omitempty"`
-	StoredAt         string `json:"storedAt,omitempty"`
-	SourceDeviceID   string `json:"sourceDeviceId,omitempty"`
-	SourceDeviceName string `json:"sourceDeviceName,omitempty"`
-	Kind             string `json:"kind,omitempty"`
-	MimeType         string `json:"mimeType,omitempty"`
-	Name             string `json:"name,omitempty"`
+	ClipID           string          `json:"clipId,omitempty"`
+	Size             int64           `json:"size,omitempty"`
+	SHA256           string          `json:"sha256,omitempty"`
+	StoredAt         string          `json:"storedAt,omitempty"`
+	SourceDeviceID   string          `json:"sourceDeviceId,omitempty"`
+	SourceDeviceName string          `json:"sourceDeviceName,omitempty"`
+	Kind             string          `json:"kind,omitempty"`
+	MimeType         string          `json:"mimeType,omitempty"`
+	Name             string          `json:"name,omitempty"`
+	Sealed           json.RawMessage `json:"sealed,omitempty"` // the box of a `sealed` value (27 item DN), verbatim
 }
 
 // ClipboardState answers a `clipboard-info`: the one value, or no `value` when it is empty. A
@@ -552,6 +561,7 @@ type Register struct {
 	Capabilities       []string        `json:"capabilities,omitempty"`
 	Receiver           json.RawMessage `json:"receiver,omitempty"`
 	KeepaliveSeconds   int             `json:"keepaliveSeconds,omitempty"`
+	E2EKey             *E2EKey         `json:"e2eKey,omitempty"` // DEVICE-EXCHANGE 27 item DF
 }
 
 // TypeName is "register".

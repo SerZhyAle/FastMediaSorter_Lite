@@ -82,7 +82,7 @@ Partial Public Class Table_Form
         AddSettingsGroup("audio", "basic", "Основные настройки", True, "include_audio_navigation", "audio_end_action", "video_volume", "video_mute")
         AddSettingsGroup("audio", "display", "Информация и управление", True, "audio_controls_visible", "audio_visualiser", "audio_sleep_timer")
         AddSettingsGroup("files", "basic", "Основные настройки", True,
-                         "advance_after_copy", "name_collision", "after_file_operation", "create_missing_destination", "delete_to_recycle_bin", "confirm_delete", "no_confirmation")
+                         "advance_after_copy", "name_collision", "after_file_operation", "reveal_status_on_file_op", "create_missing_destination", "delete_to_recycle_bin", "confirm_delete", "no_confirmation")
         AddSettingsGroup("files", "content", "Типы файлов", True,
                          "include_subfolders", "included_extensions", "include_document_navigation", "document_extensions", "text_preview_max_kb", "sort_other_files", "other_extensions")
         AddSettingsGroup("files", "history", "Недавние файлы и папки", False, "recent_files_limit", "recent_folders_limit", "recent_history")

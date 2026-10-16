@@ -25,6 +25,7 @@ func (d *Dir) resourcesFor(h *hub, deviceID string, records []json.RawMessage) [
 		}
 		if protection, has := record["protection"]; has && (!canPin || !wire.ValidProtection(protection)) {
 			delete(record, "access")
+			delete(record, "sealedAccess") // the box that replaces `access` (27 item DI) is withheld with it
 			delete(record, "shareId")
 			delete(record, "publicPort")
 			filtered, _ := json.Marshal(record)

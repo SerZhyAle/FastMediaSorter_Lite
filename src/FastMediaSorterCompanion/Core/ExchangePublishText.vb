@@ -178,6 +178,11 @@ Friend NotInheritable Class ExchangePublishText
                 Return Localization.T("Не опубликовано: нет адреса этого компьютера, который можно передать другим устройствам.")
             Case ExchangePublishBlock.NoShares
                 Return Localization.T("Пока нечего публиковать: нет общих папок.")
+            Case ExchangePublishBlock.ServerNoE2e
+                ' the whole row of item DR, in the language of the window (no new string)
+                Return ClipboardMessages.ReasonText(ConnectionDiagnosisMessages.ServerNoE2e.Code)
+            Case ExchangePublishBlock.NoOwnKey
+                Return ClipboardMessages.ReasonText(ConnectionDiagnosisMessages.E2eMissing.Code)
             Case Else
                 Return ""
         End Select

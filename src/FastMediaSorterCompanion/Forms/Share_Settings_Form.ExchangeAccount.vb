@@ -126,7 +126,7 @@ Partial Public NotInheritable Class Share_Settings_Form
         sec.AddBodyRow(_accSignInRow)
 
         ' pairing: the button, and (while a code is valid) the code, its countdown, the copy button and the one-line how-to
-        _btnAccAdd = AccButton(Localization.T("Добавить устройство"), AddressOf OnAccountAddDevice, "action.add")
+        _btnAccAdd = AccButton(Localization.T("Добавить устройство"), AddressOf OnAccountAddDevice, IconMap.GetMeaning("_btnAccAdd").GlyphId)
         Dim addRow As FlowLayoutPanel = AccFlow()
         addRow.Controls.Add(_btnAccAdd)
         sec.AddBodyRow(addRow)
@@ -181,6 +181,9 @@ Partial Public NotInheritable Class Share_Settings_Form
         _accResult.ForeColor = CollapsibleSection.AttentionColor
         _accResult.Visible = False
         sec.AddBodyRow(_accResult)
+
+        ' Spec 230: the clipboard through the server - the shortcuts command and the received-files folder (own partial).
+        BuildClipboardRows(sec)
 
         _accTimer = New System.Windows.Forms.Timer With {.Interval = 1000}
         AddHandler _accTimer.Tick, AddressOf OnAccountTimerTick
@@ -271,6 +274,7 @@ Partial Public NotInheritable Class Share_Settings_Form
 
         If model.ShowDevices AndAlso agent IsNot Nothing Then FillAccountDevices(agent, status)
         UpdateAccountRevokeVisibility()
+        ApplyClipboardRows()
 
         _secAccount.Summary = ExchangeDeviceText.StateLine(status)
         _secAccount.SummaryColor = If(status IsNot Nothing AndAlso status.Configured AndAlso status.State <> ExchangeAgentState.Online AndAlso status.State <> ExchangeAgentState.Connecting,

@@ -1,0 +1,12 @@
+Conformance vectors for DEVICE-EXCHANGE section 27 (sealed content, end-to-end encryption), contract version 0.29.
+
+source:    vectors/e2e-v1.json of the DEVICE-EXCHANGE contract in the shared catalog (producer: FastMediaSorter Android, ticket S4240)
+vendored:  2026-10-16 by ticket 234 T-1, copied byte for byte, never edited
+used by:   tests/Lite.Tests/ExchangeSealedBoxTests.vb and ExchangeSealedStreamTests.vb (the hash below is checked first)
+
+It is a separate file from PROVENANCE.txt on purpose: that one belongs to the exchange-server generator and is compared with
+exchange-server/testdata/vectors/PROVENANCE.txt byte for byte (ExchangeRecordReplayTests); a line added there would fail it.
+The privateKey members of the file exist only so a replaying product can open the boxes; a real key never leaves its device.
+
+sha256:
+  e2e-v1.json 5391a9ae33450c5de82b622278a5acb38773bdf2819ebe8ff8604114758fde35

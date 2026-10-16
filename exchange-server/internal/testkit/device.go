@@ -31,6 +31,10 @@ type Device struct {
 	// Roles are the roles the device declares (default: producer, consumer and receiver); an empty
 	// non-nil slice declares none.
 	Roles []string
+	// E2EKey is the sealing key the device declares on enroll and register (27 item DF); nil declares
+	// none, like a client that predates it. Capabilities is what it declares in `capabilities`.
+	E2EKey       *wire.E2EKey
+	Capabilities []string
 
 	mu      sync.Mutex
 	control *Control
@@ -49,7 +53,7 @@ func (d *Device) enrollFrame() *wire.Enroll {
 		roles = []string{"resource-producer", "resource-consumer", "receiver"}
 	}
 	return &wire.Enroll{Login: d.Login, DeviceID: d.ID, DeviceName: d.Name, Product: d.Product,
-		ProductVersion: "1.0", Platform: "test", Roles: roles,
+		ProductVersion: "1.0", Platform: "test", Roles: roles, Capabilities: d.Capabilities, E2EKey: d.E2EKey,
 		Receiver: json.RawMessage(`{"modes":["AUDIO_ONLY"],"transports":["HTTP_ADTS"]}`)}
 }
 
@@ -114,7 +118,7 @@ func (d *Device) Register(invitation, shared, login, pw string) (wire.Envelope, 
 	f := d.enrollFrame()
 	reg := &wire.Register{InvitationCode: invitation, SharedPassword: shared, Login: login, Password: pw,
 		DeviceID: f.DeviceID, DeviceName: f.DeviceName, Product: f.Product, ProductVersion: f.ProductVersion,
-		Platform: f.Platform, Roles: f.Roles, Receiver: f.Receiver}
+		Platform: f.Platform, Roles: f.Roles, Capabilities: f.Capabilities, E2EKey: f.E2EKey, Receiver: f.Receiver}
 	if err := c.Send(reg); err != nil {
 		_ = c.Close()
 		return nil, err

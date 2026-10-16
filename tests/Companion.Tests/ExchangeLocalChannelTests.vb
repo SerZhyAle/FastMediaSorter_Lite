@@ -236,49 +236,72 @@ Public Class ExchangeLocalChannelTests
     <Fact>
     Public Async Function The_agent_answers_state_directory_and_access_and_the_directory_carries_no_secret() As Task
         Using acc As New ExchangeStubAccount()
-            acc.Devices.Add("{""deviceId"":""PH"",""deviceName"":""Phone"",""product"":""fms-android"",""presence"":""online""}")
-            acc.Resources.Add("{""resourceId"":""R1"",""deviceId"":""PH"",""kind"":""sftp-share"",""name"":""Photos"",""shareId"":""SHARE"",""access"":{""descriptor"":""FMSSFTP2.top-secret""}}")
-            acc.Resources.Add("{""resourceId"":""R2"",""deviceId"":""PH"",""kind"":""sftp-share"",""name"":""Offline one""}")
-            Using rig As New ExchangeDeviceAgentTests.Rig()
-                Using agent As ExchangeDeviceAgent = rig.NewAgent()
-                    Dim name As String = PipeName()
-                    Dim client As New ExchangeAgentClient(name)
+            acc.Features = {"directory", "pairing", ExchangeSealedNames.FeatureSealed}
+            Using phoneKey As ExchangeDeviceKey = ExchangeDeviceKey.Generate()
+                Dim phoneId As String = ExchangeWireTestKit.IdOf("P"c)
+                Dim res1Id As String = ExchangeWireTestKit.IdOf("1"c)
+                Dim res2Id As String = ExchangeWireTestKit.IdOf("2"c)
+                acc.Devices.Add("{""deviceId"":""" & phoneId & """,""deviceName"":""Phone"",""product"":""fms-android"",""presence"":""online"",""capabilities"":[""e2e-v1""],""e2eKey"":{""v"":1,""kem"":""" & phoneKey.Kem & """}}")
+                Using rig As New ExchangeDeviceAgentTests.Rig()
+                    rig.Ports.DeviceKeys = New ExchangeMemoryDeviceKeyStore()
+                    rig.Ports.SealedTrust = New ExchangeMemorySealedTrustStore()
+                    Using agent As ExchangeDeviceAgent = rig.NewAgent()
+                        Dim name As String = PipeName()
+                        Dim client As New ExchangeAgentClient(name)
 
-                    ' before an account exists: configured False, and the directory is refused
-                    Using channel As New ExchangeDeviceLocalChannel(agent, name)
-                        channel.Start()
-                        Dim before As ExchangeAgentStateResult = Await client.GetStateAsync(CancellationToken.None)
-                        Assert.True(before.Reply.IsOk)
-                        Assert.False(before.Info.Configured)
-                        Assert.Equal(ExchangeAgentState.NotConfigured, before.Info.State)
-                        Assert.Equal("not-configured", (Await client.GetDirectoryAsync(0, 0, CancellationToken.None)).Reply.Error)
+                        ' before an account exists: configured False, and the directory is refused
+                        Using channel As New ExchangeDeviceLocalChannel(agent, name)
+                            channel.Start()
+                            Dim before As ExchangeAgentStateResult = Await client.GetStateAsync(CancellationToken.None)
+                            Assert.True(before.Reply.IsOk)
+                            Assert.False(before.Info.Configured)
+                            Assert.Equal(ExchangeAgentState.NotConfigured, before.Info.State)
+                            Assert.Equal("not-configured", (Await client.GetDirectoryAsync(0, 0, CancellationToken.None)).Reply.Error)
 
-                        Await agent.EnrollAsync(rig.Request(acc), CancellationToken.None)
-                        Assert.True(Await ExchangeStubAccount.WaitUntilAsync(Function() agent.GetFullDirectory().Resources.Count = 2))
+                            Await agent.EnrollAsync(rig.Request(acc), CancellationToken.None)
+                            Dim agentId As String = agent.GetStatus().DeviceId
+                            Dim agentKem As String = ""
+                            Using doc As JsonDocument = JsonDocument.Parse(acc.EnrollE2eKeysSeen().Last())
+                                agentKem = doc.RootElement.GetProperty("kem").GetString()
+                            End Using
+                            Const fp As String = "SHA256:8f6TQvCbXjDMOyu4A9JzKcWlEHmR5pNsGgVaU2wYqhk"
+                            Dim accessClear As String = Nothing
+                            Assert.True(ExchangeResourceAccess.TryBuild(New FmsSftpCode({"192.168.1.23"}, 2022, "fms", "top-secret", fp, "", "", False), "/Photos", accessClear))
+                            Dim box As String = ""
+                            Dim recipients As New List(Of ExchangeSealedRecipient) From {New ExchangeSealedRecipient(agentId, agentKem)}
+                            Assert.True(ExchangeSealedAccess.SealAccess(accessClear, res1Id, phoneId, phoneKey, recipients, box))
+                            Dim rec1Json As String = Nothing
+                            Assert.True(ExchangeResourceRecordBuilder.TryBuild(res1Id, phoneId, "Photos", "", "", Nothing, DateTime.UtcNow, rec1Json, False, box, fp, "/Photos"))
+                            acc.Resources.Add(rec1Json)
+                            acc.Resources.Add("{""resourceId"":""" & res2Id & """,""deviceId"":""" & phoneId & """,""kind"":""sftp-share"",""name"":""Offline one""}")
+                            Await acc.PushDirectoryAsync()
+                            Assert.True(Await ExchangeStubAccount.WaitUntilAsync(Function() agent.GetFullDirectory().Resources.Count = 2))
 
-                        Dim state As ExchangeAgentStateResult = Await client.GetStateAsync(CancellationToken.None)
-                        Assert.True(state.Info.Configured)
-                        Assert.True(state.Info.IsOnline)
-                        Assert.Contains("directory", state.Info.Features)
-                        Assert.Equal("TESTPC", state.Info.DeviceName)
-                        Assert.Equal(agent.GetStatus().DeviceId, state.Info.DeviceId)
+                            Dim state As ExchangeAgentStateResult = Await client.GetStateAsync(CancellationToken.None)
+                            Assert.True(state.Info.Configured)
+                            Assert.True(state.Info.IsOnline)
+                            Assert.Contains("directory", state.Info.Features)
+                            Assert.Equal("TESTPC", state.Info.DeviceName)
+                            Assert.Equal(agent.GetStatus().DeviceId, state.Info.DeviceId)
 
-                        Dim dir As ExchangeAgentDirectoryResult = Await client.GetDirectoryAsync(0, 0, CancellationToken.None)
-                        Assert.True(dir.Reply.IsOk)
-                        Assert.Equal(7L, dir.Snapshot.Revision)
-                        Assert.Equal(2, dir.Snapshot.Resources.Count)
-                        Assert.DoesNotContain("top-secret", dir.Reply.DataJson)
-                        Assert.DoesNotContain("SHARE", dir.Reply.DataJson)
-                        Assert.DoesNotContain("""access""", dir.Reply.DataJson)
+                            Dim dir As ExchangeAgentDirectoryResult = Await client.GetDirectoryAsync(0, 0, CancellationToken.None)
+                            Assert.True(dir.Reply.IsOk)
+                            Assert.Equal(8L, dir.Snapshot.Revision)
+                            Assert.Equal(2, dir.Snapshot.Resources.Count)
+                            Assert.DoesNotContain("top-secret", dir.Reply.DataJson)
+                            Assert.DoesNotContain("SHARE", dir.Reply.DataJson)
+                            Assert.DoesNotContain("""access""", dir.Reply.DataJson)
 
-                        Dim access As ExchangeAgentAccessResult = Await client.GetAccessAsync("R1", CancellationToken.None)
-                        Assert.True(access.Reply.IsOk)
-                        Assert.Contains("FMSSFTP2.top-secret", access.AccessJson)
-                        Assert.Equal("no-access", (Await client.GetAccessAsync("R2", CancellationToken.None)).Reply.Error)
-                        Assert.Equal("unknown-resource", (Await client.GetAccessAsync("nope", CancellationToken.None)).Reply.Error)
-                        Assert.Equal("bad-request", (Await client.SendAsync(ExchangeAgentPipe.BuildRequest("GetAccess"), 3000, CancellationToken.None)).Error)
-                        Assert.Equal("bad-request", (Await client.SendAsync(ExchangeAgentPipe.BuildRequest("CastAnswer"), 3000, CancellationToken.None)).Error)
-                        Assert.Equal("unsupported", (Await client.SendAsync(ExchangeAgentPipe.BuildRequest("CastPolicy"), 3000, CancellationToken.None)).Error)
+                            Dim access As ExchangeAgentAccessResult = Await client.GetAccessAsync(res1Id, CancellationToken.None)
+                            Assert.True(access.Reply.IsOk)
+                            Assert.Contains("top-secret", access.AccessJson)
+                            Assert.Contains("/Photos", access.AccessJson)
+                            Assert.Equal("no-access", (Await client.GetAccessAsync(res2Id, CancellationToken.None)).Reply.Error)
+                            Assert.Equal("unknown-resource", (Await client.GetAccessAsync("nope", CancellationToken.None)).Reply.Error)
+                            Assert.Equal("bad-request", (Await client.SendAsync(ExchangeAgentPipe.BuildRequest("GetAccess"), 3000, CancellationToken.None)).Error)
+                            Assert.Equal("bad-request", (Await client.SendAsync(ExchangeAgentPipe.BuildRequest("CastAnswer"), 3000, CancellationToken.None)).Error)
+                            Assert.Equal("unsupported", (Await client.SendAsync(ExchangeAgentPipe.BuildRequest("CastPolicy"), 3000, CancellationToken.None)).Error)
+                        End Using
                     End Using
                 End Using
             End Using

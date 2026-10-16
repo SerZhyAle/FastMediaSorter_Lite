@@ -145,6 +145,8 @@ type rigOpts struct {
 	logins []string
 	// pace turns the password pacer on with an interval of 2 s and a sleep that does not sleep, on the scenario's clock.
 	pace bool
+	// sealed turns the `sealed` feature on (27 item DP); the older scenarios run without it, as they always did.
+	sealed bool
 }
 
 // rig is one server of one scenario.
@@ -172,7 +174,7 @@ func newRig(seed string, o rigOpts) *rig {
 	opt := testkit.Options{
 		Now: r.clock.Now, Params: &params, Logins: o.logins, PublicEndpoint: publicEndpoint,
 		WithRelay: o.relay, Cast: o.cast, ServerVersion: "vectors",
-		AccountsRand: newSeeded(seed + "/accounts"), EngineRand: newSeeded(seed + "/tunnels"),
+		AccountsRand: newSeeded(seed + "/accounts"), EngineRand: newSeeded(seed + "/tunnels"), Sealed: o.sealed,
 	}
 	if o.pace {
 		opt.PaceInterval, opt.Sleep = 2*time.Second, func(time.Duration) {}

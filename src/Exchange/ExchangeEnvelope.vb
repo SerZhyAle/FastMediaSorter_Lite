@@ -62,6 +62,8 @@ Friend NotInheritable Class ExchangeRecordSets
     Public ReadOnly Property Devices As New List(Of String)
     Public ReadOnly Property Resources As New List(Of String)
     Public ReadOnly Property Broadcasts As New List(Of String)
+    ''' <summary>A member account's grants, added or changed (DEVICE-EXCHANGE 27 item DJ); left out of the wire when empty.</summary>
+    Public ReadOnly Property Grants As New List(Of String)
 End Class
 
 ''' <summary>The ids of a `changed.removals`.</summary>
@@ -69,6 +71,8 @@ Friend NotInheritable Class ExchangeIdSets
     Public ReadOnly Property DeviceIds As New List(Of String)
     Public ReadOnly Property ResourceIds As New List(Of String)
     Public ReadOnly Property BroadcastIds As New List(Of String)
+    ''' <summary>A member account's grants taken back (item DJ); left out of the wire when empty.</summary>
+    Public ReadOnly Property GrantIds As New List(Of String)
 End Class
 
 ''' <summary>What can be wrong with a frame or an envelope. Every one of them ends the stream; an unknown
@@ -272,8 +276,8 @@ Friend NotInheritable Class ExchangeEnvelopeTable
         Return New ExchangeMemberSpec(name, ExchangeMemberKind.Record, required, omit)
     End Function
 
-    Private Shared Function RL(name As String) As ExchangeMemberSpec
-        Return New ExchangeMemberSpec(name, ExchangeMemberKind.RecordList, False, ExchangeOmit.Never)
+    Private Shared Function RL(name As String, Optional omit As ExchangeOmit = ExchangeOmit.Never) As ExchangeMemberSpec
+        Return New ExchangeMemberSpec(name, ExchangeMemberKind.RecordList, False, omit)
     End Function
 
     Private Shared Sub Row(typeName As String, ParamArray members As ExchangeMemberSpec())
@@ -286,8 +290,8 @@ Friend NotInheritable Class ExchangeEnvelopeTable
         ' --- opening a stream (7.2) ---
         Row("enroll", T("login", True), T("password", omit:=WhenEmpty), T("pairingCode", omit:=WhenEmpty),
             T("deviceId", True), T("deviceName", True), T("product", True), T("productVersion", omit:=WhenEmpty),
-            T("platform", omit:=WhenEmpty), L("roles", WhenEmpty), L("capabilities", WhenEmpty), R("receiver", omit:=WhenEmpty),
-            N("keepaliveSeconds", WhenEmpty))
+            T("platform", omit:=WhenEmpty), L("roles", WhenEmpty), L("capabilities", WhenEmpty),
+            R("receiver", omit:=WhenEmpty), N("keepaliveSeconds", WhenEmpty), R("e2eKey", omit:=WhenEmpty))
         Row("enrolled", T("deviceToken", True), T("account"), T("accountKind", omit:=WhenEmpty), T("publicEndpoint"), N("keepaliveSeconds"),
             L("features"), T("serverVersion"))
         Row("hello", T("deviceId", True), T("deviceToken", True), T("productVersion", omit:=WhenEmpty),
@@ -298,7 +302,7 @@ Friend NotInheritable Class ExchangeEnvelopeTable
         Row("keepalive")
         Row("bye")
         Row("list")
-        Row("directory", N("revision"), RL("devices"), RL("resources"), RL("broadcasts"))
+        Row("directory", N("revision"), RL("devices"), RL("resources"), RL("broadcasts"), RL("grants", ExchangeOmit.WhenEmpty))
         Row("subscribe")
         Row("changed", N("revision"),
             New ExchangeMemberSpec("upserts", ExchangeMemberKind.Upserts, False, ExchangeOmit.Never),
@@ -313,6 +317,13 @@ Friend NotInheritable Class ExchangeEnvelopeTable
         Row("pairing-request")
         Row("pairing-code", T("code", True), T("expiresAt"))
         Row("revoke", T("deviceId", True))
+        ' --- grants (section 20 items BD/BE, section 27 item DJ): a member account gives one resource or broadcast to a
+        ' guest account. Exactly one payload member (access, credentials, sealed) travels; the server never opens it. ---
+        Row("grant", T("grantId", True), T("kind", omit:=WhenEmpty), T("guest", omit:=WhenEmpty), T("resourceId", omit:=WhenEmpty),
+            T("broadcastId", omit:=WhenEmpty), T("shareId", omit:=WhenEmpty), R("access", omit:=WhenEmpty),
+            R("credentials", omit:=WhenEmpty), R("sealed", omit:=WhenEmpty))
+        Row("granted", T("grantId", True))
+        Row("ungrant", T("grantId", True))
         ' --- tunnels (7.5) ---
         Row("connect", T("resourceId", omit:=WhenEmpty), T("shareId", omit:=WhenEmpty),
             T("broadcastId", omit:=WhenEmpty), T("scheme", omit:=WhenEmpty))
@@ -338,14 +349,15 @@ Friend NotInheritable Class ExchangeEnvelopeTable
             T("login", True), T("password", True), T("deviceId", True), T("deviceName", True),
             T("product", True), T("productVersion", omit:=WhenEmpty), T("platform", omit:=WhenEmpty),
             L("roles", WhenEmpty), L("capabilities", WhenEmpty), R("receiver", omit:=WhenEmpty),
-            N("keepaliveSeconds", WhenEmpty))
+            N("keepaliveSeconds", WhenEmpty), R("e2eKey", omit:=WhenEmpty))
         Row("password-change", T("oldPassword", True), T("newPassword", True))
         Row("password-changed", T("deviceToken", True))
         Row("account-delete", T("password", True))
         Row("account-deleted")
         ' --- spec 230 / DEVICE-EXCHANGE section 22 items BW-BY: the clipboard. The value itself is never an envelope
         ' member: after `clipboard-ready` (a put) or `clipboard-value` (a get) exactly `size` raw bytes follow. ---
-        Row("clipboard-put", T("kind", True), N("size"), T("mimeType", omit:=WhenEmpty), T("name", omit:=WhenEmpty))
+        Row("clipboard-put", T("kind", True), N("size"), T("mimeType", omit:=WhenEmpty), T("name", omit:=WhenEmpty),
+            R("sealed", omit:=WhenEmpty))
         Row("clipboard-ready")
         Row("clipboard-stored", T("clipId", True), T("sha256", True), T("storedAt"))
         Row("clipboard-info")
@@ -353,7 +365,7 @@ Friend NotInheritable Class ExchangeEnvelopeTable
         Row("clipboard-get", T("clipId", omit:=WhenEmpty))
         Row("clipboard-value", T("clipId", True), N("size"), T("sha256", True), T("storedAt"),
             T("sourceDeviceId", omit:=WhenEmpty), T("sourceDeviceName", omit:=WhenEmpty), T("kind", True),
-            T("mimeType", omit:=WhenEmpty), T("name", omit:=WhenEmpty))
+            T("mimeType", omit:=WhenEmpty), T("name", omit:=WhenEmpty), R("sealed", omit:=WhenEmpty))
         Row("clipboard-empty")
     End Sub
 
@@ -443,8 +455,10 @@ Friend NotInheritable Class ExchangeEnvelopeCodec
                 w.Name(s.Name)
                 w.Raw(ExchangeJson.Compact(raw))
             Case ExchangeMemberKind.RecordList
+                Dim items As IReadOnlyList(Of String) = env.Records(s.Name)
+                If s.Omit = ExchangeOmit.WhenEmpty AndAlso items.Count = 0 Then Return
                 w.Name(s.Name)
-                WriteRecordArray(w, env.Records(s.Name))
+                WriteRecordArray(w, items)
             Case ExchangeMemberKind.Upserts
                 Dim u As ExchangeRecordSets = env.Upserts()
                 w.Name(s.Name)
@@ -452,6 +466,9 @@ Friend NotInheritable Class ExchangeEnvelopeCodec
                 w.Name("devices") : WriteRecordArray(w, u.Devices)
                 w.Name("resources") : WriteRecordArray(w, u.Resources)
                 w.Name("broadcasts") : WriteRecordArray(w, u.Broadcasts)
+                If u.Grants.Count > 0 Then
+                    w.Name("grants") : WriteRecordArray(w, u.Grants)
+                End If
                 w.EndObject()
             Case ExchangeMemberKind.Removals
                 Dim r As ExchangeIdSets = env.Removals()
@@ -460,6 +477,9 @@ Friend NotInheritable Class ExchangeEnvelopeCodec
                 w.Name("deviceIds") : WriteTextArray(w, r.DeviceIds)
                 w.Name("resourceIds") : WriteTextArray(w, r.ResourceIds)
                 w.Name("broadcastIds") : WriteTextArray(w, r.BroadcastIds)
+                If r.GrantIds.Count > 0 Then
+                    w.Name("grantIds") : WriteTextArray(w, r.GrantIds)
+                End If
                 w.EndObject()
         End Select
     End Sub
@@ -551,6 +571,7 @@ Friend NotInheritable Class ExchangeEnvelopeCodec
                 If el.TryGetProperty("devices", part) Then u.Devices.AddRange(ReadRecordArray(part, s))
                 If el.TryGetProperty("resources", part) Then u.Resources.AddRange(ReadRecordArray(part, s))
                 If el.TryGetProperty("broadcasts", part) Then u.Broadcasts.AddRange(ReadRecordArray(part, s))
+                If el.TryGetProperty("grants", part) Then u.Grants.AddRange(ReadRecordArray(part, s))
                 env.SetUpserts(u)
             Case ExchangeMemberKind.Removals
                 If el.ValueKind <> JsonValueKind.Object Then Throw Bad(s)
@@ -559,6 +580,7 @@ Friend NotInheritable Class ExchangeEnvelopeCodec
                 If el.TryGetProperty("deviceIds", part) Then r.DeviceIds.AddRange(ReadTextArray(part, s))
                 If el.TryGetProperty("resourceIds", part) Then r.ResourceIds.AddRange(ReadTextArray(part, s))
                 If el.TryGetProperty("broadcastIds", part) Then r.BroadcastIds.AddRange(ReadTextArray(part, s))
+                If el.TryGetProperty("grantIds", part) Then r.GrantIds.AddRange(ReadTextArray(part, s))
                 env.SetRemovals(r)
         End Select
     End Sub

@@ -1,0 +1,5 @@
+[
+  {"name":"relay", "pattern":"(?i)\\brelay\\b", "forbidden":["relay","RELAY","Fast Media Sorter exchange relay server"], "allowed":["exchange server","wire RelayUpload"]},
+  {"name":"shared clipboard", "pattern":"(?i)\\bshared clipboard\\b|общ(?:ий|его|ему|им|ем) буфер|спільн(?:ий|ого|ому|им) буфер", "forbidden":["shared clipboard","общий буфер","общего буфера","спільний буфер"], "allowed":["clipboard on the server","общий пароль приглашения"]},
+  {"name":"mobile product descriptor", "pattern":"(?i)\\bmobile (?:app(?:lication)?s?|clients?|versions?)\\b|мобильн\\w* (?:приложен|клиент|верси)|мобільн\\w* (?:застосун|клієнт|версі)", "forbidden":["mobile app","mobile application","mobile client","Mobile Version","мобильное приложение","мобильного клиента","Мобильная версия","мобільний застосунок","мобільного клієнта"], "allowed":["mobile internet","mobile data","мобильный интернет","Android app"]}
+]

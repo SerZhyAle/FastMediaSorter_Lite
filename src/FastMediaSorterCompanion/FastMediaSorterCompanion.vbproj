@@ -164,6 +164,7 @@
     <Compile Include="..\Theming\CheckBoxLayout.vb" Link="Theming\CheckBoxLayout.vb" />
     <Compile Include="..\Theming\ThemedMenuRenderer.vb" Link="Theming\ThemedMenuRenderer.vb" />
     <Compile Include="..\Theming\ThemeService.vb" Link="Theming\ThemeService.vb" />
+    <Compile Include="..\Localization\Localization.DeviceVocabulary.vb" Link="Localization\Localization.DeviceVocabulary.vb" />
     <Compile Include="..\Localization\Localization.Theme.vb" Link="Localization\Localization.Theme.vb" />
     <!-- Ticket 182 L-3/L-6: the strings of the shared LogPackage / MailSender, registered by both programs. -->
     <Compile Include="..\Localization\Localization.SendLogs.vb" Link="Localization\Localization.SendLogs.vb" />

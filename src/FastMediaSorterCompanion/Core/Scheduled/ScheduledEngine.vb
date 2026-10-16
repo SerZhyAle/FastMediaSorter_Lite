@@ -101,6 +101,7 @@ Friend NotInheritable Class ScheduledEngine
     Private started As Boolean
     Private disposed As Boolean
     Private lastFailureInfo As ScheduledFailureInfo
+    Private lastTimeZoneId As String = ""
 
     ''' <summary>How long after start a missed slot waits before it runs (5): do not fight sign-in.</summary>
     Friend Property CatchUpDelay As TimeSpan = TimeSpan.FromSeconds(60)
@@ -120,6 +121,12 @@ Friend NotInheritable Class ScheduledEngine
     Friend ReadOnly Property Journal As ScheduledJournal
         Get
             Return journalLog
+        End Get
+    End Property
+
+    Friend ReadOnly Property StoreInstance As ScheduledStore
+        Get
+            Return store
         End Get
     End Property
 
@@ -180,14 +187,23 @@ Friend NotInheritable Class ScheduledEngine
     End Property
 
     ''' <summary>The system woke from sleep, or the clock moved: a slot that came due meanwhile runs now (once),
-    ''' everything else keeps its stored slot. Not a missed run - the program was here the whole time.</summary>
+    ''' everything else keeps its stored slot. Not a missed run - the program was here the whole time.
+    ''' If the local time zone changed (ticket 231, 3.7), re-arms on the grid in the new zone.</summary>
     Friend Sub Wake()
         Dim due As New List(Of KeyValuePair(Of String, DateTime))()
+        Dim zoneChanged As Boolean
         SyncLock gate
             If Not started OrElse disposed Then Return
             Dim now As DateTime = services.Clock.Invoke()
+            Dim tz As TimeZoneInfo = CurrentTimeZone()
+            zoneChanged = lastTimeZoneId.Length > 0 AndAlso Not String.Equals(lastTimeZoneId, If(tz?.Id, ""), StringComparison.Ordinal)
+            If tz IsNot Nothing Then lastTimeZoneId = tz.Id
             For Each op As ScheduledOperation In ops.Values.ToList()
                 If Not op.IsArmable OrElse StandDown Then Continue For
+                If zoneChanged Then
+                    ArmLocked(op, now)
+                    Continue For
+                End If
                 Dim slot As DateTime? = op.Record.NextRunAt
                 If slot.HasValue AndAlso slot.Value <= now AndAlso Not inLane.Contains(op.Id) Then
                     Disarm(op.Id)
@@ -200,7 +216,13 @@ Friend NotInheritable Class ScheduledEngine
         For Each item As KeyValuePair(Of String, DateTime) In due
             Track(Enqueue(item.Key, ScheduledTrigger.Schedule, item.Value))
         Next
+        If zoneChanged Then RaiseChanged()
     End Sub
+
+    Private Function CurrentTimeZone() As TimeZoneInfo
+        Return If(services.TimeZone, Function() TimeZoneInfo.Local).Invoke()
+    End Function
+
     ''' <summary>Stands every timer down or arms them again. Releasing a pause or the feature switch is
     ''' NOT a missed run (5): nothing catches up, the next slot is the first grid point after now.</summary>
     Private Sub ReArmAll(fromResume As Boolean)
@@ -223,6 +245,8 @@ Friend NotInheritable Class ScheduledEngine
         SyncLock gate
             If started OrElse disposed Then Return
             started = True
+            Dim tz As TimeZoneInfo = CurrentTimeZone()
+            If tz IsNot Nothing Then lastTimeZoneId = tz.Id
             For Each op As ScheduledOperation In store.LoadAll()
                 ops(op.Id) = op
             Next
@@ -233,9 +257,12 @@ Friend NotInheritable Class ScheduledEngine
                 Dim due As DateTime? = op.Record.NextRunAt
                 Select Case MissedRunRules.DecideAtStart(op, now, policy, stood)
                     Case StartupDecision.Missed
+                        ' Rule 5: recorded as missed, in the history only. The exclamation mark is for a skipped RUN (rule 4):
+                        ' the program was not there, which is neither the network nor the other device being off.
                         WriteNote(op, "missed", ScheduledTrigger.Schedule, ScheduledJson.FormatTime(due))
                     Case StartupDecision.RunLate
-                        late.Add(New KeyValuePair(Of String, DateTime)(op.Id, due.Value))
+                        ' The slot that came due, or - for a skipped run whose next slot is still ahead - now.
+                        late.Add(New KeyValuePair(Of String, DateTime)(op.Id, If(due.HasValue AndAlso due.Value <= now, due.Value, now)))
                 End Select
                 ArmLocked(op, now)
             Next
@@ -399,6 +426,19 @@ Friend NotInheritable Class ScheduledEngine
         RaiseChanged()
     End Sub
 
+    ''' <summary>Adds or replaces an operation imported by <see cref="ShareSettingsTransfer"/>.</summary>
+    Friend Sub ReloadImported(imported As ScheduledOperation)
+        If imported Is Nothing OrElse String.IsNullOrEmpty(imported.Id) Then Return
+        SyncLock gate
+            Dim op As ScheduledOperation = imported.Clone()
+            ops(op.Id) = op
+            If started AndAlso Not disposed Then
+                ArmLocked(op, services.Clock.Invoke())
+            End If
+        End SyncLock
+        RaiseChanged()
+    End Sub
+
     ' --- arming ------------------------------------------------------------------------------------
 
     Private Sub Disarm(id As String)
@@ -420,7 +460,7 @@ Friend NotInheritable Class ScheduledEngine
         ' Stood down (paused or the feature off): the timers go, the stored slot stays - and a release
         ' re-arms from NOW, with no catch-up.
         If StandDown Then Return
-        Dim slot As DateTime = ScheduleMath.NextSlot(op, now)
+        Dim slot As DateTime = ScheduleMath.NextSlot(op, now, CurrentTimeZone())
         SetNextRunLocked(op, slot)
         Dim wait As TimeSpan = slot - now
         If wait > MaxTimerSpan Then wait = MaxTimerSpan
@@ -590,21 +630,35 @@ Friend NotInheritable Class ScheduledEngine
     ''' from the clock, so the next slot is the first grid point after the run, never the end of it
     ''' plus an interval.</summary>
     Private Sub Apply(op As ScheduledOperation, result As ScheduledRunResult, trigger As ScheduledTrigger)
+        Dim notifySnapshot As ScheduledOperation = Nothing
         SyncLock gate
             Dim current As ScheduledOperation = Nothing
             If ops.TryGetValue(op.Id, current) Then
                 Dim record As ScheduledRunRecord = current.Record
                 record.LastRunAt = result.StartedAt
                 record.LastTrigger = trigger
-                record.LastOutcome = result.Outcome
-                record.LastFileCount = result.Files
-                record.LastFailedCount = result.Failed
-                record.LastError = ErrorTextOf(result)
-                If result.Outcome = ScheduledRunOutcome.Ok Then
-                    record.LastSuccessAt = result.StartedAt
-                    If current.Halt = ScheduledHalt.Wall Then
-                        current.Halt = ScheduledHalt.None
-                        current.HaltDetail = ""
+                If result.Outcome = ScheduledRunOutcome.Skipped Then
+                    ' Ticket 231, 3.5: a skipped run marks SkippedSinceSuccess, never clears a prior failure
+                    ' ("a failed run followed by a skipped run stays a failure"), and never halts the operation.
+                    record.SkippedSinceSuccess = True
+                    If record.LastOutcome <> ScheduledRunOutcome.Failed AndAlso record.LastOutcome <> ScheduledRunOutcome.Wall Then
+                        record.LastOutcome = ScheduledRunOutcome.Skipped
+                        record.LastFileCount = 0
+                        record.LastFailedCount = 0
+                        record.LastError = ErrorTextOf(result)
+                    End If
+                Else
+                    record.LastOutcome = result.Outcome
+                    record.LastFileCount = result.Files
+                    record.LastFailedCount = result.Failed
+                    record.LastError = ErrorTextOf(result)
+                    If result.Outcome = ScheduledRunOutcome.Ok Then
+                        record.LastSuccessAt = result.StartedAt
+                        record.SkippedSinceSuccess = False
+                        If current.Halt = ScheduledHalt.Wall Then
+                            current.Halt = ScheduledHalt.None
+                            current.HaltDetail = ""
+                        End If
                     End If
                 End If
                 If result.Halt <> ScheduledHalt.None Then
@@ -615,16 +669,28 @@ Friend NotInheritable Class ScheduledEngine
                     ArmLocked(current, services.Clock.Invoke())
                 End If
                 PersistLocked(current)
+                If current.ShowBalloonOnError AndAlso
+                   (result.Outcome = ScheduledRunOutcome.Failed OrElse result.Outcome = ScheduledRunOutcome.Wall) Then
+                    notifySnapshot = current.Clone()
+                End If
             End If
 
             If result.Outcome = ScheduledRunOutcome.Ok OrElse result.Outcome = ScheduledRunOutcome.None Then
                 If lastFailureInfo IsNot Nothing AndAlso String.Equals(lastFailureInfo.OperationId, op.Id, StringComparison.Ordinal) Then
                     lastFailureInfo = Nothing
                 End If
-            ElseIf result.Outcome <> ScheduledRunOutcome.Cancelled Then
+            ElseIf result.Outcome <> ScheduledRunOutcome.Cancelled AndAlso result.Outcome <> ScheduledRunOutcome.Skipped Then
                 lastFailureInfo = New ScheduledFailureInfo(op.Id, op.DisplayName(), result.Outcome, ErrorTextOf(result))
             End If
         End SyncLock
+
+        If notifySnapshot IsNot Nothing Then
+            Try
+                services.NotifyError?.Invoke(notifySnapshot, result)
+            Catch ex As Exception
+                AppFileLogger.LogException("Scheduled operations: error notification for " & notifySnapshot.DisplayName(), ex)
+            End Try
+        End If
 
         journalLog.Append(New JournalEntry With {
             .Timestamp = result.StartedAt, .Kind = "run", .Code = ScheduledJson.OutcomeText(result.Outcome),
@@ -640,7 +706,7 @@ Friend NotInheritable Class ScheduledEngine
 
     Private Shared Function ErrorTextOf(result As ScheduledRunResult) As String
         Select Case result.Outcome
-            Case ScheduledRunOutcome.Wall, ScheduledRunOutcome.Refused
+            Case ScheduledRunOutcome.Wall, ScheduledRunOutcome.Refused, ScheduledRunOutcome.Skipped
                 Return result.Detail
             Case ScheduledRunOutcome.Failed
                 Return result.FirstError

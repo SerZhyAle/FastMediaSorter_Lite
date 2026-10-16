@@ -1188,16 +1188,11 @@ Friend NotInheritable Class Resource_List_Panel
             If sel IsNot Nothing Then
                 Dim diagnoseItem As New ChromeMenuItem("res_Diagnose") With {
                     .GlyphId = "action.test-connection",
-                    .Caption = ConnectionDiagnosisLocalization.DoorButtonText(Localization.CurrentCultureLanguage),
-                    .AccessibleName = ConnectionDiagnosisLocalization.DoorButtonText(Localization.CurrentCultureLanguage)
+                    .Caption = ConnectionDiagnosisLocalization.DoorButtonText(Localization.CurrentCode),
+                    .AccessibleName = ConnectionDiagnosisLocalization.DoorButtonText(Localization.CurrentCode)
                 }
                 diagnoseItem.Action = Sub()
-                    Dim ctx As New ConnectionDiagnosisContext With {
-                        .Host = sel.Host,
-                        .Port = sel.Port,
-                        .Language = Localization.CurrentCultureLanguage,
-                        .LastMessageCode = ConnectionDiagnosisMessageCode.UnreachableServer
-                    }
+                    Dim ctx As New ConnectionDiagnosisContext(sel.Host, sel.Port, ConnectionDiagnosisTarget.Server, ConnectionDiagnosisMessages.UnreachableServer)
                     Dim ignored = Connection_Diagnosis_Dialog.RunAndShowAsync(FindForm(), ctx)
                 End Sub
                 items.Add(diagnoseItem)

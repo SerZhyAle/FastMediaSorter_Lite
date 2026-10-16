@@ -45,7 +45,7 @@ func clipboardBody(v *clipboard.Value) wire.ClipboardValueBody {
 	return wire.ClipboardValueBody{
 		ClipID: v.ClipID, Size: v.Size, SHA256: v.SHA256, StoredAt: v.StoredAt,
 		SourceDeviceID: v.SourceDeviceID, SourceDeviceName: v.SourceDeviceName,
-		Kind: v.Kind, MimeType: v.MimeType, Name: v.Name,
+		Kind: v.Kind, MimeType: v.MimeType, Name: v.Name, Sealed: v.Sealed,
 	}
 }
 
@@ -73,7 +73,7 @@ func (e *Engine) ClipboardPut(st *Stream, sess *Session, m *wire.ClipboardPut) {
 	if d, ok := e.cfg.Accounts.Device(acct, dev); ok {
 		sourceName = d.Name
 	}
-	p, err := e.clip.BeginPut(acct, clipboard.Decl{Kind: m.Kind, Size: m.Size, MimeType: m.MimeType, Name: m.Name}, dev, sourceName)
+	p, err := e.clip.BeginPut(acct, clipboard.Decl{Kind: m.Kind, Size: m.Size, MimeType: m.MimeType, Name: m.Name, Sealed: m.Sealed}, dev, sourceName)
 	if errors.Is(err, clipboard.ErrPutInFlight) {
 		refused(wire.ReasonCapacity, "put-in-flight")
 		return

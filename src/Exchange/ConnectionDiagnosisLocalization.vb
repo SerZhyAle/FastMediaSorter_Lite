@@ -83,6 +83,10 @@ Public Module ConnectionDiagnosisLocalization
         Return uiKey
     End Function
 
+    Public Function DoorButtonText(Optional locale As String = "") As String
+        Return GetUiText("door_button", locale)
+    End Function
+
     Private Function NormalizeLocale(locale As String) As String
         If String.IsNullOrWhiteSpace(locale) Then Return CurrentLocale()
         Dim clean As String = locale.Trim().ToLowerInvariant()

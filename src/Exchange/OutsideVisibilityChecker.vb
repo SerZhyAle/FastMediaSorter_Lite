@@ -23,13 +23,13 @@ Public Class OutsideVisibilityResult
     Public Property Verdict As OutsideVisibilityVerdict
     Public Property Host As String = String.Empty
     Public Property Port As Integer = 0
-    Public Property Message As String = String.Empty
+    Public Property Summary As String = String.Empty
 
-    Public Sub New(verdict As OutsideVisibilityVerdict, host As String, port As Integer, Optional message As String = "")
+    Public Sub New(verdict As OutsideVisibilityVerdict, host As String, port As Integer, Optional summary As String = "")
         Me.Verdict = verdict
         Me.Host = host
         Me.Port = port
-        Me.Message = message
+        Me.Summary = summary
     End Sub
 End Class
 
@@ -51,6 +51,17 @@ Public Class OutsideVisibilityChecker
     Public Sub New(Optional probe As IOutsideVisibilityProbe = Nothing)
         _probe = If(probe, New DefaultOutsideVisibilityProbe())
     End Sub
+
+    Public Async Function CheckAsync(endpoint As String, ct As CancellationToken) As Task(Of OutsideVisibilityResult)
+        Dim host As String = If(endpoint, "").Trim()
+        Dim port As Integer = 443
+        If host.Contains(":"c) Then
+            Dim parts = host.Split(":"c)
+            host = parts(0)
+            Integer.TryParse(parts(1), port)
+        End If
+        Return Await CheckAsync(host, port, ct).ConfigureAwait(False)
+    End Function
 
     Public Async Function CheckAsync(host As String, port As Integer, ct As CancellationToken) As Task(Of OutsideVisibilityResult)
         If String.IsNullOrWhiteSpace(host) OrElse port <= 0 OrElse port > 65535 Then

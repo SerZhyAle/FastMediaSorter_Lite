@@ -1,6 +1,8 @@
 #If Not NETFRAMEWORK Then
 Option Strict On
 
+Imports System.Runtime.CompilerServices
+
 ''' <summary>
 ''' Spec 232 / DEVICE-EXCHANGE 0.27 section 25 item CY:
 ''' The fifteen check steps for a connection that does not work, in fixed order from machine outward to account.
@@ -69,6 +71,7 @@ End Enum
 ''' </summary>
 Public Module ConnectionDiagnosisStepInfo
 
+    <Extension>
     Public Function IdOf(stepValue As ConnectionDiagnosisStep) As String
         Select Case stepValue
             Case ConnectionDiagnosisStep.PcAsleep : Return "pc-asleep"
@@ -112,6 +115,7 @@ Public Module ConnectionDiagnosisStepInfo
         End Select
     End Function
 
+    <Extension>
     Public Function AppliesOf(stepValue As ConnectionDiagnosisStep) As ConnectionDiagnosisApplies
         Select Case stepValue
             Case ConnectionDiagnosisStep.AddressLan,
@@ -126,6 +130,7 @@ Public Module ConnectionDiagnosisStepInfo
         End Select
     End Function
 
+    <Extension>
     Public Function IsWindowsOnly(stepValue As ConnectionDiagnosisStep) As Boolean
         Return stepValue = ConnectionDiagnosisStep.WindowsPublicNetwork
     End Function
@@ -133,6 +138,7 @@ Public Module ConnectionDiagnosisStepInfo
     ''' <summary>
     ''' Spec 232 rule 4: where Windows has a settings page for the fix, returns the ms-settings: URI.
     ''' </summary>
+    <Extension>
     Public Function WindowsSettingsUriOf(stepValue As ConnectionDiagnosisStep) As String
         Select Case stepValue
             Case ConnectionDiagnosisStep.WindowsPublicNetwork
@@ -140,7 +146,7 @@ Public Module ConnectionDiagnosisStepInfo
             Case ConnectionDiagnosisStep.DeviceClock
                 Return "ms-settings:dateandtime"
             Case Else
-                Return String.Empty
+                Return Nothing
         End Select
     End Function
 

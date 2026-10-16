@@ -5,6 +5,10 @@
 // in 13 languages, keyed by Point.ID - so an id never changes meaning, and a point is added, never
 // reworded in place. The statement is shown where an operator sets a server up, because on a
 // deployment that hosts other people's accounts it is a limit they must know.
+//
+// That is the statement of a server that does not seal. A server that advertises `sealed` (DEVICE-EXCHANGE
+// 27 item DP) can no longer say that its operator reads what goes through it; it says the honest text of
+// item DE instead, which honest.go holds (TextFor picks between the two by the server's features).
 package statement
 
 import (
@@ -14,7 +18,13 @@ import (
 
 // WithRetention includes the deployment's actual retention, never a hardcoded operator claim.
 func WithRetention(days int) string {
-	return Text() + fmt.Sprintf("\n\nLogs use UTC day files and are kept for %d days, with daily cleanup and a per-file size cap.", days)
+	return Text() + retentionNote(days)
+}
+
+// retentionNote is the closing paragraph about the logs, shared by the statement of a server that does not
+// seal and the honest text of one that does (honest.go).
+func retentionNote(days int) string {
+	return fmt.Sprintf("\n\nLogs use UTC day files and are kept for %d days, with daily cleanup and a per-file size cap.", days)
 }
 
 // Point is one sentence-sized fact of the statement.

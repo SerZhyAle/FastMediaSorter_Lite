@@ -364,6 +364,8 @@ Partial Public Class Main_Form
     ''' FileOpWorkerBusy() first.</summary>
     Private Sub QueueFileOp(op As FileOp)
 #If Not NETFRAMEWORK Then
+        ' The status panel's "show file operations" hold counts from here (a batch item is not one).
+        If op.BatchItem Is Nothing Then NoteFileOperationForStatusReveal(op.Kind)
         If (op.Kind = FileOpKind.Move OrElse op.Kind = FileOpKind.Copy) AndAlso op.RemoteDelete Is Nothing Then
             op.RemoteDelete = ResourceRouting.CaptureDelete(op.Source)
         End If
@@ -1656,6 +1658,9 @@ Partial Public Class Main_Form
             BatchOpFinished(op, failure)
             Return
         End If
+        ' Finished (done or failed): the status panel's hold counts the few seconds again from here, so the
+        ' result line is on screen for them, not only the "working on it" one.
+        NoteFileOperationForStatusReveal(op.Kind)
 #End If
 
         Dim on_Shown_List As Boolean = FileOpRules.ListStampMatches(op.ListGeneration, file_List_Generation)

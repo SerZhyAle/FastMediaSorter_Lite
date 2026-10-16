@@ -53,8 +53,13 @@ Namespace Lite.Tests
         Public Sub NetFramework_RefusesSwitch()
             ' Criterion 21: on net48, calling RefuseNetFramework sets non-zero exit code
             Environment.ExitCode = 0
-            StreamCatalogCli.RefuseNetFramework()
-            Assert.NotEqual(0, Environment.ExitCode)
+            Try
+                StreamCatalogCli.RefuseNetFramework()
+                Assert.NotEqual(0, Environment.ExitCode)
+            Finally
+                ' The exit code is the test host's own: left at 1 it ends the whole net48 run as "aborted".
+                Environment.ExitCode = 0
+            End Try
         End Sub
 #End If
 

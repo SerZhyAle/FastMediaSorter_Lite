@@ -130,11 +130,11 @@ Friend NotInheritable Class Exchange_Devices_Panel
         _signOutButton = MakeButton("res_DevicesSignOut", ExchangeEntryText.SignOutButton(), AddressOf OnSignOutClicked)
         _changePasswordButton = MakeButton("res_DevicesChangePassword", ExchangeEntryText.ChangePasswordButton(), AddressOf OnChangePasswordClicked)
         _signInButton = MakeButton("res_DevicesSignIn", ExchangeEntryText.SignInAgainButton(), AddressOf OnSignInClicked)
-        _diagnoseButton = MakeButton("res_DevicesDiagnose", ConnectionDiagnosisLocalization.DoorButtonText(Localization.CurrentCultureLanguage), AddressOf OnDiagnoseClicked)
+        _diagnoseButton = MakeButton("res_DevicesDiagnose", ConnectionDiagnosisLocalization.DoorButtonText(Localization.CurrentCode), AddressOf OnDiagnoseClicked)
         _updateAddressButton = MakeButton("res_DevicesUpdateAddress", ExchangeEntryText.UpdateAddressButton(), AddressOf OnUpdateAddressClicked)
         _handOnButton = MakeButton("res_DevicesHandOn", ExchangeEntryText.HandOnButton(), AddressOf OnHandOnClicked)
         ' WINDOWS-UI section 11: every command carries the glyph of its verb, mono (panel commands are never answers).
-        ButtonGlyphs.Apply(_addButton, "action.add")
+        ButtonGlyphs.Apply(_addButton, IconMap.GetMeaning("res_DevicesAdd").GlyphId)
         ButtonGlyphs.Apply(_attachAllButton, "action.reconnect")
         ButtonGlyphs.Apply(_signOutButton, "nav.exit")
         ButtonGlyphs.Apply(_changePasswordButton, "action.edit")
@@ -224,7 +224,7 @@ Friend NotInheritable Class Exchange_Devices_Panel
         _signOutButton.Text = ExchangeEntryText.SignOutButton()
         _changePasswordButton.Text = ExchangeEntryText.ChangePasswordButton()
         _signInButton.Text = ExchangeEntryText.SignInAgainButton()
-        _diagnoseButton.Text = ConnectionDiagnosisLocalization.DoorButtonText(Localization.CurrentCultureLanguage)
+        _diagnoseButton.Text = ConnectionDiagnosisLocalization.DoorButtonText(Localization.CurrentCode)
         _updateAddressButton.Text = ExchangeEntryText.UpdateAddressButton()
         _handOnButton.Text = ExchangeEntryText.HandOnButton()
         _autoBox.Text = ExchangeEntryText.AutoAttachCheckbox()
@@ -635,7 +635,7 @@ Friend NotInheritable Class Exchange_Devices_Panel
         Dim needsPinEnrollment As Boolean = src IsNot Nothing AndAlso src.Feed.Current.Snapshot IsNot Nothing AndAlso
             src.Feed.Current.Snapshot.Resources.Any(Function(r) ExchangeAttach.NeedsPinEnrollment(r))
         _signInButton.Visible = src IsNot Nothing AndAlso (state = ExchangeAgentState.SignInAgain OrElse state = ExchangeAgentState.PinMismatch OrElse needsPinEnrollment)
-        _diagnoseButton.Visible = src IsNot Nothing AndAlso (state = ExchangeAgentState.SignInAgain OrElse state = ExchangeAgentState.PinMismatch OrElse state = ExchangeAgentState.Reconnecting OrElse (src.Session IsNot Nothing AndAlso Not src.Session.IsConnected))
+        _diagnoseButton.Visible = src IsNot Nothing AndAlso (state = ExchangeAgentState.SignInAgain OrElse state = ExchangeAgentState.PinMismatch OrElse state = ExchangeAgentState.Reconnecting OrElse state = ExchangeAgentState.Connecting)
         _updateAddressButton.Visible = src IsNot Nothing AndAlso src.Moved.Length > 0
         _handOnButton.Visible = src IsNot Nothing AndAlso state = ExchangeAgentState.Online
         _autoBox.Visible = src IsNot Nothing
@@ -818,6 +818,27 @@ Friend NotInheritable Class Exchange_Devices_Panel
         If src Is Nothing OrElse _busy Then Return
         Dim added As ExchangeEntry = ExchangeConnectFlowUi.Run(FindForm(), "", src.Entry)
         If added IsNot Nothing Then EntryAdded(added)
+    End Sub
+
+    Private Sub OnDiagnoseClicked(sender As Object, e As EventArgs)
+        Dim src As ServerSource = CurrentSource()
+        If src Is Nothing OrElse src.Entry Is Nothing Then Return
+        Dim host As String = src.Entry.Server
+        Dim port As Integer = 443
+        If host.Contains(":"c) Then
+            Dim parts = host.Split(":"c)
+            host = parts(0)
+            Integer.TryParse(parts(1), port)
+        End If
+        Dim msg As ConnectionDiagnosisMessage = ConnectionDiagnosisMessages.UnreachableServer
+        Dim state As ExchangeAgentState = StateOfSource(src)
+        Select Case state
+            Case ExchangeAgentState.SignInAgain : msg = ConnectionDiagnosisMessages.BadCredentials
+            Case ExchangeAgentState.PinMismatch : msg = ConnectionDiagnosisMessages.CertificateChanged
+            Case Else : msg = ConnectionDiagnosisMessages.UnreachableServer
+        End Select
+        Dim ctx As New ConnectionDiagnosisContext(host, port, ConnectionDiagnosisTarget.Server, msg)
+        Dim ignored = Connection_Diagnosis_Dialog.RunAndShowAsync(FindForm(), ctx)
     End Sub
 
     Private Async Sub OnAttachAllClicked(sender As Object, e As EventArgs)

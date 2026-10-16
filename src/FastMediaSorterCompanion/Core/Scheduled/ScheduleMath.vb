@@ -45,13 +45,42 @@ Friend Module ScheduleMath
         Return If(wrapped < 0, wrapped + MinutesPerDay, wrapped)
     End Function
 
-    ''' <summary>The first grid point strictly after <paramref name="now"/>, and never before the start.</summary>
-    Friend Function NextSlot(startDate As DateTime, anchorMinutes As Integer, intervalMinutes As Integer, now As DateTime) As DateTime
+    ''' <summary>The first grid point strictly after <paramref name="now"/>, and never before the start.
+    ''' When <paramref name="tz"/> is supplied (ticket 231, 3.7):
+    ''' - a slot that falls inside a spring-forward gap advances to the first valid minute after the gap;
+    ''' - a slot that falls inside an autumn repeated hour is skipped once it has already run in that hour.</summary>
+    Friend Function NextSlot(startDate As DateTime, anchorMinutes As Integer, intervalMinutes As Integer, now As DateTime,
+                             Optional tz As TimeZoneInfo = Nothing, Optional lastRunAt As DateTime? = Nothing) As DateTime
         Dim start As DateTime = FirstSlot(startDate, anchorMinutes)
-        If now < start Then Return start
         Dim intervalTicks As Long = CLng(NormalizeInterval(intervalMinutes)) * TimeSpan.TicksPerMinute
-        Dim steps As Long = (now.Ticks - start.Ticks) \ intervalTicks + 1L
+        Dim steps As Long = If(now < start, 0L, (now.Ticks - start.Ticks) \ intervalTicks + 1L)
+        If steps < 0L Then steps = 0L
+
+        For guard As Integer = 0 To 8
+            Dim raw As New DateTime(start.Ticks + steps * intervalTicks, DateTimeKind.Unspecified)
+            Dim candidate As DateTime = AdjustForSpringGap(raw, tz)
+            If candidate <= now Then
+                steps += 1L
+                Continue For
+            End If
+            If tz IsNot Nothing AndAlso tz.IsAmbiguousTime(candidate) AndAlso
+               lastRunAt.HasValue AndAlso lastRunAt.Value >= candidate Then
+                steps += 1L
+                Continue For
+            End If
+            Return candidate
+        Next
         Return New DateTime(start.Ticks + steps * intervalTicks, DateTimeKind.Unspecified)
+    End Function
+
+    Private Function AdjustForSpringGap(candidate As DateTime, tz As TimeZoneInfo) As DateTime
+        If tz Is Nothing OrElse Not tz.IsInvalidTime(candidate) Then Return candidate
+        Dim probe As DateTime = candidate
+        For minute As Integer = 1 To 240
+            probe = candidate.AddMinutes(minute)
+            If Not tz.IsInvalidTime(probe) Then Return probe
+        Next
+        Return candidate
     End Function
 
     ''' <summary>The start of the grid: the start date at the anchor time.</summary>
@@ -60,8 +89,8 @@ Friend Module ScheduleMath
     End Function
 
     ''' <summary>The next slot of an operation - the form every caller uses.</summary>
-    Friend Function NextSlot(op As ScheduledOperation, now As DateTime) As DateTime
-        Return NextSlot(op.StartDate, op.AnchorMinutes, op.IntervalMinutes, now)
+    Friend Function NextSlot(op As ScheduledOperation, now As DateTime, Optional tz As TimeZoneInfo = Nothing) As DateTime
+        Return NextSlot(op.StartDate, op.AnchorMinutes, op.IntervalMinutes, now, tz, op.Record?.LastRunAt)
     End Function
 
     ''' <summary>The last grid point at or before <paramref name="now"/>, or Nothing before the first
@@ -104,8 +133,16 @@ Friend Module MissedRunRules
         ' A walled operation catches up with nothing: it waits for its cause to go, then runs at its next slot.
         If op.Halt = ScheduledHalt.Wall Then Return StartupDecision.Arm
         Dim due As DateTime? = op.Record.NextRunAt
-        If Not due.HasValue OrElse due.Value > now Then Return StartupDecision.Arm
-        Return If(policy = MissedRunPolicy.RunOnceAtStart, StartupDecision.RunLate, StartupDecision.Missed)
+        Dim retry As Boolean = If(op.HasExplicitRetryMissedRuns, op.RetryMissedRunsAtStart, policy = MissedRunPolicy.RunOnceAtStart)
+        If due.HasValue AndAlso due.Value <= now Then Return If(retry, StartupDecision.RunLate, StartupDecision.Missed)
+        ' Ticket 231 rule 5, "or was skipped": the last run could not start (the other device was off, no network) and no
+        ' success has followed, so it is tried once more at start. One try per start: a skip again ends it until the next one.
+        If retry AndAlso op.Record.SkippedSinceSuccess AndAlso op.Record.LastOutcome = ScheduledRunOutcome.Skipped Then Return StartupDecision.RunLate
+        Return StartupDecision.Arm
+    End Function
+
+    Friend Function DecideAtStart(op As ScheduledOperation, now As DateTime, standDown As Boolean) As StartupDecision
+        Return DecideAtStart(op, now, If(op IsNot Nothing AndAlso op.RetryMissedRunsAtStart, MissedRunPolicy.RunOnceAtStart, MissedRunPolicy.Skip), standDown)
     End Function
 
 End Module

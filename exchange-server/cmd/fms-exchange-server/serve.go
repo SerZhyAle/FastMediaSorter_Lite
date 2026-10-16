@@ -182,7 +182,7 @@ func serveCore(ctx context.Context, cmd command, console bool, stdout, stderr io
 	var infos []directory.DeviceInfo
 	for _, d := range store.AllDevices() {
 		infos = append(infos, directory.DeviceInfo{ID: d.ID, Account: d.Account, Name: d.Name, Product: d.Product,
-			ProductVersion: d.ProductVersion, Platform: d.Platform, Roles: d.Roles, Capabilities: d.Capabilities, Receiver: d.Receiver})
+			ProductVersion: d.ProductVersion, Platform: d.Platform, Roles: d.Roles, Capabilities: d.Capabilities, Receiver: d.Receiver, E2EKey: d.E2EKey})
 	}
 	l := cfg.Limits
 	dir := directory.New(directory.Options{Dir: paths.Dir,
@@ -228,7 +228,7 @@ func serveCore(ctx context.Context, cmd command, console bool, stdout, stderr io
 		Verifier: limits.NewVerifier(nil, l.VerifierConcurrency, 2*time.Second),
 		Limiter:  limiter, LoginLimiter: loginLimiter, Log: logger,
 		PublicEndpoint: cfg.PublicEndpoint, ServerVersion: version,
-		Features: rendezvous.Features{Cast: true}, Relay: relayHandler,
+		Features: rendezvous.Features{Cast: true, Sealed: true}, Relay: relayHandler,
 	})
 	srv := rendezvous.New(rendezvous.Config{
 		Params:  params,

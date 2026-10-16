@@ -94,6 +94,11 @@ func (e *Enroll) validate() error {
 			return errors.New("a role is out of bounds")
 		}
 	}
+	if e.E2EKey != nil {
+		if err := e.E2EKey.Validate(); err != nil {
+			return err
+		}
+	}
 	// "receiver":null is a member that says nothing: it is absent, never a malformed block.
 	if t := bytes.TrimSpace(e.Receiver); string(t) == "null" {
 		e.Receiver = nil
@@ -296,6 +301,11 @@ func (e *Register) validate() error {
 			return errors.New("a role is out of bounds")
 		}
 	}
+	if e.E2EKey != nil {
+		if err := e.E2EKey.Validate(); err != nil {
+			return err
+		}
+	}
 	if t := bytes.TrimSpace(e.Receiver); string(t) == "null" {
 		e.Receiver = nil
 	}
@@ -344,9 +354,10 @@ const (
 	maxMimeType = 127
 )
 
-// ClipKinds are the kinds of one clipboard value (item BU). A fourth kind arrives with the sealed
-// amendment and is not this server's until then.
-var ClipKinds = []string{"text", "image", "file"}
+// ClipKinds are the kinds of one clipboard value (item BU, and 27 item DN for the fourth). The server
+// accepts `sealed` on any stream: whether to offer it is the `sealed` feature of `welcome`, which the
+// sender checks before it puts one.
+var ClipKinds = []string{"text", "image", "file", ClipKindSealed}
 
 // ValidClipName reports whether s is a name a clipboard value may carry: at most 255 bytes of
 // UTF-8, no slash, no backslash, no control character, never "." or "..".
@@ -384,8 +395,31 @@ func ValidClipMimeType(s string) bool {
 	return slash > 0 && slash < len(s)-1
 }
 
+// checkSealedMember is the rule of item DN for the box of a clipboard value: only a `sealed` value
+// carries one, and a `sealed` value carries nothing else describing its content.
+func checkSealedMember(kind string, sealed json.RawMessage, mimeType, name string) error {
+	if kind != ClipKindSealed {
+		if len(sealed) > 0 {
+			return errors.New("only a sealed value carries a box")
+		}
+		return nil
+	}
+	if mimeType != "" || name != "" {
+		return errors.New("a sealed value carries no mimeType and no name")
+	}
+	if err := CheckBox(sealed); err != nil {
+		return errors.New("a sealed value needs a box")
+	}
+	return nil
+}
+
 func (e *ClipboardPut) validate() error {
+	if err := checkSealedMember(e.Kind, e.Sealed, e.MimeType, e.Name); err != nil {
+		return err
+	}
 	switch e.Kind {
+	case ClipKindSealed:
+		// size and the box are the whole of it; checked above and below
 	case "text":
 		if e.MimeType != "" {
 			return errors.New("a text carries no mimeType")
@@ -408,7 +442,7 @@ func (e *ClipboardPut) validate() error {
 			return errors.New("a file needs a name")
 		}
 	default:
-		return errors.New("kind is text, image or file")
+		return errors.New("kind is text, image, file or sealed")
 	}
 	if e.Size < 1 {
 		return errors.New("size is at least 1")
@@ -454,7 +488,12 @@ func bodyValidate(v *ClipboardValueBody) error {
 	if !textOK(v.SourceDeviceID, maxTunnelID) || !textOK(v.SourceDeviceName, maxDeviceName) {
 		return errors.New("a source device member is out of bounds")
 	}
+	if err := checkSealedMember(v.Kind, v.Sealed, v.MimeType, v.Name); err != nil {
+		return err
+	}
 	switch v.Kind {
+	case ClipKindSealed:
+		// the box was checked above
 	case "":
 		if v.MimeType != "" || v.Name != "" {
 			return errors.New("metadata without a kind")
@@ -478,7 +517,7 @@ func bodyValidate(v *ClipboardValueBody) error {
 			return errors.New("a file needs a name")
 		}
 	default:
-		return errors.New("kind is text, image or file")
+		return errors.New("kind is text, image, file or sealed")
 	}
 	return nil
 }

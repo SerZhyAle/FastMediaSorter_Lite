@@ -295,6 +295,7 @@ Partial Public NotInheritable Class MainWindow
         btnShare.Enabled = running AndAlso Not _busy
         btnGuide.Enabled = running AndAlso Not _busy
         btnBroadcasts.Visible = BroadcastPage.ShouldOffer(_status)
+        RefreshClipboardButtons()   ' spec 230: an account added or removed meanwhile shows on the next refresh
         ' The router is no longer detected just because this window shows a running share:
         ' detection talks to whatever answers on the LAN, and the privacy text promises
         ' nothing is contacted without being asked (ticket 054 H-17). It runs on the router

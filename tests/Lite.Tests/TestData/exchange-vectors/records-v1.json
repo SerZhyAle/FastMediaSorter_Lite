@@ -1,6 +1,6 @@
 {
   "contract": "DEVICE-EXCHANGE",
-  "contractVersion": "0.28",
+  "contractVersion": "1.1",
   "sections": "6, 7.4, 8.1",
   "rung": 1,
   "producer": "Media Exchange Server (Go) of Fast Media Sorter & Sharing for Windows, cmd/exchange-vectors",

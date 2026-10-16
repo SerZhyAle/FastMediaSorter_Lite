@@ -25,6 +25,11 @@ Friend NotInheritable Class TrayContext
     Private _pendingStartupAddResourceCamera As Boolean
     Private _pendingStartupSchedule As Boolean
     Private _pendingStartupScheduleFolder As String = ""
+    ''' <summary>Spec 230: the clipboard functions' one coordinator, shared with the main window - one operation at a time holds
+    ''' across the window's buttons, these tray items and a desktop shortcut's wake.</summary>
+    Private ReadOnly _clipboard As ClipboardCoordinator = ClipboardCoordinator.Current
+    ''' <summary>The tooltip this icon had when a clipboard operation took it over for its progress; Nothing when it is not taken.</summary>
+    Private _tooltipBeforeClipboard As String
     Private ReadOnly _statsTimer As Timer   ' keeps the tooltip's usage counters reasonably fresh while serving
     Private ReadOnly _diskLetterTimer As Timer
     Private _diskLetterFetchInFlight As Boolean
@@ -56,6 +61,8 @@ Friend NotInheritable Class TrayContext
         _notifyIcon.ContextMenuStrip = BuildMenu()
         AddHandler _notifyIcon.DoubleClick, Sub() ShowMainWindow(Nothing)
         AddHandler UiLanguage.Changed, AddressOf OnLanguageChanged
+        AddHandler _clipboard.StateChanged, AddressOf OnClipboardStateChanged
+        AddHandler _clipboard.Finished, AddressOf OnClipboardFinished
 
         _messageWindow = New MessageWindow()
         _messageWindow.StageFolder = AddressOf StageFolder
@@ -80,6 +87,7 @@ Friend NotInheritable Class TrayContext
         ExchangeLocalJoinHost.Start()
         ' Scheduled file operations (ticket 222): the engine lives in this tray process and nowhere else - it
         ' loads the stored operations and arms them. Not behind the Share opt-in (no port, no firewall).
+        ScheduledHost.NotifyErrorHandler = AddressOf OnScheduledNotifyError
         ScheduledHost.Start()
 
         ' Who gets a window. An EXPLICIT gesture always does: a folder argument ("share
@@ -208,6 +216,7 @@ Friend NotInheritable Class TrayContext
         AddHandler menu.Opening, Sub() RefreshExchangeTrayItem(miExchange)
 
         BuildScheduledMenuItems(menu)
+        BuildClipboardMenuItems(menu)
 
         ' Online "publish your folders for Android" guide.
         Dim miDesc As New ToolStripMenuItem(Localization.T("Описание.."))
@@ -654,7 +663,91 @@ Friend NotInheritable Class TrayContext
                 Dim welcomeDue As Boolean = ManagerWelcomeModel.ShouldOpen(ManagerWelcomeStore.State(), False, False, False)
                 ShowMainWindow(Nothing, welcomeDue, True)
                 If Not welcomeDue Then BeginOpenAddResource(camera:=True)
+            Case CompanionCommandKind.ClipboardSend
+                ' Spec 230: a desktop shortcut. The action IS the request - no window is raised for it.
+                BeginClipboard(isSend:=True)
+            Case CompanionCommandKind.ClipboardGet
+                BeginClipboard(isSend:=False)
         End Select
+    End Sub
+
+    ' --- spec 230: the clipboard through the server --------------------------------------------------------
+
+    ''' <summary>The two items and the cancel, absent (not disabled) with no account - decided on Opening, like the
+    ''' exchange item, so an account added meanwhile needs no restart. Nothing is read by showing them.</summary>
+    Private Sub BuildClipboardMenuItems(menu As ContextMenuStrip)
+        Dim miSend As New ToolStripMenuItem(Localization.T("Отправить буфер на сервер")) With {.Visible = False}
+        Dim miGet As New ToolStripMenuItem(Localization.T("Получить буфер с сервера")) With {.Visible = False}
+        Dim miCancel As New ToolStripMenuItem(Localization.T("Отмена")) With {.Visible = False}
+        miSend.Name = "clipboardTraySend"
+        miGet.Name = "clipboardTrayGet"
+        ' Render at opening so the current DPI and theme apply even after a tray-only theme change.
+        AddHandler menu.Opening,
+            Sub()
+                For Each item In New ToolStripMenuItem() {miSend, miGet}
+                    Dim previous As Image = item.Image
+                    item.Image = GlyphRenderer.Render(IconMap.GetMeaning(item.Name).GlyphId,
+                        menu.LogicalToDeviceUnits(20), item.ForeColor, AddressOf CompanionAssets.OpenBundledAsset)
+                    previous?.Dispose()
+                Next
+            End Sub
+        AddHandler menu.Disposed,
+            Sub()
+                miSend.Image?.Dispose()
+                miGet.Image?.Dispose()
+            End Sub
+        AddHandler miSend.Click, Sub() BeginClipboard(isSend:=True)
+        AddHandler miGet.Click, Sub() BeginClipboard(isSend:=False)
+        AddHandler miCancel.Click, Sub() _clipboard.Cancel()
+        menu.Items.Add(miSend)
+        menu.Items.Add(miGet)
+        menu.Items.Add(miCancel)
+        AddHandler menu.Opening,
+            Sub()
+                Dim offered As Boolean = _clipboard.IsOffered()
+                Dim running As Boolean = _clipboard.IsRunning
+                miSend.Visible = offered
+                miGet.Visible = offered
+                miSend.Enabled = Not running
+                miGet.Enabled = Not running
+                miCancel.Visible = offered AndAlso running
+            End Sub
+    End Sub
+
+    ''' <summary>Starts one send or get. The coordinator never throws and tells a second press that one is under way.</summary>
+    Private Sub BeginClipboard(isSend As Boolean)
+        If _disposed Then Return
+        Dim t As Task = _clipboard.RunAsync(isSend)
+    End Sub
+
+    ''' <summary>While an operation runs its progress words replace the tooltip; the tooltip it had comes back when it ends.</summary>
+    Private Sub OnClipboardStateChanged(sender As Object, e As EventArgs)
+        If _disposed Then Return
+        Try
+            If _clipboard.IsRunning Then
+                If _tooltipBeforeClipboard Is Nothing Then _tooltipBeforeClipboard = _notifyIcon.Text
+                Dim words As String = _clipboard.ProgressText
+                ' A notification-area tooltip is 63 characters at most; a longer one throws.
+                _notifyIcon.Text = If(words.Length > 63, words.Substring(0, 63), words)
+            ElseIf _tooltipBeforeClipboard IsNot Nothing Then
+                _notifyIcon.Text = _tooltipBeforeClipboard
+                _tooltipBeforeClipboard = Nothing
+            End If
+        Catch ex As Exception When TypeOf ex Is ArgumentException OrElse TypeOf ex Is InvalidOperationException
+            ' a tooltip that cannot be set is not worth an operation
+        End Try
+    End Sub
+
+    ''' <summary>The one result line. In the main window when it is on screen (it shows it itself); otherwise one tray
+    ''' notification - the shortcut run has no window to put a sentence in.</summary>
+    Private Sub OnClipboardFinished(sender As Object, e As ClipboardFinishedEventArgs)
+        If _disposed OrElse e.Text.Length = 0 Then Return
+        If _mainWindow IsNot Nothing AndAlso Not _mainWindow.IsDisposed AndAlso _mainWindow.ShowsClipboardNotice() Then Return
+        Try
+            _notifyIcon.ShowBalloonTip(8000, ProductNames.ShareManager, If(e.Text.Length > 250, e.Text.Substring(0, 250), e.Text),
+                                       If(e.Succeeded, ToolTipIcon.Info, ToolTipIcon.Warning))
+        Catch ex As Exception When TypeOf ex Is ArgumentException OrElse TypeOf ex Is InvalidOperationException
+        End Try
     End Sub
 
     ''' <summary>Posts the guided add-resource flow to the window's own UI turn, after the wake handler has returned
@@ -954,6 +1047,18 @@ Friend NotInheritable Class TrayContext
         End Try
     End Sub
 
+    Private Sub OnScheduledNotifyError(op As ScheduledOperation, result As ScheduledRunResult)
+        If _disposed OrElse op Is Nothing OrElse result Is Nothing Then Return
+        Try
+            ' The record's machine text, set from the run by the engine: a Failed run keeps its first error there, not in Detail.
+            Dim failure As New ScheduledFailureInfo(op.Id, op.DisplayName(), result.Outcome, op.Record.LastError)
+            Dim text As String = ScheduledText.FailureHint(failure)
+            If text.Length = 0 Then Return
+            _notifyIcon.ShowBalloonTip(8000, ProductNames.ShareManager, If(text.Length > 250, text.Substring(0, 250), text), ToolTipIcon.Warning)
+        Catch
+        End Try
+    End Sub
+
     Private Sub ExitApplication()
         ' Close the window while the message loop still runs, so its FormClosing writes
         ' the geometry; Dispose below repeats the Close as a backstop.
@@ -1013,6 +1118,11 @@ Friend NotInheritable Class TrayContext
                     _mainWindow.Close()
                     _mainWindow.Dispose()
                 End If
+            Catch
+            End Try
+            Try
+                RemoveHandler _clipboard.StateChanged, AddressOf OnClipboardStateChanged
+                RemoveHandler _clipboard.Finished, AddressOf OnClipboardFinished
             Catch
             End Try
             Try

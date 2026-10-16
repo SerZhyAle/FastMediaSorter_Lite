@@ -26,6 +26,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\FastMediaSorterCompanion\FastMediaSorterCompanion.vbproj" />
+    <Compile Include="..\Lite.Tests\ExchangeVocabularyTests.vb" Link="Linked\ExchangeVocabularyTests.vb" />
   </ItemGroup>
 
   <!-- The TF call-site scanner (APP-BEHAVIOUR rule 7, ticket 028 Ф-4) is shared with
@@ -46,6 +47,11 @@
     <Compile Include="..\Lite.Tests\ExchangeRenewalTests.vb" Link="Linked\ExchangeRenewalTests.vb" />
     <Compile Include="..\Lite.Tests\ExchangeVectorReplayTests.vb" Link="Linked\ExchangeVectorReplayTests.vb" />
     <Compile Include="..\Lite.Tests\ExchangeRecordReplayTests.vb" Link="Linked\ExchangeRecordReplayTests.vb" />
+    <!-- Spec 230: the clipboard client of the library is the Share Manager's own send and get; its protocol tests run
+         where that consumer is tested (and in Lite.Tests, where the library is). -->
+    <Compile Include="..\Lite.Tests\ExchangeClipboardTests.vb" Link="Linked\ExchangeClipboardTests.vb" />
+    <!-- Spec 234 T-4: the sealed clipboard - the devices, the directory and the sealed values both test projects speak about. -->
+    <Compile Include="..\Lite.Tests\ExchangeSealedClipboardKit.vb" Link="Linked\ExchangeSealedClipboardKit.vb" />
     <None Include="..\Lite.Tests\TestData\exchange-vectors\**" Link="TestData\exchange-vectors\%(RecursiveDir)%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 

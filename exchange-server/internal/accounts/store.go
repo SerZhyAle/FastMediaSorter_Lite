@@ -137,9 +137,12 @@ type Device struct {
 	Roles          []string        `json:"roles,omitempty"`
 	Capabilities   []string        `json:"capabilities,omitempty"`
 	Receiver       json.RawMessage `json:"receiver,omitempty"`
-	TokenHash      string          `json:"tokenHash"` // hex SHA-256 of the token
-	EnrolledAt     string          `json:"enrolledAt"`
-	LastSeen       string          `json:"lastSeen,omitempty"`
+	// E2EKey is the device's public key for sealing (27 item DF): public, kept with the record, listed in
+	// the directory, and fixed for the life of the deviceId.
+	E2EKey     *wire.E2EKey `json:"e2eKey,omitempty"`
+	TokenHash  string       `json:"tokenHash"` // hex SHA-256 of the token
+	EnrolledAt string       `json:"enrolledAt"`
+	LastSeen   string       `json:"lastSeen,omitempty"`
 	// SignedOutAt is set when the account's password changed: the record stays, the token in TokenHash is
 	// dead, and a `hello` with it is `signed-out` until the hash is forgotten 30 days later (19 item AT).
 	SignedOutAt string `json:"signedOutAt,omitempty"`
@@ -328,10 +331,15 @@ func Open(opt Options) (*Store, error) {
 	if gFile.StoreVersion > StoreVersion {
 		return nil, fmt.Errorf("%s: %w", GrantsFile, ErrNewerStore)
 	}
+	newGrantIDs := false
 	for i := range gFile.Grants {
 		g := gFile.Grants[i]
 		if g.Kind == "" {
 			g.Kind = GrantResource
+		}
+		if g.GrantID == "" { // a row written before grantIds existed (item BD): the id is fixed now and kept
+			g.GrantID = wire.NewID()
+			newGrantIDs = true
 		}
 		s.grants[grantKey(g.GrantedBy, g.TargetID, g.Account)] = &g
 	}
@@ -352,6 +360,9 @@ func Open(opt Options) (*Store, error) {
 	var werr error
 	if changed {
 		werr = s.saveDevicesLocked()
+	}
+	if newGrantIDs && werr == nil {
+		werr = s.saveGrantsLocked()
 	}
 	s.mu.Unlock()
 	if werr != nil {
@@ -799,6 +810,7 @@ type EnrollSpec struct {
 	Roles          []string
 	Capabilities   []string
 	Receiver       json.RawMessage
+	E2EKey         *wire.E2EKey // optional, already validated by the wire (27 item DF)
 }
 
 // Enrolled is the outcome of a successful Enroll.
@@ -827,6 +839,13 @@ func (s *Store) addDeviceLocked(spec EnrollSpec, token string) (d, old *Device, 
 	if t := s.tombstones[spec.DeviceID]; t != nil && t.Account != spec.Account {
 		return nil, nil, nil, ErrIDCollision
 	}
+	// A key lives exactly as long as its deviceId (27 item DF): a known device that is kept with a key
+	// enrolls again with that same key (a token rotation) or not at all. Another key, or none, is a
+	// collision and the record stays as it was. A device kept without a key (enrolled before it had
+	// one) may present its first.
+	if old != nil && old.E2EKey != nil && !old.E2EKey.Equal(spec.E2EKey) {
+		return nil, nil, nil, ErrIDCollision
+	}
 	if old == nil {
 		if lim := s.policy.Resolve(s.accounts[spec.Account].Limits).Devices; lim > 0 {
 			n := 0
@@ -844,6 +863,7 @@ func (s *Store) addDeviceLocked(spec EnrollSpec, token string) (d, old *Device, 
 	d = &Device{
 		ID: spec.DeviceID, Account: spec.Account, Name: spec.Name, Product: spec.Product,
 		ProductVersion: spec.ProductVersion, Platform: spec.Platform, Roles: spec.Roles, Capabilities: append([]string(nil), spec.Capabilities...), Receiver: spec.Receiver,
+		E2EKey:    spec.E2EKey.Clone(),
 		TokenHash: hashToken(token), EnrolledAt: now, LastSeen: now,
 	}
 	if old != nil {

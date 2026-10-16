@@ -1,0 +1,140 @@
+{
+  "contract": "DEVICE-EXCHANGE 0.27, section 25 item CW; S4219, 2026-10-14",
+  "sourceTableSha256": "285ab2dd0797c8ad91f8a1e0133bd538dce87160af0ba204b477cecf2cbeb242",
+  "terms": [
+    {
+      "term": "exchange server",
+      "en": "exchange server",
+      "ru": "сервер обмена",
+      "uk": "сервер обміну",
+      "key": "Сервер обмена"
+    },
+    {
+      "term": "direct access",
+      "en": "direct access (the sharing service)",
+      "ru": "прямой доступ (сервис шаринга)",
+      "uk": "прямий доступ (сервіс шарингу)",
+      "key": "Прямой доступ (сервис шаринга)"
+    },
+    {
+      "term": "Drive channel",
+      "en": "via Google Drive; short: via GD",
+      "ru": "через Google Drive; кратко: через GD",
+      "uk": "через Google Drive; скорочено: через GD",
+      "shortKey": "через GD",
+      "key": "через Google Drive"
+    },
+    {
+      "term": "relay",
+      "en": "relay through the server",
+      "ru": "раздача потока через сервер",
+      "uk": "роздача потоку через сервер",
+      "internalOnly": true
+    },
+    {
+      "term": "broadcast",
+      "en": "broadcast",
+      "ru": "трансляция",
+      "uk": "трансляція",
+      "key": "Трансляция"
+    },
+    {
+      "term": "broadcasting",
+      "en": "broadcasting",
+      "ru": "вещание",
+      "uk": "мовлення",
+      "key": "Вещание"
+    },
+    {
+      "term": "ready file as a broadcast",
+      "en": "broadcast of a ready file",
+      "ru": "вещание готового файла",
+      "uk": "мовлення готового файлу",
+      "key": "Вещание готового файла"
+    },
+    {
+      "term": "ready film given out",
+      "en": "giving out a ready film",
+      "ru": "раздача готового фильма",
+      "uk": "роздача готового фільму",
+      "key": "Раздача готового фильма"
+    },
+    {
+      "term": "cast to your own device",
+      "en": "cast to your own device",
+      "ru": "cast на своё устройство",
+      "uk": "cast на свій пристрій",
+      "key": "Cast на своё устройство"
+    },
+    {
+      "term": "the platform's casting",
+      "en": "Google Cast",
+      "ru": "Google Cast",
+      "uk": "Google Cast",
+      "key": "Google Cast"
+    },
+    {
+      "term": "clipboard",
+      "en": "clipboard",
+      "ru": "буфер",
+      "uk": "буфер",
+      "key": "Буфер"
+    },
+    {
+      "term": "send the clipboard",
+      "en": "send the clipboard to the server",
+      "ru": "отправить буфер на сервер",
+      "uk": "надіслати буфер на сервер",
+      "key": "Отправить буфер на сервер"
+    },
+    {
+      "term": "get the clipboard",
+      "en": "get the clipboard from the server",
+      "ru": "получить буфер с сервера",
+      "uk": "отримати буфер із сервера",
+      "key": "Получить буфер с сервера"
+    },
+    {
+      "term": "clipboard on the server",
+      "en": "clipboard on the server",
+      "ru": "буфер на сервере",
+      "uk": "буфер на сервері",
+      "key": "Буфер на сервере"
+    },
+    {
+      "term": "clipboard received",
+      "en": "clipboard received from the server",
+      "ru": "буфер, полученный с сервера",
+      "uk": "буфер, отриманий із сервера",
+      "key": "Буфер, полученный с сервера"
+    },
+    {
+      "term": "invitation",
+      "en": "invitation",
+      "ru": "приглашение",
+      "uk": "запрошення",
+      "key": "Приглашение"
+    },
+    {
+      "term": "invitation kind `member`",
+      "en": "own device or family",
+      "ru": "своё устройство или семья",
+      "uk": "свій пристрій або сім'я",
+      "key": "Своё устройство или семья"
+    },
+    {
+      "term": "invitation kind `guest`",
+      "en": "guest",
+      "ru": "гость",
+      "uk": "гість",
+      "key": "Гость"
+    },
+    {
+      "term": "public link with a password",
+      "en": "link with a password",
+      "ru": "ссылка с паролем",
+      "uk": "посилання з паролем",
+      "key": "Ссылка с паролем"
+    }
+  ]
+}

@@ -14,6 +14,7 @@ import (
 	cryptorand "crypto/rand"
 	"crypto/sha256"
 	"encoding/hex"
+	"encoding/json"
 	"errors"
 	"io"
 	"sync"
@@ -34,12 +35,15 @@ type hasher interface {
 var ErrPutInFlight = errors.New("clipboard: the account already has an upload in flight")
 
 // Decl is what a `clipboard-put` declared. The server never looks inside a value: the kind is
-// metadata (item BU).
+// metadata (item BU). For the kind `sealed` (27 item DN) Size counts the sealed bytes, MimeType and
+// Name are empty and Sealed is the box that opens them: one opaque JSON object, kept verbatim and
+// never read.
 type Decl struct {
 	Kind     string
 	Size     int64
 	MimeType string
 	Name     string
+	Sealed   json.RawMessage
 }
 
 // Value is one stored clipboard value with the members the server set (item BU). Its bytes are
@@ -55,6 +59,7 @@ type Value struct {
 	StoredAt         string // the server's clock
 	SourceDeviceID   string
 	SourceDeviceName string
+	Sealed           json.RawMessage // the box of a `sealed` value (27 item DN): opaque, delivered as it came
 
 	data []byte
 }
@@ -114,6 +119,7 @@ func (t *Table) BeginPut(account string, d Decl, deviceID, deviceName string) (*
 	if s.putting != nil {
 		return nil, ErrPutInFlight
 	}
+	d.Sealed = append(json.RawMessage(nil), d.Sealed...) // the caller's frame buffer is not ours to keep
 	p := &Put{t: t, account: account, decl: d, deviceID: deviceID, deviceName: deviceName, h: sha256.New()}
 	s.putting = p
 	return p, nil
@@ -159,6 +165,7 @@ func (p *Put) Complete() *Value {
 		StoredAt:         wire.FormatTime(p.t.now()),
 		SourceDeviceID:   p.deviceID,
 		SourceDeviceName: p.deviceName,
+		Sealed:           p.decl.Sealed,
 		data:             p.buf,
 	}
 	s.value = v

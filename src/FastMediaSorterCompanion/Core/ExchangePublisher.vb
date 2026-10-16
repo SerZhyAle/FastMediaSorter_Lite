@@ -200,6 +200,10 @@ Friend NotInheritable Class ExchangePublisher
     Private _session As ExchangeControlSession
     Private _connectionToken As CancellationToken
     Private _nudge As TaskCompletionSource(Of Boolean)
+    ' A nudge that found no waiting watch (before its first loop, or between two): the next loop starts at once instead of after a poll.
+    Private _nudged As Boolean
+    ' The recipients object this publisher listens to (spec 234 item H: a changed recipient set publishes again).
+    Private _hookedSealed As ExchangeSealedRecipients
     Private _snapshot As ExchangePublishSnapshot = ExchangePublishSnapshot.Empty
     Private _listenPort As Integer
     ''' <summary>The last plan outcome that was written to the log, so a blocked producer says why once instead of every pass.</summary>
@@ -264,6 +268,13 @@ Friend NotInheritable Class ExchangePublisher
             _connectionToken = ct
             _published.Clear()          ' the server forgot `access` and `shareId` with the old connection (14.5 items G, H, K)
             _grantedPort = 0
+            ' item H of 27 DI: the recipient set moves when a device joins, gains the capability or leaves - then the boxes are made again.
+            ' The same session object serves every connection of this agent, so it is hooked once.
+            If Not ReferenceEquals(_hookedSealed, session.Sealed) Then
+                If _hookedSealed IsNot Nothing Then RemoveHandler _hookedSealed.Changed, AddressOf OnSealedChanged
+                _hookedSealed = session.Sealed
+                AddHandler _hookedSealed.Changed, AddressOf OnSealedChanged
+            End If
         End SyncLock
         Try
             Await ApplyAsync(force:=True, ct).ConfigureAwait(False)
@@ -324,8 +335,13 @@ Friend NotInheritable Class ExchangePublisher
         Dim n As TaskCompletionSource(Of Boolean)
         SyncLock _gate
             n = _nudge
+            If n Is Nothing OrElse n.Task.IsCompleted Then _nudged = True
         End SyncLock
         If n IsNot Nothing Then n.TrySetResult(True)
+    End Sub
+
+    Private Sub OnSealedChanged(sender As Object, e As EventArgs)
+        Notify()
     End Sub
 
     ' --- the watch ---------------------------------------------------------------------------------------------------------
@@ -336,6 +352,10 @@ Friend NotInheritable Class ExchangePublisher
                 Dim nudge As New TaskCompletionSource(Of Boolean)(TaskCreationOptions.RunContinuationsAsynchronously)
                 SyncLock _gate
                     _nudge = nudge
+                    If _nudged Then
+                        _nudged = False
+                        nudge.TrySetResult(True)
+                    End If
                 End SyncLock
                 Dim poll As Task = _options.Delay.Invoke(TimeSpan.FromMilliseconds(_options.PollMs), ct)
                 Await Task.WhenAny(poll, nudge.Task).ConfigureAwait(False)
@@ -363,22 +383,52 @@ Friend NotInheritable Class ExchangePublisher
     Private Function Differs(plan As ExchangePublishPlan) As Boolean
         SyncLock _gate
             If _session Is Nothing Then Return False
+            ' The reason a plan publishes nothing can move without a share moving (the directory settles after the welcome, so the first
+            ' pass saw "no key yet" and a later one sees the PIN lock): the window shows the plan's block, so it is looked at again.
+            If plan.Block <> _snapshot.Block Then Return True
             For Each name As String In _published.Keys
                 If plan.Find(name) Is Nothing Then Return True
             Next
+            Dim recipients As Long = _session.Sealed.Revision
             For Each s As ExchangePlannedShare In plan.Shares
                 Dim p As Published = Nothing
                 If Not _published.TryGetValue(s.Name, p) Then Return True
                 If p.State <> ExchangePublishState.Published AndAlso p.State <> ExchangePublishState.Refused Then Return True
-                If Not String.Equals(p.Signature, SignatureOf(s), StringComparison.Ordinal) Then Return True
+                If Not String.Equals(p.Signature, SignatureOf(s, recipients), StringComparison.Ordinal) Then Return True
             Next
             Return False
         End SyncLock
     End Function
 
-    Private Shared Function SignatureOf(s As ExchangePlannedShare) As String
-        Dim text As String = s.ResourceId & vbLf & s.ShareId & vbLf & s.AccessJson & vbLf & If(s.PublicPortRequest.HasValue, s.PublicPortRequest.Value.ToString(Globalization.CultureInfo.InvariantCulture), "-") & vbLf & s.PinProtected.ToString()
+    ''' <summary>What a published record was made from. The recipient set rides in it (spec 234 item H): a sealed box is addressed to the
+    ''' devices of that moment, so when one joins, gains the capability, changes its key or leaves, the record is made again.</summary>
+    Private Shared Function SignatureOf(s As ExchangePlannedShare, recipientRevision As Long) As String
+        Dim text As String = s.ResourceId & vbLf & s.ShareId & vbLf & s.AccessJson & vbLf & If(s.PublicPortRequest.HasValue, s.PublicPortRequest.Value.ToString(Globalization.CultureInfo.InvariantCulture), "-") & vbLf & s.PinProtected.ToString() &
+                             vbLf & recipientRevision.ToString(Globalization.CultureInfo.InvariantCulture)
         Return Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(text)))
+    End Function
+
+    ''' <summary>Item DI: the folder's `access` as a box for the recipients of this entry, with the identity pair that stays in clear
+    ''' (item BA: the host key fingerprint and the root). False when it cannot be sealed - this device has no key, no recipient takes it -
+    ''' and then nothing at all is published for the folder: there is no clear fallback (item DP). Nothing is logged but the fact.</summary>
+    Private Shared Function TrySeal(session As ExchangeControlSession, share As ExchangePlannedShare, deviceId As String,
+                                    ByRef boxJson As String, ByRef fingerprint As String, ByRef root As String) As Boolean
+        boxJson = ""
+        fingerprint = ""
+        root = ""
+        Dim info As ExchangeAccessInfo = Nothing
+        If Not ExchangeResourceAccess.TryRead(share.AccessJson, share.Name, info) Then Return False
+        Dim load As Func(Of ExchangeDeviceKey) = session.ConnectionOptions.OwnKey
+        Dim key As ExchangeDeviceKey = If(load Is Nothing, Nothing, load.Invoke())
+        If key Is Nothing Then Return False
+        Try
+            If Not ExchangeSealedAccess.SealAccess(share.AccessJson, share.ResourceId, deviceId, key, session.Sealed.Recipients(), boxJson) Then Return False
+        Finally
+            key.Dispose()
+        End Try
+        fingerprint = info.Code.Fingerprint
+        root = info.Root
+        Return True
     End Function
 
     ' --- planning and applying ---------------------------------------------------------------------------------------------
@@ -409,10 +459,15 @@ Friend NotInheritable Class ExchangePublisher
         End If
         ct.ThrowIfCancellationRequested()
         Dim state As ExchangeProducerState = If(publish, _options.Store.Load(deviceId), ExchangeProducerState.Empty)
+        ' spec 234 items DP, DF, DG: a folder is published sealed or not at all. The server must list `sealed`; this device must hold a key
+        ' and be a ready recipient of its own entry (the directory lists it with the capability and the key it holds).
+        Dim sealedView As ExchangeSealedRecipients = session.Sealed
         Dim inputs As New ExchangePublishInputs With {
             .Publish = publish, .ThirdPartyPort = _options.Settings.ThirdPartyPort(), .Status = status, .DeviceId = deviceId,
             .PublicEndpoint = session.PublicEndpoint, .IncludeExternal = Not _options.LanOnly.Invoke(),
-            .LanFallback = _options.LanFallback.Invoke(), .HasPin = _options.HasPin, .State = state}
+            .LanFallback = _options.LanFallback.Invoke(), .HasPin = _options.HasPin, .State = state,
+            .ServerSealed = Not sealedView.ServerKnown OrElse sealedView.ServerSealed,
+            .OwnKeyReady = sealedView.HasOwnKey AndAlso sealedView.Recipients().Count > 0}
         Dim plan As ExchangePublishPlan = ExchangePublishPlan.Build(inputs)
         If publish AndAlso (Not _lastBlockLogged.HasValue OrElse _lastBlockLogged.Value <> plan.Block) Then
             _lastBlockLogged = plan.Block
@@ -476,8 +531,10 @@ Friend NotInheritable Class ExchangePublisher
             Next
 
             Dim state2 As ExchangeProducerState = plan.State
+            ' read BEFORE the boxes are made: a set that moves meanwhile leaves an older number in the signature, so the next pass seals again
+            Dim recipientRevision As Long = session.Sealed.Revision
             For Each share As ExchangePlannedShare In plan.Shares
-                Dim signature As String = SignatureOf(share)
+                Dim signature As String = SignatureOf(share, recipientRevision)
                 Dim current As Published = Nothing
                 SyncLock _gate
                     _published.TryGetValue(share.Name, current)
@@ -498,7 +555,17 @@ Friend NotInheritable Class ExchangePublisher
         Dim request As Integer? = share.PublicPortRequest
         For attempt As Integer = 1 To 2
             Dim json As String = Nothing
-            If Not ExchangeResourceRecordBuilder.TryBuild(share.ResourceId, deviceId, share.Name, share.AccessJson, share.ShareId, request, _options.NowUtc.Invoke(), json, share.PinProtected) Then
+            ' item DI: the record carries `sealedAccess` and NO `access`; the identity pair stays in clear (item BA)
+            Dim boxJson As String = ""
+            Dim fingerprint As String = ""
+            Dim root As String = ""
+            If Not TrySeal(session, share, deviceId, boxJson, fingerprint, root) Then
+                SetPublished(share, signature, ExchangePublishState.Refused, ExchangeRefusal.Unknown)
+                _options.Log.Invoke("Exchange producer: resource " & ExchangeIds.ForLog(share.ResourceId) & " cannot be sealed for this account, nothing is published (e2e-missing)")
+                Return state
+            End If
+            If Not ExchangeResourceRecordBuilder.TryBuild(share.ResourceId, deviceId, share.Name, "", share.ShareId, request, _options.NowUtc.Invoke(), json, share.PinProtected,
+                                                          boxJson, fingerprint, root) Then
                 SetPublished(share, signature, ExchangePublishState.Refused, ExchangeRefusal.Capacity)
                 _options.Log.Invoke("Exchange producer: the record of resource " & ExchangeIds.ForLog(share.ResourceId) & " cannot be built")
                 Return state
@@ -637,7 +704,8 @@ Friend NotInheritable Class ExchangePublisher
     End Function
 
     ''' <summary>The FMSSFTP2 text of a share that has a link (a secret: shown through the window's guarded door, never logged). False
-    ''' when there is none.</summary>
+    ''' when there is none. The text is what leaves the account, so it carries no password (ANYWHERE-ACCESS item K): the person it is
+    ''' handed to is asked for the link's password instead.</summary>
     Public Function TryGetLinkCode(name As String, ByRef codeText As String) As Boolean
         codeText = ""
         Dim p As Published = Nothing
@@ -646,7 +714,12 @@ Friend NotInheritable Class ExchangePublisher
         End SyncLock
         Dim info As ExchangeAccessInfo = Nothing
         If Not ExchangeResourceAccess.TryRead(p.AccessJson, name, info) OrElse info.Code.ShareId.Length = 0 Then Return False
-        Return info.Code.TryBuild(codeText)
+        ' The install's shared login never leaves the account (DEVICE-EXCHANGE item L): the outsider code is written in the
+        ' key-login form - no `pw`. (The confined per-link login is owed by the worker proposal; until it exists the code
+        ' opens nothing without the producer's boundary learning the link's password.)
+        Dim outsider As New FmsSftpCode(info.Code.Hosts, info.Code.Port, info.Code.Username, Nothing, info.Code.Fingerprint,
+                                        info.Code.Exchange, info.Code.ShareId, info.Code.Drive)
+        Return outsider.TryBuild(codeText)
     End Function
 
     ''' <summary>What an export (.fmscfg + its QR) takes from this share's link: the server's endpoint, the share id and the granted
@@ -691,7 +764,10 @@ Friend NotInheritable Class ExchangePublisher
             .Mode = status.Mode, .Running = status.Running, .ListenPort = status.ListenPort, .Fingerprint = status.Fingerprint,
             .Username = status.Username, .Password = status.Password, .Roots = New List(Of ShareFolder) From {only},
             .Reachability = status.Reachability, .DesiredPort = status.DesiredPort}
-        Return ShareConfigBuilder.Build(narrowed, includeExternal:=True, exchange:=export)
+        ' The link's .fmscfg leaves the account: no shared password in it (DEVICE-EXCHANGE item L); the reader asks
+        ' for the link's password instead. The direct hosts stay - a worker that is not given the link's password
+        ' answers them with an authentication failure, which is the point.
+        Return ShareConfigBuilder.Build(narrowed, includeExternal:=True, includePassword:=False, exchange:=export)
     End Function
 
     ' --- tunnels (rule 6) --------------------------------------------------------------------------------------------------

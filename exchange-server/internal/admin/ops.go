@@ -44,6 +44,10 @@ type Ops struct {
 	SaveLimits func(accounts.Policy) error
 	// Clipboard is the running server's clipboard table (ticket 229); nil offline.
 	Clipboard Clipboard
+	// Sealed is true when the running server advertises `sealed` (DEVICE-EXCHANGE 27 item DP, ticket 234): a
+	// surface that shows the operator statement then shows the honest text (internal/statement) instead of
+	// the points of a server that cannot seal. A flag, never a key or a box.
+	Sealed bool
 }
 
 // ErrNotLive is the refusal of an operation that needs the running server.
@@ -147,7 +151,7 @@ func (o *Ops) SetKind(login, kind string) (changed bool, err error) {
 		}
 	}
 	for _, g := range received {
-		o.Dir.GrantRemoved(l, g.TargetID, g.Kind == accounts.GrantBroadcast)
+		o.Dir.GrantRemoved(DirectoryGrant(g), true)
 	}
 	o.Log.Info("account-kind-changed", logx.Login(l), logx.Text("kind", k))
 	return true, nil
@@ -178,7 +182,7 @@ func (o *Ops) RemoveAccount(login string) error {
 		o.Clipboard.Erase(l)
 	}
 	for _, g := range received {
-		o.Dir.GrantRemoved(l, g.TargetID, g.Kind == accounts.GrantBroadcast)
+		o.Dir.GrantRemoved(DirectoryGrant(g), true)
 	}
 	if err != nil {
 		return err
@@ -291,6 +295,7 @@ type Status struct {
 	KeepAwakeActive  bool   `json:"keepAwakeActive"`
 	KeepAwake        bool   `json:"keepAwake"`
 	LogRetentionDays int    `json:"logRetentionDays"`
+	Sealed           bool   `json:"sealed"` // the server advertises `sealed`: the honest statement applies (ticket 234)
 }
 
 // Status returns the totals.
@@ -298,7 +303,7 @@ func (o *Ops) Status() Status {
 	c := o.Dir.Counts()
 	s := Status{Accounts: o.Accounts.AccountCount(), MaxAccounts: o.Accounts.Policy().MaxAccounts,
 		Devices: len(o.Accounts.AllDevices()), Online: c.Online,
-		Resources: c.Resources, Broadcasts: c.Broadcasts, Tombstones: o.Accounts.Tombstones(), KeepAwakeActive: o.KeepAwakeActive}
+		Resources: c.Resources, Broadcasts: c.Broadcasts, Tombstones: o.Accounts.Tombstones(), KeepAwakeActive: o.KeepAwakeActive, Sealed: o.Sealed}
 	if o.Clipboard != nil {
 		s.Clipboards, s.ClipboardBytes = o.Clipboard.Counts()
 	}
@@ -483,6 +488,7 @@ func (o *Ops) SetPolicy(maxAccounts *int, defaults *accounts.AccountLimits) (Pol
 
 // GrantView is one thing given to a guest account.
 type GrantView struct {
+	GrantID   string `json:"grantId,omitempty"`
 	TargetID  string `json:"targetId"`
 	Kind      string `json:"kind"`
 	Guest     string `json:"guest"`
@@ -491,7 +497,27 @@ type GrantView struct {
 }
 
 func grantView(g accounts.Grant) GrantView {
-	return GrantView{TargetID: g.TargetID, Kind: g.Kind, Guest: g.Account, GrantedBy: g.GrantedBy, GrantedAt: g.GrantedAt}
+	return GrantView{GrantID: g.GrantID, TargetID: g.TargetID, Kind: g.Kind, Guest: g.Account, GrantedBy: g.GrantedBy, GrantedAt: g.GrantedAt}
+}
+
+// DirectoryGrant is a grant of the accounts store in the shape the directory works with.
+func DirectoryGrant(g accounts.Grant) directory.Grant {
+	return directory.Grant{ID: g.GrantID, Owner: g.GrantedBy, Guest: g.Account, Target: g.TargetID, Broadcast: g.Kind == accounts.GrantBroadcast}
+}
+
+// heldTarget reports ErrNoTarget unless the giving account holds the resource, or the live broadcast, now.
+func (o *Ops) heldTarget(owner, targetID, kind string) error {
+	switch kind {
+	case accounts.GrantResource:
+		if _, held := o.Dir.ResourceRecord(owner, targetID); !held {
+			return ErrNoTarget
+		}
+	case accounts.GrantBroadcast:
+		if _, _, held := o.Dir.LiveBroadcast(owner, targetID); !held {
+			return ErrNoTarget
+		}
+	}
+	return nil
 }
 
 // AddGrant gives a resource or a broadcast of a member account to a guest account. The target must be
@@ -505,23 +531,84 @@ func (o *Ops) AddGrant(owner, targetID, kind, guest string) error {
 	if !ok || !o.Accounts.Exists(gl) {
 		return accounts.ErrNoAccount
 	}
-	broadcast := kind == accounts.GrantBroadcast
-	switch kind {
-	case accounts.GrantResource:
-		if _, held := o.Dir.ResourceRecord(ol, targetID); !held {
-			return ErrNoTarget
-		}
-	case accounts.GrantBroadcast:
-		if _, _, held := o.Dir.LiveBroadcast(ol, targetID); !held {
-			return ErrNoTarget
-		}
+	if err := o.heldTarget(ol, targetID, kind); err != nil {
+		return err
 	}
 	if err := o.Accounts.AddGrant(ol, targetID, kind, gl); err != nil {
 		return err
 	}
-	o.Dir.GrantAdded(ol, gl, targetID, broadcast)
+	// the store chose the grantId; the directory needs it to name the grant to the guest and to the member
+	if g, ok := o.grantOf(ol, targetID, gl); ok {
+		o.Dir.GrantAdded(DirectoryGrant(g), nil, false)
+	}
 	o.Log.Info("grant-added", logx.Login(ol), grantTarget(kind, targetID))
 	return nil
+}
+
+// grantOf finds the grant of one target to one guest that a given account made.
+func (o *Ops) grantOf(owner, targetID, guest string) (accounts.Grant, bool) {
+	for _, g := range o.Accounts.GrantsOf(owner, targetID) {
+		if g.Account == guest {
+			return g, true
+		}
+	}
+	return accounts.Grant{}, false
+}
+
+// PutGrant is the `grant` of a device (20 item BD, amended by 27 item DJ): the member account `owner`
+// gives a resource or a live broadcast to the guest account `guest`, under the grantId the device chose,
+// with the payload p - the box, or the clear access or credentials - kept in memory for the guest. A grantId
+// the account already holds for the same target and guest replaces the payload of that grant and changes
+// nothing else (replaced). The error is one the caller turns into a refusal: ErrNoTarget, ErrNoAccount (an
+// account that does not exist), accounts.ErrNotGuest, ErrNotMember, ErrGrantID.
+func (o *Ops) PutGrant(owner, grantID, targetID, kind, guest string, p directory.GrantPayload) (replaced bool, err error) {
+	ol, ok := accounts.NormalizeLogin(owner)
+	if !ok || !o.Accounts.Exists(ol) {
+		return false, accounts.ErrNoAccount
+	}
+	gl, ok := accounts.NormalizeLogin(guest)
+	if !ok || !o.Accounts.Exists(gl) {
+		return false, accounts.ErrNoAccount
+	}
+	if err := o.heldTarget(ol, targetID, kind); err != nil {
+		return false, err
+	}
+	g, replaced, err := o.Accounts.PutGrant(ol, grantID, targetID, kind, gl)
+	if err != nil {
+		return false, err
+	}
+	o.Dir.GrantAdded(DirectoryGrant(g), &p, replaced)
+	if replaced {
+		o.Log.Info("grant-replaced", logx.Login(ol), grantTarget(kind, targetID))
+	} else {
+		o.Log.Info("grant-added", logx.Login(ol), grantTarget(kind, targetID))
+	}
+	return replaced, nil
+}
+
+// RemoveGrantByID is the `ungrant` of a device: any device of the owning account takes a grant back by its
+// grantId. An unknown grantId, or one of another account, is accounts.ErrNoGrant and changes nothing.
+func (o *Ops) RemoveGrantByID(owner, grantID string) error {
+	g, err := o.Accounts.RemoveGrantByID(owner, grantID)
+	if err != nil {
+		return err
+	}
+	o.Dir.GrantRemoved(DirectoryGrant(g), true)
+	o.Log.Info("grant-removed", logx.Login(g.GrantedBy), grantTarget(g.Kind, g.TargetID))
+	return nil
+}
+
+// DropTargetGrants takes back every grant of a target that has just left the directory - a resource
+// withdrawn, a broadcast ended (20 item BD). The guests were told with the target's own removal, so only
+// the member's own devices are told here.
+func (o *Ops) DropTargetGrants(owner, targetID string) {
+	for _, g := range o.Accounts.GrantsOf(owner, targetID) {
+		if _, err := o.Accounts.RemoveGrant(g.GrantedBy, g.TargetID, g.Account); err != nil {
+			continue
+		}
+		o.Dir.GrantRemoved(DirectoryGrant(g), false)
+		o.Log.Info("grant-ended", logx.Login(g.GrantedBy), grantTarget(g.Kind, g.TargetID))
+	}
 }
 
 // RemoveGrant takes a grant back; the guest is told.
@@ -530,7 +617,7 @@ func (o *Ops) RemoveGrant(owner, targetID, guest string) error {
 	if err != nil {
 		return err
 	}
-	o.Dir.GrantRemoved(g.Account, g.TargetID, g.Kind == accounts.GrantBroadcast)
+	o.Dir.GrantRemoved(DirectoryGrant(g), true)
 	o.Log.Info("grant-removed", logx.Login(g.GrantedBy), grantTarget(g.Kind, g.TargetID))
 	return nil
 }

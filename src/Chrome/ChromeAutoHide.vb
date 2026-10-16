@@ -78,6 +78,22 @@ Friend NotInheritable Class ChromeAutoHide
         Return nowMs - emptySinceMs >= ChromeMetrics.EmptyWindowHoldDelayMilliseconds
     End Function
 
+    ''' <summary>Whether the status panel is held up by a file operation (the "show operations in the status line"
+    ''' setting). Up while any operation is queued or running, and for
+    ''' <see cref="ChromeMetrics.FileOperationRevealMilliseconds"/> after the last one was started or finished -
+    ''' so a quick run of keys keeps ONE showing that ends a fixed time after the final press, instead of a
+    ''' flash per press. <paramref name="lastOperationMs"/> is the chrome clock's reading then, -1 = none yet.
+    ''' Off means off: the panel keeps its ordinary pin / pointer / text-change rules.</summary>
+    Public Shared Function FileOperationRevealHeld(enabled As Boolean,
+                                                   nowMs As Long,
+                                                   lastOperationMs As Long,
+                                                   operationsInFlight As Integer) As Boolean
+        If Not enabled Then Return False
+        If operationsInFlight > 0 Then Return True
+        If lastOperationMs < 0L Then Return False
+        Return nowMs - lastOperationMs < ChromeMetrics.FileOperationRevealMilliseconds
+    End Function
+
     ''' <summary>Where the reveal zone of the TOP rows ends: the bottom of the lowest of them plus the zone
     ''' margin, for every top row alike. Each row used to measure from its own bottom, so row 2 (which sits
     ''' below row 1) hung alone in the band between the two zones (125 UX-308).</summary>

@@ -47,8 +47,20 @@ var (
 	// a wire envelope, a record or a string built from one handed to the logger
 	envelopeArg = regexp.MustCompile(`logx\.\w+\([^)]*(?:\bwire\.(?:Encode|Frame|Record|Envelope)|\.Marshal\(|json\.|Encode\(|\.Raw\b|Envelope)`)
 	// a forbidden field KEY (DEVICE-EXCHANGE 7.9: a log never carries these)
-	badKey = regexp.MustCompile(`logx\.(?:Text|Int)\(\s*"(?:token|password|pairingCode|access|shareId|broadcastId|deviceToken|resourceId|deviceId|tunnelId|secret|invitationCode)"`)
+	// The names of sealed content and of the keys around it (DEVICE-EXCHANGE 27 items DH, DI, DL, DQ, ticket 234)
+	// are forbidden keys as well: whatever such a field would carry is a box, a key or bytes of a record.
+	badKey = regexp.MustCompile(`logx\.(?:Text|Int)\(\s*"(?:token|password|pairingCode|access|shareId|broadcastId|deviceToken|resourceId|deviceId|tunnelId|secret|invitationCode|` +
+		`sealed|sealedAccess|box|keyRing|ring|e2eKey|kem|fromKey|ct|wk|enc|chunk|payload|relayKey|tunnelPin|credentials|verifier|verifiers)"`)
+	// A sealed box, a sealed value, a key, a key ring or the bytes of a chunk or a record handed to Text (27 item
+	// DQ: the server holds them as opaque bytes and never writes one down, not even a prefix). Applied to a source
+	// whose string literals are blanked, so a fixed word such as "sealed" in a message is no finding.
+	sealedArg = regexp.MustCompile(`logx\.Text\([^)]*(?:\.Sealed\b|\b[Ss]ealed\w*\b|\.Box\b|\b[Bb]ox\w*\b|[Kk]eyRing|[Rr]elayKey|[Tt]unnelPin|[Ee]2[Ee][Kk]ey|` +
+		`\.KEM\b|\bkem\b|[Ff]romKey|\.Payload\b|\bpayload\b|\.Chunk\b|\bchunk\b|\.Wk\b|\bwk\b|\.Enc\b|\.Ct\b|\bct\b)`)
+	stringLiteral = regexp.MustCompile("\"(?:[^\"\\\\\\n]|\\\\.)*\"|`[^`]*`")
 )
+
+// blankStrings replaces every string literal of a source with an empty one, keeping the rest.
+func blankStrings(s string) string { return stringLiteral.ReplaceAllString(s, `""`) }
 
 // TestStaticGuard is DEVICE-EXCHANGE 7.9 as a source scan (tickets 139 T-4 and 167 rules 4 and 5):
 // the log is the only way out for an id, and it names an id by its 8-hex fingerprint only.
@@ -79,6 +91,9 @@ func TestStaticGuard(t *testing.T) {
 		if badKey.MatchString(s) {
 			t.Errorf("%s uses a forbidden log field key", rel)
 		}
+		if sealedArg.MatchString(blankStrings(s)) {
+			t.Errorf("%s passes a box, a sealed value, a key, a key ring or chunk bytes to logx.Text", rel)
+		}
 	}
 }
 
@@ -102,6 +117,24 @@ func TestGuardPatternsCatch(t *testing.T) {
 			t.Errorf("the Text-argument pattern misses %s", bad)
 		}
 	}
+	// sealed content (ticket 234 item DQ): a box, a sealed access, a key, a key ring, chunk bytes, in any spelling
+	for _, bad := range []string{
+		`logx.Text("b", box)`, `logx.Text("b", string(m.Box))`, `logx.Text("s", rec.SealedAccess)`, `logx.Text("s", v.Sealed)`,
+		`logx.Text("s", string(sealedBody))`, `logx.Text("k", e2eKey)`, `logx.Text("k", dev.E2EKey)`, `logx.Text("k", keyRing)`,
+		`logx.Text("k", hex.EncodeToString(chunk.Payload))`, `logx.Text("k", string(payload))`, `logx.Text("k", env.FromKey)`,
+		`logx.Text("k", kem)`, `logx.Text("k", wk)`, `logx.Text("k", e.Enc)`, `logx.Text("k", ct)`, `logx.Text("k", relayKey)`,
+		`logx.Text("k", tunnelPin)`,
+	} {
+		if !sealedArg.MatchString(blankStrings(bad)) {
+			t.Errorf("the sealed-content pattern misses %s", bad)
+		}
+	}
+	for _, bad := range []string{`logx.Text("sealed", x)`, `logx.Text("box", x)`, `logx.Int("e2eKey", 1)`, `logx.Text( "keyRing", x)`,
+		`logx.Text("payload", x)`, `logx.Text("fromKey", x)`, `logx.Text("wk", x)`, `logx.Text("tunnelPin", x)`} {
+		if !badKey.MatchString(bad) {
+			t.Errorf("the key pattern misses %s", bad)
+		}
+	}
 	for _, bad := range []string{`logx.Text("e", wire.Encode(x))`, `logx.Text("e", string(raw.Raw))`, `logx.Text("j", json.Marshal(x))`} {
 		if !envelopeArg.MatchString(bad) {
 			t.Errorf("the envelope pattern misses %s", bad)
@@ -114,6 +147,14 @@ func TestGuardPatternsCatch(t *testing.T) {
 	}
 	for _, ok := range []string{`logx.Text("why", ternary(c, "a", "b"))`, `logx.Text("kind", "sftp-share")`, `logx.Device(id)`} {
 		if textArg.MatchString(ok) || badKey.MatchString(ok) || envelopeArg.MatchString(ok) {
+			t.Errorf("a clean call is flagged: %s", ok)
+		}
+	}
+	// the fixed words and enums of sealed content are clean: a kind, a reason, a size class, a count
+	for _, ok := range []string{`logx.Text("kind", "sealed")`, `logx.Text("kind", v.Kind)`, `logx.Text("why", chunkWhy(err))`,
+		`logx.Text("size", sizeClass(m.Size))`, `logx.Text("reason", "sealed content is not accepted")`, `logx.Text("kind", wire.ClipKindSealed)`,
+		`logx.Int("chunks", n)`, `logx.Int("bytes", len(payload))`, `logx.Text("why", "payload too large")`} {
+		if sealedArg.MatchString(blankStrings(ok)) || badKey.MatchString(ok) {
 			t.Errorf("a clean call is flagged: %s", ok)
 		}
 	}

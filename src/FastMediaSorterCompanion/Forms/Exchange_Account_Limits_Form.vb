@@ -98,8 +98,8 @@ Friend NotInheritable Class Exchange_Account_Limits_Form
         body.Controls.Add(_numBroadcastsPerDevice)
 
         _numClipboardMB = New NumericUpDown With {.Minimum = 0, .Maximum = Math.Max(1048576, clipMbVal), .Value = clipMbVal, .Width = 120,
-            .AccessibleName = Localization.T("Лимит буфера обмена, МБ")}
-        body.Controls.Add(New Label With {.AutoSize = True, .Margin = New Padding(0, 6, 0, 2), .Text = Localization.T("Лимит буфера обмена, МБ (0 = по умолчанию 5 ГБ):")})
+            .AccessibleName = Localization.T("Лимит буфера, МБ")}
+        body.Controls.Add(New Label With {.AutoSize = True, .Margin = New Padding(0, 6, 0, 2), .Text = Localization.T("Лимит буфера, МБ (0 = по умолчанию 5 ГБ):")})
         body.Controls.Add(_numClipboardMB)
 
         Dim buttons As New FlowLayoutPanel With {.AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink, .FlowDirection = FlowDirection.LeftToRight,

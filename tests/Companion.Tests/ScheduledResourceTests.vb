@@ -14,13 +14,19 @@ Imports Xunit
 Public Class ScheduledResourceTests
 
     ''' <summary>An SFTP-like server held in memory: "/dir/name" paths, listing under a folder, upload and download.</summary>
-    Private NotInheritable Class FakeServer
-        Implements IFileSystemProvider, ITypedStatProvider
+    Friend NotInheritable Class FakeServer
+        Implements IFileSystemProvider, ITypedStatProvider, IDisposable
 
         Friend ReadOnly Files As New Dictionary(Of String, Byte())(StringComparer.Ordinal)
         Friend ReadOnly Times As New Dictionary(Of String, DateTime)(StringComparer.Ordinal)
         Friend ReadOnly Folders As New HashSet(Of String)(StringComparer.Ordinal) From {"/"}
         Friend Disposed As Integer
+        ''' <summary>What the server really keeps of an upload: a test makes it lose bytes to prove a move never trusts the upload alone.</summary>
+        Friend UploadTransform As Func(Of Byte(), Byte())
+
+        Public Sub Dispose() Implements IDisposable.Dispose
+            Disposed += 1
+        End Sub
 
         Public ReadOnly Property Kind As ResourceKind Implements IFileSystemProvider.Kind
             Get
@@ -82,7 +88,7 @@ Public Class ScheduledResourceTests
         End Sub
 
         Public Sub Upload(localPath As String, remotePath As String, progress As IProgress(Of Long), ct As CancellationToken) Implements IFileSystemProvider.Upload
-            Files(remotePath) = File.ReadAllBytes(localPath)
+            Files(remotePath) = If(UploadTransform Is Nothing, File.ReadAllBytes(localPath), UploadTransform.Invoke(File.ReadAllBytes(localPath)))
             Times(remotePath) = DateTime.UtcNow
             progress?.Report(Files(remotePath).Length)
         End Sub

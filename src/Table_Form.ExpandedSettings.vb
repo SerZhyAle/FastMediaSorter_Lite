@@ -193,6 +193,9 @@ Partial Public Class Table_Form
                             Function() {Choice("next", "Следующий файл"), Choice("stay", "Остаться на текущем"), Choice("closeIfEmpty", "Закрыть, если файлов не осталось")},
                             Function() Main_Form.GetModernPreferences().AfterFileOperation,
                             Sub(v) Main_Form.GetModernPreferences().AfterFileOperation = v)
+        AddPreferenceCheck(files, "reveal_status_on_file_op",
+                           Function() Main_Form.GetModernPreferences().RevealStatusOnFileOperation,
+                           Sub(v) Main_Form.GetModernPreferences().RevealStatusOnFileOperation = v)
         AddPreferenceCheck(files, "create_missing_destination",
                            Function() Main_Form.GetModernPreferences().CreateMissingDestination,
                            Sub(v) Main_Form.GetModernPreferences().CreateMissingDestination = v)

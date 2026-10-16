@@ -186,6 +186,10 @@ Friend Enum ScheduledIssueCode
     DefinitionUnreadable = 18
     ''' <summary>An exchange link or another tunnelled resource: not usable unattended in this version.</summary>
     ResourceUnsupported = 17
+    ''' <summary>Both source and destination cannot be Google Drive in one operation (ticket 231, 3.2).</summary>
+    DriveBothSides = 19
+    ''' <summary>Delete is not offered when a side is Google Drive (ticket 231, 3.2).</summary>
+    DriveDeleteUnsupported = 20
 End Enum
 
 Friend NotInheritable Class ScheduledIssue
@@ -386,6 +390,15 @@ Friend Module ScheduledValidation
         If op.Action = ScheduledAction.Archive AndAlso
            (op.Source.Kind = ScheduledLocationKind.Resource OrElse op.Destination.Kind = ScheduledLocationKind.Resource) Then
             issues.Add(New ScheduledIssue(ScheduledIssueCode.ArchiveNeedsPaths))
+        End If
+
+        If op.Source.Kind = ScheduledLocationKind.Drive AndAlso op.NeedsDestination AndAlso
+           op.Destination.Kind = ScheduledLocationKind.Drive Then
+            issues.Add(New ScheduledIssue(ScheduledIssueCode.DriveBothSides))
+        End If
+
+        If op.Action = ScheduledAction.Delete AndAlso op.Source.Kind = ScheduledLocationKind.Drive Then
+            issues.Add(New ScheduledIssue(ScheduledIssueCode.DriveDeleteUnsupported))
         End If
 
         ' Registered resources (4.3): the registry belongs to another program, so its answers come in as facts.

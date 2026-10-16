@@ -50,7 +50,7 @@ It supports a wide range of media formats and provides features such as:
   plugin scavenger hunt, and nothing that depends on Internet Explorer still being
   installed
 
-## Mobile Version
+## Android version
 
 Want to sort media from the comfort of the couch? Check out **Fast Media Sorter & Organizer** - a powerful Android application with support for local files, network drives (SMB, SFTP, FTP), and cloud storage (Google Drive, OneDrive, Dropbox):
 
@@ -66,7 +66,7 @@ Features include:
 - Favorites system and PIN protection
 - Advanced gestures and keyboard navigation
 
-**Desktop as copilot:** Fast Media Sorter can act as the mobile app's server - its built-in SFTP service publishes the folders you pick, so the Android app browses this PC directly, on your home network or over the internet. That is the next section.
+**Desktop as copilot:** Fast Media Sorter can act as the Android app's server - its built-in SFTP service publishes the folders you pick, so the Android app browses this PC directly, on your home network or over the internet. That is the next section.
 
 ## Your folders over SFTP
 

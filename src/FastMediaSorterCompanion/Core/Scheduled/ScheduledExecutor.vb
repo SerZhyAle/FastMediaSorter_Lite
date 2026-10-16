@@ -50,6 +50,8 @@ End Class
 Friend NotInheritable Class ScheduledServices
 
     Friend Property Clock As Func(Of DateTime) = Function() DateTime.Now
+    ''' <summary>The local time zone of the wall clock (ticket 231, 3.7).</summary>
+    Friend Property TimeZone As Func(Of TimeZoneInfo) = Function() TimeZoneInfo.Local
     Friend Property KindOf As Func(Of String, MediaKind) = Function(name As String) MediaKindClassifier.KindOf(name)
     ''' <summary>The folders no operation may touch. Nothing means none (tests).</summary>
     Friend Property Protection As ProtectedFolders
@@ -58,6 +60,10 @@ Friend NotInheritable Class ScheduledServices
     Friend Property OpenSide As Func(Of ScheduledLocation, ScheduledSideOpen) = AddressOf OpenDefaultSide
     ''' <summary>The facts of a registered resource, from the viewer's registry (read, never written).</summary>
     Friend Property ResourceFacts As Func(Of String, ScheduledResourceFacts) = Function(id As String) ScheduledResourceRegistry.Lookup(id)
+    ''' <summary>Whether the user is signed in to Google in the Exchange settings (ticket 231, 3.2).</summary>
+    Friend Property IsDriveSignedIn As Func(Of Boolean) = AddressOf ScheduledDriveRegistry.IsSignedIn
+    ''' <summary>Called when a run ends in Failed or Wall on an operation with <see cref="ScheduledOperation.ShowBalloonOnError"/> (ticket 231, 3.5).</summary>
+    Friend Property NotifyError As Action(Of ScheduledOperation, ScheduledRunResult)
     ''' <summary>Which transfer moves the bytes between two sides: plain System.IO between two local folders, the
     ''' viewer's checked executor when either end is a resource.</summary>
     Friend Property TransferFor As Func(Of IScheduledSide, IScheduledSide, IScheduledTransfer) =
@@ -86,6 +92,9 @@ Friend NotInheritable Class ScheduledServices
     End Function
 
     Private Shared Function OpenDefaultSide(location As ScheduledLocation) As ScheduledSideOpen
+        If location.Kind = ScheduledLocationKind.Drive Then
+            Return ScheduledDriveRegistry.OpenSide(location)
+        End If
         If location.Kind = ScheduledLocationKind.Resource Then
             Return ScheduledResourceSides.Open(location, location.Recursive, CancellationToken.None)
         End If
@@ -259,6 +268,9 @@ Friend NotInheritable Class ScheduledExecutor
             Return Stopping(ScheduledRunOutcome.Refused, "invalid definition: " & op.HaltDetail)
         End If
         If issues.Count > 0 Then
+            If forRun AndAlso issues(0).Code = ScheduledIssueCode.ResourcePinLocked Then
+                Return Stopping(ScheduledRunOutcome.Wall, "pin-locked|" & issues(0).Detail, ScheduledHalt.Wall)
+            End If
             Dim refused As Resolution = Stopping(ScheduledRunOutcome.Refused, "issue-" & issues(0).Code.ToString() & "|" & issues(0).Detail)
             refused.StopResult.Issues = issues
             Return refused
@@ -311,6 +323,9 @@ Friend NotInheritable Class ScheduledExecutor
             Case SideProblemKind.ResourceRemoved
                 ' Not a wall: the operation is halted until the user re-points it (4.3).
                 Return Stopping(ScheduledRunOutcome.Refused, "resource-removed|" & problem.Detail, ScheduledHalt.ResourceRemoved)
+            Case SideProblemKind.Offline
+                ' An offline target or network skips the run without halting the operation (ticket 231, 3.5).
+                Return Stopping(ScheduledRunOutcome.Skipped, which & "-offline|" & problem.Detail, ScheduledHalt.None)
             Case Else
                 ' "source-unreachable|D:\Photos" - a code and the place; the words come at display time.
                 Return Stopping(ScheduledRunOutcome.Wall, which & "-" & ProblemCode(problem.Kind) & "|" & problem.Detail, ScheduledHalt.Wall)
@@ -322,8 +337,19 @@ Friend NotInheritable Class ScheduledExecutor
             Case SideProblemKind.Denied : Return "denied"
             Case SideProblemKind.NoCredential : Return "no-credential"
             Case SideProblemKind.KeyNotPinned : Return "key-not-pinned"
+            Case SideProblemKind.DeviceRevoked : Return "device-revoked"
+            Case SideProblemKind.ExchangeCertificateChanged : Return "exchange-certificate"
+            Case SideProblemKind.SignedOut : Return "signed-out"
+            Case SideProblemKind.PinLocked : Return "pin-locked"
+            Case SideProblemKind.Offline : Return "offline"
             Case Else : Return "unreachable"
         End Select
+    End Function
+
+    Private Shared Function IsDriveSide(side As IScheduledSide, location As ScheduledLocation) As Boolean
+        If location IsNot Nothing AndAlso location.Kind = ScheduledLocationKind.Drive Then Return True
+        Dim providerSide As ProviderSide = TryCast(side, ProviderSide)
+        Return providerSide IsNot Nothing AndAlso providerSide.IsDrive
     End Function
 
     ''' <summary>Plans the destination names. Copy and move keep the relative path (4.2) and settle a taken
@@ -369,7 +395,9 @@ Friend NotInheritable Class ScheduledExecutor
     ' --- copy and move ----------------------------------------------------------------------------
 
     Private Sub ExecuteTransfers(op As ScheduledOperation, resolved As Resolution, result As ScheduledRunResult, ct As CancellationToken)
-        Dim moving As Boolean = op.Action = ScheduledAction.Move
+        ' Ticket 231, 3.2: when "via Google Drive" is the source, the picked-up item is removed from the
+        ' exchange channel on Drive once the destination copy is verified (Drive is a channel, not a second copy).
+        Dim moving As Boolean = op.Action = ScheduledAction.Move OrElse IsDriveSide(resolved.Source, op.Source)
         Dim transfer As IScheduledTransfer = services.TransferFor.Invoke(resolved.Source, resolved.Destination)
         For Each item As PlannedItem In resolved.Items
             If item.Skip Then
@@ -386,7 +414,8 @@ Friend NotInheritable Class ScheduledExecutor
                         Case MoveOutcome.Moved
                             result.Files += 1
                             result.Bytes += item.Entry.Length
-                            Journal(op, "move", resolved.Source.Combine(item.Entry.RelativePath),
+                            Journal(op, If(op.Action = ScheduledAction.Move, "move", "drive-pickup"),
+                                    resolved.Source.Combine(item.Entry.RelativePath),
                                     resolved.Destination.Combine(item.TargetRelative), "")
                         Case MoveOutcome.SourceChanged
                             ' Not an error: the file is still where it was and the next run sees it as it is.
@@ -454,7 +483,7 @@ Friend NotInheritable Class ScheduledExecutor
     ''' </summary>
     Friend Function DeleteVerdictFor(location As ScheduledLocation, fileSizeBytes As Long) As DeleteDecision
         Dim binOn As Boolean = services.DeleteToRecycleBin.Invoke()
-        If location.Kind = ScheduledLocationKind.Resource Then
+        If location.Kind = ScheduledLocationKind.Resource OrElse location.Kind = ScheduledLocationKind.Drive Then
             ' There is no SFTP bin and none is claimed (4.3).
             Return DeletePolicy.DecideForProvider(New ProviderCapabilities(hasRecycleBin:=False), Nothing, fileSizeBytes, binOn, False)
         End If
@@ -538,7 +567,9 @@ Friend NotInheritable Class ScheduledExecutor
 
         Dim archiveName As String = ScheduledArchiveWriter.ArchiveFileName(resolved.Source.Root, result.StartedAt)
         Dim finalPath As String = resolved.Destination.Combine(archiveName)
-        Dim written As ArchiveWriteResult = ScheduledArchiveWriter.Write(resolved.Source, entries, finalPath, ct)
+        Dim remoteDest As Boolean = Not resolved.Destination.IsLocalPath
+        Dim written As ArchiveWriteResult = ScheduledArchiveWriter.Write(resolved.Source, entries, finalPath, ct,
+            resolved.Destination, If(remoteDest, services.AfterArchiveWritten, Nothing))
         result.ArchivePath = written.ArchivePath
         result.Files = written.Written.Count
         result.Bytes = written.Bytes
@@ -547,16 +578,20 @@ Friend NotInheritable Class ScheduledExecutor
             If result.FirstError.Length = 0 Then result.FirstError = ScheduledFailure.Coded(failure.Value, failure.Key.RelativePath)
         Next
 
-        services.AfterArchiveWritten?.Invoke(written.ArchivePath)
-        If Not op.DeleteOriginalsAfterVerify OrElse written.ArchivePath.Length = 0 Then Return
+        If Not remoteDest Then services.AfterArchiveWritten?.Invoke(written.ArchivePath)
+        Dim removeSource As Boolean = op.DeleteOriginalsAfterVerify OrElse IsDriveSide(resolved.Source, op.Source)
+        If Not removeSource OrElse written.ArchivePath.Length = 0 Then Return
 
         ' D4: the archive is read back and proved BEFORE a single original is touched. A failed proof
-        ' keeps every original and the archive, and reports.
-        Dim problem As String = ScheduledArchiveWriter.Verify(written.ArchivePath, written.Written, ct)
-        If problem.Length > 0 Then
-            result.Failed += 1
-            If result.FirstError.Length = 0 Then result.FirstError = ScheduledFailure.Coded("archive-unverified", problem)
-            Return
+        ' keeps every original and the archive, and reports. (For a remote destination, Write verified
+        ' the local zip before uploading and ProviderTransfer verified the uploaded bytes.)
+        If Not remoteDest Then
+            Dim problem As String = ScheduledArchiveWriter.Verify(written.ArchivePath, written.Written, ct)
+            If problem.Length > 0 Then
+                result.Failed += 1
+                If result.FirstError.Length = 0 Then result.FirstError = ScheduledFailure.Coded("archive-unverified", problem)
+                Return
+            End If
         End If
 
         Dim tally As New VerdictTally()
@@ -565,13 +600,20 @@ Friend NotInheritable Class ScheduledExecutor
             If Not record.Stable Then Continue For
             Dim path As String = resolved.Source.Combine(record.Entry.RelativePath)
             Try
-                ' The original must still be the file that was archived.
-                If Not LocalTransfer.SameAsListed(path, record.Entry) Then Continue For
-                Dim verdict As String = DeleteOne(path, record.Entry.Length)
+                Dim verdict As String
+                If resolved.Source.IsLocalPath Then
+                    ' The original must still be the file that was archived.
+                    If Not LocalTransfer.SameAsListed(path, record.Entry) Then Continue For
+                    verdict = DeleteOne(path, record.Entry.Length)
+                Else
+                    verdict = services.TransferFor.Invoke(resolved.Source, resolved.Source).DeleteFile(resolved.Source, record.Entry, ct)
+                End If
                 tally.Add(verdict)
                 Journal(op, "archive-delete", path, written.ArchivePath, verdict)
             Catch ex As OperationCanceledException
                 Throw
+            Catch ex As SourceChangedException
+                Continue For
             Catch ex As Exception
                 AppFileLogger.LogException("Scheduled operations: " & record.Entry.RelativePath, ex)
                 result.Failed += 1

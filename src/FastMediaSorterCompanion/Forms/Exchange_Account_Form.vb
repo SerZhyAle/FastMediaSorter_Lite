@@ -65,7 +65,9 @@ Friend NotInheritable Class Exchange_Account_Form
     Private ReadOnly _publishNow As Boolean
     Private _lblResult As Label
     Private _btnSignIn As Button
+    Private _btnDiagnose As Button
     Private _btnCancel As Button
+    Private _lastDiagnosisMessage As ConnectionDiagnosisMessage = Nothing
 
     Private _probe As ExchangeCertificateInfo
     Private _trusted As Boolean
@@ -223,6 +225,10 @@ Friend NotInheritable Class Exchange_Account_Form
         _btnCancel = NewButton(Localization.T("Отмена"), "action.cancel", ButtonGlyphRole.Dismissing)
         _btnCancel.DialogResult = DialogResult.Cancel
         buttons.Controls.Add(_btnSignIn)
+        _btnDiagnose = NewButton(ConnectionDiagnosisLocalization.DoorButtonText(Localization.CurrentCode), "action.test-connection")
+        _btnDiagnose.Visible = False
+        AddHandler _btnDiagnose.Click, AddressOf OnDiagnoseClicked
+        buttons.Controls.Add(_btnDiagnose)
         buttons.Controls.Add(_btnCancel)
         body.Controls.Add(buttons)
 
@@ -248,6 +254,9 @@ Friend NotInheritable Class Exchange_Account_Form
     Private Sub ShowResult(text As String)
         _lblResult.Text = text
         _lblResult.Visible = text.Length > 0
+        If String.IsNullOrEmpty(text) AndAlso _btnDiagnose IsNot Nothing Then
+            _btnDiagnose.Visible = False
+        End If
     End Sub
 
     Private Sub FitAccountToWorkingArea()
@@ -447,7 +456,18 @@ Friend NotInheritable Class Exchange_Account_Form
         Catch ex As ExchangeConnectException
             _probe = Nothing
             _lblResult.ForeColor = CollapsibleSection.AttentionColor
+            If ex.Failure = ExchangeConnectFailure.TlsFailed Then
+                _lastDiagnosisMessage = ConnectionDiagnosisMessages.TlsFailed
+            ElseIf ex.Failure = ExchangeConnectFailure.TimedOut Then
+                _lastDiagnosisMessage = ConnectionDiagnosisMessages.Timeout
+            Else
+                _lastDiagnosisMessage = ConnectionDiagnosisMessages.UnreachableServer
+            End If
             ShowResult(ConnectFailureText(ex.Failure))
+            If _btnDiagnose IsNot Nothing Then
+                _btnDiagnose.Text = ConnectionDiagnosisLocalization.DoorButtonText(Localization.CurrentCode)
+                _btnDiagnose.Visible = True
+            End If
         Catch ex As OperationCanceledException
             ' the window closed
         Finally
@@ -588,9 +608,55 @@ Friend NotInheritable Class Exchange_Account_Form
             _pnlCert.Visible = False
             _btnSignIn.Visible = False
         End If
+        Select Case result.Outcome
+            Case ExchangeEnrollOutcome.Refused
+                Select Case result.Refusal
+                    Case ExchangeRefusal.BadCredentials
+                        _lastDiagnosisMessage = ConnectionDiagnosisMessages.BadCredentials
+                    Case ExchangeRefusal.DeviceRevoked
+                        _lastDiagnosisMessage = ConnectionDiagnosisMessages.DeviceRevoked
+                    Case ExchangeRefusal.RateLimited
+                        _lastDiagnosisMessage = ConnectionDiagnosisMessages.RateLimited
+                    Case ExchangeRefusal.TlsRequired
+                        _lastDiagnosisMessage = ConnectionDiagnosisMessages.TlsRequired
+                    Case ExchangeRefusal.VersionUnsupported
+                        _lastDiagnosisMessage = ConnectionDiagnosisMessages.VersionUnsupported
+                    Case Else
+                        _lastDiagnosisMessage = ConnectionDiagnosisMessages.Refused
+                End Select
+            Case ExchangeEnrollOutcome.PinMismatch, ExchangeEnrollOutcome.Untrusted
+                _lastDiagnosisMessage = ConnectionDiagnosisMessages.CertificateChanged
+            Case ExchangeEnrollOutcome.TlsFailed
+                _lastDiagnosisMessage = ConnectionDiagnosisMessages.TlsFailed
+            Case ExchangeEnrollOutcome.TimedOut
+                _lastDiagnosisMessage = ConnectionDiagnosisMessages.Timeout
+            Case ExchangeEnrollOutcome.Network
+                _lastDiagnosisMessage = ConnectionDiagnosisMessages.UnreachableServer
+            Case Else
+                _lastDiagnosisMessage = ConnectionDiagnosisMessages.UnreachableServer
+        End Select
+
         _lblResult.ForeColor = CollapsibleSection.AttentionColor
         ShowResult(If(_register, ExchangeJoinText.RegisterFailure(result), ExchangeDeviceText.EnrollFailure(result)))
+        If _btnDiagnose IsNot Nothing Then
+            _btnDiagnose.Text = ConnectionDiagnosisLocalization.DoorButtonText(Localization.CurrentCode)
+            _btnDiagnose.Visible = True
+        End If
         _txtSecret.Focus()
+    End Sub
+
+    Private Sub OnDiagnoseClicked(sender As Object, e As EventArgs)
+        Dim serverText As String = If(_txtServer IsNot Nothing, _txtServer.Text.Trim(), "")
+        Dim host As String = serverText
+        Dim port As Integer = 443
+        If host.Contains(":"c) Then
+            Dim parts = host.Split(":"c)
+            host = parts(0)
+            Integer.TryParse(parts(1), port)
+        End If
+        Dim msg As ConnectionDiagnosisMessage = If(_lastDiagnosisMessage, ConnectionDiagnosisMessages.UnreachableServer)
+        Dim ctx As New ConnectionDiagnosisContext(host, port, ConnectionDiagnosisTarget.Server, msg)
+        Dim ignored = Connection_Diagnosis_Dialog.RunAndShowAsync(Me, ctx)
     End Sub
 
     Private Function ValidateRegistrationPassword() As Boolean

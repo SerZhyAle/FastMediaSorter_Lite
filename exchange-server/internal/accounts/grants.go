@@ -18,6 +18,9 @@ var (
 	ErrNotGuest       = errors.New("accounts: the account given to is not a guest account")
 	ErrNotMember      = errors.New("accounts: only a member account gives")
 	ErrBadGrantTarget = errors.New("accounts: a grant gives a resource or a broadcast")
+	// ErrGrantID is a grantId already held by another grant (of another account, or of the same account for
+	// another target or guest): a `grant` that names it is not the replacement of item DJ.
+	ErrGrantID = errors.New("accounts: the grantId is held by another grant")
 )
 
 // What a grant gives: the Kind of a Grant.
@@ -29,10 +32,11 @@ const (
 // Grant gives ONE resource or ONE broadcast of a member account to ONE guest account (DEVICE-EXCHANGE 19
 // item AO, 20 item BD). The grant is the guest's whole view of the account that gave it.
 type Grant struct {
-	TargetID  string `json:"targetId"`       // resourceId or broadcastId
-	Kind      string `json:"kind,omitempty"` // GrantResource or GrantBroadcast
-	Account   string `json:"account"`        // the guest account's login
-	GrantedBy string `json:"grantedBy"`      // the giving account's login
+	GrantID   string `json:"grantId,omitempty"` // the id the giving device chose (item BD); an older file's rows get one on load
+	TargetID  string `json:"targetId"`          // resourceId or broadcastId
+	Kind      string `json:"kind,omitempty"`    // GrantResource or GrantBroadcast
+	Account   string `json:"account"`           // the guest account's login
+	GrantedBy string `json:"grantedBy"`         // the giving account's login
 	GrantedAt string `json:"grantedAt"`
 }
 
@@ -75,39 +79,90 @@ func (s *Store) saveGrantsLocked() error {
 // `guest`. The giver must be a member and the receiver a guest of this deployment; whether the target
 // exists is the directory's to say, the store only records who may see what.
 func (s *Store) AddGrant(owner, targetID, kind, guest string) error {
+	_, _, err := s.putGrant(owner, wire.NewID(), targetID, kind, guest, false)
+	return err
+}
+
+// PutGrant is the `grant` of a device (item BD, amended by item DJ): it records a new grant under the
+// grantId the device chose, or - when the giving account already holds that grantId for the same target and
+// guest - finds the grant it replaces (replaced is true) and changes nothing in the store: a grant's box is
+// not the store's. A grantId held by another grant, or a target and guest already given under another
+// grantId, is ErrGrantID.
+func (s *Store) PutGrant(owner, grantID, targetID, kind, guest string) (g Grant, replaced bool, err error) {
+	return s.putGrant(owner, grantID, targetID, kind, guest, true)
+}
+
+func (s *Store) putGrant(owner, grantID, targetID, kind, guest string, byDevice bool) (Grant, bool, error) {
 	owner, ok := NormalizeLogin(owner)
 	if !ok {
-		return ErrNoAccount
+		return Grant{}, false, ErrNoAccount
 	}
 	guest, ok = NormalizeLogin(guest)
 	if !ok {
-		return ErrBadLogin
+		return Grant{}, false, ErrBadLogin
 	}
-	if kind != GrantResource && kind != GrantBroadcast || !wire.ValidID(targetID) {
-		return ErrBadGrantTarget
+	if kind != GrantResource && kind != GrantBroadcast || !wire.ValidID(targetID) || !wire.ValidID(grantID) {
+		return Grant{}, false, ErrBadGrantTarget
 	}
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	o, g := s.accounts[owner], s.accounts[guest]
 	if o == nil || g == nil {
-		return ErrNoAccount
+		return Grant{}, false, ErrNoAccount
 	}
 	if o.Kind == KindGuest {
-		return ErrNotMember
+		return Grant{}, false, ErrNotMember
 	}
 	if g.Kind != KindGuest {
-		return ErrNotGuest
+		return Grant{}, false, ErrNotGuest
 	}
 	key := grantKey(owner, targetID, guest)
-	if s.grants[key] != nil {
-		return ErrGrantHeld
+	if held := s.grants[key]; held != nil {
+		switch {
+		case !byDevice:
+			return Grant{}, false, ErrGrantHeld
+		case held.GrantID == grantID && held.Kind == kind:
+			return *held, true, nil
+		}
+		return Grant{}, false, ErrGrantID
 	}
-	s.grants[key] = &Grant{TargetID: targetID, Kind: kind, Account: guest, GrantedBy: owner, GrantedAt: wire.FormatTime(s.now())}
+	for _, other := range s.grants {
+		if other.GrantID == grantID {
+			return Grant{}, false, ErrGrantID
+		}
+	}
+	made := &Grant{GrantID: grantID, TargetID: targetID, Kind: kind, Account: guest, GrantedBy: owner, GrantedAt: wire.FormatTime(s.now())}
+	s.grants[key] = made
 	if err := s.saveGrantsLocked(); err != nil {
 		delete(s.grants, key)
-		return err
+		return Grant{}, false, err
 	}
-	return nil
+	return *made, false, nil
+}
+
+// GrantByID finds a grant of one giving account by the grantId (item BD).
+func (s *Store) GrantByID(owner, grantID string) (Grant, bool) {
+	owner, ok := NormalizeLogin(owner)
+	if !ok {
+		return Grant{}, false
+	}
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	for _, g := range s.grants {
+		if g.GrantedBy == owner && g.GrantID == grantID {
+			return *g, true
+		}
+	}
+	return Grant{}, false
+}
+
+// RemoveGrantByID takes a grant back by its grantId and returns it; ErrNoGrant when the account holds none.
+func (s *Store) RemoveGrantByID(owner, grantID string) (Grant, error) {
+	g, ok := s.GrantByID(owner, grantID)
+	if !ok {
+		return Grant{}, ErrNoGrant
+	}
+	return s.RemoveGrant(g.GrantedBy, g.TargetID, g.Account)
 }
 
 // RemoveGrant takes a grant back and returns it (so the directory can tell the guest what it lost).
@@ -193,6 +248,21 @@ func (s *Store) GuestsOf(owner, target string) []string {
 		}
 	}
 	sort.Strings(out)
+	return out
+}
+
+// GrantsOf lists the grants of one target of an owner, by guest.
+func (s *Store) GrantsOf(owner, target string) []Grant {
+	owner = strings.ToLower(strings.TrimSpace(owner))
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	var out []Grant
+	for _, g := range s.grants {
+		if g.TargetID == target && g.GrantedBy == owner {
+			out = append(out, *g)
+		}
+	}
+	sort.Slice(out, func(i, j int) bool { return out[i].Account < out[j].Account })
 	return out
 }
 

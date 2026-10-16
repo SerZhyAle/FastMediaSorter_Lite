@@ -735,6 +735,17 @@ Public Module LogPackage
         End If
         sb.AppendLine()
 
+#If Not NETFRAMEWORK Then
+        ' Ticket 232 rule 6: the support bundle may carry the step codes of the last diagnosis
+        ' and never an address, a login, a fingerprint or a server name.
+        Dim diagSummary As String = ConnectionDiagnosisEngine.LastRedactedSummary
+        If Not String.IsNullOrEmpty(diagSummary) Then
+            sb.AppendLine("[connection diagnosis]")
+            sb.Append(diagSummary.TrimEnd(ControlChars.Cr, ControlChars.Lf)).AppendLine()
+            sb.AppendLine()
+        End If
+#End If
+
         ' Ticket 182 L-3: what went into the archive and, with the reason, what exists but could not.
         sb.AppendLine("[log sources]")
         If logSourceLines Is Nothing Then
@@ -830,7 +841,7 @@ Public Module LogPackage
         "VideoMuted", "VideoVolume", "WheelZooms", "chkTopMost", "color_scheme", "isPerspective",
         "mediaViewedCount", "EditorHeight", "EditorLeft", "EditorTop", "EditorWidth",
         "UiLanguage", "Is_Russian_Language",
-        "NameCollisionPolicy", "AfterFileOperation", "AdvanceAfterCopy", "DeleteToRecycleBin", "ConfirmDelete",
+        "NameCollisionPolicy", "AfterFileOperation", "AdvanceAfterCopy", "RevealStatusOnFileOperation", "DeleteToRecycleBin", "ConfirmDelete",
         "CreateMissingDestination", "IncludeSubfolders", "IncludedExtensions", "InterfaceScalePercent",
         "NewImageScaleMode", "ReduceMotion", "ModernChrome", "ChromePinned", "ChromeSize", "ChromeRow1Pinned", "ChromeRow2Pinned", "ChromeStatusPinned", "ChromeOpacityPercent", "ChromeCornerRadius", "RecipientsOverlayPosition", "RecipientsOverlayWidth",
         "RecipientsOverlayFontSize", "RecipientsOverlayOpacity", "RecipientsOverlayVisibleRows", "RecipientsOverlayPinned",

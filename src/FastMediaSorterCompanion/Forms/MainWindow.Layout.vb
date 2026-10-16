@@ -244,6 +244,8 @@ Partial Public NotInheritable Class MainWindow
         ButtonGlyphs.Apply(btnPhoneCode, "device.phone")
         AddHandler btnPhoneCode.Click, Async Sub() Await OpenPhoneCodeIntakeAsync()
         _pnlListButtons.Controls.AddRange(New Control() {btnAdd, btnAddCurrent, btnPhoneCode, btnDisks, btnRemove, btnParams, btnOutsideAccess, btnBroadcasts})
+        ' Spec 230: the clipboard through the server - absent without an account (MainWindow.Clipboard.vb).
+        _pnlListButtons.Controls.AddRange(BuildClipboardButtons())
 
         ' ShowItemToolTips: a row the service account cannot read is coloured and explains
         ' itself on hover (RefreshFolderAccessWarnings) - without this flag the item tooltip

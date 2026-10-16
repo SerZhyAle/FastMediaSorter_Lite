@@ -28,6 +28,9 @@ Friend NotInheritable Class ScheduledOperationDto
     Public Property IntervalMinutes As Integer = ScheduleMath.DefaultIntervalMinutes
     Public Property Conflict As String = "skip"
     Public Property DeleteOriginalsAfterVerify As Boolean
+    <JsonIgnore(Condition:=JsonIgnoreCondition.WhenWritingNull)>
+    Public Property RetryMissedRunsAtStart As Boolean?
+    Public Property ShowBalloonOnError As Boolean
     Public Property Halt As String = "none"
     Public Property HaltDetail As String = ""
     Public Property CreatedAt As String = ""
@@ -67,6 +70,7 @@ Friend NotInheritable Class ScheduledRecordDto
     Public Property LastFailedCount As Integer
     Public Property LastError As String = ""
     Public Property NextRunAt As String = ""
+    Public Property SkippedSinceSuccess As Boolean
 End Class
 
 Friend Module ScheduledJson
@@ -190,6 +194,7 @@ Friend Module ScheduledJson
             Case ScheduledRunOutcome.Refused : Return "refused"
             Case ScheduledRunOutcome.Wall : Return "wall"
             Case ScheduledRunOutcome.Cancelled : Return "cancelled"
+            Case ScheduledRunOutcome.Skipped : Return "skipped"
             Case Else : Return "none"
         End Select
     End Function
@@ -201,6 +206,7 @@ Friend Module ScheduledJson
             Case "refused" : Return ScheduledRunOutcome.Refused
             Case "wall" : Return ScheduledRunOutcome.Wall
             Case "cancelled" : Return ScheduledRunOutcome.Cancelled
+            Case "skipped" : Return ScheduledRunOutcome.Skipped
             Case Else : Return ScheduledRunOutcome.None
         End Select
     End Function
@@ -265,13 +271,21 @@ Friend Module ScheduledJson
             .StartDate = op.StartDate.ToString(DateFormat, CultureInfo.InvariantCulture),
             .AnchorMinutes = op.AnchorMinutes, .IntervalMinutes = op.IntervalMinutes,
             .Conflict = ConflictName(op.Conflict), .DeleteOriginalsAfterVerify = op.DeleteOriginalsAfterVerify,
+            .RetryMissedRunsAtStart = If(op.HasExplicitRetryMissedRuns, CType(op.RetryMissedRunsAtStart, Boolean?), Nothing),
+            .ShowBalloonOnError = op.ShowBalloonOnError,
             .Halt = HaltText(op.Halt), .HaltDetail = op.HaltDetail,
             .CreatedAt = FormatTime(op.CreatedAt), .Record = RecordToDto(op.Record)}
     End Function
 
-    Private Function LocationToDto(location As ScheduledLocation) As ScheduledLocationDto
+    Friend Function LocationToDto(location As ScheduledLocation) As ScheduledLocationDto
+        Dim kindName As String = "path"
+        If location.Kind = ScheduledLocationKind.Resource Then
+            kindName = "resource"
+        ElseIf location.Kind = ScheduledLocationKind.Drive Then
+            kindName = "drive"
+        End If
         Return New ScheduledLocationDto With {
-            .Kind = If(location.Kind = ScheduledLocationKind.Resource, "resource", "path"),
+            .Kind = kindName,
             .Path = location.Path, .ResourceId = location.ResourceId, .ResourceName = location.ResourceName,
             .Recursive = location.Recursive}
     End Function
@@ -281,7 +295,8 @@ Friend Module ScheduledJson
             .LastRunAt = FormatTime(record.LastRunAt), .LastSuccessAt = FormatTime(record.LastSuccessAt),
             .LastOutcome = OutcomeName(record.LastOutcome), .LastTrigger = TriggerName(record.LastTrigger),
             .LastFileCount = record.LastFileCount, .LastFailedCount = record.LastFailedCount,
-            .LastError = record.LastError, .NextRunAt = FormatTime(record.NextRunAt)}
+            .LastError = record.LastError, .NextRunAt = FormatTime(record.NextRunAt),
+            .SkippedSinceSuccess = record.SkippedSinceSuccess}
     End Function
 
     Friend Function FromDto(dto As ScheduledOperationDto) As ScheduledOperation
@@ -309,6 +324,10 @@ Friend Module ScheduledJson
         op.IntervalMinutes = ScheduleMath.NormalizeInterval(dto.IntervalMinutes)
         op.Conflict = ParseConflict(dto.Conflict)
         op.DeleteOriginalsAfterVerify = dto.DeleteOriginalsAfterVerify AndAlso action = ScheduledAction.Archive
+        If dto.RetryMissedRunsAtStart.HasValue Then
+            op.RetryMissedRunsAtStart = dto.RetryMissedRunsAtStart.Value
+        End If
+        op.ShowBalloonOnError = dto.ShowBalloonOnError
         If op.Halt = ScheduledHalt.None Then
             op.Halt = ParseHalt(dto.Halt)
             op.HaltDetail = If(dto.HaltDetail, "")
@@ -317,10 +336,16 @@ Friend Module ScheduledJson
         Return op
     End Function
 
-    Private Function LocationFromDto(dto As ScheduledLocationDto) As ScheduledLocation
+    Friend Function LocationFromDto(dto As ScheduledLocationDto) As ScheduledLocation
         If dto Is Nothing Then Return New ScheduledLocation()
+        Dim kind As ScheduledLocationKind = ScheduledLocationKind.Path
+        If String.Equals(dto.Kind, "resource", StringComparison.OrdinalIgnoreCase) Then
+            kind = ScheduledLocationKind.Resource
+        ElseIf String.Equals(dto.Kind, "drive", StringComparison.OrdinalIgnoreCase) Then
+            kind = ScheduledLocationKind.Drive
+        End If
         Return New ScheduledLocation With {
-            .Kind = If(String.Equals(dto.Kind, "resource", StringComparison.OrdinalIgnoreCase), ScheduledLocationKind.Resource, ScheduledLocationKind.Path),
+            .Kind = kind,
             .Path = If(dto.Path, ""), .ResourceId = If(dto.ResourceId, ""), .ResourceName = If(dto.ResourceName, ""),
             .Recursive = dto.Recursive}
     End Function
@@ -331,7 +356,8 @@ Friend Module ScheduledJson
             .LastRunAt = ParseTime(dto.LastRunAt), .LastSuccessAt = ParseTime(dto.LastSuccessAt),
             .LastOutcome = ParseOutcome(dto.LastOutcome), .LastTrigger = ParseTrigger(dto.LastTrigger),
             .LastFileCount = Math.Max(0, dto.LastFileCount), .LastFailedCount = Math.Max(0, dto.LastFailedCount),
-            .LastError = If(dto.LastError, ""), .NextRunAt = ParseTime(dto.NextRunAt)}
+            .LastError = If(dto.LastError, ""), .NextRunAt = ParseTime(dto.NextRunAt),
+            .SkippedSinceSuccess = dto.SkippedSinceSuccess}
     End Function
 
     ' --- text ------------------------------------------------------------------------------------

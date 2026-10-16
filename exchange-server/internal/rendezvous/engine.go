@@ -14,15 +14,19 @@ import (
 	"fms/exchange-server/internal/logx"
 	"fms/exchange-server/internal/ports"
 	"fms/exchange-server/internal/tunnel"
+	"fms/exchange-server/internal/wire"
 )
 
 // Features says which optional capabilities of `welcome.features` this build really implements
 // (ticket 161 T-4: the list is driven by what is built, never claimed). Directory and pairing are
 // always there; tunnel is there when the server knows its public endpoint (the URLs a producer
 // builds cannot exist without it); relay is there when a RelayHandler is set, cast when the flag is -
-// the last two arrive with tickets 165 and 166.
+// the last two arrive with tickets 165 and 166. Sealed is `sealed` (27 item DP, ticket 234): the server
+// keeps and delivers the device key, the sealed access, the boxes, `devices` in `grants`, the replacing
+// `grant` and the clipboard kind `sealed` - all of them together, which is why one flag stands for them.
 type Features struct {
-	Cast bool
+	Cast   bool
+	Sealed bool
 }
 
 // EngineConfig is everything the real Backend needs.
@@ -88,7 +92,7 @@ func NewEngine(cfg EngineConfig) *Engine {
 		cast: cast.New(cfg.Now, cfg.Params.CastTimeout, cfg.Params.CastPerAccount),
 		clip: clipboard.NewTable(cfg.Now, cfg.Rand),
 		ctl:  map[string]*ctlEntry{}, streams: map[string]map[*Stream]struct{}{}}
-	e.ops = &admin.Ops{Accounts: cfg.Accounts, Dir: cfg.Dir, Log: cfg.Log, Live: true, Clipboard: e.clip}
+	e.ops = &admin.Ops{Accounts: cfg.Accounts, Dir: cfg.Dir, Log: cfg.Log, Live: true, Clipboard: e.clip, Sealed: cfg.Features.Sealed}
 	if cfg.Rand != nil {
 		e.tunnels.SetRand(cfg.Rand)
 	}
@@ -102,9 +106,10 @@ func NewEngine(cfg EngineConfig) *Engine {
 		cfg.Dir.SetPorts(nil)
 	}
 	cfg.Dir.SetHooks(directory.Hooks{
-		ResourceGone:  e.resourceGone,
-		BroadcastGone: e.broadcastGone,
-		CloseDevice:   e.closeDevice,
+		ResourceGone:    e.resourceGone,
+		BroadcastGone:   e.broadcastGone,
+		CloseDevice:     e.closeDevice,
+		GrantTargetGone: e.grantTargetGone,
 	})
 	// what members gave to guests, and the limits of each account (19 items AO and AS): both are the
 	// accounts store's to say, and both are asked under the directory's lock, so neither calls back
@@ -120,33 +125,24 @@ func NewEngine(cfg EngineConfig) *Engine {
 type grantSource struct{ s *accounts.Store }
 
 func (g grantSource) GrantsTo(guest string) []directory.Grant {
-	given := g.s.GrantsForGuest(guest)
-	out := make([]directory.Grant, 0, len(given))
-	for _, x := range given {
-		out = append(out, directory.Grant{Owner: x.GrantedBy, Target: x.TargetID, Broadcast: x.Kind == accounts.GrantBroadcast})
+	return directoryGrants(g.s.GrantsForGuest(guest))
+}
+
+func (g grantSource) GrantsBy(owner string) []directory.Grant {
+	return directoryGrants(g.s.GrantsBy(owner))
+}
+
+func (g grantSource) GrantsOf(owner, target string) []directory.Grant {
+	return directoryGrants(g.s.GrantsOf(owner, target))
+}
+
+func directoryGrants(in []accounts.Grant) []directory.Grant {
+	out := make([]directory.Grant, 0, len(in))
+	for _, x := range in {
+		out = append(out, admin.DirectoryGrant(x))
 	}
 	return out
 }
-
-func (g grantSource) GrantsBy(owner string) []struct {
-	Guest string
-	directory.Grant
-} {
-	made := g.s.GrantsBy(owner)
-	out := make([]struct {
-		Guest string
-		directory.Grant
-	}, 0, len(made))
-	for _, x := range made {
-		out = append(out, struct {
-			Guest string
-			directory.Grant
-		}{Guest: x.Account, Grant: directory.Grant{Owner: x.GrantedBy, Target: x.TargetID, Broadcast: x.Kind == accounts.GrantBroadcast}})
-	}
-	return out
-}
-
-func (g grantSource) GuestsOf(owner, target string) []string { return g.s.GuestsOf(owner, target) }
 
 // Ops are the operator's operations over this engine's stores, for the admin channel.
 func (e *Engine) Ops() *admin.Ops { return e.ops }
@@ -166,7 +162,11 @@ func (e *Engine) features() []string {
 	if e.cfg.Features.Cast {
 		out = append(out, "cast")
 	}
-	return append(out, "pairing", "clipboard")
+	out = append(out, "pairing", "clipboard")
+	if e.cfg.Features.Sealed {
+		out = append(out, wire.FeatureSealed)
+	}
+	return out
 }
 
 // Clipboard is the engine's clipboard table (ticket 229), for the tests that count its bytes and

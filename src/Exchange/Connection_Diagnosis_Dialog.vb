@@ -69,7 +69,7 @@ Public Class Connection_Diagnosis_Dialog
         _lblWhatHappenedText = New Label With {
             .AutoSize = True,
             .MaximumSize = New Size(DialogWidth - 40, 0),
-            .Text = ConnectionDiagnosisLocalization.GetMessageText(_result.Message.Code),
+            .Text = ConnectionDiagnosisLocalization.GetMessageText(_result.InitialMessage.Code),
             .Margin = New Padding(0, 0, 0, 14)
         }
         layout.Controls.Add(_lblWhatHappenedText)

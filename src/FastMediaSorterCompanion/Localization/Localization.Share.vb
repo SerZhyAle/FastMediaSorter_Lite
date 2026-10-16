@@ -241,7 +241,7 @@ Partial Public NotInheritable Class Localization
             "可通过 Wi-Fi 和互联网访问 - 转发的端口已通过外部测试。")
 
         Add("Работает только в той же сети Wi-Fi. Провайдер использует CGNAT - проброс порта не сработает; используйте адрес IPv6 (если показан) или VPN.",
-            "Reachable only on the same Wi-Fi. Your ISP uses CGNAT, so a forwarded port cannot work - use the IPv6 address if shown, or a VPN/relay.",
+            "Reachable only on the same Wi-Fi. Your ISP uses CGNAT, so a forwarded port cannot work - use the IPv6 address if shown, or a VPN.",
             "Працює лише в тій самій мережі Wi-Fi. Провайдер використовує CGNAT - проброс порту не спрацює; використовуйте адресу IPv6 (якщо показана) або VPN.",
             "Nur im selben WLAN erreichbar. Ihr Anbieter nutzt CGNAT, ein weitergeleiteter Port kann nicht funktionieren - nutzen Sie die IPv6-Adresse, falls angezeigt, oder ein VPN.",
             "Raggiungibile solo sulla stessa rete Wi-Fi. Il provider usa CGNAT, quindi una porta inoltrata non può funzionare: usa l'indirizzo IPv6 se mostrato, oppure una VPN.",
@@ -904,15 +904,7 @@ Partial Public NotInheritable Class Localization
             "lien avec mot de passe", "link com senha", "رابط بكلمة مرور", "पासवर्ड वाला लिंक", "পাসওয়ার্ড সহ লিঙ্ক",
             "پاس ورڈ کے ساتھ لنک", "带密码的链接")
 
-        Add("через Google Drive",
-            "through Google Drive", "через Google Drive", "über Google Drive", "tramite Google Drive", "a través de Google Drive",
-            "via Google Drive", "pelo Google Drive", "عبر Google Drive", "Google Drive के माध्यम से", "Google Drive-এর মাধ্যমে",
-            "Google Drive کے ذریعے", "通过 Google Drive")
 
-        Add("через GD",
-            "through GD", "через GD", "über GD", "tramite GD", "a través de GD",
-            "via GD", "pelo GD", "عبر GD", "GD के माध्यम से", "GD-এর মাধ্যমে",
-            "GD کے ذریعے", "通过 GD")
 
         Add("Дать доступ наружу..",
             "Give access outside..", "Дати доступ назовні..", "Zugriff nach außen geben..", "Dai accesso esterno..", "Dar acceso externo..",

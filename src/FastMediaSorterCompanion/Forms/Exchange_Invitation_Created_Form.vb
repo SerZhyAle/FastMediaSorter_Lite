@@ -59,7 +59,7 @@ Friend NotInheritable Class Exchange_Invitation_Created_Form
         Dim body As New FlowLayoutPanel With {.Dock = DockStyle.Top, .FlowDirection = FlowDirection.TopDown, .WrapContents = False,
             .AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink, .Padding = New Padding(14, 10, 14, 8)}
 
-        Dim kindText As String = If(String.Equals(_kind, "guest", StringComparison.OrdinalIgnoreCase), Localization.T("Гость"), Localization.T("Член семьи"))
+        Dim kindText As String = If(String.Equals(_kind, "guest", StringComparison.OrdinalIgnoreCase), Localization.T("Гость"), Localization.T("Своё устройство или семья"))
         body.Controls.Add(New Label With {.AutoSize = True, .MaximumSize = New Size(ContentWidth, 0), .Margin = New Padding(0, 0, 0, 4),
             .Font = New Font(Me.Font, FontStyle.Bold), .Text = Localization.TF("Тип приглашения: {0}", kindText)})
 

@@ -27,11 +27,15 @@ Friend Module ProductNames
     ''' mention only - never a title, a heading, a store field or a window caption.</summary>
     Public Const ShortLegacy As String = "Fast Media Sorter"
 
-    ''' <summary>Alias for this product (Windows). Technical text only, never UI.</summary>
-    Public Const AliasW As String = "FMS_W"
+    ''' <summary>Alias for this product (Windows). Technical text only, never UI. It replaced "FMS_W"
+    ''' (owner decision 2026-10-16): the old form reads as "Web" as easily as "Windows".</summary>
+    Public Const AliasWin As String = "FMS_Win"
 
     ''' <summary>Alias for the Android product. Technical text only, never UI.</summary>
     Public Const AliasA As String = "FMS_A"
+
+    ''' <summary>Alias for the web product (its own repository). Technical text only, never UI.</summary>
+    Public Const AliasWeb As String = "FMS_Web"
 
     ''' <summary>The byline the main window's title bar carries after the full name.</summary>
     Public Const Author As String = "SZA"

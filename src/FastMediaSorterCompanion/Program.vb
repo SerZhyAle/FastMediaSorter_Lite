@@ -61,6 +61,63 @@ Friend Module Program
     Public Const AddResourceFlag As String = "--add-resource"
     Public Const AddResourceCameraFlag As String = "--add-resource-camera"
 
+    ''' <summary>Spec 230: the two clipboard intents - WM_COPYDATA payloads to a running manager and the command-line
+    ''' switches of the two desktop shortcuts. Intents with no path in them; a receiver that does not know them is never
+    ''' sent them (<see cref="ShareActivationPolicy.IsClipboardCapable"/>). Frozen once they ship: the shortcuts a person
+    ''' keeps on the desktop carry the switches.</summary>
+    Public Const ClipboardSendCommand As String = "::fms-clipboard-send::"
+    Public Const ClipboardGetCommand As String = "::fms-clipboard-get::"
+    Public Const ClipboardSendFlag As String = "--clipboard-send"
+    Public Const ClipboardGetFlag As String = "--clipboard-get"
+
+    ''' <summary>Held by the one cold-start operation of the clipboard functions: a second shortcut press while one runs
+    ''' is told so in a sentence instead of starting a second operation.</summary>
+    Friend Const ClipboardOneShotMutexName As String = "FastMediaSorterCompanionClipboardOneShotMutex"
+
+    ''' <summary>What a command-line argument says about the clipboard functions.</summary>
+    Friend Enum ClipboardSwitch
+        None = 0
+        Send = 1
+        Receive = 2
+    End Enum
+
+    ''' <summary>Where a launch goes once its instance role is known (spec 230 rule 3): to the running manager, to ONE cold-start
+    ''' action that exits, or on to the tray manager.</summary>
+    Friend Enum LaunchRoute
+        ForwardToRunning = 0
+        ClipboardOneShot = 1
+        TrayManager = 2
+    End Enum
+
+    ''' <summary>The switch an argument is: the dash form, the slash form or the marker form of one of the two functions. The marker
+    ''' form is exact (it is a payload, not a person's typing); the flags are not case-sensitive.</summary>
+    Friend Function ClipboardSwitchOf(arg As String) As ClipboardSwitch
+        If arg Is Nothing Then Return ClipboardSwitch.None
+        If String.Equals(arg, ClipboardSendFlag, StringComparison.OrdinalIgnoreCase) OrElse
+           String.Equals(arg, "/clipboard-send", StringComparison.OrdinalIgnoreCase) OrElse
+           String.Equals(arg, ClipboardSendCommand, StringComparison.Ordinal) Then Return ClipboardSwitch.Send
+        If String.Equals(arg, ClipboardGetFlag, StringComparison.OrdinalIgnoreCase) OrElse
+           String.Equals(arg, "/clipboard-get", StringComparison.OrdinalIgnoreCase) OrElse
+           String.Equals(arg, ClipboardGetCommand, StringComparison.Ordinal) Then Return ClipboardSwitch.Receive
+        Return ClipboardSwitch.None
+    End Function
+
+    ''' <summary>The payload a second instance forwards for the switches given, or "" when neither was given. Both at once is a
+    ''' mistake of whoever wrote the command line; the send is the one that cannot lose data.</summary>
+    Friend Function ClipboardPayloadOf(sendRequested As Boolean, getRequested As Boolean) As String
+        If sendRequested Then Return ClipboardSendCommand
+        If getRequested Then Return ClipboardGetCommand
+        Return ""
+    End Function
+
+    ''' <summary>A running manager gets the request forwarded; with none running a clipboard switch does its one action and exits,
+    ''' and anything else is the tray manager.</summary>
+    Friend Function RouteOf(role As InstanceRole, clipboardRequested As Boolean) As LaunchRoute
+        If role = InstanceRole.Existing Then Return LaunchRoute.ForwardToRunning
+        If clipboardRequested Then Return LaunchRoute.ClipboardOneShot
+        Return LaunchRoute.TrayManager
+    End Function
+
     <STAThread>
     Friend Sub Main(args As String())
         AppFileLogger.Initialize()
@@ -72,6 +129,9 @@ Friend Module Program
         Dim windowRequested As Boolean = False
         Dim addResourceRequested As Boolean = False
         Dim addResourceCameraRequested As Boolean = False
+        ' Spec 230: the two clipboard shortcuts. Neither asks for the window: the action is the whole request.
+        Dim clipboardSendRequested As Boolean = False
+        Dim clipboardGetRequested As Boolean = False
         ' Ticket 222: the viewer's schedule launcher passes ONE token ("::fms-schedule::" + a folder) - never a bare
         ' folder, which this program would take for a folder to share.
         Dim schedulePayload As String = ""
@@ -81,6 +141,11 @@ Friend Module Program
                 If String.Equals(a, TrayFlag, StringComparison.OrdinalIgnoreCase) OrElse
                    String.Equals(a, "/tray", StringComparison.OrdinalIgnoreCase) Then
                     silentTray = True
+                ElseIf ClipboardSwitchOf(a) = ClipboardSwitch.Send Then
+                    ' Checked before the folder branch: the marker form has no leading "-" and would be taken for a path.
+                    clipboardSendRequested = True
+                ElseIf ClipboardSwitchOf(a) = ClipboardSwitch.Receive Then
+                    clipboardGetRequested = True
                 ElseIf String.Equals(a, AddResourceCameraFlag, StringComparison.OrdinalIgnoreCase) OrElse
                        String.Equals(a, "/add-resource-camera", StringComparison.OrdinalIgnoreCase) OrElse
                        String.Equals(a, AddResourceCameraCommand, StringComparison.Ordinal) Then
@@ -114,7 +179,10 @@ Friend Module Program
         ' startup option). A silent logon launch that finds us already up forwards NOTHING -
         ' there is nothing to do and a boot must stay quiet.
         Dim payload As String
-        If Not String.IsNullOrEmpty(folder) Then
+        Dim clipboardPayload As String = ClipboardPayloadOf(clipboardSendRequested, clipboardGetRequested)
+        If clipboardPayload.Length > 0 Then
+            payload = clipboardPayload
+        ElseIf Not String.IsNullOrEmpty(folder) Then
             payload = folder
         ElseIf addResourceCameraRequested Then
             payload = AddResourceCameraCommand
@@ -168,6 +236,22 @@ Friend Module Program
                 End If
                 Return
             End If
+
+            ' Spec 230: a clipboard shortcut that finds NO manager running does its one action and exits - it never starts the
+            ' tray manager, the worker or the exchange agent. The manager's mutex is let go first: the action is seconds long,
+            ' and a manager the person starts meanwhile must be the primary, not a launch that forwards to a message window
+            ' that does not exist. The action has its own mutex, so a second press is told so instead of racing the first.
+            If RouteOf(role, clipboardSendRequested OrElse clipboardGetRequested) = LaunchRoute.ClipboardOneShot Then
+                If role = InstanceRole.Primary AndAlso mtx IsNot Nothing Then
+                    Try : mtx.ReleaseMutex() : Catch : End Try
+                    mtx.Dispose()
+                    mtx = Nothing
+                    role = InstanceRole.Existing   ' nothing left to release in Finally
+                End If
+                Environment.ExitCode = RunClipboardOneShot(clipboardSendRequested)
+                Return
+            End If
+
             ' Read the shared UI-language flag before any Share text is built, so
             ' Companion matches the viewer's language (invariant 9).
             CompanionGlobals.LoadLanguage()
@@ -191,30 +275,7 @@ Friend Module Program
             ' it reads the migrated value instead of racing it.
             AutostartManager.OfferForSystemServiceHostOnce()
 
-            ' Crash logging, the way the viewer has it (ticket 054 H-11). Without it an
-            ' exception escaping an Async Sub handler reached the user as the raw WinForms
-            ' "Unhandled exception" dialog of a tray app, and nothing of it reached
-            ' companion.log - the file "Send the log to the author" ships. Before the first
-            ' window: the mode can only be set while no control exists on this thread.
-            Application.SetUnhandledExceptionMode(UnhandledExceptionMode.CatchException)
-            AddHandler Application.ThreadException, AddressOf OnThreadException
-            AddHandler AppDomain.CurrentDomain.UnhandledException, AddressOf OnUnhandledException
-            AddHandler Threading.Tasks.TaskScheduler.UnobservedTaskException, AddressOf OnUnobservedTaskException
-
-            Application.EnableVisualStyles()
-            Application.SetCompatibleTextRenderingDefault(False)
-            Try
-                Application.SetHighDpiMode(HighDpiMode.PerMonitorV2)
-            Catch
-                ' Older shells may reject PerMonitorV2 at runtime - the manifest still covers it.
-            End Try
-            ' Set the UI font ONCE, app-wide. Doing this (instead of Me.Font on each form)
-            ' keeps the AutoScaleMode.Font baseline consistent, so forms scale correctly at
-            ' 125/150/175% DPI instead of shrinking (the fixed-ClientSize-came-out-small bug).
-            Try
-                Application.SetDefaultFont(New Font("Segoe UI", 9.0F))
-            Catch
-            End Try
+            PrepareUi()
             ' The application theme shared with the viewer (spec 060) - after the rendering
             ' defaults above (it creates a control), before the tray menu and the first window.
             ThemeService.Initialize()
@@ -239,6 +300,66 @@ Friend Module Program
             End If
         End Try
     End Sub
+
+    ''' <summary>What every process that shows anything needs before its first control: crash logging, visual styles, DPI mode
+    ''' and the one app-wide font. Shared by the tray manager and the clipboard one-shot.</summary>
+    Private Sub PrepareUi()
+        ' Crash logging, the way the viewer has it (ticket 054 H-11). Without it an
+        ' exception escaping an Async Sub handler reached the user as the raw WinForms
+        ' "Unhandled exception" dialog of a tray app, and nothing of it reached
+        ' companion.log - the file "Send the log to the author" ships. Before the first
+        ' window: the mode can only be set while no control exists on this thread.
+        Application.SetUnhandledExceptionMode(UnhandledExceptionMode.CatchException)
+        AddHandler Application.ThreadException, AddressOf OnThreadException
+        AddHandler AppDomain.CurrentDomain.UnhandledException, AddressOf OnUnhandledException
+        AddHandler Threading.Tasks.TaskScheduler.UnobservedTaskException, AddressOf OnUnobservedTaskException
+
+        Application.EnableVisualStyles()
+        Application.SetCompatibleTextRenderingDefault(False)
+        Try
+            Application.SetHighDpiMode(HighDpiMode.PerMonitorV2)
+        Catch
+            ' Older shells may reject PerMonitorV2 at runtime - the manifest still covers it.
+        End Try
+        ' Set the UI font ONCE, app-wide. Doing this (instead of Me.Font on each form)
+        ' keeps the AutoScaleMode.Font baseline consistent, so forms scale correctly at
+        ' 125/150/175% DPI instead of shrinking (the fixed-ClientSize-came-out-small bug).
+        Try
+            Application.SetDefaultFont(New Font("Segoe UI", 9.0F))
+        Catch
+        End Try
+    End Sub
+
+    ''' <summary>
+    ''' Spec 230: the cold start of a clipboard shortcut - the action runs, its one result line is shown as a tray
+    ''' notification, and the process ends. Returns the exit code (0 = done, 1 = not done).
+    ''' </summary>
+    Private Function RunClipboardOneShot(isSend As Boolean) As Integer
+        CompanionGlobals.LoadLanguage()
+        Dim oneShot As Mutex = Nothing
+        Dim owned As Boolean = False
+        Dim alreadyRunning As Boolean = False
+        Try
+            Try
+                oneShot = New Mutex(True, ClipboardOneShotMutexName, owned)
+                alreadyRunning = Not owned
+            Catch ex As UnauthorizedAccessException
+                ' held by a higher-integrity one-shot: it exists
+                alreadyRunning = True
+            Catch ex As Exception
+                AppFileLogger.LogException("Clipboard one-shot mutex", ex)
+            End Try
+            PrepareUi()
+            Return ClipboardOneShot.Run(isSend, alreadyRunning)
+        Finally
+            If oneShot IsNot Nothing Then
+                If owned Then
+                    Try : oneShot.ReleaseMutex() : Catch : End Try
+                End If
+                oneShot.Dispose()
+            End If
+        End Try
+    End Function
 
     ' --- crash logging (ticket 054 H-11) ------------------------------------------
 
@@ -335,6 +456,9 @@ Friend Module Program
         If command.Kind = CompanionCommandKind.AddResource AndAlso Not ShareActivationPolicy.IsAddResourceCapable(receiverVersion) Then Return ShowWindowCommand
         ' Ticket 222: the schedule intent likewise never reaches a receiver that is not known to understand it.
         If command.Kind = CompanionCommandKind.Schedule AndAlso Not ShareActivationPolicy.IsScheduleCapable(receiverVersion) Then Return ShowWindowCommand
+        ' Spec 230: the clipboard intents likewise - an older receiver would refuse the unknown payload, so it gets the plain wake.
+        If (command.Kind = CompanionCommandKind.ClipboardSend OrElse command.Kind = CompanionCommandKind.ClipboardGet) AndAlso
+           Not ShareActivationPolicy.IsClipboardCapable(receiverVersion) Then Return ShowWindowCommand
         Return payload
     End Function
 

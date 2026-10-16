@@ -73,7 +73,7 @@ End Class
 Friend NotInheritable Class ExchangeAttach
     ''' <summary>DEVICE-EXCHANGE 17 AG: an older enrollment receives the lock but no access until it re-enrolls with pin-v1.</summary>
     Friend Shared Function NeedsPinEnrollment(record As ExchangeResourceRecord) As Boolean
-        Return record IsNot Nothing AndAlso record.IsProtected AndAlso record.CanAuthorize AndAlso Not record.HasAccess AndAlso
+        Return record IsNot Nothing AndAlso record.IsProtected AndAlso record.CanAuthorize AndAlso Not record.HasAccess AndAlso Not record.HasSealedAccess AndAlso
             String.Equals(record.Presence, ExchangeWire.PresenceOnline, StringComparison.Ordinal)
     End Function
 

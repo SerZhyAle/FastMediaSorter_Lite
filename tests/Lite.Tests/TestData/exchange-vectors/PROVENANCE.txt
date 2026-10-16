@@ -1,4 +1,4 @@
-Exchange conformance vectors for DEVICE-EXCHANGE 0.28 (rungs 1 and 2, and the connection string of ticket 187).
+Exchange conformance vectors for DEVICE-EXCHANGE 1.1 (rungs 1 and 2, the connection string of ticket 187, the clipboard of section 22, the sealed content of section 27).
 
 generator: cmd/exchange-vectors in the exchange-server module of the Fast Media Sorter & Sharing for Windows repository
 command:   go run ./cmd/exchange-vectors -out testdata/vectors
@@ -8,7 +8,7 @@ These files are generated, never edited: a hand edit changes a hash below and fa
 change the server (or the script) and run the command again. Regenerating without a change gives the same bytes.
 
 sha256:
-  connection-string-v1.json 45b36244ecb14c196e9c014bb901d9027f0d70e7769455657433db3ff550748f
-  frames-v2.json     f5c6ae0db7dd47454467184c5df3378104e35bfe09609acfd37f703e833541d8
-  protection-v1.json ef81c7a155a82e0521497057582c1d31cf18bf35fa1fdb4238a6a40fd3e7a66f
-  records-v1.json    38b25f4d988f77a74aec312998f35e08904b8971ebd8a41f525f6a5ecb3d2ba8
+  connection-string-v1.json 20d380f4e0d98568047d9e9fe5feb3027bc9fd446127e92fe5b730a4fda15df9
+  frames-v2.json     7ddf9fb472b825efcc77d54405681cdbf0f2e2b485e0b58bc7782bddfce5d2fd
+  protection-v1.json 31fe7d82ef339b6c0b9f48775e2ddc0a967bd298b473a2d1c4325b4721a8b5ba
+  records-v1.json    e9f2528b081cf70c16de97658f2c12e37ea2d4cb3edc7360382ede2e4be6a28e

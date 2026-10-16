@@ -507,20 +507,15 @@ Partial Public Class Main_Form
         lbl_Status.Text = Localization.TF("«{0}»: {1}", descriptor.DisplayName, ResourceMessages.ForFailure(outcome.Failure))
 
         ' Spec 232 T-2: launch connection diagnosis on connection failure
-        Dim msgCode As String = ConnectionDiagnosisMessageCode.UnreachableServer
+        Dim msg As ConnectionDiagnosisMessage = ConnectionDiagnosisMessages.UnreachableServer
         If outcome.Failure.Kind = ResourceFailureKind.Auth Then
-            msgCode = ConnectionDiagnosisMessageCode.BadCredentials
-        ElseIf outcome.Failure.Kind = ResourceFailureKind.Unavailable Then
-            msgCode = ConnectionDiagnosisMessageCode.Unavailable
+            msg = ConnectionDiagnosisMessages.BadCredentials
+        ElseIf outcome.Failure.Kind = ResourceFailureKind.KeyMismatch Then
+            msg = ConnectionDiagnosisMessages.CertificateChanged
         End If
         Dim host As String = If(descriptor IsNot Nothing, descriptor.Host, "")
         Dim port As Integer = If(descriptor IsNot Nothing, descriptor.Port, 0)
-        Dim ctx As New ConnectionDiagnosisContext With {
-            .Host = host,
-            .Port = port,
-            .LastMessageCode = msgCode,
-            .Language = Localization.CurrentCultureLanguage
-        }
+        Dim ctx As New ConnectionDiagnosisContext(host, port, ConnectionDiagnosisTarget.Server, msg)
         Dim ignoredTask = Connection_Diagnosis_Dialog.RunAndShowAsync(Me, ctx)
     End Sub
 

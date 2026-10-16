@@ -50,10 +50,10 @@ func (e *Engine) hashBounded(pw string) (string, error) {
 }
 
 // deviceSpec is what an enroll or a register says about the device.
-func deviceSpec(login, deviceID, name, product, version, platform string, roles, caps []string, receiver []byte) accounts.EnrollSpec {
+func deviceSpec(login, deviceID, name, product, version, platform string, roles, caps []string, receiver []byte, key *wire.E2EKey) accounts.EnrollSpec {
 	return accounts.EnrollSpec{
 		Account: login, DeviceID: deviceID, Name: name, Product: product, ProductVersion: version,
-		Platform: platform, Roles: knownRoles(roles), Capabilities: caps, Receiver: receiver,
+		Platform: platform, Roles: knownRoles(roles), Capabilities: caps, Receiver: receiver, E2EKey: key,
 	}
 }
 
@@ -62,7 +62,7 @@ func deviceSpec(login, deviceID, name, product, version, platform string, roles,
 func (e *Engine) admit(st *Stream, d accounts.Device, keepalive int) (*Session, time.Duration) {
 	e.cfg.Dir.DeviceEnrolled(directory.DeviceInfo{
 		ID: d.ID, Account: d.Account, Name: d.Name, Product: d.Product, ProductVersion: d.ProductVersion,
-		Platform: d.Platform, Roles: d.Roles, Capabilities: d.Capabilities, Receiver: d.Receiver,
+		Platform: d.Platform, Roles: d.Roles, Capabilities: d.Capabilities, Receiver: d.Receiver, E2EKey: d.E2EKey,
 	})
 	e.track(d.ID, st)
 	interval := e.p.clampKeepalive(keepalive)
@@ -113,7 +113,7 @@ func (e *Engine) Enroll(st *Stream, m *wire.Enroll) Result {
 		return refused(wire.ReasonBadCredentials)
 	}
 
-	en, err := e.cfg.Accounts.Enroll(deviceSpec(login, m.DeviceID, m.DeviceName, m.Product, m.ProductVersion, m.Platform, m.Roles, m.Capabilities, m.Receiver))
+	en, err := e.cfg.Accounts.Enroll(deviceSpec(login, m.DeviceID, m.DeviceName, m.Product, m.ProductVersion, m.Platform, m.Roles, m.Capabilities, m.Receiver, m.E2EKey))
 	switch {
 	case errors.Is(err, accounts.ErrIDCollision):
 		e.cfg.Log.Info("enroll-refused", logx.Login(login), logx.Device(m.DeviceID), logx.Text("reason", string(wire.ReasonIDCollision)))
@@ -207,7 +207,7 @@ func (e *Engine) Register(st *Stream, m *wire.Register) Result {
 
 	en, err := e.cfg.Accounts.RegisterAccount(accounts.RegisterSpec{
 		Login: login, PasswordRecord: rec, Kind: kind, InvitationCode: code, SharedInvitation: shared,
-		Device: deviceSpec(login, m.DeviceID, m.DeviceName, m.Product, m.ProductVersion, m.Platform, m.Roles, m.Capabilities, m.Receiver),
+		Device: deviceSpec(login, m.DeviceID, m.DeviceName, m.Product, m.ProductVersion, m.Platform, m.Roles, m.Capabilities, m.Receiver, m.E2EKey),
 	})
 	switch {
 	case errors.Is(err, accounts.ErrInvitationInvalid):

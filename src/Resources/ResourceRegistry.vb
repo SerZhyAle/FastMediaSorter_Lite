@@ -588,9 +588,13 @@ Friend Module ResourceRegistry
         ' Merge Endpoints
         If target.Endpoints Is Nothing Then target.Endpoints = New List(Of ResourceEndpoint)()
         
+        If Not String.IsNullOrEmpty(target.Host) Then
+            AddEndpointUnique(target.Endpoints, New ResourceEndpoint With {.Host = target.Host, .Port = If(target.Port > 0, target.Port, 22), .Kind = ChannelPriorityRules.NormalizeKind("", target.Host)})
+        End If
+
         ' Ensure incoming's primary address is in endpoints if different
-        If Not String.IsNullOrEmpty(incoming.Host) AndAlso (Not String.Equals(target.Host, incoming.Host, StringComparison.OrdinalIgnoreCase) OrElse target.Port <> incoming.Port) Then
-            AddEndpointUnique(target.Endpoints, New ResourceEndpoint With {.Host = incoming.Host, .Port = incoming.Port, .Kind = "portforward"})
+        If Not String.IsNullOrEmpty(incoming.Host) Then
+            AddEndpointUnique(target.Endpoints, New ResourceEndpoint With {.Host = incoming.Host, .Port = If(incoming.Port > 0, incoming.Port, 22), .Kind = ChannelPriorityRules.NormalizeKind("", incoming.Host)})
         End If
 
         If incoming.Endpoints IsNot Nothing Then
@@ -637,7 +641,8 @@ Friend Module ResourceRegistry
                 Return
             End If
         Next
-        endpoints.Add(New ResourceEndpoint With {.Kind = ep.Kind, .Host = ep.Host, .Port = port})
+        Dim k As String = If(Not String.IsNullOrEmpty(ep.Kind), ep.Kind, ChannelPriorityRules.NormalizeKind("", ep.Host))
+        endpoints.Add(New ResourceEndpoint With {.Kind = k, .Host = ep.Host, .Port = port})
     End Sub
 
     ''' <summary>

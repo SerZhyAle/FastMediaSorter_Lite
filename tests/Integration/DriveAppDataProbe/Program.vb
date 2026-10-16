@@ -419,7 +419,7 @@ Friend Module Program
         Dim keep As Boolean = False
         Dim nonce As String = Sha256Hex(Guid.NewGuid().ToByteArray()).Substring(0, 12)
         Dim name As String = "fmsx-probe-" & nonce & ".json"
-        Dim body As String = "{""probe"":""FMS_W DriveAppDataProbe (specification 203)"",""writtenAtUtc"":""" & DateTime.UtcNow.ToString("o", Globalization.CultureInfo.InvariantCulture) & """,""nonce"":""" & nonce & """}"
+        Dim body As String = "{""probe"":""FMS_Win DriveAppDataProbe (specification 203)"",""writtenAtUtc"":""" & DateTime.UtcNow.ToString("o", Globalization.CultureInfo.InvariantCulture) & """,""nonce"":""" & nonce & """}"
         Dim localHash As String = Sha256Hex(Encoding.UTF8.GetBytes(body))
         Dim uploadedId As String = ""
 

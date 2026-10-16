@@ -5,6 +5,7 @@ Option Compare Binary
 
 Imports System.Collections.Generic
 Imports System.IO
+Imports System.Security.Cryptography
 Imports System.Threading
 
 ' The two ends of an operation (ticket 222, 4.3), behind one seam.
@@ -15,7 +16,8 @@ Imports System.Threading
 ' interface rather than a branch inside the engine. The local-path side is complete here; the resource
 ' side is the Share Manager linking src\Resources (step 4 of the plan).
 
-''' <summary>Why a side cannot be used. Each member is a condition a retry cannot fix by itself (6).</summary>
+''' <summary>Why a side cannot be used. Each member is a condition a retry cannot fix by itself (6),
+''' except <see cref="SideProblemKind.Offline"/> which skips the run (ticket 231, 3.5).</summary>
 Friend Enum SideProblemKind
     None = 0
     ''' <summary>The folder is missing or the drive or share does not answer.</summary>
@@ -28,6 +30,16 @@ Friend Enum SideProblemKind
     KeyNotPinned = 4
     ''' <summary>The resource is no longer in the registry (4.3): the operation is halted, not deleted.</summary>
     ResourceRemoved = 5
+    ''' <summary>The device token was rejected as revoked by the exchange server (ticket 231, 3.1).</summary>
+    DeviceRevoked = 6
+    ''' <summary>The exchange server's TLS certificate does not match its pinned fingerprint (ticket 231, 3.1).</summary>
+    ExchangeCertificateChanged = 7
+    ''' <summary>The exchange entry or Google account is signed out (ticket 231, 3.1/3.2).</summary>
+    SignedOut = 8
+    ''' <summary>The resource requires a PIN that is missing or has changed since it was stored (ticket 231, 3.3).</summary>
+    PinLocked = 9
+    ''' <summary>The remote device, tunnel, or network is offline; the run is skipped (ticket 231, 3.5).</summary>
+    Offline = 10
 End Enum
 
 Friend NotInheritable Class SideProblem
@@ -235,6 +247,11 @@ Friend NotInheritable Class LocalTransfer
     ''' of the FINAL name, so a leftover is recognisable and swept by the next attempt at the same name.</summary>
     Friend Const PartSuffix As String = FileManager.Partial_Move_Suffix
 
+    ''' <summary>Injectable volume predicate so cross-volume move verification is provable in a unit test on one disk.</summary>
+    Friend Property SameVolumePredicate As Func(Of String, String, Boolean) = AddressOf SameVolume
+    ''' <summary>Test hook called after the destination file is published and before move verification runs.</summary>
+    Friend Property AfterCopyPublished As Action(Of String)
+
     Public Function CopyFile(source As IScheduledSide, entry As SideEntry, target As IScheduledSide,
                              targetRelative As String, overwrite As Boolean, ct As CancellationToken) As Long Implements IScheduledTransfer.CopyFile
         Dim sourcePath As String = source.Combine(entry.RelativePath)
@@ -270,7 +287,8 @@ Friend NotInheritable Class LocalTransfer
         Dim finalPath As String = target.Combine(targetRelative)
         If Not SameAsListed(sourcePath, entry) Then Return MoveOutcome.SourceChanged
 
-        If SameVolume(sourcePath, finalPath) Then
+        Dim sameVol As Boolean = If(SameVolumePredicate, New Func(Of String, String, Boolean)(AddressOf SameVolume)).Invoke(sourcePath, finalPath)
+        If sameVol AndAlso AfterCopyPublished Is Nothing Then
             ' One rename, no byte moves, atomic.
             Directory.CreateDirectory(System.IO.Path.GetDirectoryName(finalPath))
             If overwrite Then
@@ -281,20 +299,44 @@ Friend NotInheritable Class LocalTransfer
             Return MoveOutcome.Moved
         End If
 
-        ' Across volumes: copy, verify, and remove the source only if it is still what was copied.
+        ' Across volumes: copy, verify size + SHA-256 content hash, and remove the source only if it matches and is still what was copied (ticket 231, 3.6).
+        Dim expectedHash As Byte() = HashOfFile(sourcePath)
         Dim written As Long
         Try
             written = CopyFile(source, entry, target, targetRelative, overwrite, ct)
         Catch ex As SourceChangedException
             Return MoveOutcome.SourceChanged
         End Try
-        If written <> entry.Length OrElse Not SameAsListed(sourcePath, entry) Then Return MoveOutcome.CopiedSourceKept
+        AfterCopyPublished?.Invoke(finalPath)
+        If Not SameAsListed(sourcePath, entry) Then Return MoveOutcome.CopiedSourceKept
+        If written <> entry.Length OrElse Not VerifiedDestination(finalPath, entry.Length, expectedHash) Then
+            Throw New ScheduledTransferException("mismatch")
+        End If
         Try
             System.IO.File.Delete(sourcePath)
         Catch ex As Exception When TypeOf ex Is IOException OrElse TypeOf ex Is UnauthorizedAccessException
             Return MoveOutcome.CopiedSourceKept
         End Try
         Return MoveOutcome.Moved
+    End Function
+
+    Private Shared Function VerifiedDestination(finalPath As String, expectedLength As Long, expectedHash As Byte()) As Boolean
+        Try
+            Dim info As New FileInfo(finalPath)
+            If Not info.Exists OrElse info.Length <> expectedLength Then Return False
+            Dim actualHash As Byte() = HashOfFile(finalPath)
+            Return CryptographicOperations.FixedTimeEquals(expectedHash, actualHash)
+        Catch
+            Return False
+        End Try
+    End Function
+
+    Private Shared Function HashOfFile(path As String) As Byte()
+        Using stream As New FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite Or FileShare.Delete, 81920)
+            Using sha As SHA256 = SHA256.Create()
+                Return sha.ComputeHash(stream)
+            End Using
+        End Using
     End Function
 
     Public Function DeleteFile(side As IScheduledSide, entry As SideEntry, ct As CancellationToken) As String Implements IScheduledTransfer.DeleteFile

@@ -231,6 +231,8 @@ Partial Public Class Main_Form
         panel.Host.Surface.SetItems(items)
         AddHandler panel.Host.Surface.ItemInvoked, AddressOf Chrome_ItemInvoked
         AddHandler panel.Host.Surface.MouseWheel, Sub(sender, args) MouseUse(args)
+        ' Subscribed before the drag: the drag is a modal move loop and returns only when it ends.
+        AddHandler panel.Host.Surface.MoveGripPress, Sub(sender, args) ChromeTakeKeyboardForViewer()
         AddHandler panel.Host.Surface.MoveGripPress, Sub(sender, args) ChromeBeginWindowDrag()
         AddHandler panel.Host.Surface.MoveGripDoubleClick, Sub(sender, args) ChromeToggleMaximized()
         ChromeSyncWindowControlsItems(panel)
@@ -385,6 +387,8 @@ Partial Public Class Main_Form
         ' Row 1 carries the window-level commands, so a press that misses every control drags the
         ' viewer, like the caption it stands in for (188 §5, 2026-10-12 owner revision). A double
         ' click on it toggles nothing: the row's own commands are the point here.
+        ' Every row hands the keyboard to the viewer on a press that misses its controls; row 1 then also drags.
+        AddHandler panel.Host.Surface.MoveGripPress, Sub(sender, args) ChromeTakeKeyboardForViewer()
         If name = "chrome_Row1" Then
             AddHandler panel.Host.Surface.MoveGripPress, Sub(sender, args) ChromeBeginWindowDrag()
         End If
@@ -431,6 +435,16 @@ Partial Public Class Main_Form
         panel.Host.Hide()
         Me.Activate()
         If panel.Alpha > 0 Then panel.Host.Show()
+    End Sub
+
+    ''' <summary>A press on the free background of a floating panel hands the keyboard to the viewer and does
+    ''' nothing else: the panels never activate themselves (invariant 2), so after working in another window this
+    ''' is the way to bring the viewer back WITHOUT a click on the picture, which would flip the file. The next
+    ''' digit then moves the file that is on screen, whether or not the recipients list is visible.</summary>
+    Private Sub ChromeTakeKeyboardForViewer()
+        ChromeLeaveKeyboardMode()
+        If Not IsHandleCreated OrElse Not Me.Enabled OrElse WindowState = FormWindowState.Minimized Then Return
+        If Form.ActiveForm IsNot Me Then Me.Activate()
     End Sub
 
     Private Sub ChromeAcceptPath()
@@ -929,7 +943,10 @@ Partial Public Class Main_Form
             chrome_Path.AccessibleName = tip
             chrome_Path.SetTooltip(tip)
         End If
-        If changed AndAlso (carrier Is lbl_File_Number OrElse carrier Is lbl_Zoom OrElse carrier Is lbl_Status) Then
+        ' While a file operation holds the status panel up (RevealStatusOnFileOperation) the hold owns its end:
+        ' the text this operation is about to write must not start a second, five-second countdown behind it.
+        If changed AndAlso (carrier Is lbl_File_Number OrElse carrier Is lbl_Zoom OrElse carrier Is lbl_Status) AndAlso
+           Not FileOperationRevealHeld(chrome_Clock.ElapsedMilliseconds) Then
             ' Paging or wheel-zooming raised both toolbar rows over the picture for five seconds (and a slideshow
             ' under five seconds kept them up). Only the status panel is the readout of these three; the rows
             ' come from the pointer, a pin or F10 (125 UX-309).
@@ -1136,6 +1153,10 @@ Partial Public Class Main_Form
                                                    ChromeHotZone(p).Contains(pointer)
                     p.Wanted = ChromeAutoHide.NextWanted(now, p.Wanted, p.LastActivity,
                                                          ChromePanelPinned(p), over, hold, hotZoneReveal, active)
+                    ' A copy, move or delete holds the status panel up, pinned or not (RevealStatusOnFileOperation).
+                    ' LastActivity is left alone on purpose: the ordinary countdown must not add its own five seconds
+                    ' behind the hold, so the panel goes a fixed time after the LAST operation.
+                    If active AndAlso p.Name = "chrome_Status" AndAlso FileOperationRevealHeld(now) Then p.Wanted = True
 
                     Dim target As Double = If(p.Wanted, 1.0R, 0.0R)
                     Dim fadeElapsed As Integer = elapsed
@@ -1177,6 +1198,30 @@ Partial Public Class Main_Form
     End Sub
 
     Private chrome_Recent_Signature As String = Nothing
+
+    ''' <summary>The chrome clock's reading when a copy, move or delete was last started or finished; -1 = none yet.</summary>
+    Private chrome_File_Op_Last As Long = -1L
+
+    ''' <summary>A single-file copy, move or delete has been queued or has finished: the stamp the status panel's
+    ''' hold counts from (see <see cref="ChromeAutoHide.FileOperationRevealHeld"/>). Anything else - undo, rename,
+    ''' restore, one item of a batch - is not "a copy, a move or a delete" the user just asked for.</summary>
+    Private Sub NoteFileOperationForStatusReveal(kind As FileOpKind)
+        Select Case kind
+            Case FileOpKind.Copy, FileOpKind.Move, FileOpKind.Delete, FileOpKind.RecycleDelete
+                chrome_File_Op_Last = chrome_Clock.ElapsedMilliseconds
+        End Select
+    End Sub
+
+    ''' <summary>Whether a file operation holds the status panel up right now: the setting is on and an operation is
+    ''' queued or running, or the last one began or ended less than
+    ''' <see cref="ChromeMetrics.FileOperationRevealMilliseconds"/> ago. The queue's own count is the "still running"
+    ''' truth - a counter kept here could leak and leave the panel stuck up.</summary>
+    Private Function FileOperationRevealHeld(nowMs As Long) As Boolean
+        Dim enabled As Boolean = modern_Preferences IsNot Nothing AndAlso modern_Preferences.RevealStatusOnFileOperation
+        If Not enabled Then Return False
+        Dim inFlight As Integer = If(file_Op_Queue Is Nothing, 0, file_Op_Queue.PendingCount)
+        Return ChromeAutoHide.FileOperationRevealHeld(enabled, nowMs, chrome_File_Op_Last, inFlight)
+    End Function
 
     ''' <summary>The chrome clock's reading when the window last became empty; -1 while media is on screen
     ''' (see <see cref="ChromeAutoHide.HoldsForEmptyWindow"/>).</summary>

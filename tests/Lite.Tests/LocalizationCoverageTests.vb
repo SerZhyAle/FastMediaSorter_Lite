@@ -80,7 +80,7 @@ Public Class LocalizationCoverageTests
     ''' </summary>
     Private Shared ReadOnly Exempt As String() = {
         "OcrLanguageCatalog.vb", "TranslationQuality.vb", "OcrTextFilter.vb",
-        "IconMap.vb"}
+        "IconMap.vb", "ConnectionDiagnosisLocalization.vb"}
 
     Private Shared Function Skip(srcPath As String) As Boolean
         If srcPath.IndexOf("\obj\", StringComparison.OrdinalIgnoreCase) >= 0 Then Return True

@@ -53,7 +53,7 @@ End Class
 ''' Result of running the step-by-step diagnosis.
 ''' </summary>
 Public Class ConnectionDiagnosisResult
-    Public Property Message As ConnectionDiagnosisMessage
+    Public Property InitialMessage As ConnectionDiagnosisMessage
     Public Property Target As ConnectionDiagnosisTarget
     Public Property Route As ConnectionDiagnosisApplies
     Public Property FirstFailedStep As Nullable(Of ConnectionDiagnosisStep)
@@ -61,7 +61,7 @@ Public Class ConnectionDiagnosisResult
     Public Property WalkedSteps As New List(Of ConnectionDiagnosisStep)()
 
     Public Sub New(message As ConnectionDiagnosisMessage, target As ConnectionDiagnosisTarget, route As ConnectionDiagnosisApplies)
-        Me.Message = message
+        Me.InitialMessage = message
         Me.Target = target
         Me.Route = route
     End Sub
@@ -72,7 +72,7 @@ Public Class ConnectionDiagnosisResult
     ''' </summary>
     Public Function ToRedactedDiagnosticString() As String
         Dim sb As New System.Text.StringBuilder()
-        sb.Append("msg=").Append(If(Message?.Code, "unknown"))
+        sb.Append("msg=").Append(If(InitialMessage?.Code, "unknown"))
         sb.Append(";target=").Append(If(Target = ConnectionDiagnosisTarget.Server, "server", "device"))
         sb.Append(";route=").Append(If(Route = ConnectionDiagnosisApplies.Network, "network", "internet"))
         If FirstFailedStep.HasValue Then
@@ -110,6 +110,20 @@ End Interface
 ''' Runs only on explicit user request; changes no system settings; stops at first failure.
 ''' </summary>
 Public Class ConnectionDiagnosisEngine
+
+    Private Shared _lastRedactedSummary As String = ""
+
+    ''' <summary>
+    ''' Spec 232 rule 6: Redacted step codes of the last diagnosis for the support bundle (never an address, login, fingerprint or server name).
+    ''' </summary>
+    Public Shared Property LastRedactedSummary As String
+        Get
+            Return Volatile.Read(_lastRedactedSummary)
+        End Get
+        Set(value As String)
+            Volatile.Write(_lastRedactedSummary, If(value, ""))
+        End Set
+    End Property
 
     Private ReadOnly _probeProvider As IConnectionDiagnosisProbeProvider
 
@@ -258,6 +272,7 @@ Public Class ConnectionDiagnosisEngine
             result.FirstFailedStep = steps(0)
         End If
 
+        LastRedactedSummary = result.ToRedactedDiagnosticString()
         Return result
     End Function
 

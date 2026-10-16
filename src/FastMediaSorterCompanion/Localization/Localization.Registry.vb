@@ -14,6 +14,9 @@ Option Strict On
 Partial Public NotInheritable Class Localization
 
     Private Shared Sub RegisterStrings()
+#If Not NETFRAMEWORK Then
+        AddExchangeVocabularyStrings()
+#End If
         AddShareStrings()       ' tray menu + the shared ShareText prose
         AddManagerContractStrings()
         AddManagerStrings()     ' the Share Manager main window
@@ -40,6 +43,7 @@ Partial Public NotInheritable Class Localization
         AddLiveBroadcastStrings()      ' ticket 199: the live broadcast window, tray item and refusals (never 016's "Трансляции для StreamsPlayer")
         AddSendLogsStrings()    ' ticket 182 L-3/L-6: a log that cannot be included, no mail program (table linked from the viewer)
         AddScheduledStrings()   ' ticket 222: scheduled file operations - the page, the editor, the history, the tray items
+        AddClipboardStrings()   ' spec 230: the clipboard through the exchange server - buttons, tray items, shortcuts, result lines
     End Sub
 
     ''' <summary>

@@ -828,7 +828,7 @@ Partial Public Class Table_Form
              Localization.T("Дорожки и субтитры") & ". " & Localization.T("Информация и управление") & ".",
              Localization.T("Обложки, управление и поведение аудиодорожек."),
              Localization.T("Операции с файлами") & ". " & Localization.T("Типы файлов") & ".",
-             Localization.T("Серверы и сетевые папки") & ". " & Localization.T("SFTP-сервер и мобильное приложение Android."),
+             Localization.T("Серверы и сетевые папки") & ". " & Localization.T("SFTP-сервер и приложение Android."),
              Localization.T("Распознавание текста на изображениях и параметры OCR."),
              Localization.T("Сервис и параметры перевода распознанного текста."),
              Localization.T("Управление кэшем"),
@@ -1078,6 +1078,7 @@ Partial Public Class Table_Form
             Case "section_file_behavior" : Return Localization.T("Поведение файлов")
             Case "name_collision" : Return Localization.T("Совпадение имён")
             Case "after_file_operation" : Return Localization.T("После копирования или перемещения")
+            Case "reveal_status_on_file_op" : Return Localization.T("Показывать статусную строку при операциях с файлами")
             Case "delete_to_recycle_bin" : Return Localization.T("Удалять в Корзину")
             Case "confirm_delete" : Return Localization.T("Спрашивать перед удалением")
             Case "create_missing_destination" : Return Localization.T("Создавать отсутствующий каталог получателя")
@@ -1226,6 +1227,7 @@ Partial Public Class Table_Form
             Case "delete_to_recycle_bin" : Return Localization.T("На сетевом диске и съёмном носителе Корзины нет - там файл удаляется безвозвратно, и программа скажет об этом. Shift+DEL всегда удаляет мимо Корзины.")
             Case "confirm_delete" : Return Localization.T("Средний вариант удобен для быстрой разборки: удаление в Корзину проходит молча, а безвозвратное всё равно спросит.")
             Case "after_file_operation" : Return Localization.T("Выберите, что показывать после успешной операции.")
+            Case "reveal_status_on_file_op" : Return Localization.T("При копировании, переносе и удалении статусная панель появляется, даже если она не закреплена, и исчезает через 3 секунды после последней операции.")
             Case "create_missing_destination" : Return Localization.T("Если у каталога-получателя нет только последней папки, а та, что над ней, доступна - папка создаётся при первом переносе. Выключено - такой каталог считается ненайденным.")
             Case "include_subfolders" : Return Localization.T("Добавляет подходящие файлы из всех вложенных папок.")
             Case "included_extensions" : Return Localization.T("Выберите группы и отдельные форматы. Если отмечено всё - показываются все поддерживаемые.")
@@ -1272,11 +1274,11 @@ Partial Public Class Table_Form
             Case "remote_cache_limit" : Return Localization.T("Ограничивает временные копии файлов сетевых ресурсов.")
             Case "thumb_cache_clear" : Return Localization.T("Сколько места занимают сохранённые миниатюры. Очистка не удаляет исходные файлы - миниатюры строятся заново.")
             Case "thumb_cache_limit" : Return Localization.T("Ускоряет повторное открытие панели F3. 0 отключает кэш.")
-            Case "sftp_intro" : Return Localization.T("Опубликуйте выбранные папки встроенным SFTP-сервером и открывайте их в мобильном приложении.")
+            Case "sftp_intro" : Return Localization.T("Опубликуйте выбранные папки встроенным SFTP-сервером и открывайте их в приложении Android.")
             Case "resources_intro" : Return Localization.T("Сохранённые серверы SFTP и сетевые папки с паролем: открываются как обычные папки.")
             Case "sftp_manager" : Return Localization.T("Открывает отдельное приложение управления SFTP-доступом и опубликованными папками.")
-            Case "sftp_guide" : Return Localization.T("Пошаговая настройка сервера, сети и подключения мобильного клиента.")
-            Case "android_app" : Return Localization.T("Страница мобильного приложения для Android.")
+            Case "sftp_guide" : Return Localization.T("Пошаговая настройка сервера, сети и подключения клиента Android.")
+            Case "android_app" : Return Localization.T("Страница приложения для Android.")
             Case "exchange_portal" : Return Localization.T("Как открыть папки ПК и телефона на других устройствах: домашняя сеть, проброс порта, постоянный сервер.")
             Case "about_intro" : Return Localization.TF("Современный просмотрщик и сортировщик фото и видео." & vbCrLf & "Версия {0}", ShortSettingsVersion())
             Case "support_send_logs" : Return Localization.T("Соберёт журналы работы программы в архив и создаст письмо автору. Ничего не отправляется без вашего подтверждения.")

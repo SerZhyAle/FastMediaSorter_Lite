@@ -57,6 +57,8 @@ Friend Enum ScheduledLocationKind
     Path = 0
     ''' <summary>A registered resource of the viewer's registry plus a folder inside it (4.3).</summary>
     Resource = 1
+    ''' <summary>The exchange channel via Google Drive (ticket 231, 3.2).</summary>
+    Drive = 2
 End Enum
 
 ''' <summary>Why a scheduled run started. Manual triggers never move the schedule.</summary>
@@ -85,6 +87,8 @@ Friend Enum ScheduledRunOutcome
     ''' <summary>The operation-level wall: nothing a retry can fix (6).</summary>
     Wall = 4
     Cancelled = 5
+    ''' <summary>The run could not happen because the target or network was offline, or a missed slot was not retried (ticket 231, 3.5).</summary>
+    Skipped = 6
 End Enum
 
 ''' <summary>Why the scheduler leaves an operation alone although the user left it enabled.</summary>
@@ -114,6 +118,7 @@ Friend NotInheritable Class ScheduledLocation
 
     Friend ReadOnly Property IsEmpty As Boolean
         Get
+            If Kind = ScheduledLocationKind.Drive Then Return False
             If Kind = ScheduledLocationKind.Resource Then Return String.IsNullOrWhiteSpace(ResourceId)
             Return String.IsNullOrWhiteSpace(Path)
         End Get
@@ -126,6 +131,10 @@ Friend NotInheritable Class ScheduledLocation
 
     ''' <summary>A short human spelling for notes and rows: the path, or "name: folder".</summary>
     Friend Function Describe() As String
+        If Kind = ScheduledLocationKind.Drive Then
+            Dim label As String = If(String.IsNullOrEmpty(ResourceName), "Google Drive", ResourceName)
+            Return If(String.IsNullOrEmpty(Path), label, label & ": " & Path)
+        End If
         If Kind = ScheduledLocationKind.Resource Then
             Dim name As String = If(String.IsNullOrEmpty(ResourceName), ResourceId, ResourceName)
             Return If(String.IsNullOrEmpty(Path), name, name & ": " & Path)
@@ -180,11 +189,14 @@ Friend NotInheritable Class ScheduledRunRecord
     Friend Property LastError As String = ""
     ''' <summary>The slot the scheduler is armed for, or Nothing while it is not armed.</summary>
     Friend Property NextRunAt As DateTime?
+    ''' <summary>True when at least one run has been skipped since the last successful run (ticket 231, 3.5).</summary>
+    Friend Property SkippedSinceSuccess As Boolean
 
     Friend Function Clone() As ScheduledRunRecord
         Return New ScheduledRunRecord With {.LastRunAt = LastRunAt, .LastSuccessAt = LastSuccessAt,
             .LastOutcome = LastOutcome, .LastTrigger = LastTrigger, .LastFileCount = LastFileCount,
-            .LastFailedCount = LastFailedCount, .LastError = LastError, .NextRunAt = NextRunAt}
+            .LastFailedCount = LastFailedCount, .LastError = LastError, .NextRunAt = NextRunAt,
+            .SkippedSinceSuccess = SkippedSinceSuccess}
     End Function
 
 End Class
@@ -212,6 +224,21 @@ Friend NotInheritable Class ScheduledOperation
     Friend Property Conflict As ScheduledConflict = ScheduledConflict.Skip
     ''' <summary>Archive only (D4): delete the originals once the archive has been read back and matched.</summary>
     Friend Property DeleteOriginalsAfterVerify As Boolean
+    Private _retryMissedRunsAtStart As Boolean = True
+    ''' <summary>Per-operation missed-run rule (ticket 231, 3.4): run once at start when a slot was missed. Default On.</summary>
+    Friend Property RetryMissedRunsAtStart As Boolean
+        Get
+            Return _retryMissedRunsAtStart
+        End Get
+        Set(value As Boolean)
+            _retryMissedRunsAtStart = value
+            HasExplicitRetryMissedRuns = True
+        End Set
+    End Property
+    ''' <summary>True when <see cref="RetryMissedRunsAtStart"/> was explicitly set, read from JSON, or migrated.</summary>
+    Friend Property HasExplicitRetryMissedRuns As Boolean
+    ''' <summary>Per-operation error balloon switch (ticket 231, 3.4): show a tray balloon on Failed or Wall. Default Off.</summary>
+    Friend Property ShowBalloonOnError As Boolean
     Friend Property Halt As ScheduledHalt = ScheduledHalt.None
     ''' <summary>What the halt says: the wall's reason, the removed resource's name. Machine text, not translated.</summary>
     Friend Property HaltDetail As String = ""
@@ -232,7 +259,9 @@ Friend NotInheritable Class ScheduledOperation
         Return New ScheduledOperation With {.Id = Id, .Name = Name, .Enabled = Enabled, .Action = Action,
             .Source = Source.Clone(), .Destination = Destination.Clone(), .Conditions = Conditions.Clone(),
             .AnchorMinutes = AnchorMinutes, .StartDate = StartDate, .IntervalMinutes = IntervalMinutes,
-            .Conflict = Conflict, .DeleteOriginalsAfterVerify = DeleteOriginalsAfterVerify, .Halt = Halt,
+            .Conflict = Conflict, .DeleteOriginalsAfterVerify = DeleteOriginalsAfterVerify,
+            .RetryMissedRunsAtStart = RetryMissedRunsAtStart, .HasExplicitRetryMissedRuns = HasExplicitRetryMissedRuns,
+            .ShowBalloonOnError = ShowBalloonOnError, .Halt = Halt,
             .HaltDetail = HaltDetail, .CreatedAt = CreatedAt, .Record = Record.Clone()}
     End Function
 

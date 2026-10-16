@@ -168,8 +168,8 @@ Public Class ProductNamesTests
             Dim lineNo As Integer = 0
             For Each line In File.ReadAllLines(f)
                 lineNo += 1
-                For Each pattern In bannedPatterns
-                    If Regex.IsMatch(line, pattern, RegexOptions.CultureInvariant) Then
+                For Each pat In bannedPatterns
+                    If Regex.IsMatch(line, pat, RegexOptions.CultureInvariant) Then
                         offenders.Add(Path.GetFileName(f) & ":" & lineNo)
                     End If
                 Next

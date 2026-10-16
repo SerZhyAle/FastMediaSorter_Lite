@@ -265,15 +265,41 @@ Public Class ExchangeConsumerTests
             acc.Resources.Add("{""resourceId"":""R2"",""deviceId"":""HOSTPC"",""kind"":""sftp-share"",""name"":""Offline""}")
             Using hub As New ExchangeEntryHub(ports)
                 Dim session As ExchangeEntrySession = hub.SessionFor(joined.Entry)
+                ' spec 234 item DP: a clear `access` that came through the server is never used, and this session holds no device key.
+                ' The stub lists no `sealed`, so the typed state is `server-no-e2e`; the secret is not handed on.
                 Dim ok As ExchangeAgentAccessResult = Await session.GetAccessAsync("R1", CancellationToken.None)
-                Assert.True(ok.Reply.IsOk)
-                Assert.Contains("FMSSFTP2.secret", ok.AccessJson)
+                Assert.False(ok.Reply.IsOk)
+                Assert.Equal(ExchangeAgentPipe.ErrorServerNoE2e, ok.Reply.Error)
+                Assert.Equal("", ok.AccessJson)
                 Dim none As ExchangeAgentAccessResult = Await session.GetAccessAsync("R2", CancellationToken.None)
                 Assert.False(none.Reply.IsOk)
                 Assert.Equal(ExchangeAgentPipe.ErrorNoAccess, none.Reply.Error)
                 Dim unknown As ExchangeAgentAccessResult = Await session.GetAccessAsync("R9", CancellationToken.None)
                 Assert.Equal(ExchangeAgentPipe.ErrorUnknownResource, unknown.Reply.Error)
                 Assert.True(Await ExchangeStubAccount.WaitUntilAsync(Function() acc.CountOf("bye") >= 3))   ' a connection per question, each closed
+            End Using
+        End Using
+    End Function
+
+    <Fact>
+    Public Async Function On_a_sealed_server_a_clear_access_and_a_box_both_say_e2e_missing_to_a_session_without_a_key() As Task
+        Using acc As New ExchangeStubAccount()
+            acc.Features = {"directory", "tunnel", "pairing", ExchangeSealedNames.FeatureSealed}
+            Dim ports As ExchangeConsumerPorts = MakePorts()
+            Dim joined As ExchangeConsumerEnrollResult = Await ExchangeConsumer.EnrollAsync(Request(acc), ports, CancellationToken.None)
+            acc.Devices.Add("{""deviceId"":""HOSTPC"",""deviceName"":""Host"",""product"":""fms-windows"",""presence"":""online""}")
+            acc.Resources.Add("{""resourceId"":""R1"",""deviceId"":""HOSTPC"",""kind"":""sftp-share"",""name"":""Photos"",""access"":{""descriptor"":""FMSSFTP2.secret""}}")
+            acc.Resources.Add("{""resourceId"":""R2"",""deviceId"":""HOSTPC"",""kind"":""sftp-share"",""name"":""Sealed"",""sealedAccess"":{""v"":1}}")
+            Using hub As New ExchangeEntryHub(ports)
+                Dim session As ExchangeEntrySession = hub.SessionFor(joined.Entry)
+                Dim clear As ExchangeAgentAccessResult = Await session.GetAccessAsync("R1", CancellationToken.None)
+                Assert.False(clear.Reply.IsOk)
+                Assert.Equal(ExchangeAgentPipe.ErrorE2eMissing, clear.Reply.Error)
+                Assert.Equal("", clear.AccessJson)
+                Dim boxed As ExchangeAgentAccessResult = Await session.GetAccessAsync("R2", CancellationToken.None)
+                Assert.False(boxed.Reply.IsOk)
+                Assert.Equal(ExchangeAgentPipe.ErrorE2eMissing, boxed.Reply.Error)
+                Assert.Equal("", boxed.AccessJson)
             End Using
         End Using
     End Function

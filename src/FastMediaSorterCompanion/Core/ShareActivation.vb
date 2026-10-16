@@ -54,6 +54,11 @@ Friend Enum CompanionCommandKind
     Schedule = 6
     ''' <summary>Spec 227: scan QR code with camera intent from viewer.</summary>
     AddResourceCamera = 7
+    ''' <summary>Spec 230: "send the clipboard to the server" - a desktop shortcut (or a second launch) asking the running
+    ''' manager to act. An intent with no path in it; nothing is read until the manager runs it.</summary>
+    ClipboardSend = 8
+    ''' <summary>Spec 230: "get the clipboard from the server" - the mirror intent.</summary>
+    ClipboardGet = 9
 End Enum
 
 ''' <summary>What a WM_COPYDATA payload asks of the Share Manager, parsed strictly.</summary>
@@ -98,6 +103,12 @@ Friend NotInheritable Class CompanionCommand
         End If
         If String.Equals(payload, Program.AddResourceCameraCommand, StringComparison.Ordinal) Then
             Return New CompanionCommand(CompanionCommandKind.AddResourceCamera, "")
+        End If
+        If String.Equals(payload, Program.ClipboardSendCommand, StringComparison.Ordinal) Then
+            Return New CompanionCommand(CompanionCommandKind.ClipboardSend, "")
+        End If
+        If String.Equals(payload, Program.ClipboardGetCommand, StringComparison.Ordinal) Then
+            Return New CompanionCommand(CompanionCommandKind.ClipboardGet, "")
         End If
         If payload.StartsWith(ScheduleCommandPrefix, StringComparison.Ordinal) Then
             Dim rawFolder As String = payload.Substring(ScheduleCommandPrefix.Length).Trim()

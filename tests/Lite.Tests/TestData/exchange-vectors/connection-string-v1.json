@@ -1,6 +1,6 @@
 {
   "contract": "DEVICE-EXCHANGE",
-  "contractVersion": "0.28",
+  "contractVersion": "1.1",
   "proposal": "PROPOSAL-2026-10-10-exchange-connection-string.md (read with the grammar and canonical-bytes points of the proposals filed by StreamsPlayer and FastMediaSorter Android the same day)",
   "sections": "5.5 (proposed)",
   "producer": "Media Exchange Server (Go) of Fast Media Sorter & Sharing for Windows, cmd/exchange-vectors",

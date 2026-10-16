@@ -27,7 +27,7 @@ const (
 	MaxFrame = 16 * 1024
 
 	// MaxFrameAuth is the most a frame may carry after `welcome` or `enrolled`, in both directions
-	// (DEVICE-EXCHANGE 15 item T, owner decision of 2026-10-07: FMS_W's answer to ask 1, no paging).
+	// (DEVICE-EXCHANGE 15 item T, owner decision of 2026-10-07: FMS_Win's answer to ask 1, no paging).
 	// 262144 bytes of JSON. Question 1 of ticket 181 was open when this module was started; the
 	// contract text of 0.17 settled it, and this is the one line to change if the owner moves it.
 	MaxFrameAuth = 256 * 1024

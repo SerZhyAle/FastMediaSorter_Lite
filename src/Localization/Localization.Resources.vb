@@ -1537,15 +1537,7 @@ Partial Public NotInheritable Class Localization
             "lien avec mot de passe", "link com senha", "رابط بكلمة مرور", "पासवर्ड वाला लिंक", "পাসওয়ার্ড সহ লিঙ্ক",
             "پاس ورڈ کے ساتھ لنک", "带密码的链接")
 
-        Add("через Google Drive",
-            "through Google Drive", "через Google Drive", "über Google Drive", "tramite Google Drive", "a través de Google Drive",
-            "via Google Drive", "pelo Google Drive", "عبر Google Drive", "Google Drive के माध्यम से", "Google Drive-এর মাধ্যমে",
-            "Google Drive کے ذریعے", "通过 Google Drive")
 
-        Add("через GD",
-            "through GD", "через GD", "über GD", "tramite GD", "a través de GD",
-            "via GD", "pelo GD", "عبر GD", "GD के माध्यम से", "GD-এর মাধ্যমে",
-            "GD کے ذریعے", "通过 GD")
 
         Add("Дать доступ наружу..",
             "Give access outside..", "Дати доступ назовні..", "Zugriff nach außen geben..", "Dai accesso esterno..", "Dar acceso externo..",

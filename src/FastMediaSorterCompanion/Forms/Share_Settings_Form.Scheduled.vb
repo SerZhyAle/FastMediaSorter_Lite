@@ -30,10 +30,11 @@ Partial Public NotInheritable Class Share_Settings_Form
     Private _schedPause As Button
     Private _schedHistory As Button
     Private _schedClearHistory As Button
+    Private _schedExport As Button
+    Private _schedImport As Button
     Private _schedFailure As Label
+    Private _schedDiagnose As Button
     Private _schedFeature As CheckBox
-    Private _schedMissed As ComboBox
-    Private _schedMissedRow As Control
     Private _schedAutostart As Label
     Private _schedAutostartLink As LinkLabel
     Private _schedUpdating As Boolean
@@ -78,27 +79,23 @@ Partial Public NotInheritable Class Share_Settings_Form
         _schedPause = SchedButton("managerSchedPause", Localization.T("Приостановить все"), "media.pause", AddressOf OnScheduledPause)
         _schedHistory = SchedButton("managerSchedHistory", Localization.T("Журнал.."), "source.recent", AddressOf OnScheduledHistory)
         _schedClearHistory = SchedButton("managerSchedClearHistory", Localization.T("Очистить журнал"), "action.clear-all", AddressOf OnScheduledClearHistory)
-        commands.Controls.AddRange({_schedNew, _schedEdit, _schedDelete, _schedRunNow, _schedRunAll, _schedPause, _schedHistory, _schedClearHistory})
+        _schedExport = SchedButton("managerSchedExport", Localization.T("Экспорт.."), "action.export", AddressOf OnScheduledExport)
+        _schedImport = SchedButton("managerSchedImport", Localization.T("Импорт.."), "action.import", AddressOf OnScheduledImport)
+        commands.Controls.AddRange({_schedNew, _schedEdit, _schedDelete, _schedRunNow, _schedRunAll, _schedPause, _schedHistory, _schedClearHistory, _schedExport, _schedImport})
         sec.AddBodyRow(commands)
 
         _schedFailure = New Label With {.AutoSize = True, .MaximumSize = New Size(HostingContentWidth, 0), .Margin = New Padding(0, 0, 0, 8),
             .Name = "managerSchedFailure", .Visible = False}
         sec.AddBodyRow(_schedFailure)
+        _schedDiagnose = SchedButton("managerSchedDiagnose", ConnectionDiagnosisLocalization.DoorButtonText(Localization.CurrentCode), "action.test-connection", AddressOf OnScheduledDiagnoseClicked)
+        _schedDiagnose.Visible = False
+        sec.AddBodyRow(_schedDiagnose)
 
         ' --- this PC ---
         _schedFeature = New CheckBox With {.AutoSize = True, .Margin = New Padding(0, 6, 0, 2), .Name = "managerSchedFeature",
             .Text = Localization.T("Выполнять операции по расписанию на этом компьютере")}
         AddHandler _schedFeature.CheckedChanged, AddressOf OnScheduledFeatureChanged
         sec.AddBodyRow(_schedFeature)
-
-        _schedMissed = New ComboBox With {.DropDownStyle = ComboBoxStyle.DropDownList, .Width = 260, .Name = "managerSchedMissed"}
-        _schedMissed.Items.Add(ScheduledText.MissedPolicyName(MissedRunPolicy.RunOnceAtStart))
-        _schedMissed.Items.Add(ScheduledText.MissedPolicyName(MissedRunPolicy.Skip))
-        AddHandler _schedMissed.SelectedIndexChanged, AddressOf OnScheduledMissedChanged
-        toolTip.SetToolTip(_schedMissed, Localization.T("Что делать с запуском, время которого прошло, пока менеджер был закрыт: выполнить его один раз при следующем запуске или пропустить."))
-        _schedMissedRow = SettingsEditorRow(New Label With {.AutoSize = True, .Text = Localization.T("Пропущенные запуски")},
-                                            _schedMissed, New Padding(0, 6, 0, 2))
-        sec.AddBodyRow(_schedMissedRow)
 
         _schedAutostart = NoteLabel("")
         _schedAutostart.Name = "managerSchedAutostart"
@@ -142,6 +139,7 @@ Partial Public NotInheritable Class Share_Settings_Form
                                        If IsDisposed OrElse Disposing Then Return
                                        ApplyScheduledState()
                                    End Sub))
+
         Catch ex As InvalidOperationException
             ' The window is going away.
         End Try
@@ -158,7 +156,7 @@ Partial Public NotInheritable Class Share_Settings_Form
             _schedList.Items.Clear()
             For Each state As ScheduledOperationState In engine.Snapshot()
                 Dim op As ScheduledOperation = state.Operation
-                Dim row As New ListViewItem(op.DisplayName()) With {.Tag = op.Id, .Checked = op.Enabled}
+                Dim row As New ListViewItem(ScheduledText.RowTitleText(op)) With {.Tag = op.Id, .Checked = op.Enabled}
                 row.SubItems.Add(ScheduledText.ActionName(op.Action))
                 row.SubItems.Add(ScheduledText.WhereText(op))
                 row.SubItems.Add(ScheduledText.ScheduleText(op))
@@ -170,15 +168,20 @@ Partial Public NotInheritable Class Share_Settings_Form
             _schedList.EndUpdate()
 
             _schedFeature.Checked = engine.FeatureEnabled
-            _schedMissed.SelectedIndex = If(engine.MissedRuns = MissedRunPolicy.Skip, 1, 0)
             _schedPause.Text = If(engine.Paused, Localization.T("Возобновить все"), Localization.T("Приостановить все"))
             ButtonGlyphs.Apply(_schedPause, If(engine.Paused, "media.play", "media.pause"))
 
             Dim failure As ScheduledFailureInfo = engine.LastFailure
             _schedFailure.Visible = failure IsNot Nothing
+            Dim diagHost As String = ""
+            Dim diagPort As Integer = 0
+            _schedDiagnose.Visible = failure IsNot Nothing AndAlso
+                (failure.Outcome = ScheduledRunOutcome.Wall OrElse failure.Outcome = ScheduledRunOutcome.Failed OrElse failure.Outcome = ScheduledRunOutcome.Refused) AndAlso
+                TryFailureEndpoint(failure, diagHost, diagPort)
             If failure IsNot Nothing Then
                 _schedFailure.Text = ScheduledText.FailureHint(failure)
                 _schedFailure.ForeColor = CollapsibleSection.AttentionColor
+                _schedDiagnose.Text = ConnectionDiagnosisLocalization.DoorButtonText(Localization.CurrentCode)
             End If
 
             Dim autostart As Boolean = False
@@ -223,17 +226,11 @@ Partial Public NotInheritable Class Share_Settings_Form
         _schedRunAll.Text = Localization.T("Запустить все сейчас")
         _schedHistory.Text = Localization.T("Журнал..")
         _schedClearHistory.Text = Localization.T("Очистить журнал")
+        _schedExport.Text = Localization.T("Экспорт..")
+        _schedImport.Text = Localization.T("Импорт..")
         _schedFeature.Text = Localization.T("Выполнять операции по расписанию на этом компьютере")
         _schedAutostartLink.Text = Localization.T("Открыть настройку автозапуска")
         _schedList.AccessibleName = ScheduledPageCaption()
-        _schedUpdating = True
-        Try
-            _schedMissed.Items.Clear()
-            _schedMissed.Items.Add(ScheduledText.MissedPolicyName(MissedRunPolicy.RunOnceAtStart))
-            _schedMissed.Items.Add(ScheduledText.MissedPolicyName(MissedRunPolicy.Skip))
-        Finally
-            _schedUpdating = False
-        End Try
         ApplyScheduledState()
     End Sub
 
@@ -319,6 +316,43 @@ Partial Public NotInheritable Class Share_Settings_Form
         ScheduledHost.Engine.Journal.ClearHistory()
     End Sub
 
+    Private Sub OnScheduledExport()
+        Using dialog As New SaveFileDialog() With {
+            .Title = Localization.T("Экспорт операций по расписанию"),
+            .Filter = "JSON (*.json)|*.json",
+            .DefaultExt = "json",
+            .FileName = "scheduled-operations.json"}
+            If dialog.ShowDialog(Me) <> DialogResult.OK Then Return
+            Try
+                Dim store As New ScheduledStore(ScheduledStore.DefaultFolder())
+                ShareSettingsTransfer.ExportToFile(store, dialog.FileName)
+            Catch ex As Exception
+                AppFileLogger.WriteLine("Scheduled operations: export failed (" & ex.GetType().Name & ")")
+                ShowScheduledNotice(Localization.T("Не удалось записать файл экспорта."))
+            End Try
+        End Using
+    End Sub
+
+    Private Sub OnScheduledImport()
+        Using dialog As New OpenFileDialog() With {
+            .Title = Localization.T("Импорт операций по расписанию"),
+            .Filter = "JSON (*.json)|*.json"}
+            If dialog.ShowDialog(Me) <> DialogResult.OK Then Return
+            Try
+                Dim store As New ScheduledStore(ScheduledStore.DefaultFolder())
+                Dim outcome As ShareSettingsImportResult = ShareSettingsTransfer.ImportFromFile(dialog.FileName, store, AddressOf ScheduledResourceRegistry.Lookup, ScheduledHost.Engine)
+                ApplyScheduledState()
+                ' After the refresh: it hides the notice line when nothing failed to run.
+                ShowScheduledNotice(If(outcome.Readable,
+                                       Localization.TF("Импортировано операций: {0}. Не импортировано: {1}.", outcome.Imported, outcome.NotImported),
+                                       Localization.T("Импорт не удался: файл не читается как экспорт операций по расписанию.")))
+            Catch ex As Exception
+                AppFileLogger.WriteLine("Scheduled operations: import failed (" & ex.GetType().Name & ")")
+                ShowScheduledNotice(Localization.T("Импорт не удался: файл не читается как экспорт операций по расписанию."))
+            End Try
+        End Using
+    End Sub
+
     Private Sub OnScheduledItemChecked(sender As Object, e As ItemCheckedEventArgs)
         If _schedUpdating Then Return
         Dim id As String = Convert.ToString(e.Item.Tag)
@@ -329,11 +363,6 @@ Partial Public NotInheritable Class Share_Settings_Form
     Private Sub OnScheduledFeatureChanged(sender As Object, e As EventArgs)
         If _schedUpdating Then Return
         ScheduledHost.Engine.FeatureEnabled = _schedFeature.Checked
-    End Sub
-
-    Private Sub OnScheduledMissedChanged(sender As Object, e As EventArgs)
-        If _schedUpdating OrElse _schedMissed.SelectedIndex < 0 Then Return
-        ScheduledHost.Engine.MissedRuns = If(_schedMissed.SelectedIndex = 1, MissedRunPolicy.Skip, MissedRunPolicy.RunOnceAtStart)
     End Sub
 
     ' --- entry from the outside ------------------------------------------------------------------------
@@ -358,6 +387,40 @@ Partial Public NotInheritable Class Share_Settings_Form
                                    If IsDisposed OrElse Disposing Then Return
                                    OpenScheduledEditor(Nothing, folder)
                                End Sub))
+    End Sub
+
+    ''' <summary>
+    ''' The server the failed operation talks to: the registered resource behind its source or destination. The
+    ''' run's own detail is a folder or a reason, never a host, so it is not used here. False when the operation
+    ''' has no remote side to point a diagnosis at (two local folders, Drive, a resource since removed).
+    ''' </summary>
+    Private Shared Function TryFailureEndpoint(failure As ScheduledFailureInfo, ByRef host As String, ByRef port As Integer) As Boolean
+        host = ""
+        port = 0
+        Dim engine As ScheduledEngine = ScheduledHost.Engine
+        If failure Is Nothing OrElse engine Is Nothing Then Return False
+        Dim op As ScheduledOperation = engine.TryGet(failure.OperationId)
+        If op Is Nothing Then Return False
+        For Each side As ScheduledLocation In {op.Source, op.Destination}
+            If side.Kind <> ScheduledLocationKind.Resource Then Continue For
+            Dim descriptor As ResourceDescriptor = ScheduledResourceRegistry.Find(side.ResourceId)
+            If descriptor IsNot Nothing AndAlso Not String.IsNullOrWhiteSpace(descriptor.Host) Then
+                host = descriptor.Host
+                port = descriptor.Port
+                Return True
+            End If
+        Next
+        Return False
+    End Function
+
+    Private Sub OnScheduledDiagnoseClicked()
+        Dim engine As ScheduledEngine = ScheduledHost.Engine
+        Dim failure As ScheduledFailureInfo = If(engine IsNot Nothing, engine.LastFailure, Nothing)
+        Dim host As String = ""
+        Dim port As Integer = 0
+        If Not TryFailureEndpoint(failure, host, port) Then Return
+        Dim ctx As New ConnectionDiagnosisContext(host, port, ConnectionDiagnosisTarget.Server, ConnectionDiagnosisMessages.UnreachableServer)
+        Dim ignored = Connection_Diagnosis_Dialog.RunAndShowAsync(Me, ctx)
     End Sub
 
 End Class

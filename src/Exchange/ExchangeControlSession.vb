@@ -48,6 +48,14 @@ Friend NotInheritable Class ExchangeControlOptions
     ''' <summary>A line for the log. The session passes only names, states and ids already reduced to their log form - never a
     ''' token, an `access`, a pairing code or a password.</summary>
     Public Property Log As Action(Of String) = Sub(line) Return
+    ''' <summary>The `kem` of this device's own key for the sealed scheme (item DF), "" when it has none - then it seals and opens
+    ''' nothing and its own record shows `e2e-missing`. A public value.</summary>
+    Public Property OwnKem As String = ""
+    ''' <summary>The kept first-seen keys of this entry's devices (item DG). Nothing keeps them in memory for the session only.</summary>
+    Public Property SealedTrust As IExchangeSealedTrustStore
+    ''' <summary>Loads this device's private key for ONE use (the caller disposes it); Nothing, or a function that answers Nothing, when
+    ''' this session holds none and so seals nothing. Read by the producer when it seals a folder (spec 234 item DI).</summary>
+    Public Property OwnKey As Func(Of ExchangeDeviceKey)
 
 End Class
 
@@ -124,6 +132,9 @@ Friend NotInheritable Class ExchangeControlSession
     Private _pendingTypes As String()
     Private _lastEcho As Long
     Private _publicEndpoint As String = ""
+    ' True between a `welcome` and the end of that connection: the features are then the server's own word.
+    Private _welcomed As Boolean
+    Private ReadOnly _sealed As ExchangeSealedRecipients
 
     ''' <summary>The state or its reason changed (raised on the session's own thread).</summary>
     Public Event StateChanged As EventHandler
@@ -136,7 +147,25 @@ Friend NotInheritable Class ExchangeControlSession
         If options Is Nothing Then Throw New ArgumentNullException(NameOf(options))
         _options = options
         _hooks = hooks
+        _sealed = New ExchangeSealedRecipients(If(options.Credentials Is Nothing, "", options.Credentials.DeviceId), options.OwnKem, options.SealedTrust,
+                                               AddressOf _model.Snapshot, AddressOf FeaturesOfConnection)
     End Sub
+
+    ''' <summary>Who this entry may seal to and what the person is told about the rest (DEVICE-EXCHANGE 27 items DG, DP, DR). It
+    ''' follows the directory of this session: it is refreshed after every `directory`, `changed` and `welcome`, and empty
+    ''' while the connection is down.</summary>
+    Public ReadOnly Property Sealed As ExchangeSealedRecipients
+        Get
+            Return _sealed
+        End Get
+    End Property
+
+    ''' <summary>The `features` of the last `welcome` of this connection, or Nothing while there is none.</summary>
+    Private Function FeaturesOfConnection() As IReadOnlyList(Of String)
+        SyncLock _gate
+            Return If(_welcomed, _features, Nothing)
+        End SyncLock
+    End Function
 
     Public ReadOnly Property State As ExchangeAgentState
         Get
@@ -273,10 +302,12 @@ Friend NotInheritable Class ExchangeControlSession
         SyncLock _gate
             _writer = Nothing
             _features = Array.Empty(Of String)()
+            _welcomed = False
         End SyncLock
         Dim p As TaskCompletionSource(Of ExchangeEnvelope) = Interlocked.Exchange(_pending, Nothing)
         If p IsNot Nothing Then p.TrySetCanceled()
         _model.Clear()
+        _sealed.Refresh()
     End Sub
 
     Private Async Function RunConnectedAsync(open As ExchangeOpenResult, ct As CancellationToken) As Task
@@ -287,8 +318,10 @@ Friend NotInheritable Class ExchangeControlSession
             SyncLock _gate
                 _writer = open.Writer
                 _features = New List(Of String)(welcome.TextList("features"))
+                _welcomed = True
                 _publicEndpoint = welcome.Text("publicEndpoint")
             End SyncLock
+            _sealed.Refresh()
             _lastEcho = _options.Clock.Invoke()
             SetState(ExchangeAgentState.Online, "")
 
@@ -343,11 +376,13 @@ Friend NotInheritable Class ExchangeControlSession
                 Return
             Case ExchangeEnvelopeTypes.Directory
                 _model.ApplyDirectory(env)
+                _sealed.Refresh()
                 RaiseEvent DirectoryChanged(Me, EventArgs.Empty)
                 Return
             Case ExchangeEnvelopeTypes.Changed
                 Select Case _model.ApplyChanged(env)
                     Case ExchangeDirectoryApply.Applied
+                        _sealed.Refresh()
                         RaiseEvent DirectoryChanged(Me, EventArgs.Empty)
                     Case ExchangeDirectoryApply.Gap
                         ' a gap in the revisions: take the whole directory again
@@ -469,8 +504,11 @@ Friend NotInheritable Class ExchangeControlSession
     End Function
 
     ''' <summary>`revoke`: the token of another device (or this one) dies; the change arrives as `changed`.</summary>
-    Public Function RevokeAsync(deviceId As String, ct As CancellationToken) As Task(Of Boolean)
-        Return SendAsync(ExchangeMessages.Revoke(deviceId), ct)
+    Public Async Function RevokeAsync(deviceId As String, ct As CancellationToken) As Task(Of Boolean)
+        Dim sent As Boolean = Await SendAsync(ExchangeMessages.Revoke(deviceId), ct).ConfigureAwait(False)
+        ' item DG: removing a device from the account drops the key kept for it
+        If sent Then _sealed.Forget(deviceId)
+        Return sent
     End Function
 
     ''' <summary>`bye`: going offline on purpose, no answer. Best effort, bounded.</summary>

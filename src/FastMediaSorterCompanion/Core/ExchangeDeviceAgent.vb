@@ -37,6 +37,11 @@ Friend NotInheritable Class ExchangeAgentPorts
     ''' <summary>Ticket 170: the producer (publishes the shares, answers `open`). Nothing by default - a test that does not ask for it
     ''' never publishes; the production start (<see cref="ExchangeDeviceHost"/>) hands in the real one.</summary>
     Public Property Producer As IExchangeProducerHooks = Nothing
+    ''' <summary>Where the private device key lives (spec 234, item DF). Nothing: DPAPI files beside the token store. A test hands in
+    ''' the in-memory one.</summary>
+    Public Property DeviceKeys As IExchangeDeviceKeyStore = Nothing
+    ''' <summary>The kept first-seen keys of the account's devices (item DG). Nothing: a file beside the token store.</summary>
+    Public Property SealedTrust As IExchangeSealedTrustStore = Nothing
 
 End Class
 
@@ -266,12 +271,22 @@ Friend NotInheritable Class ExchangeDeviceAgent
     Private _idleReason As String = ""
     Private _changeWaiters As New List(Of TaskCompletionSource(Of Boolean))
     Private _disposed As Boolean
+    Private _sealedTrust As IExchangeSealedTrustStore
 
     ' Live broadcast state (spec 199 section 3.3)
     Private _liveBroadcastRecordJson As String
     Private _liveBroadcastId As String
     Private _liveBroadcastState As LiveProducerState
     Private _liveUploadCts As CancellationTokenSource
+    ' Sealed relay (spec 234 T-3, items DK and DL): the keys and epochs of the running broadcast, and the keys of one about to start.
+    Private _liveSealed As ExchangeSealedBroadcastSession
+    Private ReadOnly _pendingBroadcastKeys As New Dictionary(Of String, ExchangeBroadcastKeys)(StringComparer.Ordinal)
+    Private _liveSealedPublisher As ExchangeSealedBroadcastPublisher
+    ' Inner TLS of the sealed TUNNEL (item DM, ticket 234 E1b): ONE identity per broadcast, made when its outward descriptor is built
+    ' (the pin goes into it), adopted when the broadcast starts, wiped when it stops. The private key lives in memory only.
+    Private _liveTunnel As ExchangeSealedTunnel
+    Private _liveTunnelBroadcastId As String
+    Private ReadOnly _pendingTunnels As New Dictionary(Of String, ExchangeSealedTunnel)(StringComparer.Ordinal)
     Private ReadOnly _castPendingLock As New Object()
     Private ReadOnly _pendingCasts As New Dictionary(Of String, TaskCompletionSource(Of Tuple(Of Boolean, String)))(StringComparer.Ordinal)
 
@@ -323,15 +338,67 @@ Friend NotInheritable Class ExchangeDeviceAgent
         StartSession(account, address, New ExchangeDeviceCredentials(account.DeviceId, token), Nothing)
     End Sub
 
+    ' --- the device key and the kept keys of the sealed scheme (spec 234, items DF and DG) ---
+
+    Private Function KeyStore() As IExchangeDeviceKeyStore
+        Return If(_ports.DeviceKeys, New ExchangeDeviceKeyStore(_ports.Credentials.FolderPath, Nothing))
+    End Function
+
+    ''' <summary>One object for the agent's life: the file store caches what it read, and two of them over one file would disagree.</summary>
+    Private Function TrustStore() As IExchangeSealedTrustStore
+        SyncLock _gate
+            If _sealedTrust Is Nothing Then _sealedTrust = If(_ports.SealedTrust, New ExchangeSealedTrustStore(_ports.Credentials.FolderPath))
+            Return _sealedTrust
+        End SyncLock
+    End Function
+
+    ''' <summary>The key of the id before `enroll` or `register` (item DF): the one kept for it, else a new one kept first. Returns its
+    ''' public `kem`; "" when no key could be kept - then nothing is sent, because a key that is not stored would be lost at the next
+    ''' start and the device would have to enroll anew. <paramref name="created"/> tells the caller to take a new key back when the
+    ''' enrollment does not succeed.</summary>
+    Private Function PrepareDeviceKey(deviceId As String, ByRef created As Boolean) As String
+        Dim store As IExchangeDeviceKeyStore = KeyStore()
+        created = Not store.Exists(deviceId)
+        Using key As ExchangeDeviceKey = ExchangeDeviceKeys.LoadOrCreate(store, deviceId)
+            If key Is Nothing Then
+                created = False
+                _ports.Log.Invoke("Exchange agent: the device key could not be kept on this computer - nothing was sent")
+                Return ""
+            End If
+            Return key.Kem
+        End Using
+    End Function
+
+    ''' <summary>A failed enrollment leaves nothing behind: a key made for it is dropped. A key that was there before is the device's.</summary>
+    Private Sub DropFreshKeyOnFailure(deviceId As String, created As Boolean, result As ExchangeEnrollResult)
+        If created AndAlso result.Outcome <> ExchangeEnrollOutcome.Enrolled Then KeyStore().Delete(deviceId)
+    End Sub
+
+    ''' <summary>The `kem` of this device's own key, "" when it has none (a device enrolled before it had one). A pure read.</summary>
+    Private Function OwnKemOf(deviceId As String) As String
+        Using key As ExchangeDeviceKey = KeyStore().TryLoad(deviceId)
+            Return If(key Is Nothing, "", key.Kem)
+        End Using
+    End Function
+
+    ''' <summary>Who this account may seal to and the state of each device (spec 234, items DG, DP, DR). Nothing while no session runs.</summary>
+    Public Function GetSealedRecipients() As ExchangeSealedRecipients
+        SyncLock _gate
+            Return If(_session Is Nothing, Nothing, _session.Sealed)
+        End SyncLock
+    End Function
+
     Private Sub StartSession(account As ExchangeAccount, address As ExchangeServerAddress, creds As ExchangeDeviceCredentials, adopted As ExchangeOpenResult)
         StopSessionOnly()
         Dim options As New ExchangeControlOptions With {
             .Server = address, .Pin = account.Pin, .Credentials = creds, .ProductVersion = _ports.ProductVersion,
-            .Transport = _ports.Accounts.TransportFor(account, _ports.Transport), .Log = _ports.Log}
+            .Transport = _ports.Accounts.TransportFor(account, _ports.Transport), .Log = _ports.Log,
+            .OwnKem = OwnKemOf(creds.DeviceId), .SealedTrust = TrustStore(), .OwnKey = Function() KeyStore().TryLoad(creds.DeviceId)}
         _ports.ConfigureSession.Invoke(options)
         Dim session As New ExchangeControlSession(options, Me)
         AddHandler session.StateChanged, AddressOf OnSessionStateChanged
         AddHandler session.DirectoryChanged, AddressOf OnSessionDirectoryChanged
+        AddHandler session.Sealed.Changed, AddressOf OnSealedRecipientsChanged
         AddHandler session.DeviceRevoked, AddressOf OnSessionDeviceRevoked
         Dim cts As New CancellationTokenSource()
         SyncLock _gate
@@ -378,6 +445,7 @@ Friend NotInheritable Class ExchangeDeviceAgent
         If session IsNot Nothing Then
             RemoveHandler session.StateChanged, AddressOf OnSessionStateChanged
             RemoveHandler session.DirectoryChanged, AddressOf OnSessionDirectoryChanged
+            RemoveHandler session.Sealed.Changed, AddressOf OnSealedRecipientsChanged
             RemoveHandler session.DeviceRevoked, AddressOf OnSessionDeviceRevoked
         End If
         If cts IsNot Nothing Then
@@ -415,6 +483,11 @@ Friend NotInheritable Class ExchangeDeviceAgent
         _disposed = True
         StopSessionOnly()
         DisposeChannel()
+        Dim liveId As String
+        SyncLock _gate
+            liveId = _liveBroadcastId
+        End SyncLock
+        DisposeSealedBroadcast(liveId)
     End Sub
 
     ' --- state ---
@@ -513,6 +586,9 @@ Friend NotInheritable Class ExchangeDeviceAgent
     ''' chosen login and password, then `enrolled`. The completion is a sign-in's own: the token is stored under DPAPI, the account entry is
     ''' written, the control stream stays open and the local channel starts. The request's secrets are wiped whatever happens.</summary>
     Public Async Function RegisterAsync(request As ExchangeRegisterRequest, ct As CancellationToken) As Task(Of ExchangeEnrollResult)
+        Dim keyDeviceId As String = ""
+        Dim keyCreated As Boolean = False
+        Dim keyKept As Boolean = False
         Try
             Dim address As ExchangeServerAddress = Nothing
             Dim login As String = request.Login.Trim()
@@ -528,11 +604,14 @@ Friend NotInheritable Class ExchangeDeviceAgent
             End If
 
             Dim deviceId As String = _ports.Accounts.ProposeDeviceId()
+            keyDeviceId = deviceId
+            Dim kem As String = PrepareDeviceKey(deviceId, keyCreated)
+            If kem.Length = 0 Then Return New ExchangeEnrollResult(ExchangeEnrollOutcome.StoreFailed, ExchangeRefusal.Unknown, "")
             Dim name As String = ExchangeDeviceDescription.Clip(If(request.DeviceName.Trim().Length > 0, request.DeviceName, _ports.MachineName.Invoke()), 64)
             If name.Length = 0 Then name = "Windows PC"
             Dim description As New ExchangeDeviceDescription(deviceId, name, ExchangeWire.ProductWindows,
                 ExchangeDeviceDescription.Clip(_ports.ProductVersion, 64), ExchangeDeviceDescription.PlatformText(),
-                ExchangeRoles.Compute(_ports.RoleFacts), If(_ports.RoleFacts.CanReceive(), ExchangeAgentPipe.ReceiverJson, ""))
+                ExchangeRoles.Compute(_ports.RoleFacts), If(_ports.RoleFacts.CanReceive(), ExchangeAgentPipe.ReceiverJson, ""), kem)
             Dim code As String = request.InvitationCode.Trim()
             Dim sharedPw As String = request.SharedPassword
             Dim password As String = request.Password
@@ -549,7 +628,9 @@ Friend NotInheritable Class ExchangeDeviceAgent
             Select Case opened.Outcome
                 Case ExchangeOpenOutcome.Connected
                     Dim shim As New ExchangeEnrollRequest With {.PlatformValid = request.PlatformValid}
-                    Return CompleteEnrollment(opened, address, login, shim, description, pin)
+                    ' keyKept is set inside, at the moment the account is saved: whatever fails after that, the key stays with the account
+                    Dim completed As ExchangeEnrollResult = CompleteEnrollment(opened, address, login, shim, description, pin, keyKept)
+                    Return completed
                 Case ExchangeOpenOutcome.Refused
                     Return New ExchangeEnrollResult(ExchangeEnrollOutcome.Refused, opened.Refusal, opened.Fingerprint)
                 Case ExchangeOpenOutcome.PinMismatch
@@ -569,12 +650,17 @@ Friend NotInheritable Class ExchangeDeviceAgent
             End Select
         Finally
             request.Wipe()
+            ' a failed enrollment leaves nothing behind (a key that was there before is the device's own and stays)
+            If keyCreated AndAlso Not keyKept Then KeyStore().Delete(keyDeviceId)
         End Try
     End Function
     ''' <summary>Enrolls this PC: `enroll` with the password OR a pairing code, then `enrolled`. On success the token is stored under DPAPI, the
     ''' account entry is written, the control stream stays open (the very stream that enrolled becomes the control stream) and the local
     ''' channel starts. The request's secrets are wiped whatever happens.</summary>
     Public Async Function EnrollAsync(request As ExchangeEnrollRequest, ct As CancellationToken) As Task(Of ExchangeEnrollResult)
+        Dim keyDeviceId As String = ""
+        Dim keyCreated As Boolean = False
+        Dim keyKept As Boolean = False
         Try
             Dim address As ExchangeServerAddress = Nothing
             Dim login As String = request.Login.Trim()
@@ -590,11 +676,14 @@ Friend NotInheritable Class ExchangeDeviceAgent
 
             ' a failed enrollment leaves nothing behind: the id is stored with the account entry on success
             Dim deviceId As String = _ports.Accounts.ProposeDeviceId()
+            keyDeviceId = deviceId
+            Dim kem As String = PrepareDeviceKey(deviceId, keyCreated)
+            If kem.Length = 0 Then Return New ExchangeEnrollResult(ExchangeEnrollOutcome.StoreFailed, ExchangeRefusal.Unknown, "")
             Dim name As String = ExchangeDeviceDescription.Clip(If(request.DeviceName.Trim().Length > 0, request.DeviceName, _ports.MachineName.Invoke()), 64)
             If name.Length = 0 Then name = "Windows PC"
             Dim description As New ExchangeDeviceDescription(deviceId, name, ExchangeWire.ProductWindows,
                 ExchangeDeviceDescription.Clip(_ports.ProductVersion, 64), ExchangeDeviceDescription.PlatformText(),
-                ExchangeRoles.Compute(_ports.RoleFacts), If(_ports.RoleFacts.CanReceive(), ExchangeAgentPipe.ReceiverJson, ""))
+                ExchangeRoles.Compute(_ports.RoleFacts), If(_ports.RoleFacts.CanReceive(), ExchangeAgentPipe.ReceiverJson, ""), kem)
             Dim enroll As ExchangeEnvelope = ExchangeMessages.Enroll(login, request.Password, request.PairingCode.Trim().ToUpperInvariant(), description,
                                                                     ExchangeWire.ProposedKeepaliveSeconds)
             Dim opened As ExchangeOpenResult
@@ -608,7 +697,9 @@ Friend NotInheritable Class ExchangeDeviceAgent
 
             Select Case opened.Outcome
                 Case ExchangeOpenOutcome.Connected
-                    Return CompleteEnrollment(opened, address, login, request, description, pin)
+                    ' keyKept is set inside, at the moment the account is saved: whatever fails after that, the key stays with the account
+                    Dim completed As ExchangeEnrollResult = CompleteEnrollment(opened, address, login, request, description, pin, keyKept)
+                    Return completed
                 Case ExchangeOpenOutcome.Refused
                     Return New ExchangeEnrollResult(ExchangeEnrollOutcome.Refused, opened.Refusal, opened.Fingerprint)
                 Case ExchangeOpenOutcome.PinMismatch
@@ -628,11 +719,14 @@ Friend NotInheritable Class ExchangeDeviceAgent
             End Select
         Finally
             request.Wipe()
+            ' a failed enrollment leaves nothing behind (a key that was there before is the device's own and stays)
+            If keyCreated AndAlso Not keyKept Then KeyStore().Delete(keyDeviceId)
         End Try
     End Function
 
     Private Function CompleteEnrollment(opened As ExchangeOpenResult, address As ExchangeServerAddress, login As String,
-                                        request As ExchangeEnrollRequest, description As ExchangeDeviceDescription, pin As String) As ExchangeEnrollResult
+                                        request As ExchangeEnrollRequest, description As ExchangeDeviceDescription, pin As String,
+                                        ByRef keyKept As Boolean) As ExchangeEnrollResult
         Dim token As String = opened.Welcome.Text("deviceToken")
         If Not ExchangeIds.IsValidToken(token) Then
             opened.Dispose()
@@ -646,6 +740,9 @@ Friend NotInheritable Class ExchangeDeviceAgent
         Dim kind As ExchangeCertificateKind = If(request.PlatformValid, ExchangeCertificateKind.CaSigned, ExchangeCertificateKind.Pinned)
         Dim account As New ExchangeAccount(address.ToString(), login, pin, kind, description.DeviceId, description.DeviceName, If(request.PlatformValid, "", opened.KeyPin))
         _ports.Accounts.Save(account)
+        ' The device is configured from here on, so its key is the account's: a failure of the session start below must not take the
+        ' key back (the device could never open sealed content again). Only an enrollment that never got this far drops a fresh key.
+        keyKept = True
         _ports.Log.Invoke("Exchange agent: enrolled as device " & ExchangeIds.ForLog(description.DeviceId))
         StartSession(account, address, New ExchangeDeviceCredentials(description.DeviceId, token), opened)
         Return New ExchangeEnrollResult(ExchangeEnrollOutcome.Enrolled, ExchangeRefusal.Unknown, opened.Fingerprint)
@@ -733,6 +830,10 @@ Friend NotInheritable Class ExchangeDeviceAgent
     ''' server (offline) until another device of the account revokes it.</summary>
     Public Async Function DisconnectAsync() As Task
         Await StopAsync().ConfigureAwait(False)
+        ' the kept keys of the account's devices go with the account (item DG); this device's own key lives as long as its id, which
+        ' stays, so a later sign-in under the same id carries the same key (item DF)
+        Dim leaving As ExchangeAccount = _ports.Accounts.Load()
+        If leaving IsNot Nothing Then TrustStore().ForgetScope(leaving.DeviceId)
         _ports.Credentials.Delete()
         _ports.Accounts.Forget()
         ' "keep nothing" has one exception: that the person chose to leave, so the local join does not undo it at the next start
@@ -779,7 +880,9 @@ Friend NotInheritable Class ExchangeDeviceAgent
         ' Spec 200 rule 6: After a reconnect the agent sends broadcast-start again with the same id
         If Not String.IsNullOrEmpty(activeRecord) Then
             Try
-                Await session.SendAsync(New ExchangeEnvelope(ExchangeEnvelopeTypes.BroadcastStart).SetRecord("broadcast", activeRecord), ct).ConfigureAwait(False)
+                Dim startSent As Boolean = Await session.SendAsync(New ExchangeEnvelope(ExchangeEnvelopeTypes.BroadcastStart).SetRecord("broadcast", activeRecord), ct).ConfigureAwait(False)
+                ' Item DL: the record (with its current box) is out, so a replacement waiting for it may follow.
+                If startSent Then CurrentSealed()?.MarkPublished()
             Catch
             End Try
         End If
@@ -886,16 +989,29 @@ Friend NotInheritable Class ExchangeDeviceAgent
 
         Dim status As ExchangeDeviceStatus = Me.GetStatus()
         Dim deviceId As String = If(status IsNot Nothing, status.DeviceId, "")
-        Dim recordJson As String = LiveProducerDescriptorWriter.BuildBroadcastRecord(state.BroadcastId, deviceId, state.SourceName, state.Mode, state.DescriptorJson)
+        ' Items DK and DL: a broadcast with RELAY / TUNNEL endpoints is sealed. Its record carries the descriptor WITHOUT keys
+        ' (`seal: {v}`) and the box; the descriptor with the link keys (state.DescriptorJson) never goes to the server.
+        Dim publisher As ExchangeSealedBroadcastPublisher = If(state.Sealed, BeginSealedBroadcast(state, deviceId), Nothing)
+        Dim recordJson As String
+        If publisher IsNot Nothing Then
+            recordJson = publisher.PrepareRecord()
+        ElseIf state.Sealed Then
+            ' sealed, but no key of this device: nothing goes through the server (the LAN endpoint, if any, is not sealed)
+            recordJson = LiveProducerDescriptorWriter.BuildBroadcastRecord(state.BroadcastId, deviceId, state.SourceName, state.Mode, state.RecordDescriptorJson)
+        Else
+            recordJson = LiveProducerDescriptorWriter.BuildBroadcastRecord(state.BroadcastId, deviceId, state.SourceName, state.Mode, state.DescriptorJson)
+        End If
         SyncLock _gate
             _liveBroadcastRecordJson = recordJson
         End SyncLock
 
         If session IsNot Nothing Then
+            Dim sealedSession As ExchangeSealedBroadcastSession = publisher?.Session
             Dim unused As Task = Task.Run(
                 Async Function()
                     Try
-                        Await session.SendAsync(New ExchangeEnvelope(ExchangeEnvelopeTypes.BroadcastStart).SetRecord("broadcast", recordJson), CancellationToken.None).ConfigureAwait(False)
+                        Dim sent As Boolean = Await session.SendAsync(New ExchangeEnvelope(ExchangeEnvelopeTypes.BroadcastStart).SetRecord("broadcast", recordJson), CancellationToken.None).ConfigureAwait(False)
+                        If sent Then sealedSession?.MarkPublished()
                     Catch
                     End Try
                 End Function)
@@ -927,6 +1043,8 @@ Friend NotInheritable Class ExchangeDeviceAgent
             uploadCts?.Cancel()
         Catch
         End Try
+        ' the keys of the ended broadcast (and any made for one that never started) are wiped
+        DisposeSealedBroadcast(broadcastId)
         If session IsNot Nothing AndAlso Not String.IsNullOrEmpty(broadcastId) Then
             Dim unused As Task = Task.Run(
                 Async Function()
@@ -939,97 +1057,239 @@ Friend NotInheritable Class ExchangeDeviceAgent
     End Sub
 
     Private Async Function RunUploadLoopAsync(state As LiveProducerState, audioHub As LiveBroadcastHub, videoHub As LiveBroadcastHub, ct As CancellationToken) As Task
-        If String.IsNullOrEmpty(state.RelayUrl) OrElse Not String.IsNullOrEmpty(state.Password) Then Return
+        ' Item DL, no clear fallback: the relay carries sealed records or nothing. A broadcast without a sealed session (no sealing
+        ' layer wired, or no key of this device) uploads nothing, and a protected one never reaches the relay (its Digest runs on
+        ' the producer's own server, over the LAN or a TUNNEL).
+        If String.IsNullOrEmpty(state.RelayUrl) OrElse Not String.IsNullOrEmpty(state.Password) OrElse Not state.Sealed Then Return
         Dim isVideo As Boolean = String.Equals(state.Mode, "VIDEO_AUDIO", StringComparison.OrdinalIgnoreCase) OrElse
                                  String.Equals(state.Mode, "VIDEO_ONLY", StringComparison.OrdinalIgnoreCase)
-        Dim contentType As String = If(isVideo, "video/mp2t", "audio/aac")
         Dim hub As LiveBroadcastHub = If(isVideo, videoHub, audioHub)
-        If hub Is Nothing Then Return
+        Dim sealedSession As ExchangeSealedBroadcastSession = CurrentSealed()
+        If hub Is Nothing OrElse sealedSession Is Nothing OrElse Not String.Equals(sealedSession.BroadcastId, state.BroadcastId, StringComparison.Ordinal) Then Return
 
-        While Not ct.IsCancellationRequested
-            Dim session As ExchangeControlSession
+        Await LiveSealedRelayUploader.RunAsync(sealedSession, hub, isVideo,
+                                               Function(token) OpenSealedUploadAsync(state.BroadcastId, token), 1000, ct).ConfigureAwait(False)
+    End Function
+
+    ''' <summary>One relay upload of item DL: `hello`, `upload` with the content type of the sealed relay, `upload-accepted`.
+    ''' Nothing while there is no connected session (the uploader tries again).</summary>
+    Private Async Function OpenSealedUploadAsync(broadcastId As String, ct As CancellationToken) As Task(Of ExchangeOpenResult)
+        Dim session As ExchangeControlSession
+        SyncLock _gate
+            session = _session
+        End SyncLock
+        If session Is Nothing OrElse session.ConnectionOptions Is Nothing Then Return Nothing
+        Dim opts As ExchangeControlOptions = session.ConnectionOptions
+        Return Await ExchangeDataStreams.UploadAsync(opts.Transport, opts.Server, opts.Pin, opts.Credentials, opts.ProductVersion,
+                                                     broadcastId, ExchangeRelayRecords.ContentType, ct).ConfigureAwait(False)
+    End Function
+
+    ' --- sealed broadcast (spec 234 T-3, items DK and DL) ---
+
+    ''' <summary>The sealed session of the running broadcast; Nothing when there is none.</summary>
+    Friend Function CurrentSealed() As ExchangeSealedBroadcastSession
+        SyncLock _gate
+            Return _liveSealed
+        End SyncLock
+    End Function
+
+    ''' <summary>True when the current session may seal through its server: connected, `sealed` listed, a key of this device. The
+    ''' producer asks before it lists a RELAY or TUNNEL endpoint.</summary>
+    Friend Function CanSealBroadcast() As Boolean
+        Dim view As ExchangeSealedRecipients = GetSealedRecipients()
+        Return view IsNot Nothing AndAlso view.CanSealThroughServer
+    End Function
+
+    ''' <summary>A new group key for one outward link of the broadcast, as the text the outward descriptor carries (base64url); ""
+    ''' at the ring bound. Before the broadcast starts the key waits for its session; on a running one the ring changes, so a
+    ''' replacement upload follows. A secret: never logged.</summary>
+    Friend Function NewBroadcastLinkKey(broadcastId As String) As String
+        If String.IsNullOrEmpty(broadcastId) Then Return ""
+        Dim running As ExchangeSealedBroadcastSession = Nothing
+        Dim publisher As ExchangeSealedBroadcastPublisher = Nothing
+        Dim keys As ExchangeBroadcastKeys = Nothing
+        SyncLock _gate
+            If _liveSealed IsNot Nothing AndAlso String.Equals(_liveSealed.BroadcastId, broadcastId, StringComparison.Ordinal) Then
+                running = _liveSealed
+                publisher = _liveSealedPublisher
+            ElseIf Not _pendingBroadcastKeys.TryGetValue(broadcastId, keys) Then
+                ' one broadcast at a time: keys made for another id that never started are wiped
+                For Each stale As ExchangeBroadcastKeys In _pendingBroadcastKeys.Values
+                    stale.Dispose()
+                Next
+                _pendingBroadcastKeys.Clear()
+                keys = New ExchangeBroadcastKeys()
+                _pendingBroadcastKeys(broadcastId) = keys
+            End If
+        End SyncLock
+        If running IsNot Nothing Then
+            Dim text As String = running.AddLink()
+            ' the record is sent first, then the replacement upload follows (item N)
+            If text.Length > 0 AndAlso publisher IsNot Nothing Then
+                Dim unused As Task = publisher.NotifyRecipientsChangedAsync()
+            End If
+            Return text
+        End If
+        Return keys.AddLink()
+    End Function
+
+    ''' <summary>The `SHA256:` pin of the inner TLS leaf of this broadcast's TUNNEL (item DM), as the outward descriptor carries it in
+    ''' `seal.pin`. The tunnel identity is made on the first ask for a broadcast id (before the broadcast starts, as the descriptor is
+    ''' built first) and the same pin comes back on every later ask; "" when this device cannot seal through the server or the identity
+    ''' could not be made. An identity made for a broadcast that never starts is wiped when the next broadcast asks.</summary>
+    Friend Function NewBroadcastTunnelPin(broadcastId As String) As String
+        If String.IsNullOrEmpty(broadcastId) OrElse Not CanSealBroadcast() Then Return ""
+        Dim stale As New List(Of ExchangeSealedTunnel)()
+        Dim identity As ExchangeSealedTunnel = Nothing
+        Try
             SyncLock _gate
-                session = _session
-            End SyncLock
-            If session Is Nothing OrElse session.ConnectionOptions Is Nothing Then
-                Try
-                    Await Task.Delay(1000, ct).ConfigureAwait(False)
-                Catch
-                    Return
-                End Try
-                Continue While
-            End If
-
-            Dim opts As ExchangeControlOptions = session.ConnectionOptions
-            Dim uploadSession As ExchangeOpenResult = Nothing
-            Dim cursor As LiveHubCursor = Nothing
-            Dim shouldDelay As Boolean = False
-            Try
-                uploadSession = Await ExchangeDataStreams.UploadAsync(
-                    opts.Transport, opts.Server, opts.Pin, opts.Credentials, opts.ProductVersion, state.BroadcastId, contentType, ct).ConfigureAwait(False)
-                If uploadSession Is Nothing OrElse Not uploadSession.IsConnected Then
-                    shouldDelay = True
-                Else
-                    cursor = hub.Attach()
-                    Dim netStream As Stream = uploadSession.Stream
-
-                    Dim chunker As New LiveRelayTsChunker()
-
-                    ' Streaming loop
-                    While Not ct.IsCancellationRequested AndAlso Not cursor.Detached
-                        Dim chunk As Byte() = cursor.Pull()
-                        If chunk Is Nothing Then
-                            Await Task.Delay(10, ct).ConfigureAwait(False)
-                            Continue While
-                        End If
-
-                        If isVideo Then
-                            For Each cut As LiveRelayCut In chunker.Feed(chunk)
-                                Dim flags As Byte = If(cut.Header, ExchangeChunks.FlagHeader,
-                                                       If(cut.Joinable, ExchangeChunks.FlagJoinable, CByte(0)))
-                                Await WriteLiveChunkAsync(netStream, ExchangeChunks.Build(flags, cut.Payload), ct).ConfigureAwait(False)
-                            Next
-                        Else
-                            Await WriteLiveChunkAsync(netStream, ExchangeChunks.Build(ExchangeChunks.FlagJoinable, chunk), ct).ConfigureAwait(False)
-                        End If
-                    End While
-
-                    ' Clean teardown: zero-length end marker
-                    Try
-                        Dim endMarker As Byte() = ExchangeChunks.EndMarker()
-                        Await WriteLiveChunkAsync(netStream, endMarker, ct).ConfigureAwait(False)
-                    Catch
-                    End Try
+                If _liveTunnel IsNot Nothing AndAlso String.Equals(_liveTunnelBroadcastId, broadcastId, StringComparison.Ordinal) Then
+                    identity = _liveTunnel
+                ElseIf Not _pendingTunnels.TryGetValue(broadcastId, identity) Then
+                    ' one broadcast at a time: identities made for another id that never started are wiped
+                    stale.AddRange(_pendingTunnels.Values)
+                    _pendingTunnels.Clear()
+                    identity = New ExchangeSealedTunnel()
+                    _pendingTunnels(broadcastId) = identity
                 End If
-            Catch ex As OperationCanceledException When ct.IsCancellationRequested
-                Return
-            Catch ex As Exception
-                ' Lost stream: reconnect within 15s grace
-                shouldDelay = True
-            Finally
-                cursor?.Detach()
-                Try
-                    uploadSession?.Dispose()
-                Catch
-                End Try
-            End Try
+                Return identity.Pin
+            End SyncLock
+        Catch ex As System.Security.Cryptography.CryptographicException
+            Return ""
+        Finally
+            For Each old As ExchangeSealedTunnel In stale
+                old.Dispose()
+            Next
+        End Try
+    End Function
 
-            If shouldDelay Then
-                Try
-                    Await Task.Delay(1000, ct).ConfigureAwait(False)
-                Catch
-                    Return
-                End Try
+    ''' <summary>Makes the sealed session and its publisher for a broadcast that starts now; Nothing when this device has no key of its
+    ''' own to seal with.</summary>
+    Private Function BeginSealedBroadcast(state As LiveProducerState, deviceId As String) As ExchangeSealedBroadcastPublisher
+        If Not CanSealBroadcast() Then Return Nothing
+        Dim isVideo As Boolean = String.Equals(state.Mode, "VIDEO_AUDIO", StringComparison.OrdinalIgnoreCase) OrElse
+                                 String.Equals(state.Mode, "VIDEO_ONLY", StringComparison.OrdinalIgnoreCase)
+        Dim keys As ExchangeBroadcastKeys = Nothing
+        Dim previous As ExchangeSealedBroadcastSession = Nothing
+        Dim previousPublisher As ExchangeSealedBroadcastPublisher = Nothing
+        Dim identity As ExchangeSealedTunnel = Nothing
+        Dim previousTunnel As ExchangeSealedTunnel = Nothing
+        Dim wantsTunnel As Boolean = Not String.IsNullOrEmpty(state.TunnelUrl)
+        SyncLock _gate
+            If Not _pendingBroadcastKeys.TryGetValue(state.BroadcastId, keys) Then keys = New ExchangeBroadcastKeys()
+            _pendingBroadcastKeys.Remove(state.BroadcastId)
+            previous = _liveSealed
+            previousPublisher = _liveSealedPublisher
+            ' Item DM: the tunnel identity made for the outward descriptor is adopted (its pin is already handed out); a start without a
+            ' prior ask makes one now. An identity of an earlier broadcast is wiped.
+            If wantsTunnel Then
+                If _liveTunnel IsNot Nothing AndAlso String.Equals(_liveTunnelBroadcastId, state.BroadcastId, StringComparison.Ordinal) Then
+                    identity = _liveTunnel
+                ElseIf _pendingTunnels.TryGetValue(state.BroadcastId, identity) Then
+                    _pendingTunnels.Remove(state.BroadcastId)
+                End If
             End If
-        End While
+            If _liveTunnel IsNot Nothing AndAlso Not ReferenceEquals(_liveTunnel, identity) Then previousTunnel = _liveTunnel
+            _liveTunnel = Nothing
+            _liveTunnelBroadcastId = Nothing
+        End SyncLock
+        previousPublisher?.Dispose()
+        previous?.Dispose()
+        previousTunnel?.Dispose()
+        If wantsTunnel AndAlso identity Is Nothing Then
+            Try
+                identity = New ExchangeSealedTunnel()
+            Catch ex As System.Security.Cryptography.CryptographicException
+                identity = Nothing
+            End Try
+        End If
+
+        Dim sealedSession As New ExchangeSealedBroadcastSession(
+            state.BroadcastId, If(isVideo, "video/mp2t", "audio/aac"), keys,
+            Function() GetSealedRecipients(), Function() KeyStore().TryLoad(deviceId),
+            hasRelay:=Not String.IsNullOrEmpty(state.RelayUrl), tunnelPin:=If(identity IsNot Nothing, identity.Pin, ""),
+            credentialUser:=state.AuthUser, credentialPassword:=state.Password)
+        Dim publisher As New ExchangeSealedBroadcastPublisher(
+            sealedSession,
+            Function(box) LiveProducerDescriptorWriter.BuildBroadcastRecord(state.BroadcastId, deviceId, state.SourceName, state.Mode, state.RecordDescriptorJson, box),
+            Sub(record)
+                SyncLock _gate
+                    If String.Equals(_liveBroadcastId, state.BroadcastId, StringComparison.Ordinal) Then _liveBroadcastRecordJson = record
+                End SyncLock
+            End Sub,
+            Function(record) SendBroadcastUpdateAsync(record),
+            ExchangeSealedBroadcastPublisher.DefaultDebounceMs)
+        SyncLock _gate
+            _liveSealed = sealedSession
+            _liveSealedPublisher = publisher
+            _liveTunnel = identity
+            _liveTunnelBroadcastId = If(identity IsNot Nothing, state.BroadcastId, Nothing)
+        End SyncLock
+        Return publisher
     End Function
 
-    Private Shared Async Function WriteLiveChunkAsync(stream As Stream, bytes As Byte(), ct As CancellationToken) As Task
-        Using deadline As CancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(ct)
-            deadline.CancelAfter(TimeSpan.FromSeconds(5))
-            Await stream.WriteAsync(bytes, 0, bytes.Length, deadline.Token).ConfigureAwait(False)
-        End Using
+    Private Async Function SendBroadcastUpdateAsync(record As String) As Task(Of Boolean)
+        Dim session As ExchangeControlSession
+        SyncLock _gate
+            session = _session
+        End SyncLock
+        If session Is Nothing Then Return False
+        Try
+            Return Await session.SendAsync(New ExchangeEnvelope(ExchangeEnvelopeTypes.BroadcastUpdate).SetRecord("broadcast", record), CancellationToken.None).ConfigureAwait(False)
+        Catch
+            Return False
+        End Try
     End Function
+
+    ''' <summary>The sealed state of an ended broadcast (or of keys made for one that never started) is wiped.</summary>
+    Private Sub DisposeSealedBroadcast(broadcastId As String)
+        Dim sealedSession As ExchangeSealedBroadcastSession = Nothing
+        Dim publisher As ExchangeSealedBroadcastPublisher = Nothing
+        Dim stale As New List(Of ExchangeBroadcastKeys)()
+        Dim tunnels As New List(Of ExchangeSealedTunnel)()
+        SyncLock _gate
+            If _liveSealed IsNot Nothing AndAlso String.Equals(_liveSealed.BroadcastId, broadcastId, StringComparison.Ordinal) Then
+                sealedSession = _liveSealed
+                publisher = _liveSealedPublisher
+                _liveSealed = Nothing
+                _liveSealedPublisher = Nothing
+            End If
+            ' item DM: the tunnel identity (and its private key) of the ended broadcast, or one made for a broadcast that never started
+            If _liveTunnel IsNot Nothing AndAlso String.Equals(_liveTunnelBroadcastId, broadcastId, StringComparison.Ordinal) Then
+                tunnels.Add(_liveTunnel)
+                _liveTunnel = Nothing
+                _liveTunnelBroadcastId = Nothing
+            End If
+            Dim pendingTunnel As ExchangeSealedTunnel = Nothing
+            If Not String.IsNullOrEmpty(broadcastId) AndAlso _pendingTunnels.TryGetValue(broadcastId, pendingTunnel) Then
+                tunnels.Add(pendingTunnel)
+                _pendingTunnels.Remove(broadcastId)
+            End If
+            Dim waiting As ExchangeBroadcastKeys = Nothing
+            If Not String.IsNullOrEmpty(broadcastId) AndAlso _pendingBroadcastKeys.TryGetValue(broadcastId, waiting) Then
+                stale.Add(waiting)
+                _pendingBroadcastKeys.Remove(broadcastId)
+            End If
+        End SyncLock
+        publisher?.Dispose()
+        sealedSession?.Dispose()
+        For Each keys As ExchangeBroadcastKeys In stale
+            keys.Dispose()
+        Next
+        For Each tunnel As ExchangeSealedTunnel In tunnels
+            tunnel.Dispose()
+        Next
+    End Sub
+
+    ''' <summary>The recipients of the sealed directory changed: the running broadcast's record gets a new box (item DK).</summary>
+    Private Sub OnSealedRecipientsChanged(sender As Object, e As EventArgs)
+        Dim publisher As ExchangeSealedBroadcastPublisher
+        SyncLock _gate
+            publisher = _liveSealedPublisher
+        End SyncLock
+        If publisher Is Nothing Then Return
+        Dim unused As Task = publisher.NotifyRecipientsChangedAsync()
+    End Sub
 
     Private Async Function HandleBroadcastOpenAsync(session As ExchangeControlSession, tunnelId As String, broadcastId As String, ct As CancellationToken) As Task
         If String.IsNullOrEmpty(tunnelId) OrElse session Is Nothing Then Return
@@ -1038,10 +1298,34 @@ Friend NotInheritable Class ExchangeDeviceAgent
             state = _liveBroadcastState
         End SyncLock
         If state Is Nothing OrElse state.BroadcastId <> broadcastId OrElse Not state.Running Then Return
+        ' Item DM / item DP: a sealed broadcast has no clear fallback through the server. Its tunnel bridges only behind the inner TLS
+        ' of this broadcast's own identity; with no identity (no key of this device, the server lost `sealed`) the bridge stays shut,
+        ' so no clear media byte or Digest exchange crosses the server. LAN viewers and the sealed relay are not affected.
+        Dim tunnel As ExchangeSealedTunnel = Nothing
+        If state.Sealed Then
+            SyncLock _gate
+                If _liveTunnel IsNot Nothing AndAlso String.Equals(_liveTunnelBroadcastId, broadcastId, StringComparison.Ordinal) Then tunnel = _liveTunnel
+            End SyncLock
+            If tunnel Is Nothing OrElse Not CanSealBroadcast() Then Return
+        End If
 
         Dim localClient As New TcpClient()
         Dim attached As ExchangeOpenResult = Nothing
         Try
+            If tunnel IsNot Nothing Then
+                ' attach, answer with the TLS server, and only then touch the local broadcast server
+                Dim sealedOpts As ExchangeControlOptions = session.ConnectionOptions
+                attached = Await ExchangeDataStreams.AttachAsync(sealedOpts.Transport, sealedOpts.Server, sealedOpts.Pin, sealedOpts.Credentials, sealedOpts.ProductVersion, tunnelId, ct).ConfigureAwait(False)
+                If attached Is Nothing OrElse Not attached.IsConnected Then Return
+                Dim inner As Stream = Await tunnel.ServerStreamAsync(attached.Stream, ct).ConfigureAwait(False)
+                Try
+                    Await localClient.ConnectAsync(state.ListenerAddress, state.Port, ct).ConfigureAwait(False)
+                    Await ExchangeBridge.RunAsync(inner, localClient.GetStream(), New ExchangeBridgeOptions With {.IdleTimeout = TimeSpan.FromSeconds(30)}, ct).ConfigureAwait(False)
+                Finally
+                    Try : inner.Dispose() : Catch : End Try
+                End Try
+                Return
+            End If
             Await localClient.ConnectAsync(state.ListenerAddress, state.Port, ct).ConfigureAwait(False)
             Dim opts As ExchangeControlOptions = session.ConnectionOptions
             attached = Await ExchangeDataStreams.AttachAsync(opts.Transport, opts.Server, opts.Pin, opts.Credentials, opts.ProductVersion, tunnelId, ct).ConfigureAwait(False)
@@ -1070,6 +1354,12 @@ Friend NotInheritable Class ExchangeDeviceAgent
         End SyncLock
 
         Try
+            ' Item DK / 7.8: a device the current box does not address gets the record updated BEFORE the cast
+            Dim publisher As ExchangeSealedBroadcastPublisher
+            SyncLock _gate
+                publisher = If(String.Equals(_liveBroadcastId, broadcastId, StringComparison.Ordinal), _liveSealedPublisher, Nothing)
+            End SyncLock
+            If publisher IsNot Nothing Then Await publisher.BeforeCastAsync(receiverDeviceId).ConfigureAwait(False)
             Dim sent As Boolean = Await session.SendAsync(New ExchangeEnvelope(ExchangeEnvelopeTypes.Cast).
                 SetText("broadcastId", broadcastId).SetText("receiverDeviceId", receiverDeviceId), ct).ConfigureAwait(False)
             If Not sent Then Return Tuple.Create(False, "unavailable")
@@ -1247,8 +1537,17 @@ Friend NotInheritable Class ExchangeDeviceAgent
                     If String.Equals(r.ResourceId, id, StringComparison.Ordinal) Then found = r
                 Next
                 If found Is Nothing Then Return ExchangeLocalResult.Failure(ExchangeAgentPipe.ErrorUnknownResource)
-                If Not found.HasAccess Then Return ExchangeLocalResult.Failure(ExchangeAgentPipe.ErrorNoAccess)
-                Return ExchangeLocalResult.Success(found.AccessJson)
+                ' spec 234 items DI, DJ, DP: the access comes out of the record's box, opened here with this device's key; a clear
+                ' `access` from the server is never handed on, and the viewer is told the typed state instead
+                Dim sealedView As ExchangeSealedRecipients = GetSealedRecipients()
+                If sealedView Is Nothing Then Return ExchangeLocalResult.Failure(ExchangeAgentPipe.ErrorNotConnected)
+                Dim resolved As ExchangeSealedAccessResult
+                Using ownKey As ExchangeDeviceKey = KeyStore().TryLoad(sealedView.OwnDeviceId)
+                    resolved = ExchangeSealedAccess.Resolve(found, sealedView, TrustStore(), ownKey)
+                End Using
+                If resolved.State IsNot Nothing Then Return ExchangeLocalResult.Failure(resolved.State.Code)
+                If Not resolved.Opened Then Return ExchangeLocalResult.Failure(ExchangeAgentPipe.ErrorNoAccess)
+                Return ExchangeLocalResult.Success(resolved.AccessJson)
 
             Case ExchangeAgentPipe.RequestGetBroadcast
                 Dim id As String = ReadString(request, "broadcastId")

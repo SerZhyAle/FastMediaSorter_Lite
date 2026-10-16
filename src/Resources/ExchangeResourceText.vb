@@ -99,8 +99,23 @@ Friend NotInheritable Class ExchangeResourceText
             Case ExchangeAttachOutcome.AgentUnavailable : Return Localization.T("Share Manager не ответил.")
             Case ExchangeAttachOutcome.ConnectionFailed : Return ResourceMessages.ForFailure(Nothing)
             Case ExchangeAttachOutcome.SignInAgain : Return Localization.T("Чтобы подключить папки с PIN, войдите в учётную запись сервера обмена ещё раз.")
+            Case ExchangeAttachOutcome.E2eMissing : Return SealedText(ConnectionDiagnosisMessages.E2eMissing)
+            Case ExchangeAttachOutcome.KeyChanged : Return SealedText(ConnectionDiagnosisMessages.KeyChanged)
+            Case ExchangeAttachOutcome.ServerNoE2e : Return SealedText(ConnectionDiagnosisMessages.ServerNoE2e)
+            Case ExchangeAttachOutcome.SealedFailed : Return SealedText(ConnectionDiagnosisMessages.SealedFailed)
             Case Else : Return Localization.T("Не удалось сохранить ресурс.")
         End Select
+    End Function
+
+    ''' <summary>The row of the common connection-message table for a sealed state (items DI, DJ, DG, DP), in the current language. A code
+    ''' the table does not know reads as its generic refusal, never as the code itself; no new string is added for it.</summary>
+    Friend Shared Function SealedText(message As ConnectionDiagnosisMessage) As String
+        Dim locale As String = Localization.CurrentCode
+        Dim text As String = ConnectionDiagnosisLocalization.GetMessageText(message.Code, locale)
+        If text.Length = 0 OrElse String.Equals(text, message.Code, StringComparison.Ordinal) Then
+            text = ConnectionDiagnosisLocalization.GetMessageText(ConnectionDiagnosisMessages.Refused.Code, locale)
+        End If
+        Return text
     End Function
 
     Friend Shared Function CertificateQuestion(host As String, fingerprint As String) As String

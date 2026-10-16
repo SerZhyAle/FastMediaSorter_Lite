@@ -30,6 +30,10 @@ const (
 	sampleResource  = `{"resourceId":"` + idB + `","deviceId":"` + idA + `","kind":"sftp-share","name":"Photos","access":{"descriptor":"FMSSFTP2.secret","root":"/"},"future":{"a":{"b":{"c":1}}}}`
 	sampleBroadcast = `{"broadcastId":"` + idC + `","deviceId":"` + idA + `","mode":"AUDIO_ONLY","title":"Mic","descriptor":{"endpoints":[]}}`
 	sampleDevice    = `{"deviceId":"` + idA + `","deviceName":"Phone","product":"fms-android","presence":"online"}`
+	// a box is opaque to the server (27 item DH); this one only has the shape of one
+	sampleBox = `{"v":1,"from":"` + idA + `","fromKey":"BMHBNOi24fTvs6FVK82lwF9b1Kmd1yjW_czRpmXYba0FIgE5tdQz6-ECIg4o1ZsDxuymoQC3aCvBDvmY6UO4iZw","n":"AAAAAAAAAAAAAAAA","ct":"AAAA","keys":[{"to":"` + idB + `","enc":"AAAA","wk":"AAAA"}]}`
+	// an element of a member account's `grants`: no secret, and the guest's devices (27 item DJ)
+	sampleGrantEntry = `{"grantId":"` + idA + `","guest":"bob","resourceId":"` + idB + `","devices":[{"deviceId":"` + idC + `","deviceName":"Tablet","e2eKey":{"v":1,"kem":"BMHBNOi24fTvs6FVK82lwF9b1Kmd1yjW_czRpmXYba0FIgE5tdQz6-ECIg4o1ZsDxuymoQC3aCvBDvmY6UO4iZw"}}]}`
 	// 64 lower-case hex characters: the form of a clipboard value's `sha256` (22 item BU).
 	sampleSHA = "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
 )
@@ -71,6 +75,14 @@ func samples() []struct {
 		{"pairing-request", &PairingRequest{}},
 		{"pairing-code", &PairingCode{Code: "ABCD2345", ExpiresAt: "2026-10-07T12:10:00Z"}},
 		{"revoke", &Revoke{DeviceID: idB}},
+		{"grant-resource-sealed", &Grant{GrantID: idA, Guest: "bob", ResourceID: idB, Sealed: json.RawMessage(sampleBox)}},
+		{"grant-broadcast-credentials", &Grant{GrantID: idC, Guest: "bob", BroadcastID: idB, Credentials: json.RawMessage(`{"user":"u1","password":"p1"}`)}},
+		{"granted", &Granted{GrantID: idA}},
+		{"ungrant", &Ungrant{GrantID: idA}},
+		{"directory-grants", &Directory{Revision: 9, Devices: []json.RawMessage{json.RawMessage(sampleDevice)},
+			Grants: []json.RawMessage{json.RawMessage(sampleGrantEntry)}}},
+		{"changed-grants", &Changed{Revision: 10, Upserts: Upserts{Grants: []json.RawMessage{json.RawMessage(sampleGrantEntry)}},
+			Removals: Removals{GrantIDs: []string{idC}}}},
 		{"connect-resource", &Connect{ResourceID: idB}},
 		{"connect-share", &Connect{ShareID: idB}},
 		{"connect-broadcast", &Connect{BroadcastID: idC, Scheme: "rtsp"}},

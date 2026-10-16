@@ -78,14 +78,21 @@ Friend NotInheritable Class ScheduledArchiveWriter
     ''' <summary>
     ''' Writes the zip next to its final name and renames it into place only when whole. A file that
     ''' cannot be read, or that changes while it is read, is recorded as failed and left OUT of the zip.
+    ''' When <paramref name="destination"/> is a non-local side (such as Google Drive), the zip is built in a
+    ''' local staging file, verified, and uploaded to the destination side.
     ''' </summary>
     Friend Shared Function Write(source As IScheduledSide, entries As IReadOnlyList(Of SideEntry), finalPath As String,
-                                 ct As CancellationToken) As ArchiveWriteResult
+                                 ct As CancellationToken, Optional destination As IScheduledSide = Nothing,
+                                 Optional afterWritten As Action(Of String) = Nothing) As ArchiveWriteResult
         Dim result As New ArchiveWriteResult()
         If entries.Count = 0 Then Return result
 
-        Directory.CreateDirectory(System.IO.Path.GetDirectoryName(finalPath))
-        Dim temp As String = finalPath & LocalTransfer.PartSuffix
+        Dim remoteDest As Boolean = destination IsNot Nothing AndAlso Not destination.IsLocalPath
+        Dim localBasePath As String = If(remoteDest,
+            Path.Combine(Path.GetTempPath(), "fms-archive-" & Guid.NewGuid().ToString("N"), Path.GetFileName(finalPath.Replace("/"c, "\"c))),
+            finalPath)
+        Directory.CreateDirectory(System.IO.Path.GetDirectoryName(localBasePath))
+        Dim temp As String = localBasePath & LocalTransfer.PartSuffix
         If System.IO.File.Exists(temp) Then System.IO.File.Delete(temp)
         Try
             Using output As New FileStream(temp, FileMode.CreateNew, FileAccess.Write, FileShare.None)
@@ -100,6 +107,35 @@ Friend NotInheritable Class ScheduledArchiveWriter
                 System.IO.File.Delete(temp)
                 Return result
             End If
+            If remoteDest Then
+                System.IO.File.Move(temp, localBasePath)
+                afterWritten?.Invoke(localBasePath)
+                Dim verifyProblem As String = Verify(localBasePath, result.Written, ct)
+                If verifyProblem.Length > 0 Then
+                    result.ArchivePath = ""
+                    Throw New ScheduledTransferException("archive-" & verifyProblem)
+                End If
+                Dim fileName As String = Path.GetFileName(finalPath.Replace("\"c, "/"c))
+                Dim targetRelative As String = fileName
+                If destination.Exists(targetRelative) Then
+                    Dim free As String = FreeNameRule.Find("", fileName,
+                        Function(folder As String, name As String) If(folder.Length = 0, name, folder & "/" & name),
+                        Function(candidate As String) destination.Exists(candidate), Nothing)
+                    If free Is Nothing Then Throw New IOException("No free archive name on " & destination.Describe())
+                    targetRelative = free
+                End If
+                Dim localFolder As New LocalSide(System.IO.Path.GetDirectoryName(localBasePath))
+                Dim info As New FileInfo(localBasePath)
+                Dim zipSideEntry As New SideEntry With {.Name = info.Name, .RelativePath = info.Name,
+                    .Length = info.Length, .LastWriteUtc = info.LastWriteTimeUtc}
+                Dim transfer As New ProviderTransfer()
+                transfer.CopyFile(localFolder, zipSideEntry, destination, targetRelative, overwrite:=False, ct)
+                Try : System.IO.File.Delete(localBasePath) : Catch : End Try
+                Try : Directory.Delete(System.IO.Path.GetDirectoryName(localBasePath), recursive:=True) : Catch : End Try
+                result.ArchivePath = destination.Combine(targetRelative)
+                Return result
+            End If
+
             ' "Auto-dedupe name" (D4): a name that exists is never overwritten by an archive.
             Dim target As String = finalPath
             If System.IO.File.Exists(target) Then
@@ -115,6 +151,7 @@ Friend NotInheritable Class ScheduledArchiveWriter
         Catch
             Try
                 If System.IO.File.Exists(temp) Then System.IO.File.Delete(temp)
+                If remoteDest AndAlso System.IO.File.Exists(localBasePath) Then System.IO.File.Delete(localBasePath)
             Catch
             End Try
             Throw
@@ -127,6 +164,11 @@ Friend NotInheritable Class ScheduledArchiveWriter
         Dim name As String = EntryNameOf(entry.RelativePath)
         If name.Length = 0 Then
             result.Failed.Add(New KeyValuePair(Of SideEntry, String)(entry, "invalid"))
+            Return
+        End If
+        Dim providerSide As ProviderSide = TryCast(source, ProviderSide)
+        If providerSide IsNot Nothing Then
+            AddProviderEntry(zip, providerSide, sourcePath, name, entry, result, ct)
             Return
         End If
         Dim input As FileStream = Nothing
@@ -163,6 +205,49 @@ Friend NotInheritable Class ScheduledArchiveWriter
             result.Written.Add(New ArchiveEntryRecord(entry, name, total, crc.Value, stable))
             result.Bytes += total
         End Using
+    End Sub
+
+    Private Shared Sub AddProviderEntry(zip As ZipArchive, side As ProviderSide, sourcePath As String, name As String,
+                                        entry As SideEntry, result As ArchiveWriteResult, ct As CancellationToken)
+        Dim tempFile As String = Path.Combine(Path.GetTempPath(), "fms-arch-src-" & Guid.NewGuid().ToString("N") & ".tmp")
+        Try
+            side.Provider.Download(sourcePath, tempFile, Nothing, ct)
+            Using input As New FileStream(tempFile, FileMode.Open, FileAccess.Read, FileShare.Read, 81920, FileOptions.SequentialScan)
+                Dim zipEntry As ZipArchiveEntry = zip.CreateEntry(name, CompressionLevel.Optimal)
+                zipEntry.LastWriteTime = ClampZipTime(entry.LastWriteUtc)
+                Dim crc As New Crc32Accumulator()
+                Dim total As Long = 0
+                Dim buffer(81919) As Byte
+                Using output As Stream = zipEntry.Open()
+                    Dim read As Integer = input.Read(buffer, 0, buffer.Length)
+                    While read > 0
+                        ct.ThrowIfCancellationRequested()
+                        output.Write(buffer, 0, read)
+                        crc.Add(buffer, read)
+                        total += read
+                        read = input.Read(buffer, 0, buffer.Length)
+                    End While
+                End Using
+                Dim after As StatResult = ResourceProviderCalls.Stat(side.Provider, sourcePath)
+                Dim stable As Boolean = total = entry.Length AndAlso after.Outcome = StatOutcome.Found AndAlso
+                                        after.Entry.Length = entry.Length AndAlso after.Entry.LastWriteUtc = entry.LastWriteUtc
+                If Not stable Then
+                    result.Failed.Add(New KeyValuePair(Of SideEntry, String)(entry, "changed"))
+                End If
+                result.Written.Add(New ArchiveEntryRecord(entry, name, total, crc.Value, stable))
+                result.Bytes += total
+            End Using
+        Catch ex As OperationCanceledException
+            Throw
+        Catch ex As Exception
+            AppFileLogger.LogException("Scheduled operations: archiving " & sourcePath, ex)
+            result.Failed.Add(New KeyValuePair(Of SideEntry, String)(entry, ScheduledFailure.CodeOf(ex)))
+        Finally
+            Try
+                If File.Exists(tempFile) Then File.Delete(tempFile)
+            Catch
+            End Try
+        End Try
     End Sub
 
     ''' <summary>A zip stores local time from 1980 to 2107.</summary>

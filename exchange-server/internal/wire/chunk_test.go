@@ -132,7 +132,8 @@ func TestChunkTruncation(t *testing.T) {
 }
 
 func TestContentTypePattern(t *testing.T) {
-	for _, ok := range []string{"audio/aac", "video/mp2t", "application/vnd.x+y", "audio/x-m4a"} {
+	// the sealed upload's type (27 item DL) is no exception: the pattern is the only thing that checks a content type
+	for _, ok := range []string{"audio/aac", "video/mp2t", "application/vnd.x+y", "audio/x-m4a", SealedContentType} {
 		if !ValidContentType(ok) {
 			t.Errorf("%q must be valid", ok)
 		}

@@ -1,7 +1,7 @@
 ICONOGRAPHY VENDORED ARTIFACT
 Do not hand-edit SVG files in this folder. Regenerate with tools/Sync-IconGlyphs.ps1.
-Catalog versions: ICON-SET 0.30; ICON-RENDER 0.19; ICON-EXTERNAL 0.12
-Vocabulary SHA-256: 108a0f93b45d52230e23826ad1b4ff54c2714e7ff2d492e5c62b0d09b0fbc428
+Catalog versions: ICON-SET 0.33; ICON-RENDER 0.19; ICON-EXTERNAL 0.12
+Vocabulary SHA-256: 8ff441516a2811761626556e19b06bdefe2e3534de1fa6f014c3eeb58caf3ffc
 
 action.confirm.svg  ca97ceac8371975e7f8d21d26ef404858bb137a0b18d80ed0a64d34a20903f69
 action.cancel.svg  0b2ee602dece67950e801b3df344297e311e8bc33c592c7ae8cc9f5d4195c873
@@ -61,6 +61,14 @@ action.search.svg  e57b0f6083efdd7398cc80a690f953bc2d3f9d8fe388a9bbf5ed330f87223
 action.send-to.svg  a7a85fb6afb994b9515bd6032ce5cd52e874e41eb4cc0d280ba6afd6ef2b8447
 action.share.svg  bd2d4c1601b79c8069fcc0dfaabed52784489a6783e0d62d950044331cbf9301
 action.translate.svg  df11c775889f6dbf6a1e2136695cc98502b3b75d2a8c7ac7f1fcf05a951997a1
+action.replace.svg  0cbec1af2d9fd8ef4f9a64402f624cc1f50e4832cdf1478cbbe42186e1c6d5c7
+source.exchange-server.svg  b84056ecc4d1a7a3b4cce0e7aa5ee8ead6f4163d095e3d93a9ce5cceee9eefb0
+feature.server-relay.svg  8ae90736bc83e90a27b5769faedd062ac9b46f0aab01ff045dad63516ac85cb5
+action.connect-device.svg  bcf97d7c9210bc956c0c8e91e6e1274f8c7fad75e427316c65a99d9615e5b7a9
+action.send-clipboard.svg  69cb230b596bd478e5e1b33b3f9919ccea7a70c76b03d7f3f85579321adbe3a5
+action.receive-clipboard.svg  8a2cd286767347aefdc2f32cad2c803079ab8ed5a1300f41aba6f46a7062a097
+content.invitation.svg  da7a5cc6fb43e9aee01899ae93004c367ab1d6f74f33d7a01685f2eb46a1448e
+content.guest.svg  c9e05f4f8492900f23339fdf41e84db82017a5b16769dc8c59dc5fad3162237b
 action.pin.svg  62266eaa0a24617c7ef568e30ed1d9bb1416af2808ddb1dbec9327f64b744985
 action.pin--off.svg  0375c7525456730de7dc9f8ec359e51da09ef8ee65a08605763f6eb53507b6e3
 app.info.svg  bee8e268059d56aeda5b1c0c64f186c24809c9407301a81f5a76a5cccff14b14
@@ -102,4 +110,3 @@ tool.rectangle.svg  aad62948637923be2fafcda804fd41e16efd19de5288941b9473d1a9d07f
 view.grid.svg  257747bb1ccbbc8189a3c1498ded37576359f812e9529cd3c60687a2d1a33fb5
 
 Product-drawn (not from the catalog; compared with the catalog only to notice that it now holds the id):
-action.replace.svg  0cbec1af2d9fd8ef4f9a64402f624cc1f50e4832cdf1478cbbe42186e1c6d5c7

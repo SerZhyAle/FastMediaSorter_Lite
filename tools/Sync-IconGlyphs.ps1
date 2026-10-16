@@ -55,7 +55,9 @@ $glyphIds = @(
     'system.network-off', 'system.power',
     'action.add', 'action.choose-file', 'action.choose-folder', 'action.convert-to-video', 'action.copy', 'action.crop', 'action.delete', 'action.download', 'action.edit',
     'action.extract-text', 'action.refresh', 'action.rename', 'action.search', 'action.send-to',
-    'action.share', 'action.translate',
+    'action.share', 'action.translate', 'action.replace',
+    # ICON-SET 0.32 section 17: exchange meanings; Drive is a brand, so single-tone controls use words.
+    'source.exchange-server', 'feature.server-relay', 'action.connect-device', 'action.send-clipboard', 'action.receive-clipboard', 'content.invitation', 'content.guest',
     # The recipients table's and the chrome panels' pin button: the catalog's push-pin, filled while pinned and
     # its outlined state variant while free (a line-drawn tilted pin read as a second pencil next to action.edit).
     'action.pin', 'action.pin--off',
@@ -72,9 +74,7 @@ $glyphIds = @(
 # id it proposes, and proposed in the same change. These files are NOT compared with the catalog - they are the
 # product's own drawings, held by a provenance line - and the script fails the day the catalog holds the id, so the
 # product converges on the catalog's drawing (section 15, "What the owner does").
-$productGlyphs = @(
-    'action.replace'   # PROPOSAL-2026-10-11-fms-action-replace.md - overwrite an existing item with the incoming one
-)
+$productGlyphs = @()
 
 $subject = 'Sync-IconGlyphs'
 

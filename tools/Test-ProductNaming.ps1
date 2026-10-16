@@ -107,12 +107,28 @@ $forbidden = @(
 )
 
 $hits = 0; $allowedHits = 0
+$visibleVocabulary = @(Get-Content (Join-Path $PSScriptRoot 'product-vocabulary.json') -Raw | ConvertFrom-Json)
 foreach ($f in $files) {
     $full = Join-Path $Root $f
     $lines = [IO.File]::ReadAllLines($full, [Text.Encoding]::UTF8)
     for ($i = 0; $i -lt $lines.Length; $i++) {
         $text = $lines[$i]
         if ($text.Length -lt 4) { continue }
+        # Specification 233: vocabulary rules judge authored customer copy and VB literals,
+        # never identifiers, wire enums, comments, logs or internal engineering documents.
+        $visible = $f -match '^(README[^/]*\.md|tools/site-copy\.json|publishing/store/|publishing/winget/|docs/guides/STORE_PUBLISHING\.md)' -or $f -match '\.html?$'
+        $candidate = $text
+        if ($f -match '^src/.*\.vb$') {
+            $candidate = ([regex]::Matches($text, '"(?:[^"\r\n]|"")*"') | ForEach-Object { $_.Value }) -join ' '
+            $visible = $text -notmatch "^\s*'" -and ($f -match '/Localization/' -or $text -match 'Localization\.T[FC]?\(|\.Text\s*=')
+        }
+        if ($visible) {
+            foreach ($rule in $visibleVocabulary) {
+                if ($candidate -match $rule.pattern) {
+                    Problem ("forbidden visible '{0}': {1}:{2}" -f $rule.name, $f, ($i + 1))
+                }
+            }
+        }
         foreach ($form in $forbidden) {
             if (-not $form.Rx.IsMatch($text)) { continue }
             $hits++

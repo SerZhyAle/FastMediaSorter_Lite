@@ -147,6 +147,28 @@ Friend NotInheritable Class ExchangeAgentPipe
     Public Const ErrorNoAccess As String = "no-access"
     Public Const ErrorUnsupported As String = "unsupported"
     Public Const ErrorBadRequest As String = "bad-request"
+    ' Spec 234 T-2 (items DI, DJ, DP, DR): the four states of the sealed scheme, spelled as the codes of ConnectionDiagnosisMessages so
+    ' the token IS the code. An old peer sees an unknown token and treats it as any other refusal.
+    Public Const ErrorE2eMissing As String = "e2e-missing"
+    Public Const ErrorKeyChanged As String = "key-changed"
+    Public Const ErrorServerNoE2e As String = "server-no-e2e"
+    Public Const ErrorSealedFailed As String = "sealed-failed"
+
+    ''' <summary>The sealed state a refusal token names, or Nothing for any other token.</summary>
+    Public Shared Function SealedMessageOf(errorToken As String) As ConnectionDiagnosisMessage
+        Select Case errorToken
+            Case ErrorE2eMissing
+                Return ConnectionDiagnosisMessages.E2eMissing
+            Case ErrorKeyChanged
+                Return ConnectionDiagnosisMessages.KeyChanged
+            Case ErrorServerNoE2e
+                Return ConnectionDiagnosisMessages.ServerNoE2e
+            Case ErrorSealedFailed
+                Return ConnectionDiagnosisMessages.SealedFailed
+            Case Else
+                Return Nothing
+        End Select
+    End Function
 
     ''' <summary>The longest request line the server reads.</summary>
     Public Const MaxRequestBytes As Integer = 4096
@@ -282,6 +304,15 @@ Friend NotInheritable Class ExchangeAgentAccessResult
         Me.Reply = reply
         Me.AccessJson = If(accessJson, "")
     End Sub
+
+    ''' <summary>The sealed state of a refused request (`e2e-missing`, `key-changed`, `server-no-e2e`, `sealed-failed`), or Nothing
+    ''' when the reply is ok or refused for another reason. Its text is the one of ConnectionDiagnosis, whole.</summary>
+    Public ReadOnly Property SealedState As ConnectionDiagnosisMessage
+        Get
+            If Reply Is Nothing OrElse Reply.Kind <> ExchangeAgentReplyKind.Refused Then Return Nothing
+            Return ExchangeAgentPipe.SealedMessageOf(Reply.Error)
+        End Get
+    End Property
 End Class
 
 ''' <summary>The viewer's end of the local channel.</summary>

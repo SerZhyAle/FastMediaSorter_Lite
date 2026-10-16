@@ -29,6 +29,9 @@ Partial Public NotInheritable Class Share_Settings_Form
     Private _pnlXConfig As FlowLayoutPanel
     Private _txtXEndpoint As TextBox
     Private _btnXApplyEndpoint As Button
+    Private _btnXCheckVisibility As Button
+    Private _btnXDiagnose As Button
+    Private _lblXVisibilityResult As Label
     Private _lblXEndpointNote As Label
     Private _lblXEndpointProblem As Label
     Private _lnkXSuggest As LinkLabel
@@ -151,7 +154,14 @@ Partial Public NotInheritable Class Share_Settings_Form
         _btnXApplyEndpoint = XButton(ExchangeAdminText.EndpointApply(), AddressOf OnXApplyEndpoint, "action.confirm")
         _btnXApplyEndpoint.Visible = False
         endpointRow.Controls.Add(_btnXApplyEndpoint)
+        _btnXCheckVisibility = XButton(ConnectionDiagnosisLocalization.GetUiText("check_visibility", Localization.CurrentCode), AddressOf OnXCheckVisibilityClicked, "action.test-connection")
+        _btnXDiagnose = XButton(ConnectionDiagnosisLocalization.DoorButtonText(Localization.CurrentCode), AddressOf OnXDiagnoseClicked, "action.test-connection")
+        _btnXDiagnose.Visible = False
+        endpointRow.Controls.Add(_btnXCheckVisibility)
+        endpointRow.Controls.Add(_btnXDiagnose)
         _pnlXConfig.Controls.Add(endpointRow)
+        _lblXVisibilityResult = New Label With {.AutoSize = True, .MaximumSize = New Size(ExchangeAdminWidth, 0), .Margin = New Padding(0, 2, 0, 4), .Visible = False}
+        _pnlXConfig.Controls.Add(_lblXVisibilityResult)
         _lnkXSuggest = New LinkLabel With {.AutoSize = True, .Margin = New Padding(0, 0, 0, 2), .MaximumSize = New Size(ExchangeAdminWidth, 0), .Visible = False}
         AddHandler _lnkXSuggest.LinkClicked, Sub() OnXSuggestClicked()
         _pnlXConfig.Controls.Add(_lnkXSuggest)
@@ -325,7 +335,7 @@ Partial Public NotInheritable Class Share_Settings_Form
         AddHandler _lvXInvitations.SelectedIndexChanged, Sub() ApplyAccountsView(refill:=False)
         _pnlXAccounts.Controls.Add(_lvXInvitations)
 
-        _btnXCreateInvitation = XButton(Localization.T("Создать приглашение.."), AddressOf OnXCreateInvitation, "action.add")
+        _btnXCreateInvitation = XButton(Localization.T("Создать приглашение.."), AddressOf OnXCreateInvitation, IconMap.GetMeaning("_btnXCreateInvitation").GlyphId)
         _btnXWithdrawInvitation = XButton(Localization.T("Отозвать"), AddressOf OnXWithdrawInvitation, "action.remove")
         _btnXWithdrawInvitation.Visible = False
         _rowXInvButtons = AdminFlow()
@@ -492,6 +502,53 @@ Partial Public NotInheritable Class Share_Settings_Form
         Finally
             If Not (IsDisposed OrElse Disposing) Then SetXBusy(False)
         End Try
+    End Sub
+
+    Private Async Sub OnXCheckVisibilityClicked()
+        Dim endpoint As String = If(_txtXEndpoint IsNot Nothing, _txtXEndpoint.Text.Trim(), "")
+        If String.IsNullOrEmpty(endpoint) Then Return
+        _btnXCheckVisibility.Enabled = False
+        _lblXVisibilityResult.Visible = True
+        _lblXVisibilityResult.ForeColor = ThemeService.Palette.TextMuted
+        _lblXVisibilityResult.Text = ConnectionDiagnosisLocalization.GetUiText("checking", Localization.CurrentCode)
+        Try
+            Dim checker As New OutsideVisibilityChecker()
+            Dim outcome As OutsideVisibilityResult = Await checker.CheckAsync(endpoint, CancellationToken.None).ConfigureAwait(True)
+            Select Case outcome.Verdict
+                Case OutsideVisibilityVerdict.Reachable
+                    _lblXVisibilityResult.ForeColor = ThemeService.Palette.Success
+                    _lblXVisibilityResult.Text = ConnectionDiagnosisLocalization.GetUiText("reachable", Localization.CurrentCode)
+                    _btnXDiagnose.Visible = False
+                Case OutsideVisibilityVerdict.NotReachable
+                    _lblXVisibilityResult.ForeColor = CollapsibleSection.AttentionColor
+                    _lblXVisibilityResult.Text = ConnectionDiagnosisLocalization.GetUiText("not_reachable", Localization.CurrentCode) & " " & ConnectionDiagnosisLocalization.GetUiText("likely_causes", Localization.CurrentCode)
+                    _btnXDiagnose.Visible = True
+                    _btnXDiagnose.Text = ConnectionDiagnosisLocalization.DoorButtonText(Localization.CurrentCode)
+                Case Else
+                    _lblXVisibilityResult.ForeColor = ThemeService.Palette.TextMuted
+                    _lblXVisibilityResult.Text = ConnectionDiagnosisLocalization.GetUiText("could_not_check", Localization.CurrentCode)
+                    _btnXDiagnose.Visible = False
+            End Select
+        Catch ex As Exception
+            _lblXVisibilityResult.ForeColor = ThemeService.Palette.TextMuted
+            _lblXVisibilityResult.Text = ConnectionDiagnosisLocalization.GetUiText("could_not_check", Localization.CurrentCode)
+        Finally
+            _btnXCheckVisibility.Enabled = True
+        End Try
+    End Sub
+
+    Private Sub OnXDiagnoseClicked()
+        Dim endpoint As String = If(_txtXEndpoint IsNot Nothing, _txtXEndpoint.Text.Trim(), "")
+        Dim host As String = endpoint
+        Dim port As Integer = 443
+        If host.Contains(":"c) Then
+            Dim parts = host.Split(":"c)
+            host = parts(0)
+            Integer.TryParse(parts(1), port)
+        End If
+        Dim msg As ConnectionDiagnosisMessage = ConnectionDiagnosisMessages.UnreachableServer
+        Dim ctx As New ConnectionDiagnosisContext(host, port, ConnectionDiagnosisTarget.Server, msg)
+        Dim ignored = Connection_Diagnosis_Dialog.RunAndShowAsync(Me, ctx)
     End Sub
 
     ' --- the third-party ports --------------------------------------------------------------------------
@@ -736,7 +793,7 @@ Partial Public NotInheritable Class Share_Settings_Form
         If SameKeys(_lvXAccounts, keys) Then
             For i As Integer = 0 To keys.Count - 1
                 Dim a As ExchangeAdminAccount = view.Accounts(i)
-                SetSubItem(_lvXAccounts.Items(i), 1, If(a.Kind = "guest", Localization.T("Гость"), Localization.T("Семья")))
+                SetSubItem(_lvXAccounts.Items(i), 1, If(a.Kind = "guest", Localization.T("Гость"), Localization.T("Своё устройство или семья")))
                 SetSubItem(_lvXAccounts.Items(i), 2, a.Devices.ToString(CultureInfo.CurrentCulture))
                 SetSubItem(_lvXAccounts.Items(i), 3, FormatLastSeen(a.CreatedAt))
             Next
@@ -751,7 +808,7 @@ Partial Public NotInheritable Class Share_Settings_Form
             _lvXAccounts.Items.Clear()
             For Each a As ExchangeAdminAccount In view.Accounts
                 Dim item As New ListViewItem(a.Login) With {.Tag = a.Login}
-                item.SubItems.Add(If(a.Kind = "guest", Localization.T("Гость"), Localization.T("Семья")))
+                item.SubItems.Add(If(a.Kind = "guest", Localization.T("Гость"), Localization.T("Своё устройство или семья")))
                 item.SubItems.Add(a.Devices.ToString(CultureInfo.CurrentCulture))
                 item.SubItems.Add(FormatLastSeen(a.CreatedAt))
                 _lvXAccounts.Items.Add(item)
@@ -1022,7 +1079,7 @@ Partial Public NotInheritable Class Share_Settings_Form
             Dim enabled As Boolean = sharedInv IsNot Nothing AndAlso sharedInv.Enabled
             _chkXSharedInv.Checked = enabled
             If enabled Then
-                Dim kindText As String = If(String.Equals(sharedInv.Kind, "guest", StringComparison.OrdinalIgnoreCase), Localization.T("Гость"), Localization.T("Член семьи"))
+                Dim kindText As String = If(String.Equals(sharedInv.Kind, "guest", StringComparison.OrdinalIgnoreCase), Localization.T("Гость"), Localization.T("Своё устройство или семья"))
                 _lblXSharedInvStatus.Text = Localization.TF("Общий пароль включён (тип аккаунта: {0}).", kindText)
             Else
                 _lblXSharedInvStatus.Text = Localization.T("Общий пароль выключен.")
@@ -1039,7 +1096,7 @@ Partial Public NotInheritable Class Share_Settings_Form
             For i As Integer = 0 To keys.Count - 1
                 Dim inv As ExchangeAdminInvitation = view.Invitations(i)
                 Dim item As ListViewItem = _lvXInvitations.Items(i)
-                SetSubItem(item, 0, If(String.Equals(inv.Kind, "guest", StringComparison.OrdinalIgnoreCase), Localization.T("Гость"), Localization.T("Семья")))
+                SetSubItem(item, 0, If(String.Equals(inv.Kind, "guest", StringComparison.OrdinalIgnoreCase), Localization.T("Гость"), Localization.T("Своё устройство или семья")))
                 SetSubItem(item, 1, FormatLastSeen(inv.CreatedAt))
                 SetSubItem(item, 2, If(inv.Used, Localization.T("Использовано"), Localization.T("Активно")))
                 SetSubItem(item, 3, If(inv.CodeHash.Length >= 8, inv.CodeHash.Substring(0, 8), inv.CodeHash))
@@ -1053,7 +1110,7 @@ Partial Public NotInheritable Class Share_Settings_Form
         Try
             _lvXInvitations.Items.Clear()
             For Each inv As ExchangeAdminInvitation In view.Invitations
-                Dim item As New ListViewItem(If(String.Equals(inv.Kind, "guest", StringComparison.OrdinalIgnoreCase), Localization.T("Гость"), Localization.T("Семья"))) With {.Tag = inv.CodeHash}
+                Dim item As New ListViewItem(If(String.Equals(inv.Kind, "guest", StringComparison.OrdinalIgnoreCase), Localization.T("Гость"), Localization.T("Своё устройство или семья"))) With {.Tag = inv.CodeHash}
                 item.SubItems.Add(FormatLastSeen(inv.CreatedAt))
                 item.SubItems.Add(If(inv.Used, Localization.T("Использовано"), Localization.T("Активно")))
                 item.SubItems.Add(If(inv.CodeHash.Length >= 8, inv.CodeHash.Substring(0, 8), inv.CodeHash))

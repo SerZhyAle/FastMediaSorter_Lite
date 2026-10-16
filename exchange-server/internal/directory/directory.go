@@ -95,6 +95,9 @@ type Hooks struct {
 	BroadcastGone func(account, broadcastID, deviceID string)
 	// CloseDevice: close every stream of a device (revoke, a rotated token, account removal).
 	CloseDevice func(deviceID string)
+	// GrantTargetGone: a resource was withdrawn or a broadcast ended. The grants of that target end with
+	// it (20 item BD); the host takes them back. Not called when a producer merely goes offline.
+	GrantTargetGone func(account, target string, broadcast bool)
 }
 
 // Caps are the directory's working numbers until rung 2 freezes them (ticket 163 question 2).
@@ -128,6 +131,8 @@ type DeviceInfo struct {
 	Capabilities                                         []string
 	Receiver                                             json.RawMessage
 	LastSeen                                             time.Time
+	// E2EKey is the device's public sealing key (27 item DF), shown in its record. nil: the device has none.
+	E2EKey *wire.E2EKey
 }
 
 type devState struct {
@@ -175,10 +180,11 @@ type Dir struct {
 	shareIdx  map[string]ref // shareId -> (account, resourceId)
 	broIdx    map[string]ref // broadcastId -> (account, broadcastId)
 	devIdx    map[string]string
-	grants    GrantSource // what members gave to guests (grants.go); nil: nothing
-	resDirty  bool        // resource records changed since the last write
-	revDirty  bool        // a revision changed since the last write
-	lastWrite time.Time   // of the last write
+	grants    GrantSource               // what members gave to guests (grants.go); nil: nothing
+	payloads  map[grantRef]GrantPayload // the secret member of each grant, in memory only (27 item DQ)
+	resDirty  bool                      // resource records changed since the last write
+	revDirty  bool                      // a revision changed since the last write
+	lastWrite time.Time                 // of the last write
 	persistMu sync.Mutex
 }
 
@@ -193,7 +199,8 @@ func New(opt Options) *Dir {
 	if opt.WriteTemp == nil {
 		opt.WriteTemp = os.WriteFile
 	}
-	return &Dir{opt: opt, now: opt.Now, hubs: map[string]*hub{}, shareIdx: map[string]ref{}, broIdx: map[string]ref{}, devIdx: map[string]string{}}
+	return &Dir{opt: opt, now: opt.Now, hubs: map[string]*hub{}, shareIdx: map[string]ref{}, broIdx: map[string]ref{}, devIdx: map[string]string{},
+		payloads: map[grantRef]GrantPayload{}}
 }
 
 func (d *Dir) hubLocked(account string) *hub {
@@ -230,6 +237,10 @@ func (d *Dir) renderDevice(h *hub, s *devState) {
 	if len(s.info.Receiver) > 0 {
 		r.SetRaw("receiver", s.info.Receiver)
 	}
+	if s.info.E2EKey != nil {
+		b, _ := json.Marshal(s.info.E2EKey)
+		r.SetRaw("e2eKey", b)
+	}
 	r.SetStr("presence", presence(s.online))
 	if !s.info.LastSeen.IsZero() {
 		r.SetTime("lastSeen", s.info.LastSeen)
@@ -261,11 +272,22 @@ func (d *Dir) renderBroadcast(h *hub, s *broState) {
 	s.raw = r.Marshal()
 }
 
-// stored is the form a resource record takes on disk: no access, no shareId, no publicPort (all
-// three live only while the producer is online), no presence (a restart is offline by definition).
+// checkBox is the one thing the directory asks of a sealed member of a record - `sealedAccess` of a
+// resource (27 item DI), `sealed` of a broadcast (item DK): when it is there it is one JSON object. The
+// server does not look at what is inside a box, ever (item DH).
+func checkBox(rec *wire.Record, key string) error {
+	if rec.Has(key) && wire.CheckBox(rec.Raw(key)) != nil {
+		return ErrMalformed
+	}
+	return nil
+}
+
+// stored is the form a resource record takes on disk: no access, no sealedAccess (the box that replaces
+// it, 27 item DI), no shareId, no publicPort (all four live only while the producer is online), no
+// presence (a restart is offline by definition).
 func stored(r *wire.Record) *wire.Record {
 	c := r.Clone()
-	for _, k := range []string{"access", "shareId", "publicPort", "presence"} {
+	for _, k := range []string{"access", "sealedAccess", "shareId", "publicPort", "presence"} {
 		c.Delete(k)
 	}
 	return c
@@ -282,14 +304,18 @@ type tx struct {
 	rmDev   map[string]bool
 	rmRes   map[string]bool
 	rmBro   map[string]bool
-	after   []func() // run after the lock is released, in order
-	hooks   Hooks    // the hooks as they were when the transaction began
+	upGrant map[string]json.RawMessage // a member's grants added or changed (20 item BD, 27 item DJ)
+	rmGrant map[string]bool            // a member's grants taken back
+	devSet  bool                       // the set of devices changed (enrolled or removed): the givers of a guest are told
+	after   []func()                   // run after the lock is released, in order
+	hooks   Hooks                      // the hooks as they were when the transaction began
 	resDirt bool
 }
 
 func (d *Dir) begin(h *hub) *tx {
 	return &tx{d: d, h: h, hooks: d.opt.Hooks, upDev: map[string]json.RawMessage{}, upRes: map[string]json.RawMessage{}, upBro: map[string]json.RawMessage{},
-		rmDev: map[string]bool{}, rmRes: map[string]bool{}, rmBro: map[string]bool{}}
+		rmDev: map[string]bool{}, rmRes: map[string]bool{}, rmBro: map[string]bool{},
+		upGrant: map[string]json.RawMessage{}, rmGrant: map[string]bool{}}
 }
 
 func (t *tx) upsertDevice(s *devState) {
@@ -326,7 +352,7 @@ func (t *tx) removeBroadcast(id string) {
 }
 
 func (t *tx) empty() bool {
-	return len(t.upDev)+len(t.upRes)+len(t.upBro)+len(t.rmDev)+len(t.rmRes)+len(t.rmBro) == 0
+	return len(t.upDev)+len(t.upRes)+len(t.upBro)+len(t.rmDev)+len(t.rmRes)+len(t.rmBro)+len(t.upGrant)+len(t.rmGrant) == 0
 }
 
 func sortedRaw(m map[string]json.RawMessage) []json.RawMessage {
@@ -367,10 +393,13 @@ func (t *tx) commit() {
 	}
 	ch := &wire.Changed{
 		Revision: h.revision,
-		Upserts:  wire.Upserts{Devices: sortedRaw(t.upDev), Resources: sortedRaw(t.upRes), Broadcasts: sortedRaw(t.upBro)},
-		Removals: wire.Removals{DeviceIDs: sortedIDs(t.rmDev), ResourceIDs: sortedIDs(t.rmRes), BroadcastIDs: sortedIDs(t.rmBro)},
+		Upserts:  wire.Upserts{Devices: sortedRaw(t.upDev), Resources: sortedRaw(t.upRes), Broadcasts: sortedRaw(t.upBro), Grants: sortedRaw(t.upGrant)},
+		Removals: wire.Removals{DeviceIDs: sortedIDs(t.rmDev), ResourceIDs: sortedIDs(t.rmRes), BroadcastIDs: sortedIDs(t.rmBro), GrantIDs: sortedIDs(t.rmGrant)},
 	}
 	t.d.fanOutToGuestsLocked(h.login, t) // what changed in what a guest was given
+	if t.devSet {
+		t.d.pushGrantDevicesLocked(h.login) // the devices of a guest changed: whoever gave to it is told
+	}
 	if len(h.subs) == 0 {
 		return
 	}

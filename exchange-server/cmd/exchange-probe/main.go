@@ -57,7 +57,7 @@ func run(args []string, stdin io.Reader, stdout, stderr io.Writer) int {
 		return usage("no pin: pass --fingerprint SHA256:.. (the server prints it at start), or --trust-first-use to pin what it presents")
 	}
 	line, _ := bufio.NewReader(stdin).ReadString('\n')
-	password := strings.TrimRight(line, "\r\n")
+	password := strings.TrimPrefix(strings.TrimRight(line, "\r\n"), "\ufeff")
 	if password == "" {
 		return usage("the account's password is read from the first line of standard input and there was none")
 	}

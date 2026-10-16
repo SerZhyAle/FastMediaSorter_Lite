@@ -371,6 +371,9 @@ Public Class ExchangeDeviceAgentTests
                 End Using
                 ' the phone revokes this PC
                 acc.RevokeFromServer(deviceId)
+                ' StopAsync says `bye` before it cancels the loop: under load the server's close can win that race and the first agent
+                ' then records one backoff of its own. Only a wait made by the second agent would be a retry after the revocation.
+                Dim waitsOfTheFirst As Integer = rig.Waits.Count
 
                 Using second As ExchangeDeviceAgent = rig.NewAgent()
                     second.Start()
@@ -381,7 +384,7 @@ Public Class ExchangeDeviceAgentTests
                     Dim hellos As Integer = acc.CountOf("hello")
                     Await Task.Delay(500)
                     Assert.Equal(hellos, acc.CountOf("hello"))   ' no retry follows
-                    Assert.Empty(rig.Waits)
+                    Assert.Equal(waitsOfTheFirst, rig.Waits.Count)   ' the second agent never waited for a retry
                 End Using
             End Using
         End Using

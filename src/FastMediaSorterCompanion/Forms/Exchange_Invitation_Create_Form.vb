@@ -53,13 +53,19 @@ Friend NotInheritable Class Exchange_Invitation_Create_Form
             .Text = Localization.T("Выберите тип создаваемого приглашения для регистрации пользователя:")})
 
         _rbFamily = New RadioButton With {.AutoSize = True, .Checked = True, .Margin = New Padding(0, 2, 0, 2),
-            .Text = Localization.T("Член семьи / Своё устройство (полный аккаунт)")}
+            .Text = Localization.T("Своё устройство или семья")}
         body.Controls.Add(_rbFamily)
         body.Controls.Add(New Label With {.AutoSize = True, .MaximumSize = New Size(ContentWidth, 0), .ForeColor = ThemeService.Palette.TextMuted,
             .Margin = New Padding(20, 0, 0, 6), .Text = Localization.T("Создаёт полноценный аккаунт с возможностью публикации ресурсов.")})
 
         _rbGuest = New RadioButton With {.AutoSize = True, .Margin = New Padding(0, 4, 0, 2),
-            .Text = Localization.T("Гость (ограниченный доступ)")}
+            .Text = Localization.T("Гость")}
+        RefreshGuestGlyph()
+        AddHandler _rbGuest.ForeColorChanged, Sub() RefreshGuestGlyph()
+        AddHandler _rbGuest.DpiChangedAfterParent, Sub() RefreshGuestGlyph()
+        _rbGuest.ImageAlign = ContentAlignment.MiddleLeft
+        _rbGuest.TextImageRelation = TextImageRelation.ImageBeforeText
+        AddHandler Me.Disposed, Sub() _rbGuest.Image.Dispose()
         body.Controls.Add(_rbGuest)
         body.Controls.Add(New Label With {.AutoSize = True, .MaximumSize = New Size(ContentWidth, 0), .ForeColor = ThemeService.Palette.TextMuted,
             .Margin = New Padding(20, 0, 0, 10), .Text = Localization.T("Видит только явно предоставленные ему ресурсы и ничего не публикует.")})
@@ -86,5 +92,12 @@ Friend NotInheritable Class Exchange_Invitation_Create_Form
         MyBase.OnLoad(e)
         DpiLayout.ClampToWorkingArea(Me)
         DpiLayout.CenterOnOwner(Me)
+    End Sub
+
+    Private Sub RefreshGuestGlyph()
+        Dim oldImage As Image = _rbGuest.Image
+        _rbGuest.Image = GlyphRenderer.Render(IconMap.GetMeaning("_rbGuest").GlyphId,
+            _rbGuest.LogicalToDeviceUnits(20), _rbGuest.ForeColor, AddressOf CompanionAssets.OpenBundledAsset)
+        oldImage?.Dispose()
     End Sub
 End Class

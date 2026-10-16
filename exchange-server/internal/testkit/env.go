@@ -53,6 +53,8 @@ type Options struct {
 	WithRelay   bool
 	RelayConfig func(*rendezvous.RelayConfig)
 	Cast        bool
+	// Sealed turns on the `sealed` feature (27 item DP): the keys, the boxes and the sealed clipboard kind.
+	Sealed bool
 	// LogFile also writes every log line to <DataDir>/logs/exchange.log (the real layout of ticket 182
 	// L-1), so a test can scan the directory the way the manifest test of ticket 167 does.
 	LogFile bool
@@ -180,7 +182,7 @@ func StartServer(t TB, opt Options) *Env {
 	var infos []directory.DeviceInfo
 	for _, d := range env.Accounts.AllDevices() {
 		infos = append(infos, directory.DeviceInfo{ID: d.ID, Account: d.Account, Name: d.Name, Product: d.Product,
-			ProductVersion: d.ProductVersion, Platform: d.Platform, Roles: d.Roles, Capabilities: d.Capabilities, Receiver: d.Receiver})
+			ProductVersion: d.ProductVersion, Platform: d.Platform, Roles: d.Roles, Capabilities: d.Capabilities, Receiver: d.Receiver, E2EKey: d.E2EKey})
 	}
 	if err := env.Dir.Load(infos); err != nil {
 		t.Fatalf("directory: %v", err)
@@ -226,7 +228,7 @@ func StartServer(t TB, opt Options) *Env {
 	env.Engine = rendezvous.NewEngine(rendezvous.EngineConfig{
 		Params: env.Params, Accounts: env.Accounts, Dir: env.Dir, Pool: env.Pool, Verifier: env.Verifier,
 		Limiter: env.Limiter, LoginLimiter: env.LoginLimiter, Log: env.Log.Logger, Now: opt.Now,
-		PublicEndpoint: opt.PublicEndpoint, ServerVersion: serverVersion(opt), Features: rendezvous.Features{Cast: opt.Cast}, Relay: relayHandler,
+		PublicEndpoint: opt.PublicEndpoint, ServerVersion: serverVersion(opt), Features: rendezvous.Features{Cast: opt.Cast, Sealed: opt.Sealed}, Relay: relayHandler,
 		Rand: opt.EngineRand,
 	})
 	env.Ops = env.Engine.Ops()

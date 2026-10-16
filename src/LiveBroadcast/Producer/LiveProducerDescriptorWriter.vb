@@ -8,7 +8,7 @@ Imports System.Text.Json
 
 ' Ticket 199 section 5: the descriptor and the hand-off. Built to LIVE-BROADCAST 3.1 and 3.2:
 ' schemaVersion 1, url, mode, title, sourceId, isLive, targetLatencyMs and endpoints, with the LAN
-' HTTP endpoint of this ticket (RELAY and TUNNEL are 173's). Three channels carry the SAME
+' HTTP endpoint of this ticket (broadcasts and folder connections are 173's). Three channels carry the SAME
 ' description (producer rule 3): FMSBCAST1: barcode text (Base64 of the GZIP of the JSON), the
 ' broadcast_<n>.fmsbcast file, and the QR image - which renders the same barcode text, so the payload
 ' is built once here. A clickable link is not offered: the contract has not decided a desktop scheme.
@@ -36,6 +36,31 @@ Friend Class LiveDescriptorInput
     Public Property CertFingerprint As String = ""
     Public Property InnerUrl As String = ""
     Public Property AuthUser As String = ""
+    ''' <summary>DEVICE-EXCHANGE item DK / LIVE-BROADCAST item Q: the RELAY and TUNNEL endpoints carry <c>seal</c> (<c>{v:1}</c>;
+    ''' LAN endpoints never do, they do not pass through the server).</summary>
+    Public Property Sealed As Boolean
+    ''' <summary>True for the descriptor the person hands out (a link, a file, a barcode): the keys ride in its sealed endpoints and a
+    ''' sealed endpoint with no key (RELAY) or no pin (TUNNEL) is left out, since nobody holding only that descriptor could play it.
+    ''' False for the directory record: <c>seal</c> is <c>{v:1}</c> alone, the keys travel in the record's box.</summary>
+    Public Property Outward As Boolean
+    ''' <summary>The group key of THIS link (base64url, 32 bytes); written only into an outward descriptor.</summary>
+    Public Property RelayKey As String = ""
+    ''' <summary>The <c>SHA256:</c> pin of the tunnel's inner TLS leaf (item DM); written only into an outward descriptor.</summary>
+    Public Property TunnelPin As String = ""
+
+    ''' <summary>The same input as the directory record's descriptor: no key, no pin.</summary>
+    Friend Function ForRecord() As LiveDescriptorInput
+        Dim copy As LiveDescriptorInput = DirectCast(MemberwiseClone(), LiveDescriptorInput)
+        copy.Outward = False
+        copy.RelayKey = ""
+        copy.TunnelPin = ""
+        Return copy
+    End Function
+
+    ''' <summary>Never prints a key.</summary>
+    Public Overrides Function ToString() As String
+        Return "LiveDescriptorInput"
+    End Function
 End Class
 
 Friend NotInheritable Class LiveProducerDescriptorWriter
@@ -50,13 +75,21 @@ Friend NotInheritable Class LiveProducerDescriptorWriter
     Public Shared Function BuildJson(input As LiveDescriptorInput) As String
         If input Is Nothing Then Return ""
 
+        ' LIVE-BROADCAST item Q: an outward descriptor leaves a sealed endpoint out when its key / pin is missing.
+        Dim showRelay As Boolean = Not String.IsNullOrWhiteSpace(input.RelayUrl) AndAlso
+                                   Not (input.Sealed AndAlso input.Outward AndAlso String.IsNullOrEmpty(input.RelayKey))
+        Dim showTunnel As Boolean = Not String.IsNullOrWhiteSpace(input.TunnelUrl) AndAlso
+                                    Not (input.Sealed AndAlso input.Outward AndAlso String.IsNullOrEmpty(input.TunnelPin))
+
         Dim topUrl As String = ""
         If input.AllowLanViewers AndAlso Not String.IsNullOrWhiteSpace(input.Url) Then
             topUrl = input.Url
-        ElseIf Not String.IsNullOrWhiteSpace(input.RelayUrl) Then
+        ElseIf showRelay Then
             topUrl = input.RelayUrl
-        ElseIf Not String.IsNullOrWhiteSpace(input.TunnelUrl) Then
+        ElseIf showTunnel Then
             topUrl = input.TunnelUrl
+        ElseIf input.Sealed AndAlso input.Outward Then
+            Return ""
         Else
             topUrl = input.Url
         End If
@@ -98,12 +131,13 @@ Friend NotInheritable Class LiveProducerDescriptorWriter
                 End If
 
                 ' 2. RELAY endpoint
-                If Not String.IsNullOrWhiteSpace(input.RelayUrl) Then
+                If showRelay Then
                     w.WriteStartObject()
                     w.WriteString("url", input.RelayUrl)
                     w.WriteString("transport", "RELAY")
                     w.WriteString("mode", input.Mode)
                     If Not String.IsNullOrEmpty(input.CertFingerprint) Then w.WriteString("certFingerprint", input.CertFingerprint)
+                    If input.Sealed Then WriteSeal(w, If(input.Outward, input.RelayKey, ""), "")
                     If Not String.IsNullOrEmpty(input.VideoCodec) Then w.WriteString("videoCodec", input.VideoCodec)
                     If Not String.IsNullOrEmpty(input.AudioCodec) Then w.WriteString("audioCodec", input.AudioCodec)
                     If input.SampleRateHz.HasValue Then w.WriteNumber("sampleRate", input.SampleRateHz.Value)
@@ -115,13 +149,14 @@ Friend NotInheritable Class LiveProducerDescriptorWriter
                 End If
 
                 ' 3. TUNNEL endpoint
-                If Not String.IsNullOrWhiteSpace(input.TunnelUrl) Then
+                If showTunnel Then
                     w.WriteStartObject()
                     w.WriteString("url", input.TunnelUrl)
                     w.WriteString("transport", "TUNNEL")
                     w.WriteString("mode", input.Mode)
                     If Not String.IsNullOrEmpty(input.InnerUrl) Then w.WriteString("inner", input.InnerUrl)
                     If Not String.IsNullOrEmpty(input.CertFingerprint) Then w.WriteString("certFingerprint", input.CertFingerprint)
+                    If input.Sealed Then WriteSeal(w, "", If(input.Outward, input.TunnelPin, ""))
                     If Not String.IsNullOrEmpty(input.VideoCodec) Then w.WriteString("videoCodec", input.VideoCodec)
                     If Not String.IsNullOrEmpty(input.AudioCodec) Then w.WriteString("audioCodec", input.AudioCodec)
                     If input.SampleRateHz.HasValue Then w.WriteNumber("sampleRate", input.SampleRateHz.Value)
@@ -140,8 +175,19 @@ Friend NotInheritable Class LiveProducerDescriptorWriter
         End Using
     End Function
 
-    ''' <summary>Builds the broadcast record JSON for publication on the exchange (broadcast-start, broadcast-update).</summary>
-    Public Shared Function BuildBroadcastRecord(broadcastId As String, deviceId As String, title As String, mode As String, descriptorJson As String) As String
+    ''' <summary>The <c>seal</c> member of a RELAY / TUNNEL endpoint: <c>{v:1}</c> in a directory record, plus <c>key</c> (RELAY) or
+    ''' <c>pin</c> (TUNNEL) in a descriptor the person hands out. Keys are written to the document only, never to a log.</summary>
+    Private Shared Sub WriteSeal(w As Utf8JsonWriter, key As String, pin As String)
+        w.WriteStartObject("seal")
+        w.WriteNumber("v", 1)
+        If Not String.IsNullOrEmpty(key) Then w.WriteString("key", key)
+        If Not String.IsNullOrEmpty(pin) Then w.WriteString("pin", pin)
+        w.WriteEndObject()
+    End Sub
+
+    ''' <summary>Builds the broadcast record JSON for publication on the exchange (broadcast-start, broadcast-update).
+    ''' <paramref name="sealedBoxJson"/> is the record's <c>sealed</c> box (item DK), written verbatim; Nothing or "" writes none.</summary>
+    Public Shared Function BuildBroadcastRecord(broadcastId As String, deviceId As String, title As String, mode As String, descriptorJson As String, Optional sealedBoxJson As String = Nothing) As String
         Using ms As New MemoryStream()
             Using w As New Utf8JsonWriter(ms)
                 w.WriteStartObject()
@@ -153,6 +199,12 @@ Friend NotInheritable Class LiveProducerDescriptorWriter
                 Using doc As JsonDocument = JsonDocument.Parse(If(descriptorJson, "{}"))
                     doc.RootElement.WriteTo(w)
                 End Using
+                If Not String.IsNullOrEmpty(sealedBoxJson) Then
+                    w.WritePropertyName("sealed")
+                    Using box As JsonDocument = JsonDocument.Parse(sealedBoxJson)
+                        box.RootElement.WriteTo(w)
+                    End Using
+                End If
                 w.WriteEndObject()
             End Using
             Return Encoding.UTF8.GetString(ms.ToArray())

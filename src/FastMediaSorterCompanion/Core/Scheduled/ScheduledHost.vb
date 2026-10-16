@@ -18,13 +18,18 @@ Friend Module ScheduledHost
     Private _engine As ScheduledEngine
     Private _wired As Boolean
 
+    ''' <summary>Optional tray balloon callback for operations with ShowBalloonOnError = True.</summary>
+    Friend Property NotifyErrorHandler As Action(Of ScheduledOperation, ScheduledRunResult)
+
     Friend ReadOnly Property Engine As ScheduledEngine
         Get
             SyncLock Gate
                 If _engine Is Nothing Then
                     Dim folder As String = ScheduledStore.DefaultFolder()
                     Dim journal As New ScheduledJournal(folder)
-                    _engine = New ScheduledEngine(New ScheduledStore(folder), journal, ScheduledServices.ForProduct(journal))
+                    Dim services As ScheduledServices = ScheduledServices.ForProduct(journal)
+                    services.NotifyError = Sub(op, result) NotifyErrorHandler?.Invoke(op, result)
+                    _engine = New ScheduledEngine(New ScheduledStore(folder), journal, services)
                 End If
                 Return _engine
             End SyncLock
@@ -73,12 +78,16 @@ Friend Module ScheduledHost
         If e.Mode = PowerModes.Resume Then Wake()
     End Sub
 
+    ''' <summary>A clock step or a zone change: <see cref="ScheduledEngine.Wake"/> runs what came due and, when the zone
+    ''' differs from the one the slots were armed in, re-arms the grid in the new zone (ticket 231, rule 9).</summary>
     Private Sub OnTimeChanged(sender As Object, e As EventArgs)
         Wake()
     End Sub
 
     Private Sub Wake()
         Try
+            ' TimeZoneInfo.Local is cached for the life of the process: without this a zone change is invisible to the engine.
+            TimeZoneInfo.ClearCachedData()
             Dim engine As ScheduledEngine
             SyncLock Gate
                 engine = _engine

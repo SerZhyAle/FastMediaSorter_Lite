@@ -54,6 +54,8 @@ Friend NotInheritable Class ScheduledStore
     ''' one damaged definition must not hide the rest.</summary>
     Friend Function LoadAll() As List(Of ScheduledOperation)
         Dim result As New List(Of ScheduledOperation)()
+        Dim legacyPolicy As MissedRunPolicy = ScheduledSettings.MissedRuns
+        Dim migratedAny As Boolean
         SyncLock gate
             If Not Directory.Exists(folder) Then Return result
             For Each file As String In Directory.EnumerateFiles(folder, "*.json")
@@ -62,6 +64,13 @@ Friend NotInheritable Class ScheduledStore
                     If op Is Nothing Then
                         AppFileLogger.WriteLine("Scheduled operations: unreadable definition skipped: " & Path.GetFileName(file))
                     Else
+                        If Not op.HasExplicitRetryMissedRuns Then
+                            op.RetryMissedRunsAtStart = (legacyPolicy = MissedRunPolicy.RunOnceAtStart)
+                            migratedAny = True
+                            If op.Halt <> ScheduledHalt.InvalidDefinition Then
+                                Try : WriteAtomic(file, ScheduledJson.Serialize(op)) : Catch : End Try
+                            End If
+                        End If
                         result.Add(op)
                     End If
                 Catch ex As Exception
@@ -69,6 +78,7 @@ Friend NotInheritable Class ScheduledStore
                 End Try
             Next
         End SyncLock
+        If migratedAny Then ScheduledSettings.MissedRunsMigrated = True
         result.Sort(Function(a, b) a.CreatedAt.CompareTo(b.CreatedAt))
         Return result
     End Function
@@ -111,6 +121,15 @@ Friend NotInheritable Class ScheduledStore
                 toWrite.HaltDetail = ""
             End If
             WriteAtomic(file, ScheduledJson.Serialize(toWrite))
+        End SyncLock
+    End Sub
+
+    ''' <summary>Writes an imported operation whole (with its fresh record and imported halt state).</summary>
+    Friend Sub SaveImported(op As ScheduledOperation)
+        SyncLock gate
+            Directory.CreateDirectory(folder)
+            Dim file As String = FileFor(op.Id)
+            WriteAtomic(file, ScheduledJson.Serialize(op))
         End SyncLock
     End Sub
 
@@ -174,6 +193,7 @@ Friend NotInheritable Class ScheduledSettings
     Private Const FeatureKey As String = "Scheduled_FeatureEnabled"
     Private Const PausedKey As String = "Scheduled_Paused"
     Private Const MissedKey As String = "Scheduled_MissedRuns"
+    Private Const MissedMigratedKey As String = "Scheduled_MissedRunsMigrated"
     ''' <summary>The viewer's own setting, read - never written - here (D3): the bin, where one exists.</summary>
     Private Const DeleteToBinKey As String = "DeleteToRecycleBin"
 
@@ -199,14 +219,23 @@ Friend NotInheritable Class ScheduledSettings
         End Set
     End Property
 
-    ''' <summary>What to do with a slot that came due while the program was not running. The default is
-    ''' "run once at start" (12.2 default 2): the host starts at sign-in, not around the clock.</summary>
+    ''' <summary>Legacy machine-level missed-run policy (ticket 222); migrated once into each operation's
+    ''' <see cref="ScheduledOperation.RetryMissedRunsAtStart"/> on first load (ticket 231, 3.4).</summary>
     Friend Shared Property MissedRuns As MissedRunPolicy
         Get
             Return If(Read(MissedKey, "start") = "skip", MissedRunPolicy.Skip, MissedRunPolicy.RunOnceAtStart)
         End Get
         Set(value As MissedRunPolicy)
             Write(MissedKey, If(value = MissedRunPolicy.Skip, "skip", "start"))
+        End Set
+    End Property
+
+    Friend Shared Property MissedRunsMigrated As Boolean
+        Get
+            Return Read(MissedMigratedKey, "0") = "1"
+        End Get
+        Set(value As Boolean)
+            Write(MissedMigratedKey, If(value, "1", "0"))
         End Set
     End Property
 
@@ -241,3 +270,125 @@ Friend NotInheritable Class ScheduledSettings
     End Sub
 
 End Class
+
+''' <summary>
+''' Share Manager settings export and import (ticket 231, 3.8): carries the scheduled operations
+''' (definitions, enable flags, per-operation options, no run state, no secret; resources by id and
+''' last-known name). On import, an operation whose resource id is absent on the target PC is imported
+''' disabled with <see cref="ScheduledHalt.ResourceRemoved"/> until the user re-points it.
+''' </summary>
+Friend NotInheritable Class ShareSettingsPackageDto
+    Public Property Version As Integer = 1
+    Public Property Operations As New List(Of ScheduledOperationDto)()
+End Class
+
+''' <summary>What an import did: whether the file read as an export at all, and how many operations went in or were left out.</summary>
+Friend NotInheritable Class ShareSettingsImportResult
+    Friend Property Readable As Boolean
+    Friend Property Imported As Integer
+    Friend Property NotImported As Integer
+End Class
+
+Friend Module ShareSettingsTransfer
+
+    Private ReadOnly ExportJsonOptions As New System.Text.Json.JsonSerializerOptions With {
+        .WriteIndented = True,
+        .PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase,
+        .PropertyNameCaseInsensitive = True,
+        .DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull}
+
+    Friend Function ExportToJson(store As ScheduledStore) As String
+        Dim package As New ShareSettingsPackageDto With {.Version = 1}
+        If store IsNot Nothing Then
+            For Each op As ScheduledOperation In store.LoadAll()
+                Dim dto As ScheduledOperationDto = ScheduledJson.ToDto(op)
+                ' Ticket 231, 3.8: no run state, no halt state, and no secret in an exported settings file.
+                dto.Record = Nothing
+                dto.Halt = "none"
+                dto.HaltDetail = ""
+                package.Operations.Add(dto)
+            Next
+        End If
+        Return System.Text.Json.JsonSerializer.Serialize(package, ExportJsonOptions)
+    End Function
+
+    Friend Sub ExportToFile(store As ScheduledStore, filePath As String)
+        Dim json As String = ExportToJson(store)
+        Directory.CreateDirectory(Path.GetDirectoryName(Path.GetFullPath(filePath)))
+        File.WriteAllText(filePath, json, New UTF8Encoding(False))
+    End Sub
+
+    ''' <summary>Imports the operations of an export. One operation that cannot be saved is counted and skipped, never
+    ''' the end of the rest. No machine state is taken from the file: the pause and the feature switch stay this PC's own.</summary>
+    Friend Function ImportFromJson(json As String, store As ScheduledStore,
+                                   Optional resourceFacts As Func(Of String, ScheduledResourceFacts) = Nothing,
+                                   Optional engine As ScheduledEngine = Nothing) As ShareSettingsImportResult
+        Dim result As New ShareSettingsImportResult()
+        If String.IsNullOrWhiteSpace(json) OrElse store Is Nothing Then Return result
+        Dim package As ShareSettingsPackageDto
+        Try
+            package = System.Text.Json.JsonSerializer.Deserialize(Of ShareSettingsPackageDto)(json, ExportJsonOptions)
+        Catch ex As System.Text.Json.JsonException
+            Return result
+        End Try
+        If package Is Nothing OrElse package.Operations Is Nothing Then Return result
+        result.Readable = True
+        Dim lookup As Func(Of String, ScheduledResourceFacts) = If(resourceFacts, New Func(Of String, ScheduledResourceFacts)(AddressOf ScheduledResourceRegistry.Lookup))
+        For Each dto As ScheduledOperationDto In package.Operations
+            If dto Is Nothing OrElse String.IsNullOrWhiteSpace(dto.Id) Then
+                result.NotImported += 1
+                Continue For
+            End If
+            Try
+                dto.Record = New ScheduledRecordDto()
+                Dim op As ScheduledOperation = ScheduledJson.FromDto(dto)
+                op.Record = New ScheduledRunRecord()
+                ' An action this build does not know stays an invalid definition (it must never become a runnable copy); any
+                ' other halt of the writer's PC means nothing here.
+                If op.Halt <> ScheduledHalt.InvalidDefinition Then
+                    op.Halt = ScheduledHalt.None
+                    op.HaltDetail = ""
+                End If
+                Dim missingResourceName As String = FindMissingResourceName(op, lookup)
+                If missingResourceName.Length > 0 Then
+                    op.Enabled = False
+                    op.Halt = ScheduledHalt.ResourceRemoved
+                    op.HaltDetail = missingResourceName
+                End If
+                store.SaveImported(op)
+                engine?.ReloadImported(op)
+                result.Imported += 1
+            Catch ex As Exception
+                ' The class only: an id or a path from a foreign file does not belong in a log.
+                AppFileLogger.WriteLine("Scheduled operations: one imported operation was not saved (" & ex.GetType().Name & ")")
+                result.NotImported += 1
+            End Try
+        Next
+        ScheduledSettings.FollowList(store.LoadAll().Count)
+        Return result
+    End Function
+
+    Friend Function ImportFromFile(filePath As String, store As ScheduledStore,
+                                   Optional resourceFacts As Func(Of String, ScheduledResourceFacts) = Nothing,
+                                   Optional engine As ScheduledEngine = Nothing) As ShareSettingsImportResult
+        If Not File.Exists(filePath) Then Return New ShareSettingsImportResult()
+        Return ImportFromJson(File.ReadAllText(filePath, Encoding.UTF8), store, resourceFacts, engine)
+    End Function
+
+    Private Function FindMissingResourceName(op As ScheduledOperation, lookup As Func(Of String, ScheduledResourceFacts)) As String
+        If op.Source.Kind = ScheduledLocationKind.Resource Then
+            Dim facts As ScheduledResourceFacts = lookup.Invoke(op.Source.ResourceId)
+            If facts Is Nothing OrElse Not facts.Exists Then
+                Return If(String.IsNullOrEmpty(op.Source.ResourceName), op.Source.ResourceId, op.Source.ResourceName)
+            End If
+        End If
+        If op.NeedsDestination AndAlso op.Destination.Kind = ScheduledLocationKind.Resource Then
+            Dim facts As ScheduledResourceFacts = lookup.Invoke(op.Destination.ResourceId)
+            If facts Is Nothing OrElse Not facts.Exists Then
+                Return If(String.IsNullOrEmpty(op.Destination.ResourceName), op.Destination.ResourceId, op.Destination.ResourceName)
+            End If
+        End If
+        Return ""
+    End Function
+
+End Module

@@ -39,6 +39,7 @@ func (d *Dir) DeviceEnrolled(info DeviceInfo) {
 	h.devices[info.ID] = s
 	d.devIdx[info.ID] = info.Account
 	t.upsertDevice(s)
+	t.devSet = true // a guest's givers are told which devices it has now (27 item DJ)
 	t.finish()
 }
 
@@ -132,8 +133,8 @@ func (d *Dir) offlineLocked(t *tx, h *hub, s *devState) {
 	}
 }
 
-// dropLiveLocked strips what lives only while the producer is online: access, shareId, publicPort,
-// and the lease behind the port.
+// dropLiveLocked strips what lives only while the producer is online: access (or sealedAccess, the box
+// that replaces it - 27 item DI), shareId, publicPort, and the lease behind the port.
 func (d *Dir) dropLiveLocked(h *hub, r *resState) {
 	if r.shareID != "" {
 		delete(d.shareIdx, r.shareID)
@@ -142,13 +143,15 @@ func (d *Dir) dropLiveLocked(h *hub, r *resState) {
 	if d.opt.Ports != nil {
 		d.opt.Ports.Release(h.login, r.id)
 	}
-	for _, k := range []string{"access", "shareId", "publicPort"} {
+	for _, k := range []string{"access", "sealedAccess", "shareId", "publicPort"} {
 		r.rec.Delete(k)
 	}
+	d.dropGrantPayloadsLocked(h.login, r.id) // a grant's access is held in memory only while the producer is online (20 item BD)
 	r.updated = d.now()
 }
 
 func (d *Dir) endBroadcastLocked(t *tx, h *hub, b *broState) {
+	d.dropGrantPayloadsLocked(h.login, b.id)
 	delete(h.broadcasts, b.id)
 	delete(d.broIdx, b.id)
 	t.removeBroadcast(b.id)
@@ -156,6 +159,9 @@ func (d *Dir) endBroadcastLocked(t *tx, h *hub, b *broState) {
 	t.afterUnlock(func() {
 		if t.hooks.BroadcastGone != nil {
 			t.hooks.BroadcastGone(h.login, id, dev)
+		}
+		if t.hooks.GrantTargetGone != nil {
+			t.hooks.GrantTargetGone(h.login, id, true) // the grants of a broadcast live and end with it (20 item BD)
 		}
 	})
 }
@@ -198,13 +204,20 @@ func (d *Dir) Snapshot(account string) (revision int64, devices, resources, broa
 
 // SnapshotFor applies the enrolled device capability to every resource in a full list.
 func (d *Dir) SnapshotFor(account, deviceID string) (revision int64, devices, resources, broadcasts []json.RawMessage) {
+	revision, devices, resources, broadcasts, _ = d.SnapshotFull(account, deviceID)
+	return
+}
+
+// SnapshotFull is SnapshotFor plus the grants the account made (20 item BD, 27 item DJ), all read under one
+// lock so that they and the revision belong together. grants is nil for an account that gave nothing.
+func (d *Dir) SnapshotFull(account, deviceID string) (revision int64, devices, resources, broadcasts, grants []json.RawMessage) {
 	d.mu.Lock()
 	defer d.mu.Unlock()
 	h := d.hubs[account]
 	if h == nil {
-		return 0, nil, nil, nil
+		return 0, nil, nil, nil, nil
 	}
-	return h.revision, d.rawDevices(h), d.resourcesFor(h, deviceID, d.rawResources(h, "", nil)), d.rawBroadcasts(h, "", nil)
+	return h.revision, d.rawDevices(h), d.resourcesFor(h, deviceID, d.rawResources(h, "", nil)), d.rawBroadcasts(h, "", nil), d.grantsOfLocked(account)
 }
 
 func (d *Dir) rawDevices(h *hub) []json.RawMessage {
@@ -287,6 +300,9 @@ func (d *Dir) Publish(account, deviceID string, raw json.RawMessage) (PublishRes
 	}
 	if rec.Has("protection") && !wire.ValidProtection(rec.Raw("protection")) {
 		return PublishResult{}, ErrProtectionUnsupported
+	}
+	if err := checkBox(rec, "sealedAccess"); err != nil {
+		return PublishResult{}, err
 	}
 	id, ok := rec.Str("resourceId")
 	kind, okK := rec.Str("kind")
@@ -408,6 +424,9 @@ func (d *Dir) removeResourceLocked(t *tx, h *hub, r *resState) {
 		if t.hooks.ResourceGone != nil {
 			t.hooks.ResourceGone(h.login, id, dev)
 		}
+		if t.hooks.GrantTargetGone != nil {
+			t.hooks.GrantTargetGone(h.login, id, false) // the grants of a withdrawn resource end with it (20 item BD)
+		}
 	})
 }
 
@@ -426,6 +445,9 @@ func parseBroadcast(raw json.RawMessage) (*wire.Record, string, error) {
 	desc := rec.Raw("descriptor")
 	if !ok || !wire.ValidID(id) || !okM || mode == "" || len(desc) == 0 || desc[0] != '{' {
 		return nil, "", ErrMalformed
+	}
+	if err := checkBox(rec, "sealed"); err != nil {
+		return nil, "", err
 	}
 	return rec, id, nil
 }
@@ -597,6 +619,7 @@ func (d *Dir) removeDeviceLocked(t *tx, h *hub, s *devState) {
 	delete(h.devices, s.info.ID)
 	delete(d.devIdx, s.info.ID)
 	t.removeDevice(s.info.ID)
+	t.devSet = true
 	id := s.info.ID
 	t.afterUnlock(func() {
 		if sink != nil {
