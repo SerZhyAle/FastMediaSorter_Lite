@@ -1,10 +1,9 @@
 # exchange-server
 
 The exchange server of the Fast Media Sorter package: accounts, enrolled devices, the directory of
-resources and broadcasts, tunnels and the third-party port (contract `DEVICE-EXCHANGE` 0.17, with
+resources and broadcasts, tunnels and the third-party port (contract `DEVICE-EXCHANGE` 1.1, read 2026-10-16, with
 `ANYWHERE-ACCESS` 5.5 for the port; specifications 160-164). Developer notes only - the user-facing guide
-arrives with ticket 145/179. The reader-facing description is the portal page [Exchange server](https://serzhyale.github.io/FastMediaSorter_mob_v2/docs/media-exchange-portal/exchange-server.html) of the shared "Media exchange between your devices" portal (not published until the Android site publishes it; it describes the contract, not a shipped product). **Nothing here ships in any package yet**: the wire is a proposal until rung 2
-freezes it (133 section 8), and the installers, the Share Manager entry and the firewall opt-in are tickets
+arrives with ticket 145/179. The reader-facing description is the portal page [Exchange server](https://serzhyale.github.io/FastMediaSorter_mob_v2/docs/media-exchange-portal/exchange-server.html) of the shared "Media exchange between your devices" portal (not published until the Android site publishes it; it describes the contract, not a shipped product). **Nothing here ships in any release package yet** (`INCLUDE_EXCHANGE` is `'false'` in `release.yml`): the contract left `[PROPOSED]` at 1.0 and no joint rung has run (205), and the installers, the Share Manager entry and the firewall opt-in are tickets
 141-144.
 
 The wire is `schemaVersion` 2. The superseded `ANYWHERE-ACCESS` 0.10 wire (`schemaVersion` 1: one server
@@ -155,9 +154,11 @@ into `tests/Lite.Tests/TestData/exchange-vectors/`; `ExchangeVectorReplayTests` 
 or stale vendored transcripts fail. Regenerate at the Go source, then copy all four files together.
 
 The record replay preserves nested unknown members, lists unsupported kinds, reads Drive-wrapped records
-without `access`, and enforces the reader's 16 KiB bound. One generated boundary case is accepted by the
-server at 16384 input bytes but listed at 16475 after server-owned fields are added; the client skips it.
-`PROPOSAL-2026-10-11-fmsw-vectors.md` records this finding with the artifacts in the contract catalog.
+without `access`, and enforces the reader's 16 KiB bound. The server bounds the record as delivered (item BS):
+`resource-16KiB-exact` (16384 bytes as sent) is refused `capacity`, and `resource-delivered-16KiB-exact` is the
+largest accepted record, listed at 16383 bytes while its device is online and at exactly 16384 once it is offline.
+`PROPOSAL-2026-10-11-fmsw-vectors.md` records the earlier finding (a case accepted at 16384 and listed at 16475)
+with the artifacts in the contract catalog.
 No joint rung is claimed: phone/WinSCP or FileZilla runs, Drive parity, relay latency and cross-product cast
 remain pending. Developer tools are not installed; the feature gates remain shut.
 

@@ -267,6 +267,13 @@ Partial Public NotInheritable Class Share_Settings_Form
         _btnPxRotate.Visible = rotate
         _btnPxRemoveLink.Visible = remove
         _pxLinkRow.Visible = create OrElse rotate OrElse remove
+        ' Ticket 239 CR-13 (Q239-2): the outward link is closed while OutwardAccessFeatures says so - the two buttons that make a link
+        ' stay in place but off, the note is the reason; removing a link that exists stays possible.
+        Dim offered As Boolean = OutwardAccessFeatures.IsOffered()
+        _btnPxCreate.Enabled = offered
+        _btnPxRotate.Enabled = offered
+        _btnPxRemoveLink.Enabled = True
+        _lblPxLinkNote.Text = ExchangePublishText.LinkNote()
         _lblPxLinkNote.Visible = _pxSharesBlock.Visible
     End Sub
 
@@ -323,13 +330,13 @@ Partial Public NotInheritable Class Share_Settings_Form
 
     Private Async Sub OnPxCreateLink()
         Dim name As String = SelectedProducerShare()
-        If name.Length = 0 OrElse _pxBusy OrElse _pxPublisher Is Nothing Then Return
+        If name.Length = 0 OrElse _pxBusy OrElse _pxPublisher Is Nothing OrElse Not OutwardAccessFeatures.IsOffered() Then Return
         Await RunLinkActionAsync(name, ExchangePublishText.LinkCreated(name), Function(p, n) p.CreateLinkAsync(n, CancellationToken.None), showWindow:=True)
     End Sub
 
     Private Async Sub OnPxRotateLink()
         Dim name As String = SelectedProducerShare()
-        If name.Length = 0 OrElse _pxBusy OrElse _pxPublisher Is Nothing Then Return
+        If name.Length = 0 OrElse _pxBusy OrElse _pxPublisher Is Nothing OrElse Not OutwardAccessFeatures.IsOffered() Then Return
         ' names the consequence; the safe answer (No) is the default
         If MessageBox.Show(Me, ExchangePublishText.RotateQuestion(name), ExchangePublishText.GroupTitle(), MessageBoxButtons.YesNo,
                            MessageBoxIcon.Warning, MessageBoxDefaultButton.Button2) <> DialogResult.Yes Then Return

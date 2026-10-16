@@ -68,6 +68,7 @@ Friend Module ExchangePasswordChangeText
         Select Case refusal
             Case ExchangeRefusal.BadCredentials : Return Localization.T("Старый пароль не подошёл.")
             Case ExchangeRefusal.RateLimited : Return Localization.T("Слишком много попыток. Подождите минуту и повторите.")
+            Case ExchangeRefusal.PasswordPolicy : Return ExchangeDeviceText.TableText(ConnectionDiagnosisMessages.PasswordPolicy)   ' item AT, the table's own words (item DA)
             Case Else : Return Localization.T("Сервер отказал в смене пароля.")
         End Select
     End Function
@@ -82,6 +83,18 @@ Friend Module ExchangeDeviceText
 
     Friend Function GroupTitle() As String
         Return Localization.T("Учётная запись обмена")
+    End Function
+
+    ''' <summary>The words of one row of the common message table (DEVICE-EXCHANGE item CZ), in the language of the window. Item DA: the
+    ''' text is shown as the table has it - never reworded, shortened or joined with a sentence of this program. A code the table does not
+    ''' know reads as its generic refusal, never as the code itself; no Russian key is added for any of it (the table carries 13 languages).</summary>
+    Friend Function TableText(message As ConnectionDiagnosisMessage) As String
+        Dim locale As String = Localization.CurrentCode
+        Dim text As String = ConnectionDiagnosisLocalization.GetMessageText(message.Code, locale)
+        If text.Length = 0 OrElse String.Equals(text, message.Code, StringComparison.Ordinal) Then
+            text = ConnectionDiagnosisLocalization.GetMessageText(ConnectionDiagnosisMessages.Refused.Code, locale)
+        End If
+        Return text
     End Function
 
     ''' <summary>The one line the group shows (and folded, its summary).</summary>
@@ -103,7 +116,8 @@ Friend Module ExchangeDeviceText
             Case ExchangeAgentState.PinMismatch
                 Return Localization.T("Сертификат сервера изменился. Дальнейшие попытки остановлены.")
             Case ExchangeAgentState.UpdateNeeded
-                Return Localization.T("Нужна более новая версия программы. Обновите её.")
+                ' `version-unsupported` (item CZ): the two sides speak different versions; the table asks for no update
+                Return TableText(ConnectionDiagnosisMessages.VersionUnsupported)
             Case ExchangeAgentState.Defect
                 Return Localization.T("Ошибка программы при связи с сервером. Подробности в журнале.")
             Case ExchangeAgentState.Stopped
@@ -121,6 +135,7 @@ Friend Module ExchangeDeviceText
                 Select Case status.LastReason
                     Case "bad-credentials" : Return Localization.T("Сервер не принял вход этого устройства.")
                     Case "device-revoked" : Return Localization.T("Это устройство отозвано в учётной записи.")
+                    Case "signed-out" : Return TableText(ConnectionDiagnosisMessages.SignedOut)   ' item AT/BR: the password was changed; the entry stays and asks for it
                     Case "no-token" : Return Localization.T("На этом ПК нет сохранённого токена.")
                     Case "bad-address" : Return Localization.T("Сохранённый адрес сервера не читается.")
                     Case Else : Return ""
@@ -134,32 +149,38 @@ Friend Module ExchangeDeviceText
         End Select
     End Function
 
-    ''' <summary>One sentence for the outcome of an enrollment ("" for success). Never the raw reason.</summary>
-    Friend Function EnrollFailure(result As ExchangeEnrollResult) As String
+    ''' <summary>The row of the common message table (item CZ) a failed enrollment reads as, or Nothing when the table has none (a bad
+    ''' input, a token that could not be kept, a certificate nobody trusts yet, a reply of no known shape: this program's own sentences).
+    ''' A refusal reads as the row of its own reason; the wrong-secret row is the one-time-code variant when a pairing code was typed
+    ''' (<paramref name="oneTimeCode"/>); an unknown reason is the generic refusal.</summary>
+    Friend Function EnrollRow(result As ExchangeEnrollResult, Optional oneTimeCode As Boolean = False) As ConnectionDiagnosisMessage
+        Select Case result.Outcome
+            Case ExchangeEnrollOutcome.Refused
+                Return ConnectionDiagnosisMessages.OfWire(ExchangeRefusals.WireName(result.Refusal), oneTimeCode)
+            Case ExchangeEnrollOutcome.PinMismatch
+                Return ConnectionDiagnosisMessages.CertificateChanged
+            Case ExchangeEnrollOutcome.TlsFailed
+                Return ConnectionDiagnosisMessages.TlsFailed
+            Case ExchangeEnrollOutcome.Network
+                Return ConnectionDiagnosisMessages.UnreachableServer
+            Case ExchangeEnrollOutcome.TimedOut
+                Return ConnectionDiagnosisMessages.Unanswered   ' the server did not answer; `timeout` is the CAST row of the other device
+            Case Else
+                Return Nothing
+        End Select
+    End Function
+
+    ''' <summary>The words for the outcome of an enrollment ("" for success). Never the raw reason. Where the table of item CZ has a row
+    ''' for the failure, the row's own text is shown and nothing of this program's before it (item DA); the rest are this program's sentences.</summary>
+    Friend Function EnrollFailure(result As ExchangeEnrollResult, Optional oneTimeCode As Boolean = False) As String
+        Dim row As ConnectionDiagnosisMessage = EnrollRow(result, oneTimeCode)
+        If row IsNot Nothing Then Return TableText(row)
         Select Case result.Outcome
             Case ExchangeEnrollOutcome.Enrolled
                 Return ""
-            Case ExchangeEnrollOutcome.Refused
-                Select Case result.Refusal
-                    Case ExchangeRefusal.BadCredentials : Return Localization.T("Логин, пароль или код не приняты.")
-                    Case ExchangeRefusal.RateLimited : Return Localization.T("Слишком много попыток. Подождите немного и повторите.")
-                    Case ExchangeRefusal.Capacity : Return Localization.T("Сервер переполнен. Повторите позже.")
-                    Case ExchangeRefusal.IdCollision : Return Localization.T("Это устройство уже есть в другой учётной записи на этом сервере.")
-                    Case ExchangeRefusal.VersionUnsupported : Return Localization.T("Сервер требует другую версию программы. Обновите программу.")
-                    Case ExchangeRefusal.TlsRequired : Return Localization.T("Ошибка программы: сервер требует защищённого соединения. Подробности в журнале.")
-                    Case Else : Return Localization.T("Сервер отклонил запрос.")
-                End Select
-            Case ExchangeEnrollOutcome.PinMismatch
-                Return Localization.T("Сертификат сервера не совпадает с принятым отпечатком.")
             Case ExchangeEnrollOutcome.Untrusted
                 Return Localization.T("Сертификат сервера не принят. Проверьте его и подтвердите отпечаток.") & " " &
                        Localization.T("Подключение без проверки сертификата не предусмотрено.")
-            Case ExchangeEnrollOutcome.TlsFailed
-                Return Localization.T("Не удалось установить защищённое соединение. Проверьте адрес и порт: сервер обмена принимает только TLS.")
-            Case ExchangeEnrollOutcome.Network
-                Return Localization.T("Не удалось подключиться к серверу.")
-            Case ExchangeEnrollOutcome.TimedOut
-                Return Localization.T("Сервер не отвечает.")
             Case ExchangeEnrollOutcome.BadInput
                 Return Localization.T("Проверьте адрес (хост:порт), логин и пароль или код.")
             Case ExchangeEnrollOutcome.StoreFailed

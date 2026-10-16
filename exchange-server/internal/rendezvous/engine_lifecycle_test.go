@@ -49,6 +49,53 @@ func mustRegister(t *testing.T, d *testkit.Device, invitation, shared, login, pw
 	return en
 }
 
+// DEVICE-EXCHANGE item AQ names the two members of `register` `invitation` and `invitationPassword`; this
+// server first used `invitationCode` and `sharedPassword` and keeps reading them. A person registers with
+// either pair, for the one-time invitation and for the shared password alike, and a frame that names one
+// invitation twice, or both kinds together, is malformed.
+func TestRegisterReadsBothSpellingsOfItsInvitationMembers(t *testing.T) {
+	env := testkit.StartServer(t, noAccounts())
+	if err := env.Ops.SetSharedInvitation(sharedPW, "member"); err != nil {
+		t.Fatal(err)
+	}
+	env.AddSecret(sharedPW)
+	register := map[string]func(d *testkit.Device, invitation, shared, login string) (wire.Envelope, error){
+		"invitationCode / sharedPassword (the first spelling)": func(d *testkit.Device, invitation, shared, login string) (wire.Envelope, error) {
+			return d.Register(invitation, shared, login, testkit.TestPassword)
+		},
+		"invitation / invitationPassword (item AQ)": func(d *testkit.Device, invitation, shared, login string) (wire.Envelope, error) {
+			return d.RegisterNamed(invitation, shared, login, testkit.TestPassword)
+		},
+	}
+	n := 0
+	for name, send := range register {
+		n++
+		login := "oneoff" + string(rune('a'+n))
+		code := mustInvite(t, env, "member")
+		r, err := send(env.NewDevice(login), code, "", login)
+		if err != nil {
+			t.Fatalf("%s, one-time invitation: %v", name, err)
+		}
+		if en, ok := r.(*wire.Enrolled); !ok || en.Account != login || en.AccountKind != "member" {
+			t.Fatalf("%s, one-time invitation: %+v", name, r)
+		}
+		// the invitation is consumed by a registration made under either spelling
+		again, _ := send(env.NewDevice("again"+login), code, "", "again"+login)
+		refusedWith(t, again, wire.ReasonInvitationInvalid)
+
+		login = "shared" + string(rune('a'+n))
+		r, err = send(env.NewDevice(login), "", sharedPW, login)
+		if err != nil {
+			t.Fatalf("%s, shared password: %v", name, err)
+		}
+		if en, ok := r.(*wire.Enrolled); !ok || en.Account != login {
+			t.Fatalf("%s, shared password: %+v", name, r)
+		}
+		wrong, _ := send(env.NewDevice("wrong"+login), "", "not-the-shared-password", "wrong"+login)
+		refusedWith(t, wrong, wire.ReasonInvitationInvalid)
+	}
+}
+
 func TestAOneTimeInvitationRegistersOnceAndItsSecondUseLooksLikeAWrongCode(t *testing.T) {
 	env := testkit.StartServer(t, noAccounts())
 	code := mustInvite(t, env, "member")

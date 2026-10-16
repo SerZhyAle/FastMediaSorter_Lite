@@ -1,4 +1,4 @@
-﻿#If Not NETFRAMEWORK Then
+#If Not NETFRAMEWORK Then
 Option Explicit On
 Option Strict On
 Option Infer On
@@ -109,56 +109,7 @@ Partial Public Class Table_Form
         ' "Мои устройства" (171/187) stands in its own fold between the list and the Android/SFTP group:
         ' the section keeps its wiring through the panel, only the placement moves, and the fold -
         ' not the list panel's body - decides whether the entries' loop runs (rule 8).
-        Dim devicesSection As Exchange_Devices_Panel = resourcesPanel.DetachDevices()
-        If devicesSection IsNot Nothing Then
-            AddSettingsGroup("resources", "devices", "Мои устройства", True)
-            Dim devicesGroup As SettingsCollapsibleGroup = settingsGroups("resources/devices")
-            devicesSection.HostInCollapsibleGroup()
-            devicesSection.Margin = New Padding(Sp(12), 0, Sp(12), Sp(6))
-            devicesGroup.Body.Controls.Add(devicesSection)
-            devicesSection.Visible = devicesGroup.Expanded
-            AddHandler devicesGroup.ExpansionChanged, Sub() devicesSection.Visible = devicesGroup.Expanded
-        End If
         AddSettingsGroup("resources", "server", "Android / SFTP", True, "sftp_intro", "sftp_manager", "sftp_guide", "android_app", "exchange_portal")
-        Dim resourcesFlow As FlowLayoutPanel = PageFlow(modernResourcesPage)
-        For Each child As Control In resourcesFlow.Controls.Cast(Of Control)().Where(Function(c) Not TypeOf c Is SettingsCollapsibleGroup).ToArray()
-            If modernSettingsRows.Any(Function(row) row.Host Is child) Then Continue For
-            child.Name = "settingsResourcesPanel"
-            settingsGroups("resources/basic").Body.Controls.Add(child)
-        Next
-
-        For Each heading As ModernSettingRow In modernSettingsRows.Where(Function(r) r.Key.StartsWith("section_", StringComparison.Ordinal)).ToArray()
-            modernSettingsRows.Remove(heading)
-            heading.Host.Dispose()
-        Next
-        For Each row As ModernSettingRow In modernSettingsRows
-            row.Host.Name = "settingsRow_" & row.Key
-            Dim ownerId As String = Nothing
-            If rowGroups.TryGetValue(row.Key, ownerId) Then
-                settingsGroups(ownerId).Body.Controls.Add(row.Host)
-            ElseIf row.Host.Parent IsNot Nothing AndAlso TypeOf row.Host.Parent.Parent Is TabPage AndAlso row.Host.Parent.Parent IsNot modernAboutPage Then
-                Throw New InvalidOperationException("Settings row has no placement: " & row.Key)
-            End If
-        Next
-        ' The recipient grid and operation status lines are not preference rows.
-        Dim recipientFlow As FlowLayoutPanel = PageFlow(Tab_Page_1)
-        For Each child As Control In recipientFlow.Controls.Cast(Of Control)().Where(Function(c) Not TypeOf c Is SettingsCollapsibleGroup).ToArray()
-            child.Name = "settingsRecipientsGrid"
-            settingsGroups("recipients/basic").Body.Controls.Add(child)
-        Next
-        If lblOcrRecognitionStatus IsNot Nothing Then settingsGroups("ocr/recognition").Body.Controls.Add(lblOcrRecognitionStatus)
-        If lblOcrStatus IsNot Nothing Then settingsGroups("translation/provider").Body.Controls.Add(lblOcrStatus)
-        ' The grid must remain keyboard reachable; focus restoration now handles its auto-scroll.
-        Data_Grid_View.TabStop = True
-        For Each group As SettingsCollapsibleGroup In settingsGroups.Values
-            Dim order = groupRowOrder.First(Function(item) settingsGroups(item.Key) Is group).Value
-            For index As Integer = 0 To order.Length - 1
-                Dim rowId As String = order(index)
-                Dim row = modernSettingsRows.FirstOrDefault(Function(item) item.Key = rowId)
-                If row IsNot Nothing Then group.Body.Controls.SetChildIndex(row.Host, index)
-            Next
-            group.ArrangeContents()
-        Next
 
         contextTimer = New Timer()
         contextFlush = New SettingsFlushScheduler(AddressOf WriteSettingsContext,
@@ -182,7 +133,67 @@ Partial Public Class Table_Form
         restoringSettingsContext = True
         Tab_Control.SelectedTab = pageIds.First(Function(p) p.Value = settingsContext.ResolvePage(pageIds.Values)).Key
         restoringSettingsContext = False
-        LocalizeSettingsGroups()
+        EnsureModernSettingsPage(Tab_Control.SelectedTab)
+    End Sub
+
+
+    Private Sub FinishModernSettingsPage(pageId As String)
+        If pageId = "resources" Then
+            Dim devicesSection As Exchange_Devices_Panel = resourcesPanel.DetachDevices()
+            If devicesSection IsNot Nothing Then
+                AddSettingsGroup("resources", "devices", "Мои устройства", True)
+                Dim devicesGroup As SettingsCollapsibleGroup = settingsGroups("resources/devices")
+                PageFlow(modernResourcesPage).Controls.SetChildIndex(devicesGroup, 1)
+                devicesSection.HostInCollapsibleGroup()
+                devicesSection.Margin = New Padding(Sp(12), 0, Sp(12), Sp(6))
+                devicesGroup.Body.Controls.Add(devicesSection)
+                devicesSection.Visible = devicesGroup.Expanded
+                AddHandler devicesGroup.ExpansionChanged, Sub() devicesSection.Visible = devicesGroup.Expanded
+            End If
+            Dim resourcesFlow As FlowLayoutPanel = PageFlow(modernResourcesPage)
+            For Each child As Control In resourcesFlow.Controls.Cast(Of Control)().Where(Function(c) Not TypeOf c Is SettingsCollapsibleGroup).ToArray()
+                If modernSettingsRows.Any(Function(row) row.Host Is child) Then Continue For
+                child.Name = "settingsResourcesPanel"
+                settingsGroups("resources/basic").Body.Controls.Add(child)
+            Next
+        End If
+
+        For Each heading As ModernSettingRow In modernSettingsRows.Where(Function(r) r.Key.StartsWith("section_", StringComparison.Ordinal)).ToArray()
+            modernSettingsRows.Remove(heading)
+            heading.Host.Dispose()
+        Next
+        For Each row As ModernSettingRow In modernSettingsRows
+            row.Host.Name = "settingsRow_" & row.Key
+            Dim ownerId As String = Nothing
+            If rowGroups.TryGetValue(row.Key, ownerId) Then
+                Dim body = settingsGroups(ownerId).Body
+                If row.Host.Parent IsNot body Then body.Controls.Add(row.Host)
+                row.PageFlow = PageFlow(DirectCast(settingsGroups(ownerId).Parent.Parent, TabPage))
+            ElseIf row.Host.Parent IsNot Nothing AndAlso TypeOf row.Host.Parent.Parent Is TabPage AndAlso row.Host.Parent.Parent IsNot modernAboutPage Then
+                Throw New InvalidOperationException("Settings row has no placement: " & row.Key)
+            End If
+        Next
+        ' The recipient grid and operation status lines are not preference rows.
+        If pageId = "recipients" Then
+            Dim recipientFlow As FlowLayoutPanel = PageFlow(Tab_Page_1)
+            For Each child As Control In recipientFlow.Controls.Cast(Of Control)().Where(Function(c) Not TypeOf c Is SettingsCollapsibleGroup).ToArray()
+                child.Name = "settingsRecipientsGrid"
+                settingsGroups("recipients/basic").Body.Controls.Add(child)
+            Next
+            Data_Grid_View.TabStop = True
+        End If
+        If pageId = "ocr" AndAlso lblOcrRecognitionStatus IsNot Nothing Then settingsGroups("ocr/recognition").Body.Controls.Add(lblOcrRecognitionStatus)
+        If pageId = "translation" AndAlso lblOcrStatus IsNot Nothing Then settingsGroups("translation/provider").Body.Controls.Add(lblOcrStatus)
+        For Each group As SettingsCollapsibleGroup In settingsGroups.Values.Where(Function(item) item.GroupId.StartsWith(pageId & "/", StringComparison.Ordinal))
+            Dim order = groupRowOrder(group.GroupId)
+            For index As Integer = 0 To order.Length - 1
+                Dim rowId As String = order(index)
+                Dim row = modernSettingsRows.FirstOrDefault(Function(item) item.Key = rowId)
+                If row IsNot Nothing Then group.Body.Controls.SetChildIndex(row.Host, index)
+            Next
+            group.ArrangeContents()
+        Next
+
     End Sub
 
     Private Function PageFlow(page As TabPage) As FlowLayoutPanel
@@ -190,6 +201,20 @@ Partial Public Class Table_Form
     End Function
 
     Private Sub AddSettingsGroup(pageId As String, groupId As String, captionKey As String, defaultExpanded As Boolean, ParamArray rows As String())
+        Dim id As String = pageId & "/" & groupId
+        groupCaptionKeys.Add(id, captionKey)
+        groupRowOrder.Add(id, rows)
+        For Each row As String In rows
+            rowGroups.Add(row, id)
+        Next
+        If Not settingsContextReady Then
+            pendingSettingsGroups.Add(id, Sub() CreateSettingsGroup(pageId, groupId, defaultExpanded))
+        Else
+            CreateSettingsGroup(pageId, groupId, defaultExpanded)
+        End If
+    End Sub
+
+    Private Sub CreateSettingsGroup(pageId As String, groupId As String, defaultExpanded As Boolean)
         Dim id As String = pageId & "/" & groupId
         Dim page As TabPage = pageIds.First(Function(entry) entry.Value = pageId).Key
         ' The header caption is Semibold 10.5 - visibly larger than a row's 8.75, one half
@@ -199,13 +224,8 @@ Partial Public Class Table_Form
             Function(expanded, ink) GlyphRenderer.Render(IconMap.GetMeaning(If(expanded, "collapsibleSectionOpen", "collapsibleSection")).GlyphId,
                 Sp(20), ink, AddressOf RuntimeBootstrap.OpenBundledAsset))
         group.Expanded = settingsContext.Page(pageId).Expanded(groupId, defaultExpanded)
-        groupCaptionKeys.Add(id, captionKey)
-        groupRowOrder.Add(id, rows)
         settingsGroups.Add(id, group)
         PageFlow(page).Controls.Add(group)
-        For Each row As String In rows
-            rowGroups.Add(row, id)
-        Next
         Dim headerY As Integer
         AddHandler group.ExpansionChanging,
             Sub()

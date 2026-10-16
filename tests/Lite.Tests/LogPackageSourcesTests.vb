@@ -30,7 +30,7 @@ Public Class LogPackageSourcesTests
 
     ''' <summary>The archive entries of the two products, in the documented order after the program's own log.</summary>
     Private Shared ReadOnly Documented As String() = {
-        "current.log", "companion.log",
+        "current.log", "previous.log", "companion.log", "companion.previous.log",
         "exchange/exchange.log", "exchange/exchange.log.1", "exchange/service.log",
         "exchange/install-exchange-service.log", "exchange/enable-exchange-server.log",
         "share/service.log", "share/install-share-service.log"}
@@ -187,7 +187,9 @@ Public Class LogPackageSourcesTests
     Public Sub A_seeded_machine_produces_every_documented_entry_under_its_qualified_name()
         Using l As New Layout()
             l.Put("exe/current.log", "viewer line" & vbLf)
+            l.Put("exe/previous.log", "viewer rolled line" & vbLf)
             l.Put("local/FastMediaSorterCompanion/companion.log", "manager line" & vbLf)
+            l.Put("local/FastMediaSorterCompanion/previous.log", "manager rolled line" & vbLf)
             l.Put("common/FastMediaSorterExchange/logs/exchange.log", "exchange main" & vbLf)
             l.Put("common/FastMediaSorterExchange/logs/exchange.log.1", "exchange rotated" & vbLf)
             l.Put("common/FastMediaSorterExchange/logs/service.log", "exchange service" & vbLf)
@@ -213,6 +215,8 @@ Public Class LogPackageSourcesTests
                 Assert.Equal("share install" & vbLf, ReadEntry(result.Path, "share/install-share-service.log"))
                 Assert.Equal("viewer line" & vbLf, ReadEntry(result.Path, "current.log"))
                 Assert.Equal("manager line" & vbLf, ReadEntry(result.Path, "companion.log"))
+                Assert.Equal("viewer rolled line" & vbLf, ReadEntry(result.Path, "previous.log"))
+                Assert.Equal("manager rolled line" & vbLf, ReadEntry(result.Path, "companion.previous.log"))
                 ' Every included source has a line in the consent list, and every line names its entry.
                 For Each source As LogPackage.LogEntryOutcome In result.Sources
                     Assert.Equal(LogPackage.LogSourceState.Included, source.State)
@@ -269,10 +273,81 @@ Public Class LogPackageSourcesTests
             Dim result As LogPackage.LogPackageResult = Build(l)
             Try
                 Dim big As String = ReadEntry(result.Path, "exchange/exchange.log")
-                Assert.StartsWith("[.. truncated:", big)
+                Assert.StartsWith("line 0 ", big) ' the head is kept: the start of the log is what carries the configuration
+                Assert.Contains("[Diag] LOG TRUNCATED | dropped_middle_bytes=", big)
                 Assert.Contains("line 60000 ", big)
                 Assert.True(big.Length < 2.2 * 1024 * 1024, "the entry should stay about the 2 MB cap")
                 Assert.Equal("opened <USER>\Pictures\a.jpg" & vbLf, ReadEntry(result.Path, "share/service.log"))
+            Finally
+                If Not String.IsNullOrEmpty(result.Path) Then File.Delete(result.Path)
+            End Try
+        End Using
+    End Sub
+
+    ' ------------------------------------------------------------------- the rolled-over logs -----
+    ' Spec 039 phase 2: AppFileLogger rolls current.log (companion.log) to previous.log at 8 MB and the new
+    ' file starts empty, so the start of an incident can be in the rolled file. It travels with its log.
+
+    <Fact>
+    Public Sub The_rolled_log_is_looked_for_beside_the_log_it_belongs_to_and_named_after_it()
+        Using l As New Layout()
+            l.Put("exe/current.log", "now" & vbLf)
+            l.Put("exe/previous.log", "before" & vbLf)
+            l.Put("local/FastMediaSorterCompanion/companion.log", "manager now" & vbLf)
+            l.Put("local/FastMediaSorterCompanion/previous.log", "manager before" & vbLf)
+            Dim result As LogPackage.LogPackageResult = Build(l)
+            Try
+                Assert.Equal("before" & vbLf, ReadEntry(result.Path, "previous.log"))
+                Assert.Equal("manager before" & vbLf, ReadEntry(result.Path, "companion.previous.log"))
+                Dim names As List(Of String) = EntryNames(result.Path)
+                Assert.True(names.IndexOf("previous.log") = names.IndexOf("current.log") + 1, "a rolled log follows its own log")
+            Finally
+                If Not String.IsNullOrEmpty(result.Path) Then File.Delete(result.Path)
+            End Try
+        End Using
+    End Sub
+
+    <Fact>
+    Public Sub A_previous_log_beside_another_programs_log_never_stands_in_for_the_missing_one()
+        Using l As New Layout()
+            ' The viewer's rolled log sits in the exe folder; the Share Manager's own log is in its per-user folder
+            ' and has no rolled copy. Both programs would name the file previous.log.
+            l.Put("exe/current.log", "viewer" & vbLf)
+            l.Put("exe/previous.log", "VIEWER ROLLED" & vbLf)
+            l.Put("local/FastMediaSorterCompanion/companion.log", "manager" & vbLf)
+            Dim result As LogPackage.LogPackageResult = Build(l)
+            Try
+                Dim names As List(Of String) = EntryNames(result.Path)
+                Assert.Contains("previous.log", names)
+                Assert.DoesNotContain("companion.previous.log", names)
+            Finally
+                If Not String.IsNullOrEmpty(result.Path) Then File.Delete(result.Path)
+            End Try
+        End Using
+    End Sub
+
+    <Fact>
+    Public Sub A_previous_log_with_no_log_of_its_program_is_not_picked_up()
+        Using l As New Layout()
+            l.Put("exe/previous.log", "orphan" & vbLf)
+            Dim result As LogPackage.LogPackageResult = Build(l)
+            Try
+                Assert.Equal({"report.txt", "environment.txt"}, EntryNames(result.Path).ToArray())
+            Finally
+                If Not String.IsNullOrEmpty(result.Path) Then File.Delete(result.Path)
+            End Try
+        End Using
+    End Sub
+
+    <Fact>
+    Public Sub A_rolled_log_is_redacted_like_any_other_log()
+        Using l As New Layout()
+            Dim profile As String = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile)
+            l.Put("exe/current.log", "now" & vbLf)
+            l.Put("exe/previous.log", "opened " & profile & "\Pictures\a.jpg" & vbLf)
+            Dim result As LogPackage.LogPackageResult = Build(l)
+            Try
+                Assert.Equal("opened <USER>\Pictures\a.jpg" & vbLf, ReadEntry(result.Path, "previous.log"))
             Finally
                 If Not String.IsNullOrEmpty(result.Path) Then File.Delete(result.Path)
             End Try
@@ -284,7 +359,7 @@ Public Class LogPackageSourcesTests
         Using l As New Layout()
             Dim result As LogPackage.LogPackageResult = Build(l)
             Try
-                Assert.Equal({"report.txt"}, EntryNames(result.Path).ToArray())
+                Assert.Equal({"report.txt", "environment.txt"}, EntryNames(result.Path).ToArray())
                 Assert.Empty(result.Sources)
                 Dim report As String = ReadEntry(result.Path, "report.txt")
                 Assert.Contains("[log sources]", report)

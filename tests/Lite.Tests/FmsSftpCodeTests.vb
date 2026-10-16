@@ -109,15 +109,13 @@ Public Class FmsSftpCodeTests
     <InlineData("")>
     <InlineData("FMSSFTP3:h=a&p=22&u=u&fp=SHA256%3A8f6TQvCbXjDMOyu4A9JzKcWlEHmR5pNsGgVaU2wYqhk")>
     <InlineData("FMSSFTP1:")>
-    <InlineData("FMSSFTP1:h=192.168.1.23&p=2022&u=fms&fp=SHA256%3A8f6TQvCbXjDMOyu4A9JzKcWlEHmR5pNsGgVaU2wYqhk&")>
-    <InlineData("FMSSFTP1:p=2022&h=192.168.1.23&u=fms&fp=SHA256%3A8f6TQvCbXjDMOyu4A9JzKcWlEHmR5pNsGgVaU2wYqhk")>
     <InlineData("FMSSFTP1:h=192.168.1.23&h=192.168.1.24&p=2022&u=fms&fp=SHA256%3A8f6TQvCbXjDMOyu4A9JzKcWlEHmR5pNsGgVaU2wYqhk")>
     <InlineData("FMSSFTP1:h=192.168.1.23&p=0&u=fms&fp=SHA256%3A8f6TQvCbXjDMOyu4A9JzKcWlEHmR5pNsGgVaU2wYqhk")>
     <InlineData("FMSSFTP1:h=192.168.1.23&p=65536&u=fms&fp=SHA256%3A8f6TQvCbXjDMOyu4A9JzKcWlEHmR5pNsGgVaU2wYqhk")>
-    <InlineData("FMSSFTP1:h=192.168.1.23&p=02022&u=fms&fp=SHA256%3A8f6TQvCbXjDMOyu4A9JzKcWlEHmR5pNsGgVaU2wYqhk")>
+    <InlineData("FMSSFTP1:h=192.168.1.23&p=-2022&u=fms&fp=SHA256%3A8f6TQvCbXjDMOyu4A9JzKcWlEHmR5pNsGgVaU2wYqhk")>
     <InlineData("FMSSFTP1:h=192.168.1.23&p=2022&u=&fp=SHA256%3A8f6TQvCbXjDMOyu4A9JzKcWlEHmR5pNsGgVaU2wYqhk")>
     <InlineData("FMSSFTP1:h=192.168.1.23&p=2022&u=fms&fp=notafingerprint")>
-    <InlineData("FMSSFTP1:h=192.168.1.23&p=2022&u=fms&fp=SHA256%3A8f6TQvCbXjDMOyu4A9JzKcWlEHmR5pNsGgVaU2wYqhk&extra=1")>
+    <InlineData("FMSSFTP1:h=192.168.1.23&p=2022&u=fms&fp=SHA256%3A")>
     <InlineData("FMSSFTP1:h=192.168.1.23&p=2022&u=f%GGms&fp=SHA256%3A8f6TQvCbXjDMOyu4A9JzKcWlEHmR5pNsGgVaU2wYqhk")>
     <InlineData("FMSSFTP1:h=192.168.1.23&p=2022&u=f%C3&fp=SHA256%3A8f6TQvCbXjDMOyu4A9JzKcWlEHmR5pNsGgVaU2wYqhk")>
     <InlineData("FMSSFTP1:h=,&p=2022&u=fms&fp=SHA256%3A8f6TQvCbXjDMOyu4A9JzKcWlEHmR5pNsGgVaU2wYqhk")>
@@ -126,6 +124,49 @@ Public Class FmsSftpCodeTests
         Dim code As FmsSftpCode = Nothing
         Assert.False(FmsSftpCode.TryParse(text, code))
         Assert.Null(code)
+    End Sub
+
+    ''' <summary>Spec 239 CR-17, ANYWHERE-ACCESS 4.3 "Reading": a field with no `=` is skipped, an unknown key is ignored, the order is the writer's
+    ''' business, a port is decimal (a leading zero is still the number). Each text below reads as the plain code does.</summary>
+    <Theory>
+    <InlineData("FMSSFTP1:h=192.168.1.23&p=2022&u=fms&fp=SHA256%3A8f6TQvCbXjDMOyu4A9JzKcWlEHmR5pNsGgVaU2wYqhk&")>
+    <InlineData("FMSSFTP1:&h=192.168.1.23&p=2022&u=fms&fp=SHA256%3A8f6TQvCbXjDMOyu4A9JzKcWlEHmR5pNsGgVaU2wYqhk")>
+    <InlineData("FMSSFTP1:p=2022&h=192.168.1.23&u=fms&fp=SHA256%3A8f6TQvCbXjDMOyu4A9JzKcWlEHmR5pNsGgVaU2wYqhk")>
+    <InlineData("FMSSFTP1:h=192.168.1.23&p=2022&u=fms&fp=SHA256%3A8f6TQvCbXjDMOyu4A9JzKcWlEHmR5pNsGgVaU2wYqhk&extra=1")>
+    <InlineData("FMSSFTP1:h=192.168.1.23&novalue&p=2022&u=fms&fp=SHA256%3A8f6TQvCbXjDMOyu4A9JzKcWlEHmR5pNsGgVaU2wYqhk")>
+    <InlineData("FMSSFTP1:h=192.168.1.23&=x&p=2022&u=fms&fp=SHA256%3A8f6TQvCbXjDMOyu4A9JzKcWlEHmR5pNsGgVaU2wYqhk")>
+    <InlineData("FMSSFTP1:h=192.168.1.23&p=02022&u=fms&fp=SHA256%3A8f6TQvCbXjDMOyu4A9JzKcWlEHmR5pNsGgVaU2wYqhk")>
+    <InlineData("  FMSSFTP1:h=192.168.1.23&p=2022&u=fms&fp=SHA256%3A8f6TQvCbXjDMOyu4A9JzKcWlEHmR5pNsGgVaU2wYqhk" & vbCrLf)>
+    Public Sub Tolerated_forms_read_as_the_plain_code_does(text As String)
+        Dim code As FmsSftpCode = Nothing
+        Assert.True(FmsSftpCode.TryParse(text, code))
+        Assert.Equal({"192.168.1.23"}, code.Hosts.ToArray())
+        Assert.Equal(2022, code.Port)
+        Assert.Equal("fms", code.Username)
+        Assert.Null(code.Password)
+        Assert.Equal("SHA256:8f6TQvCbXjDMOyu4A9JzKcWlEHmR5pNsGgVaU2wYqhk", code.Fingerprint)
+    End Sub
+
+    ''' <summary>An unknown key and the v2 keys out of order are ignored too, and a v1 code still drops the v2 keys.</summary>
+    <Fact>
+    Public Sub An_additive_key_and_a_shuffled_v2_code_are_read()
+        Dim fp As String = "SHA256%3A8f6TQvCbXjDMOyu4A9JzKcWlEHmR5pNsGgVaU2wYqhk"
+        Dim code As FmsSftpCode = Nothing
+        Assert.True(FmsSftpCode.TryParse("FMSSFTP2:sid=q3Vb7YtK0xP2mN9sLfR4wA&future=1&x=relay.example.net%3A44022&fp=" & fp & "&u=fms&p=2022&h=192.168.1.23", code))
+        Assert.Equal("relay.example.net:44022", code.Exchange)
+        Assert.Equal("q3Vb7YtK0xP2mN9sLfR4wA", code.ShareId)
+        Dim v1 As FmsSftpCode = Nothing
+        Assert.True(FmsSftpCode.TryParse("FMSSFTP1:x=relay.example.net%3A44022&sid=q3Vb7YtK0xP2mN9sLfR4wA&h=192.168.1.23&p=2022&u=fms&fp=" & fp, v1))
+        Assert.Equal("", v1.Exchange)
+        Assert.Equal("", v1.ShareId)
+    End Sub
+
+    ''' <summary>The one thing 4.3 does not settle - a key stated twice - stays a whole refusal (two pins or two logins are ambiguous).</summary>
+    <Fact>
+    Public Sub A_key_stated_twice_is_refused_whole()
+        Dim code As FmsSftpCode = Nothing
+        Assert.False(FmsSftpCode.TryParse("FMSSFTP1:h=192.168.1.23&p=2022&u=fms&u=other&fp=SHA256%3A8f6TQvCbXjDMOyu4A9JzKcWlEHmR5pNsGgVaU2wYqhk", code))
+        Assert.False(FmsSftpCode.TryParse("FMSSFTP1:h=192.168.1.23&p=2022&u=fms&fp=SHA256%3Aa&fp=SHA256%3Ab", code))
     End Sub
 
     <Fact>

@@ -75,6 +75,31 @@ Public Class ExchangeLinkImportTests
         Assert.Single(r.Plan.Endpoints)
     End Sub
 
+    ''' <summary>Spec 239 CR-17: the catalog's own `fmscfgTunnelPath` vector (ANYWHERE-ACCESS section 4, rung 1) read as the catalog says -
+    ''' the tunnel names the exchange server and the share id, and the direct path is the only endpoint.</summary>
+    <Fact>
+    Public Sub The_vendored_fmscfgTunnelPath_vector_reads_as_the_catalog_describes()
+        Dim file As String = System.IO.Path.Combine(AppContext.BaseDirectory, "TestData", "anywhere-descriptor-vectors", "descriptor-v2.json")
+        Assert.True(System.IO.File.Exists(file), "the vendored vector file is missing: " & file)
+        Dim json As String
+        Using document As System.Text.Json.JsonDocument = System.Text.Json.JsonDocument.Parse(System.IO.File.ReadAllBytes(file))
+            json = document.RootElement.GetProperty("fmscfgTunnelPath").GetProperty("json").GetString()
+        End Using
+        Dim r As FmsConfigReadResult = Read(json, True)
+        Assert.NotNull(r.Plan)
+        Assert.NotNull(r.Plan.Tunnel)
+        Assert.Equal("relay.example.net", r.Plan.Tunnel.Host)
+        Assert.Equal(44022, r.Plan.Tunnel.Port)
+        Assert.Equal("q3Vb7YtK0xP2mN9sLfR4wA", r.Plan.Tunnel.ShareId)
+        Assert.Single(r.Plan.Endpoints)
+        Assert.Equal("192.168.1.23", r.Plan.Endpoints(0).Host)
+        ' a reader without the kind still accepts the file (the vector's own note)
+        Dim without As FmsConfigReadResult = Read(json, False)
+        Assert.NotNull(without.Plan)
+        Assert.Null(without.Plan.Tunnel)
+        Assert.Single(without.Plan.Endpoints)
+    End Sub
+
     <Fact>
     Public Sub Only_the_first_tunnel_path_counts()
         Dim r As FmsConfigReadResult = Read(Doc(Tunnel("first.example.net") & "," & Tunnel("second.example.net")), True)
@@ -125,6 +150,30 @@ Public Class ExchangeLinkImportTests
         Finally
             Environment.SetEnvironmentVariable(ExchangeFeatures.DeveloperSwitchName, saved, EnvironmentVariableTarget.Process)
         End Try
+    End Sub
+
+    ''' <summary>Spec 239 CR-17, ANYWHERE-ACCESS 4.3: a prefix above FMSSFTP2 is not "not a code" - it is one message that asks the person to update.</summary>
+    <Theory>
+    <InlineData("FMSSFTP3:h=a&p=22&u=u&fp=SHA256%3A8f6TQvCbXjDMOyu4A9JzKcWlEHmR5pNsGgVaU2wYqhk")>
+    <InlineData("   FMSSFTP12:anything")>
+    Public Sub A_newer_prefix_asks_the_person_to_update(text As String)
+        Assert.True(FmsSftpPlans.LooksLikeCode(text))
+        Dim r As FmsConfigReadResult = FmsSftpPlans.Read(text)
+        Assert.Null(r.Plan)
+        Assert.Equal(FmsConfigFailure.UpdateRequired, r.Failure)
+        Assert.False(String.IsNullOrEmpty(r.Detail))
+    End Sub
+
+    <Theory>
+    <InlineData("FMSSFTP1:h=a")>
+    <InlineData("FMSSFTP2:h=a")>
+    <InlineData("FMSSFTP0:h=a")>
+    <InlineData("FMSSFTP:h=a")>
+    <InlineData("FMSSFTPX:h=a")>
+    <InlineData("FMSSFTP3")>
+    <InlineData("")>
+    Public Sub The_known_prefixes_and_the_look_alikes_are_not_a_newer_version(text As String)
+        Assert.False(FmsSftpCode.IsNewerPrefix(text))
     End Sub
 
     <Fact>

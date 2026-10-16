@@ -5,7 +5,7 @@ Imports System.Threading
 ' Spec 230 T-3: the ONE place every door of the two clipboard functions goes through - the two main-window buttons, the two tray
 ' items, a desktop shortcut that woke a running manager over WM_COPYDATA, and the cold start that runs and exits.
 '
-'   - one operation at a time per process (item Q): a press while one runs is told so in a sentence, never queued;
+'   - one operation at a time per process (item N): a press while one runs is told so in a sentence, never queued;
 '   - the words of a running operation (progress, "N %") and its one result paragraph are composed HERE from codes, in the
 '     language the person has when they are shown;
 '   - the person can cancel what runs;

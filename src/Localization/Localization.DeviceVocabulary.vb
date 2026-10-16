@@ -3,7 +3,7 @@ Option Strict On
 Option Infer On
 Option Compare Binary
 
-' DEVICE-EXCHANGE 0.27 section 25 item CW; imported terms, specification 233.
+' DEVICE-EXCHANGE 1.1 section 2 item CW; imported terms, specification 233.
 ' The relay term is internal only. Google Drive uses words on single-tone controls (ICON-EXTERNAL rule 1).
 Partial Public NotInheritable Class Localization
     Private Shared Sub AddExchangeVocabularyStrings()

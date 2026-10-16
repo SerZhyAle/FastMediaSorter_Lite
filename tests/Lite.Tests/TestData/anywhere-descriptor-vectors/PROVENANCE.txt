@@ -15,7 +15,8 @@ test can run is a different act from copying a document so a repository can disa
 
 Source
 ------
-  contract id  : ANYWHERE-ACCESS 0.13 (section 4, rung 1; unchanged by the DEVICE-EXCHANGE amendments)
+  contract id  : ANYWHERE-ACCESS 1.0 (section 4, rung 1; taken under 0.13, the bytes are identical to the
+                 catalog's file at 1.0 - label corrected 2026-10-16, spec 239 CR-12)
   artifact     : vectors/descriptor-v2.json beside that document in the shared catalog
   producer     : FastMediaSorter Android (SftpPairingPayload, CompanionAccessPathDto)
   taken on     : 2026-10-07 (ticket 170, T-1)

@@ -53,13 +53,14 @@ Friend NotInheritable Class ExchangeWire
     ' --- the product ids of 6.1 ---
     Public Const ProductWindows As String = "fms-windows"
 
-    ' --- the four roles of 6.1 ---
+    ' --- the roles of 6.1 and item CE ---
     Public Const RoleResourceProducer As String = "resource-producer"
     Public Const RoleResourceConsumer As String = "resource-consumer"
     Public Const RoleBroadcaster As String = "broadcaster"
     Public Const RoleReceiver As String = "receiver"
-    ''' <summary>Item BV (section 22): a device that sends or receives clipboard values. Not declared by this client until
-    ''' the server it speaks to lists the role (spec 229): a server of today's `KnownRoles` refuses an unknown one.</summary>
+    ''' <summary>Item BV (section 22) and item CE: a device that sends or receives clipboard values; `fms-windows` declares it
+    ''' (<see cref="ExchangeRoles.Compute"/>). The server does not refuse a clipboard envelope for a missing role: the role tells the
+    ''' account's other devices which of them take part.</summary>
     Public Const RoleClipboard As String = "clipboard"
 
     ' --- the features of `welcome` (7.2) ---
@@ -84,7 +85,8 @@ Friend NotInheritable Class ExchangeWire
 
 End Class
 
-''' <summary>The nine reasons of 7.10. An unknown value is <see cref="Unknown"/>, shown as a generic refusal.</summary>
+''' <summary>The sixteen reasons of 7.10 (the complete list of `refused.reason`, item BR). An unknown value is <see cref="Unknown"/>,
+''' shown as a generic refusal. The numbers are not a wire value: the wire spelling is <see cref="ExchangeRefusals.WireName"/>.</summary>
 Friend Enum ExchangeRefusal
     Unknown = 0
     BadCredentials = 1
@@ -101,6 +103,14 @@ Friend Enum ExchangeRefusal
     NotPermitted = 11
     ''' <summary>Item BW and BZ: a `clipboard-put` whose `size` is above the account's `clipboardBytes`.</summary>
     LimitReached = 12
+    ''' <summary>Item AQ: a `register` whose one-time invitation or shared invitation password the server does not accept.</summary>
+    InvitationInvalid = 13
+    ''' <summary>Item AQ: a `register` whose login already exists.</summary>
+    LoginTaken = 14
+    ''' <summary>Items AQ and AT: a password outside the policy of 1.2, on `register` or `password-change`.</summary>
+    PasswordPolicy = 15
+    ''' <summary>Item AT: a `hello` whose token died with a password change or a reset.</summary>
+    SignedOut = 16
 End Enum
 
 Friend NotInheritable Class ExchangeRefusals
@@ -111,7 +121,7 @@ Friend NotInheritable Class ExchangeRefusals
     Private Shared ReadOnly Names As String() = {
         "", "bad-credentials", "device-revoked", "version-unsupported", "tls-required",
         "id-collision", "capacity", "port-unavailable", "unavailable", "rate-limited", "protection-unsupported",
-        "not-permitted", "limit-reached"}
+        "not-permitted", "limit-reached", "invitation-invalid", "login-taken", "password-policy", "signed-out"}
 
     ''' <summary>The enum of a wire reason; <see cref="ExchangeRefusal.Unknown"/> for anything else.</summary>
     Public Shared Function Parse(reason As String) As ExchangeRefusal
@@ -134,7 +144,8 @@ Friend NotInheritable Class ExchangeRefusals
         Return {ExchangeRefusal.BadCredentials, ExchangeRefusal.DeviceRevoked, ExchangeRefusal.VersionUnsupported,
                 ExchangeRefusal.TlsRequired, ExchangeRefusal.IdCollision, ExchangeRefusal.Capacity,
                 ExchangeRefusal.PortUnavailable, ExchangeRefusal.Unavailable, ExchangeRefusal.RateLimited, ExchangeRefusal.ProtectionUnsupported,
-                ExchangeRefusal.NotPermitted, ExchangeRefusal.LimitReached}
+                ExchangeRefusal.NotPermitted, ExchangeRefusal.LimitReached, ExchangeRefusal.InvitationInvalid,
+                ExchangeRefusal.LoginTaken, ExchangeRefusal.PasswordPolicy, ExchangeRefusal.SignedOut}
     End Function
 
 End Class

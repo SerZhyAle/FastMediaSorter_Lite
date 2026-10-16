@@ -59,10 +59,12 @@ Friend NotInheritable Class ModernImageSharpDecoder
         Dim watch As Stopwatch = Stopwatch.StartNew()
         stream.Position = 0
 
-        ' AVIF/HEIC/HEIF are ISO-BMFF containers ("ftyp" box); ImageSharp would
-        ' throw UnknownImageFormatException on them, so route by signature - the
-        ' MemoryStream has no file name to key on.
-        If IsIsoBmff(stream) Then Return PayloadViaMagick(stream, watch)
+        ' AVIF/HEIC/HEIF are ISO-BMFF containers ("ftyp" box) and JPEG XL has its own
+        ' signature; ImageSharp would throw UnknownImageFormatException on all of them, so
+        ' route by signature - the MemoryStream has no file name to key on.
+        Dim head As Byte() = ReadHead(stream)
+        If ImageDecoderProvider.LooksJxl(head) Then Return PayloadViaMagickJxl(stream, watch)
+        If IsIsoBmff(head) Then Return PayloadViaMagick(stream, watch)
 
         ' Ask the header first (audit 048, A-17): a crafted animated WEBP of a few KB can
         ' demand tens of GB once decoded, and the prefetch would start that unasked.
@@ -131,7 +133,8 @@ Friend NotInheritable Class ModernImageSharpDecoder
 
     Public Function TryGetPixelSize(stream As Stream) As Size Implements IImageDecoder.TryGetPixelSize
         Try
-            If IsIsoBmff(stream) Then
+            Dim head As Byte() = ReadHead(stream)
+            If IsIsoBmff(head) OrElse ImageDecoderProvider.LooksJxl(head) Then
                 ' The process-wide limits first, as the decode does (audit 057.S01-3): the
                 ' size label is often the FIRST Magick call of a session - the prefetch
                 ' worker asks it before any decode - and it ran with Magick's defaults.
@@ -156,16 +159,25 @@ Friend NotInheritable Class ModernImageSharpDecoder
     End Function
 
     ''' <summary>
-    ''' True when the stream starts with an ISO-BMFF "ftyp" box (AVIF/HEIC/HEIF).
-    ''' No other image format this decoder sees uses that container, so the brand
-    ''' does not need parsing. Leaves the position at 0.
+    ''' The first twelve bytes (fewer for a shorter stream), for the signature tests. Leaves
+    ''' the position at 0.
     ''' </summary>
-    Private Shared Function IsIsoBmff(stream As Stream) As Boolean
+    Private Shared Function ReadHead(stream As Stream) As Byte()
         Dim head(11) As Byte
         stream.Position = 0
         Dim read As Integer = stream.Read(head, 0, head.Length)
         stream.Position = 0
-        If read < 12 Then Return False
+        If read < head.Length Then ReDim Preserve head(read - 1)
+        Return head
+    End Function
+
+    ''' <summary>
+    ''' True when the head is an ISO-BMFF "ftyp" box (AVIF/HEIC/HEIF). No other image format
+    ''' this decoder sees uses that container (JPEG XL's own "ftyp" comes after its signature
+    ''' box, so it never lands at offset 4), so the brand does not need parsing.
+    ''' </summary>
+    Private Shared Function IsIsoBmff(head As Byte()) As Boolean
+        If head.Length < 12 Then Return False
         Return head(4) = Asc("f"c) AndAlso head(5) = Asc("t"c) AndAlso head(6) = Asc("y"c) AndAlso head(7) = Asc("p"c)
     End Function
 
@@ -190,6 +202,35 @@ Friend NotInheritable Class ModernImageSharpDecoder
             Return Nothing
         End If
 
+        Return MagickStillToPng(stream, watch)
+    End Function
+
+    ''' <summary>
+    ''' Magick.NET decode for JPEG XL (spec 236). A still goes the way an AVIF does; a file with
+    ''' several frames becomes an in-memory GIF, as an animated WEBP does, so the GDI+ playback
+    ''' that already animates GIFs shows it unchanged.
+    ''' The budget is asked FIRST and from the headers of ALL frames (a ping, no pixels):
+    ''' a crafted animation of a few KB can claim thousands of frames, and the still path's
+    ''' "first frame only" budget would not see that.
+    ''' </summary>
+    Private Shared Function PayloadViaMagickJxl(stream As MemoryStream, watch As Stopwatch) As DecodedPayload
+        stream.Position = 0
+        MagickResourceLimits.EnsureApplied()
+        Dim headers As List(Of ImageMagick.IMagickImageInfo) = ImageMagick.MagickImageInfo.ReadCollection(stream).ToList()
+        stream.Position = 0
+        If headers.Count = 0 Then Return Nothing
+        If Not DecodeBudget.IsWithinBudget(CLng(headers(0).Width), CLng(headers(0).Height), headers.Count) Then
+            AppFileLogger.WriteLine("Decode refused, over budget: " & headers(0).Width.ToString() & "x" &
+                                    headers(0).Height.ToString() & " x " & headers.Count.ToString() & " frames")
+            Return Nothing
+        End If
+
+        If headers.Count = 1 Then Return MagickStillToPng(stream, watch)
+        Return MagickAnimationToGif(stream, watch)
+    End Function
+
+    ''' <summary>The first frame of a Magick-readable file, oriented if asked, as a PNG payload.</summary>
+    Private Shared Function MagickStillToPng(stream As MemoryStream, watch As Stopwatch) As DecodedPayload
         Using magickImage As New ImageMagick.MagickImage(stream)
             If Is_Exif_AutoRotate Then magickImage.AutoOrient()
 
@@ -199,6 +240,38 @@ Friend NotInheritable Class ModernImageSharpDecoder
                     .Bytes = pngStream.ToArray(),
                     .Kind = DecodedPayloadKind.Png,
                     .IsAnimation = False,
+                    .DecodeMs = watch.ElapsedMilliseconds
+                }
+            End Using
+        End Using
+    End Function
+
+    ''' <summary>
+    ''' A multi-frame Magick-readable file as GIF bytes. Frames are coalesced to full canvases
+    ''' first, so each GIF frame replaces the last (dispose = background keeps a transparent
+    ''' pixel from showing the frame before it). GIF counts in hundredths of a second and
+    ''' Magick keeps the source's own tick rate, so each delay is converted through
+    ''' milliseconds; a zero duration (a JPEG XL layer, not a shown frame) takes the 100 ms
+    ''' browsers give a zero-delay GIF. 256 colours per frame, as for the animated WEBP.
+    ''' </summary>
+    Private Shared Function MagickAnimationToGif(stream As MemoryStream, watch As Stopwatch) As DecodedPayload
+        Using frames As New ImageMagick.MagickImageCollection(stream)
+            frames.Coalesce()
+            For Each frame As ImageMagick.IMagickImage(Of Byte) In frames
+                If Is_Exif_AutoRotate Then frame.AutoOrient()
+                Dim ticksPerSecond As Long = Math.Max(1L, CLng(frame.AnimationTicksPerSecond))
+                Dim milliseconds As Long = CLng(frame.AnimationDelay) * 1000L \ ticksPerSecond
+                frame.AnimationTicksPerSecond = 100
+                frame.AnimationDelay = CUInt(If(milliseconds <= 0L, 10L, Math.Max(1L, milliseconds \ 10L)))
+                frame.GifDisposeMethod = ImageMagick.GifDisposeMethod.Background
+            Next
+
+            Using gifStream As New MemoryStream()
+                frames.Write(gifStream, ImageMagick.MagickFormat.Gif)
+                Return New DecodedPayload With {
+                    .Bytes = gifStream.ToArray(),
+                    .Kind = DecodedPayloadKind.Gif,
+                    .IsAnimation = True,
                     .DecodeMs = watch.ElapsedMilliseconds
                 }
             End Using

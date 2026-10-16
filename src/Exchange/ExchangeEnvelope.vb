@@ -345,7 +345,11 @@ Friend NotInheritable Class ExchangeEnvelopeTable
             T("reason", omit:=WhenEmpty))
         Row("cast-stop", T("broadcastId", True), T("receiverDeviceId", True))
         ' --- ticket 224 account lifecycle: registration, passwords, deletion ---
-        Row("register", T("invitationCode", omit:=WhenEmpty), T("sharedPassword", omit:=WhenEmpty),
+        ' The invitation members: the names of item AQ first (the only ones this client writes), then the first spelling a server
+        ' of the S4214 fold wrote (`invitationCode`, `sharedPassword`), kept so a frame of the adopted corpus still reads and
+        ' re-encodes byte for byte. A legacy member is omitted when empty, so nothing writes it any more.
+        Row("register", T("invitation", omit:=WhenEmpty), T("invitationPassword", omit:=WhenEmpty),
+            T("invitationCode", omit:=WhenEmpty), T("sharedPassword", omit:=WhenEmpty),
             T("login", True), T("password", True), T("deviceId", True), T("deviceName", True),
             T("product", True), T("productVersion", omit:=WhenEmpty), T("platform", omit:=WhenEmpty),
             L("roles", WhenEmpty), L("capabilities", WhenEmpty), R("receiver", omit:=WhenEmpty),

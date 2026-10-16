@@ -88,6 +88,9 @@ Partial Public NotInheritable Class MainWindow
     Private progressBar As ProgressBar
     Private lvFolders As ListView
     Private btnAdd As Button
+    Private btnAddDrop As Button
+    Private _addMenu As ContextMenuStrip
+    Private mnuAddBroadcast As ToolStripMenuItem
     Private btnDisks As Button
     Private btnAddCurrent As Button
     Private btnRemove As Button

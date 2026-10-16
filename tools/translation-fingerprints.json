@@ -8,7 +8,7 @@
     "as stale, by name. Re-translate the named locales first - batching the fan-out to the",
     "release boundary is allowed - then re-record. Never edit the hashes by hand."
   ],
-  "recorded": "2026-10-14",
+  "recorded": "2026-10-16",
   "siteFingerprint": "8f3e8929d7196509",
   "trustFingerprint": "9426baf6d09d63d2",
   "locales": {

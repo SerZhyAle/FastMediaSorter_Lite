@@ -107,7 +107,21 @@ func (d *Device) enroll(pw, code string) (wire.Envelope, error) {
 // password (shared), with the login and password chosen, and enrolls this device as the account's first
 // (19 item AQ). On `enrolled` the device takes the new login and password, the token is kept and the
 // stream becomes the device's Control, as after Enroll.
+//
+// The frame spells the two invitation members `invitationCode` and `sharedPassword`, the names this server
+// first used; RegisterNamed spells them `invitation` and `invitationPassword`, the names of item AQ. The
+// server reads both (wire.Register folds the second pair into the first).
 func (d *Device) Register(invitation, shared, login, pw string) (wire.Envelope, error) {
+	return d.register(false, invitation, shared, login, pw)
+}
+
+// RegisterNamed is Register with the member names of DEVICE-EXCHANGE item AQ: `invitation` and
+// `invitationPassword`.
+func (d *Device) RegisterNamed(invitation, shared, login, pw string) (wire.Envelope, error) {
+	return d.register(true, invitation, shared, login, pw)
+}
+
+func (d *Device) register(contractNames bool, invitation, shared, login, pw string) (wire.Envelope, error) {
 	c, err := DialTLS(d.Addr, d.Pin)
 	if err != nil {
 		return nil, err
@@ -116,9 +130,14 @@ func (d *Device) Register(invitation, shared, login, pw string) (wire.Envelope, 
 		d.Env.AddSecret(s)
 	}
 	f := d.enrollFrame()
-	reg := &wire.Register{InvitationCode: invitation, SharedPassword: shared, Login: login, Password: pw,
+	reg := &wire.Register{Login: login, Password: pw,
 		DeviceID: f.DeviceID, DeviceName: f.DeviceName, Product: f.Product, ProductVersion: f.ProductVersion,
 		Platform: f.Platform, Roles: f.Roles, Capabilities: f.Capabilities, E2EKey: f.E2EKey, Receiver: f.Receiver}
+	if contractNames {
+		reg.Invitation, reg.InvitationPassword = invitation, shared
+	} else {
+		reg.InvitationCode, reg.SharedPassword = invitation, shared
+	}
 	if err := c.Send(reg); err != nil {
 		_ = c.Close()
 		return nil, err

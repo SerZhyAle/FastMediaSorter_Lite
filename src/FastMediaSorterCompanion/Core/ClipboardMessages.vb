@@ -51,7 +51,13 @@ Friend NotInheritable Class ClipboardMessages
             Case ClipboardLineCode.NotOffered
                 Return Localization.TF("Сервер {0} не принимает буфер обмена для этой учётной записи.", NameOrDash(line.Label))
             Case ClipboardLineCode.TooLarge
-                Return Localization.T("Значение в буфере обмена слишком велико, чтобы его отправить.")
+                ' Item P: the refusal names the limit (the most a text or an image is kept in memory).
+                Return Localization.TF("Текст или картинка в буфере обмена больше {0} МБ - столько программа не отправляет. Файл отправить можно: скопируйте его в проводнике.", line.Detail)
+            Case ClipboardLineCode.OverServerLimit
+                Return Localization.TF("Значение в буфере обмена больше {0} ГБ - столько сервер принимает по умолчанию. Отправьте что-нибудь поменьше.", line.Detail)
+            Case ClipboardLineCode.ClipboardNoAnswer
+                ' Item N: not "could not read" - the owner of the clipboard did not render in time, and trying again is the remedy.
+                Return Localization.T("Программа, которой принадлежит буфер обмена, не ответила вовремя. Подождите немного и попробуйте ещё раз.")
             Case ClipboardLineCode.ServerNoE2e
                 Return OnServer(line.Label, ReasonText(ConnectionDiagnosisMessages.ServerNoE2e.Code))
             Case ClipboardLineCode.E2eMissing

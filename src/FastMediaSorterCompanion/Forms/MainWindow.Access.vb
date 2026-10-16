@@ -93,28 +93,24 @@ Partial Public NotInheritable Class MainWindow
     ''' four-row reporting block on a window nobody opens to read reports.
     ''' </summary>
     Private Sub BuildStatsSection(sec As CollapsibleSection)
-        pnlStats = New TableLayoutPanel With {.AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink,
-            .ColumnCount = 2, .Margin = New Padding(0)}
-        pnlStats.ColumnStyles.Add(New ColumnStyle(SizeType.AutoSize))
-        pnlStats.ColumnStyles.Add(New ColumnStyle(SizeType.AutoSize))
-        lblStatLast = AddStatRow(pnlStats, Localization.T("Последнее подключение:"), 0)
-        lblStatConns = AddStatRow(pnlStats, Localization.T("Подключений:"), 1)
-        lblStatFiles = AddStatRow(pnlStats, Localization.T("Файлов отдано:"), 2)
-        toolTip.SetToolTip(lblStatConns, Localization.T("Считается каждый сеанс связи. Один телефон может подключаться несколько раз (проверка доступа, просмотр файла, переподключение)."))
-        sec.AddBodyRow(pnlStats)
-
         btnStatsDetails = New Button With {.AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink,
-            .Anchor = AnchorStyles.Left, .Padding = New Padding(12, 4, 12, 4), .Margin = New Padding(0, 8, 0, 2),
+            .Anchor = AnchorStyles.Left, .Padding = New Padding(12, 4, 12, 4), .Margin = New Padding(0, 4, 0, 4),
             .Text = Localization.T("Подробнее..")}
         ButtonGlyphs.Apply(btnStatsDetails, "app.info")
         AddHandler btnStatsDetails.Click, AddressOf OnStatsDetailsClicked
         sec.AddBodyRow(btnStatsDetails)
     End Sub
 
+    Friend Shared ShowStatsDialogOverride As Action(Of IWin32Window, WorkerStatus)
+
     Private Sub OnStatsDetailsClicked(sender As Object, e As EventArgs)
-        Using dlg As New Share_Status_Form(_status)
-            dlg.ShowDialog(Me)
-        End Using
+        If ShowStatsDialogOverride IsNot Nothing Then
+            ShowStatsDialogOverride(Me, _status)
+        Else
+            Using dlg As New Share_Status_Form(_status)
+                dlg.ShowDialog(Me)
+            End Using
+        End If
         ' The counters can have been reset in there - re-read rather than keep showing the
         ' numbers this window happened to be holding.
         Dim t As Task = RefreshStatsAsync()
@@ -443,8 +439,13 @@ Partial Public NotInheritable Class MainWindow
                 port = If(reach IsNot Nothing AndAlso reach.ExternalPort > 0, reach.ExternalPort, _status.ListenPort)
             End If
             ' Verbatim from ShareText - no second wording, so the folded and the unfolded
-            ' state cannot drift apart (§5.3).
-            _secInternet.Summary = ShareText.AccessStateLine(reach, port)
+            ' state cannot drift apart (§5.3). First sentence fits in the folded summary without ellipsis truncation.
+            Dim line As String = ShareText.AccessStateLine(reach, port)
+            Dim periodIdx As Integer = line.IndexOf("."c)
+            If periodIdx > 0 AndAlso periodIdx < 70 Then
+                line = line.Substring(0, periodIdx)
+            End If
+            _secInternet.Summary = line
             _secInternet.SummaryColor = AccessStateColor(reach)
         Else
             _secInternet.Summary = "-"
@@ -483,17 +484,23 @@ Partial Public NotInheritable Class MainWindow
             Return
         End If
         If _secStats IsNot Nothing Then _secStats.Visible = True
-        Dim never As String = Localization.T("ещё не было")
-        Dim lastAt As String = Share_Status_Form.FormatTime(s.LastConnectionAt)
-        If lastAt.Length = 0 Then
-            lblStatLast.Text = never
-        ElseIf String.IsNullOrEmpty(s.LastConnectionAddress) Then
-            lblStatLast.Text = lastAt
-        Else
-            lblStatLast.Text = lastAt & "  -  " & s.LastConnectionAddress
+        If lblStatLast IsNot Nothing Then
+            Dim never As String = Localization.T("ещё не было")
+            Dim lastAt As String = Share_Status_Form.FormatTime(s.LastConnectionAt)
+            If lastAt.Length = 0 Then
+                lblStatLast.Text = never
+            ElseIf String.IsNullOrEmpty(s.LastConnectionAddress) Then
+                lblStatLast.Text = lastAt
+            Else
+                lblStatLast.Text = lastAt & "  -  " & s.LastConnectionAddress
+            End If
         End If
-        lblStatConns.Text = Localization.TF("всего {0} (с запуска {1})", s.TotalConnections, s.ConnectionsSinceStart)
-        lblStatFiles.Text = Localization.TF("всего {0} (с запуска {1})", s.FilesServedTotal, s.FilesServedSinceStart)
+        If lblStatConns IsNot Nothing Then
+            lblStatConns.Text = Localization.TF("всего {0} (с запуска {1})", s.TotalConnections, s.ConnectionsSinceStart)
+        End If
+        If lblStatFiles IsNot Nothing Then
+            lblStatFiles.Text = Localization.TF("всего {0} (с запуска {1})", s.FilesServedTotal, s.FilesServedSinceStart)
+        End If
     End Sub
 
     ''' <summary>Set while a stats fetch is out, so the 10 s tick cannot stack requests behind
@@ -565,9 +572,27 @@ Partial Public NotInheritable Class MainWindow
         ' what the exchange account holds of these folders, in the same place: the producer rows are on a settings page nobody opens
         ' to learn whether a folder reached the server
         Dim exchange As String = ExchangeProducerSummary.Line()
-        If exchange.Length > 0 Then line = If(line.Length > 0, line & vbCrLf, "") & exchange
+        If exchange.Length > 0 Then
+            toolTip.SetToolTip(lblHosting, exchange)
+            Dim badge As String = If(ExchangeProducerSummary.IsReadOnly(),
+                                     Localization.T("[i] Защита: только чтение"),
+                                     Localization.T("[i] Защита обмена"))
+            line = If(line.Length > 0, line & "  " & badge, badge)
+        Else
+            toolTip.SetToolTip(lblHosting, Nothing)
+        End If
         lblHosting.Text = line
         lblHosting.Visible = line.Length > 0
+    End Sub
+
+    Private Sub OnHostingClicked(sender As Object, e As EventArgs)
+        If _busy Then Return
+        Using dlg As New Share_Settings_Form(_status)
+            Dim pageId As String = If(ExchangeProducerSummary.Line().Length > 0, "exchange", "hosting")
+            dlg.SelectPage(pageId)
+            dlg.ShowDialog(Me)
+        End Using
+        Dim t As Task = RefreshStatsAsync()
     End Sub
 
     ''' <summary>Fills the "what works right now" + "what to do next" pair. Hidden entirely

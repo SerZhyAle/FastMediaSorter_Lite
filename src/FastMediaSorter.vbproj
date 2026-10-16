@@ -527,6 +527,8 @@
          (Main_Form.PerspectiveBackground.vb, Imaging\EdgeSampler.vb); only the halo callers are
          mainline-only. Held to the catalog's vectors by LetterboxFillConformanceTests. -->
     <Compile Include="LetterboxFillMath.vb" />
+    <Compile Include="HaloPainter.vb" />
+    <Compile Include="Table_Form.LazyPages.vb" />
     <!-- The "particles and lines" audio backdrop (WAVE-PARTICLES, ticket 029). Whole-file
          "#If Not NETFRAMEWORK": the x86 fallback has no visualiser, so all three compile to
          nothing here and are listed only so the two project lists stay comparable. -->
@@ -839,6 +841,8 @@
     <Compile Include="Theming\CheckBoxLayout.vb" />
     <Compile Include="Theming\ThemedMenuRenderer.vb" />
     <Compile Include="Theming\ThemeService.vb" />
+    <Compile Include="Help\ContextHelp.vb" />
+    <Compile Include="Help\ContextHelpUi.vb" />
     <Compile Include="My Project\AssemblyInfo.vb" />
     <Compile Include="My Project\VersionInfo.vb" />
     <Compile Include="My Project\Resources.Designer.vb">

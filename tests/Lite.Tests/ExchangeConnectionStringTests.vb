@@ -165,7 +165,8 @@ Public Class ExchangeConnectionStringTests
         Dim names As New HashSet(Of String)(ExchangeConnectionStringCorpus.Load().Select(Function(c) c.Name))
         For Each n As String In {"with-fp-plus-slash", "name-escapes", "ipv6-literal", "port-leading-zero", "login-upper-case", "lower-case-hex",
                                  "fp-url-safe-alphabet", "fp-padded", "fp-lower-prefix", "raw-non-ascii", "name-empty", "field-without-equals",
-                                 "file-bom", "file-two-lines", "file-4097", "share-code", "newer-major", "length-512"}
+                                 "file-bom", "file-two-lines", "file-4097", "share-code", "newer-major", "length-512",
+                                 "length-512-cyrillic", "name-zero-width-joiners", "name-65-cyrillic", "over-512-cyrillic", "name-bidi-U+202E"}
             Assert.True(names.Contains(n), "the vector " & n & " is missing")
         Next
     End Sub
@@ -205,6 +206,48 @@ Public Class ExchangeConnectionStringTests
         Assert.Equal("[2001:db8::7]:22022", r.Value.Endpoint)
         Assert.False(ExchangeConnectionString.Build("[fe80::1%eth0]:22022", "", "", "").Succeeded)
         Assert.False(ExchangeConnectionString.Build("2001:db8::7:22022", "", "", "").Succeeded)
+    End Sub
+
+    ' ---- DEVICE-EXCHANGE item BO: the display name ---------------------------------------------------------
+
+    <Fact>
+    Public Sub A_name_with_a_bidirectional_control_is_refused_and_the_joiners_are_not()
+        For Each cp As Integer In {&H61C, &H200E, &H200F, &H202A, &H202B, &H202C, &H202D, &H202E, &H2066, &H2067, &H2068, &H2069}
+            Dim name As String = "Home" & ChrW(cp) & "NAS"
+            Dim built As ExchangeConnectionStringResult = ExchangeConnectionString.Build("a.b:1", "", name, "")
+            Assert.False(built.Succeeded, "U+" & cp.ToString("X4") & " in a built name")
+            Assert.Equal(ExchangeConnectionStringReason.BadName, built.Reason)
+            Dim read As ExchangeConnectionStringResult = ExchangeConnectionString.Parse("FMSEXCH1:x=a.b%3A1&n=" & ExchangeConnectionString.Escape(name))
+            Assert.False(read.Succeeded, "U+" & cp.ToString("X4") & " in a read string")
+            Assert.Equal(ExchangeConnectionStringReason.BadName, read.Reason)
+        Next
+        ' an emoji sequence needs the joiner, so U+200C and U+200D stay allowed
+        For Each cp As Integer In {&H200C, &H200D}
+            Dim built As ExchangeConnectionStringResult = ExchangeConnectionString.Build("a.b:1", "", "Home" & ChrW(cp) & "NAS", "")
+            Assert.True(built.Succeeded, "U+" & cp.ToString("X4") & ": " & built.Reason)
+        Next
+    End Sub
+
+    <Fact>
+    Public Sub A_writer_shortens_a_name_that_would_not_fit_instead_of_refusing_the_whole_string()
+        Dim emoji As String = ChrW(&HD83D) & ChrW(&HDE00) ' U+1F600, 12 characters once encoded
+        Dim name As String = String.Concat(Enumerable.Repeat(emoji, 64))
+        Dim built As ExchangeConnectionStringResult = ExchangeConnectionString.Build("a.b:1", "SHA256:AAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8", name, New String("u"c, 64))
+        Assert.True(built.Succeeded, built.Reason)
+        Dim refusal As ExchangeConnectionStringResult = Nothing
+        Dim text As String = ExchangeConnectionString.Format(built.Value, refusal)
+        Assert.NotNull(text)
+        Assert.True(text.Length <= ExchangeConnectionString.MaxText, text.Length.ToString())
+        ' it must read back, with every other member as it was and the name a shorter prefix of the original
+        Dim back As ExchangeConnectionStringResult = ExchangeConnectionString.Parse(text)
+        Assert.True(back.Succeeded, back.Reason)
+        Assert.Equal(built.Value.Endpoint, back.Value.Endpoint)
+        Assert.Equal(built.Value.Fingerprint, back.Value.Fingerprint)
+        Assert.Equal(built.Value.Login, back.Value.Login)
+        Assert.True(back.Value.Name.Length > 0 AndAlso back.Value.Name.Length < name.Length)
+        Assert.StartsWith(back.Value.Name, name, StringComparison.Ordinal)
+        ' the longest prefix that fits: one more scalar value would not
+        Assert.True(text.Length + 12 > ExchangeConnectionString.MaxText)
     End Sub
 
     ' ---- ticket 224 rule 1 / 226 rule 1: the invitation the string carries ---------------------------------

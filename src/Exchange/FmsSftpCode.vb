@@ -8,7 +8,8 @@ Imports System.Text
 ' section 4.1, one module for both directions so that what the producer writes is exactly what the consumer reads.
 '
 ' The rules, held to the catalog's rung 1 vectors (tests: FmsSftpCodeTests, with the vectors vendored beside a provenance file):
-'   - prefix `FMSSFTP1:` or `FMSSFTP2:`, then `&`-separated `key=value` fields in the order h, p, u, pw, fp, x, sid, drv;
+'   - prefix `FMSSFTP1:` or `FMSSFTP2:`, then `&`-separated `key=value` fields; the writer writes them in the order h, p, u, pw, fp, x,
+'     sid, drv, the reader takes any order, skips a field with no `=` and ignores an unknown key (4.3 "Reading", spec 239 CR-17);
 '   - values are application/x-www-form-urlencoded UTF-8; the host-list separator `,` and the share id are written raw;
 '   - `x` is `host:port` (an IPv6 literal in brackets), port 1-65535; `x` and `sid` are both present or both absent; `sid` is the
 '     id form exactly (22 base64url characters, no padding, 16 bytes, spare bits zero); `drv` is only `drv=1`;
@@ -119,6 +120,24 @@ Friend NotInheritable Class FmsSftpCode
 
     Private Shared ReadOnly KeyOrder As String() = {"h", "p", "u", "pw", "fp", "x", "sid", "drv"}
 
+    ''' <summary>True when the text starts with a pairing-code prefix of a version above <c>FMSSFTP2</c> (ANYWHERE-ACCESS 4.3: refused with
+    ''' the one message that asks the person to update, not with "not a code").</summary>
+    Public Shared Function IsNewerPrefix(text As String) As Boolean
+        If text Is Nothing Then Return False
+        Dim t As String = text.TrimStart()
+        Const stem As String = "FMSSFTP"
+        If Not t.StartsWith(stem, StringComparison.Ordinal) Then Return False
+        Dim i As Integer = stem.Length
+        Dim version As Integer = 0
+        Dim digits As Integer = 0
+        While i < t.Length AndAlso t(i) >= "0"c AndAlso t(i) <= "9"c AndAlso digits < 6
+            version = version * 10 + (AscW(t(i)) - AscW("0"c))
+            digits += 1
+            i += 1
+        End While
+        Return digits > 0 AndAlso i < t.Length AndAlso t(i) = ":"c AndAlso version > 2
+    End Function
+
     ''' <summary>Reads one code. False for anything that breaks a rule - the whole code is refused, nothing is partly read.</summary>
     Public Shared Function TryParse(text As String, ByRef code As FmsSftpCode) As Boolean
         code = Nothing
@@ -137,19 +156,20 @@ Friend NotInheritable Class FmsSftpCode
         End If
         If body.Length = 0 Then Return False
 
+        ' ANYWHERE-ACCESS 4.3 "Reading": a field with no `=` or nothing before it is skipped, an unknown key is ignored, the order of the
+        ' fields is the writer's business. A key the code states twice is the one thing 4.3 does not settle; two values for the
+        ' pin or the login are ambiguous, so the code is refused whole rather than one of them being picked.
         Dim values As New Dictionary(Of String, String)(StringComparer.Ordinal)
-        Dim lastIndex As Integer = -1
         For Each part As String In body.Split("&"c)
             Dim eq As Integer = part.IndexOf("="c)
-            If eq <= 0 Then Return False
+            If eq <= 0 Then Continue For
             Dim key As String = part.Substring(0, eq)
-            Dim index As Integer = Array.IndexOf(KeyOrder, key)
-            If index < 0 OrElse index <= lastIndex Then Return False   ' an unknown key, a duplicate, or out of order
-            lastIndex = index
+            If Array.IndexOf(KeyOrder, key) < 0 Then Continue For
+            If values.ContainsKey(key) Then Return False
             values(key) = part.Substring(eq + 1)
         Next
 
-        ' a v1 code is read by the v1 rules only: the v2 keys inside it are dropped (after they were seen to be well ordered)
+        ' a v1 code is read by the v1 rules only: the v2 keys inside it are dropped
         If Not v2 Then
             values.Remove("x")
             values.Remove("sid")
@@ -168,9 +188,8 @@ Friend NotInheritable Class FmsSftpCode
         Next
 
         Dim port As Integer
+        ' decimal digits only (no sign, no space); 4.3 says "decimal, 1-65535", so "02022" is the port 2022
         If Not Integer.TryParse(rawPort, NumberStyles.None, CultureInfo.InvariantCulture, port) OrElse port < 1 OrElse port > 65535 Then Return False
-        ' no leading zeros or signs: "02022" is not what a producer writes
-        If Not String.Equals(port.ToString(CultureInfo.InvariantCulture), rawPort, StringComparison.Ordinal) Then Return False
 
         Dim user As String = Nothing
         If Not TryDecode(rawUser, user) OrElse user.Length = 0 OrElse HasControl(user) Then Return False
@@ -182,7 +201,9 @@ Friend NotInheritable Class FmsSftpCode
         End If
 
         Dim fp As String = Nothing
-        If Not TryDecode(rawFp, fp) OrElse Not ExchangeTrust.IsFingerprint(fp) Then Return False
+        ' 4.3: "an fp that starts with SHA256:" - the writer still writes the 43-character form, and the pin is compared with the
+        ' host's real key, so a malformed value never matches one
+        If Not TryDecode(rawFp, fp) OrElse Not fp.StartsWith("SHA256:", StringComparison.Ordinal) OrElse fp.Length = "SHA256:".Length OrElse HasControl(fp) Then Return False
 
         Dim exchange As String = ""
         Dim shareId As String = ""

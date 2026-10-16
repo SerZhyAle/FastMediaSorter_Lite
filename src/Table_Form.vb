@@ -1,4 +1,4 @@
-﻿Option Strict On
+Option Strict On
 'sza130806
 'sza250617
 Imports System.ComponentModel
@@ -175,12 +175,13 @@ Public Class Table_Form
 
     Public Sub PrepareForDisplay()
 #If Not NETFRAMEWORK Then
+        PrepareModernSettingsForDisplay()
+#Else
+#If Not NETFRAMEWORK Then
         CaptureSettingsPage(Tab_Control.SelectedTab)
+        If Not modernSettingsBuilt Then ParkLegacySettingsControls()
 #End If
         Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " n00-2: the_Table_Form_Load")
-#If Not NETFRAMEWORK Then
-        Dim shellWasBuilt As Boolean = modernSettingsBuilt
-#End If
 
         ' Direction from the language table, like every other window (APP-BEHAVIOUR rule 8,
         ' ticket 028 Ф-7) - this one set none. RightToLeft only, never RightToLeftLayout.
@@ -427,7 +428,11 @@ Public Class Table_Form
             btn_Set_As_Default_Video.Text = Localization.T("Зарегистрировать как видеопроигрыватель по умолчанию")
             SetOnTop.Text = Localization.T("Показывать таблицу получателей поверх медиафайла")
 
+#If NETFRAMEWORK Then
         PrepareOcrTabForDisplay()
+#Else
+        If _ocrBuilt Then PrepareOcrTabForDisplay()
+#End If
 #If Not NETFRAMEWORK Then
         ' The x86 viewer has no Share button - the Companion it opens cannot run on
         ' the OSes that exe serves. The Integration group simply keeps its original
@@ -463,18 +468,13 @@ Public Class Table_Form
         ' built by Table_Form.ModernLayout.vb.  Calling this after localization
         ' gives the navigation/header the same RU/EN wording as the page content.
         BuildModernSettingsLayout()
-        ' Two passes, and which of them does the localizing depends on whether the shell existed on entry.
-        '  - First open of this instance: the shell was built just now, with the grid's rows re-created BEFORE
-        '    its template was styled and the window not yet sized or shown. The Load that follows runs a full
-        '    second pass (a shown window is the only place the rows' heights settle - the layout scene compares
-        '    316 differences without it), so localizing here would be thrown away: it is skipped.
-        '  - Shell already built (a reopen, a language switch, the wizard closing): this pass is the only one
-        '    and does everything, and the Load that follows has nothing left to do.
-        If shellWasBuilt Then
-            LocalizeModernSettingsLayout()
-            RefreshExpandedSettingsRows()
-        End If
-        preparedBeforeLoad = shellWasBuilt
+        ' Lazy pages are styled when built; Load need not rebuild or relocalize them.
+        LocalizeModernSettingsLayout()
+        WireSettingsRows()
+        RefreshExpandedSettingsRows()
+        FitInitialSettingsWindowToContent()
+        preparedBeforeLoad = True
+#End If
 #End If
     End Sub
 

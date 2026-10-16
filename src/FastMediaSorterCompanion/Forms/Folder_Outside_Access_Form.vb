@@ -7,9 +7,12 @@ Imports System.Windows.Forms
 
 ''' <summary>
 ''' Spec 228 rule 4: "Give access outside.." offers two things and nothing else:
-''' 1. A guest invitation for this folder (spec 224 guest kind, bound to this folder).
+''' 1. A guest invitation (spec 224 guest kind). It is NOT bound to this folder: a guest account sees what is granted to it on the
+'''    exchange server, and the Share Manager's file server cannot yet limit a login to one folder.
 ''' 2. A public link with a password, no account.
-''' Each is listed under the folder and can be withdrawn; withdrawing ends the open sessions it allowed.
+''' Ticket 239 CR-13 (decision Q239-2): both are shown as NOT AVAILABLE while <see cref="OutwardAccessFeatures.Offered"/> is False
+''' (ANYWHERE-ACCESS amendment L) - the reason is on screen and nothing can be created. Withdrawing what already exists stays
+''' possible; withdrawing ends the open sessions it allowed.
 ''' </summary>
 Friend NotInheritable Class Folder_Outside_Access_Form
     Inherits Form
@@ -22,8 +25,11 @@ Friend NotInheritable Class Folder_Outside_Access_Form
     Private _iconHandle As IntPtr
 
     Private _lblFolderHeader As Label
+    Private _lblGuestReason As Label
+    Private _lblLinkReason As Label
     Private _lblLinkStatus As Label
     Private _txtLinkPassword As TextBox
+    Private _btnGeneratePassword As Button
     Private _btnCreateLink As Button
     Private _btnWithdrawLink As Button
     Private _btnShowLinkQr As Button
@@ -68,13 +74,16 @@ Friend NotInheritable Class Folder_Outside_Access_Form
         body.Controls.Add(_lblFolderHeader)
 
         ' --- Section 1: Guest invitation for this folder ---
-        Dim grpGuest As New GroupBox With {.Text = Localization.T("Гостевое приглашение для этой папки"), .AutoSize = True,
+        Dim grpGuest As New GroupBox With {.Text = Localization.T("Гостевое приглашение"), .AutoSize = True,
             .AutoSizeMode = AutoSizeMode.GrowAndShrink, .Dock = DockStyle.Top, .Padding = New Padding(10, 8, 10, 8), .Margin = New Padding(0, 0, 0, 12)}
         Dim pnlGuest As New FlowLayoutPanel With {.Dock = DockStyle.Top, .FlowDirection = FlowDirection.TopDown, .WrapContents = False,
             .AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink}
 
-        pnlGuest.Controls.Add(New Label With {.AutoSize = True, .MaximumSize = New Size(ContentWidth - 30, 0), .ForeColor = ThemeService.Palette.TextMuted,
-            .Text = Localization.T("Создаёт гостевой аккаунт на сервере обмена, которому доступна только эта папка.")})
+        ' The old line here said the guest account "can only access this folder"; the server does not enforce that (CR-13), so the
+        ' line is the reason the invitation is closed - nothing about the folder is promised.
+        _lblGuestReason = New Label With {.AutoSize = True, .MaximumSize = New Size(ContentWidth - 30, 0), .ForeColor = ThemeService.Palette.TextMuted,
+            .Text = OutwardAccessFeatures.Reason()}
+        pnlGuest.Controls.Add(_lblGuestReason)
 
         Dim rowGuestButtons As New FlowLayoutPanel With {.AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink, .Margin = New Padding(0, 6, 0, 6)}
         _btnCreateGuest = NewButton(Localization.T("Создать гостевое приглашение.."), AddressOf OnCreateGuestClicked, "action.add")
@@ -100,6 +109,9 @@ Friend NotInheritable Class Folder_Outside_Access_Form
         Dim pnlLink As New FlowLayoutPanel With {.Dock = DockStyle.Top, .FlowDirection = FlowDirection.TopDown, .WrapContents = False,
             .AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink}
 
+        _lblLinkReason = New Label With {.AutoSize = True, .MaximumSize = New Size(ContentWidth - 30, 0), .ForeColor = ThemeService.Palette.TextMuted,
+            .Margin = New Padding(0, 0, 0, 6), .Text = OutwardAccessFeatures.Reason()}
+        pnlLink.Controls.Add(_lblLinkReason)
         _lblLinkStatus = New Label With {.AutoSize = True, .MaximumSize = New Size(ContentWidth - 30, 0), .Margin = New Padding(0, 0, 0, 6)}
         pnlLink.Controls.Add(_lblLinkStatus)
 
@@ -107,8 +119,8 @@ Friend NotInheritable Class Folder_Outside_Access_Form
         pnlPassword.Controls.Add(New Label With {.AutoSize = True, .Text = Localization.T("Пароль ссылки:"), .Margin = New Padding(0, 6, 8, 0)})
         _txtLinkPassword = New TextBox With {.Width = 180, .UseSystemPasswordChar = True}
         pnlPassword.Controls.Add(_txtLinkPassword)
-        Dim btnGenPw As Button = NewButton(Localization.T("Сгенерировать"), AddressOf OnGeneratePasswordClicked)
-        pnlPassword.Controls.Add(btnGenPw)
+        _btnGeneratePassword = NewButton(Localization.T("Сгенерировать"), AddressOf OnGeneratePasswordClicked)
+        pnlPassword.Controls.Add(_btnGeneratePassword)
         pnlLink.Controls.Add(pnlPassword)
 
         Dim rowLinkButtons As New FlowLayoutPanel With {.AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink, .Margin = New Padding(0, 6, 0, 6)}
@@ -136,7 +148,21 @@ Friend NotInheritable Class Folder_Outside_Access_Form
         Me.ClientSize = New Size(ContentWidth + 30, body.PreferredSize.Height + 20)
     End Sub
 
+    ''' <summary>CR-13: the reason is on screen and every control that CREATES something (a guest invitation, a link, its password)
+    ''' is off while the outward-access gate is closed. Taking access back (the Withdraw buttons) is decided by what exists, in
+    ''' <see cref="RefreshState"/> and the list's selection, never by the gate.</summary>
+    Private Sub ApplyAvailability()
+        Dim offered As Boolean = OutwardAccessFeatures.IsOffered()
+        _lblGuestReason.Visible = Not offered
+        _lblLinkReason.Visible = Not offered
+        _btnCreateGuest.Enabled = offered
+        _txtLinkPassword.Enabled = offered
+        _btnGeneratePassword.Enabled = offered
+        _btnCreateLink.Enabled = offered
+    End Sub
+
     Private Sub OnGeneratePasswordClicked()
+        If Not OutwardAccessFeatures.IsOffered() Then Return
         Dim bytes As Byte() = New Byte(11) {}
         System.Security.Cryptography.RandomNumberGenerator.Fill(bytes)
         _txtLinkPassword.Text = Convert.ToBase64String(bytes).Replace("+"c, "x"c).Replace("/"c, "y"c).TrimEnd("="c)
@@ -145,6 +171,7 @@ Friend NotInheritable Class Folder_Outside_Access_Form
 
     Private Sub RefreshState()
         Dim pub As ExchangePublisher = _publisher
+        ApplyAvailability()
         If pub Is Nothing Then
             _lblLinkStatus.Text = Localization.T("Служба публикаций недоступна.")
             _btnCreateLink.Enabled = False
@@ -160,7 +187,8 @@ Friend NotInheritable Class Folder_Outside_Access_Form
             _lblLinkStatus.Text = Localization.T("Ссылка активна.")
             _btnCreateLink.Text = Localization.T("Обновить ссылку")
             _btnWithdrawLink.Enabled = True
-            _btnShowLinkQr.Enabled = True
+            ' showing the code or the QR hands the link out again: that is outward access too
+            _btnShowLinkQr.Enabled = OutwardAccessFeatures.IsOffered()
         Else
             _lblLinkStatus.Text = Localization.T("Ссылка не создана.")
             _btnCreateLink.Text = Localization.T("Создать ссылку")
@@ -192,7 +220,7 @@ Friend NotInheritable Class Folder_Outside_Access_Form
     End Sub
 
     Private Async Sub OnCreateLinkClicked()
-        If _publisher Is Nothing Then Return
+        If _publisher Is Nothing OrElse Not OutwardAccessFeatures.IsOffered() Then Return
         Dim pw As String = _txtLinkPassword.Text.Trim()
         _lblStatusResult.Text = Localization.T("Создание ссылки..")
         Dim res As ExchangeLinkResult = Await _publisher.CreateLinkAsync(_shareName, CancellationToken.None, pw).ConfigureAwait(True)
@@ -219,7 +247,7 @@ Friend NotInheritable Class Folder_Outside_Access_Form
     End Sub
 
     Private Async Sub OnShowLinkQrClicked()
-        If _publisher Is Nothing Then Return
+        If _publisher Is Nothing OrElse Not OutwardAccessFeatures.IsOffered() Then Return
         Dim code As String = ""
         If _publisher.TryGetLinkCode(_shareName, code) Then
             Dim configJson As String = ""
@@ -238,6 +266,7 @@ Friend NotInheritable Class Folder_Outside_Access_Form
     End Sub
 
     Private Async Sub OnCreateGuestClicked()
+        If Not OutwardAccessFeatures.IsOffered() Then Return
         _lblStatusResult.Text = Localization.T("Создание гостевого приглашения..")
         Try
             Dim rep As ExchangeAdminReply = Await ExchangeAdmin.CreateInvitationAsync("guest", CancellationToken.None).ConfigureAwait(True)

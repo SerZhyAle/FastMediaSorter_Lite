@@ -35,11 +35,13 @@ Friend Enum ExchangeAgentState
     Online = 2
     ''' <summary>Waiting out a backoff after a lost stream or a retryable refusal.</summary>
     Reconnecting = 3
-    ''' <summary>`bad-credentials`, `device-revoked` or no token: the user must sign in again. Never retried.</summary>
+    ''' <summary>`bad-credentials`, `device-revoked`, `signed-out` or no token: the user must sign in again. Never retried.
+    ''' After `signed-out` the entry, its `deviceId` and its attachments stay (item AT).</summary>
     SignInAgain = 4
     ''' <summary>The certificate is not the pinned one. Never retried, never re-pinned.</summary>
     PinMismatch = 5
-    ''' <summary>`version-unsupported`: the program must be updated. Never retried.</summary>
+    ''' <summary>`version-unsupported`: the program and the server speak different versions of the exchange (item CZ asks for no
+    ''' update: release 46 has no minimum program version, item CK). Never retried.</summary>
     UpdateNeeded = 6
     ''' <summary>A defect of this program (`tls-required` on a TLS stream): logged, not retried.</summary>
     Defect = 7

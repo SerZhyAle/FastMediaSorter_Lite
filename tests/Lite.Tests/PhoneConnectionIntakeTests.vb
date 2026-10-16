@@ -28,7 +28,8 @@ Public Class PhoneConnectionIntakeTests
     <Fact>
     Public Sub Vendored_FMSSFTP_vectors_render_to_QR_and_decode_back()
         Dim vectors As JsonElement = LoadVectors()
-        If vectors.ValueKind = JsonValueKind.Undefined Then Return
+        ' the vendored file is part of the repository: a missing one is a failure, not a silent pass (spec 239 CR-17)
+        Assert.NotEqual(JsonValueKind.Undefined, vectors.ValueKind)
 
         For Each v As JsonElement In vectors.GetProperty("valid").EnumerateArray()
             Dim name As String = v.GetProperty("name").GetString()

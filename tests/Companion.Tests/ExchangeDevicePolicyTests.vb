@@ -13,6 +13,10 @@ Public Class ExchangeDevicePolicyTests
     <Theory>
     <InlineData("BadCredentials", True, "SignInAgain", False, 0, False)>
     <InlineData("DeviceRevoked", True, "SignInAgain", True, 0, False)>
+    <InlineData("SignedOut", True, "SignInAgain", False, 0, False)>
+    <InlineData("InvitationInvalid", False, "Reconnecting", False, 60, False)>
+    <InlineData("LoginTaken", False, "Reconnecting", False, 60, False)>
+    <InlineData("PasswordPolicy", False, "Reconnecting", False, 60, False)>
     <InlineData("VersionUnsupported", True, "UpdateNeeded", False, 0, False)>
     <InlineData("TlsRequired", True, "Defect", False, 0, True)>
     <InlineData("RateLimited", False, "Reconnecting", False, 60, False)>

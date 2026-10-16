@@ -22,6 +22,8 @@ Partial Public NotInheritable Class Share_Settings_Form
     Private Sub BuildClipboardRows(sec As CollapsibleSection)
         AddClipboardRow(sec, New Label With {.AutoSize = True, .Margin = New Padding(0, 10, 0, 2), .Font = _accBoldFont,
                                               .Text = Localization.T("Буфер на сервере")})
+        ' CLIPBOARD-GUARD item N: the person is told, where the buttons are, that nothing stands between the clipboard and the server.
+        AddClipboardRow(sec, AccNote(Localization.T("Отправляется ровно то, что лежит в буфере обмена в этот момент, в том числе скопированный пароль: программа ничего не проверяет, не фильтрует и не скрывает.")))
 
         If AutostartManager.IsPackaged() Then
             ' Default 4: a packaged app has no execution alias here, so a desktop shortcut cannot carry the switch. The buttons and the

@@ -14,11 +14,11 @@ Imports System.Threading
 '     caller waits for it under a bound: a program that holds the clipboard, or a delay-rendered owner that never answers,
 '     ends in a sentence and an abandoned thread, never in a frozen window (item N);
 '   - ONE open per operation, with a bounded retry (12 x 15 ms); the kind, the size and the content (or the path) are read inside
-'     that one open and the clipboard is closed BEFORE a byte goes to the network or to the disk (items M, O);
+'     that one open and the clipboard is closed BEFORE a byte goes to the network or to the disk (items B, N, O);
 '   - the order of the kinds is the contract's: ONE regular file in a file drop, else an image (the registered PNG format, else
 '     CF_DIBV5 or CF_DIB converted to PNG), else Unicode text; several files or a folder are refused (item BU);
 '   - a received value is placed in one open-empty-set-close pass, with NO privacy marker: the person asked for it, and the Windows
-'     history may keep it (item CD). The privacy-flag writer of SecureClipboard is for secrets and is not used here;
+'     history may keep it (item Q). The privacy-flag writer of SecureClipboard is for secrets and is not used here;
 '   - nothing here logs a value, a name or a path - the caller logs the kind and a size class only (item R).
 '
 ' The Share Manager's own rule "never write the clipboard outside the helper" (SecureClipboardTests) is about the managed
@@ -202,7 +202,7 @@ End Class
 Friend NotInheritable Class ClipboardWin32
     Implements IClipboardPort
 
-    ''' <summary>The bounded retry of CLIPBOARD-GUARD item M: 12 attempts, 15 ms apart.</summary>
+    ''' <summary>The bounded retry of CLIPBOARD-GUARD item B: 12 attempts, 15 ms apart.</summary>
     Friend Const OpenAttempts As Integer = 12
     Friend Const OpenPauseMs As Integer = 15
 
@@ -305,7 +305,7 @@ Friend NotInheritable Class ClipboardWin32
         Try
             early = ReadFormats(filePath, pngBytes, dibBytes, textBytes)
         Finally
-            ' The clipboard is closed exactly once, before the file system, a conversion or the network is touched (item O).
+            ' The clipboard is closed exactly once, before the file system, a conversion or the network is touched (item N).
             CloseClipboard()
         End Try
         If early IsNot Nothing Then Return early

@@ -719,11 +719,15 @@ func TestPublishChecksTheRecordButDoesNotInterpretIt(t *testing.T) {
 	if Reason(err) != wire.ReasonCapacity {
 		t.Fatalf("a record above 16 KiB: %v", err)
 	}
-	// exactly 16 KiB is accepted
+	// exactly 16 KiB as sent is capacity too: the bound is the record as delivered, which carries the
+	// members the server adds (item BS; TestARecordIsBoundedAsDeliveredNotAsSent holds the edge itself)
 	pad := wire.MaxRecord - len(`{"resourceId":"`+resR1+`","kind":"k","name":"n","pad":""}`)
 	exact := `{"resourceId":"` + resR1 + `","kind":"k","name":"n","pad":"` + strings.Repeat("a", pad) + `"}`
-	if _, err := e.d.Publish(alice, devA1, json.RawMessage(exact)); err != nil {
-		t.Fatalf("a record of exactly 16 KiB: %v", err)
+	if _, err := e.d.Publish(alice, devA1, json.RawMessage(exact)); Reason(err) != wire.ReasonCapacity {
+		t.Fatalf("a record of exactly 16 KiB as sent is longer as delivered: %v", err)
+	}
+	if len(e.resources(alice)) != 0 {
+		t.Fatal("a refused record must store nothing")
 	}
 	// an unknown kind is stored as is
 	if _, err := e.d.Publish(alice, devA1, json.RawMessage(`{"resourceId":"`+resR2+`","kind":"hologram","name":"n"}`)); err != nil {
@@ -736,6 +740,145 @@ func TestPublishChecksTheRecordButDoesNotInterpretIt(t *testing.T) {
 	if _, err := e.d.Publish("nobody", devA1, resource(resR1, devA1, "")); !errors.Is(err, ErrNoDevice) {
 		t.Fatalf("an unknown account: %v", err)
 	}
+}
+
+// DEVICE-EXCHANGE 6, item BS: the 16 KiB bound is the record AS DELIVERED - the members the producer sent
+// plus the ones the server owns - in every form it is listed in. A record at the largest admitted size is
+// listed within the bound (online, and after its device goes offline); one byte more is capacity and stores
+// nothing. The sizes below are worked out here from the members, not read back from the server.
+func TestARecordIsBoundedAsDeliveredNotAsSent(t *testing.T) {
+	deviceMember := `,"deviceId":"` + devA1 + `"`
+	stamp := wire.FormatTime(newClock().Now())
+	updatedMember := `,"updatedAt":"` + stamp + `"`
+	startedMember := `,"startedAt":"` + stamp + `"`
+	// what the server adds to a resource that carries none of its own members
+	onlineAdded := len(deviceMember) + len(`,"presence":"online"`) + len(updatedMember)
+	offlineAdded := onlineAdded + 1 // `offline` is a byte longer than `online`
+
+	resourceOf := func(t *testing.T, id, extra string, size int) json.RawMessage {
+		t.Helper()
+		base := `{"resourceId":"` + id + `","kind":"k","name":"n"` + extra + `,"pad":""}`
+		if size < len(base) {
+			t.Fatalf("the skeleton is %d bytes, above %d", len(base), size)
+		}
+		return json.RawMessage(strings.Replace(base, `"pad":""`, `"pad":"`+strings.Repeat("a", size-len(base))+`"`, 1))
+	}
+	listed := func(e *env) []json.RawMessage {
+		_, _, rs, _ := e.d.Snapshot(alice)
+		return rs
+	}
+	sizeOf := func(t *testing.T, rs []json.RawMessage) int {
+		t.Helper()
+		if len(rs) != 1 {
+			t.Fatalf("%d records are listed, want 1", len(rs))
+		}
+		return len(rs[0])
+	}
+	refused := func(t *testing.T, what string, err error) {
+		t.Helper()
+		if Reason(err) != wire.ReasonCapacity {
+			t.Fatalf("%s: want capacity, got %v", what, err)
+		}
+	}
+
+	t.Run("a resource with no live members is widest once its device is offline", func(t *testing.T) {
+		e := newEnv(t, nil)
+		sink := e.online(alice, devA1)
+		rev := e.d.Revision(alice)
+		_, err := e.d.Publish(alice, devA1, resourceOf(t, resR1, "", wire.MaxRecord))
+		refused(t, "exactly 16384 bytes as sent", err)
+		_, err = e.d.Publish(alice, devA1, resourceOf(t, resR1, "", wire.MaxRecord-offlineAdded+1))
+		refused(t, "one byte above the delivered edge", err)
+		if len(listed(e)) != 0 || e.d.Revision(alice) != rev {
+			t.Fatal("a refused record stores nothing and is no transaction")
+		}
+
+		e.publish(alice, devA1, resourceOf(t, resR1, "", wire.MaxRecord-offlineAdded))
+		if n := sizeOf(t, listed(e)); n != wire.MaxRecord-1 {
+			t.Fatalf("online the record is listed at %d bytes, want %d", n, wire.MaxRecord-1)
+		}
+		e.d.Offline(alice, devA1, sink)
+		if n := sizeOf(t, listed(e)); n != wire.MaxRecord {
+			t.Fatalf("offline the record is listed at %d bytes, want exactly %d", n, wire.MaxRecord)
+		}
+		if _, err := wire.ParseRecord(listed(e)[0]); err != nil {
+			t.Fatalf("what the server lists, a reader must be able to read: %v", err)
+		}
+	})
+
+	t.Run("a resource with live members is widest while its device is online", func(t *testing.T) {
+		e := newEnv(t, nil)
+		sink := e.online(alice, devA1)
+		access := `,"access":{"descriptor":"FMSSFTP2.vector","root":"/"}`
+		_, err := e.d.Publish(alice, devA1, resourceOf(t, resR1, access, wire.MaxRecord-onlineAdded+1))
+		refused(t, "one byte above the delivered edge", err)
+		e.publish(alice, devA1, resourceOf(t, resR1, access, wire.MaxRecord-onlineAdded))
+		if n := sizeOf(t, listed(e)); n != wire.MaxRecord {
+			t.Fatalf("online the record is listed at %d bytes, want exactly %d", n, wire.MaxRecord)
+		}
+		e.d.Offline(alice, devA1, sink)
+		if n := sizeOf(t, listed(e)); n > wire.MaxRecord {
+			t.Fatalf("offline the record is listed at %d bytes, above the bound", n)
+		}
+	})
+
+	t.Run("a granted port is counted at its widest", func(t *testing.T) {
+		e := newEnv(t, nil)
+		e.online(alice, devA1)
+		port := `,"publicPort":0` // the request is one digit; the granted port (40001) is five
+		const widening = 4
+		_, err := e.d.Publish(alice, devA1, resourceOf(t, resR1, port, wire.MaxRecord-onlineAdded-widening+1))
+		refused(t, "one byte above the delivered edge", err)
+		if e.ports.held(alice, resR1) {
+			t.Fatal("a refused publish must not leave a port lease behind")
+		}
+		res := e.publish(alice, devA1, resourceOf(t, resR1, port, wire.MaxRecord-onlineAdded-widening))
+		if res.PublicPort == nil || *res.PublicPort != 40001 {
+			t.Fatalf("granted port %v", res.PublicPort)
+		}
+		if n := sizeOf(t, listed(e)); n != wire.MaxRecord {
+			t.Fatalf("the record is listed at %d bytes, want exactly %d", n, wire.MaxRecord)
+		}
+	})
+
+	t.Run("a broadcast is bounded with startedAt and updatedAt added", func(t *testing.T) {
+		e := newEnv(t, nil)
+		e.online(alice, devA1)
+		added := len(deviceMember) + len(updatedMember) + len(startedMember)
+		broadcastOf := func(size int) json.RawMessage {
+			base := `{"broadcastId":"` + broB1 + `","mode":"AUDIO_ONLY","descriptor":{},"pad":""}`
+			return json.RawMessage(strings.Replace(base, `"pad":""`, `"pad":"`+strings.Repeat("a", size-len(base))+`"`, 1))
+		}
+		broadcasts := func() []json.RawMessage {
+			_, _, _, bs := e.d.Snapshot(alice)
+			return bs
+		}
+		_, err := e.d.BroadcastStart(alice, devA1, broadcastOf(wire.MaxRecord), nil)
+		refused(t, "exactly 16384 bytes as sent", err)
+		_, err = e.d.BroadcastStart(alice, devA1, broadcastOf(wire.MaxRecord-added+1), nil)
+		refused(t, "start, one byte above the delivered edge", err)
+		if len(broadcasts()) != 0 {
+			t.Fatal("a refused broadcast-start stores nothing")
+		}
+		if _, err := e.d.BroadcastStart(alice, devA1, broadcastOf(wire.MaxRecord-added), nil); err != nil {
+			t.Fatalf("start at the delivered edge: %v", err)
+		}
+		if n := sizeOf(t, broadcasts()); n != wire.MaxRecord {
+			t.Fatalf("the broadcast is listed at %d bytes, want exactly %d", n, wire.MaxRecord)
+		}
+		// an update is bounded the same way, with the startedAt the broadcast already has
+		before := string(broadcasts()[0])
+		refused(t, "update, one byte above the delivered edge", e.d.BroadcastUpdate(alice, devA1, broadcastOf(wire.MaxRecord-added+1), nil))
+		if string(broadcasts()[0]) != before {
+			t.Fatal("a refused broadcast-update leaves the record as it was")
+		}
+		if err := e.d.BroadcastUpdate(alice, devA1, broadcastOf(wire.MaxRecord-added), nil); err != nil {
+			t.Fatalf("update at the delivered edge: %v", err)
+		}
+		if n := sizeOf(t, broadcasts()); n != wire.MaxRecord {
+			t.Fatalf("the updated broadcast is listed at %d bytes, want exactly %d", n, wire.MaxRecord)
+		}
+	})
 }
 
 func TestDeviceIDIsForcedToThePublisherAndUpdatedAtIsServers(t *testing.T) {

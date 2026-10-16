@@ -36,8 +36,10 @@ Imports System.Threading.Tasks
 '   7. prints one verdict line and exits: PASS 0, FAIL 1, COULD NOT VERIFY 2.
 '
 ' Run by hand only (tools\check-placement.jsonl, class hand-run):
-'   dotnet run --project tests/Integration/DriveAppDataProbe/DriveAppDataProbe.vbproj [--read <name>] [--write]
+'   dotnet run --project tests/Integration/DriveAppDataProbe/DriveAppDataProbe.vbproj -- [--read <name>] [--write]
 '              [--answer y|n|c]
+' The "--" hands everything after it to the probe; without --write the run only reads, so the reverse direction
+' (a file this probe writes and the phone must see) is not checked.
 
 Friend Module Program
 
@@ -593,7 +595,7 @@ Friend Module Program
     End Function
 
     Private Sub PrintUsage()
-        Console.WriteLine("usage: dotnet run --project tests/Integration/DriveAppDataProbe/DriveAppDataProbe.vbproj [options]")
+        Console.WriteLine("usage: dotnet run --project tests/Integration/DriveAppDataProbe/DriveAppDataProbe.vbproj -- [options]")
         Console.WriteLine("  --read <name>   read this file from the listing and print its SHA-256 and length")
         Console.WriteLine("  --write         upload fmsx-probe-<random>.json, read it back (sha256), keep it for the phone to see until you press Enter, then delete it")
         Console.WriteLine("  --answer y|n|c  pre-answer the cross-product question (y reads the first fmsx- file)")

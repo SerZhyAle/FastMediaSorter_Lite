@@ -364,7 +364,12 @@ Public Class LiveProducerControllerTests
             Assert.True(result.Ok, result.SeamReason)
             Assert.Equal("127.0.0.1", controller.State.ListenerAddress)
             Assert.Equal(15, harness.Encoder.LastOptions.VideoFps)
-            Dim descriptor As LiveBroadcastReadResult = LiveBroadcastReader.ReadText(controller.State.DescriptorJson)
+            ' Ticket 239 CR-15: no password and no LAN endpoint, so there is nothing the person may hand out (the window then asks
+            ' for a password); the account's own directory record keeps its exchange endpoints.
+            Assert.Equal("", controller.State.DescriptorJson)
+            Assert.Equal("", controller.State.BarcodeText)
+            Assert.True(controller.State.HandOffWithheld)
+            Dim descriptor As LiveBroadcastReadResult = LiveBroadcastReader.ReadText(controller.State.RecordDescriptorJson)
             Assert.DoesNotContain(descriptor.Descriptor.Endpoints, Function(endpoint) endpoint.Transport = "HTTP")
             Using client As New TcpClient()
                 client.Connect(IPAddress.Loopback, harness.Port)
@@ -403,6 +408,69 @@ Public Class LiveProducerControllerTests
             Assert.Equal("TUNNEL", descriptor.Descriptor.Endpoints(0).Transport)
             Assert.DoesNotContain("separate-secret", controller.State.BarcodeText)
             Assert.DoesNotContain("separate-secret", controller.State.DescriptorJson)
+            ' Ticket 239 CR-15: a protected broadcast is handed out whole, so nothing is withheld and the record needs no split
+            Assert.False(controller.State.HandOffWithheld)
+            Assert.Equal("listener", controller.State.AuthUser)
+            Assert.Equal("", controller.State.RecordDescriptorJson)
+        Finally
+            controller.Stop()
+        End Try
+    End Sub
+
+    <Fact>
+    Public Sub Without_a_password_an_exchange_only_broadcast_has_no_hand_out_but_keeps_its_record()
+        ' Ticket 239 CR-15 (LIVE-BROADCAST item M): video with the LAN tick off reaches the world through the exchange only. With no
+        ' password the link, the code and the file have nothing they may carry, so they are empty and the window says why.
+        Dim harness As New FakeHarness()
+        Dim ports As LiveProducerPorts = harness.Ports()
+        ports.ExchangeEndpointInfo = Function() Tuple.Create("relay.example:443", "sha256:" & New String("a"c, 64))
+        Dim controller As New LiveBroadcastController(ports)
+        Try
+            Dim result As LiveStartResult = controller.Start(New LiveStartRequest With {.Kind = LiveProducerSourceKind.Screen, .Mode = "VIDEO_ONLY"})
+            Assert.True(result.Ok, result.SeamReason)
+            Dim state As LiveProducerState = controller.State
+            Assert.True(state.Running)
+            Assert.True(state.HandOffWithheld)
+            Assert.Equal("", state.DescriptorJson)
+            Assert.Equal("", state.BarcodeText)
+            ' the account's own directory record is unchanged: relay and tunnel are in it
+            Dim record As LiveBroadcastReadResult = LiveBroadcastReader.ReadText(state.RecordDescriptorJson)
+            Assert.Equal(LiveReadStatus.Ok, record.Status)
+            Assert.Contains(record.Descriptor.Endpoints, Function(endpoint) endpoint.Transport = "RELAY")
+            Assert.Contains(record.Descriptor.Endpoints, Function(endpoint) endpoint.Transport = "TUNNEL")
+        Finally
+            controller.Stop()
+        End Try
+    End Sub
+
+    <Fact>
+    Public Sub Without_a_password_the_hand_out_is_the_LAN_alone_while_the_record_keeps_every_endpoint()
+        Dim machine As String = LiveTestMachine.LanAddress()
+        If machine.Length = 0 Then Return ' NOT RUN: this machine has no LAN address to bind
+        Dim harness As New FakeHarness() With {.Address = machine}
+        Dim ports As LiveProducerPorts = harness.Ports()
+        ports.ExchangeEndpointInfo = Function() Tuple.Create("relay.example:443", "sha256:" & New String("a"c, 64))
+        Dim controller As New LiveBroadcastController(ports)
+        Try
+            Assert.True(controller.Start(MicrophoneRequest("Kitchen PC")).Ok)
+            Dim state As LiveProducerState = controller.State
+            Assert.True(state.HandOffWithheld)
+
+            ' the three channels are built from the one hand-out descriptor: the LAN endpoint alone
+            Dim fromText As LiveBroadcastReadResult = LiveBroadcastReader.ReadText(state.DescriptorJson)
+            Dim fromBarcode As LiveBroadcastReadResult = LiveBroadcastReader.ReadText(state.BarcodeText)
+            Assert.Equal(LiveReadStatus.Ok, fromText.Status)
+            Assert.Equal(LiveReadStatus.Ok, fromBarcode.Status)
+            Assert.Single(fromText.Descriptor.Endpoints)
+            Assert.Single(fromBarcode.Descriptor.Endpoints)
+            Assert.Equal("HTTP", fromBarcode.Descriptor.Endpoints(0).Transport)
+            Assert.DoesNotContain("relay.example", state.DescriptorJson)
+
+            ' while the account's own record has every endpoint
+            Dim record As LiveBroadcastReadResult = LiveBroadcastReader.ReadText(state.RecordDescriptorJson)
+            Assert.Equal(LiveReadStatus.Ok, record.Status)
+            Assert.Equal(3, record.Descriptor.Endpoints.Count)
+            Assert.Contains("relay.example", state.RecordDescriptorJson)
         Finally
             controller.Stop()
         End Try
@@ -437,10 +505,13 @@ Public Class LiveProducerControllerTests
             Dim result As LiveStartResult = controller.Start(New LiveStartRequest With {.Kind = LiveProducerSourceKind.Screen, .Mode = "VIDEO_ONLY"})
             Assert.True(result.Ok, result.SeamReason)
             Assert.Equal("127.0.0.1", controller.State.ListenerAddress)
-            Dim descriptor As LiveBroadcastReadResult = LiveBroadcastReader.ReadText(controller.State.DescriptorJson)
+            ' Ticket 239 CR-15: the inner address lives in the account's own record; with no password nothing is handed out.
+            Assert.Equal("", controller.State.DescriptorJson)
+            Assert.True(controller.State.HandOffWithheld)
+            Dim descriptor As LiveBroadcastReadResult = LiveBroadcastReader.ReadText(controller.State.RecordDescriptorJson)
             Assert.DoesNotContain(descriptor.Descriptor.Endpoints, Function(endpoint) endpoint.Transport = "HTTP")
-            Assert.Contains("http://192.0.2.1:", controller.State.DescriptorJson)
-            Assert.DoesNotContain("127.0.0.1", controller.State.DescriptorJson)
+            Assert.Contains("http://192.0.2.1:", controller.State.RecordDescriptorJson)
+            Assert.DoesNotContain("127.0.0.1", controller.State.RecordDescriptorJson)
         Finally
             controller.Stop()
         End Try

@@ -14,7 +14,10 @@
     default - build.ps1 wipes temp\ (Clean-Build.ps1 -Temp), which silently emptied an earlier
     version of this harness and left it opening files that were no longer there.
 
-    The viewer's OCR settings are borrowed for the run and put back afterwards.
+    The viewer's OCR settings are borrowed for the run and put back afterwards. A viewer also
+    writes its own state at start and exit - the last file, the recent folders, the run counters -
+    so the whole settings key is exported first and imported back last: without that, the next
+    launch of the owner's viewer would open one of these scenes. The export stays in WorkDir.
 
     A scene that produced NO plates is reported apart and fails, never averaged in: its
     "largest plate covers 0.0000 of the frame" and its "0 plates released" are the same numbers
@@ -39,6 +42,18 @@
     no setting is touched. For re-reading a run, and for proving the judge itself - a dump line
     edited by hand must fail the way the rule says it does (ticket 033 Ф-2).
 
+.PARAMETER ForcedOnly
+    Run only the forced-release scenes (below) and skip the nine scenes that use the
+    translator the user has configured. About two minutes instead of eight.
+
+    The forced scenes are the one place the harness controls the translator. Releasing the
+    plate (OCR-OVERLAY rule 9, the last rung) needs a translation longer than its source can
+    hold, and no real translator promises that, so a second viewer run points the provider at
+    a stub LibreTranslate on 127.0.0.1 that answers a long text for a source containing FORCE
+    and echoes any other source. Two scenes share one geometry, a small plate with no room
+    below it: the one that must release and the control that must not, so a pass shows the
+    judge telling the two apart and not merely counting a flag (ticket 033 F2).
+
 .OUTPUTS
     Exit codes (CHECK-VERDICT): 0 = every check passed. 1 = a check failed. 2 = could not
     verify: no built viewer, no scenes, a viewer already running (its settings and environment
@@ -50,7 +65,8 @@ param(
     [string]$WorkDir = (Join-Path $env:TEMP 'fms-ocr-scenes'),
     [int]$SecondsPerScene = 45,
     [switch]$KeepScenes,
-    [string]$JudgeDump = ''
+    [string]$JudgeDump = '',
+    [switch]$ForcedOnly
 )
 
 Set-StrictMode -Version Latest
@@ -183,7 +199,97 @@ function Build-Scenes([string]$dir) {
     Save-Canvas $c (Join-Path $dir 'e2-stitched-columns.png')
 }
 
-# What each scene must produce. `MaxPlates` left at 0 means "no upper bound".
+# The two forced-release scenes (ticket 033 F2). Same canvas, same line, same place: a single
+# line low in a short picture, so the plate's growth budget is a few dozen pixels. What
+# differs is the TRANSLATION the stub below hands back, chosen by the word FORCE in the source -
+# one long enough that no rung of the ladder can hold it, one that is the source itself.
+function Build-ForcedScenes([string]$dir) {
+    New-Item -ItemType Directory -Force -Path $dir | Out-Null
+    $c = New-Canvas 900 360 $paper
+    Add-Text $c 'FORCE RELEASE' 120 270 46 $ink
+    Save-Canvas $c (Join-Path $dir 'f1-forced-release.png')
+
+    $c = New-Canvas 900 360 $paper
+    Add-Text $c 'SHORT AND FIT' 120 270 46 $ink
+    Save-Canvas $c (Join-Path $dir 'f2-forced-control.png')
+}
+
+# A LibreTranslate on 127.0.0.1 that the viewer is pointed at for the forced scenes. It runs in
+# a runspace of this process, listens on loopback only, and exists for the length of one run.
+# POST /translate answers one string per q item; GET /languages answers 200 (the viewer's probe).
+function Start-StubTranslator {
+    $tcp = [System.Net.Sockets.TcpListener]::new([System.Net.IPAddress]::Loopback, 0)
+    $tcp.Start(); $port = $tcp.LocalEndpoint.Port; $tcp.Stop()
+
+    $state = [hashtable]::Synchronized(@{ Requests = 0; Listener = $null; Error = '' })
+    $long  = 'This translation is deliberately much longer than the text it replaces. ' * 10
+
+    $ps = [powershell]::Create()
+    [void]$ps.AddScript({
+        param($port, $state, $long)
+        $l = [System.Net.HttpListener]::new()
+        $l.Prefixes.Add("http://127.0.0.1:$port/")
+        try {
+            $l.Start()
+            $state.Listener = $l
+            while ($l.IsListening) {
+                $ctx = $l.GetContext()
+                try {
+                    $bytes = [Text.Encoding]::UTF8.GetBytes('{}')
+                    if ($ctx.Request.HttpMethod -eq 'POST' -and $ctx.Request.Url.AbsolutePath -eq '/translate') {
+                        $raw = [IO.StreamReader]::new($ctx.Request.InputStream, [Text.Encoding]::UTF8).ReadToEnd()
+                        $q = @((ConvertFrom-Json -InputObject $raw).q)
+                        $out = [string[]]@($q | ForEach-Object { if ("$_" -match 'FORCE') { $long } else { "$_" } })
+                        $json = ConvertTo-Json -InputObject @{ translatedText = $out } -Compress -Depth 4
+                        $bytes = [Text.Encoding]::UTF8.GetBytes($json)
+                        $state.Requests = $state.Requests + 1
+                    }
+                    $ctx.Response.ContentType = 'application/json; charset=utf-8'
+                    $ctx.Response.ContentLength64 = $bytes.Length
+                    $ctx.Response.OutputStream.Write($bytes, 0, $bytes.Length)
+                } finally {
+                    $ctx.Response.Close()
+                }
+            }
+        } catch {
+            # Stop() from the harness ends a blocked GetContext with an exception; that is the
+            # normal exit. Anything else is kept so the verdict can say the stub itself failed.
+            if ($null -eq $state.Listener -or $l.IsListening) { $state.Error = $_.Exception.Message }
+        }
+    }).AddArgument($port).AddArgument($state).AddArgument($long)
+    $handle = $ps.BeginInvoke()
+
+    $until = (Get-Date).AddSeconds(10)
+    while ($null -eq $state.Listener -and (Get-Date) -lt $until) { Start-Sleep -Milliseconds 100 }
+    if ($null -eq $state.Listener) {
+        $ps.Dispose()
+        throw "the stub translator did not start listening on 127.0.0.1: $($state.Error)"
+    }
+    @{ Port = $port; State = $state; Shell = $ps; Handle = $handle }
+}
+
+function Stop-StubTranslator($Stub) {
+    if ($null -eq $Stub) { return }
+    try { $Stub.State.Listener.Stop(); $Stub.State.Listener.Close() } catch { }
+    try { [void]$Stub.Shell.EndInvoke($Stub.Handle) } catch { }
+    $Stub.Shell.Dispose()
+}
+
+# Waits until the dump carries a line naming this scene, instead of sleeping the whole budget:
+# a forced scene needs no translator round trip, so most of $SecondsPerScene would be dead time.
+function Wait-ForDumpLine([string]$Leaf, [int]$Seconds) {
+    $until = (Get-Date).AddSeconds($Seconds)
+    while ((Get-Date) -lt $until) {
+        try {
+            if ((Test-Path $dump) -and (Select-String -Path $dump -SimpleMatch $Leaf -Quiet)) { return $true }
+        } catch { }   # the viewer holds the file for the instant of an append
+        Start-Sleep -Seconds 2
+    }
+    $false
+}
+
+# What each scene must produce. `MaxPlates` left at 0 means "no upper bound". `MinReleased`
+# turns the general "no plate may reach the last rung" check round for a scene built to reach it.
 $expected = @{
     'a-small-caps-balloon.png'  = @{ MinPlates = 1; MaxPlates = 1; Why = 'one balloon is one plate' }
     'a2-two-balloons.png'       = @{ MinPlates = 2; MaxPlates = 2; Why = 'two balloons stay two plates' }
@@ -196,6 +302,10 @@ $expected = @{
     # the frame IS the defect, and two plates of the right count could still both be bars.
     'e-stitched-balloons.png'   = @{ MinPlates = 2; MaxPlates = 2; MaxWidthShare = 0.35; Why = 'the stitched line is cut, one plate per balloon' }
     'e2-stitched-columns.png'   = @{ MinPlates = 2; MaxPlates = 2; MaxWidthShare = 0.35; Why = 'the cut runs are regrouped into their two columns' }
+    # The forced pair (ticket 033 F2): one geometry, two translations. The first must reach the
+    # last rung and say so; the second, which falls under the general rule, must not.
+    'f1-forced-release.png'     = @{ MinPlates = 1; MaxPlates = 1; MinReleased = 1; Why = 'a translation far longer than its box, with no room below, reaches the last rung' }
+    'f2-forced-control.png'     = @{ MinPlates = 1; MaxPlates = 1; Why = 'the same geometry with a translation that fits does not' }
 }
 
 function Get-Luma([string]$rgb) {
@@ -206,6 +316,9 @@ function Get-Luma([string]$rgb) {
 }
 
 # --- run ----------------------------------------------------------------------
+
+$forcedScenes = @()
+$stubRequests = -1   # -1: the stub did not run; 0 would mean the viewer never asked it anything
 
 if ($JudgeDump) {
     # Judge only: the scenes are whatever the dump names, so "never reached the overlay" has
@@ -226,43 +339,105 @@ if (Get-Process -Name FastMediaSorter_LITE, FastMediaSorter_x86 -ErrorAction Sil
 }
 
 New-Item -ItemType Directory -Force -Path $WorkDir | Out-Null
-if (-not $KeepScenes) { Build-Scenes $WorkDir }
+if (-not $KeepScenes -and -not $ForcedOnly) { Build-Scenes $WorkDir }
+# The forced scenes are two small deterministic drawings: always redrawn, in a folder of their
+# own so the scenes judged against the user's translator never list them.
+$forcedDir = Join-Path $WorkDir 'forced'
+Build-ForcedScenes $forcedDir
 
-$scenes = Get-ChildItem $WorkDir -Filter *.png -File | Sort-Object Name
-if ($scenes.Count -eq 0) { Exit-Verdict 'OcrOverlayScenes' 2 "no scenes in $WorkDir" }
-Write-Host "Scenes: $($scenes.Count) in $WorkDir"
+$mainScenes = @()   # not `= if (..) { @() }`: that assigns $null, and strict mode has no .Count on it
+if (-not $ForcedOnly) { $mainScenes = @(Get-ChildItem $WorkDir -Filter *.png -File | Sort-Object Name) }
+$forcedScenes = @(Get-ChildItem $forcedDir -Filter *.png -File | Sort-Object Name)
+$scenes = @($mainScenes) + @($forcedScenes)
+if (-not $ForcedOnly -and $mainScenes.Count -eq 0) { Exit-Verdict 'OcrOverlayScenes' 2 "no scenes in $WorkDir" }
+Write-Host "Scenes: $($mainScenes.Count) with the configured translator, $($forcedScenes.Count) forced, in $WorkDir"
 
+# Every setting borrowed is read first and put back after; one that did not exist is removed
+# again, not left behind holding the value the run lent it.
 $restore = @{}
-foreach ($n in 'OcrEnabled', 'OcrAutoMode', 'OcrDiskCache', 'OverlayVisible') {
-    $restore[$n] = (Get-ItemProperty -Path $regPath -Name $n -ErrorAction SilentlyContinue).$n
+function Lend-Setting([string]$Name, [string]$Value) {
+    if (-not $restore.ContainsKey($Name)) {
+        $restore[$Name] = (Get-ItemProperty -Path $regPath -Name $Name -ErrorAction SilentlyContinue).$Name
+    }
+    Set-ItemProperty -Path $regPath -Name $Name -Value $Value
 }
-Set-ItemProperty -Path $regPath -Name 'OcrEnabled'     -Value '1'
-Set-ItemProperty -Path $regPath -Name 'OcrAutoMode'    -Value '1'
-Set-ItemProperty -Path $regPath -Name 'OverlayVisible' -Value '1'
-Set-ItemProperty -Path $regPath -Name 'OcrDiskCache'   -Value '0'   # recompute every scene
 
 if (Test-Path $dump) { Remove-Item $dump }
 $env:FMS_OCR_DIAG = '1'
 $env:FMS_OCR_DIAG_FILE = $dump
 
+# The whole key, not only what is lent: see .DESCRIPTION. Without a usable export the per-value
+# restore below is all there is, and the run says so.
+$regKey    = 'HKCU\Software\VB and VBA Program Settings\SZA\FastMediaSorter'
+$regBackup = Join-Path $WorkDir 'settings-before.reg'
+& reg.exe export $regKey $regBackup /y 2>&1 | Out-Null
+$haveBackup = ($LASTEXITCODE -eq 0) -and (Test-Path $regBackup) -and ((Get-Item $regBackup).Length -gt 0)
+if (-not $haveBackup) { Write-Host 'No export of the settings key - only the values lent to the run will be put back.' }
+
+$stub = $null
 try {
-    $viewer = $null
-    foreach ($s in $scenes) {
-        if ($null -eq $viewer) {
-            $viewer = Start-Process -FilePath $exe -ArgumentList "`"$($s.FullName)`"" -PassThru
-            Start-Sleep -Seconds 6
-        } else {
-            # A second launch forwards the path to the running window (single instance).
-            Start-Process -FilePath $exe -ArgumentList "`"$($s.FullName)`"" -Wait
+    Lend-Setting 'OcrEnabled'     '1'
+    Lend-Setting 'OcrAutoMode'    '1'
+    Lend-Setting 'OverlayVisible' '1'
+    Lend-Setting 'OcrDiskCache'   '0'   # recompute every scene
+
+    # Phase 1 - the translator the user has configured.
+    if ($mainScenes.Count -gt 0) {
+        $viewer = $null
+        foreach ($s in $mainScenes) {
+            if ($null -eq $viewer) {
+                $viewer = Start-Process -FilePath $exe -ArgumentList "`"$($s.FullName)`"" -PassThru
+                Start-Sleep -Seconds 6
+            } else {
+                # A second launch forwards the path to the running window (single instance).
+                Start-Process -FilePath $exe -ArgumentList "`"$($s.FullName)`"" -Wait
+            }
+            Start-Sleep -Seconds $SecondsPerScene
+            Write-Host ("  {0,-32} done" -f $s.Name)
         }
-        Start-Sleep -Seconds $SecondsPerScene
-        Write-Host ("  {0,-32} done" -f $s.Name)
+        # The provider is read when a viewer starts, so phase 2 needs a new process.
+        Get-Process -Name FastMediaSorter_LITE -ErrorAction SilentlyContinue | Stop-Process -Force
+        Start-Sleep -Seconds 2
+    }
+
+    # Phase 2 - the stub translator, for the scenes that must reach the last rung.
+    if ($forcedScenes.Count -gt 0) {
+        $stub = Start-StubTranslator
+        Lend-Setting 'TranslateProvider'   'libretranslate'
+        Lend-Setting 'TranslateEndpoint'   "http://127.0.0.1:$($stub.Port)"
+        Lend-Setting 'TranslateTargetLang' 'en'
+        Write-Host "Forced scenes: stub translator on 127.0.0.1:$($stub.Port)"
+        $viewer = $null
+        foreach ($s in $forcedScenes) {
+            if ($null -eq $viewer) {
+                $viewer = Start-Process -FilePath $exe -ArgumentList "`"$($s.FullName)`"" -PassThru
+                Start-Sleep -Seconds 6
+            } else {
+                Start-Process -FilePath $exe -ArgumentList "`"$($s.FullName)`"" -Wait
+            }
+            $arrived = Wait-ForDumpLine $s.Name $SecondsPerScene
+            Write-Host ("  {0,-32} {1}" -f $s.Name, $(if ($arrived) { 'done' } else { 'no dump line in time' }))
+        }
+        $stubRequests = [int]$stub.State.Requests
+        if ($stub.State.Error) { Write-Host "  the stub reported: $($stub.State.Error)" }
     }
 } finally {
     Get-Process -Name FastMediaSorter_LITE -ErrorAction SilentlyContinue | Stop-Process -Force
+    Stop-StubTranslator $stub
     Start-Sleep -Seconds 2
     foreach ($n in $restore.Keys) {
-        if ($null -ne $restore[$n]) { Set-ItemProperty -Path $regPath -Name $n -Value $restore[$n] }
+        if ($null -ne $restore[$n]) {
+            Set-ItemProperty -Path $regPath -Name $n -Value $restore[$n]
+        } else {
+            Remove-ItemProperty -Path $regPath -Name $n -ErrorAction SilentlyContinue
+        }
+    }
+    if ($haveBackup) {
+        # Delete then import, so a value the viewer added during the run goes too. The export in
+        # WorkDir is kept either way: if the import fails it is the only copy left.
+        & reg.exe delete $regKey /f 2>&1 | Out-Null
+        & reg.exe import $regBackup 2>&1 | Out-Null
+        if ($LASTEXITCODE -ne 0) { Write-Host "  The settings import FAILED - the export is at $regBackup" }
     }
     Write-Host 'Settings restored.'
 }
@@ -354,8 +529,14 @@ foreach ($line in Get-Content $dump) {
     if ($maxCov -gt 0.52) { $failures += "${name}: a plate covers $($maxCov.ToString('F4')) of the frame" }
     # Rule 14: a plate whose last-rung flag is missing was not measured - a failure, not a 0.
     if ($unmeasured -gt 0) { $failures += "${name}: $unmeasured plate(s) carry no released flag - not measured" }
-    # Section 2: releasing is the last rung of the ladder and should not be reached on these scenes.
-    if ($released -gt 0) { $failures += "${name}: $released plate(s) reached the last rung (released)" }
+    # Section 2: releasing is the last rung of the ladder and should not be reached on these
+    # scenes - except on the one built to reach it (ticket 033 F2), where NOT reaching it is the
+    # failure: a scene that cannot force the rung proves nothing about the rung.
+    $mustRelease = $expected.ContainsKey($name) -and $expected[$name].ContainsKey('MinReleased')
+    if ($released -gt 0 -and -not $mustRelease) { $failures += "${name}: $released plate(s) reached the last rung (released)" }
+    if ($mustRelease -and $unmeasured -eq 0 -and $released -lt $expected[$name].MinReleased) {
+        $failures += "${name}: $released plate(s) released, expected at least $($expected[$name].MinReleased) - $($expected[$name].Why)"
+    }
     # Section 9: what the filter threw away, on a scene that DID produce plates. Not a
     # failure by itself - some refusals are the filter doing its job - but it is the number
     # the acceptance item asks for, and it used to be unobtainable without a second build.
@@ -384,6 +565,11 @@ foreach ($line in Get-Content $dump) {
 
 foreach ($s in $scenes) {
     if (-not $seen.ContainsKey($s.Name)) { $failures += "$($s.Name): never reached the overlay - no dump line" }
+}
+# A forced scene's long translation comes from the stub; if the stub was never asked, the
+# viewer used some other translator and the forced scenes measured something else.
+if ($forcedScenes.Count -gt 0 -and $stubRequests -eq 0) {
+    $failures += 'the viewer never asked the stub translator - the forced scenes did not run against it'
 }
 
 Write-Host ''

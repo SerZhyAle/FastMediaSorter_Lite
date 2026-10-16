@@ -25,7 +25,7 @@ Public Module MediaKindClassifier
 
     Private Function CreateCategories() As Dictionary(Of String, MediaKind)
         Dim result As New Dictionary(Of String, MediaKind)(StringComparer.OrdinalIgnoreCase)
-        AddCategory(result, MediaKind.Image, ".jpg .jpeg .png .webp .gif .bmp .avif .heic .heif .svg .tiff .ico .wmf .emf .tif .exif")
+        AddCategory(result, MediaKind.Image, ".jpg .jpeg .png .webp .gif .bmp .avif .heic .heif .jxl .svg .tiff .ico .wmf .emf .tif .exif")
         AddCategory(result, MediaKind.Video, ".mp4 .mkv .mov .webm .3gp .flv .wmv .m4v .avi .mpg .mpeg .ts .m2ts .vob .ogv .divx .m2v .mts .3g2 .asf")
         AddCategory(result, MediaKind.Audio, ".mp3 .m4a .flac .aac .ogg .wma .opus .amr .awb .ac3 .ec3 .ac4 .adts .thd .mka .oga .caf .alac .mia .mid .midi .wav .wave .m4b")
         AddCategory(result, MediaKind.Book, ".epub .pdf .cbz .cbr .fb2 .mobi")

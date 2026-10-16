@@ -95,6 +95,13 @@ Partial Public NotInheritable Class MainWindow
         Try
             Dim hit As ListViewHitTestInfo = lvFolders.HitTest(e.Location)
             _suppressCheck = (e.Clicks = 2 AndAlso hit IsNot Nothing AndAlso hit.Location <> ListViewHitTestLocations.StateImage)
+            If e.Button = MouseButtons.Right AndAlso hit IsNot Nothing AndAlso hit.Item IsNot Nothing Then
+                If Not hit.Item.Selected Then
+                    lvFolders.SelectedItems.Clear()
+                    hit.Item.Selected = True
+                    hit.Item.Focused = True
+                End If
+            End If
         Catch
         End Try
     End Sub
@@ -766,6 +773,7 @@ Partial Public NotInheritable Class MainWindow
             it.ForeColor = If(ThemePalette.RoleForColor(it.ForeColor, False) = ThemeRole.Danger,
                              theme.Danger, theme.TextPrimary)
         Next
+        RelayoutContent()
     End Sub
 
 End Class

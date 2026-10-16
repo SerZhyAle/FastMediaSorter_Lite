@@ -109,5 +109,32 @@ Public Class ExchangeConnectInputTests
         Assert.True(seen.Count >= 5, "the refusals that need a different remedy do not share one sentence")
     End Sub
 
+    ''' <summary>Ticket 239 CR-1 and CR-9, DEVICE-EXCHANGE items CZ and DA: the viewer's registration shows the row of the message table of
+    ''' each refusal, as the table has it - not one sentence for three causes, and no "update" request for a version refusal.</summary>
+    <Fact>
+    Public Sub A_registration_refusal_is_its_own_row_of_the_message_table_and_a_version_refusal_asks_for_no_update()
+        Dim saved As String = Localization.CurrentCode
+        Try
+            Localization.CurrentCode = "en"
+            Dim refused As ExchangeConsumerEnrollOutcome = ExchangeConsumerEnrollOutcome.Refused
+            Assert.Equal("This invitation does not work.", ExchangeEntryText.RegisterFailure(refused, ExchangeRefusal.InvitationInvalid))
+            Assert.Equal("This login is already taken. Choose another one.", ExchangeEntryText.RegisterFailure(refused, ExchangeRefusal.LoginTaken))
+            Assert.Equal("The password is too simple. Use at least 10 characters, with capital and small Latin letters and digits.",
+                         ExchangeEntryText.RegisterFailure(refused, ExchangeRefusal.PasswordPolicy))
+            Assert.Equal("The server refused this.", ExchangeEntryText.RegisterFailure(refused, ExchangeRefusal.Unknown))
+            ' a server older than the amendments of item AQ answers bad-credentials to all three: one sentence, not any of the three rows
+            Dim older As String = ExchangeEntryText.RegisterFailure(refused, ExchangeRefusal.BadCredentials)
+            Assert.NotEqual("", older)
+            For Each r As ExchangeRefusal In {ExchangeRefusal.InvitationInvalid, ExchangeRefusal.LoginTaken, ExchangeRefusal.PasswordPolicy}
+                Assert.NotEqual(older, ExchangeEntryText.RegisterFailure(refused, r))
+            Next
+            Dim version As String = "This program and the server speak different versions of the exchange."
+            Assert.Equal(version, ExchangeEntryText.EnrollFailure(refused, ExchangeRefusal.VersionUnsupported))
+            Assert.Equal(version, ExchangeEntryText.StateText(ExchangeAgentState.UpdateNeeded))
+        Finally
+            Localization.CurrentCode = saved
+        End Try
+    End Sub
+
 End Class
 #End If

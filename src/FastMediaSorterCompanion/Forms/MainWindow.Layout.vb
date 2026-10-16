@@ -116,7 +116,7 @@ Partial Public NotInheritable Class MainWindow
     ''' </summary>
     Private Sub BuildHeaderStrip()
         _pnlHeader = New TableLayoutPanel With {.Dock = DockStyle.Fill, .ColumnCount = 2,
-            .AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink, .Margin = New Padding(0, 0, 0, 6)}
+            .AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink, .Margin = New Padding(0, 0, 48, 6)}
         _pnlHeader.ColumnStyles.Add(New ColumnStyle(SizeType.Percent, 100.0F))
         _pnlHeader.ColumnStyles.Add(New ColumnStyle(SizeType.AutoSize))
 
@@ -147,7 +147,8 @@ Partial Public NotInheritable Class MainWindow
         ' whether the folders stay reachable - the service does (§6, "availability is not
         ' hidden behind a fold"). In User mode HostModeLine is empty and the row collapses.
         lblHosting = New Label With {.AutoSize = True, .Anchor = AnchorStyles.Left, .Visible = False,
-            .ForeColor = SystemColors.GrayText, .Margin = New Padding(0, 1, 0, 0)}
+            .ForeColor = SystemColors.GrayText, .Margin = New Padding(0, 1, 0, 0), .Cursor = Cursors.Hand}
+        AddHandler lblHosting.Click, AddressOf OnHostingClicked
         ' Instruction on the first run, wallpaper on every later one (decision D): it takes
         ' the state line's place only while there is nothing shared to describe.
         lblIntro = New Label With {.AutoSize = True, .Anchor = AnchorStyles.Left,
@@ -161,7 +162,7 @@ Partial Public NotInheritable Class MainWindow
         state.SetColumnSpan(lblIntro, 2)
 
         Dim actions As New FlowLayoutPanel With {.AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink,
-            .WrapContents = False, .Anchor = AnchorStyles.Right, .Margin = New Padding(0)}
+            .WrapContents = False, .Anchor = AnchorStyles.Right, .Margin = New Padding(0), .Tag = "no-wrap"}
 
         ' Gear + word, not the gear alone: an icon-only button says what it does only to
         ' someone who hovers it, and this one is the way into every machine-level setting
@@ -203,20 +204,77 @@ Partial Public NotInheritable Class MainWindow
         _pnlList = New Panel With {.Dock = DockStyle.Fill, .Margin = New Padding(0)}
 
         _pnlListButtons = New FlowLayoutPanel With {.Dock = DockStyle.Top, .AutoSize = True,
-            .AutoSizeMode = AutoSizeMode.GrowAndShrink, .Padding = New Padding(0, 0, 0, 6)}
-        btnAdd = New Button With {.AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink, .Padding = New Padding(10, 5, 12, 5), .Text = Localization.T("Добавить папку.."),
-            .TextAlign = ContentAlignment.MiddleCenter, .Font = _fontBold}
+            .AutoSizeMode = AutoSizeMode.GrowAndShrink, .WrapContents = False, .Tag = "no-wrap", .Padding = New Padding(0, 0, 0, 6)}
+        _pnlListButtons.WrapContents = False
+        btnAdd = New Button With {.Name = "btnAdd", .AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink, .Padding = New Padding(10, 5, 8, 5), .Text = Localization.T("Добавить.."),
+            .TextAlign = ContentAlignment.MiddleCenter, .Font = _fontBold, .Margin = New Padding(0, 0, 1, 0)}
         ButtonGlyphs.Apply(btnAdd, "action.add")
-        btnAddCurrent = New Button With {.AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink, .Padding = New Padding(8, 5, 8, 5), .Text = Localization.T("+ Текущая"), .Visible = _initialFolder.Length > 0}
-        btnRemove = New Button With {.AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink, .Padding = New Padding(10, 5, 10, 5), .Text = Localization.T("Убрать")}
-        ' Disabled until a row is selected: it edits THE selected folder, and a button that
-        ' silently does nothing is worse than one that shows it has nothing to act on.
-        btnParams = New Button With {.AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink, .Padding = New Padding(10, 5, 10, 5),
-            .Text = Localization.T("Редактировать"), .Enabled = False}
+
+        btnAddDrop = New Button With {.Name = "btnAddDrop", .AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink, .Padding = New Padding(4, 5, 4, 5), .Text = "▾",
+            .TextAlign = ContentAlignment.MiddleCenter, .Font = _fontBold, .Margin = New Padding(0, 0, 8, 0)}
+
+        _addMenu = New ContextMenuStrip()
+        Dim mnuAddFolder As New ToolStripMenuItem(Localization.T("Папку.."))
+        AddHandler mnuAddFolder.Click, AddressOf OnAddFolder
+
+        Dim mnuAddCurrent As New ToolStripMenuItem(Localization.T("+ Текущая"))
+        AddHandler mnuAddCurrent.Click, AddressOf OnAddCurrentFolder
+        mnuAddCurrent.Visible = _initialFolder.Length > 0
+
+        Dim mnuAddDisk As New ToolStripMenuItem(Localization.T("Диски .fdd.."))
+        AddHandler mnuAddDisk.Click, AddressOf OnDisksClicked
+
+        mnuAddBroadcast = New ToolStripMenuItem(Localization.T("Трансляции.."))
+        AddHandler mnuAddBroadcast.Click, AddressOf OnBroadcastsClicked
+        mnuAddBroadcast.Visible = False
+
+        Dim mnuAddWizard As New ToolStripMenuItem(Localization.T("Мастер добавления ресурса.."))
+        AddHandler mnuAddWizard.Click, Async Sub() Await OpenResourceAddAsync(Me, ResourceAddEntry.AddButton)
+
+        _addMenu.Items.Add(mnuAddFolder)
+        _addMenu.Items.Add(mnuAddCurrent)
+        _addMenu.Items.Add(mnuAddDisk)
+        _addMenu.Items.Add(mnuAddBroadcast)
+        _addMenu.Items.Add(New ToolStripSeparator())
+        _addMenu.Items.Add(mnuAddWizard)
+
+        AddHandler _addMenu.Opening,
+            Sub()
+                mnuAddBroadcast.Visible = (btnBroadcasts IsNot Nothing AndAlso btnBroadcasts.Visible)
+                If _initialFolder.Length > 0 Then
+                    mnuAddCurrent.Text = Localization.T("+ Текущая") & ": " & System.IO.Path.GetFileName(_initialFolder)
+                    mnuAddCurrent.Visible = True
+                Else
+                    mnuAddCurrent.Visible = False
+                End If
+                Dim iconSize As Integer = LogicalToDeviceUnits(16)
+                Dim opener As Func(Of String, System.IO.Stream) = AddressOf CompanionAssets.OpenBundledAsset
+                RenderMenuItemGlyph(mnuAddFolder, "action.add", iconSize, opener)
+                RenderMenuItemGlyph(mnuAddCurrent, "action.add", iconSize, opener)
+                RenderMenuItemGlyph(mnuAddDisk, "content.disk-container", iconSize, opener)
+                RenderMenuItemGlyph(mnuAddBroadcast, "media.cast", iconSize, opener)
+                RenderMenuItemGlyph(mnuAddWizard, "app.settings", iconSize, opener)
+            End Sub
+        AddHandler _addMenu.Disposed,
+            Sub()
+                mnuAddFolder.Image?.Dispose()
+                mnuAddCurrent.Image?.Dispose()
+                mnuAddDisk.Image?.Dispose()
+                mnuAddBroadcast.Image?.Dispose()
+                mnuAddWizard.Image?.Dispose()
+            End Sub
+
+        AddHandler btnAdd.Click, AddressOf OnAddFolder
+        AddHandler btnAddDrop.Click, Sub()
+            _addMenu.Show(btnAdd, New Point(0, btnAdd.Height))
+        End Sub
+
+        btnAddCurrent = New Button With {.AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink, .Padding = New Padding(8, 5, 8, 5), .Text = Localization.T("+ Текущая"), .Visible = False}
+        btnRemove = New Button With {.Name = "btnRemove", .AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink, .Padding = New Padding(10, 5, 10, 5), .Text = Localization.T("Убрать"), .Margin = New Padding(0, 0, 8, 0)}
+        btnParams = New Button With {.Name = "btnParams", .AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink, .Padding = New Padding(10, 5, 10, 5),
+            .Text = Localization.T("Редактировать"), .Enabled = False, .Margin = New Padding(0, 0, 4, 0)}
         btnOutsideAccess = New Button With {.AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink, .Padding = New Padding(10, 5, 10, 5),
-            .Text = Localization.T("Дать доступ наружу.."), .Enabled = False}
-        ' Absent, not disabled, until the build offers the page AND the worker states it serves it (spec 159):
-        ' ApplyStatusToUi is the one place that shows it.
+            .Text = Localization.T("Дать доступ наружу.."), .Enabled = False, .Visible = False}
         btnBroadcasts = New Button With {.AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink, .Padding = New Padding(10, 5, 10, 5),
             .Text = Localization.T("Трансляции.."), .Visible = False}
         ButtonGlyphs.Apply(btnAddCurrent, "action.add")
@@ -224,7 +282,6 @@ Partial Public NotInheritable Class MainWindow
         ButtonGlyphs.Apply(btnParams, "action.edit")
         ButtonGlyphs.Apply(btnOutsideAccess, "action.share")
         ButtonGlyphs.Apply(btnBroadcasts, "media.cast")
-        AddHandler btnAdd.Click, AddressOf OnAddFolder
         AddHandler btnAddCurrent.Click, AddressOf OnAddCurrentFolder
         AddHandler btnRemove.Click, AddressOf OnRemoveFolder
         AddHandler btnParams.Click, AddressOf OnConfigureFolder
@@ -232,20 +289,22 @@ Partial Public NotInheritable Class MainWindow
         AddHandler btnBroadcasts.Click, AddressOf OnBroadcastsClicked
         btnDisks = New Button With {.AutoSize = True, .Padding = New Padding(10, 5, 12, 5),
             .Text = Localization.T("Диски .fdd.."),
-            .TextAlign = ContentAlignment.MiddleCenter}
+            .TextAlign = ContentAlignment.MiddleCenter, .Visible = False}
         ButtonGlyphs.Apply(btnDisks, "content.disk-container")
         AddHandler btnDisks.Click, AddressOf OnDisksClicked
-        ' Spec 227 rule 1: the phone's connection code - paste, file, clipboard screenshot or camera -
-        ' read by the same readers and relayed to the viewer's import door.
-        btnPhoneCode = New Button With {.AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink,
+        btnPhoneCode = New Button With {.Name = "btnPhoneCode", .AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink,
             .Padding = New Padding(10, 5, 12, 5),
             .Text = Localization.T("Код телефона.."),
-            .TextAlign = ContentAlignment.MiddleCenter}
+            .TextAlign = ContentAlignment.MiddleCenter,
+            .Margin = New Padding(0, 0, 0, 0)}
         ButtonGlyphs.Apply(btnPhoneCode, "device.phone")
         AddHandler btnPhoneCode.Click, Async Sub() Await OpenPhoneCodeIntakeAsync()
-        _pnlListButtons.Controls.AddRange(New Control() {btnAdd, btnAddCurrent, btnPhoneCode, btnDisks, btnRemove, btnParams, btnOutsideAccess, btnBroadcasts})
-        ' Spec 230: the clipboard through the server - absent without an account (MainWindow.Clipboard.vb).
-        _pnlListButtons.Controls.AddRange(BuildClipboardButtons())
+
+        Dim clipControls As Control() = BuildClipboardButtons()
+        Dim listButtons As New List(Of Control)() From {btnAdd, btnAddDrop}
+        listButtons.AddRange(clipControls)
+        listButtons.AddRange(New Control() {btnParams, btnRemove, btnPhoneCode})
+        _pnlListButtons.Controls.AddRange(listButtons.ToArray())
 
         ' ShowItemToolTips: a row the service account cannot read is coloured and explains
         ' itself on hover (RefreshFolderAccessWarnings) - without this flag the item tooltip
@@ -272,6 +331,7 @@ Partial Public NotInheritable Class MainWindow
         AddHandler lvFolders.ItemCheck, AddressOf OnItemCheck
         AddHandler lvFolders.ItemChecked, AddressOf OnItemChecked
         AddHandler lvFolders.DoubleClick, AddressOf OnConfigureFolder
+        AddHandler lvFolders.ClientSizeChanged, Sub() UpdateFolderColumnWidths()
         BuildDiskMenu()
 
         ' Fill first, then the docked button row - see the docking note in BuildUi.
@@ -358,7 +418,7 @@ Partial Public NotInheritable Class MainWindow
         Dim saved As String = If(_settings.ExpandedSections, "")
         Dim open As New HashSet(Of String)(saved.Split(","c), StringComparer.OrdinalIgnoreCase)
         For Each sec As CollapsibleSection In Sections()
-            sec.Expanded = open.Contains(sec.Key)
+            sec.Expanded = open.Contains(sec.Key) AndAlso Not String.Equals(sec.Key, "stats", StringComparison.OrdinalIgnoreCase)
         Next
         _sectionsRestored = True
     End Sub
@@ -377,6 +437,11 @@ Partial Public NotInheritable Class MainWindow
     ''' read as broken.</summary>
     Private Sub OnSectionExpandedChanged(sender As Object, e As EventArgs)
         If Not _sectionsRestored Then Return
+        If sender Is _secStats AndAlso _secStats.Expanded Then
+            _secStats.Expanded = False
+            OnStatsDetailsClicked(_secStats, EventArgs.Empty)
+            Return
+        End If
         SetPasswordRevealed(_secAccess IsNot Nothing AndAlso _secAccess.Expanded AndAlso _passwordRevealed)
         TryGrowForSections()
         RelayoutContent()
@@ -429,10 +494,19 @@ Partial Public NotInheritable Class MainWindow
         Return buttons + LogicalToDeviceUnits(92)
     End Function
 
+    ''' <summary>Spec 237 Rule L-1: dynamic list height sized to (Items.Count + 1) rows, capped at 8 rows.</summary>
+    Private Function DesiredListHeight() As Integer
+        Dim count As Integer = If(lvFolders Is Nothing, 0, Math.Max(1, lvFolders.Items.Count + 1))
+        count = Math.Min(count, 8)
+        Dim buttons As Integer = If(_pnlListButtons Is Nothing, 0, _pnlListButtons.Height)
+        Dim rowHeight As Integer = LogicalToDeviceUnits(22)
+        Dim headerHeight As Integer = LogicalToDeviceUnits(26)
+        Return buttons + headerHeight + (count * rowHeight) + LogicalToDeviceUnits(10)
+    End Function
+
     ''' <summary>
-    ''' Gives the list every pixel the header and the sections did not take, but never less
-    ''' than three rows. When even that does not fit, the root panel's AutoScroll takes over
-    ''' - a single Percent column, so a vertical scrollbar can never trigger a horizontal one.
+    ''' Gives the list the remaining available space down to the sections, but never less than MinimumListHeight.
+    ''' Sections hug the bottom above the status strip, eliminating any dead empty space.
     ''' </summary>
     Private Sub RelayoutContent()
         If _root Is Nothing OrElse _relayouting Then Return
@@ -450,9 +524,20 @@ Partial Public NotInheritable Class MainWindow
                 style.SizeType = SizeType.Absolute
                 style.Height = height
             End If
+            UpdateFolderColumnWidths()
         Catch
         Finally
             _relayouting = False
+        End Try
+    End Sub
+
+    Private Sub UpdateFolderColumnWidths()
+        Try
+            If lvFolders Is Nothing OrElse lvFolders.Columns.Count < 4 Then Return
+            Dim fixedWidths As Integer = lvFolders.Columns(0).Width + lvFolders.Columns(1).Width + lvFolders.Columns(3).Width
+            Dim availableFolderWidth As Integer = lvFolders.ClientSize.Width - fixedWidths - SystemInformation.VerticalScrollBarWidth
+            lvFolders.Columns(2).Width = Math.Max(LogicalToDeviceUnits(250), availableFolderWidth)
+        Catch
         End Try
     End Sub
 
@@ -566,11 +651,14 @@ Partial Public NotInheritable Class MainWindow
             If _root IsNot Nothing AndAlso _wideMode Then
                 _root.ColumnStyles(1) = New ColumnStyle(SizeType.Absolute, CSng(LogicalToDeviceUnits(SectionsColumnWidth)))
             End If
+            If _pnlHeader IsNot Nothing Then
+                _pnlHeader.Margin = New Padding(0, 0, LogicalToDeviceUnits(48), LogicalToDeviceUnits(6))
+            End If
             If lvFolders Is Nothing OrElse lvFolders.Columns.Count < 4 Then Return
             lvFolders.Columns(0).Width = LogicalToDeviceUnits(170)
             lvFolders.Columns(1).Width = LogicalToDeviceUnits(130)
-            lvFolders.Columns(2).Width = LogicalToDeviceUnits(300)
             lvFolders.Columns(3).Width = LogicalToDeviceUnits(50)
+            UpdateFolderColumnWidths()
         Catch
         End Try
     End Sub
@@ -612,6 +700,13 @@ Partial Public NotInheritable Class MainWindow
         Return GlyphRenderer.Render(glyphId, LogicalToDeviceUnits(logicalTier), ThemeService.Palette.TextPrimary,
                                    AddressOf CompanionAssets.OpenBundledAsset)
     End Function
+
+    Friend Shared Sub RenderMenuItemGlyph(item As ToolStripMenuItem, glyphId As String, size As Integer, opener As Func(Of String, System.IO.Stream))
+        If item Is Nothing OrElse String.IsNullOrEmpty(glyphId) Then Return
+        Dim old As Image = item.Image
+        item.Image = GlyphRenderer.Render(glyphId, size, item.ForeColor, opener)
+        old?.Dispose()
+    End Sub
 
     ''' <summary>Reveal-password eye, drawn at <paramref name="size"/> px (authored for 16 px).
     ''' Still code-drawn: the vocabulary has no reveal-password meaning yet (spec 027, the

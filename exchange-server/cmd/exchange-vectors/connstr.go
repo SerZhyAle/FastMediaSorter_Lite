@@ -3,6 +3,7 @@ package main
 import (
 	"crypto/sha256"
 	"encoding/base64"
+	"fmt"
 	"strings"
 
 	"fms/exchange-server/internal/connstr"
@@ -196,29 +197,36 @@ func connVectors() connFile {
 	valid("name-64-ascii", "a name of exactly 64 characters", dns, "", strings.Repeat("n", 64), "")
 	valid("name-64-cyrillic", "64 scalar values of two bytes each: 64 characters, 384 once encoded", dns, "", strings.Repeat("ж", 64), "")
 	valid("name-4-byte-scalars", "a name of 4-byte scalar values (the count is scalar values, not bytes or UTF-16 units)", dns, "", strings.Repeat("\U0001F600", 12), "")
-	// exactly 512 characters: search a name (64 scalars: j two-byte letters and 64-j ASCII) and a login length
-	{
-		found := false
-	search:
+	// exactly 512 characters: search a name (64 scalars: j two-byte letters and 64-j ASCII) and a login length. The writer
+	// shortens a name that does not fit (item BO), so a hit counts only when the name came back whole.
+	exact512 := func(letter string) (name, login string, text string) {
 		for j := 0; j <= 64; j++ {
 			for l := 3; l <= 64; l++ {
-				n := strings.Repeat("é", j) + strings.Repeat("a", 64-j)
+				n := strings.Repeat(letter, j) + strings.Repeat("a", 64-j)
 				c, err := connstr.New(dns, fpB, n, strings.Repeat("u", l))
 				if err != nil {
 					continue
 				}
-				text, err := c.String()
-				if err == nil && len(text) == connstr.MaxText {
-					valid("length-512", "exactly 512 characters: the longest string a writer may write", dns, fpB, n, strings.Repeat("u", l))
-					found = true
-					break search
+				s, err := c.String()
+				if err != nil || len(s) != connstr.MaxText {
+					continue
+				}
+				if back, perr := connstr.Parse(s); perr == nil && back.Name == n {
+					return n, strings.Repeat("u", l), s
 				}
 			}
 		}
-		if !found {
-			failf("no combination reaches exactly 512 characters")
-		}
+		failf("no combination reaches exactly 512 characters with %q", letter)
+		return "", "", ""
 	}
+	{
+		n, l, _ := exact512("é")
+		valid("length-512", "exactly 512 characters: the longest string a writer may write", dns, fpB, n, l)
+	}
+	// the Cyrillic name at the edge of both limits (item BO): 64 letters is the name limit, 512 characters the text limit
+	valid("name-zero-width-joiners", "U+200C and U+200D are not refused: names in several scripts and emoji sequences need them", dns, "", "Home‌Ж‍\U0001F468‍\U0001F469", "")
+	cyrName, cyrLogin, cyrText := exact512("ж")
+	valid("length-512-cyrillic", "exactly 512 characters with a Cyrillic name (six characters per letter once encoded)", dns, fpB, cyrName, cyrLogin)
 
 	// ---- tolerated ---------------------------------------------------------------------------
 	T2 := func(name, note, s string) { tolerated(name, note, "text", []byte(s)) }
@@ -307,6 +315,12 @@ func connVectors() connFile {
 	T("name-empty", "n with no value", xdns+"&n=", connstr.RefusedBadName)
 	T("name-65", "65 characters", xdns+"&n="+strings.Repeat("n", 65), connstr.RefusedBadName)
 	T("name-control", "a control character (category Cc) after decoding", xdns+"&n=a%0Ab", connstr.RefusedBadName)
+	T("name-65-cyrillic", "65 Cyrillic letters: one over the name limit, whatever the encoded length", xdns+"&n="+esc(strings.Repeat("ж", 65)), connstr.RefusedBadName)
+	T("over-512-cyrillic", "the 512-character Cyrillic string with one more character on its last member", cyrText+"a", connstr.RefusedTooLong)
+	// item BO: a bidirectional formatting control makes a name read as something else beside the destination
+	for _, r := range []rune{0x061C, 0x200E, 0x200F, 0x202A, 0x202B, 0x202C, 0x202D, 0x202E, 0x2066, 0x2067, 0x2068, 0x2069} {
+		T(fmt.Sprintf("name-bidi-U+%04X", r), "a bidirectional formatting control after decoding (item BO)", xdns+"&n="+esc("Home"+string(r)+"NAS"), connstr.RefusedBadName)
+	}
 	T("login-2", "two characters", xdns+"&u=ab", connstr.RefusedBadLogin)
 	T("login-65", "65 characters", xdns+"&u="+strings.Repeat("u", 65), connstr.RefusedBadLogin)
 	T("login-space", "a space", xdns+"&u=al%20ce", connstr.RefusedBadLogin)

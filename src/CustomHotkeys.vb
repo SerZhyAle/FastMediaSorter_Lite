@@ -199,8 +199,8 @@ Public NotInheritable Class CustomHotkeys
 
         Dim text As New StringBuilder()
         If (keyData And Keys.Control) = Keys.Control Then text.Append("Ctrl+")
-        If (keyData And Keys.Alt) = Keys.Alt Then text.Append("Alt+")
         If (keyData And Keys.Shift) = Keys.Shift Then text.Append("Shift+")
+        If (keyData And Keys.Alt) = Keys.Alt Then text.Append("Alt+")
         text.Append(KeyName(code))
         Return text.ToString()
     End Function
@@ -208,6 +208,7 @@ Public NotInheritable Class CustomHotkeys
     ''' <summary>The reverse, tolerant of case and spacing. Keys.None when the text does
     ''' not name a usable combination - a hand-edited profile is data, not a crash.</summary>
     Public Shared Function Parse(text As String) As Keys
+        text = Canonical(text)
         If String.IsNullOrWhiteSpace(text) Then Return Keys.None
 
         ' Modifiers are stripped from the front one at a time rather than the string
@@ -249,10 +250,40 @@ Public NotInheritable Class CustomHotkeys
         Return True
     End Function
 
-    ''' <summary>Same combination, spelled the one way this class spells it. "" when the
-    ''' text names nothing usable.</summary>
+    ''' <summary>Recognized notation, independent of assignment policy. "" when the
+    ''' text contains no single recognized trigger.</summary>
     Public Shared Function Canonical(text As String) As String
-        Return Format(Parse(text))
+        If String.IsNullOrWhiteSpace(text) Then Return String.Empty
+        ' INPUT-CHORD rules 1-3: notation is independent of assignment policy. Win and
+        ' reserved OS chords can be spelled even though this viewer cannot bind them.
+        ' Keep the old viewer-only trigger vocabulary readable (Num +, arrows, OEM and
+        ' media keys); it must not make an unknown token disappear into another chord.
+        Dim rest As String = text.Trim()
+        Dim ctrl, shift, alt, win As Boolean
+        Do
+            rest = rest.Trim()
+            If rest.StartsWith("+", StringComparison.Ordinal) Then
+                rest = rest.Substring(1)
+            ElseIf TryStripModifier(rest, "ctrl") OrElse TryStripModifier(rest, "control") Then
+                ctrl = True
+            ElseIf TryStripModifier(rest, "shift") Then
+                shift = True
+            ElseIf TryStripModifier(rest, "alt") Then
+                alt = True
+            ElseIf TryStripModifier(rest, "win") OrElse TryStripModifier(rest, "meta") OrElse TryStripModifier(rest, "super") Then
+                win = True
+            Else
+                Exit Do
+            End If
+        Loop
+        ' The legacy Add spelling contains a literal plus; preserve it before trimming
+        ' tolerated trailing separators. A second trigger still fails KeyFromName.
+        If Not String.Equals(rest, "Num +", StringComparison.OrdinalIgnoreCase) Then rest = rest.TrimEnd("+"c, " "c)
+        If rest.StartsWith("NumPad", StringComparison.OrdinalIgnoreCase) Then Return String.Empty
+        Dim code As Keys = KeyFromName(rest)
+        If Not IsAssignableKey(code) Then Return String.Empty
+        Dim trigger As String = If(code = Keys.Escape, "Esc", KeyName(code))
+        Return If(ctrl, "Ctrl+", "") & If(shift, "Shift+", "") & If(alt, "Alt+", "") & If(win, "Win+", "") & trigger
     End Function
 
     ''' <summary>
@@ -265,7 +296,7 @@ Public NotInheritable Class CustomHotkeys
     Public Shared Function IsReserved(keyData As Keys) As Boolean
         Dim code As Keys = keyData And Keys.KeyCode
         Select Case code
-            Case Keys.F11, Keys.F10, Keys.Escape, Keys.LWin, Keys.RWin, Keys.Apps : Return True
+            Case Keys.F11, Keys.F10, Keys.F1, Keys.Escape, Keys.LWin, Keys.RWin, Keys.Apps : Return True
             Case Keys.Tab
                 If (keyData And Keys.Alt) = Keys.Alt Then Return True
             Case Keys.F4
@@ -277,6 +308,7 @@ Public NotInheritable Class CustomHotkeys
     End Function
 
     Private Shared Function IsAssignableKey(code As Keys) As Boolean
+        If (code And Keys.KeyCode) <> code Then Return False
         Select Case code
             Case Keys.None, Keys.ControlKey, Keys.ShiftKey, Keys.Menu,
                  Keys.LControlKey, Keys.RControlKey, Keys.LShiftKey, Keys.RShiftKey,
@@ -332,10 +364,14 @@ Public NotInheritable Class CustomHotkeys
             Case "num *" : Return Keys.Multiply
             Case "num /" : Return Keys.Divide
             Case "num ." : Return Keys.Decimal
-            Case "pagedown" : Return Keys.Next
-            Case "pageup" : Return Keys.Prior
+            Case "pagedown", "pgdn" : Return Keys.Next
+            Case "pageup", "pgup" : Return Keys.Prior
             Case "backspace" : Return Keys.Back
-            Case "enter" : Return Keys.Return
+            Case "enter", "return" : Return Keys.Return
+            Case "esc", "escape" : Return Keys.Escape
+            Case "del" : Return Keys.Delete
+            Case "ins" : Return Keys.Insert
+            Case "prtsc", "prtscn", "printscreen" : Return Keys.PrintScreen
             Case "space" : Return Keys.Space
                 ' The aliases whose enum name is not what ToString() reports - the generic
                 ' TryParse below would refuse them (119 playback defaults).
@@ -360,9 +396,9 @@ Public NotInheritable Class CustomHotkeys
     ' ------------------------------------------------------------------- store ----
 
     ''' <summary>
-    ''' The overrides in the profile, cleaned up: unknown ids, unusable or reserved
-    ''' combinations and duplicates are dropped, and an "override" that just restates the
-    ''' default is dropped too - the map is the list of what the user CHANGED.
+    ''' Unknown ids and redundant defaults are dropped. An unusable, reserved or duplicate
+    ''' stored binding stays explicitly disabled: INPUT-CHORD rule 3 forbids resurrecting
+    ''' its factory action. Old spellings are normalized without changing their key.
     ''' </summary>
     Public Shared Function Load(json As String) As Dictionary(Of String, String)
         Dim map As New Dictionary(Of String, String)(StringComparer.Ordinal)
@@ -388,9 +424,15 @@ Public NotInheritable Class CustomHotkeys
             End If
 
             Dim combo As String = Canonical(stored)
-            If combo.Length = 0 Then Continue For
+            If combo.Length = 0 OrElse Parse(combo) = Keys.None Then
+                map(action.Id) = NoShortcut
+                Continue For
+            End If
             If String.Equals(combo, Canonical(action.DefaultCombo), StringComparison.OrdinalIgnoreCase) Then Continue For
-            If Not claimed.Add(combo) Then Continue For
+            If Not claimed.Add(combo) Then
+                map(action.Id) = NoShortcut
+                Continue For
+            End If
             map(action.Id) = combo
         Next
         Return map
@@ -404,7 +446,8 @@ Public NotInheritable Class CustomHotkeys
                 If map.TryGetValue(action.Id, combo) AndAlso Not String.IsNullOrEmpty(combo) Then ordered(action.Id) = combo
             Next
         End If
-        Return JsonSerializer.Serialize(ordered)
+        ' Normalize hand-built maps as well as loaded profiles on every write.
+        Return JsonSerializer.Serialize(Load(JsonSerializer.Serialize(ordered)))
     End Function
 
     ''' <summary>What the action answers to right now.</summary>

@@ -309,6 +309,36 @@
       }
     },
     {
+      "name": "name-zero-width-joiners",
+      "kind": "text",
+      "note": "U+200C and U+200D are not refused: names in several scripts and emoji sequences need them",
+      "input": "FMSEXCH1:x=exchange.example.org%3A22022&n=Home%E2%80%8C%D0%96%E2%80%8D%F0%9F%91%A8%E2%80%8D%F0%9F%91%A9",
+      "verdict": "valid",
+      "canonical": "FMSEXCH1:x=exchange.example.org%3A22022&n=Home%E2%80%8C%D0%96%E2%80%8D%F0%9F%91%A8%E2%80%8D%F0%9F%91%A9",
+      "fields": {
+        "x": "exchange.example.org:22022",
+        "host": "exchange.example.org",
+        "port": 22022,
+        "n": "Home‌Ж‍👨‍👩"
+      }
+    },
+    {
+      "name": "length-512-cyrillic",
+      "kind": "text",
+      "note": "exactly 512 characters with a Cyrillic name (six characters per letter once encoded)",
+      "input": "FMSEXCH1:x=exchange.example.org%3A22022&fp=SHA256%3A%2B%2B%2B%2B%2F%2F%2F%2FNA%2BxR01JbXXB5CJm2pgMG7SRVTB8msjcGFw&n=%D0%B6%D0%B6%D0%B6%D0%B6%D0%B6%D0%B6%D0%B6%D0%B6%D0%B6%D0%B6%D0%B6%D0%B6%D0%B6%D0%B6%D0%B6%D0%B6%D0%B6%D0%B6%D0%B6%D0%B6%D0%B6%D0%B6%D0%B6%D0%B6%D0%B6%D0%B6%D0%B6%D0%B6%D0%B6%D0%B6%D0%B6%D0%B6%D0%B6%D0%B6%D0%B6%D0%B6%D0%B6%D0%B6%D0%B6%D0%B6%D0%B6%D0%B6%D0%B6%D0%B6%D0%B6%D0%B6%D0%B6%D0%B6%D0%B6%D0%B6%D0%B6%D0%B6%D0%B6aaaaaaaaaaa&u=uuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuu",
+      "verdict": "valid",
+      "canonical": "FMSEXCH1:x=exchange.example.org%3A22022&fp=SHA256%3A%2B%2B%2B%2B%2F%2F%2F%2FNA%2BxR01JbXXB5CJm2pgMG7SRVTB8msjcGFw&n=%D0%B6%D0%B6%D0%B6%D0%B6%D0%B6%D0%B6%D0%B6%D0%B6%D0%B6%D0%B6%D0%B6%D0%B6%D0%B6%D0%B6%D0%B6%D0%B6%D0%B6%D0%B6%D0%B6%D0%B6%D0%B6%D0%B6%D0%B6%D0%B6%D0%B6%D0%B6%D0%B6%D0%B6%D0%B6%D0%B6%D0%B6%D0%B6%D0%B6%D0%B6%D0%B6%D0%B6%D0%B6%D0%B6%D0%B6%D0%B6%D0%B6%D0%B6%D0%B6%D0%B6%D0%B6%D0%B6%D0%B6%D0%B6%D0%B6%D0%B6%D0%B6%D0%B6%D0%B6aaaaaaaaaaa&u=uuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuu",
+      "fields": {
+        "x": "exchange.example.org:22022",
+        "host": "exchange.example.org",
+        "port": 22022,
+        "fp": "SHA256:++++////NA+xR01JbXXB5CJm2pgMG7SRVTB8msjcGFw",
+        "n": "жжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжaaaaaaaaaaa",
+        "u": "uuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuu"
+      }
+    },
+    {
       "name": "white-space-around",
       "kind": "text",
       "note": "a clipboard or a chat adds white space and a line break",
@@ -987,6 +1017,118 @@
       "kind": "text",
       "note": "a control character (category Cc) after decoding",
       "input": "FMSEXCH1:x=exchange.example.org%3A22022&n=a%0Ab",
+      "verdict": "refused",
+      "reason": "bad-n"
+    },
+    {
+      "name": "name-65-cyrillic",
+      "kind": "text",
+      "note": "65 Cyrillic letters: one over the name limit, whatever the encoded length",
+      "input": "FMSEXCH1:x=exchange.example.org%3A22022&n=%D0%B6%D0%B6%D0%B6%D0%B6%D0%B6%D0%B6%D0%B6%D0%B6%D0%B6%D0%B6%D0%B6%D0%B6%D0%B6%D0%B6%D0%B6%D0%B6%D0%B6%D0%B6%D0%B6%D0%B6%D0%B6%D0%B6%D0%B6%D0%B6%D0%B6%D0%B6%D0%B6%D0%B6%D0%B6%D0%B6%D0%B6%D0%B6%D0%B6%D0%B6%D0%B6%D0%B6%D0%B6%D0%B6%D0%B6%D0%B6%D0%B6%D0%B6%D0%B6%D0%B6%D0%B6%D0%B6%D0%B6%D0%B6%D0%B6%D0%B6%D0%B6%D0%B6%D0%B6%D0%B6%D0%B6%D0%B6%D0%B6%D0%B6%D0%B6%D0%B6%D0%B6%D0%B6%D0%B6%D0%B6%D0%B6",
+      "verdict": "refused",
+      "reason": "bad-n"
+    },
+    {
+      "name": "over-512-cyrillic",
+      "kind": "text",
+      "note": "the 512-character Cyrillic string with one more character on its last member",
+      "input": "FMSEXCH1:x=exchange.example.org%3A22022&fp=SHA256%3A%2B%2B%2B%2B%2F%2F%2F%2FNA%2BxR01JbXXB5CJm2pgMG7SRVTB8msjcGFw&n=%D0%B6%D0%B6%D0%B6%D0%B6%D0%B6%D0%B6%D0%B6%D0%B6%D0%B6%D0%B6%D0%B6%D0%B6%D0%B6%D0%B6%D0%B6%D0%B6%D0%B6%D0%B6%D0%B6%D0%B6%D0%B6%D0%B6%D0%B6%D0%B6%D0%B6%D0%B6%D0%B6%D0%B6%D0%B6%D0%B6%D0%B6%D0%B6%D0%B6%D0%B6%D0%B6%D0%B6%D0%B6%D0%B6%D0%B6%D0%B6%D0%B6%D0%B6%D0%B6%D0%B6%D0%B6%D0%B6%D0%B6%D0%B6%D0%B6%D0%B6%D0%B6%D0%B6%D0%B6aaaaaaaaaaa&u=uuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuua",
+      "verdict": "refused",
+      "reason": "too-long"
+    },
+    {
+      "name": "name-bidi-U+061C",
+      "kind": "text",
+      "note": "a bidirectional formatting control after decoding (item BO)",
+      "input": "FMSEXCH1:x=exchange.example.org%3A22022&n=Home%D8%9CNAS",
+      "verdict": "refused",
+      "reason": "bad-n"
+    },
+    {
+      "name": "name-bidi-U+200E",
+      "kind": "text",
+      "note": "a bidirectional formatting control after decoding (item BO)",
+      "input": "FMSEXCH1:x=exchange.example.org%3A22022&n=Home%E2%80%8ENAS",
+      "verdict": "refused",
+      "reason": "bad-n"
+    },
+    {
+      "name": "name-bidi-U+200F",
+      "kind": "text",
+      "note": "a bidirectional formatting control after decoding (item BO)",
+      "input": "FMSEXCH1:x=exchange.example.org%3A22022&n=Home%E2%80%8FNAS",
+      "verdict": "refused",
+      "reason": "bad-n"
+    },
+    {
+      "name": "name-bidi-U+202A",
+      "kind": "text",
+      "note": "a bidirectional formatting control after decoding (item BO)",
+      "input": "FMSEXCH1:x=exchange.example.org%3A22022&n=Home%E2%80%AANAS",
+      "verdict": "refused",
+      "reason": "bad-n"
+    },
+    {
+      "name": "name-bidi-U+202B",
+      "kind": "text",
+      "note": "a bidirectional formatting control after decoding (item BO)",
+      "input": "FMSEXCH1:x=exchange.example.org%3A22022&n=Home%E2%80%ABNAS",
+      "verdict": "refused",
+      "reason": "bad-n"
+    },
+    {
+      "name": "name-bidi-U+202C",
+      "kind": "text",
+      "note": "a bidirectional formatting control after decoding (item BO)",
+      "input": "FMSEXCH1:x=exchange.example.org%3A22022&n=Home%E2%80%ACNAS",
+      "verdict": "refused",
+      "reason": "bad-n"
+    },
+    {
+      "name": "name-bidi-U+202D",
+      "kind": "text",
+      "note": "a bidirectional formatting control after decoding (item BO)",
+      "input": "FMSEXCH1:x=exchange.example.org%3A22022&n=Home%E2%80%ADNAS",
+      "verdict": "refused",
+      "reason": "bad-n"
+    },
+    {
+      "name": "name-bidi-U+202E",
+      "kind": "text",
+      "note": "a bidirectional formatting control after decoding (item BO)",
+      "input": "FMSEXCH1:x=exchange.example.org%3A22022&n=Home%E2%80%AENAS",
+      "verdict": "refused",
+      "reason": "bad-n"
+    },
+    {
+      "name": "name-bidi-U+2066",
+      "kind": "text",
+      "note": "a bidirectional formatting control after decoding (item BO)",
+      "input": "FMSEXCH1:x=exchange.example.org%3A22022&n=Home%E2%81%A6NAS",
+      "verdict": "refused",
+      "reason": "bad-n"
+    },
+    {
+      "name": "name-bidi-U+2067",
+      "kind": "text",
+      "note": "a bidirectional formatting control after decoding (item BO)",
+      "input": "FMSEXCH1:x=exchange.example.org%3A22022&n=Home%E2%81%A7NAS",
+      "verdict": "refused",
+      "reason": "bad-n"
+    },
+    {
+      "name": "name-bidi-U+2068",
+      "kind": "text",
+      "note": "a bidirectional formatting control after decoding (item BO)",
+      "input": "FMSEXCH1:x=exchange.example.org%3A22022&n=Home%E2%81%A8NAS",
+      "verdict": "refused",
+      "reason": "bad-n"
+    },
+    {
+      "name": "name-bidi-U+2069",
+      "kind": "text",
+      "note": "a bidirectional formatting control after decoding (item BO)",
+      "input": "FMSEXCH1:x=exchange.example.org%3A22022&n=Home%E2%81%A9NAS",
       "verdict": "refused",
       "reason": "bad-n"
     },

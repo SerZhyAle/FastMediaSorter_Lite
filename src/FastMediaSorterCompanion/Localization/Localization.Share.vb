@@ -916,31 +916,11 @@ Partial Public NotInheritable Class Localization
             "le code PIN a changé", "o PIN foi alterado", "تم تغيير رمز PIN", "पिन बदल गया है", "পিন পরিবর্তিত হয়েছে",
             "پن تبدیل ہو گیا ہے", "PIN 码已更改")
 
-        Add("Гостевое приглашение для этой папки",
-            "Guest invitation for this folder", "Гостьове запрошення для цієї папки", "Gasteinladung für diesen Ordner", "Invito per ospite per questa cartella",
-            "Invitación de invitado para esta carpeta", "Invitation d'invité pour ce dossier", "Convite de convidado para esta pasta",
-            "دعوة ضيف لهذا المجلد", "इस फ़ोल्डर के लिए अतिथि आमंत्रण", "এই ফোল্ডারের জন্য অতিথি আমন্ত্রণ",
-            "اس فولڈر کے لیے مہمان کی دعوت", "此文件夹的访客邀请")
-
         Add("Ссылка с паролем (без аккаунта)",
             "Link with a password (no account)", "Посилання з паролем (без акаунта)", "Link mit Passwort (ohne Konto)", "Collegamento con password (senza account)",
             "Enlace con contraseña (sin cuenta)", "Lien avec mot de passe (sans compte)", "Link com senha (sem conta)",
             "رابط بكلمة مرور (بدون حساب)", "पासवर्ड वाला लिंक (बिना खाते के)", "পাসওয়ার্ড সহ লিঙ্ক (অ্যাকাউন্ট ছাড়া)",
             "پاس ورڈ کے ساتھ لنک (بغیر اکاؤنٹ کے)", "带密码的链接 (无需账户)")
-
-        Add("Создаёт гостевой аккаунт на сервере обмена, которому доступна только эта папка.",
-            "Creates a guest account on the exchange server that can only access this folder.",
-            "Створює гостьовий акаунт на сервері обміну, якому доступна тільки ця папка.",
-            "Erstellt ein Gastkonto auf dem Exchange-Server, das nur auf diesen Ordner zugreifen kann.",
-            "Crea un account ospite sul server di scambio che può accedere solo a questa cartella.",
-            "Crea una cuenta de invitado en el servidor de intercambio que solo puede acceder a esta carpeta.",
-            "Crée un compte invité sur le serveur d'échange qui ne peut accéder qu'à ce dossier.",
-            "Cria uma conta de convidado no servidor de partilha que só pode aceder a esta pasta.",
-            "ينشئ حساب ضيف على خادم التبادل يمكنه الوصول إلى هذا المجلد فقط.",
-            "एक्सचेंज सर्वर पर एक अतिथि खाता बनाता है जो केवल इस फ़ोल्डर तक पहुँच सकता है।",
-            "এক্সচেঞ্জ সার্ভারে একটি অতিথি অ্যাকাউন্ট তৈরি করে যা কেবল এই ফোল্ডারটিতে অ্যাক্সেস করতে পারে।",
-            "ایکسچینج سرور پر ایک مہمان اکاؤنٹ بناتا ہے جو صرف اس فولڈر تک رسائی حاصل کر سکتا ہے۔",
-            "在交换服务器上创建仅可访问此文件夹的访客账户。")
 
         Add("Код телефона..",
             "Phone code..", "Код телефона..", "Telefoncode..", "Codice telefono..", "Código de teléfono..",

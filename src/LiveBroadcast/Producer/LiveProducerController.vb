@@ -74,8 +74,15 @@ Friend Class LiveProducerState
     Public Property Url As String = ""
     Public Property Address As String = ""
     Public Property Port As Integer
+    ''' <summary>The descriptor the person HANDS OUT (link, barcode, file): with no password it carries no RELAY and no TUNNEL
+    ''' (LIVE-BROADCAST item M, ticket 239 CR-15), and it is "" when nothing else is reachable - see <see cref="HandOffWithheld"/>.
+    ''' The descriptor of the account's own directory record is <see cref="RecordDescriptorJson"/>.</summary>
     Public Property DescriptorJson As String = ""
+    ''' <summary>The barcode text of <see cref="DescriptorJson"/> ("" when there is nothing to hand out).</summary>
     Public Property BarcodeText As String = ""
+    ''' <summary>True when RELAY / TUNNEL endpoints exist for this broadcast but were left out of the hand-out because it has no
+    ''' password. With <see cref="DescriptorJson"/> empty as well, the hand-off actions say so and ask for a password.</summary>
+    Public Property HandOffWithheld As Boolean
     Public Property SourceName As String = ""
     Public Property Listeners As Integer
     Public Property VideoToken As String = ""
@@ -87,7 +94,8 @@ Friend Class LiveProducerState
     ''' <summary>True when the RELAY / TUNNEL endpoints of this broadcast are sealed (DEVICE-EXCHANGE items DK, DL): the agent then
     ''' uploads sealed records, never clear bytes. <see cref="DescriptorJson"/> is then the OUTWARD descriptor (keys in its endpoints).</summary>
     Public Property Sealed As Boolean
-    ''' <summary>The descriptor of the directory record: the same endpoints, `seal: {v}` and no key. Empty when the descriptor needs no split.</summary>
+    ''' <summary>The descriptor of the directory record: the same endpoints, `seal: {v}` and no key. Empty when the descriptor needs no split
+    ''' (neither sealed nor shortened for the hand-out, <see cref="HandOffWithheld"/>).</summary>
     Public Property RecordDescriptorJson As String = ""
     ''' <summary>The user name of a protected broadcast's credentials ("" when it is open); the password is <see cref="Password"/>.</summary>
     Public Property AuthUser As String = ""
@@ -361,10 +369,15 @@ Friend Class LiveBroadcastController
                     .RelayKey = relayLinkKey,
                     .TunnelPin = tunnelPin
                 }
-                ' The descriptor the person hands out carries the link key; the one the directory record carries has `seal: {v}` alone.
-                Dim json As String = LiveProducerDescriptorWriter.BuildJson(input)
-                Dim recordJson As String = If(isSealed, LiveProducerDescriptorWriter.BuildJson(input.ForRecord()), "")
-                If isSealed AndAlso (json.Length = 0 OrElse recordJson.Length = 0) Then
+                ' The descriptor of the full outward shape carries the link key; the one the directory record carries has `seal: {v}` alone.
+                Dim fullJson As String = LiveProducerDescriptorWriter.BuildJson(input)
+                Dim withheld As Boolean = LiveProducerDescriptorWriter.WithholdsOutwardEndpoints(input)
+                ' LIVE-BROADCAST item M (ticket 239 CR-15): what the person hands out is always protected when it carries a RELAY or a
+                ' TUNNEL. With no password the three hand-off channels get the LAN alone ("" when that is unreachable too); the
+                ' account's own directory record keeps its endpoints and is built from the same input as before.
+                Dim json As String = LiveProducerDescriptorWriter.BuildHandOutJson(input)
+                Dim recordJson As String = If(isSealed OrElse withheld, LiveProducerDescriptorWriter.BuildJson(input.ForRecord()), "")
+                If isSealed AndAlso (fullJson.Length = 0 OrElse recordJson.Length = 0) Then
                     ' No endpoint of any transport could be handed out (a sealed TUNNEL has no pin before its TLS exists, item DM).
                     StopOpened()
                     Return LiveStartResult.Failed(LiveStartRefusal.NoLanAddress)
@@ -388,6 +401,7 @@ Friend Class LiveBroadcastController
                     .TunnelUrl = tunnelUrl,
                     .Sealed = isSealed,
                     .RecordDescriptorJson = recordJson,
+                    .HandOffWithheld = withheld,
                     .AuthUser = input.AuthUser
                 }
                 _state.ListenerAddress = bindAddress.ToString()

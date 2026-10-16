@@ -154,21 +154,23 @@ func (e *Engine) Register(st *Stream, m *wire.Register) Result {
 
 	// 2. the invitation: a one-time code (used only by the registration that succeeds), or the shared
 	// password (a memory-hard check, inside the bound)
+	// (each is read under either spelling: `invitation` / `invitationPassword` of item AQ, or the first
+	// names of this server, `invitationCode` / `sharedPassword`; Decode refuses a frame with both kinds)
 	var kind, code string
 	var shared *accounts.SharedInvitationAuthorization
-	if m.InvitationCode != "" {
-		k, err := e.cfg.Accounts.OneTimeInvitation(m.InvitationCode)
+	if offered := m.Code(); offered != "" {
+		k, err := e.cfg.Accounts.OneTimeInvitation(offered)
 		if err != nil {
-			e.cfg.Log.Info("register-refused", logx.Login(login), logx.Addr(addr), logx.Invitation(m.InvitationCode),
+			e.cfg.Log.Info("register-refused", logx.Login(login), logx.Addr(addr), logx.Invitation(offered),
 				logx.Text("reason", string(wire.ReasonInvitationInvalid)))
 			return Result{Refuse: wire.ReasonInvitationInvalid}
 		}
-		kind, code = k, m.InvitationCode
+		kind, code = k, offered
 	} else {
 		var k string
 		ok, err := e.cfg.Verifier.Run(func() bool {
 			var verr error
-			shared, verr = e.cfg.Accounts.AuthorizeSharedInvitation(m.SharedPassword)
+			shared, verr = e.cfg.Accounts.AuthorizeSharedInvitation(m.Shared())
 			if verr == nil {
 				k = shared.Kind()
 			}
@@ -243,7 +245,7 @@ func boolInt(b bool) int {
 	return 0
 }
 
-// knownRoles keeps only the four roles of 6.1.
+// knownRoles keeps only the roles of 6.1: the four of the first edition and `clipboard` (item BV).
 func knownRoles(in []string) []string {
 	var out []string
 	for _, r := range in {

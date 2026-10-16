@@ -300,6 +300,7 @@ Public Class ExchangeStoresTests
         Public Consumer As Boolean
         Public Receiver As Boolean
         Public Broadcaster As Boolean
+        Public Clipboard As Boolean
 
         Public Function SharesPublished() As Boolean Implements IExchangeRoleFacts.SharesPublished
             Return Producer
@@ -316,6 +317,10 @@ Public Class ExchangeStoresTests
         Public Function LiveBroadcastEnabled() As Boolean Implements IExchangeRoleFacts.LiveBroadcastEnabled
             Return Broadcaster
         End Function
+
+        Public Function TakesPartInClipboard() As Boolean Implements IExchangeRoleFacts.TakesPartInClipboard
+            Return Clipboard
+        End Function
     End Class
 
     <Fact>
@@ -325,6 +330,17 @@ Public Class ExchangeStoresTests
         Assert.Equal({"resource-producer"}, ExchangeRoles.Compute(New Facts() With {.Producer = True}).ToArray())
         Assert.Equal({"resource-producer", "resource-consumer", "receiver", "broadcaster"},
                      ExchangeRoles.Compute(New Facts() With {.Producer = True, .Consumer = True, .Receiver = True, .Broadcaster = True}).ToArray())
+    End Sub
+
+    ''' <summary>DEVICE-EXCHANGE items BV and CE: a device that takes part in the clipboard declares the role `clipboard` at enroll
+    ''' (ticket 239 CR-3); without the fact it is absent, and it comes last so the other four keep their places.</summary>
+    <Fact>
+    Public Sub The_clipboard_role_is_declared_when_the_device_takes_part_in_the_clipboard_and_comes_last()
+        Assert.Equal("clipboard", ExchangeWire.RoleClipboard)
+        Assert.Equal({"clipboard"}, ExchangeRoles.Compute(New Facts() With {.Clipboard = True}).ToArray())
+        Assert.DoesNotContain("clipboard", ExchangeRoles.Compute(New Facts() With {.Producer = True, .Consumer = True}))
+        Assert.Equal({"resource-producer", "resource-consumer", "receiver", "broadcaster", "clipboard"},
+                     ExchangeRoles.Compute(New Facts() With {.Producer = True, .Consumer = True, .Receiver = True, .Broadcaster = True, .Clipboard = True}).ToArray())
     End Sub
 
 End Class

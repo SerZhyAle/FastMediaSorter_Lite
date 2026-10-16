@@ -331,12 +331,23 @@ Friend NotInheritable Class ExchangeConnectionString
                 Return ExchangeConnectionStringResult.Refused(ExchangeConnectionStringReason.BadName, "not valid text")
             ElseIf Char.GetUnicodeCategory(ch) = UnicodeCategory.Control Then
                 Return ExchangeConnectionStringResult.Refused(ExchangeConnectionStringReason.BadName, "a control character")
+            ElseIf IsBidiControl(ch) Then
+                ' DEVICE-EXCHANGE item BO: a name could reorder the text around it, so a person reading a pasted string
+                ' cannot trust the order it shows; the zero-width joiners stay allowed (emoji sequences need them)
+                Return ExchangeConnectionStringResult.Refused(ExchangeConnectionStringReason.BadName, "a bidirectional formatting control")
             End If
             count += 1
             i += 1
         End While
         If count > MaxName Then Return ExchangeConnectionStringResult.Refused(ExchangeConnectionStringReason.BadName, "more than 64 characters")
         Return Nothing
+    End Function
+
+    ''' <summary>U+061C, U+200E/F, U+202A..U+202E and U+2066..U+2069: the marks and the embedding, override and isolate
+    ''' controls of the bidirectional algorithm.</summary>
+    Private Shared Function IsBidiControl(ch As Char) As Boolean
+        Dim v As Integer = AscW(ch)
+        Return v = &H61C OrElse v = &H200E OrElse v = &H200F OrElse (v >= &H202A AndAlso v <= &H202E) OrElse (v >= &H2066 AndAlso v <= &H2069)
     End Function
 
     ' ---- the endpoint -------------------------------------------------------------------------------------------
@@ -529,8 +540,10 @@ Friend NotInheritable Class ExchangeConnectionString
 
     ' ---- writing ------------------------------------------------------------------------------------------------
 
-    ''' <summary>The canonical text: x, fp, n, u in that order, WHATWG-escaped. Null when the text would exceed 512
-    ''' characters once encoded (<paramref name="refusal"/> says so).</summary>
+    ''' <summary>The canonical text: x, fp, n, u in that order, WHATWG-escaped. A display name that would push the text
+    ''' over 512 characters is shortened on a scalar value, or left out when not even one fits (DEVICE-EXCHANGE item BO:
+    ''' the name is decoration, the rest is the address). Null only when the text exceeds 512 characters even without
+    ''' the name (<paramref name="refusal"/> says so).</summary>
     Public Shared Function Format(value As ExchangeConnectionStringValue, ByRef refusal As ExchangeConnectionStringResult) As String
         refusal = Nothing
         If value Is Nothing Then
@@ -542,17 +555,43 @@ Friend NotInheritable Class ExchangeConnectionString
             refusal = check
             Return Nothing
         End If
+        Dim text As String = Compose(value, value.Name)
+        If text.Length <= MaxText Then Return text
+        If value.Name.Length > 0 Then
+            Dim shortened As String = Compose(value, ShortenName(value))
+            If shortened.Length <= MaxText Then Return shortened
+        End If
+        refusal = ExchangeConnectionStringResult.Refused(ExchangeConnectionStringReason.TooLong, text.Length.ToString(CultureInfo.InvariantCulture) & " characters once encoded")
+        Return Nothing
+    End Function
+
+    ''' <summary>The members in the one order, with <paramref name="name"/> as the display name ("" leaves n out).</summary>
+    Private Shared Function Compose(value As ExchangeConnectionStringValue, name As String) As String
         Dim sb As New StringBuilder(Prefix)
         sb.Append("x=").Append(Escape(value.Endpoint))
         If value.Fingerprint.Length > 0 Then sb.Append("&fp=").Append(Escape(value.Fingerprint))
-        If value.Name.Length > 0 Then sb.Append("&n=").Append(Escape(value.Name))
+        If name.Length > 0 Then sb.Append("&n=").Append(Escape(name))
         If value.Login.Length > 0 Then sb.Append("&u=").Append(Escape(value.Login.ToLowerInvariant()))
         If value.Invitation.Length > 0 Then sb.Append("&i=").Append(Escape(value.Invitation))
-        If sb.Length > MaxText Then
-            refusal = ExchangeConnectionStringResult.Refused(ExchangeConnectionStringReason.TooLong, sb.Length.ToString(CultureInfo.InvariantCulture) & " characters once encoded")
-            Return Nothing
-        End If
         Return sb.ToString()
+    End Function
+
+    ''' <summary>The longest proper prefix of the name, cut on a scalar value, that lets the whole text fit in
+    ''' <see cref="MaxText"/>; "" when not even one scalar value fits. A prefix never ends in a space or a joiner
+    ''' (U+200C, U+200D): those would dangle. The Go side's <c>shortenName</c> does the same.</summary>
+    Private Shared Function ShortenName(value As ExchangeConnectionStringValue) As String
+        Dim name As String = value.Name
+        Dim ends As New List(Of Integer)()
+        Dim k As Integer = 0
+        While k < name.Length
+            k += If(Char.IsHighSurrogate(name(k)) AndAlso k + 1 < name.Length, 2, 1)
+            ends.Add(k)
+        End While
+        For idx As Integer = ends.Count - 2 To 0 Step -1
+            Dim candidate As String = name.Substring(0, ends(idx)).TrimEnd(" "c, ChrW(&H200C), ChrW(&H200D))
+            If candidate.Length > 0 AndAlso Compose(value, candidate).Length <= MaxText Then Return candidate
+        Next
+        Return ""
     End Function
 
     ''' <summary>The WHATWG application/x-www-form-urlencoded byte serializer over UTF-8.</summary>

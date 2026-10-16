@@ -37,18 +37,23 @@ Friend NotInheritable Class ExchangeRefusalPolicy
     Public Const CapacityRetrySeconds As Integer = 120
     ''' <summary>A `rate-limited` refusal backs off for a minute.</summary>
     Public Const RateLimitedRetrySeconds As Integer = 60
-    ''' <summary>Any other refusal of a `hello` (an unknown reason, one that cannot answer a hello) is a generic one: slow retry, never a storm.</summary>
+    ''' <summary>Any other refusal of a `hello` (an unknown reason, one that cannot answer a hello - `invitation-invalid`, `login-taken`
+    ''' and `password-policy` answer a `register` and nothing else) is a generic one: slow retry, never a storm.</summary>
     Public Const GenericRetrySeconds As Integer = 60
 
-    ''' <summary>Section 5: "A refusal is not retried": bad credentials and a revoked device stop the agent and mark "sign in again"
-    ''' (the token is discarded on <c>device-revoked</c>); a version refusal stops with "update"; `rate-limited` backs off for a minute;
-    ''' `capacity` retries slowly. `tls-required` is a defect of this client (it only ever speaks TLS) and stops.</summary>
+    ''' <summary>Section 5: "A refusal is not retried": bad credentials, a revoked device and a signed-out one (item AT: the token died with
+    ''' a password change; the entry and the `deviceId` stay, the person types the password and the same device enrolls again) stop the
+    ''' agent and mark "sign in again" (the token is discarded on <c>device-revoked</c> only); a version refusal stops (the two sides speak
+    ''' different versions: nothing the person can update, item CZ); `rate-limited` backs off for a minute; `capacity` retries slowly.
+    ''' `tls-required` is a defect of this client (it only ever speaks TLS) and stops.</summary>
     Public Shared Function ForHello(reason As ExchangeRefusal) As ExchangeRefusalDecision
         Select Case reason
             Case ExchangeRefusal.BadCredentials
                 Return New ExchangeRefusalDecision(True, ExchangeAgentState.SignInAgain, False, 0, False)
             Case ExchangeRefusal.DeviceRevoked
                 Return New ExchangeRefusalDecision(True, ExchangeAgentState.SignInAgain, True, 0, False)
+            Case ExchangeRefusal.SignedOut
+                Return New ExchangeRefusalDecision(True, ExchangeAgentState.SignInAgain, False, 0, False)
             Case ExchangeRefusal.VersionUnsupported
                 Return New ExchangeRefusalDecision(True, ExchangeAgentState.UpdateNeeded, False, 0, False)
             Case ExchangeRefusal.TlsRequired

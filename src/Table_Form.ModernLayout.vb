@@ -1,4 +1,4 @@
-﻿#If Not NETFRAMEWORK Then
+#If Not NETFRAMEWORK Then
 Option Strict On
 
 Imports System.Drawing
@@ -308,6 +308,7 @@ Partial Public Class Table_Form
     Private Sub BuildModernSettingsLayout()
         If modernSettingsBuilt Then Return
         modernSettingsBuilt = True
+        modernShellInitializing = True
 
         ' This shell sizes and scales everything itself (Sp, Sf, settingsScale, DpiChanged), so WinForms
         ' must not scale the control tree as well. The Designer's AutoScaleMode.Font re-scaled every
@@ -332,7 +333,9 @@ Partial Public Class Table_Form
         MaximizeBox = True
         MinimizeBox = False
         MinimumSize = New Size(Sp(780), Sp(400))
-        ClientSize = New Size(Sp(960), Sp(640))
+        ' Start at the content-fit floor so the first page is not built and measured
+        ' at a larger size only to be shrunk again before its first frame.
+        ClientSize = New Size(Sp(218 + 560 + 48), Sp(520))
         RestoreModernSettingsWindowSize()
         BackColor = SettingsCanvas
         Font = SettingsFont("Segoe UI", Sf(9.0F), FontStyle.Regular)
@@ -481,14 +484,17 @@ Partial Public Class Table_Form
                                    RefreshModernSettingsHeader()
                                    QueueRestoreSettingsContext()
                                End Sub
+        ParkLegacySettingsControls()
+        For Each page As TabPage In Tab_Control.TabPages
+            CreateModernPageFlow(page)
+        Next
         BuildModernDataLayout()
-        BuildSettingsGroups()
         BuildSettingsDiscovery()
+        BuildSettingsGroups()
         StyleModernSettingsControls()
-        LayoutModernSettingsPages()
         ApplySystemSettingsPalette()
         ResumeLayout(True)
-        FitInitialSettingsWindowToContent()
+        modernShellInitializing = False
     End Sub
 
     Private Sub ReparentModernSettingsControl(control As Control, target As Control)
@@ -639,6 +645,7 @@ Partial Public Class Table_Form
 
     Private Sub ModernSettingsTabSelecting(sender As Object, e As TabControlCancelEventArgs)
         If UiTiming.Enabled Then pageSwitchStarted = UiTiming.Begin()
+        EnsureModernSettingsPage(e.TabPage)
     End Sub
 
     Private Sub ModernSettingsTabChanged(sender As Object, e As EventArgs)
@@ -1306,53 +1313,113 @@ Partial Public Class Table_Form
 
         Dim destinations As FlowLayoutPanel = CreateModernPageFlow(Tab_Page_1)
         ' APP-SETTINGS rule 5: the language selector is on the first page.
-        AddUiLanguageRow(destinations)
-        AddSettingRow(destinations, "recipients_overlay", SetOnTop, 34)
-        Dim gridHost As New Panel With {.BackColor = SettingsSurface, .Padding = New Padding(Sp(12))}
-        ReparentModernSettingsControl(lbl_Grid_Hint, gridHost)
-        lbl_Grid_Hint.Dock = DockStyle.Bottom
-        ' Two lines' worth: the hint names both actions now (move on a double-click, copy on
-        ' Shift + double-click) and at 34 px the wrapped second line was simply cut off.
-        lbl_Grid_Hint.Height = 50
-        lbl_Grid_Hint.AutoSize = False
-        lbl_Grid_Hint.Padding = New Padding(2, 8, 2, 0)
-        ReparentModernSettingsControl(Data_Grid_View, gridHost)
-        Data_Grid_View.Dock = DockStyle.Fill
-        Data_Grid_View.ScrollBars = ScrollBars.Vertical
-        ' Not reachable by Tab, so it is not what WinForms focuses when the page opens:
-        ' an AutoScroll container scrolls its newly focused child into view, and the grid
-        ' is tall enough that doing so pushed the row above it - the recipients-overlay
-        ' switch - out of sight. A click still focuses and edits the grid as before.
-        Data_Grid_View.TabStop = False
-        AddRecipientGridActions(gridHost)
-        destinations.Controls.Add(gridHost)
+        RegisterSettingsRow("interface_language",
+            Sub()
+                AddUiLanguageRow(destinations)
+            End Sub)
+        RegisterSettingsRow("recipients_overlay",
+            Sub()
+                AddSettingRow(destinations, "recipients_overlay", SetOnTop, 34)
+            End Sub)
+        RegisterSettingsPage("recipients",
+            Sub()
+                Dim gridHost As New Panel With {.BackColor = SettingsSurface, .Padding = New Padding(Sp(12))}
+                ReparentModernSettingsControl(lbl_Grid_Hint, gridHost)
+                lbl_Grid_Hint.Dock = DockStyle.Bottom
+                ' Two lines' worth: the hint names both actions now (move on a double-click, copy on
+                ' Shift + double-click) and at 34 px the wrapped second line was simply cut off.
+                lbl_Grid_Hint.Height = 50
+                lbl_Grid_Hint.AutoSize = False
+                lbl_Grid_Hint.Padding = New Padding(2, 8, 2, 0)
+                ReparentModernSettingsControl(Data_Grid_View, gridHost)
+                Data_Grid_View.Dock = DockStyle.Fill
+                Data_Grid_View.ScrollBars = ScrollBars.Vertical
+                ' Not reachable by Tab, so it is not what WinForms focuses when the page opens:
+                ' an AutoScroll container scrolls its newly focused child into view, and the grid
+                ' is tall enough that doing so pushed the row above it - the recipients-overlay
+                ' switch - out of sight. A click still focuses and edits the grid as before.
+                Data_Grid_View.TabStop = False
+                AddRecipientGridActions(gridHost)
+                destinations.Controls.Add(gridHost)
+            End Sub)
 
         Dim viewing As FlowLayoutPanel = CreateModernPageFlow(Tab_Page_2)
         ' The application theme first (spec 060): it is about every window, not the picture, and
         ' the background scheme right below is the picture's - two different questions.
-        AddSectionHeader(viewing, "section_appearance")
-        AddUiThemeRow(viewing)
-        AddSectionHeader(viewing, "section_background")
-        AddSettingRow(viewing, "background_color", cmbox_color_schema, 210)
-        AddSettingRow(viewing, "perspective", chb_perspectiva, 34, True)
-        AddSettingRow(viewing, "dynamic_perspective", chk_Dynamic_Perspective, 34, True)
-        AddSettingRow(viewing, "animated_perspective", chk_Animated_Perspective, 34, True)
-        AddSettingRow(viewing, "halo_speed", cmb_Halo_Speed, 180, True)
-        AddSectionHeader(viewing, "section_information")
-        AddSettingRow(viewing, "show_picture_size", chkb_show_pic_size, 34, True)
-        AddSettingRow(viewing, "show_file_size", chkb_show_file_size, 34, True)
-        AddSettingRow(viewing, "show_file_date", chkb_is_to_show_file_datetime, 34, True)
-        AddSettingRow(viewing, "show_info_overlay", chk_Show_Info_Overlay, 34, True)
-        AddSettingRow(viewing, "wheel_zooms", chk_Wheel_Zooms, 34, True)
-        AddSettingRow(viewing, "slideshow_interval", num_Slideshow_Interval, 100, True)
-        AddSettingRow(viewing, "thumbnail_size", cmb_Picture_Size, 180, True)
+
+        RegisterSettingsRow("ui_theme",
+            Sub()
+                AddUiThemeRow(viewing)
+            End Sub)
+
+        RegisterSettingsRow("background_color",
+            Sub()
+                AddSettingRow(viewing, "background_color", cmbox_color_schema, 210)
+            End Sub)
+        RegisterSettingsRow("perspective",
+            Sub()
+                AddSettingRow(viewing, "perspective", chb_perspectiva, 34, True)
+            End Sub)
+        RegisterSettingsRow("dynamic_perspective",
+            Sub()
+                AddSettingRow(viewing, "dynamic_perspective", chk_Dynamic_Perspective, 34, True)
+            End Sub)
+        RegisterSettingsRow("animated_perspective",
+            Sub()
+                AddSettingRow(viewing, "animated_perspective", chk_Animated_Perspective, 34, True)
+            End Sub)
+        RegisterSettingsRow("halo_speed",
+            Sub()
+                AddSettingRow(viewing, "halo_speed", cmb_Halo_Speed, 180, True)
+            End Sub)
+
+        RegisterSettingsRow("show_picture_size",
+            Sub()
+                AddSettingRow(viewing, "show_picture_size", chkb_show_pic_size, 34, True)
+            End Sub)
+        RegisterSettingsRow("show_file_size",
+            Sub()
+                AddSettingRow(viewing, "show_file_size", chkb_show_file_size, 34, True)
+            End Sub)
+        RegisterSettingsRow("show_file_date",
+            Sub()
+                AddSettingRow(viewing, "show_file_date", chkb_is_to_show_file_datetime, 34, True)
+            End Sub)
+        RegisterSettingsRow("show_info_overlay",
+            Sub()
+                AddSettingRow(viewing, "show_info_overlay", chk_Show_Info_Overlay, 34, True)
+            End Sub)
+        RegisterSettingsRow("wheel_zooms",
+            Sub()
+                AddSettingRow(viewing, "wheel_zooms", chk_Wheel_Zooms, 34, True)
+            End Sub)
+        RegisterSettingsRow("slideshow_interval",
+            Sub()
+                AddSettingRow(viewing, "slideshow_interval", num_Slideshow_Interval, 100, True)
+            End Sub)
+        RegisterSettingsRow("thumbnail_size",
+            Sub()
+                AddSettingRow(viewing, "thumbnail_size", cmb_Picture_Size, 180, True)
+            End Sub)
 
         Dim video As FlowLayoutPanel = CreateModernPageFlow(Tab_Page_3)
-        AddSettingRow(video, "exif_rotate", chk_Exif_AutoRotate, 34, True)
-        AddSettingRow(video, "hq_scaling", chk_Hq_Scaling, 34, True)
+        RegisterSettingsRow("exif_rotate",
+            Sub()
+                AddSettingRow(video, "exif_rotate", chk_Exif_AutoRotate, 34, True)
+            End Sub)
+        RegisterSettingsRow("hq_scaling",
+            Sub()
+                AddSettingRow(video, "hq_scaling", chk_Hq_Scaling, 34, True)
+            End Sub)
         chkb_video_loop.Visible = False
-        AddSettingRow(video, "video_mute", chk_Video_Mute, 34, True)
-        AddSettingRow(video, "video_volume", num_Video_Volume, 100, True)
+        RegisterSettingsRow("video_mute",
+            Sub()
+                AddSettingRow(video, "video_mute", chk_Video_Mute, 34, True)
+            End Sub)
+        RegisterSettingsRow("video_volume",
+            Sub()
+                AddSettingRow(video, "video_volume", num_Video_Volume, 100, True)
+            End Sub)
 
         Dim audio As FlowLayoutPanel = CreateModernPageFlow(modernAudioPage)
 
@@ -1364,27 +1431,57 @@ Partial Public Class Table_Form
         ' like the independent-thread checkbox below.
         ' SPECIFICATION_COPY_ACTIONS_REWORK.md §4.1.
         chkbox_Copy_Mode.Visible = False
-        AddAdvanceAfterCopyRow(files)
+        RegisterSettingsRow("advance_after_copy",
+            Sub()
+                AddAdvanceAfterCopyRow(files)
+            End Sub)
         ' .NET 10 always uses the background file-operation queue. Do not expose a
         ' switch that cannot change anything; the hidden control remains for net48
         ' persistence compatibility.
         chkbox_Independent_Thread_For_File_Operation.Visible = False
-        AddSettingRow(files, "no_confirmation", chkb_no_request_before_file_operation, 34, True)
-        AddSettingRow(files, "image_associations", btn_Set_As_Default, 230, True)
-        AddSettingRow(files, "video_associations", btn_Set_As_Default_Video, 230, True)
+        RegisterSettingsRow("no_confirmation",
+            Sub()
+                AddSettingRow(files, "no_confirmation", chkb_no_request_before_file_operation, 34, True)
+            End Sub)
+        RegisterSettingsRow("image_associations",
+            Sub()
+                AddSettingRow(files, "image_associations", btn_Set_As_Default, 230, True)
+            End Sub)
+        RegisterSettingsRow("video_associations",
+            Sub()
+                AddSettingRow(files, "video_associations", btn_Set_As_Default_Video, 230, True)
+            End Sub)
         ' The language button (a flag menu) is replaced by the first page's selector.
         btn_Language.Visible = False
 
         Dim ocr As FlowLayoutPanel = CreateModernPageFlow(Tab_Page_5)
         Dim translation As FlowLayoutPanel = CreateModernPageFlow(modernTranslationPage)
-        ocrInner.Visible = False
-        AddSettingRow(ocr, "ocr_enabled", chkOcrEnabled, 34, True)
-        AddSettingRow(ocr, "ocr_auto", chkOcrAuto, 34, True)
-        AddSectionHeader(ocr, "section_recognition")
-        AddSettingRow(ocr, "ocr_source", cmbOcrSource, 300, True)
-        AddSettingRow(ocr, "ocr_quality", cmbOcrQuality, 300, True)
-        AddSettingRow(ocr, "ocr_mode", cmbOcrMode, 300, True)
-        AddSettingRow(ocr, "ocr_download", btnOcrDownload, 300, True)
+        If ocrInner IsNot Nothing Then ocrInner.Visible = False
+        RegisterSettingsRow("ocr_enabled",
+            Sub()
+                AddSettingRow(ocr, "ocr_enabled", chkOcrEnabled, 34, True)
+            End Sub)
+        RegisterSettingsRow("ocr_auto",
+            Sub()
+                AddSettingRow(ocr, "ocr_auto", chkOcrAuto, 34, True)
+            End Sub)
+
+        RegisterSettingsRow("ocr_source",
+            Sub()
+                AddSettingRow(ocr, "ocr_source", cmbOcrSource, 300, True)
+            End Sub)
+        RegisterSettingsRow("ocr_quality",
+            Sub()
+                AddSettingRow(ocr, "ocr_quality", cmbOcrQuality, 300, True)
+            End Sub)
+        RegisterSettingsRow("ocr_mode",
+            Sub()
+                AddSettingRow(ocr, "ocr_mode", cmbOcrMode, 300, True)
+            End Sub)
+        RegisterSettingsRow("ocr_download",
+            Sub()
+                AddSettingRow(ocr, "ocr_download", btnOcrDownload, 300, True)
+            End Sub)
         ' The shared status line lives on the Translation page; the download button's own
         ' answer ("already installed", "engine missing") has to show where the button is
         ' (audit 057.S10-2).
@@ -1393,33 +1490,65 @@ Partial Public Class Table_Form
             .ForeColor = SettingsMutedText, .AutoEllipsis = True, .Tag = "modern:full"}
         ocr.Controls.Add(lblOcrRecognitionStatus)
 
-        AddSectionHeader(translation, "section_translation")
-        AddSettingRow(translation, "ocr_provider", cmbOcrProvider, 260, True)
-        AddSettingRow(translation, "ocr_endpoint", txtOcrEndpoint, 300, True)
-        AddSettingRow(translation, "ocr_server", MakeModernControlStrip({btnOcrInstallOllama, btnOcrStartOllama}, 310), 310, True)
-        AddSettingRow(translation, "ocr_model", MakeModernControlStrip({cmbOcrModelName, btnOcrPullModel}, 310), 310, True)
-        AddSettingRow(translation, "ocr_api", txtOcrApi, 300, True)
-        AddSettingRow(translation, "ocr_target", cmbOcrTarget, 300, True)
-        AddSectionHeader(translation, "section_overlay")
-        AddSettingRow(translation, "ocr_opacity", MakeModernOpacityStrip(), 330, True)
-        AddSettingRow(translation, "ocr_overlay_visible", chkOcrOverlayVisible, 34, True)
-        AddSettingRow(translation, "ocr_disk_cache", chkOcrDisk, 34, True)
-        ReparentModernSettingsControl(lblOcrStatus, translation)
-        lblOcrStatus.AutoSize = False
-        lblOcrStatus.Height = 34
-        lblOcrStatus.Margin = New Padding(8, 4, 8, 8)
 
-        BuildModernResourcesPage()
-        BuildModernSftpPage()
-        BuildModernAboutPage()
-        If MultiWindowPolicy.IsSecondaryInstance() Then AddInformationBlock(files, "secondary_instance_warning")
+        RegisterSettingsRow("ocr_provider",
+            Sub()
+                AddSettingRow(translation, "ocr_provider", cmbOcrProvider, 260, True)
+            End Sub)
+        RegisterSettingsRow("ocr_endpoint",
+            Sub()
+                AddSettingRow(translation, "ocr_endpoint", txtOcrEndpoint, 300, True)
+            End Sub)
+        RegisterSettingsRow("ocr_server",
+            Sub()
+                AddSettingRow(translation, "ocr_server", MakeModernControlStrip({btnOcrInstallOllama, btnOcrStartOllama}, 310), 310, True)
+            End Sub)
+        RegisterSettingsRow("ocr_model",
+            Sub()
+                AddSettingRow(translation, "ocr_model", MakeModernControlStrip({cmbOcrModelName, btnOcrPullModel}, 310), 310, True)
+            End Sub)
+        RegisterSettingsRow("ocr_api",
+            Sub()
+                AddSettingRow(translation, "ocr_api", txtOcrApi, 300, True)
+            End Sub)
+        RegisterSettingsRow("ocr_target",
+            Sub()
+                AddSettingRow(translation, "ocr_target", cmbOcrTarget, 300, True)
+            End Sub)
+
+        RegisterSettingsRow("ocr_opacity",
+            Sub()
+                AddSettingRow(translation, "ocr_opacity", MakeModernOpacityStrip(), 330, True)
+            End Sub)
+        RegisterSettingsRow("ocr_overlay_visible",
+            Sub()
+                AddSettingRow(translation, "ocr_overlay_visible", chkOcrOverlayVisible, 34, True)
+            End Sub)
+        RegisterSettingsRow("ocr_disk_cache",
+            Sub()
+                AddSettingRow(translation, "ocr_disk_cache", chkOcrDisk, 34, True)
+            End Sub)
+        RegisterSettingsPage("translation",
+            Sub()
+                ReparentModernSettingsControl(lblOcrStatus, translation)
+                lblOcrStatus.AutoSize = False
+                lblOcrStatus.Height = 34
+                lblOcrStatus.Margin = New Padding(8, 4, 8, 8)
+            End Sub)
+
+        RegisterSettingsPage("resources", Sub()
+                                              BuildModernResourcesPage()
+                                              BuildModernSftpPage()
+                                          End Sub)
+        RegisterSettingsPage("about", AddressOf BuildModernAboutPage)
+        If MultiWindowPolicy.IsSecondaryInstance() Then RegisterSettingsRow("secondary_instance_warning", Sub() AddInformationBlock(files, "secondary_instance_warning"))
         AddExpandedSettingsRows(destinations, viewing, video, audio, files, ocr)
 
         For Each oldLabel As Control In New Control() {lbl_Color, lbl_Slideshow_Interval, lbl_Picture_at_Panel_Size,
                                                         lbl_Video_Volume, lblOcrTranslator, lblOcrEndpoint, lblOcrServer,
                                                         lblOcrModel, lblOcrApi, lblOcrTarget, lblOcrSource, lblOcrQuality,
                                                         lblOcrMode, lblOcrOpacity}
-            oldLabel.Visible = False
+            If oldLabel IsNot Nothing Then oldLabel.Visible = False
         Next
         For Each oldGroup As GroupBox In New GroupBox() {grp_Background, grp_OnScreen, grp_Slideshow, grp_Panel,
                                                           grp_Quality, grp_Video, grp_FileOps, grp_Integration, grp_Language}
@@ -1428,6 +1557,8 @@ Partial Public Class Table_Form
     End Sub
 
     Private Function CreateModernPageFlow(page As TabPage) As FlowLayoutPanel
+        Dim existing = modernPageFlows.FirstOrDefault(Function(item) item.Parent Is page)
+        If existing IsNot Nothing Then Return existing
         Dim flow As New FlowLayoutPanel With {
             .Dock = DockStyle.Fill,
             .AutoScroll = True,
@@ -1439,7 +1570,10 @@ Partial Public Class Table_Form
         page.Controls.Add(flow)
         flow.BringToFront()
         modernPageFlows.Add(flow)
-        AddHandler flow.ClientSizeChanged, Sub() ResizeModernPageItems(flow)
+        AddHandler flow.ClientSizeChanged,
+            Sub()
+                If Tab_Control.SelectedTab Is page Then ResizeModernPageItems(flow)
+            End Sub
         Return flow
     End Function
 
@@ -2225,6 +2359,17 @@ Partial Public Class Table_Form
 
         RefreshModernSettingsHeader()
         For Each group As SettingsCollapsibleGroup In settingsGroups.Values
+            ApplyModernGroupPalette(group)
+        Next
+        ApplySettingsTitleBarTheme()
+        ThemeApplier.ApplyNativeTree(Me, settingsDarkMode)
+        ThemeApplier.ApplyButtonCaptions(Me, ThemePalette.ForDark(settingsDarkMode))
+        RefreshSettingsDependencies()
+        ApplySlotHealthToGrid()
+        Invalidate(True)
+    End Sub
+
+    Private Sub ApplyModernGroupPalette(group As SettingsCollapsibleGroup)
             ' The header band of 127 §3.4: a blended fill, no border, so a group header
             ' reads as a band and not as one more row - and the summary line under the
             ' caption is muted small text.
@@ -2233,13 +2378,6 @@ Partial Public Class Table_Form
             group.Header.FlatAppearance.BorderColor = BlendSettingsColor(SettingsSurface, SettingsAccent, 0.08F)
             group.Header.FlatAppearance.BorderSize = 0
             group.SetSummaryStyle(SettingsFont("Segoe UI", Sf(8.0F)), SettingsMutedText)
-        Next
-        ApplySettingsTitleBarTheme()
-        ThemeApplier.ApplyNativeTree(Me, settingsDarkMode)
-        ThemeApplier.ApplyButtonCaptions(Me, ThemePalette.ForDark(settingsDarkMode))
-        RefreshSettingsDependencies()
-        ApplySlotHealthToGrid()
-        Invalidate(True)
     End Sub
 
     Private Sub ApplyModernPaletteToTree(parent As Control)
@@ -2383,17 +2521,7 @@ Partial Public Class Table_Form
             CInt(CSng(baseColor.B) + (target - CSng(baseColor.B)) * a))
     End Function
 
-    Private Sub StyleModernSettingsControls()
-        For Each group As GroupBox In New GroupBox() {grp_Background, grp_OnScreen, grp_Slideshow, grp_Panel, grp_Quality, grp_Video, grp_FileOps, grp_Integration, grp_Language}
-            group.BackColor = SettingsSurface
-            group.ForeColor = SettingsText
-            group.Font = SettingsFont("Segoe UI Semibold", 10.0F, FontStyle.Regular)
-            group.FlatStyle = FlatStyle.Flat
-            group.Padding = New Padding(16, 20, 16, 12)
-            group.Anchor = AnchorStyles.Top Or AnchorStyles.Left Or AnchorStyles.Right
-            AddHandler group.Paint, AddressOf PaintModernSettingsCard
-        Next
-
+    Private Sub StyleModernRecipientGrid()
         Data_Grid_View.BackgroundColor = SettingsSurface
         Data_Grid_View.BorderStyle = BorderStyle.None
         Data_Grid_View.CellBorderStyle = DataGridViewCellBorderStyle.SingleHorizontal
@@ -2424,6 +2552,10 @@ Partial Public Class Table_Form
         End If
         Data_Grid_View.Anchor = AnchorStyles.Top Or AnchorStyles.Left Or AnchorStyles.Right
 
+    End Sub
+
+    Private Sub StyleModernSettingsControls()
+        If builtSettingsPages.Contains(Tab_Page_1) Then StyleModernRecipientGrid()
         ' Placement can move rows to new pages. Style the actual tab collection so
         ' General, Audio, Storage and future pages receive the same editor metrics.
         For Each page As TabPage In Tab_Control.TabPages
@@ -2541,9 +2673,8 @@ Partial Public Class Table_Form
     ''' <c>SettingsLayoutPassTests</c> holds both entry points to it).</summary>
     Private Sub LayoutModernSettingsPages()
         If Not modernSettingsBuilt OrElse Tab_Control Is Nothing Then Return
-        For Each flow As FlowLayoutPanel In modernPageFlows
-            LayoutModernSettingsPage(flow)
-        Next
+        ' Hidden pages are measured when selected; width, DPI and locale are read then.
+        If Tab_Control.SelectedTab IsNot Nothing Then LayoutModernSettingsPage(PageFlow(Tab_Control.SelectedTab))
     End Sub
 
     ''' <summary>One page, one layout pass (WINDOWS-UI section 5, amended 0.2): the rows are sized with the page
@@ -2579,5 +2710,27 @@ Partial Public Class Table_Form
         ' the final heights; it is cheap because every size is already final.
         flow.PerformLayout()
     End Sub
+
+    ''' <summary>The active settings section id for in-app context help (CONTEXT-HELP rule 3).</summary>
+    Public ReadOnly Property ActiveHelpPageId As String
+        Get
+            If Tab_Control Is Nothing Then Return "general"
+            Select Case Tab_Control.SelectedIndex
+                Case 0 : Return "general"
+                Case 1 : Return "destinations"
+                Case 2 : Return "images"
+                Case 3 : Return "video"
+                Case 4 : Return "audio"
+                Case 5 : Return "files"
+                Case 6 : Return "server"
+                Case 7 : Return "ocr"
+                Case 8 : Return "translation"
+                Case 9 : Return "storage"
+                Case 10 : Return "about"
+                Case Else : Return "general"
+            End Select
+        End Get
+    End Property
+
 End Class
 #End If

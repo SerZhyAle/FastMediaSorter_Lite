@@ -120,6 +120,9 @@
     <EmbeddedResource Include="..\..\assets\help\port-forward.html">
       <LogicalName>FmsPayloadhelp/port-forward.html</LogicalName>
     </EmbeddedResource>
+    <EmbeddedResource Include="..\..\help-map.json">
+      <LogicalName>help-map.json</LogicalName>
+    </EmbeddedResource>
     <EmbeddedResource Include="..\..\assets\icons\doc-html-translate.png">
       <LogicalName>FmsPayloadicons/doc-html-translate.png</LogicalName>
     </EmbeddedResource>

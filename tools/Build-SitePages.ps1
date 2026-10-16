@@ -315,10 +315,16 @@ function Render([string]$code) {
     }) -join "`n"
     $alts += "`n" + ('<link rel="alternate" hreflang="x-default" href="{0}/">' -f $BaseUrl)
 
-    $switcher = ($codes | ForEach-Object {
+    $languageOrder = @('ru', 'en', 'uk') + @($codes | Where-Object { $_ -notin @('ru', 'en', 'uk') })
+    $switcher = ($languageOrder | ForEach-Object {
         $cls = if ($_ -eq $code) { ' class="on"' } else { '' }
-        '<a{0} hreflang="{1}" href="{2}">{3}</a>' -f $cls, $_, (PageUrl $_), (Esc $copy.$_.name)
+        $persist = if ($_ -in @('ru', 'en', 'uk')) { ' onclick="try{{localStorage.setItem(''sza-lang'',''{0}'')}}catch(e){{}}"' -f $(if ($_ -eq 'uk') { 'ua' } else { $_ }) } else { '' }
+        '<a{0} hreflang="{1}" href="{2}" lang="{1}" title="{3}"{4}>{5}</a>' -f $cls, $_, (PageUrl $_), (Esc $copy.$_.name), $persist, $(if ($_ -eq 'uk') { 'UA' } else { $_.ToUpperInvariant() })
     }) -join "`n    "
+    $primaryLanguages = ($languageOrder[0..2] | ForEach-Object {
+        $key = if ($_ -eq 'uk') { 'ua' } else { $_ }
+        '<a hreflang="{0}" href="{1}" onclick="try{{localStorage.setItem(''sza-lang'',''{2}'')}}catch(e){{}}">{3}</a>' -f $_, (PageUrl $_), $key, $key.ToUpperInvariant()
+    }) -join ''
 
     $know = ($e.know | ForEach-Object { "      <li>$(Body $_)</li>" }) -join "`n"
 
@@ -404,23 +410,19 @@ $(TwitterImageMeta $e.ogAlt)
   <nav class="site-nav" aria-label="$(Esc $e.navLabel)">
   <a class="brand" href="$(PageUrl $code)" aria-label="$(Esc $ProductFull)">$(Body $ProductFull)</a>
   <a class="nav-doc" href="$BaseUrl/topics.html">$(Esc $e.docsLink)</a>
-  <details class="lang-menu">
-    <summary>$(Esc $e.name)</summary>
-    <div class="lang-pop">
-    $switcher
-    </div>
-  </details>
+  <div class="seg" role="group" aria-label="Language">$primaryLanguages</div>
   <button class="theme-btn" id="themeBtn" aria-label="Switch theme">◐</button>
   <a class="btn btn-primary btn-sm" href="#get">$(Esc $e.dlSetup)</a>
   </nav>
 </header>
+<nav class="container language-row" aria-label="Languages">$switcher</nav>
 
 <main class="container" id="main" tabindex="-1">
   <section class="hero">
     <div class="identity">
       <img class="product-icon" src="${A}assets/icons/store-icon-256.png" alt="" width="104" height="104">
       <div>
-        <p class="product-name">$(Body $e.title)</p>
+        <p class="product-name" lang="en" dir="ltr">$(Body $ProductFull)</p>
         <p class="kicker" lang="en" dir="ltr">Windows desktop app</p>
         <p class="kicker" lang="en" dir="ltr">Free &amp; open-source</p>
       </div>

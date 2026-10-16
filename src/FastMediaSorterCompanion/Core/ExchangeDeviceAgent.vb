@@ -45,9 +45,9 @@ Friend NotInheritable Class ExchangeAgentPorts
 
 End Class
 
-''' <summary>The roles this program can declare today. A role is declared only where its ticket is built (170 producer, 171 consumer
-''' are; 172-173 broadcaster and 174 receiver are not yet): a role is never declared ahead of its code, because a role not declared
-''' is never asked of the device (6.1) and one declared and not served is a broken promise to the account.
+''' <summary>The roles this program can declare today (item CE: `fms-windows` - the producer, the consumer, the broadcaster, the receiver and
+''' `clipboard`). A role is declared only where its code is built and on: a role is never declared ahead of its code, because a role not
+''' declared is never asked of the device (6.1) and one declared and not served is a broken promise to the account.
 ''' The roles travel in `enroll` and nowhere else (the wire has no frame that changes them later), so they say what this PC CAN do, not
 ''' what is switched on this minute: the share worker is installed (170 - whether it publishes is the user's setting, off by default) and
 ''' the viewer is installed beside it (171).</summary>
@@ -76,6 +76,12 @@ Friend NotInheritable Class ExchangeProductionRoleFacts
 
     Public Function LiveBroadcastEnabled() As Boolean Implements IExchangeRoleFacts.LiveBroadcastEnabled
         Return LiveBroadcastFeatures.IsEnabled()
+    End Function
+
+    ''' <summary>The Share Manager sends and gets the clipboard (spec 230, item BV): it takes part wherever the exchange client exists.
+    ''' It is a Share Manager function only - the viewer never declares anything, and this class is the Share Manager's.</summary>
+    Public Function TakesPartInClipboard() As Boolean Implements IExchangeRoleFacts.TakesPartInClipboard
+        Return ExchangeFeatures.IsEnabled()
     End Function
 End Class
 
@@ -622,7 +628,7 @@ Friend NotInheritable Class ExchangeDeviceAgent
                 ' the answer of `register` is `enrolled`, the same frame a sign-in answers with (224 rule 6)
                 opened = Await ExchangeSessions.EnrollAsync(_ports.Transport, address, pin, register, ct).ConfigureAwait(False)
             Finally
-                register.SetText("password", "").SetText("invitationCode", "").SetText("sharedPassword", "")
+                register.SetText("password", "").SetText("invitation", "").SetText("invitationPassword", "")
             End Try
 
             Select Case opened.Outcome
@@ -999,7 +1005,10 @@ Friend NotInheritable Class ExchangeDeviceAgent
             ' sealed, but no key of this device: nothing goes through the server (the LAN endpoint, if any, is not sealed)
             recordJson = LiveProducerDescriptorWriter.BuildBroadcastRecord(state.BroadcastId, deviceId, state.SourceName, state.Mode, state.RecordDescriptorJson)
         Else
-            recordJson = LiveProducerDescriptorWriter.BuildBroadcastRecord(state.BroadcastId, deviceId, state.SourceName, state.Mode, state.DescriptorJson)
+            ' Ticket 239 CR-15: the hand-out descriptor of a broadcast with no password is shortened to the LAN; the account's own
+            ' record keeps every endpoint (state.RecordDescriptorJson is then set), exactly as before.
+            recordJson = LiveProducerDescriptorWriter.BuildBroadcastRecord(state.BroadcastId, deviceId, state.SourceName, state.Mode,
+                If(String.IsNullOrEmpty(state.RecordDescriptorJson), state.DescriptorJson, state.RecordDescriptorJson))
         End If
         SyncLock _gate
             _liveBroadcastRecordJson = recordJson

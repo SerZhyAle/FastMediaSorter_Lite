@@ -67,6 +67,9 @@
     <!-- Link the production source directly (same assembly => Friend members visible). -->
     <Compile Include="..\..\src\Main_Form.WindowPinning.vb"><Link>Linked\Main_Form.WindowPinning.vb</Link></Compile>
     <Compile Include="..\..\src\SettingsUiContext.vb"><Link>Linked\SettingsUiContext.vb</Link></Compile>
+    <Compile Include="..\..\src\Help\ContextHelp.vb"><Link>Linked\ContextHelp.vb</Link></Compile>
+    <Compile Include="..\..\src\Help\ContextHelpUi.vb"><Link>Linked\ContextHelpUi.vb</Link></Compile>
+    <EmbeddedResource Include="..\..\help-map.json"><LogicalName>help-map.json</LogicalName></EmbeddedResource>
     <Compile Include="..\..\src\SettingsCollapsibleGroup.vb"><Link>Linked\SettingsCollapsibleGroup.vb</Link></Compile>
     <Compile Include="..\..\src\SettingsSearchRules.vb"><Link>Linked\SettingsSearchRules.vb</Link></Compile>
     <!-- The row grid and the drawn checkbox of 127: pure layout arithmetic and a Paint-only
@@ -188,6 +191,7 @@
     <Compile Include="..\..\src\LetterboxFillMath.vb">
       <Link>Linked\LetterboxFillMath.vb</Link>
     </Compile>
+    <Compile Include="..\..\src\HaloPainter.vb" Link="Linked\HaloPainter.vb" />
     <!-- The pure half of the floating chrome (002): scale, row layout, theme arithmetic and the one
          table of metrics. The painted surface, the host window and the controller stay out - they are
          WinForms glue, and the tests that matter (overflow, RTL mirroring, the 24 px minimum, high

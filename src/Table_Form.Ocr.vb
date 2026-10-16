@@ -92,6 +92,9 @@ Partial Public Class Table_Form
         BuildOcrTabIfNeeded()
         LocalizeOcrTab()
         LoadOcrFromSettings()
+#If Not NETFRAMEWORK Then
+        InitializeOcrTooltips()
+#End If
     End Sub
 
     ''' <summary>Switches the Settings window to the OCR tab (used by the toolbar
@@ -431,7 +434,9 @@ Partial Public Class Table_Form
     End Sub
 
     Private Sub InitializeOcrTooltips()
+#If NETFRAMEWORK Then
         BuildOcrTabIfNeeded()
+#End If
         If toolTip Is Nothing OrElse Not _ocrBuilt Then Return
         toolTip.SetToolTip(chkOcrEnabled, Localization.T("Включить распознавание текста и перевод на изображениях - для картинок, что упорно говорят на чужом языке."))
         toolTip.SetToolTip(chkOcrAuto, Localization.T("Распознавать и переводить автоматически после каждого изображения - вы только смотрите, программа отдувается."))

@@ -171,19 +171,36 @@ func NewWithInvitation(endpoint, fingerprint, name, login, invitation string) (C
 	return c, nil
 }
 
-// String is the canonical text. It fails when the text would exceed 512 characters.
+// String is the canonical text. Item BO: a producer keeps the whole string inside 512 characters and shortens or leaves out
+// `n` rather than write a longer string, so a display name that would not fit is cut to its longest prefix that does (or
+// dropped); it fails only when the string is over 512 without `n` as well.
 func (c Conn) String() (string, error) {
 	if _, err := NewWithInvitation(c.Endpoint(), c.Fingerprint, c.Name, c.Login, c.Invitation); err != nil {
 		return "", err
 	}
+	text := c.compose(c.Name)
+	if len(text) <= MaxText {
+		return text, nil
+	}
+	if c.Name != "" {
+		short := shortenName(c.Name, func(candidate string) bool { return len(c.compose(candidate)) <= MaxText })
+		if t := c.compose(short); len(t) <= MaxText {
+			return t, nil
+		}
+	}
+	return "", refuse(RefusedTooLong, "%d characters once encoded, the limit is %d", len(text), MaxText)
+}
+
+// compose writes the members in the one order, with name as the display name ("" leaves `n` out).
+func (c Conn) compose(name string) string {
 	var b strings.Builder
 	b.WriteString(Prefix)
 	b.WriteString(keyX + "=" + escape(c.Endpoint()))
 	if c.Fingerprint != "" {
 		b.WriteString("&" + keyFP + "=" + escape(c.Fingerprint))
 	}
-	if c.Name != "" {
-		b.WriteString("&" + keyName + "=" + escape(c.Name))
+	if name != "" {
+		b.WriteString("&" + keyName + "=" + escape(name))
 	}
 	if c.Login != "" {
 		b.WriteString("&" + keyLogin + "=" + escape(c.Login))
@@ -191,10 +208,7 @@ func (c Conn) String() (string, error) {
 	if c.Invitation != "" {
 		b.WriteString("&" + keyInv + "=" + escape(c.Invitation))
 	}
-	if b.Len() > MaxText {
-		return "", refuse(RefusedTooLong, "%d characters once encoded, the limit is %d", b.Len(), MaxText)
-	}
-	return b.String(), nil
+	return b.String()
 }
 
 // Parse reads the text of a connection string as it arrives from a clipboard, a chat or a QR: one
@@ -430,8 +444,48 @@ func checkName(n string) error {
 		if unicode.Is(unicode.Cc, r) {
 			return refuse(RefusedBadName, "a control character")
 		}
+		if isBidiControl(r) {
+			return refuse(RefusedBadName, "a bidirectional formatting control")
+		}
 	}
 	return nil
+}
+
+// isBidiControl is the set of item BO: U+061C, U+200E, U+200F, U+202A to U+202E and U+2066 to U+2069. Such a character makes
+// a name read as something else beside the destination. The zero-width joiners U+200C and U+200D are NOT in the set: names
+// in several scripts and emoji sequences need them.
+func isBidiControl(r rune) bool {
+	switch {
+	case r == 0x061C, r == 0x200E, r == 0x200F:
+		return true
+	case r >= 0x202A && r <= 0x202E:
+		return true
+	case r >= 0x2066 && r <= 0x2069:
+		return true
+	}
+	return false
+}
+
+// shortenName returns the longest prefix of n, cut on a scalar value, that still lets the whole string fit in MaxText
+// (build is the writer with a candidate name), or "" when even one scalar value does not fit. A prefix never ends in a
+// space or a joiner (U+200C, U+200D): those would dangle.
+func shortenName(n string, fits func(candidate string) bool) string {
+	runes := []rune(n)
+	for len(runes) > 0 {
+		runes = runes[:len(runes)-1]
+		for len(runes) > 0 {
+			last := runes[len(runes)-1]
+			if last == ' ' || last == 0x200C || last == 0x200D {
+				runes = runes[:len(runes)-1]
+				continue
+			}
+			break
+		}
+		if len(runes) > 0 && fits(string(runes)) {
+			return string(runes)
+		}
+	}
+	return ""
 }
 
 // normalizeLogin is 5.1: 3-64 characters of a-z 0-9 . _ -, compared case-insensitively, written lower case.

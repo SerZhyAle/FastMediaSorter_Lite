@@ -250,6 +250,65 @@ Public Class ClipboardExchangeTests
     End Function
 
     <Fact>
+    Public Async Function An_owner_that_never_renders_says_it_did_not_answer_and_not_that_the_clipboard_could_not_be_read() As Task
+        ' CLIPBOARD-GUARD item N: the timeout has its own sentence, because trying again later is the remedy.
+        Using server As New ClipboardTestServer()
+            Using rig As New ClipboardTestRig()
+                rig.Targets.Add(ClipboardTestKit.TargetOf(server, "Home"))
+                rig.Port.Snapshot = ClipboardSnapshot.OfKind(ClipboardReadKind.TimedOut)
+
+                Dim result As ClipboardRunResult = Await rig.Exchange().SendAsync(Nothing, ClipboardTestKit.Token())
+
+                Dim line As ClipboardLine = Assert.Single(result.Lines)
+                Assert.Equal(ClipboardLineCode.ClipboardNoAnswer, line.Code)
+                Dim unreadable As String = ClipboardMessages.TextOf(New ClipboardLine(ClipboardLineCode.ClipboardUnreadable))
+                Assert.NotEqual(unreadable, ClipboardMessages.TextOf(line))
+                Assert.Equal(0, server.Connections)
+            End Using
+        End Using
+    End Function
+
+    <Fact>
+    Public Async Function A_text_or_image_over_the_memory_bound_is_refused_and_the_sentence_names_the_bound() As Task
+        Using server As New ClipboardTestServer()
+            Using rig As New ClipboardTestRig()
+                rig.Targets.Add(ClipboardTestKit.TargetOf(server, "Home"))
+                rig.Port.Snapshot = ClipboardSnapshot.OfKind(ClipboardReadKind.TooLarge)
+
+                Dim result As ClipboardRunResult = Await rig.Exchange().SendAsync(Nothing, ClipboardTestKit.Token())
+
+                Dim line As ClipboardLine = Assert.Single(result.Lines)
+                Assert.Equal(ClipboardLineCode.TooLarge, line.Code)
+                Assert.Equal((ClipboardExchange.MemoryCap \ (1024L * 1024L)).ToString(System.Globalization.CultureInfo.InvariantCulture), line.Detail)
+                Assert.Contains(line.Detail, ClipboardMessages.TextOf(line))
+                Assert.Equal(0, server.Connections)
+            End Using
+        End Using
+    End Function
+
+    <Fact>
+    Public Async Function A_file_over_the_default_server_limit_is_refused_before_a_stream_opens_and_the_sentence_names_the_limit() As Task
+        ' CLIPBOARD-GUARD item P: the size is compared before anything is uploaded; DEVICE-EXCHANGE item BZ names the default.
+        Dim bigger As Long = ExchangeClipboardRules.DefaultMaxBytes + 1L
+        Assert.Equal(0L, ExchangeClipboardRules.DefaultMaxBytes Mod (1024L * 1024L * 1024L))
+        Using server As New ClipboardTestServer()
+            Using rig As New ClipboardTestRig()
+                rig.Targets.Add(ClipboardTestKit.TargetOf(server, "Home"))
+                rig.Port.Snapshot = New ClipboardSnapshot(ClipboardReadKind.OneFile, Nothing, "C:\no-such-folder\huge.bin", bigger)
+
+                Dim result As ClipboardRunResult = Await rig.Exchange().SendAsync(Nothing, ClipboardTestKit.Token())
+
+                Assert.False(result.Succeeded)
+                Dim line As ClipboardLine = Assert.Single(result.Lines)
+                Assert.Equal(ClipboardLineCode.OverServerLimit, line.Code)
+                Assert.Equal((ExchangeClipboardRules.DefaultMaxBytes \ (1024L * 1024L * 1024L)).ToString(System.Globalization.CultureInfo.InvariantCulture), line.Detail)
+                Assert.Contains(line.Detail, ClipboardMessages.TextOf(line))
+                Assert.Equal(0, server.Connections)
+            End Using
+        End Using
+    End Function
+
+    <Fact>
     Public Async Function A_clipboard_another_program_holds_ends_inside_the_bound_and_never_hangs() As Task
         ' The real Win32 port against a real holder: another thread opens the clipboard and keeps it open. The read must come back
         ' with the "busy" kind inside its bound, the place with "busy" too - the caller is never left waiting on a held clipboard.

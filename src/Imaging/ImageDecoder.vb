@@ -84,20 +84,21 @@ Public Module ImageDecoderProvider
     ''' <summary>
     ''' Extensions GDI+ cannot open natively, routed through the platform decoder
     ''' instead of Image.FromStream. The modern build adds the Magick.NET-backed
-    ''' formats (epic O-3); the x86 build keeps WEBP only - AVIF/HEIC stay
-    ''' "unsupported" there (Win 7/8.1 WIC has no HEIF codec).
+    ''' formats (epic O-3, and JPEG XL, spec 236); the x86 build keeps WEBP only -
+    ''' AVIF/HEIC/JXL stay "unsupported" there (Win 7/8.1 WIC has no HEIF or JXL codec).
     ''' </summary>
 #If NETFRAMEWORK Then
     Public ReadOnly Decoder_Backed_Extensions As New HashSet(Of String)(StringComparer.OrdinalIgnoreCase) From {".webp"}
 #Else
-    Public ReadOnly Decoder_Backed_Extensions As New HashSet(Of String)(StringComparer.OrdinalIgnoreCase) From {".webp", ".avif", ".heic", ".heif"}
+    Public ReadOnly Decoder_Backed_Extensions As New HashSet(Of String)(StringComparer.OrdinalIgnoreCase) From {".webp", ".avif", ".heic", ".heif", ".jxl"}
 #End If
 
     ''' <summary>
     ''' True when the bytes are a format the platform decoder reads and GDI+ usually does not,
     ''' whatever the file is called (audit 048, A-16): RIFF....WEBP on both builds, plus an
-    ''' ISO-BMFF "ftyp" box (AVIF/HEIC/HEIF) on the mainline, the only build that decodes
-    ''' those. Only the first twelve bytes are looked at. Pure.
+    ''' ISO-BMFF "ftyp" box (AVIF/HEIC/HEIF) and JPEG XL (<c>LooksJxl</c>) on the
+    ''' mainline, the only build that decodes those. Only the first twelve bytes are looked
+    ''' at. Pure.
     ''' </summary>
     Public Function LooksDecoderBacked(head As Byte()) As Boolean
         If head Is Nothing OrElse head.Length < 12 Then Return False
@@ -105,9 +106,30 @@ Public Module ImageDecoderProvider
            head(8) = &H57 AndAlso head(9) = &H45 AndAlso head(10) = &H42 AndAlso head(11) = &H50 Then Return True
 #If Not NETFRAMEWORK Then
         If head(4) = &H66 AndAlso head(5) = &H74 AndAlso head(6) = &H79 AndAlso head(7) = &H70 Then Return True
+        If LooksJxl(head) Then Return True
 #End If
         Return False
     End Function
+
+#If Not NETFRAMEWORK Then
+    ''' <summary>
+    ''' True when the bytes start a JPEG XL file (ISO/IEC 18181, spec 236 section 2.3): either a
+    ''' bare codestream (FF 0A) or the container's 12-byte signature box
+    ''' (size 12, "JXL ", 0D 0A 87 0A). The container's own "ftyp" box comes AFTER that box, so
+    ''' this never overlaps the ISO-BMFF test above. A bare codestream is only two bytes of
+    ''' evidence, which is enough here: the caller has either a decoder-backed extension or a
+    ''' GDI+ refusal already, and FF 0A is neither a JPEG (FF D8) nor any other format this app
+    ''' opens. Pure; tolerates a short or missing head.
+    ''' </summary>
+    Public Function LooksJxl(head As Byte()) As Boolean
+        If head Is Nothing OrElse head.Length < 2 Then Return False
+        If head(0) = &HFF AndAlso head(1) = &HA Then Return True
+        If head.Length < 12 Then Return False
+        Return head(0) = 0 AndAlso head(1) = 0 AndAlso head(2) = 0 AndAlso head(3) = &HC AndAlso
+               head(4) = &H4A AndAlso head(5) = &H58 AndAlso head(6) = &H4C AndAlso head(7) = &H20 AndAlso
+               head(8) = &HD AndAlso head(9) = &HA AndAlso head(10) = &H87 AndAlso head(11) = &HA
+    End Function
+#End If
 
     Public ReadOnly Property Current As IImageDecoder
         Get

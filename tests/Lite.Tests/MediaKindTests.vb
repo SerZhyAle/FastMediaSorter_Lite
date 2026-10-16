@@ -9,7 +9,7 @@ Imports System.Linq
 Imports Xunit
 
 Public Class MediaKindTests
-    Private Shared ReadOnly Images As String() = {".jpg", ".gif", ".jpeg", ".png", ".bmp", ".tif", ".tiff", ".ico", ".wmf", ".emf", ".exif", ".webp", ".avif", ".heic", ".heif"}
+    Private Shared ReadOnly Images As String() = {".jpg", ".gif", ".jpeg", ".png", ".bmp", ".tif", ".tiff", ".ico", ".wmf", ".emf", ".exif", ".webp", ".avif", ".heic", ".heif", ".jxl"}
     Private Shared ReadOnly Playback As String() = {".mp3", ".wav", ".m4a", ".wma", ".ogg", ".mp4", ".mkv"}
 
     <Fact>

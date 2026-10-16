@@ -541,17 +541,49 @@ func TestEnrollKeepsOnlyKnownRolesAndTheReceiverVerbatim(t *testing.T) {
 	raw, _ := testkit.DialTLS(env.Addr, env.Fingerprint)
 	defer raw.Close()
 	_ = raw.Send(&wire.Enroll{Login: "alice", Password: testkit.TestPassword, DeviceID: d.ID, DeviceName: "n", Product: "x",
-		Roles:    []string{"receiver", "emperor", "broadcaster"},
+		Roles:    []string{"receiver", "emperor", "clipboard", "broadcaster"},
 		Receiver: []byte(`{"modes":["AUDIO_ONLY"],"plays":[{"mode":"AUDIO_ONLY","transport":"HTTP_ADTS"}],"vendor":{"deep":{"er":1}}}`)})
 	if r, _ := raw.Recv(3 * time.Second); r == nil {
 		t.Fatal("no answer")
 	}
 	dev, _ := env.Accounts.Device("alice", d.ID)
-	if strings.Join(dev.Roles, ",") != "receiver,broadcaster" {
+	// an unknown role is dropped; `clipboard` is a known one (DEVICE-EXCHANGE 6.1, item BV)
+	if strings.Join(dev.Roles, ",") != "receiver,clipboard,broadcaster" {
 		t.Fatalf("roles: %v", dev.Roles)
 	}
 	if !bytes.Contains(dev.Receiver, []byte(`"vendor":{"deep":{"er":1}}`)) {
 		t.Fatalf("receiver: %s", dev.Receiver)
+	}
+}
+
+// Item BV: a device whose only role is `clipboard` (CyrFlip) is stored with it and the directory tells the
+// other devices of the account so - the role is how they learn who takes part. The server does not read it
+// as a gate.
+func TestAClipboardOnlyDeviceKeepsItsRoleAndTheDirectoryListsIt(t *testing.T) {
+	env := testkit.StartServer(t, looseOpts("alice"))
+	d := env.NewDevice("alice")
+	d.Roles = []string{"clipboard"}
+	mustEnroll(t, d)
+	dev, _ := env.Accounts.Device("alice", d.ID)
+	if strings.Join(dev.Roles, ",") != "clipboard" {
+		t.Fatalf("stored roles: %v", dev.Roles)
+	}
+	_, devices, _, _ := env.Dir.Snapshot("alice")
+	found := false
+	for _, raw := range devices {
+		rec, err := wire.ParseRecord(raw)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if id, _ := rec.Str("deviceId"); id == d.ID {
+			found = true
+			if string(rec.Raw("roles")) != `["clipboard"]` {
+				t.Fatalf("the directory lists roles %s", rec.Raw("roles"))
+			}
+		}
+	}
+	if !found {
+		t.Fatal("the device is not in the directory")
 	}
 }
 

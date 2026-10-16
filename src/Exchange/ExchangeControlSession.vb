@@ -11,9 +11,10 @@ Imports System.Threading.Tasks
 '   hello (the stored token) -> welcome -> [republish hook] -> list -> subscribe -> read loop;
 '   a keepalive at the accepted interval, a missing echo for three intervals is a dead stream;
 '   reconnect with bounded backoff (1, 2, 4, 8, 16, 30 s with jitter), reset by a welcome;
-'   a REFUSAL is not retried (ExchangeRefusalPolicy): bad-credentials and device-revoked stop and say "sign in again", a
-'   pin mismatch stops with a named state and NEVER re-pins, version-unsupported stops with "update", rate-limited backs
-'   off for a minute, capacity retries slowly. Nothing is a retry storm and nothing is silent: every state change is an event.
+'   a REFUSAL is not retried (ExchangeRefusalPolicy): bad-credentials, device-revoked and signed-out (item AT: the password
+'   was changed elsewhere; the entry stays) stop and say "sign in again", a pin mismatch stops with a named state and NEVER
+'   re-pins, version-unsupported stops (the two sides speak different versions), rate-limited backs off for a minute,
+'   capacity retries slowly. Nothing is a retry storm and nothing is silent: every state change is an event.
 '
 ' What this class never does: log or print a token, an `access`, a pairing code or a password; open a second control
 ' stream; speak a plain stream. It holds the clock and the delay as injected functions so the whole machine is tested

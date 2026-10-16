@@ -55,8 +55,7 @@ Friend NotInheritable Class LiveControlLocalization
 
     Friend Sub Apply()
         If form.IsDisposed Then Return
-        form.SuspendLayout()
-        Try
+        Using HoldLayout(form)
             For Each update In updates
                 update()
             Next
@@ -68,10 +67,40 @@ Friend NotInheritable Class LiveControlLocalization
                     AddHandler child.Disposed, Sub() font.Dispose()
                 End If
             Next
-        Finally
-            form.ResumeLayout(True)
-        End Try
+        End Using
     End Sub
+
+    ''' <summary>
+    ''' Holds the layout of the whole tree under <paramref name="root"/> until the result is disposed, then lays it out once,
+    ''' bottom-up. SuspendLayout on the root alone does not hold the nested panels back: every text, font and direction
+    ''' change of a child lays its own parent out at once, and a row that measures its own text (ManagerSettingRow) paid
+    ''' that on each of them - 4-6 s for the 214 controls of the settings window (measured 2026-10-16).
+    ''' </summary>
+    Friend Shared Function HoldLayout(root As Control) As IDisposable
+        Dim containers As New List(Of Control) From {root}
+        containers.AddRange(Children(root).Where(Function(child) child.Controls.Count > 0))
+        For Each container In containers
+            container.SuspendLayout()
+        Next
+        Return New LayoutHold(containers)
+    End Function
+
+    Private NotInheritable Class LayoutHold
+        Implements IDisposable
+        Private ReadOnly containers As List(Of Control)
+
+        Friend Sub New(containers As List(Of Control))
+            Me.containers = containers
+        End Sub
+
+        ' Children() lists a parent before its descendants, so the reverse order resumes the inside first. Every container is
+        ' resumed WITH its pending layout: ResumeLayout(False) drops it, and the window stays arranged for the old language.
+        Public Sub Dispose() Implements IDisposable.Dispose
+            For index = containers.Count - 1 To 0 Step -1
+                containers(index).ResumeLayout(True)
+            Next
+        End Sub
+    End Class
 
     Private Shared Iterator Function Children(parent As Control) As IEnumerable(Of Control)
         For Each child As Control In parent.Controls

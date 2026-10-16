@@ -322,6 +322,7 @@ Invoke-ScriptSuite 'site' 'Published site quality' (Join-Path $root 'tools\Test-
 Invoke-ScriptSuite 'site-addresses' 'Site addresses held outside the site' (Join-Path $root 'tools\Test-SiteAddresses.ps1')
 Invoke-ScriptSuite 'site-origins' 'Third-party origins of the site' (Join-Path $root 'tools\Test-SiteOrigins.ps1')
 Invoke-ScriptSuite 'site-positioning' 'Positioning source and typed facts of the site' (Join-Path $root 'tools\Test-SitePositioning.ps1')
+Invoke-ScriptSuite 'context-help' 'In-app context help (F1, ?)' (Join-Path $root 'tools\Test-ContextHelp.ps1')
 
 # --- optional live suites -----------------------------------------------------
 if ($Integration) {

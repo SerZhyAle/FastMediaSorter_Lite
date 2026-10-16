@@ -8,8 +8,9 @@ Imports System.Linq
 Imports System.Windows.Forms
 
 Partial Public NotInheritable Class Share_Settings_Form
-    ''' <summary>Each page's former fold groups (210): one left-menu item and one static
-    ''' heading block per entry, in page order. No fold state lives here any more.</summary>
+    ''' <summary>Each page's former fold groups (210, recarded by 238): one left-menu item
+    ''' and one collapsible group card per entry, in page order. The card carries the fold
+    ''' state the left menu used to own.</summary>
     Private ReadOnly _pageGroups As New Dictionary(Of String, List(Of SettingsNavGroup))(StringComparer.Ordinal)
     Private _wheelSafety As SettingsWheelSafety
     Private _aboutStart As Control
@@ -19,19 +20,30 @@ Partial Public NotInheritable Class Share_Settings_Form
     Private ReadOnly _fittedSettingsWidths As New Dictionary(Of Panel, Integer)()
     Private _heldSettingsControls As Control()
 
-    ''' <summary>One former fold group of one page: its id in stored state, its localized
-    ''' caption source, the static heading that names the block in the right pane and the
-    ''' rows that belong to it (210 section 5).</summary>
+    ''' <summary>One former fold group of one page (238): its id in stored state, its
+    ''' localized caption source, the collapsible card that frames its rows in the right
+    ''' pane, and the rows themselves (210 section 5).</summary>
     Friend NotInheritable Class SettingsNavGroup
         Friend Id As String
         Friend CaptionSource As Func(Of String)
-        Friend Heading As Label
+        Friend Card As SettingsGroupCard
         Friend Rows As New List(Of Control)()
 
         Friend ReadOnly Property Caption As String
             Get
                 Return CaptionSource()
             End Get
+        End Property
+
+        ''' <summary>The card is the single fold state; before it exists (mid-build) the
+        ''' group reads expanded, the build default of a page's first card.</summary>
+        Friend Property Expanded As Boolean
+            Get
+                Return If(Card Is Nothing, True, Card.Expanded)
+            End Get
+            Set(value As Boolean)
+                If Card IsNot Nothing Then Card.Expanded = value
+            End Set
         End Property
     End Class
 
@@ -78,7 +90,7 @@ Partial Public NotInheritable Class Share_Settings_Form
             Case "exchange" : Return ExchangeText.Title()
             Case "exchange-account" : Return ExchangeDeviceText.GroupTitle()
             Case "scheduled" : Return ScheduledPageCaption()
-            Case Else : Return Localization.T("О программе")
+            Case Else : Return Localization.T("Справка")
         End Select
     End Function
 
@@ -110,8 +122,9 @@ Partial Public NotInheritable Class Share_Settings_Form
         section.AddBodyRow(support)
     End Sub
 
-    ' The page owns the old section's editors; the inner groups are one static heading each
-    ' (210 section 5): the fold lives in the left menu, the content never hides a row.
+    ' The page owns the old section's editors; each inner group is one collapsible card
+    ' (238 section 2.3): header bar, hairline boundary, fold state of its own. The left
+    ' menu names the blocks; the cards give them their bodies and their borders.
     Private Sub BuildContractGroups(section As CollapsibleSection)
         ' Group classification uses the original controls, before adjacent commands are packed.
         Dim commandRows = section.Body.Controls.OfType(Of FlowLayoutPanel)().
@@ -133,26 +146,35 @@ Partial Public NotInheritable Class Share_Settings_Form
                 Case "startup"
                     Dim appearance = row.Contains(cmbTheme) OrElse row.Contains(cmbLanguage)
                     nextId = If(appearance, "appearance", "startup")
-                    caption = If(appearance, Function() Localization.T("Настройки интерфейса"), Function() Localization.T("Запуск"))
+                    caption = If(appearance, Function() Localization.T("Тема и язык"), Function() Localization.T("Автозапуск и запуск"))
                 Case "network"
                     Dim policyIndex = Array.IndexOf(rows, DirectCast(chkLanOnly, Control))
                     Dim policy = Array.IndexOf(rows, row) >= policyIndex
                     nextId = If(policy, "access", "connections")
-                    caption = If(policy, Function() Localization.T("Сеть"), Function() Localization.T("Подключения"))
+                    caption = If(policy, Function() Localization.T("Сетевая политика и Wi-Fi"), Function() Localization.T("Локальные подключения"))
                 Case "hosting"
                     Dim actions = Array.IndexOf(rows, row) >= Array.IndexOf(rows, DirectCast(_btnSwitchToService, Control))
                     nextId = If(actions, "service", "status")
-                    caption = If(actions, Function() Localization.T("Служба Windows"), Function() Localization.T("Состояние"))
+                    caption = If(actions, Function() Localization.T("Управление службой"), Function() Localization.T("Текущее состояние"))
                 Case "exchange"
                     If row Is _pnlXConfig Then
-                        nextId = "configuration" : caption = Function() Localization.T("Сеть")
+                        nextId = "configuration" : caption = Function() Localization.T("Сетевой адрес и порты")
                     ElseIf row Is _pnlXAccounts Then
                         nextId = "accounts" : caption = Function() ExchangeAdminText.AccountsTitle()
-                    ElseIf Array.IndexOf(rows, row) > Array.IndexOf(rows, DirectCast(_pnlXAccounts, Control)) Then
-                        nextId = "service" : caption = Function() Localization.T("Служба Windows")
+                    ElseIf row Is _pnlXDevices Then
+                        nextId = "devices" : caption = Function() Localization.T("Подключённые устройства")
+                    ElseIf row Is _pnlXInvitations Then
+                        nextId = "invitations" : caption = Function() Localization.T("Приглашения и регистрация")
+                    ElseIf _pnlXInvitations IsNot Nothing AndAlso Array.IndexOf(rows, row) > Array.IndexOf(rows, DirectCast(_pnlXInvitations, Control)) Then
+                        nextId = "service" : caption = Function() Localization.T("Управление службой")
+                    ElseIf _pnlXAccounts IsNot Nothing AndAlso Array.IndexOf(rows, row) > Array.IndexOf(rows, DirectCast(_pnlXAccounts, Control)) Then
+                        nextId = "service" : caption = Function() Localization.T("Управление службой")
                     Else
-                        nextId = "server" : caption = Function() ExchangeText.Title()
+                        nextId = "server" : caption = Function() Localization.T("Основные параметры")
                     End If
+                Case "exchange-account"
+                    nextId = "account"
+                    caption = Function() Localization.T("Основные параметры")
                 Case "scheduled"
                     ' The list and its commands, then what applies to this PC (4.4).
                     Dim machine = Array.IndexOf(rows, row) >= Array.IndexOf(rows, DirectCast(_schedFeature, Control))
@@ -166,22 +188,41 @@ Partial Public NotInheritable Class Share_Settings_Form
             If current Is Nothing OrElse nextId <> groupId Then
                 groupId = nextId
                 current = New SettingsNavGroup With {.Id = groupId, .CaptionSource = caption}
-                Dim heading As New Label With {.Text = current.Caption, .AutoSize = True, .Dock = DockStyle.Top,
-                    .Name = "managerSettingsHeading_" & section.Key & "_" & groupId,
-                    .Font = New Font(Font.FontFamily, Font.Size, FontStyle.Bold), .Margin = New Padding(0, 10, 0, 4)}
-                AddHandler heading.Disposed, Sub() heading.Font.Dispose()
-                current.Heading = heading
-                section.AddBodyRow(heading)
+                ' 238 section 2.2: the refined captions above never repeat the page title,
+                ' and the card - not a bare label - marks where one block ends and the next
+                ' begins. The page's first card is the one that starts open (T-3).
+                Dim card As New SettingsGroupCard(current.Caption, groups.Count = 0) With {
+                    .Name = "managerSettingsCard_" & section.Key & "_" & groupId}
+                current.Card = card
+                Dim pId = section.Key
+                Dim grp = current
+                AddHandler card.ExpandedChanged, Sub() OnGroupCardExpansionChanged(pId, grp)
+                section.AddBodyRow(card)
                 groups.Add(current)
             End If
             current.Rows.Add(row)
-            section.AddBodyRow(row)
+            current.Card.AddBodyRow(row)
         Next
         _pageGroups.Add(section.Key, groups)
         For Each commands In commandRows
             commands.Dispose()
         Next
         section.Body.ResumeLayout(False)
+    End Sub
+
+    Friend Sub SetGroupExpanded(pageId As String, group As SettingsNavGroup, expanded As Boolean)
+        group.Expanded = expanded
+    End Sub
+
+    ''' <summary>The one fold-state write (238 T-4): the card raises the event after its own
+    ''' single layout pass, the state is recorded at once, and the shown page is measured one
+    ''' more time so the viewport's scrollbar follows the fold. A restore during the build
+    ''' only records - no page is visible to re-measure.</summary>
+    Private Sub OnGroupCardExpansionChanged(pageId As String, group As SettingsNavGroup)
+        managerSettingsContext.Page(pageId).Groups(group.Id) = group.Card.Expanded
+        If Not _built OrElse _loading Then Return
+        Dim viewport As Panel = Nothing
+        If _pages.TryGetValue(pageId, viewport) AndAlso viewport.Visible Then viewport.PerformLayout()
     End Sub
 
     ' Async state snapshots change many visibility/text values together, never one live layout per field.
@@ -222,6 +263,11 @@ Partial Public NotInheritable Class Share_Settings_Form
         For Each section In SettingsSections()
             section.Body.ResumeLayout(False)
             section.ResumeLayout(False)
+        Next
+        ' The cards were created suspended (their constructor's handoff, like the sections').
+        For Each grp As SettingsNavGroup In _pageGroups.Values.SelectMany(Function(g) g)
+            grp.Card.Body.ResumeLayout(False)
+            grp.Card.ResumeLayout(False)
         Next
         For Each control In _heldSettingsControls.Reverse()
             control.ResumeLayout(False)
@@ -421,42 +467,45 @@ Partial Public NotInheritable Class Share_Settings_Form
         _loading = True
         SuspendLayout()
         Try
-            Text = Localization.T("Настройки менеджера")
-            ApplyHostingState(_hostingSnapshot)
-            If _exchangeSnapshot IsNot Nothing Then ApplyExchangeState(_exchangeSnapshot)
-            ApplyAccountState()
-            ApplyProducerState()
-            RefreshScheduledLanguage()
-            UpdateSummaries()
-            For Each section In AllSettingsSections()
-                _navButtons(section.Key).Text = SettingsPageCaption(section)
-                _navButtons(section.Key).AccessibleName = _navButtons(section.Key).Text
-                Dim items As List(Of SettingsNavItemButton) = Nothing
-                If _navItems.TryGetValue(section.Key, items) Then
-                    For Each item In items
-                        item.Text = item.Group.Caption
-                        item.AccessibleName = item.Group.Caption
-                        toolTip.SetToolTip(item, item.Group.Caption)
-                        item.Group.Heading.Text = item.Group.Caption
-                    Next
-                End If
-            Next
-            Dim version = Descendants(Me).FirstOrDefault(Function(control) control.Name = "managerVersion")
-            If version IsNot Nothing Then version.Text = Localization.TF("Версия: {0}", Application.ProductVersion)
-            Dim license = Descendants(Me).FirstOrDefault(Function(control) control.Name = "managerLicense")
-            If license IsNot Nothing Then license.Text = Localization.TF("Лицензия: {0}", LicenseName)
-            For Each row In Descendants(Me).OfType(Of ManagerSettingRow)()
-                row.Editor.AccessibleName = row.Caption.Text
-                row.Editor.AccessibleDescription = row.Hint.Text
-            Next
-            cmbTheme.Items.Clear()
-            cmbTheme.Items.AddRange({Localization.T("Как в системе"), Localization.T("Светлая"), Localization.T("Тёмная")})
-            cmbTheme.SelectedIndex = CInt(ThemeService.Mode)
-            cmbLanguage.SelectedIndex = Localization.CurrentIndex
-            For Each button In _headerCommands
-                button.AccessibleName = SettingsCommandCaption(button.Name)
-                toolTip.SetToolTip(button, button.AccessibleName)
-            Next
+            ' Every container held while the captions change, laid out once after - see LiveControlLocalization.HoldLayout.
+            Using LiveControlLocalization.HoldLayout(Me)
+                Text = Localization.T("Настройки менеджера")
+                ApplyHostingState(_hostingSnapshot)
+                If _exchangeSnapshot IsNot Nothing Then ApplyExchangeState(_exchangeSnapshot)
+                ApplyAccountState()
+                ApplyProducerState()
+                RefreshScheduledLanguage()
+                UpdateSummaries()
+                For Each section In AllSettingsSections()
+                    _navButtons(section.Key).Text = SettingsPageCaption(section)
+                    _navButtons(section.Key).AccessibleName = _navButtons(section.Key).Text
+                    Dim items As List(Of SettingsNavItemButton) = Nothing
+                    If _navItems.TryGetValue(section.Key, items) Then
+                        For Each item In items
+                            item.Text = item.Group.Caption
+                            item.AccessibleName = item.Group.Caption
+                            toolTip.SetToolTip(item, item.Group.Caption)
+                            item.Group.Card.Caption = item.Group.Caption
+                        Next
+                    End If
+                Next
+                Dim version = Descendants(Me).FirstOrDefault(Function(control) control.Name = "managerVersion")
+                If version IsNot Nothing Then version.Text = Localization.TF("Версия: {0}", Application.ProductVersion)
+                Dim license = Descendants(Me).FirstOrDefault(Function(control) control.Name = "managerLicense")
+                If license IsNot Nothing Then license.Text = Localization.TF("Лицензия: {0}", LicenseName)
+                For Each row In Descendants(Me).OfType(Of ManagerSettingRow)()
+                    row.Editor.AccessibleName = row.Caption.Text
+                    row.Editor.AccessibleDescription = row.Hint.Text
+                Next
+                cmbTheme.Items.Clear()
+                cmbTheme.Items.AddRange({Localization.T("Как в системе"), Localization.T("Светлая"), Localization.T("Тёмная")})
+                cmbTheme.SelectedIndex = CInt(ThemeService.Mode)
+                cmbLanguage.SelectedIndex = Localization.CurrentIndex
+                For Each button In _headerCommands
+                    button.AccessibleName = SettingsCommandCaption(button.Name)
+                    toolTip.SetToolTip(button, button.AccessibleName)
+                Next
+            End Using
             ArrangeSettingsNavigation()
             FitSettingsContent()
         Finally

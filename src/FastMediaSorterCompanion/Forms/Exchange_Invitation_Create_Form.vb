@@ -6,6 +6,8 @@ Imports System.Windows.Forms
 ''' <summary>
 ''' Dialog for creating an invitation to the exchange server (ticket 224 rule 1 and rule 3).
 ''' Offers a choice of family (full account) or guest account (announces nothing, sees only granted resources).
+''' Ticket 239 CR-13 (Q239-2): the guest choice is shown as not available, with the reason, while
+''' <see cref="OutwardAccessFeatures.Offered"/> is False; the dialog then creates a family invitation only.
 ''' </summary>
 Friend NotInheritable Class Exchange_Invitation_Create_Form
     Inherits Form
@@ -22,7 +24,7 @@ Friend NotInheritable Class Exchange_Invitation_Create_Form
 
     Public ReadOnly Property Kind As String
         Get
-            Return If(_rbGuest IsNot Nothing AndAlso _rbGuest.Checked, "guest", "member")
+            Return If(OutwardAccessFeatures.IsOffered() AndAlso _rbGuest IsNot Nothing AndAlso _rbGuest.Checked, "guest", "member")
         End Get
     End Property
 
@@ -59,7 +61,7 @@ Friend NotInheritable Class Exchange_Invitation_Create_Form
             .Margin = New Padding(20, 0, 0, 6), .Text = Localization.T("Создаёт полноценный аккаунт с возможностью публикации ресурсов.")})
 
         _rbGuest = New RadioButton With {.AutoSize = True, .Margin = New Padding(0, 4, 0, 2),
-            .Text = Localization.T("Гость")}
+            .Text = Localization.T("Гость"), .Enabled = OutwardAccessFeatures.IsOffered()}
         RefreshGuestGlyph()
         AddHandler _rbGuest.ForeColorChanged, Sub() RefreshGuestGlyph()
         AddHandler _rbGuest.DpiChangedAfterParent, Sub() RefreshGuestGlyph()
@@ -68,7 +70,8 @@ Friend NotInheritable Class Exchange_Invitation_Create_Form
         AddHandler Me.Disposed, Sub() _rbGuest.Image.Dispose()
         body.Controls.Add(_rbGuest)
         body.Controls.Add(New Label With {.AutoSize = True, .MaximumSize = New Size(ContentWidth, 0), .ForeColor = ThemeService.Palette.TextMuted,
-            .Margin = New Padding(20, 0, 0, 10), .Text = Localization.T("Видит только явно предоставленные ему ресурсы и ничего не публикует.")})
+            .Margin = New Padding(20, 0, 0, 10),
+            .Text = If(OutwardAccessFeatures.IsOffered(), Localization.T("Видит только явно предоставленные ему ресурсы и ничего не публикует."), OutwardAccessFeatures.Reason())})
 
         Dim btnRow As New FlowLayoutPanel With {.AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink, .Margin = New Padding(0, 8, 0, 2)}
         Dim btnOk As Button = NewButton(Localization.T("Создать"), Sub() Me.DialogResult = DialogResult.OK, "action.confirm", ButtonGlyphRole.Affirmative)

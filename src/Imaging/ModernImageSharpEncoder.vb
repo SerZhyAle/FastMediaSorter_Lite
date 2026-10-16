@@ -73,16 +73,17 @@ Friend NotInheritable Class ModernImageSharpEncoder
     End Class
 
     ''' <summary>
-    ''' Reads the donor's profiles. ImageSharp knows no HEIF/AVIF, so an ISO-BMFF donor is
-    ''' read through Magick.NET instead - the same routing by signature the decoder uses
-    ''' (audit 052 G-12: "Save as" from an iPhone HEIC lost its capture date and GPS). Never
-    ''' throws: a donor that cannot be read gives an empty set, and the save goes on.
+    ''' Reads the donor's profiles. ImageSharp knows no HEIF/AVIF and no JPEG XL, so an ISO-BMFF
+    ''' or JXL donor is read through Magick.NET instead - the same routing by signature the
+    ''' decoder uses (audit 052 G-12: "Save as" from an iPhone HEIC lost its capture date and
+    ''' GPS; spec 236: a JXL photo would have lost them the same way). Never throws: a donor
+    ''' that cannot be read gives an empty set, and the save goes on.
     ''' </summary>
     Friend Shared Function ReadDonorMetadata(source As Byte()) As DonorMetadata
         Dim donor As New DonorMetadata()
         If source Is Nothing OrElse source.Length = 0 Then Return donor
         Try
-            If IsIsoBmff(source) Then
+            If IsIsoBmff(source) OrElse ImageDecoderProvider.LooksJxl(source) Then
                 ReadDonorViaMagick(source, donor)
             Else
                 ' Identify parses the header only - the donor's pixels are never decoded,

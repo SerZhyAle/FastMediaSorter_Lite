@@ -62,7 +62,7 @@ Partial Public Class Main_Form
         If OpenDefaultAppsSettingsWhenPackaged() Then Return
 #End If
         ' Only formats this app can actually DISPLAY. The modern build claims
-        ' avif/heic/heif too (Magick.NET decodes them, epic O-3); on x86 they stay
+        ' avif/heic/heif/jxl too (Magick.NET decodes them, epic O-3, spec 236); on x86 they stay
         ' unclaimed - no decoder there, so becoming their default handler would
         ' mean a double-click opens a blank window. svg is claimed by neither.
         ' Unclaimed formats stay scannable/sortable inside a folder
@@ -76,7 +76,7 @@ Partial Public Class Main_Form
         Dim all_Image_Extensions() As String = {
             ".jpg", ".jpeg", ".gif", ".png", ".bmp", ".tif", ".tiff",
             ".ico", ".wmf", ".emf", ".exif", ".webp",
-            ".avif", ".heic", ".heif"
+            ".avif", ".heic", ".heif", ".jxl"
         }
 #End If
 

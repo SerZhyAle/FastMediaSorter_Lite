@@ -24,8 +24,11 @@ const (
 	maxRoles       = 8
 )
 
-// KnownRoles are the four device roles of DEVICE-EXCHANGE 6.1; an enroll keeps only these.
-var KnownRoles = []string{"resource-producer", "resource-consumer", "broadcaster", "receiver"}
+// KnownRoles are the device roles of DEVICE-EXCHANGE 6.1 - the four of the first edition and `clipboard`
+// (item BV: a device that sends or receives clipboard values declares it, and the directory tells the
+// other devices of the account which of them take part); an enroll keeps only these. The server never
+// refuses a clipboard envelope for a missing role: the role is information, not a gate.
+var KnownRoles = []string{"resource-producer", "resource-consumer", "broadcaster", "receiver", "clipboard"}
 
 // validate on Head is the default: an envelope with no required member.
 func (h *Head) validate() error { return nil }
@@ -243,31 +246,28 @@ func (e *CastStop) validate() error {
 }
 
 func (e *Register) validate() error {
-	// The contract's prose names (`invitation`, `invitationPassword`) are folded into the fold's names; the
-	// same member twice, under both names, is a malformed frame like "an invitation and a password".
-	if e.Invitation != "" {
-		if e.InvitationCode != "" {
-			return errors.New("invitation given twice")
-		}
-		e.InvitationCode, e.Invitation = e.Invitation, ""
+	// The contract's names are `invitation` and `invitationPassword` (item AQ); the first spellings of this
+	// server, `invitationCode` and `sharedPassword`, are read as well. The frame keeps the names it came
+	// with (so it encodes back to the same bytes) and the engine reads Code and Shared. The same member
+	// under both names is a malformed frame, like an invitation and a password together.
+	if e.Invitation != "" && e.InvitationCode != "" {
+		return errors.New("invitation given twice")
 	}
-	if e.InvitationPassword != "" {
-		if e.SharedPassword != "" {
-			return errors.New("invitationPassword given twice")
-		}
-		e.SharedPassword, e.InvitationPassword = e.InvitationPassword, ""
+	if e.InvitationPassword != "" && e.SharedPassword != "" {
+		return errors.New("invitationPassword given twice")
 	}
 	if err := required("login", e.Login, maxLogin); err != nil {
 		return err
 	}
+	code, shared := e.Code(), e.Shared()
 	switch {
-	case e.InvitationCode != "" && e.SharedPassword != "":
+	case code != "" && shared != "":
 		return errors.New("an invitation and an invitationPassword together")
-	case e.InvitationCode == "" && e.SharedPassword == "":
+	case code == "" && shared == "":
 		return errors.New("an invitation or an invitationPassword is required")
-	case e.InvitationCode != "" && !ValidID(e.InvitationCode):
+	case code != "" && !ValidID(code):
 		return errors.New("invitation is not 22 characters of 16 bytes")
-	case len(e.SharedPassword) > maxPassword || !utf8.ValidString(e.SharedPassword):
+	case len(shared) > maxPassword || !utf8.ValidString(shared):
 		return errors.New("invitationPassword is out of bounds")
 	}
 	if len(e.Password) == 0 || len(e.Password) > maxPassword || !utf8.ValidString(e.Password) {

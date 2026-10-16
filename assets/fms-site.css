@@ -41,8 +41,12 @@
    the kit's), then the one h1, which states the outcome. This layer styles none of them; it only lets a long word of a
    long language break instead of widening the page. */
 .hero h1{overflow-wrap:anywhere}
+.language-row{display:flex;flex-wrap:wrap;gap:4px;align-items:center;direction:ltr}
+.language-row a,.seg a{display:inline-flex;align-items:center;justify-content:center;min-width:44px;min-height:44px;text-decoration:none}
+.language-row a.on{color:var(--text);font-weight:700;text-decoration:underline}
+.seg a{font-family:var(--font-heading);font-size:11px;font-weight:700;color:var(--muted);padding:6px 12px}
 
-/* Every language, in the header, one control (<details>, no script needed to open it). */
+/* Non-landing pages may use the documentation language picker (PAGE-STYLE 4.2). */
 .lang-menu{position:relative}
 .lang-menu>summary,.site-nav .nav-doc{list-style:none;cursor:pointer;font-family:var(--font-heading);font-size:11px;font-weight:700;
   letter-spacing:.04em;padding:7px 12px;border:1px solid var(--border);border-radius:20px;color:var(--muted);white-space:nowrap}

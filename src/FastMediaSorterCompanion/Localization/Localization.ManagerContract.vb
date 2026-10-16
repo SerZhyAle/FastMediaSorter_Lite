@@ -1,4 +1,4 @@
-﻿Option Strict On
+Option Strict On
 
 Partial Public NotInheritable Class Localization
     Private Shared Sub AddManagerContractStrings()
@@ -212,5 +212,25 @@ Partial Public NotInheritable Class Localization
             "সেটিংস খুঁজুন",
             "ترتیبات تلاش کریں",
             "搜索设置")
+
+        ' Specs 237 and 238: refined settings group captions and manager toolbar
+        Add("Основные параметры", "Basic parameters", "Основні параметри", "Grundparameter", "Parametri di base", "Parámetros básicos", "Paramètres de base", "Parâmetros básicos", "المعلمات الأساسية", "बुनियादी पैरामीटर", "মৌলিক পরামিতি", "بنیادی پیرامیٹرز", "基本参数")
+        Add("Сетевой адрес и порты", "Network address and ports", "Мережева адреса та порти", "Netzwerkadresse und Ports", "Indirizzo di rete e porte", "Dirección de red y puertos", "Adresse réseau et ports", "Endereço de rede e portas", "عنوان الشبكة والمنافذ", "नेटवर्क पता और पोर्ट", "নেটওয়ার্ক ঠিকানা ও পোর্ট", "نیٹ ورک کا پتہ اور پورٹس", "网络地址和端口")
+        Add("Подключённые устройства", "Connected devices", "Підключені пристрої", "Verbundene Geräte", "Dispositivi connessi", "Dispositivos conectados", "Appareils connectés", "Dispositivos conectados", "الأجهزة المتصلة", "कनेक्ट किए गए डिवाइस", "সংযুক্ত ডিভাইস", "منسلک آلات", "已连接的设备")
+        Add("Приглашения и регистрация", "Invitations and registration", "Запрошення та реєстрація", "Einladungen und Registrierung", "Inviti e registrazione", "Invitaciones y registro", "Invitations et inscription", "Convites e registro", "الدعوات والتسجيل", "निमंत्रण और पंजीकरण", "আমন্ত্রণ ও নিবন্ধন", "دعوت نامے اور رجسٹریشن", "邀请与注册")
+        Add("Автозапуск и запуск", "Autostart and startup", "Автозапуск і запуск", "Autostart und Start", "Avvio automatico e avvio", "Inicio automático y arranque", "Démarrage automatique et lancement", "Inicialização automática e início", "التشغيل التلقائي وبدء التشغيل", "ऑटोस्टार्ट और प्रारंभ", "স্বয়ংক্রিয় চালু ও শুরু", "خودکار آغاز اور لانچ", "自启动与启动")
+        Add("Тема и язык", "Theme and language", "Тема та мова", "Design und Sprache", "Tema e lingua", "Tema e idioma", "Thème et langue", "Tema e idioma", "السمة واللغة", "थीम और भाषा", "থিম ও ভাষা", "تھیم اور زبان", "主题与语言")
+        Add("Локальные подключения", "Local connections", "Локальні підключення", "Lokale Verbindungen", "Connessioni locali", "Conexiones locales", "Connexions locales", "Conexões locais", "الاتصالات المحلية", "स्थानीय कनेक्शन", "স্থানীয় সংযোগ", "مقامی کنکشنز", "本地连接")
+        Add("Сетевая политика и Wi-Fi", "Network policy and Wi-Fi", "Мережева політика та Wi-Fi", "Netzwerkrichtlinie und Wi-Fi", "Criteri di rete e Wi-Fi", "Directiva de red y Wi-Fi", "Stratégie réseau et Wi-Fi", "Política de rede e Wi-Fi", "نهج الشبكة وWi-Fi", "नेटवर्क नीति और Wi-Fi", "নেটওয়ার্ক नीति ও Wi-Fi", "نیٹ ورک پالیسی اور Wi-Fi", "网络策略与 Wi-Fi")
+        Add("Текущее состояние", "Current state", "Поточний стан", "Aktueller Zustand", "Stato corrente", "Estado actual", "État actuel", "Estado atual", "الحالة الحالية", "वर्तमान स्थिति", "বর্তমান অবস্থা", "موجودہ حالت", "当前状态")
+        Add("Управление службой", "Service management", "Керування службою", "Dienstverwaltung", "Gestione del servizio", "Gestión del servicio", "Gestion du service", "Gestão do serviço", "إدارة الخدمة", "सेवा प्रबंधन", "পরিষেবা পরিচালনা", "سروس کا انتظام", "服务管理")
+        Add("Показать в Проводнике", "Show in File Explorer", "Показати у Провіднику", "Im Datei-Explorer anzeigen", "Mostra in Esplora file", "Mostrar en el Explorador de archivos", "Afficher dans l'Explorateur de fichiers", "Mostrar no Explorador de Arquivos", "إظهار في مستكشف الملفات", "फ़ाइल एक्सप्लोरर में दिखाएं", "ফাইল এক্সপ্লোরারে দেখান", "فائل ایکسپلورر میں دکھائیں", "在文件资源管理器中显示")
+        Add("Буфер обмена ▾", "Clipboard ▾", "Буфер обміну ▾", "Zwischenablage ▾", "Appunti ▾", "Portapapeles ▾", "Presse-papiers ▾", "Área de transferência ▾", "الحافظة ▾", "क्लिपबोर्ड ▾", "ক্লিপবোর্ড ▾", "کلپ بورڈ ▾", "剪贴板 ▾")
+        Add("Буфер обмена (передача..)", "Clipboard (transferring..)", "Буфер обміну (передавання..)", "Zwischenablage (Übertragung..)", "Appunti (trasferimento..)", "Portapapeles (transfiriendo..)", "Presse-papiers (transfert..)", "Área de transferência (transferindo..)", "الحافظة (جارٍ النقل..)", "क्लिपबोर्ड (स्थानांतरित हो रहा है..)", "ক্লিপবোর্ড (স্থানান্তর হচ্ছে..)", "کلپ بورڈ (منتقلی جاری ہے..)", "剪贴板 (传输中..)")
+        Add("[i] Защита обмена", "[i] Exchange security", "[i] Захист обміну", "[i] Exchange-Sicherheit", "[i] Sicurezza di scambio", "[i] Seguridad de intercambio", "[i] Sécurité d'échange", "[i] Segurança de troca", "[i] أمان التبادل", "[i] एक्सचेंज सुरक्षा", "[i] এক্সচেঞ্জ নিরাপত্তা", "[i] ایکسچینج سیکیورٹی", "[i] 交换安全")
+        Add("[i] Защита: только чтение", "[i] Protection: read-only", "[i] Захист: тільки для читання", "[i] Schutz: schreibgeschützt", "[i] Protezione: sola lettura", "[i] Protección: solo lectura", "[i] Protection : lecture seule", "[i] Proteção: somente leitura", "[i] الحماية: للقراءة فقط", "[i] सुरक्षा: केवल पढ़ने के लिए", "[i] সুরক্ষা: শুধুমাত্র পাঠযোগ্য", "[i] تحفظ: صرف پڑھنے کے لیے", "[i] 保护：只读")
+        Add("Мастер добавления ресурса..", "Resource addition wizard..", "Майстер додавання ресурсу..", "Assistent zum Hinzufügen von Ressourcen..", "Creazione guidata aggiunta risorsa..", "Asistente para agregar recursos..", "Assistant d'ajout de ressource..", "Assistente de adição de recursos..", "معالج إضافة الموارد..", "संसाधन जोड़ने का विज़ार्ड..", "রিসোর্স যোগ করার উইজার্ড..", "وسائل شامل کرنے کا وزرڈ..", "添加资源向导..")
+        Add("Папку..", "Folder..", "Теку..", "Ordner..", "Cartella..", "Carpeta..", "Dossier..", "Pasta..", "مجلد..", "फ़ोल्डर..", "ফোল্ডার..", "فولڈر..", "文件夹..")
+        Add("Добавить..", "Add..", "Додати..", "Hinzufügen..", "Aggiungi..", "Agregar..", "Ajouter..", "Adicionar..", "إضافة..", "जोड़ें..", "যোগ করুন..", "شامل کریں..", "添加..")
     End Sub
 End Class

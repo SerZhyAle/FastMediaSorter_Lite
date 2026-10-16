@@ -1,5 +1,5 @@
 {
-  "contract": "DEVICE-EXCHANGE 0.27, section 25 item CW; S4219, 2026-10-14",
+  "contract": "DEVICE-EXCHANGE 1.1, section 2 items CV and CW; S4219, 2026-10-14; label corrected 2026-10-16 (spec 239 CR-12)",
   "sourceTableSha256": "285ab2dd0797c8ad91f8a1e0133bd538dce87160af0ba204b477cecf2cbeb242",
   "terms": [
     {

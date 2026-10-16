@@ -161,8 +161,8 @@ func generateRecords() []recordCase {
 			`"roles":["resource-producer","resource-consumer","broadcaster","receiver"],`+
 			`"receiver":{"modes":["AUDIO_ONLY","VIDEO_AUDIO"],"transports":["HTTP","RTSP","RELAY","TUNNEL"],`+
 			`"plays":[{"mode":"AUDIO_ONLY","transport":"RELAY"},{"mode":"VIDEO_AUDIO","transport":"RTSP"}],"future":{"a":{"b":[1,2]}}}`, false)
-	devCase("device-unknown-role", "a role the server does not know is not kept: only the four roles of 6.1 are",
-		`"deviceName":"Odd roles","product":"fms-windows","roles":["receiver","time-traveller"],"receiver":{"modes":["AUDIO_ONLY"],"transports":["RELAY"]}`, false)
+	devCase("device-unknown-role", "a role the server does not know is not kept: only the roles of 6.1 are - the four of the first edition and `clipboard` (item BV), which is kept",
+		`"deviceName":"Odd roles","product":"fms-windows","roles":["receiver","clipboard","time-traveller"],"receiver":{"modes":["AUDIO_ONLY"],"transports":["RELAY"]}`, false)
 	devCase("device-unknown-product", "an unknown product value is kept and shown raw",
 		`"deviceName":"Strange","product":"some-other-product"`, false)
 	devCase("device-receiver-null", "a receiver member that is null says nothing: it is absent, not malformed",
@@ -219,8 +219,18 @@ func generateRecords() []recordCase {
 	resCase("resource-unknown-kind", "an unknown kind is stored and listed; a reader shows it as unsupported", a, id,
 		fmt.Sprintf(`{"resourceId":%q,"kind":"future-kind","name":"Not an sftp share"}`, id))
 	id = r.newID()
-	resCase("resource-16KiB-exact", "a record of exactly 16384 bytes is accepted", a, id,
+	resCase("resource-16KiB-exact", "a record of exactly 16384 bytes as sent is refused with capacity and stores nothing: the bound is the record as delivered (item BS), and the members the server adds (deviceId, presence, updatedAt) make this one longer than 16384 when it is listed", a, id,
 		recordOfSize(fmt.Sprintf(`{"resourceId":%q,"kind":"sftp-share","name":"Big"`, id), `}`, 16384))
+	// the largest input whose record is within the bound in every form the server lists it in: a record with
+	// none of the producer's live members is widest once its device is offline (presence `offline` is a byte
+	// longer than `online`), so the input is 16384 less what the server adds to it in that form
+	serverAdds := len(fmt.Sprintf(`,"deviceId":%q`, aDev)) + len(`,"presence":"offline"`) + len(fmt.Sprintf(`,"updatedAt":%q`, wire.FormatTime(instant)))
+	id = r.newID()
+	resCase("resource-delivered-16KiB-exact", fmt.Sprintf("the largest record that is accepted: %d bytes as sent, listed at 16383 bytes while its device is online and at exactly 16384 once the device is offline (presence `offline` is a byte longer than `online`)", 16384-serverAdds), a, id,
+		recordOfSize(fmt.Sprintf(`{"resourceId":%q,"kind":"sftp-share","name":"Edge"`, id), `}`, 16384-serverAdds))
+	id = r.newID()
+	resCase("resource-delivered-16KiB-plus-1", fmt.Sprintf("one byte more than the largest accepted record (%d bytes as sent) is refused with capacity and stores nothing: its delivered form would be 16385 bytes", 16384-serverAdds+1), a, id,
+		recordOfSize(fmt.Sprintf(`{"resourceId":%q,"kind":"sftp-share","name":"Edge"`, id), `}`, 16384-serverAdds+1))
 	id = r.newID()
 	resCase("resource-16KiB-plus-1", "a record one byte over 16 KiB is refused with capacity and stores nothing", a, id,
 		recordOfSize(fmt.Sprintf(`{"resourceId":%q,"kind":"sftp-share","name":"Too big"`, id), `}`, 16385))

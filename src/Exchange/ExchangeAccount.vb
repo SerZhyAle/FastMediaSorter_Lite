@@ -272,13 +272,16 @@ Friend NotInheritable Class ExchangeDeviceDescription
 End Class
 
 ''' <summary>Which roles this device declares: computed from what is installed and switched on, and a role not declared is
-''' never asked of the device (6.1). The facts are injected; the production facts answer False for every role whose ticket
-''' (170 producer, 171 consumer, 172-173 broadcaster, 174 receiver) is not built, so a role is never declared ahead of its code.</summary>
+''' never asked of the device (6.1). The facts are injected; a production fact answers False for a role whose code is not built,
+''' so a role is never declared ahead of its code. `fms-windows` declares up to five roles (item CE): the producer, the consumer,
+''' the receiver, the broadcaster and `clipboard` (item BV, the Share Manager's send and get of the clipboard, spec 230).</summary>
 Friend Interface IExchangeRoleFacts
     Function SharesPublished() As Boolean
     Function ViewerAttaches() As Boolean
     Function CanReceive() As Boolean
     Function LiveBroadcastEnabled() As Boolean
+    ''' <summary>The device sends and receives clipboard values (item BV): the Share Manager does, wherever the exchange client does.</summary>
+    Function TakesPartInClipboard() As Boolean
 End Interface
 
 Friend NotInheritable Class ExchangeRoles
@@ -293,6 +296,7 @@ Friend NotInheritable Class ExchangeRoles
         If facts.ViewerAttaches() Then roles.Add(ExchangeWire.RoleResourceConsumer)
         If facts.CanReceive() Then roles.Add(ExchangeWire.RoleReceiver)
         If facts.LiveBroadcastEnabled() Then roles.Add(ExchangeWire.RoleBroadcaster)
+        If facts.TakesPartInClipboard() Then roles.Add(ExchangeWire.RoleClipboard)
         Return roles
     End Function
 

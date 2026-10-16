@@ -69,13 +69,66 @@ func TestRefusalsNameTheirReason(t *testing.T) {
 	}
 }
 
-func TestAWriterRefusesWhatWouldNotFit(t *testing.T) {
-	c, err := New("a.b:1", fpA, strings.Repeat("\U0001F600", 64), strings.Repeat("u", 64))
+// Item BO: a writer shortens (or leaves out) the display name rather than write a string over 512 characters.
+func TestAWriterShortensTheNameRatherThanWriteTooMuch(t *testing.T) {
+	name := strings.Repeat("\U0001F600", 64) // 64 scalar values, 12 characters each once encoded
+	c, err := New("a.b:1", fpA, name, strings.Repeat("u", 64))
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, err := c.String(); RefusedOf(err) != RefusedTooLong {
-		t.Fatalf("%v", err)
+	text, err := c.String()
+	if err != nil {
+		t.Fatalf("a name that does not fit is shortened, not refused: %v", err)
+	}
+	if len(text) > MaxText {
+		t.Fatalf("%d characters, the limit is %d", len(text), MaxText)
+	}
+	back, err := Parse(text)
+	if err != nil {
+		t.Fatalf("the shortened text must read back: %v", err)
+	}
+	if back.Endpoint() != c.Endpoint() || back.Fingerprint != c.Fingerprint || back.Login != c.Login {
+		t.Fatalf("the other members must be unchanged: %+v", back)
+	}
+	if back.Name == "" || !strings.HasPrefix(name, back.Name) || back.Name == name {
+		t.Fatalf("the name must be a shorter prefix of the original, got %q", back.Name)
+	}
+	// the longest prefix that fits: one more scalar value would not
+	longer := back.Name + "\U0001F600"
+	if len(c.compose(longer)) <= MaxText {
+		t.Fatalf("a longer prefix fits, so the name was cut too short")
+	}
+}
+
+func TestShortenNameKeepsWholeScalarValuesAndNeverEndsOnASpaceOrAJoiner(t *testing.T) {
+	// no prefix fits: the name is left out
+	if got := shortenName("Home NAS", func(string) bool { return false }); got != "" {
+		t.Fatalf("got %q", got)
+	}
+	// the cut is on a scalar value, and a trailing space or joiner is dropped with it
+	if got := shortenName("ab ‍Ж", func(c string) bool { return len([]rune(c)) <= 3 }); got != "ab" {
+		t.Fatalf("got %q", got)
+	}
+	if got := shortenName("ЖЖЖЖ", func(c string) bool { return len([]rune(c)) <= 2 }); got != "ЖЖ" {
+		t.Fatalf("got %q", got)
+	}
+}
+
+func TestANameWithABidirectionalControlIsRefused(t *testing.T) {
+	for _, r := range []rune{0x061C, 0x200E, 0x200F, 0x202A, 0x202B, 0x202C, 0x202D, 0x202E, 0x2066, 0x2067, 0x2068, 0x2069} {
+		if _, err := New("a.b:1", "", "Home"+string(r)+"NAS", ""); RefusedOf(err) != RefusedBadName {
+			t.Errorf("U+%04X in the name: %v", r, err)
+		}
+		text := "FMSEXCH1:x=a.b%3A1&n=" + escape("Home"+string(r)+"NAS")
+		if _, err := Parse(text); RefusedOf(err) != RefusedBadName {
+			t.Errorf("U+%04X in a read string: %v", r, err)
+		}
+	}
+	// the joiners are not in the set
+	for _, r := range []rune{0x200C, 0x200D} {
+		if _, err := New("a.b:1", "", "Home"+string(r)+"NAS", ""); err != nil {
+			t.Errorf("U+%04X must be allowed: %v", r, err)
+		}
 	}
 }
 

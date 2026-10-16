@@ -217,6 +217,7 @@ Public Class ExchangeControlSessionTests
     <Theory>
     <InlineData("bad-credentials", "SignInAgain", False, 0)>
     <InlineData("device-revoked", "SignInAgain", True, 0)>
+    <InlineData("signed-out", "SignInAgain", False, 0)>
     <InlineData("version-unsupported", "UpdateNeeded", False, 0)>
     <InlineData("tls-required", "Defect", False, 0)>
     Public Async Function A_refusal_that_is_not_retried_stops_the_session_with_a_named_state(reason As String, stateName As String, revoked As Boolean, retryAfter As Integer) As Task
@@ -246,6 +247,9 @@ Public Class ExchangeControlSessionTests
     <InlineData("capacity", 120.0)>
     <InlineData("id-collision", 60.0)>
     <InlineData("port-unavailable", 60.0)>
+    <InlineData("invitation-invalid", 60.0)>
+    <InlineData("login-taken", 60.0)>
+    <InlineData("password-policy", 60.0)>
     <InlineData("a-reason-from-the-future", 60.0)>
     Public Async Function A_refusal_that_is_retried_waits_by_its_policy_and_then_connects(reason As String, seconds As Double) As Task
         Using acc As New ExchangeStubAccount()

@@ -72,7 +72,7 @@ Public NotInheritable Class FileDetails
     ' this window answers "what can I read from THIS file", it does not navigate.
     Private Shared ReadOnly ImageExtensions As New HashSet(Of String)(StringComparer.OrdinalIgnoreCase) From {
         ".jpg", ".jpeg", ".png", ".gif", ".bmp", ".webp", ".tif", ".tiff", ".heic", ".heif",
-        ".avif", ".svg", ".ico", ".wmf", ".emf"}
+        ".avif", ".jxl", ".svg", ".ico", ".wmf", ".emf"}
     Private Shared ReadOnly VideoExtensions As New HashSet(Of String)(StringComparer.OrdinalIgnoreCase) From {
         ".mp4", ".mkv", ".mov", ".webm", ".3gp", ".flv", ".wmv", ".m4v", ".avi", ".mpg", ".mpeg",
         ".ts", ".m2ts", ".vob", ".ogv", ".divx", ".m2v", ".mts", ".3g2", ".asf"}

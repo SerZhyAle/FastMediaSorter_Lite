@@ -683,18 +683,18 @@ begin
 end;
 
 { Names only what RegisterRequestedImageAssociations claims on THIS machine: HEIC,
-  HEIF and AVIF need the x64 mainline's decoder, so the x86 fallback (Windows 7/8.1)
+  HEIF, AVIF and JXL need the x64 mainline's decoder, so the x86 fallback (Windows 7/8.1)
   does not get them, and SVG is claimed nowhere - neither viewer displays it. }
 function RegisterAssociationsText: String;
 begin
   if UseModernExe then
   begin
     if IsLanguage('russian') then
-      Result := 'Да, зарегистрировать для JPG, PNG, GIF, BMP, TIFF, WEBP, HEIC, HEIF и AVIF'
+      Result := 'Да, зарегистрировать для JPG, PNG, GIF, BMP, TIFF, WEBP, HEIC, HEIF, AVIF и JXL'
     else if IsLanguage('ukrainian') then
-      Result := 'Так, зареєструвати для JPG, PNG, GIF, BMP, TIFF, WEBP, HEIC, HEIF і AVIF'
+      Result := 'Так, зареєструвати для JPG, PNG, GIF, BMP, TIFF, WEBP, HEIC, HEIF, AVIF і JXL'
     else
-      Result := 'Yes, register FastMediaSorter for JPG, PNG, GIF, BMP, TIFF, WEBP, HEIC, HEIF, and AVIF';
+      Result := 'Yes, register FastMediaSorter for JPG, PNG, GIF, BMP, TIFF, WEBP, HEIC, HEIF, AVIF, and JXL';
   end
   else
   begin
@@ -1210,7 +1210,7 @@ end;
 
 { The same list the viewer's own "Set as default" button claims, per exe
   (Main_Form.FileAssociation.vb AssociateAllImageFormatsWithThisApp): only formats the
-  exe that runs HERE can actually display. .heic/.heif/.avif are decoded by the x64
+  exe that runs HERE can actually display. .heic/.heif/.avif/.jxl are decoded by the x64
   mainline only (Magick.NET), so they are claimed only when UseModernExe - on Windows
   7/8.1 the associations point at the x86 exe, which would open them to "unsupported
   format". .svg is displayed by neither exe and is never claimed. .tif is claimed on
@@ -1239,6 +1239,7 @@ begin
     if not RegisterImageAssociation('.avif', 'FastMediaSorter.avif', 'AVIF Image - FastMediaSorter') then FailedCount := FailedCount + 1;
     if not RegisterImageAssociation('.heic', 'FastMediaSorter.heic', 'HEIC Image - FastMediaSorter') then FailedCount := FailedCount + 1;
     if not RegisterImageAssociation('.heif', 'FastMediaSorter.heif', 'HEIF Image - FastMediaSorter') then FailedCount := FailedCount + 1;
+    if not RegisterImageAssociation('.jxl', 'FastMediaSorter.jxl', 'JXL Image - FastMediaSorter') then FailedCount := FailedCount + 1;
   end;
 
   if FailedCount > 0 then
@@ -1626,6 +1627,7 @@ begin
   RemoveImageAssociation('.heic', 'FastMediaSorter.heic');
   RemoveImageAssociation('.heif', 'FastMediaSorter.heif');
   RemoveImageAssociation('.avif', 'FastMediaSorter.avif');
+  RemoveImageAssociation('.jxl', 'FastMediaSorter.jxl');
   { No longer registered (see WithdrawUndisplayableImageAssociations), but an older
     version of this installer did - an uninstall straight from one must clean it. }
   RemoveImageAssociation('.svg', 'FastMediaSorter.svg');

@@ -1,0 +1,505 @@
+{
+  "schemaVersion": 1,
+  "product": "FastMediaSorter",
+  "helpRoot": "docs/help",
+  "pageTemplate": "{locale}/{help}.html",
+  "index": "index",
+  "surfaces": [
+    {
+      "id": "index",
+      "name": "Help Index",
+      "form": "page",
+      "help": "index"
+    },
+    {
+      "id": "main-viewer",
+      "type": "fmsl.Main_Form",
+      "name": "Fast Media Sorter & Sharing Viewer",
+      "form": "both",
+      "help": "main-viewer"
+    },
+    {
+      "id": "settings",
+      "type": "fmsl.Table_Form",
+      "name": "Settings",
+      "form": "page",
+      "help": "settings",
+      "pages": [
+        { "id": "settings.general", "name": "General", "anchor": "general" },
+        { "id": "settings.destinations", "name": "Destination folders", "anchor": "destinations" },
+        { "id": "settings.images", "name": "Images", "anchor": "images" },
+        { "id": "settings.video", "name": "Video", "anchor": "video" },
+        { "id": "settings.audio", "name": "Audio", "anchor": "audio" },
+        { "id": "settings.files", "name": "Files and system", "anchor": "files" },
+        { "id": "settings.server", "name": "Server and resources", "anchor": "server" },
+        { "id": "settings.ocr", "name": "OCR", "anchor": "ocr" },
+        { "id": "settings.translation", "name": "Translation", "anchor": "translation" },
+        { "id": "settings.storage", "name": "Storage", "anchor": "storage" },
+        { "id": "settings.about", "name": "About", "anchor": "about" }
+      ]
+    },
+    {
+      "id": "welcome",
+      "type": "fmsl.Welcome_Form",
+      "name": "Welcome Wizard",
+      "form": "page",
+      "help": "welcome"
+    },
+    {
+      "id": "image-editor",
+      "type": "fmsl.Image_Editor_Form",
+      "name": "Image Editor",
+      "form": "page",
+      "help": "image-editor"
+    },
+    {
+      "id": "thumbnail-panel",
+      "type": "fmsl.Image_Panel_Form",
+      "name": "Thumbnail Panel",
+      "form": "page",
+      "help": "thumbnail-panel"
+    },
+    {
+      "id": "file-details",
+      "type": "fmsl.File_Details_Form",
+      "name": "File Details",
+      "form": "page",
+      "help": "file-details"
+    },
+    {
+      "id": "video-convert",
+      "type": "fmsl.Video_Convert_Form",
+      "name": "Convert to Video",
+      "form": "page",
+      "help": "video-convert"
+    },
+    {
+      "id": "video-replace-confirm",
+      "type": "fmsl.Video_Replace_Confirm_Form",
+      "name": "Video Replace Confirmation",
+      "form": "none",
+      "reason": "Confirmation dialog whose message is the complete explanation (CONTEXT-HELP rule 4)."
+    },
+    {
+      "id": "hotkeys",
+      "type": "fmsl.Hotkeys_Form",
+      "name": "Keyboard Shortcuts",
+      "form": "page",
+      "help": "hotkeys"
+    },
+    {
+      "id": "resource-manager",
+      "type": "fmsl.Resource_Manager_Form",
+      "name": "Resource Manager",
+      "form": "page",
+      "help": "resource-manager"
+    },
+    {
+      "id": "resource-edit",
+      "type": "fmsl.Resource_Edit_Form",
+      "name": "Edit Shared Resource",
+      "form": "page",
+      "help": "resource-edit"
+    },
+    {
+      "id": "resource-export",
+      "type": "fmsl.Resource_Export_Form",
+      "name": "Export Resource Config",
+      "form": "page",
+      "help": "resource-export"
+    },
+    {
+      "id": "resource-credential",
+      "type": "fmsl.Resource_Credential_Form",
+      "name": "Resource Credentials",
+      "form": "page",
+      "help": "resource-credential"
+    },
+    {
+      "id": "resource-phone-code",
+      "type": "fmsl.Resource_Phone_Code_Form",
+      "name": "Phone Connection Code",
+      "form": "page",
+      "help": "resource-phone-code"
+    },
+    {
+      "id": "exchange-connect",
+      "type": "fmsl.Exchange_Connect_Form",
+      "name": "Connect to Media Exchange Server",
+      "form": "page",
+      "help": "exchange-connect"
+    },
+    {
+      "id": "exchange-password-change",
+      "type": "fmsl.Exchange_Password_Change_Form",
+      "name": "Change Exchange Password",
+      "form": "page",
+      "help": "exchange-password-change"
+    },
+    {
+      "id": "connection-diagnosis",
+      "type": "fmsl.Connection_Diagnosis_Dialog",
+      "name": "Connection Diagnosis",
+      "form": "page",
+      "help": "connection-diagnosis"
+    },
+    {
+      "id": "secure-password",
+      "type": "fmsl.Secure_Password_Form",
+      "name": "Container Password",
+      "form": "page",
+      "help": "secure-password"
+    },
+    {
+      "id": "batch-report",
+      "type": "fmsl.Batch_Report_Form",
+      "name": "Batch Report",
+      "form": "page",
+      "help": "batch-report"
+    },
+    {
+      "id": "live-broadcast",
+      "type": "fmsl.LiveBroadcast_Form",
+      "name": "Live Broadcast",
+      "form": "page",
+      "help": "live-broadcast"
+    },
+    {
+      "id": "download-progress",
+      "type": "fmsl.Download_Progress_Form",
+      "name": "Download Progress",
+      "form": "none",
+      "reason": "Progress only; no input other than cancellation."
+    },
+    {
+      "id": "file-types",
+      "type": "fmsl.File_Types_Form",
+      "name": "File Types",
+      "form": "inherit",
+      "parent": "settings",
+      "reason": "Subordinate editor opened from Settings Files page."
+    },
+    {
+      "id": "history-log",
+      "type": "fmsl.History_Form",
+      "name": "History Log",
+      "form": "inherit",
+      "parent": "settings",
+      "reason": "Subordinate log viewer opened from Settings About page."
+    },
+    {
+      "id": "ask-dialog",
+      "type": "fmsl.Ask_Dialog",
+      "name": "Message Dialog",
+      "form": "none",
+      "reason": "The text of the message or confirmation is the complete explanation (CONTEXT-HELP rule 4)."
+    },
+    {
+      "id": "chrome-host",
+      "type": "fmsl.ChromeHost",
+      "name": "Chrome Host",
+      "form": "none",
+      "reason": "Internal host window for floating viewer chrome."
+    },
+    {
+      "id": "chrome-ink-window",
+      "type": "fmsl.ChromeInkWindow",
+      "name": "Chrome Ink Canvas",
+      "form": "none",
+      "reason": "Noninteractive floating canvas."
+    },
+    {
+      "id": "chrome-menu",
+      "type": "fmsl.ChromeMenu",
+      "name": "Chrome Menu",
+      "form": "none",
+      "reason": "Transient floating menu surface."
+    },
+    {
+      "id": "recipients-overlay-window",
+      "type": "fmsl.Main_Form+RecipientsOverlayWindow",
+      "name": "Recipients Overlay Window",
+      "form": "none",
+      "reason": "Floating destination drop zone overlay."
+    },
+    {
+      "id": "notify-toast",
+      "type": "fmsl.NotifyToast",
+      "name": "Notification Toast",
+      "form": "none",
+      "reason": "Noninteractive transient notification toast."
+    },
+    {
+      "id": "share-main",
+      "type": "FastMediaSorterCompanion.MainWindow",
+      "name": "Share Manager Main Window",
+      "form": "page",
+      "help": "share-main"
+    },
+    {
+      "id": "share-settings",
+      "type": "FastMediaSorterCompanion.Share_Settings_Form",
+      "name": "Share Manager Settings",
+      "form": "page",
+      "help": "share-settings",
+      "pages": [
+        { "id": "share-settings.startup", "name": "Startup & Language", "anchor": "startup" },
+        { "id": "share-settings.network", "name": "Network & Discovery", "anchor": "network" },
+        { "id": "share-settings.hosting", "name": "Hosting & Security", "anchor": "hosting" },
+        { "id": "share-settings.exchange", "name": "Media Exchange Server", "anchor": "exchange" },
+        { "id": "share-settings.exchange-account", "name": "Exchange Account", "anchor": "exchange-account" },
+        { "id": "share-settings.scheduled", "name": "Scheduled Operations", "anchor": "scheduled" },
+        { "id": "share-settings.help", "name": "Help & Instructions", "anchor": "help" }
+      ]
+    },
+    {
+      "id": "server-welcome",
+      "type": "FastMediaSorterCompanion.Server_Welcome_Form",
+      "name": "Media Exchange Server Welcome",
+      "form": "page",
+      "help": "server-welcome"
+    },
+    {
+      "id": "manager-welcome",
+      "type": "FastMediaSorterCompanion.Manager_Welcome_Form",
+      "name": "Share Manager Welcome",
+      "form": "page",
+      "help": "manager-welcome"
+    },
+    {
+      "id": "package-wizard",
+      "type": "FastMediaSorterCompanion.PackageWizardForm",
+      "name": "Package Wizard",
+      "form": "page",
+      "help": "package-wizard"
+    },
+    {
+      "id": "exchange-server-wizard",
+      "type": "FastMediaSorterCompanion.Exchange_Server_Wizard_Form",
+      "name": "Media Exchange Server Setup Wizard",
+      "form": "page",
+      "help": "exchange-server-wizard"
+    },
+    {
+      "id": "share-resource-add",
+      "type": "FastMediaSorterCompanion.Resource_Add_Form",
+      "name": "Add Shared Resource",
+      "form": "page",
+      "help": "share-resource-add"
+    },
+    {
+      "id": "scheduled-operation",
+      "type": "FastMediaSorterCompanion.Scheduled_Operation_Form",
+      "name": "Scheduled File Operation",
+      "form": "page",
+      "help": "scheduled-operation"
+    },
+    {
+      "id": "scheduled-history",
+      "type": "FastMediaSorterCompanion.Scheduled_History_Form",
+      "name": "Scheduled Operations History",
+      "form": "page",
+      "help": "scheduled-history"
+    },
+    {
+      "id": "scheduled-resource-picker",
+      "type": "FastMediaSorterCompanion.Scheduled_Resource_Picker_Form",
+      "name": "Select Resource for Schedule",
+      "form": "page",
+      "help": "scheduled-resource-picker"
+    },
+    {
+      "id": "scheduled-preview",
+      "type": "FastMediaSorterCompanion.Scheduled_Preview_Form",
+      "name": "Scheduled Preview",
+      "form": "inherit",
+      "parent": "scheduled-operation",
+      "reason": "Preview dialog opened from the scheduled operation editor."
+    },
+    {
+      "id": "internet-access",
+      "type": "FastMediaSorterCompanion.InternetAccessForm",
+      "name": "Internet Access Guide",
+      "form": "page",
+      "help": "internet-access"
+    },
+    {
+      "id": "share-live-broadcast",
+      "type": "FastMediaSorterCompanion.Live_Broadcast_Form",
+      "name": "Live Broadcast Manager",
+      "form": "page",
+      "help": "share-live-broadcast"
+    },
+    {
+      "id": "live-on-air-chip",
+      "type": "FastMediaSorterCompanion.Live_Broadcast_Form+LiveOnAirChip",
+      "name": "Live On-Air Chip",
+      "form": "none",
+      "reason": "Noninteractive floating status chip."
+    },
+    {
+      "id": "share-broadcasts",
+      "type": "FastMediaSorterCompanion.Share_Broadcasts_Form",
+      "name": "Active Broadcasts",
+      "form": "page",
+      "help": "share-broadcasts"
+    },
+    {
+      "id": "share-broadcast-create",
+      "type": "FastMediaSorterCompanion.Broadcast_Create_Form",
+      "name": "Create Live Broadcast",
+      "form": "page",
+      "help": "share-broadcast-create"
+    },
+    {
+      "id": "share-disks",
+      "type": "FastMediaSorterCompanion.Share_Disks_Form",
+      "name": "Virtual Disks",
+      "form": "page",
+      "help": "share-disks"
+    },
+    {
+      "id": "disk-options",
+      "type": "FastMediaSorterCompanion.DiskOptionsForm",
+      "name": "Disk Options",
+      "form": "inherit",
+      "parent": "share-disks",
+      "reason": "Configuration dialog opened from Virtual Disks."
+    },
+    {
+      "id": "share-root-params",
+      "type": "FastMediaSorterCompanion.Share_Root_Params_Form",
+      "name": "Shared Folder Parameters",
+      "form": "page",
+      "help": "share-root-params"
+    },
+    {
+      "id": "share-enable",
+      "type": "FastMediaSorterCompanion.Share_Enable_Form",
+      "name": "Enable Sharing",
+      "form": "page",
+      "help": "share-enable"
+    },
+    {
+      "id": "share-status",
+      "type": "FastMediaSorterCompanion.Share_Status_Form",
+      "name": "Sharing Status",
+      "form": "page",
+      "help": "share-status"
+    },
+    {
+      "id": "share-access-test",
+      "type": "FastMediaSorterCompanion.Share_Access_Test_Form",
+      "name": "Test Outside Access",
+      "form": "page",
+      "help": "share-access-test"
+    },
+    {
+      "id": "exchange-account",
+      "type": "FastMediaSorterCompanion.Exchange_Account_Form",
+      "name": "Exchange Account",
+      "form": "page",
+      "help": "exchange-account"
+    },
+    {
+      "id": "exchange-account-admin",
+      "type": "FastMediaSorterCompanion.Exchange_Account_Admin_Form",
+      "name": "Exchange Accounts Administration",
+      "form": "page",
+      "help": "exchange-account-admin"
+    },
+    {
+      "id": "exchange-account-limits",
+      "type": "FastMediaSorterCompanion.Exchange_Account_Limits_Form",
+      "name": "Exchange Account Limits",
+      "form": "page",
+      "help": "exchange-account-limits"
+    },
+    {
+      "id": "exchange-connection-string",
+      "type": "FastMediaSorterCompanion.Exchange_Connection_String_Form",
+      "name": "Connection String",
+      "form": "page",
+      "help": "exchange-connection-string"
+    },
+    {
+      "id": "exchange-invitation-create",
+      "type": "FastMediaSorterCompanion.Exchange_Invitation_Create_Form",
+      "name": "Create Exchange Invitation",
+      "form": "page",
+      "help": "exchange-invitation-create"
+    },
+    {
+      "id": "exchange-invitation-created",
+      "type": "FastMediaSorterCompanion.Exchange_Invitation_Created_Form",
+      "name": "Invitation Created",
+      "form": "page",
+      "help": "exchange-invitation-created"
+    },
+    {
+      "id": "exchange-shared-invitation",
+      "type": "FastMediaSorterCompanion.Exchange_Shared_Invitation_Form",
+      "name": "Shared Invitation",
+      "form": "page",
+      "help": "exchange-shared-invitation"
+    },
+    {
+      "id": "exchange-link",
+      "type": "FastMediaSorterCompanion.Exchange_Link_Form",
+      "name": "Exchange Link",
+      "form": "page",
+      "help": "exchange-link"
+    },
+    {
+      "id": "exchange-password",
+      "type": "FastMediaSorterCompanion.Exchange_Password_Form",
+      "name": "Exchange Password",
+      "form": "page",
+      "help": "exchange-password"
+    },
+    {
+      "id": "share-exchange-password-change",
+      "type": "FastMediaSorterCompanion.Exchange_Password_Change_Form",
+      "name": "Change Account Password",
+      "form": "page",
+      "help": "share-exchange-password-change"
+    },
+    {
+      "id": "folder-outside-access",
+      "type": "FastMediaSorterCompanion.Folder_Outside_Access_Form",
+      "name": "Outside Folder Access",
+      "form": "page",
+      "help": "folder-outside-access"
+    },
+    {
+      "id": "phone-code-intake",
+      "type": "FastMediaSorterCompanion.Phone_Code_Intake_Form",
+      "name": "Connect Phone Code Intake",
+      "form": "page",
+      "help": "phone-code-intake"
+    },
+    {
+      "id": "camera-scan",
+      "type": "FastMediaSorterCompanion.Camera_Scan_Form",
+      "name": "Scan QR Code",
+      "form": "page",
+      "help": "camera-scan"
+    },
+    {
+      "id": "qr-zoom",
+      "type": "FastMediaSorterCompanion.Qr_Zoom_Form",
+      "name": "QR Barcode Viewer",
+      "form": "inherit",
+      "parent": "main-viewer",
+      "reason": "Subordinate modal preview for QR barcode bitmaps."
+    },
+    {
+      "id": "companion-connection-diagnosis",
+      "type": "FastMediaSorterCompanion.Connection_Diagnosis_Dialog",
+      "name": "Share Connection Diagnosis",
+      "form": "inherit",
+      "parent": "connection-diagnosis",
+      "reason": "Shared connection diagnosis dialog used across both applications."
+    }
+  ]
+}

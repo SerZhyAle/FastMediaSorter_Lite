@@ -13,18 +13,15 @@
   case-insensitive reading, whitespace around `+` tolerated, a repeated modifier tolerated, two triggers or an
   unknown trigger make the chord unusable and never another chord. The catalog's token vectors are vendored
   (`tests/Lite.Tests/TestData/input-chord-vectors/`, digest asserted first) and run through
-  `CustomHotkeys.Canonical` by `InputChordConformanceTests` (since 2026-10-13): 17 of the 34 keyboard rows
-  conform, the other 17 are a **recorded table of what the model answers today** - the test fails the day an
-  answer moves either way, so the table and the registry exception shrink together; the 18 mouse rows bind
-  nothing here and are not run. **Not held, a dated registry exception
-  (17 of the 34 keyboard rows of the catalog's token vectors fail when run through `CustomHotkeys`):** the
-  modifier order is `Ctrl, Alt, Shift` (rule 1 says `Ctrl, Shift, Alt, Win`); the `Win` modifier and the
-  aliases `Meta`, `Super`, `Esc`, `Return`, `Del`, `Ins`, `PgUp`, `PgDn`, `PrtSc`, `PrtScn` are not read; an
-  empty token (`Ctrl++F12`, a trailing `+`) is not tolerated; the trigger set is wider than the canonical one
-  (arrow keys, `Num +`, the OEM punctuation keys, the browser and media keys - written by name, inert to any
-  other reader), which is a gap in the contract's set filed as a proposal to its owner; and an unreadable
-  stored token drops the override, so the action returns to its factory key instead of showing "no chord"
-  (rule 3's "a row in a user-built table may not fall back to the default").
+  `CustomHotkeys.Canonical` by `InputChordConformanceTests`: **34/34 keyboard rows held on 2026-10-16
+  (183 follow-up)**. Canonical notation is separate from assignment policy: it spells Win and OS-reserved
+  chords without assigning them. The viewer's `Parse` still refuses those bindings. Empty separators,
+  aliases and the Ctrl/Shift/Alt/Win order normalize on save. An unusable, reserved or duplicate stored
+  binding becomes the explicit no-shortcut marker, retiring its factory key across the next save/load.
+  Unknown action ids are ignored and redundant defaults are omitted. The 18 mouse rows bind nothing here.
+  **Remaining vocabulary exception:** existing arrow, `Num +` / `Num 5`, OEM, browser and media trigger
+  names remain readable and writable so old viewer profiles and its factory bindings keep working;
+  `NumPad5` is inert as the catalog vector requires. The viewer-vocabulary proposal remains with the owner.
 - **Refusals (rule 6) are a shorter list than the contract's minimum** (`CustomHotkeys.IsReserved`: F10, F11,
   Esc, the Windows keys, the Menu key, `Alt+Tab`, `Alt+F4`, `Ctrl+Alt+Delete`). `Ctrl+C`, `Shift`-only
   letters, `Shift+Insert`, `Alt+Space` and `Ctrl+Alt+<character>` can be assigned. The purpose of the rule is

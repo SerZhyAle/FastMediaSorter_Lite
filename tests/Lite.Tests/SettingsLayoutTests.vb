@@ -187,7 +187,8 @@ Public Class SettingsLayoutTests
         Assert.True(rows.Count > 50, "Only " & rows.Count & " settings rows found - the scanner is missing call sites.")
         Assert.Contains(rows, Function(r) r.Kind = RowKind.CheckBox)
         Assert.Contains(rows, Function(r) r.Kind = RowKind.Editor)
-        Assert.Contains(rows, Function(r) r.Kind = RowKind.SectionHeader)
+        ' Headings are now group metadata; lazy page builders create only real rows.
+        Assert.DoesNotContain(rows, Function(r) r.Kind = RowKind.SectionHeader)
         Assert.Contains(rows, Function(r) r.Kind = RowKind.ProjectLink)
 
         Dim titles As Dictionary(Of String, String) = DiscoverTitles()

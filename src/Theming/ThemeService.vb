@@ -1,4 +1,4 @@
-﻿#If Not NETFRAMEWORK Then
+#If Not NETFRAMEWORK Then
 Option Strict On
 
 Imports System.Collections.Generic
@@ -198,6 +198,7 @@ Public NotInheritable Class ThemeService
                 If aware IsNot Nothing Then aware.ApplyTheme(_palette)
             End If
             ThemeApplier.ApplyButtonCaptions(form, _palette)
+            ContextHelpUi.Attach(form)
         Catch ex As Exception
             AppFileLogger.LogException("Theme: applying to " & form.GetType().Name, ex)
         Finally

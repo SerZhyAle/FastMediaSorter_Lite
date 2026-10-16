@@ -21,9 +21,9 @@ Imports Xunit
 ''' the modern route through <c>ZoomMath.PictureBoxZoomBounds</c> gives the same rectangles is
 ''' modern-only, like ZoomMath itself.
 '''
-''' What this does NOT prove is rung 2 (pixels): that GDI+'s gradient brush samples the ramp at
-''' pixel centres, <c>(k + 0.5) / reach</c>, within 2 levels. That needs a rendered frame and is
-''' still open (see docs/contracts/LETTERBOX-FILL.md).
+''' The rendered halo gradient is checked separately by HaloGradientTests against the same math
+''' (within 2 RGB levels at pixel centres). Full bars/resampling and recorded-motion acceptance
+''' remain separate; see docs/contracts/LETTERBOX-FILL.md.
 ''' </summary>
 Public Class LetterboxFillConformanceTests
 
@@ -501,6 +501,7 @@ Public Class LetterboxFillConformanceTests
         For Each relative As String In New String() {
             "src\Main_Form.PerspectiveBackground.vb",
             "src\Main_Form.PerspectiveHalo.vb",
+            "src\HaloPainter.vb",
             "src\Imaging\EdgeSampler.vb"
         }
             Dim path As String = System.IO.Path.Combine(root, relative)

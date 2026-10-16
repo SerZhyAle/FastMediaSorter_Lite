@@ -53,7 +53,7 @@ Public Class CustomHotkeysTests
     <InlineData("Ctrl+Alt+Delete")>
     Public Sub A_reserved_combination_cannot_be_assigned(combo As String)
         Assert.True(CustomHotkeys.IsReserved(CustomHotkeys.Parse(combo) Or ParseForReserved(combo)))
-        Assert.Equal(String.Empty, CustomHotkeys.Canonical(combo))
+        Assert.Equal(Keys.None, CustomHotkeys.Parse(combo))
     End Sub
 
     ''' <summary>Parse refuses a reserved combination outright, so the reserved check has
@@ -94,10 +94,11 @@ Public Class CustomHotkeysTests
     End Sub
 
     <Fact>
-    Public Sub An_unknown_id_and_an_unusable_combination_are_dropped()
+    Public Sub An_unknown_id_is_dropped_and_an_unusable_combination_stays_disabled()
         Dim map As Dictionary(Of String, String) = CustomHotkeys.Load(
             "{""noSuchAction"":""Ctrl+Q"",""undo"":""F11"",""help"":""Ctrl+H""}")
-        Assert.Equal(1, map.Count)
+        Assert.Equal(2, map.Count)
+        Assert.Equal(CustomHotkeys.NoShortcut, map("undo"))
         Assert.Equal("Ctrl+H", map("help"))
     End Sub
 
@@ -107,8 +108,9 @@ Public Class CustomHotkeysTests
     Public Sub A_duplicate_is_resolved_in_catalogue_order()
         Dim map As Dictionary(Of String, String) = CustomHotkeys.Load(
             "{""undo"":""Ctrl+Q"",""nextFile"":""Ctrl+Q""}")
-        Assert.Equal(1, map.Count)
+        Assert.Equal(2, map.Count)
         Assert.True(map.ContainsKey("nextFile"))
+        Assert.Equal(CustomHotkeys.NoShortcut, map("undo"))
     End Sub
 
     <Fact>
@@ -118,6 +120,31 @@ Public Class CustomHotkeysTests
         Dim reloaded As Dictionary(Of String, String) = CustomHotkeys.Load(CustomHotkeys.Save(map))
         Assert.Equal("Ctrl+Z", reloaded("undo"))
         Assert.Equal(CustomHotkeys.NoShortcut, reloaded("help"))
+    End Sub
+
+    <Theory>
+    <InlineData("Ctrl+Shift+Hyper+F12")>
+    <InlineData("Ctrl+A+B")>
+    <InlineData("Win+Space")>
+    Public Sub An_unusable_stored_chord_disables_the_action_and_retires_its_default(written As String)
+        Dim map = CustomHotkeys.Load(System.Text.Json.JsonSerializer.Serialize(
+            New Dictionary(Of String, String) From {{"undo", written}}))
+        Assert.Equal(CustomHotkeys.NoShortcut, map("undo"))
+        Assert.True(CustomHotkeys.IsRetiredDefault(map, "U"))
+        Assert.Equal(String.Empty, CustomHotkeys.EffectiveCombo(map, CustomHotkeys.Find("undo")))
+        Assert.Equal(CustomHotkeys.NoShortcut, CustomHotkeys.Load(CustomHotkeys.Save(map))("undo"))
+    End Sub
+
+    <Fact>
+    Public Sub A_legacy_modifier_order_and_numpad_binding_survive_the_next_save()
+        Dim map = CustomHotkeys.Load("{""undo"":""Ctrl+Alt+Shift+N"",""help"":""Ctrl+Num +""}")
+        Assert.Equal("Ctrl+Shift+Alt+N", map("undo"))
+        Assert.Equal("Ctrl+Num +", map("help"))
+        Assert.Equal(Keys.Control Or Keys.Shift Or Keys.Alt Or Keys.N, CustomHotkeys.Parse(map("undo")))
+        Assert.Equal(Keys.Control Or Keys.Add, CustomHotkeys.Parse(map("help")))
+        Dim saved = CustomHotkeys.Load(CustomHotkeys.Save(map))
+        Assert.Equal(map("undo"), saved("undo"))
+        Assert.Equal(map("help"), saved("help"))
     End Sub
 
     <Fact>

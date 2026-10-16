@@ -30,7 +30,9 @@ Public Class LanguageSelectorContractTests
         Assert.Contains("Tab_Control.TabPages.Insert(0, modernGeneralPage)", layout)
         Assert.Contains("AddUiLanguageRow(destinations)", data.Value)
         Assert.Matches("AddSettingsGroup\(""general"", ""basic"", .*?""interface_language"", ""ui_theme""\)", groups)
-        Assert.Contains("settingsGroups(ownerId).Body.Controls.Add(row.Host)", groups)
+        Assert.Contains("Dim body = settingsGroups(ownerId).Body", groups)
+        Assert.Contains("If row.Host.Parent IsNot body Then body.Controls.Add(row.Host)", groups)
+        Assert.Contains("RegisterSettingsRow(""interface_language""", data.Value)
         Assert.DoesNotContain("""interface_language"", btn_Language", data.Value)
     End Sub
 

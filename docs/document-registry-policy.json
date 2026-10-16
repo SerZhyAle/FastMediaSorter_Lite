@@ -33,6 +33,10 @@
       "reason": "Owner-local ignored planning queue"
     },
     {
+      "prefix": "docs/help/",
+      "reason": "In-app offline help corpus (CONTEXT-HELP)"
+    },
+    {
       "prefix": "demo/",
       "reason": "Sample and demo resources"
     }

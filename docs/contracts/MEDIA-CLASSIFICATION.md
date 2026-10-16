@@ -12,8 +12,10 @@
 - An unknown or empty extension classifies as `Other` - the contract's `UNKNOWN` - and never throws (held).
 - The owner accepted the desktop-viewer proposal into 0.10. `MediaKindClassifier` maps books,
   streams and containers separately; `.fd-sec` is `Container`. An audiobook is `Audio` unless
-  the caller supplies positive book evidence. Local aliases `.tif/.exif/.log/.html/.htm` remain; the
-  contract's tables are a subset of the code's, category by category (compared 2026-10-07).
+  the caller supplies positive book evidence. Local aliases `.tif/.exif/.log/.html/.htm` remain, and
+  `.jxl` (JPEG XL, ticket 236, 2026-10-16) is a local `Image` entry the contract's `IMAGE` row does not
+  list yet - a candidate for the next catalog amendment, kept out of the contract-vectors test until
+  then; the contract's tables are a subset of the code's, category by category (compared 2026-10-07).
 - Rule 3 normalization is shared by classification, navigation and archive eligibility. Rule 5
   junk exclusion runs before the browsing extension filter for folder rows, counts and archives;
   providers and storage operations keep their full file sets.

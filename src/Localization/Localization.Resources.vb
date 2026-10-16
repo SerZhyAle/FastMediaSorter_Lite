@@ -684,6 +684,20 @@ Partial Public NotInheritable Class Localization
             "فائل پروگرام کے نئے ورژن سے بنائی گئی ہے۔ Fast Media Sorter کو اپ ڈیٹ کریں",
             "文件由更新版本的程序创建。请更新 Fast Media Sorter")
 
+        Add("Код подключения создан более новой версией программы. Обновите Fast Media Sorter",
+            "The connection code was created by a newer version of the program. Update Fast Media Sorter",
+            "Код підключення створено новішою версією програми. Оновіть Fast Media Sorter",
+            "Der Verbindungscode wurde mit einer neueren Version des Programms erstellt. Aktualisieren Sie Fast Media Sorter",
+            "Il codice di connessione è stato creato da una versione più recente del programma. Aggiornare Fast Media Sorter",
+            "El código de conexión fue creado por una versión más reciente del programa. Actualice Fast Media Sorter",
+            "Le code de connexion a été créé par une version plus récente du programme. Mettez à jour Fast Media Sorter",
+            "O código de conexão foi criado por uma versão mais recente do programa. Atualize o Fast Media Sorter",
+            "أُنشئ رمز الاتصال بإصدار أحدث من البرنامج. حدّث Fast Media Sorter",
+            "कनेक्शन कोड प्रोग्राम के नए संस्करण से बना है। Fast Media Sorter को अपडेट करें",
+            "সংযোগ কোডটি প্রোগ্রামের নতুন সংস্করণে তৈরি। Fast Media Sorter আপডেট করুন",
+            "کنکشن کوڈ پروگرام کے نئے ورژن سے بنایا گیا ہے۔ Fast Media Sorter کو اپ ڈیٹ کریں",
+            "连接码由更新版本的程序创建。请更新 Fast Media Sorter")
+
         Add("В файле не SFTP-ресурс, его нельзя открыть",
             "The file does not describe an SFTP resource, so it cannot be opened", "У файлі не SFTP-ресурс, його не можна відкрити",
             "Die Datei beschreibt keine SFTP-Ressource und kann nicht geöffnet werden", "Il file non descrive una risorsa SFTP, quindi non può essere aperta",

@@ -117,6 +117,7 @@ Public Module IconMap
         {"managerSettingsSearch", New IconMeaning("managerSettingsSearch", "action.search", "Поиск настроек", IconRole.Content, surface:=SM)},
         {"btnClipboardSend", New IconMeaning("btnClipboardSend", "action.send-clipboard", "Отправить буфер на сервер", IconRole.Content, surface:=SM)},
         {"btnClipboardGet", New IconMeaning("btnClipboardGet", "action.receive-clipboard", "Получить буфер с сервера", IconRole.Content, surface:=SM)},
+        {"btnClipboardMenu", New IconMeaning("btnClipboardMenu", "action.send-clipboard", "Отправить буфер на сервер", IconRole.Content, surface:=SM)},
         {"clipboardTraySend", New IconMeaning("clipboardTraySend", "action.send-clipboard", "Отправить буфер на сервер", IconRole.Content, surface:=SM)},
         {"clipboardTrayGet", New IconMeaning("clipboardTrayGet", "action.receive-clipboard", "Получить буфер с сервера", IconRole.Content, surface:=SM)},
         {"_btnAccAdd", New IconMeaning("_btnAccAdd", "action.connect-device", "Подключить устройство", IconRole.Content, surface:=SM)},

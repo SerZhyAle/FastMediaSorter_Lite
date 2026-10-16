@@ -107,21 +107,21 @@ in a second place.
 | **Google Drive**, named, whenever it is meant | "the cloud" |
 | **Connection string**, **Add from an exchange server**, **Get connection string**, **Sign out on this device** (226, 233) | calling a connection string a secret - it is an address with the certificate pin, carrying no password, token or pairing code |
 
-The dictionary owner is `DEVICE-EXCHANGE` 0.27 section 25 items CV-CZ (S4219). This section
+The dictionary owner is `DEVICE-EXCHANGE` 1.1 section 2 items CV and CW and section 3 item CX (S4219; it was section 25 items CV-CZ at 0.27, before the renumbering). This section
 cites its entries; it does not define another translation table. The imported conformance fixture is
 `tests/Lite.Tests/TestData/exchange-terms/dictionary.json`; the shared runtime table is
 `src/Localization/Localization.DeviceVocabulary.vb`, linked into the Share Manager.
 
 | Concept | Dictionary reference and use |
 | --- | --- |
-| Exchange server and direct access | DEVICE-EXCHANGE section 25 item CW, corresponding entries; distinguish the role from the component name in section 1 |
-| Google Drive path | DEVICE-EXCHANGE section 25 item CW, Drive channel; full wording where it fits, short wording only for a constrained label |
-| Server fan-out | DEVICE-EXCHANGE section 25 item CW, relay; internal terminology only, never a visible string |
-| Live broadcast and a ready file | DEVICE-EXCHANGE section 25 item CW, broadcast, broadcasting and ready-file entries; the stored-film feature keeps its StreamsPlayer label |
-| Cast | DEVICE-EXCHANGE section 25 item CW, both cast entries; the destination distinguishes this from Google Cast |
-| Server clipboard and its four operations | DEVICE-EXCHANGE section 25 item CW, clipboard entries; personal to the account, distinct from the system clipboard |
-| Invitations and a password link | DEVICE-EXCHANGE section 25 item CW, invitation, both invitation kinds and public-link entries |
-| Device sign-out | DEVICE-EXCHANGE section 25 item CZ; specification 226's device-local sign-out wording |
+| Exchange server and direct access | DEVICE-EXCHANGE section 2 item CW, corresponding entries; distinguish the role from the component name in section 1 |
+| Google Drive path | DEVICE-EXCHANGE section 2 item CW, Drive channel; full wording where it fits, short wording only for a constrained label |
+| Server fan-out | DEVICE-EXCHANGE section 2 item CW, relay; internal terminology only, never a visible string |
+| Live broadcast and a ready file | DEVICE-EXCHANGE section 2 item CW, broadcast, broadcasting and ready-file entries; the stored-film feature keeps its StreamsPlayer label |
+| Cast | DEVICE-EXCHANGE section 2 item CW, both cast entries; the destination distinguishes this from Google Cast |
+| Server clipboard and its four operations | DEVICE-EXCHANGE section 2 item CW, clipboard entries; personal to the account, distinct from the system clipboard |
+| Invitations and a password link | DEVICE-EXCHANGE section 2 item CW, invitation, both invitation kinds and public-link entries |
+| Device sign-out | DEVICE-EXCHANGE section 9 item CZ; specification 226's device-local sign-out wording |
 
 Specification 233 extends the existing naming gate with `tools/product-vocabulary.json`. It rejects
 relay, shared-clipboard wording and mobile product descriptors in visible copy; mobile internet and

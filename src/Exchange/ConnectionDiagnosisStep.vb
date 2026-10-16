@@ -4,7 +4,7 @@ Option Strict On
 Imports System.Runtime.CompilerServices
 
 ''' <summary>
-''' Spec 232 / DEVICE-EXCHANGE 0.27 section 25 item CY:
+''' Spec 232 / DEVICE-EXCHANGE 1.1 section 9 item CY:
 ''' The fifteen check steps for a connection that does not work, in fixed order from machine outward to account.
 ''' </summary>
 Public Enum ConnectionDiagnosisStep

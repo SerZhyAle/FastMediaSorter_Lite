@@ -257,12 +257,44 @@ func presence(online bool) string {
 }
 
 func (d *Dir) renderResource(h *hub, s *resState) {
-	r := s.rec.Clone()
-	r.SetStr("deviceId", s.device)
 	online := h.devices[s.device] != nil && h.devices[s.device].online
-	r.SetStr("presence", presence(online))
-	r.SetTime("updatedAt", s.updated)
-	s.raw = r.Marshal()
+	s.raw = resourceForm(s.rec, s.device, presence(online), s.updated)
+}
+
+// resourceForm is a resource record as a reader receives it: the members the producer sent plus the
+// ones the server owns (`deviceId`, `presence`, `updatedAt`; `publicPort` is already in rec once granted).
+func resourceForm(rec *wire.Record, device, presenceValue string, updated time.Time) json.RawMessage {
+	r := rec.Clone()
+	r.SetStr("deviceId", device)
+	r.SetStr("presence", presenceValue)
+	r.SetTime("updatedAt", updated)
+	return r.Marshal()
+}
+
+// widestPort is the widest value a granted `publicPort` can take: five digits.
+const widestPort = 65535
+
+// liveMembers are the members of a resource record that live only while its producer is online: the
+// producer's `access` (and the box that replaces it), the `shareId` and the granted `publicPort`.
+var liveMembers = []string{"access", "sealedAccess", "shareId", "publicPort"}
+
+// resourceBoundExceeded is DEVICE-EXCHANGE item BS for a resource: the 16 KiB bound holds for the record
+// AS DELIVERED, in every form the server will deliver it. There are two. While the producer is online the
+// record carries its live members, presence `online` and, when it asked for a third-party port, a granted
+// port of up to five digits; once the device goes offline the live members are gone and presence `offline`
+// is a byte longer than `online`. A record admitted here is therefore listed within the bound however long
+// it lives: a server never accepts a record it cannot list (item A).
+func resourceBoundExceeded(rec *wire.Record, device string, updated time.Time, portRequested bool) bool {
+	live := rec.Clone()
+	if portRequested {
+		live.SetInt("publicPort", widestPort)
+	}
+	gone := rec.Clone()
+	for _, k := range liveMembers {
+		gone.Delete(k)
+	}
+	return len(resourceForm(live, device, presence(true), updated)) > wire.MaxRecord ||
+		len(resourceForm(gone, device, presence(false), updated)) > wire.MaxRecord
 }
 
 func (d *Dir) renderBroadcast(h *hub, s *broState) {

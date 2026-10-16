@@ -56,7 +56,8 @@ Friend Module DpiLayout
         Next
         Dim flow = TryCast(parent, FlowLayoutPanel)
         If flow Is Nothing OrElse flow.FlowDirection = FlowDirection.TopDown OrElse
-           flow.FlowDirection = FlowDirection.BottomUp OrElse Not flow.Controls.OfType(Of Button)().Any() Then Return
+           flow.FlowDirection = FlowDirection.BottomUp OrElse Not flow.Controls.OfType(Of Button)().Any() OrElse
+           Equals(flow.Tag, "no-wrap") OrElse Equals(flow.Tag, "toolbar") Then Return
         flow.WrapContents = True
         For Each button In flow.Controls.OfType(Of Button)()
             button.Dock = DockStyle.None

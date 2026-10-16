@@ -223,6 +223,45 @@ func TestTheFramesCoverEveryEnvelopeEveryReasonAndEveryOpening(t *testing.T) {
 	}
 }
 
+// DEVICE-EXCHANGE item AQ names the two invitation members of `register` `invitation` and
+// `invitationPassword`, and a client sends those: every register step of the corpus uses them, exactly one
+// of the two, and none uses the first spellings the server also reads (`invitationCode`, `sharedPassword`).
+func TestEveryRegisterStepUsesTheContractsMemberNames(t *testing.T) {
+	var doc framesDoc
+	if err := json.Unmarshal(generated(t)[framesFileName], &doc); err != nil {
+		t.Fatal(err)
+	}
+	n := 0
+	for _, tr := range doc.Transcripts {
+		for i, st := range tr.Steps {
+			if st.JSON == "" {
+				continue
+			}
+			var m map[string]json.RawMessage
+			if err := json.Unmarshal([]byte(st.JSON), &m); err != nil {
+				t.Fatalf("%s step %d: %v", tr.Name, i, err)
+			}
+			if string(m["type"]) != `"register"` {
+				continue
+			}
+			n++
+			for _, old := range []string{"invitationCode", "sharedPassword"} {
+				if _, ok := m[old]; ok {
+					t.Errorf("%s step %d: a register frame with the first spelling %s: %s", tr.Name, i, old, st.JSON)
+				}
+			}
+			_, code := m["invitation"]
+			_, shared := m["invitationPassword"]
+			if code == shared {
+				t.Errorf("%s step %d: a register frame carries exactly one of invitation and invitationPassword: %s", tr.Name, i, st.JSON)
+			}
+		}
+	}
+	if n < 10 {
+		t.Errorf("only %d register steps were found", n)
+	}
+}
+
 // every frame of every transcript is a frame the Go codec reads and writes back to the same bytes:
 // the vectors and the codec cannot drift apart
 func TestEveryFrameDecodesAndReencodesToTheSameBytes(t *testing.T) {
@@ -283,7 +322,8 @@ func TestTheRecordCasesHaveTheVerdictsTheContractSays(t *testing.T) {
 		"device-minimal": {"accepted", ""}, "device-full": {"accepted", ""}, "device-unknown-role": {"accepted", ""},
 		"device-unknown-product": {"accepted", ""}, "device-receiver-null": {"accepted", ""}, "device-receiver-too-many-modes": {"closed", ""},
 		"resource-minimal": {"accepted", ""}, "resource-full": {"accepted", ""}, "resource-unknown-members-deep": {"accepted", ""},
-		"resource-unknown-kind": {"accepted", ""}, "resource-16KiB-exact": {"accepted", ""}, "resource-16KiB-plus-1": {"refused", "capacity"},
+		"resource-unknown-kind": {"accepted", ""}, "resource-16KiB-exact": {"refused", "capacity"}, "resource-16KiB-plus-1": {"refused", "capacity"},
+		"resource-delivered-16KiB-exact": {"accepted", ""}, "resource-delivered-16KiB-plus-1": {"refused", "capacity"},
 		"resource-held-by-another-device": {"refused", "id-collision"}, "resource-published-again-by-its-device": {"accepted", ""},
 		"resource-share-id-held-by-another": {"refused", "id-collision"}, "resource-not-an-id": {"closed", ""},
 		"broadcast-minimal": {"accepted", ""}, "broadcast-full": {"accepted", ""}, "broadcast-unknown-members-deep": {"accepted", ""},
@@ -300,6 +340,9 @@ func TestTheRecordCasesHaveTheVerdictsTheContractSays(t *testing.T) {
 		seen[c.Name] = true
 		if c.Verdict != w.verdict || c.Reason != w.reason {
 			t.Errorf("%s: %s/%s, want %s/%s", c.Name, c.Verdict, c.Reason, w.verdict, w.reason)
+		}
+		if len(c.Listed) > wire.MaxRecord {
+			t.Errorf("%s: the server lists a record of %d bytes, above the bound of %d that every reader enforces (item BS)", c.Name, len(c.Listed), wire.MaxRecord)
 		}
 		if (c.Verdict == "accepted") != (len(c.Listed) > 0) || (c.Verdict == "accepted") != (c.Drive != nil) {
 			t.Errorf("%s: an accepted record is listed and has its Drive file, a refused one has neither", c.Name)
@@ -329,6 +372,9 @@ func TestTheRecordCasesHaveTheVerdictsTheContractSays(t *testing.T) {
 			if strings.Contains(c.Listed, "time-traveller") {
 				t.Errorf("an unknown role is dropped: %s", c.Listed)
 			}
+			if !strings.Contains(c.Listed, `"roles":["receiver","clipboard"]`) {
+				t.Errorf("the role clipboard (item BV) is kept, in the order it was sent: %s", c.Listed)
+			}
 		case "resource-unknown-members-deep":
 			if !strings.Contains(c.Listed, `"future":{"a":{"b":{"c":[1,2,{"d":null}]}}}`) {
 				t.Errorf("unknown members must come back verbatim: %s", c.Listed)
@@ -338,9 +384,15 @@ func TestTheRecordCasesHaveTheVerdictsTheContractSays(t *testing.T) {
 				strings.Contains(c.Listed, "ignored-the-server-forces") {
 				t.Errorf("the server owns publicPort, presence and deviceId: %s", c.Listed)
 			}
-		case "resource-16KiB-exact":
-			if len(c.Listed) <= 16384 {
-				t.Errorf("the listed form of a record of exactly 16384 bytes is longer than the input: %d", len(c.Listed))
+		case "resource-delivered-16KiB-exact":
+			// item BS: the bound is the record as delivered. The plain record is widest once its device is
+			// offline (a byte longer), so while it is online it is listed one byte under the bound.
+			if len(c.Listed) != 16383 {
+				t.Errorf("the largest accepted record is listed at %d bytes, want 16383 (16384 once its device is offline)", len(c.Listed))
+			}
+		case "resource-16KiB-exact", "resource-delivered-16KiB-plus-1":
+			if c.Listed != "" {
+				t.Errorf("%s is refused and listed nowhere", c.Name)
 			}
 		}
 	}

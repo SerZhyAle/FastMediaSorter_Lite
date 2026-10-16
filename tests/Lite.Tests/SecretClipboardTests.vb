@@ -42,13 +42,15 @@ Public Class SecretClipboardTests
     <Fact>
     Public Sub TheExportPathHasNoClipboardDoorOutsideTheGuard()
         ' T-C2: the JSON and the compressed code are credentials; only SecretClipboard may write
-        ' to the clipboard anywhere along the export path.
+        ' to the clipboard anywhere along the export path. The phone-code window's address carries a
+        ' single-use token (CLIPBOARD-GUARD rule 6), so its copy button is held to the same door.
         Dim guarded As String = LocateSource("SecretClipboard.vb")
         Dim offenders As New List(Of String)()
         If CodeText(guarded).Split("Clipboard.Set").Length - 1 <> 1 Then offenders.Add(guarded)
-        For Each name As String In {"FmsConfigExport.vb", "ExportWriter.vb", "Resource_Export_Form.vb", "Resource_List_Panel.vb"}
+        For Each name As String In {"FmsConfigExport.vb", "ExportWriter.vb", "Resource_Export_Form.vb", "Resource_List_Panel.vb", "Resource_Phone_Code_Form.vb"}
             Dim path As String = TryLocate(name)
-            If path IsNot Nothing AndAlso CodeText(path).Contains("Clipboard.Set") Then offenders.Add(path)
+            ' A standalone Clipboard class call only: SecretClipboard.SetSecret (the door itself) is no offender.
+            If path IsNot Nothing AndAlso System.Text.RegularExpressions.Regex.IsMatch(CodeText(path), "\bClipboard\s*\.\s*Set") Then offenders.Add(path)
         Next
         Assert.True(offenders.Count = 0, "unguarded clipboard writes: " & String.Join(", ", offenders))
     End Sub

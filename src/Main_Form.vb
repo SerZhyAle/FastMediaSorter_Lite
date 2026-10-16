@@ -99,16 +99,16 @@ Public Class Main_Form
     Private Const max_Number_Of_Recent_Media_Files As Integer = 50
 
 #If NETFRAMEWORK Then
-    ' x86/net48: no AVIF/HEIC decoder exists on its target OSes (Win 7/8.1 WIC has
-    ' no HEIF codec), so those stay in web_specific_image_extensions - scanned and
-    ' sortable with an honest "unsupported" status, never claimed as displayable.
+    ' x86/net48: no AVIF/HEIC/JXL decoder exists on its target OSes (Win 7/8.1 WIC has
+    ' no HEIF or JPEG XL codec), so those stay in web_specific_image_extensions - scanned
+    ' and sortable with an honest "unsupported" status, never claimed as displayable.
     Public Image_File_Extensions As String() = {".jpg", ".gif", ".jpeg", ".png", ".bmp", ".tif", ".tiff", ".ico", ".wmf", ".emf", ".exif", ".webp"}
-    Private web_specific_image_extensions As New HashSet(Of String) From {".heic", ".heif", ".avif", ".svg"}
+    Private web_specific_image_extensions As New HashSet(Of String) From {".heic", ".heif", ".avif", ".jxl", ".svg"}
 #Else
-    ' Modern: AVIF/HEIC/HEIF decode via Magick.NET behind the IImageDecoder seam
-    ' (epic O-3), so they are first-class displayable formats here. Both builds
-    ' scan the same file set - the x86 exe keeps them in the web-specific list.
-    Public Image_File_Extensions As String() = {".jpg", ".gif", ".jpeg", ".png", ".bmp", ".tif", ".tiff", ".ico", ".wmf", ".emf", ".exif", ".webp", ".avif", ".heic", ".heif"}
+    ' Modern: AVIF/HEIC/HEIF and JPEG XL (spec 236) decode via Magick.NET behind the
+    ' IImageDecoder seam (epic O-3), so they are first-class displayable formats here.
+    ' Both builds scan the same file set - the x86 exe keeps them in the web-specific list.
+    Public Image_File_Extensions As String() = {".jpg", ".gif", ".jpeg", ".png", ".bmp", ".tif", ".tiff", ".ico", ".wmf", ".emf", ".exif", ".webp", ".avif", ".heic", ".heif", ".jxl"}
     Private web_specific_image_extensions As New HashSet(Of String) From {".svg"}
 #End If
     Private video_File_Extensions As New HashSet(Of String) From {".webm", ".ogg", ".3g2", ".mkv", ".3gp", ".mp4", ".m4v", ".m4a", ".mov", ".mp3", ".avi", ".wmv", ".asf", ".mpg", ".mpeg", ".flv", ".wav", ".wma"}
@@ -882,7 +882,7 @@ Public Class Main_Form
         Using openFileDialog As New OpenFileDialog()
             ' Build video extensions string for filter
             Dim videoExtensions As String = String.Join(";", video_File_Extensions.Select(Function(ext) "*" & ext))
-            Dim imageExtensions As String = "*.jpg;*.jpeg;*.png;*.gif;*.bmp;*.webp;*.heic;*.heif;*.avif;*.svg"
+            Dim imageExtensions As String = "*.jpg;*.jpeg;*.png;*.gif;*.bmp;*.webp;*.heic;*.heif;*.avif;*.jxl;*.svg"
             Dim archiveExtensions As String = ""
             Dim archiveFilterGroup As String = ""
 #If Not NETFRAMEWORK Then
@@ -898,7 +898,7 @@ Public Class Main_Form
                                "|Image Files|" & imageExtensions &
                                "|Video Files|" & videoExtensions &
                                archiveFilterGroup &
-                               "|JPEG Files|*.jpg;*.jpeg|PNG Files|*.png|GIF Files|*.gif|BMP Files|*.bmp|WebP Files|*.webp|HEIC Files|*.heic;*.heif|AVIF Files|*.avif|SVG Files|*.svg"
+                               "|JPEG Files|*.jpg;*.jpeg|PNG Files|*.png|GIF Files|*.gif|BMP Files|*.bmp|WebP Files|*.webp|HEIC Files|*.heic;*.heif|AVIF Files|*.avif|JPEG XL Files|*.jxl|SVG Files|*.svg"
             openFileDialog.InitialDirectory = If(String.IsNullOrEmpty(Current_Folder_Path), Environment.GetFolderPath(Environment.SpecialFolder.MyPictures), Current_Folder_Path)
             openFileDialog.Title = Localization.T("Выберите медиафайл")
             If openFileDialog.ShowDialog(Me) = DialogResult.OK Then

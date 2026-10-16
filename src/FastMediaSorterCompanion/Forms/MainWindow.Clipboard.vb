@@ -14,21 +14,50 @@ Imports System.Windows.Forms
 ''' </summary>
 Partial Public NotInheritable Class MainWindow
 
-    Private btnClipboardSend As Button
-    Private btnClipboardGet As Button
-    Private btnClipboardCancel As Button
+    Private btnClipboardMenu As Button
+    Private _clipboardMenu As ContextMenuStrip
+    Private mnuClipboardSend As ToolStripMenuItem
+    Private mnuClipboardGet As ToolStripMenuItem
+    Private mnuClipboardCancel As ToolStripMenuItem
     Private ReadOnly _clipboard As ClipboardCoordinator = ClipboardCoordinator.Current
 
-    ''' <summary>The three buttons for the list's button row, subscribed to the coordinator for the life of this window.</summary>
+    ''' <summary>The consolidated dropdown button for the list's button row, subscribed to the coordinator for the life of this window.</summary>
     Private Function BuildClipboardButtons() As Control()
-        btnClipboardSend = NewClipboardButton(Localization.T("Отправить буфер на сервер"), IconMap.GetMeaning("btnClipboardSend").GlyphId)
-        btnClipboardGet = NewClipboardButton(Localization.T("Получить буфер с сервера"), IconMap.GetMeaning("btnClipboardGet").GlyphId)
-        btnClipboardCancel = NewClipboardButton(Localization.T("Отмена"), "action.cancel")
-        btnClipboardSend.Name = "btnClipboardSend"
-        btnClipboardGet.Name = "btnClipboardGet"
-        AddHandler btnClipboardSend.Click, Sub() BeginClipboardAction(isSend:=True)
-        AddHandler btnClipboardGet.Click, Sub() BeginClipboardAction(isSend:=False)
-        AddHandler btnClipboardCancel.Click, Sub() _clipboard.Cancel()
+        btnClipboardMenu = New Button With {.AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink,
+            .Padding = New Padding(10, 5, 12, 5), .Text = Localization.T("Буфер обмена ▾"),
+            .TextAlign = ContentAlignment.MiddleCenter, .Visible = False, .Margin = New Padding(0, 0, 8, 0)}
+        ButtonGlyphs.Apply(btnClipboardMenu, "action.send-clipboard")
+        btnClipboardMenu.Name = "btnClipboardMenu"
+
+        _clipboardMenu = New ContextMenuStrip()
+        mnuClipboardSend = New ToolStripMenuItem(Localization.T("Отправить буфер на сервер"))
+        AddHandler mnuClipboardSend.Click, Sub() BeginClipboardAction(isSend:=True)
+
+        mnuClipboardGet = New ToolStripMenuItem(Localization.T("Получить буфер с сервера"))
+        AddHandler mnuClipboardGet.Click, Sub() BeginClipboardAction(isSend:=False)
+
+        mnuClipboardCancel = New ToolStripMenuItem(Localization.T("Отмена"))
+        AddHandler mnuClipboardCancel.Click, Sub() _clipboard.Cancel()
+
+        btnClipboardMenu.ContextMenuStrip = _clipboardMenu
+        _clipboardMenu.Items.Add(mnuClipboardSend)
+        _clipboardMenu.Items.Add(mnuClipboardGet)
+        _clipboardMenu.Items.Add(mnuClipboardCancel)
+
+        AddHandler _clipboardMenu.Opening,
+            Sub()
+                Dim iconSize As Integer = LogicalToDeviceUnits(16)
+                Dim opener As Func(Of String, System.IO.Stream) = AddressOf CompanionAssets.OpenBundledAsset
+                RenderMenuItemGlyph(mnuClipboardSend, "action.upload", iconSize, opener)
+                RenderMenuItemGlyph(mnuClipboardGet, "action.download", iconSize, opener)
+                RenderMenuItemGlyph(mnuClipboardCancel, "action.cancel", iconSize, opener)
+            End Sub
+
+        AddHandler btnClipboardMenu.Click, Sub()
+            If Not _clipboardMenu.Visible Then
+                _clipboardMenu.Show(btnClipboardMenu, New Point(0, btnClipboardMenu.Height))
+            End If
+        End Sub
 
         AddHandler _clipboard.StateChanged, AddressOf OnClipboardStateChanged
         AddHandler _clipboard.Finished, AddressOf OnClipboardFinished
@@ -36,29 +65,32 @@ Partial Public NotInheritable Class MainWindow
             Sub()
                 RemoveHandler _clipboard.StateChanged, AddressOf OnClipboardStateChanged
                 RemoveHandler _clipboard.Finished, AddressOf OnClipboardFinished
+                Try
+                    mnuClipboardSend?.Image?.Dispose()
+                    mnuClipboardGet?.Image?.Dispose()
+                    mnuClipboardCancel?.Image?.Dispose()
+                    _clipboardMenu.Dispose()
+                Catch : End Try
             End Sub
 
         RefreshClipboardButtons()
-        Return New Control() {btnClipboardSend, btnClipboardGet, btnClipboardCancel}
+        Return New Control() {btnClipboardMenu}
     End Function
 
-    Private Shared Function NewClipboardButton(caption As String, glyph As String) As Button
-        Dim button As New Button With {.AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink,
-            .Padding = New Padding(10, 5, 12, 5), .Text = caption, .TextAlign = ContentAlignment.MiddleCenter, .Visible = False}
-        ButtonGlyphs.Apply(button, glyph)
-        Return button
-    End Function
-
-    ''' <summary>Drawn only while an account exists; the send and get wait while one operation runs, the cancel appears.</summary>
+    ''' <summary>Drawn only while an account exists; the send and get wait while one operation runs, the cancel is enabled.</summary>
     Private Sub RefreshClipboardButtons()
-        If btnClipboardSend Is Nothing Then Return
+        If btnClipboardMenu Is Nothing Then Return
         Dim offered As Boolean = _clipboard.IsOffered()
         Dim running As Boolean = _clipboard.IsRunning
-        btnClipboardSend.Visible = offered
-        btnClipboardGet.Visible = offered
-        btnClipboardSend.Enabled = Not running
-        btnClipboardGet.Enabled = Not running
-        btnClipboardCancel.Visible = offered AndAlso running
+        btnClipboardMenu.Visible = offered
+        If mnuClipboardSend IsNot Nothing Then mnuClipboardSend.Enabled = Not running
+        If mnuClipboardGet IsNot Nothing Then mnuClipboardGet.Enabled = Not running
+        If mnuClipboardCancel IsNot Nothing Then mnuClipboardCancel.Enabled = running
+        If running Then
+            btnClipboardMenu.Text = Localization.T("Буфер обмена (передача..)")
+        Else
+            btnClipboardMenu.Text = Localization.T("Буфер обмена ▾")
+        End If
     End Sub
 
     Private Sub BeginClipboardAction(isSend As Boolean)

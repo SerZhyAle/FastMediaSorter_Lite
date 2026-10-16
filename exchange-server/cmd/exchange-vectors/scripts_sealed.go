@@ -218,7 +218,7 @@ func scenarioSealedDevices() *transcript {
 	}
 	w := r.open(tr, "register", "tls", "a person registers a new account and enrolls the first device in one frame, with the capability and the key")
 	watch := party{Dev: e2eDevices["watch"], ID: r.newID()}
-	w.send(&wire.Register{InvitationCode: inv.Code, Login: "carol", Password: testkit.TestPassword, DeviceID: watch.ID,
+	w.send(&wire.Register{Invitation: inv.Code, Login: "carol", Password: testkit.TestPassword, DeviceID: watch.ID,
 		DeviceName: "Vector watch", Product: "fms-wear", ProductVersion: "1.0.0", Platform: "vector", Roles: roles("receiver"),
 		Capabilities: []string{wire.E2ECapability}, KeepaliveSeconds: 30, E2EKey: watch.Dev.Key()})
 	en := w.expect(wire.TypeEnrolled).(*wire.Enrolled)

@@ -267,6 +267,20 @@ Friend NotInheritable Class ExchangeProducerSummary
     Private Sub New()
     End Sub
 
+    Friend Shared Function IsReadOnly() As Boolean
+        Try
+            If Not ExchangeFeatures.IsEnabled() Then Return False
+            Dim agent As ExchangeDeviceAgent = ExchangeDeviceHost.Current
+            If agent Is Nothing Then Return False
+            Dim publisher As ExchangePublisher = agent.Publisher
+            If publisher Is Nothing Then Return False
+            Dim snapshot As ExchangePublishSnapshot = publisher.Snapshot
+            Return snapshot.Block = ExchangePublishBlock.ServerNoE2e
+        Catch
+            Return False
+        End Try
+    End Function
+
     Friend Shared Function Line() As String
         Try
             If Not ExchangeFeatures.IsEnabled() Then Return ""

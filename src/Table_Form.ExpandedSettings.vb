@@ -1,4 +1,4 @@
-﻿#If Not NETFRAMEWORK Then
+#If Not NETFRAMEWORK Then
 Option Strict On
 
 Imports System.Collections.Generic
@@ -51,271 +51,486 @@ Partial Public Class Table_Form
     Private Sub AddExpandedSettingsRows(destinations As FlowLayoutPanel, viewing As FlowLayoutPanel,
                                         video As FlowLayoutPanel, audio As FlowLayoutPanel, files As FlowLayoutPanel,
                                         ocr As FlowLayoutPanel)
-        Dim p As ModernViewerPreferences = Main_Form.GetModernPreferences()
 
-        AddSectionHeader(destinations, "section_overlay_layout")
-        AddPreferenceChoice(destinations, "recipients_position",
-                            Function() {Choice("topLeft", "Вверху слева"), Choice("topRight", "Вверху справа"), Choice("bottomLeft", "Внизу слева"), Choice("bottomRight", "Внизу справа")},
-                            Function() Main_Form.GetModernPreferences().RecipientsOverlayPosition,
-                            Sub(v)
-                                Main_Form.GetModernPreferences().RecipientsOverlayPosition = v
-                                ' A drag is the fine move, a corner pick the coarse one (219 §3):
-                                ' the chosen corner is the anchor again, and the custom point goes.
-                                Main_Form.GetModernPreferences().RecipientsOverlayHasCustomPosition = False
-                            End Sub)
-        AddPreferenceNumber(destinations, "recipients_width", 180, 520,
-                            Function() Main_Form.GetModernPreferences().RecipientsOverlayWidth,
-                            Sub(v) Main_Form.GetModernPreferences().RecipientsOverlayWidth = v)
-        AddPreferenceNumber(destinations, "recipients_font", 9, 18,
-                            Function() Main_Form.GetModernPreferences().RecipientsOverlayFontSize,
-                            Sub(v) Main_Form.GetModernPreferences().RecipientsOverlayFontSize = v)
-        AddPreferenceNumber(destinations, "recipients_opacity", 40, 100,
-                            Function() Main_Form.GetModernPreferences().RecipientsOverlayOpacity,
-                            Sub(v) Main_Form.GetModernPreferences().RecipientsOverlayOpacity = v)
-        AddPreferenceNumber(destinations, "recipients_rows", 3, 11,
-                            Function() Main_Form.GetModernPreferences().RecipientsOverlayVisibleRows,
-                            Sub(v) Main_Form.GetModernPreferences().RecipientsOverlayVisibleRows = v)
+
+
+        RegisterSettingsRow("recipients_position",
+            Sub()
+                AddPreferenceChoice(destinations, "recipients_position",
+                                    Function() {Choice("topLeft", "Вверху слева"), Choice("topRight", "Вверху справа"), Choice("bottomLeft", "Внизу слева"), Choice("bottomRight", "Внизу справа")},
+                                    Function() Main_Form.GetModernPreferences().RecipientsOverlayPosition,
+                                    Sub(v)
+                                        Main_Form.GetModernPreferences().RecipientsOverlayPosition = v
+                                        ' A drag is the fine move, a corner pick the coarse one (219 §3):
+                                        ' the chosen corner is the anchor again, and the custom point goes.
+                                        Main_Form.GetModernPreferences().RecipientsOverlayHasCustomPosition = False
+                                    End Sub)
+            End Sub)
+        RegisterSettingsRow("recipients_width",
+            Sub()
+                AddPreferenceNumber(destinations, "recipients_width", 180, 520,
+                                    Function() Main_Form.GetModernPreferences().RecipientsOverlayWidth,
+                                    Sub(v) Main_Form.GetModernPreferences().RecipientsOverlayWidth = v)
+            End Sub)
+        RegisterSettingsRow("recipients_font",
+            Sub()
+                AddPreferenceNumber(destinations, "recipients_font", 9, 18,
+                                    Function() Main_Form.GetModernPreferences().RecipientsOverlayFontSize,
+                                    Sub(v) Main_Form.GetModernPreferences().RecipientsOverlayFontSize = v)
+            End Sub)
+        RegisterSettingsRow("recipients_opacity",
+            Sub()
+                AddPreferenceNumber(destinations, "recipients_opacity", 40, 100,
+                                    Function() Main_Form.GetModernPreferences().RecipientsOverlayOpacity,
+                                    Sub(v) Main_Form.GetModernPreferences().RecipientsOverlayOpacity = v)
+            End Sub)
+        RegisterSettingsRow("recipients_rows",
+            Sub()
+                AddPreferenceNumber(destinations, "recipients_rows", 3, 11,
+                                    Function() Main_Form.GetModernPreferences().RecipientsOverlayVisibleRows,
+                                    Sub(v) Main_Form.GetModernPreferences().RecipientsOverlayVisibleRows = v)
+            End Sub)
         ' 219 §5: the one recovery command - "утащил и потерял" in a click. It clears the custom
         ' point and repositions the overlay at once, from any state, and says what it did
         ' through the Notify line; at the anchor it is an honest no-op that still says so.
-        Dim resetPosition As New Button With {.AutoSize = True}
-        expandedRefreshActions.Add(Sub() resetPosition.Text = Localization.T("Сбросить"))
-        resetPosition.Text = Localization.T("Сбросить")
-        AddHandler resetPosition.Click, Sub() Main_Form.ResetRecipientsOverlayPosition()
-        AddSettingRow(destinations, "recipients_position_reset", resetPosition, 230, True)
+        RegisterSettingsRow("recipients_position_reset",
+            Sub()
+                Dim resetPosition As New Button With {.AutoSize = True}
+                expandedRefreshActions.Add(Sub() resetPosition.Text = Localization.T("Сбросить"))
+                resetPosition.Text = Localization.T("Сбросить")
+                AddHandler resetPosition.Click, Sub() Main_Form.ResetRecipientsOverlayPosition()
+                AddSettingRow(destinations, "recipients_position_reset", resetPosition, 230, True)
+            End Sub)
 
-        AddSectionHeader(viewing, "section_accessibility")
-        AddInterfaceScaleRow(viewing)
-        AddPreferenceChoice(viewing, "new_image_scale",
-                            Function() {Choice("fit", "Вписать"), Choice("actual", "100 %"), Choice("perFolder", "Запоминать для папки")},
-                            Function() Main_Form.GetModernPreferences().NewImageScaleMode,
-                            Sub(v) Main_Form.GetModernPreferences().NewImageScaleMode = v)
-        AddPreferenceCheck(viewing, "reduce_motion",
-                           Function() Main_Form.GetModernPreferences().ReduceMotion,
-                           Sub(v) Main_Form.GetModernPreferences().ReduceMotion = v)
-        AddPreferenceCheck(viewing, "chrome_pinned",
-                           Function() Main_Form.GetModernPreferences().ChromePinned,
-                           Sub(v) Main_Form.GetModernPreferences().ChromePinned = v)
-        AddPreferenceChoice(viewing, "chrome_size",
-                            Function() {Choice("small", "Маленький"), Choice("medium", "Средний"), Choice("large", "Большой"), Choice("adaptive", "Адаптивный"), Choice("touch", "Крупные цели (касание)")},
-                            Function() Main_Form.GetModernPreferences().ChromeSize,
-                            Sub(v) Main_Form.GetModernPreferences().ChromeSize = v)
-        AddPreferenceSlider(viewing, "chrome_opacity", 0, 100,
-                            Function() Main_Form.GetModernPreferences().ChromeOpacityPercent,
-                            Sub(v) Main_Form.GetModernPreferences().ChromeOpacityPercent = v)
-        AddPreferenceNumber(viewing, "chrome_corners", 0, 16,
-                            Function() Main_Form.GetModernPreferences().ChromeCornerRadius,
-                            Sub(v) Main_Form.GetModernPreferences().ChromeCornerRadius = v)
-        AddSectionHeader(viewing, "section_slideshow_behavior")
-        AddPreferenceChoice(viewing, "slideshow_random_order",
-                            Function() {Choice("natural", "Обычный порядок"), Choice("random", "Случайный"), Choice("shuffleCycle", "Без повторов до конца цикла")},
-                            Function() Main_Form.GetModernPreferences().SlideshowRandomOrder,
-                            Sub(v) Main_Form.GetModernPreferences().SlideshowRandomOrder = v)
-        AddPreferenceCheck(viewing, "stop_slideshow_manual",
-                           Function() Main_Form.GetModernPreferences().StopSlideshowOnManualNavigation,
-                           Sub(v) Main_Form.GetModernPreferences().StopSlideshowOnManualNavigation = v)
-        AddPreferenceChoice(viewing, "slideshow_ui",
-                            Function() {Choice("none", "Не скрывать"), Choice("toolbar", "Скрывать панель инструментов"), Choice("toolbarAndStatus", "Скрывать панель и статус")},
-                            Function() Main_Form.GetModernPreferences().SlideshowUiMode,
-                            Sub(v) Main_Form.GetModernPreferences().SlideshowUiMode = v)
+        RegisterSettingsRow("interface_scale",
+            Sub()
+                AddInterfaceScaleRow(viewing)
+            End Sub)
+        RegisterSettingsRow("new_image_scale",
+            Sub()
+                AddPreferenceChoice(viewing, "new_image_scale",
+                                    Function() {Choice("fit", "Вписать"), Choice("actual", "100 %"), Choice("perFolder", "Запоминать для папки")},
+                                    Function() Main_Form.GetModernPreferences().NewImageScaleMode,
+                                    Sub(v) Main_Form.GetModernPreferences().NewImageScaleMode = v)
+            End Sub)
+        RegisterSettingsRow("reduce_motion",
+            Sub()
+                AddPreferenceCheck(viewing, "reduce_motion",
+                                   Function() Main_Form.GetModernPreferences().ReduceMotion,
+                                   Sub(v) Main_Form.GetModernPreferences().ReduceMotion = v)
+            End Sub)
+        RegisterSettingsRow("chrome_pinned",
+            Sub()
+                AddPreferenceCheck(viewing, "chrome_pinned",
+                                   Function() Main_Form.GetModernPreferences().ChromePinned,
+                                   Sub(v) Main_Form.GetModernPreferences().ChromePinned = v)
+            End Sub)
+        RegisterSettingsRow("chrome_size",
+            Sub()
+                AddPreferenceChoice(viewing, "chrome_size",
+                                    Function() {Choice("small", "Маленький"), Choice("medium", "Средний"), Choice("large", "Большой"), Choice("adaptive", "Адаптивный"), Choice("touch", "Крупные цели (касание)")},
+                                    Function() Main_Form.GetModernPreferences().ChromeSize,
+                                    Sub(v) Main_Form.GetModernPreferences().ChromeSize = v)
+            End Sub)
+        RegisterSettingsRow("chrome_opacity",
+            Sub()
+                AddPreferenceSlider(viewing, "chrome_opacity", 0, 100,
+                                    Function() Main_Form.GetModernPreferences().ChromeOpacityPercent,
+                                    Sub(v) Main_Form.GetModernPreferences().ChromeOpacityPercent = v)
+            End Sub)
+        RegisterSettingsRow("chrome_corners",
+            Sub()
+                AddPreferenceNumber(viewing, "chrome_corners", 0, 16,
+                                    Function() Main_Form.GetModernPreferences().ChromeCornerRadius,
+                                    Sub(v) Main_Form.GetModernPreferences().ChromeCornerRadius = v)
+            End Sub)
+
+        RegisterSettingsRow("slideshow_random_order",
+            Sub()
+                AddPreferenceChoice(viewing, "slideshow_random_order",
+                                    Function() {Choice("natural", "Обычный порядок"), Choice("random", "Случайный"), Choice("shuffleCycle", "Без повторов до конца цикла")},
+                                    Function() Main_Form.GetModernPreferences().SlideshowRandomOrder,
+                                    Sub(v) Main_Form.GetModernPreferences().SlideshowRandomOrder = v)
+            End Sub)
+        RegisterSettingsRow("stop_slideshow_manual",
+            Sub()
+                AddPreferenceCheck(viewing, "stop_slideshow_manual",
+                                   Function() Main_Form.GetModernPreferences().StopSlideshowOnManualNavigation,
+                                   Sub(v) Main_Form.GetModernPreferences().StopSlideshowOnManualNavigation = v)
+            End Sub)
+        RegisterSettingsRow("slideshow_ui",
+            Sub()
+                AddPreferenceChoice(viewing, "slideshow_ui",
+                                    Function() {Choice("none", "Не скрывать"), Choice("toolbar", "Скрывать панель инструментов"), Choice("toolbarAndStatus", "Скрывать панель и статус")},
+                                    Function() Main_Form.GetModernPreferences().SlideshowUiMode,
+                                    Sub(v) Main_Form.GetModernPreferences().SlideshowUiMode = v)
+            End Sub)
         ' 119 Ф-6, modern only: stillness before the pointer hides itself in a slideshow
         ' or full-screen viewing; 0 = never.
-        AddPreferenceNumber(viewing, "video_hide_cursor", 0, 30,
-                            Function() Main_Form.GetModernPreferences().HideCursorAfterSec,
-                            Sub(v) Main_Form.GetModernPreferences().HideCursorAfterSec = v)
+        RegisterSettingsRow("video_hide_cursor",
+            Sub()
+                AddPreferenceNumber(viewing, "video_hide_cursor", 0, 30,
+                                    Function() Main_Form.GetModernPreferences().HideCursorAfterSec,
+                                    Sub(v) Main_Form.GetModernPreferences().HideCursorAfterSec = v)
+            End Sub)
 
-        AddSectionHeader(video, "section_video_behavior")
-        AddNavigationKindCheck(video, "include_video_navigation",
-                               Function() Main_Form.GetModernPreferences().IncludeVideoInNavigation,
-                               Sub(v) Main_Form.GetModernPreferences().IncludeVideoInNavigation = v)
-        AddPreferenceCheck(video, "video_autoplay",
-                           Function() Main_Form.GetModernPreferences().VideoAutoplay,
-                           Sub(v) Main_Form.GetModernPreferences().VideoAutoplay = v)
-        AddPreferenceCheck(video, "video_remember_position",
-                           Function() Main_Form.GetModernPreferences().RememberVideoPosition,
-                           Sub(v) Main_Form.GetModernPreferences().RememberVideoPosition = v)
-        AddPreferenceNumber(video, "video_controls_delay", 1, 15,
-                            Function() Main_Form.GetModernPreferences().VideoControlsHideDelaySec,
-                            Sub(v) Main_Form.GetModernPreferences().VideoControlsHideDelaySec = v)
-        AddPreferenceCheck(video, "video_controls_paused",
-                           Function() Main_Form.GetModernPreferences().ShowVideoControlsWhenPaused,
-                           Sub(v) Main_Form.GetModernPreferences().ShowVideoControlsWhenPaused = v)
-        AddPreferenceChoice(video, "video_click_action",
-                            Function() {Choice("pauseResume", "Пауза / продолжить"), Choice("nextFile", "Следующий файл")},
-                            Function() Main_Form.GetModernPreferences().VideoSingleClickAction,
-                            Sub(v) Main_Form.GetModernPreferences().VideoSingleClickAction = v)
-        AddPreferenceChoice(video, "video_end_action",
-                            Function() {Choice("stay", "Проиграть и стоп"), Choice("nextFile", "Автопереход к следующему"), Choice("repeat", "По кругу")},
-                            Function() Main_Form.GetModernPreferences().VideoEndAction,
-                            Sub(v) Main_Form.GetModernPreferences().VideoEndAction = v)
+
+        RegisterSettingsRow("include_video_navigation",
+            Sub()
+                AddNavigationKindCheck(video, "include_video_navigation",
+                                       Function() Main_Form.GetModernPreferences().IncludeVideoInNavigation,
+                                       Sub(v) Main_Form.GetModernPreferences().IncludeVideoInNavigation = v)
+            End Sub)
+        RegisterSettingsRow("video_autoplay",
+            Sub()
+                AddPreferenceCheck(video, "video_autoplay",
+                                   Function() Main_Form.GetModernPreferences().VideoAutoplay,
+                                   Sub(v) Main_Form.GetModernPreferences().VideoAutoplay = v)
+            End Sub)
+        RegisterSettingsRow("video_remember_position",
+            Sub()
+                AddPreferenceCheck(video, "video_remember_position",
+                                   Function() Main_Form.GetModernPreferences().RememberVideoPosition,
+                                   Sub(v) Main_Form.GetModernPreferences().RememberVideoPosition = v)
+            End Sub)
+        RegisterSettingsRow("video_controls_delay",
+            Sub()
+                AddPreferenceNumber(video, "video_controls_delay", 1, 15,
+                                    Function() Main_Form.GetModernPreferences().VideoControlsHideDelaySec,
+                                    Sub(v) Main_Form.GetModernPreferences().VideoControlsHideDelaySec = v)
+            End Sub)
+        RegisterSettingsRow("video_controls_paused",
+            Sub()
+                AddPreferenceCheck(video, "video_controls_paused",
+                                   Function() Main_Form.GetModernPreferences().ShowVideoControlsWhenPaused,
+                                   Sub(v) Main_Form.GetModernPreferences().ShowVideoControlsWhenPaused = v)
+            End Sub)
+        RegisterSettingsRow("video_click_action",
+            Sub()
+                AddPreferenceChoice(video, "video_click_action",
+                                    Function() {Choice("pauseResume", "Пауза / продолжить"), Choice("nextFile", "Следующий файл")},
+                                    Function() Main_Form.GetModernPreferences().VideoSingleClickAction,
+                                    Sub(v) Main_Form.GetModernPreferences().VideoSingleClickAction = v)
+            End Sub)
+        RegisterSettingsRow("video_end_action",
+            Sub()
+                AddPreferenceChoice(video, "video_end_action",
+                                    Function() {Choice("stay", "Проиграть и стоп"), Choice("nextFile", "Автопереход к следующему"), Choice("repeat", "По кругу")},
+                                    Function() Main_Form.GetModernPreferences().VideoEndAction,
+                                    Sub(v) Main_Form.GetModernPreferences().VideoEndAction = v)
+            End Sub)
         ' The three keyboard seek steps of 119 Ф-2: Shift+arrows / Alt+arrows / Ctrl+arrows.
-        AddPreferenceNumber(video, "video_seek_short", 1, 600,
-                            Function() Main_Form.GetModernPreferences().SeekShortSec,
-                            Sub(v) Main_Form.GetModernPreferences().SeekShortSec = v)
-        AddPreferenceNumber(video, "video_seek_medium", 1, 600,
-                            Function() Main_Form.GetModernPreferences().SeekMediumSec,
-                            Sub(v) Main_Form.GetModernPreferences().SeekMediumSec = v)
-        AddPreferenceNumber(video, "video_seek_long", 1, 600,
-                            Function() Main_Form.GetModernPreferences().SeekLongSec,
-                            Sub(v) Main_Form.GetModernPreferences().SeekLongSec = v)
-        AddSectionHeader(audio, "section_audio_behavior")
-        AddNavigationKindCheck(audio, "include_audio_navigation",
-                               Function() Main_Form.GetModernPreferences().IncludeAudioInNavigation,
-                               Sub(v) Main_Form.GetModernPreferences().IncludeAudioInNavigation = v)
-        AddPreferenceChoice(audio, "audio_end_action",
-                            Function() {Choice("next", "Автопереход к следующему"), Choice("stay", "Проиграть и стоп"), Choice("repeat", "По кругу")},
-                            Function() Main_Form.GetModernPreferences().AudioEndAction,
-                            Sub(v) Main_Form.GetModernPreferences().AudioEndAction = v)
-        AddPreferenceCheck(audio, "audio_controls_visible",
-                           Function() Main_Form.GetModernPreferences().AudioControlsAlwaysVisible,
-                           Sub(v) Main_Form.GetModernPreferences().AudioControlsAlwaysVisible = v)
-        AddPreferenceCheck(audio, "audio_visualiser",
-                           Function() Main_Form.GetModernPreferences().AudioVisualiser,
-                           Sub(v) Main_Form.GetModernPreferences().AudioVisualiser = v)
-        AddPreferenceNumber(audio, "audio_sleep_timer", 0, 180,
-                            Function() Main_Form.GetModernPreferences().SleepTimerMinutes,
-                            Sub(v) Main_Form.GetModernPreferences().SleepTimerMinutes = v)
-        AddPreferenceChoice(audio, "preferred_audio_language",
-                            Function() TrackLanguageChoices(subtitles:=False),
-                            Function() Main_Form.GetModernPreferences().PreferredAudioLanguage,
-                            Sub(v) Main_Form.GetModernPreferences().PreferredAudioLanguage = v)
-        AddPreferenceChoice(audio, "preferred_subtitle_language",
-                            Function() TrackLanguageChoices(subtitles:=True),
-                            Function() Main_Form.GetModernPreferences().PreferredSubtitleLanguage,
-                            Sub(v) Main_Form.GetModernPreferences().PreferredSubtitleLanguage = v)
+        RegisterSettingsRow("video_seek_short",
+            Sub()
+                AddPreferenceNumber(video, "video_seek_short", 1, 600,
+                                    Function() Main_Form.GetModernPreferences().SeekShortSec,
+                                    Sub(v) Main_Form.GetModernPreferences().SeekShortSec = v)
+            End Sub)
+        RegisterSettingsRow("video_seek_medium",
+            Sub()
+                AddPreferenceNumber(video, "video_seek_medium", 1, 600,
+                                    Function() Main_Form.GetModernPreferences().SeekMediumSec,
+                                    Sub(v) Main_Form.GetModernPreferences().SeekMediumSec = v)
+            End Sub)
+        RegisterSettingsRow("video_seek_long",
+            Sub()
+                AddPreferenceNumber(video, "video_seek_long", 1, 600,
+                                    Function() Main_Form.GetModernPreferences().SeekLongSec,
+                                    Sub(v) Main_Form.GetModernPreferences().SeekLongSec = v)
+            End Sub)
 
-        AddSectionHeader(files, "section_file_behavior")
-        AddPreferenceChoice(files, "name_collision",
-                            Function() {Choice("ask", "Спрашивать"), Choice("skip", "Пропустить"), Choice("rename", "Сохранить оба"), Choice("replace", "Заменить")},
-                            Function() Main_Form.GetModernPreferences().NameCollisionPolicy,
-                            Sub(v) Main_Form.GetModernPreferences().NameCollisionPolicy = v)
-        AddPreferenceChoice(files, "after_file_operation",
-                            Function() {Choice("next", "Следующий файл"), Choice("stay", "Остаться на текущем"), Choice("closeIfEmpty", "Закрыть, если файлов не осталось")},
-                            Function() Main_Form.GetModernPreferences().AfterFileOperation,
-                            Sub(v) Main_Form.GetModernPreferences().AfterFileOperation = v)
-        AddPreferenceCheck(files, "reveal_status_on_file_op",
-                           Function() Main_Form.GetModernPreferences().RevealStatusOnFileOperation,
-                           Sub(v) Main_Form.GetModernPreferences().RevealStatusOnFileOperation = v)
-        AddPreferenceCheck(files, "create_missing_destination",
-                           Function() Main_Form.GetModernPreferences().CreateMissingDestination,
-                           Sub(v) Main_Form.GetModernPreferences().CreateMissingDestination = v)
-        AddPreferenceCheck(files, "delete_to_recycle_bin",
-                           Function() Main_Form.GetModernPreferences().DeleteToRecycleBin,
-                           Sub(v) Main_Form.GetModernPreferences().DeleteToRecycleBin = v)
-        AddPreferenceChoice(files, "confirm_delete",
-                            Function() {Choice("always", "Всегда"), Choice("permanentOnly", "Только если файл не попадёт в Корзину"), Choice("never", "Никогда")},
-                            Function() Main_Form.GetModernPreferences().ConfirmDelete,
-                            Sub(v) Main_Form.GetModernPreferences().ConfirmDelete = v)
-        AddPreferenceCheck(files, "include_subfolders",
-                           Function() Main_Form.GetModernPreferences().IncludeSubfolders,
-                           Sub(v) Main_Form.GetModernPreferences().IncludeSubfolders = v)
-        AddFileTypesRow(files)
-        AddNavigationKindCheck(files, "include_document_navigation",
-                               Function() Main_Form.GetModernPreferences().IncludeDocumentInNavigation,
-                               Sub(v) Main_Form.GetModernPreferences().IncludeDocumentInNavigation = v)
-        AddContentExtensionsRow(files, "document_extensions", True)
-        AddPreferenceNumber(files, "text_preview_max_kb", ModernViewerPreferences.TextPreviewMaxKbMin, ModernViewerPreferences.TextPreviewMaxKbMax,
-                            Function() Main_Form.GetModernPreferences().TextPreviewMaxKb,
-                            Sub(v) Main_Form.GetModernPreferences().TextPreviewMaxKb = v)
-        AddNavigationKindCheck(files, "sort_other_files",
-                               Function() Main_Form.GetModernPreferences().SortOtherFiles,
-                               Sub(v) Main_Form.GetModernPreferences().SortOtherFiles = v)
-        AddContentExtensionsRow(files, "other_extensions", False)
-        AddHotkeysRow(files)
-        AddPreferenceNumber(files, "recent_files_limit", 0, 200,
-                            Function() Main_Form.GetModernPreferences().RecentFilesLimit,
-                            Sub(v) Main_Form.GetModernPreferences().RecentFilesLimit = v)
-        AddPreferenceNumber(files, "recent_folders_limit", 0, 200,
-                            Function() Main_Form.GetModernPreferences().RecentFoldersLimit,
-                            Sub(v) Main_Form.GetModernPreferences().RecentFoldersLimit = v)
-        AddHistoryRow(files)
-        AddPreferenceChoice(files, "startup_open",
-                            Function() {Choice("home", "Стартовую страницу"), Choice("lastFolder", "Последнюю папку"), Choice("lastFile", "Последний файл")},
-                            Function() Main_Form.GetModernPreferences().StartupOpenMode,
-                            Sub(v) Main_Form.GetModernPreferences().StartupOpenMode = v)
-        AddPreferenceCheck(files, "resume_last_playback",
-                           Function() Main_Form.GetModernPreferences().ResumeLastPlayback,
-                           Sub(v) Main_Form.GetModernPreferences().ResumeLastPlayback = v)
-        AddSettingsTransferRows(files)
-        AddAllowNewWindowsRow(files)
+        RegisterSettingsRow("include_audio_navigation",
+            Sub()
+                AddNavigationKindCheck(audio, "include_audio_navigation",
+                                       Function() Main_Form.GetModernPreferences().IncludeAudioInNavigation,
+                                       Sub(v) Main_Form.GetModernPreferences().IncludeAudioInNavigation = v)
+            End Sub)
+        RegisterSettingsRow("audio_end_action",
+            Sub()
+                AddPreferenceChoice(audio, "audio_end_action",
+                                    Function() {Choice("next", "Автопереход к следующему"), Choice("stay", "Проиграть и стоп"), Choice("repeat", "По кругу")},
+                                    Function() Main_Form.GetModernPreferences().AudioEndAction,
+                                    Sub(v) Main_Form.GetModernPreferences().AudioEndAction = v)
+            End Sub)
+        RegisterSettingsRow("audio_controls_visible",
+            Sub()
+                AddPreferenceCheck(audio, "audio_controls_visible",
+                                   Function() Main_Form.GetModernPreferences().AudioControlsAlwaysVisible,
+                                   Sub(v) Main_Form.GetModernPreferences().AudioControlsAlwaysVisible = v)
+            End Sub)
+        RegisterSettingsRow("audio_visualiser",
+            Sub()
+                AddPreferenceCheck(audio, "audio_visualiser",
+                                   Function() Main_Form.GetModernPreferences().AudioVisualiser,
+                                   Sub(v) Main_Form.GetModernPreferences().AudioVisualiser = v)
+            End Sub)
+        RegisterSettingsRow("audio_sleep_timer",
+            Sub()
+                AddPreferenceNumber(audio, "audio_sleep_timer", 0, 180,
+                                    Function() Main_Form.GetModernPreferences().SleepTimerMinutes,
+                                    Sub(v) Main_Form.GetModernPreferences().SleepTimerMinutes = v)
+            End Sub)
+        RegisterSettingsRow("preferred_audio_language",
+            Sub()
+                AddPreferenceChoice(audio, "preferred_audio_language",
+                                    Function() TrackLanguageChoices(subtitles:=False),
+                                    Function() Main_Form.GetModernPreferences().PreferredAudioLanguage,
+                                    Sub(v) Main_Form.GetModernPreferences().PreferredAudioLanguage = v)
+            End Sub)
+        RegisterSettingsRow("preferred_subtitle_language",
+            Sub()
+                AddPreferenceChoice(audio, "preferred_subtitle_language",
+                                    Function() TrackLanguageChoices(subtitles:=True),
+                                    Function() Main_Form.GetModernPreferences().PreferredSubtitleLanguage,
+                                    Sub(v) Main_Form.GetModernPreferences().PreferredSubtitleLanguage = v)
+            End Sub)
+
+
+        RegisterSettingsRow("name_collision",
+            Sub()
+                AddPreferenceChoice(files, "name_collision",
+                                    Function() {Choice("ask", "Спрашивать"), Choice("skip", "Пропустить"), Choice("rename", "Сохранить оба"), Choice("replace", "Заменить")},
+                                    Function() Main_Form.GetModernPreferences().NameCollisionPolicy,
+                                    Sub(v) Main_Form.GetModernPreferences().NameCollisionPolicy = v)
+            End Sub)
+        RegisterSettingsRow("after_file_operation",
+            Sub()
+                AddPreferenceChoice(files, "after_file_operation",
+                                    Function() {Choice("next", "Следующий файл"), Choice("stay", "Остаться на текущем"), Choice("closeIfEmpty", "Закрыть, если файлов не осталось")},
+                                    Function() Main_Form.GetModernPreferences().AfterFileOperation,
+                                    Sub(v) Main_Form.GetModernPreferences().AfterFileOperation = v)
+            End Sub)
+        RegisterSettingsRow("reveal_status_on_file_op",
+            Sub()
+                AddPreferenceCheck(files, "reveal_status_on_file_op",
+                                   Function() Main_Form.GetModernPreferences().RevealStatusOnFileOperation,
+                                   Sub(v) Main_Form.GetModernPreferences().RevealStatusOnFileOperation = v)
+            End Sub)
+        RegisterSettingsRow("create_missing_destination",
+            Sub()
+                AddPreferenceCheck(files, "create_missing_destination",
+                                   Function() Main_Form.GetModernPreferences().CreateMissingDestination,
+                                   Sub(v) Main_Form.GetModernPreferences().CreateMissingDestination = v)
+            End Sub)
+        RegisterSettingsRow("delete_to_recycle_bin",
+            Sub()
+                AddPreferenceCheck(files, "delete_to_recycle_bin",
+                                   Function() Main_Form.GetModernPreferences().DeleteToRecycleBin,
+                                   Sub(v) Main_Form.GetModernPreferences().DeleteToRecycleBin = v)
+            End Sub)
+        RegisterSettingsRow("confirm_delete",
+            Sub()
+                AddPreferenceChoice(files, "confirm_delete",
+                                    Function() {Choice("always", "Всегда"), Choice("permanentOnly", "Только если файл не попадёт в Корзину"), Choice("never", "Никогда")},
+                                    Function() Main_Form.GetModernPreferences().ConfirmDelete,
+                                    Sub(v) Main_Form.GetModernPreferences().ConfirmDelete = v)
+            End Sub)
+        RegisterSettingsRow("include_subfolders",
+            Sub()
+                AddPreferenceCheck(files, "include_subfolders",
+                                   Function() Main_Form.GetModernPreferences().IncludeSubfolders,
+                                   Sub(v) Main_Form.GetModernPreferences().IncludeSubfolders = v)
+            End Sub)
+        RegisterSettingsRow("included_extensions",
+            Sub()
+                AddFileTypesRow(files)
+            End Sub)
+        RegisterSettingsRow("include_document_navigation",
+            Sub()
+                AddNavigationKindCheck(files, "include_document_navigation",
+                                       Function() Main_Form.GetModernPreferences().IncludeDocumentInNavigation,
+                                       Sub(v) Main_Form.GetModernPreferences().IncludeDocumentInNavigation = v)
+            End Sub)
+        RegisterSettingsRow("document_extensions",
+            Sub()
+                AddContentExtensionsRow(files, "document_extensions", True)
+            End Sub)
+        RegisterSettingsRow("text_preview_max_kb",
+            Sub()
+                AddPreferenceNumber(files, "text_preview_max_kb", ModernViewerPreferences.TextPreviewMaxKbMin, ModernViewerPreferences.TextPreviewMaxKbMax,
+                                    Function() Main_Form.GetModernPreferences().TextPreviewMaxKb,
+                                    Sub(v) Main_Form.GetModernPreferences().TextPreviewMaxKb = v)
+            End Sub)
+        RegisterSettingsRow("sort_other_files",
+            Sub()
+                AddNavigationKindCheck(files, "sort_other_files",
+                                       Function() Main_Form.GetModernPreferences().SortOtherFiles,
+                                       Sub(v) Main_Form.GetModernPreferences().SortOtherFiles = v)
+            End Sub)
+        RegisterSettingsRow("other_extensions",
+            Sub()
+                AddContentExtensionsRow(files, "other_extensions", False)
+            End Sub)
+        RegisterSettingsRow("custom_hotkeys",
+            Sub()
+                AddHotkeysRow(files)
+            End Sub)
+        RegisterSettingsRow("recent_files_limit",
+            Sub()
+                AddPreferenceNumber(files, "recent_files_limit", 0, 200,
+                                    Function() Main_Form.GetModernPreferences().RecentFilesLimit,
+                                    Sub(v) Main_Form.GetModernPreferences().RecentFilesLimit = v)
+            End Sub)
+        RegisterSettingsRow("recent_folders_limit",
+            Sub()
+                AddPreferenceNumber(files, "recent_folders_limit", 0, 200,
+                                    Function() Main_Form.GetModernPreferences().RecentFoldersLimit,
+                                    Sub(v) Main_Form.GetModernPreferences().RecentFoldersLimit = v)
+            End Sub)
+        RegisterSettingsRow("recent_history",
+            Sub()
+                AddHistoryRow(files)
+            End Sub)
+        RegisterSettingsRow("startup_open",
+            Sub()
+                AddPreferenceChoice(files, "startup_open",
+                                    Function() {Choice("home", "Стартовую страницу"), Choice("lastFolder", "Последнюю папку"), Choice("lastFile", "Последний файл")},
+                                    Function() Main_Form.GetModernPreferences().StartupOpenMode,
+                                    Sub(v) Main_Form.GetModernPreferences().StartupOpenMode = v)
+            End Sub)
+        RegisterSettingsRow("resume_last_playback",
+            Sub()
+                AddPreferenceCheck(files, "resume_last_playback",
+                                   Function() Main_Form.GetModernPreferences().ResumeLastPlayback,
+                                   Sub(v) Main_Form.GetModernPreferences().ResumeLastPlayback = v)
+            End Sub)
+        RegisterSettingsRow("settings_export",
+            Sub()
+                AddSettingsTransferRows(files)
+            End Sub)
+        RegisterSettingsRow("allow_new_windows",
+            Sub()
+                AddAllowNewWindowsRow(files)
+            End Sub)
 
         ' ZIP/CBZ browsing (010_SPECIFICATION_ARCHIVE_BROWSING_DOTNET10.md §9, §12 Ф4).
-        AddSectionHeader(files, "section_archives")
+
         ' The bounds are the shared constants, not fresh literals: the spinner, the registry
         ' loader and the import normalizer must not be able to drift apart (103).
-        AddPreferenceNumber(files, "archive_cache_limit", ModernViewerPreferences.ArchiveCacheMaxMbMin, ModernViewerPreferences.ArchiveCacheMaxMbMax,
-                            Function() Main_Form.GetModernPreferences().ArchiveCacheMaxMb,
-                            Sub(v) Main_Form.GetModernPreferences().ArchiveCacheMaxMb = v)
-        AddPreferenceNumber(files, "archive_entry_limit", ModernViewerPreferences.ArchiveMaxEntryMbMin, ModernViewerPreferences.ArchiveMaxEntryMbMax,
-                            Function() Main_Form.GetModernPreferences().ArchiveMaxEntryMb,
-                            Sub(v) Main_Form.GetModernPreferences().ArchiveMaxEntryMb = v)
-        AddPreferenceNumber(files, "archive_entries_limit", ModernViewerPreferences.ArchiveMaxEntriesMin, ModernViewerPreferences.ArchiveMaxEntriesMax,
-                            Function() Main_Form.GetModernPreferences().ArchiveMaxEntries,
-                            Sub(v) Main_Form.GetModernPreferences().ArchiveMaxEntries = v)
+        RegisterSettingsRow("archive_cache_limit",
+            Sub()
+                AddPreferenceNumber(files, "archive_cache_limit", ModernViewerPreferences.ArchiveCacheMaxMbMin, ModernViewerPreferences.ArchiveCacheMaxMbMax,
+                                    Function() Main_Form.GetModernPreferences().ArchiveCacheMaxMb,
+                                    Sub(v) Main_Form.GetModernPreferences().ArchiveCacheMaxMb = v)
+            End Sub)
+        RegisterSettingsRow("archive_entry_limit",
+            Sub()
+                AddPreferenceNumber(files, "archive_entry_limit", ModernViewerPreferences.ArchiveMaxEntryMbMin, ModernViewerPreferences.ArchiveMaxEntryMbMax,
+                                    Function() Main_Form.GetModernPreferences().ArchiveMaxEntryMb,
+                                    Sub(v) Main_Form.GetModernPreferences().ArchiveMaxEntryMb = v)
+            End Sub)
+        RegisterSettingsRow("archive_entries_limit",
+            Sub()
+                AddPreferenceNumber(files, "archive_entries_limit", ModernViewerPreferences.ArchiveMaxEntriesMin, ModernViewerPreferences.ArchiveMaxEntriesMax,
+                                    Function() Main_Form.GetModernPreferences().ArchiveMaxEntries,
+                                    Sub(v) Main_Form.GetModernPreferences().ArchiveMaxEntries = v)
+            End Sub)
 
         ' Secure containers (026_SPECIFICATION_SECURE_CONTAINER_FD_SEC_DOTNET10.md §8, §9).
-        AddSectionHeader(files, "section_secure")
-        AddPreferenceCheck(files, "secure_in_navigation",
-                           Function() Main_Form.GetModernPreferences().SecureIncludeInNavigation,
-                           Sub(v) Main_Form.GetModernPreferences().SecureIncludeInNavigation = v)
-        AddPreferenceNumber(files, "secure_remember_minutes", ModernViewerPreferences.SecureRememberMinutesMin, ModernViewerPreferences.SecureRememberMinutesMax,
-                            Function() Main_Form.GetModernPreferences().SecureRememberMinutes,
-                            Sub(v) Main_Form.GetModernPreferences().SecureRememberMinutes = v)
-        AddPreferenceCheck(files, "secure_show_true_name",
-                           Function() Main_Form.GetModernPreferences().SecureShowTrueName,
-                           Sub(v) Main_Form.GetModernPreferences().SecureShowTrueName = v)
-        AddSecureAssociationRow(files)
-        AddLiveAssociationRow(files)
 
-        AddPreferenceNumber(ocr, "ocr_cache_limit", -1, 1024,
-                            Function() If(Not _ocrSettings.DiskCache, 0, If(Main_Form.GetModernPreferences().OcrDiskCacheMaxMb = 0, -1, Main_Form.GetModernPreferences().OcrDiskCacheMaxMb)),
-                            Sub(v)
-                                _ocrSettings.DiskCache = v <> 0
-                                If v <> 0 Then Main_Form.GetModernPreferences().OcrDiskCacheMaxMb = Math.Max(0, v)
-                                chkOcrDisk.Checked = _ocrSettings.DiskCache
-                                Main_Form.OnOcrSettingsEditedFromSettingsWindow(False, False)
-                            End Sub)
-        AddPreferenceNumber(ocr, "decode_cache_limit", 0, 8192,
-                            Function() Main_Form.GetModernPreferences().DecodeCacheMaxMb,
-                            Sub(v) Main_Form.GetModernPreferences().DecodeCacheMaxMb = v)
-        AddPreferenceNumber(ocr, "thumb_cache_limit", 0, 4096,
-                            Function() Main_Form.GetModernPreferences().PanelThumbCacheMb,
-                            Sub(v) Main_Form.GetModernPreferences().PanelThumbCacheMb = v)
-        AddPreferenceNumber(ocr, "remote_cache_limit", ModernViewerPreferences.RemoteCacheMaxMbMin, ModernViewerPreferences.RemoteCacheMaxMbMax,
-                            Function() Main_Form.GetModernPreferences().RemoteCacheMaxMb,
-                            Sub(v) Main_Form.GetModernPreferences().RemoteCacheMaxMb = v)
+        RegisterSettingsRow("secure_in_navigation",
+            Sub()
+                AddPreferenceCheck(files, "secure_in_navigation",
+                                   Function() Main_Form.GetModernPreferences().SecureIncludeInNavigation,
+                                   Sub(v) Main_Form.GetModernPreferences().SecureIncludeInNavigation = v)
+            End Sub)
+        RegisterSettingsRow("secure_remember_minutes",
+            Sub()
+                AddPreferenceNumber(files, "secure_remember_minutes", ModernViewerPreferences.SecureRememberMinutesMin, ModernViewerPreferences.SecureRememberMinutesMax,
+                                    Function() Main_Form.GetModernPreferences().SecureRememberMinutes,
+                                    Sub(v) Main_Form.GetModernPreferences().SecureRememberMinutes = v)
+            End Sub)
+        RegisterSettingsRow("secure_show_true_name",
+            Sub()
+                AddPreferenceCheck(files, "secure_show_true_name",
+                                   Function() Main_Form.GetModernPreferences().SecureShowTrueName,
+                                   Sub(v) Main_Form.GetModernPreferences().SecureShowTrueName = v)
+            End Sub)
+        RegisterSettingsRow("secure_open_with",
+            Sub()
+                AddSecureAssociationRow(files)
+            End Sub)
+        RegisterSettingsRow("live_open_with",
+            Sub()
+                AddLiveAssociationRow(files)
+            End Sub)
+
+        RegisterSettingsRow("ocr_cache_limit",
+            Sub()
+                AddPreferenceNumber(ocr, "ocr_cache_limit", -1, 1024,
+                                    Function() If(Not _ocrSettings.DiskCache, 0, If(Main_Form.GetModernPreferences().OcrDiskCacheMaxMb = 0, -1, Main_Form.GetModernPreferences().OcrDiskCacheMaxMb)),
+                                    Sub(v)
+                                        _ocrSettings.DiskCache = v <> 0
+                                        If v <> 0 Then Main_Form.GetModernPreferences().OcrDiskCacheMaxMb = Math.Max(0, v)
+                                        chkOcrDisk.Checked = _ocrSettings.DiskCache
+                                        Main_Form.OnOcrSettingsEditedFromSettingsWindow(False, False)
+                                    End Sub)
+            End Sub)
+        RegisterSettingsRow("decode_cache_limit",
+            Sub()
+                AddPreferenceNumber(ocr, "decode_cache_limit", 0, 8192,
+                                    Function() Main_Form.GetModernPreferences().DecodeCacheMaxMb,
+                                    Sub(v) Main_Form.GetModernPreferences().DecodeCacheMaxMb = v)
+            End Sub)
+        RegisterSettingsRow("thumb_cache_limit",
+            Sub()
+                AddPreferenceNumber(ocr, "thumb_cache_limit", 0, 4096,
+                                    Function() Main_Form.GetModernPreferences().PanelThumbCacheMb,
+                                    Sub(v) Main_Form.GetModernPreferences().PanelThumbCacheMb = v)
+            End Sub)
+        RegisterSettingsRow("remote_cache_limit",
+            Sub()
+                AddPreferenceNumber(ocr, "remote_cache_limit", ModernViewerPreferences.RemoteCacheMaxMbMin, ModernViewerPreferences.RemoteCacheMaxMbMax,
+                                    Function() Main_Form.GetModernPreferences().RemoteCacheMaxMb,
+                                    Sub(v) Main_Form.GetModernPreferences().RemoteCacheMaxMb = v)
+            End Sub)
 
         ' 130 §3.2/§3.3: one usage+clear row per cache. Where each lands next to its limit
         ' row is the group catalog's decision (AddSettingsGroup in SettingsGroups), never
         ' this construction order.
-        AddCacheUsageRow(ocr, "decode_cache_clear",
-                         Function() CacheUsageMeasure.FlatBytes(DecodeCacheStore.CacheDir(), DecodeCacheKey.File_Pattern),
-                         "Удалить сохранённые результаты декодирования? Сами изображения не изменятся.",
-                         Sub() CacheMaintenance.ClearFiles(DecodeCacheStore.CacheDir(), DecodeCacheKey.File_Pattern),
-                         "Кэш декодирования очищен.")
-        AddCacheUsageRow(ocr, "thumb_cache_clear",
-                         Function() CacheUsageMeasure.FlatBytes(ThumbnailCacheStore.DefaultDirectory(), ThumbnailCacheKey.File_Pattern),
-                         "Очистить кэш миниатюр?",
-                         Sub() CacheMaintenance.ClearFiles(ThumbnailCacheStore.DefaultDirectory(), ThumbnailCacheKey.File_Pattern, "*.tmp"),
-                         "Кэш миниатюр очищен.")
-        AddCacheUsageRow(ocr, "ocr_cache_clear",
-                         Function() CacheUsageMeasure.FlatBytes(OcrPaths.OcrCacheDir(), "*.json"),
-                         "Удалить сохранённые результаты распознавания? Настройки OCR не изменятся.",
-                         AddressOf Main_Form.ClearOcrResultCacheOnDisk,
-                         "Сохранённые результаты распознавания удалены.",
-                         Sub() Main_Form.ClearOcrResultCache(memoryOnly:=True))
-        AddCacheUsageRow(ocr, "archive_cache_clear",
-                         Function() CacheUsageMeasure.TreeBytes(ArchivePaths.CacheRoot()),
-                         "Удалить временные копии записей архивов? Открытые архивы продолжат работать.",
-                         Sub() CacheMaintenance.ClearSessions(ArchivePaths.CacheRoot(), Date.UtcNow,
-                                                             Function(pid) ArchiveTempStore.IsLiveViewerProcess(pid, unknownIsLive:=True)),
-                         "Временные копии архивов удалены.")
-        AddCacheUsageRow(ocr, "remote_cache_clear",
-                         Function() CacheUsageMeasure.TreeBytes(RemoteCachePaths.CacheRoot()),
-                         "Удалить временные копии файлов сетевых ресурсов? Активные подключения не пострадают.",
-                         Sub() CacheMaintenance.ClearSessions(RemoteCachePaths.CacheRoot(), Date.UtcNow,
-                                                             Function(pid) ArchiveTempStore.IsLiveViewerProcess(pid, unknownIsLive:=True)),
-                         "Временные копии файлов сетевых ресурсов удалены.")
+        RegisterSettingsRow("decode_cache_clear",
+            Sub()
+                AddCacheUsageRow(ocr, "decode_cache_clear",
+                                 Function() CacheUsageMeasure.FlatBytes(DecodeCacheStore.CacheDir(), DecodeCacheKey.File_Pattern),
+                                 "Удалить сохранённые результаты декодирования? Сами изображения не изменятся.",
+                                 Sub() CacheMaintenance.ClearFiles(DecodeCacheStore.CacheDir(), DecodeCacheKey.File_Pattern),
+                                 "Кэш декодирования очищен.")
+            End Sub)
+        RegisterSettingsRow("thumb_cache_clear",
+            Sub()
+                AddCacheUsageRow(ocr, "thumb_cache_clear",
+                                 Function() CacheUsageMeasure.FlatBytes(ThumbnailCacheStore.DefaultDirectory(), ThumbnailCacheKey.File_Pattern),
+                                 "Очистить кэш миниатюр?",
+                                 Sub() CacheMaintenance.ClearFiles(ThumbnailCacheStore.DefaultDirectory(), ThumbnailCacheKey.File_Pattern, "*.tmp"),
+                                 "Кэш миниатюр очищен.")
+            End Sub)
+        RegisterSettingsRow("ocr_cache_clear",
+            Sub()
+                AddCacheUsageRow(ocr, "ocr_cache_clear",
+                                 Function() CacheUsageMeasure.FlatBytes(OcrPaths.OcrCacheDir(), "*.json"),
+                                 "Удалить сохранённые результаты распознавания? Настройки OCR не изменятся.",
+                                 AddressOf Main_Form.ClearOcrResultCacheOnDisk,
+                                 "Сохранённые результаты распознавания удалены.",
+                                 Sub() Main_Form.ClearOcrResultCache(memoryOnly:=True))
+            End Sub)
+        RegisterSettingsRow("archive_cache_clear",
+            Sub()
+                AddCacheUsageRow(ocr, "archive_cache_clear",
+                                 Function() CacheUsageMeasure.TreeBytes(ArchivePaths.CacheRoot()),
+                                 "Удалить временные копии записей архивов? Открытые архивы продолжат работать.",
+                                 Sub() CacheMaintenance.ClearSessions(ArchivePaths.CacheRoot(), Date.UtcNow,
+                                                                     Function(pid) ArchiveTempStore.IsLiveViewerProcess(pid, unknownIsLive:=True)),
+                                 "Временные копии архивов удалены.")
+            End Sub)
+        RegisterSettingsRow("remote_cache_clear",
+            Sub()
+                AddCacheUsageRow(ocr, "remote_cache_clear",
+                                 Function() CacheUsageMeasure.TreeBytes(RemoteCachePaths.CacheRoot()),
+                                 "Удалить временные копии файлов сетевых ресурсов? Активные подключения не пострадают.",
+                                 Sub() CacheMaintenance.ClearSessions(RemoteCachePaths.CacheRoot(), Date.UtcNow,
+                                                                     Function(pid) ArchiveTempStore.IsLiveViewerProcess(pid, unknownIsLive:=True)),
+                                 "Временные копии файлов сетевых ресурсов удалены.")
+            End Sub)
     End Sub
 
     ''' <summary>

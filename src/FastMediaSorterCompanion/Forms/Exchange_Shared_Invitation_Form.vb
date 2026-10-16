@@ -6,6 +6,9 @@ Imports System.Windows.Forms
 ''' <summary>
 ''' Dialog for setting a shared invitation password (ticket 224 rule 2).
 ''' Offers a choice of password generation or typing, and account kind (family or guest).
+''' Ticket 239 CR-13 (Q239-2): the guest kind is shown as not available, with the reason, while
+''' <see cref="OutwardAccessFeatures.Offered"/> is False. A guest-kind shared invitation that already exists is shown as it is and
+''' cannot be set again from here (it is never silently turned into a family one); it can still be switched off by the caller.
 ''' </summary>
 Friend NotInheritable Class Exchange_Shared_Invitation_Form
     Inherits Form
@@ -16,6 +19,7 @@ Friend NotInheritable Class Exchange_Shared_Invitation_Form
     Private _rbType As RadioButton
     Private _rbFamily As RadioButton
     Private _rbGuest As RadioButton
+    Private _lblGuestReason As Label
     Private _iconHandle As IntPtr
     Private _password As String = ""
     Private _generated As Boolean
@@ -38,7 +42,7 @@ Friend NotInheritable Class Exchange_Shared_Invitation_Form
 
     Public ReadOnly Property Kind As String
         Get
-            Return If(_rbGuest IsNot Nothing AndAlso _rbGuest.Checked, "guest", "member")
+            Return If(OutwardAccessFeatures.IsOffered() AndAlso _rbGuest IsNot Nothing AndAlso _rbGuest.Checked, "guest", "member")
         End Get
     End Property
 
@@ -81,10 +85,16 @@ Friend NotInheritable Class Exchange_Shared_Invitation_Form
         Dim isGuest As Boolean = String.Equals(currentKind, "guest", StringComparison.OrdinalIgnoreCase)
         _rbFamily = New RadioButton With {.AutoSize = True, .Checked = Not isGuest, .Margin = New Padding(0, 2, 0, 2),
             .Text = Localization.T("Своё устройство или семья")}
+        Dim offered As Boolean = OutwardAccessFeatures.IsOffered()
         _rbGuest = New RadioButton With {.AutoSize = True, .Checked = isGuest, .Margin = New Padding(0, 0, 0, 8),
-            .Text = Localization.T("Гость")}
+            .Text = Localization.T("Гость"), .Enabled = offered}
         body.Controls.Add(_rbFamily)
         body.Controls.Add(_rbGuest)
+        If Not offered Then
+            _lblGuestReason = New Label With {.AutoSize = True, .MaximumSize = New Size(ContentWidth, 0), .ForeColor = ThemeService.Palette.TextMuted,
+                .Margin = New Padding(20, 0, 0, 8), .Text = OutwardAccessFeatures.Reason()}
+            body.Controls.Add(_lblGuestReason)
+        End If
 
         body.Controls.Add(New Label With {.AutoSize = True, .MaximumSize = New Size(ContentWidth, 0), .Font = New Font(Me.Font, FontStyle.Bold),
             .Margin = New Padding(0, 4, 0, 2), .Text = Localization.T("Пароль:")})
@@ -98,6 +108,8 @@ Friend NotInheritable Class Exchange_Shared_Invitation_Form
         Dim buttons As New FlowLayoutPanel With {.AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink, .FlowDirection = FlowDirection.LeftToRight,
             .WrapContents = False, .Margin = New Padding(0, 10, 0, 6)}
         Dim btnOk As Button = NewButton(Localization.T("Установить"), AddressOf OnOkClicked, "action.confirm", ButtonGlyphRole.Affirmative)
+        ' a guest-kind invitation that already exists cannot be set again while guests are not offered
+        btnOk.Enabled = offered OrElse Not isGuest
         Dim btnCancel As Button = NewButton(Localization.T("Отмена"), Sub() Me.DialogResult = DialogResult.Cancel, "nav.close", ButtonGlyphRole.Dismissing)
         btnCancel.DialogResult = DialogResult.Cancel
         buttons.Controls.Add(btnOk)
@@ -120,6 +132,7 @@ Friend NotInheritable Class Exchange_Shared_Invitation_Form
     End Sub
 
     Private Sub OnOkClicked()
+        If Not OutwardAccessFeatures.IsOffered() AndAlso _rbGuest.Checked Then Return
         If _rbType.Checked Then
             Using dlg As New Exchange_Password_Form(Exchange_Password_Form.DialogMode.Enter)
                 If dlg.ShowDialog(Me) <> DialogResult.OK Then Return

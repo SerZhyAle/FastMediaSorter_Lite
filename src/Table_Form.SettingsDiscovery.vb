@@ -1,4 +1,4 @@
-﻿#If Not NETFRAMEWORK Then
+#If Not NETFRAMEWORK Then
 Option Explicit On
 Option Strict On
 Option Infer On
@@ -139,8 +139,7 @@ Partial Public Class Table_Form
             modernSettingsHeader.Controls.Add(tool)
         Next
         AddHandler modernSettingsHeader.Resize, Sub() ArrangeSettingsDiscoveryHeader()
-        AddSettingRow(settingsGroups("video/basic").Body, "shared_audio_settings", sharedSoundButton, 230)
-        modernSettingsRows.Last().Host.Name = "settingsRow_shared_audio_settings"
+        RegisterSettingsPage("video", Sub() AddSettingRow(PageFlow(Tab_Page_3), "shared_audio_settings", sharedSoundButton, 230))
         Tab_Control.BringToFront()
         Tab_Control.TabIndex = 1
         ' (The tools of the shown page are decided by ModernSettingsTabChanged, in the one pass that arranges
@@ -151,7 +150,30 @@ Partial Public Class Table_Form
             Sub()
                 If modernStoragePage IsNot Nothing AndAlso Tab_Control.SelectedTab Is modernStoragePage Then RefreshCacheUsageMeasurements()
             End Sub
+        WireSettingsRows()
+        ' Every drop-down of every page, not only the ones the first pass saw; then the rows that hold one
+        ' take the field's real height. A DPI change (a monitor with another scale) restyles them again,
+        ' AFTER the layout's own DpiChanged handler has updated the scale.
+        RestyleAllSettingsCombos()
         For Each row In modernSettingsRows
+            If TypeOf row.Editor Is ComboBox Then SizeModernSettingRow(row)
+        Next
+        AddHandler DpiChanged,
+            Sub()
+                RestyleAllSettingsCombos()
+                For Each row In modernSettingsRows
+                    If TypeOf row.Editor Is ComboBox Then SizeModernSettingRow(row)
+                Next
+                ArrangeSettingsDiscoveryHeader()
+            End Sub
+        LocalizeSettingsDiscovery()
+    End Sub
+
+    Private ReadOnly wiredSettingsRows As New HashSet(Of String)(StringComparer.Ordinal)
+
+    Private Sub WireSettingsRows()
+        For Each row In modernSettingsRows
+            If Not wiredSettingsRows.Add(row.Key) Then Continue For
             For Each editor As Control In FindModernControls(Of Control)(row.Host)
                 If TypeOf editor Is CheckBox Then AddHandler DirectCast(editor, CheckBox).CheckedChanged, Sub() RefreshGroupSummary(row)
                 If TypeOf editor Is ComboBox Then AddHandler DirectCast(editor, ComboBox).SelectedIndexChanged, Sub() RefreshGroupSummary(row)
@@ -178,28 +200,13 @@ Partial Public Class Table_Form
                 End If
             Next
         Next
-        ' Every drop-down of every page, not only the ones the first pass saw; then the rows that hold one
-        ' take the field's real height. A DPI change (a monitor with another scale) restyles them again,
-        ' AFTER the layout's own DpiChanged handler has updated the scale.
-        RestyleAllSettingsCombos()
-        For Each row In modernSettingsRows
-            If TypeOf row.Editor Is ComboBox Then SizeModernSettingRow(row)
-        Next
-        AddHandler DpiChanged,
-            Sub()
-                RestyleAllSettingsCombos()
-                For Each row In modernSettingsRows
-                    If TypeOf row.Editor Is ComboBox Then SizeModernSettingRow(row)
-                Next
-                ArrangeSettingsDiscoveryHeader()
-            End Sub
-        LocalizeSettingsDiscovery()
     End Sub
 
     Private Sub FitInitialSettingsWindowToContent()
         Dim savedWidth As Integer
         If Integer.TryParse(GetSetting(App_name, Second_App_Name, "SettingsWindowWidth", "0"), savedWidth) AndAlso savedWidth > 0 Then Return
-        Dim basic = settingsGroups("general/basic")
+        Dim basic As SettingsCollapsibleGroup = Nothing
+        If Not settingsGroups.TryGetValue("general/basic", basic) Then Return
         Dim captionWidth = modernSettingsRows.Where(Function(r) r.Host.Parent Is basic.Body).
             Select(Function(r) TextRenderer.MeasureText(r.Title.Text, r.Title.Font).Width).DefaultIfEmpty(Sp(220)).Max()
         Dim desiredWidth = modernSettingsSidebar.Width + Math.Max(Sp(560), captionWidth + Sp(300)) + Sp(48)
@@ -470,6 +477,10 @@ Partial Public Class Table_Form
     End Sub
 
     Friend Function FindSettingsRows(query As String) As String()
+        ' A search explicitly asks about every page, including ones not visited yet.
+        For Each page As TabPage In Tab_Control.TabPages
+            EnsureModernSettingsPage(page)
+        Next
         Return modernSettingsRows.Where(Function(row) rowGroups.ContainsKey(row.Key)).Where(
             Function(row)
                 Dim options As New List(Of String)()

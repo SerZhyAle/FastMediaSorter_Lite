@@ -75,6 +75,20 @@ Public Class ExchangeAdminGroupUiTests
         Assert.True(t.IsCompleted, "the refresh did not end")
     End Sub
 
+    ''' <summary>238: the page's blocks are collapsible cards and a fresh context leaves only
+    ''' the first one open. The flows below exercise the accounts/devices/invitations content,
+    ''' so every card of the exchange page starts open, whatever this machine had saved.</summary>
+    Private Shared Sub ExpandAllExchangeCards(form As Share_Settings_Form)
+        Dim groups = DirectCast(GetType(Share_Settings_Form).GetField("_pageGroups",
+            BindingFlags.Instance Or BindingFlags.NonPublic).GetValue(form),
+            Dictionary(Of String, List(Of Share_Settings_Form.SettingsNavGroup)))
+        Dim setExpanded = GetType(Share_Settings_Form).GetMethod("SetGroupExpanded", BindingFlags.Instance Or BindingFlags.NonPublic)
+        For Each grp In groups("exchange")
+            setExpanded.Invoke(form, New Object() {"exchange", grp, True})
+        Next
+        Application.DoEvents()
+    End Sub
+
     <Fact>
     Public Sub An_account_selected_shows_its_devices_a_device_selected_offers_revoke_and_a_refresh_keeps_both_selections()
         ExchangeTestSupport.OnUi(
@@ -85,6 +99,7 @@ Public Class ExchangeAdminGroupUiTests
                     form.ShowInTaskbar = False
                     form.Show()
                     GetType(Share_Settings_Form).GetMethod("SelectSettingsPage", BindingFlags.Instance Or BindingFlags.NonPublic).Invoke(form, New Object() {"exchange"})
+                    ExpandAllExchangeCards(form)
                     Dim accounts As ListView = Field(Of ListView)(form, "_lvXAccounts")
                     Dim devices As ListView = Field(Of ListView)(form, "_lvXDevices")
                     Dim reset As Button = Field(Of Button)(form, "_btnXResetPw")
@@ -145,6 +160,7 @@ Public Class ExchangeAdminGroupUiTests
                     form.Show()
                     Dim accounts As ListView = Field(Of ListView)(form, "_lvXAccounts")
                     GetType(Share_Settings_Form).GetMethod("SelectSettingsPage", BindingFlags.Instance Or BindingFlags.NonPublic).Invoke(form, New Object() {"exchange"})
+                    ExpandAllExchangeCards(form)
                     Pump(Function() accounts.Items.Count = 2, "the accounts list")
                     Assert.False(Field(Of FlowLayoutPanel)(form, "_rowXWizard").Visible, "accounts exist: the wizard is for a PC where nothing exists yet")
                     Assert.Equal(ExchangeAdminText.Totals(2, 2), Field(Of Label)(form, "_lblXAccTotals").Text)

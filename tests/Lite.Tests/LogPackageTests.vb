@@ -49,39 +49,237 @@ Public Class LogPackageTests
         End Try
     End Sub
 
-    <Fact>
-    Public Sub A_long_log_contributes_its_tail_with_a_truncation_marker()
+    ' ---- spec 039 phase 2: redact first, then cut to head + tail, with the contract's marker ----
+
+    Private Const MarkerStart As String = "[Diag] LOG TRUNCATED | "
+
+    ''' <summary>The three byte counts the marker states, by name.</summary>
+    Private Shared Function MarkerCounts(markerLine As String) As Dictionary(Of String, Long)
+        Dim counts As New Dictionary(Of String, Long)(StringComparer.Ordinal)
+        For Each part As String In markerLine.Substring(MarkerStart.Length).Split({" | "}, StringSplitOptions.None)
+            Dim pair As String() = part.Split("="c)
+            counts(pair(0)) = Long.Parse(pair(1), Globalization.CultureInfo.InvariantCulture)
+        Next
+        Return counts
+    End Function
+
+    ''' <summary>A log longer than the 2 MB ceiling, packed through the one-source path the archive uses.</summary>
+    Private Shared Function PackLongLog(lineCount As Integer, makeLine As Func(Of Integer, String)) As String
         Dim logPath As String = Path.Combine(Path.GetTempPath(), "fms-test-long-" & Guid.NewGuid().ToString("N") & ".log")
         Dim zipPath As String = logPath & ".zip"
-
         Try
             Using writer As New StreamWriter(logPath, False, New UTF8Encoding(False))
-                ' Comfortably over the 2 MB per-entry cap, with identifiable lines.
-                For i As Integer = 0 To 60000
-                    writer.WriteLine("line " & i.ToString() & " " & New String("x"c, 50))
+                For i As Integer = 0 To lineCount - 1
+                    Dim line As String = makeLine(i)
+                    writer.Write(line)
+                    writer.Write(vbLf)
                 Next
             End Using
-
             Using zip As New FileStream(zipPath, FileMode.Create, FileAccess.Write, FileShare.None)
                 Using archive As New ZipArchive(zip, ZipArchiveMode.Create)
                     LogPackage.CopyLogEntry(archive, "current.log", logPath)
                 End Using
             End Using
-
-            Dim packed As String = ReadEntry(zipPath, "current.log")
-            Dim lines As String() = packed.Split(New String() {vbCrLf, vbLf}, StringSplitOptions.RemoveEmptyEntries)
-
-            Assert.StartsWith("[.. truncated:", lines(0))
-            ' The tail seek lands mid-record; the partial line is dropped, so the first
-            ' real line is a whole one.
-            Assert.StartsWith("line ", lines(1))
-            Assert.EndsWith("xxxxx", lines(1))
-            ' The last line of the source survived - it is the tail we kept, not the head.
-            Assert.StartsWith("line 60000 ", lines(lines.Length - 1))
-            Assert.True(packed.Length < 2.2 * 1024 * 1024, "packed entry should be about the 2 MB cap, was " & packed.Length.ToString())
+            Return ReadEntry(zipPath, "current.log")
         Finally
             Delete(logPath)
             Delete(zipPath)
+        End Try
+    End Function
+
+    <Fact>
+    Public Sub A_long_log_keeps_its_head_and_its_tail_with_the_contracts_marker_between_them()
+        Dim packed As String = PackLongLog(60001, Function(i) "line " & i.ToString() & " " & New String("x"c, 50))
+        Dim lines As String() = packed.Split(New String() {vbLf}, StringSplitOptions.RemoveEmptyEntries)
+
+        ' The start of the log is kept: it carries the session header and the configuration.
+        Assert.Equal("line 0 " & New String("x"c, 50), lines(0))
+        ' The last line of the source survived too.
+        Assert.StartsWith("line 60000 ", lines(lines.Length - 1))
+        Dim markerIndex As Integer = Array.FindIndex(lines, Function(l) l.StartsWith(MarkerStart, StringComparison.Ordinal))
+        Assert.True(markerIndex > 0 AndAlso markerIndex < lines.Length - 1, "the marker stands between the head and the tail")
+        Assert.Single(lines, Function(l) l.StartsWith("[Diag] ", StringComparison.Ordinal))
+        ' Every record on both sides of it is whole.
+        For Each line As String In lines.Where(Function(l, i) i <> markerIndex)
+            Assert.EndsWith("xxxxx", line)
+        Next
+        Assert.True(Encoding.UTF8.GetByteCount(packed) < 2L * 1024L * 1024L + 200L, "the entry stays about the 2 MB ceiling")
+    End Sub
+
+    <Fact>
+    Public Sub The_marker_says_exactly_what_was_dropped()
+        Dim packed As String = PackLongLog(60001, Function(i) "line " & i.ToString() & " " & New String("x"c, 50))
+        Dim lines As String() = packed.Split(New String() {vbLf}, StringSplitOptions.RemoveEmptyEntries)
+        Dim markerIndex As Integer = Array.FindIndex(lines, Function(l) l.StartsWith(MarkerStart, StringComparison.Ordinal))
+        Dim counts As Dictionary(Of String, Long) = MarkerCounts(lines(markerIndex))
+
+        Dim head As Long = lines.Take(markerIndex).Sum(Function(l) CLng(Encoding.UTF8.GetByteCount(l)) + 1L)
+        Dim tail As Long = lines.Skip(markerIndex + 1).Sum(Function(l) CLng(Encoding.UTF8.GetByteCount(l)) + 1L)
+        Assert.Equal(head, counts("kept_head_bytes"))
+        Assert.Equal(tail, counts("kept_tail_bytes"))
+        Assert.True(head <= LogPackage.HeadKeepBytes)
+        ' Nothing is lost without being counted: what is kept plus what is dropped is the whole log.
+        Dim whole As Long = Enumerable.Range(0, 60001).Sum(Function(i) CLng(Encoding.UTF8.GetByteCount("line " & i.ToString() & " " & New String("x"c, 50))) + 1L)
+        Assert.Equal(whole, head + tail + counts("dropped_middle_bytes"))
+    End Sub
+
+    <Fact>
+    Public Sub A_log_that_fits_is_written_whole_with_no_marker()
+        Dim packed As String = PackLongLog(1000, Function(i) "line " & i.ToString())
+        Assert.DoesNotContain("[Diag]", packed)
+        Assert.StartsWith("line 0" & vbLf & "line 1" & vbLf, packed)
+        Assert.EndsWith("line 999" & vbLf, packed)
+    End Sub
+
+    <Fact>
+    Public Sub A_log_between_the_head_and_the_ceiling_is_not_cut()
+        ' About 1 MB: past the 256 KB head, far under the 2 MB ceiling - the head fills and the rest is the tail,
+        ' and nothing between them is dropped.
+        Dim packed As String = PackLongLog(20000, Function(i) "line " & i.ToString() & " " & New String("x"c, 40))
+        Assert.DoesNotContain("[Diag]", packed)
+        Assert.Equal(20000, packed.Split(New String() {vbLf}, StringSplitOptions.RemoveEmptyEntries).Length)
+    End Sub
+
+    <Fact>
+    Public Sub The_cut_is_made_on_redacted_text_so_the_marker_counts_what_the_archive_would_have_held()
+        Dim profile As String = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile)
+        ' Each source line carries the profile path, which becomes the much shorter <USER>: a cut made on the
+        ' original text would count the long form.
+        Dim packed As String = PackLongLog(40001, Function(i) "line " & i.ToString() & " opened " & profile & "\Pictures\" & New String("p"c, 30))
+        Dim lines As String() = packed.Split(New String() {vbLf}, StringSplitOptions.RemoveEmptyEntries)
+        Dim markerIndex As Integer = Array.FindIndex(lines, Function(l) l.StartsWith(MarkerStart, StringComparison.Ordinal))
+        Assert.True(markerIndex > 0, "the log is long enough to be cut")
+        Assert.DoesNotContain(profile, packed, StringComparison.OrdinalIgnoreCase)
+        Dim counts As Dictionary(Of String, Long) = MarkerCounts(lines(markerIndex))
+        Dim whole As Long = Enumerable.Range(0, 40001).Sum(Function(i) CLng(Encoding.UTF8.GetByteCount("line " & i.ToString() & " opened <USER>\Pictures\" & New String("p"c, 30))) + 1L)
+        Assert.Equal(whole, counts("kept_head_bytes") + counts("kept_tail_bytes") + counts("dropped_middle_bytes"))
+    End Sub
+
+    ''' <summary>A source that claims a huge length and fails the test if anyone reads it.</summary>
+    Private NotInheritable Class UnreadableGiant
+        Inherits Stream
+
+        Friend ReadCalls As Integer
+
+        Public Overrides ReadOnly Property CanRead As Boolean = True
+        Public Overrides ReadOnly Property CanSeek As Boolean = True
+        Public Overrides ReadOnly Property CanWrite As Boolean = False
+
+        Public Overrides ReadOnly Property Length As Long
+            Get
+                Return LogPackage.MaxSourceBytes + 1L
+            End Get
+        End Property
+
+        Public Overrides Property Position As Long
+            Get
+                Return 0L
+            End Get
+            Set(value As Long)
+            End Set
+        End Property
+
+        Public Overrides Function Read(buffer As Byte(), offset As Integer, count As Integer) As Integer
+            ReadCalls += 1
+            Throw New InvalidOperationException("an oversized source must not be read")
+        End Function
+
+        Public Overrides Function Seek(offset As Long, origin As SeekOrigin) As Long
+            Return 0L
+        End Function
+
+        Public Overrides Sub Flush()
+        End Sub
+
+        Public Overrides Sub SetLength(value As Long)
+            Throw New NotSupportedException()
+        End Sub
+
+        Public Overrides Sub Write(buffer As Byte(), offset As Integer, count As Integer)
+            Throw New NotSupportedException()
+        End Sub
+    End Class
+
+    <Fact>
+    Public Sub A_source_too_long_to_redact_is_replaced_by_the_omission_marker_and_never_read()
+        Dim giant As New UnreadableGiant()
+        Dim zipPath As String = Path.Combine(Path.GetTempPath(), "fms-test-giant-" & Guid.NewGuid().ToString("N") & ".zip")
+        Try
+            Using zip As New FileStream(zipPath, FileMode.Create, FileAccess.Write, FileShare.None)
+                Using archive As New ZipArchive(zip, ZipArchiveMode.Create)
+                    Dim outcome As LogPackage.LogEntryOutcome = LogPackage.CopyLogEntry(archive, "exchange/exchange.log", "x.log", Function(p) giant)
+                    Assert.Equal(LogPackage.LogSourceState.Included, outcome.State)
+                End Using
+            End Using
+            Assert.Equal(0, giant.ReadCalls)
+            Assert.Equal("[Diag] LOG OMITTED | reason=oversized_untrusted | source_bytes=" &
+                         (LogPackage.MaxSourceBytes + 1L).ToString(Globalization.CultureInfo.InvariantCulture) & vbLf,
+                         ReadEntry(zipPath, "exchange/exchange.log"))
+        Finally
+            Delete(zipPath)
+        End Try
+    End Sub
+
+    ' ---- spec 039 phase 2: the archive name and environment.txt ----
+
+    <Fact>
+    Public Sub The_archive_name_is_product_logs_version_and_stamp_with_nothing_after_the_stamp()
+        Dim testDir As String = Path.Combine(Path.GetTempPath(), "fms-test-name-" & Guid.NewGuid().ToString("N"))
+        Directory.CreateDirectory(testDir)
+        Dim fixedTime As New DateTime(2026, 10, 1, 14, 0, 0)
+        Try
+            Dim first As LogPackage.LogPackageResult = LogPackage.Build(AddressOf SeededSettings, fixedTime, testDir, Nothing)
+            Dim second As LogPackage.LogPackageResult = LogPackage.Build(AddressOf SeededSettings, fixedTime, testDir, Nothing)
+
+            Dim pattern As New RegularExpressions.Regex("^fms-logs-.+-\d{8}-\d{6}\.zip$")
+            Assert.Matches(pattern, Path.GetFileName(first.Path))
+            Assert.Matches(pattern, Path.GetFileName(second.Path))
+            Assert.EndsWith("-20261001-140000.zip", first.Path)
+            ' Same second: the name is taken, so the next free second is used - never a random suffix.
+            Assert.EndsWith("-20261001-140001.zip", second.Path)
+        Finally
+            Try
+                If Directory.Exists(testDir) Then Directory.Delete(testDir, True)
+            Catch
+            End Try
+        End Try
+    End Sub
+
+    <Fact>
+    Public Sub Environment_txt_is_key_value_lines_in_utc_with_the_schema_version_first_and_no_user_content()
+        Dim testDir As String = Path.Combine(Path.GetTempPath(), "fms-test-env-" & Guid.NewGuid().ToString("N"))
+        Directory.CreateDirectory(testDir)
+        Dim fixedTime As New DateTime(2026, 10, 1, 14, 0, 0, DateTimeKind.Utc)
+        Try
+            Dim result As LogPackage.LogPackageResult = LogPackage.Build(AddressOf SeededSettings, fixedTime, testDir, Nothing)
+            Assert.Contains("environment.txt", result.Entries)
+
+            Dim text As String = ReadEntry(result.Path, "environment.txt")
+            Dim lines As String() = text.Split(New String() {vbLf}, StringSplitOptions.RemoveEmptyEntries)
+            Assert.Equal("schema_version=1", lines(0))
+            Assert.Equal("generated_utc=2026-10-01T14:00:00Z", lines(1))
+            For Each line As String In lines
+                Assert.Matches("^[a-z_]+=[^\r\n]*$", line)
+            Next
+            Dim keys As String() = lines.Select(Function(l) l.Substring(0, l.IndexOf("="c))).ToArray()
+            Assert.Equal(keys.Length, keys.Distinct().Count())
+            Assert.Contains("app_version", keys)
+            Assert.Contains("os", keys)
+            ' The metric set is stated, and it is empty: this product keeps no catalog to count.
+            Assert.Contains("volume_metrics=none", lines)
+            ' Facts, never a path or a name.
+            Dim profile As String = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile)
+            Assert.DoesNotContain(profile, text, StringComparison.OrdinalIgnoreCase)
+            ' It is the second entry, right after the report that a person reads.
+            Using archive As ZipArchive = ZipFile.OpenRead(result.Path)
+                Assert.Equal("report.txt", archive.Entries(0).FullName)
+                Assert.Equal("environment.txt", archive.Entries(1).FullName)
+            End Using
+        Finally
+            Try
+                If Directory.Exists(testDir) Then Directory.Delete(testDir, True)
+            Catch
+            End Try
         End Try
     End Sub
 

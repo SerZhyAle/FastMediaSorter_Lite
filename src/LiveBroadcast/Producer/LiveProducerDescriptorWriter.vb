@@ -11,7 +11,13 @@ Imports System.Text.Json
 ' HTTP endpoint of this ticket (broadcasts and folder connections are 173's). Three channels carry the SAME
 ' description (producer rule 3): FMSBCAST1: barcode text (Base64 of the GZIP of the JSON), the
 ' broadcast_<n>.fmsbcast file, and the QR image - which renders the same barcode text, so the payload
-' is built once here. A clickable link is not offered: the contract has not decided a desktop scheme.
+' is built once here. The window's link is `fmsbcast://live?payload=` + the barcode text (the contract's
+' target host is `import`: ticket 239 CR-16 keeps that gap on record).
+'
+' A descriptor handed outside the account that carries a RELAY or TUNNEL endpoint is always protected
+' (LIVE-BROADCAST item M, ticket 239 CR-15): <see cref="BuildHandOutJson"/> is the ONE function the three
+' hand-off channels build from, and it leaves RELAY and TUNNEL out of a descriptor that has no `auth` and is not sealed (item Q: a
+' sealed endpoint is protected by its key or pin).
 '
 ' Round-trip: this product's own reader (023, LiveBroadcastReader) must accept everything written
 ' here - LiveProducerDescriptorWriterTests holds it, byte for byte, against the real parser.
@@ -57,6 +63,21 @@ Friend Class LiveDescriptorInput
         Return copy
     End Function
 
+    ''' <summary>The same input with every endpoint that leaves the machine through the exchange taken out (RELAY and TUNNEL, with
+    ''' their keys, pins and fingerprint): what is left is the LAN endpoint alone (ticket 239 CR-15).</summary>
+    Friend Function ForLanOnly() As LiveDescriptorInput
+        Dim copy As LiveDescriptorInput = DirectCast(MemberwiseClone(), LiveDescriptorInput)
+        copy.RelayUrl = ""
+        copy.TunnelUrl = ""
+        copy.CertFingerprint = ""
+        copy.InnerUrl = ""
+        copy.Sealed = False
+        copy.Outward = False
+        copy.RelayKey = ""
+        copy.TunnelPin = ""
+        Return copy
+    End Function
+
     ''' <summary>Never prints a key.</summary>
     Public Overrides Function ToString() As String
         Return "LiveDescriptorInput"
@@ -67,6 +88,33 @@ Friend NotInheritable Class LiveProducerDescriptorWriter
 
     Private Sub New()
     End Sub
+
+    ''' <summary>True when <see cref="BuildHandOutJson"/> leaves a RELAY or TUNNEL endpoint out because the descriptor is neither
+    ''' protected by `auth` nor sealed.</summary>
+    Public Shared Function WithholdsOutwardEndpoints(input As LiveDescriptorInput) As Boolean
+        If input Is Nothing OrElse input.Sealed OrElse Not String.IsNullOrEmpty(input.AuthUser) Then Return False
+        Return Not String.IsNullOrWhiteSpace(input.RelayUrl) OrElse Not String.IsNullOrWhiteSpace(input.TunnelUrl)
+    End Function
+
+    ''' <summary>The descriptor the person hands out (link, barcode, file): LIVE-BROADCAST item M says a descriptor handed outside
+    ''' the account that carries a RELAY or TUNNEL endpoint is always protected, so one with no `auth` is built WITHOUT those two
+    ''' endpoints (the LAN alone). When no LAN endpoint is reachable either there is nothing to hand out and the result is "" -
+    ''' the window then says why and asks for a password instead of giving an empty hand-off. A protected input is built whole.
+    ''' A SEALED input counts as protected (item Q, read with M): its RELAY and TUNNEL endpoints are listed only with the key or the
+    ''' pin that opens them (<see cref="BuildJson"/> leaves out one that has none), the descriptor that carries those keys is a
+    ''' secret handed by the person, and the relay is offered only to a broadcast with no password (the server has no listener
+    ''' verifiers, 239 CR-14) - so without this a sealed outward link could never exist.
+    ''' The directory record of the person's own account is a different document (<see cref="LiveDescriptorInput.ForRecord"/>)
+    ''' and is not shortened by this.</summary>
+    Public Shared Function BuildHandOutJson(input As LiveDescriptorInput) As String
+        If input Is Nothing Then Return ""
+        If String.IsNullOrEmpty(input.AuthUser) AndAlso Not input.Sealed Then
+            Dim lan As LiveDescriptorInput = input.ForLanOnly()
+            If Not lan.AllowLanViewers OrElse String.IsNullOrWhiteSpace(lan.Url) Then Return ""
+            Return BuildJson(lan)
+        End If
+        Return BuildJson(input)
+    End Function
 
     ''' <summary>The descriptor JSON of section 3, field by field: schemaVersion first, then the required
     ''' url and mode, then the optional members, then the endpoints array with the endpoints in order:

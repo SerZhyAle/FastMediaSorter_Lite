@@ -101,7 +101,7 @@ Public Class ExchangeAccountGroupTests
     <Fact>
     Public Sub A_reason_is_one_sentence_and_never_the_raw_wire_token()
         Dim seen As New HashSet(Of String)
-        For Each reason As String In {"bad-credentials", "device-revoked", "no-token", "bad-address"}
+        For Each reason As String In {"bad-credentials", "device-revoked", "signed-out", "no-token", "bad-address"}
             Dim detail As String = ExchangeDeviceText.StateDetail(Status(ExchangeAgentState.SignInAgain, Nothing, reason))
             Assert.False(String.IsNullOrWhiteSpace(detail), reason)
             Assert.DoesNotContain(reason, detail)
@@ -131,9 +131,14 @@ Public Class ExchangeAccountGroupTests
                 Assert.DoesNotContain(wire, text)
             Next
         Next
-        ' an unknown reason is the generic refusal, which is also what a reason the dialog does not single out gets
-        Assert.Equal(ExchangeDeviceText.EnrollFailure(New ExchangeEnrollResult(ExchangeEnrollOutcome.Refused, ExchangeRefusal.Unknown, "")),
+        ' DEVICE-EXCHANGE item DA (ticket 239 CR-9): a refusal is shown as ITS row of the message table, never a sentence of this
+        ' program: an unknown reason is the table's generic `refused`, `unavailable` has its own row
+        Assert.Equal(ExchangeDeviceText.TableText(ConnectionDiagnosisMessages.Refused),
+                     ExchangeDeviceText.EnrollFailure(New ExchangeEnrollResult(ExchangeEnrollOutcome.Refused, ExchangeRefusal.Unknown, "")))
+        Assert.Equal(ExchangeDeviceText.TableText(ConnectionDiagnosisMessages.Unavailable),
                      ExchangeDeviceText.EnrollFailure(New ExchangeEnrollResult(ExchangeEnrollOutcome.Refused, ExchangeRefusal.Unavailable, "")))
+        Assert.NotEqual(ExchangeDeviceText.EnrollFailure(New ExchangeEnrollResult(ExchangeEnrollOutcome.Refused, ExchangeRefusal.Unknown, "")),
+                        ExchangeDeviceText.EnrollFailure(New ExchangeEnrollResult(ExchangeEnrollOutcome.Refused, ExchangeRefusal.Unavailable, "")))
         Assert.NotEqual(ExchangeDeviceText.EnrollFailure(New ExchangeEnrollResult(ExchangeEnrollOutcome.Refused, ExchangeRefusal.BadCredentials, "")),
                         ExchangeDeviceText.EnrollFailure(New ExchangeEnrollResult(ExchangeEnrollOutcome.Refused, ExchangeRefusal.RateLimited, "")))
         ' the "no way to reach a certificate that cannot be checked" case is said in words, never offered as a switch
@@ -302,18 +307,45 @@ Public Class ExchangeAccountGroupTests
                                      Using rig As New ExchangeDeviceAgentTests.Rig()
                                          Using agent As ExchangeDeviceAgent = rig.NewAgent()
                                              Using dlg As New Exchange_Account_Form(agent, "host.example:22022", "alice")
-                                                 Assert.Null(dlg.AcceptButton)   ' the default is Cancel: no Enter key accepts anything
-                                                 Assert.Same(DialogField(Of Button)(dlg, "_btnCancel"), dlg.CancelButton)
-                                                 Assert.False(DialogField(Of Button)(dlg, "_btnSignIn").Visible)   ' no sign-in until a certificate was shown and accepted
-                                                 Assert.False(DialogField(Of FlowLayoutPanel)(dlg, "_pnlCert").Visible)
-                                                 Assert.False(DialogField(Of CheckBox)(dlg, "_chkStart").Checked)   ' start-with-Windows is off by default (Q180-2)
-                                                 Assert.Equal("host.example:22022", DialogField(Of TextBox)(dlg, "_txtServer").Text)
-                                                 Assert.Equal("alice", DialogField(Of TextBox)(dlg, "_txtLogin").Text)
-                                                 Assert.True(DialogField(Of TextBox)(dlg, "_txtSecret").UseSystemPasswordChar)   ' masked
-                                                 Assert.True(DialogField(Of RadioButton)(dlg, "_rbPassword").Checked)
-                                                 Assert.Equal("TESTPC".Length > 0, DialogField(Of TextBox)(dlg, "_txtName").Text.Length > 0)
-                                                 Assert.Equal(0, rig.Transport.Attempts)   ' nothing is contacted by opening the dialog
-                                                 Assert.Equal(0, rig.Port.Writes)
+                                                 dlg.Show()
+                                                 Try
+                                                     Assert.Null(dlg.AcceptButton)   ' the default is Cancel: no Enter key accepts anything
+                                                     Assert.Same(DialogField(Of Button)(dlg, "_btnCancel"), dlg.CancelButton)
+                                                     Assert.True(DialogField(Of Button)(dlg, "_btnSignIn").Visible)   ' sign-in button is visible so the user knows how to apply
+                                                     Assert.False(DialogField(Of FlowLayoutPanel)(dlg, "_pnlCert").Visible)
+                                                     Assert.False(DialogField(Of CheckBox)(dlg, "_chkStart").Checked)   ' start-with-Windows is off by default (Q180-2)
+                                                     Assert.Equal("host.example:22022", DialogField(Of TextBox)(dlg, "_txtServer").Text)
+                                                     Assert.Equal("alice", DialogField(Of TextBox)(dlg, "_txtLogin").Text)
+                                                     Assert.True(DialogField(Of TextBox)(dlg, "_txtSecret").UseSystemPasswordChar)   ' masked
+                                                     Assert.True(DialogField(Of RadioButton)(dlg, "_rbPassword").Checked)
+                                                     Assert.Equal("TESTPC".Length > 0, DialogField(Of TextBox)(dlg, "_txtName").Text.Length > 0)
+                                                     Assert.Equal(0, rig.Transport.Attempts)   ' nothing is contacted by opening the dialog
+                                                     Assert.Equal(0, rig.Port.Writes)
+                                                 Finally
+                                                     dlg.Close()
+                                                 End Try
+                                             End Using
+                                         End Using
+                                     End Using
+                                 End Sub)
+    End Sub
+
+    <Fact>
+    Public Sub Clicking_sign_in_with_empty_credentials_prompts_user_without_contacting_network()
+        ExchangeTestSupport.OnUi(Sub()
+                                     Using rig As New ExchangeDeviceAgentTests.Rig()
+                                         Using agent As ExchangeDeviceAgent = rig.NewAgent()
+                                             Using dlg As New Exchange_Account_Form(agent, "host.example:22022", "")
+                                                 dlg.Show()
+                                                 Try
+                                                     Dim btnSignIn As Button = DialogField(Of Button)(dlg, "_btnSignIn")
+                                                     Dim lblResult As Label = DialogField(Of Label)(dlg, "_lblResult")
+                                                     btnSignIn.PerformClick()
+                                                     Assert.True(lblResult.Visible)
+                                                     Assert.Equal(0, rig.Transport.Attempts)
+                                                 Finally
+                                                     dlg.Close()
+                                                 End Try
                                              End Using
                                          End Using
                                      End Using

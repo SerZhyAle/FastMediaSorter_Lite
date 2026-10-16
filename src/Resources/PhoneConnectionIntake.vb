@@ -44,7 +44,9 @@ Friend NotInheritable Class PhoneConnectionIntake
             Return New FmsConfigReadResult With {.Failure = FmsConfigFailure.Empty}
         End If
         Dim trimmed As String = text.Trim()
-        If ExchangeFeatures.IsEnabled() AndAlso FmsSftpPlans.LooksLikeCode(trimmed) Then
+        ' a pairing code is recognised whatever the exchange gate says: FMSSFTP1 is plain SFTP, and the gate only decides whether the
+        ' `x` tunnel path of a v2 code is kept (FmsSftpPlans.Read)
+        If FmsSftpPlans.LooksLikeCode(trimmed) Then
             Return FmsSftpPlans.Read(trimmed)
         Else
             Return FmsConfigReader.ReadText(trimmed)

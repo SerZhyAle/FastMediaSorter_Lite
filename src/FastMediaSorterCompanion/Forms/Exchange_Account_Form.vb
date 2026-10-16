@@ -220,7 +220,7 @@ Friend NotInheritable Class Exchange_Account_Form
         Dim buttons As New FlowLayoutPanel With {.AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink, .FlowDirection = FlowDirection.LeftToRight,
             .WrapContents = False, .Margin = New Padding(0, 8, 0, 4)}
         _btnSignIn = NewButton(Localization.T("Войти"), "action.confirm", ButtonGlyphRole.Affirmative)
-        _btnSignIn.Visible = False   ' hidden until a certificate has been shown and accepted (or the system trusts it)
+        _btnSignIn.Visible = True   ' visible so the user has the clear action button to apply / sign in
         AddHandler _btnSignIn.Click, AddressOf OnSignInClicked
         _btnCancel = NewButton(Localization.T("Отмена"), "action.cancel", ButtonGlyphRole.Dismissing)
         _btnCancel.DialogResult = DialogResult.Cancel
@@ -295,8 +295,8 @@ Friend NotInheritable Class Exchange_Account_Form
         _probe = Nothing
         _trusted = False
         _pnlCert.Visible = False
-        _btnSignIn.Visible = False
         _btnCheck.Visible = True
+        Me.AcceptButton = Nothing
         ShowResult("")
         ApplyRegisterMode("")
     End Sub
@@ -437,12 +437,12 @@ Friend NotInheritable Class Exchange_Account_Form
 
     ' --- first contact ---
 
-    Private Async Sub OnCheckClicked(sender As Object, e As EventArgs)
-        If _busy Then Return
+    Private Async Function CheckCertificateInternalAsync() As Task(Of Boolean)
+        If _busy Then Return False
         Dim address As ExchangeServerAddress = Nothing
         If Not ExchangeServerAddress.TryParse(_txtServer.Text, address) Then
             ShowResult(Localization.T("Проверьте адрес (хост:порт), логин и пароль или код."))
-            Return
+            Return False
         End If
         ShowResult(Localization.T("Подключение.."))
         _lblResult.ForeColor = ThemeService.Palette.TextMuted
@@ -450,39 +450,42 @@ Friend NotInheritable Class Exchange_Account_Form
         Try
             Dim target As String = _txtServer.Text.Trim()
             Dim probe As ExchangeCertificateInfo = Await _agent.ProbeCertificateAsync(target, _cts.Token)
-            If IsDisposed OrElse Not String.Equals(target, _txtServer.Text.Trim(), StringComparison.OrdinalIgnoreCase) Then Return
+            If IsDisposed OrElse Not String.Equals(target, _txtServer.Text.Trim(), StringComparison.OrdinalIgnoreCase) Then Return False
             _probe = probe
             ShowCertificate()
+            Return True
         Catch ex As ExchangeConnectException
             _probe = Nothing
             _lblResult.ForeColor = CollapsibleSection.AttentionColor
-            If ex.Failure = ExchangeConnectFailure.TlsFailed Then
-                _lastDiagnosisMessage = ConnectionDiagnosisMessages.TlsFailed
-            ElseIf ex.Failure = ExchangeConnectFailure.TimedOut Then
-                _lastDiagnosisMessage = ConnectionDiagnosisMessages.Timeout
-            Else
-                _lastDiagnosisMessage = ConnectionDiagnosisMessages.UnreachableServer
-            End If
-            ShowResult(ConnectFailureText(ex.Failure))
+            _lastDiagnosisMessage = ConnectFailureRow(ex.Failure)
+            ShowResult(ExchangeDeviceText.TableText(_lastDiagnosisMessage))
             If _btnDiagnose IsNot Nothing Then
                 _btnDiagnose.Text = ConnectionDiagnosisLocalization.DoorButtonText(Localization.CurrentCode)
                 _btnDiagnose.Visible = True
             End If
+            Return False
         Catch ex As OperationCanceledException
             ' the window closed
+            Return False
         Finally
             If Not IsDisposed Then SetBusy(False)
         End Try
+    End Function
+
+    Private Async Sub OnCheckClicked(sender As Object, e As EventArgs)
+        Await CheckCertificateInternalAsync()
     End Sub
 
-    Private Shared Function ConnectFailureText(failure As ExchangeConnectFailure) As String
+    ''' <summary>The row of the common message table (item CZ) a failed first contact reads as: the server did not answer is `unanswered`
+    ''' (the `timeout` row belongs to a cast and its other device), a handshake that failed is `tls-failed`, anything else cannot be reached.</summary>
+    Friend Shared Function ConnectFailureRow(failure As ExchangeConnectFailure) As ConnectionDiagnosisMessage
         Select Case failure
             Case ExchangeConnectFailure.TlsFailed
-                Return Localization.T("Не удалось установить защищённое соединение. Проверьте адрес и порт: сервер обмена принимает только TLS.")
+                Return ConnectionDiagnosisMessages.TlsFailed
             Case ExchangeConnectFailure.TimedOut
-                Return Localization.T("Сервер не отвечает.")
+                Return ConnectionDiagnosisMessages.Unanswered
             Case Else
-                Return Localization.T("Не удалось подключиться к серверу.")
+                Return ConnectionDiagnosisMessages.UnreachableServer
         End Select
     End Function
 
@@ -494,12 +497,14 @@ Friend NotInheritable Class Exchange_Account_Form
             _lblCertNote.Text = Localization.T("Сертификат подтверждён системой, закреплять его не нужно.")
             _btnTrust.Visible = False
             _trusted = True
+            Me.AcceptButton = _btnSignIn
         Else
             _lblCertNote.Text = Localization.T("Сверьте его с отпечатком, который дал вам оператор сервера.")
             _btnTrust.Visible = True
             _trusted = False
+            Me.AcceptButton = Nothing
         End If
-        _btnSignIn.Visible = _trusted
+        _btnSignIn.Visible = True
         ShowResult("")
         FitAccountToWorkingArea()
     End Sub
@@ -510,18 +515,33 @@ Friend NotInheritable Class Exchange_Account_Form
         _trusted = True
         _btnTrust.Visible = False
         _btnSignIn.Visible = True
+        Me.AcceptButton = _btnSignIn
         _btnSignIn.Focus()
+        ShowResult("")
     End Sub
 
     ' --- sign in ---
 
     Private Async Sub OnSignInClicked(sender As Object, e As EventArgs)
-        If _busy OrElse _probe Is Nothing OrElse Not _trusted Then Return
+        If _busy Then Return
         If _txtLogin.Text.Trim().Length = 0 OrElse _txtSecret.Text.Length = 0 Then
             ShowResult(Localization.T("Проверьте адрес (хост:порт), логин и пароль или код."))
             Return
         End If
         If _register AndAlso Not ValidateRegistrationPassword() Then Return
+
+        If _probe Is Nothing Then
+            Dim checked As Boolean = Await CheckCertificateInternalAsync()
+            If Not checked OrElse IsDisposed Then Return
+        End If
+
+        If Not _trusted Then
+            ShowResult(Localization.T("Сертификат сервера не принят. Проверьте его и подтвердите отпечаток."))
+            If _btnTrust IsNot Nothing AndAlso _btnTrust.Visible Then
+                _btnTrust.Focus()
+            End If
+            Return
+        End If
 
         ' one publisher (rule 9): a join while another server is held asks to replace it, and replacing leaves the first one cleanly
         Dim held As ExchangeDeviceStatus = _agent.GetStatus()
@@ -606,38 +626,18 @@ Friend NotInheritable Class Exchange_Account_Form
             _probe = Nothing
             _trusted = False
             _pnlCert.Visible = False
-            _btnSignIn.Visible = False
+            Me.AcceptButton = Nothing
         End If
-        Select Case result.Outcome
-            Case ExchangeEnrollOutcome.Refused
-                Select Case result.Refusal
-                    Case ExchangeRefusal.BadCredentials
-                        _lastDiagnosisMessage = ConnectionDiagnosisMessages.BadCredentials
-                    Case ExchangeRefusal.DeviceRevoked
-                        _lastDiagnosisMessage = ConnectionDiagnosisMessages.DeviceRevoked
-                    Case ExchangeRefusal.RateLimited
-                        _lastDiagnosisMessage = ConnectionDiagnosisMessages.RateLimited
-                    Case ExchangeRefusal.TlsRequired
-                        _lastDiagnosisMessage = ConnectionDiagnosisMessages.TlsRequired
-                    Case ExchangeRefusal.VersionUnsupported
-                        _lastDiagnosisMessage = ConnectionDiagnosisMessages.VersionUnsupported
-                    Case Else
-                        _lastDiagnosisMessage = ConnectionDiagnosisMessages.Refused
-                End Select
-            Case ExchangeEnrollOutcome.PinMismatch, ExchangeEnrollOutcome.Untrusted
-                _lastDiagnosisMessage = ConnectionDiagnosisMessages.CertificateChanged
-            Case ExchangeEnrollOutcome.TlsFailed
-                _lastDiagnosisMessage = ConnectionDiagnosisMessages.TlsFailed
-            Case ExchangeEnrollOutcome.TimedOut
-                _lastDiagnosisMessage = ConnectionDiagnosisMessages.Timeout
-            Case ExchangeEnrollOutcome.Network
-                _lastDiagnosisMessage = ConnectionDiagnosisMessages.UnreachableServer
-            Case Else
-                _lastDiagnosisMessage = ConnectionDiagnosisMessages.UnreachableServer
-        End Select
+        ' the row of the common message table the failure reads as (item CZ): the diagnosis walks it, and the line below says its words
+        Dim oneTimeCode As Boolean = Not _register AndAlso _rbCode.Checked
+        _lastDiagnosisMessage = ExchangeDeviceText.EnrollRow(result, oneTimeCode)
+        If _lastDiagnosisMessage Is Nothing Then
+            _lastDiagnosisMessage = If(result.Outcome = ExchangeEnrollOutcome.Untrusted,
+                                       ConnectionDiagnosisMessages.CertificateChanged, ConnectionDiagnosisMessages.UnreachableServer)
+        End If
 
         _lblResult.ForeColor = CollapsibleSection.AttentionColor
-        ShowResult(If(_register, ExchangeJoinText.RegisterFailure(result), ExchangeDeviceText.EnrollFailure(result)))
+        ShowResult(If(_register, ExchangeJoinText.RegisterFailure(result), ExchangeDeviceText.EnrollFailure(result, oneTimeCode)))
         If _btnDiagnose IsNot Nothing Then
             _btnDiagnose.Text = ConnectionDiagnosisLocalization.DoorButtonText(Localization.CurrentCode)
             _btnDiagnose.Visible = True

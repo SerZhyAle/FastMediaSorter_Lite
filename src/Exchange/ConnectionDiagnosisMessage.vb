@@ -13,7 +13,7 @@ Public Enum ConnectionDiagnosisKind
 End Enum
 
 ''' <summary>
-''' Spec 232 / DEVICE-EXCHANGE 0.27 section 25 items CZ, DD, DR:
+''' Spec 232 / DEVICE-EXCHANGE 1.1 section 9 items CZ, DD, DR:
 ''' One row of the common connection message table.
 ''' </summary>
 Public NotInheritable Class ConnectionDiagnosisMessage

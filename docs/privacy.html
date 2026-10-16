@@ -167,7 +167,9 @@ main:focus{outline:none}
             <strong>Clipboard transfers.</strong> Choose "Send the clipboard to the server" in Share
             Manager, its tray menu or its desktop shortcut to send the current text, image or one file
             to each joined member account. "Get the clipboard from the server" retrieves its newest value.
-            This transfer is explicit, not continuous clipboard monitoring. The server holds only the
+            This transfer is explicit, not continuous clipboard monitoring. What is sent is exactly what
+            is on the clipboard at that moment, a password you copied included: the program does not
+            inspect, filter or mask it. The server holds only the
             last complete value in memory, never on disk. A new complete upload replaces it; an interrupted
             upload leaves the previous value. Restarting the server or deleting the account clears it.
             Logs record only the kind and size class, never the clipboard contents or file name.

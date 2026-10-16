@@ -245,8 +245,10 @@ Public Class InputModelTests
         Assert.True(CustomHotkeys.IsReserved(Keys.Apps))
         Assert.Equal(String.Empty, CustomHotkeys.Format(Keys.F10))
         Assert.Equal(Keys.None, CustomHotkeys.Parse("F10"))
-        ' A hand-edited profile that binds F10 is cleaned up, not honoured as a dead binding.
-        Assert.Empty(CustomHotkeys.Load("{""undo"":""F10""}"))
+        ' Refusing a stored chord must also retire the factory key (INPUT-CHORD rule 3).
+        Dim map = CustomHotkeys.Load("{""undo"":""F10""}")
+        Assert.Equal(CustomHotkeys.NoShortcut, map("undo"))
+        Assert.True(CustomHotkeys.IsRetiredDefault(map, "U"))
     End Sub
 
     ' --- UX-104: the keyboard door to the media menu -----------------------------------------
@@ -273,7 +275,7 @@ Public Class InputModelTests
         Assert.Equal("mediaMenu", CustomHotkeys.OwnerOfOverride(map, "Ctrl+M"))
         ' ... and the two reserved keys can never be bound to anything else.
         Assert.Equal(Keys.None, CustomHotkeys.Parse("Apps"))
-        Assert.Empty(CustomHotkeys.Load("{""mediaMenu"":""Apps""}"))
+        Assert.Equal(CustomHotkeys.NoShortcut, CustomHotkeys.Load("{""mediaMenu"":""Apps""}")("mediaMenu"))
     End Sub
 
     ' --- UX-106: F7 then F11 ---------------------------------------------------------------

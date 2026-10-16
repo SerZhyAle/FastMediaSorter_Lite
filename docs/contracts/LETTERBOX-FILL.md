@@ -35,11 +35,13 @@
   1e-4 (plus floating-point slack for the vectors' four printed decimals). Beyond the vectors it holds
   the host conditions, the clock progress (the last frame is exactly 1) and a source scan that keeps a
   contract number and the old private arithmetic out of the three painting files.
-- **Not held, so still an exception.** Rung 2 (pixels): that GDI+'s `LinearGradientBrush` with
-  `PixelOffsetMode.Half` samples the ramp at pixel centres, `(k + 0.5) / reach`, within 2 levels
-  per channel is **unmeasured** - the screen draws through the brush, so `HaloAlphaRow` is the rule's
-  executable form and what the vectors check, not what the screen calls. Rung 3 (recorded frames of a
-  growth at 60 and 144 Hz) is not written in the catalog.
+- **Halo gradient pixels held on 2026-10-16 (183 follow-up).** The viewer and
+  `HaloGradientTests` call the same `HaloPainter.PaintFade` GDI+ painter. The test compares every pixel
+  against `HaloAlphaRow`, with the contract's maximum 2 levels per RGB channel: both axes and directions,
+  lengths 1/2/3/7/19/64/257/1024, growth 0/0.13/0.5/1, black/white/coloured backgrounds, a coloured bar,
+  and a nonzero origin. Outside pixels remain untouched. The existing brush needed no sampling correction.
+  This closes the gradient uncertainty; full bars/resampling pixel conformance and rung 3 (recorded frames
+  of growth at 60 and 144 Hz) remain separate acceptance work, not claimed by this check.
 - **Observed on the way, for the catalog (owner's amendment, nothing changed here).** The reference
   script rounds the stop distances to six decimals (`Get-HaloStops`) and then interpolates over the
   rounded table, so `halo.alphaRows` and `stopApproximationMaxError` were computed on stops that are

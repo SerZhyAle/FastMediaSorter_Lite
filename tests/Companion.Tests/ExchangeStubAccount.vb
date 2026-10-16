@@ -312,6 +312,18 @@ Friend NotInheritable Class ExchangeStubAccount
 
     Private ReadOnly _enrolledRecords As New Dictionary(Of String, String)(StringComparer.Ordinal)   ' deviceId -> record as the directory lists it
 
+    ''' <summary>The invitation code of a `register` frame: the member of DEVICE-EXCHANGE item AQ, else the first spelling.</summary>
+    Private Shared Function InvitationOf(frame As ExchangeEnvelope) As String
+        Dim v As String = frame.Text("invitation")
+        Return If(v.Length > 0, v, frame.Text("invitationCode"))
+    End Function
+
+    ''' <summary>The shared invitation password of a `register` frame: the member of item AQ, else the first spelling.</summary>
+    Private Shared Function SharedPasswordOf(frame As ExchangeEnvelope) As String
+        Dim v As String = frame.Text("invitationPassword")
+        Return If(v.Length > 0, v, frame.Text("sharedPassword"))
+    End Function
+
     ''' <summary>The directory record of a device from its `enroll` or `register`: id, name, product, online, capabilities, `e2eKey`.</summary>
     Private Shared Function EnrolledRecordOf(frame As ExchangeEnvelope) As String
         Dim o As New System.Text.Json.Nodes.JsonObject()
@@ -398,7 +410,7 @@ Friend NotInheritable Class ExchangeStubAccount
                 Dim deviceId As String = first.Text("deviceId")
                 SyncLock _gate
                     _registerPasswords.Add(first.Text("password"))
-                    _registerCodes.Add(first.Text("invitationCode"))
+                    _registerCodes.Add(InvitationOf(first))
                     _enrollRoles.Add(String.Join(",", first.TextList("roles")))
                     _enrollCapabilities.Add(String.Join(",", first.TextList("capabilities")))
                     _enrollNames.Add(first.Text("deviceName"))
@@ -420,12 +432,12 @@ Friend NotInheritable Class ExchangeStubAccount
                     Await c.Refuse("capacity")
                     Return
                 End If
-                Dim invitation As String = first.Text("invitationCode")
-                If invitation.Length = 0 Then invitation = first.Text("sharedPassword")
+                Dim invitation As String = InvitationOf(first)
+                If invitation.Length = 0 Then invitation = SharedPasswordOf(first)
                 Dim codeOk As Boolean
                 SyncLock _gate
                     codeOk = (Not _usedInvitation AndAlso String.Equals(invitation, Invitation, StringComparison.Ordinal)) OrElse
-                             (first.Text("invitationCode").Length = 0 AndAlso invitation.Length > 0 AndAlso invitation = SharedInvitationPassword)
+                             (InvitationOf(first).Length = 0 AndAlso invitation.Length > 0 AndAlso invitation = SharedInvitationPassword)
                 End SyncLock
                 If Not codeOk OrElse ExchangePasswordPolicy.Check(first.Text("password")) <> ExchangePasswordPolicy.Verdict.Accepted Then
                     Await c.Refuse("bad-credentials")

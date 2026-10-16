@@ -57,6 +57,8 @@ Partial Public NotInheritable Class Share_Settings_Form
     Private _lblXCertService As Label
 
     Private _pnlXAccounts As FlowLayoutPanel
+    Private _pnlXDevices As FlowLayoutPanel
+    Private _pnlXInvitations As FlowLayoutPanel
     Private _lblXAccTotals As Label
     Private _lblXAccHint As Label
     Private _lblXAccOffline As Label
@@ -289,10 +291,14 @@ Partial Public NotInheritable Class Share_Settings_Form
         _pnlXAccounts.Controls.Add(_chkXKeepPasswords)
         _lblXKeepNote = AdminNote(ExchangeAdminText.KeepPasswordsNote())
         _pnlXAccounts.Controls.Add(_lblXKeepNote)
+        sec.AddBodyRow(_pnlXAccounts)
 
+        ' Devices panel (spec 238)
+        _pnlXDevices = XColumn()
+        _pnlXDevices.Visible = False
         _lblXDevTitle = XBold("")
         _lblXDevTitle.Visible = False
-        _pnlXAccounts.Controls.Add(_lblXDevTitle)
+        _pnlXDevices.Controls.Add(_lblXDevTitle)
         _lvXDevices = New ListView With {.View = View.Details, .FullRowSelect = True, .HideSelection = False, .MultiSelect = False,
             .Width = ExchangeAdminWidth, .Height = 110, .Margin = New Padding(0, 2, 0, 2), .Visible = False,
             .AccessibleName = Localization.T("Устройства")}
@@ -302,17 +308,20 @@ Partial Public NotInheritable Class Share_Settings_Form
         _lvXDevices.Columns.Add(Localization.T("Состояние"), Me.LogicalToDeviceUnits(70))
         _lvXDevices.Columns.Add(Localization.T("Последний раз в сети"), Me.LogicalToDeviceUnits(110))
         AddHandler _lvXDevices.SelectedIndexChanged, Sub() ApplyAccountsView(refill:=False)
-        _pnlXAccounts.Controls.Add(_lvXDevices)
+        _pnlXDevices.Controls.Add(_lvXDevices)
         _btnXRevoke = XButton(Localization.T("Отозвать"), AddressOf OnXRevokeDevice, "action.remove")
         _rowXRevoke = AdminFlow()
         _rowXRevoke.Controls.Add(_btnXRevoke)
-        _pnlXAccounts.Controls.Add(_rowXRevoke)
+        _pnlXDevices.Controls.Add(_rowXRevoke)
+        sec.AddBodyRow(_pnlXDevices)
 
-        ' Invitations (ticket 224)
+        ' Invitations panel (spec 238)
+        _pnlXInvitations = XColumn()
+        _pnlXInvitations.Visible = False
         _lblXInvTitle = XBold(Localization.T("Приглашения"))
         _lblXInvTitle.Visible = False
-        _pnlXAccounts.Controls.Add(_lblXInvTitle)
-        _pnlXAccounts.Controls.Add(AdminNote(Localization.T("Одноразовые приглашения для регистрации новых пользователей на сервере.")))
+        _pnlXInvitations.Controls.Add(_lblXInvTitle)
+        _pnlXInvitations.Controls.Add(AdminNote(Localization.T("Одноразовые приглашения для регистрации новых пользователей на сервере.")))
 
         _chkXSharedInv = New CheckBox With {.AutoSize = True, .Margin = New Padding(0, 4, 0, 0),
             .Text = Localization.T("Общий пароль приглашения")}
@@ -321,9 +330,9 @@ Partial Public NotInheritable Class Share_Settings_Form
         _rowXSharedInv = AdminFlow()
         _rowXSharedInv.Controls.Add(_chkXSharedInv)
         _rowXSharedInv.Controls.Add(_btnXSetSharedInv)
-        _pnlXAccounts.Controls.Add(_rowXSharedInv)
+        _pnlXInvitations.Controls.Add(_rowXSharedInv)
         _lblXSharedInvStatus = AdminNote("")
-        _pnlXAccounts.Controls.Add(_lblXSharedInvStatus)
+        _pnlXInvitations.Controls.Add(_lblXSharedInvStatus)
 
         _lvXInvitations = New ListView With {.View = View.Details, .FullRowSelect = True, .HideSelection = False, .MultiSelect = False,
             .Width = ExchangeAdminWidth, .Height = 110, .Margin = New Padding(0, 4, 0, 2), .Visible = False,
@@ -333,7 +342,7 @@ Partial Public NotInheritable Class Share_Settings_Form
         _lvXInvitations.Columns.Add(Localization.T("Состояние"), Me.LogicalToDeviceUnits(110))
         _lvXInvitations.Columns.Add(Localization.T("Хеш"), Me.LogicalToDeviceUnits(110))
         AddHandler _lvXInvitations.SelectedIndexChanged, Sub() ApplyAccountsView(refill:=False)
-        _pnlXAccounts.Controls.Add(_lvXInvitations)
+        _pnlXInvitations.Controls.Add(_lvXInvitations)
 
         _btnXCreateInvitation = XButton(Localization.T("Создать приглашение.."), AddressOf OnXCreateInvitation, IconMap.GetMeaning("_btnXCreateInvitation").GlyphId)
         _btnXWithdrawInvitation = XButton(Localization.T("Отозвать"), AddressOf OnXWithdrawInvitation, "action.remove")
@@ -341,18 +350,18 @@ Partial Public NotInheritable Class Share_Settings_Form
         _rowXInvButtons = AdminFlow()
         _rowXInvButtons.Controls.Add(_btnXCreateInvitation)
         _rowXInvButtons.Controls.Add(_btnXWithdrawInvitation)
-        _pnlXAccounts.Controls.Add(_rowXInvButtons)
+        _pnlXInvitations.Controls.Add(_rowXInvButtons)
 
         ' The statement of what the operator can see (DEVICE-EXCHANGE 7.9): always part of this group, never dismissible;
         ' only folded. It is shown once more at the first account (Exchange_Account_Admin_Form).
         _lnkXStatement = New LinkLabel With {.AutoSize = True, .Margin = New Padding(0, 10, 0, 2), .Text = ExchangeAdminText.StatementShow()}
         AddHandler _lnkXStatement.LinkClicked, Sub() ToggleXStatement()
-        _pnlXAccounts.Controls.Add(_lnkXStatement)
+        _pnlXInvitations.Controls.Add(_lnkXStatement)
         _txtXStatement = New TextBox With {.Multiline = True, .ReadOnly = True, .ScrollBars = ScrollBars.Vertical, .Width = ExchangeAdminWidth, .Height = 170,
             .Margin = New Padding(0, 2, 0, 6), .Visible = False, .Text = String.Join(vbCrLf & vbCrLf, ExchangeStatement.Paragraphs()),
             .AccessibleName = ExchangeAdminText.StatementTitle()}
-        _pnlXAccounts.Controls.Add(_txtXStatement)
-        sec.AddBodyRow(_pnlXAccounts)
+        _pnlXInvitations.Controls.Add(_txtXStatement)
+        sec.AddBodyRow(_pnlXInvitations)
 
         _exAccTimer = New System.Windows.Forms.Timer With {.Interval = ExchangeAccountsPollMs}
         AddHandler _exAccTimer.Tick, AddressOf OnXAccountsTick
@@ -387,6 +396,8 @@ Partial Public NotInheritable Class Share_Settings_Form
         _rowXWizard.Visible = m.ShowWizard
         _pnlXConfig.Visible = m.ShowConfigRows
         _pnlXAccounts.Visible = m.ShowAccounts
+        If _pnlXDevices IsNot Nothing Then _pnlXDevices.Visible = m.ShowAccounts
+        If _pnlXInvitations IsNot Nothing Then _pnlXInvitations.Visible = m.ShowAccounts
 
         ' the address: the server's own value, unless the person is mid-edit
         If Not EndpointPendingX() Then

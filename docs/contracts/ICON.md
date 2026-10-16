@@ -3,7 +3,7 @@
 | | |
 | --- | --- |
 | **Ids** | `ICON-SET`, `ICON-RENDER`, `ICON-EXTERNAL` |
-| **Version** | catalog 0.30 / 0.19 / 0.12, all draft (read 2026-10-11). **Implemented: 0.30 / partial 0.19 / 0.12** - the vendored vocabulary and the 95 catalog glyphs (plus one product-drawn, `action.replace`) this product renders were re-imported at 0.30 on 2026-10-11 (`assets/glyphs/PROVENANCE.txt`, `tools/Sync-IconGlyphs.ps1 -Check` exit 0); `ICON-RENDER` stays partial under the dated exceptions in the registry |
+| **Version** | catalog 0.33 / 0.19 / 0.12, all draft (read 2026-10-16, specification 235). **Implemented: partial 0.33 / partial 0.19 / 0.12** - the vendored vocabulary and the 105 catalog glyphs this product renders (none product-drawn: `action.replace` is the catalog's since 0.31) were re-imported at 0.33 on 2026-10-16 (`assets/glyphs/PROVENANCE.txt`, `tools/Sync-IconGlyphs.ps1 -Check` exit 0); the set stays partial under the dated exceptions in the registry. Since 0.30 the catalog added 14 records (0.31: seven, 0.32: the six exchange meanings of `DEVICE-EXCHANGE` item CW, 0.33: `action.retry`), changed no shipped glyph and turned `action.email` active; `ICON-RENDER` and `ICON-EXTERNAL` did not move |
 | **Home** | `iconography/README.md` in the shared contracts catalog |
 | **Role here** | consumer - viewer, Share Manager and product site; `specification 027` (local specification) |
 
@@ -24,7 +24,7 @@ On the site, a control drawn with a vocabulary glyph either references the vendo
 `IconographyContractTests` holds both forms to the vendored files, so a re-import that redraws a glyph
 fails until its inline copies follow.
 
-## What 0.18-0.28 asked of this product (read 2026-10-07)
+## What 0.18-0.28 asked of this product (read 2026-10-07; re-read 2026-10-16 where marked)
 
 - **`action.convert-to-video` (0.21)** is the picture of the animation-to-video button: `IconMap` row
   `btn_ToVideo` now names it, the glyph is vendored, and the chrome draws it instead of an icon-font code
@@ -39,9 +39,11 @@ fails until its inline copies follow.
   `IconMap` and an id in the sync script.
 - **`tool.brush` was split (0.28, a MAJOR's cost in a draft):** the vendored brush is now the Material brush,
   never the pencil of `action.edit`; the editor's Brush tool uses it and `IconographyContractTests` fails if
-  the two drawings coincide. Rule 6: `action.convert-to-video`, `action.choose-file`, `action.choose-folder`
-  and `content.disk-container` are still `proposed`; none has reached a released version yet (the last release
-  predates them), so the "first product to ship it" report is owed with the next release.
+  the two drawings coincide. Rule 6 (re-counted 2026-10-16 from the vendored vocabulary): **21 of the 105 vendored
+  ids are `proposed` in 0.33**, among them `action.convert-to-video`, `action.choose-file`, `action.choose-folder`
+  and `content.disk-container`; none has reached a released version yet (the last release has no
+  `assets/glyphs`), so release 46 is this product's first shipment of every one of them and the "first product
+  to ship it" report is owed with it (239 CR-20).
 - **`ICON-RENDER` 0.17 / 0.18:** a Windows product that declares itself pointer-first may size to the 28 px floor
   without detecting touch. This product has not made that declaration - it is the owner's - so the coarse-input
   question stays an open exception. The web floor (28 CSS px fine pointer, 44 coarse) is the site's. Rule 7 (0.18)
@@ -55,9 +57,19 @@ fails until its inline copies follow.
 **What the product reads of the catalog.** Its tests read only the `id` of each vendored record and its renderer
 reads the SVG subset of `ICON-RENDER` rule 1 (`src/Icons/SvgPathData.vb`, `GlyphRenderer.vb`; a malformed file throws
 to the caller, a missing record is a test failure, never a blank glyph). It reads no `colour`, `rtl` or `status`
-field, so the section 5 defaults for an unknown value do not arise, and `vocabulary.version` is not read: the sync
-script takes the contract versions from the README blocks for the provenance record and does not refuse a higher
-MAJOR (a dated exception; the product is on MAJOR 0 and nothing refuses today).
+field, so the section 5 defaults for an unknown value do not arise. **`vocabulary.version` is read** (since
+2026-10-16, `e5eeb24`): `tools/Sync-IconGlyphs.ps1` refuses a catalog at a higher MAJOR than 0 with exit 2 in both
+the `-Check` and the import mode, accepts a higher MINOR and never guesses a malformed or missing carrier
+(`tests/Integration/IconCatalogCarrier.ps1`, run by hand; the earlier dated exception is closed in the registry).
+
+## Adoption still open (read 2026-10-16)
+
+Two catalog records exist where the product still draws the nearest meaning: "Skip" draws `media.next`
+(`action.skip`, 0.31) and "Create desktop shortcuts" draws `action.add` (`action.create-shortcut`, 0.31). The
+`feature.server-relay` record is vendored and drawn by no control. Not checked: the inline `data-glyph` copies on
+the site pages against 0.33, and the names of the 0.31-0.33 records in the ten further languages. All four are
+in the registry's dated exception on `ICON-SET` and in 239 CR-20.
+
 ## Deviations still open
 
 Each is a dated exception in the catalog registry. Meanings with no usable catalog picture yet - the random

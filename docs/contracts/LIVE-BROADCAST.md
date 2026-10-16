@@ -3,9 +3,9 @@
 | | |
 | --- | --- |
 | **Id** | `LIVE-BROADCAST` |
-| **Version** | 0.18, draft (read in full 2026-10-07). 0.14 added the PC producer, the HTTP MPEG-TS video shape, the `RELAY` and `TUNNEL` endpoints, receivers and cast, all `[PROPOSED]`; 0.15-0.18 folded the proposals of the same day (`sourceId` names a source, the PC producer's numbers, the first-picture budget, `TUNNEL.inner` never omitted). The RTSP stream kinds are `[CONTRACT]` since 0.13. Owner: FastMediaSorter Android |
-| **Home** | `live-broadcast/README.md`, `11_live_broadcast_contract.md` and `13_contract_amendment_2026-10-07.md` in the shared contracts catalog |
-| **Role here** | **consumer** - local specification 023, built in the working tree on 2026-10-07 (audio over HTTP), real-device acceptance not run; **planned producer** (local specifications 172 and 173) and **planned receiver** over every transport and as a cast target (local specification 201), under the umbrella 160 |
+| **Version** | **1.0, active; read 2026-10-16** (specification 235: file 11 and the amendment items A to Q of files 13 to 16; file 12 is superseded by item B and is a record). 0.14 added the PC producer, the HTTP MPEG-TS video shape, the `RELAY` and `TUNNEL` endpoints, receivers and cast; 0.15-0.18 folded the proposals of 2026-10-07 (`sourceId` names a source, the PC producer's numbers, the first-picture budget, `TUNNEL.inner` never omitted); items M to Q (protection, sources, watch, seal) arrived with the later amendment files 14 to 16. Owner: FastMediaSorter Android |
+| **Home** | `live-broadcast/README.md`, `11_live_broadcast_contract.md` and the amendment files `13` to `16` in the shared contracts catalog |
+| **Role here** | **consumer** (the viewer, specification 023, `src/LiveBroadcast/`), **PC producer** (the Share Manager: capture, encode, LAN serving, exchange publication, relay upload; specification 199, `src/LiveBroadcast/Producer/` and `src/FastMediaSorterCompanion/Core/`) and **receiver** of a broadcast listed on the exchange and as a cast target (specification 201). The gate is open (`LiveBroadcastFeatures.Offered = True`). **Implements `partial 1.0`** (registry row, verified 2026-10-16): the section 6 handshake has not been run by this product, the protected-broadcast completion (relay `verifiers`) and the sealed receiver are not built, and the differences are dated exceptions in the registry |
 
 **Reader-facing description:** the portal page [Live broadcast](https://serzhyale.github.io/FastMediaSorter_mob_v2/docs/media-exchange-portal/live-broadcast.html) of the shared "Media exchange between your devices" portal (not published until the Android site publishes it). Nothing there binds this contract.
 
@@ -14,45 +14,46 @@ it was missing the no-loopback producer rule, the link `package=` hint and the w
 2026-09-17. The copy was deleted rather than refreshed, which is the only thing that stops it drifting
 again.
 
+The contract ships no conformance vector file, so there is nothing to replay; the shape of the descriptor is
+held by `LiveBroadcastContractSyncTests` and `LiveProducerDescriptorWriterTests`.
+
 ## What this repository must do as a consumer (023)
 
 - Start at the live edge with a small buffer, and **never let the delay grow**: after a stall or a
   reconnect, rejoin at the live edge and drop what was missed.
 - Put the resilience in bounded reconnects, not in a deep buffer. On a LAN the producer adds milliseconds;
-  anything above half a second end to end was added here.
+  anything above half a second end to end was added here. The buffer comes from `targetLatencyMs` (floor and
+  ceiling under 2 s, item L).
 - Open exactly one connection per listener - a probe connection costs a listener slot, and the watch has
   four.
 - Do not compensate for a quiet producer with gain of your own; that hides a defect that has a ticket.
 - Read `isLive` from the descriptor rather than probing, and refuse a `schemaVersion` above the one this
   build supports with "update the app", never "invalid".
 - Read `sourceId` as one opaque string (`<deviceSourceId>:<source>` is a single channel of its own), accept any
-  channel count and sample rate of an `AUDIO_ONLY` body, skip an endpoint transport this build does not play
-  (`RELAY`, `TUNNEL`), and never dial the host of a `TUNNEL.inner` - a consumer replaces that host and port with
-  its own forwarder's (`DEVICE-EXCHANGE` 7.7; the documentation host `192.0.2.1` marks "no LAN address").
-- Refuse a video mode by name until it is played (`VIDEO_AUDIO` and `VIDEO_ONLY` are refused as unsupported, as
-  2.5 and 3.1 ask); when video is played, the first picture is due within the keyframe interval plus 1 s and the
-  report records time to first picture beside time to first byte (0.17 item I).
-- The `[PROPOSED]` sections bind nobody until they flip: the HTTP MPEG-TS shape, the `RELAY` and `TUNNEL` endpoints
-  and cast are built behind a gate and are not claimed as conformance until the owner flips them.
+  channel count and sample rate of an `AUDIO_ONLY` body, skip an endpoint transport this build does not play,
+  and never dial the host of a `TUNNEL.inner` - a consumer replaces that host and port with its own
+  forwarder's (`DEVICE-EXCHANGE` 7.7; the documentation host `192.0.2.1` marks "no LAN address").
+- A protected broadcast (item M): read `auth`, answer Digest on the LAN and `TUNNEL` endpoints and Basic on
+  `RELAY`, take the directory's `credentials` for an own device, ask for a password once and never put it in a
+  URL.
+- Refuse a video mode by name until it is played; when video is played, the first picture is due within the
+  keyframe interval plus 1 s and the report records time to first picture beside time to first byte (item I).
+- A sealed endpoint (item Q) is skipped until the viewer's receiver plays it: the parsing is built, the live
+  session does not call it yet (specification 234, E2b).
 
-## What is planned (nothing built yet)
+## What the producer does (199)
 
-- **Producer (172, 173).** The Share Manager captures the microphone, the system audio and the screen, serves
-  `AUDIO_ONLY` in the 2.1 shape and the MPEG-TS shape on the LAN, and publishes the broadcast to the user's
-  exchange account with `RELAY` and `TUNNEL` endpoints. Every ask of the proposal this repository filed was
-  answered in the contract: `sourceId` per source with several broadcasts (item G), the MPEG-TS numbers, the
-  token path segment and the channel count and sample rate (item H), `TUNNEL.inner` on `192.0.2.1` when there is no
-  LAN address (item J). Specifications 172 and 173 still carry the older plan (one `sourceId` per device, stereo
-  as a deviation, `inner` open) and are re-read against these items when they start.
-- **Receiver (174).** Plays any endpoint the descriptor lists in the producer's order - LAN, then `RELAY`, then
-  `TUNNEL` - audio and video, with certificate checking never switched off, and accepts a cast. It widens the
-  endpoint model and the store together, because both drop the members they do not model today (`inner`,
-  `certFingerprint`, `channels`).
-- **One proposal is drafted and not filed** (the catalog is sealed): what the required top-level `url` carries when a
-  descriptor has no LAN endpoint, and which of two timestamp-less descriptors of one `sourceId` wins - kept in this
-  repository's `docs/specifications/183_contract_proposals/`, for the owner to place. 173 (the producer) is
-  the ticket that has to choose a value until the owner answers; item J and producer rule 1 already exclude the
-  documentation host and loopback.
-- **The registry row** is role P/C: `Implements` `partial 0.18` for the consumer's audio path, producer and receiver
-  not built; the open points (the first sound measured at 1.0-1.1 s against "within 1 s", the section 6
-  handshake not run on a real phone or watch) are in its notes and in a dated exception.
+The Share Manager captures the microphone, the system sound (with the process-loopback exclusion), the screen
+(Windows Graphics Capture) and the camera (Media Foundation), serves `AUDIO_ONLY` in the 2.1 shape and the
+MPEG-TS shape (item C) on the LAN with HTTP Digest, and publishes the broadcast to the user's exchange account
+with `RELAY` and `TUNNEL` endpoints, one broadcast at a time with a stable `sourceId` (items G and N). **What it
+does not yet do is in the registry, not here**, and the two that matter most are named so nobody relies on them:
+a broadcast with a password is not offered on the relay (no `verifiers`, 239 CR-14), and a descriptor handed
+outside the account may carry `RELAY` and `TUNNEL` with no password (239 CR-15).
+
+- **The registry row** is role P/C, `Implements` `partial 1.0`; the section 6 handshake, the first-sound
+  figure of the consumer (1.0-1.1 s against "within 1 s") and the joint run are in a dated exception tied to
+  205.
+- **One proposal is drafted and not filed** (the catalog is sealed): what the required top-level `url` carries
+  when a descriptor has no LAN endpoint, and which of two timestamp-less descriptors of one `sourceId` wins - kept
+  in this repository's `docs/specifications/183_contract_proposals/`, for the owner to place.

@@ -1,4 +1,4 @@
-﻿Option Explicit On
+Option Explicit On
 Option Strict On
 Option Infer On
 Option Compare Binary
@@ -61,6 +61,10 @@ Friend NotInheritable Class ManagerSettingRow
                 Dim needed = TextRenderer.MeasureText(button.Text, button.Font, Size.Empty, TextFormatFlags.SingleLine).Width +
                     button.Padding.Horizontal + If(button.Image Is Nothing, 0, button.Image.Width) + LogicalToDeviceUnits(10) +
                     button.Margin.Horizontal + flow.Padding.Horizontal
+                value = Math.Max(value, Math.Min(needed, Math.Max(1, available - Caption.Margin.Horizontal - LogicalToDeviceUnits(80))))
+            Next
+            For Each child As Control In flow.Controls
+                Dim needed = child.GetPreferredSize(Size.Empty).Width + child.Margin.Horizontal + flow.Padding.Horizontal
                 value = Math.Max(value, Math.Min(needed, Math.Max(1, available - Caption.Margin.Horizontal - LogicalToDeviceUnits(80))))
             Next
         End If

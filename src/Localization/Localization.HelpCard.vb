@@ -192,6 +192,13 @@ Partial Public NotInheritable Class Localization
             "Imagens e ficheiros de texto", "الصور والملفات النصية", "चित्र और टेक्स्ट फ़ाइलें",
             "ছবি ও টেক্সট ফাইল", "تصاویر اور ٹیکسٹ فائلیں", "图片和文本文件")
 
+        ' --- 240: in-app context help link on the F1 reference card ---
+        Add("Полная справка (веб-страница)",
+            "Full help (web page)", "Повна довідка (веб-сторінка)", "Vollständige Hilfe (Webseite)",
+            "Guida completa (pagina web)", "Ayuda completa (página web)", "Aide complète (page web)",
+            "Ajuda completa (página web)", "المساعدة الكاملة (صفحة ويب)", "पूरी सहायता (वेब पेज)",
+            "সম্পূর্ণ সহায়তা (ওয়েব পৃষ্ঠা)", "مکمل مدد (ویب صفحہ)", "完整帮助（网页）")
+
     End Sub
 
 End Class

@@ -14,6 +14,7 @@
 {"path": "docs/contracts/AUTOMATED-CHECKS.md", "topic": "AUTOMATED-CHECKS", "area": "contracts", "triggers": ["Adoption, version, conformance gate or exception changes for AUTOMATED-CHECKS"], "role": "source"}
 {"path": "docs/contracts/CAPTURE-OUTPUT.md", "topic": "CAPTURE-OUTPUT", "area": "contracts", "triggers": ["Adoption, version, conformance gate or exception changes for CAPTURE-OUTPUT"], "role": "source"}
 {"path": "docs/contracts/CLIPBOARD-GUARD.md", "topic": "CLIPBOARD-GUARD", "area": "contracts", "triggers": ["Adoption, version, conformance gate or exception changes for CLIPBOARD-GUARD"], "role": "source"}
+{"path": "docs/contracts/CONTEXT-HELP.md", "topic": "CONTEXT-HELP", "area": "contracts", "triggers": ["Adoption, version, conformance gate or exception changes for CONTEXT-HELP"], "role": "source"}
 {"path": "docs/contracts/CONTRACT_BROADCAST_RESOURCE.md", "topic": "CONTRACT_BROADCAST_RESOURCE", "area": "contracts", "triggers": ["Adoption, version, conformance gate or exception changes for CONTRACT_BROADCAST_RESOURCE"], "role": "source"}
 {"path": "docs/contracts/DEVICE-EXCHANGE.md", "topic": "DEVICE-EXCHANGE", "area": "contracts", "triggers": ["Adoption, version, conformance gate or exception changes for DEVICE-EXCHANGE"], "role": "source"}
 {"path": "docs/contracts/DIAGNOSTIC-REPORT.md", "topic": "DIAGNOSTIC-REPORT", "area": "contracts", "triggers": ["Adoption, version, conformance gate or exception changes for DIAGNOSTIC-REPORT"], "role": "source"}

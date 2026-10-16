@@ -143,7 +143,7 @@ func (d *Dir) dropLiveLocked(h *hub, r *resState) {
 	if d.opt.Ports != nil {
 		d.opt.Ports.Release(h.login, r.id)
 	}
-	for _, k := range []string{"access", "sealedAccess", "shareId", "publicPort"} {
+	for _, k := range liveMembers {
 		r.rec.Delete(k)
 	}
 	d.dropGrantPayloadsLocked(h.login, r.id) // a grant's access is held in memory only while the producer is online (20 item BD)
@@ -282,8 +282,9 @@ type PublishResult struct {
 	PublicPort *int
 }
 
-// Publish offers a resource record. The record is checked, not interpreted: at most 16 KiB (past it,
-// capacity), resourceId in the id form, kind and name present - an unknown kind is stored as is -
+// Publish offers a resource record. The record is checked, not interpreted: at most 16 KiB as the
+// reader receives it - the members the server adds included, in the widest form (past it, capacity;
+// DEVICE-EXCHANGE item BS) - resourceId in the id form, kind and name present - an unknown kind is stored as is -
 // deviceId forced to the publishing device, shareId in the id form and unique per deployment.
 //
 // A resourceId held by another device of the account, or a shareId held anywhere, is ErrIDCollision;
@@ -355,6 +356,10 @@ func (d *Dir) Publish(account, deviceID string, raw json.RawMessage) (PublishRes
 	// the candidate, and whether the account's directory would still fit one frame
 	rec.SetStr("deviceId", deviceID)
 	candidate := &resState{id: id, device: deviceID, rec: rec, shareID: shareID, updated: d.now()}
+	if resourceBoundExceeded(rec, deviceID, candidate.updated, requested != nil) {
+		d.mu.Unlock() // item BS: the bound is the record as delivered, not as sent
+		return PublishResult{}, ErrCapacity
+	}
 	d.renderResource(h, candidate)
 	if !wire.DirectoryFits(d.rawDevices(h), d.rawResources(h, id, candidate.raw), d.rawBroadcasts(h, "", nil)) {
 		d.mu.Unlock()
@@ -459,8 +464,9 @@ func checkListeners(n *int) error {
 	return nil
 }
 
-// BroadcastStart records a live broadcast, in memory only. At most 4 live broadcasts per device and
-// 16 per account (capacity); the broadcastId is unique per deployment (id-collision) except that the
+// BroadcastStart records a live broadcast, in memory only. The record is bounded as delivered (item BS:
+// the server's `deviceId`, `updatedAt` and `startedAt` count; past 16 KiB it is capacity). At most 4
+// live broadcasts per device and 16 per account (capacity); the broadcastId is unique per deployment (id-collision) except that the
 // same device starting a held id replaces it; maxListeners is 0 (no cap) to 10000.
 func (d *Dir) BroadcastStart(account, deviceID string, raw json.RawMessage, maxListeners *int) (string, error) {
 	rec, id, err := parseBroadcast(raw)
@@ -509,6 +515,10 @@ func (d *Dir) BroadcastStart(account, deviceID string, raw json.RawMessage, maxL
 		cand.maxListeners = *maxListeners
 	}
 	d.renderBroadcast(h, cand)
+	if len(cand.raw) > wire.MaxRecord { // item BS: the bound is the record as delivered, not as sent
+		d.mu.Unlock()
+		return "", ErrCapacity
+	}
 	if !wire.DirectoryFits(d.rawDevices(h), d.rawResources(h, "", nil), d.rawBroadcasts(h, id, cand.raw)) {
 		d.mu.Unlock()
 		return "", ErrCapacity
@@ -552,6 +562,10 @@ func (d *Dir) BroadcastUpdate(account, deviceID string, raw json.RawMessage, max
 		cand.maxListeners = *maxListeners
 	}
 	d.renderBroadcast(h, cand)
+	if len(cand.raw) > wire.MaxRecord { // item BS: the bound is the record as delivered, not as sent
+		d.mu.Unlock()
+		return ErrCapacity
+	}
 	if !wire.DirectoryFits(d.rawDevices(h), d.rawResources(h, "", nil), d.rawBroadcasts(h, id, cand.raw)) {
 		d.mu.Unlock()
 		return ErrCapacity

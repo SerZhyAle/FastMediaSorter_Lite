@@ -10,9 +10,11 @@ Imports System.Windows.Forms
 ''' <summary>The left menu as a tree (210): each page row keeps its icon, caption, selection
 ''' tint, accent stripe and focus rectangle and gains a display-only disclosure chevron; the
 ''' page's former fold groups sit under it as indented, icon-less rows. Clicking a page
-''' selects it and toggles its item list; clicking an item makes that group the page's whole
-''' right-pane content (owner revision 2026-10-13) - only the chosen row carries the tint.
-''' Which pages are expanded is the stored context's <see cref="SettingsPageContext.NavExpanded"/>.</summary>
+''' selects it and toggles its item list; clicking an item expands that group's card in the
+''' right pane, scrolls it into view and focuses its first editor - the rest of the page
+''' stays put, so sibling cards remain visible and collapsible without navigating away
+''' (238 section 2.1). Which pages are expanded is the stored context's
+''' <see cref="SettingsPageContext.NavExpanded"/>.</summary>
 Partial Public NotInheritable Class Share_Settings_Form
     Implements IThemeAware
 
@@ -25,16 +27,10 @@ Partial Public NotInheritable Class Share_Settings_Form
     Private _pageViewportHost As Panel
     Private _navigation As FlowLayoutPanel
     Private _selectedPage As String = String.Empty
-    ''' <summary>The chosen sub-menu per page: the group id shown alone in the right pane,
-    ''' or empty for the whole page. Runtime view state, not persisted.</summary>
+    ''' <summary>The chosen sub-menu per page: the group whose card the last reveal brought
+    ''' into view, or empty for the whole page. It owns the rail's highlight and nothing
+    ''' else - the right pane always shows every card. Runtime view state, not persisted.</summary>
     Private ReadOnly _selectedItem As New Dictionary(Of String, String)(StringComparer.Ordinal)
-    ''' <summary>Rows an active item filter hid. App-driven visibility (service state,
-    ''' pairing notes) keeps changing underneath, so a lift restores exactly what the
-    ''' filter took away and never second-guesses the app.</summary>
-    Private ReadOnly _filteredOut As New Dictionary(Of String, List(Of Control))(StringComparer.Ordinal)
-    ''' <summary>Body rows already carrying the filter's VisibleChanged guard.</summary>
-    Private ReadOnly _guardWired As New HashSet(Of Control)()
-    Private _applyingItemFilter As Boolean
 
     Private Sub BuildSettingsPages()
         _root = New TableLayoutPanel With {.Dock = DockStyle.Fill, .ColumnCount = 2, .RowCount = 1,
@@ -57,7 +53,6 @@ Partial Public NotInheritable Class Share_Settings_Form
             BuildContractGroups(sec)
             Dim id = sec.Key
             _selectedItem(id) = String.Empty
-            _filteredOut(id) = New List(Of Control)()
             Dim button As New SettingsNavigationButton With {.Text = SettingsPageCaption(sec), .Name = "managerSettingsNav_" & id,
                 .PageId = id, .AccessibleName = SettingsPageCaption(sec), .AccessibleRole = AccessibleRole.PageTab,
                 .FlatStyle = FlatStyle.Flat, .UseVisualStyleBackColor = False, .Width = 240, .Height = 34,
@@ -176,7 +171,11 @@ Partial Public NotInheritable Class Share_Settings_Form
         Next
     End Sub
 
-    Private Sub SelectSettingsPage(id As String)
+    Friend Sub SelectPage(id As String)
+        SelectSettingsPage(id)
+    End Sub
+
+    Friend Sub SelectSettingsPage(id As String)
         If Not _pages.ContainsKey(id) OrElse id = _selectedPage Then Return
         If settingsWasPresented Then CaptureSettingsViewport()
         Dim viewport = _pages(id)
@@ -214,12 +213,12 @@ Partial Public NotInheritable Class Share_Settings_Form
 
     ''' <summary>One gesture (210 section 4.3, Q210-3): a click on a collapsed page selects
     ''' it and reveals its items; a click on an expanded page folds the items and keeps the
-    ''' page selected. A page row always means the whole page, so it also lifts any item
-    ''' filter (owner revision 2026-10-13).</summary>
+    ''' page selected. The page row always means the whole page - every card of it in its
+    ''' remembered fold state (238 section 2.1) - so it also gives the highlight back from
+    ''' a chosen sub-menu item.</summary>
     Private Sub OnSettingsPageClicked(id As String)
         If SelectedItemId(id).Length > 0 Then
             _selectedItem(id) = String.Empty
-            ApplySettingsItemFilter(id)
             ApplySettingsNavigationTheme(ThemeService.Palette)
         End If
         If _navItems.ContainsKey(id) AndAlso _navItems(id).Count > 0 Then
@@ -266,106 +265,22 @@ Partial Public NotInheritable Class Share_Settings_Form
         Next
     End Function
 
-    ''' <summary>The one reveal path (210 sections 4.4 and 5.4, owner revision 2026-10-13):
-    ''' a subordinate item - or a search hit - shows that group and nothing else in the
-    ''' right pane, focuses the block's first editor. The filter runs while the page is
-    ''' visible, so a later switch back to the page row restores what the app had shown.</summary>
+    ''' <summary>The one reveal path (210 sections 4.4 and 5.4, recarded by 238 section 2.1):
+    ''' a subordinate item - or a search hit - expands that group's card, scrolls its header
+    ''' to the top of the viewport and focuses the block's first editor. The rest of the page
+    ''' keeps its place: sibling cards stay visible and independently collapsible.</summary>
     Private Sub RevealSettingsBlock(pageId As String, group As SettingsNavGroup, editor As Control)
         SelectSettingsPage(pageId)
         Dim viewport = _pages(pageId)
         _selectedItem(pageId) = group.Id
-        ApplySettingsItemFilter(pageId)
+        SetGroupExpanded(pageId, group, True)
         viewport.PerformLayout()
         If editor Is Nothing Then editor = FirstSettingsBlockEditor(group)
-        viewport.AutoScrollPosition = Point.Empty
+        ' The whole card is the target, so its header lands just under the viewport's top.
+        viewport.AutoScrollPosition = New Point(0, Math.Max(0, ViewportTop(group.Card.Header) - LogicalToDeviceUnits(8)))
         If editor IsNot Nothing Then editor.Focus()
         ApplySettingsNavigationTheme(ThemeService.Palette)
     End Sub
-
-    ''' <summary>Shows the page's chosen group (or every group when none is chosen) by
-    ''' hiding the other groups' headings and rows. Must run while the page is visible:
-    ''' "currently visible" then means "the app wants this row", and the hidden rows are
-    ''' remembered verbatim for the lift. Every classified row gets the VisibleChanged
-    ''' guard, so app-driven state revealing a filtered-out row goes back behind the
-    ''' filter instead of leaking into the sub-menu's view.</summary>
-    Private Sub ApplySettingsItemFilter(pageId As String)
-        Dim suppressed = _filteredOut(pageId)
-        ' One layout pass for the whole filter: every row's Visible used to relayout the page tree on its
-        ' own, so choosing a sub-menu item repainted the pane dozens of times (seconds at a high DPI).
-        Dim body = SettingsSections().First(Function(s As CollapsibleSection) s.Key = pageId).Body
-        body.SuspendLayout()
-        _applyingItemFilter = True
-        Try
-            For Each row In suppressed
-                row.Visible = True
-            Next
-            suppressed.Clear()
-            Dim groupId = SelectedItemId(pageId)
-            For Each pair In ClassifiedSettingsRows(pageId)
-                WireSettingsRowGuard(pair.Key)
-                If groupId.Length = 0 Then Continue For
-                If pair.Value.Id = groupId OrElse Not pair.Key.Visible Then Continue For
-                suppressed.Add(pair.Key)
-                pair.Key.Visible = False
-            Next
-        Finally
-            _applyingItemFilter = False
-            body.ResumeLayout(True)
-        End Try
-    End Sub
-
-    ''' <summary>The body rows of the page in display order with the group whose block
-    ''' each ends: the nearest <c>managerSettingsHeading_</c> label above names the block
-    ''' (210 section 5). Rows the contract pass adds after the build - checkbox hints -
-    ''' classify into the block they follow, so the filter cannot strand them.</summary>
-    Private Iterator Function ClassifiedSettingsRows(pageId As String) As IEnumerable(Of KeyValuePair(Of Control, SettingsNavGroup))
-        Dim body = SettingsSections().First(Function(s As CollapsibleSection) s.Key = pageId).Body
-        Dim headingPrefix = "managerSettingsHeading_" & pageId & "_"
-        Dim current As SettingsNavGroup = Nothing
-        For Each child As Control In body.Controls
-            Dim label = TryCast(child, Label)
-            If label IsNot Nothing AndAlso label.Name.StartsWith(headingPrefix, StringComparison.Ordinal) Then
-                Dim groupId = label.Name.Substring(headingPrefix.Length)
-                current = _pageGroups(pageId).FirstOrDefault(Function(g As SettingsNavGroup) g.Id = groupId)
-            End If
-            If current IsNot Nothing Then Yield New KeyValuePair(Of Control, SettingsNavGroup)(child, current)
-        Next
-    End Function
-
-    Private Sub WireSettingsRowGuard(row As Control)
-        If _guardWired.Add(row) Then AddHandler row.VisibleChanged, AddressOf OnSettingsRowVisibleChanged
-    End Sub
-
-    Private Sub OnSettingsRowVisibleChanged(sender As Object, e As EventArgs)
-        If _applyingItemFilter Then Return
-        Dim row = DirectCast(sender, Control)
-        Dim pageId = SettingsRowPageId(row)
-        If Not row.Visible OrElse pageId.Length = 0 OrElse pageId <> _selectedPage Then Return
-        Dim groupId = SelectedItemId(pageId)
-        If groupId.Length = 0 Then Return
-        Dim owning = ClassifiedSettingsRows(pageId).FirstOrDefault(Function(item As KeyValuePair(Of Control, SettingsNavGroup)) item.Key Is row)
-        If owning.Key Is Nothing OrElse owning.Value Is Nothing OrElse owning.Value.Id = groupId Then Return
-        Dim suppressed = _filteredOut(pageId)
-        If Not suppressed.Contains(row) Then suppressed.Add(row)
-        _applyingItemFilter = True
-        Try
-            row.Visible = False
-        Finally
-            _applyingItemFilter = False
-        End Try
-    End Sub
-
-    ''' <summary>The page viewport a row lives in, by the viewport's name.</summary>
-    Private Shared Function SettingsRowPageId(row As Control) As String
-        Dim parent = row.Parent
-        While parent IsNot Nothing
-            If parent.Name.StartsWith("managerSettingsPage_", StringComparison.Ordinal) Then
-                Return parent.Name.Substring("managerSettingsPage_".Length)
-            End If
-            parent = parent.Parent
-        End While
-        Return String.Empty
-    End Function
 
     Private Sub LoadSelectedSettingsPage()
         Select Case _selectedPage
@@ -412,6 +327,11 @@ Partial Public NotInheritable Class Share_Settings_Form
                 Dim selected = pair.Key = _selectedPage AndAlso SelectedItemId(pair.Key) = item.Group.Id
                 item.Selected = selected
                 StyleSettingsNavRow(item, selected, pair.Key <> _selectedPage, fill, palette)
+            Next
+        Next
+        For Each pair In _pageGroups
+            For Each grp In pair.Value
+                If grp.Card IsNot Nothing Then grp.Card.ApplyPalette(palette)
             Next
         Next
     End Sub
@@ -589,6 +509,13 @@ Partial Public NotInheritable Class Share_Settings_Form
             Return New NavRowAccessibleObject(Me)
         End Function
     End Class
+
+    ''' <summary>The active settings section id for in-app context help (CONTEXT-HELP rule 3).</summary>
+    Public ReadOnly Property ActiveHelpPageId As String
+        Get
+            Return If(String.IsNullOrEmpty(_selectedPage), "startup", _selectedPage)
+        End Get
+    End Property
 
     ''' <summary>A subordinate row: a plain caption under its page, no icon and no chevron,
     ''' a PageTab of its page for assistive tech (210 section 4.6).</summary>

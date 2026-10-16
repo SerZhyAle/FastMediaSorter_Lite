@@ -78,6 +78,74 @@ Public Class SecureClipboardTests
         Assert.True(offenders.Count = 0, "Clipboard.Set* outside SecureClipboard: " & String.Join(", ", offenders))
     End Sub
 
+    ''' <summary>The Share Manager has a second, deliberate writer: <c>ClipboardWin32.PlaceNow</c> puts a value the person asked to
+    ''' receive (CLIPBOARD-GUARD item Q: no privacy marker, the value is supposed to stay). The scan above cannot see it, because it
+    ''' calls the Win32 function and not the Clipboard class; this one holds that the only call site of <c>SetClipboardData</c> in
+    ''' the Share Manager is inside that one function, so a new raw writer cannot appear unnoticed.</summary>
+    <Fact>
+    Public Sub ShareManager_HasOneWin32ClipboardWriter_AndItIsPlaceNow()
+        Dim root As String = FindRepoRoot()
+        Assert.False(root Is Nothing, "repository root not found above " & AppContext.BaseDirectory)
+        Dim dir As String = Path.Combine(root, "src", "FastMediaSorterCompanion")
+        Dim pattern As New Regex("\bSetClipboardData\s*\(", RegexOptions.CultureInvariant)
+
+        Dim offenders As New List(Of String)()
+        Dim sitesInPlaceNow As Integer = 0
+        For Each file As String In Directory.GetFiles(dir, "*.vb", SearchOption.AllDirectories)
+            If file.Contains(Path.DirectorySeparatorChar & "obj" & Path.DirectorySeparatorChar) Then Continue For
+            Dim inPlaceNow As Boolean = False
+            Dim lineNo As Integer = 0
+            For Each line As String In System.IO.File.ReadAllLines(file)
+                lineNo += 1
+                Dim code As String = line.TrimStart()
+                If code.StartsWith("'", StringComparison.Ordinal) Then Continue For
+                If code.Contains("Function PlaceNow(") Then inPlaceNow = True
+                If code.StartsWith("End Function", StringComparison.Ordinal) Then inPlaceNow = False
+                ' The P/Invoke declaration is not a call.
+                If code.Contains("Function SetClipboardData(") Then Continue For
+                If Not pattern.IsMatch(line) Then Continue For
+                If Path.GetFileName(file) = "ClipboardWin32.vb" AndAlso inPlaceNow Then
+                    sitesInPlaceNow += 1
+                Else
+                    offenders.Add(Path.GetFileName(file) & ":" & lineNo)
+                End If
+            Next
+        Next
+
+        Assert.True(offenders.Count = 0, "SetClipboardData outside ClipboardWin32.PlaceNow: " & String.Join(", ", offenders))
+        Assert.Equal(1, sitesInPlaceNow)
+    End Sub
+
+    ''' <summary>CLIPBOARD-GUARD item M: a send the person started sends what the clipboard holds, whatever markers it carries - no
+    ''' preview, no filter. The reading path (the Win32 reader, the exchange and its coordinator) therefore never names a privacy
+    ''' format; a marker check added there would silently hold back the password the person just chose to send.</summary>
+    <Fact>
+    Public Sub A_send_never_looks_at_the_privacy_markers_of_the_clipboard()
+        Dim root As String = FindRepoRoot()
+        Assert.False(root Is Nothing, "repository root not found above " & AppContext.BaseDirectory)
+        Dim pattern As New Regex("ExcludeClipboardContentFromMonitorProcessing|CanIncludeInClipboardHistory|CanUploadToCloudClipboard|PrivacyFormats|SecureClipboard", RegexOptions.CultureInvariant)
+        Dim offenders As New List(Of String)()
+        For Each name As String In {"ClipboardWin32.vb", "ClipboardExchange.vb", "ClipboardCoordinator.vb"}
+            Dim file As String = Path.Combine(root, "src", "FastMediaSorterCompanion", "Core", name)
+            Assert.True(System.IO.File.Exists(file), "missing " & file)
+            Dim lineNo As Integer = 0
+            For Each line As String In System.IO.File.ReadAllLines(file)
+                lineNo += 1
+                If line.TrimStart().StartsWith("'", StringComparison.Ordinal) Then Continue For
+                If pattern.IsMatch(line) Then offenders.Add(name & ":" & lineNo)
+            Next
+        Next
+        Assert.True(offenders.Count = 0, "the reading path looks at privacy markers: " & String.Join(", ", offenders))
+    End Sub
+
+    ''' <summary>CLIPBOARD-GUARD item B: the clipboard is opened with a bounded retry of 12 attempts, 15 ms apart - a number the
+    ''' contract states, so a change to it is a decision and not a drift.</summary>
+    <Fact>
+    Public Sub The_bounded_retry_is_twelve_attempts_fifteen_milliseconds_apart()
+        Assert.Equal(12, ClipboardWin32.OpenAttempts)
+        Assert.Equal(15, ClipboardWin32.OpenPauseMs)
+    End Sub
+
     Private Shared Function FindRepoRoot() As String
         Dim dir = New DirectoryInfo(AppContext.BaseDirectory)
         While dir IsNot Nothing

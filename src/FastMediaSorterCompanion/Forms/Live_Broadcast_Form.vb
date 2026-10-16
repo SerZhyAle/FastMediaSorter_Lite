@@ -46,6 +46,7 @@ Public Class Live_Broadcast_Form
     Private _chkAllowLanViewers As CheckBox
     Private _txtTitle As TextBox
     Private _txtPassword As TextBox
+    Private _lblPasswordHint As Label
     Private _btnGenPassword As Button
     Private _numPort As NumericUpDown
     Private _numBitrate As NumericUpDown
@@ -132,7 +133,7 @@ Public Class Live_Broadcast_Form
         Dim rows As New TableLayoutPanel With {
             .AutoSize = True,
             .ColumnCount = 2,
-            .RowCount = 5,
+            .RowCount = 6,
             .Margin = New Padding(0, 8, 0, 4)
         }
         rows.ColumnStyles.Add(New ColumnStyle(SizeType.Absolute, 170))
@@ -188,6 +189,15 @@ Public Class Live_Broadcast_Form
         pwdFlow.Controls.Add(_txtPassword)
         pwdFlow.Controls.Add(_btnGenPassword)
         rows.Controls.Add(pwdFlow, 1, 4)
+        ' Ticket 239 CR-15 (LIVE-BROADCAST item M): what the password does for the hand-off, said where it is typed.
+        _lblPasswordHint = New Label With {
+            .AutoSize = True,
+            .MaximumSize = New Size(380, 0),
+            .ForeColor = Color.DimGray,
+            .Margin = New Padding(3, 0, 3, 4),
+            .Text = Localization.T("Без пароля ссылка, код и файл содержат только адрес в вашей сети. Чтобы передать трансляцию за пределы сети, задайте пароль.")
+        }
+        rows.Controls.Add(_lblPasswordHint, 1, 5)
         pnl.Controls.Add(rows, 0, 2)
 
         ' --- the video rows (B2 screen, B3 camera): the pickers, the cursor toggle, the no-sound
@@ -632,10 +642,26 @@ Public Class Live_Broadcast_Form
 
     ' --- the three hand-off channels (section 5, producer rule 3: the same description) -------
 
+    ''' <summary>The channels hand out what the controller built and nothing else (LIVE-BROADCAST item M, ticket 239 CR-15): with no
+    ''' password the descriptor carries no RELAY / TUNNEL, and when no LAN endpoint is left the hand-out is empty. Then there is no
+    ''' silent no-op: the one line says why and asks for a password.</summary>
+    Private Function HandOffReady(state As LiveProducerState) As Boolean
+        Dim refusal As String = HandOffRefusal(state)
+        If refusal.Length = 0 Then Return True
+        _lblState.Text = refusal
+        Return False
+    End Function
+
+    ''' <summary>"" when the state has something to hand out; otherwise the one line the hand-off actions show.</summary>
+    Friend Shared Function HandOffRefusal(state As LiveProducerState) As String
+        If state IsNot Nothing AndAlso Not String.IsNullOrEmpty(state.DescriptorJson) AndAlso Not String.IsNullOrEmpty(state.BarcodeText) Then Return ""
+        Return Localization.T("Без пароля эту трансляцию нельзя передать за пределы вашей сети. Остановите её, задайте пароль и начните снова.")
+    End Function
+
     Private Sub OnCopyLink(sender As Object, e As EventArgs)
         Dim state As LiveProducerState = _controller.State
-        If String.IsNullOrEmpty(state.BarcodeText) Then Return
-        ' LIVE-BROADCAST item M: hand off the complete descriptor; tell the password separately.
+        If Not HandOffReady(state) Then Return
+        ' The link carries the barcode text: the descriptor with its `auth` member, never the password (tell that separately).
         Dim url As String = "fmsbcast://live?payload=" & Uri.EscapeDataString(state.BarcodeText)
         If SecureClipboard.SetSecret(url) Then
             _lblState.Text = Localization.T("Ссылка скопирована.")
@@ -722,8 +748,9 @@ Public Class Live_Broadcast_Form
     End Function
 
     Private Sub OnCopyCode(sender As Object, e As EventArgs)
-        Dim text As String = _controller.State.BarcodeText
-        If text.Length = 0 Then Return
+        Dim state As LiveProducerState = _controller.State
+        If Not HandOffReady(state) Then Return
+        Dim text As String = state.BarcodeText
         If SecureClipboard.SetSecret(text) Then
             _lblState.Text = Localization.T("Код скопирован.")
         Else
@@ -733,7 +760,7 @@ Public Class Live_Broadcast_Form
 
     Private Sub OnSaveFile(sender As Object, e As EventArgs)
         Dim state As LiveProducerState = _controller.State
-        If state.DescriptorJson.Length = 0 Then Return
+        If Not HandOffReady(state) Then Return
         _fileNumber += 1
         Using dialog As New SaveFileDialog With {
             .Title = Localization.T("Сохранить файл для импорта"),
@@ -751,8 +778,9 @@ Public Class Live_Broadcast_Form
     End Sub
 
     Private Sub OnShowQr(sender As Object, e As EventArgs)
-        Dim payload As String = _controller.State.BarcodeText
-        If payload.Length = 0 Then Return
+        Dim state As LiveProducerState = _controller.State
+        If Not HandOffReady(state) Then Return
+        Dim payload As String = state.BarcodeText
         Using gen As New QRCoder.QRCodeGenerator()
             Using data As QRCoder.QRCodeData = gen.CreateQrCode(payload, QRCoder.QRCodeGenerator.ECCLevel.M)
                 Dim png As New QRCoder.PngByteQRCode(data)

@@ -295,11 +295,13 @@ Friend NotInheritable Class ExchangeMessages
     ''' <summary>A `register` (ticket 224 rule 6, the client half 226): the one-time invitation CODE or the shared invitation
     ''' password (exactly one of them), the chosen login and password, and the first device's members - the account and the
     ''' device in one exchange. The answer is `enrolled`, exactly as a sign-in's. The code and the password are secret
-    ''' holders: they live in the caller's field and in this one frame.</summary>
+    ''' holders: they live in the caller's field and in this one frame. The two members go out under the names of
+    ''' DEVICE-EXCHANGE item AQ, `invitation` and `invitationPassword` (the first spelling, `invitationCode` and `sharedPassword`,
+    ''' is only ever read, see the `register` row of the envelope table).</summary>
     Public Shared Function Register(invitationCode As String, sharedPassword As String, login As String, password As String,
                                     description As ExchangeDeviceDescription, keepaliveSeconds As Integer) As ExchangeEnvelope
         Dim env As ExchangeEnvelope = New ExchangeEnvelope(ExchangeEnvelopeTypes.Register).
-            SetText("invitationCode", invitationCode).SetText("sharedPassword", sharedPassword).
+            SetText("invitation", invitationCode).SetText("invitationPassword", sharedPassword).
             SetText("login", login).SetText("password", password).
             SetText("deviceId", description.DeviceId).SetText("deviceName", description.DeviceName).
             SetText("product", description.Product).SetText("productVersion", description.ProductVersion).

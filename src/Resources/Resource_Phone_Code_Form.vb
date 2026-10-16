@@ -156,11 +156,11 @@ Friend NotInheritable Class Resource_Phone_Code_Form
 
     Private Sub OnCopyClicked(sender As Object, e As EventArgs)
         If String.IsNullOrEmpty(_intakeUrl) Then Return
-        Try
-            Clipboard.SetText(_intakeUrl)
-        Catch ex As Exception
+        ' CLIPBOARD-GUARD rule 6: the address carries the single-use token that lets whoever holds it hand a code to this window, so
+        ' it takes the privacy markers (no Win+V history, no cloud sync) like every other credential copy.
+        If Not SecretClipboard.SetSecret(_intakeUrl) Then
             _statusLabel.Text = Localization.T("Буфер обмена занят другой программой")
-        End Try
+        End If
     End Sub
 
     ''' <summary>The same bounded clipboard door as every other intake (text, or a screenshot of the phone's QR),

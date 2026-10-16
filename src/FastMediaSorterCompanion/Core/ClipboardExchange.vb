@@ -1,5 +1,6 @@
 Option Strict On
 
+Imports System.Globalization
 Imports System.IO
 Imports System.Threading
 
@@ -12,7 +13,7 @@ Imports System.Threading
 '   - GET asks every server what its clipboard holds, takes the NEWEST by the server's receive time and names the device it came
 '     from (rule 5); text and an image go to the clipboard as such, a file is saved under its own name or the free name of
 '     ticket 222 into the received-files folder and placed as a file drop. Nothing opens by itself;
-'   - one operation at a time (item Q): a press while one runs gets one sentence;
+'   - one operation at a time (item N): a press while one runs gets one sentence;
 '   - the log carries the kind and a size class and a count, never a value, a file name, a path, a server or a device (item R).
 ' Words: the result lines are CODES composed into the person's language at display time (ClipboardMessages), like every
 ' Share Manager operation's; a failure's reason is a row of the common connection-message table.
@@ -153,6 +154,10 @@ Friend Enum ClipboardLineCode
     SealedFailed = 20
     ''' <summary>Label: the value was sent before this device joined the account; it is not an error, the next value opens.</summary>
     JoinedLater = 21
+    ''' <summary>The owner of the clipboard did not render a delay-rendered format within the read bound (CLIPBOARD-GUARD item N): nothing was sent.</summary>
+    ClipboardNoAnswer = 22
+    ''' <summary>Detail: the limit, in whole GB. The value is larger than the default `clipboardBytes` of an account (item P), refused before a stream opens.</summary>
+    OverServerLimit = 23
 End Enum
 
 Friend NotInheritable Class ClipboardLine
@@ -232,6 +237,8 @@ Friend NotInheritable Class ClipboardExchange
 
     ''' <summary>Largest value kept in memory; a text or an image beyond it is saved as a file instead of lost.</summary>
     Friend Const MemoryCap As Long = ClipboardWin32.MaxInMemoryBytes
+    Private Const MegaByte As Long = 1024L * 1024L
+    Private Const GigaByte As Long = 1024L * 1024L * 1024L
 
     ' --- SEND ---------------------------------------------------------------------------------------------
 
@@ -268,6 +275,13 @@ Friend NotInheritable Class ClipboardExchange
                     mime = MimeForFile(name)
             End Select
             If snapshot.Size < 1L Then Return One(ClipboardLineCode.NothingToSend)
+            ' CLIPBOARD-GUARD item P: the size is compared with the cap before anything is uploaded, and the refusal names the limit.
+            ' The wire does not carry the account's own `clipboardBytes` to the device, so the compared limit is the default (item BZ);
+            ' a server with a lower limit still answers `limit-reached` on the declared size, which reads as its own sentence.
+            If snapshot.Size > ExchangeClipboardRules.DefaultMaxBytes Then
+                _ports.Log.Invoke("Clipboard send: not sent (over the default limit)")
+                Return New ClipboardRunResult({New ClipboardLine(ClipboardLineCode.OverServerLimit, detail:=(ExchangeClipboardRules.DefaultMaxBytes \ GigaByte).ToString(CultureInfo.InvariantCulture))}, False)
+            End If
 
             Dim lines As New List(Of ClipboardLine)()
             Dim sent As Integer = 0
@@ -332,7 +346,9 @@ Friend NotInheritable Class ClipboardExchange
             Case ClipboardReadKind.Busy
                 Return New ClipboardLine(ClipboardLineCode.ClipboardBusy)
             Case ClipboardReadKind.TooLarge
-                Return New ClipboardLine(ClipboardLineCode.TooLarge)
+                Return New ClipboardLine(ClipboardLineCode.TooLarge, detail:=(MemoryCap \ MegaByte).ToString(CultureInfo.InvariantCulture))
+            Case ClipboardReadKind.TimedOut
+                Return New ClipboardLine(ClipboardLineCode.ClipboardNoAnswer)
             Case Else
                 Return New ClipboardLine(ClipboardLineCode.ClipboardUnreadable)
         End Select

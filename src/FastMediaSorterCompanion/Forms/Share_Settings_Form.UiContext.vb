@@ -30,6 +30,17 @@ Partial Public NotInheritable Class Share_Settings_Form
             ' The menu resumes its saved expansion (210 section 7.4); the v1-to-v2
             ' migration happened inside Read.
             ApplySettingsNavExpansion()
+            For Each pagePair In _pageGroups
+                Dim pId = pagePair.Key
+                Dim pageCtx = managerSettingsContext.Page(pId)
+                For Each grp In pagePair.Value
+                    Dim exp As Boolean
+                    ' No stored fold for the group: the page's first card is the one that
+                    ' starts open, the rest stay folded to keep the page short (238 T-3).
+                    grp.Expanded = If(pageCtx.Groups.TryGetValue(grp.Id, exp), exp, pagePair.Value(0) Is grp)
+                    grp.Card.Caption = grp.Caption
+                Next
+            Next
             SelectSettingsPage(managerSettingsContext.ResolvePage(_pages.Keys))
         Catch ex As Exception
             AppFileLogger.LogException("Share settings: restoring UI context", ex)
@@ -149,6 +160,13 @@ Partial Public NotInheritable Class Share_Settings_Form
         If e.Cancel OrElse Not settingsWasPresented Then Return
         Try
             CaptureSettingsViewport()
+            For Each pagePair In _pageGroups
+                Dim pId = pagePair.Key
+                Dim pageCtx = managerSettingsContext.Page(pId)
+                For Each grp In pagePair.Value
+                    pageCtx.Groups(grp.Id) = grp.Expanded
+                Next
+            Next
             SaveSetting(App_name, Second_App_Name, "Share_SettingsContext", managerSettingsContext.ToJson())
             Dim savedBounds = If(WindowState = FormWindowState.Normal, Me.Bounds, Me.RestoreBounds)
             SaveSetting(App_name, Second_App_Name, "Share_SettingsBounds", JsonSerializer.Serialize(

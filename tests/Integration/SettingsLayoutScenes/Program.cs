@@ -59,6 +59,14 @@ static class Program
     static TabControl Tabs;
     static string Scratch;
     static double ColdConstructMs, ColdPrepareMs, ColdOpenMs;
+    static bool OpenOnly;
+    static bool SearchFirst;
+    static string CaptureDirectory;
+
+    static void Check(bool condition, string message)
+    {
+        if (!condition) throw new InvalidOperationException(message);
+    }
 
     static object Member(object target, string name)
     {
@@ -263,13 +271,45 @@ static class Program
         try
         {
             int pages = Tabs.TabCount;
+            var initialPage = Tabs.SelectedTab;
+            Check(((System.Collections.ICollection)Member(Window, "pendingSettingsRows")).Count > 50,
+                "Opening settings eagerly built the other pages' editors.");
+            Check(((System.Collections.ICollection)Member(Window, "pendingSettingsGroups")).Count > 10,
+                "Opening settings eagerly built the other pages' groups.");
+            Check(Member(Window, "resourcesPanel") == null && !(bool)Member(Window, "_ocrBuilt"),
+                "Opening General created Resources or OCR.");
+            if (SearchFirst)
+            {
+                var found = (string[])Window.GetType().GetMethod("FindSettingsRows", Instance).Invoke(Window, new object[] { "" });
+                Check(found.Length > 80, "Search omitted rows of unvisited pages.");
+                Check(Tabs.SelectedTab == initialPage, "Search changed the selected settings page.");
+                Console.WriteLine($"Lazy-page search: {found.Length} rows, current page preserved");
+            }
+            if (OpenOnly)
+            {
+                File.WriteAllText(output, JsonSerializer.Serialize(new { coldOpenMs = ColdOpenMs, coldPrepareMs = ColdPrepareMs }));
+                Console.WriteLine($"Settings open: {ColdOpenMs:0.0} ms");
+                return;
+            }
             // Two passes over every page: the first visit and the repeat visit of WINDOWS-UI section 5.
             for (int pass = 0; pass < 2; pass++)
                 for (int i = 0; i < pages; i++)
                 {
                     int index = i;
                     await Record("page:" + (pass == 0 ? "first:" : "repeat:") + i, () => Tabs.SelectedIndex = index);
+                    if (pass == 0 && CaptureDirectory != null)
+                    {
+                        Directory.CreateDirectory(CaptureDirectory);
+                        using var picture = new Bitmap(Window.Width, Window.Height);
+                        Window.DrawToBitmap(picture, new Rectangle(Point.Empty, picture.Size));
+                        picture.Save(Path.Combine(CaptureDirectory, $"settings-{i}.png"), ImageFormat.Png);
+                    }
                 }
+            Check(((System.Collections.ICollection)Member(Window, "pendingSettingsRows")).Count == 0,
+                "Visiting every page left unbuilt preference rows.");
+            var rows = ((System.Collections.IEnumerable)Member(Window, "modernSettingsRows")).Cast<object>().ToArray();
+            Check(rows.Length > 100 && rows.Select(row => (string)Member(row, "Key")).Distinct().Count() == rows.Length,
+                "Lazy construction omitted or duplicated rows.");
             // Group toggles on every page: collapse, then expand again (the remembered context ends where it began).
             for (int i = 0; i < pages; i++)
             {
@@ -402,7 +442,10 @@ static class Program
         // ("100 %" of WINDOWS-UI section 9). Without it the window is per-monitor aware and sits on the PRIMARY
         // monitor, so a comparison between two runs is made at one scale (the output names it).
         bool unaware = args.Contains("--unaware");
+        OpenOnly = args.Contains("--open-only");
+        SearchFirst = args.Contains("--search-first");
         string output = Path.GetFullPath(args.FirstOrDefault(a => !a.StartsWith("--")) ?? "settings-layout-scenes.json");
+        CaptureDirectory = args.Contains("--capture") ? Path.Combine(Path.GetDirectoryName(output), "fms-183-settings-captures") : null;
         Application.SetHighDpiMode(unaware ? HighDpiMode.DpiUnaware : HighDpiMode.PerMonitorV2);
         Application.SetDefaultFont(new Font("Microsoft Sans Serif", 8.25f));
         Application.EnableVisualStyles();
@@ -414,6 +457,12 @@ static class Program
         try
         {
             Console.WriteLine("SettingsLayoutScenes: scratch hive " + Scratch + ", window off screen, output " + output);
+            // F2 is pressed in an existing viewer. Do not charge construction of VB's
+            // default Main_Form (or loading its preferences) to the settings dialog.
+            var myProject = App.GetType("fmsl.My.MyProject", true);
+            var forms = myProject.GetProperty("Forms", Static).GetValue(null);
+            var viewer = (Form)forms.GetType().GetProperty("Main_Form", Instance).GetValue(forms);
+            viewer.GetType().GetMethod("GetModernPreferences", Instance).Invoke(viewer, null);
             var sw = Stopwatch.StartNew();
             var openClock = Stopwatch.StartNew();
             Window = new Table_Form();
@@ -429,7 +478,6 @@ static class Program
             ColdConstructMs = constructMs;
             ColdPrepareMs = prepareMs;
             Tabs = (TabControl)Member(Window, "Tab_Control");
-            Hook(Window);
             Window.Shown += async (s, e) =>
             {
                 Console.WriteLine($"  construct {constructMs:0} ms, PrepareForDisplay {prepareMs:0} ms");
@@ -439,7 +487,7 @@ static class Program
                 await Run(output);
             };
             Application.Run(Window);
-            if (Environment.ExitCode == 0) Summarise(output);
+            if (Environment.ExitCode == 0 && !OpenOnly) Summarise(output);
             Window.Dispose();
         }
         finally

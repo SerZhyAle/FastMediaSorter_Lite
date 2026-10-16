@@ -27,7 +27,7 @@ Public Class ExchangeVocabularyTests
     <Fact>
     Public Sub Every_visible_dictionary_term_matches_English_Russian_and_Ukrainian()
         Using doc = JsonDocument.Parse(File.ReadAllText(Path.Combine(Root(), "tests", "Lite.Tests", "TestData", "exchange-terms", "dictionary.json")))
-            Assert.Contains("DEVICE-EXCHANGE 0.27", doc.RootElement.GetProperty("contract").GetString())
+            Assert.Contains("DEVICE-EXCHANGE 1.1, section 2 items CV and CW", doc.RootElement.GetProperty("contract").GetString())
             Dim count As Integer = 0
             For Each term In doc.RootElement.GetProperty("terms").EnumerateArray()
                 If term.GetProperty("term").GetString() = "relay" Then

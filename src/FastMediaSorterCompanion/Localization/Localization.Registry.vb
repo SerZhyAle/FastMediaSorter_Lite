@@ -44,6 +44,7 @@ Partial Public NotInheritable Class Localization
         AddSendLogsStrings()    ' ticket 182 L-3/L-6: a log that cannot be included, no mail program (table linked from the viewer)
         AddScheduledStrings()   ' ticket 222: scheduled file operations - the page, the editor, the history, the tray items
         AddClipboardStrings()   ' spec 230: the clipboard through the exchange server - buttons, tray items, shortcuts, result lines
+        AddOutwardAccessStrings()      ' ticket 239 CR-13: the guest invitation and the link with a password shown as not available
     End Sub
 
     ''' <summary>

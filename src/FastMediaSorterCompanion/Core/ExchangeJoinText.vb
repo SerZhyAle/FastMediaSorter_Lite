@@ -61,16 +61,15 @@ Friend NotInheritable Class ExchangeJoinText
         End Select
     End Function
 
-    ''' <summary>226 rule 1: the refusals of a registration, one sentence each - a used code and a wrong code say the same
-    ''' (224 rule 6, no oracle).</summary>
+    ''' <summary>226 rule 1: the refusals of a registration, each in the words of its own row of the common message table (item CZ, shown
+    ''' as the table has it, item DA): `invitation-invalid` says the same for a code nobody made, a used one and a wrong shared password
+    ''' (224 rule 6, no oracle), `login-taken` and `password-policy` have their own rows (the invitation is not consumed by them, item AQ).
+    ''' `bad-credentials` is what a server older than the amendments of item AQ answered to every registration refusal: it keeps the one
+    ''' sentence that covers all three of its causes. An unknown reason is the table's generic refusal.</summary>
     Friend Shared Function RegisterFailure(result As ExchangeEnrollResult) As String
         If result.Outcome = ExchangeEnrollOutcome.Refused Then
-            Select Case result.Refusal
-                Case ExchangeRefusal.BadCredentials : Return Localization.T("Приглашение не подошло, уже использовано, или такой логин уже занят.")
-                Case ExchangeRefusal.RateLimited : Return Localization.T("Слишком много попыток. Подождите минуту и повторите.")
-                Case ExchangeRefusal.Capacity : Return Localization.T("На сервере не осталось мест для учётных записей.")
-                Case Else : Return Localization.T("Сервер отказал в регистрации.")
-            End Select
+            If result.Refusal = ExchangeRefusal.BadCredentials Then Return Localization.T("Приглашение не подошло, уже использовано, или такой логин уже занят.")
+            Return ExchangeDeviceText.TableText(ConnectionDiagnosisMessages.OfWire(ExchangeRefusals.WireName(result.Refusal)))
         End If
         Return ExchangeDeviceText.EnrollFailure(result)
     End Function

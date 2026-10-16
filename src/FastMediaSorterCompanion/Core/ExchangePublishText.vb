@@ -66,6 +66,8 @@ Friend NotInheritable Class ExchangePublishText
     End Function
 
     Friend Shared Function LinkNote() As String
+        ' Ticket 239 CR-13: while the outward-access gate is closed the note is the reason, not a promise the link cannot keep.
+        If Not OutwardAccessFeatures.IsOffered() Then Return OutwardAccessFeatures.Reason()
         Return Localization.T("Ссылка работает без учётной записи, через сервер обмена: у кого она есть, тот открывает эту папку. «Новая ссылка» делает прежние QR-коды и файлы бесполезными, «Удалить ссылку» убирает её совсем.")
     End Function
 

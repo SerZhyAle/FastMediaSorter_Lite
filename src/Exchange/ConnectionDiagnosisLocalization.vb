@@ -5,7 +5,7 @@ Imports System.Collections.Generic
 Imports System.Globalization
 
 ''' <summary>
-''' Spec 232 / DEVICE-EXCHANGE 0.27 section 25 items CY, CZ, DD, DR:
+''' Spec 232 / DEVICE-EXCHANGE 1.1 section 9 items CY, CZ, DD, DR:
 ''' Localization table for all 15 check steps and all message rows in 13 languages.
 ''' Languages: en, ru, uk (canonical from contract) plus de, es, fr, it, ja, ko, pl, pt, tr, zh.
 ''' </summary>

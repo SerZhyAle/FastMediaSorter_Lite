@@ -93,6 +93,9 @@
       <WithCulture>false</WithCulture>
       <LogicalName>glyphs/%(Filename)%(Extension)</LogicalName>
     </EmbeddedResource>
+    <EmbeddedResource Include="..\..\help-map.json">
+      <LogicalName>help-map.json</LogicalName>
+    </EmbeddedResource>
   </ItemGroup>
 
   <ItemGroup>
@@ -106,6 +109,8 @@
 
       Linked, not copied: a fix to T/TF/TC must not need doing twice.
     -->
+    <Compile Include="..\Help\ContextHelp.vb" Link="Help\ContextHelp.vb" />
+    <Compile Include="..\Help\ContextHelpUi.vb" Link="Help\ContextHelpUi.vb" />
     <Compile Include="..\LogSessionDiagnostics.vb" Link="LogSessionDiagnostics.vb" />
     <Compile Include="..\Theming\IThemeAware.vb" Link="Theming\IThemeAware.vb" />
     <Compile Include="..\Localization\Localization.vb" Link="Localization\Localization.vb" />

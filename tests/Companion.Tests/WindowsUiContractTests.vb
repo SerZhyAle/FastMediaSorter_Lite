@@ -101,7 +101,7 @@ Public Class WindowsUiContractTests
                      Assert.True(items("startup").Count > 0)
                      Assert.All(items("startup"), Sub(item) Assert.False(item.Visible))
                      Assert.True((buttons("startup").AccessibilityObject.State And AccessibleStates.Collapsed) <> 0)
-                     Assert.True(items("exchange").Count = 4, "the exchange page carries its four blocks")
+                     Assert.True(items("exchange").Count = 6, "the exchange page carries its six blocks")
                      ' The whole row is the toggle (Q210-3): one click selects the page and reveals its items.
                      buttons("exchange").PerformClick()
                      Assert.True(items("exchange")(0).Visible)
@@ -113,21 +113,60 @@ Public Class WindowsUiContractTests
                      Assert.All(items("exchange"), Sub(item) Assert.False(item.Visible))
                      Assert.Equal("exchange", context.LastPageId)
                      Assert.True((buttons("exchange").AccessibilityObject.State And AccessibleStates.Collapsed) <> 0)
-                     ' A subordinate item makes its group the page's whole content: the chosen
-                     ' block alone stays visible (2026-10-13 owner revision).
+                     ' The page's blocks are collapsible cards (238), each with its own fold
+                     ' state; a fresh context leaves only the first one open. Folded by hand
+                     ' here, so the reveal below owns every state regardless of what this
+                     ' machine had saved when the window was constructed.
+                     Dim groups = DirectCast(GetType(Share_Settings_Form).GetField("_pageGroups", flags).GetValue(window),
+                                             Dictionary(Of String, List(Of Share_Settings_Form.SettingsNavGroup)))
+                     Dim setExpanded = GetType(Share_Settings_Form).GetMethod("SetGroupExpanded", flags)
+                     For Each grp In groups("exchange")
+                         setExpanded.Invoke(window, New Object() {"exchange", grp, False})
+                     Next
+                     Application.DoEvents()
+                     ' No card repeats its page title (238 sections 2.2 and 5.1): the page
+                     ' heading and any card header of the same page never read the same.
+                     For Each pair In groups
+                         For Each grp In pair.Value
+                             Assert.True(TypeOf grp.Card Is SettingsGroupCard, pair.Key & "/" & grp.Id)
+                             Assert.Equal(AccessibleRole.Grouping, grp.Card.AccessibleRole)
+                             Assert.NotEqual(buttons(pair.Key).Text, grp.Card.Caption)
+                         Next
+                     Next
                      buttons("exchange").PerformClick()
+                     ' A subordinate item expands its card, scrolls it into view and focuses
+                     ' its first editor - and the sibling cards stay on the page (238 section
+                     ' 2.1), collapsible without navigating away.
                      items("exchange")(items("exchange").Count - 1).PerformClick()
                      Application.DoEvents()
                      Assert.Equal("exchange", context.LastPageId)
                      Assert.True(pages("exchange").Visible)
-                     Dim chosen = pages("exchange").Controls.Find("managerSettingsHeading_exchange_service", True)
-                     Assert.True(chosen.Length = 1 AndAlso chosen(0).Visible, "the service heading shows")
-                     Assert.All(pages("exchange").Controls.Find("managerSettingsHeading_exchange_server", True),
-                                Sub(heading) Assert.False(heading.Visible, "the server block is behind the filter"))
-                     ' The page row means the whole page again: the filter lifts.
+                     Dim chosenCards = pages("exchange").Controls.Find("managerSettingsCard_exchange_service", True)
+                     Assert.True(chosenCards.Length = 1, "the service card exists")
+                     Dim chosen = DirectCast(chosenCards(0), SettingsGroupCard)
+                     Assert.True(chosen.Visible AndAlso chosen.Expanded, "the service card shows expanded")
+                     Assert.True(context.Page("exchange").Groups("service"), "the fold state is remembered")
+                     Dim headerTop = chosen.Header.PointToScreen(Point.Empty).Y - pages("exchange").PointToScreen(Point.Empty).Y
+                     Assert.True(headerTop >= 0 AndAlso headerTop < pages("exchange").ClientSize.Height,
+                                 "the card scrolled into view, top " & headerTop.ToString())
+                     Assert.All(pages("exchange").Controls.Find("managerSettingsCard_exchange_server", True),
+                                Sub(card) Assert.True(card.Visible, "the sibling card stays on the page"))
+                     Assert.All(pages("exchange").Controls.Find("managerSettingsCard_exchange_server", True),
+                                Sub(card) Assert.False(DirectCast(card, SettingsGroupCard).Expanded, "the sibling keeps its fold"))
+                     ' The block's first editor takes the focus - when the model gives this
+                     ' state any editor to focus at all (a bare not-configured server has
+                     ' none, and hidden rows inside a visible command flow do not count).
+                     Dim firstEditor = GetType(Share_Settings_Form).GetMethod("FirstSettingsBlockEditor",
+                         BindingFlags.Instance Or BindingFlags.NonPublic Or BindingFlags.Static).Invoke(
+                         window, New Object() {groups("exchange").Last()})
+                     If firstEditor IsNot Nothing Then
+                         Assert.True(chosen.Contains(window.ActiveControl), "an editor of the block holds the focus")
+                     End If
+                     ' The page row means the whole page: every card of it in its remembered state.
                      buttons("exchange").PerformClick()
-                     Assert.All(pages("exchange").Controls.Find("managerSettingsHeading_exchange_server", True),
-                                Sub(heading) Assert.True(heading.Visible, "the filter lifted"))
+                     Application.DoEvents()
+                     Assert.All(groups("exchange"), Sub(grp) Assert.True(grp.Card.Visible, grp.Id & " visible"))
+                     Assert.True(groups("exchange").Last().Card.Expanded, "remembered fold survives the page click")
                      ' Left/Right fold and unfold the selected page's items.
                      Dim keyDown = GetType(Share_Settings_Form).GetMethod("OnSettingsNavigationKeyDown", flags)
                      keyDown.Invoke(window, New Object() {buttons("exchange"), New KeyEventArgs(Keys.Left)})
@@ -410,6 +449,14 @@ Public Class WindowsUiContractTests
                              GetType(Share_Settings_Form).GetMethod("ApplyExchangeState", flags).Invoke(window, New Object() {snapshot})
                              For Each pageId In pages.Keys
                                  selectPage.Invoke(window, New Object() {pageId})
+                                 Dim pageGroups = DirectCast(GetType(Share_Settings_Form).GetField("_pageGroups", flags).GetValue(window),
+                                                             Dictionary(Of String, List(Of Share_Settings_Form.SettingsNavGroup)))
+                                 Dim setExpanded = GetType(Share_Settings_Form).GetMethod("SetGroupExpanded", flags)
+                                 If pageGroups.ContainsKey(pageId) Then
+                                     For Each grp In pageGroups(pageId)
+                                         setExpanded.Invoke(window, New Object() {pageId, grp, True})
+                                     Next
+                                 End If
                                  If pageId = "exchange" AndAlso state = 1 Then
                                      DirectCast(GetType(Share_Settings_Form).GetField("_txtXEndpoint", flags).GetValue(window), TextBox).Text = "203.0.113.9:22023"
                                      DirectCast(GetType(Share_Settings_Form).GetField("numXRangeHigh", flags).GetValue(window), NumericUpDown).Value = 40101
@@ -508,8 +555,12 @@ Public Class WindowsUiContractTests
                          Dim value = number.Value
                          Dim capture As New LiveControlLocalization(window)
                          Localization.CurrentCode = "ar"
+                         ' Every container is held while the captions, font and direction change (HoldLayout): measured 2026-10-16 the
+                         ' switch took 6 s for this window without it and 0.2 s with it. The bound only catches that coming back.
+                         Dim clock = Diagnostics.Stopwatch.StartNew()
                          capture.Apply()
                          GetType(Share_Settings_Form).GetMethod("RefreshSettingsLanguage", flags).Invoke(window, New Object() {Nothing, EventArgs.Empty})
+                         Assert.True(clock.Elapsed < TimeSpan.FromSeconds(4), "Live language switch took " & clock.Elapsed.TotalSeconds.ToString("0.0") & " s.")
                          Assert.False(window.IsDisposed)
                          Assert.Equal(DialogResult.None, window.DialogResult)
                          Assert.Equal(value, number.Value)
@@ -526,6 +577,26 @@ Public Class WindowsUiContractTests
                  End Try
              End Sub)
     End Sub
+    <Fact>
+    Public Sub Live_language_refresh_of_the_main_window_takes_a_moment_not_seconds()
+        OnUi(Sub()
+                 Dim previous = Localization.CurrentCode
+                 Try
+                     Localization.CurrentCode = "en"
+                     Using window As New MainWindow()
+                         Dim capture As New LiveControlLocalization(window)
+                         Localization.CurrentCode = "ar"
+                         Dim clock = Diagnostics.Stopwatch.StartNew()
+                         capture.Apply()
+                         Assert.True(clock.Elapsed < TimeSpan.FromSeconds(4), "Live language switch took " & clock.Elapsed.TotalSeconds.ToString("0.0") & " s.")
+                         Assert.Equal(RightToLeft.Yes, window.RightToLeft)
+                     End Using
+                 Finally
+                     Localization.CurrentCode = previous
+                 End Try
+             End Sub)
+    End Sub
+
     <Fact>
     Public Sub Secondary_window_numeric_buttons_keep_their_width_and_native_value_semantics()
         OnUi(Sub()
@@ -593,6 +664,91 @@ Public Class WindowsUiContractTests
                      window.RightToLeft = RightToLeft.No
                      Assert.Equal(check.Margin.Left + CheckBoxLayout.CaptionInset(check), hint.Margin.Left)
                  End Using
+             End Sub)
+    End Sub
+
+    <Fact>
+    Public Sub Main_window_toolbar_and_context_menus_streamline_per_spec_237()
+        OnUi(Sub()
+                 Dim previous = Localization.CurrentCode
+                 Try
+                     Localization.CurrentCode = "ru"
+                     MainWindow.ShowStatsDialogOverride = Sub(w, st)
+                                                              ' Test seam: avoid blocking modal dialog
+                                                          End Sub
+                     Using window As New MainWindow()
+                         window.Show()
+                         window.ClientSize = New Size(760, 560)
+                         Application.DoEvents()
+
+                         Dim flags = BindingFlags.Instance Or BindingFlags.NonPublic
+                         Dim pnlButtons = DirectCast(GetType(MainWindow).GetField("_pnlListButtons", flags).GetValue(window), FlowLayoutPanel)
+                         Dim addMenu = DirectCast(GetType(MainWindow).GetField("_addMenu", flags).GetValue(window), ContextMenuStrip)
+                         Dim lvFolders = DirectCast(GetType(MainWindow).GetField("lvFolders", flags).GetValue(window), ListView)
+                         Dim diskMenu = DirectCast(GetType(MainWindow).GetField("_diskMenu", flags).GetValue(window), ContextMenuStrip)
+                         Dim secStats = DirectCast(GetType(MainWindow).GetField("_secStats", flags).GetValue(window), CollapsibleSection)
+                         Dim clipBtn = pnlButtons.Controls.OfType(Of Button)().FirstOrDefault(Function(b) b.Name = "btnClipboardMenu")
+
+                         ' 1. Toolbar single-row layout without wrapping
+                         Assert.False(pnlButtons.WrapContents)
+                         Dim buttonNames = pnlButtons.Controls.Cast(Of Control)().Select(Function(c) c.Name).ToArray()
+                         Assert.Equal(New String() {"btnAdd", "btnAddDrop", "btnClipboardMenu", "btnParams", "btnRemove", "btnPhoneCode"}, buttonNames)
+
+                         ' Verify buttons are on a single horizontal row at 760 and 560 px
+                         Dim tops760 = pnlButtons.Controls.Cast(Of Control)().Select(Function(c) c.Top).Distinct().Count()
+                         Assert.Equal(1, tops760)
+
+                         window.ClientSize = New Size(560, 420)
+                         Application.DoEvents()
+                         Dim tops560 = pnlButtons.Controls.Cast(Of Control)().Select(Function(c) c.Top).Distinct().Count()
+                         Assert.Equal(1, tops560)
+
+                         ' 2. Resource creation dropdown menu
+                         Assert.NotNull(addMenu)
+                         Dim openAddMenu = GetType(ToolStripDropDown).GetMethod("OnOpening", flags)
+                         openAddMenu.Invoke(addMenu, New Object() {New System.ComponentModel.CancelEventArgs()})
+                         Assert.True(addMenu.Items.Count >= 5)
+                         Assert.Equal("Папку..", addMenu.Items(0).Text)
+                         Assert.NotNull(addMenu.Items(0).Image)
+
+                         ' 3. Clipboard consolidation dropdown
+                         Assert.NotNull(clipBtn)
+                         Dim clipMenu = clipBtn.ContextMenuStrip
+                         Assert.NotNull(clipMenu)
+                         Dim openClipMenu = GetType(ToolStripDropDown).GetMethod("OnOpening", flags)
+                         openClipMenu.Invoke(clipMenu, New Object() {New System.ComponentModel.CancelEventArgs()})
+                         Assert.Equal(3, clipMenu.Items.Count)
+                         Assert.Equal("Отправить буфер на сервер", clipMenu.Items(0).Text)
+                         Assert.NotNull(clipMenu.Items(0).Image)
+                         Assert.Equal("Получить буфер с сервера", clipMenu.Items(1).Text)
+                         Assert.NotNull(clipMenu.Items(1).Image)
+                         Assert.Equal("Отмена", clipMenu.Items(2).Text)
+
+                         ' 4. Unified context menu on lvFolders
+                         Assert.NotNull(diskMenu)
+                         Assert.Same(diskMenu, lvFolders.ContextMenuStrip)
+                         Dim folderItem As New ListViewItem("SharedDocs") With {.Tag = "C:\NonExistentTestFolder"}
+                         lvFolders.Items.Add(folderItem)
+                         folderItem.Selected = True
+                         Dim openDiskMenu = GetType(ToolStripDropDown).GetMethod("OnOpening", flags)
+                         openDiskMenu.Invoke(diskMenu, New Object() {New System.ComponentModel.CancelEventArgs()})
+                         Assert.True(diskMenu.Items.Count >= 4)
+                         Dim editItem = DirectCast(diskMenu.Items(0), ToolStripMenuItem)
+                         Assert.Equal("Редактировать", editItem.Text)
+                         Assert.True(editItem.Font.Bold, "Edit item is bold default action")
+                         Assert.NotNull(editItem.Image)
+                         Assert.Contains(diskMenu.Items.OfType(Of ToolStripMenuItem)(), Function(it) it.Text = "Дать доступ наружу..")
+                         Assert.Contains(diskMenu.Items.OfType(Of ToolStripMenuItem)(), Function(it) it.Text = "Убрать")
+
+                         ' 5. Stats fold simplification: expanding immediately collapses and opens details
+                         Assert.NotNull(secStats)
+                         secStats.Expanded = True
+                         Assert.False(secStats.Expanded, "Stats section collapses immediately to act as a direct door")
+                     End Using
+                 Finally
+                     MainWindow.ShowStatsDialogOverride = Nothing
+                     Localization.CurrentCode = previous
+                 End Try
              End Sub)
     End Sub
 End Class

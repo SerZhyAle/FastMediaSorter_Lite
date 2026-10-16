@@ -538,18 +538,20 @@ func (*ClipboardEmpty) TypeName() string { return TypeClipboardEmpty }
 // --- ticket 224 account lifecycle: registration, passwords, deletion ---
 
 // Register is the account and its first device in one exchange, by invitation (DEVICE-EXCHANGE 19 item AQ):
-// exactly one of InvitationCode (a one-time invitation, 22 characters that decode to 16 bytes) or
-// SharedPassword (the shared invitation password), then the login and password chosen and every
-// device member of `enroll`. The names are the S4214 fold's (invitationCode, sharedPassword - the shape
-// the generated transcripts of 205 already carry). The contract's own prose of item AQ calls the same
-// two members `invitation` and `invitationPassword`; a frame that uses those is folded into the two
-// above by validate, so a client built to either reading registers (the engine reads only the two).
+// exactly one of `invitation` (a one-time invitation, 22 characters that decode to 16 bytes) or
+// `invitationPassword` (the shared invitation password), then the login and password chosen and every
+// device member of `enroll`. Those are the contract's names, and the names a client sends and the
+// generated transcripts use (Invitation, InvitationPassword). This server first spelled the two members
+// `invitationCode` and `sharedPassword` (the S4214 fold; InvitationCode, SharedPassword) and keeps
+// reading them, so a client built to either reading registers. A frame decodes to the names it carries
+// and encodes back to the same bytes; the engine reads the invitation through Code and the shared
+// password through Shared, which look at both spellings.
 type Register struct {
 	Head
-	InvitationCode     string          `json:"invitationCode,omitempty"`
-	SharedPassword     string          `json:"sharedPassword,omitempty"`
-	Invitation         string          `json:"invitation,omitempty"`         // alias of InvitationCode, folded by validate
-	InvitationPassword string          `json:"invitationPassword,omitempty"` // alias of SharedPassword, folded by validate
+	InvitationCode     string          `json:"invitationCode,omitempty"`     // the first spelling of Invitation
+	SharedPassword     string          `json:"sharedPassword,omitempty"`     // the first spelling of InvitationPassword
+	Invitation         string          `json:"invitation,omitempty"`         // DEVICE-EXCHANGE item AQ
+	InvitationPassword string          `json:"invitationPassword,omitempty"` // DEVICE-EXCHANGE item AQ
 	Login              string          `json:"login"`
 	Password           string          `json:"password"`
 	DeviceID           string          `json:"deviceId"`
@@ -566,6 +568,24 @@ type Register struct {
 
 // TypeName is "register".
 func (*Register) TypeName() string { return TypeRegister }
+
+// Code is the one-time invitation the frame carries, under either spelling ("" when it carries none).
+// validate refuses a frame that carries it under both.
+func (e *Register) Code() string {
+	if e.Invitation != "" {
+		return e.Invitation
+	}
+	return e.InvitationCode
+}
+
+// Shared is the shared invitation password the frame carries, under either spelling ("" when it carries
+// none). validate refuses a frame that carries it under both.
+func (e *Register) Shared() string {
+	if e.InvitationPassword != "" {
+		return e.InvitationPassword
+	}
+	return e.SharedPassword
+}
 
 // PasswordChange changes an account's password from an authenticated control stream (ticket 224).
 type PasswordChange struct {

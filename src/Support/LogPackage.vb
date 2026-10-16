@@ -7,6 +7,7 @@ Imports System.Globalization
 Imports System.IO
 Imports System.IO.Compression
 Imports System.Linq
+Imports System.Runtime.InteropServices
 Imports System.Text
 Imports System.Windows.Forms
 Imports Microsoft.Win32
@@ -14,8 +15,10 @@ Imports Microsoft.Win32
 ''' <summary>
 ''' Builds the ZIP a user sends to the author from Settings -> About
 ''' (SPECIFICATION_SEND_LOGS_TO_AUTHOR.md). Collects the viewer log, the Share
-''' Manager log when it exists, and a generated report.txt with version/OS/settings
-''' facts, then packs them into %TEMP%.
+''' Manager log when it exists (each with the log its logger rolled over), a generated
+''' report.txt with version/OS/settings facts for a person and an environment.txt of
+''' KEY=value facts for a parser, then packs them into %TEMP%. Every log is redacted
+''' before it is cut (DIAGNOSTIC-REPORT 0.12; spec 039).
 '''
 ''' Modern build only: the About tab exists only in the .NET 10 settings shell, and
 ''' the x86 fallback takes no new features (CLAUDE.md maintenance policy).
@@ -25,11 +28,24 @@ Imports Microsoft.Win32
 ''' </summary>
 Public Module LogPackage
 
-    ''' <summary>Per-entry cap on the ORIGINAL text; a longer log contributes its tail.</summary>
+    ''' <summary>Per-entry ceiling on the text an archive entry carries; a longer log contributes its head and
+    ''' its tail (item D of DIAGNOSTIC-REPORT 0.12 lets a product choose a ceiling below the contract's 16 MB
+    ''' for a bundle that travels as a mail attachment). The report's "recent errors" read the same cap.</summary>
     Private Const MaxEntryBytes As Long = 2L * 1024L * 1024L
+
+    ''' <summary>The part of <see cref="MaxEntryBytes"/> kept from the START of a cut log: the session header,
+    ''' the version and the configuration the program logs on startup. The rest is the recent failure sequence.</summary>
+    Friend Const HeadKeepBytes As Long = 256L * 1024L
+
+    ''' <summary>A source longer than this is not read through the redactor at all (the logs roll at 8 MB; the
+    ''' exchange server's own files are its business). It is replaced by the contract's omission marker.</summary>
+    Friend Const MaxSourceBytes As Long = 64L * 1024L * 1024L
 
     ''' <summary>Above this the mail will not go through, so the UI offers "open" only.</summary>
     Public Const MaxPackageBytes As Long = 20L * 1024L * 1024L
+
+    ''' <summary>The report's own version key (DIAGNOSTIC-REPORT 0.12 section 8 B; absent would mean 1).</summary>
+    Friend Const EnvironmentSchemaVersion As Integer = 1
 
     Private Const PackagePrefix As String = "fms-logs-"
 
@@ -73,6 +89,9 @@ Public Module LogPackage
     Friend Structure LogSourceSpec
         Public EntryName As String
         Public Candidates As String()
+        ''' <summary>The entry name of the log this one is the rolled-over copy of, or Nothing. Such a source has
+        ''' no fixed candidates: <see cref="ResolveRolledSource"/> derives them from where its log was found.</summary>
+        Public RolledOf As String
     End Structure
 
     ''' <summary>Why a log that exists could not be read.</summary>
@@ -112,9 +131,42 @@ Public Module LogPackage
         Public EntryName As String
         Public State As LogSourceState
         Public SourcePath As String
-        Public Snapshot As TailSnapshot
+        ''' <summary>The source after redaction and, when it was long, after the cut (spec 039 phase 2).</summary>
+        Public Content As CompactedLog
         Public Failure As LogReadFailure
         Public FailureType As String
+    End Structure
+
+    ''' <summary>
+    ''' One log as it goes into the archive: every line already redacted, then cut to its head and its tail
+    ''' when it is longer than <see cref="MaxEntryBytes"/> (DIAGNOSTIC-REPORT 0.12 section 8 C and D -
+    ''' redaction precedes truncation, a product may choose a lower ceiling). Byte counts are those of the
+    ''' redacted UTF-8 text that is kept or dropped, terminators included.
+    ''' </summary>
+    Friend Structure CompactedLog
+        ''' <summary>The source length captured ONCE, at open.</summary>
+        Public SourceLength As Long
+        ''' <summary>True when the source was too long to read through the redactor: nothing of it is kept.</summary>
+        Public Omitted As Boolean
+        ''' <summary>The first whole lines, redacted. Never more than <see cref="HeadKeepBytes"/>.</summary>
+        Public HeadBytes As Byte()
+        ''' <summary>The last whole lines, redacted. Empty when the log was never cut and all of it is in the head.</summary>
+        Public TailBytes As Byte()
+        ''' <summary>Bytes of redacted text between the head and the tail that are not in the archive; 0 when nothing was cut.</summary>
+        Public DroppedMiddleBytes As Long
+
+        Public ReadOnly Property Cut As Boolean
+            Get
+                Return DroppedMiddleBytes > 0
+            End Get
+        End Property
+
+        ''' <summary>Bytes of log text the entry carries (the marker line is not counted).</summary>
+        Public ReadOnly Property KeptBytes As Long
+            Get
+                Return If(HeadBytes Is Nothing, 0L, CLng(HeadBytes.Length)) + If(TailBytes Is Nothing, 0L, CLng(TailBytes.Length))
+            End Get
+        End Property
     End Structure
 
     ''' <summary>
@@ -161,14 +213,16 @@ Public Module LogPackage
             End If
 
             Dim currentTime As DateTime = If(now.HasValue, now.Value, DateTime.Now)
-            Dim timeStampString As String = currentTime.ToString("yyyyMMdd-HHmmss", CultureInfo.InvariantCulture)
             Dim version As String = AppVersion()
             Dim effectiveSettingsSource As Func(Of List(Of KeyValuePair(Of String, Object))) = If(settingsSource, AddressOf ReadRegistrySettings)
 
             Dim zipStream As FileStream = Nothing
-            For attempt As Integer = 1 To 100
-                Dim token As String = Guid.NewGuid().ToString("N").Substring(0, 8)
-                Dim candidate As String = Path.Combine(destDir, PackagePrefix & version & "-" & timeStampString & "-" & token & ".zip")
+            For attempt As Integer = 0 To 99
+                ' <Product>-logs-<version>-yyyyMMdd-HHmmss.zip and nothing after the stamp (DIAGNOSTIC-REPORT
+                ' 0.12 item A leaves no room for a random token). CreateNew still decides who owns a name: a
+                ' second package built in the same second takes the next free second.
+                Dim stamp As String = currentTime.AddSeconds(attempt).ToString("yyyyMMdd-HHmmss", CultureInfo.InvariantCulture)
+                Dim candidate As String = Path.Combine(destDir, PackagePrefix & version & "-" & stamp & ".zip")
                 Try
                     zipStream = New FileStream(candidate, FileMode.CreateNew, FileAccess.Write, FileShare.None)
                     reservedPath = candidate
@@ -189,8 +243,18 @@ Public Module LogPackage
                     ' by the per-entry cap times the number of sources.
                     Dim effectiveRoots As LogSourceRoots = If(roots.HasValue, roots.Value, CurrentLogRoots())
                     Dim reads As New List(Of LogSourceRead)()
-                    For Each spec As LogSourceSpec In PlanLogSources(effectiveRoots)
+                    Dim readByName As New Dictionary(Of String, LogSourceRead)(StringComparer.OrdinalIgnoreCase)
+                    For Each planned As LogSourceSpec In PlanLogSources(effectiveRoots)
+                        ' A rolled-over log is looked for beside the log it belongs to; the plan lists it right
+                        ' after that log, so the parent is always read by now.
+                        Dim spec As LogSourceSpec = planned
+                        If Not String.IsNullOrEmpty(planned.RolledOf) Then
+                            Dim parent As LogSourceRead = Nothing
+                            readByName.TryGetValue(planned.RolledOf, parent)
+                            spec = ResolveRolledSource(planned, parent)
+                        End If
                         Dim read As LogSourceRead = ReadLogSource(spec, openSource)
+                        readByName(spec.EntryName) = read
                         If read.State <> LogSourceState.Missing Then reads.Add(read)
                     Next
 
@@ -201,6 +265,11 @@ Public Module LogPackage
 
                     WriteTextEntry(archive, "report.txt", RedactUserProfile(reportText))
                     result.Entries.Add("report.txt")
+
+                    ' The machine-readable summary a parser reads (the report above is for a person):
+                    ' KEY=value, UTC, schema_version first. Facts and counts only (DIAGNOSTIC-REPORT rule 2).
+                    WriteTextEntry(archive, "environment.txt", BuildEnvironment(currentTime.ToUniversalTime()))
+                    result.Entries.Add("environment.txt")
 
                     For Each read As LogSourceRead In reads
                         Dim outcome As LogEntryOutcome = WriteLogSource(archive, read)
@@ -298,13 +367,16 @@ Public Module LogPackage
         Dim temp As String = If(roots.TempDir, "")
 
         If Not String.IsNullOrEmpty(roots.OwnLogPath) Then
-            specs.Add(Spec(Path.GetFileName(roots.OwnLogPath), roots.OwnLogPath))
+            Dim own As LogSourceSpec = Spec(Path.GetFileName(roots.OwnLogPath), roots.OwnLogPath)
+            specs.Add(own)
+            specs.Add(RolledSpec(own))
         End If
         For Each sibling As LogSourceSpec In {
             Spec("current.log", Under(exeDir, "current.log"), Under(local, App_name, Second_App_Name, "logs", "current.log")),
             Spec("companion.log", Under(exeDir, "companion.log"), Under(local, "FastMediaSorterCompanion", "companion.log"))}
             If specs.Any(Function(s) String.Equals(s.EntryName, sibling.EntryName, StringComparison.OrdinalIgnoreCase)) Then Continue For
             specs.Add(sibling)
+            specs.Add(RolledSpec(sibling))
         Next
 
         ' The exchange server: its data directories in the order the server prefers them.
@@ -330,6 +402,36 @@ Public Module LogPackage
         specs.Add(Spec("share/service.log", Under(shareMachine, "service.log"), Under(shareUser, "service.log")))
         specs.Add(Spec("share/install-share-service.log", Under(shareMachine, "install-share-service.log"), Under(temp, "install-share-service.log")))
         Return specs
+    End Function
+
+    ''' <summary>The entry name of the log a program's own logger rolled over: "previous.log" for the viewer's
+    ''' current.log, "companion.previous.log" for the Share Manager's companion.log - both programs roll to the
+    ''' file name previous.log in their own folder, so the archive qualifies them.</summary>
+    Friend Function RolledEntryName(logEntryName As String) As String
+        If String.Equals(logEntryName, "current.log", StringComparison.OrdinalIgnoreCase) Then Return "previous.log"
+        Return Path.GetFileNameWithoutExtension(logEntryName) & ".previous.log"
+    End Function
+
+    ''' <summary>The "previous.log" that <c>AppFileLogger.RotateIfOversized</c> leaves beside a log. A rolled log
+    ''' is the start of the same incident - the current one begins empty after the 8 MB roll-over - so it
+    ''' travels with it. Where it is looked for depends on where the log itself was FOUND (the viewer writes
+    ''' next to the exe or, failing that, under %LOCALAPPDATA%; both programs name the rolled file
+    ''' previous.log), so the plan only says whose rolled copy this is and <see cref="ResolveRolledSource"/>
+    ''' fills the candidate in once the log has been read.</summary>
+    Private Function RolledSpec(log As LogSourceSpec) As LogSourceSpec
+        Return New LogSourceSpec With {.EntryName = RolledEntryName(log.EntryName), .Candidates = New String() {}, .RolledOf = log.EntryName}
+    End Function
+
+    ''' <summary>The rolled log's single candidate: previous.log in the folder the parent log was found in.
+    ''' A parent that does not exist leaves no candidate - a program that never ran has no rolled log, and a
+    ''' previous.log beside some OTHER program's log must never stand in for it.</summary>
+    Friend Function ResolveRolledSource(spec As LogSourceSpec, parent As LogSourceRead) As LogSourceSpec
+        Dim candidates As String() = New String() {}
+        If parent.State <> LogSourceState.Missing AndAlso Not String.IsNullOrEmpty(parent.SourcePath) Then
+            Dim folder As String = Path.GetDirectoryName(parent.SourcePath)
+            If Not String.IsNullOrEmpty(folder) Then candidates = New String() {Path.Combine(folder, "previous.log")}
+        End If
+        Return New LogSourceSpec With {.EntryName = spec.EntryName, .Candidates = candidates, .RolledOf = spec.RolledOf}
     End Function
 
     ''' <summary>Include the last serving day's log even when the server is stopped today. Only owned
@@ -471,8 +573,78 @@ Public Module LogPackage
     End Function
 
     ''' <summary>
-    ''' Reads one source: the first candidate that is not MISSING decides it. Included (its tail, read once and
-    ''' bounded, so a log that keeps growing cannot outrun the read) or Unreadable with the reason; a source
+    ''' Redacts a log line by line and only THEN cuts it to <see cref="HeadKeepBytes"/> of head and the rest of
+    ''' <see cref="MaxEntryBytes"/> of tail (DIAGNOSTIC-REPORT 0.12 section 8 C: a tail that begins in the middle
+    ''' of a multi-line secret defeats every line pattern, so nothing is cut before its text is clean). The
+    ''' length is captured once and the read is bounded by it, so a file that keeps growing - or is truncated or
+    ''' replaced - underneath us ends in a short read, never a long one. Memory stays at the cap: the head is kept
+    ''' as it arrives and the tail is a queue that gives its oldest lines up. A source longer than
+    ''' <see cref="MaxSourceBytes"/> is not read at all (<see cref="CompactedLog.Omitted"/>).
+    ''' </summary>
+    Friend Function CompactRedacted(source As Stream) As CompactedLog
+        Dim result As New CompactedLog With {.HeadBytes = New Byte() {}, .TailBytes = New Byte() {}}
+        Dim total As Long = source.Length
+        result.SourceLength = total
+        If total > MaxSourceBytes Then
+            result.Omitted = True
+            Return result
+        End If
+
+        Const TailKeepBytes As Long = MaxEntryBytes - HeadKeepBytes
+        Dim utf8 As New UTF8Encoding(False)
+        Dim profile As String = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile)
+        Dim head As New MemoryStream()
+        Dim tail As New Queue(Of Byte())()
+        Dim tailBytes As Long = 0L
+        Dim tailStarted As Boolean = False
+
+        Using bounded As New BoundedReadStream(source, total)
+            Using reader As New StreamReader(bounded, utf8, False, 64 * 1024)
+                Dim line As String = reader.ReadLine()
+                While line IsNot Nothing
+                    ' ReadLine drops the terminator; LF goes back, which every log reader accepts.
+                    Dim clean As Byte() = utf8.GetBytes(RedactUserProfile(line, profile) & vbLf)
+                    If Not tailStarted AndAlso head.Length + clean.Length <= HeadKeepBytes Then
+                        head.Write(clean, 0, clean.Length)
+                    Else
+                        tailStarted = True
+                        tail.Enqueue(clean)
+                        tailBytes += clean.Length
+                        While tailBytes > TailKeepBytes AndAlso tail.Count > 0
+                            Dim oldest As Byte() = tail.Dequeue()
+                            tailBytes -= oldest.Length
+                            result.DroppedMiddleBytes += oldest.Length
+                        End While
+                    End If
+                    line = reader.ReadLine()
+                End While
+            End Using
+        End Using
+
+        result.HeadBytes = head.ToArray()
+        Dim joined As New MemoryStream(CInt(Math.Min(tailBytes, Integer.MaxValue)))
+        For Each piece As Byte() In tail
+            joined.Write(piece, 0, piece.Length)
+        Next
+        result.TailBytes = joined.ToArray()
+        Return result
+    End Function
+
+    ''' <summary>The line that stands where the middle of a cut log was, in the contract's own words.</summary>
+    Friend Function TruncationMarker(content As CompactedLog) As String
+        Return "[Diag] LOG TRUNCATED | dropped_middle_bytes=" & content.DroppedMiddleBytes.ToString(CultureInfo.InvariantCulture) &
+               " | kept_head_bytes=" & content.HeadBytes.Length.ToString(CultureInfo.InvariantCulture) &
+               " | kept_tail_bytes=" & content.TailBytes.Length.ToString(CultureInfo.InvariantCulture)
+    End Function
+
+    ''' <summary>The line that replaces a source too long to be redacted before it is cut.</summary>
+    Friend Function OmissionMarker(content As CompactedLog) As String
+        Return "[Diag] LOG OMITTED | reason=oversized_untrusted | source_bytes=" & content.SourceLength.ToString(CultureInfo.InvariantCulture)
+    End Function
+
+    ''' <summary>
+    ''' Reads one source: the first candidate that is not MISSING decides it. Included (redacted, then cut to
+    ''' its head and tail; read once and bounded, so a log that keeps growing cannot outrun the read) or Unreadable with the reason; a source
     ''' with no existing candidate comes back Missing and stays silent.
     '''
     ''' The share mode is the point of the default opener: AppFileLogger holds current.log open for writing,
@@ -493,13 +665,13 @@ Public Module LogPackage
         For Each candidate As String In spec.Candidates
             If String.IsNullOrEmpty(candidate) Then Continue For
             Try
-                Dim snapshot As TailSnapshot
+                Dim content As CompactedLog
                 Using source As Stream = opener(candidate)
-                    snapshot = ReadTail(source, MaxEntryBytes)
+                    content = CompactRedacted(source)
                 End Using
                 result.State = LogSourceState.Included
                 result.SourcePath = candidate
-                result.Snapshot = snapshot
+                result.Content = content
                 Return result
             Catch ex As Exception
                 If IsMissingFailure(ex) Then Continue For
@@ -514,8 +686,9 @@ Public Module LogPackage
         Return result
     End Function
 
-    ''' <summary>Writes an included source into the archive (tail with its truncation marker, the
-    ''' user-profile path replaced line by line), or describes an unreadable one. Never throws.</summary>
+    ''' <summary>Writes an included source into the archive - already redacted by <see cref="CompactRedacted"/>,
+    ''' with the contract's marker where a long log was cut or left out - or describes an unreadable one.
+    ''' Never throws.</summary>
     Friend Function WriteLogSource(archive As ZipArchive, read As LogSourceRead) As LogEntryOutcome
         Dim outcome As New LogEntryOutcome With {
             .EntryName = read.EntryName, .State = read.State, .SourcePath = read.SourcePath,
@@ -523,28 +696,29 @@ Public Module LogPackage
         Select Case read.State
             Case LogSourceState.Included
                 Try
-                    Dim snapshot As TailSnapshot = read.Snapshot
+                    Dim content As CompactedLog = read.Content
                     Dim entry As ZipArchiveEntry = archive.CreateEntry(read.EntryName, CompressionLevel.Optimal)
-                    Using target As New StreamWriter(entry.Open(), New UTF8Encoding(False))
-                        If snapshot.Truncated Then
-                            target.Write("[.. truncated: original " & snapshot.SourceLength.ToString(CultureInfo.InvariantCulture) &
-                                         " bytes, keeping the last " & MaxEntryBytes.ToString(CultureInfo.InvariantCulture) & " ..]" &
-                                         Environment.NewLine)
+                    Dim written As Long = 0L
+                    Using target As Stream = entry.Open()
+                        Dim utf8 As New UTF8Encoding(False)
+                        If content.Omitted Then
+                            Dim marker As Byte() = utf8.GetBytes(OmissionMarker(content) & vbLf)
+                            target.Write(marker, 0, marker.Length)
+                            written = marker.Length
+                        Else
+                            target.Write(content.HeadBytes, 0, content.HeadBytes.Length)
+                            written = content.HeadBytes.Length
+                            If content.Cut Then
+                                Dim marker As Byte() = utf8.GetBytes(TruncationMarker(content) & vbLf)
+                                target.Write(marker, 0, marker.Length)
+                                written += marker.Length
+                            End If
+                            target.Write(content.TailBytes, 0, content.TailBytes.Length)
+                            written += content.TailBytes.Length
                         End If
-                        ' Line by line, so the user-profile path is replaced before it is
-                        ' written (spec 039 phase 1). ReadLine drops the terminator; LF goes
-                        ' back, which every log reader accepts.
-                        Using reader As New StreamReader(New MemoryStream(snapshot.Bytes), New UTF8Encoding(False), False)
-                            Dim line As String = reader.ReadLine()
-                            While line IsNot Nothing
-                                target.Write(RedactUserProfile(line))
-                                target.Write(vbLf)
-                                line = reader.ReadLine()
-                            End While
-                        End Using
                     End Using
-                    outcome.Bytes = snapshot.Bytes.Length
-                    outcome.Line = read.EntryName & "  (" & DescribeSize(snapshot.Bytes.Length) & ")"
+                    outcome.Bytes = CInt(Math.Min(written, CLng(Integer.MaxValue)))
+                    outcome.Line = read.EntryName & "  (" & DescribeSize(written) & ")"
                 Catch ex As Exception
                     ' The archive itself refused the entry: that is the same news as an unreadable source.
                     AppFileLogger.LogException("LogPackage.WriteLogSource " & read.EntryName, ex)
@@ -581,8 +755,15 @@ Public Module LogPackage
         For Each read As LogSourceRead In reads
             Select Case read.State
                 Case LogSourceState.Included
-                    lines.Add(read.EntryName & ": included (" & DescribeSize(read.Snapshot.Bytes.Length) & ")" &
-                              If(read.Snapshot.Truncated, ", tail only", "") & " from " & read.SourcePath)
+                    If read.Content.Omitted Then
+                        lines.Add(read.EntryName & ": NOT included - " & DescribeSize(read.Content.SourceLength) &
+                                  " is over the " & DescribeSize(MaxSourceBytes) & " read limit; a marker stands in its place (source " &
+                                  read.SourcePath & ")")
+                    Else
+                        lines.Add(read.EntryName & ": included (" & DescribeSize(read.Content.KeptBytes) & ")" &
+                                  If(read.Content.Cut, ", head and tail (" & DescribeSize(read.Content.DroppedMiddleBytes) & " of the middle left out)", "") &
+                                  " from " & read.SourcePath)
+                    End If
                 Case LogSourceState.Unreadable
                     lines.Add(read.EntryName & ": NOT included - " & ReasonText(read.Failure) &
                               " (" & read.FailureType & "; source " & read.SourcePath & ")")
@@ -781,6 +962,40 @@ Public Module LogPackage
         End If
 
         Return sb.ToString()
+    End Function
+
+    ''' <summary>
+    ''' environment.txt - the part of the bundle a parser reads (DIAGNOSTIC-REPORT 0.12 rule 2 and section 8 B):
+    ''' greppable <c>KEY=value</c> lines, time in UTC, <c>schema_version</c> first, facts and counts only. report.txt
+    ''' travels beside it for the person who reads. This product keeps no catalog of titles, URLs or history, so
+    ''' the metric set is stated as empty (<c>volume_metrics=none</c>) rather than filled from anything the user
+    ''' authored. Values are single-line and never carry a path; the account name does not appear.
+    ''' </summary>
+    Friend Function BuildEnvironment(generatedUtc As DateTime) As String
+        Dim lines As New List(Of String) From {
+            "schema_version=" & EnvironmentSchemaVersion.ToString(CultureInfo.InvariantCulture),
+            "generated_utc=" & generatedUtc.ToString("yyyy-MM-dd'T'HH:mm:ss'Z'", CultureInfo.InvariantCulture),
+            "app_id=FastMediaSorter",
+            "app_version=" & OneLine(AppVersion()),
+            "runtime=" & OneLine(RuntimeInformation.FrameworkDescription),
+            "os=" & OneLine(RuntimeInformation.OSDescription),
+            "os_arch=" & RuntimeInformation.OSArchitecture.ToString(),
+            "process_arch=" & RuntimeInformation.ProcessArchitecture.ToString(),
+            "ui_language=" & OneLine(Localization.CurrentCode),
+            "media_backend=LibVlc",
+            "packaged=" & IsPackaged().ToString(),
+            "volume_metrics=none"}
+        Return String.Join(vbLf, lines) & vbLf
+    End Function
+
+    ''' <summary>One line, for a KEY=value file: control characters become spaces.</summary>
+    Private Function OneLine(value As String) As String
+        If String.IsNullOrEmpty(value) Then Return ""
+        Dim chars As Char() = value.ToCharArray()
+        For i As Integer = 0 To chars.Length - 1
+            If Char.IsControl(chars(i)) Then chars(i) = " "c
+        Next
+        Return New String(chars).Trim()
     End Function
 
     Friend Function DescribeCrashDumps(dumpDirectory As String) As String

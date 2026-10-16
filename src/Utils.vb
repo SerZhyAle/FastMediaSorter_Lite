@@ -224,7 +224,7 @@ Module Utils
     ''' EXIF auto-rotate on, a portrait phone photo stored as landscape pixels plus an
     ''' Orientation tag of 5..8 is shown upright, so its label must say 3024x4032, not the
     ''' stored 4032x3024. Only JPEG (APP1 Exif, read in the same header walk) and, on the
-    ''' mainline, HEIC/AVIF (through the decoder seam) carry it.</param>
+    ''' mainline, HEIC/AVIF/JXL (through the decoder seam) carry it.</param>
     Public Function GetImageDimensions(filePath As String, applyOrientation As Boolean) As Size
         Try
             Using fs As New IO.FileStream(filePath, IO.FileMode.Open, IO.FileAccess.Read, IO.FileShare.ReadWrite)
@@ -259,7 +259,7 @@ Module Utils
                     Return jpeg_Size
                 End If
 
-                ' WEBP (and AVIF/HEIC/HEIF on modern): let the platform decoder read
+                ' WEBP (and AVIF/HEIC/HEIF/JXL on modern): let the platform decoder read
                 ' the dimensions so we stay off GDI+. The seam reports the displayed size
                 ' itself (the mainline's Magick path reads the orientation it auto-orients by).
                 ' By extension OR by header (audit 057.S01-2): a WEBP saved under a .jpg name

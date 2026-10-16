@@ -448,8 +448,11 @@ func scenarioRegistration() *transcript {
 		return inv.Code
 	}
 	member, guest := mk("member"), mk("guest")
+	// the members are spelled as item AQ names them: `invitation` and `invitationPassword`. The server also
+	// reads `invitationCode` and `sharedPassword`; no step of this corpus uses them, so a replay by a client
+	// that sends the contract's names compares member for member
 	frame := func(code, shared, login, pw string) *wire.Register {
-		return &wire.Register{InvitationCode: code, SharedPassword: shared, Login: login, Password: pw, DeviceID: r.newID(),
+		return &wire.Register{Invitation: code, InvitationPassword: shared, Login: login, Password: pw, DeviceID: r.newID(),
 			DeviceName: "Vector phone", Product: "fms-android", ProductVersion: "1.0.0", Platform: "vector",
 			Roles: roles("resource-consumer"), KeepaliveSeconds: 30}
 	}

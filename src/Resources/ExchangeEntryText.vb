@@ -77,6 +77,12 @@ Friend NotInheritable Class ExchangeEntryText
         Return Localization.T("Пароль ещё раз:")
     End Function
 
+    ''' <summary>The words of one row of the common message table (item CZ) in the current language, as the table has them (item DA).
+    ''' A code the table does not know reads as its generic refusal.</summary>
+    Friend Shared Function TableText(message As ConnectionDiagnosisMessage) As String
+        Return ExchangeResourceText.SealedText(message)
+    End Function
+
     ''' <summary>The server's password policy in words, shown before the first refusal.</summary>
     Friend Shared Function PasswordPolicyNote() As String
         Return Localization.T("Пароль: не короче 10 символов, с заглавной латинской буквой, со строчной латинской буквой и с цифрой.")
@@ -102,13 +108,11 @@ Friend NotInheritable Class ExchangeEntryText
             Case ExchangeConsumerEnrollOutcome.BadInput
                 Return Localization.T("Укажите логин и пароль.")
             Case ExchangeConsumerEnrollOutcome.Refused
-                Select Case refusal
-                    Case ExchangeRefusal.BadCredentials : Return Localization.T("Приглашение не подошло, уже использовано, или такой логин уже занят.")
-                    Case ExchangeRefusal.VersionUnsupported : Return Localization.T("Сервер и программа не совпадают по версии: обновите программу.")
-                    Case ExchangeRefusal.RateLimited : Return Localization.T("Слишком много попыток. Подождите минуту и повторите.")
-                    Case ExchangeRefusal.Capacity : Return Localization.T("На сервере не осталось мест для учётных записей.")
-                    Case Else : Return Localization.T("Сервер отказал в регистрации.")
-                End Select
+                ' each refusal in the words of its own row of the common message table (items CZ, DA: `invitation-invalid`, `login-taken`,
+                ' `password-policy`, `version-unsupported` ..). `bad-credentials` is what a server older than the amendments of item AQ
+                ' answered to every registration refusal: it keeps the one sentence that covers its three causes.
+                If refusal = ExchangeRefusal.BadCredentials Then Return Localization.T("Приглашение не подошло, уже использовано, или такой логин уже занят.")
+                Return TableText(ConnectionDiagnosisMessages.OfWire(ExchangeRefusals.WireName(refusal)))
             Case Else
                 Return EnrollFailure(outcome, refusal)
         End Select
@@ -176,7 +180,7 @@ Friend NotInheritable Class ExchangeEntryText
             Case ExchangeConsumerEnrollOutcome.Refused
                 Select Case refusal
                     Case ExchangeRefusal.BadCredentials : Return Localization.T("Логин или пароль не подошли.")
-                    Case ExchangeRefusal.VersionUnsupported : Return Localization.T("Сервер и программа не совпадают по версии: обновите программу.")
+                    Case ExchangeRefusal.VersionUnsupported : Return TableText(ConnectionDiagnosisMessages.VersionUnsupported)   ' item CZ: no "update" demand
                     Case ExchangeRefusal.RateLimited : Return Localization.T("Слишком много попыток входа. Подождите минуту и повторите.")
                     Case ExchangeRefusal.Capacity : Return Localization.T("Сервер сейчас не принимает новые устройства.")
                     Case ExchangeRefusal.IdCollision : Return Localization.T("Сервер уже знает это устройство в другой учётной записи. Повторите попытку.")
@@ -213,7 +217,7 @@ Friend NotInheritable Class ExchangeEntryText
             Case ExchangeAgentState.Connecting, ExchangeAgentState.Reconnecting : Return Localization.T("соединяюсь..")
             Case ExchangeAgentState.SignInAgain : Return Localization.T("нужно войти заново")
             Case ExchangeAgentState.PinMismatch : Return Localization.T("сертификат сервера изменился")
-            Case ExchangeAgentState.UpdateNeeded : Return Localization.T("нужна новая версия программы")
+            Case ExchangeAgentState.UpdateNeeded : Return TableText(ConnectionDiagnosisMessages.VersionUnsupported)   ' item CZ: different versions, no "update" demand
             Case Else : Return Localization.T("нет связи")
         End Select
     End Function

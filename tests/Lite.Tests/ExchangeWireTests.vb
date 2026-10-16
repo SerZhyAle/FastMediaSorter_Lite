@@ -49,6 +49,40 @@ Public Class ExchangeWireTests
         Assert.Equal(If(supportsPin, New String() {"pin-v1"}, Array.Empty(Of String)()), decoded.TextList("capabilities").ToArray())
     End Sub
 
+    ''' <summary>DEVICE-EXCHANGE item AQ (ticket 239 CR-2): a `register` carries the invitation under `invitation` and
+    ''' `invitationPassword`. The first spelling (`invitationCode`, `sharedPassword`) is only ever read: nothing writes it.</summary>
+    <Theory>
+    <InlineData("CODE-ONE", "")>
+    <InlineData("", "Shared-pw-1")>
+    Public Sub A_register_frame_names_the_invitation_members_of_item_AQ_and_not_the_first_spelling(code As String, sharedPw As String)
+        Dim description As New ExchangeDeviceDescription(New String("D"c, 21) & "A", "Test device",
+            ExchangeWire.ProductWindows, "test", "Windows", New List(Of String) From {"resource-consumer"}, "")
+        Dim text As String = Utf8(ExchangeEnvelopeCodec.Encode(ExchangeMessages.Register(code, sharedPw, "bob", "Passw0rd-Test-1", description, 30)))
+        Assert.DoesNotContain("invitationCode", text)
+        Assert.DoesNotContain("sharedPassword", text)
+        If code.Length > 0 Then
+            Assert.Contains("""invitation"":""" & code & """", text)
+        Else
+            Assert.DoesNotContain("""invitation"":", text)
+        End If
+        If sharedPw.Length > 0 Then
+            Assert.Contains("""invitationPassword"":""" & sharedPw & """", text)
+        Else
+            Assert.DoesNotContain("invitationPassword", text)
+        End If
+    End Sub
+
+    <Fact>
+    Public Sub A_register_frame_with_the_first_spelling_is_still_read_and_written_back_unchanged()
+        Dim wire As String = "{""schemaVersion"":2,""type"":""register"",""invitationCode"":""OLD-CODE"",""sharedPassword"":""old-pw"",""login"":""bob"",""password"":""x"",""deviceId"":""" &
+            New String("D"c, 21) & "A"",""deviceName"":""PC"",""product"":""windows""}"
+        Dim env As ExchangeEnvelope = ExchangeEnvelopeCodec.Decode(Encoding.UTF8.GetBytes(wire))
+        Assert.Equal("OLD-CODE", env.Text("invitationCode"))
+        Assert.Equal("old-pw", env.Text("sharedPassword"))
+        Assert.Equal("", env.Text("invitation"))
+        Assert.Equal(wire, Utf8(ExchangeEnvelopeCodec.Encode(env)))
+    End Sub
+
     ''' <summary>A value for every member kind, so every type of the table can be built and round-tripped.</summary>
     Private Shared Function Sample(typeName As String) As ExchangeEnvelope
         Dim env As New ExchangeEnvelope(typeName)
@@ -351,13 +385,22 @@ Public Class ExchangeWireTests
     ' ---------------------------------------------------------------- reasons, ids
 
     <Fact>
-    Public Sub The_twelve_reasons_parse_and_an_unknown_one_is_a_generic_refusal()
-        Dim names As String() = {"bad-credentials", "device-revoked", "version-unsupported", "tls-required", "id-collision", "capacity", "port-unavailable", "unavailable", "rate-limited"}
-        Assert.Equal(12, ExchangeRefusals.All().Length)   ' the nine of 7.10, protection-unsupported, and the two of the clipboard (item BW)
+    Public Sub The_sixteen_reasons_parse_and_an_unknown_one_is_a_generic_refusal()
+        ' DEVICE-EXCHANGE 7.10 / item BR, in the order of ExchangeRefusals.All(): the nine of 7.10, protection-unsupported, the two of
+        ' the clipboard (item BW) and the four of the account lifecycle (items AQ and AT, ticket 239 CR-1)
+        Dim names As String() = {"bad-credentials", "device-revoked", "version-unsupported", "tls-required", "id-collision", "capacity", "port-unavailable", "unavailable", "rate-limited",
+                                 "protection-unsupported", "not-permitted", "limit-reached", "invitation-invalid", "login-taken", "password-policy", "signed-out"}
+        Assert.Equal(16, ExchangeRefusals.All().Length)
+        Assert.Equal(names.Length, ExchangeRefusals.All().Length)
         Assert.Equal(ExchangeRefusal.NotPermitted, ExchangeRefusals.Parse("not-permitted"))
         Assert.Equal(ExchangeRefusal.LimitReached, ExchangeRefusals.Parse("limit-reached"))
         Assert.Equal("not-permitted", ExchangeRefusals.WireName(ExchangeRefusal.NotPermitted))
         Assert.Equal("limit-reached", ExchangeRefusals.WireName(ExchangeRefusal.LimitReached))
+        Assert.Equal(ExchangeRefusal.InvitationInvalid, ExchangeRefusals.Parse("invitation-invalid"))
+        Assert.Equal(ExchangeRefusal.LoginTaken, ExchangeRefusals.Parse("login-taken"))
+        Assert.Equal(ExchangeRefusal.PasswordPolicy, ExchangeRefusals.Parse("password-policy"))
+        Assert.Equal(ExchangeRefusal.SignedOut, ExchangeRefusals.Parse("signed-out"))
+        Assert.Equal("signed-out", ExchangeRefusals.WireName(ExchangeRefusal.SignedOut))
         For i As Integer = 0 To names.Length - 1
             Dim r As ExchangeRefusal = ExchangeRefusals.Parse(names(i))
             Assert.NotEqual(ExchangeRefusal.Unknown, r)

@@ -88,12 +88,18 @@ Friend NotInheritable Class FmsSftpPlans
     ''' <summary>True when <paramref name="text"/> is a pairing code (whatever it holds): the reader of FMSCFG is then not asked.</summary>
     Friend Shared Function LooksLikeCode(text As String) As Boolean
         Dim t As String = If(text, "").TrimStart()
-        Return t.StartsWith(FmsSftpCode.PrefixV1, StringComparison.Ordinal) OrElse t.StartsWith(FmsSftpCode.PrefixV2, StringComparison.Ordinal)
+        Return t.StartsWith(FmsSftpCode.PrefixV1, StringComparison.Ordinal) OrElse t.StartsWith(FmsSftpCode.PrefixV2, StringComparison.Ordinal) OrElse
+               FmsSftpCode.IsNewerPrefix(t)
     End Function
 
     ''' <summary>The code as an import. Never throws; a refused code is a result with a failure, never a half-read plan.</summary>
     Friend Shared Function Read(text As String) As FmsConfigReadResult
         Dim code As FmsSftpCode = Nothing
+        ' ANYWHERE-ACCESS 4.3: a prefix above FMSSFTP2 gets the one message that asks the person to update
+        If FmsSftpCode.IsNewerPrefix(text) Then
+            Return New FmsConfigReadResult With {.Failure = FmsConfigFailure.UpdateRequired,
+                                                 .Detail = Localization.T("Код подключения создан более новой версией программы. Обновите Fast Media Sorter")}
+        End If
         If Not FmsSftpCode.TryParse(text, code) Then Return New FmsConfigReadResult With {.Failure = FmsConfigFailure.InvalidJson}
 
         Dim plan As New FmsConfigPlan With {.SchemaVersion = 2, .UserName = code.Username, .Password = If(code.Password, ""), .PinnedFingerprint = code.Fingerprint}

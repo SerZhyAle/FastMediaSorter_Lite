@@ -203,7 +203,7 @@ Public Class LogTailSnapshotTests
     End Sub
 
     <Fact>
-    Public Sub An_archive_entry_from_an_actively_written_log_holds_the_tail_marker_and_stays_within_the_cap()
+    Public Sub An_archive_entry_from_an_actively_written_log_holds_the_cut_marker_and_stays_within_the_cap()
         Dim path As String = TempLog(Lines(80000)) ' about 3.7 MB, more than the 2 MB cap
         Dim zipPath As String = path & ".zip"
         Try
@@ -219,8 +219,10 @@ Public Class LogTailSnapshotTests
                 Dim entry As ZipArchiveEntry = zip.GetEntry("current.log")
                 Using reader As New StreamReader(entry.Open(), Encoding.UTF8)
                     Dim text As String = reader.ReadToEnd()
-                    Assert.StartsWith("[.. truncated: original ", text)
-                    Assert.DoesNotContain("zzzz", text)
+                    Assert.StartsWith("L00000 ", text) ' the head of the log is kept
+                    Assert.Contains("[Diag] LOG TRUNCATED | dropped_middle_bytes=", text)
+                    Assert.Contains("L79999 ", text) ' and the last record that existed when the read began
+                    Assert.DoesNotContain("zzzz", text) ' nothing the writer appended afterwards leaked in
                     Assert.True(Encoding.UTF8.GetByteCount(text) <= 2 * 1024 * 1024 + 200)
                 End Using
             End Using

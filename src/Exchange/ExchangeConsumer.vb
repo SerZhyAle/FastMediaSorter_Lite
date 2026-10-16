@@ -219,7 +219,7 @@ Friend NotInheritable Class ExchangeConsumer
             opened = Await ExchangeSessions.EnrollAsync(ports.Transport, address, pin, register, ct).ConfigureAwait(False)
         Finally
             ' the frame's buffer was overwritten in the writer; the envelope's copies go too
-            register.SetText("password", "").SetText("invitationCode", "").SetText("sharedPassword", "")
+            register.SetText("password", "").SetText("invitation", "").SetText("invitationPassword", "")
         End Try
         Select Case opened.Outcome
             Case ExchangeOpenOutcome.Connected

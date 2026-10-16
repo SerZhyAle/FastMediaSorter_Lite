@@ -8,7 +8,7 @@ Imports System.Threading.Tasks
 Imports System.Windows.Forms
 
 ''' <summary>
-''' Spec 232 / DEVICE-EXCHANGE 0.27 section 25 item DA:
+''' Spec 232 / DEVICE-EXCHANGE 1.1 section 9 item DA:
 ''' The "Why doesn't it connect?.." dialog showing what happened, what to try,
 ''' Windows settings integration, step walk, and privacy-safe diagnostic codes.
 ''' </summary>

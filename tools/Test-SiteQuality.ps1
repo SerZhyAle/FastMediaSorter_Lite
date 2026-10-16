@@ -642,6 +642,34 @@ foreach ($p in $pages) {
 }
 
 # --- verdict ---------------------------------------------------------------------
+# Ticket 183, PAGE-STYLE 4.1b/4.2: every landing keeps the unlocalized brand,
+# the primary RU/EN/UA switch and a separate code row for the other locales.
+$productSource = [IO.File]::ReadAllText((Join-Path $Root 'src/ProductNames.vb'))
+$fullProductName = [regex]::Match($productSource, 'Public Const Full As String = "([^"]+)"').Groups[1].Value
+if (-not $fullProductName) { Problem 'ProductNames.Full could not be read (landing identity)' }
+foreach ($p in @($pages | Where-Object { $_.Kind -eq 'landing' })) {
+    $h = Page-Html $p.File
+    $identity = [regex]::Match($h, '<p class="product-name"[^>]*>(.*?)</p>').Groups[1].Value
+    if ([Net.WebUtility]::HtmlDecode($identity) -cne $fullProductName) { Problem "$($p.File): the landing identity does not use ProductNames.Full" }
+    $header = [regex]::Match($h, '(?s)<header\b.*?</header>').Value
+    $segment = [regex]::Match($header, '(?s)<div class="seg"[^>]*>(.*?)</div>').Groups[1].Value
+    $primary = @([regex]::Matches($segment, '>(RU|EN|UA)</(?:button|a)>') | ForEach-Object { $_.Groups[1].Value })
+    if (($primary -join ',') -cne 'RU,EN,UA') { Problem "$($p.File): the primary language switch must be RU,EN,UA" }
+    if ($header -match 'class="lang-menu"') { Problem "$($p.File): a landing must use the segmented switch, not the documentation picker" }
+    $languageRow = [regex]::Match($h, '(?s)<nav class="container language-row"[^>]*>(.*?)</nav>')
+    if (-not $languageRow.Success -or $languageRow.Index -gt $h.IndexOf('<h1')) { Problem "$($p.File): language codes must stand below the header and before the outcome"; continue }
+    $listed = @([regex]::Matches($languageRow.Value, '<a\b[^>]*hreflang="([a-z]+)"[^>]*>([A-Z]{2})</a>'))
+    $want = if ($p.Lang -eq 'en') { @($codes | Where-Object { $_ -notin 'ru','en','uk' }) } else { @('ru','en','uk') + @($codes | Where-Object { $_ -notin 'ru','en','uk' }) }
+    $have = @($listed | ForEach-Object { $_.Groups[1].Value })
+    if (($have -join ',') -cne ($want -join ',')) { Problem "$($p.File): the landing language row has missing, reordered or duplicate locales" }
+    foreach ($entry in $listed) {
+        $iso = $entry.Groups[1].Value
+        $label = if ($iso -eq 'uk') { 'UA' } else { $iso.ToUpperInvariant() }
+        if ($entry.Groups[2].Value -cne $label) { Problem "$($p.File): language $iso must read $label" }
+        if ($iso -notin 'ru','en','uk' -and $entry.Value -match 'localStorage') { Problem "$($p.File): an extra locale must not overwrite sza-lang" }
+    }
+}
+
 if ($stray.Count -gt 0) { $problems.Add("undeclared folders under ${LangDir}/: $($stray -join ', ')") }
 if ($problems.Count -gt 0) {
     $problems | ForEach-Object { Write-Host "  - $_" }
