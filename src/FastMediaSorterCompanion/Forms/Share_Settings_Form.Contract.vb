@@ -1,4 +1,4 @@
-Option Explicit On
+﻿Option Explicit On
 Option Strict On
 Option Infer On
 Option Compare Binary
@@ -94,33 +94,7 @@ Partial Public NotInheritable Class Share_Settings_Form
         End Select
     End Function
 
-    ''' <summary>The licence's name as the About rows show it - a name, not a sentence, so it is not translated; it is
-    ''' a constant (and not a literal argument) so that a placeholder can carry it and the parity scan does not read it
-    ''' as a key.</summary>
-    Private Const LicenseName As String = "MIT"
-
-    Private Sub BuildAboutRows(section As CollapsibleSection)
-        _aboutStart = New Label With {.Text = ProductNames.FullForLabel, .AutoSize = True, .Dock = DockStyle.Top}
-        section.AddBodyRow(_aboutStart)
-        section.AddBodyRow(New Label With {.Text = Localization.TF("Версия: {0}", Application.ProductVersion),
-            .AutoSize = True, .Dock = DockStyle.Top, .Name = "managerVersion"})
-        section.AddBodyRow(New Label With {.Text = Localization.TF("Лицензия: {0}", LicenseName), .AutoSize = True,
-            .Dock = DockStyle.Top, .Name = "managerLicense"})
-        Dim licenseText As String
-        Using stream = CompanionAssets.OpenBundledAsset("LICENSE"), reader As New IO.StreamReader(stream)
-            licenseText = reader.ReadToEnd().Replace(vbCrLf, vbLf).Replace(vbLf, Environment.NewLine)
-        End Using
-        section.AddBodyRow(New TextBox With {.Text = licenseText, .Multiline = True, .ReadOnly = True,
-            .ScrollBars = ScrollBars.Vertical, .Dock = DockStyle.Top, .Height = 140, .Width = 400,
-            .AccessibleName = Localization.T("Лицензия"), .Name = "managerLicenseText"})
-        AddHelpLink(section, Localization.T("Политика конфиденциальности"),
-            Sub() NetworkInfo.OpenInBrowser(ShareLinks.Localized(SitePages.PrivacyPageUrl)))
-        Dim support As New Button With {.Text = Localization.T("Отправить журнал автору.."), .AutoSize = True,
-            .Name = "managerSupportBundle", .Margin = New Padding(0, 8, 0, 0)}
-        ButtonGlyphs.Apply(support, "action.email")
-        AddHandler support.Click, Async Sub() Await SendLogsFlow.RunAsync(Me)
-        section.AddBodyRow(support)
-    End Sub
+    ' The About group of the "help" page (BuildAboutRows and its rows) lives in Share_Settings_Form.About.vb.
 
     ' The page owns the old section's editors; each inner group is one collapsible card
     ' (238 section 2.3): header bar, hairline boundary, fold state of its own. The left
@@ -165,6 +139,10 @@ Partial Public NotInheritable Class Share_Settings_Form
                         nextId = "devices" : caption = Function() Localization.T("Подключённые устройства")
                     ElseIf row Is _pnlXInvitations Then
                         nextId = "invitations" : caption = Function() Localization.T("Приглашения и регистрация")
+                    ElseIf _pnlXRemoteAdmin IsNot Nothing AndAlso row Is _pnlXRemoteAdmin Then
+                        nextId = "remote-admin" : caption = Function() Localization.T("Удалённое администрирование")
+                    ElseIf _pnlXRemoteAdmin IsNot Nothing AndAlso Array.IndexOf(rows, row) > Array.IndexOf(rows, DirectCast(_pnlXRemoteAdmin, Control)) Then
+                        nextId = "service" : caption = Function() Localization.T("Управление службой")
                     ElseIf _pnlXInvitations IsNot Nothing AndAlso Array.IndexOf(rows, row) > Array.IndexOf(rows, DirectCast(_pnlXInvitations, Control)) Then
                         nextId = "service" : caption = Function() Localization.T("Управление службой")
                     ElseIf _pnlXAccounts IsNot Nothing AndAlso Array.IndexOf(rows, row) > Array.IndexOf(rows, DirectCast(_pnlXAccounts, Control)) Then
@@ -173,8 +151,9 @@ Partial Public NotInheritable Class Share_Settings_Form
                         nextId = "server" : caption = Function() Localization.T("Основные параметры")
                     End If
                 Case "exchange-account"
-                    nextId = "account"
-                    caption = Function() Localization.T("Основные параметры")
+                    Dim isClipboard = _clipRows.Contains(row)
+                    nextId = If(row Is _pxGroup, "publishing", If(isClipboard, "clipboard", "account"))
+                    caption = If(row Is _pxGroup, Function() ExchangePublishText.GroupTitle(), If(isClipboard, Function() Localization.T("Буфер на сервере"), Function() Localization.T("Основные параметры")))
                 Case "scheduled"
                     ' The list and its commands, then what applies to this PC (4.4).
                     Dim machine = Array.IndexOf(rows, row) >= Array.IndexOf(rows, DirectCast(_schedFeature, Control))
@@ -199,6 +178,10 @@ Partial Public NotInheritable Class Share_Settings_Form
                 AddHandler card.ExpandedChanged, Sub() OnGroupCardExpansionChanged(pId, grp)
                 section.AddBodyRow(card)
                 groups.Add(current)
+            End If
+            If row Is _clipTitle Then
+                _clipTitle.Visible = False
+                Continue For
             End If
             current.Rows.Add(row)
             current.Card.AddBodyRow(row)
@@ -282,8 +265,8 @@ Partial Public NotInheritable Class Share_Settings_Form
             If control IsNot Nothing AndAlso control.Name.Length = 0 Then control.Name = field.Name
         Next
         SetBooleanHint(chkAutostart, Localization.T("Запускает менеджер после входа в Windows. Не меняет режим службы."))
-        SetBooleanHint(chkOpenOnStart, toolTip.GetToolTip(chkOpenOnStart))
-        toolTip.SetToolTip(cmbLanguage, Localization.T("Меняет язык всех открытых окон и меню сразу."))
+        If chkOpenOnStart IsNot Nothing Then SetBooleanHint(chkOpenOnStart, toolTip.GetToolTip(chkOpenOnStart))
+        If cmbLanguage IsNot Nothing Then toolTip.SetToolTip(cmbLanguage, Localization.T("Меняет язык всех открытых окон и меню сразу."))
         For Each row In Descendants(Me).OfType(Of ManagerSettingRow)()
             Dim hint = toolTip.GetToolTip(row.Editor)
             If row.Editor Is numPort Then hint = Localization.T("Порт подключения. Изменение применяется отдельной кнопкой; обновите правило роутера и выданные коды.")
@@ -303,7 +286,7 @@ Partial Public NotInheritable Class Share_Settings_Form
     End Sub
 
     Private Sub SetBooleanHint(check As CheckBox, text As String)
-        If text.Length = 0 OrElse check.Parent Is Nothing Then Return
+        If check Is Nothing OrElse text.Length = 0 OrElse check.Parent Is Nothing Then Return
         Dim hint = NoteLabel(text)
         hint.Name = check.Name & "Hint"
         Dim table = TryCast(check.Parent, TableLayoutPanel)
@@ -432,7 +415,9 @@ Partial Public NotInheritable Class Share_Settings_Form
     End Sub
 
     Private Sub FitInitialSettingsBounds()
-        Dim page = _pages("startup")
+        ' Each destination sizes itself on its own first page: the SFTP and local-exchange windows have no
+        ' "startup" page, and a window with no saved bounds of its own must still open.
+        Dim page = If(_pages.ContainsKey("startup"), _pages("startup"), _pages.Values.First())
         page.PerformLayout()
         Dim height = page.Controls(0).PreferredSize.Height + LogicalToDeviceUnits(52) + _root.Padding.Vertical
         ' The rail as it will actually show: page rows plus the item lists their saved
@@ -469,7 +454,7 @@ Partial Public NotInheritable Class Share_Settings_Form
         Try
             ' Every container held while the captions change, laid out once after - see LiveControlLocalization.HoldLayout.
             Using LiveControlLocalization.HoldLayout(Me)
-                Text = Localization.T("Настройки менеджера")
+                Text = DestinationCaption()
                 ApplyHostingState(_hostingSnapshot)
                 If _exchangeSnapshot IsNot Nothing Then ApplyExchangeState(_exchangeSnapshot)
                 ApplyAccountState()
@@ -489,18 +474,17 @@ Partial Public NotInheritable Class Share_Settings_Form
                         Next
                     End If
                 Next
-                Dim version = Descendants(Me).FirstOrDefault(Function(control) control.Name = "managerVersion")
-                If version IsNot Nothing Then version.Text = Localization.TF("Версия: {0}", Application.ProductVersion)
-                Dim license = Descendants(Me).FirstOrDefault(Function(control) control.Name = "managerLicense")
-                If license IsNot Nothing Then license.Text = Localization.TF("Лицензия: {0}", LicenseName)
+                RefreshAboutTexts()
                 For Each row In Descendants(Me).OfType(Of ManagerSettingRow)()
                     row.Editor.AccessibleName = row.Caption.Text
                     row.Editor.AccessibleDescription = row.Hint.Text
                 Next
+                If cmbTheme IsNot Nothing Then
                 cmbTheme.Items.Clear()
                 cmbTheme.Items.AddRange({Localization.T("Как в системе"), Localization.T("Светлая"), Localization.T("Тёмная")})
                 cmbTheme.SelectedIndex = CInt(ThemeService.Mode)
                 cmbLanguage.SelectedIndex = Localization.CurrentIndex
+                End If
                 For Each button In _headerCommands
                     button.AccessibleName = SettingsCommandCaption(button.Name)
                     toolTip.SetToolTip(button, button.AccessibleName)

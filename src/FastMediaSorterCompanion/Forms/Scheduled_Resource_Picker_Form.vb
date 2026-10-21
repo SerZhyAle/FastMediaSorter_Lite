@@ -20,6 +20,7 @@ Friend NotInheritable Class Scheduled_Resource_Picker_Form
     Private txtFolder As TextBox
     Private btnOk As Button
     Private btnCancel As Button
+    Private _answerRow As DialogButtonRow
     Private ReadOnly resources As List(Of ResourceDescriptor)
     Private _iconHandle As IntPtr
 
@@ -46,7 +47,7 @@ Friend NotInheritable Class Scheduled_Resource_Picker_Form
         AutoSizeMode = AutoSizeMode.GrowAndShrink
 
         Dim table As New TableLayoutPanel With {.AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink, .ColumnCount = 1,
-            .Padding = New Padding(14, 12, 14, 10)}
+            .Padding = New Padding(14, 12, 14, 2)}
         table.ColumnStyles.Add(New ColumnStyle(SizeType.AutoSize))
 
         If resources.Count = 0 Then
@@ -74,21 +75,21 @@ Friend NotInheritable Class Scheduled_Resource_Picker_Form
             .ForeColor = ThemeService.Palette.TextMuted,
             .Text = Localization.T("Пароль и ключ сервера берутся из списка ресурсов просмотрщика. Если пароль не сохранён или ключ не подтверждён, операция остановится - без вопросов.")})
 
-        Dim footer As New FlowLayoutPanel With {.AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink, .FlowDirection = FlowDirection.RightToLeft,
-            .Dock = DockStyle.Fill, .Margin = New Padding(0)}
-        btnCancel = New Button With {.Text = Localization.T("Отмена"), .AutoSize = True, .DialogResult = DialogResult.Cancel, .Name = "btnSchedResourceCancel",
-            .Padding = New Padding(14, 5, 14, 5)}
-        btnOk = New Button With {.Text = Localization.T("Выбрать"), .AutoSize = True, .Name = "btnSchedResourceOk", .Padding = New Padding(14, 5, 14, 5),
-            .Enabled = resources.Count > 0}
-        ButtonGlyphs.Apply(btnOk, "action.confirm", ButtonGlyphRole.Affirmative)
-        ButtonGlyphs.Apply(btnCancel, "action.cancel", ButtonGlyphRole.Dismissing)
+        ' The answers ride the shared bottom row (ticket 243 T-8b batch C, BUTTONS 2.0 sections 3 and 4): Cancel first, Select
+        ' last, widths from the caption and its glyph. Bind keeps their meaning: Escape is Cancel, Enter is Select (it only
+        ' fills in the fields below; nothing is sent or deleted), and a window with no resource has Select disabled as before.
+        btnCancel = New Button With {.Text = Localization.T("Отмена"), .DialogResult = DialogResult.Cancel, .Name = "btnSchedResourceCancel"}
+        btnOk = New Button With {.Text = Localization.T("Выбрать"), .Name = "btnSchedResourceOk", .Enabled = resources.Count > 0}
         AddHandler btnOk.Click, AddressOf OnOkClicked
-        footer.Controls.AddRange({btnCancel, btnOk})
-        table.Controls.Add(footer)
+        _answerRow = New DialogButtonRow() With {.Dock = DockStyle.Bottom, .Name = "btnSchedResourceButtons", .Padding = New Padding(14, 4, 14, 10)}
+        DpiLayout.AddAnswer(_answerRow, btnOk, DialogButtonRole.Affirmative, "action.confirm")
+        DpiLayout.AddAnswer(_answerRow, btnCancel, DialogButtonRole.Dismissing, "action.cancel")
 
+        table.Dock = DockStyle.Fill
         Controls.Add(table)
-        AcceptButton = btnOk
-        CancelButton = btnCancel
+        ' Last in the collection: the docked row takes its edge first and reads after the fields in the Tab order.
+        Controls.Add(_answerRow)
+        _answerRow.Bind(Me)
         ResumeLayout(True)
         DpiLayout.ApplyAutoScale(Me)
     End Sub

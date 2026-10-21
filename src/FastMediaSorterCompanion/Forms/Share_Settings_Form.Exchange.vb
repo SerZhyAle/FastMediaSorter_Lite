@@ -1,4 +1,4 @@
-Option Strict On
+﻿Option Strict On
 
 Imports System.Drawing
 Imports System.Threading.Tasks
@@ -28,6 +28,14 @@ Imports System.Windows.Forms
 ''' devices, the statement) are the partial Share_Settings_Form.ExchangeAdmin.vb.
 ''' </summary>
 Partial Public NotInheritable Class Share_Settings_Form
+    Private Shared Sub OpenServerManagementLog(owner As IWin32Window, folder As Boolean)
+        Try
+            ManagementLogAccess.OpenServerLog(ExchangeProcess.DataDir(), folder)
+        Catch ex As Exception
+            ShowManagementLogError(owner, ex)
+        End Try
+    End Sub
+
 
     Private _secExchange As CollapsibleSection
     Private _exLoaded As Boolean
@@ -82,12 +90,15 @@ Partial Public NotInheritable Class Share_Settings_Form
     ''' read - a group added to one of those four places and forgotten in another broke silently (R4 section
     ''' 1); a test holds that none of them keeps a list of its own.</summary>
     Private Function AllSections() As CollapsibleSection()
-        Dim list As New List(Of CollapsibleSection) From {_secStartup, _secNetwork, _secHosting}
+        Dim list As New List(Of CollapsibleSection)
+        For Each section In {_secStartup, _secNetwork, _secHosting}
+            If section IsNot Nothing Then list.Add(section)
+        Next
         If _secExchange IsNot Nothing Then list.Add(_secExchange)
         ' Scheduled file operations (ticket 222): a page of every Share Manager, after hosting and the exchange server
         ' and before Help - it is not behind the exchange component or the Share opt-in.
         If _secScheduled IsNot Nothing Then list.Add(_secScheduled)
-        list.Add(_secHelp)
+        If _secHelp IsNot Nothing Then list.Add(_secHelp)
         Return list.ToArray()
     End Function
 
@@ -145,7 +156,7 @@ Partial Public NotInheritable Class Share_Settings_Form
             _btnXWelcome = XButton(Localization.T("Приветствие.."), Sub()
                 ReplayExchangeRequested = True
                 Close()
-            End Sub, "app.help")
+            End Sub, IconMap.GetMeaning("exchangeWelcomeReplay").GlyphId)   ' app.tour: replays a setup wizard, not "explain this window"
             _btnXWelcome.Name = "exchangeWelcomeReplay"
             _btnXWelcome.MinimumSize = New Size(0, 44)
             sec.AddBodyRow(_btnXWelcome)
@@ -191,6 +202,9 @@ Partial Public NotInheritable Class Share_Settings_Form
 
         ' ticket 168: the accounts, their devices and the statement of what the operator can see
         BuildExchangeAccountRows(sec)
+
+        ' ticket 245: remote administration settings and browser button
+        BuildExchangeRemoteAdminRows(sec)
 
         ' the firewall (ticket 143)
         _lblXFw = New Label With {.AutoSize = True, .Margin = New Padding(0, 8, 0, 2), .MaximumSize = New Size(HostingContentWidth, 0)}
@@ -260,7 +274,7 @@ Partial Public NotInheritable Class Share_Settings_Form
     End Function
 
     Friend Sub FocusPublishPage()
-        SelectSettingsPage("network")
+        SelectSettingsPage("exchange-account")
     End Sub
 
     Friend Sub FocusHostingPage()
@@ -343,6 +357,7 @@ Partial Public NotInheritable Class Share_Settings_Form
             _lnkXTrust.Visible = m.ShowFirewallEnable OrElse m.ShowFirewallRemove OrElse m.ShowRegisterService OrElse m.ShowRemoveService
 
             ApplyExchangeAdminState(snap, m)
+            ApplyExchangeRemoteAdminState(snap.Report)
         End Using
     End Sub
 
@@ -364,6 +379,10 @@ Partial Public NotInheritable Class Share_Settings_Form
     End Sub
 
     Private Async Sub OnXApplyPort()
+        Await ApplyExchangePortAsync()
+    End Sub
+
+    Private Async Function ApplyExchangePortAsync() As Task
         If _exBusy OrElse Not PortPendingX() Then Return
         Dim newPort As Integer = CInt(numXPort.Value)
         Dim consoleRunning As Boolean = _exModel IsNot Nothing AndAlso _exModel.Kind = ExchangeRunKind.RunningConsole
@@ -371,7 +390,7 @@ Partial Public NotInheritable Class Share_Settings_Form
             (_exModel.Kind = ExchangeRunKind.ServiceRunning OrElse _exModel.Kind = ExchangeRunKind.ServiceStarting OrElse
              _exModel.Kind = ExchangeRunKind.ServiceStopped OrElse _exModel.Kind = ExchangeRunKind.ServiceStopping)
         If consoleRunning OrElse serviceExists Then
-            If MessageBox.Show(Me, ExchangeText.PortQuestion(newPort, consoleRunning), Me.Text, MessageBoxButtons.YesNo,
+            If ManagerBox.Show(Me, ExchangeText.PortQuestion(newPort, consoleRunning), Me.Text, MessageBoxButtons.YesNo,
                                MessageBoxIcon.Warning, MessageBoxDefaultButton.Button2) <> DialogResult.Yes Then Return
         End If
         Dim listen As String = ExchangeProcess.WithPort(If(_exReport IsNot Nothing, _exReport.Listen, ""), newPort)
@@ -385,7 +404,7 @@ Partial Public NotInheritable Class Share_Settings_Form
             Dim restarted As Boolean = False
             If outcome = ExchangeProcess.ListenOutcome.Saved Then
                 _exSettings.ListenPort = newPort
-                Try : _exSettings.Save() : Catch : End Try
+                Try : _exSettings.Save() : NotifySettingsChanged() : Catch : End Try
                 _exBaselinePort = newPort
                 If consoleRunning Then
                     Await Task.Run(Sub() ExchangeProcess.StopServer())
@@ -401,7 +420,7 @@ Partial Public NotInheritable Class Share_Settings_Form
         Finally
             If Not (IsDisposed OrElse Disposing) Then SetXBusy(False)
         End Try
-    End Sub
+    End Function
 
     ' --- fingerprint ----------------------------------------------------------------------
 
@@ -428,7 +447,10 @@ Partial Public NotInheritable Class Share_Settings_Form
 
     Private Sub OnXGetConnectionString()
         If _exBusy OrElse Not ConnectionStringAvailable() Then Return
-        Using dlg As New Exchange_Connection_String_Form()
+        ' the browser sign-in link rides beside the string (WEB-BINDING page-served-by-the-server 3): the report of this window
+        ' decides whether this server serves a web client at all, the link itself is the pure builder's
+        Dim report As ExchangeProcess.InspectReport = _exReport
+        Using dlg As New Exchange_Connection_String_Form(Nothing, Function(text As String) ExchangeProcess.BrowserSignInUrl(report, text))
             dlg.ShowDialog(Me)
         End Using
     End Sub
@@ -443,7 +465,7 @@ Partial Public NotInheritable Class Share_Settings_Form
             If IsDisposed OrElse Disposing Then Return
             If outcome = ExchangeProcess.StartOutcome.Started Then
                 _exSettings.EverStarted = True
-                Try : _exSettings.Save() : Catch : End Try
+                Try : _exSettings.Save() : NotifySettingsChanged() : Catch : End Try
             End If
             Dim port As Integer = If(_exModel IsNot Nothing, _exModel.ShownPort(), ExchangeSettings.DefaultPort)
             ShowXResult(ExchangeText.StartResult(outcome, port), outcome = ExchangeProcess.StartOutcome.Started OrElse outcome = ExchangeProcess.StartOutcome.AlreadyRunning)
@@ -472,7 +494,7 @@ Partial Public NotInheritable Class Share_Settings_Form
 
     Private Sub OnXKeepRunningChanged(sender As Object, e As EventArgs)
         _exSettings.KeepRunningOnExit = _chkXKeep.Checked
-        Try : _exSettings.Save() : Catch : End Try
+        Try : _exSettings.Save() : NotifySettingsChanged() : Catch : End Try
     End Sub
 
     ' --- firewall (143) --------------------------------------------------------------------
@@ -483,7 +505,7 @@ Partial Public NotInheritable Class Share_Settings_Form
     End Sub
 
     Private Async Sub OnXFirewallRemove()
-        If MessageBox.Show(Me, ExchangeText.FirewallRemoveQuestion(), Me.Text, MessageBoxButtons.YesNo,
+        If ManagerBox.Show(Me, ExchangeText.FirewallRemoveQuestion(), Me.Text, MessageBoxButtons.YesNo,
                            MessageBoxIcon.Warning, MessageBoxDefaultButton.Button2) <> DialogResult.Yes Then Return
         Await RunXElevated(Function() ExchangeFirewall.WithdrawViaElevation(), withdrew:=True)
     End Sub
@@ -524,14 +546,14 @@ Partial Public NotInheritable Class Share_Settings_Form
 
     Private Async Sub OnXRegister()
         If _exBusy Then Return
-        If MessageBox.Show(Me, ExchangeText.RegisterQuestion(), Me.Text, MessageBoxButtons.YesNo,
+        If ManagerBox.Show(Me, ExchangeText.RegisterQuestion(), Me.Text, MessageBoxButtons.YesNo,
                            MessageBoxIcon.Question, MessageBoxDefaultButton.Button2) <> DialogResult.Yes Then Return
         Await RunXManage(ExchangeService.RegisterVerb())
     End Sub
 
     Private Async Sub OnXRemoveService()
         If _exBusy Then Return
-        If MessageBox.Show(Me, ExchangeText.RemoveServiceQuestion(), Me.Text, MessageBoxButtons.YesNo,
+        If ManagerBox.Show(Me, ExchangeText.RemoveServiceQuestion(), Me.Text, MessageBoxButtons.YesNo,
                            MessageBoxIcon.Warning, MessageBoxDefaultButton.Button2) <> DialogResult.Yes Then Return
         Await RunXManage(ExchangeService.Verb.Remove)
     End Sub
@@ -566,7 +588,12 @@ Partial Public NotInheritable Class Share_Settings_Form
             If b IsNot Nothing Then b.Enabled = Not value
         Next
         If _btnXConnString IsNot Nothing Then _btnXConnString.Enabled = Not value AndAlso ConnectionStringAvailable()
+        If _chkXRemoteAdminOn IsNot Nothing Then _chkXRemoteAdminOn.Enabled = Not value
+        If _btnXRemoteAdminBrowser IsNot Nothing Then
+            _btnXRemoteAdminBrowser.Enabled = Not value AndAlso ExchangeProcess.BrowserAdminUrl(_exReport).Length > 0
+        End If
         Me.UseWaitCursor = value
+        If Not value Then NotifySettingsChanged()
     End Sub
 
     ''' <summary>Window teardown for the group: the bold font and the process event.</summary>

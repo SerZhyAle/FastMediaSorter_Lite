@@ -1,6 +1,6 @@
 {
-    "version":  "26.10.13.2333",
-    "origin":  "local build",
-    "source":  "P:\\WINDOWS\\FileDo\\exe_to_download\\filedo.exe",
-    "binarySha256":  "0f49fcfb8025a55b3d555472940d344f81b5c8aae0a9c0e6c205196351e3b681"
+  "version": "26.10.13.2333",
+  "origin": "local build",
+  "source": "P:\\WINDOWS\\FileDo\\exe_to_download\\filedo.exe",
+  "binarySha256": "0f49fcfb8025a55b3d555472940d344f81b5c8aae0a9c0e6c205196351e3b681"
 }

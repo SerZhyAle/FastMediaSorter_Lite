@@ -256,15 +256,17 @@ decisions that were the product's to make are listed here, the numbers are in th
 
 - **One module owns it.** `src/Icons/ButtonGlyphs.vb` (linked into both programs; whole-file modern):
   `ButtonGlyphs.Apply(button, glyphId, role)` renders the catalog path at 16 logical px of the button's DPI in one
-  colour with the 6 px gap inside the bitmap (so the gap scales and mirrors with the reading direction), and keeps it
+  colour with the 8 px gap (6 until 2026-10-20, `BUTTONS` 2.0) inside the bitmap (so the gap scales and mirrors with the reading direction), and keeps it
   current through the theme (`ThemeService` hands over the palette), DPI, direction, Enabled and system colours.
   No dialog draws, tints or re-themes a picture of its own. `DialogLayout.WidenButtons` counts the glyph, so a
   fixed-width button grows for its caption instead of clipping it.
 - **Roles.** Colour is spent on the answers of a dialog and nowhere else: the accept answer is green
-  (`Affirmative`), the cancel path red (`Dismissing`), a continue-anyway answer amber (`Caution`); the acting
-  button of an irreversible confirmation takes the danger face with its own ink and its dismissing neighbour keeps a red
-  glyph and no tint; everything else is the mono look. The hue is the theme's own Success / Danger / Warning pair,
-  moved along lightness only as far as 3 : 1 against the tinted face needs (`ButtonGlyphs.Readable`).
+  (`Affirmative`), a continue-anyway answer amber (`Caution`); the acting button of an irreversible confirmation
+  takes the danger face with its own ink; everything else is the mono look. The hue is the theme's own Success /
+  Warning pair, moved along lightness only as far as 3 : 1 against the face needs (`ButtonGlyphs.Readable`).
+  *Amended 2026-10-20 (specification 243, `BUTTONS` 2.0 section 3):* Cancel, No and Close (`Dismissing`) were red
+  with a 12 percent face tint; they are now neutral, and no answer tints its face. The dialog's answers also read
+  Cancel first and the acting answer last (`BUTTONS` 2.0 section 4 rule 4).
 - **Not taken, and why** (dated exceptions in the registry): the operating system's message boxes and the one
   `TaskDialog` (their buttons are drawn by Windows); the random-slideshow mark, the Translate button's language
   text, the speed readout, the recipients overlay rows in right-to-left, the editor's swatches and hand-drawn tools.

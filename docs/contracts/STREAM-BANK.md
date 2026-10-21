@@ -3,7 +3,7 @@
 | | |
 | --- | --- |
 | **Id** | `STREAM-BANK` |
-| **Version** | 2.2, active (re-read 2026-10-07; 2.2 adds rule 13 - a blank or absent `is_live` means "not stated" - which a producer that always leaves the column blank already holds). Owner: FastMediaSorter Android |
+| **Version** | 2.4, active (2.2 of 2026-10-02 added rule 13 - a blank or absent `is_live` means "not stated" - which a producer that always leaves the column blank already holds; 2.3 of 2026-10-07 added rule 14, the closed `language` and `country` value sets; 2.4 of 2026-10-17 is the consolidation). The body below was last read against 2.2 on 2026-10-07; the 2.3 and 2.4 clauses are not yet audited against `src/Streams/`. Owner: FastMediaSorter Android |
 | **Home** | `stream-catalog/README.md` in the shared contracts catalog |
 | **Role here** | **producer** - implemented under specification 022 (`src/Streams/`), on `main` since 2026-10-03 and in **no release yet** (the latest release predates it); the contract's own header still lists this product as "planned" |
 

@@ -20,20 +20,24 @@ import (
 // stream: online while it runs, offline after it.
 func (e *Engine) Control(cs *ControlStream, first wire.Envelope) {
 	sess := cs.Session()
+	ev := logx.AuditEvent{Op: "device.connect", Remote: cs.st.raw.RemoteAddr().String(), Transport: cs.st.Transport()}
+	auditSession(&ev, sess)
+	e.audit(ev)
+	defer func() { ev.Op = "device.disconnect"; e.audit(ev) }()
 	if !e.cfg.Dir.Online(sess.Account, sess.DeviceID, cs) {
 		return // the device was revoked between its hello and now
 	}
 	e.registerCtl(cs, sess.Keepalive)
 	e.cfg.Accounts.Touch(sess.DeviceID)
-	e.cfg.Log.Info("online", logx.Device(sess.DeviceID), logx.Addr(cs.Addr()))
+	e.cfg.Log.State("online", logx.Device(sess.DeviceID), logx.Addr(cs.Addr()))
 	defer func() {
 		e.dropCtl(cs)
 		e.cfg.Dir.Offline(sess.Account, sess.DeviceID, cs)
 		if !e.cfg.Dir.DeviceOnline(sess.Account, sess.DeviceID) {
 			e.castDeviceGone(sess.DeviceID) // a replaced stream leaves the device online: its offers stand
+			e.cfg.Log.State("offline", logx.Device(sess.DeviceID))
 		}
 		e.cfg.Accounts.Touch(sess.DeviceID)
-		e.cfg.Log.Info("offline", logx.Device(sess.DeviceID))
 	}()
 	env := first
 	for {
@@ -61,6 +65,16 @@ func (e *Engine) refuseOrClose(cs *ControlStream, err error) bool {
 // handle runs one envelope of a control stream and reports whether the stream goes on.
 func (e *Engine) handle(cs *ControlStream, sess *Session, env wire.Envelope) bool {
 	acct, dev := sess.Account, sess.DeviceID
+	var op, target string
+	status := logx.AuditRefusal("not-permitted")
+	defer func() {
+		if op == "" {
+			return
+		}
+		ev := logx.AuditEvent{Op: op, Target: target, Status: status, Remote: cs.st.raw.RemoteAddr().String(), Transport: cs.st.Transport(), Details: "directory mutation"}
+		auditSession(&ev, sess)
+		e.audit(ev)
+	}()
 	switch m := env.(type) {
 	case *wire.Keepalive:
 		e.cfg.Accounts.Touch(dev)
@@ -79,6 +93,7 @@ func (e *Engine) handle(cs *ControlStream, sess *Session, env wire.Envelope) boo
 		e.cfg.Dir.Subscribe(acct, dev, cs)
 		return true
 	case *wire.Publish:
+		op = "resource.publish"
 		if e.cfg.Accounts.IsGuest(acct) {
 			e.cfg.Log.Info("publish-refused", logx.Device(dev), logx.Text("why", "guest"))
 			return cs.Send(wire.Refuse(wire.ReasonNotPermitted)) == nil
@@ -86,60 +101,95 @@ func (e *Engine) handle(cs *ControlStream, sess *Session, env wire.Envelope) boo
 		res, err := e.cfg.Dir.Publish(acct, dev, m.Resource)
 		if err != nil {
 			e.cfg.Log.Info("publish-refused", logx.Device(dev), logx.Text("why", publishWhy(err)))
+			status = logx.AuditRefusal(publishWhy(err))
 			return e.refuseOrClose(cs, err)
 		}
 		port := 0
 		if res.PublicPort != nil {
 			port = *res.PublicPort
 		}
-		e.cfg.Log.Info("published", logx.Device(dev), logx.Resource(res.ResourceID), logx.Int("port", port))
+		status, target = logx.AuditStatusOK, res.ResourceID
+		e.cfg.Log.State("published", logx.Device(dev), logx.Resource(res.ResourceID), logx.Int("port", port))
 		return cs.Send(&wire.Published{ResourceID: res.ResourceID, PublicPort: res.PublicPort}) == nil
 	case *wire.Unpublish:
+		op = "resource.unpublish"
+		target = m.ResourceID
+		owned, exists := e.cfg.Dir.ResolveResource(acct, m.ResourceID)
 		e.cfg.Dir.Unpublish(acct, dev, m.ResourceID)
+		if exists && owned.DeviceID == dev {
+			status = logx.AuditStatusOK
+		}
 		return true
 	case *wire.BroadcastStart:
+		op = "broadcast.start"
 		if e.cfg.Accounts.IsGuest(acct) {
 			e.cfg.Log.Info("broadcast-refused", logx.Device(dev), logx.Text("why", "guest"))
 			return cs.Send(wire.Refuse(wire.ReasonNotPermitted)) == nil
 		}
 		if !e.cfg.LoginLimiter.Allow(dev, limits.BroadcastStart) {
+			status = logx.AuditRefusal("rate-limited")
 			return cs.Send(wire.Refuse(wire.ReasonRateLimited)) == nil
 		}
 		id, err := e.cfg.Dir.BroadcastStart(acct, dev, m.Broadcast, m.MaxListeners)
 		if err != nil {
 			e.cfg.Log.Info("broadcast-refused", logx.Device(dev), logx.Text("why", publishWhy(err)))
+			status = logx.AuditRefusal(publishWhy(err))
 			return e.refuseOrClose(cs, err)
 		}
-		e.cfg.Log.Info("broadcast-started", logx.Device(dev), logx.Broadcast(id))
+		status, target = logx.AuditStatusOK, id
+		e.cfg.Log.State("broadcast-started", logx.Device(dev), logx.Broadcast(id))
 		return cs.Send(&wire.BroadcastStarted{BroadcastID: id}) == nil
 	case *wire.BroadcastUpdate:
+		op = "broadcast.update"
+		if rec, err := wire.ParseRecord(m.Broadcast); err == nil {
+			target, _ = rec.Str("broadcastId")
+		}
+		_, owner, exists := e.cfg.Dir.LiveBroadcast(acct, target)
 		if err := e.cfg.Dir.BroadcastUpdate(acct, dev, m.Broadcast, m.MaxListeners); err != nil {
+			status = logx.AuditRefusal(publishWhy(err))
 			return e.refuseOrClose(cs, err)
+		}
+		if exists && owner == dev {
+			status = logx.AuditStatusOK
 		}
 		return true
 	case *wire.BroadcastEnd:
+		op = "broadcast.end"
+		target = m.BroadcastID
+		_, owner, exists := e.cfg.Dir.LiveBroadcast(acct, target)
 		e.cfg.Dir.BroadcastEnd(acct, dev, m.BroadcastID)
+		if exists && owner == dev {
+			status = logx.AuditStatusOK
+		}
 		return true
 	case *wire.PairingRequest:
+		op = "device.pairing-code"
 		if !e.cfg.LoginLimiter.Allow(acct, limits.PairingRequest) {
+			status = logx.AuditRefusal("rate-limited")
 			return cs.Send(wire.Refuse(wire.ReasonRateLimited)) == nil
 		}
 		code, exp, err := e.cfg.Accounts.NewPairingCode(acct)
 		switch {
 		case errors.Is(err, accounts.ErrCapacity):
+			status = logx.AuditRefusal("capacity")
 			return cs.Send(wire.Refuse(wire.ReasonCapacity)) == nil
 		case err != nil:
 			return false
 		}
-		e.cfg.Log.Info("pairing-code-issued", logx.Device(dev))
+		status = logx.AuditStatusOK
+		e.cfg.Log.State("pairing-code-issued", logx.Device(dev))
 		return cs.Send(&wire.PairingCode{Code: code, ExpiresAt: wire.FormatTime(exp)}) == nil
 	case *wire.Revoke:
+		op = "device.revoke"
+		target = m.DeviceID
 		// Any enrolled device of the account may revoke another - or itself: the trust among an
 		// account's devices is flat, an accepted limit of v1 (item Q). An unknown or foreign device
 		// does nothing and is not answered; a real one is reported through `changed` and the log.
 		e.cfg.Log.Info("revoke-requested", logx.Device(dev))
-		if _, err := e.ops.RevokeDevice(acct, m.DeviceID); err != nil {
+		if changed, err := e.ops.RevokeDevice(acct, m.DeviceID); err != nil {
 			e.cfg.Log.Error("revoke-failed", logx.Device(dev), logx.Text("error", err.Error()))
+		} else if changed {
+			status = logx.AuditStatusOK
 		}
 		return true
 	case *wire.Grant:
@@ -184,7 +234,14 @@ func (e *Engine) handle(cs *ControlStream, sess *Session, env wire.Envelope) boo
 // the pairing codes are burned.
 func (e *Engine) handlePasswordChange(cs *ControlStream, sess *Session, m *wire.PasswordChange) bool {
 	acct, dev := sess.Account, sess.DeviceID
+	status := logx.AuditRefusal("incomplete")
+	defer func() {
+		ev := logx.AuditEvent{Op: "account.passwd", Target: acct, Remote: cs.st.raw.RemoteAddr().String(), Transport: cs.st.Transport(), Status: status, Details: "password change"}
+		auditSession(&ev, sess)
+		e.audit(ev)
+	}()
 	refuse := func(r wire.Reason, why string) bool {
+		status = logx.AuditRefusal(string(r))
 		e.cfg.Log.Info("password-change-refused", logx.Device(dev), logx.Login(acct), logx.Text("reason", string(r)), logx.Text("why", why))
 		return cs.Send(wire.Refuse(r)) == nil
 	}
@@ -216,7 +273,8 @@ func (e *Engine) handlePasswordChange(cs *ControlStream, sess *Session, m *wire.
 	for _, id := range signedOut {
 		e.cfg.Dir.SignOutDevice(acct, id)
 	}
-	e.cfg.Log.Info("password-changed", logx.Device(dev), logx.Login(acct), logx.Int("signedOut", len(signedOut)))
+	status = logx.AuditStatusOK
+	e.cfg.Log.State("password-changed", logx.Device(dev), logx.Login(acct), logx.Int("signedOut", len(signedOut)))
 	return cs.Send(&wire.PasswordChanged{DeviceToken: token}) == nil
 }
 
@@ -226,7 +284,14 @@ func (e *Engine) handlePasswordChange(cs *ControlStream, sess *Session, m *wire.
 // through the one path of the operator's removal, so the two erase the same set.
 func (e *Engine) handleAccountDelete(cs *ControlStream, sess *Session, m *wire.AccountDelete) bool {
 	acct, dev := sess.Account, sess.DeviceID
+	status := logx.AuditRefusal("incomplete")
+	defer func() {
+		ev := logx.AuditEvent{Op: "account.remove", Target: acct, Remote: cs.st.raw.RemoteAddr().String(), Transport: cs.st.Transport(), Status: status, Details: "account removal"}
+		auditSession(&ev, sess)
+		e.audit(ev)
+	}()
 	refuse := func(r wire.Reason) bool {
+		status = logx.AuditRefusal(string(r))
 		e.cfg.Log.Info("account-delete-refused", logx.Device(dev), logx.Login(acct), logx.Text("reason", string(r)))
 		return cs.Send(wire.Refuse(r)) == nil
 	}
@@ -243,8 +308,10 @@ func (e *Engine) handleAccountDelete(cs *ControlStream, sess *Session, m *wire.A
 	_ = cs.SendSync(&wire.AccountDeleted{})
 	if err := e.ops.RemoveAccount(acct); err != nil {
 		e.cfg.Log.Error("account-delete-failed", logx.Device(dev), logx.Login(acct), logx.Text("error", err.Error()))
+	} else {
+		status = logx.AuditStatusOK
 	}
-	e.cfg.Log.Info("account-deleted", logx.Device(dev), logx.Login(acct))
+	e.cfg.Log.State("account-deleted", logx.Device(dev), logx.Login(acct))
 	return false
 }
 

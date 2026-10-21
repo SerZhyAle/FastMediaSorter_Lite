@@ -34,9 +34,7 @@ Public Class IconographyContractTests
     <Fact>
     Public Sub Exchange_controls_use_the_catalog_exchange_meanings()
         Dim expected As New Dictionary(Of String, String) From {
-            {"managerSettingsNav_exchange", "source.exchange-server"},
             {"managerSettingsNav_exchange-account", "action.connect-device"},
-            {"res_DevicesAdd", "source.exchange-server"},
             {"xc_Connect", "action.connect-device"},
             {"btnClipboardSend", "action.send-clipboard"},
             {"btnClipboardGet", "action.receive-clipboard"},
@@ -68,7 +66,7 @@ Public Class IconographyContractTests
     End Sub
 
     <Fact>
-    Public Sub The_rows_still_waiting_on_the_catalog_are_exactly_these_four()
+    Public Sub The_rows_still_waiting_on_the_catalog_are_exactly_these_six()
         ' ICON-SET rule 5 / registry exception: a control whose meaning has no usable catalog
         ' picture keeps its own under a dated exception. The list is pinned by name so a row
         ' joins or leaves it on purpose, in the same edit as the exception that records it.
@@ -77,7 +75,7 @@ Public Class IconographyContractTests
         ' the variants the catalog still owes; the password eye waits for the Share Manager to adopt
         ' action.reveal (its off form's file is owed too).
         Dim waiting = IconMap.All.Where(Function(m) Not m.IsVocabulary).Select(Function(m) m.ControlName).OrderBy(Function(n) n, StringComparer.Ordinal).ToArray()
-        Assert.Equal(New String() {"btnRevealPassword", "btn_Random_Slideshow", "editor_Tool_Oval_Filled", "editor_Tool_Rectangle_Filled"}, waiting)
+        Assert.Equal(New String() {"btnRevealPassword", "btn_Random_Slideshow", "editor_Tool_Oval_Filled", "editor_Tool_Rectangle_Filled", "managerSettingsNav_exchange", "res_DevicesAdd"}, waiting)
     End Sub
 
     <Fact>
@@ -163,10 +161,10 @@ Public Class IconographyContractTests
         ' and relies on its <g transform> to lift it into the grid.
         For Each filePath As String In Directory.GetFiles(GlyphDir, "*.svg")
             Dim name As String = Path.GetFileName(filePath)
-            ' A catalog drawing that departs from item A is the catalog's to fix, not the product's to redraw (rule 1
-            ' of ICON-RENDER section 3: the vendored file is the catalog's). Named here, with the date it was found, so the
-            ' list shrinks when the catalog does. 2026-10-11: action.paste (proposed, from the CyrFlip batch) inks at y 0..22.
-            If name = "action.paste.svg" Then Continue For
+            ' No allowance: ICON-SET 0.34/0.36 turned action.paste active with a 1 px inset <g transform>, so it holds
+            ' the same live area as every other glyph. A catalog drawing that departs from item A is the catalog's to
+            ' fix, not the product's to redraw (rule 1 of ICON-RENDER section 3), so a new departure is reported, not
+            ' skipped here.
             Dim shapes = GlyphRenderer.ReadShapes(File.ReadAllText(filePath))
             Try
                 Assert.NotEmpty(shapes)
@@ -371,7 +369,8 @@ Public Class IconographyContractTests
     <Fact>
     Public Sub Root_page_draws_back_to_top_and_download_with_vocabulary_glyphs()
         ' Spec 044: the kit's text arrows gave way to nav.scroll-top and action.download.
-        ' The theme switch keeps the kit's symbol until the vocabulary has a meaning for it.
+        ' Specification 243 (BUTTONS 2.0): the glyph sits on the two download commands, not on the "All releases"
+        ' navigation link; the theme switch draws app.theme.
         Dim page As String = File.ReadAllText(Path.Combine(FindRepoRoot(), "index.html"))
         Assert.Contains("data-glyph=""nav.scroll-top""", page)
         Assert.Contains("data-glyph=""action.download""", page)

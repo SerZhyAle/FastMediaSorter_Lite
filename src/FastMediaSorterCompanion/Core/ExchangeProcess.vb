@@ -140,6 +140,11 @@ Friend Module ExchangeProcess
         Public Property KeepAwake As Boolean
         Public Property LogRetentionDays As Integer = 31
         Public Property MaxAccounts As Integer = 10
+        Public Property AdminOn As Boolean
+        Public Property AdminPasswordSet As Boolean
+        Public Property AdminAllowedAddresses As String() = Array.Empty(Of String)()
+        Public Property AdminSessionLifetimeMinutes As Integer = 15
+        Public Property WebDir As String = ""
 
         ''' <summary>The listen port from the endpoint ("" host or not), or 0 when it has none.</summary>
         Public ReadOnly Property Port As Integer
@@ -189,12 +194,33 @@ Friend Module ExchangeProcess
                 report.LogRetentionDays = If(days > 0, days, 31)
                 Dim maxAcc As Integer = ReadInt(root, "maxAccounts")
                 report.MaxAccounts = If(maxAcc > 0, maxAcc, 10)
+                report.AdminOn = ReadBool(root, "adminOn")
+                report.AdminPasswordSet = ReadBool(root, "adminPasswordSet")
+                report.AdminAllowedAddresses = ReadStringArray(root, "adminAllowedAddresses")
+                Dim life As Integer = ReadInt(root, "adminSessionLifetimeMinutes")
+                report.AdminSessionLifetimeMinutes = If(life > 0, life, 15)
+                report.WebDir = ReadString(root, "webDir")
                 report.Answered = True
             End Using
         Catch ex As JsonException
             report.Answered = False
         End Try
         Return report
+    End Function
+
+    Private Function ReadStringArray(root As JsonElement, name As String) As String()
+        Dim v As JsonElement = Nothing
+        If root.TryGetProperty(name, v) AndAlso v.ValueKind = JsonValueKind.Array Then
+            Dim list As New List(Of String)()
+            For Each item As JsonElement In v.EnumerateArray()
+                If item.ValueKind = JsonValueKind.String Then
+                    Dim s As String = item.GetString()
+                    If Not String.IsNullOrEmpty(s) Then list.Add(s)
+                End If
+            Next
+            Return list.ToArray()
+        End If
+        Return Array.Empty(Of String)()
     End Function
 
     Private Function ReadString(root As JsonElement, name As String) As String
@@ -477,6 +503,169 @@ Friend Module ExchangeProcess
             End If
         End If
         Return result
+    End Function
+
+    ' --- remote administration (ticket 245, DEVICE-EXCHANGE 1.4) -------------------------
+
+    ''' <summary>Converts a "SHA256:<base64>" fingerprint into 32 colon-separated hex bytes, e.g. "AA:BB:...".</summary>
+    Friend Function FormatFingerprintHex(fingerprint As String) As String
+        If String.IsNullOrWhiteSpace(fingerprint) Then Return ""
+        Dim b64 As String = fingerprint.Trim()
+        If b64.StartsWith("SHA256:", StringComparison.OrdinalIgnoreCase) Then
+            b64 = b64.Substring("SHA256:".Length).Trim()
+        End If
+        Try
+            Dim bytes As Byte() = Convert.FromBase64String(b64)
+            If bytes.Length = 32 Then
+                Return BitConverter.ToString(bytes).Replace("-"c, ":"c)
+            End If
+        Catch ex As FormatException
+        End Try
+        Return fingerprint
+    End Function
+
+    ''' <summary>Computes the browser admin URL https://<x>/#admin per Rule 13.</summary>
+    Friend Function BrowserAdminUrl(report As InspectReport) As String
+        If report Is Nothing Then Return ""
+        If Not report.AdminOn OrElse String.IsNullOrWhiteSpace(report.WebDir) Then Return ""
+        Dim hostPort As String = report.PublicEndpoint.Trim()
+        If String.IsNullOrEmpty(hostPort) Then
+            Dim port As Integer = report.Port
+            If port = 0 Then Return ""
+            Dim separator As Integer = report.Listen.LastIndexOf(":"c)
+            Dim listenHost As String = report.Listen.Substring(0, separator).Trim("["c, "]"c)
+            If listenHost = "" OrElse listenHost = "0.0.0.0" Then
+                listenHost = "127.0.0.1"
+            ElseIf listenHost = "::" Then
+                listenHost = "::1"
+            End If
+            If listenHost.Contains(":"c) Then listenHost = "[" & listenHost & "]"
+            hostPort = listenHost & ":" & port.ToString(Globalization.CultureInfo.InvariantCulture)
+        End If
+        Return "https://" & hostPort & "/#admin"
+    End Function
+
+    ''' <summary>The sign-in link of the browser client (WEB-BINDING page-served-by-the-server 3, item AE): https://&lt;x&gt;/#&lt;connection string&gt;.
+    ''' Pure. The host and port come out of the connection string itself (so the link and the string name the same server; an IPv6 literal
+    ''' is bracketed), the string rides after the # unchanged (only the white space around it is dropped) and a fragment never reaches the wire. "" when the server serves no web
+    ''' client, or when there is no string, or when the string is not a connection string with an endpoint - never a half link.</summary>
+    Friend Function BrowserSignInUrl(report As InspectReport, connectionString As String) As String
+        If report Is Nothing OrElse String.IsNullOrWhiteSpace(report.WebDir) Then Return ""
+        If String.IsNullOrEmpty(connectionString) Then Return ""
+        Dim parsed As ExchangeConnectionStringResult = ExchangeConnectionString.Parse(connectionString)
+        If Not parsed.Succeeded Then Return ""
+        Dim endpoint As String = parsed.Value.Endpoint
+        If parsed.Value.Host.Length = 0 OrElse parsed.Value.Port <= 0 Then Return ""
+        Return "https://" & endpoint & "/#" & connectionString.Trim()
+    End Function
+
+    Friend NotInheritable Class AdminActionResult
+        Public Property Outcome As ConfigOutcome = ConfigOutcome.Failed
+        Public Property GeneratedPassword As String = ""
+        Public Property ErrorMessage As String = ""
+    End Class
+
+    Friend Function AdminOn(generate As Boolean, password As String, allowedAddresses As String, sessionLifetimeMinutes As Integer) As AdminActionResult
+        Dim res As New AdminActionResult
+        If Not IsAvailable() Then
+            res.Outcome = ConfigOutcome.Unavailable
+            Return res
+        End If
+        Dim args As New List(Of String) From {"admin", "on"}
+        If generate Then
+            args.Add("--generate")
+        End If
+        If allowedAddresses IsNot Nothing Then
+            args.Add("--allowed")
+            args.Add(If(allowedAddresses.Trim().Length = 0, "-", allowedAddresses.Trim()))
+        End If
+        If sessionLifetimeMinutes > 0 Then
+            args.Add("--lifetime")
+            args.Add(sessionLifetimeMinutes.ToString(Globalization.CultureInfo.InvariantCulture))
+        End If
+        Dim stdin As String = Nothing
+        If Not generate AndAlso Not String.IsNullOrEmpty(password) Then
+            stdin = password
+        End If
+        Dim r As RunResult = Run(args.ToArray(), stdin, CommandTimeoutMs)
+        Log("admin on", r)
+        If Not r.Started OrElse r.TimedOut Then
+            res.Outcome = ConfigOutcome.Failed
+            Return res
+        End If
+        Select Case r.ExitCode
+            Case ExitOk
+                res.Outcome = ConfigOutcome.Saved
+                If generate Then
+                    Dim lines As String() = If(r.StdOut, "").Split({ChrW(10), ChrW(13)}, StringSplitOptions.RemoveEmptyEntries)
+                    If lines.Length > 0 Then res.GeneratedPassword = lines(0).Trim()
+                End If
+            Case ExitUsage : res.Outcome = ConfigOutcome.Refused
+            Case ExitPolicy : res.Outcome = ConfigOutcome.Refused
+            Case ExitConfig : res.Outcome = ConfigOutcome.ConfigProblem
+            Case Else : res.Outcome = ConfigOutcome.Failed
+        End Select
+        res.ErrorMessage = If(r.StdErr, "").Trim()
+        Return res
+    End Function
+
+    Friend Function AdminOff() As ConfigOutcome
+        If Not IsAvailable() Then Return ConfigOutcome.Unavailable
+        Dim r As RunResult = Run({"admin", "off"}, Nothing, CommandTimeoutMs)
+        Log("admin off", r)
+        Return ConfigOutcomeOf(r)
+    End Function
+
+    Friend Function AdminPasswd(generate As Boolean, password As String) As AdminActionResult
+        Dim res As New AdminActionResult
+        If Not IsAvailable() Then
+            res.Outcome = ConfigOutcome.Unavailable
+            Return res
+        End If
+        Dim args As New List(Of String) From {"admin", "passwd"}
+        If generate Then
+            args.Add("--generate")
+        End If
+        Dim stdin As String = Nothing
+        If Not generate AndAlso Not String.IsNullOrEmpty(password) Then
+            stdin = password
+        End If
+        Dim r As RunResult = Run(args.ToArray(), stdin, CommandTimeoutMs)
+        Log("admin passwd", r)
+        If Not r.Started OrElse r.TimedOut Then
+            res.Outcome = ConfigOutcome.Failed
+            Return res
+        End If
+        Select Case r.ExitCode
+            Case ExitOk
+                res.Outcome = ConfigOutcome.Saved
+                If generate Then
+                    Dim lines As String() = If(r.StdOut, "").Split({ChrW(10), ChrW(13)}, StringSplitOptions.RemoveEmptyEntries)
+                    If lines.Length > 0 Then res.GeneratedPassword = lines(0).Trim()
+                End If
+            Case ExitUsage : res.Outcome = ConfigOutcome.Refused
+            Case ExitPolicy : res.Outcome = ConfigOutcome.Refused
+            Case ExitConfig : res.Outcome = ConfigOutcome.ConfigProblem
+            Case Else : res.Outcome = ConfigOutcome.Failed
+        End Select
+        res.ErrorMessage = If(r.StdErr, "").Trim()
+        Return res
+    End Function
+
+    Friend Function AdminSet(allowedAddresses As String, sessionLifetimeMinutes As Integer) As ConfigOutcome
+        If Not IsAvailable() Then Return ConfigOutcome.Unavailable
+        Dim args As New List(Of String) From {"admin", "set"}
+        If allowedAddresses IsNot Nothing Then
+            args.Add("--allowed")
+            args.Add(If(allowedAddresses.Trim().Length = 0, "-", allowedAddresses.Trim()))
+        End If
+        If sessionLifetimeMinutes > 0 Then
+            args.Add("--lifetime")
+            args.Add(sessionLifetimeMinutes.ToString(Globalization.CultureInfo.InvariantCulture))
+        End If
+        Dim r As RunResult = Run(args.ToArray(), Nothing, CommandTimeoutMs)
+        Log("admin set", r)
+        Return ConfigOutcomeOf(r)
     End Function
 
     ' --- where the data lives ----------------------------------------------------------------

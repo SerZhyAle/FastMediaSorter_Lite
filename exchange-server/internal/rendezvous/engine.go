@@ -43,7 +43,9 @@ type EngineConfig struct {
 	Limiter      *limits.Limiter
 	LoginLimiter *limits.Limiter
 	Log          *logx.Logger
-	Now          func() time.Time
+	// Audit is the local operational audit of spec 247 (DEVICE-EXCHANGE 1.5 section C): nil discards.
+	Audit *logx.Audit
+	Now   func() time.Time
 	// PublicEndpoint is the host:port every client reaches the server by, announced in `welcome`.
 	PublicEndpoint string
 	ServerVersion  string
@@ -92,7 +94,8 @@ func NewEngine(cfg EngineConfig) *Engine {
 		cast: cast.New(cfg.Now, cfg.Params.CastTimeout, cfg.Params.CastPerAccount),
 		clip: clipboard.NewTable(cfg.Now, cfg.Rand),
 		ctl:  map[string]*ctlEntry{}, streams: map[string]map[*Stream]struct{}{}}
-	e.ops = &admin.Ops{Accounts: cfg.Accounts, Dir: cfg.Dir, Log: cfg.Log, Live: true, Clipboard: e.clip, Sealed: cfg.Features.Sealed}
+	e.ops = &admin.Ops{Accounts: cfg.Accounts, Dir: cfg.Dir, Log: cfg.Log, Live: true, Clipboard: e.clip, Sealed: cfg.Features.Sealed,
+		Audit: admin.NewAuditTracker(), AuditLog: cfg.Audit}
 	if cfg.Rand != nil {
 		e.tunnels.SetRand(cfg.Rand)
 	}
@@ -114,6 +117,7 @@ func NewEngine(cfg EngineConfig) *Engine {
 	// what members gave to guests, and the limits of each account (19 items AO and AS): both are the
 	// accounts store's to say, and both are asked under the directory's lock, so neither calls back
 	cfg.Dir.SetGrants(grantSource{cfg.Accounts})
+	cfg.Dir.SetListeners(e.broadcastListeners)
 	cfg.Dir.SetCapsFor(func(account string) directory.Caps {
 		l := cfg.Accounts.LimitsFor(account)
 		return directory.Caps{ResourcesPerAccount: l.Resources, BroadcastsPerAccount: l.Broadcasts, BroadcastsPerDevice: l.BroadcastsPerDevice}
@@ -147,6 +151,35 @@ func directoryGrants(in []accounts.Grant) []directory.Grant {
 // Ops are the operator's operations over this engine's stores, for the admin channel.
 func (e *Engine) Ops() *admin.Ops { return e.ops }
 
+// audit writes one [AUDIT] event of the device path (spec 247): the actor is an authenticated
+// account/device, the transport of every device stream is TLS. Nil-safe like the audit itself.
+func (e *Engine) audit(ev logx.AuditEvent) {
+	if e.cfg.Audit == nil {
+		return
+	}
+	if ev.Transport == "" {
+		ev.Transport = "TLS-stream"
+	}
+	if ev.Status == "" {
+		ev.Status = logx.AuditStatusOK
+	}
+	e.cfg.Audit.Record(ev)
+}
+
+// auditSession fills the identity members of an event from a session.
+func auditSession(ev *logx.AuditEvent, sess *Session) {
+	if sess == nil {
+		return
+	}
+	ev.Actor, ev.Device, ev.DeviceName = sess.Account, sess.DeviceID, sess.DeviceName
+	if sess.Product != "" {
+		ev.Product = sess.Product
+		if sess.ProductVersion != "" {
+			ev.Product += "/" + sess.ProductVersion
+		}
+	}
+}
+
 // Tunnels is the number of tunnels, pending or bridged (a count, never a list).
 func (e *Engine) Tunnels() int { return e.tunnels.Total() }
 
@@ -177,7 +210,7 @@ func (e *Engine) Clipboard() *clipboard.Table { return e.clip }
 
 func (e *Engine) resourceGone(account, resourceID, deviceID string) {
 	e.tunnels.AbortKey(tunnel.ResourceKey(account, resourceID))
-	e.cfg.Log.Info("resource-gone", logx.Resource(resourceID), logx.Device(deviceID))
+	e.cfg.Log.State("resource-gone", logx.Login(account), logx.Resource(resourceID), logx.Device(deviceID))
 }
 
 func (e *Engine) broadcastGone(account, broadcastID, deviceID string) {
@@ -186,7 +219,7 @@ func (e *Engine) broadcastGone(account, broadcastID, deviceID string) {
 		e.cfg.Relay.End(broadcastID) // every listener's body ends cleanly, the ring is dropped
 	}
 	e.cast.DropBroadcast(broadcastID)
-	e.cfg.Log.Info("broadcast-ended", logx.Broadcast(broadcastID), logx.Device(deviceID))
+	e.cfg.Log.State("broadcast-ended", logx.Login(account), logx.Broadcast(broadcastID), logx.Device(deviceID))
 }
 
 // closeDevice ends every stream of a device, its control stream and its data streams, and its
@@ -300,3 +333,9 @@ func (e *Engine) Close() {
 		e.cfg.Log.Error("store-write-failed", logx.Text("store", "devices"), logx.Text("error", err.Error()))
 	}
 }
+
+// Pacer returns the pacer of password checks.
+func (e *Engine) Pacer() *accounts.Pacer { return e.cfg.Accounts.Pacer() }
+
+// Verifier returns the concurrency-bounded password verifier.
+func (e *Engine) Verifier() *limits.Verifier { return e.cfg.Verifier }

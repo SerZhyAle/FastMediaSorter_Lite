@@ -1204,3 +1204,44 @@ func TestPacerIsOnePasswordCheckASecondAndNeverALockout(t *testing.T) {
 		}
 	}
 }
+
+func TestPacerWaitAddrKeyedByAddressAlone(t *testing.T) {
+	ck := newClock()
+	var slept time.Duration
+	sleep := func(d time.Duration) {
+		slept += d
+		ck.Add(d)
+	}
+	p := newPacer(ck.Now, sleep, 0)
+
+	// first check: no wait
+	if !p.WaitAddr("10.0.0.1") || slept != 0 {
+		t.Fatal("first check on 10.0.0.1 should not wait")
+	}
+	// second check on same address waits one slot
+	before := slept
+	if !p.WaitAddr("10.0.0.1") || slept-before != time.Second {
+		t.Fatalf("second check on 10.0.0.1 should wait 1s, slept %v", slept-before)
+	}
+	// third check arrives while second is running: wait would be > 1 interval, turned away!
+	// to test turned away: if Reserve is called before time advanced:
+	// currently ck.Now() was advanced by 1s in sleep, so the slot at start+1s is claimed (until start+2s).
+	// If two checks arrive at the same time:
+	w1, ok1 := p.Reserve(AddrKey("10.0.0.2"))
+	if !ok1 || w1 != 0 {
+		t.Fatalf("first reserve: %v %v", w1, ok1)
+	}
+	w2, ok2 := p.Reserve(AddrKey("10.0.0.2"))
+	if !ok2 || w2 != time.Second {
+		t.Fatalf("second reserve: %v %v", w2, ok2)
+	}
+	_, ok3 := p.Reserve(AddrKey("10.0.0.2"))
+	if ok3 {
+		t.Fatal("third reserve on same address within window should be rate-limited")
+	}
+
+	// a different address is completely independent
+	if !p.WaitAddr("10.0.0.3") {
+		t.Fatal("independent address should not be locked out")
+	}
+}

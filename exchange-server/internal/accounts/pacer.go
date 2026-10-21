@@ -131,3 +131,18 @@ func (p *Pacer) Wait(login, addr string) bool {
 	}
 	return true
 }
+
+// WaitAddr takes a turn for one password check paced by client address alone (DEVICE-EXCHANGE 1.4, ticket 245).
+func (p *Pacer) WaitAddr(addr string) bool {
+	if addr == "" {
+		return true
+	}
+	wait, ok := p.Reserve(AddrKey(addr))
+	if !ok {
+		return false
+	}
+	if wait > 0 {
+		p.sleep(wait)
+	}
+	return true
+}

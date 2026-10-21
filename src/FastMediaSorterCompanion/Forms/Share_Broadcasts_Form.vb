@@ -35,6 +35,7 @@ Public NotInheritable Class Share_Broadcasts_Form
     Private btnRefresh As Button
     Private btnRevoke As Button
     Private btnClose As Button
+    Private _answerRow As DialogButtonRow
 
     Public Sub New(Optional initialTargetPath As String = "")
         _initialTargetPath = If(initialTargetPath, "").Trim()
@@ -58,14 +59,16 @@ Public NotInheritable Class Share_Broadcasts_Form
 
         Dim pnlMain As New TableLayoutPanel With {
             .Dock = DockStyle.Fill,
-            .Padding = New Padding(16),
+            .Padding = New Padding(16, 16, 16, 0),
             .ColumnCount = 1,
-            .RowCount = 5
+            .RowCount = 4
         }
+        ' The column follows the window (it used to follow the widest content, the one-line actions row): a window clamped to a
+        ' small monitor or opened at a high scale wraps the actions instead of pushing the list past its edge.
+        pnlMain.ColumnStyles.Add(New ColumnStyle(SizeType.Percent, 100.0F))
         pnlMain.RowStyles.Add(New RowStyle(SizeType.AutoSize))
         pnlMain.RowStyles.Add(New RowStyle(SizeType.AutoSize))
         pnlMain.RowStyles.Add(New RowStyle(SizeType.Percent, 100.0F))
-        pnlMain.RowStyles.Add(New RowStyle(SizeType.AutoSize))
         pnlMain.RowStyles.Add(New RowStyle(SizeType.AutoSize))
 
         ' Header & Gateway Toggle
@@ -76,8 +79,9 @@ Public NotInheritable Class Share_Broadcasts_Form
             .Margin = New Padding(0, 0, 0, 4)
         }
         AddHandler chkEnableGateway.CheckedChanged, AddressOf OnGatewayToggleChanged
-        pnlMain.Controls.Add(chkEnableGateway, 0, 0)
 
+        ' The gateway switch is a boolean row (BOOLEAN-OPTION 2.0, ticket 243 T-11c-b2a): the check box keeps its field, handler and
+        ' state; its description is the row's explanation and the status and notice lines stay under the row, indented to the caption.
         Dim pnlDesc As New FlowLayoutPanel With {
             .AutoSize = True,
             .FlowDirection = FlowDirection.TopDown,
@@ -103,12 +107,21 @@ Public NotInheritable Class Share_Broadcasts_Form
             .MaximumSize = New Size(700, 0),
             .Visible = False
         }
-        pnlDesc.Controls.Add(lblGatewayDesc)
+        Dim gatewayRow As OptionRowHost = OptionRows.InFlow(chkEnableGateway, lblGatewayDesc)
+        gatewayRow.Caption.Font = chkEnableGateway.Font
+        gatewayRow.Margin = New Padding(0, 0, 0, 4)
+        pnlMain.Controls.Add(gatewayRow, 0, 0)
         pnlDesc.Controls.Add(lblGatewayStatus)
         pnlDesc.Controls.Add(lblNotice)
         pnlMain.Controls.Add(pnlDesc, 0, 1)
-        lblGatewayDesc.Margin = Padding.Empty
-        CheckBoxLayout.BindHint(chkEnableGateway, pnlDesc)
+        ' The two lines under the row start where its caption starts (the edge inset, the box and the gap; 96-dpi px, scaled
+        ' with the window), on the reading-start side.
+        Dim captionInset As Integer = OptionRows.FlowEdgeInsetLogical + SettingsCheckBox.BoxSideLogical + SettingsCheckBox.CaptionGapLogical
+        If Me.RightToLeft = RightToLeft.Yes Then
+            pnlDesc.Margin = New Padding(0, 0, captionInset, 10)
+        Else
+            pnlDesc.Margin = New Padding(captionInset, 0, 0, 10)
+        End If
 
         ' Broadcasts ListView
         lvBroadcasts = New ListView With {
@@ -199,29 +212,33 @@ Public NotInheritable Class Share_Broadcasts_Form
         pnlActions.Controls.AddRange(New Control() {btnCreate, btnCopyLink, btnSaveSpres, btnShowQr, btnRefresh, btnRevoke})
         pnlMain.Controls.Add(pnlActions, 0, 3)
 
-        ' Bottom close row
-        Dim pnlBottom As New FlowLayoutPanel With {
-            .AutoSize = True,
-            .Anchor = AnchorStyles.Right,
-            .FlowDirection = FlowDirection.LeftToRight,
-            .Margin = New Padding(0)
-        }
+        ' Close is the window's one answer and rides the shared bottom row (ticket 243 T-8b, BUTTONS 2.0 sections 3 and 4):
+        ' the row sizes it from its caption and glyph and binds Escape and Enter to it. The actions row above (Create, Copy
+        ' link, Save, QR, Refresh, Revoke) works on the selected broadcast of the list - per-row commands, not answers - and
+        ' stays where it is.
         btnClose = New Button With {
+            .Name = "xsb_Close",
             .AutoSize = True,
-            .Padding = New Padding(14, 5, 14, 5),
             .Text = Localization.T("Закрыть"),
             .DialogResult = DialogResult.OK
         }
-        ButtonGlyphs.Apply(btnClose, "nav.close", ButtonGlyphRole.Dismissing)
         AddHandler btnClose.Click, Sub() Me.Close()
-        pnlBottom.Controls.Add(btnClose)
-        pnlMain.Controls.Add(pnlBottom, 0, 4)
+        _answerRow = New DialogButtonRow() With {.Dock = DockStyle.Bottom, .Name = "xsb_Buttons", .Padding = New Padding(16, 4, 16, 12)}
+        DpiLayout.AddAnswer(_answerRow, btnClose, DialogButtonRole.Dismissing, "nav.close")
 
         Me.Controls.Add(pnlMain)
-        Me.CancelButton = btnClose
+        ' Last in the collection: the docked row takes its edge first and reads after the list in the Tab order.
+        Me.Controls.Add(_answerRow)
+        _answerRow.Bind(Me)
         DpiLayout.ApplyAutoScale(Me)
 
         AddHandler Me.Shown, AddressOf OnShownAsync
+    End Sub
+
+    Protected Overrides Sub OnLoad(e As EventArgs)
+        MyBase.OnLoad(e)
+        OptionRows.ArrangeAll(Me)
+        DpiLayout.ClampToWorkingArea(Me)
     End Sub
 
     Private Async Sub OnShownAsync(sender As Object, e As EventArgs)
@@ -526,7 +543,7 @@ Public NotInheritable Class Share_Broadcasts_Form
         Dim b As WorkerBroadcast = SelectedBroadcast()
         If b Is Nothing Then Return
 
-        Dim answer As DialogResult = MessageBox.Show(Me,
+        Dim answer As DialogResult = ManagerBox.Show(Me,
             Localization.TF("Отозвать трансляцию {0}? Ссылка перестанет работать немедленно.", b.Title),
             Localization.T("Трансляции для StreamsPlayer"), MessageBoxButtons.YesNo, MessageBoxIcon.Question)
         If answer <> DialogResult.Yes Then Return

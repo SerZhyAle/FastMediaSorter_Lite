@@ -13,6 +13,7 @@ import (
 	"fms/exchange-server/internal/config"
 	"fms/exchange-server/internal/deploy"
 	"fms/exchange-server/internal/directory"
+	"fms/exchange-server/internal/logx"
 	"fms/exchange-server/internal/password"
 )
 
@@ -58,8 +59,29 @@ func withRunner(paths config.Paths, stderr io.Writer, f func(opRunner) int) int 
 			printf(stderr, "cannot open the directory: %v\n", err)
 			return exitConfig
 		}
+		var logger *logx.Logger
+		var audit *logx.Audit
+		defer func() { _ = logger.Close() }()
+		defer func() { _ = audit.Close() }()
 		ops := &admin.Ops{Accounts: store, Dir: dir, SaveLimits: saveLimitsTo(paths.Config)}
-		code := f(func(req admin.Request) (admin.Response, error) { return ops.Handle(req), nil })
+		code := f(func(req admin.Request) (admin.Response, error) {
+			if stateMutation(req.Op) && logger == nil {
+				if err := os.MkdirAll(paths.LogsDir, 0o700); err != nil {
+					return admin.Response{}, errors.New("cannot create the state log directory")
+				}
+				logger, err = logx.OpenDaily(paths.LogsDir, cfg.Log.MaxBytes, cfg.Log.RetentionDays, nil)
+				if err != nil {
+					return admin.Response{}, errors.New("cannot open the state log")
+				}
+				ops.Log = logger
+				audit, err = logx.OpenAuditDaily(paths.LogsDir, cfg.Log.MaxBytes, cfg.Log.RetentionDays, nil)
+				if err != nil {
+					return admin.Response{}, errors.New("cannot open the operational audit")
+				}
+				ops.AuditLog = audit
+			}
+			return ops.HandleAudited(req, logx.AuditEvent{Transport: "LocalCLI", Product: admin.ClientProductLocal}), nil
+		})
 		if err := dir.Flush(); err != nil {
 			printf(stderr, "cannot write the directory: %v\n", err)
 			return exitConfig

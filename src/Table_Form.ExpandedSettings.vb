@@ -113,6 +113,21 @@ Partial Public Class Table_Form
                                     Function() Main_Form.GetModernPreferences().NewImageScaleMode,
                                     Sub(v) Main_Form.GetModernPreferences().NewImageScaleMode = v)
             End Sub)
+        ' Spec 242 rules 2 and 22: the switch, and under it the FFmpeg state with the button that runs the
+        ' existing consent flow (a check row cannot host a command, so the state is a row of its own).
+        RegisterSettingsRow("animated_via_video",
+            Sub()
+                AddPreferenceCheck(viewing, "animated_via_video",
+                                   Function() Main_Form.GetModernPreferences().AnimatedViaVideo,
+                                   Sub(v)
+                                       Main_Form.GetModernPreferences().AnimatedViaVideo = v
+                                       If Not v Then Main_Form.PurgeAnimationVideoStore()
+                                   End Sub)
+            End Sub)
+        RegisterSettingsRow("animated_via_video_ffmpeg",
+            Sub()
+                AddFfmpegStateRow(viewing)
+            End Sub)
         RegisterSettingsRow("reduce_motion",
             Sub()
                 AddPreferenceCheck(viewing, "reduce_motion",
@@ -1249,6 +1264,50 @@ Partial Public Class Table_Form
             End Sub
         expandedRefreshActions.Add(refresh)
         AddSettingRow(flow, key, check, 34, True)
+    End Sub
+
+    ''' <summary>
+    ''' Spec 242 rule 2: the FFmpeg state line and the button that fetches it. The state is the row's hint
+    ''' (<c>ModernSettingDescription</c> asks <c>OptionalRuntimeManager.HasFfmpegRuntime</c>); the button runs the
+    ''' existing consent flow - the same dialog, download size and licence text as "Replace with video" - and is
+    ''' shown only while the runtime is missing. Nothing is downloaded without that dialog's Yes, and the answer
+    ''' (a No included) is not remembered here: the remembered No of rule 22 belongs to the first-file offer.
+    ''' </summary>
+    Private Sub AddFfmpegStateRow(flow As FlowLayoutPanel)
+        Const rowKey As String = "animated_via_video_ffmpeg"
+        Dim download As New Button With {.AutoSize = True}
+        Dim downloading As Boolean = False
+        Dim refresh As Action =
+            Sub()
+                download.Text = Localization.T("Загрузить..")
+                download.Visible = Not OptionalRuntimeManager.HasFfmpegRuntime()
+                Dim row As ModernSettingRow = modernSettingsRows.FirstOrDefault(Function(item) item.Key = rowKey)
+                If row Is Nothing OrElse row.Description Is Nothing Then Return
+                row.Description.Text = ModernSettingDescription(rowKey)
+                download.AccessibleDescription = row.Description.Text
+                SizeModernSettingRow(row)
+            End Sub
+        AddHandler download.Click,
+            Async Sub()
+                If downloading Then Return
+                downloading = True
+                download.Enabled = False
+                Try
+                    ' The dialogs (consent, progress, retry, failure) belong to the flow itself.
+                    Await OptionalRuntimeManager.EnsureFfmpegRuntimeInteractiveAsync(Me).ConfigureAwait(True)
+                Catch ex As Exception
+                    AppFileLogger.LogException("Settings: downloading FFmpeg", ex)
+                Finally
+                    downloading = False
+                    If Not download.IsDisposed Then download.Enabled = True
+                End Try
+                If IsDisposed OrElse Disposing OrElse download.IsDisposed Then Return
+                refresh()
+            End Sub
+        expandedRefreshActions.Add(refresh)
+        download.Text = Localization.T("Загрузить..")
+        download.Visible = Not OptionalRuntimeManager.HasFfmpegRuntime()
+        AddSettingRow(flow, "animated_via_video_ffmpeg", download, 230, True)
     End Sub
 
     ''' <summary>A kind toggle needs more than applying preferences: it changes which

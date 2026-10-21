@@ -1,4 +1,4 @@
-﻿Option Strict On
+Option Strict On
 
 ''' <summary>
 ''' The words of the server administration of ticket 168 (accounts, devices, the address clients use, the third-party
@@ -133,20 +133,28 @@ Friend Module ExchangeAdminText
     ''' <summary>One sentence per failure code of an admin answer. The server's own text is never used.</summary>
     Friend Function Failure(code As String) As String
         Select Case code
-            Case ExchangeAdminCodes.Exists
-                Return Localization.T("Такая учётная запись уже есть.")
-            Case ExchangeAdminCodes.BadLogin, ExchangeAdminCodes.BadRequest
-                Return LoginHint()
-            Case ExchangeAdminCodes.WeakPassword
-                Return Localization.T("Пароль не принят: он не соответствует правилам.")
+            Case ExchangeAdminCodes.BadRequest
+                Return Localization.T("Сервер не принял этот запрос. Проверьте введённое и повторите.")
             Case ExchangeAdminCodes.NoAccount
                 Return Localization.T("Такой учётной записи нет.")
+            Case ExchangeAdminCodes.Exists
+                Return Localization.T("Это уже есть на сервере.")
+            Case ExchangeAdminCodes.BadLogin
+                Return Localization.T("Логин не принят: от 3 до 64 символов - строчные латинские буквы, цифры, точка, подчёркивание и дефис.")
+            Case ExchangeAdminCodes.WeakPassword
+                Return Localization.T("Пароль не принят: он не соответствует правилам.")
             Case ExchangeAdminCodes.NotFound
-                Return Localization.T("Такого устройства нет в этой учётной записи.")
+                Return Localization.T("Этого нет на сервере. Возможно, оно уже удалено.")
+            Case ExchangeAdminCodes.Capacity
+                Return Localization.T("Сервер сейчас не может это принять: достигнут его предел. Повторите позже.")
+            Case ExchangeAdminCodes.BadKind
+                Return Localization.T("Учётная запись бывает либо «своё устройство или семья», либо «гость».")
+            Case ExchangeAdminCodes.BadLimit
+                Return Localization.T("Предел не принят: нужно целое число в границах, которые принимает сервер.")
             Case ExchangeAdminCodes.NotReached
                 Return Localization.T("Не удалось связаться с сервером обмена.")
             Case Else
-                Return Localization.T("Не удалось выполнить действие. Подробности - в журнале сервера обмена.")
+                Return Localization.T("Серверу не удалось это сделать. Подробности - в журнале сервера.")
         End Select
     End Function
 
@@ -489,6 +497,171 @@ Friend Module ExchangeAdminText
             Case Else
                 Return Localization.T("Остановлено.")
         End Select
+    End Function
+
+    ' --- spec 246: management visibility ---
+
+    Friend Function ResourcesTitle() As String
+        Return Localization.T("Опубликованные ресурсы")
+    End Function
+
+    Friend Function ColumnResourceName() As String
+        Return Localization.T("Имя ресурса")
+    End Function
+
+    Friend Function ColumnSourceDevice() As String
+        Return Localization.T("Устройство-источник")
+    End Function
+
+    Friend Function ColumnChannels() As String
+        Return Localization.T("Каналы")
+    End Function
+
+    Friend Function ColumnPinProtected() As String
+        Return Localization.T("Защита PIN")
+    End Function
+
+    Friend Function ColumnSealed() As String
+        Return Localization.T("Шифрование E2EE")
+    End Function
+
+    Friend Function ColumnPublished() As String
+        Return Localization.T("Опубликовано")
+    End Function
+
+    Friend Function UnpublishResourceButton() As String
+        Return Localization.T("Снять с публикации")
+    End Function
+
+    Friend Function UnpublishResourceConfirm(name As String) As String
+        Return Localization.TF("Снять с публикации ресурс «{0}»?", name)
+    End Function
+
+    Friend Function BroadcastsTitle() As String
+        Return Localization.T("Активные трансляции")
+    End Function
+
+    Friend Function ColumnBroadcastId() As String
+        Return Localization.T("ID / Название")
+    End Function
+
+    Friend Function ColumnKind() As String
+        Return Localization.T("Тип")
+    End Function
+
+    Friend Function ColumnListeners() As String
+        Return Localization.T("Слушателей")
+    End Function
+
+    Friend Function ColumnDuration() As String
+        Return Localization.T("Длительность")
+    End Function
+
+    Friend Function StopBroadcastButton() As String
+        Return Localization.T("Остановить трансляцию")
+    End Function
+
+    Friend Function StopBroadcastConfirm(id As String) As String
+        Return Localization.TF("Остановить трансляцию «{0}»?", id)
+    End Function
+
+    Friend Function ClipboardTitle() As String
+        Return Localization.T("Буфер обмена учётной записи")
+    End Function
+
+    Friend Function ClipboardEmpty() As String
+        Return Localization.T("Буфер обмена пуст.")
+    End Function
+
+    Friend Function ClipboardSealedNote() As String
+        Return Localization.T("Сквозное шифрование (содержимое недоступно оператору)")
+    End Function
+
+    Friend Function ClearClipboardButton() As String
+        Return Localization.T("Очистить буфер")
+    End Function
+
+    Friend Function ClearClipboardConfirm(login As String) As String
+        Return Localization.TF("Очистить буфер обмена учётной записи «{0}»?", login)
+    End Function
+
+    Friend Function AuditLogButton() As String
+        Return Localization.T("Журнал действий..")
+    End Function
+
+    Friend Function AuditDialogTitle() As String
+        Return Localization.T("Журнал действий администратора")
+    End Function
+
+    Friend Function ActiveSessionsTitle() As String
+        Return Localization.T("Активные сессии администрирования")
+    End Function
+
+    Friend Function ColumnSeq() As String
+        Return Localization.T("№")
+    End Function
+
+    Friend Function ColumnTime() As String
+        Return Localization.T("Время (UTC)")
+    End Function
+
+    Friend Function ColumnRemoteAddr() As String
+        Return Localization.T("Адрес")
+    End Function
+
+    Friend Function ColumnOperator() As String
+        Return Localization.T("Оператор")
+    End Function
+
+    Friend Function ColumnOperation() As String
+        Return Localization.T("Операция")
+    End Function
+
+    Friend Function ColumnTarget() As String
+        Return Localization.T("Цель")
+    End Function
+
+    Friend Function ColumnStatus() As String
+        Return Localization.T("Результат")
+    End Function
+
+    ' --- the browser surface (WEB-BINDING, ticket 244) ------------------------------------------
+
+    ''' <summary>What the certificate buttons' explanation says about renewal. It is true of both kinds of client: a program of this
+    ''' product accepts a same-key renewal without asking (DEVICE-EXCHANGE item AY), a browser asks again after ANY new leaf, the same
+    ''' key or not (WEB-BINDING certificate-trust 1 and 2).</summary>
+    Friend Function CertificateRenewalNote() As String
+        Return Localization.T("Продление сохраняет ключ, и программы принимают такой сертификат без вопросов. При замене ключа каждое устройство должно снова подтвердить сертификат. Браузер спрашивает снова после любого нового сертификата.")
+    End Function
+
+    ''' <summary>The sentence the surface that renews the certificate adds (WEB-BINDING certificate-trust 4, last paragraph).</summary>
+    Friend Function RenewBrowserNote() As String
+        Return Localization.T("Каждый браузер спросит снова, поэтому продлевайте сертификат только при необходимости.")
+    End Function
+
+    ''' <summary>The canonical warning of WEB-BINDING certificate-trust 4, verbatim in English, Russian and Ukrainian (item DA: not
+    ''' reworded, shortened or joined with other text). It is true only for a certificate the server made itself, which is what has
+    ''' a fingerprint to show.</summary>
+    Friend Function BrowserWarning() As String
+        Return Localization.T("Браузер предупредит, что соединение не защищено, потому что сервер создал сертификат сам. Ниже его отпечаток: если ваш браузер показывает сертификат, можно сравнить их. Продолжайте, только если доверяете этому серверу.")
+    End Function
+
+    ''' <summary>What the browser dialog says when there is no fingerprint to show - a certificate from a certificate authority, or
+    ''' none made yet. The canonical warning is not shown then: it promises a fingerprint "below" and a warning the browser will not give.</summary>
+    Friend Function BrowserNoFingerprintNotice() As String
+        Return Localization.T("Отпечатка для показа нет: сертификат этого сервера выдан центром сертификации, либо сервер его ещё не создал. Такой сертификат браузер проверяет сам. Если браузер всё равно предупреждает, продолжайте, только если доверяете этому серверу.")
+    End Function
+
+    ''' <summary>The one sentence on top of the browser dialog: the canonical warning while there is a fingerprint, the truthful one
+    ''' while there is not.</summary>
+    Friend Function BrowserTrustNotice(fingerprintHex As String) As String
+        Return If(String.IsNullOrWhiteSpace(fingerprintHex), BrowserNoFingerprintNotice(), BrowserWarning())
+    End Function
+
+    ''' <summary>WEB-BINDING page-served-by-the-server 3: the sentence for a page the server itself serves, canonical in English,
+    ''' Russian and Ukrainian, shown next to the text of item DE and never joined with other text.</summary>
+    Friend Function PageServedNotice() As String
+        Return Localization.T("Эту страницу отдаёт сам сервер обмена, поэтому тот, кто им управляет, мог бы изменить её так, чтобы читать то, что вы отправляете. Пользуйтесь ею только на сервере, которым управляете вы сами или человек, которому вы доверяете.")
     End Function
 
 End Module

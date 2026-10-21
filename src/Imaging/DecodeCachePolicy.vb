@@ -21,8 +21,10 @@ Friend Module DecodeCachePolicy
     ''' </summary>
     Friend Const Decode_Cache_Min_Ms As Long = 400
 
-    ''' <summary>Hard ceiling on one entry, whatever the budget is.</summary>
-    Friend Const Absolute_Max_Entry_Bytes As Long = 64L * 1024L * 1024L
+    ''' <summary>Hard ceiling on one entry, whatever the budget is. 128 MB since spec 241
+    ''' (was 64 MB): a 368 Mpx animation encodes to 101 MB without dither and the old ceiling
+    ''' refused it, so the same wait repeated on every visit.</summary>
+    Friend Const Absolute_Max_Entry_Bytes As Long = 128L * 1024L * 1024L
 
     ''' <summary>Zero, or less, means the user switched the cache off - nothing is read and
     ''' nothing is written. The same reading OcrDiskCacheMaxMb already documents.</summary>
@@ -31,7 +33,7 @@ Friend Module DecodeCachePolicy
     End Function
 
     ''' <summary>
-    ''' min(64 MB, a quarter of the budget). One 300-megabyte animation must not evict the
+    ''' min(128 MB, a quarter of the budget). One 300-megabyte animation must not evict the
     ''' whole cache in order to store itself.
     ''' </summary>
     Friend Function MaxEntryBytes(budgetMb As Integer) As Long
@@ -48,6 +50,8 @@ Friend Module DecodeCachePolicy
     Friend Function ShouldStore(payload As DecodedPayload, budgetMb As Integer) As Boolean
         If Not IsEnabled(budgetMb) Then Return False
         If payload Is Nothing OrElse payload.Bytes Is Nothing OrElse payload.Bytes.Length = 0 Then Return False
+        ' A first-frame stand-in is not the answer for the file (spec 241 rule 10).
+        If payload.IsPreview Then Return False
         If payload.Bytes.LongLength > MaxEntryBytes(budgetMb) Then Return False
         If payload.IsAnimation Then Return True
         Return payload.DecodeMs >= Decode_Cache_Min_Ms

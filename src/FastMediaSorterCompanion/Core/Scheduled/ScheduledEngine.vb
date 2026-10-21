@@ -606,6 +606,8 @@ Friend NotInheritable Class ScheduledEngine
                     WriteNote(op, "late", trigger, ScheduledJson.FormatTime(dueSlot))
                 End If
 
+                AppFileLogger.WriteLine(DateTimeOffset.UtcNow.ToString("O", Globalization.CultureInfo.InvariantCulture) &
+                    " [SHARE-STATE] scheduled-trigger " & ScheduledJson.TriggerName(trigger))
                 Dim result As ScheduledRunResult = Await Task.Run(Function() executor.Run(op, token))
                 Apply(op, result, trigger)
             Finally
@@ -692,6 +694,10 @@ Friend NotInheritable Class ScheduledEngine
             End Try
         End If
 
+        AppFileLogger.WriteLine(DateTimeOffset.UtcNow.ToString("O", Globalization.CultureInfo.InvariantCulture) &
+            " [SHARE-STATE] scheduled-result " & ScheduledJson.OutcomeText(result.Outcome) &
+            " processed=" & result.Files.ToString(Globalization.CultureInfo.InvariantCulture) &
+            " failed=" & result.Failed.ToString(Globalization.CultureInfo.InvariantCulture))
         journalLog.Append(New JournalEntry With {
             .Timestamp = result.StartedAt, .Kind = "run", .Code = ScheduledJson.OutcomeText(result.Outcome),
             .OperationId = op.Id, .OperationName = op.DisplayName(), .Trigger = ScheduledJson.TriggerName(trigger),

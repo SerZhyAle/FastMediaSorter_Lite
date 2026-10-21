@@ -29,6 +29,7 @@ Public NotInheritable Class Share_Access_Test_Form
     Private _target As Label
     Private _detail As Label
     Private _btnClose As Button
+    Private _answerRow As DialogButtonRow
     Private _iconHandle As IntPtr
     Private _headlineFont As Font
     Private _probeStarted As Boolean
@@ -92,23 +93,20 @@ Public NotInheritable Class Share_Access_Test_Form
             .MaximumSize = New Size(contentWidth, 0), .MinimumSize = New Size(contentWidth, 0),
             .Text = ""}
 
-        Dim btnFlow As New FlowLayoutPanel With {.AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink,
-            .Anchor = AnchorStyles.Right, .Margin = New Padding(0, 8, 0, 0),
-            .FlowDirection = FlowDirection.LeftToRight, .WrapContents = False}
-        _btnClose = New Button With {.AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink,
-            .Padding = New Padding(12, 6, 12, 6), .Margin = New Padding(0),
-            .Text = Localization.T("Закрыть"), .DialogResult = DialogResult.OK}
-        ButtonGlyphs.Apply(_btnClose, "nav.close", ButtonGlyphRole.Dismissing)
-        btnFlow.Controls.Add(_btnClose)
+        ' Close is the window's one answer and rides the shared bottom row (ticket 243 T-8b, BUTTONS 2.0 sections 3 and 4);
+        ' Enter and Escape both reach it, as before.
+        _btnClose = New Button With {.Name = "xat_Close", .Text = Localization.T("Закрыть"), .DialogResult = DialogResult.OK}
+        _answerRow = New DialogButtonRow() With {.Dock = DockStyle.Bottom, .Name = "xat_Buttons", .Padding = New Padding(16, 4, 16, 12)}
+        DpiLayout.AddAnswer(_answerRow, _btnClose, DialogButtonRole.Dismissing, "nav.close")
 
         tlp.Controls.Add(_headline)
         tlp.Controls.Add(_target)
         tlp.Controls.Add(_detail)
-        tlp.Controls.Add(btnFlow)
 
         Me.Controls.Add(tlp)
-        Me.AcceptButton = _btnClose
-        Me.CancelButton = _btnClose
+        ' Last in the collection: the docked row takes its edge first.
+        Me.Controls.Add(_answerRow)
+        _answerRow.Bind(Me)
 
         AddHandler Me.Shown, AddressOf OnShownRunProbe
 

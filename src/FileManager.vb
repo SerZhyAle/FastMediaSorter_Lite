@@ -25,6 +25,22 @@ Public Module FileManager
     ''' </summary>
     ''' <param name="failure">None on success; otherwise the class of the failure.</param>
     Public Function LoadImageWithStream(filePath As String, ByRef failure As PathFailureKind) As Tuple(Of Image, IO.MemoryStream)
+        Return LoadImageCore(filePath, failure, ImageLoadStage.Whole)
+    End Function
+
+#If Not NETFRAMEWORK Then
+    ''' <summary>
+    ''' The same loader for a caller that does not need a whole long animation (spec 241): the viewer's
+    ''' display and prefetch ask <c>Staged</c>, the thumbnails <c>FirstFrame</c>. A picture that comes
+    ''' back as the first frame of an animation is marked - <see cref="AnimationStaging.InfoOf"/>.
+    ''' Modern only: the net48 exe keeps <see cref="LoadImageWithStream"/> and decodes everything.
+    ''' </summary>
+    Friend Function LoadImageStaged(filePath As String, ByRef failure As PathFailureKind, stage As ImageLoadStage) As Tuple(Of Image, IO.MemoryStream)
+        Return LoadImageCore(filePath, failure, stage)
+    End Function
+#End If
+
+    Private Function LoadImageCore(filePath As String, ByRef failure As PathFailureKind, stage As ImageLoadStage) As Tuple(Of Image, IO.MemoryStream)
         failure = PathFailureKind.None
         If String.IsNullOrEmpty(filePath) OrElse Not File.Exists(filePath) Then
             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0036: LoadImage file not found")
@@ -67,7 +83,7 @@ Public Module FileManager
                 ' the PAYLOAD stream, which is strictly more correct than the source bytes
                 ' returned here before: for an animation, the stream GDI+ actually reads was
                 ' the invisible one, and the one the caller kept alive was dead weight.
-                Dim viaCache As Tuple(Of Image, IO.MemoryStream) = DecodeCache.LoadImage(filePath, failure)
+                Dim viaCache As Tuple(Of Image, IO.MemoryStream) = DecodeCache.LoadImage(filePath, failure, stage)
                 If viaCache Is Nothing Then Return Nothing
                 nextImage = viaCache.Item1
                 ms = viaCache.Item2
@@ -91,7 +107,7 @@ Public Module FileManager
 #Else
                     ms.Dispose()
                     ms = Nothing
-                    Dim viaDecoder As Tuple(Of Image, IO.MemoryStream) = DecodeCache.LoadImage(filePath, failure)
+                    Dim viaDecoder As Tuple(Of Image, IO.MemoryStream) = DecodeCache.LoadImage(filePath, failure, stage)
                     If viaDecoder Is Nothing Then Return Nothing
                     nextImage = viaDecoder.Item1
                     ms = viaDecoder.Item2

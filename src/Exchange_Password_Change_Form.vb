@@ -22,6 +22,10 @@ Imports System.Windows.Forms
 Friend NotInheritable Class Exchange_Password_Change_Form
     Inherits Form
 
+    ''' <summary>Height at 96 dpi of the heading row that carries the exchange mark (40 px) and its gap to the first row.</summary>
+    Private Const HeadingBand As Integer = 46
+
+    Private ReadOnly heading As Label
     Private ReadOnly oldLabel As Label
     Private ReadOnly oldBox As TextBox
     Private ReadOnly newLabel As Label
@@ -29,10 +33,12 @@ Friend NotInheritable Class Exchange_Password_Change_Form
     Private ReadOnly repeatLabel As Label
     Private ReadOnly repeatBox As TextBox
     Private ReadOnly revealBox As CheckBox
+    Private ReadOnly revealRow As OptionRowHost
     Private ReadOnly policyNote As Label
     Private ReadOnly statusLabel As Label
     Private ReadOnly okButton As Button
     Private ReadOnly cancelButton_ As Button
+    Private ReadOnly answerRow As DialogButtonRow
     Private script_Font As Font
 
     ''' <summary>The old password, taken at the moment of OK (the fields are cleared on close).</summary>
@@ -60,7 +66,9 @@ Friend NotInheritable Class Exchange_Password_Change_Form
         Me.MinimizeBox = False
         Me.ShowInTaskbar = False
         Me.StartPosition = FormStartPosition.CenterParent
-        Me.ClientSize = New Size(420, 282)
+        ' The authored content ends at 244 (the status line, below the 40 px reveal row); the bottom row below it is 50 tall
+        ' (8 + one 32 line + 10) at 96 dpi.
+        Me.ClientSize = New Size(420, 294)
 
         Dim family As String = Localization.FontFamily()
         If family IsNot Nothing Then
@@ -78,26 +86,45 @@ Friend NotInheritable Class Exchange_Password_Change_Form
         repeatLabel = New Label With {.Name = "xpc_Repeat", .AutoSize = False, .Location = New Point(14, 110), .Size = New Size(392, 16), .Text = ExchangeEntryText.ChangePasswordRepeatLabel()}
         repeatBox = New TextBox With {.Name = "xpc_RepeatBox", .Location = New Point(14, 128), .Size = New Size(392, 24), .UseSystemPasswordChar = True,
                                       .AccessibleName = ExchangeEntryText.ChangePasswordRepeatLabel()}
-        revealBox = New CheckBox With {.Name = "xpc_Reveal", .AutoSize = True, .Location = New Point(14, 156), .Text = Localization.T("Показать пароль")}
+        revealBox = New CheckBox With {.Name = "xpc_Reveal", .Text = Localization.T("Показать пароль")}
         AddHandler revealBox.CheckedChanged, Sub()
                                                  oldBox.UseSystemPasswordChar = Not revealBox.Checked
                                                  newBox.UseSystemPasswordChar = Not revealBox.Checked
                                                  repeatBox.UseSystemPasswordChar = Not revealBox.Checked
                                              End Sub
-        policyNote = New Label With {.Name = "xpc_Policy", .AutoSize = False, .Location = New Point(14, 178), .Size = New Size(392, 30),
+        ' The reveal switch is an option row of the Settings anatomy (ticket 243 T-11b, BOOLEAN-OPTION 2.0): the same check box with
+        ' the same name and handler, a 20 px box in a 32 px target, the caption beside it.
+        revealRow = DialogOptionRow.CreateAt(revealBox, Nothing, 14, 152, 420)
+        policyNote = New Label With {.Name = "xpc_Policy", .AutoSize = False, .Location = New Point(14, 194), .Size = New Size(392, 30),
                                      .ForeColor = SystemColors.GrayText, .Text = ExchangeEntryText.PasswordPolicyNote()}
-        statusLabel = New Label With {.Name = "xpc_Status", .AutoSize = False, .Location = New Point(14, 210), .Size = New Size(392, 18),
+        statusLabel = New Label With {.Name = "xpc_Status", .AutoSize = False, .Location = New Point(14, 226), .Size = New Size(392, 18),
                                       .ForeColor = Color.Firebrick, .Text = ""}
-        okButton = New Button With {.Name = "xpc_Ok", .Location = New Point(186, 236), .Size = New Size(120, 28), .Text = ExchangeEntryText.ChangePasswordButton()}
+        okButton = New Button With {.Name = "xpc_Ok", .Text = ExchangeEntryText.ChangePasswordButton()}
         AddHandler okButton.Click, AddressOf OnOk
-        ButtonGlyphs.Apply(okButton, "action.confirm", ButtonGlyphRole.Affirmative)
-        cancelButton_ = New Button With {.Name = "xpc_Cancel", .Location = New Point(314, 236), .Size = New Size(92, 28), .Text = Localization.T("Отмена"),
-                                         .DialogResult = DialogResult.Cancel}
-        ButtonGlyphs.Apply(cancelButton_, "action.cancel", ButtonGlyphRole.Dismissing)
+        cancelButton_ = New Button With {.Name = "xpc_Cancel", .Text = Localization.T("Отмена"), .DialogResult = DialogResult.Cancel}
 
-        Me.Controls.AddRange(New Control() {oldLabel, oldBox, newLabel, newBox, repeatLabel, repeatBox, revealBox, policyNote, statusLabel, okButton, cancelButton_})
-        Me.AcceptButton = okButton
-        Me.CancelButton = cancelButton_
+        ' The answers ride the shared bottom row (ticket 243 T-8b, BUTTONS 2.0 sections 3 and 4): Cancel first, the final
+        ' affirmative answer last, widths from the caption and its glyph. Bind keeps their meaning: Enter is the change
+        ' (the safe default - the old password is still asked and the server has the last word), Escape is Cancel.
+        answerRow = New DialogButtonRow() With {.Dock = DockStyle.Bottom, .Name = "xpc_Buttons", .Padding = New Padding(14, 8, 14, 10)}
+        answerRow.Add(okButton, DialogButtonRole.Affirmative, "action.confirm")
+        answerRow.Add(cancelButton_, DialogButtonRole.Dismissing, "action.cancel")
+
+        Me.Controls.AddRange(New Control() {oldLabel, oldBox, newLabel, newBox, repeatLabel, repeatBox, revealRow, policyNote, statusLabel})
+        ' EXCHANGE-MARK (spec 248 V4): a heading band with the mark above the authored rows, never in the title bar.
+        ' Everything authored above moves down by the band; the heading wraps and grows in FitContent like any caption.
+        For Each child As Control In Me.Controls
+            child.Top += HeadingBand
+        Next
+        Me.ClientSize = New Size(Me.ClientSize.Width, Me.ClientSize.Height + HeadingBand)
+        heading = New Label With {.Name = "xpc_Heading", .AutoSize = False, .UseMnemonic = False, .Location = New Point(14, 12),
+                                  .Size = New Size(392, 40), .Text = Me.Text}
+        ExchangeMark.Apply(heading, 32, AddressOf RuntimeBootstrap.OpenBundledAsset)
+        Me.Controls.Add(heading)
+        Me.Controls.SetChildIndex(heading, 0)
+        ' Last in the collection: it reads after the fields in the Tab order, and the docked row takes its edge first.
+        Me.Controls.Add(answerRow)
+        answerRow.Bind(Me)
 
         ' LAST line of the builder: scaling touches only the children that exist by now.
         DialogLayout.ApplyAutoScale(Me)
@@ -106,6 +133,7 @@ Friend NotInheritable Class Exchange_Password_Change_Form
     Protected Overrides Sub OnLoad(e As EventArgs)
         MyBase.OnLoad(e)
         DialogLayout.FitContent(Me)
+        DialogLayout.KeepRoomForRow(Me, answerRow)
     End Sub
 
     Protected Overrides Sub OnShown(e As EventArgs)

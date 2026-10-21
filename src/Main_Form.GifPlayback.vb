@@ -1,4 +1,4 @@
-﻿Option Strict On
+Option Strict On
 
 Imports System.Collections.ObjectModel
 Imports System.ComponentModel
@@ -17,6 +17,13 @@ Partial Public Class Main_Form
         StopGifLoopPlayback()
 
         If image Is Nothing Then Return
+
+#If Not NETFRAMEWORK Then
+        ' The first frame of a long animation is a plain picture: this is the one place every
+        ' picture put on a box passes (the display path, the prefetch adoption), so it is
+        ' where the rest of the animation is asked for (spec 241).
+        BeginAnimationUpgradeIfPreview(image)
+#End If
 
         Try
             If Not image.RawFormat.Equals(System.Drawing.Imaging.ImageFormat.Gif) Then Return
@@ -54,6 +61,15 @@ Partial Public Class Main_Form
         gif_Restart_Timer.Stop()
         gif_Total_Duration_Ms = 0
         gif_Restart_Image_Ref = Nothing
+#If Not NETFRAMEWORK Then
+        ' Every transition away from a picture passes here (spec 241 rule 13): a first frame that
+        ' was waiting for its animation is not waiting any more.
+        LeaveAnimationUpgrade()
+        ' ...and so is an animation video that played over it (spec 242): the player lets go, then its lease.
+        If AnimationVideoInputFor(Current_File_Name) Is Nothing Then
+            StopAnimationVideo()
+        End If
+#End If
     End Sub
 
     Private Sub Gif_Restart_Timer_Tick(sender As Object, e As EventArgs) Handles gif_Restart_Timer.Tick

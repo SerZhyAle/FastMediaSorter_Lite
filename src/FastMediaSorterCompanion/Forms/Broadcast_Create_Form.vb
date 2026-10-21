@@ -21,6 +21,7 @@ Public NotInheritable Class Broadcast_Create_Form
     Private chkRecursive As CheckBox
     Private chkExternal As CheckBox
     Private lblWarning As Label
+    Private _answerRow As DialogButtonRow
 
     <DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)>
     Public Property BroadcastTitle As String = ""
@@ -85,7 +86,7 @@ Public NotInheritable Class Broadcast_Create_Form
             .AutoSize = True,
             .AutoSizeMode = AutoSizeMode.GrowAndShrink,
             .ColumnCount = 2,
-            .Padding = New Padding(18, 16, 18, 12),
+            .Padding = New Padding(18, 16, 18, 6),
             .GrowStyle = TableLayoutPanelGrowStyle.AddRows
         }
         tlp.ColumnStyles.Add(New ColumnStyle(SizeType.AutoSize))
@@ -160,8 +161,11 @@ Public NotInheritable Class Broadcast_Create_Form
                 .Text = Localization.T("Включая подпапки"),
                 .Checked = False
             }
-            tlp.Controls.Add(chkRecursive, 0, r)
-            tlp.SetColumnSpan(chkRecursive, 2)
+            ' Each option is a boolean row (BOOLEAN-OPTION 2.0, ticket 243 T-11c-b2a): the check box keeps its field, handlers and
+            ' place in the Tab order; the row around it is what the table holds.
+            Dim recursiveRow As OptionRowHost = OptionRows.InFlow(chkRecursive)
+            tlp.Controls.Add(recursiveRow, 0, r)
+            tlp.SetColumnSpan(recursiveRow, 2)
             r += 1
         End If
 
@@ -172,67 +176,61 @@ Public NotInheritable Class Broadcast_Create_Form
             .Text = Localization.T("Также через интернет"),
             .Checked = Not settings.LanOnlyExport
         }
-        tlp.Controls.Add(chkExternal, 0, r)
-        tlp.SetColumnSpan(chkExternal, 2)
-        r += 1
 
-        ' Security warning label
+        ' The security warning is the EXPLANATION of the internet option (BOOLEAN-OPTION 2.0 section 2): it stands under the
+        ' caption, inside the row, only while the option is on (an empty explanation takes no room), as it appeared before.
+        Dim warningText As String = Localization.T("Внимание: HTTP-трафик не шифруется. Содержимое и токен трансляции будут передаваться в открытом виде.")
         lblWarning = New Label With {
             .AutoSize = True,
-            .MaximumSize = New Size(420, 0),
             .ForeColor = Color.Firebrick,
-            .Margin = New Padding(0, 2, 0, 8),
-            .Text = Localization.T("Внимание: HTTP-трафик не шифруется. Содержимое и токен трансляции будут передаваться в открытом виде."),
-            .Visible = chkExternal.Checked
+            .Text = If(chkExternal.Checked, warningText, "")
         }
+        Dim externalRow As OptionRowHost = OptionRows.InFlow(chkExternal, lblWarning)
         AddHandler chkExternal.CheckedChanged, Sub()
-                                                   lblWarning.Visible = chkExternal.Checked
+                                                   externalRow.SetExplanation(If(chkExternal.Checked, warningText, ""))
                                                    ' Suggested lifetime defaults to shortest (1 hour) when internet is checked (§7.3)
                                                    If chkExternal.Checked AndAlso cboLifetime.SelectedIndex = 0 Then
                                                        cboLifetime.SelectedIndex = 1
                                                    End If
                                                End Sub
         If chkExternal.Checked Then cboLifetime.SelectedIndex = 1
-        tlp.Controls.Add(lblWarning, 0, r)
-        CheckBoxLayout.BindHint(chkExternal, lblWarning)
-        tlp.SetColumnSpan(lblWarning, 2)
+        tlp.Controls.Add(externalRow, 0, r)
+        tlp.SetColumnSpan(externalRow, 2)
         r += 1
 
-        ' Button row
-        Dim btnRow As New FlowLayoutPanel With {
-            .AutoSize = True,
-            .Anchor = AnchorStyles.Right,
-            .FlowDirection = FlowDirection.LeftToRight,
-            .WrapContents = False,
-            .Margin = New Padding(0, 16, 0, 0)
-        }
+        ' The answers ride the shared bottom row (ticket 243 T-8b, BUTTONS 2.0 sections 3 and 4): Cancel first, Broadcast
+        ' last, widths from the caption and its glyph. Bind keeps their meaning: Enter broadcasts (nothing is sent before
+        ' this window is answered, and the warning above says what an internet broadcast exposes), Escape cancels.
         Dim btnBroadcast As New Button With {
+            .Name = "xbc_Ok",
             .AutoSize = True,
-            .AutoSizeMode = AutoSizeMode.GrowAndShrink,
-            .Padding = New Padding(14, 5, 14, 5),
-            .Margin = New Padding(0, 0, 8, 0),
             .Text = Localization.T("Транслировать"),
             .DialogResult = DialogResult.OK
         }
         Dim btnCancel As New Button With {
+            .Name = "xbc_Cancel",
             .AutoSize = True,
-            .AutoSizeMode = AutoSizeMode.GrowAndShrink,
-            .Padding = New Padding(14, 5, 14, 5),
             .Text = Localization.T("Отмена"),
             .DialogResult = DialogResult.Cancel
         }
-        ButtonGlyphs.Apply(btnBroadcast, "media.cast", ButtonGlyphRole.Affirmative)
-        ButtonGlyphs.Apply(btnCancel, "action.cancel", ButtonGlyphRole.Dismissing)
         AddHandler btnBroadcast.Click, AddressOf OnAccept
-        btnRow.Controls.AddRange(New Control() {btnBroadcast, btnCancel})
-        tlp.Controls.Add(btnRow, 0, r)
-        tlp.SetColumnSpan(btnRow, 2)
+        _answerRow = New DialogButtonRow() With {.Dock = DockStyle.Bottom, .Name = "xbc_Buttons", .Padding = New Padding(18, 4, 18, 12)}
+        DpiLayout.AddAnswer(_answerRow, btnBroadcast, DialogButtonRole.Affirmative, "media.cast")
+        DpiLayout.AddAnswer(_answerRow, btnCancel, DialogButtonRole.Dismissing, "action.cancel")
 
         Me.Controls.Add(tlp)
-        Me.AcceptButton = btnBroadcast
-        Me.CancelButton = btnCancel
+        ' Last in the collection: the docked row takes its edge first and reads after the fields in the Tab order.
+        Me.Controls.Add(_answerRow)
+        _answerRow.Bind(Me)
         Me.MinimumSize = New Size(440, 0)
         DpiLayout.ApplyAutoScale(Me)
+    End Sub
+
+    Protected Overrides Sub OnLoad(e As EventArgs)
+        MyBase.OnLoad(e)
+        ' The boolean rows are laid out now that the window has its scale (they are as tall as caption and explanation need).
+        OptionRows.ArrangeAll(Me)
+        DpiLayout.ClampToWorkingArea(Me)
     End Sub
 
     Private Sub OnAccept(sender As Object, e As EventArgs)

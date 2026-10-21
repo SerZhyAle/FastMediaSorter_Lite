@@ -66,7 +66,32 @@ func (e *Engine) admit(st *Stream, d accounts.Device, keepalive int) (*Session, 
 	})
 	e.track(d.ID, st)
 	interval := e.p.clampKeepalive(keepalive)
-	return &Session{Account: d.Account, DeviceID: d.ID, Keepalive: interval}, interval
+	return &Session{Account: d.Account, DeviceID: d.ID, Keepalive: interval, DeviceName: d.Name, Product: d.Product, ProductVersion: d.ProductVersion}, interval
+}
+
+// auditAuthed is the [AUDIT] event of one sign-in outcome (spec 247): the identity the server knows
+// after it, the reason when it refused. The device's own display text (name, product) is untrusted.
+func (e *Engine) auditAuthed(op, login, addr, reason string, dev accounts.Device) {
+	ev := logx.AuditEvent{Op: op, Actor: login, Device: dev.ID, DeviceName: dev.Name, Remote: addr,
+		Product: productWord(dev.Product, dev.ProductVersion)}
+	if reason == "" {
+		ev.Status = logx.AuditStatusOK
+	} else {
+		ev.Status = logx.AuditRefusal(reason)
+		ev.Actor, ev.Device, ev.DeviceName, ev.Product = "", "", "", ""
+	}
+	e.audit(ev)
+}
+
+// productWord is the product and its version as one audit token.
+func productWord(product, version string) string {
+	if product == "" {
+		return ""
+	}
+	if version == "" {
+		return product
+	}
+	return product + "/" + version
 }
 
 // Enroll is `enroll` (5.2): the login and the password or a pairing code, then a token that is returned
@@ -76,8 +101,10 @@ func (e *Engine) admit(st *Stream, d accounts.Device, keepalive int) (*Session, 
 func (e *Engine) Enroll(st *Stream, m *wire.Enroll) Result {
 	addr := st.Addr()
 	login, loginOK := accounts.NormalizeLogin(m.Login)
+	dev := accounts.Device{ID: m.DeviceID, Name: m.DeviceName, Product: m.Product, ProductVersion: m.ProductVersion}
 	refused := func(r wire.Reason) Result {
 		e.cfg.Log.Info("enroll-refused", logx.Login(login), logx.Addr(addr), logx.Text("reason", string(r)))
+		e.auditAuthed("device.enroll", login, st.raw.RemoteAddr().String(), string(r), dev)
 		return Result{Refuse: r}
 	}
 
@@ -128,7 +155,8 @@ func (e *Engine) Enroll(st *Stream, m *wire.Enroll) Result {
 
 	// the directory learns of the device; a rotated token closes the old streams (through the hook)
 	sess, interval := e.admit(st, en.Device, m.KeepaliveSeconds)
-	e.cfg.Log.Info("enrolled", logx.Login(login), logx.Device(en.Device.ID), logx.Addr(addr), logx.Int("rotated", boolInt(en.Rotated)))
+	e.cfg.Log.State("enrolled", logx.Login(login), logx.Device(en.Device.ID), logx.Addr(addr), logx.Int("rotated", boolInt(en.Rotated)))
+	e.auditAuthed("device.enroll", login, st.raw.RemoteAddr().String(), "", en.Device)
 	return Result{
 		Session: sess,
 		Reply:   &wire.Enrolled{DeviceToken: en.Token, WelcomeBody: e.welcomeBody(login, int(interval/time.Second))},
@@ -142,8 +170,10 @@ func (e *Engine) Enroll(st *Stream, m *wire.Enroll) Result {
 func (e *Engine) Register(st *Stream, m *wire.Register) Result {
 	addr := st.Addr()
 	login, loginOK := accounts.NormalizeLogin(m.Login)
+	regDev := accounts.Device{ID: m.DeviceID, Name: m.DeviceName, Product: m.Product, ProductVersion: m.ProductVersion}
 	refused := func(r wire.Reason) Result {
 		e.cfg.Log.Info("register-refused", logx.Login(login), logx.Addr(addr), logx.Text("reason", string(r)))
+		e.auditAuthed("account.register", login, st.raw.RemoteAddr().String(), string(r), regDev)
 		return Result{Refuse: r}
 	}
 
@@ -227,10 +257,11 @@ func (e *Engine) Register(st *Stream, m *wire.Register) Result {
 	}
 
 	sess, interval := e.admit(st, en.Device, m.KeepaliveSeconds)
+	e.auditAuthed("account.register", login, st.raw.RemoteAddr().String(), "", en.Device)
 	if code != "" {
-		e.cfg.Log.Info("registered", logx.Login(login), logx.Device(en.Device.ID), logx.Addr(addr), logx.Invitation(code), logx.Text("kind", kind))
+		e.cfg.Log.State("registered", logx.Login(login), logx.Device(en.Device.ID), logx.Addr(addr), logx.Invitation(code), logx.Text("kind", kind))
 	} else {
-		e.cfg.Log.Info("registered", logx.Login(login), logx.Device(en.Device.ID), logx.Addr(addr), logx.Text("via", "shared-invitation"), logx.Text("kind", kind))
+		e.cfg.Log.State("registered", logx.Login(login), logx.Device(en.Device.ID), logx.Addr(addr), logx.Text("via", "shared-invitation"), logx.Text("kind", kind))
 	}
 	return Result{
 		Session: sess,
@@ -265,7 +296,15 @@ func knownRoles(in []string) []string {
 // every other failure it is `bad-credentials`, so the reason cannot tell a stranger that a deviceId
 // ever existed. A hello is not a password check: it keeps its failed-attempt buckets, charged to the
 // address and, once the account is known, to the account.
-func (e *Engine) Hello(st *Stream, m *wire.Hello) Result {
+func (e *Engine) Hello(st *Stream, m *wire.Hello) (result Result) {
+	defer func() {
+		ev := logx.AuditEvent{Op: "device.hello", Remote: st.raw.RemoteAddr().String(), Transport: st.Transport(), Status: logx.AuditRefusal(string(result.Refuse))}
+		if result.Session != nil {
+			auditSession(&ev, result.Session)
+			ev.Status = logx.AuditStatusOK
+		}
+		e.audit(ev)
+	}()
 	addr := st.Addr()
 	okAddr, giveAddr := takeFailure(e.cfg.Limiter, addr, limits.FailedAuth)
 	if !okAddr {
@@ -279,7 +318,7 @@ func (e *Engine) Hello(st *Stream, m *wire.Hello) Result {
 		interval := e.p.clampKeepalive(m.KeepaliveSeconds)
 		e.track(dev.ID, st)
 		return Result{
-			Session: &Session{Account: dev.Account, DeviceID: dev.ID, Keepalive: interval},
+			Session: &Session{Account: dev.Account, DeviceID: dev.ID, Keepalive: interval, DeviceName: dev.Name, Product: dev.Product, ProductVersion: dev.ProductVersion},
 			Reply:   &wire.Welcome{WelcomeBody: e.welcomeBody(dev.Account, int(interval/time.Second))},
 		}
 	case accounts.HelloSignedOut:

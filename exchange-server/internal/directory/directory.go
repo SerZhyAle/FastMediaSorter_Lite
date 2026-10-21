@@ -47,6 +47,7 @@ var (
 	ErrPortUnavail = errors.New("directory: no port available")
 	ErrNoDevice    = errors.New("directory: no such device")
 	ErrNotYours    = errors.New("directory: not this device's")
+	ErrNotFound    = errors.New("directory: target not found")
 	ErrNewerStore  = errors.New("directory: the store was written by a newer server")
 )
 
@@ -118,8 +119,11 @@ type Options struct {
 	// CapsFor resolves the caps of ONE account (the operator's per-account limits, 19 item AS); nil
 	// means Caps for everyone. It is called under the directory's lock, so it must not call back.
 	CapsFor func(account string) Caps
-	Ports   PortGranter
-	Hooks   Hooks
+	// ListenersOf says how many listeners a broadcast has right now; the relay and the tunnels are the host's,
+	// not the directory's. nil means none are known (0). It is called WITHOUT the directory's lock held.
+	ListenersOf func(broadcastID string) int
+	Ports       PortGranter
+	Hooks       Hooks
 	// WriteTemp creates the temporary file of a write (a test replaces it).
 	WriteTemp func(name string, data []byte, perm os.FileMode) error
 }

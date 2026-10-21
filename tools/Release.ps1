@@ -154,6 +154,7 @@ if ($SkipTests) {
 Invoke-Step "Site pages match their copy sources" 'Build-SitePages.ps1' @('-Check')
 Invoke-Step "Published site quality" 'Test-SiteQuality.ps1'
 Invoke-Step "Vendored glyphs match the catalog" 'Sync-IconGlyphs.ps1' @('-Check')
+Invoke-Step "Exchange mark matches the catalog" 'Sync-ExchangeMark.ps1' @('-Check')
 
 # 5. The gates of the exchange and the live broadcast (204 section 3 item 3, the table of 206 section 2):
 #    an open gate needs its evidence file, and the release itself never opens one.

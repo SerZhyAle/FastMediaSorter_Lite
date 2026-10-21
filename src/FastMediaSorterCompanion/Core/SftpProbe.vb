@@ -33,6 +33,11 @@ Public Module SftpProbe
         Timeout
         ''' <summary>Empty host or an out-of-range port - nothing to probe.</summary>
         BadInput
+        ''' <summary>The peer accepted the connection and then closed it (end of stream or a reset) before it sent a single byte. This does NOT
+        ''' say the peer is not SSH: a server at its connection limit, or one that drops a client before its banner, does exactly this
+        ''' (SHARE-SESSION 1.3 (iii): the transport stays undetermined, never "not an SSH server"). Appended at the end, with the same
+        ''' value as the viewer's `ProbeVerdict.ClosedBeforeBanner`: the earlier values stay stable.</summary>
+        ClosedBeforeBanner = 5
     End Enum
 
     ''' <summary>
@@ -66,13 +71,17 @@ Public Module SftpProbe
                 Dim rdone As Task = Await Task.WhenAny(readTask, Task.Delay(readMs))
                 If rdone Is readTask Then
                     Dim n As Integer = Await readTask
-                    If n > 0 Then
-                        Dim banner As String = Encoding.ASCII.GetString(buf, 0, n)
-                        If banner.IndexOf("SSH-", StringComparison.OrdinalIgnoreCase) >= 0 Then Return ProbeResult.SshOk
-                    End If
+                    ' End of stream before a single byte: the peer closed on us. That is "closed before the banner", not "not SSH" -
+                    ' it may be a server at its connection limit, so the result must not say what the peer is (SHARE-SESSION 1.3 (iii)).
+                    If n = 0 Then Return ProbeResult.ClosedBeforeBanner
+                    Dim banner As String = Encoding.ASCII.GetString(buf, 0, n)
+                    If banner.IndexOf("SSH-", StringComparison.OrdinalIgnoreCase) >= 0 Then Return ProbeResult.SshOk
                 Else
                     ObserveFault(readTask)
                 End If
+            Catch ex As System.IO.IOException
+                ' A reset before the banner is the same fact as an end of stream: the peer hung up on us before it spoke.
+                Return ProbeResult.ClosedBeforeBanner
             Catch
             End Try
 

@@ -245,3 +245,41 @@ func (t *Table) Counts() (values int, bytes int64) {
 	}
 	return values, bytes
 }
+
+// ClipboardSlotView is what the operator sees of an account's in-memory clipboard slot (spec 246).
+type ClipboardSlotView struct {
+	Present          bool   `json:"present"`
+	ClipID           string `json:"clipId,omitempty"`
+	Kind             string `json:"kind,omitempty"`
+	MimeType         string `json:"mimeType,omitempty"`
+	SizeBytes        int64  `json:"sizeBytes"`
+	SHA256           string `json:"sha256,omitempty"`
+	StoredAt         string `json:"storedAt,omitempty"`
+	SourceDeviceID   string `json:"sourceDeviceId,omitempty"`
+	SourceDeviceName string `json:"sourceDeviceName,omitempty"`
+	Sealed           bool   `json:"sealed"`
+}
+
+// Info returns administrative metadata of the account's clipboard slot (spec 246).
+func (t *Table) Info(account string) *ClipboardSlotView {
+	t.mu.Lock()
+	defer t.mu.Unlock()
+	s := t.slots[account]
+	if s == nil || s.value == nil {
+		return &ClipboardSlotView{Present: false}
+	}
+	v := s.value
+	return &ClipboardSlotView{
+		Present:          true,
+		ClipID:           v.ClipID,
+		Kind:             v.Kind,
+		MimeType:         v.MimeType,
+		SizeBytes:        v.Size,
+		SHA256:           v.SHA256,
+		StoredAt:         v.StoredAt,
+		SourceDeviceID:   v.SourceDeviceID,
+		SourceDeviceName: v.SourceDeviceName,
+		Sealed:           len(v.Sealed) > 0,
+	}
+}
+

@@ -1,4 +1,4 @@
-Option Strict On
+﻿Option Strict On
 
 Imports System.Collections.Generic
 Imports System.Linq
@@ -91,7 +91,7 @@ Public Class ExchangeDependencySplitTests
                                              Assert.Null(SectionField(form, "_secExchange"))
                                              Assert.NotNull(SectionField(form, "_secAccount"))
                                              Dim keys As String() = Sections(form).Select(Function(s) s.Key).ToArray()
-                                             Assert.Equal({"startup", "network", "hosting", "scheduled", "exchange-account", "help"}, keys)
+                                             Assert.Equal({"startup", "scheduled", "exchange-account", "help"}, keys)
                                              Assert.DoesNotContain("exchange", keys)
                                          End Using
                                      End Sub)
@@ -110,23 +110,23 @@ Public Class ExchangeDependencySplitTests
                                              Assert.Null(SectionField(form, "_secExchange"))
                                              Assert.NotNull(SectionField(form, "_secAccount"))
                                              Dim keys As String() = Sections(form).Select(Function(s) s.Key).ToArray()
-                                             Assert.Equal({"startup", "network", "hosting", "scheduled", "exchange-account", "help"}, keys)
+                                             Assert.Equal({"startup", "scheduled", "exchange-account", "help"}, keys)
                                          End Using
                                      End Sub)
         End Using
     End Sub
 
     <Fact>
-    Public Sub With_the_component_present_both_pages_exist_and_the_account_page_sits_before_help()
+    Public Sub With_the_component_present_client_preferences_still_have_their_own_window()
         ' the owner's rule of 2026-10-12 unchanged: where the component is installed WITH the program, the client side is on too
         Using ExchangeFeatures.ForFlow(switchOn:=False, componentInstalled:=True)
             ExchangeProcess.ExeDirectoryOverride = Component(withExe:=True)
             ExchangeTestSupport.OnUi(Sub()
                                          Using form As New Share_Settings_Form()
-                                             Assert.NotNull(SectionField(form, "_secExchange"))
+                                             Assert.Null(SectionField(form, "_secExchange"))
                                              Assert.NotNull(SectionField(form, "_secAccount"))
                                              Dim keys As String() = Sections(form).Select(Function(s) s.Key).ToArray()
-                                             Assert.Equal({"startup", "network", "hosting", "exchange", "scheduled", "exchange-account", "help"}, keys)
+                                             Assert.Equal({"startup", "scheduled", "exchange-account", "help"}, keys)
                                          End Using
                                      End Sub)
         End Using

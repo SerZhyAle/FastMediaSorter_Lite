@@ -10,12 +10,12 @@ Imports System.Windows.Forms
 
 ''' <summary>
 ''' One collapsible group card of the manager settings pages (spec 238): a tinted header
-''' bar - bold caption, disclosure chevron - over the block's rows, framed by a hairline
+''' bar - bold caption, state-marker triangle (COLLAPSIBLE-GROUP 1.1 section 3) - over the block's rows, framed by a hairline
 ''' border that gives every subordinate section a visible boundary on the shared page.
 '''
 ''' The mechanics are the main window's <see cref="CollapsibleSection"/>, kept because
 ''' each of them was paid for once:
-''' - the header is DRAWN, not composed of child labels: the chevron scales with the font,
+''' - the header is DRAWN, not composed of child labels: the marker scales with the window,
 '''   the caption wraps instead of clipping, and the RTL mirror is a property read;
 ''' - toggling never resizes the window from in here, and the setter performs its own
 '''   layout before raising <see cref="ExpandedChanged"/> - an AutoSize control caches its
@@ -195,7 +195,7 @@ Public NotInheritable Class SettingsGroupCard
 
     ' ------------------------------------------------------------------------------
     ''' <summary>
-    ''' The card's header bar: chevron, bold caption, no summary - the page itself answers
+    ''' The card's header bar: state marker (the shared filled triangle), bold caption, no summary - the page itself answers
     ''' "what is this". Owner-drawn for the reasons in the card's remark; keyboard- and
     ''' screen-reader-reachable because a fold that only a mouse can open hides things.
     ''' </summary>
@@ -205,6 +205,7 @@ Public NotInheritable Class SettingsGroupCard
         Private _title As String
         Private _expanded As Boolean
         Private _hot As Boolean
+        Private _markerScale As Single
 
         Public Event Toggled As EventHandler
 
@@ -375,25 +376,59 @@ Public NotInheritable Class SettingsGroupCard
             If Focused Then ControlPaint.DrawFocusRectangle(g, New Rectangle(1, 1, w - 2, h - 2))
 
             Dim ink As Color = ThemePalette.ReadableText(palette.TextPrimary, If(_hot, palette.ControlHover, band))
-            Dim glyph As Integer = Math.Min(Math.Max(12, Font.Height), Math.Max(1, h - 4))
-            Dim pad As Integer = 6
-            Dim chevronX As Integer = If(rtl, w - pad - glyph, pad)
-            ' The vocabulary's disclosure pair - the same meanings the section headers and
-            ' the nav chevrons draw (ICON-SET rule 2: never a second map entry).
-            Dim meaning As IconMeaning = IconMap.GetMeaning(If(_expanded, "collapsibleSectionOpen", "collapsibleSection"))
-            Using bitmap As Bitmap = GlyphRenderer.Render(meaning.GlyphId, glyph, ink, AddressOf CompanionAssets.OpenBundledAsset)
-                g.DrawImage(bitmap, chevronX, (h - glyph) \ 2, glyph, glyph)
-            End Using
-
             Dim textFlags As TextFormatFlags = TextFormatFlags.VerticalCenter Or TextFormatFlags.NoPadding
             If rtl Then textFlags = textFlags Or TextFormatFlags.RightToLeft
-            Dim left As Integer = pad + glyph + 8
-            Dim textRect As Rectangle = If(rtl,
-                New Rectangle(pad, 0, w - left - pad, h),
-                New Rectangle(left, 0, Math.Max(1, w - left - pad), h))
             Using bold As New Font(Font, FontStyle.Bold)
+                Dim cell As Rectangle
+                Dim textRect As Rectangle
+                Arrange(bold, cell, textRect)
+                ' COLLAPSIBLE-GROUP 1.1 section 3: the filled state triangle at the reading start, in the
+                ' caption's own ink - the viewer's settings groups draw the same shape (GroupMarker).
+                GroupMarker.Fill(g, ink, GroupMarker.DirectionFor(_expanded, rtl), cell)
                 TextRenderer.DrawText(g, _title, bold, textRect, ink, textFlags Or TextFormatFlags.WordBreak)
             End Using
+        End Sub
+
+        ''' <summary>The test seam of the interface factor (device DPI / 96) the marker is sized with; 0 = the
+        ''' control's own DPI. A test cannot move a window to a 175 percent monitor, so it names the factor.</summary>
+        Friend Sub SetMarkerScale(factor As Single)
+            _markerScale = factor
+            Invalidate()
+        End Sub
+
+        Private Function MarkerFactor() As Single
+            If _markerScale > 0.0F Then Return _markerScale
+            Return DeviceDpi / 96.0F
+        End Function
+
+        ''' <summary>The marker's square cell, in client coordinates: tier 16 scaled with the window, at the reading
+        ''' start, centred on the FIRST caption line.</summary>
+        Friend Function MarkerBounds() As Rectangle
+            Using bold As New Font(Font, FontStyle.Bold)
+                Dim cell As Rectangle
+                Dim textRect As Rectangle
+                Arrange(bold, cell, textRect)
+                Return cell
+            End Using
+        End Function
+
+        ''' <summary>Where the marker and the caption go: the marker's cell at the reading start (left; right under
+        ''' RTL), then the 8 logical px gap, then the caption in the rest of the bar. The caption wraps inside its
+        ''' rectangle and is never clipped; the cell is centred on the first line of it.</summary>
+        Private Sub Arrange(bold As Font, ByRef cell As Rectangle, ByRef textRect As Rectangle)
+            Dim rtl As Boolean = (RightToLeft = RightToLeft.Yes)
+            Dim factor As Single = MarkerFactor()
+            Dim pad As Integer = UiSizing.DevicePx(6, factor)
+            Dim side As Integer = GroupMarker.CellPx(factor)
+            Dim start As Integer = pad + side + GroupMarker.GapPx(factor)
+            Dim w As Integer = ClientSize.Width
+            Dim h As Integer = ClientSize.Height
+            Dim textWidth As Integer = Math.Max(1, w - start - pad)
+            textRect = If(rtl, New Rectangle(pad, 0, textWidth, h), New Rectangle(start, 0, textWidth, h))
+            Dim block As Integer = TextRenderer.MeasureText(_title, bold, New Size(textWidth, Integer.MaxValue),
+                                                             TextFormatFlags.WordBreak Or TextFormatFlags.NoPadding).Height
+            Dim centre As Integer = GroupMarker.FirstLineCentre(0, h, block, bold.Height)
+            cell = New Rectangle(If(rtl, w - pad - side, pad), centre - side \ 2, side, side)
         End Sub
 
     End Class

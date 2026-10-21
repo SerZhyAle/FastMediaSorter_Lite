@@ -31,6 +31,9 @@ Public NotInheritable Class File_Details_Form
     Private ReadOnly status As New Label()
     Private ReadOnly btnCopy As New Button()
     Private ReadOnly btnClose As New Button()
+#If Not NETFRAMEWORK Then
+    Private answerRow As DialogButtonRow
+#End If
     Private ui_Font As Font
     Private header_Font As Font
 
@@ -83,10 +86,6 @@ Public NotInheritable Class File_Details_Form
         AddHandler btnClose.Click, Sub() Close()
 
 #If Not NETFRAMEWORK Then
-        ' A non-modal information window with no answer of its own: both commands are mono. (Close is not a
-        ' CancelButton here - Escape is wired by hand - so it is not the dismissing answer of a question.)
-        ButtonGlyphs.Apply(btnCopy, "action.copy")
-        ButtonGlyphs.Apply(btnClose, "nav.close")
         BuildDockedLayout()
         ' LAST line of the builder: scaling touches only the children that exist by now (124 UX-202).
         DialogLayout.ApplyAutoScale(Me)
@@ -116,11 +115,16 @@ Public NotInheritable Class File_Details_Form
     ''' (24 px, 8 px under the text box) over the top 18 px of the button row (28 px high, 40 px from the bottom),
     ''' and a control added earlier is drawn OVER one added later, so the file name's label hid the buttons - at
     ''' every scale, and with a 42 px label at 175 % (ticket 124 left the numbers alone and only scaled them).
-    ''' Here the text box fills what is left, and one strip along the bottom holds the status (it takes the room
-    ''' the buttons leave and ellipsizes a long file name) and the buttons (as wide as their caption needs, so a
-    ''' German, Hindi or Arabic caption is never cut). The strip sizes itself from the buttons' height, so
-    ''' neither the scale nor the language can push the buttons out of the window. Measures are 96-dpi pixels:
+    ''' Here the text box fills what is left and the status and the buttons are docked along the bottom, so neither
+    ''' the scale nor the language can push the buttons out of the window. Measures are 96-dpi pixels:
     ''' DialogLayout.ApplyAutoScale, the builder's last line, scales them.
+    '''
+    ''' The two commands are the shared bottom row (ticket 243 T-8b, BUTTONS 2.0 sections 3 and 4): Copy is a command of the
+    ''' window, Close its dismissing answer, and the row measures them by caption and glyph. The status line (the
+    ''' file name, "copied") sits in its own docked line above the row, ellipsized, since the row owns its whole width
+    ''' and its own height. A non-modal information window with no question: Bind makes Escape the Close button (as
+    ''' the hand-wired handler below did) and leaves Enter alone - a read-only text has no default answer, and Enter
+    ''' pressed in it must not close the window.
     ''' </summary>
     Private Sub BuildDockedLayout()
         box.Dock = DockStyle.Fill
@@ -130,38 +134,24 @@ Public NotInheritable Class File_Details_Form
 
         status.AutoSize = False
         status.AutoEllipsis = True
-        status.Dock = DockStyle.Fill
+        status.Dock = DockStyle.Bottom
+        status.Height = 24
         status.TextAlign = ContentAlignment.MiddleLeft
-        status.Margin = New Padding(0)
+        status.Padding = New Padding(12, 0, 12, 0)
         status.Name = "details_Status"
 
-        For Each button As Button In New Button() {btnCopy, btnClose}
-            button.AutoSize = True
-            button.AutoSizeMode = AutoSizeMode.GrowOnly
-            button.MinimumSize = New Size(Localization.Scaled(105), 28)
-            button.Margin = New Padding(8, 0, 0, 0)
-            button.Padding = New Padding(6, 0, 6, 0)
-        Next
         btnCopy.Name = "details_Copy"
         btnClose.Name = "details_Close"
+        answerRow = New DialogButtonRow() With {.Dock = DockStyle.Bottom, .Name = "details_Buttons", .Padding = New Padding(12, 4, 12, 12)}
+        answerRow.Add(btnCopy, DialogButtonRole.Command, "action.copy")
+        answerRow.Add(btnClose, DialogButtonRole.Dismissing, "nav.close")
 
-        Dim buttons As New FlowLayoutPanel With {.AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink, .WrapContents = False,
-            .FlowDirection = FlowDirection.LeftToRight, .Margin = New Padding(0), .Dock = DockStyle.Fill, .Name = "details_Buttons"}
-        buttons.Controls.Add(btnCopy)
-        buttons.Controls.Add(btnClose)
-
-        Dim strip As New TableLayoutPanel With {.Dock = DockStyle.Bottom, .AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink,
-            .ColumnCount = 2, .RowCount = 1, .Padding = New Padding(12, 8, 12, 12), .Name = "details_Strip"}
-        strip.ColumnStyles.Add(New ColumnStyle(SizeType.Percent, 100.0F))
-        strip.ColumnStyles.Add(New ColumnStyle(SizeType.AutoSize))
-        strip.RowStyles.Add(New RowStyle(SizeType.AutoSize))
-        strip.Controls.Add(status, 0, 0)
-        strip.Controls.Add(buttons, 1, 0)
-
-        ' The strip is added AFTER the body: a later docked control is laid out first and keeps its edge,
-        ' the Fill one takes what remains.
+        ' Docked bottom edges are taken from the LAST added control inwards, and the Fill one takes what remains: the
+        ' body first, then the status line, the row last (at the very bottom, and last in the tab order).
         Controls.Add(body)
-        Controls.Add(strip)
+        Controls.Add(status)
+        Controls.Add(answerRow)
+        answerRow.Bind(Me, bindAccept:=False)
     End Sub
 #End If
 
@@ -259,7 +249,8 @@ Public NotInheritable Class File_Details_Form
     End Sub
 
     Private Sub File_Details_Form_KeyDown(sender As Object, e As KeyEventArgs) Handles MyBase.KeyDown
-        ' Non-modal: no CancelButton, so Escape is wired by hand.
+        ' The net48 window has no CancelButton, so Escape is wired by hand; on modern the row's Bind makes Escape the
+        ' Close button, which closes it first - this stays as the net48 path.
         If e.KeyCode = Keys.Escape Then Close()
     End Sub
 End Class

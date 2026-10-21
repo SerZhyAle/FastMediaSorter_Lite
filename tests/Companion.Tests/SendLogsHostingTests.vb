@@ -69,7 +69,7 @@ Public Class SendLogsHostingTests
         Dim forms As String = Path.Combine(ExchangeTestSupport.RepoRoot(), "src", "FastMediaSorterCompanion", "Forms")
         Dim entries As String() = {
             Path.Combine(ExchangeTestSupport.RepoRoot(), "src", "FastMediaSorterCompanion", "TrayContext.vb"),
-            Path.Combine(forms, "Share_Settings_Form.Contract.vb")}
+            Path.Combine(forms, "Share_Settings_Form.About.vb")}
         For Each entryFile As String In entries
             Dim text As String = File.ReadAllText(entryFile)
             Assert.True(text.Contains("SendLogsFlow.RunAsync("), Path.GetFileName(entryFile) & " does not open SendLogsFlow")

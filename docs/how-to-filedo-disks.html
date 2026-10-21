@@ -39,6 +39,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="../assets/sza-kit.css">
 <link rel="stylesheet" href="../assets/fms-site.css">
+<link rel="stylesheet" href="../assets/fms-buttons.css">
 <style>
 html[data-lang="ru"] [data-l]:not([data-l="ru"]){display:none}
 html[data-lang="en"] [data-l]:not([data-l="en"]){display:none}
@@ -69,8 +70,8 @@ html[data-lang="ua"] [data-l]:not([data-l="ua"]){display:none}
 <header class="site-header"><span id="site-nav-label" class="sr-only"><span data-l="en">Main navigation</span><span data-l="ru">Основная навигация</span><span data-l="ua">Основна навігація</span></span><nav class="site-nav" aria-labelledby="site-nav-label">
 <a class="brand" href="../" aria-label="Fast Media Sorter &amp; Sharing for Windows">Fast Media Sorter &amp; Sharing for Windows<span class="dot">.</span></a>
 <div class="seg" role="group" aria-label="Language"><button data-setlang="ru">RU</button><button data-setlang="en">EN</button><button data-setlang="ua">UA</button></div>
-<button class="theme-btn" id="themeBtn" aria-label="Switch theme">◐</button>
-<a class="btn btn-primary btn-sm" href="../#get"><span data-l="en">Download</span><span data-l="ru">Скачать</span><span data-l="ua">Завантажити</span></a>
+<button class="theme-btn" id="themeBtn" type="button" aria-pressed="true"><svg class="glyph" data-glyph="app.theme" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" focusable="false"><path d="M12 22c5.52 0 10-4.48 10-10S17.52 2 12 2 2 6.48 2 12s4.48 10 10 10zm1-17.93c3.94.49 7 3.85 7 7.93s-3.05 7.44-7 7.93V4.07z" fill="currentColor"/></svg><span><span data-l="en">Dark theme</span><span data-l="ru">Тёмная тема</span><span data-l="ua">Темна тема</span></span></button>
+<a class="btn btn-primary" href="../#get"><span data-l="en">Download</span><span data-l="ru">Скачать</span><span data-l="ua">Завантажити</span></a>
 </nav></header>
 
 <main class="container" id="main" tabindex="-1">
@@ -203,9 +204,9 @@ html[data-lang="ua"] [data-l]:not([data-l="ua"]){display:none}
 <a href="../publish-folders-android.html"><b>HOW TO · Android</b><span data-l="en">Share folders to your Android phone over SFTP</span><span data-l="ru">Раздать папки на телефон Android по SFTP</span><span data-l="ua">Роздати теки на телефон Android через SFTP</span></a>
 <a href="../server.html"><b>SERVER · Always-on</b><span data-l="en">Share folders from boot, with nobody signed in</span><span data-l="ru">Раздача папок с загрузки, без входа в систему</span><span data-l="ua">Роздача тек із завантаження, без входу в систему</span></a>
 <a href="how-to-viewer.html"><b>HOW TO · Viewer</b><span data-l="en">Review and sort a media folder</span><span data-l="ru">Просмотр и сортировка медиафайлов</span><span data-l="ua">Перегляд і сортування медіафайлів</span></a>
-<a data-l="en" href="https://serzhyale.github.io/FastMediaSorter_mob_v2/docs/media-exchange-portal/windows-servers.html" target="_blank" rel="noopener"><b>PORTAL · Windows servers</b><span>Which Windows program serves your folders and disks</span></a>
-<a data-l="ru" href="https://serzhyale.github.io/FastMediaSorter_mob_v2/docs/media-exchange-portal/windows-servers-ru.html" target="_blank" rel="noopener"><b>PORTAL · Серверы на Windows</b><span>Какая программа Windows раздаёт ваши папки и диски</span></a>
-<a data-l="ua" href="https://serzhyale.github.io/FastMediaSorter_mob_v2/docs/media-exchange-portal/windows-servers-uk.html" target="_blank" rel="noopener"><b>PORTAL · Сервери на Windows</b><span>Яка програма Windows роздає ваші теки та диски</span></a>
+<a data-l="en" href="https://serzhyale.github.io/FastMediaSorter_mob_v2/docs/media-exchange-portal/windows-servers.html" target="_blank" rel="noopener noreferrer"><b>PORTAL · Windows servers</b><span>Which Windows program serves your folders and disks</span><span class="sr-only"> (opens in a new tab)</span></a>
+<a data-l="ru" href="https://serzhyale.github.io/FastMediaSorter_mob_v2/docs/media-exchange-portal/windows-servers-ru.html" target="_blank" rel="noopener noreferrer"><b>PORTAL · Серверы на Windows</b><span>Какая программа Windows раздаёт ваши папки и диски</span><span class="sr-only"> (откроется в новой вкладке)</span></a>
+<a data-l="ua" href="https://serzhyale.github.io/FastMediaSorter_mob_v2/docs/media-exchange-portal/windows-servers-uk.html" target="_blank" rel="noopener noreferrer"><b>PORTAL · Сервери на Windows</b><span>Яка програма Windows роздає ваші теки та диски</span><span class="sr-only"> (відкриється в новій вкладці)</span></a>
 <a href="../topics.html"><b>TOPICS</b><span data-l="en">Every page on this site by subject</span><span data-l="ru">Все страницы сайта по темам</span><span data-l="ua">Усі сторінки сайту за темами</span></a>
 <a href="../glossary.html"><b>GLOSSARY</b><span data-l="en">What the site's terms mean</span><span data-l="ru">Что значат термины сайта</span><span data-l="ua">Що означають терміни сайту</span></a>
 </div></section>
@@ -215,5 +216,5 @@ html[data-lang="ua"] [data-l]:not([data-l="ua"]){display:none}
 <span><a href="../">Fast Media Sorter &amp; Sharing for Windows</a> · <a href="../publish-folders-android.html"><span data-l="en">Detailed Android guide</span><span data-l="ru">Подробная инструкция для Android</span><span data-l="ua">Детальний посібник для Android</span></a></span>
 <span>© 2026 Serhii Zhyhunenko · <a href="mailto:sza@ukr.net">sza@ukr.net</a></span>
 </div></div></footer>
-<script>(function(){var d=document.documentElement;function lang(v){d.dataset.lang=v;d.lang=v==='ua'?'uk':v;document.querySelectorAll('[data-setlang]').forEach(function(b){b.setAttribute('aria-pressed',String(b.dataset.setlang===v))});try{localStorage.setItem('sza-lang',v)}catch(e){}}document.querySelectorAll('[data-setlang]').forEach(function(b){b.onclick=function(){lang(b.dataset.setlang)}});lang(d.dataset.lang==='ru'?'ru':d.dataset.lang==='ua'?'ua':'en');document.getElementById('themeBtn').onclick=function(){var v=d.dataset.theme==='light'?'dark':'light';d.dataset.theme=v;try{localStorage.setItem('sza-theme',v)}catch(e){}}})();</script>
+<script>(function(){var d=document.documentElement;function lang(v){d.dataset.lang=v;d.lang=v==='ua'?'uk':v;document.querySelectorAll('[data-setlang]').forEach(function(b){b.setAttribute('aria-pressed',String(b.dataset.setlang===v))});try{localStorage.setItem('sza-lang',v)}catch(e){}}document.querySelectorAll('[data-setlang]').forEach(function(b){b.onclick=function(){lang(b.dataset.setlang)}});lang(d.dataset.lang==='ru'?'ru':d.dataset.lang==='ua'?'ua':'en');var themeEl=document.getElementById('themeBtn');function syncTheme(){themeEl.setAttribute('aria-pressed',String(d.dataset.theme!=='light'))}syncTheme();themeEl.onclick=function(){var v=d.dataset.theme==='light'?'dark':'light';d.dataset.theme=v;try{localStorage.setItem('sza-theme',v)}catch(e){}syncTheme()}})();</script>
 </body></html>

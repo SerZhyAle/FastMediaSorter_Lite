@@ -10,10 +10,12 @@
 ## What this repository must do
 
 1. **Name one positioning source with an ordered pillar list** (rules 1, 2). Declared: `docs/guides/POSITIONING.md`
-   (the family sentence and three pillars, in order: View and sort, Share folders, FileDO virtual disks), with
-   its machine form `tools/site-facts.json`. `tools/Test-SitePositioning.ps1` holds 41 surface files (the landing
-   and its twelve locale pages, the server page, the three READMEs, the Store description, the winget description)
-   to that order. Closed by ticket 155.
+   (the family sentence and three optional components, in order: media viewer and sorter, local SFTP folder
+   sharing, Media Exchange Server; FileDO hosting is a capability of sharing - **specification 249, 2026-10-20,
+   replaced the three-pillar list**), with its machine form `tools/site-facts.json`. `tools/Test-SitePositioning.ps1`
+   holds 41 surface files (the landing and its twelve locale pages, the server page, the three READMEs, the Store
+   description, the winget description) to that order, and the component x channel availability matrix to the
+   packaging files. Closed by ticket 155, reopened and re-closed by specification 249.
 2. **Type a fact once, in its source** (rule 3). Names have one: `docs/guides/PRODUCT_NAMING.md`, gated by
    `tools/Test-ProductNaming.ps1`. The language count (13) and the platform floor (Windows 10 1607, build 14393;
    the Store package 1809) are typed in `tools/site-facts.json`, read against their real sources (`Localization.Codes`,
@@ -22,10 +24,15 @@
 3. **Declare the public editions with one name each** (rule 4): the full-package edition
    (`Fast Media Sorter & Sharing for Windows`) and the Server edition (`Fast Media Sorter & Sharing: Folder
    Share Server`), declared in `tools/site-facts.json`; a colon-form edition name the file does not declare fails
-   the gate. The Media Exchange Server is planned and not public. **Owner ruling Q155-2, 2026-10-06: door 3 stays**
-   as the family-map reservation (specification 132 section 3.2) - named once, in the future tense, marked planned,
-   with no link, date or download, on the landing, its twelve locale pages and the three READMEs; the gate fails a
-   mention anywhere else.
+   the gate. The Media Exchange Server is the third component, **in development and in no package**.
+   **Dated local exception to rule 4 as the catalog words it (owner decision 2026-10-20, specification 249; it
+   replaces the Q155-2 ruling of 2026-10-06, which allowed one future-tense mention in door 3):** the server is
+   named wherever the three components are listed and wherever the data file's `development` block allows, always
+   within 420 characters of a development marker in the page's own language, never inside a link to a download, an
+   installer, a release, a store or a winget command, never with a date, and its door carries no call to action; the
+   Microsoft Store listing does not name it at all. The catalog amendment (rule 4 and its registry row) is not
+   written from this repository; it is carried to the successor specification, and this exception stands until the
+   catalog says the same.
 4. **Keep the trust pages saying one thing** (rule 12): the install-trust page is held by
    `TrustPageContractTests`. The data claims of the ten function pages were read against `docs/privacy.html` on
    2026-10-06: the UPnP / reachability-check wording, the firewall step and several local files do not agree or
@@ -38,6 +45,13 @@
 ## Where the evidence is
 
 Specification 147 (`done/`), specification 155 (rules 1 to 4) and the catalog registry; specification 156 (`done/`, the browser run and the reading of the ten pages) and its follow-ups 157 (the function pages) and 158 (the browser findings and what is still not run).
+
+## State on 2026-10-20 (specification 249)
+
+Rules 1 to 4 hold under the three-component model: `tools/Test-SitePositioning.ps1` PASS (3 components, 41 regions
+of 41 surface files, 2 edition names, 171 in-development mentions, 16 matrix cells over 20 evidence patterns, 138
+typed claims in 69 files); its fixture self-test `tests/Integration/SitePositioning.ps1` PASS (38 cases). The ten
+function pages (rules 5-10 and 12) were not re-read.
 
 ## State on 2026-10-07
 

@@ -44,7 +44,7 @@ Partial Public Class Share_Root_Params_Form
     Private btnCancel As Button
     Private _content As TableLayoutPanel   ' the scrollable settings grid
     Private _scrollHost As Panel           ' AutoScroll wrapper around _content
-    Private _buttonBar As TableLayoutPanel ' pinned OK/Cancel bar (Dock=Bottom)
+    Private _buttonBar As DialogButtonRow  ' pinned OK/Cancel answer row (Dock=Bottom)
 
     Public ReadOnly Property Result As ShareRootParams
         Get
@@ -122,7 +122,7 @@ Partial Public Class Share_Root_Params_Form
             Localization.T("Текст"), "PDF", "EPUB", "Office"}
         For i As Integer = 0 To MediaTokens.Length - 1
             _mediaChecks(i) = New CheckBox With {.AutoSize = True, .Margin = New Padding(0, 2, 18, 2), .Text = names(i)}
-            mediaFlow.Controls.Add(_mediaChecks(i))
+            mediaFlow.Controls.Add(OptionRows.InFlow(_mediaChecks(i), Nothing, OptionRowFit.Content))
         Next
         Dim mediaCap As New TableLayoutPanel With {.AutoSize = True, .ColumnCount = 1, .Margin = New Padding(0, 3, 12, 0)}
         mediaCap.Controls.Add(Cap(Localization.T("Точный набор типов:")))
@@ -138,7 +138,11 @@ Partial Public Class Share_Root_Params_Form
         chkHidden = New CheckBox With {.AutoSize = True, .Margin = New Padding(0, 2, 0, 2), .Text = Localization.T("Показывать скрытые файлы")}
         chkAllFiles = New CheckBox With {.AutoSize = True, .Margin = New Padding(0, 2, 0, 2), .Text = Localization.T("Все файлы (не только медиа)")}
         AddHandler chkScanSub.CheckedChanged, Sub() chkSubItems.Enabled = chkScanSub.Checked
-        scanFlow.Controls.AddRange(New Control() {chkScanSub, chkSubItems, chkHidden, chkAllFiles})
+        ' Each option is a boolean row (BOOLEAN-OPTION 2.0, ticket 243 T-11c-b): the check box keeps its field, handlers and
+        ' place in the Tab order; the row around it is what the flow holds.
+        scanFlow.Controls.AddRange(New Control() {OptionRows.InFlow(chkScanSub, Nothing, OptionRowFit.Content),
+            OptionRows.InFlow(chkSubItems, Nothing, OptionRowFit.Content), OptionRows.InFlow(chkHidden, Nothing, OptionRowFit.Content),
+            OptionRows.InFlow(chkAllFiles, Nothing, OptionRowFit.Content)})
         tlp.Controls.Add(Cap(Localization.T("Условия сканирования:")), 0, r)
         tlp.Controls.Add(scanFlow, 1, r) : r += 1
 
@@ -150,19 +154,22 @@ Partial Public Class Share_Root_Params_Form
             .Text = Localization.T("Недоступно для записи на уровне сервера - сервер запрещает изменения")}
         AddHandler chkReadOnly.CheckedChanged, AddressOf OnReadOnlyToggled
         tip.SetToolTip(chkReadOnly, Localization.T("Настоящий запрет: сервер физически не даёт телефону менять файлы."))
-        AddFullRow(tlp, chkReadOnly, r) : r += 1
+        Dim readOnlyRow As OptionRowHost = OptionRows.InFlow(chkReadOnly)
+        tip.SetToolTip(readOnlyRow.Caption, tip.GetToolTip(chkReadOnly))   ' the caption is what the pointer rests on now
+        AddFullRow(tlp, readOnlyRow, r) : r += 1
         chkSoftReadOnly = New CheckBox With {.AutoSize = True, .Margin = New Padding(0, 2, 0, 2),
             .Text = Localization.T("Публиковать как «только чтение» - подсказка приложению (сервер не блокирует)")}
         tip.SetToolTip(chkSoftReadOnly, Localization.T("Приложение спрячет кнопки изменения, но сервер запись не запрещает. На папку-получатель не действует."))
-        AddFullRow(tlp, chkSoftReadOnly, r) : r += 1
+        Dim softReadOnlyRow As OptionRowHost = OptionRows.InFlow(chkSoftReadOnly)
+        tip.SetToolTip(softReadOnlyRow.Caption, tip.GetToolTip(chkSoftReadOnly))
+        AddFullRow(tlp, softReadOnlyRow, r) : r += 1
         chkDestination = New CheckBox With {.AutoSize = True, .Margin = New Padding(0, 2, 0, 0),
             .Text = Localization.T("Папка-получатель - в неё можно копировать и переносить с телефона")}
         AddHandler chkDestination.CheckedChanged, AddressOf OnDestinationToggled
-        AddFullRow(tlp, chkDestination, r) : r += 1
+        ' What the option does is its EXPLANATION (BOOLEAN-OPTION 2.0 section 2): it stands under the caption for good, wrapped
+        ' in the row, instead of appearing only once the box is ticked, and the row is as tall as caption and explanation need.
         lblDestNote = Note(Localization.T("Папка станет доступна на запись; ресурс попадёт в список получателей. Цвет метки выберет приложение."))
-        lblDestNote.Margin = New Padding(24, 0, 0, 6)
-        AddFullRow(tlp, lblDestNote, r) : r += 1
-        CheckBoxLayout.BindHint(chkDestination, lblDestNote)
+        AddFullRow(tlp, OptionRows.InFlow(chkDestination, lblDestNote), r) : r += 1
 
         ' 6. Comment / PIN / slideshow.
         txtComment = New TextBox With {.Width = 420, .Anchor = AnchorStyles.Left, .Margin = New Padding(0, 8, 0, 0)}
@@ -187,22 +194,15 @@ Partial Public Class Share_Root_Params_Form
 
         ' Buttons live in a PINNED bottom bar (Dock=Bottom) - always visible, so they can
         ' never scroll off the bottom of the screen when the content is tall at high DPI.
-        Dim btnFlow As New FlowLayoutPanel With {.AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink,
-            .Anchor = AnchorStyles.Right, .Margin = New Padding(0),
-            .FlowDirection = FlowDirection.LeftToRight, .WrapContents = False}
-        btnOk = New Button With {.AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink, .MinimumSize = New Size(96, 34), .Text = "OK", .Margin = New Padding(0, 0, 8, 0)}
-        btnCancel = New Button With {.AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink, .MinimumSize = New Size(96, 34), .Text = Localization.T("Отмена"), .DialogResult = DialogResult.Cancel}
-        ButtonGlyphs.Apply(btnOk, "action.confirm", ButtonGlyphRole.Affirmative)
-        ButtonGlyphs.Apply(btnCancel, "action.cancel", ButtonGlyphRole.Dismissing)
+        ' The answers ride the shared bottom row (ticket 243 T-8b batch C, BUTTONS 2.0 sections 3 and 4): Cancel first, OK
+        ' last, widths from the caption and its glyph. The row stays pinned under the scrolling host, so it can never
+        ' scroll off the bottom of the screen. Escape is Cancel, Enter is OK as before (the PIN field is a single line).
+        btnOk = New Button With {.Text = "OK", .Name = "xrp_Ok"}
+        btnCancel = New Button With {.Text = Localization.T("Отмена"), .DialogResult = DialogResult.Cancel, .Name = "xrp_Cancel"}
         AddHandler btnOk.Click, AddressOf OnOk
-        btnFlow.Controls.Add(btnOk)
-        btnFlow.Controls.Add(btnCancel)
-
-        _buttonBar = New TableLayoutPanel With {.Dock = DockStyle.Bottom, .AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink,
-            .ColumnCount = 1, .Padding = New Padding(18, 8, 18, 12)}
-        _buttonBar.ColumnStyles.Add(New ColumnStyle(SizeType.Percent, 100.0F))
-        _buttonBar.RowStyles.Add(New RowStyle(SizeType.AutoSize))
-        _buttonBar.Controls.Add(btnFlow, 0, 0)
+        _buttonBar = New DialogButtonRow() With {.Dock = DockStyle.Bottom, .Name = "xrp_Buttons", .Padding = New Padding(18, 8, 18, 12)}
+        DpiLayout.AddAnswer(_buttonBar, btnOk, DialogButtonRole.Affirmative, "action.confirm")
+        DpiLayout.AddAnswer(_buttonBar, btnCancel, DialogButtonRole.Dismissing, "action.cancel")
 
         ' Scrollable host: fills the space above the button bar and shows a vertical scrollbar
         ' when the settings are taller than the window (small screens / high display scaling).
@@ -212,8 +212,7 @@ Partial Public Class Share_Root_Params_Form
         ' Fill host first, docked bar last, so the host takes the leftover above the bar.
         Me.Controls.Add(_scrollHost)
         Me.Controls.Add(_buttonBar)
-        Me.AcceptButton = btnOk
-        Me.CancelButton = btnCancel
+        _buttonBar.Bind(Me)
 
         DpiLayout.ApplyAutoScale(Me)   ' last, once every child exists - see DpiLayout
     End Sub
@@ -227,15 +226,13 @@ Partial Public Class Share_Root_Params_Form
             Dim wa As Rectangle = DpiLayout.WorkingAreaFor(Me)
             Dim chromeW As Integer = Me.Width - Me.ClientSize.Width
             Dim chromeH As Integer = Me.Height - Me.ClientSize.Height
-            ' Measure the TALLEST state: the destination note is shown/hidden at runtime,
-            ' so reserve its height upfront. That way toggling the "destination" checkbox
-            ' never grows the content past the window and no scrollbar ever appears (the
-            ' fixed dialog cannot resize afterwards).
-            Dim noteWasVisible As Boolean = lblDestNote.Visible
-            lblDestNote.Visible = True
+            ' The boolean rows are laid out now that the window has its scale (they are as tall as caption and
+            ' explanation need), so the measure below already holds their real heights. The destination explanation
+            ' stands under its caption for good, so nothing toggling at run time can grow the content later.
+            OptionRows.ArrangeAll(Me)
             Dim content As Size = _content.PreferredSize
-            lblDestNote.Visible = noteWasVisible
-            Dim barH As Integer = _buttonBar.PreferredSize.Height
+            ' the row wraps whole buttons when it is narrow, so its height depends on the width it gets
+            Dim barH As Integer = _buttonBar.GetPreferredSize(New Size(content.Width, 0)).Height
             Dim desiredClientH As Integer = content.Height + barH
             Dim clientH As Integer = Math.Min(desiredClientH, wa.Height - chromeH)
             Dim needVScroll As Boolean = clientH < desiredClientH
@@ -345,7 +342,6 @@ Partial Public Class Share_Root_Params_Form
     End Sub
 
     Private Sub UpdateDestinationEnabled()
-        lblDestNote.Visible = chkDestination.Checked
         ' A destination ignores the soft hint (ShareRootParams.AdvertisedReadOnly, ticket 034
         ' phase 2): greyed, never cleared, so unticking "destination" brings it back.
         chkSoftReadOnly.Enabled = Not chkDestination.Checked

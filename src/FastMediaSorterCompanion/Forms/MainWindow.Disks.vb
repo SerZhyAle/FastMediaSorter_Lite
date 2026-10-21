@@ -14,8 +14,11 @@ Partial Public NotInheritable Class MainWindow
         If Not DiskSharing.Supported(_status) Then Return
         Try
             Dim response As WorkerResponse = Await DiskSharing.SendAsync(New WorkerRequest With {.type = "disk-list"})
-            If response.Ok AndAlso response.Disks IsNot Nothing AndAlso Not IsDisposed Then
-                _diskSnapshot = response.Disks
+            ' An absent "disks" on an ok answer is an empty list (zero disks shared), not a failure:
+            ' keeping the previous snapshot then would show disks that are no longer shared.
+            Dim disks As List(Of SharedDisk) = DiskSharing.DisksOf(response)
+            If disks IsNot Nothing AndAlso Not IsDisposed Then
+                _diskSnapshot = disks
                 DiskDriveLetters.Reconcile(_diskSnapshot)
             End If
         Catch
@@ -53,6 +56,7 @@ Partial Public NotInheritable Class MainWindow
             _loading = previous
         End Try
         RefreshRowActionButtons()
+        OnResourceRowsChanged()
     End Sub
 
     Private Async Sub OnDisksClicked(sender As Object, e As EventArgs)

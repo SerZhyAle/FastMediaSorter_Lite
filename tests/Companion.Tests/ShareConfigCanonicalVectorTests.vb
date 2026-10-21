@@ -256,7 +256,7 @@ Public Class ShareConfigCanonicalVectorTests
 
     ''' <summary>The `,"accessNote":".."` tail plus the closing brace, so it can be cut off
     ''' without hard-coding the localized sentence twice.</summary>
-    Private Shared Function WithoutAccessNoteSuffix(json As String) As String
+    Friend Shared Function WithoutAccessNoteSuffix(json As String) As String
         Dim idx As Integer = json.IndexOf(",""accessNote"":", StringComparison.Ordinal)
         Assert.True(idx > 0, "this producer stopped emitting accessNote - the divergence list needs updating")
         Return json.Substring(idx)

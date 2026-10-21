@@ -791,6 +791,10 @@ Partial Public Class Main_Form
     ''' <summary>Rotates the active picture 90°; clears any OCR overlay (the
     ''' pixel grid changed, so cached boxes no longer align).</summary>
     Private Sub RotateActiveImage(clockwise As Boolean)
+#If Not NETFRAMEWORK Then
+        ' An animation video cannot be turned, and turning the first frame under it would be undone by the next showing (spec 242 rule 21).
+        If IsAnimationVideoActive() Then Return
+#End If
         Dim rot As RotateFlipType = If(clockwise, RotateFlipType.Rotate90FlipNone, RotateFlipType.Rotate270FlipNone)
         Try
             Dim rotated As Boolean = False
@@ -817,6 +821,10 @@ Partial Public Class Main_Form
             ' cache key, and a key that moves without the pixels would miss for nothing.
             If rotated Then
                 OnActiveImageRotated(clockwise)
+#If Not NETFRAMEWORK Then
+                ' A turned first frame of a long animation stays as the user left it (spec 241 rule 12).
+                HoldAnimationPreview()
+#End If
             Else
                 current_Overlay_Document = Nothing
             End If

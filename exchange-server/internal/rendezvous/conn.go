@@ -13,10 +13,15 @@ import (
 	"bufio"
 	"crypto/tls"
 	"errors"
+	"fmt"
 	"net"
+	"strings"
 	"sync"
 	"time"
 
+	"fms/exchange-server/internal/accounts"
+	"fms/exchange-server/internal/admin"
+	"fms/exchange-server/internal/config"
 	"fms/exchange-server/internal/limits"
 	"fms/exchange-server/internal/logx"
 	"fms/exchange-server/internal/wire"
@@ -31,6 +36,19 @@ type Config struct {
 	Backend Backend
 	Log     *logx.Logger
 	Now     func() time.Time
+
+	// Ticket 245 Remote Administration and Web Client (244)
+	AdminConfig     config.Admin
+	PublicEndpoint  string
+	LeafFingerprint string
+	Ops             *admin.Ops
+	Verifier        *limits.Verifier
+	AdminPacer      *accounts.Pacer
+	WebDir          string
+
+	// WebSocketMaxMessage caps one WebSocket message (the host setting limits.webSocketMessageBytes,
+	// WEB-BINDING websocket-binding "Messages"); 0 is the default, wsMaxMessage.
+	WebSocketMaxMessage int
 }
 
 // Server is one deployment's listener.
@@ -174,6 +192,7 @@ func (c *trackedConn) Close() error {
 		c.s.mu.Lock()
 		delete(c.s.conns, c)
 		c.s.mu.Unlock()
+		c.s.recordAudit(logx.AuditEvent{Op: "connection.close", Remote: c.RemoteAddr().String(), Transport: "TCP", Status: logx.AuditStatusOK})
 	})
 	return c.Conn.Close()
 }
@@ -207,7 +226,17 @@ func (s *Server) track(c net.Conn) *trackedConn {
 	}
 	s.conns[tc] = struct{}{}
 	s.mu.Unlock()
+	s.recordAudit(logx.AuditEvent{Op: "connection.open", Remote: c.RemoteAddr().String(), Transport: "TCP", Status: logx.AuditStatusOK})
 	return tc
+}
+
+// connectionPanicked is the recover of handle: it logs the event (the client's address as everywhere,
+// the panic as bounded, cleaned text - never a stack, never a payload) and closes the connection.
+func (s *Server) connectionPanicked(raw *trackedConn, r any) {
+	if s.cfg.Log != nil {
+		s.cfg.Log.Error("connection-panic", logx.Addr(limits.Key(raw.RemoteAddr())), logx.Text("panic", fmt.Sprintf("%T: %v", r, r)))
+	}
+	_ = raw.Close()
 }
 
 func ternary(c bool, a, b string) string {
@@ -244,6 +273,14 @@ func isASCIILetter(b byte) bool { return b >= 'A' && b <= 'Z' || b >= 'a' && b <
 // else closes. Every connection holds a pre-auth slot until it authenticates (the backend has answered
 // its enroll or hello), or hands itself over as an outsider connect or an HTTP listen, or ends.
 func (s *Server) handle(raw *trackedConn) {
+	// One bad connection must never end the process: a panic on this connection's goroutine (a frame
+	// the parsers did not foresee, a backend bug) is logged and the connection closed, nothing more.
+	// It does not reach goroutines a backend starts of its own (a bridge, a control stream's writer).
+	defer func() {
+		if r := recover(); r != nil {
+			s.connectionPanicked(raw, r)
+		}
+	}()
 	leave := s.cfg.PreAuth.Enter(raw)
 	defer leave()
 	key := limits.Key(raw.RemoteAddr())
@@ -306,18 +343,38 @@ func (s *Server) httpOpening(raw *trackedConn, conn net.Conn, br *bufio.Reader, 
 	if err != nil {
 		return
 	}
-	leave()
 	_ = conn.SetReadDeadline(time.Time{})
-	id, ok := wire.ParseListenPath(req.Path)
-	switch {
-	case !ok || !wire.ValidID(id):
-		_ = st.WriteRaw(wire.HTTPResponse(404, 0))
-	case req.Method != "GET":
-		_ = st.WriteRaw(wire.HTTPResponse(405, 0))
-	case req.Version != "HTTP/1.1": // the body is chunked: HTTP/1.1 only (7.6)
+
+	if req.Version != "HTTP/1.1" {
 		_ = st.WriteRaw(wire.HTTPResponse(505, 0))
-	default:
+		return
+	}
+
+	if req.Path == "/v2/ws" {
+		// The WebSocket opening judges its own method: WEB-BINDING websocket-binding "Opening" makes a
+		// method other than GET a 400 (the 405 of the listen path below is the relay's, 7.6).
+		owned = true
+		s.handleWebSocket(st, req, br, leave)
+		return
+	}
+
+	if id, ok := wire.ParseListenPath(req.Path); ok && wire.ValidID(id) {
+		if req.Method != "GET" {
+			_ = st.WriteRaw(wire.HTTPResponse(405, 0))
+			return
+		}
+		leave()
 		owned = true
 		s.cfg.Backend.Listen(st, id)
+		return
 	}
+
+	leave()
+
+	if s.cfg.WebDir != "" && !strings.HasPrefix(req.Path, "/v2/") {
+		s.serveStaticFile(st, req)
+		return
+	}
+
+	_ = st.WriteRaw(wire.HTTPResponse(404, 0))
 }

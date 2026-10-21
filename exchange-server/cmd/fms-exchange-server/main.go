@@ -36,12 +36,13 @@ func main() {
 	os.Exit(run(ctx, os.Args[1:], os.Stdin, os.Stdout, os.Stderr))
 }
 
-func run(ctx context.Context, args []string, stdin io.Reader, stdout, stderr io.Writer) int {
+func run(ctx context.Context, args []string, stdin io.Reader, stdout, stderr io.Writer) (code int) {
 	cmd, err := parseArgs(args)
 	if err != nil {
 		printUsage(stderr, err)
 		return exitUsage
 	}
+	defer func() { logConfigCommand(cmd, code, stderr) }()
 	switch cmd.name {
 	case "version":
 		printf(stdout, "%s\n", version)
@@ -74,6 +75,8 @@ func run(ctx context.Context, args []string, stdin io.Reader, stdout, stderr io.
 		return runGrant(cmd, stdout, stderr)
 	case "policy":
 		return runPolicy(cmd, stdout, stderr)
+	case "admin":
+		return runAdmin(cmd, stdin, stdout, stderr)
 	case "stop":
 		return runStop(cmd, stdout, stderr)
 	}

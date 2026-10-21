@@ -24,6 +24,8 @@ Friend NotInheritable Class ExchangeAdminCodes
     Friend Const NotFound As String = "not-found"
     ''' <summary>The account is at its limit of outstanding pairing codes.</summary>
     Friend Const Capacity As String = "capacity"
+    Friend Const BadKind As String = "bad-kind"
+    Friend Const BadLimit As String = "bad-limit"
     Friend Const Internal As String = "internal"
     ''' <summary>Ours: neither the admin pipe nor the binary's offline path could be used.</summary>
     Friend Const NotReached As String = "not-reached"
@@ -77,6 +79,15 @@ Friend NotInheritable Class ExchangeAdminRequest
     Friend Const OpGrantRemove As String = "grant.remove"
     Friend Const OpGrantList As String = "grant.list"
 
+    ' Spec 246: management visibility operations.
+    Friend Const OpBroadcastList As String = "broadcast.list"
+    Friend Const OpBroadcastEnd As String = "broadcast.end"
+    Friend Const OpResourceList As String = "resource.list"
+    Friend Const OpResourceUnpublish As String = "resource.unpublish"
+    Friend Const OpClipboardInfo As String = "clipboard.info"
+    Friend Const OpClipboardErase As String = "clipboard.erase"
+    Friend Const OpAdminAuditList As String = "admin.audit.list"
+
     ''' <summary>The channel's bound on one request (<c>admin.MaxRequest</c>).</summary>
     Friend Const MaxBytes As Integer = 4096
 
@@ -92,8 +103,10 @@ Friend NotInheritable Class ExchangeAdminRequest
     Public ReadOnly TargetId As String
     Public ReadOnly GuestAccount As String
     Public ReadOnly Limits As ExchangeAccountLimits
+    Public ReadOnly BroadcastId As String
+    Public ReadOnly ResourceId As String
 
-    Public Sub New(op As String, Optional login As String = "", Optional password As String = "", Optional deviceId As String = "", Optional signOut As Boolean = False, Optional kind As String = "", Optional codeHash As String = "", Optional targetId As String = "", Optional guestAccount As String = "", Optional limits As ExchangeAccountLimits = Nothing)
+    Public Sub New(op As String, Optional login As String = "", Optional password As String = "", Optional deviceId As String = "", Optional signOut As Boolean = False, Optional kind As String = "", Optional codeHash As String = "", Optional targetId As String = "", Optional guestAccount As String = "", Optional limits As ExchangeAccountLimits = Nothing, Optional broadcastId As String = "", Optional resourceId As String = "")
         Me.Op = op
         Me.Login = If(login, "")
         Me.Password = If(password, "")
@@ -104,6 +117,8 @@ Friend NotInheritable Class ExchangeAdminRequest
         Me.TargetId = If(targetId, "")
         Me.GuestAccount = If(guestAccount, "")
         Me.Limits = limits
+        Me.BroadcastId = If(broadcastId, "")
+        Me.ResourceId = If(resourceId, "")
     End Sub
 
     Public Overrides Function ToString() As String
@@ -127,6 +142,8 @@ Friend NotInheritable Class ExchangeAdminRequest
                 If CodeHash.Length > 0 Then w.WriteString("codeHash", CodeHash)
                 If TargetId.Length > 0 Then w.WriteString("targetId", TargetId)
                 If GuestAccount.Length > 0 Then w.WriteString("guestAccount", GuestAccount)
+                If BroadcastId.Length > 0 Then w.WriteString("broadcastId", BroadcastId)
+                If ResourceId.Length > 0 Then w.WriteString("resourceId", ResourceId)
                 If Limits IsNot Nothing Then
                     w.WriteStartObject("limits")
                     If Limits.DevicesPerAccount.HasValue Then w.WriteNumber("devicesPerAccount", Limits.DevicesPerAccount.Value)
@@ -188,6 +205,69 @@ Friend NotInheritable Class ExchangeAdminDevice
     Public Property EnrolledAt As String = ""
     Public Property LastSeen As String = ""
     Public Property Online As Boolean
+End Class
+
+' Spec 246 data classes
+Friend NotInheritable Class ExchangeAdminBroadcast
+    Public Property BroadcastId As String = ""
+    Public Property Account As String = ""
+    Public Property DeviceId As String = ""
+    Public Property DeviceName As String = ""
+    Public Property Kind As String = ""
+    Public Property StartedAt As String = ""
+    Public Property ActiveSeconds As Long
+    Public Property ListenersCount As Integer
+    Public Property MaxListeners As Integer
+    Public Property BitrateEstimateKbps As Integer
+End Class
+
+Friend NotInheritable Class ExchangeAdminResource
+    Public Property ResourceId As String = ""
+    Public Property Name As String = ""
+    Public Property ShareId As String = ""
+    Public Property DeviceId As String = ""
+    Public Property DeviceName As String = ""
+    Public Property Channels As IReadOnlyList(Of String) = Array.Empty(Of String)()
+    Public Property PinProtected As Boolean
+    Public Property Sealed As Boolean
+    Public Property PublishedAt As String = ""
+End Class
+
+Friend NotInheritable Class ExchangeAdminClipboardInfo
+    Public Property Present As Boolean
+    Public Property ClipId As String = ""
+    Public Property Kind As String = ""
+    Public Property MimeType As String = ""
+    Public Property SizeBytes As Long
+    Public Property Sha256 As String = ""
+    Public Property StoredAt As String = ""
+    Public Property SourceDeviceId As String = ""
+    Public Property SourceDeviceName As String = ""
+    Public Property Sealed As Boolean
+End Class
+
+Friend NotInheritable Class ExchangeAdminAuditRecord
+    Public Property Seq As Long
+    Public Property Timestamp As String = ""
+    Public Property RemoteAddr As String = ""
+    Public Property ClientProduct As String = ""
+    Public Property OperatorName As String = ""
+    Public Property Op As String = ""
+    Public Property Target As String = ""
+    Public Property Status As String = ""
+End Class
+
+Friend NotInheritable Class ExchangeAdminSession
+    Public Property SessionId As String = ""
+    Public Property RemoteAddr As String = ""
+    Public Property ClientProduct As String = ""
+    Public Property ConnectedAt As String = ""
+    Public Property LastOp As String = ""
+End Class
+
+Friend NotInheritable Class ExchangeAdminAuditView
+    Public Property ActiveSessions As IReadOnlyList(Of ExchangeAdminSession) = Array.Empty(Of ExchangeAdminSession)()
+    Public Property Records As IReadOnlyList(Of ExchangeAdminAuditRecord) = Array.Empty(Of ExchangeAdminAuditRecord)()
 End Class
 
 ''' <summary>The totals a status request may show: counts, never a list and never a secret.</summary>
@@ -302,6 +382,116 @@ Friend NotInheritable Class ExchangeAdminParser
                 .LastSeen = Str(el, "lastSeen"), .Online = Bool(el, "online")})
         Next
         Return list
+    End Function
+
+    Friend Shared Function Broadcasts(dataJson As String) As List(Of ExchangeAdminBroadcast)
+        Dim list As New List(Of ExchangeAdminBroadcast)()
+        For Each el As JsonElement In Items(dataJson)
+            list.Add(New ExchangeAdminBroadcast With {
+                .BroadcastId = Str(el, "broadcastId"),
+                .Account = Str(el, "account"),
+                .DeviceId = Str(el, "deviceId"),
+                .DeviceName = Str(el, "deviceName"),
+                .Kind = Str(el, "kind"),
+                .StartedAt = Str(el, "startedAt"),
+                .ActiveSeconds = NumL(el, "activeSeconds"),
+                .ListenersCount = Num(el, "listenersCount"),
+                .MaxListeners = Num(el, "maxListeners"),
+                .BitrateEstimateKbps = Num(el, "bitrateEstimateKbps")
+            })
+        Next
+        Return list
+    End Function
+
+    Friend Shared Function Resources(dataJson As String) As List(Of ExchangeAdminResource)
+        Dim list As New List(Of ExchangeAdminResource)()
+        For Each el As JsonElement In Items(dataJson)
+            Dim r As New ExchangeAdminResource With {
+                .ResourceId = Str(el, "resourceId"),
+                .Name = Str(el, "name"),
+                .ShareId = Str(el, "shareId"),
+                .DeviceId = Str(el, "deviceId"),
+                .DeviceName = Str(el, "deviceName"),
+                .PinProtected = Bool(el, "pinProtected"),
+                .Sealed = Bool(el, "sealed"),
+                .PublishedAt = Str(el, "publishedAt")
+            }
+            Dim chList As New List(Of String)()
+            Dim chEl As JsonElement
+            If el.TryGetProperty("channels", chEl) AndAlso chEl.ValueKind = JsonValueKind.Array Then
+                For Each c As JsonElement In chEl.EnumerateArray()
+                    If c.ValueKind = JsonValueKind.String Then chList.Add(c.GetString())
+                Next
+            End If
+            r.Channels = chList
+            list.Add(r)
+        Next
+        Return list
+    End Function
+
+    Friend Shared Function Clipboard(dataJson As String) As ExchangeAdminClipboardInfo
+        Dim info As New ExchangeAdminClipboardInfo()
+        If String.IsNullOrWhiteSpace(dataJson) Then Return info
+        Try
+            Using doc As JsonDocument = JsonDocument.Parse(dataJson)
+                If doc.RootElement.ValueKind <> JsonValueKind.Object Then Return info
+                info.Present = Bool(doc.RootElement, "present")
+                info.ClipId = Str(doc.RootElement, "clipId")
+                info.Kind = Str(doc.RootElement, "kind")
+                info.MimeType = Str(doc.RootElement, "mimeType")
+                info.SizeBytes = NumL(doc.RootElement, "sizeBytes")
+                info.Sha256 = Str(doc.RootElement, "sha256")
+                info.StoredAt = Str(doc.RootElement, "storedAt")
+                info.SourceDeviceId = Str(doc.RootElement, "sourceDeviceId")
+                info.SourceDeviceName = Str(doc.RootElement, "sourceDeviceName")
+                info.Sealed = Bool(doc.RootElement, "sealed")
+            End Using
+        Catch ex As JsonException
+        End Try
+        Return info
+    End Function
+
+    Friend Shared Function Audit(dataJson As String) As ExchangeAdminAuditView
+        Dim v As New ExchangeAdminAuditView()
+        If String.IsNullOrWhiteSpace(dataJson) Then Return v
+        Try
+            Using doc As JsonDocument = JsonDocument.Parse(dataJson)
+                If doc.RootElement.ValueKind <> JsonValueKind.Object Then Return v
+                Dim sessEl As JsonElement
+                If doc.RootElement.TryGetProperty("activeSessions", sessEl) AndAlso sessEl.ValueKind = JsonValueKind.Array Then
+                    Dim sl As New List(Of ExchangeAdminSession)()
+                    For Each el As JsonElement In sessEl.EnumerateArray()
+                        sl.Add(New ExchangeAdminSession With {
+                            .SessionId = Str(el, "sessionId"),
+                            .RemoteAddr = Str(el, "remoteAddr"),
+                            .ClientProduct = Str(el, "clientProduct"),
+                            .ConnectedAt = Str(el, "connectedAt"),
+                            .LastOp = Str(el, "lastOp")
+                        })
+                    Next
+                    v.ActiveSessions = sl
+                End If
+                Dim recEl As JsonElement
+                If doc.RootElement.TryGetProperty("records", recEl) AndAlso recEl.ValueKind = JsonValueKind.Array Then
+                    Dim rl As New List(Of ExchangeAdminAuditRecord)()
+                    For Each el As JsonElement In recEl.EnumerateArray()
+                        rl.Add(New ExchangeAdminAuditRecord With {
+                            .Seq = NumL(el, "seq"),
+                            .Timestamp = Str(el, "timestamp"),
+                            .RemoteAddr = Str(el, "remoteAddr"),
+                            .ClientProduct = Str(el, "clientProduct"),
+                            .OperatorName = Str(el, "operator"),
+                            .Op = Str(el, "op"),
+                            .Target = Str(el, "target"),
+                            .Status = Str(el, "status")
+                        })
+                    Next
+                    v.Records = rl
+                End If
+            End Using
+        Catch ex As JsonException
+        End Try
+        Return v
     End Function
 
     ''' <summary>The code of a <c>device.pairing-code</c> answer: "" when the text is not one. It is a secret for ten minutes;
@@ -759,6 +949,34 @@ Friend Module ExchangeAdmin
 
     Friend Function StatusAsync(ct As CancellationToken) As Task(Of ExchangeAdminReply)
         Return SendAsync(New ExchangeAdminRequest(ExchangeAdminRequest.OpStatus), ct)
+    End Function
+
+    Friend Function ListBroadcastsAsync(login As String, ct As CancellationToken, Optional deviceId As String = "") As Task(Of ExchangeAdminReply)
+        Return SendAsync(New ExchangeAdminRequest(ExchangeAdminRequest.OpBroadcastList, login:=login, deviceId:=deviceId), ct)
+    End Function
+
+    Friend Function EndBroadcastAsync(login As String, broadcastId As String, ct As CancellationToken) As Task(Of ExchangeAdminReply)
+        Return SendAsync(New ExchangeAdminRequest(ExchangeAdminRequest.OpBroadcastEnd, login:=login, broadcastId:=broadcastId, targetId:=broadcastId), ct)
+    End Function
+
+    Friend Function ListResourcesAsync(login As String, ct As CancellationToken) As Task(Of ExchangeAdminReply)
+        Return SendAsync(New ExchangeAdminRequest(ExchangeAdminRequest.OpResourceList, login:=login), ct)
+    End Function
+
+    Friend Function UnpublishResourceAsync(login As String, resourceId As String, ct As CancellationToken) As Task(Of ExchangeAdminReply)
+        Return SendAsync(New ExchangeAdminRequest(ExchangeAdminRequest.OpResourceUnpublish, login:=login, resourceId:=resourceId, targetId:=resourceId), ct)
+    End Function
+
+    Friend Function GetClipboardInfoAsync(login As String, ct As CancellationToken) As Task(Of ExchangeAdminReply)
+        Return SendAsync(New ExchangeAdminRequest(ExchangeAdminRequest.OpClipboardInfo, login:=login), ct)
+    End Function
+
+    Friend Function EraseClipboardAsync(login As String, ct As CancellationToken) As Task(Of ExchangeAdminReply)
+        Return SendAsync(New ExchangeAdminRequest(ExchangeAdminRequest.OpClipboardErase, login:=login), ct)
+    End Function
+
+    Friend Function ListAdminAuditAsync(ct As CancellationToken) As Task(Of ExchangeAdminReply)
+        Return SendAsync(New ExchangeAdminRequest(ExchangeAdminRequest.OpAdminAuditList), ct)
     End Function
 
 End Module

@@ -134,6 +134,65 @@ Public Class DiskSharingTests
         Assert.Throws(Of WorkerExchangeException)(Sub() WorkerIpc.ParseResponse("{""schemaVersion"":2,""ok"":true,""disks"":[" & records & "]}", 2))
     End Sub
 
+    ' --- an absent "disks" is an empty list (the worker omits an empty one: omitempty on its Response) -------
+
+    ''' <summary>The Go worker's real answer for "no disk is shared": <c>disks</c> is OMITTED, not <c>[]</c>.
+    ''' An ok:true schema-2 answer without the member is zero disks - not "Missing disk list.", which is what
+    ''' the Disks window threw and what made the tray and the main window skip their reconcile.</summary>
+    <Fact>
+    Public Sub AbsentDisks_OnAnOkSchemaTwoAnswer_IsAnEmptyList()
+        Dim parsed As WorkerResponse = WorkerIpc.ParseResponse("{""schemaVersion"":2,""ok"":true}", 2)
+        Assert.True(parsed.Ok)
+        Assert.Null(parsed.Disks)   ' the wire form: the member is not there at all
+        Dim disks As List(Of SharedDisk) = DiskSharing.DisksOf(parsed)
+        Assert.NotNull(disks)
+        Assert.Empty(disks)
+    End Sub
+
+    <Fact>
+    Public Sub AnExplicitEmptyList_AndARealList_AreReadAsTheyAre()
+        Assert.Empty(DiskSharing.DisksOf(WorkerIpc.ParseResponse("{""schemaVersion"":2,""ok"":true,""disks"":[]}", 2)))
+        Dim two As List(Of SharedDisk) = DiskSharing.DisksOf(WorkerIpc.ParseResponse(
+            "{""schemaVersion"":2,""ok"":true,""disks"":[{""rootName"":""A"",""state"":""open""},{""rootName"":""B"",""state"":""closed""}]}", 2))
+        Assert.Equal(2, two.Count)
+        Assert.Equal("A", two(0).RootName)
+    End Sub
+
+    ''' <summary>The relaxation is for an ok schema-2 answer ONLY: a refusal has no list to show, and the
+    ''' schema-2 requirement and the 1024-record bound of the parser still hold.</summary>
+    <Fact>
+    Public Sub AbsentDisks_IsNotAnEmptyList_WhenTheAnswerIsNotOkSchemaTwo()
+        Assert.Null(DiskSharing.DisksOf(Nothing))
+        Assert.Null(DiskSharing.DisksOf(WorkerIpc.ParseResponse("{""schemaVersion"":2,""ok"":false,""error"":""unsupported""}", 2)))
+        Assert.Null(DiskSharing.DisksOf(New WorkerResponse With {.SchemaVersion = 1, .Ok = True}))
+        Assert.Throws(Of WorkerExchangeException)(Sub() WorkerIpc.ParseResponse("{""schemaVersion"":1,""ok"":true}", 2))
+        Assert.Throws(Of WorkerVersionRefusedException)(Sub() WorkerIpc.ParseResponse("{""schemaVersion"":3,""ok"":true}", 2))
+        Dim records As String = String.Join(",", Enumerable.Repeat("{}", 1025))
+        Assert.Throws(Of WorkerExchangeException)(Sub() WorkerIpc.ParseResponse("{""schemaVersion"":2,""ok"":true,""disks"":[" & records & "]}", 2))
+    End Sub
+
+    ''' <summary>What the tray, the Disks window and the main window do with it: the empty list reconciles, so
+    ''' a drive alias whose disk is no longer shared is released instead of staying for the whole session.</summary>
+    <Fact>
+    Public Sub AbsentDisks_ReconcilesAnAliasAway()
+        Dim directory As String = Path.Combine(Path.GetTempPath(), "fms-disk-alias-" & Guid.NewGuid().ToString("N"))
+        Dim storePath As String = "Software\SZA\FastMediaSorter\Tests\" & Guid.NewGuid().ToString("N")
+        Dim disk As New SharedDisk With {.ContainerId = Guid.NewGuid().ToString("N"), .State = "open", .MountPath = directory}
+        Dim letter As String = DiskDriveLetters.FreeLetters().Last()
+        IO.Directory.CreateDirectory(directory)
+        Try
+            DiskDriveLetters.Attach(disk, letter, storePath)
+            Assert.NotEqual("", DiskDriveLetters.CurrentTarget(letter))
+            Dim none As List(Of SharedDisk) = DiskSharing.DisksOf(WorkerIpc.ParseResponse("{""schemaVersion"":2,""ok"":true}", 2))
+            DiskDriveLetters.Reconcile(none, storePath)
+            Assert.Equal("", DiskDriveLetters.CurrentTarget(letter))
+        Finally
+            DiskDriveLetters.Reconcile(Array.Empty(Of SharedDisk)(), storePath)
+            Registry.CurrentUser.DeleteSubKey(storePath, False)
+            IO.Directory.Delete(directory)
+        End Try
+    End Sub
+
     <Fact>
     Public Sub AWindowsDriveAliasReadsTheMountAndIsRemovedOnlyAfterClose()
         Dim directory As String = Path.Combine(Path.GetTempPath(), "fms-disk-alias-" & Guid.NewGuid().ToString("N"))

@@ -27,6 +27,7 @@ Public NotInheritable Class Hotkeys_Form
     Private ReadOnly btnResetAll As New Button()
     Private ReadOnly btnOk As New Button()
     Private ReadOnly btnCancel As New Button()
+    Private footer As DialogButtonRow
 
     Private ReadOnly working As Dictionary(Of String, String)
 
@@ -119,26 +120,23 @@ Public NotInheritable Class Hotkeys_Form
         AddHandler btnClear.Click, Sub() ApplyToSelection(CustomHotkeys.NoShortcut)
         ButtonGlyphs.Apply(btnClear, "action.remove")
 
-        ' On the OK / Cancel row, at the start edge: on the capture row it started at x = 488 while "Снять сочетание"
-        ' ends at x = 518, so the two overlapped by 30 px and one hid part of the other's caption at every scale
-        ' in English and Arabic (the 124 layout audit finds it).
-        LayoutButton(btnResetAll, Localization.T("Сбросить всё"), 12, ClientSize.Height - 42, 140)
-        btnResetAll.Anchor = AnchorStyles.Left Or AnchorStyles.Bottom
+        ' The bottom row (ticket 243 T-8a, BUTTONS 2.0 sections 3 and 4): one row against the reading end, widths from
+        ' the caption and its glyph, "Reset all" first as a command, then Cancel, then OK - the final affirmative
+        ' answer last (it was first). It sat on the capture row once and overlapped "Снять сочетание" by 30 px at
+        ' every scale in English and Arabic (the 124 layout audit found it); a row of its own cannot.
+        btnResetAll.Text = Localization.T("Сбросить всё")
         AddHandler btnResetAll.Click, AddressOf ResetAll
-        ButtonGlyphs.Apply(btnResetAll, "action.reset")
-
-        LayoutButton(btnOk, Localization.T("ОК"), ClientSize.Width - 24 - 220, ClientSize.Height - 42, 105)
-        btnOk.Anchor = AnchorStyles.Right Or AnchorStyles.Bottom
+        btnOk.Text = Localization.T("ОК")
         btnOk.DialogResult = DialogResult.OK
-        ButtonGlyphs.Apply(btnOk, "action.confirm", ButtonGlyphRole.Affirmative)
-
-        LayoutButton(btnCancel, Localization.T("Отмена"), ClientSize.Width - 12 - 105, ClientSize.Height - 42, 105)
-        btnCancel.Anchor = AnchorStyles.Right Or AnchorStyles.Bottom
+        btnCancel.Text = Localization.T("Отмена")
         btnCancel.DialogResult = DialogResult.Cancel
-        ButtonGlyphs.Apply(btnCancel, "action.cancel", ButtonGlyphRole.Dismissing)
 
-        AcceptButton = btnOk
-        CancelButton = btnCancel
+        footer = New DialogButtonRow() With {.Dock = DockStyle.Bottom, .Name = "hotkeys_Buttons", .Padding = New Padding(12, 6, 12, 8)}
+        footer.Add(btnResetAll, DialogButtonRole.Command, "action.reset")
+        footer.Add(btnOk, DialogButtonRole.Affirmative, "action.confirm")
+        footer.Add(btnCancel, DialogButtonRole.Dismissing, "action.cancel")
+        Controls.Add(footer)
+        footer.Bind(Me)
 
         ' LAST line of the builder: scaling touches only the children that exist by now (124 UX-202).
         DialogLayout.ApplyAutoScale(Me)
@@ -152,13 +150,13 @@ Public NotInheritable Class Hotkeys_Form
         ' The window is taller than a small laptop screen at a high scale: keep it on the monitor.
         DialogLayout.ClampToWorkingArea(Me)
         ' OnLoad can clamp while the form's initial anchor layout is still pending.
-        ' Restate the footer against the final client size instead of retaining its
-        ' pre-clamp bottom coordinates at 175 percent.
-        For Each command As Button In New Button() {btnResetAll, btnOk, btnCancel}
-            command.Top = ClientSize.Height - command.Height - DialogLayout.Device(Me, 14)
-        Next
+        ' Restate the capture row against the final client size and the bottom row's real top (the row is docked
+        ' and owns its height, which grows by a line when its buttons wrap) instead of retaining pre-clamp
+        ' bottom coordinates at 175 percent.
+        PerformLayout()
+        Dim footerTop As Integer = ClientSize.Height - footer.Height
         Dim captureHeight As Integer = Math.Max(captureBox.Height, Math.Max(btnReset.Height, btnClear.Height))
-        Dim captureTop As Integer = btnOk.Top - captureHeight - DialogLayout.Device(Me, 8)
+        Dim captureTop As Integer = footerTop - captureHeight - DialogLayout.Device(Me, 8)
         captureBox.Top = captureTop
         btnReset.Top = captureTop
         btnClear.Top = captureTop
@@ -175,22 +173,14 @@ Public NotInheritable Class Hotkeys_Form
     End Function
 
     ''' <summary>This window does not run DialogLayout.FitContent (its rows are chained and anchored by hand), so a
-    ''' caption that grew by a glyph is made to fit here: the capture row grows towards the end, the OK / Cancel pair
-    ''' keeps its end edge and grows towards the start, with the gap it had.</summary>
+    ''' caption that grew by a glyph is made to fit here: the capture row grows towards the end. The bottom row
+    ''' (<see cref="DialogButtonRow"/>) measures itself.</summary>
     Private Sub FitCommandCaptions()
         PerformAutoScale()
         Dim gap As Integer = DialogLayout.Device(Me, 8)
 
         btnReset.SetBounds(btnReset.Left, btnReset.Top, NeededWidth(btnReset), btnReset.Height)
         btnClear.SetBounds(btnReset.Right + gap, btnClear.Top, NeededWidth(btnClear), btnClear.Height)
-
-        btnResetAll.SetBounds(btnResetAll.Left, btnResetAll.Top, NeededWidth(btnResetAll), btnResetAll.Height)
-
-        Dim between As Integer = btnCancel.Left - btnOk.Right
-        Dim cancelWidth As Integer = NeededWidth(btnCancel)
-        btnCancel.SetBounds(btnCancel.Right - cancelWidth, btnCancel.Top, cancelWidth, btnCancel.Height)
-        Dim okWidth As Integer = NeededWidth(btnOk)
-        btnOk.SetBounds(btnCancel.Left - between - okWidth, btnOk.Top, okWidth, btnOk.Height)
     End Sub
 
     Private Sub LayoutButton(button As Button, caption As String, left As Integer, top As Integer, width As Integer)

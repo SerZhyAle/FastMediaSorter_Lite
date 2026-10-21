@@ -71,27 +71,23 @@ Friend NotInheritable Class Resource_Manager_Form
         AddHandler panel.ItemActivated, AddressOf OnOpenFromPanel
         AddHandler panel.SelectionChanged, Sub(has As Boolean) openButton.Enabled = has
 
-        ' The dialog's own chrome: Open at the left of the bottom strip, Close at its right.
-        openButton = New Button With {.Name = "res_Open", .Text = Localization.T("Открыть"), .Size = New Size(92, 28),
-                                      .Location = New Point(12, 6), .Enabled = False,
-                                      .Anchor = AnchorStyles.Bottom Or AnchorStyles.Left}
+        ' The dialog's own chrome (ticket 243 T-8a, BUTTONS 2.0 sections 3 and 4): one bottom row against the
+        ' reading end, widths from the caption and its glyph, the dismissing answer first and the final
+        ' affirmative one (Open) last. Open needs a selection, so it is not Enter's target (no AcceptButton here,
+        ' as before); Escape and the close box answer Close.
+        openButton = New Button With {.Name = "res_Open", .Text = Localization.T("Открыть"), .Enabled = False}
         AddHandler openButton.Click, AddressOf OnOpen
-        ButtonGlyphs.Apply(openButton, "action.confirm", ButtonGlyphRole.Affirmative)
-        closeButton = New Button With {.Name = "res_Close", .Text = Localization.T("Закрыть"), .Size = New Size(92, 28),
-                                       .Location = New Point(ClientSize.Width - 104, 6),
-                                       .DialogResult = DialogResult.Cancel,
-                                       .Anchor = AnchorStyles.Bottom Or AnchorStyles.Right}
-        ButtonGlyphs.Apply(closeButton, "nav.close", ButtonGlyphRole.Dismissing)
+        closeButton = New Button With {.Name = "res_Close", .Text = Localization.T("Закрыть"), .DialogResult = DialogResult.Cancel}
 
-        Dim bottom As New Panel With {.Dock = DockStyle.Bottom, .Height = 40}
-        bottom.Controls.Add(openButton)
-        bottom.Controls.Add(closeButton)
+        Dim bottom As New DialogButtonRow() With {.Dock = DockStyle.Bottom, .Name = "res_Buttons", .Padding = New Padding(12, 4, 12, 4)}
+        bottom.Add(openButton, DialogButtonRole.Affirmative, "action.confirm")
+        bottom.Add(closeButton, DialogButtonRole.Dismissing, "nav.close")
 
         ' Docking is laid out from the end of the collection: the bottom strip takes its edge
         ' first, the shared panel fills the rest.
         Controls.Add(panel)
         Controls.Add(bottom)
-        Me.CancelButton = closeButton
+        bottom.Bind(Me, bindAccept:=False)
 
         RefillForFirstShow()
         Me.pendingDraft = draft
@@ -103,21 +99,6 @@ Friend NotInheritable Class Resource_Manager_Form
     Protected Overrides Sub OnLoad(e As EventArgs)
         MyBase.OnLoad(e)
         DialogLayout.ClampToWorkingArea(Me)
-        FitStripCaptions()
-    End Sub
-
-    ''' <summary>The bottom strip is docked, so DialogLayout.FitContent leaves it alone: a caption with its glyph
-    ''' must not be clipped by the fixed 92 px, so each button grows to what it needs - Open towards the end, Close
-    ''' keeping its end edge. The strip keeps its height and the buttons their one height.</summary>
-    Private Sub FitStripCaptions()
-        PerformAutoScale()
-        Dim padding As Integer = DialogLayout.Device(Me, 24)
-        Dim openWidth As Integer = Math.Max(openButton.Width,
-            TextRenderer.MeasureText(openButton.Text, openButton.Font).Width + ButtonGlyphs.ExtraWidth(openButton) + padding)
-        openButton.SetBounds(openButton.Left, openButton.Top, openWidth, openButton.Height)
-        Dim closeWidth As Integer = Math.Max(closeButton.Width,
-            TextRenderer.MeasureText(closeButton.Text, closeButton.Font).Width + ButtonGlyphs.ExtraWidth(closeButton) + padding)
-        closeButton.SetBounds(closeButton.Right - closeWidth, closeButton.Top, closeWidth, closeButton.Height)
     End Sub
 
     Private pendingDraft As ResourceDescriptor

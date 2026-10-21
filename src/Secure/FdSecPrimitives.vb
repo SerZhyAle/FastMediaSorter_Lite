@@ -71,6 +71,19 @@ Friend Module FdSecPrimitives
     End Function
 
     ''' <summary>
+    ''' Unkeyed BLAKE2b-256 over a RANGE of an array, for a caller whose bytes sit inside a
+    ''' larger buffer and must not be copied into a second array (the writer hashes a whole
+    ''' encoded video that is up to 256 MB). The same digest as <c>Blake2b(256, slice)</c>.
+    ''' </summary>
+    Friend Function Blake2b256(data As Byte(), offset As Integer, count As Integer) As Byte()
+        Dim digest As New Blake2bDigest(256)
+        If count > 0 Then digest.BlockUpdate(data, offset, count)
+        Dim output(31) As Byte
+        digest.DoFinal(output, 0)
+        Return output
+    End Function
+
+    ''' <summary>
     ''' Keyed BLAKE2b-256 - mistake 2: this is the primitive's OWN key input, not
     ''' HMAC-BLAKE2b. The .NET ecosystem makes that mistake easy to make (the Konscious
     ''' type that does exactly the wrong thing is called <c>HMACBlake2B</c>), and the

@@ -36,10 +36,10 @@ Public Class SectionLayoutTests
     ' MainWindow.Layout.vb, BuildUi:
     '     Me.MinimumSize = New Size(560, 420)          ' window, 96-DPI design units
     '     _root.Padding  = New Padding(12, 10, 12, 4)
-    ' CollapsibleSection.OnPaint:
-    '     glyph  = Math.Max(7, CInt(Me.Font.Height * 0.42F))
-    '     pad    = 6
-    '     left   = pad + glyph + 8
+    ' CollapsibleSection.OnPaint (ticket 243 T-11c-a, COLLAPSIBLE-GROUP 1.1 section 3):
+    '     pad    = 6                                  ' logical px
+    '     marker = GroupMarker.CellPx(factor)         ' the state triangle's cell, tier 16 (16 at 100 percent)
+    '     left   = pad + marker + GroupMarker.GapPx(factor)   ' gap 8
     '     right  = w - pad
     '     title is drawn into (right - left) with NO EndEllipsis.
     '
@@ -59,7 +59,10 @@ Public Class SectionLayoutTests
     Private Const ScrollBarWidth As Integer = 17
 
     Private Const HeaderPad As Integer = 6
-    Private Const ChevronGap As Integer = 8
+
+    ''' <summary>The state marker's cell and its gap to the title at 96 DPI (the header's logical px).</summary>
+    Private Const MarkerCell As Integer = GroupMarker.TierLogical
+    Private Const MarkerGap As Integer = GroupMarker.GapLogical
 
     ''' <summary>Application.SetDefaultFont in Program.Main. The section header draws its
     ''' title BOLD in this family and size.</summary>
@@ -67,13 +70,13 @@ Public Class SectionLayoutTests
     Private Const UiFontSize As Single = 9.0F
 
     ''' <summary>
-    ''' The width a title actually gets on the narrowest window. The chevron scales with the
-    ''' font, so it is derived from the same font the text is measured in.
+    ''' The width a title actually gets on the narrowest window: the section minus the state marker's cell
+    ''' and its gap at the reading start and the pad at the other end (96 DPI; a larger factor scales the
+    ''' window and the text together).
     ''' </summary>
-    Private Shared Function TitleBudget(font As Font) As Integer
+    Private Shared Function TitleBudget() As Integer
         Dim sectionWidth As Integer = MinClientWidth - RootPaddingHorizontal - ScrollBarWidth
-        Dim glyph As Integer = Math.Max(7, CInt(font.Height * 0.42F))
-        Dim left As Integer = HeaderPad + glyph + ChevronGap
+        Dim left As Integer = HeaderPad + MarkerCell + MarkerGap
         Return sectionWidth - left - HeaderPad
     End Function
 
@@ -85,7 +88,7 @@ Public Class SectionLayoutTests
 
         Using regular As New Font(UiFontFamily, UiFontSize)
             Using bold As New Font(regular, FontStyle.Bold)
-                Dim budget As Integer = TitleBudget(regular)
+                Dim budget As Integer = TitleBudget()
                 For Each ru As String In DiscoverSectionTitles()
                     For index As Integer = 0 To Localization.Codes.Length - 1
                         Dim text As String = Translate(ru, index)
@@ -134,7 +137,7 @@ Public Class SectionLayoutTests
 
         Using regular As New Font(UiFontFamily, UiFontSize)
             Using bold As New Font(regular, FontStyle.Bold)
-                Assert.True(Measure(New String("W"c, 120), bold) > TitleBudget(regular),
+                Assert.True(Measure(New String("W"c, 120), bold) > TitleBudget(),
                             "The measurement never exceeds the budget - it is not measuring anything.")
             End Using
         End Using

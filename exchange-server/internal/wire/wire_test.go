@@ -115,6 +115,10 @@ func samples() []struct {
 		{"password-changed", &PasswordChanged{DeviceToken: tok}},
 		{"account-delete", &AccountDelete{Password: "Passw0rdTest"}},
 		{"account-deleted", &AccountDeleted{}},
+		{"admin-auth", &AdminAuth{Password: "AdminPassw0rd1"}},
+		{"admin-auth-ok", &AdminAuthOK{Token: tok, ExpiresSeconds: 900}},
+		{"admin-request", &AdminRequest{ID: 1, Token: tok, Op: "status"}},
+		{"admin-reply", &AdminReply{ID: 1, OK: true, Data: json.RawMessage(`{}`)}},
 	}
 }
 
@@ -415,11 +419,12 @@ func TestVersionRefusalCarriesTheServersOwnSchemaVersion(t *testing.T) {
 	}
 }
 
-func TestReasonsAreTheSixteenOfTheContract(t *testing.T) {
+func TestReasonsAreTheSeventeenOfTheContract(t *testing.T) {
 	want := []string{"bad-credentials", "device-revoked", "version-unsupported", "tls-required", "id-collision",
 		"capacity", "port-unavailable", "unavailable", "rate-limited", "protection-unsupported",
-		"invitation-invalid", "login-taken", "password-policy", "limit-reached", "not-permitted", "signed-out"}
-	if len(AllReasons) != 16 {
+		"invitation-invalid", "login-taken", "password-policy", "limit-reached", "not-permitted", "signed-out",
+		"admin-disabled"}
+	if len(AllReasons) != 17 {
 		t.Fatalf("%d reasons", len(AllReasons))
 	}
 	for i, r := range AllReasons {
@@ -432,7 +437,7 @@ func TestReasonsAreTheSixteenOfTheContract(t *testing.T) {
 	}
 	defer func() {
 		if recover() == nil {
-			t.Error("Refuse accepted a reason outside the sixteen")
+			t.Error("Refuse accepted a reason outside the seventeen")
 		}
 	}()
 	Refuse(Reason("nope"))

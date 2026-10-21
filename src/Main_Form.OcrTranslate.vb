@@ -151,6 +151,10 @@ Partial Public Class Main_Form
 
         ocr_Auto_Timer.Stop()
         If ocr_Settings.Enabled AndAlso ocr_Settings.AutoMode AndAlso IsCurrentFileEligibleImage() Then
+#If Not NETFRAMEWORK Then
+            ' The first frame of a long animation is not read automatically (spec 241 rule 13).
+            If IsAnimationPreviewShown Then Return
+#End If
             ocr_Auto_Timer.Start() ' debounce; tick runs the job
         End If
     End Sub

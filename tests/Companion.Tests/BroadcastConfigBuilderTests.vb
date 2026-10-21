@@ -14,6 +14,7 @@ Imports Xunit
 ''' and CompanionCommand broadcast activation parsing.
 ''' Contract: CONTRACT_BROADCAST_RESOURCE.md (schemaVersion 1).
 ''' </summary>
+<Collection(UiLanguageCollection.Name)>
 Public Class BroadcastConfigBuilderTests
 
     <Fact>

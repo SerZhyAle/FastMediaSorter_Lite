@@ -15,8 +15,9 @@ Imports Xunit
 
 ''' <summary>
 ''' WINDOWS-UI 0.4 section 11 / ICON-RENDER 0.19 section 14 as the product holds them: the glyph before the caption
-''' of a command button, the hue and the tint of the answer buttons of a dialog, and the numbers the section asks to be
-''' measured (glyph 3 : 1, caption 4.5 : 1 against the face the pair is actually drawn on, tinted face included).
+''' of a command button, the glyph hue of the answer buttons of a dialog (BUTTONS 2.0 section 3: Cancel, No and Close
+''' neutral, no face tint), and the numbers the section asks to be measured (glyph 3 : 1, caption 4.5 : 1 against the
+''' face the pair is actually drawn on).
 ''' A window cannot be looked at here, so the checks read the button the way the module drew it (<see cref="ButtonGlyphs"/>)
 ''' and a rendered bitmap of it; what stays manual is the live high-contrast switch and a physical 150/200 percent monitor.
 ''' </summary>
@@ -92,8 +93,8 @@ Public Class AnswerButtonGlyphTests
 
     <Fact>
     Public Sub In_an_irreversible_confirmation_only_the_acting_button_has_a_red_face()
-        ' WINDOWS-UI section 11 item 7: the dismissing answer keeps its red glyph and takes no tint, the acting button
-        ' alone takes the danger face, and the default focus stays on the safe answer.
+        ' WINDOWS-UI section 11 item 7 / BUTTONS 2.0 section 3: the dismissing answer is neutral with no tint, the
+        ' acting button alone takes the danger face, and the default focus stays on the safe answer.
         OnSta(Sub()
                   Using dialog As New Ask_Dialog(AskSpecs.ProfileResetConfirm())
                       Dim buttons As List(Of Button) = AnswerButtons(dialog)
@@ -105,25 +106,51 @@ Public Class AnswerButtonGlyphTests
                       Assert.Equal(Color.FromArgb(225, 225, 225).ToArgb(), ButtonGlyphs.CurrentFace(safe).ToArgb())
                       Assert.Same(safe, dialog.AcceptButton)
                   End Using
-                  ' A question that is not a confirmation of an irreversible act tints its dismissing answer.
+                  ' Any other question keeps the same plain face on its dismissing answer: no answer is tinted.
                   Using dialog As New Ask_Dialog(AskSpecs.HotkeyConflict("Ctrl+K", "Action"))
                       Dim cancel As Button = AnswerButtons(dialog)(AskSpecs.ConflictCancel)
-                      Assert.NotEqual(Color.FromArgb(225, 225, 225).ToArgb(), ButtonGlyphs.CurrentFace(cancel).ToArgb())
+                      Assert.Equal(Color.FromArgb(225, 225, 225).ToArgb(), ButtonGlyphs.CurrentFace(cancel).ToArgb())
                   End Using
               End Sub)
     End Sub
 
     <Fact>
-    Public Sub A_text_prompt_is_a_green_ok_beside_a_red_cancel()
+    Public Sub A_text_prompt_is_a_green_ok_beside_a_neutral_cancel()
         OnSta(Sub()
                   Using dialog As New Ask_Dialog(AskSpecs.JumpToNumberPrompt(1, 10))
                       Dim buttons As List(Of Button) = AnswerButtons(dialog)
                       Assert.Equal(2, buttons.Count)
-                      Assert.Equal(ButtonGlyphRole.Affirmative, ButtonGlyphs.RoleOf(buttons(0)))
-                      Assert.Equal("action.confirm", ButtonGlyphs.GlyphOf(buttons(0)))
-                      Assert.Equal(ButtonGlyphRole.Dismissing, ButtonGlyphs.RoleOf(buttons(1)))
-                      Assert.Equal("action.cancel", ButtonGlyphs.GlyphOf(buttons(1)))
+                      Dim ok As Button = buttons.First(Function(b) ButtonGlyphs.RoleOf(b) = ButtonGlyphRole.Affirmative)
+                      Dim cancel As Button = buttons.First(Function(b) ButtonGlyphs.RoleOf(b) = ButtonGlyphRole.Dismissing)
+                      Assert.Equal("action.confirm", ButtonGlyphs.GlyphOf(ok))
+                      Assert.Equal("action.cancel", ButtonGlyphs.GlyphOf(cancel))
+                      ' Cancel is neutral: its glyph takes the caption's own colour, never the danger pair.
+                      Assert.True(ButtonGlyphs.HueOf(ButtonGlyphRole.Dismissing, ThemePalette.Light).IsEmpty)
+                      Assert.True(ButtonGlyphs.HueOf(ButtonGlyphRole.Dismissing, ThemePalette.Dark).IsEmpty)
+                      Assert.NotEqual(ThemePalette.Light.Danger.ToArgb(), ButtonGlyphs.CurrentInk(cancel).ToArgb())
                   End Using
+              End Sub)
+    End Sub
+
+    <Theory>
+    <InlineData(False)>
+    <InlineData(True)>
+    Public Sub No_non_destructive_answer_tints_its_face_and_cancel_matches_a_neutral_button(dark As Boolean)
+        ' BUTTONS 2.0 section 3: Cancel, No and Close are neutral; no face tint on a non-destructive answer.
+        OnSta(Sub()
+                  UnderPalette(dark, Sub()
+                                         Using form As New Form()
+                                             Dim neutral As Button = NewButton("Caption", "action.copy", ButtonGlyphRole.Neutral, form)
+                                             Dim baseFace As Color = ButtonGlyphs.CurrentFace(neutral)
+                                             Dim baseInk As Color = ButtonGlyphs.CurrentInk(neutral)
+                                             For Each role As ButtonGlyphRole In {ButtonGlyphRole.Affirmative, ButtonGlyphRole.Dismissing, ButtonGlyphRole.Caution}
+                                                 Dim b As Button = NewButton("Caption", "action.confirm", role, form)
+                                                 Assert.Equal(baseFace.ToArgb(), ButtonGlyphs.CurrentFace(b).ToArgb())
+                                             Next
+                                             Dim cancel As Button = NewButton("Caption", "action.cancel", ButtonGlyphRole.Dismissing, form)
+                                             Assert.Equal(baseInk.ToArgb(), ButtonGlyphs.CurrentInk(cancel).ToArgb())
+                                         End Using
+                                     End Sub)
               End Sub)
     End Sub
 
@@ -233,8 +260,9 @@ Public Class AnswerButtonGlyphTests
     End Sub
 
     <Fact>
-    Public Sub The_gap_is_six_logical_pixels_on_the_caption_side_and_follows_the_reading_direction()
+    Public Sub The_gap_is_eight_logical_pixels_on_the_caption_side_and_follows_the_reading_direction()
         OnSta(Sub()
+                  Assert.Equal(8, ButtonGlyphs.GapLogicalSize)
                   Using form As New Form()
                       Dim ltr As Button = NewButton("Caption", "action.cancel", ButtonGlyphRole.Dismissing, form)
                       Dim rtl As New Button With {.Text = "Caption", .RightToLeft = RightToLeft.Yes, .AutoSize = True}
@@ -389,7 +417,7 @@ Public Class AnswerButtonGlyphTests
     End Sub
 
     <Fact>
-    Public Sub The_tint_is_painted_over_the_face_of_an_answer_and_not_over_a_neutral_button()
+    Public Sub The_face_of_an_answer_is_painted_like_the_face_of_a_neutral_button()
         OnSta(Sub()
                   Using form As New Form()
                       form.ClientSize = New Size(300, 60)
@@ -402,9 +430,11 @@ Public Class AnswerButtonGlyphTests
                           ok.DrawToBitmap(a, New Rectangle(Point.Empty, ok.Size))
                           plain.DrawToBitmap(b, New Rectangle(Point.Empty, plain.Size))
                           ' a point inside the face, left of the glyph and clear of the border
-                          Dim tinted As Color = a.GetPixel(6, ok.Height \ 2)
+                          ' (BUTTONS 2.0 section 3: the hue lives in the glyph only, no answer tints its face)
+                          Dim answer As Color = a.GetPixel(6, ok.Height \ 2)
                           Dim bare As Color = b.GetPixel(6, plain.Height \ 2)
-                          Assert.True(CInt(tinted.G) - tinted.R > CInt(bare.G) - bare.R, "no green over the face: " & HexOf(tinted) & " against " & HexOf(bare))
+                          Assert.True(Math.Abs(CInt(answer.R) - bare.R) <= 2 AndAlso Math.Abs(CInt(answer.G) - bare.G) <= 2 AndAlso Math.Abs(CInt(answer.B) - bare.B) <= 2,
+                                      "the answer's face is tinted: " & HexOf(answer) & " against " & HexOf(bare))
                       End Using
                       form.Close()
                   End Using

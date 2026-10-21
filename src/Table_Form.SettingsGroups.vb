@@ -70,7 +70,8 @@ Partial Public Class Table_Form
         AddSettingsGroup("recipients", "overlay", "Вид таблицы получателей", False,
                          "recipients_position", "recipients_width", "recipients_font", "recipients_opacity", "recipients_rows",
                          "recipients_position_reset")
-        AddSettingsGroup("images", "basic", "Основные настройки", True, "new_image_scale", "exif_rotate", "wheel_zooms", "show_picture_size", "show_file_size", "show_file_date")
+        AddSettingsGroup("images", "basic", "Основные настройки", True, "new_image_scale", "exif_rotate", "wheel_zooms",
+                         "animated_via_video", "animated_via_video_ffmpeg", "show_picture_size", "show_file_size", "show_file_date")
         AddSettingsGroup("images", "background", "Фон изображения", False, "background_color", "perspective", "dynamic_perspective", "animated_perspective", "halo_speed")
         AddSettingsGroup("images", "slideshow", "Поведение слайд-шоу", True, "slideshow_interval", "slideshow_random_order", "stop_slideshow_manual", "slideshow_ui")
         AddSettingsGroup("images", "advanced", "Дополнительные настройки", False, "hq_scaling", "thumbnail_size")
@@ -219,10 +220,10 @@ Partial Public Class Table_Form
         Dim page As TabPage = pageIds.First(Function(entry) entry.Value = pageId).Key
         ' The header caption is Semibold 10.5 - visibly larger than a row's 8.75, one half
         ' of how a header stands apart from the rows it governs (127 §3.4; the blended
-        ' band fill is the other half and arrives with the palette pass).
-        Dim group As New SettingsCollapsibleGroup(id, settingsScale, SettingsFont("Segoe UI Semibold", Sf(10.5F)),
-            Function(expanded, ink) GlyphRenderer.Render(IconMap.GetMeaning(If(expanded, "collapsibleSectionOpen", "collapsibleSection")).GlyphId,
-                Sp(20), ink, AddressOf RuntimeBootstrap.OpenBundledAsset))
+        ' band fill is the other half and arrives with the palette pass). The state triangle
+        ' (COLLAPSIBLE-GROUP section 3 rule 2) is painted by the header itself in its own ink:
+        ' there is no glyph to bake, so a theme, DPI or RightToLeft change only repaints it.
+        Dim group As New SettingsCollapsibleGroup(id, settingsScale, SettingsFont("Segoe UI Semibold", Sf(10.5F)))
         group.Expanded = settingsContext.Page(pageId).Expanded(groupId, defaultExpanded)
         settingsGroups.Add(id, group)
         PageFlow(page).Controls.Add(group)

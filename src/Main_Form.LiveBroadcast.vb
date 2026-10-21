@@ -51,6 +51,12 @@ Partial Public Class Main_Form
             Dim record As ExchangeBroadcastRecord = Nothing
             If Not ExchangeRecordReader.TryReadBroadcast(reply.DataJson, record) Then Return
             Dim parsed As LiveBroadcastReadResult = LiveBroadcastRecords.ReadRecord(record.Raw)
+            If parsed.Status <> LiveReadStatus.Ok Then
+                ' LIVE-BROADCAST 1.1: an offer whose descriptor this program cannot read (a later schema included) is refused WITH the
+                ' reason on screen - the sender still gets its "unsupported" answer below, but the person at this PC is told, not left guessing.
+                LiveBroadcastMessages.LogRefusal(parsed.Status, "the cast offer")
+                ShowLiveBroadcastError(parsed.Status)
+            End If
             Dim accepted As Boolean = parsed.Status = LiveReadStatus.Ok
             If accepted AndAlso Not live_Options.AutoAcceptCast Then
                 Dim question As New AskSpec(Localization.T("Открыть live-трансляцию"), Localization.T("Принять входящую трансляцию?"), AskIcon.None,
@@ -178,6 +184,8 @@ Partial Public Class Main_Form
         If is_Vlc_Playing Then RememberCurrentVideoPosition()
         media_Generation += 1
         open_Coordinator.NoteNavigation()
+        ' The shared player may hold an animation video (spec 242): let go of it before the broadcast takes the player.
+        StopAnimationVideo()
 
         If IsSecureContentOnScreen() Then
             If is_Vlc_Playing Then StopVlcPlayback()

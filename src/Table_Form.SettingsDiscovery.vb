@@ -11,13 +11,18 @@ Imports System.Linq
 Imports System.Windows.Forms
 
 Partial Public Class Table_Form
-    ' The header tools are icon buttons (search, expand all, collapse all): each draws its
+    Implements IContextHelpHost
+
+    ' The header tools are icon buttons (search, expand all, collapse all, then the '?' help): each draws its
     ' picture in the button's CURRENT ink at the CURRENT scale, so a theme or a DPI change re-renders it.
     Private ReadOnly settingsToolIcons As New Dictionary(Of Button, Func(Of Integer, Color, Bitmap))()
     Private settingsPageHasGroups As Boolean = True
     Private searchSettingsButton As Button
     Private expandSettingsButton As Button
     Private collapseSettingsButton As Button
+    ''' <summary>The shared '?' (<see cref="ContextHelpUi"/>), the last tool of the header row. Not the form's corner:
+    ''' there it sat on top of the collapse-all tool and drew as a different kind of button.</summary>
+    Private helpSettingsButton As Button
     Private sharedSoundButton As Button
     Private arrangingSettingsHeader As Boolean
     Private updatingThumbnailChoice As Boolean
@@ -27,7 +32,11 @@ Partial Public Class Table_Form
 
     Private Sub AddRecipientGridActions(host As Panel)
         Dim actions As New FlowLayoutPanel With {.Dock = DockStyle.Bottom, .AutoSize = True, .WrapContents = True}
-        slotHealthDetails = New Label With {.Dock = DockStyle.Bottom, .Height = Sp(66), .ForeColor = SettingsMutedText}
+        ' No reserved height: FitRecipientsHost gives the line the height of its text while a slot has
+        ' something to say and takes it away (hidden, zero) when it does not.
+        slotHealthDetails = New Label With {.Dock = DockStyle.Bottom, .AutoSize = False, .Height = 0, .Visible = False,
+                                            .Padding = New Padding(Sp(2), Sp(4), Sp(2), Sp(6)), .ForeColor = SettingsMutedText}
+        AddHandler slotHealthDetails.TextChanged, Sub() FitRecipientsHost()
         Dim browse = SettingsToolButton(Sub()
                                            Dim slot = SelectedRecipientSlot()
                                            If slot > 0 Then BrowseLocalSlotFolder(slot)
@@ -139,6 +148,8 @@ Partial Public Class Table_Form
             modernSettingsHeader.Controls.Add(tool)
         Next
         AddHandler modernSettingsHeader.Resize, Sub() ArrangeSettingsDiscoveryHeader()
+        ' The theme service may have offered the '?' before the header existed (it waits for CanHostHelpButton).
+        ContextHelpUi.Attach(Me)
         RegisterSettingsPage("video", Sub() AddSettingRow(PageFlow(Tab_Page_3), "shared_audio_settings", sharedSoundButton, 230))
         Tab_Control.BringToFront()
         Tab_Control.TabIndex = 1
@@ -187,16 +198,16 @@ Partial Public Class Table_Form
                     StyleModernComboBox(combo)
                     AddHandler combo.DropDown, Sub() SizeSettingsChoices(combo)
                 End If
-                If editor Is row.Editor AndAlso TypeOf editor Is Button Then editor.Height = Math.Max(editor.Height, Sp(44))
+                If editor Is row.Editor AndAlso TypeOf editor Is Button Then editor.Height = Math.Max(editor.Height, Sp(SettingsRowGridRules.ButtonHeight))
                 Dim number = TryCast(editor, NumericUpDown)
                 If number IsNot Nothing Then
                     number.AutoSize = False
-                    number.MinimumSize = New Size(0, Sp(44))
+                    number.MinimumSize = New Size(0, Sp(28))
                 End If
                 Dim input = TryCast(editor, TextBox)
                 If input IsNot Nothing Then
                     input.AutoSize = False
-                    input.MinimumSize = New Size(0, Sp(44))
+                    input.MinimumSize = New Size(0, Sp(28))
                 End If
             Next
         Next
@@ -215,7 +226,7 @@ Partial Public Class Table_Form
     End Sub
 
     Private Function SettingsToolButton(action As Action) As Button
-        Dim button As New Button With {.AutoSize = True, .MinimumSize = New Size(Sp(44), Sp(44)), .UseMnemonic = False,
+        Dim button As New Button With {.AutoSize = True, .MinimumSize = New Size(Sp(32), Sp(32)), .UseMnemonic = False,
             .Font = SettingsFont("Segoe UI", Sf(9.0F)), .Margin = New Padding(0, 0, Sp(6), 0)}
         AddHandler button.Click, Sub() action()
         Return button
@@ -236,6 +247,31 @@ Partial Public Class Table_Form
         AddHandler button.Disposed, Sub() settingsToolIcons.Remove(button)
         Return button
     End Function
+
+    Private ReadOnly Property CanHostHelpButton As Boolean Implements IContextHelpHost.CanHostHelpButton
+        Get
+            Return modernSettingsHeader IsNot Nothing AndAlso searchSettingsButton IsNot Nothing
+        End Get
+    End Property
+
+    ''' <summary>Takes the '?' into the header's tool row as its last tool: the same square, border, face, ink and
+    ''' 24 px centred picture as search / expand all / collapse all, so it neither covers a tool nor looks like a
+    ''' stray control. <see cref="ArrangeSettingsDiscoveryHeader"/> places it and narrows the title to make room.</summary>
+    Private Sub HostHelpButton(button As Button) Implements IContextHelpHost.HostHelpButton
+        helpSettingsButton = button
+        button.FlatStyle = FlatStyle.Standard
+        button.FlatAppearance.BorderSize = 1
+        button.Text = String.Empty
+        button.ImageAlign = ContentAlignment.MiddleCenter
+        button.Margin = New Padding(0)
+        button.Padding = New Padding(0)
+        settingsToolIcons(button) = Function(size, ink) RenderSettingsGlyph("app.help", size, ink)
+        AddHandler button.ForeColorChanged, Sub() RenderSettingsToolIcon(button)
+        AddHandler button.Disposed, Sub() settingsToolIcons.Remove(button)
+        modernSettingsHeader.Controls.Add(button)
+        ApplyModernButtonPalette(button)
+        ArrangeSettingsDiscoveryHeader()
+    End Sub
 
     Private Sub RenderSettingsToolIcon(button As Button)
         Dim render As Func(Of Integer, Color, Bitmap) = Nothing
@@ -328,9 +364,11 @@ Partial Public Class Table_Form
             Dim enabled As Boolean = row.Editor.Enabled
             row.Title.ForeColor = If(enabled, SettingsText, SettingsMutedText)
             row.Description.ForeColor = SettingsMutedText
+            ' Only the caption is a toggle (BOOLEAN-OPTION 2.0 section 3 rule 1); the explanation keeps the
+            ' ordinary cursor whatever the state, and a disabled option shows no hand anywhere.
             If TypeOf row.Editor Is CheckBox Then
                 row.Title.Cursor = If(enabled, Cursors.Hand, Cursors.Default)
-                row.Description.Cursor = row.Title.Cursor
+                row.Description.Cursor = Cursors.Default
             End If
             Dim reason As String = Nothing
             Select Case row.Key
@@ -390,6 +428,8 @@ Partial Public Class Table_Form
                 tools.Add(expandSettingsButton)
                 tools.Add(collapseSettingsButton)
             End If
+            ' Help is always the END-most tool, on every page, so it never moves when a page has no groups.
+            If helpSettingsButton IsNot Nothing AndAlso Not helpSettingsButton.IsDisposed Then tools.Add(helpSettingsButton)
             Dim side As Integer = Sp(SettingsToolSide)
             Dim gap As Integer = Sp(6)
             Dim edge As Integer = Sp(16)
@@ -411,7 +451,7 @@ Partial Public Class Table_Form
             modernSettingsSubtitle.Top = modernSettingsTitle.Bottom + Sp(2)
             modernSettingsSubtitle.Height = TextRenderer.MeasureText(modernSettingsSubtitle.Text, modernSettingsSubtitle.Font,
                 New Size(modernSettingsSubtitle.Width, Integer.MaxValue), TextFormatFlags.WordBreak).Height + Sp(4)
-            modernSettingsHeader.Height = Math.Max(searchSettingsButton.Bottom, modernSettingsSubtitle.Bottom) + Sp(10)
+            modernSettingsHeader.Height = Math.Max(searchSettingsButton.Bottom, modernSettingsSubtitle.Bottom) + Sp(6)
         Finally
             arrangingSettingsHeader = False
         End Try

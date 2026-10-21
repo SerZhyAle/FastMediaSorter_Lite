@@ -33,6 +33,7 @@ Public Module ConnectionDiagnosisLocalization
         InitializePortuguese()
         InitializeTurkish()
         InitializeChinese()
+        InitializeUiOnlyRows()
     End Sub
 
     Public Function CurrentLocale() As String
@@ -91,8 +92,15 @@ Public Module ConnectionDiagnosisLocalization
         If String.IsNullOrWhiteSpace(locale) Then Return CurrentLocale()
         Dim clean As String = locale.Trim().ToLowerInvariant()
         If clean = "ua" Then clean = "uk"
-        If StepTexts.ContainsKey(clean) Then Return clean
+        If StepTexts.ContainsKey(clean) OrElse MessageTexts.ContainsKey(clean) Then Return clean
         Return "en"
+    End Function
+
+    ''' <summary>The refusal of a format newer than this program reads (DEVICE-EXCHANGE 1.3 amendment of 2026-10-17, code
+    ''' `format-unsupported`: connection string, .fmsexch file, LIVE-BROADCAST descriptor), in the language the program shows.
+    ''' The one place the viewer and the Share Manager take this sentence from.</summary>
+    Public Function FormatUnsupportedText() As String
+        Return GetMessageText("format-unsupported", Localization.CurrentCode)
     End Function
 
     ' --- 1. ENGLISH (Canon item CY & CZ) ---
@@ -152,6 +160,7 @@ Public Module ConnectionDiagnosisLocalization
             {"key-changed", "The protection key of this device has changed, so nothing is sent to it. Remove the device from the account and add it again."},
             {"server-no-e2e", "This server cannot carry protected content, so folders, broadcasts and the clipboard do not go through it."},
             {"sealed-failed", "This could not be opened on this device. Try again from the other device."},
+            {"format-unsupported", "This format is newer than this program supports. Nothing was imported. Use a compatible program."},
             {"refused", "The server refused this."}
         }
         MessageTexts("en") = msgs
@@ -234,6 +243,7 @@ Public Module ConnectionDiagnosisLocalization
             {"key-changed", "Ключ защиты этого устройства изменился, поэтому ему ничего не отправляется. Удалите устройство из аккаунта и добавьте его снова."},
             {"server-no-e2e", "Этот сервер не умеет передавать защищённое содержимое, поэтому папки, трансляции и буфер через него не идут."},
             {"sealed-failed", "Это не удалось открыть на этом устройстве. Повторите с другого устройства."},
+            {"format-unsupported", "Этот формат новее, чем поддерживает программа. Ничего не импортировано. Используйте совместимую программу."},
             {"refused", "Сервер отказал в этом."}
         }
         MessageTexts("ru") = msgs
@@ -316,6 +326,7 @@ Public Module ConnectionDiagnosisLocalization
             {"key-changed", "Ключ захисту цього пристрою змінився, тому йому нічого не надсилається. Видаліть пристрій з акаунта й додайте його знову."},
             {"server-no-e2e", "Цей сервер не вміє передавати захищений вміст, тому папки, трансляції й буфер через нього не йдуть."},
             {"sealed-failed", "Це не вдалося відкрити на цьому пристрої. Повторіть з іншого пристрою."},
+            {"format-unsupported", "Цей формат новіший, ніж підтримує програма. Нічого не імпортовано. Скористайтеся сумісною програмою."},
             {"refused", "Сервер відмовив у цьому."}
         }
         MessageTexts("uk") = msgs
@@ -403,6 +414,7 @@ Public Module ConnectionDiagnosisLocalization
             {"key-changed", "Der Sicherheitsschlüssel dieses Geräts hat sich geändert."},
             {"server-no-e2e", "Dieser Server unterstützt keine geschützten Inhalte."},
             {"sealed-failed", "Konnte auf diesem Gerät nicht geöffnet werden."},
+            {"format-unsupported", "Dieses Format ist neuer, als dieses Programm unterstützt. Es wurde nichts importiert. Verwenden Sie ein kompatibles Programm."},
             {"refused", "Der Server hat dies abgelehnt."}
         }
         Dim ui As New Dictionary(Of String, String)(StringComparer.OrdinalIgnoreCase) From {
@@ -481,6 +493,7 @@ Public Module ConnectionDiagnosisLocalization
             {"key-changed", "La clave de protección de este dispositivo ha cambiado."},
             {"server-no-e2e", "Este servidor no puede transmitir contenido protegido."},
             {"sealed-failed", "No se pudo abrir en este dispositivo."},
+            {"format-unsupported", "Este formato es más reciente de lo que admite este programa. No se importó nada. Usa un programa compatible."},
             {"refused", "El servidor rechazó esta solicitud."}
         }
         Dim ui As New Dictionary(Of String, String)(StringComparer.OrdinalIgnoreCase) From {
@@ -559,6 +572,7 @@ Public Module ConnectionDiagnosisLocalization
             {"key-changed", "La clé de protection de cet appareil a changé."},
             {"server-no-e2e", "Ce serveur ne prend pas en charge le contenu protégé."},
             {"sealed-failed", "Impossible d'ouvrir sur cet appareil."},
+            {"format-unsupported", "Ce format est plus récent que ce que ce programme prend en charge. Rien n'a été importé. Utilisez un programme compatible."},
             {"refused", "Le serveur a refusé cette requête."}
         }
         Dim ui As New Dictionary(Of String, String)(StringComparer.OrdinalIgnoreCase) From {
@@ -637,6 +651,7 @@ Public Module ConnectionDiagnosisLocalization
             {"key-changed", "La chiave di protezione di questo dispositivo è cambiata."},
             {"server-no-e2e", "Questo server non supporta contenuti protetti."},
             {"sealed-failed", "Impossibile aprire su questo dispositivo."},
+            {"format-unsupported", "Questo formato è più recente di quello supportato da questo programma. Non è stato importato nulla. Usa un programma compatibile."},
             {"refused", "Il server ha rifiutato la richiesta."}
         }
         Dim ui As New Dictionary(Of String, String)(StringComparer.OrdinalIgnoreCase) From {
@@ -715,6 +730,7 @@ Public Module ConnectionDiagnosisLocalization
             {"key-changed", "この機器の保護キーが変更されました。"},
             {"server-no-e2e", "このサーバーは保護されたコンテンツを送信できません。"},
             {"sealed-failed", "この機器では開けませんでした。"},
+            {"format-unsupported", "この形式は、このプログラムが対応しているものより新しい形式です。何もインポートされませんでした。互換性のあるプログラムを使用してください。"},
             {"refused", "サーバーが接続を拒否しました。"}
         }
         Dim ui As New Dictionary(Of String, String)(StringComparer.OrdinalIgnoreCase) From {
@@ -793,6 +809,7 @@ Public Module ConnectionDiagnosisLocalization
             {"key-changed", "이 기기의 보안 키가 변경되었습니다."},
             {"server-no-e2e", "이 서버는 보호된 콘텐츠를 전달할 수 없습니다."},
             {"sealed-failed", "이 기기에서 열 수 없습니다."},
+            {"format-unsupported", "이 형식은 이 프로그램이 지원하는 것보다 새로운 형식입니다. 아무것도 가져오지 않았습니다. 호환되는 프로그램을 사용하세요."},
             {"refused", "서버가 요청을 거부했습니다."}
         }
         Dim ui As New Dictionary(Of String, String)(StringComparer.OrdinalIgnoreCase) From {
@@ -871,6 +888,7 @@ Public Module ConnectionDiagnosisLocalization
             {"key-changed", "Klucz zabezpieczeń tego urządzenia uległ zmianie."},
             {"server-no-e2e", "Ten serwer nie obsługuje chronionej zawartości."},
             {"sealed-failed", "Nie udało się otworzyć na tym urządzeniu."},
+            {"format-unsupported", "Ten format jest nowszy, niż obsługuje ten program. Nic nie zaimportowano. Użyj zgodnego programu."},
             {"refused", "Serwer odrzucił żądanie."}
         }
         Dim ui As New Dictionary(Of String, String)(StringComparer.OrdinalIgnoreCase) From {
@@ -949,6 +967,7 @@ Public Module ConnectionDiagnosisLocalization
             {"key-changed", "A chave de segurança deste dispositivo mudou."},
             {"server-no-e2e", "Este servidor não suporta conteúdo protegido."},
             {"sealed-failed", "Não foi possível abrir neste dispositivo."},
+            {"format-unsupported", "Este formato é mais recente do que este programa suporta. Nada foi importado. Use um programa compatível."},
             {"refused", "O servidor recusou a solicitação."}
         }
         Dim ui As New Dictionary(Of String, String)(StringComparer.OrdinalIgnoreCase) From {
@@ -1027,6 +1046,7 @@ Public Module ConnectionDiagnosisLocalization
             {"key-changed", "Bu cihazın koruma anahtarı değişti."},
             {"server-no-e2e", "Bu sunucu korumalı içerik aktaramıyor."},
             {"sealed-failed", "Bu cihazda açılamadı."},
+            {"format-unsupported", "Bu biçim, bu programın desteklediğinden daha yeni. Hiçbir şey içe aktarılmadı. Uyumlu bir program kullanın."},
             {"refused", "Sunucu isteği reddetti."}
         }
         Dim ui As New Dictionary(Of String, String)(StringComparer.OrdinalIgnoreCase) From {
@@ -1105,6 +1125,7 @@ Public Module ConnectionDiagnosisLocalization
             {"key-changed", "此设备的保护密钥已更改。"},
             {"server-no-e2e", "此服务器无法传输受保护内容。"},
             {"sealed-failed", "无法在此设备上打开。"},
+            {"format-unsupported", "此格式比本程序支持的格式更新。未导入任何内容。请使用兼容的程序。"},
             {"refused", "服务器拒绝了此请求。"}
         }
         Dim ui As New Dictionary(Of String, String)(StringComparer.OrdinalIgnoreCase) From {
@@ -1126,6 +1147,24 @@ Public Module ConnectionDiagnosisLocalization
             {"codes_copied", "诊断代码已复制到剪贴板。"}
         }
         AddLocale("zh", steps, msgs, ui)
+    End Sub
+
+    ' --- 14. the four interface languages of the programs that the table does not carry (ar, hi, bn, ur) ---
+    ' Only the row `format-unsupported` is translated for them; every other row and every step reads as English there, as before
+    ' (NormalizeLocale accepts the code, GetStepText and GetUiText fall back to English).
+    Private Sub InitializeUiOnlyRows()
+        MessageTexts("ar") = New Dictionary(Of String, String)(StringComparer.OrdinalIgnoreCase) From {
+            {"format-unsupported", "هذا التنسيق أحدث مما يدعمه هذا البرنامج. لم يتم استيراد أي شيء. استخدم برنامجًا متوافقًا."}
+        }
+        MessageTexts("hi") = New Dictionary(Of String, String)(StringComparer.OrdinalIgnoreCase) From {
+            {"format-unsupported", "यह फ़ॉर्मैट इस प्रोग्राम के समर्थन से नया है। कुछ भी आयात नहीं किया गया। संगत प्रोग्राम का उपयोग करें।"}
+        }
+        MessageTexts("bn") = New Dictionary(Of String, String)(StringComparer.OrdinalIgnoreCase) From {
+            {"format-unsupported", "এই ফরম্যাটটি এই প্রোগ্রামের সমর্থনের চেয়ে নতুন। কিছুই ইমপোর্ট করা হয়নি। একটি সামঞ্জস্যপূর্ণ প্রোগ্রাম ব্যবহার করুন।"}
+        }
+        MessageTexts("ur") = New Dictionary(Of String, String)(StringComparer.OrdinalIgnoreCase) From {
+            {"format-unsupported", "یہ فارمیٹ اس پروگرام کی معاونت سے نیا ہے۔ کچھ بھی درآمد نہیں کیا گیا۔ ہم آہنگ پروگرام استعمال کریں۔"}
+        }
     End Sub
 
 End Module

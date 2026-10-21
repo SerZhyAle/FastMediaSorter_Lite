@@ -194,6 +194,22 @@ Partial Public NotInheritable Class Localization
             "पोर्ट खुला है, पर SFTP ने उत्तर नहीं दिया: {0}", "পোর্ট খোলা, কিন্তু SFTP সাড়া দেয়নি: {0}",
             "پورٹ کھلا ہے مگر SFTP نے جواب نہیں دیا: {0}", "端口已开放，但 SFTP 无响应：{0}")
 
+        ' SHARE-SESSION 1.3 (iii): the peer closed the connection before any banner - not "not SSH", the transport is undetermined.
+        ' Same key and wording as the viewer's table (src/Localization/Localization.Resources.vb), so both programs say it alike.
+        Add("Сервер закрыл соединение, не успев ответить. Возможно, достигнут предел подключений; повторите через минуту.",
+            "The server closed the connection before it answered. It may be at its connection limit; try again in a moment.",
+            "Сервер закрив з'єднання, не встигнувши відповісти. Можливо, досягнуто ліміту підключень; повторіть за хвилину.",
+            "Der Server hat die Verbindung geschlossen, bevor er geantwortet hat. Möglicherweise ist sein Verbindungslimit erreicht; versuchen Sie es gleich noch einmal.",
+            "Il server ha chiuso la connessione prima di rispondere. Potrebbe aver raggiunto il limite di connessioni; riprovare tra poco.",
+            "El servidor cerró la conexión antes de responder. Puede haber alcanzado su límite de conexiones; inténtelo de nuevo en un momento.",
+            "Le serveur a fermé la connexion avant de répondre. Il a peut-être atteint sa limite de connexions ; réessayez dans un instant.",
+            "O servidor fechou a conexão antes de responder. Pode ter atingido o limite de conexões; tente novamente em instantes.",
+            "أغلق الخادم الاتصال قبل أن يرد. ربما بلغ حد الاتصالات؛ حاول مرة أخرى بعد قليل.",
+            "सर्वर ने जवाब देने से पहले कनेक्शन बंद कर दिया। हो सकता है कि वह कनेक्शन की सीमा पर हो; थोड़ी देर बाद फिर कोशिश करें।",
+            "সার্ভার উত্তর দেওয়ার আগেই সংযোগ বন্ধ করে দিয়েছে। সম্ভবত সংযোগের সীমায় পৌঁছে গেছে; কিছুক্ষণ পরে আবার চেষ্টা করুন।",
+            "سرور نے جواب دینے سے پہلے کنکشن بند کر دیا۔ ہو سکتا ہے وہ کنکشنز کی حد پر ہو؛ تھوڑی دیر بعد دوبارہ کوشش کریں۔",
+            "服务器在响应之前关闭了连接。它可能已达到连接数上限；请稍后再试。")
+
         Add("С этого ПК не отвечает ({0}). Роутер может не пускать на свой внешний адрес изнутри - проверьте с телефона по мобильной сети.",
             "No answer from this PC ({0}). Your router may block its own address from inside - test from the phone on mobile data.",
             "З цього ПК не відповідає ({0}). Роутер може не пускати на свою зовнішню адресу зсередини - перевірте з телефона через мобільну мережу.",

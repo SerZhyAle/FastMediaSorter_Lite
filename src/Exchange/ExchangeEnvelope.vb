@@ -31,6 +31,8 @@ Friend Enum ExchangeMemberKind
     Upserts
     ''' <summary>The `removals` object of `changed`.</summary>
     Removals
+    ''' <summary>A JSON object or array kept verbatim (admin-reply data).</summary>
+    AnyRecord
 End Enum
 
 ''' <summary>When a member is written.</summary>
@@ -276,6 +278,10 @@ Friend NotInheritable Class ExchangeEnvelopeTable
         Return New ExchangeMemberSpec(name, ExchangeMemberKind.Record, required, omit)
     End Function
 
+    Private Shared Function AnyR(name As String, Optional required As Boolean = False, Optional omit As ExchangeOmit = ExchangeOmit.Never) As ExchangeMemberSpec
+        Return New ExchangeMemberSpec(name, ExchangeMemberKind.AnyRecord, required, omit)
+    End Function
+
     Private Shared Function RL(name As String, Optional omit As ExchangeOmit = ExchangeOmit.Never) As ExchangeMemberSpec
         Return New ExchangeMemberSpec(name, ExchangeMemberKind.RecordList, False, omit)
     End Function
@@ -371,6 +377,18 @@ Friend NotInheritable Class ExchangeEnvelopeTable
             T("sourceDeviceId", omit:=WhenEmpty), T("sourceDeviceName", omit:=WhenEmpty), T("kind", True),
             T("mimeType", omit:=WhenEmpty), T("name", omit:=WhenEmpty), R("sealed", omit:=WhenEmpty))
         Row("clipboard-empty")
+        ' --- spec 245 / DEVICE-EXCHANGE 1.4: remote administration ---
+        Const WhenUnset As ExchangeOmit = ExchangeOmit.WhenUnset
+        Row("admin-auth", T("password", True))
+        Row("admin-auth-ok", T("token", True), N("expiresSeconds"))
+        Row("admin-request", N("id"), T("token", omit:=WhenEmpty), T("op", True),
+            T("login", omit:=WhenEmpty), T("password", omit:=WhenEmpty), T("kind", omit:=WhenEmpty),
+            T("expectedLogin", omit:=WhenEmpty), N("maxAccounts", WhenUnset), T("codeHash", omit:=WhenEmpty),
+            T("targetId", omit:=WhenEmpty), T("guestAccount", omit:=WhenEmpty), T("deviceId", omit:=WhenEmpty),
+            R("limits", omit:=WhenEmpty))
+        Row("admin-reply", N("id"),
+            New ExchangeMemberSpec("ok", ExchangeMemberKind.Flag, False, ExchangeOmit.Never),
+            AnyR("data", omit:=WhenEmpty), T("code", omit:=WhenEmpty), T("error", omit:=WhenEmpty))
     End Sub
 
     ''' <summary>The members of a type in wire order, or Nothing for a type this wire does not define.</summary>
@@ -456,6 +474,15 @@ Friend NotInheritable Class ExchangeEnvelopeCodec
                     Return
                 End If
                 If Not ExchangeJson.IsObject(raw) Then Throw New ExchangeWireException(ExchangeWireError.BadMessage, s.Name & " is not an object")
+                w.Name(s.Name)
+                w.Raw(ExchangeJson.Compact(raw))
+            Case ExchangeMemberKind.AnyRecord
+                Dim raw As String = env.Record(s.Name)
+                If raw.Length = 0 Then
+                    If s.Required Then Throw New ExchangeWireException(ExchangeWireError.BadMessage, s.Name & " is required")
+                    Return
+                End If
+                If Not ExchangeJson.IsObjectOrArray(raw) Then Throw New ExchangeWireException(ExchangeWireError.BadMessage, s.Name & " is not an object or array")
                 w.Name(s.Name)
                 w.Raw(ExchangeJson.Compact(raw))
             Case ExchangeMemberKind.RecordList
@@ -565,6 +592,9 @@ Friend NotInheritable Class ExchangeEnvelopeCodec
                 env.SetTextList(s.Name, ReadTextArray(el, s))
             Case ExchangeMemberKind.Record
                 If el.ValueKind <> JsonValueKind.Object Then Throw Bad(s)
+                env.SetRecord(s.Name, ExchangeJson.Compact(el.GetRawText()))
+            Case ExchangeMemberKind.AnyRecord
+                If el.ValueKind <> JsonValueKind.Object AndAlso el.ValueKind <> JsonValueKind.Array Then Throw Bad(s)
                 env.SetRecord(s.Name, ExchangeJson.Compact(el.GetRawText()))
             Case ExchangeMemberKind.RecordList
                 env.SetRecords(s.Name, ReadRecordArray(el, s))

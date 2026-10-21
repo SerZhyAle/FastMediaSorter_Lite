@@ -54,12 +54,13 @@ Partial Public NotInheritable Class MainWindow
             "Телефоны перестанут её видеть, а её настройки (PIN, фильтры, папка назначения) будут удалены.",
             If(String.IsNullOrEmpty(host), it.Text, host))
         If WillStopServer(it) Then question &= vbCrLf & vbCrLf & Localization.T("Это последняя отмеченная папка: раздача остановится.")
-        If MessageBox.Show(Me, question, Me.Text, MessageBoxButtons.OKCancel, MessageBoxIcon.Warning,
+        If ManagerBox.Show(Me, question, Me.Text, MessageBoxButtons.OKCancel, MessageBoxIcon.Warning,
                            MessageBoxDefaultButton.Button2) <> DialogResult.OK Then Return
         If Not String.IsNullOrEmpty(host) Then ShareRootParamsStore.RemoveFor(host)
         If String.Equals(host, _lastTouchedRoot, StringComparison.OrdinalIgnoreCase) Then _lastTouchedRoot = ""
         lvFolders.Items.Remove(it)
         RestripeList()
+        OnResourceRowsChanged()
         SelectDefaultRow()
         Await ApplySharedFoldersAsync()
     End Sub
@@ -123,7 +124,7 @@ Partial Public NotInheritable Class MainWindow
         ' Unticking the last folder stops a running server and disconnects every phone
         ' on it - asked first (APP-BEHAVIOUR rule 5, ticket 028 Ф-5).
         If Not e.Item.Checked AndAlso ServerIsRunning() AndAlso CurrentShareFolders().Count = 0 AndAlso Not HasExternalRoots() Then
-            If MessageBox.Show(Me, Localization.T("Это последняя отмеченная папка. Снять отметку и остановить раздачу? Подключённые телефоны будут отключены."),
+            If ManagerBox.Show(Me, Localization.T("Это последняя отмеченная папка. Снять отметку и остановить раздачу? Подключённые телефоны будут отключены."),
                                Me.Text, MessageBoxButtons.OKCancel, MessageBoxIcon.Warning,
                                MessageBoxDefaultButton.Button2) <> DialogResult.OK Then
                 Dim prev As Boolean = _loading
@@ -198,6 +199,7 @@ Partial Public NotInheritable Class MainWindow
             _loading = prev
         End Try
         RestripeList()
+        OnResourceRowsChanged()
         Return True
     End Function
 
@@ -228,6 +230,7 @@ Partial Public NotInheritable Class MainWindow
         ' Inside BeginUpdate/EndUpdate the ListView does not raise SelectedIndexChanged for
         ' every language, so the button state is asked for once the list is settled.
         RefreshRowActionButtons()
+        OnResourceRowsChanged()
     End Sub
 
     ''' <summary>
@@ -370,7 +373,7 @@ Partial Public NotInheritable Class MainWindow
             names.Add(If(r.hostPath, ""))
         Next
         Dim question As String = HostingText.GrantNeededPrompt(String.Join(Environment.NewLine, names))
-        If MessageBox.Show(If(dialogOwner, Me), question, Me.Text, MessageBoxButtons.OKCancel, MessageBoxIcon.Question) <> DialogResult.OK Then
+        If ManagerBox.Show(If(dialogOwner, Me), question, Me.Text, MessageBoxButtons.OKCancel, MessageBoxIcon.Question) <> DialogResult.OK Then
             SetHint(HostingText.GrantDeclinedHint())
             Return False
         End If
@@ -428,7 +431,7 @@ Partial Public NotInheritable Class MainWindow
         End If
 
         Dim question As String = HostingText.SubtreeGrantPrompt(FolderListForPrompt(scan.Grantable))
-        If MessageBox.Show(If(dialogOwner, Me), question, Me.Text, MessageBoxButtons.OKCancel, MessageBoxIcon.Warning) <> DialogResult.OK Then
+        If ManagerBox.Show(If(dialogOwner, Me), question, Me.Text, MessageBoxButtons.OKCancel, MessageBoxIcon.Warning) <> DialogResult.OK Then
             SetHint(HostingText.SubtreeBlockedWarning(scan.Blocked.Count))
             Return
         End If

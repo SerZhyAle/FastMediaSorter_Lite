@@ -217,7 +217,8 @@ Friend NotInheritable Class ExchangeConnectionString
 
     Private Shared Function NotAString(s As String) As ExchangeConnectionStringResult
         If s.Length >= 9 AndAlso s.StartsWith("FMSEXCH", StringComparison.Ordinal) AndAlso s(7) >= "2"c AndAlso s(7) <= "9"c AndAlso s(8) = ":"c Then
-            Return ExchangeConnectionStringResult.Refused(ExchangeConnectionStringReason.NewerMajor, "a later major of the string")
+            ' the reason id `newer-major` is the vector vocabulary (connection-string-v1) and stays; the person reads the row `format-unsupported`
+            Return ExchangeConnectionStringResult.Refused(ExchangeConnectionStringReason.NewerMajor, "format-unsupported: a later major of the string")
         End If
         Dim looks As String = ""
         If s.StartsWith("FMSSFTP", StringComparison.Ordinal) Then

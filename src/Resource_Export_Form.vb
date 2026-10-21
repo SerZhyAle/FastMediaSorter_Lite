@@ -25,6 +25,7 @@ Friend NotInheritable Class Resource_Export_Form
     Private ReadOnly saveButton As Button
     Private ReadOnly copyTextButton As Button
     Private ReadOnly copyCodeButton As Button
+    Private ReadOnly answerRow As DialogButtonRow
     Private script_Font As Font
 
     Friend Sub New(resource As ResourceDescriptor, secretStore As IResourceSecretStore)
@@ -32,12 +33,14 @@ Friend NotInheritable Class Resource_Export_Form
         Me.secrets = secretStore
         Me.Text = Localization.T("Экспорт ресурса")
         Me.FormBorderStyle = FormBorderStyle.Sizable
-        Me.MinimumSize = New Size(480, 300)
+        ' Tall enough for the content and one line of the answer row (it was 300 for a 28 px button strip).
+        Me.MinimumSize = New Size(480, 312)
         Me.MaximizeBox = False
         Me.MinimizeBox = False
         Me.ShowInTaskbar = False
         Me.StartPosition = FormStartPosition.CenterParent
-        Me.ClientSize = New Size(470, 270)
+        ' The authored content ends at 214 (the status line); the bottom row below it is 50 tall (8 + one 32 line + 10) at 96 dpi.
+        Me.ClientSize = New Size(470, 264)
 
         Dim family As String = Localization.FontFamily()
         If family IsNot Nothing Then
@@ -75,32 +78,32 @@ Friend NotInheritable Class Resource_Export_Form
             noStoredPasswordHint.Visible = True
         End If
 
+        ' Not anchored to the bottom (it was): the answer row below is docked and owns its height, which grows by a
+        ' line when its buttons wrap, so a label that kept its distance from the bottom edge would end up under it.
         status = New Label With {
             .Name = "res_Export_Status", .AutoSize = False, .Location = New Point(12, 168), .Size = New Size(446, 46),
-            .Anchor = AnchorStyles.Top Or AnchorStyles.Bottom Or AnchorStyles.Left Or AnchorStyles.Right}
+            .Anchor = AnchorStyles.Top Or AnchorStyles.Left Or AnchorStyles.Right}
 
         saveButton = MakeButton("res_ExportSave", Localization.T("Сохранить в файл.."), AddressOf OnSave)
         copyTextButton = MakeButton("res_ExportCopyText", Localization.T("Копировать текст"), AddressOf OnCopyText)
         copyCodeButton = MakeButton("res_ExportCopyCode", Localization.T("Копировать код"), AddressOf OnCopyCode)
         Dim closeButton As New Button With {
-            .Name = "res_ExportClose", .Text = Localization.T("Закрыть"), .Size = New Size(92, 28),
-            .Location = New Point(366, 228), .DialogResult = DialogResult.Cancel,
-            .Anchor = AnchorStyles.Bottom Or AnchorStyles.Right}
-        For Each b As Button In {saveButton, copyTextButton, copyCodeButton}
-            b.Anchor = AnchorStyles.Bottom Or AnchorStyles.Left
-        Next
-        ' The three actions are not the window's answer (it has none: Close is its one way out) - mono glyphs.
-        ButtonGlyphs.Apply(saveButton, "action.export")
-        ButtonGlyphs.Apply(copyTextButton, "action.copy")
-        ButtonGlyphs.Apply(copyCodeButton, "action.copy")
-        ButtonGlyphs.Apply(closeButton, "nav.close", ButtonGlyphRole.Dismissing)
-        saveButton.Location = New Point(12, 228)
-        copyTextButton.Location = New Point(130, 228)
-        copyCodeButton.Location = New Point(248, 228)
+            .Name = "res_ExportClose", .Text = Localization.T("Закрыть"), .DialogResult = DialogResult.Cancel}
+
+        ' The three actions are not the window's answer (it has none: Close is its one way out), so they are commands
+        ' of the shared bottom row (ticket 243 T-8b, BUTTONS 2.0 sections 3 and 4): they read first, in the order they
+        ' had on the screen, set apart from Close, the one dismissing answer. Mono glyphs for the commands. Close is
+        ' Escape's target and, being the only answer, what Enter selects when nothing else holds the focus - none of
+        ' the three commands is ever the default (each one hands out the access key).
+        answerRow = New DialogButtonRow() With {.Dock = DockStyle.Bottom, .Name = "res_Export_Buttons", .Padding = New Padding(12, 8, 12, 10)}
+        answerRow.Add(saveButton, DialogButtonRole.Command, "action.export")
+        answerRow.Add(copyTextButton, DialogButtonRole.Command, "action.copy")
+        answerRow.Add(copyCodeButton, DialogButtonRole.Command, "action.copy")
+        answerRow.Add(closeButton, DialogButtonRole.Dismissing, "nav.close")
 
         Controls.AddRange(New Control() {nameHeader, warning, noPasswordRadio, withPasswordRadio,
-                                         noStoredPasswordHint, status, saveButton, copyTextButton, copyCodeButton, closeButton})
-        Me.CancelButton = closeButton
+                                         noStoredPasswordHint, status, answerRow})
+        answerRow.Bind(Me)
 
         ' LAST line of the builder: scaling touches only the children that exist by now (124 UX-202).
         DialogLayout.ApplyAutoScale(Me)
@@ -109,10 +112,11 @@ Friend NotInheritable Class Resource_Export_Form
     Protected Overrides Sub OnLoad(e As EventArgs)
         MyBase.OnLoad(e)
         DialogLayout.FitContent(Me)
+        DialogLayout.KeepRoomForRow(Me, answerRow)
     End Sub
 
     Private Function MakeButton(controlName As String, text As String, handler As EventHandler) As Button
-        Dim b As New Button With {.Name = controlName, .Text = text, .Size = New Size(110, 28)}
+        Dim b As New Button With {.Name = controlName, .Text = text}
         AddHandler b.Click, handler
         Return b
     End Function

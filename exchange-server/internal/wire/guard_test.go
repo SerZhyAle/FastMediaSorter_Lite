@@ -100,18 +100,18 @@ func TestEveryReasonConstantIsInTheList(t *testing.T) {
 	}
 }
 
-// TestTheReasonsTheServerCanEmitAreExactlyTheSixteenOfTheContract is ticket 167 rule 7 (ten) and ticket 224 (six more): the set of
+// TestTheReasonsTheServerCanEmitAreExactlyTheSeventeenOfTheContract is ticket 167 rule 7 (ten), ticket 224 (six more) and ticket 245: the set of
 // reasons the server can emit is built by scanning the sources for every Reason constant a non-test
-// file names, and it must be inside the list of DEVICE-EXCHANGE 7.10 - and every one of the sixteen must
+// file names, and it must be inside the list of DEVICE-EXCHANGE 7.10 - and every one of the seventeen must
 // be emitted somewhere (a reason nothing can produce would be a promise the server cannot keep).
-func TestTheReasonsTheServerCanEmitAreExactlyTheSixteenOfTheContract(t *testing.T) {
+func TestTheReasonsTheServerCanEmitAreExactlyTheSeventeenOfTheContract(t *testing.T) {
 	ident := regexp.MustCompile(`\b(?:wire\.)?(Reason[A-Z]\w*)\b`)
 	declared := map[string]bool{}
 	for _, m := range regexp.MustCompile(`(?m)^\s*(Reason[A-Z]\w*)\s+Reason\s*=`).FindAllStringSubmatch(moduleGoFiles(t, false)["internal/wire/reason.go"], -1) {
 		declared[m[1]] = true
 	}
-	if len(declared) != 16 || len(AllReasons) != 16 {
-		t.Fatalf("%d declared, %d listed: the contract has sixteen reasons", len(declared), len(AllReasons))
+	if len(declared) != 17 || len(AllReasons) != 17 {
+		t.Fatalf("%d declared, %d listed: the contract has seventeen reasons", len(declared), len(AllReasons))
 	}
 	emitted := map[string]bool{}
 	for name, src := range moduleGoFiles(t, false) {

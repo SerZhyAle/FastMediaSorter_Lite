@@ -81,7 +81,8 @@ Public Class ConnectionDiagnosisTests
     ' --- ticket 239 CR-9: every row of items CZ, DD and DR and every step of item CY, verbatim, with its kind and step ---
 
     ''' <summary>Code, kind, step id ("-" = none), English, Russian, Ukrainian of each row of the message tables of DEVICE-EXCHANGE
-    ''' items CZ, DD and DR. Typed from the catalog, not read from it at run time, so a changed word is a failing test.</summary>
+    ''' items CZ, DD and DR, plus the canonical local row <c>format-unsupported</c> of the amendment of 2026-10-17 (DEVICE-EXCHANGE 1.3; LIVE-BROADCAST 1.1
+    ''' names it). Typed from the catalog, not read from it at run time, so a changed word is a failing test.</summary>
     Private Shared ReadOnly MessageRows As String()() = {
         New String() {"bad-credentials", "wire", "credentials", "The login or the password is wrong.", "Логин или пароль неверны.", "Логін або пароль неправильні."},
         New String() {"bad-credentials-code", "wire", "credentials", "The login or the one-time code is wrong.", "Логин или одноразовый код неверны.", "Логін або одноразовий код неправильні."},
@@ -118,11 +119,12 @@ Public Class ConnectionDiagnosisTests
         New String() {"key-changed", "state", "-", "The protection key of this device has changed, so nothing is sent to it. Remove the device from the account and add it again.", "Ключ защиты этого устройства изменился, поэтому ему ничего не отправляется. Удалите устройство из аккаунта и добавьте его снова.", "Ключ захисту цього пристрою змінився, тому йому нічого не надсилається. Видаліть пристрій з акаунта й додайте його знову."},
         New String() {"server-no-e2e", "state", "operator", "This server cannot carry protected content, so folders, broadcasts and the clipboard do not go through it.", "Этот сервер не умеет передавать защищённое содержимое, поэтому папки, трансляции и буфер через него не идут.", "Цей сервер не вміє передавати захищений вміст, тому папки, трансляції й буфер через нього не йдуть."},
         New String() {"sealed-failed", "local", "-", "This could not be opened on this device. Try again from the other device.", "Это не удалось открыть на этом устройстве. Повторите с другого устройства.", "Це не вдалося відкрити на цьому пристрої. Повторіть з іншого пристрою."},
+        New String() {"format-unsupported", "local", "-", "This format is newer than this program supports. Nothing was imported. Use a compatible program.", "Этот формат новее, чем поддерживает программа. Ничего не импортировано. Используйте совместимую программу.", "Цей формат новіший, ніж підтримує програма. Нічого не імпортовано. Скористайтеся сумісною програмою."},
         New String() {"refused", "wire", "operator", "The server refused this.", "Сервер отказал в этом.", "Сервер відмовив у цьому."}}
 
     <Fact>
     Public Sub EveryRowOfTheMessageTablesIsPinnedVerbatimWithItsKindAndStep()
-        Assert.Equal(36, MessageRows.Length)
+        Assert.Equal(37, MessageRows.Length)
         Dim seen As New HashSet(Of String)()
         For Each row As String() In MessageRows
             Dim code As String = row(0)
@@ -180,7 +182,7 @@ Public Class ConnectionDiagnosisTests
             "limit-reached-clipboard", "not-permitted", "declined", "timeout", "unsupported",
             "unreachable-server", "unreachable-device", "unanswered", "tls-failed", "certificate-changed",
             "empty-credential", "server-offline", "resource-locked", "clipboard-empty",
-            "share-paused", "e2e-missing", "key-changed", "server-no-e2e", "sealed-failed", "refused"
+            "share-paused", "e2e-missing", "key-changed", "server-no-e2e", "sealed-failed", "format-unsupported", "refused"
         }
 
         For Each code In codes
@@ -193,6 +195,46 @@ Public Class ConnectionDiagnosisTests
                 Assert.False(String.IsNullOrWhiteSpace(text), $"Message {code} missing text for locale {localeCode}")
             Next
         Next
+    End Sub
+
+    ''' <summary>DEVICE-EXCHANGE 1.3 amendment of 2026-10-17 (named by LIVE-BROADCAST 1.1): the one `format-unsupported` sentence, in the
+    ''' language the program shows. English, Russian and Ukrainian are the catalog's words (pinned above); every other table language and
+    ''' the four interface languages the table does not carry (ar, hi, bn, ur) have a sentence of their own, none a copy of the English one,
+    ''' and none asks for an update.</summary>
+    <Fact>
+    Public Sub FormatUnsupportedReadsInEveryInterfaceLanguageAndTheTableLanguagesWithoutAnUpdateDemand()
+        Dim english As String = ConnectionDiagnosisLocalization.GetMessageText("format-unsupported", "en")
+        Assert.Equal("This format is newer than this program supports. Nothing was imported. Use a compatible program.", english)
+        Dim saved As String = Localization.CurrentCode
+        Try
+            For Each code As String In Localization.Codes
+                Localization.CurrentCode = code
+                Dim text As String = ConnectionDiagnosisLocalization.FormatUnsupportedText()
+                Assert.Equal(ConnectionDiagnosisLocalization.GetMessageText("format-unsupported", code), text)
+                Assert.False(String.IsNullOrWhiteSpace(text), "format-unsupported missing for interface language " & code)
+                Assert.NotEqual("format-unsupported", text)
+                If code <> "en" Then Assert.NotEqual(english, text)
+            Next
+        Finally
+            Localization.CurrentCode = saved
+        End Try
+        For Each code As String In Locales13
+            Dim text As String = ConnectionDiagnosisLocalization.GetMessageText("format-unsupported", code)
+            If code <> "en" Then Assert.NotEqual(english, text)
+            ' three sentences, no placeholder, no ellipsis, no smart double quote (house text style)
+            Assert.DoesNotContain("{0}", text)
+            Assert.DoesNotContain(ChrW(&H201C).ToString(), text)
+            Assert.DoesNotContain(ChrW(&H201D).ToString(), text)
+            Assert.DoesNotContain("...", text)
+        Next
+        ' the wire reason `version-unsupported` keeps its own row and asks for no update either
+        Assert.NotEqual(english, ConnectionDiagnosisLocalization.GetMessageText("version-unsupported", "en"))
+        Assert.Equal(ConnectionDiagnosisKind.Local, ConnectionDiagnosisMessages.FormatUnsupported.Kind)
+        Assert.False(ConnectionDiagnosisMessages.FormatUnsupported.StepValue.HasValue)
+        Assert.Same(ConnectionDiagnosisMessages.FormatUnsupported, ConnectionDiagnosisMessages.OfCode("format-unsupported"))
+        ' a language the table does not carry still reads every OTHER row as English (the step and ui tables fall back as before)
+        Assert.Equal(ConnectionDiagnosisLocalization.GetMessageText("bad-credentials", "en"), ConnectionDiagnosisLocalization.GetMessageText("bad-credentials", "ar"))
+        Assert.Equal(ConnectionDiagnosisLocalization.GetStepText(ConnectionDiagnosisStep.PcAsleep, "en"), ConnectionDiagnosisLocalization.GetStepText(ConnectionDiagnosisStep.PcAsleep, "hi"))
     End Sub
 
     <Fact>

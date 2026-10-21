@@ -291,7 +291,7 @@ func (r *Relay) logEnd(b *bcast, why string) {
 	n := b.listeners
 	r.mu.Unlock()
 	// counters only, never an id in clear (rule 10, ticket 167)
-	r.cfg.Log.Info("relay-ended", logx.Broadcast(b.id), logx.Text("why", why),
+	r.cfg.Log.State("relay-ended", logx.Broadcast(b.id), logx.Text("why", why),
 		logx.Int("bytes-in", clampInt(b.ring.BytesIn())), logx.Int("bytes-out", clampInt(b.out.Load())), logx.Int("listeners", n))
 }
 

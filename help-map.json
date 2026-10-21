@@ -20,26 +20,72 @@
     },
     {
       "id": "settings",
+      "exchangeMark": "inline",
       "type": "fmsl.Table_Form",
       "name": "Settings",
       "form": "page",
       "help": "settings",
       "pages": [
-        { "id": "settings.general", "name": "General", "anchor": "general" },
-        { "id": "settings.destinations", "name": "Destination folders", "anchor": "destinations" },
-        { "id": "settings.images", "name": "Images", "anchor": "images" },
-        { "id": "settings.video", "name": "Video", "anchor": "video" },
-        { "id": "settings.audio", "name": "Audio", "anchor": "audio" },
-        { "id": "settings.files", "name": "Files and system", "anchor": "files" },
-        { "id": "settings.server", "name": "Server and resources", "anchor": "server" },
-        { "id": "settings.ocr", "name": "OCR", "anchor": "ocr" },
-        { "id": "settings.translation", "name": "Translation", "anchor": "translation" },
-        { "id": "settings.storage", "name": "Storage", "anchor": "storage" },
-        { "id": "settings.about", "name": "About", "anchor": "about" }
+        {
+          "id": "settings.general",
+          "name": "General",
+          "anchor": "general"
+        },
+        {
+          "id": "settings.destinations",
+          "name": "Destination folders",
+          "anchor": "destinations"
+        },
+        {
+          "id": "settings.images",
+          "name": "Images",
+          "anchor": "images"
+        },
+        {
+          "id": "settings.video",
+          "name": "Video",
+          "anchor": "video"
+        },
+        {
+          "id": "settings.audio",
+          "name": "Audio",
+          "anchor": "audio"
+        },
+        {
+          "id": "settings.files",
+          "name": "Files and system",
+          "anchor": "files"
+        },
+        {
+          "id": "settings.server",
+          "name": "Server and resources",
+          "anchor": "server"
+        },
+        {
+          "id": "settings.ocr",
+          "name": "OCR",
+          "anchor": "ocr"
+        },
+        {
+          "id": "settings.translation",
+          "name": "Translation",
+          "anchor": "translation"
+        },
+        {
+          "id": "settings.storage",
+          "name": "Storage",
+          "anchor": "storage"
+        },
+        {
+          "id": "settings.about",
+          "name": "About",
+          "anchor": "about"
+        }
       ]
     },
     {
       "id": "welcome",
+      "exchangeMark": "inline",
       "type": "fmsl.Welcome_Form",
       "name": "Welcome Wizard",
       "form": "page",
@@ -124,6 +170,7 @@
     },
     {
       "id": "exchange-connect",
+      "exchangeMark": "full",
       "type": "fmsl.Exchange_Connect_Form",
       "name": "Connect to Media Exchange Server",
       "form": "page",
@@ -131,6 +178,7 @@
     },
     {
       "id": "exchange-password-change",
+      "exchangeMark": "full",
       "type": "fmsl.Exchange_Password_Change_Form",
       "name": "Change Exchange Password",
       "form": "page",
@@ -138,6 +186,7 @@
     },
     {
       "id": "connection-diagnosis",
+      "exchangeMark": "full",
       "type": "fmsl.Connection_Diagnosis_Dialog",
       "name": "Connection Diagnosis",
       "form": "page",
@@ -238,22 +287,37 @@
     },
     {
       "id": "share-settings",
+      "exchangeMark": "inline",
       "type": "FastMediaSorterCompanion.Share_Settings_Form",
       "name": "Share Manager Settings",
       "form": "page",
       "help": "share-settings",
       "pages": [
-        { "id": "share-settings.startup", "name": "Startup & Language", "anchor": "startup" },
-        { "id": "share-settings.network", "name": "Network & Discovery", "anchor": "network" },
-        { "id": "share-settings.hosting", "name": "Hosting & Security", "anchor": "hosting" },
-        { "id": "share-settings.exchange", "name": "Media Exchange Server", "anchor": "exchange" },
-        { "id": "share-settings.exchange-account", "name": "Exchange Account", "anchor": "exchange-account" },
-        { "id": "share-settings.scheduled", "name": "Scheduled Operations", "anchor": "scheduled" },
-        { "id": "share-settings.help", "name": "Help & Instructions", "anchor": "help" }
+        {
+          "id": "share-settings.startup",
+          "name": "Startup & Language",
+          "anchor": "startup"
+        },
+        {
+          "id": "share-settings.exchange-account",
+          "name": "Exchange Account",
+          "anchor": "exchange-account"
+        },
+        {
+          "id": "share-settings.scheduled",
+          "name": "Scheduled Operations",
+          "anchor": "scheduled"
+        },
+        {
+          "id": "share-settings.help",
+          "name": "Help & Instructions",
+          "anchor": "help"
+        }
       ]
     },
     {
       "id": "server-welcome",
+      "exchangeMark": "full",
       "type": "FastMediaSorterCompanion.Server_Welcome_Form",
       "name": "Media Exchange Server Welcome",
       "form": "page",
@@ -275,6 +339,7 @@
     },
     {
       "id": "exchange-server-wizard",
+      "exchangeMark": "full",
       "type": "FastMediaSorterCompanion.Exchange_Server_Wizard_Form",
       "name": "Media Exchange Server Setup Wizard",
       "form": "page",
@@ -396,6 +461,7 @@
     },
     {
       "id": "exchange-account",
+      "exchangeMark": "full",
       "type": "FastMediaSorterCompanion.Exchange_Account_Form",
       "name": "Exchange Account",
       "form": "page",
@@ -403,6 +469,7 @@
     },
     {
       "id": "exchange-account-admin",
+      "exchangeMark": "full",
       "type": "FastMediaSorterCompanion.Exchange_Account_Admin_Form",
       "name": "Exchange Accounts Administration",
       "form": "page",
@@ -410,6 +477,7 @@
     },
     {
       "id": "exchange-account-limits",
+      "exchangeMark": "full",
       "type": "FastMediaSorterCompanion.Exchange_Account_Limits_Form",
       "name": "Exchange Account Limits",
       "form": "page",
@@ -417,6 +485,7 @@
     },
     {
       "id": "exchange-connection-string",
+      "exchangeMark": "full",
       "type": "FastMediaSorterCompanion.Exchange_Connection_String_Form",
       "name": "Connection String",
       "form": "page",
@@ -424,6 +493,7 @@
     },
     {
       "id": "exchange-invitation-create",
+      "exchangeMark": "full",
       "type": "FastMediaSorterCompanion.Exchange_Invitation_Create_Form",
       "name": "Create Exchange Invitation",
       "form": "page",
@@ -431,6 +501,7 @@
     },
     {
       "id": "exchange-invitation-created",
+      "exchangeMark": "full",
       "type": "FastMediaSorterCompanion.Exchange_Invitation_Created_Form",
       "name": "Invitation Created",
       "form": "page",
@@ -438,6 +509,7 @@
     },
     {
       "id": "exchange-shared-invitation",
+      "exchangeMark": "full",
       "type": "FastMediaSorterCompanion.Exchange_Shared_Invitation_Form",
       "name": "Shared Invitation",
       "form": "page",
@@ -445,6 +517,7 @@
     },
     {
       "id": "exchange-link",
+      "exchangeMark": "full",
       "type": "FastMediaSorterCompanion.Exchange_Link_Form",
       "name": "Exchange Link",
       "form": "page",
@@ -452,6 +525,7 @@
     },
     {
       "id": "exchange-password",
+      "exchangeMark": "full",
       "type": "FastMediaSorterCompanion.Exchange_Password_Form",
       "name": "Exchange Password",
       "form": "page",
@@ -459,6 +533,7 @@
     },
     {
       "id": "share-exchange-password-change",
+      "exchangeMark": "full",
       "type": "FastMediaSorterCompanion.Exchange_Password_Change_Form",
       "name": "Change Account Password",
       "form": "page",
@@ -486,6 +561,30 @@
       "help": "camera-scan"
     },
     {
+      "id": "exchange-local-account-picker",
+      "type": "FastMediaSorterCompanion.Exchange_Local_Account_Picker_Form",
+      "name": "Local Account Picker",
+      "form": "inherit",
+      "parent": "exchange-account",
+      "reason": "Subordinate dialog to pick a local exchange server account."
+    },
+    {
+      "id": "exchange-admin-browser",
+      "type": "FastMediaSorterCompanion.Exchange_Admin_Browser_Form",
+      "name": "Manage in the Browser",
+      "form": "inherit",
+      "parent": "exchange-account-admin",
+      "reason": "Dialog showing server certificate fingerprint, URL, and QR code to open browser administration."
+    },
+    {
+      "id": "exchange-admin-audit",
+      "type": "FastMediaSorterCompanion.Exchange_Admin_Audit_Form",
+      "name": "Remote Administration Audit Log",
+      "form": "inherit",
+      "parent": "exchange-account-admin",
+      "reason": "Subordinate dialog showing recent remote administration operations and active sessions."
+    },
+    {
       "id": "qr-zoom",
       "type": "FastMediaSorterCompanion.Qr_Zoom_Form",
       "name": "QR Barcode Viewer",
@@ -500,6 +599,38 @@
       "form": "inherit",
       "parent": "connection-diagnosis",
       "reason": "Shared connection diagnosis dialog used across both applications."
+    },
+    {
+      "id": "sftp-settings",
+      "name": "SFTP sharing settings",
+      "form": "page",
+      "help": "sftp-settings",
+      "pages": [
+        {
+          "id": "share-settings.network",
+          "name": "Network & Discovery",
+          "anchor": "network"
+        },
+        {
+          "id": "share-settings.hosting",
+          "name": "Hosting & Security",
+          "anchor": "hosting"
+        }
+      ]
+    },
+    {
+      "id": "exchange-server-settings",
+      "name": "Exchange server settings",
+      "exchangeMark": "full",
+      "form": "page",
+      "help": "exchange-server-settings",
+      "pages": [
+        {
+          "id": "share-settings.exchange",
+          "name": "Media Exchange Server",
+          "anchor": "exchange"
+        }
+      ]
     }
   ]
 }

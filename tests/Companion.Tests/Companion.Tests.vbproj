@@ -27,6 +27,7 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\FastMediaSorterCompanion\FastMediaSorterCompanion.vbproj" />
     <Compile Include="..\Lite.Tests\ExchangeVocabularyTests.vb" Link="Linked\ExchangeVocabularyTests.vb" />
+    <Compile Include="..\Lite.Tests\ExchangeMarkTests.vb" Link="Linked\ExchangeMarkTests.vb" />
   </ItemGroup>
 
   <!-- The TF call-site scanner (APP-BEHAVIOUR rule 7, ticket 028 Ф-4) is shared with

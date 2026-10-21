@@ -57,7 +57,7 @@ Public Module GlyphRenderer
         SyncLock cacheLock
             Dim cached As Bitmap = Nothing
             If cache.TryGetValue(key, cached) Then Return DirectCast(cached.Clone(), Bitmap)
-            Using stream As Stream = openAsset("glyphs/" & glyphId & ".svg")
+            Using stream As Stream = openAsset(If(glyphId = "exchange-mark", "exchange-mark/svg/exchange-mark-mono.svg", "glyphs/" & glyphId & ".svg"))
                 If stream Is Nothing Then Throw New FileNotFoundException("Bundled icon glyph was not found.", glyphId)
                 Using reader As New StreamReader(stream, Encoding.UTF8, detectEncodingFromByteOrderMarks:=True)
                     cached = RenderSvg(reader.ReadToEnd(), size, colour)

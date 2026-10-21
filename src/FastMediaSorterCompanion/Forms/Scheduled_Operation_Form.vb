@@ -49,6 +49,11 @@ Friend NotInheritable Class Scheduled_Operation_Form
     Private cmbConflict As ComboBox
     Private chkDeleteOriginals As CheckBox
     Private lblVerdict As Label
+    ' The empty cell in front of a page row that can hide. Every page control stands in an explicit cell (AddRow), so a hidden
+    ' row moves nothing; its spacer hides with it only so the row collapses to no height instead of an empty label's 18 px.
+    Private spacerOriginals As Label
+    Private spacerVerdict As Label
+    Private spacerConditions As Label
 
     Private btnConditions As Button
     Private pnlConditions As TableLayoutPanel
@@ -84,6 +89,7 @@ Friend NotInheritable Class Scheduled_Operation_Form
     Private btnPreview As Button
     Private btnSave As Button
     Private btnCancel As Button
+    Private answerRow As DialogButtonRow
     Private _iconHandle As IntPtr
     Private _loading As Boolean
     Private _previewing As Boolean
@@ -146,22 +152,23 @@ Friend NotInheritable Class Scheduled_Operation_Form
         MinimumSize = New Size(560, 420)
         ClientSize = New Size(640, 640)
 
-        Dim footer As New FlowLayoutPanel With {.Dock = DockStyle.Bottom, .AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink,
-            .FlowDirection = FlowDirection.RightToLeft, .Padding = New Padding(12, 8, 12, 8), .WrapContents = False}
-        btnCancel = New Button With {.Text = Localization.T("Отмена"), .AutoSize = True, .DialogResult = DialogResult.Cancel,
-            .Name = "btnSchedCancel", .Margin = New Padding(8, 0, 0, 0), .Padding = New Padding(14, 5, 14, 5)}
-        btnSave = New Button With {.Text = Localization.T("Сохранить"), .AutoSize = True, .Name = "btnSchedSave",
-            .Margin = New Padding(8, 0, 0, 0), .Padding = New Padding(14, 5, 14, 5)}
-        btnPreview = New Button With {.Text = Localization.T("Что будет выполнено сейчас.."), .AutoSize = True, .Name = "btnSchedPreview",
-            .Margin = New Padding(0), .Padding = New Padding(14, 5, 14, 5)}
-        ButtonGlyphs.Apply(btnSave, "action.confirm", ButtonGlyphRole.Affirmative)
-        ButtonGlyphs.Apply(btnCancel, "action.cancel", ButtonGlyphRole.Dismissing)
-        ButtonGlyphs.Apply(btnPreview, "action.search")
+        ' The answers ride the shared bottom row (ticket 243 T-8b batch C, BUTTONS 2.0 sections 3 and 4): the read-only preview
+        ' is the editor's own COMMAND (first, set apart from the answers, never the default), then Cancel, then Save last.
+        ' The pick buttons beside the source and destination fields and the conditions switch are field-local commands and
+        ' stay where they are. Escape is Cancel. Enter saves, as before - EXCEPT while the operation deletes files (a
+        ' delete, or an archive that removes its originals): then no accept button exists (UpdateVerdict takes it away) and
+        ' Enter in a field saves nothing, so arming a deletion is always a deliberate click on Save.
+        btnCancel = New Button With {.Text = Localization.T("Отмена"), .DialogResult = DialogResult.Cancel, .Name = "btnSchedCancel"}
+        btnSave = New Button With {.Text = Localization.T("Сохранить"), .Name = "btnSchedSave"}
+        btnPreview = New Button With {.Text = Localization.T("Что будет выполнено сейчас.."), .Name = "btnSchedPreview"}
         AddHandler btnSave.Click, AddressOf OnSaveClicked
         AddHandler btnPreview.Click, AddressOf OnPreviewClicked
-        footer.Controls.AddRange({btnCancel, btnSave, btnPreview})
+        answerRow = New DialogButtonRow() With {.Dock = DockStyle.Bottom, .Name = "btnSchedButtons", .Padding = New Padding(12, 8, 12, 8)}
+        DpiLayout.AddAnswer(answerRow, btnPreview, DialogButtonRole.Command, "action.search")
+        DpiLayout.AddAnswer(answerRow, btnCancel, DialogButtonRole.Dismissing, "action.cancel")
+        DpiLayout.AddAnswer(answerRow, btnSave, DialogButtonRole.Affirmative, "action.confirm")
+        answerRow.Bind(Me, bindAccept:=False)
         AcceptButton = btnSave
-        CancelButton = btnCancel
 
         Dim page As New TableLayoutPanel With {.Dock = DockStyle.Top, .AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink,
             .ColumnCount = 2, .Padding = New Padding(14, 10, 14, 6)}
@@ -193,8 +200,7 @@ Friend NotInheritable Class Scheduled_Operation_Form
 
         chkRecursive = New CheckBox With {.Text = Localization.T("Включая вложенные папки"), .AutoSize = True, .Checked = True,
             .Margin = New Padding(0, 2, 0, 2), .Name = "chkSchedRecursive"}
-        page.Controls.Add(New Label With {.AutoSize = True, .Margin = New Padding(0)})
-        page.Controls.Add(chkRecursive)
+        AddRow(page, New Label With {.AutoSize = True, .Margin = New Padding(0)}, OptionRows.InFlow(chkRecursive))
 
         lblDestination = Caption(Localization.T("Назначение"))
         txtDestination = New TextBox With {.Dock = DockStyle.Fill, .Margin = New Padding(0, 4, 6, 0), .Name = "txtSchedDestination"}
@@ -208,40 +214,37 @@ Friend NotInheritable Class Scheduled_Operation_Form
         btnDestinationDrive = New Button With {.Text = Localization.T("Через Google Диск"), .AutoSize = True, .Name = "btnSchedDestinationDrive", .Margin = New Padding(6, 2, 0, 0)}
         ButtonGlyphs.Apply(btnDestinationDrive, "system.internet")
         AddHandler btnDestinationDrive.Click, Sub() PickDrive(txtDestination, destinationLocation)
-        page.Controls.Add(lblDestination)
-        page.Controls.Add(PairRow(txtDestination, btnDestinationPick, btnDestinationResource, btnDestinationDrive))
+        AddRow(page, lblDestination, PairRow(txtDestination, btnDestinationPick, btnDestinationResource, btnDestinationDrive))
 
         lblConflict = Caption(Localization.T("Если имя занято"))
         cmbConflict = New ComboBox With {.DropDownStyle = ComboBoxStyle.DropDownList, .Width = 220, .Margin = New Padding(0, 4, 0, 0), .Name = "cmbSchedConflict"}
         For Each mode As ScheduledConflict In {ScheduledConflict.Skip, ScheduledConflict.Overwrite, ScheduledConflict.KeepBoth}
             cmbConflict.Items.Add(ScheduledText.ConflictName(mode))
         Next
-        page.Controls.Add(lblConflict)
-        page.Controls.Add(cmbConflict)
+        AddRow(page, lblConflict, cmbConflict)
 
         chkDeleteOriginals = New CheckBox With {.Text = Localization.T("Удалить исходные файлы после проверки архива"), .AutoSize = True,
             .Margin = New Padding(0, 4, 0, 2), .Name = "chkSchedDeleteOriginals"}
         AddHandler chkDeleteOriginals.CheckedChanged, AddressOf OnShapeChanged
-        page.Controls.Add(New Label With {.AutoSize = True, .Margin = New Padding(0)})
-        page.Controls.Add(chkDeleteOriginals)
+        spacerOriginals = New Label With {.AutoSize = True, .Margin = New Padding(0)}
+        AddRow(page, spacerOriginals, OptionRows.InFlow(chkDeleteOriginals))
 
         lblVerdict = New Label With {.AutoSize = True, .MaximumSize = New Size(560, 0), .Margin = New Padding(0, 4, 0, 2),
             .Name = "lblSchedVerdict", .Font = New Font(Font, FontStyle.Bold)}
         AddHandler lblVerdict.Disposed, Sub() lblVerdict.Font.Dispose()
-        page.Controls.Add(New Label With {.AutoSize = True, .Margin = New Padding(0)})
-        page.Controls.Add(lblVerdict)
+        spacerVerdict = New Label With {.AutoSize = True, .Margin = New Padding(0)}
+        AddRow(page, spacerVerdict, lblVerdict)
 
         ' --- conditions (collapsed by default, as in FMS_A) ---
         btnConditions = New Button With {.Text = Localization.T("Условия отбора файлов"), .AutoSize = True, .Name = "btnSchedConditions",
             .Margin = New Padding(0, 10, 0, 2), .Padding = New Padding(10, 4, 10, 4)}
         ButtonGlyphs.Apply(btnConditions, "action.filter")
-        AddHandler btnConditions.Click, Sub() pnlConditions.Visible = Not pnlConditions.Visible
-        page.Controls.Add(New Label With {.AutoSize = True, .Margin = New Padding(0)})
-        page.Controls.Add(btnConditions)
+        AddHandler btnConditions.Click, Sub() SetConditionsOpen(Not pnlConditions.Visible)
+        AddRow(page, New Label With {.AutoSize = True, .Margin = New Padding(0)}, btnConditions)
 
         BuildConditions()
-        page.Controls.Add(New Label With {.AutoSize = True, .Margin = New Padding(0)})
-        page.Controls.Add(pnlConditions)
+        spacerConditions = New Label With {.AutoSize = True, .Margin = New Padding(0), .Visible = False}
+        AddRow(page, spacerConditions, pnlConditions)
 
         ' --- schedule ---
         dtpStart = New DateTimePicker With {.Format = DateTimePickerFormat.Custom, .CustomFormat = "HH:mm", .ShowUpDown = True,
@@ -261,42 +264,60 @@ Friend NotInheritable Class Scheduled_Operation_Form
         AddRow(page, Caption(Localization.T("Повторять каждые")), every)
 
         lblNextRun = New Label With {.AutoSize = True, .MaximumSize = New Size(560, 0), .Margin = New Padding(0, 6, 0, 2), .Name = "lblSchedNextRun"}
-        page.Controls.Add(New Label With {.AutoSize = True, .Margin = New Padding(0)})
-        page.Controls.Add(lblNextRun)
+        AddRow(page, New Label With {.AutoSize = True, .Margin = New Padding(0)}, lblNextRun)
 
         chkEnabled = New CheckBox With {.Text = Localization.T("Выполнять по расписанию"), .AutoSize = True, .Checked = True,
             .Margin = New Padding(0, 6, 0, 2), .Name = "chkSchedEnabled"}
         AddHandler chkEnabled.CheckedChanged, AddressOf OnScheduleChanged
-        page.Controls.Add(New Label With {.AutoSize = True, .Margin = New Padding(0)})
-        page.Controls.Add(chkEnabled)
+        AddRow(page, New Label With {.AutoSize = True, .Margin = New Padding(0)}, OptionRows.InFlow(chkEnabled))
 
         chkRetryMissed = New CheckBox With {.Text = Localization.T("Выполнить пропущенный запуск при старте программы"), .AutoSize = True, .Checked = True,
             .Margin = New Padding(0, 2, 0, 2), .Name = "chkSchedRetryMissed"}
-        page.Controls.Add(New Label With {.AutoSize = True, .Margin = New Padding(0)})
-        page.Controls.Add(chkRetryMissed)
+        AddRow(page, New Label With {.AutoSize = True, .Margin = New Padding(0)}, OptionRows.InFlow(chkRetryMissed))
 
         chkBalloonOnError = New CheckBox With {.Text = Localization.T("Показывать уведомление при ошибке"), .AutoSize = True, .Checked = False,
             .Margin = New Padding(0, 2, 0, 2), .Name = "chkSchedBalloonOnError"}
-        page.Controls.Add(New Label With {.AutoSize = True, .Margin = New Padding(0)})
-        page.Controls.Add(chkBalloonOnError)
+        AddRow(page, New Label With {.AutoSize = True, .Margin = New Padding(0)}, OptionRows.InFlow(chkBalloonOnError))
 
         lblAutostart = Note("")
         lblAutostart.Name = "lblSchedAutostart"
-        page.Controls.Add(New Label With {.AutoSize = True, .Margin = New Padding(0)})
-        page.Controls.Add(lblAutostart)
+        AddRow(page, New Label With {.AutoSize = True, .Margin = New Padding(0)}, lblAutostart)
 
         Dim scroller As New Panel With {.Dock = DockStyle.Fill, .AutoScroll = True}
         scroller.Controls.Add(page)
         Controls.Add(scroller)
-        Controls.Add(footer)
+        ' Last in the collection: the docked row takes its edge first and reads after the fields in the Tab order.
+        Controls.Add(answerRow)
 
-        toolTip.SetToolTip(chkRecursive, Localization.T("Если выключено, обрабатываются только файлы самой папки."))
+        TipFor(chkRecursive, Localization.T("Если выключено, обрабатываются только файлы самой папки."))
         toolTip.SetToolTip(cmbConflict, Localization.T("Что делать, если в папке назначения уже есть файл с таким именем."))
-        toolTip.SetToolTip(chkDeleteOriginals, Localization.T("Исходные файлы удаляются только после того, как архив прочитан обратно и сверен."))
+        TipFor(chkDeleteOriginals, Localization.T("Исходные файлы удаляются только после того, как архив прочитан обратно и сверен."))
         toolTip.SetToolTip(btnPreview, Localization.T("Показывает список без каких-либо изменений. Запуск не требует просмотра."))
 
         ResumeLayout(True)
         DpiLayout.ApplyAutoScale(Me)   ' last, once every child exists - see DpiLayout
+    End Sub
+
+    Protected Overrides Sub OnLoad(e As EventArgs)
+        MyBase.OnLoad(e)
+        ' The boolean rows (ticket 243 T-11c-b) are laid out now that the window has its scale; the page makes room for the
+        ' taller rows and the body scrolls.
+        OptionRows.ArrangeAll(Me)
+        ' The editor is authored at 640 x 640: at a high scale it must still fit the monitor (the body scrolls, the row does not).
+        DpiLayout.ClampToWorkingArea(Me)
+    End Sub
+
+    ''' <summary>A hint on the check box AND on its row's caption: the pointer rests on the caption now, not on the 32 px box.</summary>
+    Private Sub TipFor(check As CheckBox, text As String)
+        toolTip.SetToolTip(check, text)
+        Dim row As OptionRowHost = OptionRows.RowOf(check)
+        If row IsNot Nothing Then toolTip.SetToolTip(row.Caption, text)
+    End Sub
+
+    ''' <summary>Opens or folds the conditions group together with the empty cell in front of it (see <see cref="spacerConditions"/>).</summary>
+    Private Sub SetConditionsOpen(open As Boolean)
+        pnlConditions.Visible = open
+        spacerConditions.Visible = open
     End Sub
 
     Private Sub BuildConditions()
@@ -312,7 +333,9 @@ Friend NotInheritable Class Scheduled_Operation_Form
         chkDocuments = New CheckBox With {.Text = Localization.T("Документы"), .AutoSize = True, .Name = "chkSchedDocuments"}
         AddHandler chkAllFiles.CheckedChanged, AddressOf OnAllFilesChanged
         Dim types As New FlowLayoutPanel With {.AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink, .Margin = New Padding(0)}
-        types.Controls.AddRange({chkAllFiles, chkImages, chkAudio, chkVideo, chkDocuments})
+        types.Controls.AddRange({OptionRows.InFlow(chkAllFiles, Nothing, OptionRowFit.Content), OptionRows.InFlow(chkImages, Nothing, OptionRowFit.Content),
+                              OptionRows.InFlow(chkAudio, Nothing, OptionRowFit.Content), OptionRows.InFlow(chkVideo, Nothing, OptionRowFit.Content),
+                              OptionRows.InFlow(chkDocuments, Nothing, OptionRowFit.Content)})
         AddRow(pnlConditions, Caption(Localization.T("Типы файлов")), types)
 
         cmbTime = New ComboBox With {.DropDownStyle = ComboBoxStyle.DropDownList, .Width = 260, .Margin = New Padding(0, 4, 0, 0), .Name = "cmbSchedTime"}
@@ -331,39 +354,43 @@ Friend NotInheritable Class Scheduled_Operation_Form
         chkOlder = New CheckBox With {.Text = Localization.T("Старше"), .AutoSize = True, .Name = "chkSchedOlder"}
         numOlderDays = Number(36500) : numOlderDays.Name = "numSchedOlderDays"
         numOlderHours = Number(23) : numOlderHours.Name = "numSchedOlderHours"
-        AddRow(pnlConditions, chkOlder, DaysHours(numOlderDays, numOlderHours))
+        AddRow(pnlConditions, OptionRows.InFlow(chkOlder, Nothing, OptionRowFit.Content), DaysHours(numOlderDays, numOlderHours))
         chkYounger = New CheckBox With {.Text = Localization.T("Младше"), .AutoSize = True, .Name = "chkSchedYounger"}
         numYoungerDays = Number(36500) : numYoungerDays.Name = "numSchedYoungerDays"
         numYoungerHours = Number(23) : numYoungerHours.Name = "numSchedYoungerHours"
-        AddRow(pnlConditions, chkYounger, DaysHours(numYoungerDays, numYoungerHours))
+        AddRow(pnlConditions, OptionRows.InFlow(chkYounger, Nothing, OptionRowFit.Content), DaysHours(numYoungerDays, numYoungerHours))
         chkLarger = New CheckBox With {.Text = Localization.T("Размер больше"), .AutoSize = True, .Name = "chkSchedLarger"}
         numLargerMb = Number(1000000) : numLargerMb.Name = "numSchedLargerMb"
-        AddRow(pnlConditions, chkLarger, MegaBytes(numLargerMb))
+        AddRow(pnlConditions, OptionRows.InFlow(chkLarger, Nothing, OptionRowFit.Content), MegaBytes(numLargerMb))
         chkSmaller = New CheckBox With {.Text = Localization.T("Размер меньше"), .AutoSize = True, .Name = "chkSchedSmaller"}
         numSmallerMb = Number(1000000) : numSmallerMb.Name = "numSchedSmallerMb"
-        AddRow(pnlConditions, chkSmaller, MegaBytes(numSmallerMb))
+        AddRow(pnlConditions, OptionRows.InFlow(chkSmaller, Nothing, OptionRowFit.Content), MegaBytes(numSmallerMb))
 
         chkHidden = New CheckBox With {.Text = Localization.T("Включать скрытые и системные файлы"), .AutoSize = True, .Name = "chkSchedHidden"}
-        pnlConditions.Controls.Add(New Label With {.AutoSize = True, .Margin = New Padding(0)})
-        pnlConditions.Controls.Add(chkHidden)
+        AddRow(pnlConditions, New Label With {.AutoSize = True, .Margin = New Padding(0)}, OptionRows.InFlow(chkHidden))
     End Sub
 
     Private Shared Function DaysHours(days As NumericUpDown, hours As NumericUpDown) As Control
-        Dim flow As New FlowLayoutPanel With {.AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink, .WrapContents = False, .Margin = New Padding(0)}
+        Dim flow As New FlowLayoutPanel With {.AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink, .WrapContents = False, .Margin = New Padding(0, 4, 0, 0)}
         flow.Controls.AddRange({days, New Label With {.Text = Localization.T("дн."), .AutoSize = True, .Margin = New Padding(0, 8, 10, 0)},
                                 hours, New Label With {.Text = Localization.T("ч"), .AutoSize = True, .Margin = New Padding(0, 8, 0, 0)}})
         Return flow
     End Function
 
     Private Shared Function MegaBytes(box As NumericUpDown) As Control
-        Dim flow As New FlowLayoutPanel With {.AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink, .WrapContents = False, .Margin = New Padding(0)}
+        Dim flow As New FlowLayoutPanel With {.AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink, .WrapContents = False, .Margin = New Padding(0, 4, 0, 0)}
         flow.Controls.AddRange({box, New Label With {.Text = Localization.T("МБ"), .AutoSize = True, .Margin = New Padding(0, 8, 0, 0)}})
         Return flow
     End Function
 
+    ''' <summary>One row of a two-column table. Both controls stand in an EXPLICIT cell: a table that places its children itself
+    ''' skips a hidden one, so a row that hides (a full-width option row and the empty cell before it) moved every later
+    ''' control one cell over - and a full-width row landed in the narrow first column. Every row adds exactly two controls, so
+    ''' the row number is half the count so far.</summary>
     Private Shared Sub AddRow(table As TableLayoutPanel, left As Control, right As Control)
-        table.Controls.Add(left)
-        table.Controls.Add(right)
+        Dim r As Integer = table.Controls.Count \ 2
+        table.Controls.Add(left, 0, r)
+        table.Controls.Add(right, 1, r)
     End Sub
 
     Private Shared Function PairRow(box As TextBox, pick As Button, resource As Button, drive As Button) As Control
@@ -410,7 +437,7 @@ Friend NotInheritable Class Scheduled_Operation_Form
             SetSize(chkSmaller, numSmallerMb, c.MaxSizeBytes)
             chkHidden.Checked = c.IncludeHidden
             ' A condition that is set shows the group open; an untouched definition keeps it folded.
-            pnlConditions.Visible = Not IsDefaultConditions(c)
+            SetConditionsOpen(Not IsDefaultConditions(c))
 
             Dim start As DateTime = DateTime.Today.AddMinutes(op.AnchorMinutes)
             dtpStart.Value = start
@@ -507,7 +534,11 @@ Friend NotInheritable Class Scheduled_Operation_Form
         Dim showConflict As Boolean = action = ScheduledAction.Copy OrElse action = ScheduledAction.Move
         lblConflict.Visible = showConflict
         cmbConflict.Visible = showConflict
-        chkDeleteOriginals.Visible = action = ScheduledAction.Archive
+        ' The row (box, caption) is what stands in the page now, so the row is what hides - the check box inside it hiding
+        ' alone would leave the caption behind.
+        Dim showOriginals As Boolean = action = ScheduledAction.Archive
+        OptionRows.RowOf(chkDeleteOriginals).Visible = showOriginals
+        spacerOriginals.Visible = showOriginals
         ' An archive takes folders of this PC (or Google Drive) only for now (12.2 default 7).
         btnSourceResource.Visible = action <> ScheduledAction.Archive
         btnDestinationResource.Visible = action <> ScheduledAction.Archive
@@ -520,7 +551,10 @@ Friend NotInheritable Class Scheduled_Operation_Form
     ''' <summary>The read-only verdict line (D3): shown only when something is going to be deleted.</summary>
     Private Sub UpdateVerdict(action As ScheduledAction)
         Dim removes As Boolean = action = ScheduledAction.Delete OrElse (action = ScheduledAction.Archive AndAlso chkDeleteOriginals.Checked)
+        ' The safe default while files are going to be removed: Enter does not save (see BuildUi).
+        AcceptButton = If(removes, Nothing, btnSave)
         lblVerdict.Visible = removes
+        spacerVerdict.Visible = removes
         If Not removes Then Return
         Dim location As ScheduledLocation = ReadLocation(txtSource, sourceLocation)
         Dim canonical As String = If(location.Kind = ScheduledLocationKind.Resource, location.ResourceId,
@@ -692,21 +726,19 @@ Friend NotInheritable Class Scheduled_Preview_Form
         Dim list As New ListBox With {.Dock = DockStyle.Fill, .IntegralHeight = False, .HorizontalScrollbar = True,
             .Name = "lstSchedPreview", .AccessibleName = Localization.T("Что будет выполнено сейчас")}
         list.Items.AddRange(result.Lines.Cast(Of Object)().ToArray())
-        Dim footer As New FlowLayoutPanel With {.Dock = DockStyle.Bottom, .AutoSize = True, .FlowDirection = FlowDirection.RightToLeft,
-            .Padding = New Padding(12, 8, 12, 8)}
-        Dim close As New Button With {.Text = Localization.T("Закрыть"), .AutoSize = True, .DialogResult = DialogResult.Cancel,
-            .Name = "btnSchedPreviewClose", .Padding = New Padding(14, 5, 14, 5)}
-        ButtonGlyphs.Apply(close, "action.cancel", ButtonGlyphRole.Dismissing)
-        footer.Controls.Add(close)
-        If result.Truncated Then
-            footer.Controls.Add(New Label With {.AutoSize = True, .Margin = New Padding(0, 8, 12, 0),
-                .Text = Localization.TF("Показаны первые {0}.", ScheduledExecutor.PreviewLineCap)})
-        End If
-        CancelButton = close
-        AcceptButton = close
+        ' The one answer rides the shared bottom row (ticket 243 T-8b batch C); the "first N shown" line is not an answer and
+        ' sits above it. Escape and Enter both close, as before - the window changes nothing.
+        Dim close As New Button With {.Text = Localization.T("Закрыть"), .DialogResult = DialogResult.Cancel, .Name = "btnSchedPreviewClose"}
+        Dim row As New DialogButtonRow() With {.Dock = DockStyle.Bottom, .Name = "btnSchedPreviewButtons", .Padding = New Padding(12, 8, 12, 8)}
+        DpiLayout.AddAnswer(row, close, DialogButtonRole.Dismissing, "action.cancel")
         Controls.Add(list)
         Controls.Add(summary)
-        Controls.Add(footer)
+        If result.Truncated Then
+            Controls.Add(New Label With {.Dock = DockStyle.Bottom, .AutoSize = True, .Padding = New Padding(12, 6, 12, 0),
+                .Name = "lblSchedPreviewTruncated", .Text = Localization.TF("Показаны первые {0}.", ScheduledExecutor.PreviewLineCap)})
+        End If
+        Controls.Add(row)
+        row.Bind(Me)
         ResumeLayout(True)
         DpiLayout.ApplyAutoScale(Me)
     End Sub

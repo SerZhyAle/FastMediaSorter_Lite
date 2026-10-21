@@ -252,6 +252,11 @@ Public Class FdSecRuleTests
     ''' The other side of the rule: names that merely LOOK close to a refused class still
     ''' open. COM10 is not a device, a leading dot is not a trailing one, and a name in
     ''' another script is just a name.
+    '''
+    ''' The four characters Windows refuses in a file name but the container format does not
+    ''' (quote, less-than, greater-than, bar) are pinned open on purpose, FDSEC decision of
+    ''' 2026-10-19: a sealed name that is close to a refused class still opens, and the reader
+    ''' makes no platform-specific damage check, so this row set must not turn into a refusal.
     ''' </summary>
     <Theory>
     <InlineData("com10.log")>
@@ -259,6 +264,10 @@ Public Class FdSecRuleTests
     <InlineData(".hidden.jpg")>
     <InlineData("a b.jpg")>
     <InlineData("фото отпуск.jpg")>
+    <InlineData("a""b.jpg")>
+    <InlineData("a<b.jpg")>
+    <InlineData("a>b.jpg")>
+    <InlineData("a|b.jpg")>
     Public Sub A_name_close_to_a_refused_class_still_opens(name As String)
         Assert.True(FdSecMetadata.IsAcceptableName(name))
         Dim packed As Byte() = FdSecTestContainer.Pack(New Byte(31) {}, name, Credential,

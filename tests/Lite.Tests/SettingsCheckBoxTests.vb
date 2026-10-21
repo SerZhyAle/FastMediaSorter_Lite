@@ -53,7 +53,7 @@ Public Class SettingsCheckBoxTests
     Private Shared Function CenterPixel(check As CheckBox) As Color
         Using bitmap As New Bitmap(check.Width, check.Height)
             check.DrawToBitmap(bitmap, New Rectangle(0, 0, check.Width, check.Height))
-            ' The 20 px box is centred in the 28 px control, so the middle is fill.
+            ' The 20 px box is centred in the 32 px hit target, so the middle is fill.
             Return bitmap.GetPixel(check.Width \ 2, check.Height \ 2)
         End Using
     End Function
@@ -97,11 +97,12 @@ Public Class SettingsCheckBoxTests
     End Sub
 
     <Fact>
-    Public Sub Attach_resizes_to_the_box_plus_focus_room()
+    Public Sub Attach_resizes_to_the_hit_target_around_the_box()
         WithShownCheckBox(
             Sub(check)
-                Assert.Equal(28, check.Width)
-                Assert.Equal(28, check.Height)
+                ' BOOLEAN-OPTION 2.0 section 2 rule 4 / UI-SIZING section 2 rule 4: 32 by 32 around a 20 px box.
+                Assert.Equal(32, check.Width)
+                Assert.Equal(32, check.Height)
                 Assert.True(SettingsCheckBox.IsAttached(check))
                 Assert.Equal(String.Empty, check.Text)
                 ' The primitive keeps its own toggle behavior.
@@ -118,12 +119,12 @@ Public Class SettingsCheckBoxTests
             Sub(check)
                 check.Checked = True
                 SettingsCheckBox.Attach(check, 1.75F)
-                Assert.Equal(49, check.Width)
-                Assert.Equal(49, check.Height)
+                Assert.Equal(56, check.Width)
+                Assert.Equal(56, check.Height)
                 Assert.True(check.Checked)
                 Assert.Equal(Color.FromArgb(0, 90, 200), CenterPixel(check))
                 SettingsCheckBox.Attach(check, 1.0F)
-                Assert.Equal(28, check.Width)
+                Assert.Equal(32, check.Width)
                 Assert.True(check.Checked)
             End Sub)
     End Sub

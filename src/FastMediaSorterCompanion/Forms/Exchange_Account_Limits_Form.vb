@@ -20,6 +20,7 @@ Friend NotInheritable Class Exchange_Account_Limits_Form
     Private _numBroadcasts As NumericUpDown
     Private _numBroadcastsPerDevice As NumericUpDown
     Private _numClipboardMB As NumericUpDown
+    Private _answerRow As DialogButtonRow
     Private _iconHandle As IntPtr
     Private _limits As ExchangeAccountLimits
     ' the clipboard limit is edited in whole megabytes, but the store keeps bytes: a value the field cannot show
@@ -62,6 +63,7 @@ Friend NotInheritable Class Exchange_Account_Limits_Form
             .AutoSizeMode = AutoSizeMode.GrowAndShrink, .Padding = New Padding(14, 12, 14, 6)}
         body.ColumnStyles.Add(New ColumnStyle(SizeType.Percent, 100.0F))
 
+        body.Controls.Add(ExchangeMark.Heading(Text, 32, AddressOf CompanionAssets.OpenBundledAsset))
         body.Controls.Add(New Label With {.AutoSize = True, .MaximumSize = New Size(ContentWidth, 0), .Margin = New Padding(0, 0, 0, 8),
             .Text = Localization.T("Индивидуальные ограничения для данного аккаунта. Значение 0 означает использование настроек сервера по умолчанию.")})
 
@@ -102,18 +104,21 @@ Friend NotInheritable Class Exchange_Account_Limits_Form
         body.Controls.Add(New Label With {.AutoSize = True, .Margin = New Padding(0, 6, 0, 2), .Text = Localization.T("Лимит буфера, МБ (0 = по умолчанию 5 ГБ):")})
         body.Controls.Add(_numClipboardMB)
 
-        Dim buttons As New FlowLayoutPanel With {.AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink, .FlowDirection = FlowDirection.LeftToRight,
-            .WrapContents = False, .Margin = New Padding(0, 12, 0, 6)}
+        ' The answers ride the shared bottom row (ticket 243 T-8b, BUTTONS 2.0 sections 3 and 4): Cancel first, Save last
+        ' and the default (the limits can be changed again), Escape = Cancel.
         Dim btnOk As Button = NewButton(Localization.T("Сохранить"), AddressOf OnOkClicked, "action.confirm", ButtonGlyphRole.Affirmative)
+        btnOk.Name = "xlim_Ok"
         Dim btnCancel As Button = NewButton(Localization.T("Отмена"), Sub() Me.DialogResult = DialogResult.Cancel, "nav.close", ButtonGlyphRole.Dismissing)
+        btnCancel.Name = "xlim_Cancel"
         btnCancel.DialogResult = DialogResult.Cancel
-        buttons.Controls.Add(btnOk)
-        buttons.Controls.Add(btnCancel)
-        body.Controls.Add(buttons)
+        _answerRow = New DialogButtonRow() With {.Dock = DockStyle.Bottom, .Name = "xlim_Buttons", .Padding = New Padding(14, 4, 14, 10)}
+        DpiLayout.AddAnswer(_answerRow, btnOk, DialogButtonRole.Affirmative, "action.confirm")
+        DpiLayout.AddAnswer(_answerRow, btnCancel, DialogButtonRole.Dismissing, "nav.close")
 
-        Me.AcceptButton = btnOk
-        Me.CancelButton = btnCancel
         Me.Controls.Add(body)
+        ' Last in the collection: the docked row takes its edge first and reads after the content in the Tab order.
+        Me.Controls.Add(_answerRow)
+        _answerRow.Bind(Me)
         Me.AutoSize = True
         Me.AutoSizeMode = AutoSizeMode.GrowAndShrink
 

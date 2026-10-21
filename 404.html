@@ -24,6 +24,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://serzhyale.github.io/FastMediaSorter_Lite/assets/sza-kit.css">
 <link rel="stylesheet" href="https://serzhyale.github.io/FastMediaSorter_Lite/assets/fms-site.css">
+<link rel="stylesheet" href="https://serzhyale.github.io/FastMediaSorter_Lite/assets/fms-buttons.css">
 <style>
 html[data-lang="ru"] [data-l]:not([data-l="ru"]),html[data-lang="en"] [data-l]:not([data-l="en"]),html[data-lang="ua"] [data-l]:not([data-l="ua"]){display:none}
 .site-header>.brand{margin-right:auto}.hero{text-align:left;padding:1.5rem 0 .8rem}.hero .lead{margin:0}
@@ -43,8 +44,8 @@ html[data-lang="ru"] [data-l]:not([data-l="ru"]),html[data-lang="en"] [data-l]:n
   <div class="seg" role="group" aria-label="Language">
     <button data-setlang="ru">RU</button><button data-setlang="en" aria-pressed="true">EN</button><button data-setlang="ua">UA</button>
   </div>
-  <button class="theme-btn" id="themeBtn" aria-label="Switch theme">◐</button>
-  <a class="btn btn-primary btn-sm" href="https://serzhyale.github.io/FastMediaSorter_Lite/#get"><span data-l="en">Download</span><span data-l="ru">Скачать</span><span data-l="ua">Завантажити</span></a>
+  <button class="theme-btn" id="themeBtn" type="button" aria-pressed="true"><svg class="glyph" data-glyph="app.theme" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" focusable="false"><path d="M12 22c5.52 0 10-4.48 10-10S17.52 2 12 2 2 6.48 2 12s4.48 10 10 10zm1-17.93c3.94.49 7 3.85 7 7.93s-3.05 7.44-7 7.93V4.07z" fill="currentColor"/></svg><span><span data-l="en">Dark theme</span><span data-l="ru">Тёмная тема</span><span data-l="ua">Темна тема</span></span></button>
+  <a class="btn btn-primary" href="https://serzhyale.github.io/FastMediaSorter_Lite/#get"><span data-l="en">Download</span><span data-l="ru">Скачать</span><span data-l="ua">Завантажити</span></a>
   </nav>
 </header>
 
@@ -103,10 +104,13 @@ html[data-lang="ru"] [data-l]:not([data-l="ru"]),html[data-lang="en"] [data-l]:n
   });
   setLang(doc.getAttribute('data-lang')||'en');
   var tb=document.getElementById('themeBtn');
+  function pressTheme(){ if(tb) tb.setAttribute('aria-pressed', doc.getAttribute('data-theme')==='light'?'false':'true'); }
+  pressTheme();
   if(tb) tb.addEventListener('click',function(){
     var v=doc.getAttribute('data-theme')==='light'?'dark':'light';
     doc.setAttribute('data-theme',v);
     try{localStorage.setItem('sza-theme',v);}catch(e){}
+    pressTheme();
   });
 })();
 </script>

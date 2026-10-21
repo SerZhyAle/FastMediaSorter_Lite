@@ -37,8 +37,6 @@ Friend Module WorkerShares
 
     Private Const SharesFileName As String = "shares.json"
     Private Const DisksFileName As String = "diskshares.json"
-    Private Const DataDirEnvironmentVariable As String = "FMS_COMPANION_DATA_DIR"
-    Private Const DataDirFolderName As String = "FastMediaSorterCompanion"
 
     ''' <summary>Is this row the server's mirror rather than a resource the user set up? Pure.</summary>
     Friend Function IsManaged(resource As ResourceDescriptor) As Boolean
@@ -240,16 +238,15 @@ Friend Module WorkerShares
         Return value.GetString()
     End Function
 
-    ''' <summary>Where the worker keeps its files - the worker's own resolution order
-    ''' (its hostkey.go): the environment override first, then the machine data dir when it
-    ''' exists, then the user's. Empty when none of them is named or present.</summary>
+    ''' <summary>Where the worker keeps its files - the ONE host-side resolution
+    ''' (<see cref="WorkerStateDir.Resolve"/>, the worker's own order: the explicit override, then a
+    ''' machine data dir this account can read, then the user's). Empty when the chosen store is not
+    ''' there to read: an override is returned as named, but a per-user directory that was never
+    ''' created is "no store yet", as it always was.</summary>
     Friend Function DataDir() As String
-        Dim environmentOverride As String = Environment.GetEnvironmentVariable(DataDirEnvironmentVariable)
-        If Not String.IsNullOrWhiteSpace(environmentOverride) Then Return environmentOverride
-        Dim machine As String = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData), DataDirFolderName)
-        If Directory.Exists(machine) Then Return machine
-        Dim user As String = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), DataDirFolderName)
-        If Directory.Exists(user) Then Return user
+        Dim chosen As String = WorkerStateDir.Resolve()
+        If chosen.Length = 0 Then Return ""
+        If WorkerStateDir.ExplicitOverride().Length > 0 OrElse Directory.Exists(chosen) Then Return chosen
         Return ""
     End Function
 

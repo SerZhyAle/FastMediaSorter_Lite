@@ -3,7 +3,7 @@
 | | |
 | --- | --- |
 | **Ids** | `REPO-STAMP`, `HARNESS-PROFILE`, `REPO-LAYOUT`, `RULE-DELIVERY` |
-| **Version** | `REPO-STAMP` 0.12, `HARNESS-PROFILE` 0.11, `REPO-LAYOUT` 0.11, `RULE-DELIVERY` 0.12, all draft (read 2026-10-07). `REPO-STAMP` and `RULE-DELIVERY` 0.12 are `breaking` for a **reader**, not for a stamp. Owner: sza-unified-rules |
+| **Version** | `REPO-STAMP` 0.12, `HARNESS-PROFILE` 0.12, `REPO-LAYOUT` 0.11, `RULE-DELIVERY` 0.12, all draft (read 2026-10-20, specification 244; `HARNESS-PROFILE` was 0.11 on 2026-10-07, its 0.12 is additive). `REPO-STAMP` and `RULE-DELIVERY` 0.12 are `breaking` for a **reader**, not for a stamp. Owner: sza-unified-rules |
 | **Home** | `rule-adoption/README.md` in the shared contracts catalog |
 | **Role here** | producer of the stamp (`.sza-canon.json`, written by the adoption run, never by hand), consumer of the other three. `HARNESS-PROFILE` is **not bound** here - declared below |
 
@@ -18,9 +18,8 @@
   `ledgerShape: 1` with no `ledgerFile`, `channels`, `site`, `privacy`) were all settled by the 2026-10-03
   re-sync.
 - **`RULE-DELIVERY`.** Being behind is the normal state between reconciliations; being behind silently is the
-  fault. The stamp declares canon `2026.10.02.3`, the canon has since moved (`2026.10.07.2`), so the digests
-  differ: today that is the **warning** rung (`SZA-CANON03`, aged from `reconciledOn` 2026-10-03), not the
-  error rung. The owed step is one `sza:adopt-canon` re-sync that re-reads the changed rule documents; the
+  fault. On 2026-10-20 the stamp declared canon `2026.10.17.1` (`reconciledOn` 2026-10-17) and the canon had moved
+  on (`2026.10.20.1`), so the digests differ: that is the **warning** rung (`SZA-CANON03`), not the error rung. The owed step is one `sza:adopt-canon` re-sync that re-reads the changed rule documents; the
   version pair is never typed by hand.
 - **`REPO-LAYOUT` rule 1.** Every root agent-rules file carries the canon pointer or delegates wholesale to a
   sibling that does: `CLAUDE.md` carries it, `AGENTS.md` has its own "Canon pointer" section.
@@ -36,5 +35,6 @@
   run here: no `PLAN/` or `dev/` tree exists, and the tickets live in `docs/specifications/` under the
   scheme above, where the harness defaults do not look. The 0.11 derived `paths.changelog` is moot for the
   same reason (the stamp declares `ledgerShape` 1, which the contract leaves undecided; the repository's
-  ledger is the root `CHANGELOG.md`). Before the harness is ever run here, a profile must be written first.
+  ledger is the root `CHANGELOG.md`). Before the harness is ever run here, a profile must be written first, and under 0.12 it sets `paths.changelog`
+  empty, because the dev-log tools are not used and a dev-log target is never derived from another file.
 - Enforcement comes from the `sza` plugin's hooks, never a second local copy of them.

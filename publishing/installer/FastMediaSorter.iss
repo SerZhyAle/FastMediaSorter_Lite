@@ -128,7 +128,7 @@ russian.CompExchange={#ExchangeServerName} - необязательное доп
 ukrainian.CompExchange={#ExchangeServerName} - необов’язкове доповнення: сервер обміну, через який сервери роздачі та клієнти знаходять одне одного (не ставиться, доки ви його не позначите; нічого не запускається, а правило брандмауера не додається, доки ви самі не попросите про це в Менеджері спільного доступу)
 #endif
 english.TypeFull=Full - everything offline-ready (recommended)
-english.TypeCompact=Compact - the viewer without the server (codecs & models download on demand)
+english.TypeCompact=Compact - the viewer without folder sharing (codecs & models download on demand)
 english.TypeCustom=Custom
 english.CompCore=Core - image & video viewer and sorter (required)
 english.CompCodecs=Video codecs (VLC) - offline playback of AVI, MKV, VP9 and other formats
@@ -139,7 +139,7 @@ english.ShareManagerComment=Share folders from this PC to an Android phone over 
 english.ShareDesktopIcon=Create a desktop shortcut for the Share Manager
 
 russian.TypeFull=Полная - всё для работы без интернета (рекомендуется)
-russian.TypeCompact=Компактная - просмотрщик без сервера (кодеки и модели скачаются по мере надобности)
+russian.TypeCompact=Компактная - просмотрщик без раздачи папок (кодеки и модели скачаются по мере надобности)
 russian.TypeCustom=Выборочная
 russian.CompCore=Ядро - просмотр и сортировка изображений и видео (обязательно)
 russian.CompCodecs=Видео-кодеки (VLC) - оффлайн-воспроизведение AVI, MKV, VP9 и других форматов
@@ -150,7 +150,7 @@ russian.ShareManagerComment=Раздача папок этого ПК на те�
 russian.ShareDesktopIcon=Создать ярлык Менеджера общего доступа на рабочем столе
 
 ukrainian.TypeFull=Повна - усе для роботи без інтернету (рекомендовано)
-ukrainian.TypeCompact=Компактна - переглядач без сервера (кодеки та моделі завантажаться за потреби)
+ukrainian.TypeCompact=Компактна - переглядач без роздачі тек (кодеки та моделі завантажаться за потреби)
 ukrainian.TypeCustom=Вибіркова
 ukrainian.CompCore=Ядро - перегляд і сортування зображень та відео (обов'язково)
 ukrainian.CompCodecs=Відео-кодеки (VLC) - офлайн-відтворення AVI, MKV, VP9 та інших форматів

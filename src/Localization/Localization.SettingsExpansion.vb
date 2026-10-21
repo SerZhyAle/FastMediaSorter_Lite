@@ -307,8 +307,8 @@ Partial Public NotInheritable Class Localization
             "Pantalla completa", "Plein écran", "Ecrã inteiro", "وضع ملء الشاشة",
             "पूर्ण स्क्रीन", "পূর্ণ পর্দা", "فل اسکرین", "全屏模式")
 
-        Add("Справка", "Help", "Довідка", "Hilfe", "Guida", "Ayuda", "Aide", "Ajuda",
-            "المساعدة", "सहायता", "সহায়তা", "مدد", "帮助")
+        Add("Справка", "Help", "Довідка", "Hilfe", "Aiuto", "Ayuda", "Aide", "Ajuda",
+            "مساعدة", "सहायता", "সহায়তা", "مدد", "帮助")
 
         Add("Панель изображений",
             "Image panel", "Панель зображень", "Bildleiste", "Pannello immagini",

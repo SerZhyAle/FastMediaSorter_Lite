@@ -1068,7 +1068,7 @@ Public Module LogPackage
         "PreferredSubtitleLanguage", "AudioEndAction", "IncludeAudioInNavigation", "IncludeDocumentInNavigation",
         "AudioControlsAlwaysVisible", "AudioVisualiser", "SleepTimerMinutes", "StartupOpenMode",
         "ResumeLastPlayback", "RecentFilesLimit", "RecentFoldersLimit", "OcrDiskCacheMaxMb", "DecodeCacheMaxMb",
-        "ConfirmReplaceWithVideo", "ArchiveCacheMaxMb", "ArchiveMaxEntryMb", "ArchiveMaxEntries",
+        "AnimatedViaVideo", "AnimatedViaVideoFfmpegAsked", "ConfirmReplaceWithVideo", "ArchiveCacheMaxMb", "ArchiveMaxEntryMb", "ArchiveMaxEntries",
         "SecureIncludeInNavigation", "SecureRememberMinutes", "SecureShowTrueName", "CustomHotkeys",
         "OcrEnabled", "OcrAutoMode", "OcrEngine", "OcrSourceLang", "TranslateProvider", "TranslateTargetLang",
         "OverlayVisible", "OverlayOpacity", "OcrDiskCache", "OllamaModel", "OcrModelQuality", "OcrPageMode",

@@ -283,7 +283,7 @@ Partial Public Class Main_Form
 
         Dim time_Ms As Long, length_Ms As Long
         Try
-            time_Ms = vlc_Media_Player.Time
+            time_Ms = PlayerTimeMs()
             length_Ms = vlc_Media_Player.Length
         Catch ex As Exception
             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w2530: seek read failed: " & ex.Message)
@@ -294,7 +294,7 @@ Partial Public Class Main_Form
         If target < 0 Then Return
 
         Try
-            vlc_Media_Player.Time = target
+            SeekPlayerTime(target)
         Catch ex As Exception
             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w2531: seek failed: " & ex.Message)
             Return
@@ -353,7 +353,7 @@ Partial Public Class Main_Form
     Private Sub RunAbLoop()
         Dim time_Ms As Long, length_Ms As Long
         Try
-            time_Ms = vlc_Media_Player.Time
+            time_Ms = PlayerTimeMs()
             length_Ms = vlc_Media_Player.Length
         Catch ex As Exception
             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w2535: A-B read failed: " & ex.Message)
@@ -392,9 +392,9 @@ Partial Public Class Main_Form
     Private Sub Ab_Loop_Timer_Tick(sender As Object, e As EventArgs) Handles ab_Loop_Timer.Tick
         If Not is_Vlc_Playing OrElse vlc_Media_Player Is Nothing OrElse video_Seek.IsDragging Then Return
         Try
-            Dim t As Long = vlc_Media_Player.Time
+            Dim t As Long = PlayerTimeMs()
             If ab_Loop.IsDueToJump(t, MonotonicClock.NowMs()) Then
-                vlc_Media_Player.Time = ab_Loop.AMs
+                SeekPlayerTime(ab_Loop.AMs)
                 ab_Loop.RecordJump(MonotonicClock.NowMs())
                 Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w2537: A-B jump")
             End If

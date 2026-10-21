@@ -643,4 +643,89 @@ Public Class ExchangeAdminTests
         Next
     End Sub
 
+    ' --- spec 246: management visibility parsers and models ---------------------------------------
+
+    <Fact>
+    Public Sub The_visibility_parsers_extract_broadcasts_resources_clipboard_and_audit()
+        Dim broJson As String = "[{""broadcastId"":""b1"",""account"":""alice"",""deviceId"":""d1"",""deviceName"":""Laptop"",""kind"":""camera"",""startedAt"":""2026-10-19T18:00:00Z"",""activeSeconds"":120,""listenersCount"":2,""maxListeners"":5,""bitrateEstimateKbps"":1500}]"
+        Dim broList As List(Of ExchangeAdminBroadcast) = ExchangeAdminParser.Broadcasts(broJson)
+        Assert.Single(broList)
+        Assert.Equal("b1", broList(0).BroadcastId)
+        Assert.Equal("alice", broList(0).Account)
+        Assert.Equal("Laptop", broList(0).DeviceName)
+        Assert.Equal("camera", broList(0).Kind)
+        Assert.Equal(120, broList(0).ActiveSeconds)
+        Assert.Equal(2, broList(0).ListenersCount)
+        Assert.Equal(5, broList(0).MaxListeners)
+        Assert.Equal(1500, broList(0).BitrateEstimateKbps)
+
+        Dim resJson As String = "[{""resourceId"":""r1"",""name"":""Photos"",""shareId"":""s1"",""deviceId"":""d1"",""deviceName"":""Phone"",""channels"":[""lan"",""tunnel""],""pinProtected"":true,""sealed"":false,""publishedAt"":""2026-10-19T17:00:00Z""}]"
+        Dim resList As List(Of ExchangeAdminResource) = ExchangeAdminParser.Resources(resJson)
+        Assert.Single(resList)
+        Assert.Equal("r1", resList(0).ResourceId)
+        Assert.Equal("Photos", resList(0).Name)
+        Assert.Equal("Phone", resList(0).DeviceName)
+        Assert.Equal(2, resList(0).Channels.Count)
+        Assert.True(resList(0).PinProtected)
+        Assert.False(resList(0).Sealed)
+
+        Dim clipJson As String = "{""present"":true,""clipId"":""c1"",""kind"":""text"",""mimeType"":""text/plain"",""sizeBytes"":42,""sha256"":""abc"",""storedAt"":""2026-10-19T18:05:00Z"",""sourceDeviceId"":""d1"",""sourceDeviceName"":""Desktop"",""sealed"":true}"
+        Dim clip As ExchangeAdminClipboardInfo = ExchangeAdminParser.Clipboard(clipJson)
+        Assert.True(clip.Present)
+        Assert.Equal("c1", clip.ClipId)
+        Assert.Equal("text", clip.Kind)
+        Assert.Equal(42, clip.SizeBytes)
+        Assert.True(clip.Sealed)
+        Assert.Equal("Desktop", clip.SourceDeviceName)
+
+        Dim auditJson As String = "{""activeSessions"":[{""sessionId"":""sess1"",""remoteAddr"":""203.0.113.5:50000"",""clientProduct"":""FMS_A"",""connectedAt"":""2026-10-19T18:00:00Z"",""lastOp"":""account.list""}]," &
+                                  """records"":[{""seq"":1,""timestamp"":""2026-10-19T18:01:00Z"",""remoteAddr"":""203.0.113.5"",""clientProduct"":""FMS_A"",""operator"":""admin"",""op"":""account.add"",""target"":""bob"",""status"":""OK""}]}"
+        Dim audit As ExchangeAdminAuditView = ExchangeAdminParser.Audit(auditJson)
+        Assert.Single(audit.ActiveSessions)
+        Assert.Equal("sess1", audit.ActiveSessions(0).SessionId)
+        Assert.Equal("FMS_A", audit.ActiveSessions(0).ClientProduct)
+        Assert.Single(audit.Records)
+        Assert.Equal(1, audit.Records(0).Seq)
+        Assert.Equal("account.add", audit.Records(0).Op)
+        Assert.Equal("bob", audit.Records(0).Target)
+        Assert.Equal("OK", audit.Records(0).Status)
+    End Sub
+
+    <Fact>
+    Public Sub The_visibility_accounts_model_detects_external_admin_and_selection_flags()
+        Dim view As New ExchangeAccountsView With {
+            .Reached = True,
+            .Accounts = New List(Of ExchangeAdminAccount) From {
+                New ExchangeAdminAccount With {.Login = "alice", .Devices = 1, .Kind = "member"}
+            },
+            .DevicesOf = "alice",
+            .Devices = New List(Of ExchangeAdminDevice) From {
+                New ExchangeAdminDevice With {.DeviceId = "d1", .Name = "PC"}
+            },
+            .Resources = New List(Of ExchangeAdminResource) From {
+                New ExchangeAdminResource With {.ResourceId = "r1", .Name = "Photos"}
+            },
+            .Broadcasts = New List(Of ExchangeAdminBroadcast) From {
+                New ExchangeAdminBroadcast With {.BroadcastId = "b1", .Kind = "camera"}
+            },
+            .Audit = New ExchangeAdminAuditView With {
+                .ActiveSessions = New List(Of ExchangeAdminSession) From {
+                    New ExchangeAdminSession With {.SessionId = "s1", .ClientProduct = "FMS_A", .RemoteAddr = "203.0.113.5:50000"}
+                }
+            }
+        }
+
+        Dim m As ExchangeAccountsModel = ExchangeAccountsModel.Build(view, "alice", "d1", selectedResId:="r1", selectedBroId:="b1")
+        Assert.True(m.Reached)
+        Assert.True(m.ShowResources)
+        Assert.True(m.ShowUnpublishResource)
+        Assert.True(m.ShowBroadcasts)
+        Assert.True(m.ShowStopBroadcast)
+        Assert.True(m.ShowClipboard)
+        Assert.True(m.ShowAuditLog)
+        Assert.True(m.ExternalAdminActive)
+        Assert.Contains("FMS_A", m.ExternalAdminBadgeText)
+        Assert.Contains("203.0.113.5", m.ExternalAdminBadgeText)
+    End Sub
+
 End Class

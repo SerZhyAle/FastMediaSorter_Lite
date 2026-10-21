@@ -267,7 +267,10 @@ Friend NotInheritable Class ThumbnailService
     ''' it works on the main surface.</summary>
     Private Shared Function DecodeFit(path As String, px As Integer) As Bitmap
         Try
-            Dim loaded = LoadImageWithStream(path)
+            ' An animation is drawn by its first frame in a grid cell: the whole transcode of a long
+            ' one is seconds of work nobody sees (spec 241 rule 14).
+            Dim failure As PathFailureKind = PathFailureKind.Content
+            Dim loaded = LoadImageStaged(path, failure, ImageLoadStage.FirstFrame)
             If loaded Is Nothing Then Return Nothing
             Using stream As MemoryStream = loaded.Item2
                 Using original As Image = loaded.Item1

@@ -42,7 +42,10 @@ Public Class Main_Form
 #End If
     End Sub
 
-    Private Const slide_show_limit As Integer = 30
+    ' MEDIA-VIEWER rule 5: the slideshow interval is at least 1 s, including the repeated-start
+    ' halving of the running interval (the stored preference stays unchanged). It was 30 ms, which
+    ' flashes pictures at about 30 Hz.
+    Private Const slide_show_limit As Integer = 1000
     Private Const max_Namber_of_Recent_Folders As Integer = 100
     ' FROZEN name - one mutex for both exes (see CLAUDE.md). Friend so that
     ' Application_Events can create it at Startup, which is the only moment early

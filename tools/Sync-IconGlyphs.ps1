@@ -52,6 +52,9 @@ $glyphIds = @(
     'action.redo', 'action.adjust', 'action.filter', 'action.email', 'action.change-password', 'action.mount-disk',
     'action.unmount-disk', 'action.auto-mount', 'action.convert', 'action.upload', 'action.secure',
     'nav.back', 'nav.forward', 'nav.open-external', 'nav.exit', 'media.stop', 'media.cast', 'media.audio-track', 'app.help',
+    # ICON-SET 0.35: the replayable welcome tour, distinct from app.help (explain this window) and app.info (details).
+    # Status "proposed" in the catalog: the first product to ship it says so in a proposal (ICON-SET rule 6).
+    'app.tour',
     'system.network-off', 'system.power',
     'action.add', 'action.choose-file', 'action.choose-folder', 'action.convert-to-video', 'action.copy', 'action.crop', 'action.delete', 'action.download', 'action.edit',
     'action.extract-text', 'action.refresh', 'action.rename', 'action.search', 'action.send-to',
@@ -66,6 +69,8 @@ $glyphIds = @(
     'media.exit-fullscreen', 'media.fullscreen', 'media.mute', 'media.next', 'media.pause',
     'media.play', 'media.previous', 'media.random', 'media.slideshow', 'media.volume',
     'nav.collapse', 'nav.expand', 'nav.more', 'nav.scroll-top', 'source.recent', 'source.resource',
+    # The site header's theme switch (BUTTONS 2.0: a header command carries its glyph; PAGE-STYLE 3.1).
+    'app.theme',
     'status.error', 'status.locked', 'status.ok', 'status.unknown', 'status.warning',
     'system.internet', 'system.wifi', 'tool.brush', 'tool.oval', 'tool.rectangle', 'view.grid'
 )

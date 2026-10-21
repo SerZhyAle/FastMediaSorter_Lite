@@ -41,6 +41,7 @@ Friend NotInheritable Class Resource_Phone_Code_Form
     Private ReadOnly _copyButton As Button
     Private ReadOnly _pasteButton As Button
     Private ReadOnly _closeButton As Button
+    Private ReadOnly _answerRow As DialogButtonRow
     Private _scriptFont As Font
     Private _titleFont As Font
 
@@ -67,7 +68,8 @@ Friend NotInheritable Class Resource_Phone_Code_Form
         MinimizeBox = False
         ShowInTaskbar = False
         StartPosition = FormStartPosition.CenterParent
-        ClientSize = New Size(420, 500)
+        ' The authored content ends at 410 (the status line); the bottom row below it is 50 tall (8 + one 32 line + 10) at 96 dpi.
+        ClientSize = New Size(420, 460)
 
         Dim family As String = Localization.FontFamily()
         If family IsNot Nothing Then
@@ -117,23 +119,27 @@ Friend NotInheritable Class Resource_Phone_Code_Form
         }
 
         _pasteButton = New Button With {
-            .Text = Localization.T("Вставить из буфера.."),
-            .Location = New Point(40, 440),
-            .Size = New Size(160, 36)
+            .Name = "phone_Paste",
+            .Text = Localization.T("Вставить из буфера..")
         }
         AddHandler _pasteButton.Click, AddressOf OnPasteClicked
-        ButtonGlyphs.Apply(_pasteButton, "action.paste")
 
         _closeButton = New Button With {
+            .Name = "phone_Close",
             .Text = Localization.T("Закрыть"),
-            .Location = New Point(220, 440),
-            .Size = New Size(160, 36),
             .DialogResult = DialogResult.Cancel
         }
-        ButtonGlyphs.Apply(_closeButton, "action.cancel", ButtonGlyphRole.Dismissing)
 
-        Controls.AddRange({titleLabel, _qrBox, _codeBox, _copyButton, _statusLabel, _pasteButton, _closeButton})
-        CancelButton = _closeButton
+        ' The way out rides the shared bottom row (ticket 243 T-8b, BUTTONS 2.0 sections 3 and 4): the paste door is a
+        ' command of the window and reads first, Close (the one dismissing answer) after it, widths from the caption and
+        ' its glyph. Bind makes Close both Escape's target and, there being no affirmative answer here, the one Enter
+        ' selects - it only ends the waiting, the phone's code is never taken by a key.
+        _answerRow = New DialogButtonRow() With {.Dock = DockStyle.Bottom, .Name = "phone_Buttons", .Padding = New Padding(20, 8, 20, 10)}
+        _answerRow.Add(_pasteButton, DialogButtonRole.Command, "action.paste")
+        _answerRow.Add(_closeButton, DialogButtonRole.Dismissing, "action.cancel")
+
+        Controls.AddRange({titleLabel, _qrBox, _codeBox, _copyButton, _statusLabel, _answerRow})
+        _answerRow.Bind(Me)
 
         SetupIntakeListener()
 
@@ -144,6 +150,7 @@ Friend NotInheritable Class Resource_Phone_Code_Form
     Protected Overrides Sub OnLoad(e As EventArgs)
         MyBase.OnLoad(e)
         DialogLayout.FitContent(Me)
+        DialogLayout.KeepRoomForRow(Me, _answerRow)
     End Sub
 
     Protected Overrides Sub Dispose(disposing As Boolean)

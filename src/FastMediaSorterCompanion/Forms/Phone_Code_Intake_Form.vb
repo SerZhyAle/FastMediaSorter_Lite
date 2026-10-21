@@ -24,6 +24,7 @@ Friend NotInheritable Class Phone_Code_Intake_Form
     Private ReadOnly _cameraButton As Button
     Private ReadOnly _fileButton As Button
     Private ReadOnly _clipboardButton As Button
+    Private _answerRow As DialogButtonRow
     Private _relay As PhoneCodeRelay
     Private _busy As Boolean
 
@@ -35,7 +36,8 @@ Friend NotInheritable Class Phone_Code_Intake_Form
         MinimizeBox = False
         ShowInTaskbar = False
         StartPosition = FormStartPosition.CenterParent
-        ClientSize = New Size(560, 206)
+        ' The body ends at 164; the rest is the room of a one-line answer row (OnLoad adds the missing height of a longer one).
+        ClientSize = New Size(560, 218)
 
         Dim explain As New Label With {
             .Location = New Point(16, 14),
@@ -76,23 +78,22 @@ Friend NotInheritable Class Phone_Code_Intake_Form
             .ForeColor = SystemColors.GrayText,
             .UseMnemonic = False}
 
-        _relayButton = New Button With {
-            .Location = New Point(330, 166),
-            .Size = New Size(104, 34),
-            .Text = Localization.T("Передать")}
-        ButtonGlyphs.Apply(_relayButton, "action.confirm", ButtonGlyphRole.Affirmative)
+        ' The answers ride the shared bottom row (ticket 243 T-8b batch C, BUTTONS 2.0 sections 3 and 4): Cancel first, Relay
+        ' last, widths from the caption and its glyph. The three intake doors above (file, clipboard, camera) are commands
+        ' of the field and stay where they are. Escape is Cancel; Enter is Relay as before - it only hands the typed code
+        ' to the viewer, whose own import dialog asks what it always asks, so nothing is added or changed by it.
+        _relayButton = New Button With {.Text = Localization.T("Передать"), .Name = "xpi_Relay"}
         AddHandler _relayButton.Click, AddressOf OnRelay
 
-        Dim cancelButton As New Button With {
-            .Location = New Point(442, 166),
-            .Size = New Size(102, 34),
-            .Text = Localization.T("Отмена"),
-            .DialogResult = DialogResult.Cancel}
-        ButtonGlyphs.Apply(cancelButton, "action.cancel", ButtonGlyphRole.Dismissing)
+        Dim cancelButton As New Button With {.Text = Localization.T("Отмена"), .DialogResult = DialogResult.Cancel, .Name = "xpi_Cancel"}
+        _answerRow = New DialogButtonRow() With {.Dock = DockStyle.Bottom, .Name = "xpi_Buttons", .Padding = New Padding(16, 4, 16, 10)}
+        DpiLayout.AddAnswer(_answerRow, _relayButton, DialogButtonRole.Affirmative, "action.confirm")
+        DpiLayout.AddAnswer(_answerRow, cancelButton, DialogButtonRole.Dismissing, "action.cancel")
 
-        Controls.AddRange({explain, _codeBox, _fileButton, _clipboardButton, _cameraButton, _status, _relayButton, cancelButton})
-        CancelButton = cancelButton
-        AcceptButton = _relayButton
+        Controls.AddRange({explain, _codeBox, _fileButton, _clipboardButton, _cameraButton, _status})
+        ' Last in the collection: the docked row takes its edge first and reads after the field and its doors in the Tab order.
+        Controls.Add(_answerRow)
+        _answerRow.Bind(Me)
 
         ' Spec 227 rule 1: the door takes a dropped file the same as an opened one.
         AllowDrop = True
@@ -108,6 +109,13 @@ Friend NotInheritable Class Phone_Code_Intake_Form
 
         DpiLayout.ApplyAutoScale(Me)
         ThemeService.Attach(Me)
+    End Sub
+
+    Protected Overrides Sub OnLoad(e As EventArgs)
+        MyBase.OnLoad(e)
+        ' A fixed-size window: make it taller by what a wrapped row needs (a long language, a high scale) and keep it on screen.
+        DpiLayout.KeepRoomForRow(Me, _answerRow)
+        DpiLayout.ClampToWorkingArea(Me)
     End Sub
 
     ''' <summary>The viewer probe the tray's own item uses, handed in by the window.</summary>

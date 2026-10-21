@@ -419,4 +419,108 @@ Public Class ExchangeProcessTests
         Assert.Equal(expected, ExchangeSettings.ClampPort(value))
     End Sub
 
+    ' --- remote administration (ticket 245) ----------------------------------------------------
+
+    <Fact>
+    Public Sub Inspect_parses_remote_administration_properties()
+        Dim json As String = "{""adminOn"":true,""adminPasswordSet"":true,""adminAllowedAddresses"":[""127.0.0.1"",""192.168.1.0/24""],""adminSessionLifetimeMinutes"":30,""webDir"":""C:\\web""}"
+        Dim r As ExchangeProcess.InspectReport = ExchangeProcess.ParseInspect(json, 0)
+        Assert.True(r.Answered)
+        Assert.True(r.AdminOn)
+        Assert.True(r.AdminPasswordSet)
+        Assert.Equal(2, r.AdminAllowedAddresses.Length)
+        Assert.Equal("127.0.0.1", r.AdminAllowedAddresses(0))
+        Assert.Equal("192.168.1.0/24", r.AdminAllowedAddresses(1))
+        Assert.Equal(30, r.AdminSessionLifetimeMinutes)
+        Assert.Equal("C:\web", r.WebDir)
+    End Sub
+
+    <Fact>
+    Public Sub Remote_administration_defaults_when_missing()
+        Dim json As String = "{}"
+        Dim r As ExchangeProcess.InspectReport = ExchangeProcess.ParseInspect(json, 0)
+        Assert.True(r.Answered)
+        Assert.False(r.AdminOn)
+        Assert.False(r.AdminPasswordSet)
+        Assert.Empty(r.AdminAllowedAddresses)
+        Assert.Equal(15, r.AdminSessionLifetimeMinutes)
+        Assert.Equal("", r.WebDir)
+    End Sub
+
+    <Fact>
+    Public Sub FormatFingerprintHex_formats_base64_sha256_to_colon_separated_hex()
+        ' 32 bytes of 0xAB in base64:
+        Dim bytes(31) As Byte
+        For i As Integer = 0 To 31
+            bytes(i) = &HAB
+        Next
+        Dim b64 As String = Convert.ToBase64String(bytes)
+        Dim fpWithPrefix As String = "SHA256:" & b64
+        Dim hex As String = ExchangeProcess.FormatFingerprintHex(fpWithPrefix)
+        Dim expected As String = String.Join(":", Enumerable.Repeat("AB", 32))
+        Assert.Equal(expected, hex)
+    End Sub
+
+    <Fact>
+    Public Sub BrowserAdminUrl_formats_public_endpoint_or_loopback()
+        Dim reportEndpoint As New ExchangeProcess.InspectReport With {.AdminOn = True, .WebDir = "C:\web", .PublicEndpoint = "exch.example.com:22022"}
+        Assert.Equal("https://exch.example.com:22022/#admin", ExchangeProcess.BrowserAdminUrl(reportEndpoint))
+
+        Dim reportLoopback As New ExchangeProcess.InspectReport With {.AdminOn = True, .WebDir = "C:\web", .Listen = ":22022"}
+        Assert.Equal("https://127.0.0.1:22022/#admin", ExchangeProcess.BrowserAdminUrl(reportLoopback))
+    End Sub
+
+    <Theory>
+    <InlineData("[::]:22022", "https://[::1]:22022/#admin")>
+    <InlineData("192.0.2.1:22022", "https://192.0.2.1:22022/#admin")>
+    <InlineData("", "")>
+    Public Sub Browser_admin_link_uses_an_address_the_server_listens_on(listen As String, expected As String)
+        Dim report As New ExchangeProcess.InspectReport With {.AdminOn = True, .WebDir = "C:\web", .Listen = listen}
+        Assert.Equal(expected, ExchangeProcess.BrowserAdminUrl(report))
+        report.AdminOn = False
+        Assert.Equal("", ExchangeProcess.BrowserAdminUrl(report))
+        report.AdminOn = True
+        report.WebDir = ""
+        Assert.Equal("", ExchangeProcess.BrowserAdminUrl(report))
+    End Sub
+
+    <Fact>
+    Public Sub Admin_CLI_verbs_invoke_expected_arguments()
+        Dim capturedArgs As String() = Nothing
+        Dim capturedStdin As String = Nothing
+
+        ExchangeProcess.RunOverride = Function(args As String(), stdin As String) As ExchangeProcess.RunResult
+                                          capturedArgs = args
+                                          capturedStdin = stdin
+                                          Return New ExchangeProcess.RunResult With {.Started = True, .ExitCode = 0, .StdOut = "generated_secret" & vbLf}
+                                      End Function
+
+        Try
+            ' AdminOn with generate
+            Dim resOn As ExchangeProcess.AdminActionResult = ExchangeProcess.AdminOn(generate:=True, password:=Nothing, allowedAddresses:="127.0.0.1", sessionLifetimeMinutes:=20)
+            Assert.Equal(ExchangeProcess.ConfigOutcome.Saved, resOn.Outcome)
+            Assert.Equal("generated_secret", resOn.GeneratedPassword)
+            Assert.Equal(New String() {"admin", "on", "--generate", "--allowed", "127.0.0.1", "--lifetime", "20"}, capturedArgs)
+            Assert.Null(capturedStdin)
+
+            ' AdminOff
+            Dim resOff As ExchangeProcess.ConfigOutcome = ExchangeProcess.AdminOff()
+            Assert.Equal(ExchangeProcess.ConfigOutcome.Saved, resOff)
+            Assert.Equal(New String() {"admin", "off"}, capturedArgs)
+
+            ' AdminPasswd with manual password
+            Dim resPw As ExchangeProcess.AdminActionResult = ExchangeProcess.AdminPasswd(generate:=False, password:="secretPass123!")
+            Assert.Equal(ExchangeProcess.ConfigOutcome.Saved, resPw.Outcome)
+            Assert.Equal(New String() {"admin", "passwd"}, capturedArgs)
+            Assert.Equal("secretPass123!", capturedStdin)
+
+            ' AdminSet
+            Dim resSet As ExchangeProcess.ConfigOutcome = ExchangeProcess.AdminSet(allowedAddresses:="-", sessionLifetimeMinutes:=15)
+            Assert.Equal(ExchangeProcess.ConfigOutcome.Saved, resSet)
+            Assert.Equal(New String() {"admin", "set", "--allowed", "-", "--lifetime", "15"}, capturedArgs)
+        Finally
+            ExchangeProcess.RunOverride = Nothing
+        End Try
+    End Sub
+
 End Class

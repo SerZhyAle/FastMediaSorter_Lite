@@ -431,10 +431,122 @@ Public Class LiveBroadcastImportTests
         ' ...except "not a broadcast" and nothing else: it is the catch-all and has its own text too.
         Assert.Empty(duplicates)
 
-        ' A newer app's descriptor asks for an update; it is not "damaged".
-        Assert.Equal(Localization.T("Требуется обновить приложение для этой трансляции"), sentences(LiveReadStatus.UnsupportedVersion))
+        ' A descriptor of a later schema is refused with the canonical `format-unsupported` text (LIVE-BROADCAST 1.1 through DEVICE-EXCHANGE 1.3,
+        ' amendment of 2026-10-17: no "update" demand); it is not "damaged".
+        Assert.Equal(ConnectionDiagnosisLocalization.FormatUnsupportedText(), sentences(LiveReadStatus.UnsupportedVersion))
         Assert.NotEqual(sentences(LiveReadStatus.InvalidDocument), sentences(LiveReadStatus.UnsupportedVersion))
         Assert.NotEqual(sentences(LiveReadStatus.InvalidDocument), sentences(LiveReadStatus.UnsupportedMode))
+    End Sub
+
+    ''' <summary>LIVE-BROADCAST 1.1: the refusal of a later schema is the catalog's words in English, Russian and Ukrainian - the one row of
+    ''' DEVICE-EXCHANGE `format-unsupported` - and the old "update the app" sentence is gone from the live code and its table.</summary>
+    <Fact>
+    Public Sub The_Later_Schema_Refusal_Is_The_Canonical_Text_And_No_Update_Demand_Remains()
+        Dim saved As String = Localization.CurrentCode
+        Try
+            Localization.CurrentCode = "en"
+            Assert.Equal("This format is newer than this program supports. Nothing was imported. Use a compatible program.", LiveBroadcastMessages.ForReadStatus(LiveReadStatus.UnsupportedVersion))
+            Localization.CurrentCode = "ru"
+            Assert.Equal("Этот формат новее, чем поддерживает программа. Ничего не импортировано. Используйте совместимую программу.", LiveBroadcastMessages.ForReadStatus(LiveReadStatus.UnsupportedVersion))
+            Localization.CurrentCode = "uk"
+            Assert.Equal("Цей формат новіший, ніж підтримує програма. Нічого не імпортовано. Скористайтеся сумісною програмою.", LiveBroadcastMessages.ForReadStatus(LiveReadStatus.UnsupportedVersion))
+        Finally
+            Localization.CurrentCode = saved
+        End Try
+        Dim src As String = FindSourceDirectory()
+        For Each relative As String In New String() {"LiveBroadcast\LiveBroadcastMessages.vb", "LiveBroadcast\LiveReconnectPolicy.vb", "Localization\Localization.LiveBroadcast.vb"}
+            Dim text As String = IO.File.ReadAllText(Path.Combine(src, relative))
+            Assert.DoesNotContain("Требуется обновить приложение", text, StringComparison.Ordinal)
+            Assert.DoesNotContain("An app update is required", text, StringComparison.Ordinal)
+        Next
+    End Sub
+
+#End Region
+
+#Region "A refused record is shown, never skipped (LIVE-BROADCAST 1.1)"
+
+    Private Shared Function DirectoryRecord(descriptorJson As String) As String
+        Return "{""broadcastId"":""b-1"",""descriptor"":" & descriptorJson & "}"
+    End Function
+
+    ''' <summary>The directory list used to `Continue For` past a record that did not read. The row it builds now carries the refusal in the language
+    ''' shown, and the playable record keeps its descriptor and its broadcast id.</summary>
+    <Theory>
+    <InlineData("{""schemaVersion"":2,""url"":""http://192.168.1.50:8768/live"",""mode"":""AUDIO_ONLY""}", "UnsupportedVersion")>
+    <InlineData("{""schemaVersion"":99999999999,""url"":""http://192.168.1.50:8768/live"",""mode"":""AUDIO_ONLY""}", "UnsupportedVersion")>
+    <InlineData("{""schemaVersion"":1,""url"":""http://192.168.1.50:8768/live"",""mode"":""HOLOGRAM""}", "UnsupportedMode")>
+    <InlineData("{""schemaVersion"":1,""url"":""http://127.0.0.1:8768/live"",""mode"":""AUDIO_ONLY""}", "LoopbackHost")>
+    <InlineData("{""url"":""http://192.168.1.50:8768/live""}", "InvalidDocument")>
+    Public Sub A_Directory_Record_That_Does_Not_Read_Is_A_Row_With_The_Refusal_Not_A_Skipped_One(descriptorJson As String, expectedName As String)
+        Dim expected As LiveReadStatus = CType([Enum].Parse(GetType(LiveReadStatus), expectedName), LiveReadStatus)
+        Dim row As LiveDirectoryRow = LiveBroadcastRecords.RowOf(DirectoryRecord(descriptorJson))
+        Assert.False(row.IsPlayable)
+        Assert.Equal(expected, row.Status)
+        Assert.Null(row.Descriptor)
+        Assert.Equal(LiveBroadcastMessages.ForReadStatus(expected), row.RefusalText)
+        Assert.NotEqual("", row.RefusalText)
+        If expected = LiveReadStatus.UnsupportedVersion Then
+            Assert.Equal(ConnectionDiagnosisLocalization.FormatUnsupportedText(), row.RefusalText)
+        End If
+    End Sub
+
+    <Fact>
+    Public Sub A_Playable_Directory_Record_Keeps_Its_Descriptor_And_Broadcast_Id_And_Has_No_Refusal()
+        Dim row As LiveDirectoryRow = LiveBroadcastRecords.RowOf(DirectoryRecord(PhoneJson))
+        Assert.True(row.IsPlayable)
+        Assert.Equal(LiveReadStatus.Ok, row.Status)
+        Assert.NotNull(row.Descriptor)
+        Assert.Equal("b-1", row.Descriptor.BroadcastId)
+        Assert.Equal("", row.RefusalText)
+    End Sub
+
+    <Theory>
+    <InlineData("")>
+    <InlineData("   ")>
+    <InlineData("not json at all")>
+    <InlineData("[]")>
+    <InlineData("42")>
+    <InlineData("{}")>
+    <InlineData("{""descriptor"":null}")>
+    Public Sub A_Record_Of_Any_Shape_Becomes_A_Refused_Row_And_Never_Throws(raw As String)
+        Dim row As LiveDirectoryRow = LiveBroadcastRecords.RowOf(raw)
+        Assert.NotNull(row)
+        Assert.False(row.IsPlayable)
+        Assert.NotEqual("", row.RefusalText)
+    End Sub
+
+    ''' <summary>The wiring: the directory list builds a row for every record and logs a refusal once per id; the cast-offer poll shows the
+    ''' refusal for a descriptor it cannot read instead of answering the sender and saying nothing to the person at this PC. The log line names
+    ''' the code and carries no descriptor text.</summary>
+    <Fact>
+    Public Sub The_Directory_List_And_The_Cast_Offer_Show_A_Refusal_Instead_Of_Dropping_The_Record()
+        Dim src As String = FindSourceDirectory()
+
+        Dim form As String = IO.File.ReadAllText(Path.Combine(src, "LiveBroadcast_Form.vb"))
+        Assert.Contains("LiveBroadcastRecords.RowOf(record.Raw)", form, StringComparison.Ordinal)
+        Assert.DoesNotContain("If parsed.Status <> LiveReadStatus.Ok Then Continue For", form, StringComparison.Ordinal)
+        Assert.Contains("LiveBroadcastMessages.LogRefusal(", form, StringComparison.Ordinal)
+        Assert.Contains("row.RefusalText", form, StringComparison.Ordinal)
+
+        Dim main As String = IO.File.ReadAllText(Path.Combine(src, "Main_Form.LiveBroadcast.vb"))
+        Dim readAt As Integer = main.IndexOf("LiveBroadcastRecords.ReadRecord(record.Raw)", StringComparison.Ordinal)
+        Dim showAt As Integer = main.IndexOf("ShowLiveBroadcastError(parsed.Status)", StringComparison.Ordinal)
+        Dim answerAt As Integer = main.IndexOf("ExchangeAgentPipe.RequestCastAnswer", StringComparison.Ordinal)
+        Assert.True(readAt >= 0 AndAlso showAt > readAt AndAlso answerAt > showAt, "the refusal is shown after the descriptor is read and before the sender is answered")
+        Assert.Contains("LiveBroadcastMessages.LogRefusal(parsed.Status", main, StringComparison.Ordinal)
+
+        Dim messages As String = IO.File.ReadAllText(Path.Combine(src, "LiveBroadcast", "LiveBroadcastMessages.vb"))
+        Assert.Contains("""format-unsupported""", messages, StringComparison.Ordinal)
+        ' it is only a status and a surface that reach the log - never the record
+        Assert.Contains("Public Sub LogRefusal(status As LiveReadStatus, surface As String)", messages, StringComparison.Ordinal)
+    End Sub
+
+    <Fact>
+    Public Sub Logging_A_Refusal_Is_Safe_Without_A_Log_File_And_Is_Silent_For_A_Readable_Record()
+        Assert.False(LiveBroadcastRecords.RowOf(Nothing).IsPlayable)
+        LiveBroadcastMessages.LogRefusal(LiveReadStatus.Ok, "a test")
+        LiveBroadcastMessages.LogRefusal(LiveReadStatus.UnsupportedVersion, "a test")
+        LiveBroadcastMessages.LogRefusal(LiveReadStatus.InvalidDocument, "a test")
     End Sub
 
 #End Region

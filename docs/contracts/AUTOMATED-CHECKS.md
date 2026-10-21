@@ -3,7 +3,7 @@
 | | |
 | --- | --- |
 | **Ids** | `CHECK-VERDICT`, `CHECK-BASELINE`, `CHECK-PLACEMENT`, `BUILD-EVIDENCE` |
-| **Version** | 0.12 / 0.11 / 0.11 / 0.10, draft (read 2026-10-07; 0.12 adds the verdict word `NOT APPLICABLE`, `CHECK-BASELINE` 0.11 puts metric bounds out of scope, the other two are unchanged since the 2026-10-02 reading). Owner: FastMediaSorter Android |
+| **Version** | 0.13 / 0.11 / 0.11 / 0.10, draft (read 2026-10-20, specification 244; read at 0.12 on 2026-10-07: 0.12 adds the verdict word `NOT APPLICABLE`, `CHECK-BASELINE` 0.11 puts metric bounds out of scope, the other two are unchanged since the 2026-10-02 reading). 0.13 (2026-10-17, additive, plus a clarification of 2026-10-18) gives a test verdict line that reports counts the grammar `run=N skipped=M` and says a zero-test input is no pass unless it is `NOT APPLICABLE`; `CHECK-BASELINE`, `CHECK-PLACEMENT` and `BUILD-EVIDENCE` did not move. Owner: FastMediaSorter Android |
 | **Home** | `automated-checks/README.md` in the shared contracts catalog |
 | **Role here** | `CHECK-VERDICT`, `CHECK-PLACEMENT`, `BUILD-EVIDENCE`: producer and consumer - every check script under `tools/` and `tests/Integration/`, the runner `tools/Run-AllTests.ps1`, the release preflight in `tools/Release.ps1`, and `build.ps1`. `CHECK-BASELINE`: no role - no accepted debt exists |
 
@@ -21,6 +21,11 @@
   skipped, `Run-AllTests` and `Release.ps1` use them (a not-applicable preflight step reads like a skipped one,
   so the tag still refuses it), and a producer prints it with `Exit-NotApplicable`;
   `tests/Integration/VerdictHelper.ps1` is the fixture.
+- **The 0.13 count grammar is not adopted yet (read 2026-10-20).** A test verdict line that reports counts writes
+  `run=N skipped=M` (run is what executed, skipped is what did not pass; non-negative integers), and an aggregator
+  that counts checks, not tests, keeps rule 14's form (the 2026-10-18 clarification). No script under `tools/` prints
+  `run=` or `skipped=`: `Run-AllTests.ps1` prints `N tests skipped (id n)` and `Invoke-Tests.ps1` prints no counts, so
+  a new writer takes the tokens and the old spellings stay readable meanwhile.
 - **Placement is declared, and held both ways.** `tools/check-placement.jsonl` carries the one
   `per-change runner: none` declaration (0.11 rule 8) and a record per check (classes `agent-closure`,
   `release`, `build`, `hand-run`; 42 records on 2026-10-07); `tools/Test-CheckPlacement.ps1` - run by every `Run-AllTests` - fails a check

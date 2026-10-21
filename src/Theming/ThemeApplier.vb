@@ -250,6 +250,13 @@ Friend NotInheritable Class ThemeApplier
                                          number.ForeColor, palette.Border, palette.Accent, trackDpi:=True)
         End If
 
+        ' The drawn box of a dialog's option row (ticket 243 T-11b) takes its colours from the palette, last, so no role
+        ' the generic walk gave the check box above can win. A row whose host paints its own palette is left alone.
+        Dim optionRow As IThemedOptionRow = TryCast(c.Parent, IThemedOptionRow)
+        If optionRow IsNot Nothing AndAlso Object.ReferenceEquals(optionRow.Check, c) AndAlso Not optionRow.OwnsPalette Then
+            optionRow.ApplyThemePalette(palette)
+        End If
+
         ApplyNative(c, st, dark)
     End Sub
 

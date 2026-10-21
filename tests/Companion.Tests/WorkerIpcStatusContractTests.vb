@@ -144,7 +144,7 @@ Public Class WorkerIpcStatusContractTests
     ''' <summary>Item C rule 2: <c>externalPortChecked = false</c> is UNCONFIRMED, not unreachable. Only
     ''' checked = true with open = false says the port does not answer from outside. The host's wording
     ''' keeps the two apart in every place that words it - the phone's note and the sharer's state line - and
-    ''' the export keeps the path in both cases.</summary>
+    ''' the export keeps an unconfirmed path while it drops a confirmed-closed one.</summary>
     <Fact>
     Public Sub NotChecked_IsUnconfirmed_AndOnlyCheckedAndClosedIsDead()
         Dim saved As String = Localization.CurrentCode
@@ -167,10 +167,11 @@ Public Class WorkerIpcStatusContractTests
             Assert.NotEqual(ShareText.AccessStateLine(open, 2222), lineUnchecked)
 
             ' The export drops nothing on an unconfirmed path (a dropped working path is the other way to
-            ' collapse the two), and it keeps the closed one too - the open dated exception on item 2.
+            ' collapse the two) and drops only the one the connect-back CONFIRMED closed (FMSCFG 2.5
+            ' producer choice (c): a dead entry is a bug).
             For Each reach As WorkerReachability In {unchecked_, closed, open}
                 Dim res As ShareConfigResult = ShareConfigBuilder.Build(Running(reach), includeExternal:=True)
-                Assert.True(res.HasExternal)
+                Assert.Equal(Not Object.ReferenceEquals(reach, closed), res.HasExternal)
             Next
         Finally
             Localization.CurrentCode = saved

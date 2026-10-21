@@ -81,6 +81,9 @@ func TestEveryRefusal(t *testing.T) {
 		"relay listeners zero":    func(c *Config) { c.Limits.RelayListenersPerBcast = 0 },
 		"relay total zero":        func(c *Config) { c.Limits.RelayListenersTotal = 0 },
 		"cast pending zero":       func(c *Config) { c.Limits.CastPendingPerAccount = 0 },
+		"admin lifetime negative": func(c *Config) { c.Admin.SessionLifetimeMinutes = -1 },
+		"admin floor negative":    func(c *Config) { c.Admin.PasswordFloor = -1 },
+		"admin bad allowed addr":  func(c *Config) { c.Admin.AllowedAddresses = []string{"not-an-ip"} },
 	}
 	for name, f := range mutate {
 		c := good
@@ -88,6 +91,56 @@ func TestEveryRefusal(t *testing.T) {
 		if c.Validate() == nil {
 			t.Errorf("%s: accepted", name)
 		}
+	}
+}
+
+func TestAdminAllowsAndOrigin(t *testing.T) {
+	a := Admin{
+		AllowedAddresses: []string{"192.168.1.10", "10.0.0.0/24"},
+		Origins:          []string{"https://app.example.com"},
+	}
+	if !a.Allows("192.168.1.10:12345") {
+		t.Error("expected 192.168.1.10:12345 to be allowed")
+	}
+	if !a.Allows("10.0.0.42:54321") {
+		t.Error("expected 10.0.0.42:54321 to be allowed in 10.0.0.0/24")
+	}
+	if a.Allows("192.168.1.11:12345") {
+		t.Error("expected 192.168.1.11:12345 to be disallowed")
+	}
+	empty := Admin{}
+	if !empty.Allows("192.168.1.11:12345") {
+		t.Error("empty allowedAddresses should allow all")
+	}
+
+	if !a.OriginAllowed("https://app.example.com", "server:22022") {
+		t.Error("expected listed origin to be allowed")
+	}
+	if !a.OriginAllowed("https://server:22022", "server:22022") {
+		t.Error("expected same-host origin to be allowed")
+	}
+	if a.OriginAllowed("https://evil.com", "server:22022") {
+		t.Error("expected unlisted origin to be disallowed")
+	}
+	if !a.OriginAllowed("", "server:22022") {
+		t.Error("expected empty origin to be allowed")
+	}
+}
+
+func TestAdminTrustUsesTheActualIPAndExactSecureOrigin(t *testing.T) {
+	a := Admin{AllowedAddresses: []string{"::1", "2001:db8::/64", "192.0.2.1"}, Origins: []string{"https://admin.example:443"}}
+	for _, addr := range []string{"[::1]:1234", "[2001:db8::42]:1234", "[::ffff:192.0.2.1]:1234"} {
+		if !a.Allows(addr) {
+			t.Errorf("allowed peer rejected: %s", addr)
+		}
+	}
+	for _, origin := range []string{"http://server:22022", "http://admin.example:443", "https://admin.example:444", "https://server:22022/path", "https://user@server:22022", "null"} {
+		if a.OriginAllowed(origin, "server:22022") {
+			t.Errorf("untrusted origin accepted: %s", origin)
+		}
+	}
+	if !a.OriginAllowed("https://admin.example:443", "server:22022") {
+		t.Fatal("explicit secure origin rejected")
 	}
 }
 

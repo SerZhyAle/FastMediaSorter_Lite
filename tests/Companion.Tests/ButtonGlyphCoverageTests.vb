@@ -15,7 +15,9 @@ Imports Xunit
 ''' button without a glyph fails this test instead of shipping bare.
 ''' With FMS_SHOT_DIR set the same windows are rendered, light and dark, to PNG files there (the acceptance evidence).
 ''' </summary>
-<Collection("AppFileLogger")>
+' Window construction and palette refresh share process-global UI state with the UI contract tests.
+' Keep the glyph walk out of a concurrent theme refresh on another STA thread.
+<Collection(UiLanguageCollection.Name)>
 Public Class ButtonGlyphCoverageTests
 
     ''' <summary>Buttons that keep their own picture or are glyph-only on purpose (a dated exception in the registry).</summary>
@@ -81,7 +83,7 @@ Public Class ButtonGlyphCoverageTests
     End Sub
 
     <Fact>
-    Public Sub The_enable_dialog_answers_are_an_amber_install_and_a_red_cancel()
+    Public Sub The_enable_dialog_answers_are_an_amber_install_and_a_neutral_cancel()
         OnSta(Sub()
                   ButtonGlyphs.AssetOpener = AddressOf CompanionAssets.OpenBundledAsset
                   Using f As New Share_Enable_Form()
@@ -94,6 +96,7 @@ Public Class ButtonGlyphCoverageTests
                       Assert.Equal(ButtonGlyphRole.Caution, ButtonGlyphs.RoleOf(accept))
                       Assert.Equal(ButtonGlyphRole.Dismissing, ButtonGlyphs.RoleOf(cancel))
                       Assert.Equal("action.cancel", ButtonGlyphs.GlyphOf(cancel))
+                      Assert.True(ButtonGlyphs.HueOf(ButtonGlyphRole.Dismissing, ThemePalette.Light).IsEmpty)
                   End Using
               End Sub)
     End Sub

@@ -106,17 +106,26 @@ Public Class ExchangeRegistrationUiTests
                  Using rig As New ExchangeDeviceAgentTests.Rig(), agent As ExchangeDeviceAgent = rig.NewAgent(), form As New Exchange_Account_Form(agent)
                      Field(Of TextBox)(form, "_txtString").Text = Connection(invitation:=True)
                      form.AutoScaleMode = AutoScaleMode.None
-                     form.Scale(New SizeF(2.0F, 2.0F))
-                     Dim scaledFont As New Font(form.Font.FontFamily, form.Font.Size * 2.0F)
+                     ' "Tall" is relative to the monitor: scale until the form is clearly taller than this screen's
+                     ' working area, so the check means the same on a laptop and on a large display.
+                     Dim factor As Single = Math.Max(2.0F, CSng(Screen.FromControl(form).WorkingArea.Height) * 1.5F / Math.Max(1, form.Height))
+                     form.Scale(New SizeF(factor, factor))
+                     Dim scaledFont As New Font(form.Font.FontFamily, form.Font.Size * factor)
                      form.Font = scaledFont
                      form.Show()
                      Try
-                         Assert.True(form.AutoScroll, "Tall registration needs a scroll viewport.")
+                         ' The scrolling part is the body of fields; the answer row (ticket 243 T-8b) is docked on the window's
+                         ' bottom edge outside it, so a window-level scroll bar would carry the answers away with the fields.
+                         Dim body As TableLayoutPanel = Nothing
+                         For Each child As Control In form.Controls
+                             If TypeOf child Is TableLayoutPanel Then body = DirectCast(child, TableLayoutPanel)
+                         Next
+                         Assert.NotNull(body)
+                         Assert.True(body.AutoScroll, "Tall registration needs a scroll viewport.")
                          Assert.True(form.Height <= Screen.FromControl(form).WorkingArea.Height, "The outer form must fit the monitor.")
                          Dim cancel As Button = Field(Of Button)(form, "_btnCancel")
-                         form.ScrollControlIntoView(cancel)
                          Dim bounds As Rectangle = form.RectangleToClient(cancel.RectangleToScreen(cancel.ClientRectangle))
-                         Assert.True(form.ClientRectangle.Contains(bounds), "Cancel must remain reachable after scrolling.")
+                         Assert.True(form.ClientRectangle.Contains(bounds), "Cancel must stay on screen without any scrolling.")
                      Finally
                          form.Close()
                          scaledFont.Dispose()

@@ -3,16 +3,17 @@
 | | |
 | --- | --- |
 | **Id** | `SITE-EXPERIENCE` |
-| **Version** | 0.3, draft (written 2026-10-06 by FastMediaSorter Android, ticket S4096; 0.2 added rule 20 and 0.3 made the portal language picker conforming, both read 2026-10-07) |
+| **Version** | 0.4, draft (read 2026-10-20, specification 244; written 2026-10-06 by FastMediaSorter Android, ticket S4096; 0.2 added rule 20 and 0.3 made the portal language picker conforming, both read 2026-10-07). 0.4 carries the 2026-10-17 amendment of the domain's README, whose additions are the Support page type and the rendering of a release history; no rule text of this contract changed between 0.3 and 0.4 |
 | **Home** | `product-site/SITE-EXPERIENCE.md` and the run-list `product-site/SITE-CHECKLIST.md` in the shared contracts catalog |
 | **Role here** | consumer, opted in by the owner on 2026-10-06 (specification 147, D1); guide tier. Rules 1, 4, 7, 8, 10, 13-19 are read; the portal-component rules (2, 3, 5, 6, 9, 11, 12) are not bound at this tier |
 
 ## What this repository must do
 
 1. **Serve the kit as the catalog's file, first** (rule 1): `assets/sza-kit.css` is vendored and linked before
-   `assets/fms-site.css` on every page. It is the catalog's file byte for byte (the revision of 15661 bytes, SHA-256
-   `27501a10..`, that carries `PAGE-STYLE` 1.4 and 1.5, vendored 2026-10-13; marked `-text`, so the working-tree bytes
-   are LF); `Build-SitePages.ps1 -Check` pins its SHA-256.
+   `assets/fms-site.css` on every page. The vendored copy is the revision of 15661 bytes, SHA-256 `27501a10..`, that
+   carries `PAGE-STYLE` 1.4 and 1.5 (vendored 2026-10-13; marked `-text`, so the working-tree bytes are LF); the
+   catalog's current kit is a later revision (see the [PAGE pointer](PAGE.md)), so this copy is not the catalog's
+   file until it is vendored again. `Build-SitePages.ps1 -Check` pins the old SHA-256.
 2. **Keep layout out of `style` attributes** (rule 4) and the pre-paint theme resolver before the first
    stylesheet (rule 7). Both are open exceptions.
 3. **Share language and theme through `sza-lang` (`ru`, `en`, `ua`) and `sza-theme` (`dark`, `light`)**

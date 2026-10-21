@@ -16,8 +16,13 @@ Partial Public NotInheritable Class Share_Settings_Form
         Dim tools As New FlowLayoutPanel With {.Dock = DockStyle.Top, .Height = 52,
             .FlowDirection = FlowDirection.LeftToRight, .WrapContents = False, .Padding = New Padding(4, 0, 4, 4)}
         AddSettingsHeaderCommand(tools, "managerSettingsSearch", AddressOf SearchManagerSettings)
-        _pageHost.Controls.Add(tools)
-        tools.SendToBack()
+        tools.Dock = DockStyle.Fill
+        _settingsHeader = New TableLayoutPanel With {.Dock = DockStyle.Top, .Height = 52, .ColumnCount = 2, .RowCount = 1}
+        _settingsHeader.ColumnStyles.Add(New ColumnStyle(SizeType.Percent, 100))
+        _settingsHeader.ColumnStyles.Add(New ColumnStyle(SizeType.Absolute, 48))
+        _settingsHeader.Controls.Add(tools, 0, 0)
+        _pageHost.Controls.Add(_settingsHeader)
+        _settingsHeader.SendToBack()
     End Sub
 
     Private Sub AddSettingsHeaderCommand(host As Control, name As String, action As Action)

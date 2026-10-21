@@ -19,6 +19,7 @@ Friend NotInheritable Class Camera_Scan_Form
     Private ReadOnly _previewBox As PictureBox
     Private ReadOnly _statusLabel As Label
     Private ReadOnly _cancelButton As Button
+    Private ReadOnly _answerRow As DialogButtonRow
     Private _camera As CameraCaptureSource
     Private _lastScanTicks As Long
     Private _found As Boolean
@@ -39,7 +40,7 @@ Friend NotInheritable Class Camera_Scan_Form
         MinimizeBox = False
         ShowInTaskbar = False
         StartPosition = FormStartPosition.CenterParent
-        ClientSize = New Size(540, 520)
+        ClientSize = New Size(540, 510)
 
         _previewBox = New PictureBox With {
             .Location = New Point(20, 20),
@@ -57,19 +58,32 @@ Friend NotInheritable Class Camera_Scan_Form
             .Font = New Font(Font.FontFamily, 10.0F, FontStyle.Regular)
         }
 
+        ' Cancel is the window's one answer and rides the shared bottom row (ticket 243 T-8b, BUTTONS 2.0 sections 3 and 4):
+        ' the row sizes it from its caption and glyph and binds Escape (and Enter) to it. The scan itself ends the window
+        ' with OK, so nothing else is asked here.
         _cancelButton = New Button With {
-            .Location = New Point(210, 460),
-            .Size = New Size(120, 40),
+            .Name = "xcam_Cancel",
             .Text = Localization.T("Отмена"),
             .DialogResult = DialogResult.Cancel
         }
-        ButtonGlyphs.Apply(_cancelButton, "action.cancel")
+        _answerRow = New DialogButtonRow() With {.Dock = DockStyle.Bottom, .Name = "xcam_Buttons", .Padding = New Padding(20, 4, 20, 10)}
+        DpiLayout.AddAnswer(_answerRow, _cancelButton, DialogButtonRole.Dismissing, "action.cancel")
 
-        Controls.AddRange({_previewBox, _statusLabel, _cancelButton})
-        CancelButton = _cancelButton
+        Controls.AddRange({_previewBox, _statusLabel})
+        ' Last in the collection: the docked row takes its edge first and reads after the preview in the Tab order.
+        Controls.Add(_answerRow)
+        _answerRow.Bind(Me)
 
         DpiLayout.ApplyAutoScale(Me)
         ThemeService.Attach(Me)
+    End Sub
+
+    ''' <summary>The window has a fixed client size authored for a one-line row: a row that wraps in a longer language or at
+    ''' a higher scale makes the window taller by exactly the missing height, and the window stays on its monitor.</summary>
+    Protected Overrides Sub OnLoad(e As EventArgs)
+        MyBase.OnLoad(e)
+        DpiLayout.KeepRoomForRow(Me, _answerRow)
+        DpiLayout.ClampToWorkingArea(Me)
     End Sub
 
     Protected Overrides Sub OnShown(e As EventArgs)

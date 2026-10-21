@@ -262,6 +262,7 @@ Public NotInheritable Class CollapsibleSection
         Private _summaryColor As Color = SystemColors.GrayText
         Private _expanded As Boolean
         Private _hot As Boolean
+        Private _markerScale As Single
         <DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)>
         Friend Property WrapSettingsTitle As Boolean
 
@@ -372,7 +373,8 @@ Public NotInheritable Class CollapsibleSection
             MyBase.OnFontChanged(e)
             ' One line of text plus breathing room; follows the script font, which is taller
             ' for hi/bn than for Latin.
-            Me.Height = Math.Max(24, Me.Font.Height + 10)
+            ' ...and never shorter than the state marker's cell with a little air (tier 16 scaled with the window).
+            Me.Height = Math.Max(Math.Max(24, Me.Font.Height + 10), GroupMarker.CellPx(MarkerFactor()) + 4)
             FitHeaderTitle()
         End Sub
 
@@ -466,18 +468,15 @@ Public NotInheritable Class CollapsibleSection
             End Using
             If Me.Focused Then ControlPaint.DrawFocusRectangle(g, New Rectangle(1, 1, w - 2, h - 2))
 
-            Dim glyph As Integer = Math.Min(Math.Max(12, Me.Font.Height), Math.Max(1, h - 4))
-            Dim pad As Integer = 6
-            Dim chevronX As Integer = If(rtl, w - pad - glyph, pad)
-            DrawChevron(g, New Rectangle(chevronX, (h - glyph) \ 2, glyph, glyph), _expanded, If(WrapSettingsTitle, SettingsNavIconPalette.ResolveInk("settingsNavGeneral", theme.IsDark,
-                {BackColor, theme.ControlHover}, theme.TextMuted, SystemInformation.HighContrast), theme.TextMuted))
-
             Dim textFlags As TextFormatFlags = TextFormatFlags.VerticalCenter Or TextFormatFlags.SingleLine Or TextFormatFlags.NoPadding
             If WrapSettingsTitle Then textFlags = (textFlags And Not TextFormatFlags.SingleLine) Or TextFormatFlags.WordBreak
             If rtl Then textFlags = textFlags Or TextFormatFlags.RightToLeft
 
-            Dim left As Integer = pad + glyph + 8
+            Dim pad As Integer = HeaderPad()
+            Dim left As Integer = pad + GroupMarker.CellPx(MarkerFactor()) + GroupMarker.GapPx(MarkerFactor())
             Dim right As Integer = w - pad
+            ' The header's ink: the caption and the state marker are drawn in it.
+            Dim ink As Color = theme.TextPrimary
             Dim titleWidth As Integer
             Using bold As New Font(Me.Font, FontStyle.Bold)
                 titleWidth = TextRenderer.MeasureText(g, _title, bold, New Size(Integer.MaxValue, h),
@@ -485,7 +484,10 @@ Public NotInheritable Class CollapsibleSection
                 Dim titleRect As Rectangle = If(rtl,
                     New Rectangle(pad, 0, w - left - pad, h),
                     New Rectangle(left, 0, right - left, h))
-                TextRenderer.DrawText(g, _title, bold, titleRect, theme.TextPrimary,
+                ' COLLAPSIBLE-GROUP 1.1 section 3: the filled state triangle at the reading start, in the
+                ' caption's own ink - the viewer's settings groups draw the same shape (GroupMarker).
+                GroupMarker.Fill(g, ink, GroupMarker.DirectionFor(_expanded, rtl), MarkerCell(bold, titleRect))
+                TextRenderer.DrawText(g, _title, bold, titleRect, ink,
                                       textFlags Or If(rtl, TextFormatFlags.Right, TextFormatFlags.Left))
             End Using
 
@@ -504,18 +506,46 @@ Public NotInheritable Class CollapsibleSection
                                   textFlags Or TextFormatFlags.EndEllipsis Or If(rtl, TextFormatFlags.Left, TextFormatFlags.Right))
         End Sub
 
-        ''' <summary>The vocabulary's disclosure pair: nav.expand (chevron down) while the
-        ''' section is folded, nav.collapse (chevron up) while it is open - each shows the
-        ''' action a click performs. Both are rtl "fixed", so nothing mirrors here. It was a
-        ''' solid triangle in a baked grey, and a solid down triangle is nav.dropdown's
-        ''' shape (ICON-SET rule 2, spec 027 phase 7).</summary>
-        Private Shared Sub DrawChevron(g As Graphics, r As Rectangle, expanded As Boolean, ink As Color)
-            Dim meaning As IconMeaning = IconMap.GetMeaning(If(expanded, "collapsibleSectionOpen", "collapsibleSection"))
-            Using glyph As Bitmap = GlyphRenderer.Render(meaning.GlyphId, Math.Max(1, r.Width), ink,
-                                                         AddressOf CompanionAssets.OpenBundledAsset)
-                g.DrawImage(glyph, r.Left, r.Top, r.Width, r.Height)
-            End Using
+        ''' <summary>The test seam of the interface factor (device DPI / 96) the marker is sized with; 0 = the
+        ''' control's own DPI. A test cannot move a window to a 175 percent monitor, so it names the factor.</summary>
+        Friend Sub SetMarkerScale(factor As Single)
+            _markerScale = factor
+            Invalidate()
         End Sub
+
+        Private Function MarkerFactor() As Single
+            If _markerScale > 0.0F Then Return _markerScale
+            Return DeviceDpi / 96.0F
+        End Function
+
+        ''' <summary>The inset of the header's content from either edge.</summary>
+        Private Function HeaderPad() As Integer
+            Return UiSizing.DevicePx(6, MarkerFactor())
+        End Function
+
+        ''' <summary>The marker's square cell, in client coordinates: tier 16 scaled with the window, at the reading
+        ''' start, centred on the FIRST caption line (a caption that wraps keeps its marker beside the first line).</summary>
+        Private Function MarkerCell(bold As Font, titleRect As Rectangle) As Rectangle
+            Dim rtl As Boolean = (Me.RightToLeft = RightToLeft.Yes)
+            Dim side As Integer = GroupMarker.CellPx(MarkerFactor())
+            Dim block As Integer = bold.Height
+            If WrapSettingsTitle Then
+                block = TextRenderer.MeasureText(_title, bold, New Size(Math.Max(1, titleRect.Width), Integer.MaxValue),
+                                                 TextFormatFlags.WordBreak Or TextFormatFlags.NoPadding).Height
+            End If
+            Dim centre As Integer = GroupMarker.FirstLineCentre(0, Me.ClientSize.Height, block, bold.Height)
+            Return New Rectangle(If(rtl, Me.ClientSize.Width - HeaderPad() - side, HeaderPad()), centre - side \ 2, side, side)
+        End Function
+
+        ''' <summary>The marker's square cell for the current state, in client coordinates.</summary>
+        Friend Function MarkerBounds() As Rectangle
+            Using bold As New Font(Me.Font, FontStyle.Bold)
+                Dim pad As Integer = HeaderPad()
+                Dim start As Integer = pad + GroupMarker.CellPx(MarkerFactor()) + GroupMarker.GapPx(MarkerFactor())
+                Dim textWidth As Integer = Math.Max(1, Me.ClientSize.Width - start - pad)
+                Return MarkerCell(bold, New Rectangle(start, 0, textWidth, Me.ClientSize.Height))
+            End Using
+        End Function
 
     End Class
 

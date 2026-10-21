@@ -1,4 +1,4 @@
-﻿Option Strict On
+Option Strict On
 
 Imports System.Diagnostics
 Imports System.IO
@@ -364,6 +364,17 @@ Partial Public Class Main_Form
     ''' </summary>
     Private Function CreateVlcMedia(file_Path As String) As LibVLCSharp.Shared.Media
 #If Not NETFRAMEWORK Then
+        ' Spec 242 rule 21: temporary encrypted animation video stream
+        Dim anim_Input As LibVLCSharp.Shared.StreamMediaInput = AnimationVideoInputFor(file_Path)
+        If anim_Input IsNot Nothing Then
+            Dim animMedia As New LibVLCSharp.Shared.Media(libVlc, anim_Input)
+            ' Loops for ever, no sound, no subtitles (E10): the video is silent, but otherwise an ordinary video.
+            For Each animation_Option As String In AnimationVideoSurfaceRules.PlayerOptions
+                animMedia.AddOption(animation_Option)
+            Next
+            Return animMedia
+        End If
+
         ' A secure container plays from its own decrypting stream and has no path VLC could
         ' open - which is the point: no decrypted byte ever reaches the disk
         ' (026_SPECIFICATION_SECURE_CONTAINER_FD_SEC_DOTNET10.md §5.2). The input outlives
@@ -388,6 +399,13 @@ Partial Public Class Main_Form
         ' (minutes if the runtime has to be downloaded), and the user goes on flipping.
         Dim generation As Integer = media_Generation
 
+#If Not NETFRAMEWORK Then
+        ' The shared player may still hold an animation video (spec 242): its release is chained into
+        ' vlc_Pending_Stop, which is awaited below, so the real video never starts under it.
+        If AnimationVideoInputFor(file_Path) Is Nothing Then
+            StopAnimationVideo()
+        End If
+#End If
         If Not Await EnsureVlcInitializedAsync() Then
             If generation <> media_Generation Then Return
             lbl_Status.Text = OptionalRuntimeManager.GetVlcUnavailableStatusText()
@@ -502,13 +520,17 @@ Partial Public Class Main_Form
 #End If
             Dim media As LibVLCSharp.Shared.Media = CreateVlcMedia(file_Path)
 #If Not NETFRAMEWORK Then
-            video_Started_With_Repeat = CurrentEffectiveRepeat()
-            If video_Started_With_Repeat Then media.AddOption(":input-repeat=65535")
+            ' The temporary animation video (spec 242): an ordinary video to the user, with the differences that it
+            ' loops for ever on its own (CreateVlcMedia gave it the option), starts playing whatever the autoplay
+            ' setting says, and does not hold the slideshow back.
+            Dim animation_Media As Boolean = AnimationVideoInputFor(file_Path) IsNot Nothing
+            video_Started_With_Repeat = CurrentEffectiveRepeat() OrElse animation_Media
+            If video_Started_With_Repeat AndAlso Not animation_Media Then media.AddOption(":input-repeat=65535")
 #Else
             If Is_Video_Loop OrElse VideoEndAction() = "repeat" Then media.AddOption(":input-repeat=65535")
 #End If
 #If Not NETFRAMEWORK Then
-            pause_New_Video_When_Ready = Not VideoShouldAutoplay()
+            pause_New_Video_When_Ready = Not VideoShouldAutoplay() AndAlso Not animation_Media
             ' A container's media is kept and watched rather than released: LibVLC writes
             ' an embedded cover to its art cache as the input starts, and the watch is what
             ' deletes it (Main_Form.Secure.vb, audit 046 G-04). Attached before Play.
@@ -517,7 +539,7 @@ Partial Public Class Main_Form
             vlc_Media_Player.Play(media)
 #If Not NETFRAMEWORK Then
             If Not keep_Media_For_Art_Watch Then media.Dispose()
-            If Is_slide_show_mode Then
+            If Is_slide_show_mode AndAlso Not animation_Media Then
                 ' Слайдшоу отдаёт темп ролику: таймер молчит, пока видео не кончится (У-09).
                 SlideShowTimer.Enabled = False
                 slideshow_Waits_For_Video = True
@@ -705,9 +727,21 @@ Partial Public Class Main_Form
     ''' </summary>
     Private Sub Vlc_Media_Player_EncounteredError(sender As Object, e As EventArgs)
         Dim event_Generation As Integer = vlc_Play_Generation
+#If Not NETFRAMEWORK Then
+        ' On this thread, like the generation: non-zero while an animation video's media is in the player (spec 242).
+        Dim animation_Serial As Integer = AnimationVideoEventSerial()
+#End If
         Try
             If Me.IsDisposed OrElse Not Me.IsHandleCreated Then Return
             Me.BeginInvoke(Sub()
+#If Not NETFRAMEWORK Then
+                               ' An animation has no external player to fall back to and no status of a video's: its
+                               ' surface says the route failed and the picture stays.
+                               If animation_Serial <> 0 Then
+                                   OnAnimationVideoError(animation_Serial)
+                                   Return
+                               End If
+#End If
                                If Not IsVlcEventCurrent(event_Generation) Then Return
 #If Not NETFRAMEWORK Then
                                If IsLiveBroadcastActive() Then
@@ -768,9 +802,18 @@ Partial Public Class Main_Form
         ' the UI thread is doing Stop() at that moment during a fast flip), and
         ' video_Volume_Level / is_Video_Muted are read here as well. BeginInvoke, never
         ' Invoke: waiting for the UI thread from a VLC callback is the deadlock itself.
+#If Not NETFRAMEWORK Then
+        ' On this thread: non-zero while an animation video's media is in the player (spec 242); the UI half tells a live
+        ' session's event from a stale one's.
+        Dim animation_Serial As Integer = AnimationVideoEventSerial()
+#End If
         Try
             If Me.IsDisposed OrElse Not Me.IsHandleCreated Then Return
             Me.BeginInvoke(Sub()
+#If Not NETFRAMEWORK Then
+                               ' A stale session's event is dropped; the live animation video goes on to what every video gets.
+                               If animation_Serial <> 0 AndAlso Not OnAnimationVideoPlaying(animation_Serial) Then Return
+#End If
                                ApplyVideoAudioStateToVlc()
 #If Not NETFRAMEWORK Then
             ' A video reopened to apply Repeat owes the user the second
@@ -941,6 +984,9 @@ Partial Public Class Main_Form
                                    NotifyLivePlayerEnded(event_Generation)
                                    Return
                                End If
+                               ' The animation video loops for ever on its own: it has no end to remember, to advance from or to
+                               ' restart in a tight loop (spec 242).
+                               If IsAnimationVideoMedia() Then Return
                                ' The defensive A-B path (119 Ф-4, decision Q119-2): inside an
                                ' armed span reaching the end is never "end" - the watcher
                                ' always wins because B cannot be set in the last 500 ms, and

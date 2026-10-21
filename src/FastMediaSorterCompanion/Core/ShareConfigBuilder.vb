@@ -164,12 +164,15 @@ Public Module ShareConfigBuilder
             hasIpv6 = True
         End If
 
-        ' Emitted even when the worker's connect-back ran and found the port closed
-        ' (ExternalPortChecked and not ExternalPortOpen): the code keeps working once the
-        ' user fixes the forward the accessNote points at. FMSCFG says "a dead entry is a
-        ' bug" - a dated registry exception until the owner rules (ticket 034 phase 4).
+        ' FMSCFG 2.5 producer choice (c): a path the worker's connect-back CONFIRMED closed
+        ' (ExternalPortChecked AND NOT ExternalPortOpen) is not exported - "a dead entry is a
+        ' bug" - while a never-checked one stays: unchecked is not working, but it is not dead
+        ' either (WORKER-IPC 0.13 item C: Checked=False is unconfirmed, never unreachable). The
+        ' accessNote below still says why no outside address is offered (the "did not answer"
+        ' rung of ShareText.AccessNoteCore, built from the same reach facts).
+        Dim confirmedClosed As Boolean = reach IsNot Nothing AndAlso reach.ExternalPortChecked AndAlso Not reach.ExternalPortOpen
         Dim hasExt As Boolean = False
-        If includeExternal AndAlso reach IsNot Nothing AndAlso Not reach.IsCgnat AndAlso Not String.IsNullOrEmpty(reach.ExternalHost) Then
+        If includeExternal AndAlso reach IsNot Nothing AndAlso Not reach.IsCgnat AndAlso Not confirmedClosed AndAlso Not String.IsNullOrEmpty(reach.ExternalHost) Then
             Dim extPort As Integer = If(reach.ExternalPort > 0, reach.ExternalPort, port)
             AppendAccessPath(paths, "portforward", reach.ExternalHost, extPort)
             hasExt = True
@@ -271,6 +274,8 @@ Public Module ShareConfigBuilder
                 result.QrOverflow = True
             End Try
         End If
+        AppFileLogger.WriteLine(DateTimeOffset.UtcNow.ToString("O", CultureInfo.InvariantCulture) &
+            " [SHARE-STATE] config-prepared qrAvailable=" & (result.QrPng IsNot Nothing).ToString())
         Return result
     End Function
 
@@ -440,6 +445,8 @@ Public Module ShareConfigBuilder
     ''' </summary>
     Public Sub WriteConfigFile(path As String, json As String)
         Dim outcome As ConfigWriteOutcome = ProtectedConfigWriter.Publish(path, json)
+        AppFileLogger.WriteLine(DateTimeOffset.UtcNow.ToString("O", CultureInfo.InvariantCulture) &
+            " [SHARE-STATE] config-export result=" & outcome.ToString())
         If outcome <> ConfigWriteOutcome.Saved Then Throw New ConfigWriteRefusedException(outcome)
     End Sub
     ''' <summary>Owner-only ACL on <paramref name="path"/>. False when the file system has no

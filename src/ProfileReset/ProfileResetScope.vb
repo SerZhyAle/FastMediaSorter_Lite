@@ -146,6 +146,7 @@ Public NotInheritable Class ProfileResetScope
         "RecentFoldersLimit",
         "OcrDiskCacheMaxMb",
         "DecodeCacheMaxMb",
+        "AnimatedViaVideo",
         "PanelViewMode",
         "PanelThumbnailSize",
         "PanelThumbCacheMb",
@@ -192,7 +193,8 @@ Public NotInheritable Class ProfileResetScope
         "DocumentPageHistory",
         "RunsCount",
         "mediaViewedCount",
-        "UserAlreadyAskedForAssociations"
+        "UserAlreadyAskedForAssociations",
+        "AnimatedViaVideoFfmpegAsked"
     })
 
     ''' <summary>4.3: Transient names (operation marker).</summary>

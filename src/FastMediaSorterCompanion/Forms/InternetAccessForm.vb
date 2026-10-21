@@ -32,6 +32,7 @@ Public NotInheritable Class InternetAccessForm
     Private txtForward As TextBox
     Private lblHint As Label
     Private btnClose As Button
+    Private _answerRow As DialogButtonRow
 
     Public Sub New(status As WorkerStatus)
         _status = status
@@ -65,7 +66,7 @@ Public NotInheritable Class InternetAccessForm
         ' button/label content); the guide link gets a fixed roomy row so its
         ' two-dot sentence can wrap to two lines instead of being clipped; the
         ' instructions text box is the only row that stretches (Percent 100).
-        Dim root As New TableLayoutPanel With {.Dock = DockStyle.Fill, .ColumnCount = 1, .RowCount = 5, .Padding = New Padding(12)}
+        Dim root As New TableLayoutPanel With {.Dock = DockStyle.Fill, .ColumnCount = 1, .RowCount = 5, .Padding = New Padding(12, 12, 12, 2)}
         root.ColumnStyles.Add(New ColumnStyle(SizeType.Percent, 100.0F))
         root.RowStyles.Add(New RowStyle(SizeType.AutoSize))
         root.RowStyles.Add(New RowStyle(SizeType.Absolute, 44.0F))
@@ -119,22 +120,22 @@ Public NotInheritable Class InternetAccessForm
             .BackColor = SystemColors.Window}
         root.Controls.Add(txtForward, 0, 3)
 
-        ' --- row 4: hint + Close ----------------------------------------------------
-        Dim footer As New TableLayoutPanel With {.Dock = DockStyle.Fill, .AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink,
-            .ColumnCount = 2, .Margin = New Padding(0)}
-        footer.ColumnStyles.Add(New ColumnStyle(SizeType.Percent, 100.0F))
-        footer.ColumnStyles.Add(New ColumnStyle(SizeType.AutoSize))
+        ' --- row 4: the hint line; Close is the one answer of the window and rides the shared bottom row -------
         lblHint = New Label With {.Dock = DockStyle.Fill, .AutoEllipsis = True, .ForeColor = Color.DimGray,
-            .TextAlign = ContentAlignment.MiddleLeft, .Margin = New Padding(0, 6, 12, 0)}
-        btnClose = New Button With {.AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink, .Padding = New Padding(16, 4, 16, 4),
-            .Margin = New Padding(0), .Text = Localization.T("Закрыть"), .DialogResult = DialogResult.OK}
-        ButtonGlyphs.Apply(btnClose, "nav.close", ButtonGlyphRole.Dismissing)
-        footer.Controls.Add(lblHint, 0, 0)
-        footer.Controls.Add(btnClose, 1, 0)
-        root.Controls.Add(footer, 0, 4)
+            .TextAlign = ContentAlignment.MiddleLeft, .Margin = New Padding(0, 0, 0, 4)}
+        root.Controls.Add(lblHint, 0, 4)
+
+        ' Close is the window's one answer (ticket 243 T-8b, BUTTONS 2.0 sections 3 and 4): the shared row sizes it from
+        ' its caption and glyph and binds Escape and Enter to it. Test and Refresh beside the status line are commands
+        ' of that line, not answers, and stay where they are.
+        btnClose = New Button With {.Name = "xia_Close", .AutoSize = True, .Text = Localization.T("Закрыть"), .DialogResult = DialogResult.OK}
+        _answerRow = New DialogButtonRow() With {.Dock = DockStyle.Bottom, .Name = "xia_Buttons", .Padding = New Padding(12, 4, 12, 10)}
+        DpiLayout.AddAnswer(_answerRow, btnClose, DialogButtonRole.Dismissing, "nav.close")
 
         Me.Controls.Add(root)
-        Me.CancelButton = btnClose
+        ' Last in the collection: the docked row takes its edge first and reads after the content in the Tab order.
+        Me.Controls.Add(_answerRow)
+        _answerRow.Bind(Me)
         DpiLayout.ApplyAutoScale(Me)   ' last, once every child exists - see DpiLayout
 
         AddHandler Me.Shown, AddressOf OnShownFirst
@@ -271,6 +272,9 @@ Public NotInheritable Class InternetAccessForm
                 Return Localization.TF("SFTP-сервер доступен: {0}", ep)
             Case SftpProbe.ProbeResult.PortOpen
                 Return Localization.TF("Порт открыт, но SFTP не ответил: {0}", ep)
+            Case SftpProbe.ProbeResult.ClosedBeforeBanner
+                ' SHARE-SESSION 1.3 (iii): hung up before any banner - undetermined, never "not SFTP"
+                Return Localization.T("Сервер закрыл соединение, не успев ответить. Возможно, достигнут предел подключений; повторите через минуту.")
             Case SftpProbe.ProbeResult.Timeout, SftpProbe.ProbeResult.Refused
                 Return Localization.TF("С этого ПК не отвечает ({0}). Роутер может не пускать на свой внешний адрес изнутри - проверьте с телефона по мобильной сети.", ep)
 

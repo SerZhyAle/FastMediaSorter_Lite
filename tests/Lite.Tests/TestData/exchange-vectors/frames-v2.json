@@ -1,7 +1,7 @@
 {
   "contract": "DEVICE-EXCHANGE",
   "contractVersion": "1.1",
-  "sections": "5, 6, 7.1-7.10, 22, 27",
+  "sections": "5, 6, 7.1-7.10, 22, 27, REMOTE-ADMIN",
   "rung": 2,
   "producer": "Media Exchange Server (Go) of Fast Media Sorter & Sharing for Windows, cmd/exchange-vectors",
   "notes": [
@@ -17,7 +17,8 @@
     "`limit-reached` is a count limit of the server or of the account (resources, broadcasts, devices, accounts, and the clipboard's `clipboardBytes`); `capacity` is the server unable to take more - a record or a frame over its size, the work queue of the password hash full, no room for another pairing code, the account's second overlapping clipboard put. A client that retries later is right for the second and wrong for the first.",
     "The `clipboard` transcript is section 22 (ticket 229): after `clipboard-ready` and after the members of `clipboard-value` the bytes are RAW - one step per byte run, whose `hex` is the bytes exactly as they crossed the stream; a frame assembler stops there. A put's completion is judged against a short probe for bytes beyond the declared size, and a sender that half-closes is judged at once.",
     "This corpus is evidence for sections 5 to 7, 22 and 27 at edition 1.1. The transcripts `sealed-devices`, `sealed-folder`, `sealed-grant` and `sealed-clipboard` run against a server that advertises `sealed` (item DP); every other transcript runs against one that does not, so its `welcome.features` carries no `sealed` and its clipboard kinds are `text`, `image` and `file`.",
-    "The `sealed` member of this file lists every box of the `sealed-*` transcripts with the context it was sealed under, the devices it is from and to, and the clear payload it opens to. The server did not make, open or check a box (item DH): the boxes are sealed by the generator over the fixed device keys of the shared vector file e2e-v1.json, so a product that holds that file's private keys opens every one of them. See `sealed.notes`."
+    "The `sealed` member of this file lists every box of the `sealed-*` transcripts with the context it was sealed under, the devices it is from and to, and the clear payload it opens to. The server did not make, open or check a box (item DH): the boxes are sealed by the generator over the fixed device keys of the shared vector file e2e-v1.json, so a product that holds that file's private keys opens every one of them. See `sealed.notes`.",
+    "The transcripts `admin-native` and `admin-websocket` are evidence for remote administration (ticket 245, DEVICE-EXCHANGE 1.4, REMOTE-ADMIN.md and WEB-BINDING.md). `admin-native` exercises the length-prefixed envelope stream inside TLS (0x00), including admin-disabled, allowedAddresses exclusion, wrong password, rate-limited by the per-address pacer, capacity, lapsed session token, and all 18 carried operations with exact reply shapes and connectionString on invitation.create; `admin-websocket` exercises the WebSocket opening (/v2/ws) with subprotocol fms-exchange-v2, Origin validation, authentication and carried operations."
   ],
   "constants": {
     "maxChunkLength": 1048576,
@@ -3446,6 +3447,972 @@
         {
           "stream": "get",
           "direction": "server->client",
+          "closed": true
+        }
+      ]
+    },
+    {
+      "name": "admin-native",
+      "description": "Remote administration over TLS, using native envelopes or WebSocket binary messages as named by the transcript (DEVICE-EXCHANGE 1.4, REMOTE-ADMIN.md). Administration is off by default: admin-auth is answered admin-disabled. When turned on, clients outside allowedAddresses are closed without answer. A wrong password is bad-credentials; rapid attempts from the same client address are rate-limited by the per-address pacer; when the password verifier is saturated the answer is capacity. An authenticated session token expires after the configured lifetime (default 15 minutes) or stream close. Carries 18 operations and never host OS settings.",
+      "streams": [
+        {
+          "id": "admin-disabled",
+          "transport": "tls",
+          "purpose": "admin-auth when web administration is off"
+        },
+        {
+          "id": "admin-excluded",
+          "transport": "tls",
+          "purpose": "admin-auth from an address not in allowedAddresses"
+        },
+        {
+          "id": "admin-wrong",
+          "transport": "tls",
+          "purpose": "admin-auth with the wrong password: evaluated at once"
+        },
+        {
+          "id": "admin-waiting-slot",
+          "transport": "tls",
+          "purpose": "a second check right behind it waits for its slot, then evaluated"
+        },
+        {
+          "id": "admin-rate-limited",
+          "transport": "tls",
+          "purpose": "a third check inside the window is turned away without evaluating"
+        },
+        {
+          "id": "admin-capacity",
+          "transport": "tls",
+          "purpose": "admin-auth while the verifier queue is full"
+        },
+        {
+          "id": "admin-lapsed",
+          "transport": "tls",
+          "purpose": "session inactivity expires after session lifetime"
+        },
+        {
+          "id": "admin-ops",
+          "transport": "tls",
+          "purpose": "authenticated administration stream exercising all carried operations"
+        }
+      ],
+      "steps": [
+        {
+          "stream": "admin-disabled",
+          "direction": "client->server",
+          "json": "{\"schemaVersion\":2,\"type\":\"admin-auth\",\"password\":\"AdminSecretPass1\"}",
+          "hex": "000000457b22736368656d6156657273696f6e223a322c2274797065223a2261646d696e2d61757468222c2270617373776f7264223a2241646d696e5365637265745061737331227d"
+        },
+        {
+          "stream": "admin-disabled",
+          "direction": "server->client",
+          "json": "{\"schemaVersion\":2,\"type\":\"refused\",\"reason\":\"admin-disabled\"}",
+          "hex": "0000003e7b22736368656d6156657273696f6e223a322c2274797065223a2272656675736564222c22726561736f6e223a2261646d696e2d64697361626c6564227d"
+        },
+        {
+          "stream": "admin-disabled",
+          "direction": "server->client",
+          "note": "web administration is off by default: admin-auth is refused with admin-disabled",
+          "closed": true
+        },
+        {
+          "stream": "admin-excluded",
+          "direction": "client->server",
+          "json": "{\"schemaVersion\":2,\"type\":\"admin-auth\",\"password\":\"AdminSecretPass1\"}",
+          "hex": "000000457b22736368656d6156657273696f6e223a322c2274797065223a2261646d696e2d61757468222c2270617373776f7264223a2241646d696e5365637265745061737331227d"
+        },
+        {
+          "stream": "admin-excluded",
+          "direction": "server->client",
+          "note": "the client address is not in allowedAddresses: the server closes the stream with no answer",
+          "closed": true
+        },
+        {
+          "stream": "admin-wrong",
+          "direction": "client->server",
+          "json": "{\"schemaVersion\":2,\"type\":\"admin-auth\",\"password\":\"WrongPassword99!\"}",
+          "hex": "000000457b22736368656d6156657273696f6e223a322c2274797065223a2261646d696e2d61757468222c2270617373776f7264223a2257726f6e6750617373776f7264393921227d"
+        },
+        {
+          "stream": "admin-wrong",
+          "direction": "server->client",
+          "json": "{\"schemaVersion\":2,\"type\":\"refused\",\"reason\":\"bad-credentials\"}",
+          "hex": "0000003f7b22736368656d6156657273696f6e223a322c2274797065223a2272656675736564222c22726561736f6e223a226261642d63726564656e7469616c73227d"
+        },
+        {
+          "stream": "admin-wrong",
+          "direction": "server->client",
+          "note": "wrong password: refused with bad-credentials",
+          "closed": true
+        },
+        {
+          "stream": "admin-waiting-slot",
+          "direction": "client->server",
+          "json": "{\"schemaVersion\":2,\"type\":\"admin-auth\",\"password\":\"AnotherWrongPass!\"}",
+          "hex": "000000467b22736368656d6156657273696f6e223a322c2274797065223a2261646d696e2d61757468222c2270617373776f7264223a22416e6f7468657257726f6e675061737321227d"
+        },
+        {
+          "stream": "admin-waiting-slot",
+          "direction": "server->client",
+          "json": "{\"schemaVersion\":2,\"type\":\"refused\",\"reason\":\"bad-credentials\"}",
+          "hex": "0000003f7b22736368656d6156657273696f6e223a322c2274797065223a2272656675736564222c22726561736f6e223a226261642d63726564656e7469616c73227d"
+        },
+        {
+          "stream": "admin-waiting-slot",
+          "direction": "server->client",
+          "note": "second check inside window: waits for its slot, then evaluated",
+          "closed": true
+        },
+        {
+          "stream": "admin-rate-limited",
+          "direction": "client->server",
+          "json": "{\"schemaVersion\":2,\"type\":\"admin-auth\",\"password\":\"ThirdWrongPass!\"}",
+          "hex": "000000447b22736368656d6156657273696f6e223a322c2274797065223a2261646d696e2d61757468222c2270617373776f7264223a22546869726457726f6e675061737321227d"
+        },
+        {
+          "stream": "admin-rate-limited",
+          "direction": "server->client",
+          "json": "{\"schemaVersion\":2,\"type\":\"refused\",\"reason\":\"rate-limited\"}",
+          "hex": "0000003c7b22736368656d6156657273696f6e223a322c2274797065223a2272656675736564222c22726561736f6e223a22726174652d6c696d69746564227d"
+        },
+        {
+          "stream": "admin-rate-limited",
+          "direction": "server->client",
+          "note": "pace is per client address, not per login: a third check inside the window is refused with rate-limited before evaluating",
+          "closed": true
+        },
+        {
+          "stream": "admin-capacity",
+          "direction": "client->server",
+          "json": "{\"schemaVersion\":2,\"type\":\"admin-auth\",\"password\":\"AdminSecretPass1\"}",
+          "hex": "000000457b22736368656d6156657273696f6e223a322c2274797065223a2261646d696e2d61757468222c2270617373776f7264223a2241646d696e5365637265745061737331227d"
+        },
+        {
+          "stream": "admin-capacity",
+          "direction": "server->client",
+          "json": "{\"schemaVersion\":2,\"type\":\"refused\",\"reason\":\"capacity\"}",
+          "hex": "000000387b22736368656d6156657273696f6e223a322c2274797065223a2272656675736564222c22726561736f6e223a226361706163697479227d"
+        },
+        {
+          "stream": "admin-capacity",
+          "direction": "server->client",
+          "note": "password verifier bound saturated: refused with capacity",
+          "closed": true
+        },
+        {
+          "stream": "admin-lapsed",
+          "direction": "client->server",
+          "json": "{\"schemaVersion\":2,\"type\":\"admin-auth\",\"password\":\"AdminSecretPass1\"}",
+          "hex": "000000457b22736368656d6156657273696f6e223a322c2274797065223a2261646d696e2d61757468222c2270617373776f7264223a2241646d696e5365637265745061737331227d"
+        },
+        {
+          "stream": "admin-lapsed",
+          "direction": "server->client",
+          "json": "{\"schemaVersion\":2,\"type\":\"admin-auth-ok\",\"token\":\"C8gQmg1jpBBFIMcDtt_rKe0ZKaUstazlGzYYG6Ycxic\",\"expiresSeconds\":900}",
+          "hex": "000000757b22736368656d6156657273696f6e223a322c2274797065223a2261646d696e2d617574682d6f6b222c22746f6b656e223a22433867516d67316a70424246494d634474745f724b65305a4b61557374617a6c477a595947365963786963222c22657870697265735365636f6e6473223a3930307d"
+        },
+        {
+          "stream": "admin-lapsed",
+          "direction": "client->server",
+          "json": "{\"schemaVersion\":2,\"type\":\"admin-request\",\"id\":1,\"token\":\"C8gQmg1jpBBFIMcDtt_rKe0ZKaUstazlGzYYG6Ycxic\",\"op\":\"status\"}",
+          "hex": "000000757b22736368656d6156657273696f6e223a322c2274797065223a2261646d696e2d72657175657374222c226964223a312c22746f6b656e223a22433867516d67316a70424246494d634474745f724b65305a4b61557374617a6c477a595947365963786963222c226f70223a22737461747573227d"
+        },
+        {
+          "stream": "admin-lapsed",
+          "direction": "server->client",
+          "json": "{\"schemaVersion\":2,\"type\":\"refused\",\"reason\":\"bad-credentials\"}",
+          "hex": "0000003f7b22736368656d6156657273696f6e223a322c2274797065223a2272656675736564222c22726561736f6e223a226261642d63726564656e7469616c73227d"
+        },
+        {
+          "stream": "admin-lapsed",
+          "direction": "server->client",
+          "note": "session lifetime of inactivity elapsed: token lapsed, request refused with bad-credentials and stream closed",
+          "closed": true
+        },
+        {
+          "stream": "admin-ops",
+          "direction": "client->server",
+          "json": "{\"schemaVersion\":2,\"type\":\"admin-auth\",\"password\":\"AdminSecretPass1\"}",
+          "hex": "000000457b22736368656d6156657273696f6e223a322c2274797065223a2261646d696e2d61757468222c2270617373776f7264223a2241646d696e5365637265745061737331227d"
+        },
+        {
+          "stream": "admin-ops",
+          "direction": "server->client",
+          "json": "{\"schemaVersion\":2,\"type\":\"admin-auth-ok\",\"token\":\"oNbpY-1RNJ-K3keHwJ2EugH_8eB-VGTll4QB1mZwYfs\",\"expiresSeconds\":900}",
+          "hex": "000000757b22736368656d6156657273696f6e223a322c2274797065223a2261646d696e2d617574682d6f6b222c22746f6b656e223a226f4e6270592d31524e4a2d4b336b6548774a32457567485f3865422d5647546c6c345142316d5a77596673222c22657870697265735365636f6e6473223a3930307d",
+          "note": "admin-auth succeeded: token issued, frame bound raised to 262144 bytes"
+        },
+        {
+          "stream": "admin-ops",
+          "direction": "client->server",
+          "json": "{\"schemaVersion\":2,\"type\":\"admin-request\",\"id\":1,\"token\":\"oNbpY-1RNJ-K3keHwJ2EugH_8eB-VGTll4QB1mZwYfs\",\"op\":\"status\"}",
+          "hex": "000000757b22736368656d6156657273696f6e223a322c2274797065223a2261646d696e2d72657175657374222c226964223a312c22746f6b656e223a226f4e6270592d31524e4a2d4b336b6548774a32457567485f3865422d5647546c6c345142316d5a77596673222c226f70223a22737461747573227d"
+        },
+        {
+          "stream": "admin-ops",
+          "direction": "server->client",
+          "json": "{\"schemaVersion\":2,\"type\":\"admin-reply\",\"id\":1,\"ok\":true,\"data\":{\"accounts\":1,\"maxAccounts\":10,\"devices\":0,\"online\":0,\"resources\":0,\"broadcasts\":0,\"tombstones\":0,\"clipboards\":0,\"clipboardBytes\":0,\"keepAwakeActive\":false,\"keepAwake\":false,\"logRetentionDays\":0,\"sealed\":false}}",
+          "hex": "000001137b22736368656d6156657273696f6e223a322c2274797065223a2261646d696e2d7265706c79222c226964223a312c226f6b223a747275652c2264617461223a7b226163636f756e7473223a312c226d61784163636f756e7473223a31302c2264657669636573223a302c226f6e6c696e65223a302c227265736f7572636573223a302c2262726f61646361737473223a302c22746f6d6273746f6e6573223a302c22636c6970626f61726473223a302c22636c6970626f6172644279746573223a302c226b6565704177616b65416374697665223a66616c73652c226b6565704177616b65223a66616c73652c226c6f67526574656e74696f6e44617973223a302c227365616c6564223a66616c73657d7d",
+          "note": "status: server counts and host policy flags"
+        },
+        {
+          "stream": "admin-ops",
+          "direction": "client->server",
+          "json": "{\"schemaVersion\":2,\"type\":\"admin-request\",\"id\":2,\"token\":\"oNbpY-1RNJ-K3keHwJ2EugH_8eB-VGTll4QB1mZwYfs\",\"op\":\"policy.status\"}",
+          "hex": "0000007c7b22736368656d6156657273696f6e223a322c2274797065223a2261646d696e2d72657175657374222c226964223a322c22746f6b656e223a226f4e6270592d31524e4a2d4b336b6548774a32457567485f3865422d5647546c6c345142316d5a77596673222c226f70223a22706f6c6963792e737461747573227d"
+        },
+        {
+          "stream": "admin-ops",
+          "direction": "server->client",
+          "json": "{\"schemaVersion\":2,\"type\":\"admin-reply\",\"id\":2,\"ok\":true,\"data\":{\"maxAccounts\":10,\"accounts\":1,\"defaults\":{\"devices\":64,\"resources\":256,\"broadcasts\":16,\"broadcastsPerDevice\":4,\"clipboardBytes\":5368709120},\"persisted\":true}}",
+          "hex": "000000df7b22736368656d6156657273696f6e223a322c2274797065223a2261646d696e2d7265706c79222c226964223a322c226f6b223a747275652c2264617461223a7b226d61784163636f756e7473223a31302c226163636f756e7473223a312c2264656661756c7473223a7b2264657669636573223a36342c227265736f7572636573223a3235362c2262726f61646361737473223a31362c2262726f61646361737473506572446576696365223a342c22636c6970626f6172644279746573223a353336383730393132307d2c22706572736973746564223a747275657d7d",
+          "note": "policy.status: account cap and default limits"
+        },
+        {
+          "stream": "admin-ops",
+          "direction": "client->server",
+          "json": "{\"schemaVersion\":2,\"type\":\"admin-request\",\"id\":3,\"token\":\"oNbpY-1RNJ-K3keHwJ2EugH_8eB-VGTll4QB1mZwYfs\",\"op\":\"policy.set\",\"maxAccounts\":8}",
+          "hex": "000000897b22736368656d6156657273696f6e223a322c2274797065223a2261646d696e2d72657175657374222c226964223a332c22746f6b656e223a226f4e6270592d31524e4a2d4b336b6548774a32457567485f3865422d5647546c6c345142316d5a77596673222c226f70223a22706f6c6963792e736574222c226d61784163636f756e7473223a387d"
+        },
+        {
+          "stream": "admin-ops",
+          "direction": "server->client",
+          "json": "{\"schemaVersion\":2,\"type\":\"admin-reply\",\"id\":3,\"ok\":true,\"data\":{\"maxAccounts\":8,\"accounts\":1,\"defaults\":{\"devices\":64,\"resources\":256,\"broadcasts\":16,\"broadcastsPerDevice\":4,\"clipboardBytes\":5368709120},\"persisted\":false}}",
+          "hex": "000000df7b22736368656d6156657273696f6e223a322c2274797065223a2261646d696e2d7265706c79222c226964223a332c226f6b223a747275652c2264617461223a7b226d61784163636f756e7473223a382c226163636f756e7473223a312c2264656661756c7473223a7b2264657669636573223a36342c227265736f7572636573223a3235362c2262726f61646361737473223a31362c2262726f61646361737473506572446576696365223a342c22636c6970626f6172644279746573223a353336383730393132307d2c22706572736973746564223a66616c73657d7d",
+          "note": "policy.set: update account cap"
+        },
+        {
+          "stream": "admin-ops",
+          "direction": "client->server",
+          "json": "{\"schemaVersion\":2,\"type\":\"admin-request\",\"id\":4,\"token\":\"oNbpY-1RNJ-K3keHwJ2EugH_8eB-VGTll4QB1mZwYfs\",\"op\":\"account.list\"}",
+          "hex": "0000007b7b22736368656d6156657273696f6e223a322c2274797065223a2261646d696e2d72657175657374222c226964223a342c22746f6b656e223a226f4e6270592d31524e4a2d4b336b6548774a32457567485f3865422d5647546c6c345142316d5a77596673222c226f70223a226163636f756e742e6c697374227d"
+        },
+        {
+          "stream": "admin-ops",
+          "direction": "server->client",
+          "json": "{\"schemaVersion\":2,\"type\":\"admin-reply\",\"id\":4,\"ok\":true,\"data\":[{\"login\":\"alice\",\"createdAt\":\"2026-10-07T12:00:00Z\",\"devices\":0,\"kind\":\"member\",\"effective\":{\"devices\":64,\"resources\":256,\"broadcasts\":16,\"broadcastsPerDevice\":4,\"clipboardBytes\":5368709120}}]}",
+          "hex": "000001027b22736368656d6156657273696f6e223a322c2274797065223a2261646d696e2d7265706c79222c226964223a342c226f6b223a747275652c2264617461223a5b7b226c6f67696e223a22616c696365222c22637265617465644174223a22323032362d31302d30375431323a30303a30305a222c2264657669636573223a302c226b696e64223a226d656d626572222c22656666656374697665223a7b2264657669636573223a36342c227265736f7572636573223a3235362c2262726f61646361737473223a31362c2262726f61646361737473506572446576696365223a342c22636c6970626f6172644279746573223a353336383730393132307d7d5d7d",
+          "note": "account.list: all accounts with own and effective limits"
+        },
+        {
+          "stream": "admin-ops",
+          "direction": "client->server",
+          "json": "{\"schemaVersion\":2,\"type\":\"admin-request\",\"id\":5,\"token\":\"oNbpY-1RNJ-K3keHwJ2EugH_8eB-VGTll4QB1mZwYfs\",\"op\":\"account.add\",\"login\":\"bob\",\"password\":\"BobPassword123!\",\"kind\":\"member\"}",
+          "hex": "000000b57b22736368656d6156657273696f6e223a322c2274797065223a2261646d696e2d72657175657374222c226964223a352c22746f6b656e223a226f4e6270592d31524e4a2d4b336b6548774a32457567485f3865422d5647546c6c345142316d5a77596673222c226f70223a226163636f756e742e616464222c226c6f67696e223a22626f62222c2270617373776f7264223a22426f6250617373776f726431323321222c226b696e64223a226d656d626572227d"
+        },
+        {
+          "stream": "admin-ops",
+          "direction": "server->client",
+          "json": "{\"schemaVersion\":2,\"type\":\"admin-reply\",\"id\":5,\"ok\":true,\"data\":{\"login\":\"bob\",\"overCap\":false}}",
+          "hex": "000000607b22736368656d6156657273696f6e223a322c2274797065223a2261646d696e2d7265706c79222c226964223a352c226f6b223a747275652c2264617461223a7b226c6f67696e223a22626f62222c226f766572436170223a66616c73657d7d",
+          "note": "account.add: create new member account"
+        },
+        {
+          "stream": "admin-ops",
+          "direction": "client->server",
+          "json": "{\"schemaVersion\":2,\"type\":\"admin-request\",\"id\":6,\"token\":\"oNbpY-1RNJ-K3keHwJ2EugH_8eB-VGTll4QB1mZwYfs\",\"op\":\"account.limits\",\"login\":\"bob\",\"limits\":{\"devicesPerAccount\":4}}",
+          "hex": "000000ac7b22736368656d6156657273696f6e223a322c2274797065223a2261646d696e2d72657175657374222c226964223a362c22746f6b656e223a226f4e6270592d31524e4a2d4b336b6548774a32457567485f3865422d5647546c6c345142316d5a77596673222c226f70223a226163636f756e742e6c696d697473222c226c6f67696e223a22626f62222c226c696d697473223a7b22646576696365735065724163636f756e74223a347d7d"
+        },
+        {
+          "stream": "admin-ops",
+          "direction": "server->client",
+          "json": "{\"schemaVersion\":2,\"type\":\"admin-reply\",\"id\":6,\"ok\":true}",
+          "hex": "000000397b22736368656d6156657273696f6e223a322c2274797065223a2261646d696e2d7265706c79222c226964223a362c226f6b223a747275657d",
+          "note": "account.limits: set per-account limit override"
+        },
+        {
+          "stream": "admin-ops",
+          "direction": "client->server",
+          "json": "{\"schemaVersion\":2,\"type\":\"admin-request\",\"id\":7,\"token\":\"oNbpY-1RNJ-K3keHwJ2EugH_8eB-VGTll4QB1mZwYfs\",\"op\":\"account.passwd\",\"login\":\"bob\",\"password\":\"NewBobPassword123!\"}",
+          "hex": "000000ab7b22736368656d6156657273696f6e223a322c2274797065223a2261646d696e2d72657175657374222c226964223a372c22746f6b656e223a226f4e6270592d31524e4a2d4b336b6548774a32457567485f3865422d5647546c6c345142316d5a77596673222c226f70223a226163636f756e742e706173737764222c226c6f67696e223a22626f62222c2270617373776f7264223a224e6577426f6250617373776f726431323321227d"
+        },
+        {
+          "stream": "admin-ops",
+          "direction": "server->client",
+          "json": "{\"schemaVersion\":2,\"type\":\"admin-reply\",\"id\":7,\"ok\":true,\"data\":{\"signedOut\":0}}",
+          "hex": "000000507b22736368656d6156657273696f6e223a322c2274797065223a2261646d696e2d7265706c79222c226964223a372c226f6b223a747275652c2264617461223a7b227369676e65644f7574223a307d7d",
+          "note": "account.passwd: change account password and sign out devices"
+        },
+        {
+          "stream": "admin-ops",
+          "direction": "client->server",
+          "json": "{\"schemaVersion\":2,\"type\":\"admin-request\",\"id\":8,\"token\":\"oNbpY-1RNJ-K3keHwJ2EugH_8eB-VGTll4QB1mZwYfs\",\"op\":\"account.kind\",\"login\":\"bob\",\"kind\":\"guest\"}",
+          "hex": "000000987b22736368656d6156657273696f6e223a322c2274797065223a2261646d696e2d72657175657374222c226964223a382c22746f6b656e223a226f4e6270592d31524e4a2d4b336b6548774a32457567485f3865422d5647546c6c345142316d5a77596673222c226f70223a226163636f756e742e6b696e64222c226c6f67696e223a22626f62222c226b696e64223a226775657374227d"
+        },
+        {
+          "stream": "admin-ops",
+          "direction": "server->client",
+          "json": "{\"schemaVersion\":2,\"type\":\"admin-reply\",\"id\":8,\"ok\":true,\"data\":{\"changed\":true}}",
+          "hex": "000000517b22736368656d6156657273696f6e223a322c2274797065223a2261646d696e2d7265706c79222c226964223a382c226f6b223a747275652c2264617461223a7b226368616e676564223a747275657d7d",
+          "note": "account.kind: switch account between member and guest"
+        },
+        {
+          "stream": "admin-ops",
+          "direction": "client->server",
+          "json": "{\"schemaVersion\":2,\"type\":\"admin-request\",\"id\":9,\"token\":\"oNbpY-1RNJ-K3keHwJ2EugH_8eB-VGTll4QB1mZwYfs\",\"op\":\"invitation.create\",\"kind\":\"member\"}",
+          "hex": "000000907b22736368656d6156657273696f6e223a322c2274797065223a2261646d696e2d72657175657374222c226964223a392c22746f6b656e223a226f4e6270592d31524e4a2d4b336b6548774a32457567485f3865422d5647546c6c345142316d5a77596673222c226f70223a22696e7669746174696f6e2e637265617465222c226b696e64223a226d656d626572227d"
+        },
+        {
+          "stream": "admin-ops",
+          "direction": "server->client",
+          "json": "{\"schemaVersion\":2,\"type\":\"admin-reply\",\"id\":9,\"ok\":true,\"data\":{\"code\":\"rbC4B3JZPj6OY1U7ZjJSCQ\",\"invitation\":{\"codeHash\":\"a95241fb1e098c0de4d0fb7979efeff43c355fe67e329d574333bd6b96182588\",\"kind\":\"member\",\"createdAt\":\"2026-10-07T12:16:09Z\",\"used\":false},\"connectionString\":\"FMSEXCH1:x=exchange.example.net%3A22022\\u0026fp=SHA256%3ACiRPpo2CAv0EWbvrI36dOY5LzLMElp1F4Je4giuncbI\\u0026i=rbC4B3JZPj6OY1U7ZjJSCQ\"}}",
+          "hex": "000001977b22736368656d6156657273696f6e223a322c2274797065223a2261646d696e2d7265706c79222c226964223a392c226f6b223a747275652c2264617461223a7b22636f6465223a227262433442334a5a506a364f593155375a6a4a534351222c22696e7669746174696f6e223a7b22636f646548617368223a2261393532343166623165303938633064653464306662373937396566656666343363333535666536376533323964353734333333626436623936313832353838222c226b696e64223a226d656d626572222c22637265617465644174223a22323032362d31302d30375431323a31363a30395a222c2275736564223a66616c73657d2c22636f6e6e656374696f6e537472696e67223a22464d5345584348313a783d65786368616e67652e6578616d706c652e6e657425334132323032325c753030323666703d53484132353625334143695250706f32434176304557627672493336644f59354c7a4c4d456c703146344a65346769756e6362495c7530303236693d7262433442334a5a506a364f593155375a6a4a534351227d7d",
+          "note": "invitation.create: creates one-time invitation and returns code and connectionString"
+        },
+        {
+          "stream": "admin-ops",
+          "direction": "client->server",
+          "json": "{\"schemaVersion\":2,\"type\":\"admin-request\",\"id\":10,\"token\":\"oNbpY-1RNJ-K3keHwJ2EugH_8eB-VGTll4QB1mZwYfs\",\"op\":\"invitation.list\"}",
+          "hex": "0000007f7b22736368656d6156657273696f6e223a322c2274797065223a2261646d696e2d72657175657374222c226964223a31302c22746f6b656e223a226f4e6270592d31524e4a2d4b336b6548774a32457567485f3865422d5647546c6c345142316d5a77596673222c226f70223a22696e7669746174696f6e2e6c697374227d"
+        },
+        {
+          "stream": "admin-ops",
+          "direction": "server->client",
+          "json": "{\"schemaVersion\":2,\"type\":\"admin-reply\",\"id\":10,\"ok\":true,\"data\":[{\"codeHash\":\"a95241fb1e098c0de4d0fb7979efeff43c355fe67e329d574333bd6b96182588\",\"kind\":\"member\",\"createdAt\":\"2026-10-07T12:16:09Z\",\"used\":false}]}",
+          "hex": "000000d37b22736368656d6156657273696f6e223a322c2274797065223a2261646d696e2d7265706c79222c226964223a31302c226f6b223a747275652c2264617461223a5b7b22636f646548617368223a2261393532343166623165303938633064653464306662373937396566656666343363333535666536376533323964353734333333626436623936313832353838222c226b696e64223a226d656d626572222c22637265617465644174223a22323032362d31302d30375431323a31363a30395a222c2275736564223a66616c73657d5d7d",
+          "note": "invitation.list: list pending invitations with hash and kind"
+        },
+        {
+          "stream": "admin-ops",
+          "direction": "client->server",
+          "json": "{\"schemaVersion\":2,\"type\":\"admin-request\",\"id\":11,\"token\":\"oNbpY-1RNJ-K3keHwJ2EugH_8eB-VGTll4QB1mZwYfs\",\"op\":\"invitation.withdraw\",\"codeHash\":\"a95241fb1e098c0de4d0fb7979efeff43c355fe67e329d574333bd6b96182588\"}",
+          "hex": "000000d17b22736368656d6156657273696f6e223a322c2274797065223a2261646d696e2d72657175657374222c226964223a31312c22746f6b656e223a226f4e6270592d31524e4a2d4b336b6548774a32457567485f3865422d5647546c6c345142316d5a77596673222c226f70223a22696e7669746174696f6e2e7769746864726177222c22636f646548617368223a2261393532343166623165303938633064653464306662373937396566656666343363333535666536376533323964353734333333626436623936313832353838227d"
+        },
+        {
+          "stream": "admin-ops",
+          "direction": "server->client",
+          "json": "{\"schemaVersion\":2,\"type\":\"admin-reply\",\"id\":11,\"ok\":true}",
+          "hex": "0000003a7b22736368656d6156657273696f6e223a322c2274797065223a2261646d696e2d7265706c79222c226964223a31312c226f6b223a747275657d",
+          "note": "invitation.withdraw: withdraw unused invitation by codeHash prefix"
+        },
+        {
+          "stream": "admin-ops",
+          "direction": "client->server",
+          "json": "{\"schemaVersion\":2,\"type\":\"admin-request\",\"id\":12,\"token\":\"oNbpY-1RNJ-K3keHwJ2EugH_8eB-VGTll4QB1mZwYfs\",\"op\":\"shared_invitation.status\"}",
+          "hex": "000000887b22736368656d6156657273696f6e223a322c2274797065223a2261646d696e2d72657175657374222c226964223a31322c22746f6b656e223a226f4e6270592d31524e4a2d4b336b6548774a32457567485f3865422d5647546c6c345142316d5a77596673222c226f70223a227368617265645f696e7669746174696f6e2e737461747573227d"
+        },
+        {
+          "stream": "admin-ops",
+          "direction": "server->client",
+          "json": "{\"schemaVersion\":2,\"type\":\"admin-reply\",\"id\":12,\"ok\":true,\"data\":{\"enabled\":false}}",
+          "hex": "000000537b22736368656d6156657273696f6e223a322c2274797065223a2261646d696e2d7265706c79222c226964223a31322c226f6b223a747275652c2264617461223a7b22656e61626c6564223a66616c73657d7d",
+          "note": "shared_invitation.status: check shared invitation state"
+        },
+        {
+          "stream": "admin-ops",
+          "direction": "client->server",
+          "json": "{\"schemaVersion\":2,\"type\":\"admin-request\",\"id\":13,\"token\":\"oNbpY-1RNJ-K3keHwJ2EugH_8eB-VGTll4QB1mZwYfs\",\"op\":\"shared_invitation.set\",\"password\":\"SharedPassw0rdTest!\",\"kind\":\"guest\"}",
+          "hex": "000000b57b22736368656d6156657273696f6e223a322c2274797065223a2261646d696e2d72657175657374222c226964223a31332c22746f6b656e223a226f4e6270592d31524e4a2d4b336b6548774a32457567485f3865422d5647546c6c345142316d5a77596673222c226f70223a227368617265645f696e7669746174696f6e2e736574222c2270617373776f7264223a2253686172656450617373773072645465737421222c226b696e64223a226775657374227d"
+        },
+        {
+          "stream": "admin-ops",
+          "direction": "server->client",
+          "json": "{\"schemaVersion\":2,\"type\":\"admin-reply\",\"id\":13,\"ok\":true}",
+          "hex": "0000003a7b22736368656d6156657273696f6e223a322c2274797065223a2261646d696e2d7265706c79222c226964223a31332c226f6b223a747275657d",
+          "note": "shared_invitation.set: set reusable shared invitation password and kind"
+        },
+        {
+          "stream": "admin-ops",
+          "direction": "client->server",
+          "json": "{\"schemaVersion\":2,\"type\":\"admin-request\",\"id\":14,\"token\":\"oNbpY-1RNJ-K3keHwJ2EugH_8eB-VGTll4QB1mZwYfs\",\"op\":\"device.list\",\"login\":\"alice\"}",
+          "hex": "0000008b7b22736368656d6156657273696f6e223a322c2274797065223a2261646d696e2d72657175657374222c226964223a31342c22746f6b656e223a226f4e6270592d31524e4a2d4b336b6548774a32457567485f3865422d5647546c6c345142316d5a77596673222c226f70223a226465766963652e6c697374222c226c6f67696e223a22616c696365227d"
+        },
+        {
+          "stream": "admin-ops",
+          "direction": "server->client",
+          "json": "{\"schemaVersion\":2,\"type\":\"admin-reply\",\"id\":14,\"ok\":true,\"data\":[]}",
+          "hex": "000000447b22736368656d6156657273696f6e223a322c2274797065223a2261646d696e2d7265706c79222c226964223a31342c226f6b223a747275652c2264617461223a5b5d7d",
+          "note": "device.list: list enrolled devices of account without secrets"
+        },
+        {
+          "stream": "admin-ops",
+          "direction": "client->server",
+          "json": "{\"schemaVersion\":2,\"type\":\"admin-request\",\"id\":15,\"token\":\"oNbpY-1RNJ-K3keHwJ2EugH_8eB-VGTll4QB1mZwYfs\",\"op\":\"device.pairing-code\",\"login\":\"alice\"}",
+          "hex": "000000937b22736368656d6156657273696f6e223a322c2274797065223a2261646d696e2d72657175657374222c226964223a31352c22746f6b656e223a226f4e6270592d31524e4a2d4b336b6548774a32457567485f3865422d5647546c6c345142316d5a77596673222c226f70223a226465766963652e70616972696e672d636f6465222c226c6f67696e223a22616c696365227d"
+        },
+        {
+          "stream": "admin-ops",
+          "direction": "server->client",
+          "json": "{\"schemaVersion\":2,\"type\":\"admin-reply\",\"id\":15,\"ok\":true,\"data\":{\"code\":\"9HG46Z75\",\"expiresAt\":\"2026-10-07T12:26:09Z\"}}",
+          "hex": "000000787b22736368656d6156657273696f6e223a322c2274797065223a2261646d696e2d7265706c79222c226964223a31352c226f6b223a747275652c2264617461223a7b22636f6465223a2239484734365a3735222c22657870697265734174223a22323032362d31302d30375431323a32363a30395a227d7d",
+          "note": "device.pairing-code: single-use 10-minute pairing code for local enrollment"
+        },
+        {
+          "stream": "admin-ops",
+          "direction": "client->server",
+          "json": "{\"schemaVersion\":2,\"type\":\"admin-request\",\"id\":16,\"token\":\"oNbpY-1RNJ-K3keHwJ2EugH_8eB-VGTll4QB1mZwYfs\",\"op\":\"device.revoke\",\"login\":\"alice\",\"deviceId\":\"non-existent-device-id\"}",
+          "hex": "000000b17b22736368656d6156657273696f6e223a322c2274797065223a2261646d696e2d72657175657374222c226964223a31362c22746f6b656e223a226f4e6270592d31524e4a2d4b336b6548774a32457567485f3865422d5647546c6c345142316d5a77596673222c226f70223a226465766963652e7265766f6b65222c226c6f67696e223a22616c696365222c226465766963654964223a226e6f6e2d6578697374656e742d6465766963652d6964227d"
+        },
+        {
+          "stream": "admin-ops",
+          "direction": "server->client",
+          "json": "{\"schemaVersion\":2,\"type\":\"admin-reply\",\"id\":16,\"ok\":false,\"code\":\"not-found\",\"error\":\"no such device in that account\"}",
+          "hex": "000000777b22736368656d6156657273696f6e223a322c2274797065223a2261646d696e2d7265706c79222c226964223a31362c226f6b223a66616c73652c22636f6465223a226e6f742d666f756e64222c226572726f72223a226e6f20737563682064657669636520696e2074686174206163636f756e74227d",
+          "note": "device.revoke: not-found when the account has no such device"
+        },
+        {
+          "stream": "admin-ops",
+          "direction": "client->server",
+          "json": "{\"schemaVersion\":2,\"type\":\"admin-request\",\"id\":17,\"token\":\"oNbpY-1RNJ-K3keHwJ2EugH_8eB-VGTll4QB1mZwYfs\",\"op\":\"grant.list\",\"login\":\"alice\"}",
+          "hex": "0000008a7b22736368656d6156657273696f6e223a322c2274797065223a2261646d696e2d72657175657374222c226964223a31372c22746f6b656e223a226f4e6270592d31524e4a2d4b336b6548774a32457567485f3865422d5647546c6c345142316d5a77596673222c226f70223a226772616e742e6c697374222c226c6f67696e223a22616c696365227d"
+        },
+        {
+          "stream": "admin-ops",
+          "direction": "server->client",
+          "json": "{\"schemaVersion\":2,\"type\":\"admin-reply\",\"id\":17,\"ok\":true,\"data\":[]}",
+          "hex": "000000447b22736368656d6156657273696f6e223a322c2274797065223a2261646d696e2d7265706c79222c226964223a31372c226f6b223a747275652c2264617461223a5b5d7d",
+          "note": "grant.list: list active resource and broadcast grants"
+        },
+        {
+          "stream": "admin-ops",
+          "direction": "client->server",
+          "json": "{\"schemaVersion\":2,\"type\":\"admin-request\",\"id\":18,\"token\":\"oNbpY-1RNJ-K3keHwJ2EugH_8eB-VGTll4QB1mZwYfs\",\"op\":\"account.remove\",\"login\":\"bob\"}",
+          "hex": "0000008c7b22736368656d6156657273696f6e223a322c2274797065223a2261646d696e2d72657175657374222c226964223a31382c22746f6b656e223a226f4e6270592d31524e4a2d4b336b6548774a32457567485f3865422d5647546c6c345142316d5a77596673222c226f70223a226163636f756e742e72656d6f7665222c226c6f67696e223a22626f62227d"
+        },
+        {
+          "stream": "admin-ops",
+          "direction": "server->client",
+          "json": "{\"schemaVersion\":2,\"type\":\"admin-reply\",\"id\":18,\"ok\":true}",
+          "hex": "0000003a7b22736368656d6156657273696f6e223a322c2274797065223a2261646d696e2d7265706c79222c226964223a31382c226f6b223a747275657d",
+          "note": "account.remove: delete account and clean up resources and directory"
+        },
+        {
+          "stream": "admin-ops",
+          "direction": "client->server",
+          "json": "{\"schemaVersion\":2,\"type\":\"bye\"}",
+          "hex": "000000207b22736368656d6156657273696f6e223a322c2274797065223a22627965227d"
+        },
+        {
+          "stream": "admin-ops",
+          "direction": "server->client",
+          "note": "bye closes the administration stream cleanly",
+          "closed": true
+        }
+      ]
+    },
+    {
+      "name": "admin-websocket",
+      "description": "Remote administration over TLS, using native envelopes or WebSocket binary messages as named by the transcript (DEVICE-EXCHANGE 1.4, REMOTE-ADMIN.md). Administration is off by default: admin-auth is answered admin-disabled. When turned on, clients outside allowedAddresses are closed without answer. A wrong password is bad-credentials; rapid attempts from the same client address are rate-limited by the per-address pacer; when the password verifier is saturated the answer is capacity. An authenticated session token expires after the configured lifetime (default 15 minutes) or stream close. Carries 18 operations and never host OS settings.",
+      "streams": [
+        {
+          "id": "admin-disabled",
+          "transport": "tls",
+          "purpose": "admin-auth when web administration is off"
+        },
+        {
+          "id": "admin-excluded",
+          "transport": "tls",
+          "purpose": "admin-auth from an address not in allowedAddresses"
+        },
+        {
+          "id": "admin-wrong",
+          "transport": "tls",
+          "purpose": "admin-auth with the wrong password: evaluated at once"
+        },
+        {
+          "id": "admin-waiting-slot",
+          "transport": "tls",
+          "purpose": "a second check right behind it waits for its slot, then evaluated"
+        },
+        {
+          "id": "admin-rate-limited",
+          "transport": "tls",
+          "purpose": "a third check inside the window is turned away without evaluating"
+        },
+        {
+          "id": "admin-capacity",
+          "transport": "tls",
+          "purpose": "admin-auth while the verifier queue is full"
+        },
+        {
+          "id": "admin-lapsed",
+          "transport": "tls",
+          "purpose": "session inactivity expires after session lifetime"
+        },
+        {
+          "id": "admin-ops",
+          "transport": "tls",
+          "purpose": "authenticated administration stream exercising all carried operations"
+        }
+      ],
+      "steps": [
+        {
+          "stream": "admin-disabled",
+          "direction": "client->server / server->client",
+          "note": "HTTP upgrade to WebSocket (/v2/ws) with subprotocol fms-exchange-v2 and Origin validation",
+          "http": {
+            "request": "GET /v2/ws HTTP/1.1\r\nHost: exchange.example.net:22022\r\nUpgrade: websocket\r\nConnection: Upgrade\r\nSec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==\r\nSec-WebSocket-Version: 13\r\nSec-WebSocket-Protocol: fms-exchange-v2\r\nOrigin: https://exchange.example.net:22022\r\n\r\n",
+            "status": 101,
+            "responseHead": "HTTP/1.1 101 Switching Protocols\r\nUpgrade: websocket\r\nConnection: Upgrade\r\nSec-WebSocket-Accept: s3pPLMBiTxaQ9kYGzzhZRbK+xOo=\r\nSec-WebSocket-Protocol: fms-exchange-v2\r\n\r\n",
+            "responseHex": "485454502f312e312031303120537769746368696e672050726f746f636f6c730d0a557067726164653a20776562736f636b65740d0a436f6e6e656374696f6e3a20557067726164650d0a5365632d576562536f636b65742d4163636570743a20733370504c4d426954786151396b59477a7a685a52624b2b784f6f3d0d0a5365632d576562536f636b65742d50726f746f636f6c3a20666d732d65786368616e67652d76320d0a0d0a"
+          }
+        },
+        {
+          "stream": "admin-disabled",
+          "direction": "client->server",
+          "json": "{\"schemaVersion\":2,\"type\":\"admin-auth\",\"password\":\"AdminSecretPass1\"}",
+          "hex": "000000457b22736368656d6156657273696f6e223a322c2274797065223a2261646d696e2d61757468222c2270617373776f7264223a2241646d696e5365637265745061737331227d"
+        },
+        {
+          "stream": "admin-disabled",
+          "direction": "server->client",
+          "json": "{\"schemaVersion\":2,\"type\":\"refused\",\"reason\":\"admin-disabled\"}",
+          "hex": "0000003e7b22736368656d6156657273696f6e223a322c2274797065223a2272656675736564222c22726561736f6e223a2261646d696e2d64697361626c6564227d"
+        },
+        {
+          "stream": "admin-disabled",
+          "direction": "server->client",
+          "note": "web administration is off by default: admin-auth is refused with admin-disabled",
+          "closed": true
+        },
+        {
+          "stream": "admin-excluded",
+          "direction": "client->server / server->client",
+          "note": "HTTP upgrade to WebSocket (/v2/ws) with subprotocol fms-exchange-v2 and Origin validation",
+          "http": {
+            "request": "GET /v2/ws HTTP/1.1\r\nHost: exchange.example.net:22022\r\nUpgrade: websocket\r\nConnection: Upgrade\r\nSec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==\r\nSec-WebSocket-Version: 13\r\nSec-WebSocket-Protocol: fms-exchange-v2\r\nOrigin: https://exchange.example.net:22022\r\n\r\n",
+            "status": 101,
+            "responseHead": "HTTP/1.1 101 Switching Protocols\r\nUpgrade: websocket\r\nConnection: Upgrade\r\nSec-WebSocket-Accept: s3pPLMBiTxaQ9kYGzzhZRbK+xOo=\r\nSec-WebSocket-Protocol: fms-exchange-v2\r\n\r\n",
+            "responseHex": "485454502f312e312031303120537769746368696e672050726f746f636f6c730d0a557067726164653a20776562736f636b65740d0a436f6e6e656374696f6e3a20557067726164650d0a5365632d576562536f636b65742d4163636570743a20733370504c4d426954786151396b59477a7a685a52624b2b784f6f3d0d0a5365632d576562536f636b65742d50726f746f636f6c3a20666d732d65786368616e67652d76320d0a0d0a"
+          }
+        },
+        {
+          "stream": "admin-excluded",
+          "direction": "client->server",
+          "json": "{\"schemaVersion\":2,\"type\":\"admin-auth\",\"password\":\"AdminSecretPass1\"}",
+          "hex": "000000457b22736368656d6156657273696f6e223a322c2274797065223a2261646d696e2d61757468222c2270617373776f7264223a2241646d696e5365637265745061737331227d"
+        },
+        {
+          "stream": "admin-excluded",
+          "direction": "server->client",
+          "note": "the client address is not in allowedAddresses: the server closes the stream with no answer",
+          "closed": true
+        },
+        {
+          "stream": "admin-wrong",
+          "direction": "client->server / server->client",
+          "note": "HTTP upgrade to WebSocket (/v2/ws) with subprotocol fms-exchange-v2 and Origin validation",
+          "http": {
+            "request": "GET /v2/ws HTTP/1.1\r\nHost: exchange.example.net:22022\r\nUpgrade: websocket\r\nConnection: Upgrade\r\nSec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==\r\nSec-WebSocket-Version: 13\r\nSec-WebSocket-Protocol: fms-exchange-v2\r\nOrigin: https://exchange.example.net:22022\r\n\r\n",
+            "status": 101,
+            "responseHead": "HTTP/1.1 101 Switching Protocols\r\nUpgrade: websocket\r\nConnection: Upgrade\r\nSec-WebSocket-Accept: s3pPLMBiTxaQ9kYGzzhZRbK+xOo=\r\nSec-WebSocket-Protocol: fms-exchange-v2\r\n\r\n",
+            "responseHex": "485454502f312e312031303120537769746368696e672050726f746f636f6c730d0a557067726164653a20776562736f636b65740d0a436f6e6e656374696f6e3a20557067726164650d0a5365632d576562536f636b65742d4163636570743a20733370504c4d426954786151396b59477a7a685a52624b2b784f6f3d0d0a5365632d576562536f636b65742d50726f746f636f6c3a20666d732d65786368616e67652d76320d0a0d0a"
+          }
+        },
+        {
+          "stream": "admin-wrong",
+          "direction": "client->server",
+          "json": "{\"schemaVersion\":2,\"type\":\"admin-auth\",\"password\":\"WrongPassword99!\"}",
+          "hex": "000000457b22736368656d6156657273696f6e223a322c2274797065223a2261646d696e2d61757468222c2270617373776f7264223a2257726f6e6750617373776f7264393921227d"
+        },
+        {
+          "stream": "admin-wrong",
+          "direction": "server->client",
+          "json": "{\"schemaVersion\":2,\"type\":\"refused\",\"reason\":\"bad-credentials\"}",
+          "hex": "0000003f7b22736368656d6156657273696f6e223a322c2274797065223a2272656675736564222c22726561736f6e223a226261642d63726564656e7469616c73227d"
+        },
+        {
+          "stream": "admin-wrong",
+          "direction": "server->client",
+          "note": "wrong password: refused with bad-credentials",
+          "closed": true
+        },
+        {
+          "stream": "admin-waiting-slot",
+          "direction": "client->server / server->client",
+          "note": "HTTP upgrade to WebSocket (/v2/ws) with subprotocol fms-exchange-v2 and Origin validation",
+          "http": {
+            "request": "GET /v2/ws HTTP/1.1\r\nHost: exchange.example.net:22022\r\nUpgrade: websocket\r\nConnection: Upgrade\r\nSec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==\r\nSec-WebSocket-Version: 13\r\nSec-WebSocket-Protocol: fms-exchange-v2\r\nOrigin: https://exchange.example.net:22022\r\n\r\n",
+            "status": 101,
+            "responseHead": "HTTP/1.1 101 Switching Protocols\r\nUpgrade: websocket\r\nConnection: Upgrade\r\nSec-WebSocket-Accept: s3pPLMBiTxaQ9kYGzzhZRbK+xOo=\r\nSec-WebSocket-Protocol: fms-exchange-v2\r\n\r\n",
+            "responseHex": "485454502f312e312031303120537769746368696e672050726f746f636f6c730d0a557067726164653a20776562736f636b65740d0a436f6e6e656374696f6e3a20557067726164650d0a5365632d576562536f636b65742d4163636570743a20733370504c4d426954786151396b59477a7a685a52624b2b784f6f3d0d0a5365632d576562536f636b65742d50726f746f636f6c3a20666d732d65786368616e67652d76320d0a0d0a"
+          }
+        },
+        {
+          "stream": "admin-waiting-slot",
+          "direction": "client->server",
+          "json": "{\"schemaVersion\":2,\"type\":\"admin-auth\",\"password\":\"AnotherWrongPass!\"}",
+          "hex": "000000467b22736368656d6156657273696f6e223a322c2274797065223a2261646d696e2d61757468222c2270617373776f7264223a22416e6f7468657257726f6e675061737321227d"
+        },
+        {
+          "stream": "admin-waiting-slot",
+          "direction": "server->client",
+          "json": "{\"schemaVersion\":2,\"type\":\"refused\",\"reason\":\"bad-credentials\"}",
+          "hex": "0000003f7b22736368656d6156657273696f6e223a322c2274797065223a2272656675736564222c22726561736f6e223a226261642d63726564656e7469616c73227d"
+        },
+        {
+          "stream": "admin-waiting-slot",
+          "direction": "server->client",
+          "note": "second check inside window: waits for its slot, then evaluated",
+          "closed": true
+        },
+        {
+          "stream": "admin-rate-limited",
+          "direction": "client->server / server->client",
+          "note": "HTTP upgrade to WebSocket (/v2/ws) with subprotocol fms-exchange-v2 and Origin validation",
+          "http": {
+            "request": "GET /v2/ws HTTP/1.1\r\nHost: exchange.example.net:22022\r\nUpgrade: websocket\r\nConnection: Upgrade\r\nSec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==\r\nSec-WebSocket-Version: 13\r\nSec-WebSocket-Protocol: fms-exchange-v2\r\nOrigin: https://exchange.example.net:22022\r\n\r\n",
+            "status": 101,
+            "responseHead": "HTTP/1.1 101 Switching Protocols\r\nUpgrade: websocket\r\nConnection: Upgrade\r\nSec-WebSocket-Accept: s3pPLMBiTxaQ9kYGzzhZRbK+xOo=\r\nSec-WebSocket-Protocol: fms-exchange-v2\r\n\r\n",
+            "responseHex": "485454502f312e312031303120537769746368696e672050726f746f636f6c730d0a557067726164653a20776562736f636b65740d0a436f6e6e656374696f6e3a20557067726164650d0a5365632d576562536f636b65742d4163636570743a20733370504c4d426954786151396b59477a7a685a52624b2b784f6f3d0d0a5365632d576562536f636b65742d50726f746f636f6c3a20666d732d65786368616e67652d76320d0a0d0a"
+          }
+        },
+        {
+          "stream": "admin-rate-limited",
+          "direction": "client->server",
+          "json": "{\"schemaVersion\":2,\"type\":\"admin-auth\",\"password\":\"ThirdWrongPass!\"}",
+          "hex": "000000447b22736368656d6156657273696f6e223a322c2274797065223a2261646d696e2d61757468222c2270617373776f7264223a22546869726457726f6e675061737321227d"
+        },
+        {
+          "stream": "admin-rate-limited",
+          "direction": "server->client",
+          "json": "{\"schemaVersion\":2,\"type\":\"refused\",\"reason\":\"rate-limited\"}",
+          "hex": "0000003c7b22736368656d6156657273696f6e223a322c2274797065223a2272656675736564222c22726561736f6e223a22726174652d6c696d69746564227d"
+        },
+        {
+          "stream": "admin-rate-limited",
+          "direction": "server->client",
+          "note": "pace is per client address, not per login: a third check inside the window is refused with rate-limited before evaluating",
+          "closed": true
+        },
+        {
+          "stream": "admin-capacity",
+          "direction": "client->server / server->client",
+          "note": "HTTP upgrade to WebSocket (/v2/ws) with subprotocol fms-exchange-v2 and Origin validation",
+          "http": {
+            "request": "GET /v2/ws HTTP/1.1\r\nHost: exchange.example.net:22022\r\nUpgrade: websocket\r\nConnection: Upgrade\r\nSec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==\r\nSec-WebSocket-Version: 13\r\nSec-WebSocket-Protocol: fms-exchange-v2\r\nOrigin: https://exchange.example.net:22022\r\n\r\n",
+            "status": 101,
+            "responseHead": "HTTP/1.1 101 Switching Protocols\r\nUpgrade: websocket\r\nConnection: Upgrade\r\nSec-WebSocket-Accept: s3pPLMBiTxaQ9kYGzzhZRbK+xOo=\r\nSec-WebSocket-Protocol: fms-exchange-v2\r\n\r\n",
+            "responseHex": "485454502f312e312031303120537769746368696e672050726f746f636f6c730d0a557067726164653a20776562736f636b65740d0a436f6e6e656374696f6e3a20557067726164650d0a5365632d576562536f636b65742d4163636570743a20733370504c4d426954786151396b59477a7a685a52624b2b784f6f3d0d0a5365632d576562536f636b65742d50726f746f636f6c3a20666d732d65786368616e67652d76320d0a0d0a"
+          }
+        },
+        {
+          "stream": "admin-capacity",
+          "direction": "client->server",
+          "json": "{\"schemaVersion\":2,\"type\":\"admin-auth\",\"password\":\"AdminSecretPass1\"}",
+          "hex": "000000457b22736368656d6156657273696f6e223a322c2274797065223a2261646d696e2d61757468222c2270617373776f7264223a2241646d696e5365637265745061737331227d"
+        },
+        {
+          "stream": "admin-capacity",
+          "direction": "server->client",
+          "json": "{\"schemaVersion\":2,\"type\":\"refused\",\"reason\":\"capacity\"}",
+          "hex": "000000387b22736368656d6156657273696f6e223a322c2274797065223a2272656675736564222c22726561736f6e223a226361706163697479227d"
+        },
+        {
+          "stream": "admin-capacity",
+          "direction": "server->client",
+          "note": "password verifier bound saturated: refused with capacity",
+          "closed": true
+        },
+        {
+          "stream": "admin-lapsed",
+          "direction": "client->server / server->client",
+          "note": "HTTP upgrade to WebSocket (/v2/ws) with subprotocol fms-exchange-v2 and Origin validation",
+          "http": {
+            "request": "GET /v2/ws HTTP/1.1\r\nHost: exchange.example.net:22022\r\nUpgrade: websocket\r\nConnection: Upgrade\r\nSec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==\r\nSec-WebSocket-Version: 13\r\nSec-WebSocket-Protocol: fms-exchange-v2\r\nOrigin: https://exchange.example.net:22022\r\n\r\n",
+            "status": 101,
+            "responseHead": "HTTP/1.1 101 Switching Protocols\r\nUpgrade: websocket\r\nConnection: Upgrade\r\nSec-WebSocket-Accept: s3pPLMBiTxaQ9kYGzzhZRbK+xOo=\r\nSec-WebSocket-Protocol: fms-exchange-v2\r\n\r\n",
+            "responseHex": "485454502f312e312031303120537769746368696e672050726f746f636f6c730d0a557067726164653a20776562736f636b65740d0a436f6e6e656374696f6e3a20557067726164650d0a5365632d576562536f636b65742d4163636570743a20733370504c4d426954786151396b59477a7a685a52624b2b784f6f3d0d0a5365632d576562536f636b65742d50726f746f636f6c3a20666d732d65786368616e67652d76320d0a0d0a"
+          }
+        },
+        {
+          "stream": "admin-lapsed",
+          "direction": "client->server",
+          "json": "{\"schemaVersion\":2,\"type\":\"admin-auth\",\"password\":\"AdminSecretPass1\"}",
+          "hex": "000000457b22736368656d6156657273696f6e223a322c2274797065223a2261646d696e2d61757468222c2270617373776f7264223a2241646d696e5365637265745061737331227d"
+        },
+        {
+          "stream": "admin-lapsed",
+          "direction": "server->client",
+          "json": "{\"schemaVersion\":2,\"type\":\"admin-auth-ok\",\"token\":\"o51-tYvmTu4SA-TCGNUBNLgy__ZNs34F-gNEykLAzck\",\"expiresSeconds\":900}",
+          "hex": "000000757b22736368656d6156657273696f6e223a322c2274797065223a2261646d696e2d617574682d6f6b222c22746f6b656e223a226f35312d7459766d54753453412d5443474e55424e4c67795f5f5a4e733334462d674e45796b4c417a636b222c22657870697265735365636f6e6473223a3930307d"
+        },
+        {
+          "stream": "admin-lapsed",
+          "direction": "client->server",
+          "json": "{\"schemaVersion\":2,\"type\":\"admin-request\",\"id\":1,\"token\":\"o51-tYvmTu4SA-TCGNUBNLgy__ZNs34F-gNEykLAzck\",\"op\":\"status\"}",
+          "hex": "000000757b22736368656d6156657273696f6e223a322c2274797065223a2261646d696e2d72657175657374222c226964223a312c22746f6b656e223a226f35312d7459766d54753453412d5443474e55424e4c67795f5f5a4e733334462d674e45796b4c417a636b222c226f70223a22737461747573227d"
+        },
+        {
+          "stream": "admin-lapsed",
+          "direction": "server->client",
+          "json": "{\"schemaVersion\":2,\"type\":\"refused\",\"reason\":\"bad-credentials\"}",
+          "hex": "0000003f7b22736368656d6156657273696f6e223a322c2274797065223a2272656675736564222c22726561736f6e223a226261642d63726564656e7469616c73227d"
+        },
+        {
+          "stream": "admin-lapsed",
+          "direction": "server->client",
+          "note": "session lifetime of inactivity elapsed: token lapsed, request refused with bad-credentials and stream closed",
+          "closed": true
+        },
+        {
+          "stream": "admin-ops",
+          "direction": "client->server / server->client",
+          "note": "HTTP upgrade to WebSocket (/v2/ws) with subprotocol fms-exchange-v2 and Origin validation",
+          "http": {
+            "request": "GET /v2/ws HTTP/1.1\r\nHost: exchange.example.net:22022\r\nUpgrade: websocket\r\nConnection: Upgrade\r\nSec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==\r\nSec-WebSocket-Version: 13\r\nSec-WebSocket-Protocol: fms-exchange-v2\r\nOrigin: https://exchange.example.net:22022\r\n\r\n",
+            "status": 101,
+            "responseHead": "HTTP/1.1 101 Switching Protocols\r\nUpgrade: websocket\r\nConnection: Upgrade\r\nSec-WebSocket-Accept: s3pPLMBiTxaQ9kYGzzhZRbK+xOo=\r\nSec-WebSocket-Protocol: fms-exchange-v2\r\n\r\n",
+            "responseHex": "485454502f312e312031303120537769746368696e672050726f746f636f6c730d0a557067726164653a20776562736f636b65740d0a436f6e6e656374696f6e3a20557067726164650d0a5365632d576562536f636b65742d4163636570743a20733370504c4d426954786151396b59477a7a685a52624b2b784f6f3d0d0a5365632d576562536f636b65742d50726f746f636f6c3a20666d732d65786368616e67652d76320d0a0d0a"
+          }
+        },
+        {
+          "stream": "admin-ops",
+          "direction": "client->server",
+          "json": "{\"schemaVersion\":2,\"type\":\"admin-auth\",\"password\":\"AdminSecretPass1\"}",
+          "hex": "000000457b22736368656d6156657273696f6e223a322c2274797065223a2261646d696e2d61757468222c2270617373776f7264223a2241646d696e5365637265745061737331227d"
+        },
+        {
+          "stream": "admin-ops",
+          "direction": "server->client",
+          "json": "{\"schemaVersion\":2,\"type\":\"admin-auth-ok\",\"token\":\"kyWWNb9XgT_Xh7i2t71dTES-7ccZkcXc8k--d8L12Hc\",\"expiresSeconds\":900}",
+          "hex": "000000757b22736368656d6156657273696f6e223a322c2274797065223a2261646d696e2d617574682d6f6b222c22746f6b656e223a226b7957574e62395867545f5868376932743731645445532d3763635a6b635863386b2d2d64384c31324863222c22657870697265735365636f6e6473223a3930307d",
+          "note": "admin-auth succeeded: token issued, frame bound raised to 262144 bytes"
+        },
+        {
+          "stream": "admin-ops",
+          "direction": "client->server",
+          "json": "{\"schemaVersion\":2,\"type\":\"admin-request\",\"id\":1,\"token\":\"kyWWNb9XgT_Xh7i2t71dTES-7ccZkcXc8k--d8L12Hc\",\"op\":\"status\"}",
+          "hex": "000000757b22736368656d6156657273696f6e223a322c2274797065223a2261646d696e2d72657175657374222c226964223a312c22746f6b656e223a226b7957574e62395867545f5868376932743731645445532d3763635a6b635863386b2d2d64384c31324863222c226f70223a22737461747573227d"
+        },
+        {
+          "stream": "admin-ops",
+          "direction": "server->client",
+          "json": "{\"schemaVersion\":2,\"type\":\"admin-reply\",\"id\":1,\"ok\":true,\"data\":{\"accounts\":1,\"maxAccounts\":10,\"devices\":0,\"online\":0,\"resources\":0,\"broadcasts\":0,\"tombstones\":0,\"clipboards\":0,\"clipboardBytes\":0,\"keepAwakeActive\":false,\"keepAwake\":false,\"logRetentionDays\":0,\"sealed\":false}}",
+          "hex": "000001137b22736368656d6156657273696f6e223a322c2274797065223a2261646d696e2d7265706c79222c226964223a312c226f6b223a747275652c2264617461223a7b226163636f756e7473223a312c226d61784163636f756e7473223a31302c2264657669636573223a302c226f6e6c696e65223a302c227265736f7572636573223a302c2262726f61646361737473223a302c22746f6d6273746f6e6573223a302c22636c6970626f61726473223a302c22636c6970626f6172644279746573223a302c226b6565704177616b65416374697665223a66616c73652c226b6565704177616b65223a66616c73652c226c6f67526574656e74696f6e44617973223a302c227365616c6564223a66616c73657d7d",
+          "note": "status: server counts and host policy flags"
+        },
+        {
+          "stream": "admin-ops",
+          "direction": "client->server",
+          "json": "{\"schemaVersion\":2,\"type\":\"admin-request\",\"id\":2,\"token\":\"kyWWNb9XgT_Xh7i2t71dTES-7ccZkcXc8k--d8L12Hc\",\"op\":\"policy.status\"}",
+          "hex": "0000007c7b22736368656d6156657273696f6e223a322c2274797065223a2261646d696e2d72657175657374222c226964223a322c22746f6b656e223a226b7957574e62395867545f5868376932743731645445532d3763635a6b635863386b2d2d64384c31324863222c226f70223a22706f6c6963792e737461747573227d"
+        },
+        {
+          "stream": "admin-ops",
+          "direction": "server->client",
+          "json": "{\"schemaVersion\":2,\"type\":\"admin-reply\",\"id\":2,\"ok\":true,\"data\":{\"maxAccounts\":10,\"accounts\":1,\"defaults\":{\"devices\":64,\"resources\":256,\"broadcasts\":16,\"broadcastsPerDevice\":4,\"clipboardBytes\":5368709120},\"persisted\":true}}",
+          "hex": "000000df7b22736368656d6156657273696f6e223a322c2274797065223a2261646d696e2d7265706c79222c226964223a322c226f6b223a747275652c2264617461223a7b226d61784163636f756e7473223a31302c226163636f756e7473223a312c2264656661756c7473223a7b2264657669636573223a36342c227265736f7572636573223a3235362c2262726f61646361737473223a31362c2262726f61646361737473506572446576696365223a342c22636c6970626f6172644279746573223a353336383730393132307d2c22706572736973746564223a747275657d7d",
+          "note": "policy.status: account cap and default limits"
+        },
+        {
+          "stream": "admin-ops",
+          "direction": "client->server",
+          "json": "{\"schemaVersion\":2,\"type\":\"admin-request\",\"id\":3,\"token\":\"kyWWNb9XgT_Xh7i2t71dTES-7ccZkcXc8k--d8L12Hc\",\"op\":\"policy.set\",\"maxAccounts\":8}",
+          "hex": "000000897b22736368656d6156657273696f6e223a322c2274797065223a2261646d696e2d72657175657374222c226964223a332c22746f6b656e223a226b7957574e62395867545f5868376932743731645445532d3763635a6b635863386b2d2d64384c31324863222c226f70223a22706f6c6963792e736574222c226d61784163636f756e7473223a387d"
+        },
+        {
+          "stream": "admin-ops",
+          "direction": "server->client",
+          "json": "{\"schemaVersion\":2,\"type\":\"admin-reply\",\"id\":3,\"ok\":true,\"data\":{\"maxAccounts\":8,\"accounts\":1,\"defaults\":{\"devices\":64,\"resources\":256,\"broadcasts\":16,\"broadcastsPerDevice\":4,\"clipboardBytes\":5368709120},\"persisted\":false}}",
+          "hex": "000000df7b22736368656d6156657273696f6e223a322c2274797065223a2261646d696e2d7265706c79222c226964223a332c226f6b223a747275652c2264617461223a7b226d61784163636f756e7473223a382c226163636f756e7473223a312c2264656661756c7473223a7b2264657669636573223a36342c227265736f7572636573223a3235362c2262726f61646361737473223a31362c2262726f61646361737473506572446576696365223a342c22636c6970626f6172644279746573223a353336383730393132307d2c22706572736973746564223a66616c73657d7d",
+          "note": "policy.set: update account cap"
+        },
+        {
+          "stream": "admin-ops",
+          "direction": "client->server",
+          "json": "{\"schemaVersion\":2,\"type\":\"admin-request\",\"id\":4,\"token\":\"kyWWNb9XgT_Xh7i2t71dTES-7ccZkcXc8k--d8L12Hc\",\"op\":\"account.list\"}",
+          "hex": "0000007b7b22736368656d6156657273696f6e223a322c2274797065223a2261646d696e2d72657175657374222c226964223a342c22746f6b656e223a226b7957574e62395867545f5868376932743731645445532d3763635a6b635863386b2d2d64384c31324863222c226f70223a226163636f756e742e6c697374227d"
+        },
+        {
+          "stream": "admin-ops",
+          "direction": "server->client",
+          "json": "{\"schemaVersion\":2,\"type\":\"admin-reply\",\"id\":4,\"ok\":true,\"data\":[{\"login\":\"alice\",\"createdAt\":\"2026-10-07T12:00:00Z\",\"devices\":0,\"kind\":\"member\",\"effective\":{\"devices\":64,\"resources\":256,\"broadcasts\":16,\"broadcastsPerDevice\":4,\"clipboardBytes\":5368709120}}]}",
+          "hex": "000001027b22736368656d6156657273696f6e223a322c2274797065223a2261646d696e2d7265706c79222c226964223a342c226f6b223a747275652c2264617461223a5b7b226c6f67696e223a22616c696365222c22637265617465644174223a22323032362d31302d30375431323a30303a30305a222c2264657669636573223a302c226b696e64223a226d656d626572222c22656666656374697665223a7b2264657669636573223a36342c227265736f7572636573223a3235362c2262726f61646361737473223a31362c2262726f61646361737473506572446576696365223a342c22636c6970626f6172644279746573223a353336383730393132307d7d5d7d",
+          "note": "account.list: all accounts with own and effective limits"
+        },
+        {
+          "stream": "admin-ops",
+          "direction": "client->server",
+          "json": "{\"schemaVersion\":2,\"type\":\"admin-request\",\"id\":5,\"token\":\"kyWWNb9XgT_Xh7i2t71dTES-7ccZkcXc8k--d8L12Hc\",\"op\":\"account.add\",\"login\":\"bob\",\"password\":\"BobPassword123!\",\"kind\":\"member\"}",
+          "hex": "000000b57b22736368656d6156657273696f6e223a322c2274797065223a2261646d696e2d72657175657374222c226964223a352c22746f6b656e223a226b7957574e62395867545f5868376932743731645445532d3763635a6b635863386b2d2d64384c31324863222c226f70223a226163636f756e742e616464222c226c6f67696e223a22626f62222c2270617373776f7264223a22426f6250617373776f726431323321222c226b696e64223a226d656d626572227d"
+        },
+        {
+          "stream": "admin-ops",
+          "direction": "server->client",
+          "json": "{\"schemaVersion\":2,\"type\":\"admin-reply\",\"id\":5,\"ok\":true,\"data\":{\"login\":\"bob\",\"overCap\":false}}",
+          "hex": "000000607b22736368656d6156657273696f6e223a322c2274797065223a2261646d696e2d7265706c79222c226964223a352c226f6b223a747275652c2264617461223a7b226c6f67696e223a22626f62222c226f766572436170223a66616c73657d7d",
+          "note": "account.add: create new member account"
+        },
+        {
+          "stream": "admin-ops",
+          "direction": "client->server",
+          "json": "{\"schemaVersion\":2,\"type\":\"admin-request\",\"id\":6,\"token\":\"kyWWNb9XgT_Xh7i2t71dTES-7ccZkcXc8k--d8L12Hc\",\"op\":\"account.limits\",\"login\":\"bob\",\"limits\":{\"devicesPerAccount\":4}}",
+          "hex": "000000ac7b22736368656d6156657273696f6e223a322c2274797065223a2261646d696e2d72657175657374222c226964223a362c22746f6b656e223a226b7957574e62395867545f5868376932743731645445532d3763635a6b635863386b2d2d64384c31324863222c226f70223a226163636f756e742e6c696d697473222c226c6f67696e223a22626f62222c226c696d697473223a7b22646576696365735065724163636f756e74223a347d7d"
+        },
+        {
+          "stream": "admin-ops",
+          "direction": "server->client",
+          "json": "{\"schemaVersion\":2,\"type\":\"admin-reply\",\"id\":6,\"ok\":true}",
+          "hex": "000000397b22736368656d6156657273696f6e223a322c2274797065223a2261646d696e2d7265706c79222c226964223a362c226f6b223a747275657d",
+          "note": "account.limits: set per-account limit override"
+        },
+        {
+          "stream": "admin-ops",
+          "direction": "client->server",
+          "json": "{\"schemaVersion\":2,\"type\":\"admin-request\",\"id\":7,\"token\":\"kyWWNb9XgT_Xh7i2t71dTES-7ccZkcXc8k--d8L12Hc\",\"op\":\"account.passwd\",\"login\":\"bob\",\"password\":\"NewBobPassword123!\"}",
+          "hex": "000000ab7b22736368656d6156657273696f6e223a322c2274797065223a2261646d696e2d72657175657374222c226964223a372c22746f6b656e223a226b7957574e62395867545f5868376932743731645445532d3763635a6b635863386b2d2d64384c31324863222c226f70223a226163636f756e742e706173737764222c226c6f67696e223a22626f62222c2270617373776f7264223a224e6577426f6250617373776f726431323321227d"
+        },
+        {
+          "stream": "admin-ops",
+          "direction": "server->client",
+          "json": "{\"schemaVersion\":2,\"type\":\"admin-reply\",\"id\":7,\"ok\":true,\"data\":{\"signedOut\":0}}",
+          "hex": "000000507b22736368656d6156657273696f6e223a322c2274797065223a2261646d696e2d7265706c79222c226964223a372c226f6b223a747275652c2264617461223a7b227369676e65644f7574223a307d7d",
+          "note": "account.passwd: change account password and sign out devices"
+        },
+        {
+          "stream": "admin-ops",
+          "direction": "client->server",
+          "json": "{\"schemaVersion\":2,\"type\":\"admin-request\",\"id\":8,\"token\":\"kyWWNb9XgT_Xh7i2t71dTES-7ccZkcXc8k--d8L12Hc\",\"op\":\"account.kind\",\"login\":\"bob\",\"kind\":\"guest\"}",
+          "hex": "000000987b22736368656d6156657273696f6e223a322c2274797065223a2261646d696e2d72657175657374222c226964223a382c22746f6b656e223a226b7957574e62395867545f5868376932743731645445532d3763635a6b635863386b2d2d64384c31324863222c226f70223a226163636f756e742e6b696e64222c226c6f67696e223a22626f62222c226b696e64223a226775657374227d"
+        },
+        {
+          "stream": "admin-ops",
+          "direction": "server->client",
+          "json": "{\"schemaVersion\":2,\"type\":\"admin-reply\",\"id\":8,\"ok\":true,\"data\":{\"changed\":true}}",
+          "hex": "000000517b22736368656d6156657273696f6e223a322c2274797065223a2261646d696e2d7265706c79222c226964223a382c226f6b223a747275652c2264617461223a7b226368616e676564223a747275657d7d",
+          "note": "account.kind: switch account between member and guest"
+        },
+        {
+          "stream": "admin-ops",
+          "direction": "client->server",
+          "json": "{\"schemaVersion\":2,\"type\":\"admin-request\",\"id\":9,\"token\":\"kyWWNb9XgT_Xh7i2t71dTES-7ccZkcXc8k--d8L12Hc\",\"op\":\"invitation.create\",\"kind\":\"member\"}",
+          "hex": "000000907b22736368656d6156657273696f6e223a322c2274797065223a2261646d696e2d72657175657374222c226964223a392c22746f6b656e223a226b7957574e62395867545f5868376932743731645445532d3763635a6b635863386b2d2d64384c31324863222c226f70223a22696e7669746174696f6e2e637265617465222c226b696e64223a226d656d626572227d"
+        },
+        {
+          "stream": "admin-ops",
+          "direction": "server->client",
+          "json": "{\"schemaVersion\":2,\"type\":\"admin-reply\",\"id\":9,\"ok\":true,\"data\":{\"code\":\"ov-XE90wR-a01wACHjnV4w\",\"invitation\":{\"codeHash\":\"08cdb464ff091c163c8f613993c8841bef37d96d02b13d2dc7fb8f52bc093e6c\",\"kind\":\"member\",\"createdAt\":\"2026-10-07T12:16:09Z\",\"used\":false},\"connectionString\":\"FMSEXCH1:x=exchange.example.net%3A22022\\u0026fp=SHA256%3ACiRPpo2CAv0EWbvrI36dOY5LzLMElp1F4Je4giuncbI\\u0026i=ov-XE90wR-a01wACHjnV4w\"}}",
+          "hex": "000001977b22736368656d6156657273696f6e223a322c2274797065223a2261646d696e2d7265706c79222c226964223a392c226f6b223a747275652c2264617461223a7b22636f6465223a226f762d5845393077522d613031774143486a6e563477222c22696e7669746174696f6e223a7b22636f646548617368223a2230386364623436346666303931633136336338663631333939336338383431626566333764393664303262313364326463376662386635326263303933653663222c226b696e64223a226d656d626572222c22637265617465644174223a22323032362d31302d30375431323a31363a30395a222c2275736564223a66616c73657d2c22636f6e6e656374696f6e537472696e67223a22464d5345584348313a783d65786368616e67652e6578616d706c652e6e657425334132323032325c753030323666703d53484132353625334143695250706f32434176304557627672493336644f59354c7a4c4d456c703146344a65346769756e6362495c7530303236693d6f762d5845393077522d613031774143486a6e563477227d7d",
+          "note": "invitation.create: creates one-time invitation and returns code and connectionString"
+        },
+        {
+          "stream": "admin-ops",
+          "direction": "client->server",
+          "json": "{\"schemaVersion\":2,\"type\":\"admin-request\",\"id\":10,\"token\":\"kyWWNb9XgT_Xh7i2t71dTES-7ccZkcXc8k--d8L12Hc\",\"op\":\"invitation.list\"}",
+          "hex": "0000007f7b22736368656d6156657273696f6e223a322c2274797065223a2261646d696e2d72657175657374222c226964223a31302c22746f6b656e223a226b7957574e62395867545f5868376932743731645445532d3763635a6b635863386b2d2d64384c31324863222c226f70223a22696e7669746174696f6e2e6c697374227d"
+        },
+        {
+          "stream": "admin-ops",
+          "direction": "server->client",
+          "json": "{\"schemaVersion\":2,\"type\":\"admin-reply\",\"id\":10,\"ok\":true,\"data\":[{\"codeHash\":\"08cdb464ff091c163c8f613993c8841bef37d96d02b13d2dc7fb8f52bc093e6c\",\"kind\":\"member\",\"createdAt\":\"2026-10-07T12:16:09Z\",\"used\":false}]}",
+          "hex": "000000d37b22736368656d6156657273696f6e223a322c2274797065223a2261646d696e2d7265706c79222c226964223a31302c226f6b223a747275652c2264617461223a5b7b22636f646548617368223a2230386364623436346666303931633136336338663631333939336338383431626566333764393664303262313364326463376662386635326263303933653663222c226b696e64223a226d656d626572222c22637265617465644174223a22323032362d31302d30375431323a31363a30395a222c2275736564223a66616c73657d5d7d",
+          "note": "invitation.list: list pending invitations with hash and kind"
+        },
+        {
+          "stream": "admin-ops",
+          "direction": "client->server",
+          "json": "{\"schemaVersion\":2,\"type\":\"admin-request\",\"id\":11,\"token\":\"kyWWNb9XgT_Xh7i2t71dTES-7ccZkcXc8k--d8L12Hc\",\"op\":\"invitation.withdraw\",\"codeHash\":\"08cdb464ff091c163c8f613993c8841bef37d96d02b13d2dc7fb8f52bc093e6c\"}",
+          "hex": "000000d17b22736368656d6156657273696f6e223a322c2274797065223a2261646d696e2d72657175657374222c226964223a31312c22746f6b656e223a226b7957574e62395867545f5868376932743731645445532d3763635a6b635863386b2d2d64384c31324863222c226f70223a22696e7669746174696f6e2e7769746864726177222c22636f646548617368223a2230386364623436346666303931633136336338663631333939336338383431626566333764393664303262313364326463376662386635326263303933653663227d"
+        },
+        {
+          "stream": "admin-ops",
+          "direction": "server->client",
+          "json": "{\"schemaVersion\":2,\"type\":\"admin-reply\",\"id\":11,\"ok\":true}",
+          "hex": "0000003a7b22736368656d6156657273696f6e223a322c2274797065223a2261646d696e2d7265706c79222c226964223a31312c226f6b223a747275657d",
+          "note": "invitation.withdraw: withdraw unused invitation by codeHash prefix"
+        },
+        {
+          "stream": "admin-ops",
+          "direction": "client->server",
+          "json": "{\"schemaVersion\":2,\"type\":\"admin-request\",\"id\":12,\"token\":\"kyWWNb9XgT_Xh7i2t71dTES-7ccZkcXc8k--d8L12Hc\",\"op\":\"shared_invitation.status\"}",
+          "hex": "000000887b22736368656d6156657273696f6e223a322c2274797065223a2261646d696e2d72657175657374222c226964223a31322c22746f6b656e223a226b7957574e62395867545f5868376932743731645445532d3763635a6b635863386b2d2d64384c31324863222c226f70223a227368617265645f696e7669746174696f6e2e737461747573227d"
+        },
+        {
+          "stream": "admin-ops",
+          "direction": "server->client",
+          "json": "{\"schemaVersion\":2,\"type\":\"admin-reply\",\"id\":12,\"ok\":true,\"data\":{\"enabled\":false}}",
+          "hex": "000000537b22736368656d6156657273696f6e223a322c2274797065223a2261646d696e2d7265706c79222c226964223a31322c226f6b223a747275652c2264617461223a7b22656e61626c6564223a66616c73657d7d",
+          "note": "shared_invitation.status: check shared invitation state"
+        },
+        {
+          "stream": "admin-ops",
+          "direction": "client->server",
+          "json": "{\"schemaVersion\":2,\"type\":\"admin-request\",\"id\":13,\"token\":\"kyWWNb9XgT_Xh7i2t71dTES-7ccZkcXc8k--d8L12Hc\",\"op\":\"shared_invitation.set\",\"password\":\"SharedPassw0rdTest!\",\"kind\":\"guest\"}",
+          "hex": "000000b57b22736368656d6156657273696f6e223a322c2274797065223a2261646d696e2d72657175657374222c226964223a31332c22746f6b656e223a226b7957574e62395867545f5868376932743731645445532d3763635a6b635863386b2d2d64384c31324863222c226f70223a227368617265645f696e7669746174696f6e2e736574222c2270617373776f7264223a2253686172656450617373773072645465737421222c226b696e64223a226775657374227d"
+        },
+        {
+          "stream": "admin-ops",
+          "direction": "server->client",
+          "json": "{\"schemaVersion\":2,\"type\":\"admin-reply\",\"id\":13,\"ok\":true}",
+          "hex": "0000003a7b22736368656d6156657273696f6e223a322c2274797065223a2261646d696e2d7265706c79222c226964223a31332c226f6b223a747275657d",
+          "note": "shared_invitation.set: set reusable shared invitation password and kind"
+        },
+        {
+          "stream": "admin-ops",
+          "direction": "client->server",
+          "json": "{\"schemaVersion\":2,\"type\":\"admin-request\",\"id\":14,\"token\":\"kyWWNb9XgT_Xh7i2t71dTES-7ccZkcXc8k--d8L12Hc\",\"op\":\"device.list\",\"login\":\"alice\"}",
+          "hex": "0000008b7b22736368656d6156657273696f6e223a322c2274797065223a2261646d696e2d72657175657374222c226964223a31342c22746f6b656e223a226b7957574e62395867545f5868376932743731645445532d3763635a6b635863386b2d2d64384c31324863222c226f70223a226465766963652e6c697374222c226c6f67696e223a22616c696365227d"
+        },
+        {
+          "stream": "admin-ops",
+          "direction": "server->client",
+          "json": "{\"schemaVersion\":2,\"type\":\"admin-reply\",\"id\":14,\"ok\":true,\"data\":[]}",
+          "hex": "000000447b22736368656d6156657273696f6e223a322c2274797065223a2261646d696e2d7265706c79222c226964223a31342c226f6b223a747275652c2264617461223a5b5d7d",
+          "note": "device.list: list enrolled devices of account without secrets"
+        },
+        {
+          "stream": "admin-ops",
+          "direction": "client->server",
+          "json": "{\"schemaVersion\":2,\"type\":\"admin-request\",\"id\":15,\"token\":\"kyWWNb9XgT_Xh7i2t71dTES-7ccZkcXc8k--d8L12Hc\",\"op\":\"device.pairing-code\",\"login\":\"alice\"}",
+          "hex": "000000937b22736368656d6156657273696f6e223a322c2274797065223a2261646d696e2d72657175657374222c226964223a31352c22746f6b656e223a226b7957574e62395867545f5868376932743731645445532d3763635a6b635863386b2d2d64384c31324863222c226f70223a226465766963652e70616972696e672d636f6465222c226c6f67696e223a22616c696365227d"
+        },
+        {
+          "stream": "admin-ops",
+          "direction": "server->client",
+          "json": "{\"schemaVersion\":2,\"type\":\"admin-reply\",\"id\":15,\"ok\":true,\"data\":{\"code\":\"NSDQX63H\",\"expiresAt\":\"2026-10-07T12:26:09Z\"}}",
+          "hex": "000000787b22736368656d6156657273696f6e223a322c2274797065223a2261646d696e2d7265706c79222c226964223a31352c226f6b223a747275652c2264617461223a7b22636f6465223a224e53445158363348222c22657870697265734174223a22323032362d31302d30375431323a32363a30395a227d7d",
+          "note": "device.pairing-code: single-use 10-minute pairing code for local enrollment"
+        },
+        {
+          "stream": "admin-ops",
+          "direction": "client->server",
+          "json": "{\"schemaVersion\":2,\"type\":\"admin-request\",\"id\":16,\"token\":\"kyWWNb9XgT_Xh7i2t71dTES-7ccZkcXc8k--d8L12Hc\",\"op\":\"device.revoke\",\"login\":\"alice\",\"deviceId\":\"non-existent-device-id\"}",
+          "hex": "000000b17b22736368656d6156657273696f6e223a322c2274797065223a2261646d696e2d72657175657374222c226964223a31362c22746f6b656e223a226b7957574e62395867545f5868376932743731645445532d3763635a6b635863386b2d2d64384c31324863222c226f70223a226465766963652e7265766f6b65222c226c6f67696e223a22616c696365222c226465766963654964223a226e6f6e2d6578697374656e742d6465766963652d6964227d"
+        },
+        {
+          "stream": "admin-ops",
+          "direction": "server->client",
+          "json": "{\"schemaVersion\":2,\"type\":\"admin-reply\",\"id\":16,\"ok\":false,\"code\":\"not-found\",\"error\":\"no such device in that account\"}",
+          "hex": "000000777b22736368656d6156657273696f6e223a322c2274797065223a2261646d696e2d7265706c79222c226964223a31362c226f6b223a66616c73652c22636f6465223a226e6f742d666f756e64222c226572726f72223a226e6f20737563682064657669636520696e2074686174206163636f756e74227d",
+          "note": "device.revoke: not-found when the account has no such device"
+        },
+        {
+          "stream": "admin-ops",
+          "direction": "client->server",
+          "json": "{\"schemaVersion\":2,\"type\":\"admin-request\",\"id\":17,\"token\":\"kyWWNb9XgT_Xh7i2t71dTES-7ccZkcXc8k--d8L12Hc\",\"op\":\"grant.list\",\"login\":\"alice\"}",
+          "hex": "0000008a7b22736368656d6156657273696f6e223a322c2274797065223a2261646d696e2d72657175657374222c226964223a31372c22746f6b656e223a226b7957574e62395867545f5868376932743731645445532d3763635a6b635863386b2d2d64384c31324863222c226f70223a226772616e742e6c697374222c226c6f67696e223a22616c696365227d"
+        },
+        {
+          "stream": "admin-ops",
+          "direction": "server->client",
+          "json": "{\"schemaVersion\":2,\"type\":\"admin-reply\",\"id\":17,\"ok\":true,\"data\":[]}",
+          "hex": "000000447b22736368656d6156657273696f6e223a322c2274797065223a2261646d696e2d7265706c79222c226964223a31372c226f6b223a747275652c2264617461223a5b5d7d",
+          "note": "grant.list: list active resource and broadcast grants"
+        },
+        {
+          "stream": "admin-ops",
+          "direction": "client->server",
+          "json": "{\"schemaVersion\":2,\"type\":\"admin-request\",\"id\":18,\"token\":\"kyWWNb9XgT_Xh7i2t71dTES-7ccZkcXc8k--d8L12Hc\",\"op\":\"account.remove\",\"login\":\"bob\"}",
+          "hex": "0000008c7b22736368656d6156657273696f6e223a322c2274797065223a2261646d696e2d72657175657374222c226964223a31382c22746f6b656e223a226b7957574e62395867545f5868376932743731645445532d3763635a6b635863386b2d2d64384c31324863222c226f70223a226163636f756e742e72656d6f7665222c226c6f67696e223a22626f62227d"
+        },
+        {
+          "stream": "admin-ops",
+          "direction": "server->client",
+          "json": "{\"schemaVersion\":2,\"type\":\"admin-reply\",\"id\":18,\"ok\":true}",
+          "hex": "0000003a7b22736368656d6156657273696f6e223a322c2274797065223a2261646d696e2d7265706c79222c226964223a31382c226f6b223a747275657d",
+          "note": "account.remove: delete account and clean up resources and directory"
+        },
+        {
+          "stream": "admin-ops",
+          "direction": "client->server",
+          "json": "{\"schemaVersion\":2,\"type\":\"bye\"}",
+          "hex": "000000207b22736368656d6156657273696f6e223a322c2274797065223a22627965227d"
+        },
+        {
+          "stream": "admin-ops",
+          "direction": "server->client",
+          "note": "bye closes the administration stream cleanly",
           "closed": true
         }
       ]

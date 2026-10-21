@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024" role="img">
+<title>Exchange server</title>
+<defs>
+<radialGradient id="hub" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="#FFFFFF"/><stop offset=".55" stop-color="#FFF4CC"/><stop offset="1" stop-color="#FFD98A"/></radialGradient>
+</defs>
+<path d="M509.2,511.88 L346.94,370.83 L405.07,124.29 Q408.77,108.6 415.73,106.99 Z" fill="#FFD54A"/>
+<path d="M509.2,511.88 L415.73,106.99 Q422.68,105.39 432.89,117.87 L593.21,313.97 Z" fill="#E58F00"/>
+<path d="M522.66,517.59 L606.67,319.69 L859.1,298.79 Q875.17,297.46 878.85,303.58 Z" fill="#FF8F75"/>
+<path d="M522.66,517.59 L878.85,303.58 Q882.52,309.69 873.8,323.26 L736.84,536.33 Z" fill="#C93124"/>
+<path d="M521.39,532.16 L735.57,550.9 L833.45,784.52 Q839.68,799.39 835,804.78 Z" fill="#D58CFF"/>
+<path d="M521.39,532.16 L835,804.78 Q830.32,810.16 814.72,806.06 L569.75,741.65 Z" fill="#7A2DBE"/>
+<path d="M507.14,535.45 L555.51,744.94 L363.56,910.22 Q351.35,920.74 344.78,917.95 Z" fill="#72BBFF"/>
+<path d="M507.14,535.45 L344.78,917.95 Q338.21,915.17 337.29,899.07 L322.85,646.18 Z" fill="#1D5CC2"/>
+<path d="M499.61,522.92 L315.32,633.65 L98.81,502.18 Q85.03,493.81 85.65,486.7 Z" fill="#55E6B4"/>
+<path d="M499.61,522.92 L85.65,486.7 Q86.27,479.59 101.3,473.74 L337.35,381.86 Z" fill="#0C8A66"/>
+<circle cx="512" cy="524" r="64.5" fill="url(#hub)"/>
+<circle cx="512" cy="524" r="64.5" fill="none" stroke="#0B1020" stroke-opacity=".28" stroke-width="5.16"/>
+</svg>

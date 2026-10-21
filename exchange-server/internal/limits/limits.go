@@ -297,6 +297,12 @@ func (v *Verifier) Peak() int {
 	return v.peak
 }
 
+// Hold takes a verification slot until the returned release function is called.
+func (v *Verifier) Hold() func() {
+	v.sem <- struct{}{}
+	return func() { <-v.sem }
+}
+
 // PreAuth is the shared pool of streams that have not yet registered, attached or connected.
 // When it is full, the OLDEST unauthenticated stream is evicted - never an authenticated one.
 type PreAuth struct {

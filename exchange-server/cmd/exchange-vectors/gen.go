@@ -123,6 +123,7 @@ func frameNotes() []string {
 		"The `clipboard` transcript is section 22 (ticket 229): after `clipboard-ready` and after the members of `clipboard-value` the bytes are RAW - one step per byte run, whose `hex` is the bytes exactly as they crossed the stream; a frame assembler stops there. A put's completion is judged against a short probe for bytes beyond the declared size, and a sender that half-closes is judged at once.",
 		"This corpus is evidence for sections 5 to 7, 22 and 27 at edition 1.1. The transcripts `sealed-devices`, `sealed-folder`, `sealed-grant` and `sealed-clipboard` run against a server that advertises `sealed` (item DP); every other transcript runs against one that does not, so its `welcome.features` carries no `sealed` and its clipboard kinds are `text`, `image` and `file`.",
 		"The `sealed` member of this file lists every box of the `sealed-*` transcripts with the context it was sealed under, the devices it is from and to, and the clear payload it opens to. The server did not make, open or check a box (item DH): the boxes are sealed by the generator over the fixed device keys of the shared vector file e2e-v1.json, so a product that holds that file's private keys opens every one of them. See `sealed.notes`.",
+		"The transcripts `admin-native` and `admin-websocket` are evidence for remote administration (ticket 245, DEVICE-EXCHANGE 1.4, REMOTE-ADMIN.md and WEB-BINDING.md). `admin-native` exercises the length-prefixed envelope stream inside TLS (0x00), including admin-disabled, allowedAddresses exclusion, wrong password, rate-limited by the per-address pacer, capacity, lapsed session token, and all 18 carried operations with exact reply shapes and connectionString on invitation.create; `admin-websocket` exercises the WebSocket opening (/v2/ws) with subprotocol fms-exchange-v2, Origin validation, authentication and carried operations.",
 	}
 }
 
@@ -152,11 +153,12 @@ func generate(commit string) (files map[string][]byte, err error) {
 	sealedCases = nil
 	for _, sc := range []func() *transcript{scenarioEnrollAndHello, scenarioPairing, scenarioRefusals, scenarioDirectory,
 		scenarioTunnels, scenarioRelay, scenarioCast, scenarioRegistration, scenarioPasswordAndSignOut, scenarioPace,
-		scenarioClipboard, scenarioSealedDevices, scenarioSealedFolder, scenarioSealedGrant, scenarioSealedClipboard} {
+		scenarioClipboard, scenarioSealedDevices, scenarioSealedFolder, scenarioSealedGrant, scenarioSealedClipboard,
+		scenarioAdminNative, scenarioAdminWebSocket} {
 		transcripts = append(transcripts, sc())
 	}
 	frames := framesFile{
-		Contract: contractID, ContractVersion: contractVersion, Sections: "5, 6, 7.1-7.10, 22, 27", Rung: 2, Producer: producerName,
+		Contract: contractID, ContractVersion: contractVersion, Sections: "5, 6, 7.1-7.10, 22, 27, REMOTE-ADMIN", Rung: 2, Producer: producerName,
 		Notes: frameNotes(),
 		Constants: map[string]int{"maxFrame": wire.MaxFrame, "maxFrameAuth": wire.MaxFrameAuth, "maxRecord": wire.MaxRecord,
 			"maxChunkLength": wire.MaxChunkLen, "schemaVersion": wire.SchemaVersion},

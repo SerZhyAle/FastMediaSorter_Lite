@@ -344,6 +344,34 @@ func (e *AccountDelete) validate() error {
 
 func (e *AccountDeleted) validate() error { return nil }
 
+func (e *AdminAuth) validate() error {
+	if len(e.Password) == 0 || len(e.Password) > maxPassword || !utf8.ValidString(e.Password) {
+		return errors.New("password is out of bounds")
+	}
+	return nil
+}
+
+func (e *AdminAuthOK) validate() error {
+	if !ValidToken(e.Token) {
+		return errors.New("token is not a token")
+	}
+	if e.ExpiresSeconds <= 0 {
+		return errors.New("expiresSeconds must be positive")
+	}
+	return nil
+}
+
+func (e *AdminRequest) validate() error {
+	if e.Op == "" {
+		return errors.New("admin-request requires op")
+	}
+	return nil
+}
+
+func (e *AdminReply) validate() error {
+	return nil
+}
+
 // --- the clipboard (section 22) ---
 
 // Bounds of item BW: a name is at most 255 bytes of UTF-8, a mimeType at most 127 in the

@@ -388,6 +388,8 @@ Public Class ImportedSettingsLimitsTests
             .RecentFoldersLimit = 150,
             .OcrDiskCacheMaxMb = 500,
             .DecodeCacheMaxMb = 1024,
+            .AnimatedViaVideo = False,
+            .AnimatedViaVideoFfmpegAsked = True,
             .PanelViewMode = "list",
             .PanelThumbnailSize = 192,
             .PanelThumbCacheMb = 512,
@@ -487,7 +489,7 @@ Public Class ImportedSettingsLimitsTests
         ' A Boolean can only be true or false, so there is nothing to fold - the list
         ' exists so a NEW property cannot slip past the inventory unnoticed.
         Dim listed As New HashSet(Of String) From {
-            "AdvanceAfterCopy", "AllowNewWindows", "AudioControlsAlwaysVisible", "AudioVisualiser", "AutoAcceptLiveCast",
+            "AdvanceAfterCopy", "AllowNewWindows", "AnimatedViaVideo", "AnimatedViaVideoFfmpegAsked", "AudioControlsAlwaysVisible", "AudioVisualiser", "AutoAcceptLiveCast",
             "RevealStatusOnFileOperation",
             "CreateMissingDestination", "DeleteToRecycleBin", "IncludeAudioInNavigation",
             "IncludeDocumentInNavigation", "IncludeSubfolders", "IncludeVideoInNavigation", "ModernChrome", "ChromePinned", "ChromeRow1Pinned", "ChromeRow2Pinned", "ChromeStatusPinned", "RecipientsOverlayPinned", "ChromeWindowControlsPinned",
@@ -529,6 +531,7 @@ Public Class ImportedSettingsLimitsTests
             .AudioVisualiser = False, .SleepTimerMinutes = 45, .StartupOpenMode = "lastFile",
             .ResumeLastPlayback = True, .AllowNewWindows = True, .RecentFilesLimit = 120,
             .RecentFoldersLimit = 64, .OcrDiskCacheMaxMb = 333, .DecodeCacheMaxMb = 1000,
+            .AnimatedViaVideo = False, .AnimatedViaVideoFfmpegAsked = True,
             .PanelViewMode = "list", .PanelThumbnailSize = 128, .PanelThumbCacheMb = 512,
             .ArchiveCacheMaxMb = 4096, .ArchiveMaxEntryMb = 256, .ArchiveMaxEntries = 5000,
             .RemoteCacheMaxMb = 3000, .SecureIncludeInNavigation = False,

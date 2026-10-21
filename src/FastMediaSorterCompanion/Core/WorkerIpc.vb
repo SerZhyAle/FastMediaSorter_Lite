@@ -529,6 +529,10 @@ Public Class WorkerBroadcast
     Public Property ExpiresAt As String = ""
     Public Property Hits As Long
     Public Property BytesServed As Long
+    ''' <summary>The worker's irreversible expiry flag (WORKER-IPC 0.16: snapshot media kind and
+    ''' irreversible expiry). Absent on a worker that predates it = False, which is also the
+    ''' honest reading: no claim of expiry was made.</summary>
+    Public Property Expired As Boolean
 End Class
 
 Public Class WorkerBroadcastItem
@@ -620,8 +624,102 @@ Public Class WorkerStatus
     Public Property PortSupported As Boolean
     ''' <summary>Non-empty when the LAST attempt to start the SFTP server failed; cleared by
     ''' a successful start. The boot-restore path has no requester to answer, so without this
-    ''' a refused pinned port would read as a plain "not running".</summary>
+    ''' a refused pinned port would read as a plain "not running". A value that is not a JSON
+    ''' string is read as absent (<see cref="LastStartErrorWire"/>): a type drift of a known
+    ''' field never poisons the whole answer into "unreadable" (VERSIONING section 4).</summary>
+    <JsonIgnore>
     Public Property LastStartError As String
+
+    ''' <summary>The wire member <c>lastStartError</c>, bound as a raw JSON value so that ANY type
+    ''' binds: a string is the text, everything else (and null) leaves <see cref="LastStartError"/>
+    ''' Nothing, exactly as if the member were absent. Before this, a number or an object here made
+    ''' System.Text.Json throw, which <see cref="WorkerIpc.ParseResponse"/> reports as an unreadable
+    ''' answer for the WHOLE response - status, roots and ports lost with it. (A custom converter
+    ''' would be the usual tool; VB cannot consume Utf8JsonReader, a ref struct.) Not for callers:
+    ''' read <see cref="LastStartError"/>.</summary>
+    <JsonPropertyName("lastStartError")>
+    <JsonIgnore(Condition:=JsonIgnoreCondition.WhenWritingDefault)>
+    Public Property LastStartErrorWire As JsonElement
+        Get
+            Return Nothing
+        End Get
+        Set(value As JsonElement)
+            LastStartError = If(value.ValueKind = JsonValueKind.String, value.GetString(), Nothing)
+        End Set
+    End Property
+
+    Private _lastStartErrorKind As String = StartErrorKinds.None
+    Private _lastStartErrorKindRaw As String = ""
+    Private _hasLastStartErrorKind As Boolean
+
+    ''' <summary>The structured reading of <see cref="LastStartError"/> (WORKER-IPC 0.17, the
+    ''' consolidation amendment item 1): one of <see cref="StartErrorKinds"/> - empty (no start
+    ''' error), <c>in-use</c> (an occupied address), <c>excluded-range</c> (an access denial in a
+    ''' reserved port range) or <c>other</c>. An unknown token, and a value that is not a JSON
+    ''' string, read as <c>other</c>; the token as received stays in
+    ''' <see cref="LastStartErrorKindRaw"/>. Setting it - from the wire or in code - marks the
+    ''' field as SENT (<see cref="HasLastStartErrorKind"/>); a JSON null is the same as absent.
+    ''' A worker that predates the field never sets it, and the host then falls back to the
+    ''' literal <see cref="ShareController.ExcludedRangeMarker"/> token and the free text.</summary>
+    <JsonIgnore>
+    Public Property LastStartErrorKind As String
+        Get
+            Return _lastStartErrorKind
+        End Get
+        Set(value As String)
+            If value Is Nothing Then
+                _lastStartErrorKind = StartErrorKinds.None
+                _lastStartErrorKindRaw = ""
+                _hasLastStartErrorKind = False
+                Return
+            End If
+            _hasLastStartErrorKind = True
+            _lastStartErrorKindRaw = value
+            _lastStartErrorKind = StartErrorKinds.Normalize(value)
+        End Set
+    End Property
+
+    ''' <summary>The wire member <c>lastStartErrorKind</c>, bound as a raw JSON value so that ANY
+    ''' type binds (see <see cref="LastStartErrorWire"/>): a string is the token, JSON null is the
+    ''' same as absent, and any other value becomes the first 64 characters of its JSON text - which
+    ''' <see cref="StartErrorKinds.Normalize"/> then reads as <c>other</c>. Not for callers: read
+    ''' <see cref="LastStartErrorKind"/>.</summary>
+    <JsonPropertyName("lastStartErrorKind")>
+    <JsonIgnore(Condition:=JsonIgnoreCondition.WhenWritingDefault)>
+    Public Property LastStartErrorKindWire As JsonElement
+        Get
+            Return Nothing
+        End Get
+        Set(value As JsonElement)
+            Select Case value.ValueKind
+                Case JsonValueKind.Undefined, JsonValueKind.Null
+                    LastStartErrorKind = Nothing
+                Case JsonValueKind.String
+                    LastStartErrorKind = value.GetString()
+                Case Else
+                    Dim raw As String = value.GetRawText()
+                    LastStartErrorKind = If(raw.Length > 64, raw.Substring(0, 64), raw)
+            End Select
+        End Set
+    End Property
+
+    ''' <summary>The kind token exactly as the worker sent it ("" when absent); for a value that
+    ''' is not a JSON string, the first 64 characters of its JSON text. Kept for the log.</summary>
+    <JsonIgnore>
+    Public ReadOnly Property LastStartErrorKindRaw As String
+        Get
+            Return _lastStartErrorKindRaw
+        End Get
+    End Property
+
+    ''' <summary>True when the worker sent <c>lastStartErrorKind</c> (any non-null value). When
+    ''' False the host reads the start error from its text, as it did before the field existed.</summary>
+    <JsonIgnore>
+    Public ReadOnly Property HasLastStartErrorKind As Boolean
+        Get
+            Return _hasLastStartErrorKind
+        End Get
+    End Property
     Public Property Reachability As WorkerReachability
     ''' <summary>Local usage counters (SPECIFICATION_SHARE_STATS_AND_TRAY_HUB.md §3.2).
     ''' Additive field - absent from an older worker, in which case it stays Nothing and is
@@ -641,6 +739,35 @@ Public Class WorkerStatus
     Public Property BroadcastReachability As WorkerReachability
     ' No `exchange` / `exchangeSupported` member (ticket 170 section 5): the worker is not told about an exchange server, so its status
     ' has nothing to say about one. A worker that still reports such a member has it ignored (an unknown member is never an error).
+End Class
+
+''' <summary>The vocabulary of <c>status.lastStartErrorKind</c> (WORKER-IPC 0.17, consolidation
+''' amendment item 1). Matched literally and case-sensitively, like the
+''' <see cref="ShareController.ExcludedRangeMarker"/> token it refines.</summary>
+Public NotInheritable Class StartErrorKinds
+    ''' <summary>No start error.</summary>
+    Public Const None As String = ""
+    ''' <summary>The listen address is occupied.</summary>
+    Public Const InUse As String = "in-use"
+    ''' <summary>An access denial in a reserved range (the Hyper-V, WSL or Docker excluded
+    ''' port-range case).</summary>
+    Public Const ExcludedRange As String = "excluded-range"
+    ''' <summary>Any other start error - and what every unknown token reads as.</summary>
+    Public Const Other As String = "other"
+
+    Private Sub New()
+    End Sub
+
+    ''' <summary>The documented default for an unknown value (VERSIONING section 4 rule 4):
+    ''' <c>other</c>. The four known tokens map to themselves.</summary>
+    Public Shared Function Normalize(token As String) As String
+        Select Case token
+            Case None, InUse, ExcludedRange, Other
+                Return token
+            Case Else
+                Return Other
+        End Select
+    End Function
 End Class
 
 ''' <summary>Local-only SFTP usage counters kept by the worker in <c>stats.json</c> and

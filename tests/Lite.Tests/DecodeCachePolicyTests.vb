@@ -69,6 +69,27 @@ Public Class DecodeCachePolicyTests
         Assert.Equal(DecodeCachePolicy.Absolute_Max_Entry_Bytes, DecodeCachePolicy.MaxEntryBytes(8192))
     End Sub
 
+    ''' <summary>Spec 241 rule 5: 128 MB, so a 368 Mpx animation's 101 MB undithered payload
+    ''' is kept instead of being re-encoded on every visit.</summary>
+    <Fact>
+    Public Sub The_entry_ceiling_is_128_megabytes_and_still_a_quarter_of_the_budget()
+        Assert.Equal(128L * 1024L * 1024L, DecodeCachePolicy.Absolute_Max_Entry_Bytes)
+        Assert.Equal(128L * 1024L * 1024L, DecodeCachePolicy.MaxEntryBytes(512))
+        Assert.Equal(25L * 1024L * 1024L, DecodeCachePolicy.MaxEntryBytes(100))
+        Assert.True(101L * 1024L * 1024L <= DecodeCachePolicy.MaxEntryBytes(512))
+        Assert.True(187L * 1024L * 1024L > DecodeCachePolicy.MaxEntryBytes(512), "a dithered 187 MB payload is still never stored")
+    End Sub
+
+    ''' <summary>Spec 241 rule 10: a first-frame stand-in is never the cache's answer.</summary>
+    <Fact>
+    Public Sub A_preview_is_never_stored()
+        Dim preview As New DecodedPayload With {
+            .Bytes = New Byte(1023) {}, .Kind = DecodedPayloadKind.Png, .IsAnimation = False,
+            .DecodeMs = 9999, .IsPreview = True
+        }
+        Assert.False(DecodeCachePolicy.ShouldStore(preview, 512))
+    End Sub
+
     <Fact>
     Public Sub A_failed_decode_is_never_stored()
         Assert.False(DecodeCachePolicy.ShouldStore(Nothing, 512))

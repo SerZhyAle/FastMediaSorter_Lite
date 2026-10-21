@@ -113,6 +113,11 @@ Partial Public NotInheritable Class Localization
             "F4 - apri un file da un'altra cartella", "F4 - abrir un archivo de otra carpeta", "F4 - ouvrir un fichier d'un autre dossier",
             "F4 - abrir um ficheiro de outra pasta", "F4 - فتح ملف من مجلد آخر", "F4 - किसी दूसरे फ़ोल्डर की फ़ाइल खोलें",
             "F4 - অন্য ফোল্ডারের ফাইল খুলুন", "F4 - کسی دوسرے فولڈر کی فائل کھولیں", "F4 - 打开其他文件夹中的文件")
+        Add("Проверьте, что ресурс включён и присоединён",
+            "Check that the resource is turned on and connected", "Перевірте, що ресурс увімкнено та приєднано", "Prüfen Sie, ob die Ressource eingeschaltet und verbunden ist",
+            "Verificare che la risorsa sia accesa e collegata", "Compruebe que el recurso esté encendido y conectado", "Vérifiez que la ressource est allumée et connectée",
+            "Verifique se o recurso está ligado e conectado", "تحقق من تشغيل المورد وتوصيله", "जाँचें कि संसाधन चालू और जुड़ा हुआ है",
+            "রিসোর্সটি চালু এবং সংযুক্ত আছে কিনা তা পরীক্ষা করুন", "چیک کریں کہ وسیلہ آن اور منسلک ہے", "请检查资源是否已开启并连接")
         Add("Сначала откройте файл (F4) или папку с медиафайлами",
             "First open a file (F4) or a folder with media files", "Спершу відкрийте файл (F4) або теку з медіафайлами", "Öffnen Sie zuerst eine Datei (F4) oder einen Ordner mit Mediendateien",
             "Apri prima un file (F4) o una cartella con file multimediali", "Primero abra un archivo (F4) o una carpeta con archivos multimedia", "Ouvrez d'abord un fichier (F4) ou un dossier de fichiers multimédias",
@@ -270,6 +275,12 @@ Partial Public NotInheritable Class Localization
             "Don't save", "Не зберігати", "Nicht speichern", "Non salvare", "No guardar",
             "Ne pas enregistrer", "Não salvar", "عدم الحفظ", "सहेजें नहीं",
             "সংরক্ষণ করবেন না", "محفوظ نہ کریں", "不保存")
+
+        ' --- the plain answers of a Yes/No and OK/Cancel question (ticket 243 T-12a, ViewerBoxMapping) --------------
+        ' "ОК" and "Отмена" are already registered (SettingsExpansion and Support tables); the same words as the
+        ' Share Manager's own table for these two, which has its own copy of the layer.
+        Add("Да", "Yes", "Так", "Ja", "Sì", "Sí", "Oui", "Sim", "نعم", "हाँ", "হ্যাঁ", "ہاں", "是")
+        Add("Нет", "No", "Ні", "Nein", "No", "No", "Non", "Não", "لا", "नहीं", "না", "نہیں", "否")
 
         ' --- values that used to be glued to a translated fragment (124 UX-217, the sweep of 2026-10-13) ----------
         ' Each is ONE sentence with its value in a placeholder: where the value goes, and in which direction the

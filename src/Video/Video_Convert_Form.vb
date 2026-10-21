@@ -24,6 +24,7 @@ Friend NotInheritable Class Video_Convert_Form
     Private ReadOnly caption As Label
     Private ReadOnly bar As ProgressBar
     Private ReadOnly cancelButton As Button
+    Private ReadOnly answerRow As DialogButtonRow
 
     ''' <summary>Set once the caller's work has finished, so closing the window from the
     ''' title bar cannot be mistaken for pressing Cancel.</summary>
@@ -46,7 +47,8 @@ Friend NotInheritable Class Video_Convert_Form
         Me.StartPosition = FormStartPosition.CenterParent
         ' Direction from the language table (APP-BEHAVIOUR rule 8, ticket 028 Ф-7).
         If Localization.IsRightToLeft() Then Me.RightToLeft = RightToLeft.Yes
-        Me.ClientSize = New Size(400, 116)
+        ' The authored content ends at 60 (the bar); the bottom row below it is 50 tall (8 + one 32 line + 10) at 96 dpi.
+        Me.ClientSize = New Size(400, 110)
 
         caption = New Label With {
             .AutoSize = False,
@@ -63,17 +65,19 @@ Friend NotInheritable Class Video_Convert_Form
             .Style = If(determinate, ProgressBarStyle.Continuous, ProgressBarStyle.Marquee)
         }
         cancelButton = New Button With {
-            .Location = New Point(296, 74),
-            .Size = New Size(90, 28),
             .Text = Localization.T("Отмена")
         }
         AddHandler cancelButton.Click, AddressOf CancelRequested
-        ButtonGlyphs.Apply(cancelButton, "action.cancel", ButtonGlyphRole.Dismissing)
+
+        ' The one answer rides the shared bottom row (ticket 243 T-8b, BUTTONS 2.0 sections 3 and 4). Bind keeps the
+        ' meaning it had: Escape is Cancel, and Enter - with Cancel the only button of the window - is Cancel too.
+        answerRow = New DialogButtonRow() With {.Dock = DockStyle.Bottom, .Name = "convert_Buttons", .Padding = New Padding(14, 8, 14, 10)}
+        answerRow.Add(cancelButton, DialogButtonRole.Dismissing, "action.cancel")
 
         Me.Controls.Add(caption)
         Me.Controls.Add(bar)
-        Me.Controls.Add(cancelButton)
-        Me.CancelButton = cancelButton
+        Me.Controls.Add(answerRow)
+        answerRow.Bind(Me)
 
         ' LAST line of the builder: scaling touches only the children that exist by now.
         DialogLayout.ApplyAutoScale(Me)
@@ -82,6 +86,7 @@ Friend NotInheritable Class Video_Convert_Form
     Protected Overrides Sub OnLoad(e As EventArgs)
         MyBase.OnLoad(e)
         DialogLayout.FitContent(Me)
+        DialogLayout.KeepRoomForRow(Me, answerRow)
     End Sub
 
     ''' <summary>Called from the encoder's progress reports, already marshalled onto this
@@ -144,6 +149,7 @@ Friend NotInheritable Class Video_Replace_Confirm_Form
     Inherits Form
 
     Private ReadOnly suppress As CheckBox
+    Private ReadOnly answerRow As DialogButtonRow
 
     ''' <summary>True when the user ticked "do not ask again". Read only after an OK.</summary>
     Friend ReadOnly Property DoNotAskAgain As Boolean
@@ -163,7 +169,6 @@ Friend NotInheritable Class Video_Replace_Confirm_Form
         Me.StartPosition = FormStartPosition.CenterParent
         ' Direction from the language table (APP-BEHAVIOUR rule 8, ticket 028 Ф-7).
         If Localization.IsRightToLeft() Then Me.RightToLeft = RightToLeft.Yes
-        Me.ClientSize = New Size(460, If(warnAboutAlpha, 176, 156))
 
         Dim message As String = Localization.TF("{0} будет преобразован в {1}. Оригинал будет удалён безвозвратно, минуя Корзину.",
                                                 sourceName, targetName)
@@ -180,34 +185,37 @@ Friend NotInheritable Class Video_Replace_Confirm_Form
         }
 
         suppress = New CheckBox With {
-            .AutoSize = True,
-            .Location = New Point(14, text.Bottom + 10),
+            .Name = "replace_Suppress",
             .Text = Localization.T("Не спрашивать до закрытия программы")
         }
+        ' The option is a row of the Settings anatomy (ticket 243 T-11b, BOOLEAN-OPTION 2.0): the same check box with the same
+        ' state, a 20 px box in a 32 px target, the caption beside it. A row is 40 px tall at 96 dpi and FitContent grows it.
+        Dim suppressRow As OptionRowHost = DialogOptionRow.CreateAt(suppress, Nothing, 14, text.Bottom + 6, 460)
 
         Dim accept As New Button With {
-            .Location = New Point(232, suppress.Bottom + 12),
-            .Size = New Size(120, 28),
             .Text = Localization.T("Преобразовать"),
             .DialogResult = DialogResult.OK
         }
         Dim decline As New Button With {
-            .Location = New Point(358, suppress.Bottom + 12),
-            .Size = New Size(88, 28),
             .Text = Localization.T("Отмена"),
             .DialogResult = DialogResult.Cancel
         }
-        ' The acting button deletes the original past the Recycle Bin: the danger face. "Cancel" stays the safe answer.
-        ButtonGlyphs.Apply(accept, "action.convert", ButtonGlyphRole.Irreversible)
-        ButtonGlyphs.Apply(decline, "action.cancel", ButtonGlyphRole.Dismissing)
+
+        ' The answers ride the shared bottom row (ticket 243 T-8b, BUTTONS 2.0 sections 3 and 4): Cancel first, the acting
+        ' button in the affirmative place with the danger face (it deletes the original past the Recycle Bin, so it is
+        ' the Destructive role). Bind keeps the meaning they had: Escape is Cancel, and Cancel is the default - an
+        ' irreversible action must not be one Enter away.
+        answerRow = New DialogButtonRow() With {.Dock = DockStyle.Bottom, .Name = "replace_Buttons", .Padding = New Padding(14, 8, 14, 10)}
+        answerRow.Add(accept, DialogButtonRole.Destructive, "action.convert")
+        answerRow.Add(decline, DialogButtonRole.Dismissing, "action.cancel")
+
+        ' The authored content ends at the option row; the bottom row below it is 50 tall (8 + one 32 line + 10) at 96 dpi.
+        Me.ClientSize = New Size(460, suppressRow.Bottom + 50)
 
         Me.Controls.Add(text)
-        Me.Controls.Add(suppress)
-        Me.Controls.Add(accept)
-        Me.Controls.Add(decline)
-        ' Cancel is the default: an irreversible action should not be one Enter away.
-        Me.AcceptButton = Nothing
-        Me.CancelButton = decline
+        Me.Controls.Add(suppressRow)
+        Me.Controls.Add(answerRow)
+        answerRow.Bind(Me)
 
         ' LAST line of the builder: scaling touches only the children that exist by now.
         DialogLayout.ApplyAutoScale(Me)
@@ -216,6 +224,7 @@ Friend NotInheritable Class Video_Replace_Confirm_Form
     Protected Overrides Sub OnLoad(e As EventArgs)
         MyBase.OnLoad(e)
         DialogLayout.FitContent(Me)
+        DialogLayout.KeepRoomForRow(Me, answerRow)
     End Sub
 
 End Class

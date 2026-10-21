@@ -135,6 +135,41 @@ Friend Module DpiLayout
         NudgeOnScreen(f, wa)
     End Sub
 
+    ''' <summary>Hands a button to the shared answer row (<see cref="DialogButtonRow"/>, BUTTONS 2.0 sections 3 and 4;
+    ''' ticket 243 T-8b). The row owns the button's size, margin and place, and its width already holds the padding of
+    ''' the caption - so the 12 px the Companion's own <c>NewButton</c> puts inside the button is dropped here, or the
+    ''' caption would be asked to fit in a box 24 px narrower than the row measured. Name, handlers, DialogResult and
+    ''' the glyph the button already carries are kept.</summary>
+    Friend Function AddAnswer(row As DialogButtonRow, button As Button, role As DialogButtonRole, Optional glyphId As String = Nothing) As Button
+        button.Padding = Padding.Empty
+        Return row.Add(button, role, glyphId)
+    End Function
+
+    ''' <summary>Keeps the docked answer row of a window with a FIXED client size clear of the content above it: the window
+    ''' is authored with the room of a one-line row, and a row that wraps in a longer language or at a higher scale is
+    ''' taller (a bottom-docked row grows upwards over the controls). The window is made taller by exactly the missing
+    ''' amount and kept on its monitor. Call it from <c>OnLoad</c>, after <c>MyBase.OnLoad</c>; an auto-sized window
+    ''' does not need it, and a window whose row fits is not touched. This is the Companion's own twin of
+    ''' <c>DialogLayout.KeepRoomForRow</c> (which names viewer services and is not linked here).</summary>
+    Friend Sub KeepRoomForRow(f As Form, row As Control)
+        If f Is Nothing OrElse f.IsDisposed OrElse row Is Nothing Then Return
+        f.PerformAutoScale()
+        Dim lowest As Integer = 0
+        For Each c As Control In f.Controls
+            If Object.ReferenceEquals(c, row) OrElse Not c.Visible OrElse c.Dock <> DockStyle.None Then Continue For
+            lowest = Math.Max(lowest, c.Bottom)
+        Next
+        Dim rowHeight As Integer = Math.Max(row.Height, row.GetPreferredSize(New Size(f.ClientSize.Width, 0)).Height)
+        Dim missing As Integer = lowest + rowHeight - f.ClientSize.Height
+        If missing <= 0 Then Return
+        Dim sizeBefore As Size = f.Size
+        f.ClientSize = New Size(f.ClientSize.Width, f.ClientSize.Height + missing)
+        If f.Size <> sizeBefore AndAlso (f.StartPosition = FormStartPosition.CenterParent OrElse f.StartPosition = FormStartPosition.CenterScreen) Then
+            f.Location = New Point(f.Left - (f.Width - sizeBefore.Width) \ 2, f.Top - (f.Height - sizeBefore.Height) \ 2)
+        End If
+        ClampToWorkingArea(f)
+    End Sub
+
     ''' <summary>Centers the form over its owner (or the working area when it has none), then
     ''' clamps it fully on-screen. Use after changing a form's size post-construction, since
     ''' the StartPosition centering already ran against the old size.</summary>
@@ -148,3 +183,26 @@ Friend Module DpiLayout
     End Sub
 
 End Module
+
+''' <summary>The viewer's <c>DialogLayout</c> name for the windows the two programs SHARE: <c>src\Exchange\*.vb</c> is linked
+''' into the Companion by a wildcard, and a shared dialog written against the viewer's helper (the connection diagnosis
+''' window) must compile here too. The viewer's class names viewer services (<c>AppFileLogger</c>, <c>DialogRules</c>), so
+''' it is not linked; each member below only forwards to the Companion's own <see cref="DpiLayout"/> equivalent - no second
+''' implementation, nothing to keep in step (ticket 243 T-8b).</summary>
+Friend NotInheritable Class DialogLayout
+
+    Private Sub New()
+    End Sub
+
+    Friend Shared Sub ApplyAutoScale(f As ContainerControl)
+        DpiLayout.ApplyAutoScale(f)
+    End Sub
+
+    Friend Shared Sub ClampToWorkingArea(f As Form)
+        DpiLayout.ClampToWorkingArea(f)
+    End Sub
+
+    Friend Shared Sub KeepRoomForRow(f As Form, row As Control)
+        DpiLayout.KeepRoomForRow(f, row)
+    End Sub
+End Class

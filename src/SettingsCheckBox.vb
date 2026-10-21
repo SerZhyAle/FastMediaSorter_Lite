@@ -20,12 +20,33 @@ Imports System.Windows.Forms
 ''' WinForms buttons paint themselves, so there is no style hack: the Paint handler runs
 ''' after the base rendering and covers the whole client with the row surface before
 ''' drawing the box. The control carries the box plus a margin so the 2 px focus ring
-''' always has room; the hit target stays the caption row as well (120 §5.4).
+''' always has room.
+'''
+''' The row anatomy of BOOLEAN-OPTION 2.0 lives here too, so the window and the tests share
+''' one implementation: the 32 logical px hit target around the 20 px box (UI-SIZING
+''' section 2 rule 4), the 8 px box-to-text gap, the RTL mirror of the whole leading part
+''' (<see cref="PlaceLeading"/>), the wrapped-text row height (<see cref="ArrangeRow"/>) and the
+''' activation rule of section 3 rule 1 - the caption toggles, the explanation never does
+''' (<see cref="BindCaption"/>).
 ''' </summary>
 Friend NotInheritable Class SettingsCheckBox
 
-    Private Const BoxSideLogical As Integer = 20
-    Private Const ControlSideLogical As Integer = 28
+    ' Logical px, composed with the window's Sp factor (Px). BOOLEAN-OPTION 2.0 section 2 rule 4.
+    ' The box, the hit target and the caption gap are the ordinary pointer row of the shared token table
+    ' (UiSizing, UI-SIZING 1.1): a Const cannot call the resolver, so each takes the table's own constant, and
+    ' a test pins the pairs. The touch and compact rows are for the later slices that wire a profile into the rows.
+    ''' <summary>The visible square: at least 20 for a pointer.</summary>
+    Friend Const BoxSideLogical As Integer = UiSizing.PointerCheckBox
+    ''' <summary>The hit target: 32 by 32 for a pointer (UI-SIZING section 2 rule 4). The box is
+    ''' centred in it, so the target reaches 6 px past the box on every side.</summary>
+    Friend Const ControlSideLogical As Integer = UiSizing.PointerTarget
+    ''' <summary>Visible box to the text cell.</summary>
+    Friend Const CaptionGapLogical As Integer = UiSizing.GlyphGap
+    ''' <summary>The box's distance from the row's reading-start edge (unchanged from the 28 px control
+    ''' era: 14 + 4).</summary>
+    Friend Const BoxEdgeInsetLogical As Integer = 18
+    ''' <summary>The text cell's distance from the row's reading-end edge.</summary>
+    Friend Const TextEndInsetLogical As Integer = 14
     Private Const CornerRadiusLogical As Single = 4.0F
     Private Const BorderWidthLogical As Single = 1.5F
     Private Const TickWidthLogical As Single = 2.5F
@@ -79,9 +100,154 @@ Friend NotInheritable Class SettingsCheckBox
     End Sub
 
     Private Shared Sub ResizeControl(check As CheckBox, state As State)
-        Dim side As Integer = Math.Max(1, CInt(Math.Round(ControlSideLogical * state.Scale)))
+        Dim side As Integer = ControlSide(state.Scale)
         check.MinimumSize = Size.Empty
         check.Size = New Size(side, side)
+    End Sub
+
+    ''' <summary>A logical size at the window's scale; the same rounding as the window's Sp.</summary>
+    Friend Shared Function Px(logical As Integer, scale As Single) As Integer
+        If scale = 1.0F Then Return logical
+        Return CInt(Math.Round(logical * scale))
+    End Function
+
+    ''' <summary>Side of the square hit target.</summary>
+    Friend Shared Function ControlSide(scale As Single) As Integer
+        Return Math.Max(1, Px(ControlSideLogical, scale))
+    End Function
+
+    ''' <summary>Side of the visible box.</summary>
+    Friend Shared Function BoxSide(scale As Single) As Integer
+        Return Math.Max(4, Px(BoxSideLogical, scale))
+    End Function
+
+    ''' <summary>Where a boolean row puts its checkbox control and its text cell. The mirror under
+    ''' RightToLeft is explicit coordinate work (the repo never uses RightToLeftLayout).</summary>
+    Friend Structure Leading
+        ''' <summary>Left edge of the hit-target control, in the row's client coordinates.</summary>
+        Public CheckLeft As Integer
+        ''' <summary>Left edge of the text cell (title and explanation share it).</summary>
+        Public TextLeft As Integer
+        Public TextWidth As Integer
+    End Structure
+
+    ''' <summary>BOOLEAN-OPTION 2.0 section 2 rules 1 and 4: the box stands at the reading start (left,
+    ''' or right under RightToLeft), the text cell takes the rest of the row after an 8 px gap.</summary>
+    ''' <param name="edgeInsetLogical">The box's distance from the reading-start edge. The Settings window keeps the
+    ''' default; a dialog row (<see cref="DialogOptionRow"/>) passes its own margin so the box stands where the native
+    ''' check box stood.</param>
+    Friend Shared Function PlaceLeading(rowWidth As Integer, rightToLeft As Boolean, scale As Single,
+                                        Optional edgeInsetLogical As Integer = BoxEdgeInsetLogical) As Leading
+        Dim side As Integer = ControlSide(scale)
+        Dim box As Integer = BoxSide(scale)
+        Dim inset As Integer = (side - box) \ 2
+        Dim edge As Integer = Px(edgeInsetLogical, scale)
+        Dim gap As Integer = Px(CaptionGapLogical, scale)
+        Dim endInset As Integer = Px(TextEndInsetLogical, scale)
+        Dim minWidth As Integer = Px(40, scale)
+        Dim result As New Leading()
+        If rightToLeft Then
+            Dim boxLeft As Integer = rowWidth - edge - box
+            result.CheckLeft = boxLeft - inset
+            result.TextWidth = Math.Max(minWidth, boxLeft - gap - endInset)
+            result.TextLeft = boxLeft - gap - result.TextWidth
+        Else
+            result.CheckLeft = edge - inset
+            result.TextLeft = edge + box + gap
+            result.TextWidth = Math.Max(minWidth, rowWidth - result.TextLeft - endInset)
+        End If
+        Return result
+    End Function
+
+    ''' <summary>
+    ''' Places a boolean row's controls and sets the row's height from its content: the title and the
+    ''' explanation are measured WITH word break at the final text width, so a long translation or a
+    ''' larger scale makes the row taller and never clips or ellipsizes (section 2 rules 5 and 6). The
+    ''' checkbox lines up with the FIRST heading line, not with the middle of a long explanation.
+    ''' </summary>
+    ''' <param name="heading">The optional heading glyph and `?` help button of the option
+    ''' (<see cref="OptionHeading"/>); Nothing finds the one registered for <paramref name="check"/>, and a row that has
+    ''' none is laid out exactly as it always was.</param>
+    Friend Shared Sub ArrangeRow(host As Control, check As CheckBox, title As Label, description As Label, scale As Single,
+                                 Optional heading As OptionHeading = Nothing,
+                                 Optional edgeInsetLogical As Integer = BoxEdgeInsetLogical)
+        Dim rtl As Boolean = host.RightToLeft = RightToLeft.Yes
+        Dim lead As Leading = PlaceLeading(host.ClientSize.Width, rtl, scale, edgeInsetLogical)
+        If heading Is Nothing Then heading = OptionHeading.Find(check)
+
+        Dim hasTitle As Boolean = title IsNot Nothing AndAlso Not String.IsNullOrEmpty(title.Text)
+        Dim hasHeading As Boolean = heading IsNot Nothing AndAlso hasTitle
+        If heading IsNot Nothing AndAlso Not hasTitle Then heading.HideParts()
+
+        ' The caption's box: the whole text cell, or what the glyph and the help target leave of it (section 2 rule 2).
+        Dim headingPlan As OptionHeadingPlan = Nothing
+        Dim captionLeft As Integer = lead.TextLeft
+        Dim captionWidth As Integer = lead.TextWidth
+        Dim targetHeight As Integer = check.Height
+        If hasHeading Then
+            headingPlan = heading.PlanFor(lead, rtl, scale)
+            captionLeft = headingPlan.CaptionLeft
+            captionWidth = headingPlan.CaptionWidth
+            If heading.HasHelp Then targetHeight = Math.Max(targetHeight, heading.HelpSide(scale))
+        End If
+
+        Dim titleHeight As Integer = 0
+        Dim firstLine As Integer = 0
+        If title IsNot Nothing Then title.Visible = hasTitle
+        If hasTitle Then
+            title.AutoEllipsis = False
+            titleHeight = SettingsRowText.WrappedHeight(title, captionWidth, Px(16, scale), Px(2, scale))
+            firstLine = Math.Min(titleHeight, Math.Max(Px(16, scale), title.Font.Height + Px(2, scale)))
+        End If
+
+        Dim hasDescription As Boolean = description IsNot Nothing AndAlso Not String.IsNullOrEmpty(description.Text)
+        Dim descriptionHeight As Integer = 0
+        If description IsNot Nothing Then description.Visible = hasDescription
+        If hasDescription Then
+            description.AutoEllipsis = False
+            descriptionHeight = SettingsRowText.WrappedHeight(description, lead.TextWidth, Px(14, scale), Px(2, scale))
+        End If
+
+        Dim titleTop As Integer = Px(5, scale)
+        If hasTitle Then titleTop = Math.Max(titleTop, Px(3, scale) + (targetHeight - firstLine) \ 2)
+        Dim contentBottom As Integer = titleTop
+        If hasTitle Then
+            title.SetBounds(captionLeft, titleTop, captionWidth, titleHeight)
+            contentBottom = title.Bottom
+        End If
+        ' The help target is centred on the first heading line and may reach below it; the explanation starts under it,
+        ' so no hit area lies over the text of its own option.
+        Dim headingBottom As Integer = If(hasTitle, title.Bottom, titleTop)
+        If hasHeading Then
+            heading.Place(headingPlan, titleTop, firstLine, scale)
+            If heading.HasHelp Then headingBottom = Math.Max(headingBottom, heading.Help.Bottom)
+        End If
+        If hasDescription Then
+            Dim descriptionTop As Integer = If(hasTitle, Math.Max(title.Bottom + Px(2, scale), If(hasHeading, headingBottom, 0)), titleTop)
+            description.SetBounds(lead.TextLeft, descriptionTop, lead.TextWidth, descriptionHeight)
+            contentBottom = description.Bottom
+        ElseIf hasHeading Then
+            contentBottom = Math.Max(contentBottom, headingBottom)
+        End If
+        check.SetBounds(lead.CheckLeft, If(hasTitle, titleTop + (firstLine - check.Height) \ 2, Px(4, scale)), check.Width, check.Height)
+        host.Height = Math.Max(contentBottom + Px(5, scale), check.Bottom + Px(5, scale))
+    End Sub
+
+    ''' <summary>BOOLEAN-OPTION 2.0 section 3 rule 1 for a settings row: ONLY the caption (the title label)
+    ''' toggles the checkbox, with the hand cursor over it. The explanation is deliberately not bound:
+    ''' it gets the ordinary cursor and no handler. A disabled checkbox is not toggled from the caption.</summary>
+    Friend Shared Sub BindCaption(caption As Label, check As CheckBox)
+        caption.Cursor = Cursors.Hand
+        caption.Tag = check
+        AddHandler caption.Click, AddressOf ToggleFromCaption
+    End Sub
+
+    Private Shared Sub ToggleFromCaption(sender As Object, e As EventArgs)
+        Dim label As Label = TryCast(sender, Label)
+        Dim check As CheckBox = If(label Is Nothing, Nothing, TryCast(label.Tag, CheckBox))
+        If check Is Nothing OrElse Not check.Enabled Then Return
+        check.Checked = Not check.Checked
+        check.Focus()
     End Sub
 
     ''' <summary>The palette roles of 127 §3.5, applied on build and on every theme change.</summary>
@@ -116,7 +282,7 @@ Friend NotInheritable Class SettingsCheckBox
         Dim enabled As Boolean = check.Enabled
         Dim hovered As Boolean = enabled AndAlso client.Contains(check.PointToClient(Control.MousePosition))
         Dim dimmed As Single = If(enabled, 0.0F, 0.55F)
-        Dim boxSide As Integer = Math.Max(4, CInt(Math.Round(BoxSideLogical * state.Scale)))
+        Dim boxSide As Integer = SettingsCheckBox.BoxSide(state.Scale)
         Dim box As New Rectangle(client.X + (client.Width - boxSide) \ 2,
                                  client.Y + (client.Height - boxSide) \ 2, boxSide, boxSide)
         Dim border As Color = BlendSettingsInk(hovered, state.HoverInk, state.BorderInk, state.SurfaceBack, dimmed)
@@ -185,9 +351,30 @@ Friend NotInheritable Class SettingsCheckBox
         Dim ink As Color = If(hover AndAlso hoverInk <> Color.Empty, hoverInk, normalInk)
         If amount <= 0.0F Then Return ink
         Dim a As Single = Math.Max(0.0F, Math.Min(1.0F, amount))
-        Return Color.FromArgb(CInt(ink.R + (surface.R - ink.R) * a),
-                              CInt(ink.G + (surface.G - ink.G) * a),
-                              CInt(ink.B + (surface.B - ink.B) * a))
+        ' Integer arithmetic: Byte minus Byte stays a Byte in VB and throws OverflowException when the surface is darker than
+        ' the ink, which painted a disabled box in a light palette (white fill on a grey surface) as an unhandled paint error.
+        Return Color.FromArgb(CInt(CInt(ink.R) + (CInt(surface.R) - CInt(ink.R)) * a),
+                              CInt(CInt(ink.G) + (CInt(surface.G) - CInt(ink.G)) * a),
+                              CInt(CInt(ink.B) + (CInt(surface.B) - CInt(ink.B)) * a))
+    End Function
+End Class
+
+''' <summary>How tall a wrapped row label has to be so that nothing of its text is cut off. A row never
+''' ellipsizes or clips (BOOLEAN-OPTION 2.0 section 2 rule 5): it grows.</summary>
+Friend NotInheritable Class SettingsRowText
+
+    ''' <summary>The height of <paramref name="label"/>'s text wrapped at <paramref name="width"/>, plus
+    ''' <paramref name="slack"/>, and never below <paramref name="minimum"/>. It is the larger of the GDI measurement the
+    ''' window has always used and what the label itself reports: a label drawn with GDI+ text (the default of a
+    ''' process that never calls SetCompatibleTextRenderingDefault(False)) is wider and taller than TextRenderer says,
+    ''' and the old ellipsis used to hide that.</summary>
+    Friend Shared Function WrappedHeight(label As Label, width As Integer, minimum As Integer, slack As Integer) As Integer
+        Dim available As Integer = Math.Max(1, width)
+        Dim flags As TextFormatFlags = TextFormatFlags.WordBreak
+        If label.RightToLeft = RightToLeft.Yes Then flags = flags Or TextFormatFlags.RightToLeft
+        Dim measured As Integer = TextRenderer.MeasureText(label.Text, label.Font, New Size(available, Integer.MaxValue), flags).Height
+        Dim reported As Integer = label.GetPreferredSize(New Size(available, 0)).Height
+        Return Math.Max(minimum, Math.Max(measured, reported) + slack)
     End Function
 End Class
 #End If

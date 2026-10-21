@@ -54,6 +54,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="../../assets/sza-kit.css">
 <link rel="stylesheet" href="../../assets/fms-site.css">
+<link rel="stylesheet" href="../../assets/fms-buttons.css">
 <script type="application/ld+json">{"@context":"https://schema.org","@type":"SoftwareApplication","name":"Fast Media Sorter & Sharing for Windows","description":"تصفّح مجلدات ضخمة من الصور والفيديو بسرعة، ثم انقل أو انسخ أو أعد تسمية أو احذف كل ملف بمفتاح واحد.","url":"https://serzhyale.github.io/FastMediaSorter_Lite/lang/ar/","inLanguage":"ar","applicationCategory":"MultimediaApplication","operatingSystem":"Windows 7, Windows 8.1, Windows 10, Windows 11","image":"https://serzhyale.github.io/FastMediaSorter_Lite/assets/social-card-1200x630.png","downloadUrl":"https://github.com/SerZhyAle/FastMediaSorter_Lite/releases/latest","isAccessibleForFree":true,"offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"author":{"@type":"Person","name":"SerZhyAle"}}</script>
 </head>
 <body>
@@ -62,12 +63,12 @@
   <nav class="site-nav" aria-label="التنقل الرئيسي">
   <a class="brand" href="https://serzhyale.github.io/FastMediaSorter_Lite/lang/ar/" aria-label="Fast Media Sorter &amp; Sharing for Windows"><bdi>Fast Media Sorter &amp; Sharing for Windows</bdi></a>
   <a class="nav-doc" href="https://serzhyale.github.io/FastMediaSorter_Lite/topics.html">الوثائق (بالإنجليزية)</a>
-  <div class="seg" role="group" aria-label="Language"><a hreflang="ru" href="https://serzhyale.github.io/FastMediaSorter_Lite/lang/ru/" onclick="try{localStorage.setItem('sza-lang','ru')}catch(e){}">RU</a><a hreflang="en" href="https://serzhyale.github.io/FastMediaSorter_Lite/" onclick="try{localStorage.setItem('sza-lang','en')}catch(e){}">EN</a><a hreflang="uk" href="https://serzhyale.github.io/FastMediaSorter_Lite/lang/uk/" onclick="try{localStorage.setItem('sza-lang','ua')}catch(e){}">UA</a></div>
-  <button class="theme-btn" id="themeBtn" aria-label="Switch theme">◐</button>
-  <a class="btn btn-primary btn-sm" href="#get">المثبّت (GitHub)</a>
+  <div class="seg" role="group" aria-label="اللغة"><a hreflang="ru" href="https://serzhyale.github.io/FastMediaSorter_Lite/lang/ru/" onclick="try{localStorage.setItem('sza-lang','ru')}catch(e){}">RU</a><a hreflang="en" href="https://serzhyale.github.io/FastMediaSorter_Lite/" onclick="try{localStorage.setItem('sza-lang','en')}catch(e){}">EN</a><a hreflang="uk" href="https://serzhyale.github.io/FastMediaSorter_Lite/lang/uk/" onclick="try{localStorage.setItem('sza-lang','ua')}catch(e){}">UA</a></div>
+  <button class="theme-btn" id="themeBtn" type="button" aria-pressed="true"><svg class="glyph" data-glyph="app.theme" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" focusable="false"><path d="M12 22c5.52 0 10-4.48 10-10S17.52 2 12 2 2 6.48 2 12s4.48 10 10 10zm1-17.93c3.94.49 7 3.85 7 7.93s-3.05 7.44-7 7.93V4.07z" fill="currentColor"/></svg><span>السمة الداكنة</span></button>
+  <a class="btn btn-ghost" href="#get">المثبّت (GitHub)</a>
   </nav>
 </header>
-<nav class="container language-row" aria-label="Languages"><a hreflang="ru" href="https://serzhyale.github.io/FastMediaSorter_Lite/lang/ru/" lang="ru" title="Русский" onclick="try{localStorage.setItem('sza-lang','ru')}catch(e){}">RU</a>
+<nav class="container language-row" aria-label="اللغة"><a hreflang="ru" href="https://serzhyale.github.io/FastMediaSorter_Lite/lang/ru/" lang="ru" title="Русский" onclick="try{localStorage.setItem('sza-lang','ru')}catch(e){}">RU</a>
     <a hreflang="en" href="https://serzhyale.github.io/FastMediaSorter_Lite/" lang="en" title="English" onclick="try{localStorage.setItem('sza-lang','en')}catch(e){}">EN</a>
     <a hreflang="uk" href="https://serzhyale.github.io/FastMediaSorter_Lite/lang/uk/" lang="uk" title="Українська" onclick="try{localStorage.setItem('sza-lang','ua')}catch(e){}">UA</a>
     <a hreflang="de" href="https://serzhyale.github.io/FastMediaSorter_Lite/lang/de/" lang="de" title="Deutsch">DE</a>
@@ -75,7 +76,7 @@
     <a hreflang="es" href="https://serzhyale.github.io/FastMediaSorter_Lite/lang/es/" lang="es" title="Español">ES</a>
     <a hreflang="fr" href="https://serzhyale.github.io/FastMediaSorter_Lite/lang/fr/" lang="fr" title="Français">FR</a>
     <a hreflang="pt" href="https://serzhyale.github.io/FastMediaSorter_Lite/lang/pt/" lang="pt" title="Português">PT</a>
-    <a class="on" hreflang="ar" href="https://serzhyale.github.io/FastMediaSorter_Lite/lang/ar/" lang="ar" title="العربية">AR</a>
+    <a class="on" aria-current="true" hreflang="ar" href="https://serzhyale.github.io/FastMediaSorter_Lite/lang/ar/" lang="ar" title="العربية">AR</a>
     <a hreflang="hi" href="https://serzhyale.github.io/FastMediaSorter_Lite/lang/hi/" lang="hi" title="हिन्दी">HI</a>
     <a hreflang="bn" href="https://serzhyale.github.io/FastMediaSorter_Lite/lang/bn/" lang="bn" title="বাংলা">BN</a>
     <a hreflang="ur" href="https://serzhyale.github.io/FastMediaSorter_Lite/lang/ur/" lang="ur" title="اردو">UR</a>
@@ -92,7 +93,7 @@
       </div>
     </div>
     <h1>فرز الصور والفيديو بمفتاح واحد لكل ملف</h1>
-    <p class="lead lead-narrow">اعرض وسائطك ورتّبها؛ وعند الحاجة يكون البرنامج نفسه أيضًا خادمًا لمشاركة المجلدات ومضيفًا للأقراص الافتراضية FileDO - وكل دور من هذه الأدوار اختياري ويبقى متوقفًا حتى تُشغّله.</p>
+    <p class="lead lead-narrow">ثلاثة أجزاء اختيارية: عارض ومُرتِّب لوسائطك، وخدمة محلية لمشاركة المجلدات عبر SFTP، وخادم <bdi>Media Exchange Server</bdi> (قيد التطوير ولم يصدر بعد) - ابدأ بالعارض أو بخادم مشاركة المجلدات، ولا تضف الباقي إلا إن أردته.</p>
     <p class="lead lead-narrow">تصفّح مجلدات ضخمة من الصور والفيديو بسرعة، ثم انقل أو انسخ أو أعد تسمية أو احذف كل ملف بمفتاح واحد.</p>
     <p class="lead lead-narrow"><bdi>«Sharing»</bdi> في الاسم تعني تسليم وسائطك إلى طرف آخر: هاتف Android الخاص بك أو نسخة أخرى من البرنامج أو أي عميل SFTP. يبقى معطّلًا حتى تفعّله بنفسك. <a href="https://serzhyale.github.io/FastMediaSorter_Lite/publish-folders-android.html" lang="en" dir="ltr">Share folders to Android over SFTP</a></p>
     <div class="button-group">
@@ -103,26 +104,26 @@
 
   <section class="section doors" id="doors" aria-labelledby="doors-title">
     <div class="sec-head">
-      <h2 class="section-title" id="doors-title"><span class="hash">#</span>ثلاثة أبواب وبرنامج واحد</h2>
-      <p class="section-desc">اختر المدخل المناسب لما جئت من أجله. خلف كل باب التنزيل الكامل نفسه؛ أما إصدارة الخادم فحزمة مخصّصة للتشغيل الدائم.</p>
+      <h2 class="section-title" id="doors-title"><span class="hash">#</span>مدخلان وثلاثة أجزاء اختيارية</h2>
+      <p class="section-desc">ابدأ من حيث أنت: بالعارض أو بخادم مشاركة المجلدات. كل جزء اختياري، وخادم <bdi>Media Exchange Server</bdi> لا يزال قيد التطوير.</p>
     </div>
     <div class="grid">
     <article class="card scenario-card" id="door-1">
-      <span class="pill">العارض</span>
-      <h3>أحتاج إلى عارض</h3>
-      <p>اعرض الصور ومقاطع الفيديو ورتّبها بمفتاح واحد لكل ملف. نزّل الحزمة الكاملة - مثبّت واحد والعائلة كلها. اختر النوع «مضغوط» في الإعداد لتحصل على عارض كامل بلا خادم؛ وتبقى المشاركة وFileDO إضافتين اختياريتين.</p>
-      <div class="scenario-foot"><a class="btn btn-primary btn-sm" href="#get">نزّل الحزمة الكاملة</a></div>
+      <span class="pill">العارض أولًا</span>
+      <h3>أحتاج إلى عارض ومُرتِّب</h3>
+      <p>اعرض الصور ومقاطع الفيديو ورتّبها بمفتاح واحد لكل ملف. تثبّت الحزمة الكاملة العارض، ومعه مشاركة المجلدات المحلية عبر SFTP كجزء اختياري يبقى متوقفًا حتى تُشغّله؛ اختر النوع «مضغوط» في الإعداد لتركها خارجًا. لا حاجة إلى خادم للترتيب.</p>
+      <div class="scenario-foot"><a class="btn btn-ghost" href="#get">نزّل الحزمة الكاملة</a></div>
     </article>
     <article class="card scenario-card" id="door-2">
-      <span class="pill">مشاركة إلى Android</span>
-      <h3>أريد مجلداتي على هاتفي</h3>
-      <p>امنح هاتفك مجلدات هذا الحاسوب عبر SFTP: ثبّت الحزمة الكاملة مع تحديد خادم مشاركة المجلدات واقترن مرة واحدة برمز QR - أو ثبّت إصدارة الخادم على جهاز يجب أن يخدم دون تسجيل دخول أحد. العارض موجود أيضًا ضمنها، واختياري في إصدارة الخادم.</p>
-      <div class="scenario-foot"><a class="btn btn-ghost btn-sm" href="https://serzhyale.github.io/FastMediaSorter_Lite/server.html">المشاركة إلى Android (بالإنجليزية)</a></div>
+      <span class="pill">الخادم أولًا</span>
+      <h3>أريد خادمًا لمجلداتي</h3>
+      <p>افتح مجلدات هذا الحاسوب على هاتف Android أو في نسخة أخرى من البرنامج أو في أي عميل SFTP. تثبّت إصدارة الخادم (setup.exe أو winget، وتتطلب صلاحيات المسؤول) خدمة مشاركة المجلدات كخدمة Windows تعمل دون أن يكون أحد مسجّلًا الدخول؛ والعارض إضافة اختيارية غير محدّدة. ولا تثبّت <bdi>Media Exchange Server</bdi> (قيد التطوير).</p>
+      <div class="scenario-foot"><a class="btn btn-ghost" href="https://serzhyale.github.io/FastMediaSorter_Lite/server.html">إصدارة الخادم: مشاركة دون تسجيل دخول (بالإنجليزية)</a></div>
     </article>
     <article class="card scenario-card" id="door-3">
-      <span class="pill gold">مخطّط له</span>
-      <h3>سأُشغّل <bdi>Media Exchange Server</bdi></h3>
-      <p>مخطّط له وغير متاح بعد: <bdi>Media Exchange Server</bdi>، خدمة ربط ليوم لا يملك فيه خادم المشاركة عنوانًا يمكن الوصول إليه ولا إعادة توجيه منفذ. لا شيء للتنزيل الآن، ولا وعد بأكثر من ذلك.</p>
+      <span class="pill gold">قيد التطوير</span>
+      <h3><span class="exchange-picture"><img class="exchange-mark" src="../../assets/exchange-mark/svg/exchange-mark-small.svg" width="32" height="32" alt="خادم التبادل"></span> <bdi>Media Exchange Server</bdi></h3>
+      <p>قيد التطوير وليس في أي حزمة بعد، فلا شيء لتنزيله. هو خادم مستقل تشغّله بنفسك للأجهزة التي لا تستطيع الوصول إلى بعضها مباشرة. وهو ليس مشاركة مجلدات، ولا يحتاج إليه العارض ولا المشاركة المحلية.</p>
     </article>
     </div>
   </section>
@@ -165,14 +166,14 @@
           <button class="copy" data-copy="winget install --id SerZhyAle.FastMediaSorter">نسخ</button></div>
       </div>
       <div class="dl-row" id="dlRow">
-        <a class="btn btn-primary" id="dl-setup" href="https://github.com/SerZhyAle/FastMediaSorter_Lite/releases/latest">المثبّت (GitHub)</a>
-        <a class="btn btn-ghost" id="dl-zip" href="https://github.com/SerZhyAle/FastMediaSorter_Lite/releases/latest">Portable (.zip)</a>
-        <a class="btn btn-ghost btn-sm" href="https://github.com/SerZhyAle/FastMediaSorter_Lite/releases/latest">All releases</a>
-        <a class="btn btn-ghost btn-sm" href="https://apps.microsoft.com/detail/9N59Z73WZ53C" target="_blank" rel="noopener"><span>Microsoft Store</span></a>
-        <a class="btn btn-ghost btn-sm" href="https://serzhyale.github.io/FastMediaSorter_Lite/server.html">إصدارة الخادم: مشاركة دون تسجيل دخول (بالإنجليزية)</a>
+        <a class="btn btn-primary" id="dl-setup" href="https://github.com/SerZhyAle/FastMediaSorter_Lite/releases/latest"><svg class="glyph" data-glyph="action.download" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" focusable="false"><g transform="translate(12 12) scale(0.917 0.917) translate(-12 -12)"><path d="M19.35,10.04C18.67,6.59 15.64,4 12,4 9.11,4 6.6,5.64 5.35,8.04 2.34,8.36 0,10.91 0,14c0,3.31 2.69,6 6,6h13c2.76,0 5,-2.24 5,-5 0,-2.64 -2.05,-4.78 -4.65,-4.96zM17,13l-5,5 -5,-5h3V9h4v4h3z" fill="currentColor"/></g></svg><span>المثبّت (GitHub)</span></a>
+        <a class="btn btn-ghost" id="dl-zip" href="https://github.com/SerZhyAle/FastMediaSorter_Lite/releases/latest"><svg class="glyph" data-glyph="action.download" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" focusable="false"><g transform="translate(12 12) scale(0.917 0.917) translate(-12 -12)"><path d="M19.35,10.04C18.67,6.59 15.64,4 12,4 9.11,4 6.6,5.64 5.35,8.04 2.34,8.36 0,10.91 0,14c0,3.31 2.69,6 6,6h13c2.76,0 5,-2.24 5,-5 0,-2.64 -2.05,-4.78 -4.65,-4.96zM17,13l-5,5 -5,-5h3V9h4v4h3z" fill="currentColor"/></g></svg><span>Portable (.zip)</span></a>
+        <a class="btn btn-ghost" href="https://github.com/SerZhyAle/FastMediaSorter_Lite/releases/latest">All releases</a>
+        <a class="btn btn-ghost" href="https://apps.microsoft.com/detail/9N59Z73WZ53C" target="_blank" rel="noopener noreferrer"><span>Microsoft Store</span><span class="sr-only"> (يفتح في علامة تبويب جديدة)</span></a>
+        <a class="btn btn-ghost" href="https://serzhyale.github.io/FastMediaSorter_Lite/server.html">إصدارة الخادم: مشاركة دون تسجيل دخول (بالإنجليزية)</a>
         <span class="dl-meta" id="dlMeta">Offline-ready bundles - VLC runtimes and OCR packs included. Windows 10 1607+ / 11; a 32-bit build for Windows 7/8.1 is in the same download.</span>
       </div>
-      <p class="dl-meta">داخل الحزمة الكاملة، وكله اختياري ومتوقف حتى تُشغّله: خادم مشاركة المجلدات (Share Manager وعامل SFTP)، واستضافة الأقراص الافتراضية FileDO، وترميزات الفيديو دون اتصال، ونماذج OCR. اختر النوع «مضغوط» لتستبعد الخادم.</p>
+      <p class="dl-meta">داخل الحزمة الكاملة: العارض، وكأجزاء اختيارية تبقى متوقفة حتى تُشغّلها: مشاركة المجلدات المحلية عبر SFTP (Share Manager وعامل SFTP؛ واستضافة أقراص FileDO الافتراضية قدرة من قدرات المشاركة)، وترميزات الفيديو دون اتصال، ونماذج OCR. اختر النوع «مضغوط» لترك المشاركة خارجًا. و<bdi>Media Exchange Server</bdi> لا يزال قيد التطوير وليس في أي حزمة.</p>
       <p class="dl-meta">
         <a href="https://serzhyale.github.io/FastMediaSorter_Lite/lang/ar/trust.html">لماذا يحذّر Windows من هذا التنزيل</a>
       </p>
@@ -199,7 +200,7 @@
     </article>
     </div>
     <details class="sec sec-spaced" id="all-features">
-      <summary><span class="secnum">01</span><bdi>Fast Media Sorter &amp; Sharing for Windows</bdi> - Features</summary>
+      <summary><span class="secnum">01</span><bdi>Fast Media Sorter &amp; Sharing for Windows</bdi> - الميزات</summary>
       <div class="grid grid-spaced">
       <article class="card">
         <h3>مفتاح واحد لكل ملف</h3>
@@ -272,7 +273,7 @@
       <li><a href="https://serzhyale.github.io/FastMediaSorter_Lite/docs/how-to-resources.html">Open a server or a network share like a folder</a></li>
       <li><a href="https://serzhyale.github.io/FastMediaSorter_Lite/docs/how-to-filedo-disks.html">Share FileDO .fdd virtual disks</a></li>
       <li><a href="https://serzhyale.github.io/FastMediaSorter_Lite/publish-folders-android.html">Share folders to Android over SFTP</a></li>
-      <li><a href="https://serzhyale.github.io/FastMediaSorter_mob_v2/docs/media-exchange-portal/" target="_blank" rel="noopener">Media exchange between your devices (portal)</a></li>
+      <li><a href="https://serzhyale.github.io/FastMediaSorter_mob_v2/docs/media-exchange-portal/" target="_blank" rel="noopener noreferrer">Media exchange between your devices (portal)<span class="sr-only"> (يفتح في علامة تبويب جديدة)</span></a></li>
     </ul>
   </section>
 
@@ -287,7 +288,7 @@
     <a href="#howto">HOW TO</a>
     <a href="https://serzhyale.github.io/FastMediaSorter_Lite/topics.html">Topics</a>
     <a href="https://serzhyale.github.io/FastMediaSorter_Lite/glossary.html">Glossary</a>
-    <a href="https://serzhyale.github.io/FastMediaSorter_mob_v2/docs/media-exchange-portal/" target="_blank" rel="noopener">Media exchange portal</a>
+    <a href="https://serzhyale.github.io/FastMediaSorter_mob_v2/docs/media-exchange-portal/" target="_blank" rel="noopener noreferrer">Media exchange portal<span class="sr-only"> (يفتح في علامة تبويب جديدة)</span></a>
     <a href="https://serzhyale.github.io/FastMediaSorter_Lite/lang/ar/trust.html">لماذا يحذّر Windows من هذا التنزيل</a>
     <a href="https://serzhyale.github.io/FastMediaSorter_Lite/docs/privacy.html">Privacy</a>
     <a href="https://github.com/SerZhyAle/FastMediaSorter_Lite#readme">README</a>
@@ -317,7 +318,7 @@
     <a hreflang="es" href="https://serzhyale.github.io/FastMediaSorter_Lite/lang/es/" lang="es" title="Español">ES</a>
     <a hreflang="fr" href="https://serzhyale.github.io/FastMediaSorter_Lite/lang/fr/" lang="fr" title="Français">FR</a>
     <a hreflang="pt" href="https://serzhyale.github.io/FastMediaSorter_Lite/lang/pt/" lang="pt" title="Português">PT</a>
-    <a class="on" hreflang="ar" href="https://serzhyale.github.io/FastMediaSorter_Lite/lang/ar/" lang="ar" title="العربية">AR</a>
+    <a class="on" aria-current="true" hreflang="ar" href="https://serzhyale.github.io/FastMediaSorter_Lite/lang/ar/" lang="ar" title="العربية">AR</a>
     <a hreflang="hi" href="https://serzhyale.github.io/FastMediaSorter_Lite/lang/hi/" lang="hi" title="हिन्दी">HI</a>
     <a hreflang="bn" href="https://serzhyale.github.io/FastMediaSorter_Lite/lang/bn/" lang="bn" title="বাংলা">BN</a>
     <a hreflang="ur" href="https://serzhyale.github.io/FastMediaSorter_Lite/lang/ur/" lang="ur" title="اردو">UR</a>
@@ -340,7 +341,7 @@
     doc.setAttribute('data-theme',t);
     try{localStorage.setItem('sza-theme',t);}catch(e){}
     var m=document.querySelector('meta[name="theme-color"]'); if(m) m.setAttribute('content', t==='light'?'#eef3ea':'#0a0f0a');
-    var b=document.getElementById('themeBtn'); if(b) b.setAttribute('aria-label', t==='light'?'Switch to dark theme':'Switch to light theme');
+    var b=document.getElementById('themeBtn'); if(b) b.setAttribute('aria-pressed', t==='light'?'false':'true');
   }
   var tb=document.getElementById('themeBtn');
   if(tb) tb.addEventListener('click',function(){setTheme(doc.getAttribute('data-theme')==='light'?'dark':'light');});

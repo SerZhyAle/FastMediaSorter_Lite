@@ -45,7 +45,7 @@
 
 .PARAMETER Check
     Render into memory and fail if any page or marked region on disk differs, or if any
-    of the 16 contract conformance checks fail. For a pre-flight sweep:
+    of the 17 contract conformance checks fail. For a pre-flight sweep:
     it proves the committed HTML still matches its source and contracts.
 
 .NOTES
@@ -57,7 +57,7 @@
     script writes the pages and a failure is an ordinary error (exit 1).
 #>
 [CmdletBinding()]
-param([switch]$Check)
+param([switch]$Check, [switch]$UseGitHistory)
 
 $ErrorActionPreference = 'Stop'
 . (Join-Path $PSScriptRoot 'lib\Verdict.ps1')
@@ -69,10 +69,12 @@ trap {
 }
 if ($Check) {
     Write-Subject 'Build-SitePages' ('the trust pages, the per-language index pages, the not-found page, the Support and What''s new pages, ' +
-        'robots.txt, sitemap.xml, search-index.json and index.html marked regions against tools/site-copy.json + ' +
+        'robots.txt, sitemap.xml, search-index.json and the index.html / server.html marked regions against tools/site-copy.json + ' +
         'tools/trust-copy.json + CHANGELOG.md, and the social card')
 }
 $Root     = Split-Path $PSScriptRoot -Parent
+. (Join-Path $PSScriptRoot 'lib/ExchangeMark.ps1')
+$exchangeTerms = Get-ExchangeMarkTerms $Root
 $CopyFile = Join-Path $PSScriptRoot 'site-copy.json'
 $BaseUrl  = 'https://serzhyale.github.io/FastMediaSorter_Lite'
 $LangDir  = 'lang'   # the one root folder that holds every translated page
@@ -138,6 +140,28 @@ function Body([string]$s) {
     $h
 }
 
+# The theme control (PAGE-STYLE 4.3, BUTTONS 2.0 section 2 rules 4 and 5). A toggle with a stable label exposes its pressed
+# state, so the label names the state that is "on" - the dark theme - and aria-pressed says whether it is. The name is visible
+# text, one string per language in `themeLabel` of tools/site-copy.json; the glyph beside it is the ICON-SET meaning app.theme
+# and is decoration only (aria-hidden). Every page's script keeps aria-pressed in step with data-theme.
+$ThemeGlyph = '<svg class="glyph" data-glyph="app.theme" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" focusable="false"><path d="M12 22c5.52 0 10-4.48 10-10S17.52 2 12 2 2 6.48 2 12s4.48 10 10 10zm1-17.93c3.94.49 7 3.85 7 7.93s-3.05 7.44-7 7.93V4.07z" fill="currentColor"/></svg>'
+# The two download commands (BUTTONS 2.0: a substantive command keeps its semantic glyph; the navigation link "All releases" does not).
+$DownloadGlyph = '<svg class="glyph" data-glyph="action.download" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" focusable="false"><g transform="translate(12 12) scale(0.917 0.917) translate(-12 -12)"><path d="M19.35,10.04C18.67,6.59 15.64,4 12,4 9.11,4 6.6,5.64 5.35,8.04 2.34,8.36 0,10.91 0,14c0,3.31 2.69,6 6,6h13c2.76,0 5,-2.24 5,-5 0,-2.64 -2.05,-4.78 -4.65,-4.96zM17,13l-5,5 -5,-5h3V9h4v4h3z" fill="currentColor"/></g></svg>'
+function ThemeButton([string]$labelHtml) {
+    "<button class=`"theme-btn`" id=`"themeBtn`" type=`"button`" aria-pressed=`"true`">$ThemeGlyph<span>$labelHtml</span></button>"
+}
+# A copy key of site-copy.json in the three in-page languages (en, ru, ua - the copy block of ua is `uk`), as data-l spans.
+function SiteCopySpans([string]$key, [string]$wrapOpen = '', [string]$wrapClose = '') {
+    (('en', 'ru', 'ua') | ForEach-Object {
+        $k = if ($_ -eq 'ua') { 'uk' } else { $_ }
+        '<span data-l="{0}">{1}{2}{3}</span>' -f $_, $wrapOpen, (Esc $copy.$k.$key), $wrapClose
+    }) -join ''
+}
+# The accessible name of an external link (BUTTONS 2.0 section 2 rule 3): the visible marker is drawn by assets/fms-buttons.css
+# on every a[target="_blank"], so the words that say the link opens elsewhere are the screen-reader half of it. `externalLabel`
+# is one string per language in tools/site-copy.json.
+function ExtName([string]$text) { '<span class="sr-only"> (' + (Esc $text) + ')</span>' }
+function ExtNameSpans { '<span class="sr-only">' + (SiteCopySpans 'externalLabel' ' (' ')') + '</span>' }
 # The page's <title>, its og:title and its twitter:title: the job in the page's language, then the compact name, which is
 # the short title-length form (PRODUCT_NAMING section 1). The H1 and the structured data keep the full name.
 function PageTitle($e) { "$($e.pageTitle)$TitleSeparator$TitleSuffix" }
@@ -255,19 +279,18 @@ function RenderIndexChannels {
 
     <div class="dl-row" id="dlRow">
       <a class="btn btn-primary" id="dl-setup" href="$($copy._channels.github.url)">
-        <span data-l="en">Install with setup (.exe)</span><span data-l="ru">Установить через setup (.exe)</span><span data-l="ua">Встановити через setup (.exe)</span>
+        $DownloadGlyph<span data-l="en">Install with setup (.exe)</span><span data-l="ru">Установить через setup (.exe)</span><span data-l="ua">Встановити через setup (.exe)</span>
       </a>
       <a class="btn btn-ghost" id="dl-zip" href="$($copy._channels.github.url)">
-        <span data-l="en">Portable (.zip)</span><span data-l="ru">Портативная (.zip)</span><span data-l="ua">Портативна (.zip)</span>
+        $DownloadGlyph<span data-l="en">Portable (.zip)</span><span data-l="ru">Портативная (.zip)</span><span data-l="ua">Портативна (.zip)</span>
       </a>
-      <a class="btn btn-ghost btn-sm" href="$($copy._channels.github.url)">
+      <a class="btn btn-ghost" href="$($copy._channels.github.url)">
         <span data-l="en">All releases</span><span data-l="ru">Все релизы</span><span data-l="ua">Усі релізи</span>
-        <svg class="glyph" data-glyph="action.download" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" focusable="false"><g transform="translate(12 12) scale(0.917 0.917) translate(-12 -12)"><path d="M19.35,10.04C18.67,6.59 15.64,4 12,4 9.11,4 6.6,5.64 5.35,8.04 2.34,8.36 0,10.91 0,14c0,3.31 2.69,6 6,6h13c2.76,0 5,-2.24 5,-5 0,-2.64 -2.05,-4.78 -4.65,-4.96zM17,13l-5,5 -5,-5h3V9h4v4h3z" fill="currentColor"/></g></svg>
       </a>
-      <a class="btn btn-ghost btn-sm" href="$($copy._channels.store.url)" target="_blank" rel="noopener">
-        <span>Microsoft Store</span>
+      <a class="btn btn-ghost" href="$($copy._channels.store.url)" target="_blank" rel="noopener noreferrer">
+        <span>Microsoft Store</span>$(ExtNameSpans)
       </a>
-      <a class="btn btn-ghost btn-sm" href="server.html">
+      <a class="btn btn-ghost" href="server.html">
         <span data-l="en">$(Esc $copy.en.serverLink)</span><span data-l="ru">$(Esc $copy.ru.serverLink)</span><span data-l="ua">$(Esc $copy.uk.serverLink)</span>
       </a>
       <span class="dl-meta" id="dlMeta">
@@ -317,13 +340,14 @@ function Render([string]$code) {
 
     $languageOrder = @('ru', 'en', 'uk') + @($codes | Where-Object { $_ -notin @('ru', 'en', 'uk') })
     $switcher = ($languageOrder | ForEach-Object {
-        $cls = if ($_ -eq $code) { ' class="on"' } else { '' }
+        $cls = if ($_ -eq $code) { ' class="on" aria-current="true"' } else { '' }
         $persist = if ($_ -in @('ru', 'en', 'uk')) { ' onclick="try{{localStorage.setItem(''sza-lang'',''{0}'')}}catch(e){{}}"' -f $(if ($_ -eq 'uk') { 'ua' } else { $_ }) } else { '' }
         '<a{0} hreflang="{1}" href="{2}" lang="{1}" title="{3}"{4}>{5}</a>' -f $cls, $_, (PageUrl $_), (Esc $copy.$_.name), $persist, $(if ($_ -eq 'uk') { 'UA' } else { $_.ToUpperInvariant() })
     }) -join "`n    "
     $primaryLanguages = ($languageOrder[0..2] | ForEach-Object {
         $key = if ($_ -eq 'uk') { 'ua' } else { $_ }
-        '<a hreflang="{0}" href="{1}" onclick="try{{localStorage.setItem(''sza-lang'',''{2}'')}}catch(e){{}}">{3}</a>' -f $_, (PageUrl $_), $key, $key.ToUpperInvariant()
+        $cur = if ($_ -eq $code) { ' aria-current="true"' } else { '' }
+        '<a hreflang="{0}" href="{1}"{4} onclick="try{{localStorage.setItem(''sza-lang'',''{2}'')}}catch(e){{}}">{3}</a>' -f $_, (PageUrl $_), $key, $key.ToUpperInvariant(), $cur
     }) -join ''
 
     $know = ($e.know | ForEach-Object { "      <li>$(Body $_)</li>" }) -join "`n"
@@ -352,8 +376,8 @@ function Render([string]$code) {
     $portal = $copy._howto.portal
     $portalFooter = ''
     if ($portal) {
-        $howto += "`n" + ('      <li><a href="{0}" target="_blank" rel="noopener">{1}</a></li>' -f $portal.url, (Esc $portal.label))
-        $portalFooter = "`n" + ('    <a href="{0}" target="_blank" rel="noopener">{1}</a>' -f $portal.url, (Esc $portal.footer))
+        $howto += "`n" + ('      <li><a href="{0}" target="_blank" rel="noopener noreferrer">{1}{2}</a></li>' -f $portal.url, (Esc $portal.label), (ExtName $e.externalLabel))
+        $portalFooter = "`n" + ('    <a href="{0}" target="_blank" rel="noopener noreferrer">{1}{2}</a>' -f $portal.url, (Esc $portal.footer), (ExtName $e.externalLabel))
     }
 
     # The three doors (ticket 132 section 3.2): viewer, share to Android, and the reserved exchange-server slot.
@@ -361,13 +385,18 @@ function Render([string]$code) {
     $doorHrefs = @('#get', "$BaseUrl/server.html", '')
     $doorCards = (0..2 | ForEach-Object {
         $d = $e.doors[$_]
+        $exchangeImage = ''
+        if (($_ + 1) -eq $copy._exchangeMark.door) {
+            $alt = Esc $exchangeTerms[$code]
+            $exchangeImage = "<span class=`"exchange-picture`"><img class=`"exchange-mark`" src=`"../../$($copy._exchangeMark.asset)`" width=`"32`" height=`"32`" alt=`"$alt`"></span> "
+        }
         $pillClass = if ($_ -eq 2) { 'pill gold' } else { 'pill' }
         $cta = ''
         if ($d[3]) {
-            $btnClass = if ($_ -eq 0) { 'btn btn-primary btn-sm' } else { 'btn btn-ghost btn-sm' }
+            $btnClass = 'btn btn-ghost'
             $cta = "`n      <div class=`"scenario-foot`"><a class=`"$btnClass`" href=`"$($doorHrefs[$_])`">$(Esc $d[3])</a></div>"
         }
-        "    <article class=`"card scenario-card`" id=`"door-$($_ + 1)`">`n      <span class=`"$pillClass`">$(Body $d[0])</span>`n      <h3>$(Body $d[1])</h3>`n      <p>$(Body $d[2])</p>$cta`n    </article>"
+        "    <article class=`"card scenario-card`" id=`"door-$($_ + 1)`">`n      <span class=`"$pillClass`">$(Body $d[0])</span>`n      <h3>$exchangeImage$(Body $d[1])</h3>`n      <p>$(Body $d[2])</p>$cta`n    </article>"
     }) -join "`n"
 
     $familyGrid = RenderFamilyGridForLocale $code
@@ -402,6 +431,7 @@ $(TwitterImageMeta $e.ogAlt)
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="${A}assets/sza-kit.css">
 <link rel="stylesheet" href="${A}assets/fms-site.css">
+<link rel="stylesheet" href="${A}assets/fms-buttons.css">
 <script type="application/ld+json">$(JsonLd $code $e)</script>
 </head>
 <body>
@@ -410,12 +440,12 @@ $(TwitterImageMeta $e.ogAlt)
   <nav class="site-nav" aria-label="$(Esc $e.navLabel)">
   <a class="brand" href="$(PageUrl $code)" aria-label="$(Esc $ProductFull)">$(Body $ProductFull)</a>
   <a class="nav-doc" href="$BaseUrl/topics.html">$(Esc $e.docsLink)</a>
-  <div class="seg" role="group" aria-label="Language">$primaryLanguages</div>
-  <button class="theme-btn" id="themeBtn" aria-label="Switch theme">◐</button>
-  <a class="btn btn-primary btn-sm" href="#get">$(Esc $e.dlSetup)</a>
+  <div class="seg" role="group" aria-label="$(Esc $e.langLabel)">$primaryLanguages</div>
+  $(ThemeButton (Esc $e.themeLabel))
+  <a class="btn btn-ghost" href="#get">$(Esc $e.dlSetup)</a>
   </nav>
 </header>
-<nav class="container language-row" aria-label="Languages">$switcher</nav>
+<nav class="container language-row" aria-label="$(Esc $e.langLabel)">$switcher</nav>
 
 <main class="container" id="main" tabindex="-1">
   <section class="hero">
@@ -470,11 +500,11 @@ $scenarioCards
           <button class="copy" data-copy="$($copy._channels.winget.command)">$($CopyWords[$code][0])</button></div>
       </div>
       <div class="dl-row" id="dlRow">
-        <a class="btn btn-primary" id="dl-setup" href="$($copy._channels.github.url)">$(Esc $e.dlSetup)</a>
-        <a class="btn btn-ghost" id="dl-zip" href="$($copy._channels.github.url)">Portable (.zip)</a>
-        <a class="btn btn-ghost btn-sm" href="$($copy._channels.github.url)">All releases</a>
-        <a class="btn btn-ghost btn-sm" href="$($copy._channels.store.url)" target="_blank" rel="noopener"><span>Microsoft Store</span></a>
-        <a class="btn btn-ghost btn-sm" href="$BaseUrl/server.html">$(Esc $e.serverLink)</a>
+        <a class="btn btn-primary" id="dl-setup" href="$($copy._channels.github.url)">$DownloadGlyph<span>$(Esc $e.dlSetup)</span></a>
+        <a class="btn btn-ghost" id="dl-zip" href="$($copy._channels.github.url)">$DownloadGlyph<span>Portable (.zip)</span></a>
+        <a class="btn btn-ghost" href="$($copy._channels.github.url)">All releases</a>
+        <a class="btn btn-ghost" href="$($copy._channels.store.url)" target="_blank" rel="noopener noreferrer"><span>Microsoft Store</span>$(ExtName $e.externalLabel)</a>
+        <a class="btn btn-ghost" href="$BaseUrl/server.html">$(Esc $e.serverLink)</a>
         <span class="dl-meta" id="dlMeta">Offline-ready bundles - VLC runtimes and OCR packs included. Windows 10 1607+ / 11; a 32-bit build for Windows 7/8.1 is in the same download.</span>
       </div>
       <p class="dl-meta">$(Body $e.insideNote)</p>
@@ -492,7 +522,7 @@ $note    </div>
 $featureGroupCards
     </div>
     <details class="sec sec-spaced" id="all-features">
-      <summary><span class="secnum">01</span>$(Body $e.title) - Features</summary>
+      <summary><span class="secnum">01</span>$(Body $e.title) - $(Esc $e.featuresLabel)</summary>
       <div class="grid grid-spaced">
 $allFeatureCards
       </div>
@@ -550,7 +580,7 @@ $familyGrid
     doc.setAttribute('data-theme',t);
     try{localStorage.setItem('sza-theme',t);}catch(e){}
     var m=document.querySelector('meta[name="theme-color"]'); if(m) m.setAttribute('content', t==='light'?'#eef3ea':'#0a0f0a');
-    var b=document.getElementById('themeBtn'); if(b) b.setAttribute('aria-label', t==='light'?'Switch to dark theme':'Switch to light theme');
+    var b=document.getElementById('themeBtn'); if(b) b.setAttribute('aria-pressed', t==='light'?'false':'true');
   }
   var tb=document.getElementById('themeBtn');
   if(tb) tb.addEventListener('click',function(){setTheme(doc.getAttribute('data-theme')==='light'?'dark':'light');});
@@ -612,7 +642,7 @@ function RenderTrust([string]$code) {
     $alts += "`n" + ('<link rel="alternate" hreflang="x-default" href="{0}">' -f (TrustUrl 'en'))
 
     $switcher = ($codes | ForEach-Object {
-        $cls = if ($_ -eq $code) { ' class="on"' } else { '' }
+        $cls = if ($_ -eq $code) { ' class="on" aria-current="true"' } else { '' }
         '<a{0} hreflang="{1}" href="{2}">{3}</a>' -f $cls, $_, (TrustUrl $_), (Esc $copy.$_.name)
     }) -join "`n    "
 
@@ -656,6 +686,7 @@ $(TwitterImageMeta $e.ogAlt)
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="${A}assets/sza-kit.css">
 <link rel="stylesheet" href="${A}assets/fms-site.css">
+<link rel="stylesheet" href="${A}assets/fms-buttons.css">
 <script type="application/ld+json">$(TrustJsonLd $code $t)</script>
 </head>
 <body>
@@ -663,8 +694,8 @@ $(TwitterImageMeta $e.ogAlt)
 <header class="site-header">
   <nav class="site-nav" aria-label="$(Esc $e.navLabel)">
   <a class="brand" href="$(PageUrl $code)" aria-label="$(Esc $ProductFull)"><span class="brand-mark"><img src="$A$Favicon" alt="" width="24" height="24"></span>$(Body $ProductFull)</a>
-  <button class="theme-btn" id="themeBtn" aria-label="Switch theme">◐</button>
-  <a class="btn btn-ghost btn-sm" href="$(PageUrl $code)">$(Esc $t.backLabel)</a>
+  $(ThemeButton (Esc $e.themeLabel))
+  <a class="btn btn-ghost" href="$(PageUrl $code)">$(Esc $t.backLabel)</a>
   </nav>
 </header>
 
@@ -705,7 +736,7 @@ $familyGrid
     doc.setAttribute('data-theme',t);
     try{localStorage.setItem('sza-theme',t);}catch(e){}
     var m=document.querySelector('meta[name="theme-color"]'); if(m) m.setAttribute('content', t==='light'?'#eef3ea':'#0a0f0a');
-    var b=document.getElementById('themeBtn'); if(b) b.setAttribute('aria-label', t==='light'?'Switch to dark theme':'Switch to light theme');
+    var b=document.getElementById('themeBtn'); if(b) b.setAttribute('aria-pressed', t==='light'?'false':'true');
   }
   var tb=document.getElementById('themeBtn');
   if(tb) tb.addEventListener('click',function(){setTheme(doc.getAttribute('data-theme')==='light'?'dark':'light');});
@@ -750,6 +781,7 @@ $ThemeResolver
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="$BaseUrl/assets/sza-kit.css">
 <link rel="stylesheet" href="$BaseUrl/assets/fms-site.css">
+<link rel="stylesheet" href="$BaseUrl/assets/fms-buttons.css">
 <style>
 html[data-lang="ru"] [data-l]:not([data-l="ru"]),html[data-lang="en"] [data-l]:not([data-l="en"]),html[data-lang="ua"] [data-l]:not([data-l="ua"]){display:none}
 .site-header>.brand{margin-right:auto}.hero{text-align:left;padding:1.5rem 0 .8rem}.hero .lead{margin:0}
@@ -769,8 +801,8 @@ html[data-lang="ru"] [data-l]:not([data-l="ru"]),html[data-lang="en"] [data-l]:n
   <div class="seg" role="group" aria-label="Language">
     <button data-setlang="ru">RU</button><button data-setlang="en" aria-pressed="true">EN</button><button data-setlang="ua">UA</button>
   </div>
-  <button class="theme-btn" id="themeBtn" aria-label="Switch theme">◐</button>
-  <a class="btn btn-primary btn-sm" href="$BaseUrl/#get">$(Spans 'download')</a>
+  $(ThemeButton (SiteCopySpans 'themeLabel'))
+  <a class="btn btn-primary" href="$BaseUrl/#get">$(Spans 'download')</a>
   </nav>
 </header>
 
@@ -821,10 +853,13 @@ $guides
   });
   setLang(doc.getAttribute('data-lang')||'en');
   var tb=document.getElementById('themeBtn');
+  function pressTheme(){ if(tb) tb.setAttribute('aria-pressed', doc.getAttribute('data-theme')==='light'?'false':'true'); }
+  pressTheme();
   if(tb) tb.addEventListener('click',function(){
     var v=doc.getAttribute('data-theme')==='light'?'dark':'light';
     doc.setAttribute('data-theme',v);
     try{localStorage.setItem('sza-theme',v);}catch(e){}
+    pressTheme();
   });
 })();
 </script>
@@ -893,6 +928,7 @@ $(TwitterImageMeta ([string]$disc.socialCard.alt))
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="assets/sza-kit.css">
 <link rel="stylesheet" href="assets/fms-site.css">
+<link rel="stylesheet" href="assets/fms-buttons.css">
 <script type="application/ld+json">$($ld | ConvertTo-Json -Depth 5 -Compress)</script>
 <style>
 html[data-lang="ru"] [data-l]:not([data-l="ru"]),html[data-lang="en"] [data-l]:not([data-l="en"]),html[data-lang="ua"] [data-l]:not([data-l="ua"]){display:none}
@@ -910,8 +946,8 @@ html[data-lang="ru"] [data-l]:not([data-l="ru"]),html[data-lang="en"] [data-l]:n
   <div class="seg" role="group" aria-label="Language">
     <button data-setlang="ru">RU</button><button data-setlang="en" aria-pressed="true">EN</button><button data-setlang="ua">UA</button>
   </div>
-  <button class="theme-btn" id="themeBtn" aria-label="Switch theme">◐</button>
-  <a class="btn btn-primary btn-sm" href="$BaseUrl/#get">$(Spans 'download')</a>
+  $(ThemeButton (SiteCopySpans 'themeLabel'))
+  <a class="btn btn-primary" href="$BaseUrl/#get">$(Spans 'download')</a>
   </nav>
 </header>
 
@@ -949,10 +985,13 @@ $body
   });
   setLang(doc.getAttribute('data-lang')||'en');
   var tb=document.getElementById('themeBtn');
+  function pressTheme(){ if(tb) tb.setAttribute('aria-pressed', doc.getAttribute('data-theme')==='light'?'false':'true'); }
+  pressTheme();
   if(tb) tb.addEventListener('click',function(){
     var v=doc.getAttribute('data-theme')==='light'?'dark':'light';
     doc.setAttribute('data-theme',v);
     try{localStorage.setItem('sza-theme',v);}catch(e){}
+    pressTheme();
   });
 })();
 </script>
@@ -994,12 +1033,13 @@ function RenderSupport {
 }
 
 # The latest released sections of CHANGELOG.md as plain data: version, date, categories, entries. [Unreleased] and anything
-# older than the 'count'-th release is never read. A top-level entry (with its sub-entries) that names a reserved,
-# non-public variant is left out - the page must not say what docs/guides/POSITIONING.md keeps unsaid (rule 4, Q155-2).
+# older than the 'count'-th release is never read. A top-level entry (with its sub-entries) that names the component in
+# development (site-facts.json development.mentionPattern) is left out - this page lists what a release shipped, and that
+# component is in no package (docs/guides/POSITIONING.md section 2, specification 249).
 function ReadReleases([int]$count) {
     $path = Join-Path $Root 'CHANGELOG.md'
     if (-not (Test-Path -LiteralPath $path)) { throw "Missing release notes: $path" }
-    $reserved = @($facts.reservations | ForEach-Object { [string]$_.mentionPattern } | Where-Object { $_ })
+    $reserved = @([string]$facts.development.mentionPattern | Where-Object { $_ })
     $releases = [Collections.Generic.List[object]]::new()
     $cur = $null; $cat = $null; $item = $null
     foreach ($raw in [IO.File]::ReadAllLines($path, [Text.UTF8Encoding]::new($false))) {
@@ -1081,6 +1121,68 @@ function RenderWhatsNew {
     PlainPage 'whats-new.html' $wn.short $wn.desc (InPageSpans $wn.kicker) (InPageSpans $wn.h1) (InPageSpans $wn.lead) ((@($blocks) + $tail) -join "`n`n")
 }
 
+# The availability matrix of docs/guides/POSITIONING.md section 4.1 as a marked region of server.html (specification
+# 249): rows are the components, columns the packages, every cell the state the `availability` block of
+# tools/site-facts.json holds - the same cells tools/Test-SitePositioning.ps1 holds to the packaging files. The labels are
+# `_matrix` in site-copy.json (en/ru/uk, the three languages the hand-authored pages carry). On a narrow screen each row
+# becomes a card whose cells carry the package name (class "lbl"), so nothing scrolls sideways.
+function MatrixAt([object[]]$path) {
+    $text = foreach ($lang in 'en', 'ru', 'uk') {
+        $n = $copy._matrix.$lang
+        foreach ($seg in $path) { $n = if ($n -is [array]) { $n[[int]$seg] } else { $n.([string]$seg) } }
+        [string]$n
+    }
+    InPageSpans ([pscustomobject]@{ en = $text[0]; ru = $text[1]; ua = $text[2] })
+}
+
+function RenderServerMatrix {
+    $av = $facts.availability
+    $corner = MatrixAt @('corner')
+    $head = foreach ($ch in $av.channels) { '<th scope="col">' + (MatrixAt @('channels', [string]$ch)) + '</th>' }
+    $rows = foreach ($comp in $av.components) {
+        $kid = [string]$comp
+        $cells = foreach ($ch in $av.channels) {
+            $cid = [string]$ch
+            $state = [string](@($av.cells.$kid.$cid)[0])
+            '<td data-state="' + $state + '"><span class="lbl">' + (MatrixAt @('channels', $cid)) + '</span>' + (MatrixAt @('states', $state)) + '</td>'
+        }
+        '<tr><th scope="row">' + (MatrixAt @('components', $kid)) + '</th>' + ($cells -join '') + '</tr>'
+    }
+    $factHead = for ($i = 0; $i -lt 4; $i++) {
+        if ($i -eq 0) { '<th scope="col">' + $corner + '</th>' } else { '<th scope="col">' + (MatrixAt @('factsHead', $i)) + '</th>' }
+    }
+    $factRows = for ($r = 0; $r -lt @($copy._matrix.en.facts).Count; $r++) {
+        $c = for ($i = 0; $i -lt 4; $i++) {
+            $span = MatrixAt @('facts', $r, $i)
+            if ($i -eq 0) { '<th scope="row">' + $span + '</th>' }
+            else { '<td><span class="lbl">' + (MatrixAt @('factsHead', $i)) + '</span>' + $span + '</td>' }
+        }
+        '<tr>' + ($c -join '') + '</tr>'
+    }
+    @"
+<!-- gen:matrix -->
+<section class="section" id="matrix">
+<h2>$(MatrixAt @('title'))</h2>
+<p>$(MatrixAt @('lead'))</p>
+<div class="tbl-wrap"><table class="cmp mx">
+<thead><tr><th scope="col">$corner</th>$($head -join '')</tr></thead>
+<tbody>
+$($rows -join "`n")
+</tbody>
+</table></div>
+<h3>$(MatrixAt @('factsTitle'))</h3>
+<div class="tbl-wrap"><table class="cmp mx">
+<thead><tr>$($factHead -join '')</tr></thead>
+<tbody>
+$($factRows -join "`n")
+</tbody>
+</table></div>
+<p class="note">$(MatrixAt @('notes'))</p>
+</section>
+<!-- /gen:matrix -->
+"@ -replace "`r`n", "`n"
+}
+
 $written = @(); $stale = @(); $compared = 0
 
 # 1. Update/check root index.html marked regions (gen:channels, gen:family)
@@ -1113,6 +1215,30 @@ if (Test-Path $indexFile) {
         if ($newIndex -ne $indexContent) {
             [IO.File]::WriteAllText($indexFile, ($newIndex -replace "`r`n", "`n"), (New-Object Text.UTF8Encoding $false))
             $written += 'index.html (marked regions)'
+        }
+    }
+}
+
+# 1b. Update/check the server page's marked region (gen:matrix, specification 249). server.html is hand-authored, trilingual,
+#     UTF-8 with a BOM and CRLF lines; the region is replaced in place and the file keeps its own BOM and line endings.
+$serverFile = Join-Path $Root 'server.html'
+if (Test-Path $serverFile) {
+    $serverBytes = [IO.File]::ReadAllBytes($serverFile)
+    $serverBom = ($serverBytes.Length -ge 3 -and $serverBytes[0] -eq 0xEF -and $serverBytes[1] -eq 0xBB -and $serverBytes[2] -eq 0xBF)
+    $serverContent = [Text.UTF8Encoding]::new($false).GetString($serverBytes, $(if ($serverBom) { 3 } else { 0 }), $serverBytes.Length - $(if ($serverBom) { 3 } else { 0 }))
+    $serverCrlf = $serverContent.Contains("`r`n")
+    $serverLf = $serverContent -replace "`r`n", "`n"
+    $expectedMatrix = (RenderServerMatrix).Trim()
+    $matrixMatch = [regex]::Match($serverLf, '(?s)<!-- gen:matrix -->.*?<!-- /gen:matrix -->')
+    if ($Check) {
+        $compared++
+        if (-not $matrixMatch.Success -or $matrixMatch.Value.Trim() -ne $expectedMatrix) { $stale += 'server.html (gen:matrix)' }
+    } elseif ($matrixMatch.Success) {
+        $newServer = $serverLf.Substring(0, $matrixMatch.Index) + $expectedMatrix + $serverLf.Substring($matrixMatch.Index + $matrixMatch.Length)
+        if ($newServer -ne $serverLf) {
+            if ($serverCrlf) { $newServer = $newServer -replace "`n", "`r`n" }
+            [IO.File]::WriteAllText($serverFile, $newServer, [Text.UTF8Encoding]::new($serverBom))
+            $written += 'server.html (marked region)'
         }
     }
 }
@@ -1225,7 +1351,7 @@ $script:DirtyPages = @{}       # repo-relative path -> $true when the working co
 function Get-LastmodMap {
     if ($null -ne $script:LastmodMap) { return $script:LastmodMap }
     $map = @{}
-    if (Get-Command git -ErrorAction SilentlyContinue) {
+    if ($UseGitHistory -and (Get-Command git -ErrorAction SilentlyContinue)) {
         Push-Location $Root
         try {
             $inside  = (& git rev-parse --is-inside-work-tree 2>$null)
@@ -1254,9 +1380,16 @@ function Get-LastmodMap {
 function RenderSitemap {
     $entries = @(SiteEntries)
     $lastmod = Get-LastmodMap
+    # Ordinary filesystem-only work retains existing declared dates without inventing history.
+    if (-not $UseGitHistory -and (Test-Path -LiteralPath (Join-Path $Root 'sitemap.xml'))) {
+        $existing = [xml][IO.File]::ReadAllText((Join-Path $Root 'sitemap.xml'))
+        foreach ($url in $existing.urlset.url) {
+            if ($url.lastmod) { $lastmod[[string]$url.loc] = [string]$url.lastmod }
+        }
+    }
 
     $body = ($entries | ForEach-Object {
-        $mod = if ($lastmod.ContainsKey($_.path)) { "`n    <lastmod>$($lastmod[$_.path])</lastmod>" } else { '' }
+        $mod = if ($lastmod.ContainsKey($_.path)) { "`n    <lastmod>$($lastmod[$_.path])</lastmod>" } elseif ($lastmod.ContainsKey($_.url)) { "`n    <lastmod>$($lastmod[$_.url])</lastmod>" } else { '' }
         if ($_.url -eq "$BaseUrl/") {
             $alts = (($codes | ForEach-Object {
                 '    <xhtml:link rel="alternate" hreflang="{0}" href="{1}"/>' -f $_, (PageUrl $_)
@@ -1364,14 +1497,15 @@ if ($Check) {
         $problems += "$($orphans.Count) legacy folder(s)"
     }
 
-    # --- 12 Contract Conformance Checks (ticket 030 section 5, DOC-EXTERNAL-QUALITY), then 13-14 (specification 154) ---
-    # 1. Kit identity - the catalog's reference/sza-kit.css as re-vendored 2026-10-13 (the revision the PAGE-STYLE 1.4/1.5
-    # amendments owed and the catalog published on 2026-10-07: 15661 bytes; it replaced the 1.3 file, 14521 bytes,
-    # SHA-256 AEA958F8..). Re-pin when the catalog moves the file again, never by hand-editing the kit.
+    # --- 12 Contract Conformance Checks (ticket 030 section 5, DOC-EXTERNAL-QUALITY), then 13-14 (specification 154) and 15 (the button adapter, ticket 243) ---
+    # 1. Kit identity - the catalog's reference/sza-kit.css as re-vendored 2026-10-20 (the PAGE-STYLE 3.1 revision the catalog
+    # published on 2026-10-17: 15926 bytes, code-surface tokens, copy-button states and the darker light accent; it replaced the
+    # 1.4/1.5 file of 2026-10-07, 15661 bytes, SHA-256 27501A10.., and before it the 1.3 file, 14521 bytes, SHA-256 AEA958F8..).
+    # Re-pin when the catalog moves the file again, never by hand-editing the kit.
     # Hashed with CRLF folded to LF: the catalog file is LF, and a text=auto checkout with
     # core.autocrlf turns the working copy CRLF without changing a single character of the kit.
     # assets/sza-kit.css is also marked -text in .gitattributes (PAGE-STYLE section 0 step 1), so a new clone is LF.
-    $pinnedKitSha = '27501A1078653B78A7150250857313625BFE884BCC41A1272B7D7D483CEF2895'
+    $pinnedKitSha = 'E438FEF279FEA8165BA6DB46289C3AB35AC2FBCFAA5B2EA50BB009716EDDFAC9'
     $kitFile = Join-Path $Root 'assets/sza-kit.css'
     if (-not (Test-Path $kitFile)) {
         $problems += "Kit identity: missing assets/sza-kit.css"
@@ -1587,6 +1721,14 @@ if ($Check) {
             if ((& $fold $res.Value) -ne $canon) { $problems += "Theme resolver: $rel carries a resolver that is not the PAGE-STYLE section 7 text" }
             if ($css.Success -and $res.Index -gt $css.Index) { $problems += "Theme resolver: $rel places it after the first stylesheet link" }
         }
+        # 15. The BUTTONS 2.0 adapter follows the page layer (PAGE-STYLE 3.1 section 5, "Extending the kit"): a page that loads
+        # assets/fms-site.css and not assets/fms-buttons.css after it keeps the kit's pills, glow and hover lift.
+        $siteLink = [regex]::Match($fc, '(?i)<link\b[^>]*\bhref\s*=\s*["''][^"'']*assets/fms-site\.css["''][^>]*>')
+        if ($siteLink.Success) {
+            $btnLink = [regex]::Match($fc, '(?i)<link\b[^>]*\bhref\s*=\s*["''][^"'']*assets/fms-buttons\.css["''][^>]*>')
+            if (-not $btnLink.Success) { $problems += "Button adapter: $rel loads assets/fms-site.css but not assets/fms-buttons.css" }
+            elseif ($btnLink.Index -lt $siteLink.Index) { $problems += "Button adapter: $rel loads assets/fms-buttons.css before assets/fms-site.css" }
+        }
     }
     if ($problems.Count -gt 0) {
         Write-Host "Conformance check problems found:"
@@ -1594,7 +1736,7 @@ if ($Check) {
         Exit-Verdict 'Build-SitePages' 1 ($problems -join '; ')
     }
 
-    Exit-Verdict 'Build-SitePages' 0 "$compared render targets and 16 conformance checks passed"
+    Exit-Verdict 'Build-SitePages' 0 "$compared render targets and 17 conformance checks passed"
 }
 
 Write-Host "Wrote $($written.Count) pages:"

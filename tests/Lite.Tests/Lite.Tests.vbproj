@@ -69,14 +69,21 @@
     <Compile Include="..\..\src\SettingsUiContext.vb"><Link>Linked\SettingsUiContext.vb</Link></Compile>
     <Compile Include="..\..\src\Help\ContextHelp.vb"><Link>Linked\ContextHelp.vb</Link></Compile>
     <Compile Include="..\..\src\Help\ContextHelpUi.vb"><Link>Linked\ContextHelpUi.vb</Link></Compile>
+    <EmbeddedResource Include="..\..\assets\exchange-mark\png\*.png"><LogicalName>FmsPayloadexchange-mark/png/%(Filename)%(Extension)</LogicalName></EmbeddedResource>
+    <EmbeddedResource Include="..\..\assets\exchange-mark\svg\*.svg"><LogicalName>FmsPayloadexchange-mark/svg/%(Filename)%(Extension)</LogicalName></EmbeddedResource>
     <EmbeddedResource Include="..\..\help-map.json"><LogicalName>help-map.json</LogicalName></EmbeddedResource>
     <Compile Include="..\..\src\SettingsCollapsibleGroup.vb"><Link>Linked\SettingsCollapsibleGroup.vb</Link></Compile>
+    <!-- The settings page rail (ticket 243 T-7a): the control and its pure rules, whole-file "#If Not NETFRAMEWORK". -->
+    <Compile Include="..\..\src\SettingsRail.vb"><Link>Linked\SettingsRail.vb</Link></Compile>
+    <Compile Include="..\..\src\Support\SettingsRailRules.vb"><Link>Linked\Support\SettingsRailRules.vb</Link></Compile>
     <Compile Include="..\..\src\SettingsSearchRules.vb"><Link>Linked\SettingsSearchRules.vb</Link></Compile>
     <!-- The row grid and the drawn checkbox of 127: pure layout arithmetic and a Paint-only
          configurator, so both are provable here. Whole-file "#If Not NETFRAMEWORK", like
          SettingsCollapsibleGroup - on the net48 leg they and their tests compile to nothing. -->
     <Compile Include="..\..\src\SettingsRowGrid.vb"><Link>Linked\SettingsRowGrid.vb</Link></Compile>
     <Compile Include="..\..\src\SettingsCheckBox.vb"><Link>Linked\SettingsCheckBox.vb</Link></Compile>
+    <Compile Include="..\..\src\OptionHelpSource.vb"><Link>Linked\OptionHelpSource.vb</Link></Compile>
+    <Compile Include="..\..\src\OptionHelpUi.vb"><Link>Linked\OptionHelpUi.vb</Link></Compile>
     <Compile Include="..\..\src\SettingsNumericStepper.vb"><Link>Linked\SettingsNumericStepper.vb</Link></Compile>
     <Compile Include="..\..\src\Theming\CheckBoxLayout.vb"><Link>Linked\Theming\CheckBoxLayout.vb</Link></Compile>
     <Compile Include="..\..\src\SettingsNavIconPalette.vb"><Link>Linked\SettingsNavIconPalette.vb</Link></Compile>
@@ -90,6 +97,7 @@
     <Compile Include="..\..\src\Icons\SvgPathData.vb">
       <Link>Linked\Icons\SvgPathData.vb</Link>
     </Compile>
+    <Compile Include="..\..\src\Icons\ExchangeMark.vb"><Link>Linked\Icons\ExchangeMark.vb</Link></Compile>
     <Compile Include="..\..\src\Icons\GlyphRenderer.vb">
       <Link>Linked\Icons\GlyphRenderer.vb</Link>
     </Compile>
@@ -145,6 +153,33 @@
     <Compile Include="..\..\src\Imaging\DecodeCachePolicy.vb">
       <Link>Linked\Imaging\DecodeCachePolicy.vb</Link>
     </Compile>
+    <!-- Spec 241: the dither threshold of the animation -> GIF transcode. Whole-file modern. -->
+    <Compile Include="..\..\src\Imaging\GifTranscodePolicy.vb">
+      <Link>Linked\Imaging\GifTranscodePolicy.vb</Link>
+    </Compile>
+    <!-- Spec 241: stage-1 side table + the upgrade state machine and its single-slot
+         runner (pure, no WinForms). Whole-file modern. -->
+    <Compile Include="..\..\src\Imaging\AnimationStaging.vb">
+      <Link>Linked\Imaging\AnimationStaging.vb</Link>
+    </Compile>
+    <Compile Include="..\..\src\Imaging\AnimationUpgrade.vb">
+      <Link>Linked\Imaging\AnimationUpgrade.vb</Link>
+    </Compile>
+    <!-- Spec 242 T-1: the pure eligibility policy, the GIF block walker and the neighbour choice.
+         Whole-file modern; they need AnimationStaging, DecodeBudget and NavigationRules, linked above. -->
+    <Compile Include="..\..\src\Imaging\AnimationVideoPolicy.vb">
+      <Link>Linked\Imaging\AnimationVideoPolicy.vb</Link>
+    </Compile>
+    <!-- Spec 242 T-6a: the video surface's state and rules, pure and whole-file modern. -->
+    <Compile Include="..\..\src\Imaging\AnimationVideoState.vb">
+      <Link>Linked\Imaging\AnimationVideoState.vb</Link>
+    </Compile>
+    <Compile Include="..\..\src\Imaging\GifBlockWalker.vb">
+      <Link>Linked\Imaging\GifBlockWalker.vb</Link>
+    </Compile>
+    <Compile Include="..\..\src\Imaging\AnimationVideoPrefetchPlan.vb">
+      <Link>Linked\Imaging\AnimationVideoPrefetchPlan.vb</Link>
+    </Compile>
     <Compile Include="..\..\src\Imaging\DecodeCacheStore.vb">
       <Link>Linked\Imaging\DecodeCacheStore.vb</Link>
     </Compile>
@@ -178,6 +213,24 @@
          shared temp-name marker. -->
     <Compile Include="..\..\src\Video\VideoConvertPlan.vb">
       <Link>Linked\Video\VideoConvertPlan.vb</Link>
+    </Compile>
+    <!-- Spec 242 T-4: the temporary video's argument line and its process runner. The runner is linked WITH
+         AnimationToVideo (it reuses ParseProgressPercent; AppFileLogger, which that module's own runner calls, is
+         linked above) and has no logger of its own, so the fake-child tests can drive it. Whole-file modern. -->
+    <Compile Include="..\..\src\Video\AnimationToVideo.vb">
+      <Link>Linked\Video\AnimationToVideo.vb</Link>
+    </Compile>
+    <Compile Include="..\..\src\Video\AnimationVideoPlan.vb">
+      <Link>Linked\Video\AnimationVideoPlan.vb</Link>
+    </Compile>
+    <Compile Include="..\..\src\Video\AnimationVideoEncoder.vb">
+      <Link>Linked\Video\AnimationVideoEncoder.vb</Link>
+    </Compile>
+    <!-- Spec 242 T-6b: the route core (encode -> seal -> play, one job at a time, fall-back exactly once). It
+         needs the encoder's EncodedVideo, the store's AnimationVideoLease (linked below) and the surface reason codes
+         (AnimationVideoState, above), and nothing of the form. Whole-file modern. -->
+    <Compile Include="..\..\src\Video\AnimationVideoRoute.vb">
+      <Link>Linked\Video\AnimationVideoRoute.vb</Link>
     </Compile>
     <!-- The zoom geometry of the .NET 10 viewer. Whole-file "#If Not NETFRAMEWORK",
          so on the net48 leg this - and ZoomMathTests - compile to nothing, which is
@@ -224,17 +277,25 @@
     <Compile Include="..\..\src\TextViewRules.vb"><Link>Linked\TextViewRules.vb</Link></Compile>
     <Compile Include="..\..\src\NotifyToast.vb"><Link>Linked\NotifyToast.vb</Link></Compile>
     <Compile Include="..\..\src\DialogLayout.vb"><Link>Linked\DialogLayout.vb</Link></Compile>
+    <!-- T-11b: the boolean option row of the dialogs; DialogLayout.FitContent sizes it. Whole-file modern-only. -->
+    <Compile Include="..\..\src\DialogOptionRow.vb"><Link>Linked\DialogOptionRow.vb</Link></Compile>
     <Compile Include="..\..\src\DialogLayer.vb"><Link>Linked\DialogLayer.vb</Link></Compile>
     <!-- WINDOWS-UI section 9 (amended 0.2): the opt-in timing of a window and its pure budget; DialogLayer calls both. -->
     <Compile Include="..\..\src\UiTimingBudget.vb"><Link>Linked\UiTimingBudget.vb</Link></Compile>
     <Compile Include="..\..\src\UiTiming.vb"><Link>Linked\UiTiming.vb</Link></Compile>
     <Compile Include="..\..\src\ViewerBox.vb"><Link>Linked\ViewerBox.vb</Link></Compile>
+    <!-- Ticket 243 T-12a: the pure MessageBox -> AskSpec mapping that ViewerBox routes its questions through. -->
+    <Compile Include="..\..\src\ViewerBoxMapping.vb"><Link>Linked\ViewerBoxMapping.vb</Link></Compile>
     <Compile Include="..\..\src\AskModel.vb"><Link>Linked\AskModel.vb</Link></Compile>
     <Compile Include="..\..\src\Welcome\WelcomeRules.vb"><Link>Linked\WelcomeRules.vb</Link></Compile>
     <!-- Spec 211 section 7: the where-pairing gate lives in WelcomeWhereGateTests.vb, picked up by the
          default glob like the rest of the suite. -->
     <Compile Include="..\..\src\AskSpecs.vb"><Link>Linked\AskSpecs.vb</Link></Compile>
     <Compile Include="..\..\src\Ask_Dialog.vb"><Link>Linked\Ask_Dialog.vb</Link></Compile>
+    <!-- Ticket 243 T-8a: the one dialog button row and its pure model. -->
+    <Compile Include="..\..\src\DialogButtonRow.vb"><Link>Linked\DialogButtonRow.vb</Link></Compile>
+    <!-- The progress window of a download: its button row is checked in DialogButtonRowTests. DownloadMessages (the part that names the viewer window) is deliberately not linked. -->
+    <Compile Include="..\..\src\Download_Progress_Form.vb"><Link>Linked\Download_Progress_Form.vb</Link></Compile>
     <!-- The secondary windows whose layout the dialog-layer tests drive at 100/150/175 % (124 UX-202/UX-203):
          built in code, so a layout rule is checked by building them. Resource_Edit_Form and
          Resource_Credential_Form are linked further down with the resource tests. -->
@@ -246,6 +307,13 @@
     <Compile Include="..\..\src\Video\Video_Convert_Form.vb"><Link>Linked\Video\Video_Convert_Form.vb</Link></Compile>
     <Compile Include="..\..\src\Chrome\UiScale.vb">
       <Link>Linked\Chrome\UiScale.vb</Link>
+    </Compile>
+    <Compile Include="..\..\src\Chrome\UiSizing.vb">
+      <Link>Linked\Chrome\UiSizing.vb</Link>
+    </Compile>
+    <!-- The state marker of every collapsible group header (ticket 243 T-11c): whole-file "#If Not NETFRAMEWORK". -->
+    <Compile Include="..\..\src\Chrome\GroupMarker.vb">
+      <Link>Linked\Chrome\GroupMarker.vb</Link>
     </Compile>
     <Compile Include="..\..\src\Chrome\ChromeLayout.vb">
       <Link>Linked\Chrome\ChromeLayout.vb</Link>
@@ -494,6 +562,9 @@
     <Compile Include="..\..\src\Resources\WorkerShares.vb">
       <Link>Linked\Resources\WorkerShares.vb</Link>
     </Compile>
+    <Compile Include="..\..\src\Resources\WorkerStateDir.vb">
+      <Link>Linked\Resources\WorkerStateDir.vb</Link>
+    </Compile>
     <Compile Include="..\..\src\Resources\ResourcePolicy.vb">
       <Link>Linked\Resources\ResourcePolicy.vb</Link>
     </Compile>
@@ -622,6 +693,9 @@
     <Compile Include="..\..\src\Support\SitePages.vb">
       <Link>Linked\Support\SitePages.vb</Link>
     </Compile>
+    <Compile Include="..\..\src\Support\AboutResources.vb">
+      <Link>Linked\Support\AboutResources.vb</Link>
+    </Compile>
     <!-- The 13-language localization layer. Linked whole, tables included: the parity
          test's whole job is to look at the real shipped table, and running it on BOTH
          legs also proves the #If NETFRAMEWORK seam cuts Codes to RU+EN on net48 while
@@ -681,6 +755,9 @@
          never duplicate, one owner per result. Pure, both legs. -->
     <Compile Include="..\..\src\InFlightDecodeRegistry.vb">
       <Link>Linked\InFlightDecodeRegistry.vb</Link>
+    </Compile>
+    <Compile Include="..\..\src\LoadingIndicatorRules.vb">
+      <Link>Linked\LoadingIndicatorRules.vb</Link>
     </Compile>
     <!-- The classifier that decides whether a read failure is about the FILE (drop it from
          the list, as always) or about everything between us and it (keep it - a dropped SMB
@@ -982,6 +1059,15 @@
     </Compile>
     <Compile Include="..\..\src\Secure\FdSecStream.vb">
       <Link>Linked\Secure\FdSecStream.vb</Link>
+    </Compile>
+    <Compile Include="..\..\src\Secure\FdSecWriter.vb">
+      <Link>Linked\Secure\FdSecWriter.vb</Link>
+    </Compile>
+    <!-- Spec 242 T-3: the encrypted temp store of the animation videos. No product dependencies (the log hook and
+         the "is that pid a viewer" question are injected), so it links alone beside the FDSEC reader and writer.
+         Whole-file "#If Not NETFRAMEWORK". -->
+    <Compile Include="..\..\src\Video\AnimationVideoStore.vb">
+      <Link>Linked\Video\AnimationVideoStore.vb</Link>
     </Compile>
     <!-- The outcome-to-words map, outside the form precisely so "three classes, three
          messages, never merged" is something a test can hold it to. -->

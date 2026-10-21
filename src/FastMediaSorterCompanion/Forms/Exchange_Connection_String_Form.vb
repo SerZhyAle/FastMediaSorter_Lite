@@ -34,16 +34,33 @@ Friend NotInheritable Class Exchange_Connection_String_Form
     Private _btnCopy As Button
     Private _btnSave As Button
     Private _btnQr As Button
+    Private _btnLink As Button
+    Private ReadOnly _signInLink As Func(Of String, String)
     Private _lblResult As Label
+    Private _body As FlowLayoutPanel
+    Private _answerRow As DialogButtonRow
+    Private _fittingRows As Boolean
     Private _iconHandle As IntPtr
     Private _sequence As Integer
     Private _text As String = ""
 
     ''' <param name="make">The command, injectable: name and login in, the binary's answer out. Runs on a pool thread.</param>
-    Friend Sub New(Optional make As Func(Of String, String, ExchangeProcess.ConnectionStringResult) = Nothing)
+    ''' <param name="signInLink">The connection string in, the browser sign-in link out ("" = this server serves no web client, so no
+    ''' link is offered). Nothing = the window has no such action (WEB-BINDING page-served-by-the-server 3, item AE).</param>
+    Friend Sub New(Optional make As Func(Of String, String, ExchangeProcess.ConnectionStringResult) = Nothing,
+                   Optional signInLink As Func(Of String, String) = Nothing)
         _make = If(make, AddressOf ExchangeProcess.ConnectionString)
+        _signInLink = signInLink
         BuildUi()
     End Sub
+
+    ''' <summary>The sign-in link of the string currently shown, or "" when there is none (no string yet, no web client, or no such action).</summary>
+    Friend ReadOnly Property CurrentSignInLink As String
+        Get
+            If _signInLink Is Nothing OrElse _text.Length = 0 Then Return ""
+            Return If(_signInLink(_text), "")
+        End Get
+    End Property
 
     ''' <summary>The string currently shown ("" while there is none): what Copy, Save and the QR hand over.</summary>
     Friend ReadOnly Property CurrentText As String
@@ -80,7 +97,7 @@ Friend NotInheritable Class Exchange_Connection_String_Form
                 _sequence += 1
                 ShareIcons.FreeIcon(Me.Icon, _iconHandle)
             End Sub
-        Me.FormBorderStyle = FormBorderStyle.FixedDialog
+        Me.FormBorderStyle = FormBorderStyle.Sizable
         Me.MaximizeBox = False
         Me.MinimizeBox = False
         Me.ShowInTaskbar = False
@@ -88,6 +105,8 @@ Friend NotInheritable Class Exchange_Connection_String_Form
 
         Dim body As New FlowLayoutPanel With {.Dock = DockStyle.Top, .FlowDirection = FlowDirection.TopDown, .WrapContents = False, .AutoSize = True,
             .AutoSizeMode = AutoSizeMode.GrowAndShrink, .Padding = New Padding(14, 10, 14, 6)}
+        _body = body
+        body.Controls.Add(ExchangeMark.Heading(Text, 32, AddressOf CompanionAssets.OpenBundledAsset))
         body.Controls.Add(Note(ExchangeConnectionStringText.Intro()))
 
         body.Controls.Add(Caption(ExchangeConnectionStringText.NameLabel()))
@@ -104,7 +123,7 @@ Friend NotInheritable Class Exchange_Connection_String_Form
         body.Controls.Add(Note(ExchangeConnectionStringText.LoginNote()))
 
         body.Controls.Add(Caption(ExchangeConnectionStringText.StringLabel()))
-        _txtString = New TextBox With {.ReadOnly = True, .Multiline = True, .WordWrap = True, .ScrollBars = ScrollBars.Vertical,
+        _txtString = New TextBox With {.ReadOnly = True, .Multiline = True, .AutoSize = False, .WordWrap = True, .ScrollBars = ScrollBars.Vertical,
             .Width = ContentWidth, .Height = 76, .Margin = New Padding(0, 0, 0, 4), .AccessibleName = ExchangeConnectionStringText.StringLabel()}
         body.Controls.Add(_txtString)
 
@@ -116,23 +135,32 @@ Friend NotInheritable Class Exchange_Connection_String_Form
         buttons.Controls.Add(_btnCopy)
         buttons.Controls.Add(_btnSave)
         buttons.Controls.Add(_btnQr)
+        ' the sign-in link of the browser client: only where the caller supplies the builder, and only while there is a link to hand over
+        _btnLink = NewButton(ExchangeConnectionStringText.CopySignInLinkButton(), AddressOf OnCopyLink, "action.copy")
+        _btnLink.Visible = False
+        buttons.Controls.Add(_btnLink)
         body.Controls.Add(buttons)
 
         _lblResult = New Label With {.AutoSize = True, .MaximumSize = New Size(ContentWidth, 0), .ForeColor = ThemeService.Palette.TextMuted,
             .Margin = New Padding(0, 4, 0, 4), .Visible = False}
         body.Controls.Add(_lblResult)
 
+        ' Close is the window's one answer and rides the shared answer row (ticket 243 T-8b, BUTTONS 2.0 sections 3 and 4);
+        ' Enter and Escape both reach it, as before. The four buttons above stay where they are: they are the commands of
+        ' the string field they sit under, enabled and shown with it, not answers of the window.
         Dim close As Button = NewButton(Localization.T("Закрыть"), Sub() Me.Close(), "nav.close", ButtonGlyphRole.Dismissing)
+        close.Name = "xcs_Close"
         close.DialogResult = DialogResult.OK
-        Dim closeRow As New FlowLayoutPanel With {.AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink, .Margin = New Padding(0, 6, 0, 2)}
-        closeRow.Controls.Add(close)
-        body.Controls.Add(closeRow)
-        Me.AcceptButton = close
-        Me.CancelButton = close
+        _answerRow = New DialogButtonRow() With {.Name = "xcs_Buttons", .Margin = New Padding(0, 6, 0, 2)}
+        DpiLayout.AddAnswer(_answerRow, close, DialogButtonRole.Dismissing, "nav.close")
+        body.Controls.Add(_answerRow)
+        _answerRow.Bind(Me)
 
         Me.Controls.Add(body)
         Me.AutoScroll = True
         Me.ClientSize = body.PreferredSize
+        AddHandler body.Layout, Sub(sender, e) FitRowsToWidth()
+        AddHandler body.SizeChanged, Sub() Me.AutoScrollMinSize = New Size(0, body.Height)
 
         AddHandler _debounce.Tick, AddressOf OnDebounce
         SetActionsEnabled(False)
@@ -142,15 +170,44 @@ Friend NotInheritable Class Exchange_Connection_String_Form
 
     Protected Overrides Sub OnLoad(e As EventArgs)
         MyBase.OnLoad(e)
+        ' Measure only after DPI scaling and the final row widths have settled.
+        FitRowsToWidth()
+        _body.PerformLayout()
+        Me.ClientSize = New Size(Me.ClientSize.Width, _body.GetPreferredSize(New Size(_body.ClientSize.Width, 0)).Height)
+        Me.MinimumSize = Me.SizeFromClientSize(New Size(Me.LogicalToDeviceUnits(280), Me.LogicalToDeviceUnits(200)))
         DpiLayout.ClampToWorkingArea(Me)
         DpiLayout.CenterOnOwner(Me)
         Dim t As Task = RegenerateAsync()
+    End Sub
+
+    Private Sub FitRowsToWidth()
+        If _fittingRows Then Return
+        _fittingRows = True
+        _body.SuspendLayout()
+        Try
+            Dim width As Integer = Math.Max(1, _body.ClientSize.Width - _body.Padding.Horizontal)
+            For Each row As Control In _body.Controls
+                Dim available As Integer = Math.Max(1, width - row.Margin.Horizontal)
+                Dim minimumHeight As Integer = If(row Is _txtString, Me.LogicalToDeviceUnits(76), 0)
+                row.MaximumSize = New Size(available, minimumHeight)
+                row.MinimumSize = New Size(available, minimumHeight)
+                row.Width = available
+                If row Is _txtString Then row.Height = minimumHeight
+                ' The answer row sizes its own height from the width it is given (a longer caption wraps whole buttons).
+                If row Is _answerRow Then row.Height = _answerRow.GetPreferredSize(New Size(available, 0)).Height
+            Next
+        Finally
+            _body.ResumeLayout(True)
+            _fittingRows = False
+        End Try
     End Sub
 
     Private Sub SetActionsEnabled(enabled As Boolean)
         _btnCopy.Enabled = enabled
         _btnSave.Enabled = enabled
         _btnQr.Enabled = enabled
+        _btnLink.Enabled = enabled
+        _btnLink.Visible = enabled AndAlso CurrentSignInLink.Length > 0
     End Sub
 
     Private Sub OnInputChanged(sender As Object, e As EventArgs)
@@ -204,6 +261,20 @@ Friend NotInheritable Class Exchange_Connection_String_Form
         data.SetText(_text, TextDataFormat.UnicodeText)
         If SecureClipboard.TrySetDataObject(data) Then
             Say(ExchangeConnectionStringText.Copied(), True)
+        Else
+            Say(ExchangeText.CopyFailed(), False)
+        End If
+    End Sub
+
+    Private Sub OnCopyLink()
+        Dim link As String = CurrentSignInLink
+        If link.Length = 0 Then Return
+        ' The string this window builds is secret-free (name, login, fingerprint; never a password or an invitation), and so is the link
+        ' that carries it after the #: a plain copy through the one clipboard door, as OnCopy does.
+        Dim data As New DataObject()
+        data.SetText(link, TextDataFormat.UnicodeText)
+        If SecureClipboard.TrySetDataObject(data) Then
+            Say(Localization.T("Ссылка скопирована в буфер обмена."), True)
         Else
             Say(ExchangeText.CopyFailed(), False)
         End If

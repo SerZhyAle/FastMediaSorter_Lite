@@ -224,7 +224,7 @@ Partial Public Class Main_Form
             ' A live stream has no position to come back to - reopening one restarts it at
             ' "now", which is the only thing it could mean anyway.
             pending_Video_Seek = If(at_Position >= 0.0F, at_Position,
-                                    If(vlc_Media_Player.IsSeekable, vlc_Media_Player.Position, -1.0F))
+                                    If(vlc_Media_Player.IsSeekable, PlayerPosition(), -1.0F))
             pending_Video_Pause = If(at_Position >= 0.0F, False, Not vlc_Media_Player.IsPlaying)
 
             Dim media As LibVLCSharp.Shared.Media = CreateVlcMedia(file_Path)
@@ -263,7 +263,7 @@ Partial Public Class Main_Form
         If at < 0.0F AndAlso Not pause Then Return
 
         Try
-            If at > 0.0F AndAlso at < 1.0F Then vlc_Media_Player.Position = at
+            If at > 0.0F AndAlso at < 1.0F Then SeekPlayerPosition(at)
             ' SetPause, not Pause: libvlc's Pause() TOGGLES, and this must not depend on
             ' what state the fresh media happens to be in.
             If pause Then vlc_Media_Player.SetPause(True)

@@ -175,6 +175,32 @@ Partial Public NotInheritable Class Localization
             "Ladefehler: {0}", "Errore di caricamento: {0}", "Error de carga: {0}",
             "Erreur de chargement : {0}", "Erro de carregamento: {0}", "خطأ في التحميل: {0}",
             "लोडिंग त्रुटि: {0}", "লোডিং ত্রুটি: {0}", "لوڈنگ خرابی: {0}", "加载出错：{0}")
+        ' A long animated picture is opened as its first frame, the rest is prepared in the background (spec 241).
+        Add("Анимация готовится.. кадров: {0}", "Preparing the animation.. frames: {0}", "Анімація готується.. кадрів: {0}",
+            "Animation wird vorbereitet.. Bilder: {0}", "Preparazione dell'animazione.. fotogrammi: {0}",
+            "Preparando la animación.. fotogramas: {0}", "Préparation de l'animation.. images : {0}",
+            "Preparando a animação.. quadros: {0}", "جارٍ تجهيز الرسم المتحرك.. الإطارات: {0}",
+            "एनिमेशन तैयार हो रहा है.. फ़्रेम: {0}", "অ্যানিমেশন প্রস্তুত হচ্ছে.. ফ্রেম: {0}",
+            "اینیمیشن تیار ہو رہی ہے.. فریمز: {0}", "正在准备动画..帧数：{0}")
+        Add("Анимацию не удалось подготовить: {0}", "Could not prepare the animation: {0}", "Не вдалося підготувати анімацію: {0}",
+            "Animation konnte nicht vorbereitet werden: {0}", "Impossibile preparare l'animazione: {0}",
+            "No se pudo preparar la animación: {0}", "Impossible de préparer l'animation : {0}",
+            "Não foi possível preparar a animação: {0}", "تعذّر تجهيز الرسم المتحرك: {0}",
+            "एनिमेशन तैयार नहीं हो सका: {0}", "অ্যানিমেশন প্রস্তুত করা যায়নি: {0}",
+            "اینیمیشن تیار نہ ہو سکی: {0}", "无法准备动画：{0}")
+        Add("Показан первый кадр, анимация слишком длинная (кадров: {0})",
+            "Showing the first frame, the animation is too long (frames: {0})",
+            "Показано перший кадр, анімація занадто довга (кадрів: {0})",
+            "Erstes Bild angezeigt, die Animation ist zu lang (Bilder: {0})",
+            "Mostrato il primo fotogramma, l'animazione è troppo lunga (fotogrammi: {0})",
+            "Se muestra el primer fotograma, la animación es demasiado larga (fotogramas: {0})",
+            "Première image affichée, l'animation est trop longue (images : {0})",
+            "Primeiro quadro exibido, a animação é longa demais (quadros: {0})",
+            "عُرض الإطار الأول، فالرسم المتحرك طويل جدًا (الإطارات: {0})",
+            "पहला फ़्रेम दिखाया गया, एनिमेशन बहुत लंबा है (फ़्रेम: {0})",
+            "প্রথম ফ্রেম দেখানো হয়েছে, অ্যানিমেশন খুব দীর্ঘ (ফ্রেম: {0})",
+            "پہلا فریم دکھایا گیا، اینیمیشن بہت لمبی ہے (فریمز: {0})",
+            "已显示第一帧，动画过长（帧数：{0}）")
         Add("Формат не поддерживается: {0}", "Unsupported format: {0}", "Формат не підтримується: {0}",
             "Format nicht unterstützt: {0}", "Formato non supportato: {0}", "Formato no compatible: {0}",
             "Format non pris en charge : {0}", "Formato não suportado: {0}", "الصيغة غير مدعومة: {0}",

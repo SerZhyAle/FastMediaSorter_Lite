@@ -10,20 +10,23 @@ package admin
 import (
 	"errors"
 	"sort"
+	"sync"
 	"time"
 
 	"fms/exchange-server/internal/accounts"
+	"fms/exchange-server/internal/clipboard"
 	"fms/exchange-server/internal/directory"
 	"fms/exchange-server/internal/logx"
 	"fms/exchange-server/internal/wire"
 )
 
-// Clipboard is what the operator's operations touch of the clipboard slots (ticket 229): the
-// erasure that goes with an account removal and with an account becoming a guest, and the counts
-// of the status. Nil for an offline command line, which holds no slots of its own.
+// Clipboard is what the operator's operations touch of the clipboard slots (ticket 229, spec 246): the
+// erasure that goes with an account removal and with an account becoming a guest, the counts
+// of the status, and metadata inspection. Nil for an offline command line, which holds no slots of its own.
 type Clipboard interface {
 	Erase(account string)
 	Counts() (values int, bytes int64)
+	Info(account string) *clipboard.ClipboardSlotView
 }
 
 // Ops are the operator's operations.
@@ -44,6 +47,10 @@ type Ops struct {
 	SaveLimits func(accounts.Policy) error
 	// Clipboard is the running server's clipboard table (ticket 229); nil offline.
 	Clipboard Clipboard
+	// Audit is the in-memory audit tracker for admin sessions and change history (spec 246 Group D).
+	Audit    *AuditTracker
+	AuditLog *logx.Audit
+	auditMu  sync.Mutex
 	// Sealed is true when the running server advertises `sealed` (DEVICE-EXCHANGE 27 item DP, ticket 234): a
 	// surface that shows the operator statement then shows the honest text (internal/statement) instead of
 	// the points of a server that cannot seal. A flag, never a key or a box.
@@ -79,7 +86,7 @@ func (o *Ops) PairingCode(login string) (string, time.Time, error) {
 	if err != nil {
 		return "", time.Time{}, err
 	}
-	o.Log.Info("pairing-code-issued", logx.Login(l))
+	o.Log.State("pairing-code-issued", logx.Login(l))
 	return code, expires, nil
 }
 
@@ -97,7 +104,7 @@ func (o *Ops) AddAccountKind(login, pw, kind string) (l string, overCap bool, er
 		return l, false, err
 	}
 	k := o.Accounts.KindOf(l)
-	o.Log.Info("account-added", logx.Login(l), logx.Text("kind", k))
+	o.Log.State("account-added", logx.Login(l), logx.Text("kind", k))
 	return l, o.Accounts.AccountCount() > o.Accounts.Policy().MaxAccounts, nil
 }
 
@@ -116,7 +123,7 @@ func (o *Ops) SetPassword(login, pw string) (int, error) {
 	for _, id := range ids {
 		o.Dir.SignOutDevice(l, id)
 	}
-	o.Log.Info("password-reset", logx.Login(l), logx.Int("signedOut", len(ids)))
+	o.Log.State("password-reset", logx.Login(l), logx.Int("signedOut", len(ids)))
 	return len(ids), nil
 }
 
@@ -153,7 +160,7 @@ func (o *Ops) SetKind(login, kind string) (changed bool, err error) {
 	for _, g := range received {
 		o.Dir.GrantRemoved(DirectoryGrant(g), true)
 	}
-	o.Log.Info("account-kind-changed", logx.Login(l), logx.Text("kind", k))
+	o.Log.State("account-kind-changed", logx.Login(l), logx.Text("kind", k))
 	return true, nil
 }
 
@@ -187,7 +194,7 @@ func (o *Ops) RemoveAccount(login string) error {
 	if err != nil {
 		return err
 	}
-	o.Log.Info("account-removed", logx.Login(l))
+	o.Log.State("account-removed", logx.Login(l))
 	return nil
 }
 
@@ -207,7 +214,7 @@ func (o *Ops) RevokeDevice(login, deviceID string) (bool, error) {
 		return false, nil
 	}
 	o.Dir.RevokeDevice(l, deviceID)
-	o.Log.Info("device-revoked", logx.Login(l), logx.Device(deviceID))
+	o.Log.State("device-revoked", logx.Login(l), logx.Device(deviceID))
 	return true, nil
 }
 
@@ -353,7 +360,7 @@ func (o *Ops) CreateInvitation(kind, expectedLogin string) (CreateInvitationResu
 	if err != nil {
 		return CreateInvitationResult{}, err
 	}
-	o.Log.Info("invitation-created", logx.Text("kind", inv.Kind), logx.Invitation(code))
+	o.Log.State("invitation-created", logx.Text("kind", inv.Kind), logx.Invitation(code))
 	return CreateInvitationResult{Code: code, Invitation: invitationView(inv)}, nil
 }
 
@@ -374,7 +381,7 @@ func (o *Ops) WithdrawInvitation(codeHashOrPrefix string) (bool, error) {
 		return false, err
 	}
 	if ok {
-		o.Log.Info("invitation-withdrawn", logx.Text("hash", shortHash(codeHashOrPrefix)))
+		o.Log.State("invitation-withdrawn", logx.Text("hash", shortHash(codeHashOrPrefix)))
 	}
 	return ok, nil
 }
@@ -399,10 +406,10 @@ func (o *Ops) SetSharedInvitation(pw, kind string) error {
 		return err
 	}
 	if pw == "" {
-		o.Log.Info("shared-invitation-off")
+		o.Log.State("shared-invitation-off")
 	} else {
 		_, k := o.Accounts.SharedInvitationStatus()
-		o.Log.Info("shared-invitation-set", logx.Text("kind", k))
+		o.Log.State("shared-invitation-set", logx.Text("kind", k))
 	}
 	return nil
 }
@@ -419,7 +426,7 @@ func (o *Ops) SetAccountLimits(login string, lim *accounts.AccountLimits) error 
 	if err := o.Accounts.SetAccountLimits(l, lim); err != nil {
 		return err
 	}
-	o.Log.Info("account-limits-changed", logx.Login(l))
+	o.Log.State("account-limits-changed", logx.Login(l))
 	return nil
 }
 
@@ -478,7 +485,7 @@ func (o *Ops) SetPolicy(maxAccounts *int, defaults *accounts.AccountLimits) (Pol
 		persisted = false
 	}
 	o.Accounts.SetPolicy(next)
-	o.Log.Info("policy-changed", logx.Int("maxAccounts", next.MaxAccounts))
+	o.Log.State("policy-changed", logx.Int("maxAccounts", next.MaxAccounts))
 	v := o.PolicyStatus()
 	v.Persisted = persisted
 	return v, nil
@@ -541,7 +548,7 @@ func (o *Ops) AddGrant(owner, targetID, kind, guest string) error {
 	if g, ok := o.grantOf(ol, targetID, gl); ok {
 		o.Dir.GrantAdded(DirectoryGrant(g), nil, false)
 	}
-	o.Log.Info("grant-added", logx.Login(ol), grantTarget(kind, targetID))
+	o.Log.State("grant-added", logx.Login(ol), grantTarget(kind, targetID))
 	return nil
 }
 
@@ -579,9 +586,9 @@ func (o *Ops) PutGrant(owner, grantID, targetID, kind, guest string, p directory
 	}
 	o.Dir.GrantAdded(DirectoryGrant(g), &p, replaced)
 	if replaced {
-		o.Log.Info("grant-replaced", logx.Login(ol), grantTarget(kind, targetID))
+		o.Log.State("grant-replaced", logx.Login(ol), grantTarget(kind, targetID))
 	} else {
-		o.Log.Info("grant-added", logx.Login(ol), grantTarget(kind, targetID))
+		o.Log.State("grant-added", logx.Login(ol), grantTarget(kind, targetID))
 	}
 	return replaced, nil
 }
@@ -594,7 +601,7 @@ func (o *Ops) RemoveGrantByID(owner, grantID string) error {
 		return err
 	}
 	o.Dir.GrantRemoved(DirectoryGrant(g), true)
-	o.Log.Info("grant-removed", logx.Login(g.GrantedBy), grantTarget(g.Kind, g.TargetID))
+	o.Log.State("grant-removed", logx.Login(g.GrantedBy), grantTarget(g.Kind, g.TargetID))
 	return nil
 }
 
@@ -607,7 +614,7 @@ func (o *Ops) DropTargetGrants(owner, targetID string) {
 			continue
 		}
 		o.Dir.GrantRemoved(DirectoryGrant(g), false)
-		o.Log.Info("grant-ended", logx.Login(g.GrantedBy), grantTarget(g.Kind, g.TargetID))
+		o.Log.State("grant-ended", logx.Login(g.GrantedBy), grantTarget(g.Kind, g.TargetID))
 	}
 }
 
@@ -618,7 +625,7 @@ func (o *Ops) RemoveGrant(owner, targetID, guest string) error {
 		return err
 	}
 	o.Dir.GrantRemoved(DirectoryGrant(g), true)
-	o.Log.Info("grant-removed", logx.Login(g.GrantedBy), grantTarget(g.Kind, g.TargetID))
+	o.Log.State("grant-removed", logx.Login(g.GrantedBy), grantTarget(g.Kind, g.TargetID))
 	return nil
 }
 
@@ -644,4 +651,97 @@ func grantTarget(kind, id string) logx.Field {
 		return logx.Broadcast(id)
 	}
 	return logx.Resource(id)
+}
+
+// ListBroadcasts lists active broadcasts under an account (spec 246 Group A).
+func (o *Ops) ListBroadcasts(login, deviceID string) []directory.BroadcastView {
+	if o.Dir == nil {
+		return []directory.BroadcastView{}
+	}
+	l, ok := accounts.NormalizeLogin(login)
+	if !ok {
+		return []directory.BroadcastView{}
+	}
+	return o.Dir.ListBroadcasts(l, deviceID)
+}
+
+// EndBroadcast administratively stops an active broadcast (spec 246 Group A).
+func (o *Ops) EndBroadcast(login, broadcastID string) error {
+	if !o.Live {
+		return ErrNotLive
+	}
+	l, ok := accounts.NormalizeLogin(login)
+	if !ok || !o.Accounts.Exists(l) {
+		return accounts.ErrNoAccount
+	}
+	if err := o.Dir.EndBroadcast(l, broadcastID); err != nil {
+		return err
+	}
+	o.Log.State("broadcast-ended-admin", logx.Login(l), logx.Broadcast(broadcastID))
+	return nil
+}
+
+// ListResources lists published resources of an account (spec 246 Group B).
+func (o *Ops) ListResources(login string) []directory.ResourceView {
+	if o.Dir == nil {
+		return []directory.ResourceView{}
+	}
+	l, ok := accounts.NormalizeLogin(login)
+	if !ok {
+		return []directory.ResourceView{}
+	}
+	return o.Dir.ListResources(l)
+}
+
+// UnpublishResource administratively revokes a published resource (spec 246 Group B).
+func (o *Ops) UnpublishResource(login, resourceID string) error {
+	if !o.Live {
+		return ErrNotLive
+	}
+	l, ok := accounts.NormalizeLogin(login)
+	if !ok || !o.Accounts.Exists(l) {
+		return accounts.ErrNoAccount
+	}
+	if err := o.Dir.UnpublishResource(l, resourceID); err != nil {
+		return err
+	}
+	o.Log.State("resource-unpublished-admin", logx.Login(l), logx.Resource(resourceID))
+	return nil
+}
+
+// GetClipboardInfo inspects an account's clipboard slot metadata (spec 246 Group C).
+func (o *Ops) GetClipboardInfo(login string) (*clipboard.ClipboardSlotView, error) {
+	if !o.Live || o.Clipboard == nil {
+		return &clipboard.ClipboardSlotView{Present: false}, nil
+	}
+	l, ok := accounts.NormalizeLogin(login)
+	if !ok || !o.Accounts.Exists(l) {
+		return nil, accounts.ErrNoAccount
+	}
+	return o.Clipboard.Info(l), nil
+}
+
+// EraseClipboard clears an account's clipboard slot (spec 246 Group C).
+func (o *Ops) EraseClipboard(login string) error {
+	if !o.Live || o.Clipboard == nil {
+		return nil
+	}
+	l, ok := accounts.NormalizeLogin(login)
+	if !ok || !o.Accounts.Exists(l) {
+		return accounts.ErrNoAccount
+	}
+	o.Clipboard.Erase(l)
+	o.Log.State("clipboard-erased", logx.Login(l))
+	return nil
+}
+
+// ListAudit returns recent administrative audit events and active admin sessions (spec 246 Group D).
+func (o *Ops) ListAudit() AdminAuditView {
+	if o.Audit != nil {
+		return o.Audit.View()
+	}
+	return AdminAuditView{
+		ActiveSessions: []AdminSessionView{},
+		Records:        []AdminAuditRecord{},
+	}
 }

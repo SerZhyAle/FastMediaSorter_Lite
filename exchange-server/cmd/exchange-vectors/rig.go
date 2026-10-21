@@ -2,6 +2,7 @@ package main
 
 import (
 	"crypto/sha256"
+	"crypto/tls"
 	"encoding/binary"
 	"encoding/hex"
 	"errors"
@@ -13,9 +14,11 @@ import (
 	"sync"
 	"time"
 
+	"fms/exchange-server/internal/config"
 	"fms/exchange-server/internal/ports"
 	"fms/exchange-server/internal/rendezvous"
 	"fms/exchange-server/internal/testkit"
+	"fms/exchange-server/internal/tlsid"
 	"fms/exchange-server/internal/wire"
 )
 
@@ -147,6 +150,10 @@ type rigOpts struct {
 	pace bool
 	// sealed turns the `sealed` feature on (27 item DP); the older scenarios run without it, as they always did.
 	sealed bool
+	admin      *config.Admin
+	webDir     string
+	verifyConc int
+	verifyWait time.Duration
 }
 
 // rig is one server of one scenario.
@@ -159,6 +166,44 @@ type rig struct {
 	// (and so a broadcast) in the middle of a scenario.
 	mu       sync.Mutex
 	sessions []*sess
+}
+
+const vectorCertPEM = `-----BEGIN CERTIFICATE-----
+MIIBYjCCAQigAwIBAgIBATAKBggqhkjOPQQDAjAfMR0wGwYDVQQDExRleGNoYW5n
+ZS5leGFtcGxlLm5ldDAeFw0yNjEwMDcwMDAwMDBaFw0zNjEwMDcwMDAwMDBaMB8x
+HTAbBgNVBAMTFGV4Y2hhbmdlLmV4YW1wbGUubmV0MFkwEwYHKoZIzj0CAQYIKoZI
+zj0DAQcDQgAEpl35dna4p6cWUfJ2NWb9CNNYBZzienOjCOLDHxa0Szn2c5Tdv4ND
+NXUJmyj6WsB3CZzzGclY8cXzjrDbEzHko6M1MDMwDgYDVR0PAQH/BAQDAgeAMBMG
+A1UdJQQMMAoGCCsGAQUFBwMBMAwGA1UdEwEB/wQCMAAwCgYIKoZIzj0EAwIDSAAw
+RQIgSxdOfA4pE8cqOZmFSBjGXJj5zqeth1vPGYLfsBGXoKYCIQCaLiT+2mg0qsdz
+Wlub4QP4084Ni1d/+uvLIJ+LbvGG9Q==
+-----END CERTIFICATE-----
+`
+
+const vectorKeyPEM = `-----BEGIN EC PRIVATE KEY-----
+MHcCAQEEIL3mx5omsWvptEsnLJzVKqHTV2+8uNZ7HNN6hbuUPW15oAoGCCqGSM49
+AwEHoUQDQgAEpl35dna4p6cWUfJ2NWb9CNNYBZzienOjCOLDHxa0Szn2c5Tdv4ND
+NXUJmyj6WsB3CZzzGclY8cXzjrDbEzHkow==
+-----END EC PRIVATE KEY-----
+`
+
+var (
+	vectorIDOnce sync.Once
+	vectorID     *tlsid.Identity
+)
+
+func getVectorTLSIdentity() *tlsid.Identity {
+	vectorIDOnce.Do(func() {
+		cert, err := tls.X509KeyPair([]byte(vectorCertPEM), []byte(vectorKeyPEM))
+		if err != nil {
+			failf("load vector tls key pair: %v", err)
+		}
+		vectorID = &tlsid.Identity{
+			Cert:        cert,
+			Fingerprint: tlsid.Fingerprint(cert.Certificate[0]),
+		}
+	})
+	return vectorID
 }
 
 // newRig starts a server for a scenario. seed names the scenario: every id, token and code is drawn
@@ -175,6 +220,11 @@ func newRig(seed string, o rigOpts) *rig {
 		Now: r.clock.Now, Params: &params, Logins: o.logins, PublicEndpoint: publicEndpoint,
 		WithRelay: o.relay, Cast: o.cast, ServerVersion: "vectors",
 		AccountsRand: newSeeded(seed + "/accounts"), EngineRand: newSeeded(seed + "/tunnels"), Sealed: o.sealed,
+		WebDir: o.webDir, VerifyConc: o.verifyConc, VerifyWait: o.verifyWait,
+		TLSIdentity: getVectorTLSIdentity(),
+	}
+	if o.admin != nil {
+		opt.Admin = *o.admin
 	}
 	if o.pace {
 		opt.PaceInterval, opt.Sleep = 2*time.Second, func(time.Duration) {}

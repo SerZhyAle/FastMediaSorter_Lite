@@ -1,4 +1,4 @@
-Option Strict On
+﻿Option Strict On
 
 Imports System.Collections.Generic
 Imports System.Text
@@ -20,7 +20,7 @@ Public Class ExchangeHostSettingsTests
             ExchangeProcess.RunOverride = Function(args, stdin) New ExchangeProcess.RunResult With {.Started = True, .StdOut = "{}"}
             ExchangeAdmin.PipeNameOverride = "fms-225-no-server-" & Guid.NewGuid().ToString("N")
             ExchangeTestSupport.OnUi(Sub()
-                Using form As New Share_Settings_Form With {.Location = New Point(-6000, -6000), .StartPosition = FormStartPosition.Manual, .ShowInTaskbar = False}
+                Using form As New Share_Settings_Form(destination:=SettingsDestination.ExchangeServer) With {.Location = New Point(-6000, -6000), .StartPosition = FormStartPosition.Manual, .ShowInTaskbar = False}
                     form.Show()
                     Dim flags As BindingFlags = BindingFlags.Instance Or BindingFlags.NonPublic
                     GetType(Share_Settings_Form).GetMethod("SelectSettingsPage", flags).Invoke(form, New Object() {"exchange"})

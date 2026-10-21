@@ -155,8 +155,11 @@ $net48OnlyFiles = @(
 $x86OnlyTrees = @('x86\', 'libvlc\win-x86\', 'runtimes\win-x86\')
 # The exchange server (specification 133) is not part of the Store package in v1: the Store channel
 # is the viewer edition's and stays lean. A local build deploys its tree into bin\Release for
-# development, so it is excluded here by name rather than by luck.
-$notInThisPackageTrees = @('exchange\')
+# development, so it is excluded here by name rather than by luck. The same holds for the FileDO
+# disk-hosting tree (filedo\, a capability of sharing; specification 249): build.ps1 stages it into
+# bin\Release, the Store listing says the Store version does not carry it, and the availability
+# matrix of tools/site-facts.json says 'absent' for the Store.
+$notInThisPackageTrees = @('exchange\', 'filedo\')
 Get-ChildItem $ReleaseDir -Recurse -File |
     Where-Object { $_.Extension -notin '.pdb', '.xml', '.log' } |
     ForEach-Object {
@@ -219,6 +222,9 @@ if (-not $SkipOcrPayload) {
 # governs the GitHub and winget setups, never the MSIX.
 if (Test-Path -LiteralPath (Join-Path $Stage 'exchange')) {
     throw "The MSIX stage carries an exchange\ folder - the exchange server is not part of the Store package."
+}
+if (Test-Path -LiteralPath (Join-Path $Stage 'filedo')) {
+    throw "The MSIX stage carries a filedo\ folder - FileDO disk hosting is not part of the Store package."
 }
 $strayExchange = @(Get-ChildItem -LiteralPath $Stage -Recurse -File -Filter 'fms-exchange-server*' -ErrorAction SilentlyContinue)
 if ($strayExchange.Count -gt 0) {

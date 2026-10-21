@@ -180,9 +180,13 @@ Friend NotInheritable Class Ask_Dialog
             If glyph.Length = 0 Then glyph = ButtonGlyphs.DefaultGlyph(role)
             If glyph.Length > 0 Then ButtonGlyphs.Apply(b, glyph, role)
         Next
-        ' FlowDirection.RightToLeft places the first control added at the far right: add them last-to-first so
-        ' the first answer reads first, and the cancel answer sits at the end.
-        For i As Integer = answerButtons.Count - 1 To 0 Step -1
+        ' BUTTONS 2.0 section 4 rule 4: the answers read Cancel, the intermediate ones, then the final affirmative
+        ' action. A spec lists its answers the other way round (the acting answer first, the cancel answer last), so
+        ' the strip shows the spec's LAST answer first. FlowDirection.RightToLeft puts the first control added at
+        ' the far right (the far left under a right-to-left window, which mirrors a flow), so adding in spec order
+        ' leaves the acting answer at the end of the reading and the cancel answer at its start in both directions.
+        For i As Integer = 0 To answerButtons.Count - 1
+            answerButtons(i).TabIndex = answerButtons.Count - 1 - i
             strip.Controls.Add(answerButtons(i))
         Next
         root.Controls.Add(strip, 0, row)

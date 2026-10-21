@@ -123,6 +123,36 @@ Friend NotInheritable Class DialogLayout
         End Try
     End Sub
 
+    ''' <summary>Keeps the docked answer row (<see cref="DialogButtonRow"/>) of a hand-positioned window clear of the
+    ''' content above it (ticket 243, T-8b). The window is authored with the room of a one-line row; a row that wraps
+    ''' in a longer language or at a higher scale is taller, and a row docked to the bottom grows upwards over the
+    ''' controls. The window is made taller by exactly the missing amount (and kept on its monitor). Call it from
+    ''' OnLoad after <see cref="FitContent"/>; a window whose row fits is not touched. The row's need is asked of it
+    ''' for the window's width, so it does not depend on whether the first layout pass has already run.</summary>
+    Friend Shared Sub KeepRoomForRow(f As Form, row As Control)
+        If f Is Nothing OrElse f.IsDisposed OrElse row Is Nothing Then Return
+        Try
+            f.PerformAutoScale()
+            Dim lowest As Integer = 0
+            For Each c As Control In f.Controls
+                If Object.ReferenceEquals(c, row) OrElse Not c.Visible OrElse c.Dock <> DockStyle.None Then Continue For
+                lowest = Math.Max(lowest, c.Bottom)
+            Next
+            Dim rowHeight As Integer = Math.Max(row.Height, row.GetPreferredSize(New Size(f.ClientSize.Width, 0)).Height)
+            Dim missing As Integer = lowest + rowHeight - f.ClientSize.Height
+            If missing <= 0 Then Return
+            Dim sizeBefore As Size = f.Size
+            f.ClientSize = New Size(f.ClientSize.Width, f.ClientSize.Height + missing)
+            If f.Size <> sizeBefore AndAlso (f.StartPosition = FormStartPosition.CenterParent OrElse f.StartPosition = FormStartPosition.CenterScreen) Then
+                f.Location = New Point(f.Left - (f.Width - sizeBefore.Width) \ 2, f.Top - (f.Height - sizeBefore.Height) \ 2)
+            End If
+            ClampToWorkingArea(f)
+        Catch ex As Exception
+            ' A layout nicety must never stop a window from opening.
+            AppFileLogger.LogException("DialogLayout row room", ex)
+        End Try
+    End Sub
+
     ''' <summary>Grows ONE fixed-size label to the height its current text needs, after the text was changed at
     ''' run time (a refusal, a warning, a status line), and moves everything under it down by the same amount,
     ''' taking the window with it. Does nothing when the text already fits.</summary>
@@ -217,6 +247,11 @@ Friend NotInheritable Class DialogLayout
     ''' <summary>The height this control needs for its text, or 0 when what it has is enough (or the control is
     ''' not one that wraps).</summary>
     Private Shared Function NeededHeight(c As Control, f As Form, scale As Single) As Integer
+        ' A boolean option row (ticket 243 T-11b) is as tall as its caption and explanation need at this scale; it is
+        ' arranged here, once the window has its scale, and the controls under it move down by what it grew.
+#If Not NETFRAMEWORK Then
+        If DialogOptionRow.IsRow(c) Then Return DialogOptionRow.NeededHeight(c)
+#End If
         Dim label As Label = TryCast(c, Label)
         Dim check As ButtonBase = If(TypeOf c Is CheckBox OrElse TypeOf c Is RadioButton, DirectCast(c, ButtonBase), Nothing)
         If label IsNot Nothing AndAlso Not label.AutoSize Then Return NeededLabelHeight(label)

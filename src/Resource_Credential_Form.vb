@@ -23,9 +23,12 @@ Friend NotInheritable Class Resource_Credential_Form
     Private ReadOnly field As TextBox
     Private ReadOnly reveal As CheckBox
     Private ReadOnly remember As CheckBox
+    Private ReadOnly revealRow As OptionRowHost
+    Private ReadOnly rememberRow As OptionRowHost
     Private ReadOnly warning As Label
     Private ReadOnly okButton As Button
     Private ReadOnly dismissButton As Button
+    Private ReadOnly answerRow As DialogButtonRow
     Private script_Font As Font
     Private ReadOnly pinMode As Boolean
 
@@ -53,7 +56,9 @@ Friend NotInheritable Class Resource_Credential_Form
         Me.MinimizeBox = False
         Me.ShowInTaskbar = False
         Me.StartPosition = FormStartPosition.CenterParent
-        Me.ClientSize = New Size(460, 178)
+        ' The authored content ends at 178 (the two 40 px option rows, then the warning line); the bottom row below it is 50 tall
+        ' (8 + one 32 line + 10) at 96 dpi.
+        Me.ClientSize = New Size(460, 228)
 
         Dim family As String = Localization.FontFamily()
         If family IsNot Nothing Then
@@ -80,25 +85,28 @@ Friend NotInheritable Class Resource_Credential_Form
 
         reveal = New CheckBox With {
             .Name = "resource_Reveal",
-            .AutoSize = True,
-            .Location = New Point(14, 82),
             .Text = If(pinMode, Localization.T("Показать PIN-код"), Localization.T("Показать пароль"))
         }
         AddHandler reveal.CheckedChanged, Sub() field.UseSystemPasswordChar = Not reveal.Checked
 
+        Dim offerRemember As Boolean = showRemember AndAlso Not pinMode
         remember = New CheckBox With {
             .Name = "resource_Remember",
-            .AutoSize = True,
-            .Location = New Point(14, 104),
             .Checked = True,
-            .Visible = showRemember AndAlso Not pinMode,
+            .Visible = offerRemember,
             .Text = Localization.T("Запомнить пароль (защищён средствами Windows)")
         }
+
+        ' Both are option rows of the Settings anatomy (ticket 243 T-11b, BOOLEAN-OPTION 2.0): the same check boxes with the
+        ' same names, state and handlers, a 20 px box in a 32 px target, the caption beside it. The hidden one hides its row.
+        revealRow = DialogOptionRow.CreateAt(reveal, Nothing, 14, 80, 460)
+        rememberRow = DialogOptionRow.CreateAt(remember, Nothing, 14, 120, 460)
+        rememberRow.Visible = offerRemember
 
         warning = New Label With {
             .Name = "resource_Warning",
             .AutoSize = False,
-            .Location = New Point(14, 126),
+            .Location = New Point(14, 162),
             .Size = New Size(432, 16),
             .ForeColor = Color.Firebrick,
             .Text = If(retry, If(pinMode, Localization.T("PIN-код не подошёл. Введите его ещё раз."), Localization.T("Пароль не подошёл. Введите его ещё раз.")), "")
@@ -106,32 +114,31 @@ Friend NotInheritable Class Resource_Credential_Form
 
         okButton = New Button With {
             .Name = "resource_Ok",
-            .Location = New Point(246, 142),
-            .Size = New Size(100, 28),
             .Text = Localization.T("Подключиться"),
             .DialogResult = DialogResult.None
         }
         AddHandler okButton.Click, AddressOf Confirm
-        ButtonGlyphs.Apply(okButton, "action.confirm", ButtonGlyphRole.Affirmative)
 
         dismissButton = New Button With {
             .Name = "resource_Cancel",
-            .Location = New Point(354, 142),
-            .Size = New Size(92, 28),
             .Text = Localization.T("Отмена"),
             .DialogResult = DialogResult.Cancel
         }
-        ButtonGlyphs.Apply(dismissButton, "action.cancel", ButtonGlyphRole.Dismissing)
+
+        ' The answers ride the shared bottom row (ticket 243 T-8b, BUTTONS 2.0 sections 3 and 4): Cancel first, the final
+        ' affirmative answer last, widths from the caption and its glyph. Bind keeps the meaning they had: Escape is
+        ' Cancel, Enter is Connect (the safe default - it connects, it destroys nothing).
+        answerRow = New DialogButtonRow() With {.Dock = DockStyle.Bottom, .Name = "resource_Buttons", .Padding = New Padding(14, 8, 14, 10)}
+        answerRow.Add(okButton, DialogButtonRole.Affirmative, "action.confirm")
+        answerRow.Add(dismissButton, DialogButtonRole.Dismissing, "action.cancel")
 
         Me.Controls.Add(prompt)
         Me.Controls.Add(field)
-        Me.Controls.Add(reveal)
-        Me.Controls.Add(remember)
+        Me.Controls.Add(revealRow)
+        Me.Controls.Add(rememberRow)
         Me.Controls.Add(warning)
-        Me.Controls.Add(okButton)
-        Me.Controls.Add(dismissButton)
-        Me.AcceptButton = okButton
-        Me.CancelButton = dismissButton
+        Me.Controls.Add(answerRow)
+        answerRow.Bind(Me)
 
         ' LAST line of the builder: scaling touches only the children that exist by now.
         DialogLayout.ApplyAutoScale(Me)
@@ -146,6 +153,7 @@ Friend NotInheritable Class Resource_Credential_Form
     Protected Overrides Sub OnLoad(e As EventArgs)
         MyBase.OnLoad(e)
         DialogLayout.FitContent(Me)
+        DialogLayout.KeepRoomForRow(Me, answerRow)
     End Sub
 
     Protected Overrides Sub OnShown(e As EventArgs)

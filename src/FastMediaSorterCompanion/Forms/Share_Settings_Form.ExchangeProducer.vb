@@ -338,7 +338,7 @@ Partial Public NotInheritable Class Share_Settings_Form
         Dim name As String = SelectedProducerShare()
         If name.Length = 0 OrElse _pxBusy OrElse _pxPublisher Is Nothing OrElse Not OutwardAccessFeatures.IsOffered() Then Return
         ' names the consequence; the safe answer (No) is the default
-        If MessageBox.Show(Me, ExchangePublishText.RotateQuestion(name), ExchangePublishText.GroupTitle(), MessageBoxButtons.YesNo,
+        If ManagerBox.Show(Me, ExchangePublishText.RotateQuestion(name), ExchangePublishText.GroupTitle(), MessageBoxButtons.YesNo,
                            MessageBoxIcon.Warning, MessageBoxDefaultButton.Button2) <> DialogResult.Yes Then Return
         Await RunLinkActionAsync(name, ExchangePublishText.LinkRotated(name), Function(p, n) p.RotateLinkAsync(n, CancellationToken.None), showWindow:=True)
     End Sub
@@ -346,7 +346,7 @@ Partial Public NotInheritable Class Share_Settings_Form
     Private Async Sub OnPxRemoveLink()
         Dim name As String = SelectedProducerShare()
         If name.Length = 0 OrElse _pxBusy OrElse _pxPublisher Is Nothing Then Return
-        If MessageBox.Show(Me, ExchangePublishText.RemoveQuestion(name), ExchangePublishText.GroupTitle(), MessageBoxButtons.YesNo,
+        If ManagerBox.Show(Me, ExchangePublishText.RemoveQuestion(name), ExchangePublishText.GroupTitle(), MessageBoxButtons.YesNo,
                            MessageBoxIcon.Warning, MessageBoxDefaultButton.Button2) <> DialogResult.Yes Then Return
         Await RunLinkActionAsync(name, ExchangePublishText.LinkRemoved(name), Function(p, n) p.RemoveLinkAsync(n, CancellationToken.None), showWindow:=False)
     End Sub

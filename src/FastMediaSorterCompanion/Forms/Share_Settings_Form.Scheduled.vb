@@ -265,7 +265,7 @@ Partial Public NotInheritable Class Share_Settings_Form
         If id.Length = 0 Then Return
         Dim op As ScheduledOperation = ScheduledHost.Engine.TryGet(id)
         If op Is Nothing Then Return
-        If MessageBox.Show(Me, Localization.TF("Удалить операцию «{0}»? Файлы она не затрагивает.", op.DisplayName()),
+        If ManagerBox.Show(Me, Localization.TF("Удалить операцию «{0}»? Файлы она не затрагивает.", op.DisplayName()),
                            ScheduledPageCaption(), MessageBoxButtons.YesNo, MessageBoxIcon.Question,
                            MessageBoxDefaultButton.Button2) <> DialogResult.Yes Then Return
         ScheduledHost.Engine.Delete(id)
@@ -310,7 +310,7 @@ Partial Public NotInheritable Class Share_Settings_Form
     End Sub
 
     Private Sub OnScheduledClearHistory()
-        If MessageBox.Show(Me, Localization.T("Очистить журнал операций по расписанию? Сами операции и их расписание не изменятся."),
+        If ManagerBox.Show(Me, Localization.T("Очистить журнал операций по расписанию? Сами операции и их расписание не изменятся."),
                            ScheduledPageCaption(), MessageBoxButtons.YesNo, MessageBoxIcon.Question,
                            MessageBoxDefaultButton.Button2) <> DialogResult.Yes Then Return
         ScheduledHost.Engine.Journal.ClearHistory()

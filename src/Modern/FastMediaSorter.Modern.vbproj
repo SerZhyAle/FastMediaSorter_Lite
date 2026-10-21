@@ -126,6 +126,18 @@
     <EmbeddedResource Include="..\..\assets\icons\doc-html-translate.png">
       <LogicalName>FmsPayloadicons/doc-html-translate.png</LogicalName>
     </EmbeddedResource>
+    <EmbeddedResource Include="..\..\assets\exchange-mark\png\*.png">
+      <WithCulture>false</WithCulture>
+      <LogicalName>FmsPayloadexchange-mark/png/%(Filename)%(Extension)</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="..\..\assets\exchange-mark\svg\*.svg">
+      <WithCulture>false</WithCulture>
+      <LogicalName>FmsPayloadexchange-mark/svg/%(Filename)%(Extension)</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="..\..\assets\exchange-mark\ico\*.ico">
+      <WithCulture>false</WithCulture>
+      <LogicalName>FmsPayloadexchange-mark/ico/%(Filename)%(Extension)</LogicalName>
+    </EmbeddedResource>
     <EmbeddedResource Include="..\..\assets\glyphs\*.svg">
       <!-- MSBuild reads the penultimate extension of a resource file name as a culture: "action.run.svg" is
            Rundi ("run"), so that glyph was silently moved to a satellite assembly and left out of the exe. -->

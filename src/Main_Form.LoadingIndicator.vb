@@ -3,6 +3,7 @@ Option Strict On
 Imports System.Diagnostics
 Imports System.Drawing
 Imports System.IO
+Imports System.Globalization
 Imports System.Windows.Forms
 
 ' The "Загрузка.." badge shown over the media surface while a slow image decodes.
@@ -56,6 +57,10 @@ Partial Public Class Main_Form
     Private Const loading_Decode_Deadline_Ms As Integer = 20000
 
     Private loading_Badge As Label
+    Private loading_Badge_Path As String = Nothing
+    Private loading_Badge_Last_Sec As Integer = -1
+    Private loading_Badge_Cached_Percent As Integer = 0
+    Private loading_Badge_Cached_Remaining_Sec As Integer = -1
 
     ''' <summary>
     ''' LoadImageWithStream, but it tells the user when it is taking its time.
@@ -192,7 +197,12 @@ Partial Public Class Main_Form
     Private Shared Function DecodeForDisplay(file_Path As String) As DecodeOutcome
         Dim outcome As New DecodeOutcome()
         Dim reported As PathFailureKind = PathFailureKind.Content
+#If NETFRAMEWORK Then
         outcome.Loaded = LoadImageWithStream(file_Path, reported)
+#Else
+        ' A long animation arrives as its first frame (spec 241); the viewer upgrades it afterwards.
+        outcome.Loaded = LoadImageStaged(file_Path, reported, ImageLoadStage.Staged)
+#End If
         outcome.Failure = reported
         Return outcome
     End Function
@@ -278,7 +288,7 @@ Partial Public Class Main_Form
 
     ''' <summary>Shows (building it on first use) and repaints the badge. Safe to call
     ''' on every frame - only the text changes after the first one.</summary>
-    Private Sub ShowLoadingBadge(file_Path As String, file_Size_Bytes As Long, elapsed As TimeSpan, frame As Integer)
+    Private Sub ShowLoadingBadge(file_Path As String, file_Size_Bytes As Long, elapsed As TimeSpan, frame As Integer, Optional loaded_Bytes As Long = -1L)
         If Not CanShowLoadingBadge() Then Return
         If panel_Media Is Nothing OrElse panel_Media.IsDisposed Then Return
 
@@ -302,7 +312,7 @@ Partial Public Class Main_Form
                 panel_Media.Controls.Add(loading_Badge)
             End If
 
-            loading_Badge.Text = LoadingBadgeText(file_Path, file_Size_Bytes, elapsed, frame)
+            loading_Badge.Text = LoadingBadgeText(file_Path, file_Size_Bytes, elapsed, frame, loaded_Bytes)
             loading_Badge.Location = New Point(
                 Math.Max(0, (panel_Media.ClientSize.Width - loading_Badge.Width) \ 2),
                 Math.Max(0, (panel_Media.ClientSize.Height - loading_Badge.Height) \ 2))
@@ -321,7 +331,15 @@ Partial Public Class Main_Form
         End Try
     End Sub
 
+    Private Sub ResetLoadingBadgeState()
+        loading_Badge_Path = Nothing
+        loading_Badge_Last_Sec = -1
+        loading_Badge_Cached_Percent = 0
+        loading_Badge_Cached_Remaining_Sec = -1
+    End Sub
+
     Private Sub HideLoadingBadge()
+        ResetLoadingBadgeState()
         If loading_Badge Is Nothing Then Return
         Try
             ' Left built for the next slow file; hiding invalidates the area under it,
@@ -332,32 +350,65 @@ Partial Public Class Main_Form
         End Try
     End Sub
 
+    Private Sub UpdateLoadingBadgeMetrics(file_Path As String, file_Size_Bytes As Long, elapsed As TimeSpan, loaded_Bytes As Long)
+        If Not String.Equals(loading_Badge_Path, file_Path, StringComparison.OrdinalIgnoreCase) Then
+            loading_Badge_Path = file_Path
+            loading_Badge_Last_Sec = -1
+            loading_Badge_Cached_Percent = 0
+            loading_Badge_Cached_Remaining_Sec = -1
+        End If
+
+        LoadingIndicatorRules.UpdateMetricsOncePerSecond(
+            loaded_Bytes, file_Size_Bytes, elapsed,
+            loading_Badge_Last_Sec, loading_Badge_Cached_Percent, loading_Badge_Cached_Remaining_Sec)
+    End Sub
+
     ''' <summary>What the badge says: the file, why it is slow (its size), how long it
-    ''' has been going, and a spinner that proves the app is alive rather than wedged -
-    ''' the thing the user could not tell before.</summary>
-    Private Function LoadingBadgeText(file_Path As String, file_Size_Bytes As Long, elapsed As TimeSpan, frame As Integer) As String
+    ''' has been going or its percent and estimated remaining time, and a spinner that
+    ''' proves the app is alive rather than wedged.</summary>
+    Private Function LoadingBadgeText(file_Path As String,
+                                      file_Size_Bytes As Long,
+                                      elapsed As TimeSpan,
+                                      frame As Integer,
+                                      Optional loaded_Bytes As Long = -1L) As String
         ' Plain ASCII: every font has it, and this text can land on any machine.
         Const spinner As String = "|/-\"
         Dim tick As String = spinner.Substring(frame Mod spinner.Length, 1)
 
         Dim head As String = Localization.TF("Загрузка.. {0}", tick)
-        Dim seconds As String = Localization.TF("{0} с", CInt(Math.Floor(elapsed.TotalSeconds)).ToString())
+        Dim fileName As String = Path.GetFileName(file_Path)
+        If String.IsNullOrEmpty(fileName) Then fileName = file_Path
+
+        Dim line3 As String
+        If loaded_Bytes >= 0 AndAlso file_Size_Bytes > 0 Then
+            UpdateLoadingBadgeMetrics(file_Path, file_Size_Bytes, elapsed, loaded_Bytes)
+            Dim sizeText As String = FormatLoadingSize(file_Size_Bytes)
+            Dim percentText As String = loading_Badge_Cached_Percent.ToString(CultureInfo.InvariantCulture) & "%"
+            If loading_Badge_Cached_Remaining_Sec >= 0 Then
+                Dim remainingText As String = LoadingIndicatorRules.FormatRemainingTime(loading_Badge_Cached_Remaining_Sec)
+                line3 = sizeText & "   " & percentText & "   " & remainingText
+            Else
+                line3 = sizeText & "   " & percentText
+            End If
+        Else
+            Dim seconds As String = Localization.TF("{0} с", CInt(Math.Floor(elapsed.TotalSeconds)).ToString(CultureInfo.InvariantCulture))
+            If file_Size_Bytes > 0 Then
+                line3 = FormatLoadingSize(file_Size_Bytes) & "   " & seconds
+            Else
+                line3 = seconds
+            End If
+        End If
 
         Return head & Environment.NewLine &
-               Path.GetFileName(file_Path) & Environment.NewLine &
-               FormatLoadingSize(file_Size_Bytes) & "   " & seconds
+               fileName & Environment.NewLine &
+               line3
     End Function
 
     ''' <summary>Binary units, like the file-size column in the status bar: KiB/MiB are
     ''' powers of 1024 by definition, so the number and the unit come from the same
     ''' system.</summary>
     Private Function FormatLoadingSize(size_Bytes As Long) As String
-        If size_Bytes >= 1024L * 1024L Then
-            Return Localization.TF("{0} МиБ", (size_Bytes / (1024.0 * 1024.0)).ToString("F1"))
-        ElseIf size_Bytes >= 1024L Then
-            Return Localization.TF("{0} КиБ", (size_Bytes / 1024.0).ToString("F1"))
-        End If
-        Return Localization.TF("{0} Б", size_Bytes.ToString())
+        Return LoadingIndicatorRules.FormatLoadingSize(size_Bytes)
     End Function
 
 End Class

@@ -27,6 +27,7 @@ Friend NotInheritable Class Batch_Report_Form
     Private ReadOnly close_Button As New Button()
     Private ReadOnly copy_Button As New Button()
     Private ReadOnly folder_Button As New Button()
+    Private answerRow As DialogButtonRow
 
     Friend Sub New(report As BatchReport)
         Text = Localization.T("Отчёт об операции")
@@ -49,33 +50,24 @@ Friend NotInheritable Class Batch_Report_Form
 
         close_Button.Text = Localization.T("Закрыть")
         close_Button.DialogResult = DialogResult.OK
-        AcceptButton = close_Button
-        CancelButton = close_Button
-        ' Accept and Cancel at once: the one way out of the report, so it is the dismissing answer.
-        ButtonGlyphs.Apply(close_Button, "nav.close", ButtonGlyphRole.Dismissing)
 
         copy_Button.Text = Localization.T("Копировать")
         AddHandler copy_Button.Click, Sub(s, e) CopyRows()
-        ButtonGlyphs.Apply(copy_Button, "action.copy")
 
         folder_Button.Text = Localization.T("Показать в проводнике")
         folder_Button.Enabled = False
         AddHandler folder_Button.Click, Sub(s, e) ShowFirstSelectedInFolder()
-        ButtonGlyphs.Apply(folder_Button, "content.folder")
 
-        ' The buttons ride one bottom band, way out on the right like the panel's own strip.
-        ' Reverse add order, reverse dock order: the LAST control added docks first, so
-        ' "Закрыть" - added last - ends up rightmost, under the right hand.
-        Dim bottom As New Panel With {.Dock = DockStyle.Bottom, .Height = 32, .Padding = New Padding(8, 0, 0, 0)}
-        close_Button.Dock = DockStyle.Right
-        close_Button.Width = 110
-        copy_Button.Dock = DockStyle.Right
-        copy_Button.Width = 120
-        folder_Button.Dock = DockStyle.Right
-        folder_Button.Width = 190
-        bottom.Controls.Add(folder_Button)
-        bottom.Controls.Add(copy_Button)
-        bottom.Controls.Add(close_Button)
+        ' The buttons ride one bottom row, against the reading end like the panel's own strip (ticket 243 T-8a,
+        ' BUTTONS 2.0 sections 3 and 4): widths follow the caption and the glyph in front of it, a button that does
+        ' not fit moves whole to a second line, and the two commands read first, in the order they had on the screen
+        ' (Show in Explorer, Copy), the dismissing answer after them.
+        answerRow = New DialogButtonRow() With {.Dock = DockStyle.Bottom, .Name = "batch_Buttons", .Padding = New Padding(8, 4, 8, 4)}
+        answerRow.Add(folder_Button, DialogButtonRole.Command, "content.folder")
+        answerRow.Add(copy_Button, DialogButtonRole.Command, "action.copy")
+        ' Accept and Cancel at once: the one way out of the report, so it is the dismissing answer.
+        answerRow.Add(close_Button, DialogButtonRole.Dismissing, "nav.close")
+        answerRow.Bind(Me)
 
         list.Dock = DockStyle.Fill
         list.View = View.Details
@@ -103,7 +95,7 @@ Friend NotInheritable Class Batch_Report_Form
         list.EndUpdate()
 
         Controls.Add(list)
-        Controls.Add(bottom)
+        Controls.Add(answerRow)
         Controls.Add(summary)
 
         ' LAST line of the builder: scaling touches only the children that exist by now (124 UX-202).
@@ -170,19 +162,9 @@ Friend NotInheritable Class Batch_Report_Form
         list.Columns(0).Width = DialogLayout.Device(list, 280)
         list.Columns(1).Width = DialogLayout.Device(list, 100)
         list.Columns(2).Width = DialogLayout.Device(list, 300)
-        FitStripCaptions()
-    End Sub
-
-    ''' <summary>The strip's buttons are docked at fixed logical widths (110 / 120 / 190), which a caption with a
-    ''' glyph in front of it - or a longer language - can outgrow. Each is widened to what its caption and glyph
-    ''' need, never narrower than it was; the strip keeps its height and every button its one height.</summary>
-    Private Sub FitStripCaptions()
-        PerformAutoScale()
-        Dim padding As Integer = DialogLayout.Device(Me, 24)
-        For Each button As Button In New Button() {close_Button, copy_Button, folder_Button}
-            Dim needed As Integer = TextRenderer.MeasureText(button.Text, button.Font).Width + ButtonGlyphs.ExtraWidth(button) + padding
-            If needed > button.Width Then button.Width = needed
-        Next
+        ' The window is 720 x 460 logical pixels: on a small laptop screen at a high scale that is larger than the
+        ' monitor, so it is kept on the working area (the row below wraps its buttons to the width left).
+        DialogLayout.ClampToWorkingArea(Me)
     End Sub
 
     ''' <summary>The order of the groups. OrderBy is stable, so inside a group the files keep the

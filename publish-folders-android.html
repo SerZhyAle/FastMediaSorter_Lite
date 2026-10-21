@@ -1,4 +1,4 @@
-<!doctype html>
+﻿<!doctype html>
 <html lang="en" data-lang="en" data-theme="dark" data-ui-steps>
 <head>
 <meta charset="utf-8">
@@ -42,6 +42,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="assets/sza-kit.css">
 <link rel="stylesheet" href="assets/fms-site.css">
+<link rel="stylesheet" href="assets/fms-buttons.css">
 <style>
   html[data-lang="ru"] [data-l]:not([data-l="ru"]){display:none}
   html[data-lang="en"] [data-l]:not([data-l="en"]){display:none}
@@ -68,8 +69,8 @@
   <div class="seg" role="group" aria-label="Language">
     <button data-setlang="ru">RU</button><button data-setlang="en" aria-pressed="true">EN</button><button data-setlang="ua">UA</button>
   </div>
-  <button class="theme-btn" id="themeBtn" aria-label="Switch theme">◐</button>
-  <a class="btn btn-primary btn-sm" href="./#get"><span data-l="en">Download</span><span data-l="ru">Скачать</span><span data-l="ua">Завантажити</span></a>
+  <button class="theme-btn" id="themeBtn" type="button" aria-pressed="true"><svg class="glyph" data-glyph="app.theme" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" focusable="false"><path d="M12 22c5.52 0 10-4.48 10-10S17.52 2 12 2 2 6.48 2 12s4.48 10 10 10zm1-17.93c3.94.49 7 3.85 7 7.93s-3.05 7.44-7 7.93V4.07z" fill="currentColor"/></svg><span><span data-l="en">Dark theme</span><span data-l="ru">Тёмная тема</span><span data-l="ua">Темна тема</span></span></button>
+  <a class="btn btn-primary" href="./#get"><span data-l="en">Download</span><span data-l="ru">Скачать</span><span data-l="ua">Завантажити</span></a>
 </nav></header>
 
 <main class="container" id="main" tabindex="-1">
@@ -104,10 +105,10 @@
       </span>
     </div>
     <div class="button-group">
-      <a class="btn btn-ghost btn-sm" data-l="en" href="https://serzhyale.github.io/FastMediaSorter_mob_v2/" target="_blank" rel="noopener">Get the Android app →</a>
-      <a class="btn btn-ghost btn-sm" data-l="ru" href="https://serzhyale.github.io/FastMediaSorter_mob_v2/index-ru.html" target="_blank" rel="noopener">Приложение для Android →</a>
-      <a class="btn btn-ghost btn-sm" data-l="ua" href="https://serzhyale.github.io/FastMediaSorter_mob_v2/index-uk.html" target="_blank" rel="noopener">Застосунок для Android →</a>
-      <a class="btn btn-ghost btn-sm" href="https://play.google.com/store/apps/details?id=com.sza.fastmediasorter" target="_blank" rel="noopener">Google Play</a>
+      <a class="btn btn-ghost" data-l="en" href="https://serzhyale.github.io/FastMediaSorter_mob_v2/" target="_blank" rel="noopener noreferrer">Get the Android app<span class="sr-only"> (opens in a new tab)</span></a>
+      <a class="btn btn-ghost" data-l="ru" href="https://serzhyale.github.io/FastMediaSorter_mob_v2/index-ru.html" target="_blank" rel="noopener noreferrer">Приложение для Android<span class="sr-only"> (откроется в новой вкладке)</span></a>
+      <a class="btn btn-ghost" data-l="ua" href="https://serzhyale.github.io/FastMediaSorter_mob_v2/index-uk.html" target="_blank" rel="noopener noreferrer">Застосунок для Android<span class="sr-only"> (відкриється в новій вкладці)</span></a>
+      <a class="btn btn-ghost" href="https://play.google.com/store/apps/details?id=com.sza.fastmediasorter" target="_blank" rel="noopener noreferrer">Google Play<span class="sr-only"><span data-l="en"> (opens in a new tab)</span><span data-l="ru"> (откроется в новой вкладке)</span><span data-l="ua"> (відкриється в новій вкладці)</span></span></a>
     </div>
   </div>
 
@@ -202,7 +203,7 @@
            <span data-l="ru">Когда раздача запускается, Share Manager пробует открыть порт автоматически (UPnP/NAT-PMP), а затем <b>проверяет снаружи, действительно ли он отвечает</b> (через check-host.net). Если отмечено <b>Только локальная сеть (без доступа из интернета)</b>, ни то ни другое не выполняется. Строка <b>Через интернет</b> честно показывает адрес - или сообщает, что вы за CGNAT. Если порт не открыт, откройте <b>Как настроить доступ через интернет</b> - инструкцию проброса порта под ваш роутер, и <b>Проверить доступ из интернета</b> для проверки. Если у ПК есть <b>IPv6</b>, его адрес добавляется тоже и работает даже за CGNAT.</span>
            <span data-l="ua">Коли роздача запускається, Share Manager пробує відкрити порт автоматично (UPnP/NAT-PMP), а потім <b>перевіряє ззовні, чи він справді відповідає</b> (через check-host.net). Якщо позначено <b>Тільки локальна мережа (без доступу з інтернету)</b>, ні те, ні інше не виконується. Рядок <b>Через інтернет</b> чесно показує адресу - або повідомляє, що ви за CGNAT. Якщо порт не відкрито, відкрийте <b>Як налаштувати доступ через інтернет</b> - інструкцію проброса порту під ваш роутер, і <b>Перевірити доступ з інтернету</b> для перевірки. Якщо ПК має <b>IPv6</b>, його адресу додано теж, і вона працює навіть за CGNAT.</span></p>
         <p class="flush-bottom"><span data-l="en">Per-model, step-by-step port-forwarding guides: </span><span data-l="ru">Пошаговые инструкции проброса портов по моделям: </span><span data-l="ua">Покрокові інструкції проброса портів за моделями: </span>
-          <a href="https://portforward.com/router.htm" target="_blank" rel="noopener">portforward.com</a>.</p>
+          <a href="https://portforward.com/router.htm" target="_blank" rel="noopener noreferrer">portforward.com<span class="sr-only"><span data-l="en"> (opens in a new tab)</span><span data-l="ru"> (откроется в новой вкладке)</span><span data-l="ua"> (відкриється в новій вкладці)</span></span></a>.</p>
       </div>
       <div class="card">
         <h3 class="flush-top"><img class="contract-icon" src="assets/glyphs/action.search.svg" alt=""> <span data-l="en">Finds your PC automatically</span><span data-l="ru">Находит ваш ПК сам</span><span data-l="ua">Знаходить ваш ПК сам</span></h3>
@@ -213,14 +214,14 @@
     </div>
     <p class="lead-narrow lead-small">
       <span data-l="en">Manufacturer support:</span><span data-l="ru">Поддержка производителей:</span><span data-l="ua">Підтримка виробників:</span>
-      <a href="https://www.tp-link.com/support/" target="_blank" rel="noopener">TP-Link</a> ·
-      <a href="https://www.asus.com/support/" target="_blank" rel="noopener">ASUS</a> ·
-      <a href="https://help.keenetic.com/" target="_blank" rel="noopener">Keenetic</a> ·
-      <a href="https://support.dlink.com/" target="_blank" rel="noopener">D-Link</a> ·
-      <a href="https://www.netgear.com/support/" target="_blank" rel="noopener">NETGEAR</a> ·
-      <a href="https://consumer.huawei.com/en/support/" target="_blank" rel="noopener">Huawei</a> ·
-      <a href="https://www.mi.com/global/service/" target="_blank" rel="noopener">Xiaomi</a> ·
-      <a href="https://help.mikrotik.com/" target="_blank" rel="noopener">MikroTik</a>
+      <a href="https://www.tp-link.com/support/" target="_blank" rel="noopener noreferrer">TP-Link<span class="sr-only"><span data-l="en"> (opens in a new tab)</span><span data-l="ru"> (откроется в новой вкладке)</span><span data-l="ua"> (відкриється в новій вкладці)</span></span></a> ·
+      <a href="https://www.asus.com/support/" target="_blank" rel="noopener noreferrer">ASUS<span class="sr-only"><span data-l="en"> (opens in a new tab)</span><span data-l="ru"> (откроется в новой вкладке)</span><span data-l="ua"> (відкриється в новій вкладці)</span></span></a> ·
+      <a href="https://help.keenetic.com/" target="_blank" rel="noopener noreferrer">Keenetic<span class="sr-only"><span data-l="en"> (opens in a new tab)</span><span data-l="ru"> (откроется в новой вкладке)</span><span data-l="ua"> (відкриється в новій вкладці)</span></span></a> ·
+      <a href="https://support.dlink.com/" target="_blank" rel="noopener noreferrer">D-Link<span class="sr-only"><span data-l="en"> (opens in a new tab)</span><span data-l="ru"> (откроется в новой вкладке)</span><span data-l="ua"> (відкриється в новій вкладці)</span></span></a> ·
+      <a href="https://www.netgear.com/support/" target="_blank" rel="noopener noreferrer">NETGEAR<span class="sr-only"><span data-l="en"> (opens in a new tab)</span><span data-l="ru"> (откроется в новой вкладке)</span><span data-l="ua"> (відкриється в новій вкладці)</span></span></a> ·
+      <a href="https://consumer.huawei.com/en/support/" target="_blank" rel="noopener noreferrer">Huawei<span class="sr-only"><span data-l="en"> (opens in a new tab)</span><span data-l="ru"> (откроется в новой вкладке)</span><span data-l="ua"> (відкриється в новій вкладці)</span></span></a> ·
+      <a href="https://www.mi.com/global/service/" target="_blank" rel="noopener noreferrer">Xiaomi<span class="sr-only"><span data-l="en"> (opens in a new tab)</span><span data-l="ru"> (откроется в новой вкладке)</span><span data-l="ua"> (відкриється в новій вкладці)</span></span></a> ·
+      <a href="https://help.mikrotik.com/" target="_blank" rel="noopener noreferrer">MikroTik<span class="sr-only"><span data-l="en"> (opens in a new tab)</span><span data-l="ru"> (откроется в новой вкладке)</span><span data-l="ua"> (відкриється в новій вкладці)</span></span></a>
     </p>
   </section>
 
@@ -232,15 +233,15 @@
     </div>
     <div class="card">
       <ul class="flush-list">
-        <li><span data-l="en"><a href="https://serzhyale.github.io/FastMediaSorter_mob_v2/docs/media-exchange-portal/" target="_blank" rel="noopener">The portal start page</a> - every way, and which program does what.</span>
-            <span data-l="ru"><a href="https://serzhyale.github.io/FastMediaSorter_mob_v2/docs/media-exchange-portal/index-ru.html" target="_blank" rel="noopener">Стартовая страница портала</a> - все способы и что делает каждая программа.</span>
-            <span data-l="ua"><a href="https://serzhyale.github.io/FastMediaSorter_mob_v2/docs/media-exchange-portal/index-uk.html" target="_blank" rel="noopener">Стартова сторінка порталу</a> - усі способи і що робить кожна програма.</span></li>
-        <li><span data-l="en"><a href="https://serzhyale.github.io/FastMediaSorter_mob_v2/docs/media-exchange-portal/home-network.html" target="_blank" rel="noopener">Your home network</a> - your own router and no server in between, the way this page sets up.</span>
-            <span data-l="ru"><a href="https://serzhyale.github.io/FastMediaSorter_mob_v2/docs/media-exchange-portal/home-network-ru.html" target="_blank" rel="noopener">Домашняя сеть</a> - ваш роутер и никакого сервера посередине, способ, который настраивает эта страница.</span>
-            <span data-l="ua"><a href="https://serzhyale.github.io/FastMediaSorter_mob_v2/docs/media-exchange-portal/home-network-uk.html" target="_blank" rel="noopener">Домашня мережа</a> - ваш роутер і жодного сервера посередині, спосіб, який налаштовує ця сторінка.</span></li>
-        <li><span data-l="en"><a href="https://serzhyale.github.io/FastMediaSorter_mob_v2/docs/media-exchange-portal/windows-servers.html" target="_blank" rel="noopener">Windows servers</a> - which Windows program serves your folders, and the always-on Server edition.</span>
-            <span data-l="ru"><a href="https://serzhyale.github.io/FastMediaSorter_mob_v2/docs/media-exchange-portal/windows-servers-ru.html" target="_blank" rel="noopener">Серверы на Windows</a> - какая программа Windows раздаёт ваши папки и чем отличается серверная редакция, которая работает круглосуточно.</span>
-            <span data-l="ua"><a href="https://serzhyale.github.io/FastMediaSorter_mob_v2/docs/media-exchange-portal/windows-servers-uk.html" target="_blank" rel="noopener">Сервери на Windows</a> - яка програма Windows роздає ваші теки і чим відрізняється серверна редакція, що працює цілодобово.</span></li>
+        <li><span data-l="en"><a href="https://serzhyale.github.io/FastMediaSorter_mob_v2/docs/media-exchange-portal/" target="_blank" rel="noopener noreferrer">The portal start page<span class="sr-only"><span data-l="en"> (opens in a new tab)</span><span data-l="ru"> (откроется в новой вкладке)</span><span data-l="ua"> (відкриється в новій вкладці)</span></span></a> - every way, and which program does what.</span>
+            <span data-l="ru"><a href="https://serzhyale.github.io/FastMediaSorter_mob_v2/docs/media-exchange-portal/index-ru.html" target="_blank" rel="noopener noreferrer">Стартовая страница портала<span class="sr-only"><span data-l="en"> (opens in a new tab)</span><span data-l="ru"> (откроется в новой вкладке)</span><span data-l="ua"> (відкриється в новій вкладці)</span></span></a> - все способы и что делает каждая программа.</span>
+            <span data-l="ua"><a href="https://serzhyale.github.io/FastMediaSorter_mob_v2/docs/media-exchange-portal/index-uk.html" target="_blank" rel="noopener noreferrer">Стартова сторінка порталу<span class="sr-only"><span data-l="en"> (opens in a new tab)</span><span data-l="ru"> (откроется в новой вкладке)</span><span data-l="ua"> (відкриється в новій вкладці)</span></span></a> - усі способи і що робить кожна програма.</span></li>
+        <li><span data-l="en"><a href="https://serzhyale.github.io/FastMediaSorter_mob_v2/docs/media-exchange-portal/home-network.html" target="_blank" rel="noopener noreferrer">Your home network<span class="sr-only"><span data-l="en"> (opens in a new tab)</span><span data-l="ru"> (откроется в новой вкладке)</span><span data-l="ua"> (відкриється в новій вкладці)</span></span></a> - your own router and no server in between, the way this page sets up.</span>
+            <span data-l="ru"><a href="https://serzhyale.github.io/FastMediaSorter_mob_v2/docs/media-exchange-portal/home-network-ru.html" target="_blank" rel="noopener noreferrer">Домашняя сеть<span class="sr-only"><span data-l="en"> (opens in a new tab)</span><span data-l="ru"> (откроется в новой вкладке)</span><span data-l="ua"> (відкриється в новій вкладці)</span></span></a> - ваш роутер и никакого сервера посередине, способ, который настраивает эта страница.</span>
+            <span data-l="ua"><a href="https://serzhyale.github.io/FastMediaSorter_mob_v2/docs/media-exchange-portal/home-network-uk.html" target="_blank" rel="noopener noreferrer">Домашня мережа<span class="sr-only"><span data-l="en"> (opens in a new tab)</span><span data-l="ru"> (откроется в новой вкладке)</span><span data-l="ua"> (відкриється в новій вкладці)</span></span></a> - ваш роутер і жодного сервера посередині, спосіб, який налаштовує ця сторінка.</span></li>
+        <li><span data-l="en"><a href="https://serzhyale.github.io/FastMediaSorter_mob_v2/docs/media-exchange-portal/windows-servers.html" target="_blank" rel="noopener noreferrer">Windows servers<span class="sr-only"><span data-l="en"> (opens in a new tab)</span><span data-l="ru"> (откроется в новой вкладке)</span><span data-l="ua"> (відкриється в новій вкладці)</span></span></a> - which Windows program serves your folders, and the always-on Server edition.</span>
+            <span data-l="ru"><a href="https://serzhyale.github.io/FastMediaSorter_mob_v2/docs/media-exchange-portal/windows-servers-ru.html" target="_blank" rel="noopener noreferrer">Серверы на Windows<span class="sr-only"><span data-l="en"> (opens in a new tab)</span><span data-l="ru"> (откроется в новой вкладке)</span><span data-l="ua"> (відкриється в новій вкладці)</span></span></a> - какая программа Windows раздаёт ваши папки и чем отличается серверная редакция, которая работает круглосуточно.</span>
+            <span data-l="ua"><a href="https://serzhyale.github.io/FastMediaSorter_mob_v2/docs/media-exchange-portal/windows-servers-uk.html" target="_blank" rel="noopener noreferrer">Сервери на Windows<span class="sr-only"><span data-l="en"> (opens in a new tab)</span><span data-l="ru"> (откроется в новой вкладке)</span><span data-l="ua"> (відкриється в новій вкладці)</span></span></a> - яка програма Windows роздає ваші теки і чим відрізняється серверна редакція, що працює цілодобово.</span></li>
       </ul>
     </div>
   </section>
@@ -317,6 +318,11 @@
       <a href="glossary.html"><b>GLOSSARY</b><span data-l="en">What the site's terms mean</span><span data-l="ru">Что значат термины сайта</span><span data-l="ua">Що означають терміни сайту</span></a>
     </div>
   </section>
+<section id="sharing-settings-windows">
+<h2><span data-l="en">Where sharing settings live</span><span data-l="ru">Где находятся настройки общего доступа</span><span data-l="ua">Де знаходяться налаштування спільного доступу</span></h2>
+<p><span data-l="en">In builds with separate settings windows, SFTP sharing settings owns the SFTP port, LAN-only policy and Hosting page. General preferences, remote-account access, publishing and schedules remain in Manager settings. The installed local exchange server has its own settings window. Links at the lower left open the other installed component without closing the current window. Opening settings starts no server. Earlier builds keep these pages together.</span><span data-l="ru">В сборках с отдельными окнами порт SFTP, локальная сеть и страница хостинга находятся в настройках общего доступа SFTP. Общие параметры, удалённая учётная запись, публикация и расписания остаются в настройках менеджера. Установленный локальный сервер обмена настраивается отдельно. Ссылки слева внизу открывают другой установленный компонент, сохраняя текущее окно. Открытие настроек не запускает сервер. В прежних сборках страницы объединены.</span><span data-l="ua">У збірках з окремими вікнами порт SFTP, локальна мережа й сторінка хостингу знаходяться в налаштуваннях спільного доступу SFTP. Загальні параметри, віддалений обліковий запис, публікація й розклади залишаються в налаштуваннях менеджера. Установлений локальний сервер обміну налаштовується окремо. Посилання зліва внизу відкривають інший установлений компонент, зберігаючи поточне вікно. Відкриття налаштувань не запускає сервер. У попередніх збірках сторінки об’єднані.</span></p>
+<p><a href="docs/help/en/sftp-settings.html">SFTP</a> · <a href="docs/help/en/share-settings.html" data-l="en">Manager settings help</a><a href="docs/help/ru/share-settings.html" data-l="ru">Справка настроек менеджера</a><a href="docs/help/uk/share-settings.html" data-l="ua">Довідка налаштувань менеджера</a></p>
+</section>
 </main>
 <footer class="site-footer"><div class="container">
   <div class="footer-bottom">
@@ -347,11 +353,14 @@
   setLang((q==='ru'||q==='en'||q==='ua')?q:(d.getAttribute('data-lang')||'en'));
 
   var themeBtn=document.getElementById('themeBtn');
+  function syncTheme(){ if(themeBtn) themeBtn.setAttribute('aria-pressed', d.getAttribute('data-theme')==='light'?'false':'true'); }
+  syncTheme();
   if(themeBtn){
     themeBtn.addEventListener('click',function(){
       var v=d.getAttribute('data-theme')==='light'?'dark':'light';
       d.setAttribute('data-theme',v);
       try{localStorage.setItem('sza-theme',v);}catch(e){}
+      syncTheme();
     });
   }
 

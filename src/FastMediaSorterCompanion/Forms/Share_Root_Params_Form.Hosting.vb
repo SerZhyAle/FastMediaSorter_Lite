@@ -53,6 +53,14 @@ Partial Public Class Share_Root_Params_Form
     End Function
 
     Private Sub PrepareHostedControl(control As Control, width As Integer, dpi As Integer)
+        If TypeOf control Is OptionRowHost Then
+            ' A boolean row (ticket 243 T-11c-b) lays its box, caption and explanation out itself (OptionRows.ArrangeAll, once
+            ' the window that hosts it has its scale); the editor only gives a full-width row the width of the hosted column.
+            ' Its inner check box and labels are NOT the touch controls below: the box is the drawn 32 px target already.
+            If control.Dock = DockStyle.Top Then control.Width = width
+            control.Anchor = AnchorStyles.Left Or AnchorStyles.Top
+            Return
+        End If
         control.Anchor = AnchorStyles.Left Or AnchorStyles.Top
         control.MaximumSize = New Size(width, 0)
         If TypeOf control Is Label OrElse TypeOf control Is ButtonBase Then

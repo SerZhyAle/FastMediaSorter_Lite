@@ -76,6 +76,10 @@ var registry = map[string]func() Envelope{
 	TypePasswordChanged:  func() Envelope { return new(PasswordChanged) },
 	TypeAccountDelete:    func() Envelope { return new(AccountDelete) },
 	TypeAccountDeleted:   func() Envelope { return new(AccountDeleted) },
+	TypeAdminAuth:        func() Envelope { return new(AdminAuth) },
+	TypeAdminAuthOK:      func() Envelope { return new(AdminAuthOK) },
+	TypeAdminRequest:     func() Envelope { return new(AdminRequest) },
+	TypeAdminReply:       func() Envelope { return new(AdminReply) },
 }
 
 // Types lists every type this wire defines, sorted as the table of ticket 161 section 4.
@@ -88,7 +92,8 @@ func Types() []string {
 		TypeUpload, TypeUploadAccepted, TypeCast, TypeCastOffer, TypeCastAnswer, TypeCastResult, TypeCastStop,
 		TypeClipboardPut, TypeClipboardReady, TypeClipboardStored, TypeClipboardInfo, TypeClipboardState,
 		TypeClipboardGet, TypeClipboardValue, TypeClipboardEmpty,
-		TypeRegister, TypePasswordChange, TypePasswordChanged, TypeAccountDelete, TypeAccountDeleted}
+		TypeRegister, TypePasswordChange, TypePasswordChanged, TypeAccountDelete, TypeAccountDeleted,
+		TypeAdminAuth, TypeAdminAuthOK, TypeAdminRequest, TypeAdminReply}
 }
 
 // New returns a zero typed envelope of the given type, or nil for a type this wire does not define.

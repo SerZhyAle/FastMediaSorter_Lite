@@ -53,7 +53,14 @@ func clipboardBody(v *clipboard.Value) wire.ClipboardValueBody {
 func (e *Engine) ClipboardPut(st *Stream, sess *Session, m *wire.ClipboardPut) {
 	defer st.Close()
 	acct, dev := sess.Account, sess.DeviceID
+	status := logx.AuditRefusal("incomplete")
+	defer func() {
+		ev := logx.AuditEvent{Op: "clipboard.put", Remote: st.raw.RemoteAddr().String(), Transport: st.Transport(), Target: acct, Status: status, Details: "clipboard slot"}
+		auditSession(&ev, sess)
+		e.audit(ev)
+	}()
 	refused := func(r wire.Reason, why string) {
+		status = logx.AuditRefusal(string(r))
 		e.cfg.Log.Info("clipboard-put-refused", logx.Device(dev), logx.Login(acct),
 			logx.Text("reason", string(r)), logx.Text("why", why))
 		_ = st.Send(wire.Refuse(r))
@@ -131,6 +138,7 @@ func (e *Engine) ClipboardPut(st *Stream, sess *Session, m *wire.ClipboardPut) {
 	if v == nil {
 		return // erased with the account while the upload ran; its stream is closing anyway
 	}
+	status = logx.AuditStatusOK
 	e.cfg.Log.Info("clipboard-stored", logx.Device(dev), logx.Login(acct),
 		logx.Text("kind", v.Kind), logx.Text("size", sizeClass(v.Size)))
 	_ = st.Send(&wire.ClipboardStored{ClipID: v.ClipID, SHA256: v.SHA256, StoredAt: v.StoredAt})

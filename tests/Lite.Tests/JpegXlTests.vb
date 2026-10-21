@@ -17,6 +17,7 @@ Imports fmsl
 ''' byte tables: a hand-typed codestream cannot be checked by eye, and a fixture that is
 ''' valid by construction can only fail for a reason that is in the decoder.
 ''' </summary>
+<Collection("DecodeCacheBudget")>
 Public Class JpegXlTests
 
     ' ------------------------------------------------------------ both runtimes ----

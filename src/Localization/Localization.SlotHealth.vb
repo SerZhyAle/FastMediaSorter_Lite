@@ -194,6 +194,128 @@ Partial Public NotInheritable Class Localization
             "فولڈر {0} دستیاب ہے - پھر کلک کریں",
             "文件夹 {0} 可用 - 请再点击一次")
 
+        ' --- the REAL reason on the status line (owner request 2026-10-17) ---------------
+        ' Chosen from the error CODE the system returned (SlotCauses), never from its text; {1} is the
+        ' computer, share, drive or server name taken from the destination.
+        Add("! Каталог {0}: компьютер «{1}» не найден в сети - он выключен, не в этой сети или имя указано неверно.",
+            "! Folder {0}: computer «{1}» was not found on the network - it is off, on another network or the name is wrong.",
+            "! Каталог {0}: комп'ютер «{1}» не знайдено в мережі - він вимкнений, не в цій мережі або назву вказано невірно.",
+            "! Ordner {0}: Computer «{1}» wurde im Netzwerk nicht gefunden - er ist aus, in einem anderen Netzwerk oder der Name ist falsch.",
+            "! Cartella {0}: il computer «{1}» non è stato trovato in rete - è spento, in un'altra rete o il nome non è corretto.",
+            "! Carpeta {0}: no se encuentra el equipo «{1}» en la red: está apagado, en otra red o el nombre es incorrecto.",
+            "! Dossier {0} : l'ordinateur «{1}» est introuvable sur le réseau - il est éteint, sur un autre réseau ou son nom est incorrect.",
+            "! Pasta {0}: o computador «{1}» não foi encontrado na rede - está desligado, em outra rede ou o nome está incorreto.",
+            "! المجلد {0}: لم يتم العثور على الكمبيوتر «{1}» في الشبكة - فهو مطفأ أو في شبكة أخرى أو الاسم غير صحيح.",
+            "! फ़ोल्डर {0}: कंप्यूटर «{1}» नेटवर्क पर नहीं मिला - वह बंद है, दूसरे नेटवर्क पर है या नाम गलत है।",
+            "! ফোল্ডার {0}: কম্পিউটার «{1}» নেটওয়ার্কে পাওয়া যায়নি - সেটি বন্ধ, অন্য নেটওয়ার্কে আছে বা নামটি ভুল।",
+            "! فولڈر {0}: کمپیوٹر «{1}» نیٹ ورک پر نہیں ملا - وہ بند ہے، کسی اور نیٹ ورک پر ہے یا نام غلط ہے۔",
+            "! 文件夹 {0}：在网络中找不到计算机「{1}」- 它已关机、不在此网络中，或名称有误。")
+
+        Add("! Каталог {0}: общая папка «{1}» не найдена - проверьте имя папки на компьютере.",
+            "! Folder {0}: shared folder «{1}» was not found - check the share name on the computer.",
+            "! Каталог {0}: спільну теку «{1}» не знайдено - перевірте назву теки на комп'ютері.",
+            "! Ordner {0}: Freigabe «{1}» wurde nicht gefunden - Freigabenamen auf dem Computer prüfen.",
+            "! Cartella {0}: la cartella condivisa «{1}» non è stata trovata - controlla il nome della condivisione sul computer.",
+            "! Carpeta {0}: no se encuentra la carpeta compartida «{1}»: compruebe el nombre del recurso en el equipo.",
+            "! Dossier {0} : le dossier partagé «{1}» est introuvable - vérifiez le nom du partage sur l'ordinateur.",
+            "! Pasta {0}: a pasta compartilhada «{1}» não foi encontrada - verifique o nome da pasta no computador.",
+            "! المجلد {0}: لم يتم العثور على المجلد المشترك «{1}» - تحقق من اسم المجلد على الكمبيوتر.",
+            "! फ़ोल्डर {0}: साझा फ़ोल्डर «{1}» नहीं मिला - कंप्यूटर पर फ़ोल्डर का नाम जाँचें।",
+            "! ফোল্ডার {0}: শেয়ার করা ফোল্ডার «{1}» পাওয়া যায়নি - কম্পিউটারে ফোল্ডারের নামটি পরীক্ষা করুন।",
+            "! فولڈر {0}: مشترکہ فولڈر «{1}» نہیں ملا - کمپیوٹر پر فولڈر کا نام جانچیں۔",
+            "! 文件夹 {0}：找不到共享文件夹「{1}」- 请检查该计算机上的共享名称。")
+
+        Add("! Каталог {0}: сеть до «{1}» недоступна - проверьте подключение к сети.",
+            "! Folder {0}: the network to «{1}» is not reachable - check the network connection.",
+            "! Каталог {0}: мережа до «{1}» недоступна - перевірте підключення до мережі.",
+            "! Ordner {0}: Das Netzwerk zu «{1}» ist nicht erreichbar - Netzwerkverbindung prüfen.",
+            "! Cartella {0}: la rete verso «{1}» non è raggiungibile - controlla la connessione di rete.",
+            "! Carpeta {0}: la red hacia «{1}» no está disponible: compruebe la conexión de red.",
+            "! Dossier {0} : le réseau vers «{1}» est inaccessible - vérifiez la connexion réseau.",
+            "! Pasta {0}: a rede até «{1}» está inacessível - verifique a conexão de rede.",
+            "! المجلد {0}: الشبكة إلى «{1}» غير متاحة - تحقق من اتصال الشبكة.",
+            "! फ़ोल्डर {0}: «{1}» तक नेटवर्क उपलब्ध नहीं है - नेटवर्क कनेक्शन जाँचें।",
+            "! ফোল্ডার {0}: «{1}» পর্যন্ত নেটওয়ার্ক পাওয়া যাচ্ছে না - নেটওয়ার্ক সংযোগ পরীক্ষা করুন।",
+            "! فولڈر {0}: «{1}» تک نیٹ ورک دستیاب نہیں - نیٹ ورک کنکشن جانچیں۔",
+            "! 文件夹 {0}：无法通过网络访问「{1}」- 请检查网络连接。")
+
+        Add("! Каталог {0}: связь с «{1}» оборвалась.",
+            "! Folder {0}: the connection to «{1}» was lost.",
+            "! Каталог {0}: зв'язок із «{1}» обірвався.",
+            "! Ordner {0}: Die Verbindung zu «{1}» wurde unterbrochen.",
+            "! Cartella {0}: la connessione con «{1}» si è interrotta.",
+            "! Carpeta {0}: se perdió la conexión con «{1}».",
+            "! Dossier {0} : la connexion avec «{1}» a été interrompue.",
+            "! Pasta {0}: a conexão com «{1}» foi perdida.",
+            "! المجلد {0}: انقطع الاتصال بـ «{1}».",
+            "! फ़ोल्डर {0}: «{1}» से कनेक्शन टूट गया।",
+            "! ফোল্ডার {0}: «{1}»-এর সঙ্গে সংযোগ বিচ্ছিন্ন হয়েছে।",
+            "! فولڈر {0}: «{1}» سے رابطہ منقطع ہو گیا۔",
+            "! 文件夹 {0}：与「{1}」的连接已断开。")
+
+        Add("! Каталог {0}: устройство «{1}» не готово - диск, карта или сетевой диск не подключены.",
+            "! Folder {0}: device «{1}» is not ready - the drive, card or network drive is not connected.",
+            "! Каталог {0}: пристрій «{1}» не готовий - диск, картка або мережевий диск не підключені.",
+            "! Ordner {0}: Das Gerät «{1}» ist nicht bereit - Laufwerk, Karte oder Netzlaufwerk ist nicht verbunden.",
+            "! Cartella {0}: il dispositivo «{1}» non è pronto - unità, scheda o unità di rete non collegata.",
+            "! Carpeta {0}: el dispositivo «{1}» no está listo: la unidad, la tarjeta o la unidad de red no está conectada.",
+            "! Dossier {0} : le périphérique «{1}» n'est pas prêt - le disque, la carte ou le lecteur réseau n'est pas connecté.",
+            "! Pasta {0}: o dispositivo «{1}» não está pronto - o disco, o cartão ou a unidade de rede não está conectado.",
+            "! المجلد {0}: الجهاز «{1}» غير جاهز - القرص أو البطاقة أو محرك الشبكة غير متصل.",
+            "! फ़ोल्डर {0}: डिवाइस «{1}» तैयार नहीं है - डिस्क, कार्ड या नेटवर्क ड्राइव जुड़ा नहीं है।",
+            "! ফোল্ডার {0}: ডিভাইস «{1}» প্রস্তুত নয় - ডিস্ক, কার্ড বা নেটওয়ার্ক ড্রাইভ সংযুক্ত নেই।",
+            "! فولڈر {0}: ڈیوائس «{1}» تیار نہیں - ڈسک، کارڈ یا نیٹ ورک ڈرائیو منسلک نہیں۔",
+            "! 文件夹 {0}：设备「{1}」未就绪 - 磁盘、存储卡或网络驱动器未连接。")
+
+        Add("! Каталог {0}: «{1}» не ответил за {2} с.",
+            "! Folder {0}: «{1}» did not answer within {2} s.",
+            "! Каталог {0}: «{1}» не відповів за {2} с.",
+            "! Ordner {0}: «{1}» hat nicht innerhalb von {2} s geantwortet.",
+            "! Cartella {0}: «{1}» non ha risposto entro {2} s.",
+            "! Carpeta {0}: «{1}» no respondió en {2} s.",
+            "! Dossier {0} : «{1}» n'a pas répondu en {2} s.",
+            "! Pasta {0}: «{1}» não respondeu em {2} s.",
+            "! المجلد {0}: لم يستجب «{1}» خلال {2} ث.",
+            "! फ़ोल्डर {0}: «{1}» ने {2} सेकंड में उत्तर नहीं दिया।",
+            "! ফোল্ডার {0}: «{1}» {2} সেকেন্ডের মধ্যে সাড়া দেয়নি।",
+            "! فولڈر {0}: «{1}» نے {2} سیکنڈ میں جواب نہیں دیا۔",
+            "! 文件夹 {0}：「{1}」在 {2} 秒内没有响应。")
+
+        ' A finished sentence from the resource layer ("the server did not accept the login"), wrapped.
+        Add("! Каталог {0}: {1}.",
+            "! Folder {0}: {1}.", "! Каталог {0}: {1}.", "! Ordner {0}: {1}.",
+            "! Cartella {0}: {1}.", "! Carpeta {0}: {1}.", "! Dossier {0} : {1}.",
+            "! Pasta {0}: {1}.", "! المجلد {0}: {1}.", "! फ़ोल्डर {0}: {1}।",
+            "! ফোল্ডার {0}: {1}।", "! فولڈر {0}: {1}۔", "! 文件夹 {0}：{1}。")
+
+        ' The retry hint that follows a cause sentence, by key press and by click (125 UX-332).
+        Add("Нажмите клавишу ещё раз, чтобы повторить проверку.",
+            "Press the key again to check once more.",
+            "Натисніть клавішу ще раз, щоб перевірити знову.",
+            "Taste erneut drücken, um noch einmal zu prüfen.",
+            "Premi di nuovo il tasto per riprovare.",
+            "Pulse la tecla otra vez para volver a comprobar.",
+            "Appuyez de nouveau sur la touche pour revérifier.",
+            "Pressione a tecla novamente para verificar de novo.",
+            "اضغط المفتاح مرة أخرى لإعادة الفحص.",
+            "दोबारा जाँचने के लिए कुंजी फिर दबाएँ।",
+            "আবার পরীক্ষা করতে কী-টি পুনরায় চাপুন।",
+            "دوبارہ جانچنے کے لیے کلید پھر دبائیں۔",
+            "再次按该键可重新检查。")
+        Add("Нажмите ещё раз, чтобы повторить проверку.",
+            "Click again to check once more.",
+            "Натисніть ще раз, щоб перевірити знову.",
+            "Erneut klicken, um noch einmal zu prüfen.",
+            "Fai di nuovo clic per riprovare.",
+            "Haga clic otra vez para volver a comprobar.",
+            "Cliquez de nouveau pour revérifier.",
+            "Clique novamente para verificar de novo.",
+            "انقر مرة أخرى لإعادة الفحص.",
+            "दोबारा जाँचने के लिए फिर क्लिक करें।",
+            "আবার পরীক্ষা করতে পুনরায় ক্লিক করুন।",
+            "دوبارہ جانچنے کے لیے پھر کلک کریں۔",
+            "再次点击可重新检查。")
+
     End Sub
 
 End Class

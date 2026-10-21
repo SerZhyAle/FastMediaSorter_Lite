@@ -38,13 +38,14 @@ type HTTPRequest struct {
 	Method  string
 	Path    string // the request target without a query
 	Version string // "HTTP/1.1" or another HTTP/1.x
+	Headers map[string]string
 }
 
 // ReadHTTPRequest reads one request head (the request line and the header lines up to the blank
-// line) from r, bounded at maxHTTPHead bytes, and returns its method and path. Header values are
-// not kept: the relay needs none of them for a 404 or a 405.
+// line) from r, bounded at maxHTTPHead bytes, and returns its method, path and headers.
 func ReadHTTPRequest(r *bufio.Reader) (HTTPRequest, error) {
 	var req HTTPRequest
+	req.Headers = make(map[string]string)
 	total := 0
 	first := true
 	for {
@@ -71,13 +72,18 @@ func ReadHTTPRequest(r *bufio.Reader) (HTTPRequest, error) {
 		if line == "" {
 			return req, nil
 		}
+		if colon := strings.Index(line, ":"); colon > 0 {
+			k := strings.ToLower(strings.TrimSpace(line[:colon]))
+			v := strings.TrimSpace(line[colon+1:])
+			req.Headers[k] = v
+		}
 	}
 }
 
 // HTTPResponse is a body-less response with the given status, closing the connection. retryAfter,
 // when positive, adds the Retry-After header of a 503 (7.6).
 func HTTPResponse(status int, retryAfter int) []byte {
-	text := map[int]string{404: "Not Found", 405: "Method Not Allowed", 503: "Service Unavailable",
+	text := map[int]string{400: "Bad Request", 403: "Forbidden", 404: "Not Found", 405: "Method Not Allowed", 503: "Service Unavailable",
 		505: "HTTP Version Not Supported"}[status]
 	if text == "" {
 		text = "Error"

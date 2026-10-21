@@ -3,37 +3,36 @@
 | | |
 | --- | --- |
 | **Id** | `CLIPBOARD-GUARD` |
-| **Version** | **0.11, read 2026-10-16** (specification 235). 0.10 restated the privacy-marker writer set and pinned the raw-API retry numbers; **0.11 (2026-10-14, section 8, items L to R, the reader amendment `CyrFlip S0073`)** added the exchange clipboard participant: explicit send of whatever is on the clipboard, no hangs, the order of kinds, the caps, the writing of a received value, no value in a log. The label correction of 2026-10-16 changed nothing else. Owner: CyrFlip |
+| **Version** | 0.11, draft (since 2026-09-24; 0.10 of 2026-09-26, 0.11 of 2026-10-14 with two corrections of 2026-10-16; read on 2026-10-20: the header, section 8 and item I). Owner: CyrFlip |
 | **Home** | `clipboard-guard/README.md` in the shared contracts catalog |
-| **Role here** | **writer** (unchanged: the Share Manager copies the SFTP password, login, the `.fmscfg` QR and the broadcast link; the viewer copies names, paths and one payload with an SFTP password) **and, since specification 230, participant and reader** (item L): the Share Manager reads the clipboard on an explicit press and sends it to the user's exchange server, and places a received value (`ClipboardWin32`, `ClipboardExchange`, `ClipboardCoordinator`); the viewer reads the clipboard once, on an explicit paste, to take in a phone code (`QrCodeDecoder.DecodeClipboard`). No history, no in-place transformation, so items D to K and rules 4 and 5 bind nothing here. **Implements `partial 0.11`** (two registry rows, verified 2026-10-16) |
+| **Role here** | **writer** (the Share Manager copies the SFTP password, login, the `.fmscfg` QR and the broadcast link; the viewer copies names, paths and one resource document with a password) and **participant and reader of the exchange clipboard** (item L): the Share Manager reads the clipboard on an explicit press, sends it to the user's exchange server and places a received value (`ClipboardWin32`, `ClipboardExchange`, `ClipboardCoordinator` in `src/FastMediaSorterCompanion/Core/`); the viewer reads the clipboard once, on an explicit paste, to take in a phone code (`QrCodeDecoder.DecodeClipboard`). It keeps no history and transforms nothing in place, so items D to K and rules 4 and 5 bind nothing here |
 
 ## What this repository must do to stay conformant
 
-- **A credential written to the clipboard carries the privacy markers**: `CanIncludeInClipboardHistory` = 0
-  and `CanUploadToCloudClipboard` = 0 as DWORDs, `ExcludeClipboardContentFromMonitorProcessing` by presence.
-  Share Manager: `SecureClipboard.ApplyPrivacyFlags` (`src/FastMediaSorterCompanion/Core/`) is the door for
-  every secret - the password, login + password, the QR image, the broadcast link; the exchange fingerprint,
-  not a secret, goes through `TrySetDataObject` without markers. Viewer: `SecretClipboard` (`src/Resources/`)
-  does the same for the exported resource document, held by `SecretClipboardTests`. The source-scan test
-  `ShareManager_NeverWritesTheClipboardOutsideTheHelper` keeps any other `Clipboard.Set*` call out of the
-  Share Manager; **it cannot see `ClipboardWin32.PlaceNow`, the one deliberate marker-free writer** (item Q: a
-  value the user asked to receive carries no marker), so that writer is reviewed by hand (239 CR-19).
-- **Reading and placing the exchange value (items L to R)**: only an explicit act sends (a button, a tray item,
-  the desktop shortcut) - no timer, no change notification, no start-up send - and nothing filters by a privacy
-  marker or previews (item M: what is sent is exactly what is on the clipboard, a password included; the
-  guide and the privacy page must say so, which they do not yet, 239 CR-19). The read runs on a worker thread
-  with one `OpenClipboard` loop of 12 x 15 ms, closes the clipboard before any file system, conversion or
-  network work, and abandons a delay-rendered format that does not answer (item N). One regular file is sent
-  streamed after the close, a folder or several files are refused (O.1); a value is written with one open, one
-  `EmptyClipboard` and one close, never restored (Q); no value and no file name reaches a log (R).
-- **The order of kinds and the line endings follow `DEVICE-EXCHANGE` item CB** (file, image, text; CRLF to LF on
-  the wire), **which the two contracts disagree on**: `CLIPBOARD-GUARD` item O says file, text, image and line
-  endings as they are. This is a recorded difference for the owners, not a local choice (239 CR-18, Q239-1).
-- **Item B's 12 x 15 ms loop is used by the exchange port** and is not used by the writers that go through the
-  WinForms wrapper (`SecureClipboard`, `SecretClipboard`, `Utils.CopyTextToClipboard`: 3 x 120 ms; the plain
-  `Clipboard.SetText` callers of the viewer take the framework's default and catch and log the failure) nor by
-  the viewer's paste reader - a **dated registry exception** on the wrapper, with a clarification for wrappers
-  proposed to the contract's owner.
-- The viewer's other writers copy non-sensitive text (a file name, a path, a log-package file drop, the
-  exchange hand-on string, the redacted diagnosis); one copies a URL with a single-use `?token=` of the LAN
-  intake without markers (`Resource_Phone_Code_Form`, 239 CR-19).
+- **A secret written to the clipboard carries the privacy markers (rule 6, item I).** `CanIncludeInClipboardHistory`
+  and `CanUploadToCloudClipboard` as DWORD 0, `ExcludeClipboardContentFromMonitorProcessing` by presence. The door
+  is `SecureClipboard.ApplyPrivacyFlags` in the Share Manager and `SecretClipboard` in `src/Resources/` for the
+  viewer. `ShareManager_NeverWritesTheClipboardOutsideTheHelper` keeps other writers out of the Share Manager; it
+  cannot see `ClipboardWin32.PlaceNow`, the one deliberate marker-free writer (item Q), which is reviewed by hand.
+- **Raw Win32, off a thread without a pump (rules 1, 2, items A, B).** The open retries 12 times 15 ms and
+  `CloseClipboard` runs unconditionally; a high-level wrapper is allowed only on a UI thread that pumps messages.
+- **Only an explicit act sends (items L, M).** A button, a tray item or the desktop shortcut: no timer, no change
+  notification, no start-up send. Nothing filters by a privacy marker, previews or asks: what is sent is exactly what
+  is on the clipboard, a password included, and the guide and the privacy page say so in the product's own words.
+- **No hangs (item N).** The read runs off the UI thread in one open, closes the clipboard before any file system,
+  conversion or network work, and abandons a delay-rendered format whose owner does not answer within 5 seconds.
+  One operation at a time.
+- **What is read, and how much (items O, P).** One regular file, streamed from disk after the close; a folder or
+  several files are refused with one message; then text, then an image. The cap is the server's limit for the
+  account, compared before anything is marshalled or uploaded.
+- **Writing a received value (item Q).** One open, one `EmptyClipboard`, every format set, one close; never backed
+  up or restored; no privacy markers on it.
+- **No value in a log (item R).** A sent or received value, and a file name, never enter a log, a support bundle,
+  a diagnostic dump or a temporary file outside the received-files folder; logs carry kind, size and a reason code.
+- **Order of kinds and line ends.** Item O here (file, text, image; line ends as they are) and `DEVICE-EXCHANGE`
+  item CB (file, image, text; CRLF to LF on the wire) differ; the Share Manager follows `DEVICE-EXCHANGE`.
+
+## Where it stands
+
+The registry rows of this product and its dated exceptions say what is proven and what is open; this pointer never
+repeats them. Specification 244 holds the clause-by-clause audit.

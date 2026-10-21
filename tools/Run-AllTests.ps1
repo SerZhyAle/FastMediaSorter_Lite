@@ -23,8 +23,9 @@
                                        READMEs hold resolves against the page set; offline)
     6c. Third-party origins         -> tools/Test-SiteOrigins.ps1 (every outside host a published page contacts is declared,
                                        named on the privacy page and in each trust locale; offline)
-    6d. Positioning and typed facts -> tools/Test-SitePositioning.ps1 (the pillars in the source's order on every declared
-                                       surface, the editions, the reserved door, the language count and the platform floor; offline)
+    6d. Positioning and typed facts -> tools/Test-SitePositioning.ps1 (the three components in the source's order on every declared
+                                       surface, the availability matrix against the packaging files, the component in development, the
+                                       editions, the language count and the platform floor; offline)
 
     These are UNIT/logic suites - fast, no network, no phone. Three live suites are opt-in:
     -Integration sends GetStatus to a RUNNING worker and validates the answer (read-only - it

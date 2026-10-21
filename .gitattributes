@@ -12,6 +12,8 @@ publishing/store/listingData.csv -text
 # SHA-256 (assets/glyphs/PROVENANCE.txt, tests/Lite.Tests/TestData/icon-vocabulary/PROVENANCE.txt).
 # A CRLF rewrite on checkout would break every hash on a fresh Windows clone.
 assets/glyphs/*.svg -text
+assets/exchange-mark/svg/*.svg binary
+docs/help/exchange-mark/*.svg binary
 tests/Lite.Tests/TestData/icon-vocabulary/vocabulary.jsonl -text
 
 # The vendored site kit is the catalog's reference stylesheet byte for byte (PAGE-STYLE section 0 step 1;

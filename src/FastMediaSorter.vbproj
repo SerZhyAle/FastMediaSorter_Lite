@@ -202,6 +202,7 @@
     <Compile Include="Resources\RemoteCacheStore.vb" />
     <Compile Include="Resources\ResourceRegistry.vb" />
     <Compile Include="Resources\WorkerShares.vb" />
+    <Compile Include="Resources\WorkerStateDir.vb" />
     <Compile Include="Resources\ResourcePolicy.vb" />
     <Compile Include="Resources\ResourceFailure.vb" />
     <Compile Include="Resources\ResourceCommit.vb" />
@@ -239,6 +240,7 @@
     <Compile Include="Secure\FdSecScreen.vb" />
     <Compile Include="Secure\FdSecContainer.vb" />
     <Compile Include="Secure\FdSecStream.vb" />
+    <Compile Include="Secure\FdSecWriter.vb" />
     <Compile Include="SecureMessages.vb" />
     <Compile Include="SecurePolicy.vb" />
     <Compile Include="VlcArtCache.vb" />
@@ -401,6 +403,7 @@
       <DependentUpon>Main_Form.vb</DependentUpon>
       <SubType>Form</SubType>
     </Compile>
+    <Compile Include="LoadingIndicatorRules.vb" />
     <Compile Include="Main_Form.MediaLoading.vb">
       <DependentUpon>Main_Form.vb</DependentUpon>
       <SubType>Form</SubType>
@@ -548,6 +551,9 @@
     <Compile Include="Download_Progress_Form.vb">
       <SubType>Form</SubType>
     </Compile>
+    <!-- Ticket 243 T-8a: the words around a download, moved out of the form's file so the test project can link the
+         form. Whole file is #If Not NETFRAMEWORK. -->
+    <Compile Include="Download_Messages.vb" />
     <Compile Include="MediaUrl.vb" />
     <!-- Custom keyboard shortcuts and the two dialogs of the expanded settings window
          (SPECIFICATION_SETTINGS_EXPANSION.md §3.4, §3.5, §7.2). All four are whole-file
@@ -629,6 +635,14 @@
     <Compile Include="Imaging\DecodeCachePolicy.vb" />
     <Compile Include="Imaging\DecodeCacheStore.vb" />
     <Compile Include="Imaging\DecodeCache.vb" />
+    <Compile Include="Imaging\GifTranscodePolicy.vb" />
+    <Compile Include="Imaging\AnimationStaging.vb" />
+    <Compile Include="Imaging\AnimationUpgrade.vb" />
+    <Compile Include="Imaging\AnimationVideoPolicy.vb" />
+    <Compile Include="Imaging\AnimationVideoState.vb" />
+    <Compile Include="Imaging\AnimationVideoClock.vb" />
+    <Compile Include="Imaging\GifBlockWalker.vb" />
+    <Compile Include="Imaging\AnimationVideoPrefetchPlan.vb" />
     <!-- The editor's window and the viewer's entry point into it (§2, §5). Same shape:
          whole-file "#If Not NETFRAMEWORK", listed so the two file sets stay identical. -->
     <Compile Include="EditorGeometry.vb" />
@@ -651,10 +665,25 @@
          file sets stay identical. -->
     <Compile Include="Video\VideoConvertPlan.vb" />
     <Compile Include="Video\AnimationToVideo.vb" />
+    <!-- Spec 242 T-4: the temporary video's argument line (pure) and its FFmpeg-to-stdout runner. Whole-file
+         "#If Not NETFRAMEWORK"; they compile to nothing here. -->
+    <Compile Include="Video\AnimationVideoPlan.vb" />
+    <Compile Include="Video\AnimationVideoEncoder.vb" />
+    <Compile Include="Video\AnimationVideoStore.vb" />
+    <!-- Spec 242 T-6b: the route core (encode -> seal -> play, one job at a time). Whole-file modern. -->
+    <Compile Include="Video\AnimationVideoRoute.vb" />
     <Compile Include="Video\Video_Convert_Form.vb">
       <SubType>Form</SubType>
     </Compile>
     <Compile Include="Main_Form.ToVideo.vb">
+      <DependentUpon>Main_Form.vb</DependentUpon>
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Main_Form.AnimationUpgrade.vb">
+      <DependentUpon>Main_Form.vb</DependentUpon>
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Main_Form.AnimationVideo.vb">
       <DependentUpon>Main_Form.vb</DependentUpon>
       <SubType>Form</SubType>
     </Compile>
@@ -740,6 +769,7 @@
     <!-- Site page URLs by language (ticket 037). No seam: the x86 viewer's settings
          window never links them, and a constant it does not read costs nothing. -->
     <Compile Include="Support\SitePages.vb" />
+    <Compile Include="Support\AboutResources.vb" />
     <Compile Include="Common_Module.vb" />
     <!-- The 13-language localization layer (013_SPECIFICATION_THIRTEEN_UI_LANGUAGES.md).
          The modern project picks these up through its ..\**\*.vb glob; this old-style
@@ -792,6 +822,11 @@
     <Compile Include="SettingsPersistence.vb" />
     <Compile Include="SettingsUiContext.vb" />
     <Compile Include="SettingsCollapsibleGroup.vb" />
+    <!-- Ticket 243 T-7a: the settings page rail (modern shell). Both are whole-file "#If Not NETFRAMEWORK" and
+         compile to nothing here - listed so the two projects keep one source tree. SettingsRailRules is pure
+         and depends on Chrome\UiSizing.vb only. -->
+    <Compile Include="SettingsRail.vb" />
+    <Compile Include="Support\SettingsRailRules.vb" />
     <Compile Include="SettingsNumericStepper.vb" />
     <!-- Whole-file "#If Not NETFRAMEWORK" (the modern settings shell's identity-ink table,
          specification 128): compiles to nothing here - listed so the two projects keep one
@@ -876,6 +911,7 @@
     <Compile Include="DialogRules.vb" />
     <Compile Include="Theming\AccentColors.vb" />
     <Compile Include="ViewerBox.vb" />
+    <Compile Include="ViewerBoxMapping.vb" />
     <Compile Include="DialogLayout.vb" />
     <Compile Include="DialogLayer.vb" />
     <Compile Include="DialogLayer.Viewer.vb" />
@@ -885,6 +921,9 @@
     <Compile Include="AskModel.vb" />
     <Compile Include="AskSpecs.vb" />
     <Compile Include="Ask_Dialog.vb" />
+    <!-- Ticket 243 T-8a: the one dialog button row (content-fit widths, whole-button wrap, reading-order answers).
+         Whole file is #If Not NETFRAMEWORK, so it compiles to nothing here; listed to keep one source tree. -->
+    <Compile Include="DialogButtonRow.vb" />
     <!-- Ticket 219: the pure geometry of the recipients overlay's free position. Whole file
          is #If Not NETFRAMEWORK, so it compiles to nothing here; listed anyway like the other
          modern-only files above. -->
@@ -897,6 +936,7 @@
       <DependentUpon>Main_Form.vb</DependentUpon>
     </Compile>
     <Compile Include="Chrome\UiScale.vb" />
+    <Compile Include="Chrome\UiSizing.vb" />
     <Compile Include="Chrome\ChromeLayout.vb" />
     <Compile Include="Chrome\ChromeTheme.vb" />
     <Compile Include="Chrome\ChromeItem.vb" />

@@ -116,11 +116,79 @@ Public Class ResourceUiTests
         End Try
     End Sub
 
+    ''' <summary>A loopback server that accepts the first client and closes it at once without sending a byte (what a server at its
+    ''' connection limit can do): the client reads end-of-stream before any banner.</summary>
+    Private Shared Function ServeAcceptThenClose(ByRef port As Integer) As TcpListener
+        Dim listener As New TcpListener(IPAddress.Loopback, 0)
+        listener.Start()
+        port = CType(listener.LocalEndpoint, IPEndPoint).Port
+        Task.Run(Async Function()
+                     Try
+                         Using client As TcpClient = Await listener.AcceptTcpClientAsync()
+                             ' leaving the Using closes the socket with nothing written
+                         End Using
+                     Catch ex As Exception
+                     End Try
+                 End Function)
+        Return listener
+    End Function
+
+    ''' <summary>SHARE-SESSION 1.3 (iii): end of stream before any banner leaves the transport undetermined. It used to be folded into
+    ''' "the port is open, but it is not an SSH server", which a server at its connection limit does not deserve.</summary>
+    <Fact>
+    Public Sub Probe_a_peer_that_closes_before_any_banner_is_closed_before_banner_not_not_ssh()
+        Dim port As Integer
+        Dim listener As TcpListener = ServeAcceptThenClose(port)
+        Try
+            Dim watch As Diagnostics.Stopwatch = Diagnostics.Stopwatch.StartNew()
+            Dim verdict As ProbeVerdict = ResourceProbe.ProbeSftpAsync("127.0.0.1", port, CancellationToken.None, timeoutMs:=8000).GetAwaiter().GetResult()
+            Assert.Equal(ProbeVerdict.ClosedBeforeBanner, verdict)
+            ' with an 8 s budget the wait for a banner is 4 s, so a close seen inside 3 s was seen at once
+            Assert.True(watch.ElapsedMilliseconds < 3000, "the close is seen at once, not after the wait for a banner")
+        Finally
+            listener.Stop()
+        End Try
+    End Sub
+
+    <Fact>
+    Public Sub The_closed_before_banner_sentence_does_not_say_what_the_peer_is_in_any_language()
+        Dim saved As String = Localization.CurrentCode
+        Try
+            Localization.CurrentCode = "en"
+            Assert.Equal("The server closed the connection before it answered. It may be at its connection limit; try again in a moment.",
+                         ResourceProbe.VerdictSentence(ProbeVerdict.ClosedBeforeBanner))
+            Assert.Equal("The port is open, but it is not an SSH server", ResourceProbe.VerdictSentence(ProbeVerdict.PortOpen))
+            For Each code As String In Localization.Codes
+                Localization.CurrentCode = code
+                Dim closed As String = ResourceProbe.VerdictSentence(ProbeVerdict.ClosedBeforeBanner)
+                Assert.False(String.IsNullOrWhiteSpace(closed))
+                Assert.NotEqual(ResourceProbe.VerdictSentence(ProbeVerdict.PortOpen), closed)
+                Assert.NotEqual(ResourceProbe.VerdictSentence(ProbeVerdict.Refused), closed)
+                Assert.NotEqual(ResourceProbe.VerdictSentence(ProbeVerdict.Timeout), closed)
+            Next
+        Finally
+            Localization.CurrentCode = saved
+        End Try
+    End Sub
+
+    ''' <summary>The new verdict is appended: every earlier value keeps its number.</summary>
+    <Fact>
+    Public Sub The_probe_verdicts_keep_their_numbers_and_the_new_one_is_last()
+        Assert.Equal(0, CInt(ProbeVerdict.SshOk))
+        Assert.Equal(1, CInt(ProbeVerdict.PortOpen))
+        Assert.Equal(2, CInt(ProbeVerdict.Refused))
+        Assert.Equal(3, CInt(ProbeVerdict.Timeout))
+        Assert.Equal(4, CInt(ProbeVerdict.BadInput))
+        Assert.Equal(5, CInt(ProbeVerdict.ClosedBeforeBanner))
+        Assert.Equal(5, [Enum].GetValues(GetType(ProbeVerdict)).Cast(Of Integer)().Max())
+    End Sub
+
     <Fact>
     Public Sub Probe_anything_else_that_answers_is_only_an_open_port()
         Dim port As Integer
         Dim listener As TcpListener = Serve("HTTP/1.1 400 Bad Request" & vbCrLf, port)
         Try
+            ' something that answers with another protocol is still "not SSH" - only an empty close became its own verdict
             Assert.Equal(ProbeVerdict.PortOpen, ResourceProbe.ProbeSftpAsync("127.0.0.1", port, CancellationToken.None).GetAwaiter().GetResult())
         Finally
             listener.Stop()

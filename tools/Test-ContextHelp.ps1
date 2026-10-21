@@ -34,6 +34,8 @@ if (-not (Test-Path -LiteralPath $mapFile)) {
     Exit-Verdict 'Test-ContextHelp' 2 'help-map.json is missing'
 }
 
+. (Join-Path $PSScriptRoot 'lib/ExchangeMark.ps1')
+$exchangeTerms = Get-ExchangeMarkTerms $Root
 $problems = [Collections.Generic.List[string]]::new()
 function Problem([string]$msg) { $problems.Add($msg) }
 
@@ -188,6 +190,23 @@ if (-not (Test-Path -LiteralPath $helpRoot)) {
                 continue
             }
             $html = [IO.File]::ReadAllText($topicPath)
+            $surface = $map.surfaces | Where-Object { $_.help -eq $topic -and $_.exchangeMark } | Select-Object -First 1
+            if ($surface) {
+                $expectedAlt = if ($surface.exchangeMark -eq 'full') { 'Media Exchange Server' } else { $exchangeTerms[$locale] }
+                $expectedFile = if ($surface.exchangeMark -eq 'full') { 'full-256.png' } else { 'exchange-mark-small.svg' }
+                $marks = @([regex]::Matches($html, '<img\b[^>]*class="exchange-(?:head|inline)"[^>]*>'))
+                if ($marks.Count -ne 1) { Problem "Exchange mark must appear once in $locale/$topic.html" }
+                else {
+                    $tag = $marks[0].Value
+                    $alt = [Net.WebUtility]::HtmlDecode([regex]::Match($tag, 'alt="([^"]*)"').Groups[1].Value)
+                    $position = $html.IndexOf($tag)
+                    $titleStart = $html.IndexOf('<h1')
+                    $wrongPosition = if ($surface.exchangeMark -eq 'full') { $position -gt $titleStart } else { $position -lt $titleStart -or $position -gt $html.IndexOf('</h1>') }
+                    if ($alt -cne $expectedAlt -or $tag -notmatch [regex]::Escape("../exchange-mark/$expectedFile") -or $wrongPosition) {
+                        Problem "Exchange mark artwork, placement or accessible name is wrong in $locale/$topic.html"
+                    }
+                }
+            }
             $expectedDir = if ($locale -in @('ar', 'ur')) { 'rtl' } else { 'ltr' }
             if ($html -notmatch "<html lang=`"$locale`" dir=`"$expectedDir`"") {
                 Problem "Incorrect html lang/dir in docs/help/$locale/$topic.html"

@@ -54,6 +54,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="../../assets/sza-kit.css">
 <link rel="stylesheet" href="../../assets/fms-site.css">
+<link rel="stylesheet" href="../../assets/fms-buttons.css">
 <script type="application/ld+json">{"@context":"https://schema.org","@type":"SoftwareApplication","name":"Fast Media Sorter & Sharing for Windows","description":"फ़ोटो और वीडियो के विशाल फ़ोल्डर तेज़ी से देखें और हर फ़ाइल को एक ही कुंजी से ले जाएँ, कॉपी करें, नाम बदलें या हटाएँ।","url":"https://serzhyale.github.io/FastMediaSorter_Lite/lang/hi/","inLanguage":"hi","applicationCategory":"MultimediaApplication","operatingSystem":"Windows 7, Windows 8.1, Windows 10, Windows 11","image":"https://serzhyale.github.io/FastMediaSorter_Lite/assets/social-card-1200x630.png","downloadUrl":"https://github.com/SerZhyAle/FastMediaSorter_Lite/releases/latest","isAccessibleForFree":true,"offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"author":{"@type":"Person","name":"SerZhyAle"}}</script>
 </head>
 <body>
@@ -62,12 +63,12 @@
   <nav class="site-nav" aria-label="मुख्य नेविगेशन">
   <a class="brand" href="https://serzhyale.github.io/FastMediaSorter_Lite/lang/hi/" aria-label="Fast Media Sorter &amp; Sharing for Windows">Fast Media Sorter &amp; Sharing for Windows</a>
   <a class="nav-doc" href="https://serzhyale.github.io/FastMediaSorter_Lite/topics.html">दस्तावेज़ (अंग्रेज़ी में)</a>
-  <div class="seg" role="group" aria-label="Language"><a hreflang="ru" href="https://serzhyale.github.io/FastMediaSorter_Lite/lang/ru/" onclick="try{localStorage.setItem('sza-lang','ru')}catch(e){}">RU</a><a hreflang="en" href="https://serzhyale.github.io/FastMediaSorter_Lite/" onclick="try{localStorage.setItem('sza-lang','en')}catch(e){}">EN</a><a hreflang="uk" href="https://serzhyale.github.io/FastMediaSorter_Lite/lang/uk/" onclick="try{localStorage.setItem('sza-lang','ua')}catch(e){}">UA</a></div>
-  <button class="theme-btn" id="themeBtn" aria-label="Switch theme">◐</button>
-  <a class="btn btn-primary btn-sm" href="#get">इंस्टॉलर (GitHub)</a>
+  <div class="seg" role="group" aria-label="भाषा"><a hreflang="ru" href="https://serzhyale.github.io/FastMediaSorter_Lite/lang/ru/" onclick="try{localStorage.setItem('sza-lang','ru')}catch(e){}">RU</a><a hreflang="en" href="https://serzhyale.github.io/FastMediaSorter_Lite/" onclick="try{localStorage.setItem('sza-lang','en')}catch(e){}">EN</a><a hreflang="uk" href="https://serzhyale.github.io/FastMediaSorter_Lite/lang/uk/" onclick="try{localStorage.setItem('sza-lang','ua')}catch(e){}">UA</a></div>
+  <button class="theme-btn" id="themeBtn" type="button" aria-pressed="true"><svg class="glyph" data-glyph="app.theme" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" focusable="false"><path d="M12 22c5.52 0 10-4.48 10-10S17.52 2 12 2 2 6.48 2 12s4.48 10 10 10zm1-17.93c3.94.49 7 3.85 7 7.93s-3.05 7.44-7 7.93V4.07z" fill="currentColor"/></svg><span>डार्क थीम</span></button>
+  <a class="btn btn-ghost" href="#get">इंस्टॉलर (GitHub)</a>
   </nav>
 </header>
-<nav class="container language-row" aria-label="Languages"><a hreflang="ru" href="https://serzhyale.github.io/FastMediaSorter_Lite/lang/ru/" lang="ru" title="Русский" onclick="try{localStorage.setItem('sza-lang','ru')}catch(e){}">RU</a>
+<nav class="container language-row" aria-label="भाषा"><a hreflang="ru" href="https://serzhyale.github.io/FastMediaSorter_Lite/lang/ru/" lang="ru" title="Русский" onclick="try{localStorage.setItem('sza-lang','ru')}catch(e){}">RU</a>
     <a hreflang="en" href="https://serzhyale.github.io/FastMediaSorter_Lite/" lang="en" title="English" onclick="try{localStorage.setItem('sza-lang','en')}catch(e){}">EN</a>
     <a hreflang="uk" href="https://serzhyale.github.io/FastMediaSorter_Lite/lang/uk/" lang="uk" title="Українська" onclick="try{localStorage.setItem('sza-lang','ua')}catch(e){}">UA</a>
     <a hreflang="de" href="https://serzhyale.github.io/FastMediaSorter_Lite/lang/de/" lang="de" title="Deutsch">DE</a>
@@ -76,7 +77,7 @@
     <a hreflang="fr" href="https://serzhyale.github.io/FastMediaSorter_Lite/lang/fr/" lang="fr" title="Français">FR</a>
     <a hreflang="pt" href="https://serzhyale.github.io/FastMediaSorter_Lite/lang/pt/" lang="pt" title="Português">PT</a>
     <a hreflang="ar" href="https://serzhyale.github.io/FastMediaSorter_Lite/lang/ar/" lang="ar" title="العربية">AR</a>
-    <a class="on" hreflang="hi" href="https://serzhyale.github.io/FastMediaSorter_Lite/lang/hi/" lang="hi" title="हिन्दी">HI</a>
+    <a class="on" aria-current="true" hreflang="hi" href="https://serzhyale.github.io/FastMediaSorter_Lite/lang/hi/" lang="hi" title="हिन्दी">HI</a>
     <a hreflang="bn" href="https://serzhyale.github.io/FastMediaSorter_Lite/lang/bn/" lang="bn" title="বাংলা">BN</a>
     <a hreflang="ur" href="https://serzhyale.github.io/FastMediaSorter_Lite/lang/ur/" lang="ur" title="اردو">UR</a>
     <a hreflang="zh" href="https://serzhyale.github.io/FastMediaSorter_Lite/lang/zh/" lang="zh" title="中文">ZH</a></nav>
@@ -92,7 +93,7 @@
       </div>
     </div>
     <h1>हर फ़ाइल के लिए एक कुंजी से फ़ोटो और वीडियो छाँटें</h1>
-    <p class="lead lead-narrow">अपने मीडिया को देखें और छाँटें; ज़रूरत पड़ने पर यही प्रोग्राम फ़ोल्डर-साझाकरण सर्वर और FileDO वर्चुअल डिस्क का होस्ट भी है - इनमें से हर भूमिका वैकल्पिक है और आपके चालू करने तक बंद रहती है।</p>
+    <p class="lead lead-narrow">तीन वैकल्पिक हिस्से: आपके मीडिया के लिए व्यूअर और सॉर्टर, SFTP से फ़ोल्डर साझा करने वाली स्थानीय सेवा, और Media Exchange Server (विकासाधीन, अभी जारी नहीं हुआ) - व्यूअर से या फ़ोल्डर-साझाकरण सर्वर से शुरू करें, और बाक़ी सिर्फ़ तब जोड़ें जब आप चाहें।</p>
     <p class="lead lead-narrow">फ़ोटो और वीडियो के विशाल फ़ोल्डर तेज़ी से देखें और हर फ़ाइल को एक ही कुंजी से ले जाएँ, कॉपी करें, नाम बदलें या हटाएँ।</p>
     <p class="lead lead-narrow">नाम में «Sharing» का मतलब है अपनी मीडिया किसी और को देना: आपका Android फ़ोन, प्रोग्राम की कोई दूसरी प्रति, या कोई भी SFTP क्लाइंट। जब तक आप चालू न करें, यह बंद रहता है। <a href="https://serzhyale.github.io/FastMediaSorter_Lite/publish-folders-android.html" lang="en" dir="ltr">Share folders to Android over SFTP</a></p>
     <div class="button-group">
@@ -103,26 +104,26 @@
 
   <section class="section doors" id="doors" aria-labelledby="doors-title">
     <div class="sec-head">
-      <h2 class="section-title" id="doors-title"><span class="hash">#</span>तीन दरवाज़े, एक प्रोग्राम</h2>
-      <p class="section-desc">जिस काम के लिए आए हैं, उसके अनुसार प्रवेश चुनें। हर दरवाज़े के पीछे वही पूरा डाउनलोड है; सर्वर संस्करण हमेशा चालू रहने वाले उपयोग के लिए अलग पैकेज है।</p>
+      <h2 class="section-title" id="doors-title"><span class="hash">#</span>दो रास्ते, तीन वैकल्पिक हिस्से</h2>
+      <p class="section-desc">जहाँ हैं वहीं से शुरू करें: व्यूअर से या फ़ोल्डर-साझाकरण सर्वर से। हर हिस्सा वैकल्पिक है, और Media Exchange Server अभी विकासाधीन है।</p>
     </div>
     <div class="grid">
     <article class="card scenario-card" id="door-1">
-      <span class="pill">व्यूअर</span>
-      <h3>मुझे व्यूअर चाहिए</h3>
-      <p>हर फ़ाइल के लिए एक कुंजी से फ़ोटो और वीडियो देखें और छाँटें। पूरा पैकेज डाउनलोड करें - एक इंस्टॉलर, पूरा परिवार। सेटअप में «कॉम्पैक्ट» प्रकार चुनें तो आपको बिना सर्वर वाला पूरा व्यूअर मिलता है; साझाकरण और FileDO वैकल्पिक अतिरिक्त बने रहते हैं।</p>
-      <div class="scenario-foot"><a class="btn btn-primary btn-sm" href="#get">पूरा पैकेज डाउनलोड करें</a></div>
+      <span class="pill">पहले व्यूअर</span>
+      <h3>मुझे व्यूअर और सॉर्टर चाहिए</h3>
+      <p>हर फ़ाइल के लिए एक कुंजी से फ़ोटो और वीडियो देखें और छाँटें। पूरा पैकेज व्यूअर इंस्टॉल करता है, और SFTP से स्थानीय फ़ोल्डर-साझाकरण एक वैकल्पिक हिस्से के रूप में, जो आपके चालू करने तक बंद रहता है; इसे छोड़ने के लिए सेटअप में «कॉम्पैक्ट» प्रकार चुनें। छाँटने के लिए किसी सर्वर की ज़रूरत नहीं।</p>
+      <div class="scenario-foot"><a class="btn btn-ghost" href="#get">पूरा पैकेज डाउनलोड करें</a></div>
     </article>
     <article class="card scenario-card" id="door-2">
-      <span class="pill">Android पर साझा करें</span>
-      <h3>मैं अपने फ़ोल्डर फ़ोन पर चाहता हूँ</h3>
-      <p>इस पीसी के फ़ोल्डर SFTP से अपने फ़ोन को दें: फ़ोल्डर-साझाकरण सर्वर चुनकर पूरा पैकेज इंस्टॉल करें और QR कोड से एक बार जोड़ें - या ऐसी मशीन पर सर्वर संस्करण इंस्टॉल करें जिसे किसी के साइन इन किए बिना सेवा देनी है। व्यूअर भी साथ में है, सर्वर संस्करण में वैकल्पिक।</p>
-      <div class="scenario-foot"><a class="btn btn-ghost btn-sm" href="https://serzhyale.github.io/FastMediaSorter_Lite/server.html">Android पर साझा करें (अंग्रेज़ी में)</a></div>
+      <span class="pill">पहले सर्वर</span>
+      <h3>मुझे अपने फ़ोल्डरों के लिए सर्वर चाहिए</h3>
+      <p>इस पीसी के फ़ोल्डर Android फ़ोन पर, प्रोग्राम की दूसरी प्रति में या किसी भी SFTP क्लाइंट में खोलें। सर्वर संस्करण (setup.exe या winget, प्रशासक अधिकार चाहिए) फ़ोल्डर-साझाकरण सेवा को Windows सेवा के रूप में इंस्टॉल करता है, जो किसी के साइन इन किए बिना चलती है; व्यूअर एक वैकल्पिक, बिना टिक वाला अतिरिक्त हिस्सा है। यह Media Exchange Server (विकासाधीन) इंस्टॉल नहीं करता।</p>
+      <div class="scenario-foot"><a class="btn btn-ghost" href="https://serzhyale.github.io/FastMediaSorter_Lite/server.html">सर्वर संस्करण: बिना साइन इन के साझाकरण (अंग्रेज़ी में)</a></div>
     </article>
     <article class="card scenario-card" id="door-3">
-      <span class="pill gold">योजना में</span>
-      <h3>मैं एक Media Exchange Server चलाऊँगा</h3>
-      <p>योजना में है, अभी उपलब्ध नहीं: Media Exchange Server, उस दिन के लिए एक कनेक्ट सेवा जब किसी साझाकरण सर्वर के पास न पहुँचने योग्य पता हो और न पोर्ट फ़ॉरवर्ड। डाउनलोड करने को अभी कुछ नहीं है, और इससे अधिक कुछ वादा नहीं किया गया है।</p>
+      <span class="pill gold">विकासाधीन</span>
+      <h3><span class="exchange-picture"><img class="exchange-mark" src="../../assets/exchange-mark/svg/exchange-mark-small.svg" width="32" height="32" alt="एक्सचेंज सर्वर"></span> Media Exchange Server</h3>
+      <p>विकासाधीन है और अभी किसी पैकेज में नहीं है, इसलिए डाउनलोड करने को कुछ नहीं। यह एक अलग सर्वर है जिसे आप ख़ुद चलाते हैं, उन उपकरणों के लिए जो सीधे एक-दूसरे तक नहीं पहुँच सकते। यह फ़ोल्डर-साझाकरण नहीं है, और न व्यूअर को, न स्थानीय साझाकरण को इसकी ज़रूरत है।</p>
     </article>
     </div>
   </section>
@@ -165,14 +166,14 @@
           <button class="copy" data-copy="winget install --id SerZhyAle.FastMediaSorter">कॉपी करें</button></div>
       </div>
       <div class="dl-row" id="dlRow">
-        <a class="btn btn-primary" id="dl-setup" href="https://github.com/SerZhyAle/FastMediaSorter_Lite/releases/latest">इंस्टॉलर (GitHub)</a>
-        <a class="btn btn-ghost" id="dl-zip" href="https://github.com/SerZhyAle/FastMediaSorter_Lite/releases/latest">Portable (.zip)</a>
-        <a class="btn btn-ghost btn-sm" href="https://github.com/SerZhyAle/FastMediaSorter_Lite/releases/latest">All releases</a>
-        <a class="btn btn-ghost btn-sm" href="https://apps.microsoft.com/detail/9N59Z73WZ53C" target="_blank" rel="noopener"><span>Microsoft Store</span></a>
-        <a class="btn btn-ghost btn-sm" href="https://serzhyale.github.io/FastMediaSorter_Lite/server.html">सर्वर संस्करण: बिना साइन इन के साझाकरण (अंग्रेज़ी में)</a>
+        <a class="btn btn-primary" id="dl-setup" href="https://github.com/SerZhyAle/FastMediaSorter_Lite/releases/latest"><svg class="glyph" data-glyph="action.download" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" focusable="false"><g transform="translate(12 12) scale(0.917 0.917) translate(-12 -12)"><path d="M19.35,10.04C18.67,6.59 15.64,4 12,4 9.11,4 6.6,5.64 5.35,8.04 2.34,8.36 0,10.91 0,14c0,3.31 2.69,6 6,6h13c2.76,0 5,-2.24 5,-5 0,-2.64 -2.05,-4.78 -4.65,-4.96zM17,13l-5,5 -5,-5h3V9h4v4h3z" fill="currentColor"/></g></svg><span>इंस्टॉलर (GitHub)</span></a>
+        <a class="btn btn-ghost" id="dl-zip" href="https://github.com/SerZhyAle/FastMediaSorter_Lite/releases/latest"><svg class="glyph" data-glyph="action.download" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" focusable="false"><g transform="translate(12 12) scale(0.917 0.917) translate(-12 -12)"><path d="M19.35,10.04C18.67,6.59 15.64,4 12,4 9.11,4 6.6,5.64 5.35,8.04 2.34,8.36 0,10.91 0,14c0,3.31 2.69,6 6,6h13c2.76,0 5,-2.24 5,-5 0,-2.64 -2.05,-4.78 -4.65,-4.96zM17,13l-5,5 -5,-5h3V9h4v4h3z" fill="currentColor"/></g></svg><span>Portable (.zip)</span></a>
+        <a class="btn btn-ghost" href="https://github.com/SerZhyAle/FastMediaSorter_Lite/releases/latest">All releases</a>
+        <a class="btn btn-ghost" href="https://apps.microsoft.com/detail/9N59Z73WZ53C" target="_blank" rel="noopener noreferrer"><span>Microsoft Store</span><span class="sr-only"> (नए टैब में खुलता है)</span></a>
+        <a class="btn btn-ghost" href="https://serzhyale.github.io/FastMediaSorter_Lite/server.html">सर्वर संस्करण: बिना साइन इन के साझाकरण (अंग्रेज़ी में)</a>
         <span class="dl-meta" id="dlMeta">Offline-ready bundles - VLC runtimes and OCR packs included. Windows 10 1607+ / 11; a 32-bit build for Windows 7/8.1 is in the same download.</span>
       </div>
-      <p class="dl-meta">पूरे पैकेज के भीतर सब कुछ वैकल्पिक है और आपके चालू करने तक बंद रहता है: फ़ोल्डर-साझाकरण सर्वर (Share Manager और SFTP वर्कर), FileDO वर्चुअल डिस्क की होस्टिंग, ऑफ़लाइन वीडियो कोडेक और OCR मॉडल। सर्वर को छोड़ने के लिए «कॉम्पैक्ट» प्रकार चुनें।</p>
+      <p class="dl-meta">पूरे पैकेज के भीतर: व्यूअर, और वैकल्पिक हिस्से जो आपके चालू करने तक बंद रहते हैं - SFTP से स्थानीय फ़ोल्डर-साझाकरण (Share Manager और SFTP वर्कर; FileDO .fdd डिस्क की होस्टिंग साझाकरण की एक क्षमता है), ऑफ़लाइन वीडियो कोडेक और OCR मॉडल। साझाकरण को छोड़ने के लिए «कॉम्पैक्ट» प्रकार चुनें। Media Exchange Server अभी विकासाधीन है और किसी पैकेज में नहीं है।</p>
       <p class="dl-meta">
         <a href="https://serzhyale.github.io/FastMediaSorter_Lite/lang/hi/trust.html">Windows इस डाउनलोड पर चेतावनी क्यों देता है</a>
       </p>
@@ -199,7 +200,7 @@
     </article>
     </div>
     <details class="sec sec-spaced" id="all-features">
-      <summary><span class="secnum">01</span>Fast Media Sorter &amp; Sharing for Windows - Features</summary>
+      <summary><span class="secnum">01</span>Fast Media Sorter &amp; Sharing for Windows - सुविधाएँ</summary>
       <div class="grid grid-spaced">
       <article class="card">
         <h3>हर फ़ाइल के लिए एक कुंजी</h3>
@@ -272,7 +273,7 @@
       <li><a href="https://serzhyale.github.io/FastMediaSorter_Lite/docs/how-to-resources.html">Open a server or a network share like a folder</a></li>
       <li><a href="https://serzhyale.github.io/FastMediaSorter_Lite/docs/how-to-filedo-disks.html">Share FileDO .fdd virtual disks</a></li>
       <li><a href="https://serzhyale.github.io/FastMediaSorter_Lite/publish-folders-android.html">Share folders to Android over SFTP</a></li>
-      <li><a href="https://serzhyale.github.io/FastMediaSorter_mob_v2/docs/media-exchange-portal/" target="_blank" rel="noopener">Media exchange between your devices (portal)</a></li>
+      <li><a href="https://serzhyale.github.io/FastMediaSorter_mob_v2/docs/media-exchange-portal/" target="_blank" rel="noopener noreferrer">Media exchange between your devices (portal)<span class="sr-only"> (नए टैब में खुलता है)</span></a></li>
     </ul>
   </section>
 
@@ -287,7 +288,7 @@
     <a href="#howto">HOW TO</a>
     <a href="https://serzhyale.github.io/FastMediaSorter_Lite/topics.html">Topics</a>
     <a href="https://serzhyale.github.io/FastMediaSorter_Lite/glossary.html">Glossary</a>
-    <a href="https://serzhyale.github.io/FastMediaSorter_mob_v2/docs/media-exchange-portal/" target="_blank" rel="noopener">Media exchange portal</a>
+    <a href="https://serzhyale.github.io/FastMediaSorter_mob_v2/docs/media-exchange-portal/" target="_blank" rel="noopener noreferrer">Media exchange portal<span class="sr-only"> (नए टैब में खुलता है)</span></a>
     <a href="https://serzhyale.github.io/FastMediaSorter_Lite/lang/hi/trust.html">Windows इस डाउनलोड पर चेतावनी क्यों देता है</a>
     <a href="https://serzhyale.github.io/FastMediaSorter_Lite/docs/privacy.html">Privacy</a>
     <a href="https://github.com/SerZhyAle/FastMediaSorter_Lite#readme">README</a>
@@ -318,7 +319,7 @@
     <a hreflang="fr" href="https://serzhyale.github.io/FastMediaSorter_Lite/lang/fr/" lang="fr" title="Français">FR</a>
     <a hreflang="pt" href="https://serzhyale.github.io/FastMediaSorter_Lite/lang/pt/" lang="pt" title="Português">PT</a>
     <a hreflang="ar" href="https://serzhyale.github.io/FastMediaSorter_Lite/lang/ar/" lang="ar" title="العربية">AR</a>
-    <a class="on" hreflang="hi" href="https://serzhyale.github.io/FastMediaSorter_Lite/lang/hi/" lang="hi" title="हिन्दी">HI</a>
+    <a class="on" aria-current="true" hreflang="hi" href="https://serzhyale.github.io/FastMediaSorter_Lite/lang/hi/" lang="hi" title="हिन्दी">HI</a>
     <a hreflang="bn" href="https://serzhyale.github.io/FastMediaSorter_Lite/lang/bn/" lang="bn" title="বাংলা">BN</a>
     <a hreflang="ur" href="https://serzhyale.github.io/FastMediaSorter_Lite/lang/ur/" lang="ur" title="اردو">UR</a>
     <a hreflang="zh" href="https://serzhyale.github.io/FastMediaSorter_Lite/lang/zh/" lang="zh" title="中文">ZH</a>
@@ -340,7 +341,7 @@
     doc.setAttribute('data-theme',t);
     try{localStorage.setItem('sza-theme',t);}catch(e){}
     var m=document.querySelector('meta[name="theme-color"]'); if(m) m.setAttribute('content', t==='light'?'#eef3ea':'#0a0f0a');
-    var b=document.getElementById('themeBtn'); if(b) b.setAttribute('aria-label', t==='light'?'Switch to dark theme':'Switch to light theme');
+    var b=document.getElementById('themeBtn'); if(b) b.setAttribute('aria-pressed', t==='light'?'false':'true');
   }
   var tb=document.getElementById('themeBtn');
   if(tb) tb.addEventListener('click',function(){setTheme(doc.getAttribute('data-theme')==='light'?'dark':'light');});

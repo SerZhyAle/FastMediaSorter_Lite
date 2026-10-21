@@ -18,6 +18,10 @@ Friend Enum ProbeVerdict
     Timeout = 3
     ''' <summary>An empty host or a port outside 1..65535: nothing to ask.</summary>
     BadInput = 4
+    ''' <summary>The peer accepted the connection and then closed it without sending a byte (end of stream before any banner). This does NOT
+    ''' say the peer is not SSH: a server at its connection limit, or one that drops a client before its banner, does exactly this
+    ''' (SHARE-SESSION 1.3 (iii): the transport stays undetermined). Appended at the end: the earlier values are persisted nowhere but stay stable.</summary>
+    ClosedBeforeBanner = 5
 End Enum
 
 ''' <summary>
@@ -52,7 +56,10 @@ Friend Module ResourceProbe
                     Return ProbeVerdict.PortOpen
                 End If
                 Dim count As Integer = Await read.ConfigureAwait(False)
-                If count > 0 AndAlso Encoding.ASCII.GetString(buffer, 0, count).StartsWith("SSH-", StringComparison.Ordinal) Then
+                ' End of stream before a single byte: the peer closed on us. That is "closed before the banner", not "not SSH" -
+                ' it may be a server at its connection limit, so the verdict must not say what the peer is (SHARE-SESSION 1.3 (iii)).
+                If count = 0 Then Return ProbeVerdict.ClosedBeforeBanner
+                If Encoding.ASCII.GetString(buffer, 0, count).StartsWith("SSH-", StringComparison.Ordinal) Then
                     Return ProbeVerdict.SshOk
                 End If
                 Return ProbeVerdict.PortOpen
@@ -80,6 +87,8 @@ Friend Module ResourceProbe
                 Return Localization.T("Сервер отвечает")
             Case ProbeVerdict.PortOpen
                 Return Localization.T("Порт открыт, но это не SSH-сервер")
+            Case ProbeVerdict.ClosedBeforeBanner
+                Return Localization.T("Сервер закрыл соединение, не успев ответить. Возможно, достигнут предел подключений; повторите через минуту.")
             Case ProbeVerdict.Refused
                 Return Localization.T("Сервер недоступен: подключение отклонено")
             Case ProbeVerdict.Timeout

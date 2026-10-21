@@ -273,6 +273,94 @@ Public Class FdSecStreamTests
         End Try
     End Sub
 
+    ''' <summary>
+    ''' Audit 242 M-1: a Dispose that lands between the source read (inside the lock) and
+    ''' the decrypt (outside it) wipes the file key under the open, so the tag fails. That
+    ''' is "the reader was closed", never "the file is altered": it must come out as
+    ''' <see cref="ObjectDisposedException"/>, not as the tamper class, and the stream's
+    ''' <c>Failed</c> event (which a viewer turns into a message) must stay silent.
+    ''' The race is made deterministic from the source: the hook runs on the reading thread
+    ''' inside the lock right after the bytes are read (the lock is re-entrant), which is
+    ''' exactly the window between the lock release and the open.
+    ''' </summary>
+    <Fact>
+    Public Sub A_dispose_between_the_read_and_the_decrypt_is_a_disposed_error_not_tamper()
+        Dim packed As Byte() = FdSecTestContainer.Pack(Payload(3000), "inside.bin", Credential,
+                                                       FdSecTestContainer.FastProfile, Alignment, ChunkSize)
+        Using source As New HookedStream(New MemoryStream(packed, writable:=False))
+            Dim container As FdSecContainer = FdSecContainer.Open(source, Credential, ownsSource:=False,
+                                                                  profile:=FdSecTestContainer.FastProfile)
+            Dim failed As Integer = 0
+            Using stream As Stream = container.OpenContentStream()
+                AddHandler DirectCast(stream, FdSecStream).Failed, Sub(sender, outcome) failed += 1
+                source.AfterRead = Sub() container.Dispose()
+
+                Dim buffer(9) As Byte
+                Assert.Throws(Of ObjectDisposedException)(Function() stream.Read(buffer, 0, buffer.Length))
+                Assert.Equal(0, failed)
+                Assert.Null(DirectCast(stream, FdSecStream).LastFailure)
+            End Using
+            ' Closed stays closed, and says so the same way.
+            Assert.Throws(Of ObjectDisposedException)(Function() container.ReadChunk(0))
+        End Using
+    End Sub
+
+    ''' <summary>A source whose Read can run one hook after the bytes are read and before
+    ''' it returns - on the reading thread, inside the container's lock.</summary>
+    Private NotInheritable Class HookedStream
+        Inherits Stream
+
+        Private ReadOnly inner As Stream
+        Public AfterRead As Action
+
+        Public Sub New(inner As Stream)
+            Me.inner = inner
+        End Sub
+
+        Public Overrides Function Read(buffer As Byte(), offset As Integer, count As Integer) As Integer
+            Dim n As Integer = inner.Read(buffer, offset, count)
+            Dim hook As Action = AfterRead
+            If hook IsNot Nothing Then
+                AfterRead = Nothing
+                hook()
+            End If
+            Return n
+        End Function
+
+        Public Overrides ReadOnly Property CanRead As Boolean = True
+        Public Overrides ReadOnly Property CanSeek As Boolean = True
+        Public Overrides ReadOnly Property CanWrite As Boolean = False
+        Public Overrides ReadOnly Property Length As Long
+            Get
+                Return inner.Length
+            End Get
+        End Property
+        Public Overrides Property Position As Long
+            Get
+                Return inner.Position
+            End Get
+            Set(value As Long)
+                inner.Position = value
+            End Set
+        End Property
+        Public Overrides Function Seek(offset As Long, origin As SeekOrigin) As Long
+            Return inner.Seek(offset, origin)
+        End Function
+        Public Overrides Sub Flush()
+        End Sub
+        Public Overrides Sub SetLength(value As Long)
+            Throw New NotSupportedException()
+        End Sub
+        Public Overrides Sub Write(buffer As Byte(), offset As Integer, count As Integer)
+            Throw New NotSupportedException()
+        End Sub
+
+        Protected Overrides Sub Dispose(disposing As Boolean)
+            If disposing Then inner.Dispose()
+            MyBase.Dispose(disposing)
+        End Sub
+    End Class
+
     ''' <summary>The content stream is read-only, and says so rather than pretending to
     ''' accept a write. Nothing in the viewer writes to it; a future caller that tries
     ''' finds out at the call, not in a file.</summary>

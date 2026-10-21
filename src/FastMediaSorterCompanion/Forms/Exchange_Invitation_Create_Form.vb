@@ -16,6 +16,7 @@ Friend NotInheritable Class Exchange_Invitation_Create_Form
 
     Private _rbFamily As RadioButton
     Private _rbGuest As RadioButton
+    Private _answerRow As DialogButtonRow
     Private _iconHandle As IntPtr
 
     Friend Sub New()
@@ -51,6 +52,7 @@ Friend NotInheritable Class Exchange_Invitation_Create_Form
             .AutoSizeMode = AutoSizeMode.GrowAndShrink, .Padding = New Padding(14, 10, 14, 8)}
         body.ColumnStyles.Add(New ColumnStyle(SizeType.Percent, 100.0F))
 
+        body.Controls.Add(ExchangeMark.Heading(Text, 32, AddressOf CompanionAssets.OpenBundledAsset))
         body.Controls.Add(New Label With {.AutoSize = True, .MaximumSize = New Size(ContentWidth, 0), .Margin = New Padding(0, 0, 0, 8),
             .Text = Localization.T("Выберите тип создаваемого приглашения для регистрации пользователя:")})
 
@@ -73,18 +75,22 @@ Friend NotInheritable Class Exchange_Invitation_Create_Form
             .Margin = New Padding(20, 0, 0, 10),
             .Text = If(OutwardAccessFeatures.IsOffered(), Localization.T("Видит только явно предоставленные ему ресурсы и ничего не публикует."), OutwardAccessFeatures.Reason())})
 
-        Dim btnRow As New FlowLayoutPanel With {.AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink, .Margin = New Padding(0, 8, 0, 2)}
+        ' The answers ride the shared bottom row (ticket 243 T-8b, BUTTONS 2.0 sections 3 and 4): Cancel first, Create last
+        ' and the default (it only creates an invitation the person can withdraw), Escape = Cancel.
         Dim btnOk As Button = NewButton(Localization.T("Создать"), Sub() Me.DialogResult = DialogResult.OK, "action.confirm", ButtonGlyphRole.Affirmative)
+        btnOk.Name = "xinvc_Ok"
         btnOk.DialogResult = DialogResult.OK
         Dim btnCancel As Button = NewButton(Localization.T("Отмена"), Sub() Me.DialogResult = DialogResult.Cancel, "nav.close", ButtonGlyphRole.Dismissing)
+        btnCancel.Name = "xinvc_Cancel"
         btnCancel.DialogResult = DialogResult.Cancel
-        btnRow.Controls.Add(btnOk)
-        btnRow.Controls.Add(btnCancel)
-        body.Controls.Add(btnRow)
+        _answerRow = New DialogButtonRow() With {.Dock = DockStyle.Bottom, .Name = "xinvc_Buttons", .Padding = New Padding(14, 4, 14, 10)}
+        DpiLayout.AddAnswer(_answerRow, btnOk, DialogButtonRole.Affirmative, "action.confirm")
+        DpiLayout.AddAnswer(_answerRow, btnCancel, DialogButtonRole.Dismissing, "nav.close")
 
-        Me.AcceptButton = btnOk
-        Me.CancelButton = btnCancel
         Me.Controls.Add(body)
+        ' Last in the collection: the docked row takes its edge first and reads after the content in the Tab order.
+        Me.Controls.Add(_answerRow)
+        _answerRow.Bind(Me)
         Me.AutoSize = True
         Me.AutoSizeMode = AutoSizeMode.GrowAndShrink
 

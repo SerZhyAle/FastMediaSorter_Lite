@@ -87,6 +87,18 @@
     <EmbeddedResource Include="..\..\assets\help\port-forward.html">
       <LogicalName>help/port-forward.html</LogicalName>
     </EmbeddedResource>
+    <EmbeddedResource Include="..\..\assets\exchange-mark\png\*.png">
+      <WithCulture>false</WithCulture>
+      <LogicalName>exchange-mark/png/%(Filename)%(Extension)</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="..\..\assets\exchange-mark\svg\*.svg">
+      <WithCulture>false</WithCulture>
+      <LogicalName>exchange-mark/svg/%(Filename)%(Extension)</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="..\..\assets\exchange-mark\ico\*.ico">
+      <WithCulture>false</WithCulture>
+      <LogicalName>exchange-mark/ico/%(Filename)%(Extension)</LogicalName>
+    </EmbeddedResource>
     <EmbeddedResource Include="..\..\assets\glyphs\*.svg">
       <!-- MSBuild reads the penultimate extension of a resource file name as a culture: "action.run.svg" is
            Rundi ("run"), so that glyph was silently moved to a satellite assembly and left out of the exe. -->
@@ -149,11 +161,40 @@
       moves is corrected once.
     -->
     <Compile Include="..\Support\SitePages.vb" Link="Core\SitePages.vb" />
+    <Compile Include="..\Support\AboutResources.vb" Link="Core\AboutResources.vb" />
     <Compile Include="..\SettingsNavIconPalette.vb" Link="Theming\SettingsNavIconPalette.vb" />
     <Compile Include="..\Icons\IconMap.vb" Link="Core\IconMap.vb" />
     <Compile Include="..\Icons\SvgPathData.vb" Link="Core\SvgPathData.vb" />
     <Compile Include="..\Icons\GlyphRenderer.vb" Link="Core\GlyphRenderer.vb" />
+    <Compile Include="..\Chrome\UiSizing.vb" Link="Core\UiSizing.vb" />
+    <!-- The state marker of a collapsible group header (COLLAPSIBLE-GROUP 1.1 section 3, ticket 243 T-11c): the filled
+         triangle the viewer's settings groups draw, here for the two Manager header kinds (SettingsGroupCard,
+         CollapsibleSection). Whole-file "#If Not NETFRAMEWORK"; needs only UiSizing above. -->
+    <Compile Include="..\Chrome\GroupMarker.vb" Link="Core\GroupMarker.vb" />
+    <!-- The page rail's arithmetic (SETTINGS-NAVIGATION 2.0 section 2 rules 5 and 7, ticket 243 T-7b): row target,
+         glyph, gap, rail width, focus movement. Pure, shared with the viewer's settings window. -->
+    <Compile Include="..\Support\SettingsRailRules.vb" Link="Core\SettingsRailRules.vb" />
     <Compile Include="..\Icons\ButtonGlyphs.vb" Link="Core\ButtonGlyphs.vb" />
+    <!-- The one answer row of the secondary windows (BUTTONS 2.0 sections 3 and 4, ticket 243 T-8a/T-8b): the viewer's
+         control, whole-file "#If Not NETFRAMEWORK", needs only UiSizing and ButtonGlyphs above - no DialogLayout. -->
+    <Compile Include="..\DialogButtonRow.vb" Link="Core\DialogButtonRow.vb" />
+    <!-- The boolean option row (BOOLEAN-OPTION 2.0 sections 2 and 3, ticket 243 T-11c-b): the viewer's owner-drawn 20 px box
+         over a stock CheckBox, its caption/explanation row host and the row's arithmetic, linked whole (each file is
+         "#If Not NETFRAMEWORK"). SettingsCheckBox.ArrangeRow names OptionHeading (the optional heading glyph and `?` target),
+         so its two files come along; the Manager adds no help target. Core\OptionRows.vb is the Manager's facade. -->
+    <Compile Include="..\SettingsRowGrid.vb" Link="Core\SettingsRowGrid.vb" />
+    <Compile Include="..\OptionHelpSource.vb" Link="Core\OptionHelpSource.vb" />
+    <Compile Include="..\OptionHelpUi.vb" Link="Core\OptionHelpUi.vb" />
+    <Compile Include="..\SettingsCheckBox.vb" Link="Core\SettingsCheckBox.vb" />
+    <Compile Include="..\DialogOptionRow.vb" Link="Core\DialogOptionRow.vb" />    <!-- The product-owned QUESTION window (BUTTONS 2.0 section 1, ticket 243 T-12b): the viewer's Ask_Dialog with its pure
+         model and the MessageBox-to-AskSpec mapping, linked whole - each is "#If Not NETFRAMEWORK", which this net10 project
+         never defines. Ask_Dialog names only DialogLayout.ApplyAutoScale / ClampToWorkingArea (the forwarding class in
+         Core\DpiLayout.vb), Localization, ButtonGlyphs and ProductNames, all of which are linked above; the viewer's
+         AskDialogs / DialogLayer (the viewer's band) are NOT linked - Core\ManagerBox.vb shows the window itself. -->
+    <Compile Include="..\AskModel.vb" Link="Core\AskModel.vb" />
+    <Compile Include="..\Ask_Dialog.vb" Link="Core\Ask_Dialog.vb" />
+    <Compile Include="..\ViewerBoxMapping.vb" Link="Core\ViewerBoxMapping.vb" />
+    <Compile Include="..\Icons\ExchangeMark.vb" Link="Core\ExchangeMark.vb" />
     <Compile Include="..\Icons\StepArt.vb" Link="Core\StepArt.vb" />
     <!--
       The application theme (spec 060): one stored mode, one palette, one applier for both
@@ -211,6 +252,8 @@
     <Compile Include="..\PathFailure.vb" Link="Core\Scheduled\Linked\PathFailure.vb" />
     <Compile Include="..\FreeNameRule.vb" Link="Core\Scheduled\Linked\FreeNameRule.vb" />
     <Compile Include="..\Resources\IFileSystemProvider.vb" Link="Core\Scheduled\Linked\IFileSystemProvider.vb" />
+    <!-- Ticket 244 (WORKER-LAUNCH 1.0): the ONE state-directory resolution the viewer's WorkerShares also uses. -->
+    <Compile Include="..\Resources\WorkerStateDir.vb" Link="Core\WorkerStateDir.vb" />
     <!-- EXPERIMENT (ticket 222 step 4): the provider layer the viewer already has, for registered resources. -->
     <Compile Include="..\Resources\ResourceRegistry.vb" Link="Core\Scheduled\Linked\Resources\ResourceRegistry.vb" />
     <Compile Include="..\Resources\ResourceFailure.vb" Link="Core\Scheduled\Linked\Resources\ResourceFailure.vb" />

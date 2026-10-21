@@ -104,7 +104,10 @@ func serveCore(ctx context.Context, cmd command, console bool, stdout, stderr io
 		printf(stderr, "cannot read the config %s: %v\n", paths.Config, err)
 		return exitConfig
 	}
-	if err := cfg.Validate(); err != nil {
+	// ValidateIn names the data directory itself, so the web directory is checked against it (WEB-BINDING
+	// page-served-by-the-server: never the data or TLS directory, never a directory that holds the private key)
+	// whatever way cfg was read: a server that would publish its own key does not start.
+	if err := cfg.ValidateIn(paths); err != nil {
 		printf(stderr, "the config is not valid: %v\n", err)
 		return exitConfig
 	}
@@ -173,7 +176,13 @@ func serveCore(ctx context.Context, cmd command, console bool, stdout, stderr io
 		return exitConfig
 	}
 	defer logger.Close()
-	logger.Info("start", logx.Text("version", version))
+	audit, err := logx.OpenAuditDaily(paths.LogsDir, cfg.Log.MaxBytes, cfg.Log.RetentionDays, nil)
+	if err != nil {
+		printf(stderr, "cannot open the operational audit: %v\n", err)
+		return exitConfig
+	}
+	defer audit.Close()
+	logger.State("start", logx.Text("version", version))
 	if cfg.ObsoletePasswordHash {
 		logger.Warn("obsolete", logx.Text("member", "the server-wide credential of the superseded design is ignored; it is removed when the config is next saved"))
 	}
@@ -226,14 +235,26 @@ func serveCore(ctx context.Context, cmd command, console bool, stdout, stderr io
 	engine := rendezvous.NewEngine(rendezvous.EngineConfig{
 		Params: params, Accounts: store, Dir: dir, Pool: pool,
 		Verifier: limits.NewVerifier(nil, l.VerifierConcurrency, 2*time.Second),
-		Limiter:  limiter, LoginLimiter: loginLimiter, Log: logger,
+		Limiter:  limiter, LoginLimiter: loginLimiter, Log: logger, Audit: audit,
 		PublicEndpoint: cfg.PublicEndpoint, ServerVersion: version,
 		Features: rendezvous.Features{Cast: true, Sealed: true}, Relay: relayHandler,
 	})
 	srv := rendezvous.New(rendezvous.Config{
-		Params:  params,
-		TLS:     &tls.Config{Certificates: []tls.Certificate{id.Cert}, MinVersion: tls.VersionTLS12},
-		Limiter: limiter, PreAuth: limits.NewPreAuth(l.PreAuthSlots), Backend: engine, Log: logger,
+		Params:          params,
+		TLS:             &tls.Config{Certificates: []tls.Certificate{id.Cert}, MinVersion: tls.VersionTLS12},
+		Limiter:         limiter,
+		PreAuth:         limits.NewPreAuth(l.PreAuthSlots),
+		Backend:         engine,
+		Log:             logger,
+		AdminConfig:     cfg.Admin,
+		PublicEndpoint:  cfg.PublicEndpoint,
+		LeafFingerprint: id.Fingerprint,
+		Ops:             engine.Ops(),
+		Verifier:        engine.Verifier(),
+		AdminPacer:      store.Pacer(),
+		WebDir:          cfg.WebDir,
+
+		WebSocketMaxMessage: cfg.Limits.WebSocketMessage(),
 	})
 
 	ln, err := net.Listen("tcp", cfg.Listen)
@@ -291,7 +312,7 @@ func serveCore(ctx context.Context, cmd command, console bool, stdout, stderr io
 		printf(stdout, "public endpoint not set: tunnels and the relay are hidden from clients until it is (fms-exchange-server set-endpoint)\n")
 	}
 	printf(stdout, "tls fingerprint %s\n", id.Fingerprint)
-	logger.Info("listening", logx.Text("addr", ln.Addr().String()), logx.Text("fingerprint", id.Fingerprint))
+	logger.State("listening", logx.Text("addr", ln.Addr().String()), logx.Text("fingerprint", id.Fingerprint))
 
 	done := make(chan error, 1)
 	go func() { done <- srv.Serve(ln) }()
@@ -299,7 +320,7 @@ func serveCore(ctx context.Context, cmd command, console bool, stdout, stderr io
 	case <-ctx.Done():
 		srv.Close()
 		<-done
-		logger.Info("stop")
+		logger.State("stop")
 		return exitOK
 	case err := <-done:
 		if err != nil {

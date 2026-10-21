@@ -1,4 +1,4 @@
-Option Strict On
+﻿Option Strict On
 
 Imports System.Drawing
 Imports System.Globalization
@@ -55,6 +55,7 @@ Partial Public NotInheritable Class Share_Settings_Form
     Private _btnXReplaceCert As Button
     Private _btnXImportCert As Button
     Private _lblXCertService As Label
+    Private _lblXRenewNote As Label
 
     Private _pnlXAccounts As FlowLayoutPanel
     Private _pnlXDevices As FlowLayoutPanel
@@ -73,9 +74,14 @@ Partial Public NotInheritable Class Share_Settings_Form
     Private _lblXKeepNote As Label
     Private _exKeepLoading As Boolean
     Private _lblXDevTitle As Label
+    Private _lblXDevNoAcc As Label
     Private _lvXDevices As ListView
     Private _rowXRevoke As FlowLayoutPanel
     Private _btnXRevoke As Button
+    Private _rowXLocalJoin As FlowLayoutPanel
+    Private _btnXJoinLocal As Button
+    Private _lblXJoinLocalNote As Label
+    Private _lblXJoinLocalStatus As Label
     Private _lblXInvTitle As Label
     Private _chkXSharedInv As CheckBox
     Private _btnXSetSharedInv As Button
@@ -94,6 +100,28 @@ Partial Public NotInheritable Class Share_Settings_Form
     Private _exAccReading As Boolean
     Private _exAccRereadRequested As Boolean
     Private _exAccFilling As Boolean
+
+    ' Spec 246: management visibility controls
+    Private _lblXAdminSessionBadge As Label
+    Private _btnXAuditLog As Button
+
+    Private _pnlXResources As FlowLayoutPanel
+    Private _lblXResTitle As Label
+    Private _lvXResources As ListView
+    Private _btnXUnpublishResource As Button
+    Private _rowXResButtons As FlowLayoutPanel
+
+    Private _pnlXBroadcasts As FlowLayoutPanel
+    Private _lblXBroTitle As Label
+    Private _lvXBroadcasts As ListView
+    Private _btnXStopBroadcast As Button
+    Private _rowXBroButtons As FlowLayoutPanel
+
+    Private _pnlXClip As FlowLayoutPanel
+    Private _lblXClipTitle As Label
+    Private _lblXClipStatus As Label
+    Private _btnXClearClip As Button
+    Private _rowXClipButtons As FlowLayoutPanel
 
     ''' <summary>The refresh of the account lists while the group is unfolded and a server runs.</summary>
     Private Const ExchangeAccountsPollMs As Integer = 5000
@@ -128,13 +156,23 @@ Partial Public NotInheritable Class Share_Settings_Form
             .Font = bold, .Text = text}
     End Function
 
+    ''' <summary>The heading of a group the exchange page gained after the page itself (specs 245 and 246): the mark at the
+    ''' reading-start side, 16 px beside bold text, named by the CW term (spec 248 M2; EXCHANGE-MARK rule 8 a).</summary>
+    Private Function XMarkedBold(text As String) As Label
+        Dim heading As Label = XBold(text)
+        ExchangeMark.Apply(heading, 16, AddressOf CompanionAssets.OpenBundledAsset)
+        Return heading
+    End Function
+
     ''' <summary>Every button that an action disables while it runs (the Hosting precedent): one list, so a new button is
     ''' not forgotten by <see cref="SetXBusy"/>.</summary>
     Private Function ExchangeBusyButtons() As Button()
         Return New Button() {_btnXApplyHost, _btnXRenewCert, _btnXApplyPort, _btnXApplyEndpoint, _btnXApplyRange, _btnXWizard, _btnXCopyFp, _btnXReplaceCert, _btnXImportCert,
                              _btnXAddAccount, _btnXResetPw, _btnXAccountLimits, _btnXRemoveAccount, _btnXCreateInvitation, _btnXWithdrawInvitation, _btnXSetSharedInv,
+                             _btnXRemoteAdminSetPw, _btnXRemoteAdminApply, _btnXRemoteAdminBrowser,
                              _btnXRevoke, _btnXStart, _btnXStop,
-                             _btnXFwEnable, _btnXFwRemove, _btnXSvcStart, _btnXSvcStop, _btnXRegister, _btnXRemove}
+                             _btnXFwEnable, _btnXFwRemove, _btnXSvcStart, _btnXSvcStop, _btnXRegister, _btnXRemove,
+                             _btnXUnpublishResource, _btnXStopBroadcast, _btnXClearClip, _btnXAuditLog}
     End Function
 
     ' --- building -----------------------------------------------------------------------------------
@@ -236,6 +274,9 @@ Partial Public NotInheritable Class Share_Settings_Form
         _rowXCert.Controls.Add(_btnXImportCert)
         _rowXCert.Controls.Add(_btnXReplaceCert)
         _pnlXConfig.Controls.Add(_rowXCert)
+        ' WEB-BINDING certificate-trust 4: the surface that renews says what a renewal costs a browser; shown only while the renew button is
+        _lblXRenewNote = AdminNote(ExchangeAdminText.RenewBrowserNote())
+        _pnlXConfig.Controls.Add(_lblXRenewNote)
         _lblXCertService = AdminNote(ExchangeAdminText.CertificateServiceNote())
         _pnlXConfig.Controls.Add(_lblXCertService)
         sec.AddBodyRow(_pnlXConfig)
@@ -267,6 +308,7 @@ Partial Public NotInheritable Class Share_Settings_Form
         _lvXAccounts.Columns.Add(ExchangeAdminText.ColumnDevices(), Me.LogicalToDeviceUnits(70))
         _lvXAccounts.Columns.Add(ExchangeAdminText.ColumnCreated(), Me.LogicalToDeviceUnits(160))
         AddHandler _lvXAccounts.SelectedIndexChanged, AddressOf OnXAccountSelected
+        ExchangeMark.ApplyAccounts(_lvXAccounts, AddressOf CompanionAssets.OpenBundledAsset)
         _pnlXAccounts.Controls.Add(_lvXAccounts)
 
         _btnXAddAccount = XButton(ExchangeAdminText.AddAccountButton(), AddressOf OnXAddAccount, "action.add")
@@ -282,7 +324,18 @@ Partial Public NotInheritable Class Share_Settings_Form
         _rowXAccButtons.Controls.Add(_btnXAccountLimits)
         _rowXAccButtons.Controls.Add(_btnXShowPw)
         _rowXAccButtons.Controls.Add(_btnXRemoveAccount)
+        _btnXAuditLog = XButton(ExchangeAdminText.AuditLogButton(), AddressOf OnXAuditLogClicked, "action.view")
+        _rowXAccButtons.Controls.Add(_btnXAuditLog)
         _pnlXAccounts.Controls.Add(_rowXAccButtons)
+
+        _lblXAdminSessionBadge = New Label With {
+            .AutoSize = True,
+            .MaximumSize = New Size(ExchangeAdminWidth, 0),
+            .Margin = New Padding(0, 4, 0, 4),
+            .ForeColor = Color.DarkOrange,
+            .Visible = False
+        }
+        _pnlXAccounts.Controls.Add(_lblXAdminSessionBadge)
 
         ' keeping the passwords on this PC (off by default; the switch asks first, both ways)
         _chkXKeepPasswords = New CheckBox With {.AutoSize = True, .Margin = New Padding(0, 6, 0, 0), .Text = ExchangeAdminText.KeepPasswordsCheckbox(),
@@ -299,6 +352,9 @@ Partial Public NotInheritable Class Share_Settings_Form
         _lblXDevTitle = XBold("")
         _lblXDevTitle.Visible = False
         _pnlXDevices.Controls.Add(_lblXDevTitle)
+        _lblXDevNoAcc = AdminNote(ExchangeJoinText.DevicesSelectAccountHint())
+        _lblXDevNoAcc.Visible = False
+        _pnlXDevices.Controls.Add(_lblXDevNoAcc)
         _lvXDevices = New ListView With {.View = View.Details, .FullRowSelect = True, .HideSelection = False, .MultiSelect = False,
             .Width = ExchangeAdminWidth, .Height = 110, .Margin = New Padding(0, 2, 0, 2), .Visible = False,
             .AccessibleName = Localization.T("Устройства")}
@@ -313,7 +369,85 @@ Partial Public NotInheritable Class Share_Settings_Form
         _rowXRevoke = AdminFlow()
         _rowXRevoke.Controls.Add(_btnXRevoke)
         _pnlXDevices.Controls.Add(_rowXRevoke)
+
+        _lblXJoinLocalNote = AdminNote(ExchangeJoinText.JoinLocalDescription())
+        _lblXJoinLocalNote.Margin = New Padding(0, 6, 0, 2)
+        _lblXJoinLocalNote.Visible = False
+        _pnlXDevices.Controls.Add(_lblXJoinLocalNote)
+
+        _btnXJoinLocal = XButton(ExchangeJoinText.JoinLocalButton(), AddressOf OnXJoinLocalClicked, "action.confirm")
+        _rowXLocalJoin = AdminFlow()
+        _rowXLocalJoin.Controls.Add(_btnXJoinLocal)
+        _rowXLocalJoin.Visible = False
+        _pnlXDevices.Controls.Add(_rowXLocalJoin)
+
+        _lblXJoinLocalStatus = AdminNote("")
+        _lblXJoinLocalStatus.Visible = False
+        _pnlXDevices.Controls.Add(_lblXJoinLocalStatus)
+
         sec.AddBodyRow(_pnlXDevices)
+
+        ' Published resources panel (spec 246 Group B)
+        _pnlXResources = XColumn()
+        _pnlXResources.Visible = False
+        _lblXResTitle = XMarkedBold(ExchangeAdminText.ResourcesTitle())
+        _pnlXResources.Controls.Add(_lblXResTitle)
+        _lvXResources = New ListView With {.View = View.Details, .FullRowSelect = True, .HideSelection = False, .MultiSelect = False,
+            .Width = ExchangeAdminWidth, .Height = 110, .Margin = New Padding(0, 2, 0, 2), .Visible = False,
+            .AccessibleName = ExchangeAdminText.ResourcesTitle()}
+        _lvXResources.Columns.Add(ExchangeAdminText.ColumnResourceName(), Me.LogicalToDeviceUnits(130))
+        _lvXResources.Columns.Add(ExchangeAdminText.ColumnSourceDevice(), Me.LogicalToDeviceUnits(100))
+        _lvXResources.Columns.Add(ExchangeAdminText.ColumnChannels(), Me.LogicalToDeviceUnits(90))
+        _lvXResources.Columns.Add(ExchangeAdminText.ColumnPinProtected(), Me.LogicalToDeviceUnits(70))
+        _lvXResources.Columns.Add(ExchangeAdminText.ColumnSealed(), Me.LogicalToDeviceUnits(70))
+        AddHandler _lvXResources.SelectedIndexChanged, Sub() ApplyAccountsView(refill:=False)
+        _pnlXResources.Controls.Add(_lvXResources)
+
+        _btnXUnpublishResource = XButton(ExchangeAdminText.UnpublishResourceButton(), AddressOf OnXUnpublishResource, "action.remove")
+        _btnXUnpublishResource.Visible = False
+        _rowXResButtons = AdminFlow()
+        _rowXResButtons.Controls.Add(_btnXUnpublishResource)
+        _pnlXResources.Controls.Add(_rowXResButtons)
+        _pnlXDevices.Controls.Add(_pnlXResources)
+
+        ' Live broadcasts panel (spec 246 Group A)
+        _pnlXBroadcasts = XColumn()
+        _pnlXBroadcasts.Visible = False
+        _lblXBroTitle = XMarkedBold(ExchangeAdminText.BroadcastsTitle())
+        _pnlXBroadcasts.Controls.Add(_lblXBroTitle)
+        _lvXBroadcasts = New ListView With {.View = View.Details, .FullRowSelect = True, .HideSelection = False, .MultiSelect = False,
+            .Width = ExchangeAdminWidth, .Height = 100, .Margin = New Padding(0, 2, 0, 2), .Visible = False,
+            .AccessibleName = ExchangeAdminText.BroadcastsTitle()}
+        _lvXBroadcasts.Columns.Add(ExchangeAdminText.ColumnBroadcastId(), Me.LogicalToDeviceUnits(120))
+        _lvXBroadcasts.Columns.Add(ExchangeAdminText.ColumnSourceDevice(), Me.LogicalToDeviceUnits(100))
+        _lvXBroadcasts.Columns.Add(ExchangeAdminText.ColumnKind(), Me.LogicalToDeviceUnits(80))
+        _lvXBroadcasts.Columns.Add(ExchangeAdminText.ColumnListeners(), Me.LogicalToDeviceUnits(80))
+        _lvXBroadcasts.Columns.Add(ExchangeAdminText.ColumnDuration(), Me.LogicalToDeviceUnits(80))
+        AddHandler _lvXBroadcasts.SelectedIndexChanged, Sub() ApplyAccountsView(refill:=False)
+        _pnlXBroadcasts.Controls.Add(_lvXBroadcasts)
+
+        _btnXStopBroadcast = XButton(ExchangeAdminText.StopBroadcastButton(), AddressOf OnXStopBroadcast, "action.remove")
+        _btnXStopBroadcast.Visible = False
+        _rowXBroButtons = AdminFlow()
+        _rowXBroButtons.Controls.Add(_btnXStopBroadcast)
+        _pnlXBroadcasts.Controls.Add(_rowXBroButtons)
+        _pnlXDevices.Controls.Add(_pnlXBroadcasts)
+
+        ' Clipboard slot panel (spec 246 Group C)
+        _pnlXClip = XColumn()
+        _pnlXClip.Visible = False
+        _lblXClipTitle = XMarkedBold(ExchangeAdminText.ClipboardTitle())
+        _pnlXClip.Controls.Add(_lblXClipTitle)
+        _lblXClipStatus = AdminNote("")
+        _lblXClipStatus.Margin = New Padding(0, 2, 0, 2)
+        _pnlXClip.Controls.Add(_lblXClipStatus)
+
+        _btnXClearClip = XButton(ExchangeAdminText.ClearClipboardButton(), AddressOf OnXClearClipboard, "action.remove")
+        _btnXClearClip.Visible = False
+        _rowXClipButtons = AdminFlow()
+        _rowXClipButtons.Controls.Add(_btnXClearClip)
+        _pnlXClip.Controls.Add(_rowXClipButtons)
+        _pnlXAccounts.Controls.Add(_pnlXClip)
 
         ' Invitations panel (spec 238)
         _pnlXInvitations = XColumn()
@@ -433,6 +567,7 @@ Partial Public NotInheritable Class Share_Settings_Form
         _lblXCertKind.Text = If(m.ShowFingerprint, ExchangeAdminText.CertificateKind(m.CertImported), "")
         _lblXCertKind.Visible = m.ShowFingerprint
         _rowXCert.Visible = m.ShowCertificateActions
+        _lblXRenewNote.Visible = m.ShowCertificateActions AndAlso Not m.CertImported
         _lblXCertService.Visible = m.ShowCertificateServiceNote
 
         If m.ShowAccounts Then
@@ -496,6 +631,10 @@ Partial Public NotInheritable Class Share_Settings_Form
     End Sub
 
     Private Async Sub OnXApplyEndpoint()
+        Await ApplyExchangeEndpointAsync()
+    End Sub
+
+    Private Async Function ApplyExchangeEndpointAsync() As Task
         If _exBusy OrElse Not EndpointPendingX() Then Return
         Dim text As String = _txtXEndpoint.Text.Trim()
         Dim verdict As ExchangeOperatorEndpoint.Verdict = ExchangeOperatorEndpoint.Check(text)
@@ -513,7 +652,7 @@ Partial Public NotInheritable Class Share_Settings_Form
         Finally
             If Not (IsDisposed OrElse Disposing) Then SetXBusy(False)
         End Try
-    End Sub
+    End Function
 
     Private Async Sub OnXCheckVisibilityClicked()
         Dim endpoint As String = If(_txtXEndpoint IsNot Nothing, _txtXEndpoint.Text.Trim(), "")
@@ -590,6 +729,10 @@ Partial Public NotInheritable Class Share_Settings_Form
     End Sub
 
     Private Async Sub OnXApplyRange()
+        Await ApplyExchangeRangeAsync()
+    End Sub
+
+    Private Async Function ApplyExchangeRangeAsync() As Task
         If _exBusy OrElse Not RangePendingX() OrElse RangeVerdictX() <> ExchangePortRangeRules.Verdict.Accepted Then Return
         Dim low As Integer = CInt(numXRangeLow.Value)
         Dim high As Integer = CInt(numXRangeHigh.Value)
@@ -608,16 +751,16 @@ Partial Public NotInheritable Class Share_Settings_Form
         Finally
             If Not (IsDisposed OrElse Disposing) Then SetXBusy(False)
         End Try
-    End Sub
+    End Function
 
     ' --- the certificate ----------------------------------------------------------------------------------
 
     ''' <summary>Replacing the identity asks TWICE and says what will happen to every enrolled device; both defaults are No.</summary>
     Private Async Sub OnXReplaceCertificate()
         If _exBusy Then Return
-        If MessageBox.Show(Me, ExchangeAdminText.ReplaceCertificateQuestion(), Me.Text, MessageBoxButtons.YesNo,
+        If ManagerBox.Show(Me, ExchangeAdminText.ReplaceCertificateQuestion(), Me.Text, MessageBoxButtons.YesNo,
                            MessageBoxIcon.Warning, MessageBoxDefaultButton.Button2) <> DialogResult.Yes Then Return
-        If MessageBox.Show(Me, ExchangeAdminText.ReplaceCertificateSure(), Me.Text, MessageBoxButtons.YesNo,
+        If ManagerBox.Show(Me, ExchangeAdminText.ReplaceCertificateSure(), Me.Text, MessageBoxButtons.YesNo,
                            MessageBoxIcon.Warning, MessageBoxDefaultButton.Button2) <> DialogResult.Yes Then Return
         Await RunXCertificate(Function() ExchangeProcess.ReplaceCertificate())
     End Sub
@@ -637,7 +780,7 @@ Partial Public NotInheritable Class Share_Settings_Form
             If ofd.ShowDialog(Me) <> DialogResult.OK Then Return
             keyPath = ofd.FileName
         End Using
-        If MessageBox.Show(Me, ExchangeAdminText.ImportCertificateQuestion(), Me.Text, MessageBoxButtons.YesNo,
+        If ManagerBox.Show(Me, ExchangeAdminText.ImportCertificateQuestion(), Me.Text, MessageBoxButtons.YesNo,
                            MessageBoxIcon.Warning, MessageBoxDefaultButton.Button2) <> DialogResult.Yes Then Return
         Await RunXCertificate(Function() ExchangeProcess.ImportCertificate(certPath, keyPath))
     End Sub
@@ -749,7 +892,7 @@ Partial Public NotInheritable Class Share_Settings_Form
     ''' <summary>Redraws the lists and which buttons exist from the last view and the selection, through the pure model.</summary>
     Private Sub ApplyAccountsView(Optional refill As Boolean = True)
         If _lvXAccounts Is Nothing Then Return
-        Dim m As ExchangeAccountsModel = ExchangeAccountsModel.Build(_exAccView, SelectedXAccountLogin(), SelectedXDeviceId(), SelectedXInvitationHash())
+        Dim m As ExchangeAccountsModel = ExchangeAccountsModel.Build(_exAccView, SelectedXAccountLogin(), SelectedXDeviceId(), SelectedXInvitationHash(), SelectedXResourceId(), SelectedXBroadcastId())
 
         _lblXAccTotals.Text = If(m.Reached, ExchangeAdminText.Totals(m.AccountCount, m.DeviceTotal), "")
         _lblXAccTotals.Visible = m.Reached
@@ -765,12 +908,17 @@ Partial Public NotInheritable Class Share_Settings_Form
         _btnXRemoveAccount.Visible = m.ShowRemove
 
         If refill AndAlso _exAccView IsNot Nothing AndAlso _exAccView.Reached Then FillXAccounts(_exAccView)
-        _lblXDevTitle.Text = If(m.ShowDevices, ExchangeAdminText.DevicesTitle(SelectedXAccountLogin()), "")
-        _lblXDevTitle.Visible = m.ShowDevices
+        _lblXDevTitle.Text = If(m.ShowDevices, ExchangeAdminText.DevicesTitle(SelectedXAccountLogin()), Localization.T("Подключённые устройства"))
+        _lblXDevTitle.Visible = m.Reached
+        If _lblXDevNoAcc IsNot Nothing Then _lblXDevNoAcc.Visible = m.Reached AndAlso Not m.ShowDevices
         _lvXDevices.Visible = m.ShowDevices
         If refill AndAlso m.ShowDevices Then FillXDevices(_exAccView)
         _btnXRevoke.Visible = m.ShowRevoke
         _rowXRevoke.Visible = m.ShowRevoke
+        Dim canLocalJoin As Boolean = m.Reached AndAlso ExchangeProcess.IsAvailable()
+        If _rowXLocalJoin IsNot Nothing Then _rowXLocalJoin.Visible = canLocalJoin
+        If _lblXJoinLocalNote IsNot Nothing Then _lblXJoinLocalNote.Visible = canLocalJoin
+        If _lblXJoinLocalStatus IsNot Nothing Then _lblXJoinLocalStatus.Visible = canLocalJoin AndAlso _lblXJoinLocalStatus.Text.Length > 0
 
         ' Invitations
         _lblXInvTitle.Visible = m.Reached
@@ -784,6 +932,39 @@ Partial Public NotInheritable Class Share_Settings_Form
         If refill AndAlso _exAccView IsNot Nothing AndAlso _exAccView.Reached Then
             FillXInvitations(_exAccView)
             ApplySharedInvState(_exAccView.SharedInvitation)
+        End If
+
+        ' Spec 246: External admin badge and audit log button
+        If _lblXAdminSessionBadge IsNot Nothing Then
+            _lblXAdminSessionBadge.Text = m.ExternalAdminBadgeText
+            _lblXAdminSessionBadge.Visible = m.ExternalAdminActive
+        End If
+        If _btnXAuditLog IsNot Nothing Then _btnXAuditLog.Visible = m.ShowAuditLog
+
+        ' Spec 246: Resources
+        If _pnlXResources IsNot Nothing Then
+            _pnlXResources.Visible = m.ShowResources
+            _lvXResources.Visible = m.ShowResources
+            _btnXUnpublishResource.Visible = m.ShowUnpublishResource
+            If refill AndAlso m.ShowResources AndAlso _exAccView IsNot Nothing AndAlso _exAccView.Reached Then
+                FillXResources(_exAccView)
+            End If
+        End If
+
+        ' Spec 246: Broadcasts
+        If _pnlXBroadcasts IsNot Nothing Then
+            _pnlXBroadcasts.Visible = m.ShowBroadcasts
+            _lvXBroadcasts.Visible = m.ShowBroadcasts
+            _btnXStopBroadcast.Visible = m.ShowStopBroadcast
+            If refill AndAlso m.ShowBroadcasts AndAlso _exAccView IsNot Nothing AndAlso _exAccView.Reached Then
+                FillXBroadcasts(_exAccView)
+            End If
+        End If
+
+        ' Spec 246: Clipboard
+        If _pnlXClip IsNot Nothing Then
+            _pnlXClip.Visible = m.ShowClipboard
+            ApplyClipboardState(m.ShowClipboard)
         End If
 
         If _built Then _root.PerformLayout()
@@ -818,7 +999,7 @@ Partial Public NotInheritable Class Share_Settings_Form
         Try
             _lvXAccounts.Items.Clear()
             For Each a As ExchangeAdminAccount In view.Accounts
-                Dim item As New ListViewItem(a.Login) With {.Tag = a.Login}
+                Dim item As New ListViewItem(a.Login) With {.Tag = a.Login, .ImageKey = "exchange"}
                 item.SubItems.Add(If(a.Kind = "guest", Localization.T("Гость"), Localization.T("Своё устройство или семья")))
                 item.SubItems.Add(a.Devices.ToString(CultureInfo.CurrentCulture))
                 item.SubItems.Add(FormatLastSeen(a.CreatedAt))
@@ -1023,7 +1204,7 @@ Partial Public NotInheritable Class Share_Settings_Form
         Dim wanted As Boolean = _chkXKeepPasswords.Checked
         If wanted = _exSettings.KeepAccountPasswords Then Return
         Dim question As String = If(wanted, ExchangeAdminText.KeepPasswordsConfirmOn(), ExchangeAdminText.KeepPasswordsConfirmOff())
-        If MessageBox.Show(Me, question, Me.Text, MessageBoxButtons.YesNo, MessageBoxIcon.Warning, MessageBoxDefaultButton.Button2) <> DialogResult.Yes Then
+        If ManagerBox.Show(Me, question, Me.Text, MessageBoxButtons.YesNo, MessageBoxIcon.Warning, MessageBoxDefaultButton.Button2) <> DialogResult.Yes Then
             _exKeepLoading = True
             _chkXKeepPasswords.Checked = Not wanted
             _exKeepLoading = False
@@ -1031,7 +1212,7 @@ Partial Public NotInheritable Class Share_Settings_Form
         End If
         If Not wanted Then ExchangeAccountPasswordStore.CreateDefault().Clear()
         _exSettings.KeepAccountPasswords = wanted
-        Try : _exSettings.Save() : Catch : End Try
+        Try : _exSettings.Save() : NotifySettingsChanged() : Catch : End Try
         ApplyAccountsView(refill:=False)
     End Sub
 
@@ -1040,7 +1221,7 @@ Partial Public NotInheritable Class Share_Settings_Form
         If _exBusy Then Return
         Dim login As String = SelectedXAccountLogin()
         If login.Length = 0 Then Return
-        If MessageBox.Show(Me, ExchangeAdminText.RemoveAccountQuestion(login), Me.Text, MessageBoxButtons.YesNo,
+        If ManagerBox.Show(Me, ExchangeAdminText.RemoveAccountQuestion(login), Me.Text, MessageBoxButtons.YesNo,
                            MessageBoxIcon.Warning, MessageBoxDefaultButton.Button2) <> DialogResult.Yes Then Return
         SetXBusy(True)
         Try
@@ -1063,7 +1244,7 @@ Partial Public NotInheritable Class Share_Settings_Form
         Dim id As String = SelectedXDeviceId()
         If login.Length = 0 OrElse id.Length = 0 Then Return
         Dim name As String = _lvXDevices.SelectedItems(0).Text
-        If MessageBox.Show(Me, ExchangeAdminText.RevokeDeviceQuestion(name), Me.Text, MessageBoxButtons.YesNo,
+        If ManagerBox.Show(Me, ExchangeAdminText.RevokeDeviceQuestion(name), Me.Text, MessageBoxButtons.YesNo,
                            MessageBoxIcon.Warning, MessageBoxDefaultButton.Button2) <> DialogResult.Yes Then Return
         SetXBusy(True)
         Try
@@ -1082,6 +1263,186 @@ Partial Public NotInheritable Class Share_Settings_Form
         If _lvXInvitations Is Nothing OrElse _lvXInvitations.SelectedItems.Count = 0 Then Return ""
         Return If(TryCast(_lvXInvitations.SelectedItems(0).Tag, String), "")
     End Function
+
+    Private Function SelectedXResourceId() As String
+        If _lvXResources Is Nothing OrElse _lvXResources.SelectedItems.Count = 0 Then Return ""
+        Return If(TryCast(_lvXResources.SelectedItems(0).Tag, String), "")
+    End Function
+
+    Private Function SelectedXBroadcastId() As String
+        If _lvXBroadcasts Is Nothing OrElse _lvXBroadcasts.SelectedItems.Count = 0 Then Return ""
+        Return If(TryCast(_lvXBroadcasts.SelectedItems(0).Tag, String), "")
+    End Function
+
+    Private Shared Function FormatBytes(bytes As Long) As String
+        If bytes < 1024L Then Return bytes.ToString(CultureInfo.CurrentCulture) & " B"
+        If bytes < 1024L * 1024L Then Return (bytes / 1024.0).ToString("F1", CultureInfo.CurrentCulture) & " KB"
+        Return (bytes / (1024.0 * 1024.0)).ToString("F1", CultureInfo.CurrentCulture) & " MB"
+    End Function
+
+    Private Sub ApplyClipboardState(showClipboard As Boolean)
+        If _pnlXClip Is Nothing Then Return
+        If Not showClipboard OrElse _exAccView Is Nothing OrElse _exAccView.ClipboardSlot Is Nothing OrElse Not _exAccView.ClipboardSlot.Present Then
+            _lblXClipStatus.Text = ExchangeAdminText.ClipboardEmpty()
+            _btnXClearClip.Visible = False
+            Return
+        End If
+        Dim c As ExchangeAdminClipboardInfo = _exAccView.ClipboardSlot
+        Dim sizeStr As String = FormatBytes(c.SizeBytes)
+        Dim devStr As String = If(Not String.IsNullOrEmpty(c.SourceDeviceName), c.SourceDeviceName, c.SourceDeviceId)
+        Dim lines As New List(Of String)()
+        lines.Add(Localization.TF("Тип: {0} ({1}), Размер: {2}", c.Kind, If(String.IsNullOrEmpty(c.MimeType), "unknown", c.MimeType), sizeStr))
+        If Not String.IsNullOrEmpty(devStr) Then
+            lines.Add(Localization.TF("Источник: {0}", devStr))
+        End If
+        If Not String.IsNullOrEmpty(c.StoredAt) Then
+            lines.Add(Localization.TF("Время: {0}", FormatLastSeen(c.StoredAt)))
+        End If
+        If c.Sealed Then
+            lines.Add(ExchangeAdminText.ClipboardSealedNote())
+        End If
+        _lblXClipStatus.Text = String.Join(vbCrLf, lines)
+        _btnXClearClip.Visible = True
+    End Sub
+
+    Private Sub FillXResources(view As ExchangeAccountsView)
+        Dim keys As List(Of String) = view.Resources.Select(Function(r) r.ResourceId).ToList()
+        If SameKeys(_lvXResources, keys) Then
+            For i As Integer = 0 To keys.Count - 1
+                Dim r As ExchangeAdminResource = view.Resources(i)
+                Dim item As ListViewItem = _lvXResources.Items(i)
+                SetSubItem(item, 1, If(Not String.IsNullOrEmpty(r.DeviceName), r.DeviceName, r.DeviceId))
+                SetSubItem(item, 2, String.Join(", ", r.Channels))
+                SetSubItem(item, 3, If(r.PinProtected, Localization.T("Да"), Localization.T("Нет")))
+                SetSubItem(item, 4, If(r.Sealed, Localization.T("Да"), Localization.T("Нет")))
+            Next
+            Return
+        End If
+        Dim selected As String = SelectedXResourceId()
+        Dim restore As ListViewItem = Nothing
+        _lvXResources.BeginUpdate()
+        Try
+            _lvXResources.Items.Clear()
+            For Each r As ExchangeAdminResource In view.Resources
+                Dim item As New ListViewItem(r.Name) With {.Tag = r.ResourceId}
+                item.SubItems.Add(If(Not String.IsNullOrEmpty(r.DeviceName), r.DeviceName, r.DeviceId))
+                item.SubItems.Add(String.Join(", ", r.Channels))
+                item.SubItems.Add(If(r.PinProtected, Localization.T("Да"), Localization.T("Нет")))
+                item.SubItems.Add(If(r.Sealed, Localization.T("Да"), Localization.T("Нет")))
+                _lvXResources.Items.Add(item)
+                If String.Equals(r.ResourceId, selected, StringComparison.Ordinal) Then restore = item
+            Next
+        Finally
+            _lvXResources.EndUpdate()
+        End Try
+        If restore IsNot Nothing Then restore.Selected = True
+    End Sub
+
+    Private Sub FillXBroadcasts(view As ExchangeAccountsView)
+        Dim keys As List(Of String) = view.Broadcasts.Select(Function(b) b.BroadcastId).ToList()
+        If SameKeys(_lvXBroadcasts, keys) Then
+            For i As Integer = 0 To keys.Count - 1
+                Dim b As ExchangeAdminBroadcast = view.Broadcasts(i)
+                Dim item As ListViewItem = _lvXBroadcasts.Items(i)
+                SetSubItem(item, 1, If(Not String.IsNullOrEmpty(b.DeviceName), b.DeviceName, b.DeviceId))
+                SetSubItem(item, 2, b.Kind)
+                SetSubItem(item, 3, b.ListenersCount.ToString(CultureInfo.CurrentCulture) & If(b.MaxListeners > 0, " / " & b.MaxListeners.ToString(CultureInfo.CurrentCulture), ""))
+                SetSubItem(item, 4, TimeSpan.FromSeconds(b.ActiveSeconds).ToString("g", CultureInfo.CurrentCulture))
+            Next
+            Return
+        End If
+        Dim selected As String = SelectedXBroadcastId()
+        Dim restore As ListViewItem = Nothing
+        _lvXBroadcasts.BeginUpdate()
+        Try
+            _lvXBroadcasts.Items.Clear()
+            For Each b As ExchangeAdminBroadcast In view.Broadcasts
+                Dim item As New ListViewItem(b.BroadcastId) With {.Tag = b.BroadcastId}
+                item.SubItems.Add(If(Not String.IsNullOrEmpty(b.DeviceName), b.DeviceName, b.DeviceId))
+                item.SubItems.Add(b.Kind)
+                item.SubItems.Add(b.ListenersCount.ToString(CultureInfo.CurrentCulture) & If(b.MaxListeners > 0, " / " & b.MaxListeners.ToString(CultureInfo.CurrentCulture), ""))
+                item.SubItems.Add(TimeSpan.FromSeconds(b.ActiveSeconds).ToString("g", CultureInfo.CurrentCulture))
+                _lvXBroadcasts.Items.Add(item)
+                If String.Equals(b.BroadcastId, selected, StringComparison.Ordinal) Then restore = item
+            Next
+        Finally
+            _lvXBroadcasts.EndUpdate()
+        End Try
+        If restore IsNot Nothing Then restore.Selected = True
+    End Sub
+
+    Private Async Sub OnXUnpublishResource()
+        If _exBusy Then Return
+        Dim account As String = SelectedXAccountLogin()
+        Dim resId As String = SelectedXResourceId()
+        If String.IsNullOrEmpty(account) OrElse String.IsNullOrEmpty(resId) Then Return
+        Dim r = If(_exAccView IsNot Nothing, _exAccView.Resources.FirstOrDefault(Function(x) String.Equals(x.ResourceId, resId, StringComparison.Ordinal)), Nothing)
+        Dim resName As String = If(r IsNot Nothing, r.Name, resId)
+        If ManagerBox.Show(Me, ExchangeAdminText.UnpublishResourceConfirm(resName), Me.Text, MessageBoxButtons.YesNo,
+                           MessageBoxIcon.Warning, MessageBoxDefaultButton.Button2) <> DialogResult.Yes Then Return
+        SetXBusy(True)
+        Try
+            Dim reply As ExchangeAdminReply = Await ExchangeAdmin.UnpublishResourceAsync(account, resId, CancellationToken.None)
+            If IsDisposed OrElse Disposing Then Return
+            ShowXResult(If(reply.Ok, Localization.TF("Ресурс «{0}» снят с публикации.", resName), ExchangeAdminText.Failure(reply.Code)), reply.Ok)
+            Await RefreshAccountsAsync()
+        Catch ex As Exception
+            AppFileLogger.LogException("Exchange: unpublishing resource", ex)
+        Finally
+            If Not (IsDisposed OrElse Disposing) Then SetXBusy(False)
+        End Try
+    End Sub
+
+    Private Async Sub OnXStopBroadcast()
+        If _exBusy Then Return
+        Dim account As String = SelectedXAccountLogin()
+        Dim broId As String = SelectedXBroadcastId()
+        If String.IsNullOrEmpty(account) OrElse String.IsNullOrEmpty(broId) Then Return
+        If ManagerBox.Show(Me, ExchangeAdminText.StopBroadcastConfirm(broId), Me.Text, MessageBoxButtons.YesNo,
+                           MessageBoxIcon.Warning, MessageBoxDefaultButton.Button2) <> DialogResult.Yes Then Return
+        SetXBusy(True)
+        Try
+            Dim reply As ExchangeAdminReply = Await ExchangeAdmin.EndBroadcastAsync(account, broId, CancellationToken.None)
+            If IsDisposed OrElse Disposing Then Return
+            ShowXResult(If(reply.Ok, Localization.TF("Трансляция «{0}» остановлена.", broId), ExchangeAdminText.Failure(reply.Code)), reply.Ok)
+            Await RefreshAccountsAsync()
+        Catch ex As Exception
+            AppFileLogger.LogException("Exchange: stopping broadcast", ex)
+        Finally
+            If Not (IsDisposed OrElse Disposing) Then SetXBusy(False)
+        End Try
+    End Sub
+
+    Private Async Sub OnXClearClipboard()
+        If _exBusy Then Return
+        Dim account As String = SelectedXAccountLogin()
+        If String.IsNullOrEmpty(account) Then Return
+        If ManagerBox.Show(Me, ExchangeAdminText.ClearClipboardConfirm(account), Me.Text, MessageBoxButtons.YesNo,
+                           MessageBoxIcon.Warning, MessageBoxDefaultButton.Button2) <> DialogResult.Yes Then Return
+        SetXBusy(True)
+        Try
+            Dim reply As ExchangeAdminReply = Await ExchangeAdmin.EraseClipboardAsync(account, CancellationToken.None)
+            If IsDisposed OrElse Disposing Then Return
+            ShowXResult(If(reply.Ok, Localization.TF("Буфер обмена учётной записи «{0}» очищен.", account), ExchangeAdminText.Failure(reply.Code)), reply.Ok)
+            Await RefreshAccountsAsync()
+        Catch ex As Exception
+            AppFileLogger.LogException("Exchange: clearing clipboard", ex)
+        Finally
+            If Not (IsDisposed OrElse Disposing) Then SetXBusy(False)
+        End Try
+    End Sub
+
+    Private Sub OnXAuditLogClicked()
+        If _exAccView Is Nothing OrElse _exAccView.Audit Is Nothing Then
+            Using dlg As New Exchange_Admin_Audit_Form(New ExchangeAdminAuditView())
+                dlg.ShowDialog(Me)
+            End Using
+        Else
+            Using dlg As New Exchange_Admin_Audit_Form(_exAccView.Audit)
+                dlg.ShowDialog(Me)
+            End Using
+        End If
+    End Sub
 
     Private Sub ApplySharedInvState(sharedInv As ExchangeAdminSharedInvitation)
         If _chkXSharedInv Is Nothing Then Return
@@ -1199,7 +1560,7 @@ Partial Public NotInheritable Class Share_Settings_Form
         If _exBusy Then Return
         Dim hash As String = SelectedXInvitationHash()
         If hash.Length = 0 Then Return
-        If MessageBox.Show(Me, Localization.T("Отозвать выбранное приглашение? Код перестанет действовать."), Me.Text,
+        If ManagerBox.Show(Me, Localization.T("Отозвать выбранное приглашение? Код перестанет действовать."), Me.Text,
                            MessageBoxButtons.YesNo, MessageBoxIcon.Warning, MessageBoxDefaultButton.Button2) <> DialogResult.Yes Then Return
         SetXBusy(True)
         Try
@@ -1218,7 +1579,7 @@ Partial Public NotInheritable Class Share_Settings_Form
         If _loadingXSharedInv OrElse _exBusy Then Return
         Dim wanted As Boolean = _chkXSharedInv.Checked
         If Not wanted Then
-            If MessageBox.Show(Me, Localization.T("Отключить общий пароль приглашения? Новые регистрации по нему станут невозможны."),
+            If ManagerBox.Show(Me, Localization.T("Отключить общий пароль приглашения? Новые регистрации по нему станут невозможны."),
                                Me.Text, MessageBoxButtons.YesNo, MessageBoxIcon.Warning, MessageBoxDefaultButton.Button2) <> DialogResult.Yes Then
                 _loadingXSharedInv = True
                 _chkXSharedInv.Checked = True
@@ -1287,5 +1648,108 @@ Partial Public NotInheritable Class Share_Settings_Form
             If Not (IsDisposed OrElse Disposing) Then SetXBusy(False)
         End Try
     End Sub
+
+    Private Async Sub OnXJoinLocalClicked()
+        Dim preferredLogin As String = SelectedXAccountLogin()
+        Await PerformLocalJoinAsync(_lblXJoinLocalStatus, _btnXJoinLocal, preferredLogin)
+    End Sub
+
+    Private Async Function PerformLocalJoinAsync(statusLabel As Label, triggerButton As Button, preferredLogin As String) As Task
+        If _exBusy OrElse _accBusy Then Return
+        If triggerButton IsNot Nothing Then triggerButton.Enabled = False
+        If statusLabel IsNot Nothing Then
+            statusLabel.ForeColor = ThemeService.Palette.TextMuted
+            statusLabel.Text = Localization.T("Подключение..")
+            statusLabel.Visible = True
+        End If
+
+        Try
+            Dim ports As New ExchangeLocalJoinPorts()
+            Dim explicitLogin As String = If(Not String.IsNullOrEmpty(preferredLogin), preferredLogin.Trim(), Nothing)
+
+            If String.IsNullOrEmpty(explicitLogin) Then
+                Dim listed As ExchangeAdminReply = Await ports.ListAccountsAsync(CancellationToken.None).ConfigureAwait(False)
+                If listed.Ok AndAlso listed.Route = ExchangeAdminRoute.Pipe Then
+                    Dim accountList As List(Of ExchangeAdminAccount) = ExchangeAdminParser.Accounts(listed.DataJson)
+                    If accountList.Count > 1 Then
+                        Dim logins As List(Of String) = accountList.Select(Function(a) a.Login).ToList()
+                        Dim chosenLogin As String = Nothing
+                        Dim dlgResult As DialogResult = DialogResult.Cancel
+
+                        Dim showPickerAction As Action = Sub()
+                            Using dlg As New Exchange_Local_Account_Picker_Form(logins)
+                                dlgResult = dlg.ShowDialog(Me)
+                                If dlgResult = DialogResult.OK Then chosenLogin = dlg.SelectedLogin
+                            End Using
+                        End Sub
+
+                        If InvokeRequired Then
+                            Invoke(showPickerAction)
+                        Else
+                            showPickerAction()
+                        End If
+
+                        If dlgResult <> DialogResult.OK OrElse String.IsNullOrEmpty(chosenLogin) Then
+                            If statusLabel IsNot Nothing Then
+                                If InvokeRequired Then
+                                    Invoke(New Action(Sub() statusLabel.Text = ""))
+                                Else
+                                    statusLabel.Text = ""
+                                End If
+                            End If
+                            Return
+                        End If
+                        explicitLogin = chosenLogin
+                    End If
+                End If
+            End If
+
+            Dim outcome As ExchangeLocalJoinOutcome = Await ExchangeLocalJoin.JoinLocalAsync(ports, explicitLogin, CancellationToken.None).ConfigureAwait(False)
+            Dim outcomeText As String = ExchangeJoinText.LocalJoinOutcomeText(outcome)
+            Dim isSuccess As Boolean = (outcome = ExchangeLocalJoinOutcome.Joined OrElse outcome = ExchangeLocalJoinOutcome.AlreadyJoined)
+
+            Dim updateUiAction As Action = Sub()
+                If statusLabel IsNot Nothing Then
+                    statusLabel.ForeColor = If(isSuccess, ThemeService.Palette.TextPrimary, CollapsibleSection.AttentionColor)
+                    statusLabel.Text = outcomeText
+                    statusLabel.Visible = True
+                End If
+                If _secAccount IsNot Nothing Then ApplyAccountState()
+                If _secExchange IsNot Nothing Then
+                    Dim t1 As Task = RefreshExchangeAsync()
+                    Dim t2 As Task = RefreshAccountsAsync()
+                End If
+            End Sub
+
+            If InvokeRequired Then
+                Invoke(updateUiAction)
+            Else
+                updateUiAction()
+            End If
+        Catch ex As Exception
+            AppFileLogger.LogException("Exchange local join", ex)
+            Dim errorAction As Action = Sub()
+                If statusLabel IsNot Nothing Then
+                    statusLabel.ForeColor = CollapsibleSection.AttentionColor
+                    statusLabel.Text = Localization.T("Не удалось подключиться к локальному серверу.")
+                    statusLabel.Visible = True
+                End If
+            End Sub
+            If InvokeRequired Then
+                Invoke(errorAction)
+            Else
+                errorAction()
+            End If
+        Finally
+            Dim enableAction As Action = Sub()
+                If triggerButton IsNot Nothing Then triggerButton.Enabled = True
+            End Sub
+            If InvokeRequired Then
+                Invoke(enableAction)
+            Else
+                enableAction()
+            End If
+        End Try
+    End Function
 
 End Class

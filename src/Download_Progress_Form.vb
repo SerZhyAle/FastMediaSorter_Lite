@@ -88,18 +88,20 @@ Friend NotInheritable Class Download_Progress_Form
                                     .RightToLeft = RightToLeft.No}
         amount = New Label With {.AutoSize = True, .MaximumSize = New Size(460, 0), .Margin = New Padding(0, 0, 0, 10),
                                  .ForeColor = SystemColors.GrayText, .Text = ""}
-        btn_Cancel = New Button With {.AutoSize = True, .MinimumSize = New Size(90, 28),
-                                        .Anchor = AnchorStyles.Right, .Text = Localization.T("Отмена")}
+        btn_Cancel = New Button With {.Text = Localization.T("Отмена")}
         AddHandler btn_Cancel.Click, AddressOf CancelRequested
-        ' The window's CancelButton: the dismissing answer. The button is AutoSize, so the window grows for the glyph.
-        ButtonGlyphs.Apply(btn_Cancel, "action.cancel", ButtonGlyphRole.Dismissing)
+        ' The dismissing answer, in the shared button row (ticket 243 T-8a, BUTTONS 2.0 sections 3 and 4): the width
+        ' follows the caption and its glyph, the row sizes itself and sits against the reading end. Bind makes it
+        ' the window's CancelButton (Escape) and, being the only answer, the one Enter selects.
+        Dim answers As New DialogButtonRow() With {.AutoSize = True, .Anchor = AnchorStyles.Right, .Name = "download_Buttons"}
+        answers.Add(btn_Cancel, DialogButtonRole.Dismissing, "action.cancel")
 
         layout.Controls.Add(caption)
         layout.Controls.Add(bar)
         layout.Controls.Add(amount)
-        layout.Controls.Add(btn_Cancel)
+        layout.Controls.Add(answers)
         Me.Controls.Add(layout)
-        Me.CancelButton = btn_Cancel
+        answers.Bind(Me)
     End Sub
 
     ''' <summary>
@@ -204,30 +206,4 @@ Friend NotInheritable Class Download_Progress_Form
     End Sub
 
 End Class
-
-''' <summary>The words around a download, shared by every caller of the dialog.</summary>
-Friend Module DownloadMessages
-
-    ''' <summary>Cancelling is an outcome, not a failure: its own sentence, informational.</summary>
-    Friend Sub ShowCancelled(owner As IWin32Window, what As String)
-        Dim words As String = Localization.TF("Загрузка «{0}» отменена. Ничего не установлено; её можно запустить снова.", what)
-        ' The user's own Cancel is answered on the status line, not with a modal box (124 UX-208): a box for news.
-        Dim viewer As Main_Form = ViewerDialogPrep.FindViewer(owner)
-        If viewer IsNot Nothing Then
-            viewer.Notify(words, NotifyLevel.Info)
-        Else
-            ViewerBox.Show(owner, words, ProductNames.Full, MessageBoxButtons.OK, MessageBoxIcon.Information)
-        End If
-    End Sub
-
-    ''' <summary>A failed download: the cause and the actions, Retry first. True = retry.</summary>
-    Friend Function AskRetry(owner As IWin32Window, what As String, failure As Exception) As Boolean
-        AppFileLogger.LogException("Download failed: " & what, failure)
-        Return ViewerBox.Show(owner,
-                               Localization.TF("Не удалось загрузить «{0}».", what) & Environment.NewLine & Environment.NewLine &
-                               FailureText.Describe(failure),
-                               ProductNames.Full, MessageBoxButtons.RetryCancel, MessageBoxIcon.Warning) = DialogResult.Retry
-    End Function
-
-End Module
 #End If

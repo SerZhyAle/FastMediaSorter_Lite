@@ -3,7 +3,7 @@
 | | |
 | --- | --- |
 | **Ids** | `ICON-SET`, `ICON-RENDER`, `ICON-EXTERNAL` |
-| **Version** | catalog 0.33 / 0.19 / 0.12, all draft (read 2026-10-16, specification 235). **Implemented: partial 0.33 / partial 0.19 / 0.12** - the vendored vocabulary and the 105 catalog glyphs this product renders (none product-drawn: `action.replace` is the catalog's since 0.31) were re-imported at 0.33 on 2026-10-16 (`assets/glyphs/PROVENANCE.txt`, `tools/Sync-IconGlyphs.ps1 -Check` exit 0); the set stays partial under the dated exceptions in the registry. Since 0.30 the catalog added 14 records (0.31: seven, 0.32: the six exchange meanings of `DEVICE-EXCHANGE` item CW, 0.33: `action.retry`), changed no shipped glyph and turned `action.email` active; `ICON-RENDER` and `ICON-EXTERNAL` did not move |
+| **Version** | catalog 0.36 / 0.24 / 0.12, all draft (read 2026-10-20, specification 244). The vendored vocabulary and the 106 glyph files this product renders (105 catalog records and the `action.pin--off` state; none product-drawn) are imported at these versions: `assets/glyphs/PROVENANCE.txt` names them and `tools/Sync-IconGlyphs.ps1 -Check` exits 0 (2026-10-20). Since 0.33 the catalog made the `app.help` names normative and gave `action.paste` its 1 px inset (0.34), added `app.tour` (0.35), turned `action.paste` active (0.36), and moved the button, group-marker, navigation-policy and size-floor rules out of `ICON-RENDER` into the UI contracts (`ICON-RENDER` 0.20 to 0.24); `ICON-EXTERNAL` did not move. The registry row and its dated exceptions say what is proven |
 | **Home** | `iconography/README.md` in the shared contracts catalog |
 | **Role here** | consumer - viewer, Share Manager and product site; `specification 027` (local specification) |
 
@@ -39,20 +39,39 @@ fails until its inline copies follow.
   `IconMap` and an id in the sync script.
 - **`tool.brush` was split (0.28, a MAJOR's cost in a draft):** the vendored brush is now the Material brush,
   never the pencil of `action.edit`; the editor's Brush tool uses it and `IconographyContractTests` fails if
-  the two drawings coincide. Rule 6 (re-counted 2026-10-16 from the vendored vocabulary): **21 of the 105 vendored
-  ids are `proposed` in 0.33**, among them `action.convert-to-video`, `action.choose-file`, `action.choose-folder`
-  and `content.disk-container`; none has reached a released version yet (the last release has no
-  `assets/glyphs`), so release 46 is this product's first shipment of every one of them and the "first product
-  to ship it" report is owed with it (239 CR-20).
+  the two drawings coincide. Rule 6 (re-counted 2026-10-20 from the vendored vocabulary): **21 of the 105 vendored
+  records are `proposed` in 0.36**, among them `app.tour`, `action.convert-to-video`, `action.choose-file`,
+  `action.choose-folder` and `content.disk-container`; none has reached a released version yet (the last release
+  has no `assets/glyphs`), so release 46 is this product's first shipment of every one of them and the "first
+  product to ship it" report is owed with it (239 CR-20).
 - **`ICON-RENDER` 0.17 / 0.18:** a Windows product that declares itself pointer-first may size to the 28 px floor
-  without detecting touch. This product has not made that declaration - it is the owner's - so the coarse-input
-  question stays an open exception. The web floor (28 CSS px fine pointer, 44 coarse) is the site's. Rule 7 (0.18)
-  keeps `media.previous` / `media.next` fixed except for the pages and chapters of a document; the viewer mirrors
-  its previous / next **file** buttons in a right-to-left layout, which the text neither allows nor forbids -
-  recorded as an exception and put to the owner as a proposal.
+  without detecting touch. This product has not made that declaration - it is the owner's. Since 0.24 the target
+  floors of the components `UI-SIZING` covers are that contract's (see the [UNIFIED-UI pointer](UNIFIED-UI.md)); rule 5
+  still holds for everything else. The web floor (28 CSS px fine pointer, 44 coarse) is the site's. Rule 7 (0.18)
+  keeps `media.previous` / `media.next` fixed when they step files, tracks or slides (transport) and mirrored only
+  for the pages and chapters of a document; the viewer mirrors its previous / next **file** buttons in a
+  right-to-left layout (the same pair also pages the entries of a comic archive, which the viewer cannot tell from
+  a folder of photos) - a dated exception in the registry.
 - **`ICON-EXTERNAL` 0.12:** rule 3 (a document's own images) has no subject here. Rule 6 (endonyms, never flags)
   holds on the .NET 10 build since 2026-10-04 (`LanguageSelectorContractTests`); the x86 fallback keeps its flags
   under the maintenance policy.
+
+## What 0.34-0.36 and `ICON-RENDER` 0.20-0.24 ask of this product (read 2026-10-20)
+
+- **`app.help` (0.34)** explains an option or the window it is in, and F1 asks for the same; its thirteen names are
+  normative and are carried word for word, never re-translated per product. It stays distinct from `app.info`.
+- **`app.tour` (0.35)**: replaying a welcome or a tour is `app.tour`, never `app.help` or `app.info`. It is
+  `proposed`, so the rule 6 first-shipper report applies to it.
+- **Dialog verbs (0.34)**: skipping the current item and going on is the qualified `media.next`; a show-password
+  control draws `action.reveal` once the complete pair is exported, and until then its dated mapping stays an
+  explicit migration exception.
+- **`action.paste` (0.34; `active` since 0.36)**: the catalog's export carries a 1 px inset inside the 1..23 live
+  area of the grid; a consumer re-imports it and never redraws it.
+- **`ICON-RENDER` 0.20 to 0.24**: section 14 (button rendering) is a pointer to `BUTTONS`; a group header's
+  current-state marker is `COLLAPSIBLE-GROUP`'s (section 20), not `nav.expand` / `nav.collapse`; the identity inks of
+  section 11 apply under one colour-or-monochrome policy for the whole settings navigation
+  (`SETTINGS-NAVIGATION`); size floors and profiles of the covered components are `UI-SIZING`'s (the
+  [UNIFIED-UI pointer](UNIFIED-UI.md) names the five contracts).
 
 **What the product reads of the catalog.** Its tests read only the `id` of each vendored record and its renderer
 reads the SVG subset of `ICON-RENDER` rule 1 (`src/Icons/SvgPathData.vb`, `GlyphRenderer.vb`; a malformed file throws
@@ -62,13 +81,13 @@ field, so the section 5 defaults for an unknown value do not arise. **`vocabular
 the `-Check` and the import mode, accepts a higher MINOR and never guesses a malformed or missing carrier
 (`tests/Integration/IconCatalogCarrier.ps1`, run by hand; the earlier dated exception is closed in the registry).
 
-## Adoption still open (read 2026-10-16)
+## Adoption still open (read 2026-10-20)
 
-Two catalog records exist where the product still draws the nearest meaning: "Skip" draws `media.next`
-(`action.skip`, 0.31) and "Create desktop shortcuts" draws `action.add` (`action.create-shortcut`, 0.31). The
+One catalog record exists where the product still draws the nearest meaning: "Create desktop shortcuts" draws
+`action.add` (`action.create-shortcut`, 0.31); "Skip" drawing `media.next` is the 0.34 reading, not a gap. The
 `feature.server-relay` record is vendored and drawn by no control. Not checked: the inline `data-glyph` copies on
-the site pages against 0.33, and the names of the 0.31-0.33 records in the ten further languages. All four are
-in the registry's dated exception on `ICON-SET` and in 239 CR-20.
+the site pages against 0.36, and the names of the 0.31-0.36 records in the ten further languages. The open items
+are in the registry's dated exception on `ICON-SET` and in 239 CR-20.
 
 ## Deviations still open
 
@@ -79,3 +98,6 @@ for adopting `action.reveal` - keep their pre-contract pictures and are listed, 
 (`ICON-RENDER` 0.18 section 11, the ink table `src/SettingsNavIconPalette.vb` with its 3 : 1 gates). The site
 theme switch still draws the kit's `◐` where `app.theme` is the decided glyph. The x86 fallback keeps its Unicode
 toolbar and its flags.
+
+The two exchange-server controls use the unmodified `EXCHANGE-MARK` 0.3 mono artwork while
+`PROPOSAL-2026-10-19-exchange-server-mark.md` awaits acceptance; their vocabulary ids stay empty.

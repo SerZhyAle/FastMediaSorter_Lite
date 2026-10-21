@@ -418,6 +418,11 @@ Partial Public NotInheritable Class Localization
             "اندرونی خرابی: {0}۔ ممکن ہے آخری عمل مکمل نہ ہوا ہو؛ تفصیل لاگ میں ہے۔",
             "内部错误：{0}。上一个操作可能未完成；详情见日志。")
 
+        ' --- ticket 243 T-11a: the accessible name of an option's help button (BOOLEAN-OPTION 2.0 section 4 rule 4) --
+        Add("Справка: {0}",
+            "Help: {0}", "Довідка: {0}", "Hilfe: {0}", "Aiuto: {0}", "Ayuda: {0}", "Aide : {0}", "Ajuda: {0}",
+            "مساعدة: {0}", "सहायता: {0}", "সহায়তা: {0}", "مدد: {0}", "帮助：{0}")
+
     End Sub
 
 End Class

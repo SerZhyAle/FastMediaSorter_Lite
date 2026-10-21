@@ -274,8 +274,8 @@ into a private SFTP server for folders you pick, so the Android app can browse t
 on your home Wi-Fi or over the internet - after a one-time QR pairing. Sharing is strictly opt-in and
 stays between your own devices; nothing is uploaded to any third party. Sharing runs while you are
 signed in. The same program family also has an always-on Server edition, which hosts the same sharing
-as a Windows service, and FileDO virtual-disk hosting; neither is part of the Store version - both
-are available from the project website and winget.
+as a Windows service, and FileDO virtual-disk hosting, a capability of sharing; these are not part of
+the Store version - they are available from the project website and winget.
 
 Optional on-image OCR translation recognizes text in a picture (fully offline, Tesseract) and overlays
 a translation using a provider you configure yourself - a local Ollama model or a LibreTranslate
@@ -331,8 +331,8 @@ Internet Explorer больше нет, и теперь с полноценной
 Раздача включается только по вашему желанию и остаётся между вашими устройствами; никуда на сторону
 ничего не выгружается. Раздача работает, пока вы вошли в систему. У того же семейства программ есть
 ещё серверная редакция, которая поднимает ту же раздачу как службу Windows, и хостинг виртуальных
-дисков FileDO; ни то ни другое в версию из Store не входит - всё это доступно на сайте проекта и
-через winget.
+дисков FileDO - возможность раздачи; в версию из Store не входит ни то ни другое - всё это доступно
+на сайте проекта и через winget.
 
 Необязательный перевод текста прямо на картинке: распознавание полностью офлайн (Tesseract) и
 наложение перевода через выбранного вами провайдера - локальную модель Ollama или сервер

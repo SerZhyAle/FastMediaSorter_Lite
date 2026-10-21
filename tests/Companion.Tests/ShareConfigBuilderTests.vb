@@ -348,23 +348,146 @@ Public Class ShareConfigBuilderTests
         End Try
     End Sub
 
-    ''' <summary>Phase 4 - pins TODAY's behaviour while the owner decides (registry exception):
-    ''' a port-forward the worker's connect-back found closed is still exported, and the
-    ''' accessNote says so. If the owner keeps "a dead entry is a bug", this test flips.</summary>
+    ' --- FMSCFG 2.5 producer choice (c): a path CONFIRMED closed is not exported -----------
+
+    Private Shared Function PathKinds(configJson As String) As List(Of String)
+        Dim kinds As New List(Of String)()
+        Using doc = JsonDocument.Parse(configJson)
+            For Each p As JsonElement In doc.RootElement.GetProperty("accessPaths").EnumerateArray()
+                kinds.Add(p.GetProperty("kind").GetString())
+            Next
+        End Using
+        Return kinds
+    End Function
+
+    ''' <summary>"A dead entry is a bug": the worker's connect-back ran (checked) and the port did
+    ''' not answer (not open), so the export carries the LAN path only and the accessNote - still
+    ''' non-empty - is what tells the phone's user why there is no outside address.</summary>
     <Fact>
-    Public Sub Build_CheckedAndClosedPortforward_IsStillExported_PendingOwner()
+    Public Sub Build_ConfirmedClosedPortforward_IsDropped_AndTheLanPathStays()
         Dim reach As New WorkerReachability With {
             .LanAddress = "192.168.1.50", .ExternalHost = "203.0.113.5", .ExternalPort = 2222,
             .IsCgnat = False, .ExternalPortChecked = True, .ExternalPortOpen = False
         }
         Dim res = ShareConfigBuilder.Build(RunningStatus(reach), includeExternal:=True)
         Assert.NotNull(res)
-        Assert.True(res.HasExternal)
+        Assert.False(res.HasExternal)
+        Assert.Equal("192.168.1.50:2222", res.LanDisplay)
         Assert.NotEqual("", res.AccessNote)
+        Assert.Equal(New List(Of String) From {"lan"}, PathKinds(res.ConfigJson))
+        Assert.DoesNotContain("203.0.113.5", res.ConfigJson)
         Using doc = JsonDocument.Parse(res.ConfigJson)
-            Dim paths = doc.RootElement.GetProperty("accessPaths")
-            Assert.Equal("portforward", paths(paths.GetArrayLength() - 1).GetProperty("kind").GetString())
+            Assert.Equal("192.168.1.50", doc.RootElement.GetProperty("accessPaths")(0).GetProperty("host").GetString())
+            Assert.Equal(res.AccessNote, doc.RootElement.GetProperty("accessNote").GetString())
         End Using
+    End Sub
+
+    ''' <summary>Only the forward is dropped: an IPv6 path is a different address on the same port and
+    ''' the connect-back says nothing about it.</summary>
+    <Fact>
+    Public Sub Build_ConfirmedClosedPortforward_KeepsTheIpv6Path()
+        Dim reach As New WorkerReachability With {
+            .LanAddress = "192.168.1.50", .Ipv6Address = "2001:db8::1", .ExternalHost = "203.0.113.5", .ExternalPort = 2222,
+            .IsCgnat = False, .ExternalPortChecked = True, .ExternalPortOpen = False
+        }
+        Dim res = ShareConfigBuilder.Build(RunningStatus(reach), includeExternal:=True)
+        Assert.NotNull(res)
+        Assert.True(res.HasIpv6)
+        Assert.False(res.HasExternal)
+        Assert.Equal(New List(Of String) From {"lan", "ipv6"}, PathKinds(res.ConfigJson))
+    End Sub
+
+    ''' <summary>"Not checked" is not "not working" (WORKER-IPC 0.13 item C): a forward the connect-back never
+    ''' ran for stays in the export, in its place after lan and ipv6.</summary>
+    <Fact>
+    Public Sub Build_NeverCheckedPortforward_IsKept()
+        Dim reach As New WorkerReachability With {
+            .LanAddress = "192.168.1.50", .ExternalHost = "203.0.113.5", .ExternalPort = 2222,
+            .IsCgnat = False, .ExternalPortChecked = False, .ExternalPortOpen = False
+        }
+        Dim res = ShareConfigBuilder.Build(RunningStatus(reach), includeExternal:=True)
+        Assert.NotNull(res)
+        Assert.True(res.HasExternal)
+        Assert.Equal(New List(Of String) From {"lan", "portforward"}, PathKinds(res.ConfigJson))
+        Using doc = JsonDocument.Parse(res.ConfigJson)
+            Dim fwd = doc.RootElement.GetProperty("accessPaths")(1)
+            Assert.Equal("203.0.113.5", fwd.GetProperty("host").GetString())
+            Assert.Equal(2222, fwd.GetProperty("port").GetInt32())
+        End Using
+    End Sub
+
+    <Fact>
+    Public Sub Build_CheckedOpenPortforward_IsKept()
+        Dim reach As New WorkerReachability With {
+            .LanAddress = "192.168.1.50", .ExternalHost = "203.0.113.5", .ExternalPort = 2222,
+            .IsCgnat = False, .ExternalPortChecked = True, .ExternalPortOpen = True
+        }
+        Dim res = ShareConfigBuilder.Build(RunningStatus(reach), includeExternal:=True)
+        Assert.NotNull(res)
+        Assert.True(res.HasExternal)
+        Assert.Equal(New List(Of String) From {"lan", "portforward"}, PathKinds(res.ConfigJson))
+    End Sub
+
+    ''' <summary>The LAN-only export never carried the forward, whatever the probe said.</summary>
+    <Theory>
+    <InlineData(False, False)>
+    <InlineData(True, False)>
+    <InlineData(True, True)>
+    Public Sub Build_LanOnlyExport_NeverCarriesTheForward(checked As Boolean, open As Boolean)
+        Dim reach As New WorkerReachability With {
+            .LanAddress = "192.168.1.50", .ExternalHost = "203.0.113.5", .ExternalPort = 2222,
+            .ExternalPortChecked = checked, .ExternalPortOpen = open
+        }
+        Dim res = ShareConfigBuilder.Build(RunningStatus(reach), includeExternal:=False)
+        Assert.NotNull(res)
+        Assert.Equal(New List(Of String) From {"lan"}, PathKinds(res.ConfigJson))
+    End Sub
+
+    ' --- FMSCFG 2.5 producer choice (a): readOnly is always explicit -------------------------
+
+    ''' <summary>Every roots[] entry carries <c>readOnly</c> as an explicit boolean, true AND false: a
+    ''' writable root says false, a server-read-only or soft-read-only root says true, a destination says
+    ''' false. An importer never has to apply a default to learn whether a root is writable.</summary>
+    <Fact>
+    Public Sub Build_ReadOnly_IsExplicitTrueAndFalse_InEveryRoot()
+        Dim hostW As String = "C:\__fms_test__" & Guid.NewGuid().ToString("N")
+        Dim hostSoft As String = "C:\__fms_test__" & Guid.NewGuid().ToString("N")
+        Dim hostServerRo As String = "C:\__fms_test__" & Guid.NewGuid().ToString("N")
+        Dim hostDest As String = "C:\__fms_test__" & Guid.NewGuid().ToString("N")
+        Dim hostDefault As String = "C:\__fms_test__" & Guid.NewGuid().ToString("N")
+        Dim st As New WorkerStatus With {
+            .Running = True, .ListenPort = 2222, .Username = "fms", .Password = "secret", .Fingerprint = "SHA256:abc123",
+            .Roots = New List(Of ShareFolder) From {
+                New ShareFolder With {.name = "Writable", .hostPath = hostW, .readOnly = False},
+                New ShareFolder With {.name = "Soft", .hostPath = hostSoft, .readOnly = False},
+                New ShareFolder With {.name = "ServerRo", .hostPath = hostServerRo, .readOnly = True},
+                New ShareFolder With {.name = "Dest", .hostPath = hostDest, .readOnly = False},
+                New ShareFolder With {.name = "Default", .hostPath = hostDefault, .readOnly = False}
+            },
+            .Reachability = New WorkerReachability With {.LanAddress = "192.168.1.50"}
+        }
+        Dim grid As New Dictionary(Of String, ShareRootParams)(StringComparer.OrdinalIgnoreCase) From {
+            {hostW, New ShareRootParams()},
+            {hostSoft, New ShareRootParams With {.SoftReadOnly = True}},
+            {hostServerRo, New ShareRootParams With {.IsDestination = True}},
+            {hostDest, New ShareRootParams With {.IsDestination = True}}
+        }
+        Dim res = ShareConfigBuilder.Build(st, includeExternal:=False, perRootParams:=grid)
+        Assert.NotNull(res)
+        Using doc = JsonDocument.Parse(res.ConfigJson)
+            Dim roots = doc.RootElement.GetProperty("roots")
+            Assert.Equal(5, roots.GetArrayLength())
+            Dim expected As Boolean() = {False, True, True, False, False}
+            For i As Integer = 0 To roots.GetArrayLength() - 1
+                Dim v As JsonElement = Nothing
+                Assert.True(roots(i).TryGetProperty("readOnly", v), "root " & i & " has no explicit readOnly")
+                Assert.True(v.ValueKind = JsonValueKind.True OrElse v.ValueKind = JsonValueKind.False, "root " & i & ": readOnly is not a boolean")
+                Assert.Equal(expected(i), v.GetBoolean())
+            Next
+        End Using
+        ' Both values were actually written, not just one of them.
+        Assert.Contains("""readOnly"":true", res.ConfigJson)
+        Assert.Contains("""readOnly"":false", res.ConfigJson)
     End Sub
 
 End Class

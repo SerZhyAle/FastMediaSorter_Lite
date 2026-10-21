@@ -358,6 +358,10 @@ Partial Public NotInheritable Class Localization
             "+ Current", "+ Поточна", "+ Aktueller", "+ Corrente", "+ Actual", "+ Actuel",
             "+ Atual", "+ الحالي", "+ वर्तमान", "+ বর্তমান", "+ موجودہ", "+ 当前")
 
+        Add("+ Текущая: {0}",
+            "+ Current: {0}", "+ Поточна: {0}", "+ Aktueller: {0}", "+ Corrente: {0}", "+ Actual: {0}", "+ Actuel : {0}",
+            "+ Atual: {0}", "+ الحالي: {0}", "+ वर्तमान: {0}", "+ বর্তমান: {0}", "+ موجودہ: {0}", "+ 当前：{0}")
+
         Add("Убрать",
             "Remove", "Прибрати", "Entfernen", "Rimuovi", "Quitar", "Retirer", "Remover",
             "إزالة", "हटाएँ", "সরান", "ہٹائیں", "移除")
@@ -755,6 +759,11 @@ Partial Public NotInheritable Class Localization
         ' short ON PURPOSE - they are measured at the minimum window width in all thirteen
         ' languages (§7.8) and, unlike the summaries beside them, must never ellipsize.
 
+        Add("Общие ресурсы",
+            "Shared resources", "Загальні ресурси", "Freigegebene Ressourcen", "Risorse condivise",
+            "Recursos compartidos", "Ressources partagées", "Recursos partilhados",
+            "الموارد المشتركة", "साझा संसाधन", "শেয়ার করা রিসোর্স", "شیئرڈ وسائل", "共享资源")
+
         Add("Доступ с телефона",
             "Phone access", "Доступ з телефона", "Zugriff vom Telefon", "Accesso dal telefono",
             "Acceso desde el teléfono", "Accès depuis le téléphone", "Acesso pelo telemóvel",
@@ -810,11 +819,11 @@ Partial Public NotInheritable Class Localization
             "تفصیلات..", "详情..")
 
         Add("Справка",
-            "Help", "Довідка", "Hilfe", "Guida", "Ayuda", "Aide", "Ajuda",
-            "المساعدة", "सहायता", "সहায়তা", "مدد", "帮助")
+            "Help", "Довідка", "Hilfe", "Aiuto", "Ayuda", "Aide", "Ajuda",
+            "مساعدة", "सहायता", "সহায়তা", "مدد", "帮助")
 
         Add("Справка ▾",
-            "Help ▾", "Довідка ▾", "Hilfe ▾", "Guida ▾", "Ayuda ▾", "Aide ▾", "Ajuda ▾",
+            "Help ▾", "Довідка ▾", "Hilfe ▾", "Aiuto ▾", "Ayuda ▾", "Aide ▾", "Ajuda ▾",
             "مساعدة ▾", "सहायता ▾", "সহায়তা ▾", "مدد ▾", "帮助 ▾")
 
         Add("Показать пароль",

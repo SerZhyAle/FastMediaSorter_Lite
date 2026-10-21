@@ -21,6 +21,10 @@ Friend Enum ExchangeLocalJoinOutcome
     CodeRefused
     ''' <summary>The code was issued and the enrolment was refused or could not connect.</summary>
     EnrollFailed
+    ''' <summary>This PC is already configured to the local server and publishing is enabled.</summary>
+    AlreadyJoined
+    ''' <summary>The server holds no accounts at all: an account must be created first.</summary>
+    NoAccounts
 End Enum
 
 ''' <summary>Everything the local join touches, so a test drives it with stand-ins and counts what it did.</summary>
@@ -29,6 +33,8 @@ Friend Interface IExchangeLocalJoinPorts
     Function Offered() As Boolean
     ''' <summary>An account entry is configured for this Windows user already.</summary>
     Function AlreadyConfigured() As Boolean
+    ''' <summary>The server of the currently configured account, or "".</summary>
+    Function ConfiguredServer() As String
     ''' <summary>The person disconnected on purpose.</summary>
     Function Declined() As Boolean
     ''' <summary>The server's binary is installed with this program.</summary>
@@ -85,20 +91,52 @@ Friend NotInheritable Class ExchangeLocalJoin
     ''' <summary>An outcome after which another attempt cannot help.</summary>
     Friend Shared Function IsFinal(outcome As ExchangeLocalJoinOutcome) As Boolean
         Return outcome = ExchangeLocalJoinOutcome.Joined OrElse outcome = ExchangeLocalJoinOutcome.NotNeeded OrElse
-               outcome = ExchangeLocalJoinOutcome.NotOneAccount
+               outcome = ExchangeLocalJoinOutcome.NotOneAccount OrElse outcome = ExchangeLocalJoinOutcome.AlreadyJoined
     End Function
 
     Friend Shared Async Function TryJoinAsync(ports As IExchangeLocalJoinPorts, ct As CancellationToken) As Task(Of ExchangeLocalJoinOutcome)
         If Not ports.Offered() OrElse ports.Declined() OrElse ports.AlreadyConfigured() OrElse Not ports.ComponentPresent() Then
             Return ExchangeLocalJoinOutcome.NotNeeded
         End If
+        Return Await JoinLocalCoreAsync(ports, explicitLogin:=Nothing, ct:=ct).ConfigureAwait(False)
+    End Function
 
+    ''' <summary>
+    ''' Explicit or button-driven join: enrolls this PC and enables share publishing in one click.
+    ''' If <paramref name="explicitLogin"/> is specified, joins that account. If not specified, automatically joins if there is exactly 1 account.
+    ''' If already configured to the local server, ensures publishing is on and returns <see cref="ExchangeLocalJoinOutcome.AlreadyJoined"/>.
+    ''' </summary>
+    Friend Shared Async Function JoinLocalAsync(ports As IExchangeLocalJoinPorts, Optional explicitLogin As String = Nothing, Optional ct As CancellationToken = Nothing) As Task(Of ExchangeLocalJoinOutcome)
+        If Not ports.Offered() OrElse Not ports.ComponentPresent() Then
+            Return ExchangeLocalJoinOutcome.NotNeeded
+        End If
+
+        If ports.AlreadyConfigured() AndAlso IsLocalServer(ports.ConfiguredServer()) Then
+            ports.EnablePublishing()
+            Return ExchangeLocalJoinOutcome.AlreadyJoined
+        End If
+
+        Return Await JoinLocalCoreAsync(ports, explicitLogin, ct).ConfigureAwait(False)
+    End Function
+
+    Private Shared Async Function JoinLocalCoreAsync(ports As IExchangeLocalJoinPorts, explicitLogin As String, ct As CancellationToken) As Task(Of ExchangeLocalJoinOutcome)
         ' the running server's own channel names the account(s); the offline verbs would answer for a server that is not up
         Dim listed As ExchangeAdminReply = Await ports.ListAccountsAsync(ct).ConfigureAwait(False)
         If Not listed.Ok OrElse listed.Route <> ExchangeAdminRoute.Pipe Then Return ExchangeLocalJoinOutcome.ServerNotRunning
         Dim accountList As List(Of ExchangeAdminAccount) = ExchangeAdminParser.Accounts(listed.DataJson)
-        If accountList.Count <> 1 OrElse accountList(0).Login.Length = 0 Then Return ExchangeLocalJoinOutcome.NotOneAccount
-        Dim login As String = accountList(0).Login
+        If accountList.Count = 0 Then
+            Return If(explicitLogin IsNot Nothing, ExchangeLocalJoinOutcome.NoAccounts, ExchangeLocalJoinOutcome.NotOneAccount)
+        End If
+
+        Dim login As String = ""
+        If Not String.IsNullOrEmpty(explicitLogin) Then
+            login = explicitLogin.Trim()
+        ElseIf accountList.Count = 1 Then
+            login = accountList(0).Login
+        Else
+            Return ExchangeLocalJoinOutcome.NotOneAccount
+        End If
+        If login.Length = 0 Then Return ExchangeLocalJoinOutcome.NotOneAccount
 
         ' what answers on the port must be this server, before anything secret exists
         ct.ThrowIfCancellationRequested()
@@ -174,6 +212,11 @@ Friend NotInheritable Class ExchangeLocalJoinPorts
 
     Public Function AlreadyConfigured() As Boolean Implements IExchangeLocalJoinPorts.AlreadyConfigured
         Return _accounts.IsConfigured()
+    End Function
+
+    Public Function ConfiguredServer() As String Implements IExchangeLocalJoinPorts.ConfiguredServer
+        Dim acc As ExchangeAccount = _accounts.Load()
+        Return If(acc IsNot Nothing, acc.Server, "")
     End Function
 
     Public Function Declined() As Boolean Implements IExchangeLocalJoinPorts.Declined

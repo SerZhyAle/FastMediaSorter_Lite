@@ -3,6 +3,7 @@ package directory
 import (
 	"encoding/json"
 	"sort"
+	"time"
 
 	"fms/exchange-server/internal/wire"
 )
@@ -873,6 +874,14 @@ func (d *Dir) SetCapsFor(f func(account string) Caps) {
 	d.mu.Unlock()
 }
 
+// SetListeners installs the count of a broadcast's listeners (nil: none are known, every count is 0). The
+// host owns the relay and the tunnels, so it answers; the function is called without the directory's lock.
+func (d *Dir) SetListeners(f func(broadcastID string) int) {
+	d.mu.Lock()
+	d.opt.ListenersOf = f
+	d.mu.Unlock()
+}
+
 // SetPorts installs the port granter (nil: no third-party ports, a port request is port-unavailable).
 func (d *Dir) SetPorts(p PortGranter) {
 	d.mu.Lock()
@@ -891,3 +900,166 @@ func (d *Dir) DeviceOnline(account, deviceID string) bool {
 	}
 	return false
 }
+
+// BroadcastView is what the operator sees of an active live broadcast (spec 246).
+type BroadcastView struct {
+	BroadcastID         string `json:"broadcastId"`
+	Account             string `json:"account"`
+	DeviceID            string `json:"deviceId"`
+	DeviceName          string `json:"deviceName"`
+	Kind                string `json:"kind"`
+	StartedAt           string `json:"startedAt"`
+	ActiveSeconds       int64  `json:"activeSeconds"`
+	ListenersCount      int    `json:"listenersCount"`
+	MaxListeners        int    `json:"maxListeners"`
+	BitrateEstimateKbps int    `json:"bitrateEstimateKbps,omitempty"`
+}
+
+// ResourceView is what the operator sees of a published shared resource (spec 246).
+type ResourceView struct {
+	ResourceID   string   `json:"resourceId"`
+	Name         string   `json:"name"`
+	ShareID      string   `json:"shareId"`
+	DeviceID     string   `json:"deviceId"`
+	DeviceName   string   `json:"deviceName"`
+	Channels     []string `json:"channels"`
+	PinProtected bool     `json:"pinProtected"`
+	Sealed       bool     `json:"sealed"`
+	PublishedAt  string   `json:"publishedAt"`
+}
+
+// ListBroadcasts lists active live broadcasts for an account and optional device (spec 246). The listener
+// count of each is asked of the host AFTER the directory's lock is released, so the relay's own lock is never
+// taken under it; a broadcast that ended in between simply counts 0. BitrateEstimateKbps stays absent: the
+// relay measures the bytes of a broadcast over its life, not a rate, and a number is not invented.
+func (d *Dir) ListBroadcasts(account, deviceID string) []BroadcastView {
+	out, listenersOf := d.listBroadcastsLocked(account, deviceID)
+	if listenersOf != nil {
+		for i := range out {
+			if n := listenersOf(out[i].BroadcastID); n > 0 {
+				out[i].ListenersCount = n
+			}
+		}
+	}
+	return out
+}
+
+func (d *Dir) listBroadcastsLocked(account, deviceID string) ([]BroadcastView, func(string) int) {
+	d.mu.Lock()
+	defer d.mu.Unlock()
+	h := d.hubs[account]
+	if h == nil {
+		return []BroadcastView{}, nil
+	}
+	out := make([]BroadcastView, 0, len(h.broadcasts))
+	for _, b := range h.broadcasts {
+		if deviceID != "" && b.device != deviceID {
+			continue
+		}
+		devName := ""
+		if dev := h.devices[b.device]; dev != nil {
+			devName = dev.info.Name
+		}
+		kind, _ := b.rec.Str("kind")
+		if kind == "" {
+			kind, _ = b.rec.Str("mode")
+		}
+		started, _ := b.rec.Str("startedAt")
+		if started == "" {
+			started = wire.FormatTime(b.updated)
+		}
+		var activeSec int64
+		if t, err := time.Parse(time.RFC3339, started); err == nil {
+			diff := d.now().Sub(t).Seconds()
+			if diff > 0 {
+				activeSec = int64(diff)
+			}
+		}
+		out = append(out, BroadcastView{
+			BroadcastID:   b.id,
+			Account:       account,
+			DeviceID:      b.device,
+			DeviceName:    devName,
+			Kind:          kind,
+			StartedAt:     started,
+			ActiveSeconds: activeSec,
+			MaxListeners:  b.maxListeners,
+		})
+	}
+	sort.Slice(out, func(i, j int) bool { return out[i].BroadcastID < out[j].BroadcastID })
+	return out, d.opt.ListenersOf
+}
+
+// EndBroadcast ends an active broadcast administratively (spec 246).
+func (d *Dir) EndBroadcast(account, broadcastID string) error {
+	d.mu.Lock()
+	h := d.hubs[account]
+	if h == nil {
+		d.mu.Unlock()
+		return ErrNoDevice
+	}
+	b := h.broadcasts[broadcastID]
+	if b == nil {
+		d.mu.Unlock()
+		return ErrNotFound
+	}
+	t := d.begin(h)
+	d.endBroadcastLocked(t, h, b)
+	t.finish()
+	return nil
+}
+
+// ListResources lists published resources of an account (spec 246).
+func (d *Dir) ListResources(account string) []ResourceView {
+	d.mu.Lock()
+	defer d.mu.Unlock()
+	h := d.hubs[account]
+	if h == nil {
+		return []ResourceView{}
+	}
+	out := make([]ResourceView, 0, len(h.resources))
+	for _, r := range h.resources {
+		devName := ""
+		if dev := h.devices[r.device]; dev != nil {
+			devName = dev.info.Name
+		}
+		name, _ := r.rec.Str("name")
+		channels := []string{"tunnel"}
+		if r.rec.Has("publicPort") {
+			channels = append(channels, "portforward")
+		}
+		out = append(out, ResourceView{
+			ResourceID:   r.id,
+			Name:         name,
+			ShareID:      r.shareID,
+			DeviceID:     r.device,
+			DeviceName:   devName,
+			Channels:     channels,
+			PinProtected: r.rec.Has("protection"),
+			Sealed:       r.rec.Has("sealedAccess"),
+			PublishedAt:  wire.FormatTime(r.updated),
+		})
+	}
+	sort.Slice(out, func(i, j int) bool { return out[i].ResourceID < out[j].ResourceID })
+	return out
+}
+
+// UnpublishResource unpublishes a resource administratively (spec 246).
+func (d *Dir) UnpublishResource(account, resourceID string) error {
+	d.mu.Lock()
+	h := d.hubs[account]
+	if h == nil {
+		d.mu.Unlock()
+		return ErrNoDevice
+	}
+	r := h.resources[resourceID]
+	if r == nil {
+		d.mu.Unlock()
+		return ErrNotFound
+	}
+	t := d.begin(h)
+	d.removeResourceLocked(t, h, r)
+	t.finish()
+	return nil
+}
+

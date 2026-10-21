@@ -7,16 +7,19 @@ Imports System.IO
 Imports System.Runtime.CompilerServices
 Imports System.Windows.Forms
 
-''' <summary>What a command button's answer means, which decides its hue (WINDOWS-UI 0.4 section 11
-''' item 4). Only <see cref="Affirmative"/>, <see cref="Dismissing"/> and <see cref="Caution"/> are
-''' coloured, and only on the answer buttons of a dialog; everything else is <see cref="Neutral"/>,
-''' the mono look (item 5).</summary>
+''' <summary>What a command button's answer means, which decides its glyph hue (BUTTONS 2.0 section 3 rule 5;
+''' WINDOWS-UI 0.4 section 11 item 4). Only <see cref="Affirmative"/> and <see cref="Caution"/> are coloured,
+''' only in the glyph and only on the answer buttons of a dialog; everything else - Cancel, No and Close
+''' included - is neutral, the mono look (item 5). No answer tints its face; the one face colour is the
+''' danger face of <see cref="Irreversible"/>.</summary>
 Public Enum ButtonGlyphRole
     ''' <summary>Browse, Refresh, Add, Open - the glyph in the caption's own colour.</summary>
     Neutral
     ''' <summary>OK, Yes, Apply, Save, Done - <c>state.ok</c>, the product's success pair.</summary>
     Affirmative
-    ''' <summary>Cancel, No, Close without applying - <c>state.error</c>, the product's danger pair.</summary>
+    ''' <summary>Cancel, No, Close without applying - the glyph in the caption's own colour, exactly as
+    ''' <see cref="Neutral"/> (a refusal is not an error); the role stays so the answer is recognised by order,
+    ''' default glyph and focus.</summary>
     Dismissing
     ''' <summary>Continue anyway, Skip, Overwrite a copy - <c>state.warning</c>.</summary>
     Caution
@@ -26,23 +29,24 @@ Public Enum ButtonGlyphRole
 End Enum
 
 ''' <summary>
-''' One glyph in front of the caption of a WinForms <see cref="Button"/> (WINDOWS-UI 0.4 section 11 items 1,
-''' 2, 4, 5, 6; ICON-RENDER 0.19 section 14), from the same catalog renderer the toolbars use - never a
-''' bitmap of its own drawing.
+''' One glyph in front of the caption of a WinForms <see cref="Button"/> (BUTTONS 2.0 section 3; WINDOWS-UI 0.4
+''' section 11 items 1, 2, 4, 5, 6; ICON-RENDER 0.19 section 14), from the same catalog renderer the toolbars
+''' use - never a bitmap of its own drawing.
 '''
 ''' What it owns, so that no dialog does:
 ''' <list type="bullet">
-''' <item>the bitmap: 16 logical px at the button's current DPI, the catalog path in ONE colour, plus a
-''' 6 logical px gap on the caption's side so the pair is one picture and the gap scales with DPI;</item>
-''' <item>the hue: <c>state.ok</c> / <c>state.error</c> / <c>state.warning</c> are the palette's
-''' Success / Danger / Warning pair of the theme in force, moved along the lightness axis only as far as
-''' the 3 : 1 against the face it is drawn on needs;</item>
-''' <item>the tint: the reference 12 percent of the same hue over the face, painted after the button;</item>
+''' <item>the bitmap: 16 logical px at the button's current DPI, the catalog path in ONE colour, plus an
+''' 8 logical px gap on the caption's side so the pair is one picture and the gap scales with DPI;</item>
+''' <item>the hue: <c>state.ok</c> / <c>state.warning</c> are the palette's Success / Warning pair of the
+''' theme in force, moved along the lightness axis only as far as the 3 : 1 against the face it is drawn on
+''' needs; Cancel, No and Close carry no hue;</item>
+''' <item>no tint: a non-destructive answer keeps the control's own face; the only face colour is the danger
+''' face of an irreversible confirmation's acting button;</item>
 ''' <item>liveness: a theme change, a DPI change, the reading direction and Enabled re-render the picture,
 ''' so no value is resolved once at load;</item>
-''' <item>the disabled state: no hue, no tint - the framework (light) or the theme's own disabled paint (dark)
+''' <item>the disabled state: no hue - the framework (light) or the theme's own disabled paint (dark)
 ''' dims the picture together with the caption (item 6);</item>
-''' <item>high contrast: system colours for glyph and caption, no tint, no danger face.</item>
+''' <item>high contrast: system colours for glyph and caption, no danger face.</item>
 ''' </list>
 ''' It never touches Escape, Enter, focus or button order (item 7).
 ''' </summary>
@@ -52,11 +56,15 @@ Public NotInheritable Class ButtonGlyphs
     End Sub
 
     ''' <summary>The glyph's size, in logical (96-dpi) pixels - the 16 px tier beside a caption
-    ''' (ICON-RENDER section 3 rule 5). A reference value awaiting measurement.</summary>
-    Public Const GlyphLogicalSize As Integer = 16
+    ''' (ICON-RENDER section 3 rule 5). A reference value awaiting measurement. It is the ordinary pointer tier of
+    ''' the shared token table (<c>UiSizing.Tokens(Pointer, Ordinary).GlyphTier</c>); a Const cannot call the
+    ''' resolver, so it takes the table's own constant, and a test pins the pair. The touch and compact tiers
+    ''' are for the later slices that wire a profile into the buttons.</summary>
+    Public Const GlyphLogicalSize As Integer = UiSizing.PointerGlyphTier
 
-    ''' <summary>The gap between glyph and caption, in logical pixels (WINDOWS-UI section 11 item 2).</summary>
-    Public Const GapLogicalSize As Integer = 6
+    ''' <summary>The gap between glyph and caption, in logical pixels (BUTTONS 2.0 section 3: 8 beside the 16 tier);
+    ''' the <c>GlyphGap</c> of the shared token table (<c>UiSizing</c>).</summary>
+    Public Const GapLogicalSize As Integer = UiSizing.GlyphGap
 
     ''' <summary>How much room a button may have beyond its glyph, gap and caption before the pair is moved from
     ''' the middle to the reading start (logical px, both sides together). A full-width command button
@@ -66,9 +74,6 @@ Public NotInheritable Class ButtonGlyphs
 
     ''' <summary>The inset of the pair from the reading-start edge of a wide button (logical px).</summary>
     Public Const StartInsetLogical As Integer = 12
-
-    ''' <summary>The face tint of an answer button, in percent of the hue (item 4, reference value).</summary>
-    Public Const TintPercent As Integer = 12
 
     ''' <summary>The contrast a meaningful glyph holds against its face (WINDOWS-UI section 6 item 4).</summary>
     Public Const GlyphContrast As Double = 3.0R
@@ -161,7 +166,6 @@ Public NotInheritable Class ButtonGlyphs
             AddHandler button.SizeChanged, AddressOf OnArrangeEvent
             AddHandler button.TextChanged, AddressOf OnArrangeEvent
             AddHandler button.FontChanged, AddressOf OnArrangeEvent
-            AddHandler button.Paint, AddressOf OnPaintTint
             AddHandler button.Disposed, AddressOf OnDisposed
             SyncLock live
                 live.Add(New WeakReference(Of Button)(button))
@@ -221,19 +225,18 @@ Public NotInheritable Class ButtonGlyphs
         Return InkOf(button, st, paletteInForce)
     End Function
 
-    ''' <summary>The face the glyph of <paramref name="button"/> is measured against: the control face, with
-    ''' the tint of its hue over it when it has one.</summary>
+    ''' <summary>The face the glyph of <paramref name="button"/> is measured against: the control's own face.</summary>
     Public Shared Function CurrentFace(button As Button) As Color
         Dim st As GlyphState = Nothing
         If button Is Nothing OrElse Not states.TryGetValue(button, st) Then Return Color.Empty
-        Return FaceOf(button, st, paletteInForce, withTint:=True)
+        Return FaceOf(button, st, paletteInForce)
     End Function
 
-    ''' <summary>The hue (before the contrast adjustment) a role stands for in a palette.</summary>
+    ''' <summary>The hue (before the contrast adjustment) a role stands for in a palette; empty where the glyph
+    ''' takes the caption's own colour (Neutral, Dismissing, Irreversible).</summary>
     Public Shared Function HueOf(role As ButtonGlyphRole, palette As ThemePalette) As Color
         Select Case role
             Case ButtonGlyphRole.Affirmative : Return palette.Success
-            Case ButtonGlyphRole.Dismissing : Return palette.Danger
             Case ButtonGlyphRole.Caution : Return palette.Warning
             Case Else : Return Color.Empty
         End Select
@@ -255,7 +258,7 @@ Public NotInheritable Class ButtonGlyphs
         Return towards
     End Function
 
-    ''' <summary>A colour laid over another at <paramref name="percent"/>, the reference tint.</summary>
+    ''' <summary>A colour laid over another at <paramref name="percent"/> (the danger face's hover and pressed shades).</summary>
     Public Shared Function Over(face As Color, hue As Color, percent As Integer) As Color
         Dim a As Double = percent / 100.0R
         Return Color.FromArgb(
@@ -449,11 +452,10 @@ Public NotInheritable Class ButtonGlyphs
         Return 0
     End Function
 
-    ' --- ink, face, tint ---------------------------------------------------------------------
+    ' --- ink, face ---------------------------------------------------------------------------
 
-    ''' <summary>The face a glyph is judged against: the button's own face colour, the tint over it for a
-    ''' hued answer.</summary>
-    Private Shared Function FaceOf(b As Button, st As GlyphState, palette As ThemePalette, withTint As Boolean) As Color
+    ''' <summary>The face a glyph is judged against: the button's own face colour (no answer tints it).</summary>
+    Private Shared Function FaceOf(b As Button, st As GlyphState, palette As ThemePalette) As Color
         Dim face As Color
         If SystemInformation.HighContrast Then
             face = SystemColors.Control
@@ -466,16 +468,12 @@ Public NotInheritable Class ButtonGlyphs
         Else
             face = LightVisualStyleFace
         End If
-        If withTint AndAlso b.Enabled AndAlso Not SystemInformation.HighContrast AndAlso Not TintSuppressed(b, st) Then
-            Dim hue As Color = HueOf(st.Role, palette)
-            If Not hue.IsEmpty Then face = Over(face, hue, TintPercent)
-        End If
         Return face
     End Function
 
-    ''' <summary>The colour of the glyph: the caption's colour for a neutral or unavailable button, the hue of the
-    ''' answer (held to 3 : 1 against the tinted face) for an available hued one, the danger face's ink for the
-    ''' acting button of an irreversible confirmation.</summary>
+    ''' <summary>The colour of the glyph: the caption's colour for a neutral, dismissing or unavailable button, the
+    ''' hue of the answer (held to 3 : 1 against the face) for an available affirmative or caution one, the danger
+    ''' face's ink for the acting button of an irreversible confirmation.</summary>
     Private Shared Function InkOf(b As Button, st As GlyphState, palette As ThemePalette) As Color
         If SystemInformation.HighContrast Then
             Return If(b.Enabled, SystemColors.ControlText, SystemColors.GrayText)
@@ -492,7 +490,7 @@ Public NotInheritable Class ButtonGlyphs
             Dim fore As Color = b.ForeColor
             Return If(fore.IsEmpty OrElse fore.A = 0, palette.TextPrimary, palette.Restate(fore, False))
         End If
-        Return Readable(hue, FaceOf(b, st, palette, withTint:=True))
+        Return Readable(hue, FaceOf(b, st, palette))
     End Function
 
     ''' <summary>The danger face of an irreversible confirmation's acting button: the palette's danger colour
@@ -528,42 +526,6 @@ Public NotInheritable Class ButtonGlyphs
             b.FlatAppearance.BorderColor = st.SavedBorder
             b.FlatAppearance.BorderSize = st.SavedBorderSize
         End If
-    End Sub
-
-    ''' <summary>In a confirmation of an irreversible act the dismissing answer keeps its red glyph and takes no tint,
-    ''' so the only red FACE in the window is the one that cannot be undone (WINDOWS-UI section 11 item 7). Decided at
-    ''' paint time, from the window the button is in.</summary>
-    Private Shared Function TintSuppressed(b As Button, st As GlyphState) As Boolean
-        If st.Role <> ButtonGlyphRole.Dismissing Then Return False
-        Dim host As Control = b.FindForm()
-        If host Is Nothing Then Return False
-        Return HoldsIrreversible(host)
-    End Function
-
-    Private Shared Function HoldsIrreversible(parent As Control) As Boolean
-        For Each child As Control In parent.Controls
-            Dim other As Button = TryCast(child, Button)
-            Dim st As GlyphState = Nothing
-            If other IsNot Nothing AndAlso states.TryGetValue(other, st) AndAlso st.Role = ButtonGlyphRole.Irreversible Then Return True
-            If child.HasChildren AndAlso HoldsIrreversible(child) Then Return True
-        Next
-        Return False
-    End Function
-
-    ''' <summary>The tint: the hue at <see cref="TintPercent"/> over the button's face, inside its border, painted
-    ''' after the button so every visual style and the dark flat paint carry it alike.</summary>
-    Private Shared Sub OnPaintTint(sender As Object, e As PaintEventArgs)
-        Dim b As Button = TryCast(sender, Button)
-        Dim st As GlyphState = Nothing
-        If b Is Nothing OrElse Not states.TryGetValue(b, st) Then Return
-        If Not b.Enabled OrElse SystemInformation.HighContrast OrElse TintSuppressed(b, st) Then Return
-        Dim hue As Color = HueOf(st.Role, paletteInForce)
-        If hue.IsEmpty Then Return
-        Dim inner As Rectangle = Rectangle.Inflate(b.ClientRectangle, -2, -2)
-        If inner.Width <= 0 OrElse inner.Height <= 0 Then Return
-        Using brush As New SolidBrush(Color.FromArgb(CInt(Math.Round(255 * TintPercent / 100.0R)), hue))
-            e.Graphics.FillRectangle(brush, inner)
-        End Using
     End Sub
 End Class
 #End If

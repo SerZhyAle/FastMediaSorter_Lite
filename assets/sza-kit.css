@@ -29,7 +29,7 @@
   --gold-ink:#1c1403;
   /* code */
   --code-bg:#070f08;
-  --code-ink:#d6e2cf;
+  --code-ink:#d6e2cf; --code-accent:#7ee787; --code-output:#e6c35a;
   /* semantic */
   --ok:#3fb950; --warn:#e3b341; --danger:#e5534b;
   /* effects */
@@ -51,9 +51,9 @@ html[data-theme="light"]{
   --card:rgba(255,255,255,.70); --card-hover:rgba(255,255,255,.92);
   --border:rgba(16,40,20,.12); --border-hover:rgba(47,143,58,.40);
   --text:#16210f; --text-2:#384534; --muted:#5f6b54;
-  --acc:#2f8f3a; --acc-strong:#267a30; --acc-ink:#ffffff;
+  --acc:#267a30; --acc-strong:#206629; --acc-ink:#ffffff;
   --gold:#9a6a13; --gold-strong:#7e560f; --gold-ink:#ffffff;
-  --code-bg:#0e1411; --code-ink:#d6e2cf;          /* code stays dark in light mode */
+  --code-bg:#0e1411; --code-ink:#d6e2cf; --code-accent:#7ee787; --code-output:#e6c35a;          /* code stays dark in light mode */
   --shadow:0 6px 24px rgba(20,40,20,.10);
   --glow:0 0 26px rgba(47,143,58,.18);
 }
@@ -96,7 +96,7 @@ img{max-width:100%;height:auto}
 .seg{display:flex;gap:2px;background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:20px;padding:3px}
 html[data-theme="light"] .seg{background:rgba(16,40,20,.05)}
 .seg button{font-family:var(--font-heading);font-size:11px;font-weight:700;letter-spacing:.04em;
-  padding:5px 10px;border:none;border-radius:14px;background:transparent;color:var(--muted);cursor:pointer}
+  padding:5px 10px;border:none;border-radius:14px;background:transparent;color:var(--code-ink);cursor:pointer}
 .seg button[aria-pressed="true"],.seg button.on{background:var(--acc);color:var(--acc-ink)}
 /* PAGE-STYLE 4.3 (1.4): the control is labelled - its name is visible text beside the app.theme glyph -
    so this is a pill in the .seg family, not a bare round glyph. A page still carrying the 1.0 bare-glyph
@@ -169,11 +169,11 @@ details.sec>*:not(summary){margin-bottom:1.1rem}
 .copybox{position:relative;background:var(--code-bg);border:1px solid var(--border);border-radius:var(--radius-sm);
   padding:.85rem 1rem;padding-right:5rem;font-family:var(--font-mono);font-size:.86rem;color:var(--code-ink);
   overflow-x:auto;white-space:nowrap}
-.copybox .tok{color:var(--acc-strong)}
+.copybox .tok{color:var(--code-accent)}
 .copybox .copy{position:absolute;top:.5rem;right:.5rem;font-family:var(--font-body);font-size:.72rem;font-weight:600;
-  padding:.35rem .7rem;border-radius:8px;background:rgba(255,255,255,.06);border:1px solid var(--border);color:var(--muted);cursor:pointer}
-.copybox .copy:hover{color:var(--text);border-color:var(--border-hover)}
-.copybox .copy.done{color:var(--acc);border-color:var(--acc)}
+  padding:.35rem .7rem;border-radius:8px;background:rgba(255,255,255,.06);border:1px solid var(--border);color:var(--code-ink);cursor:pointer}
+.copybox .copy:hover{color:var(--code-ink);border-color:var(--border-hover)}
+.copybox .copy.done{color:var(--code-accent);border-color:var(--code-accent)}
 
 /* ---------- CALLOUT / NOTE ---------- */
 .note{background:var(--card);border:1px solid var(--border);border-left:3px solid var(--gold);
@@ -193,8 +193,8 @@ kbd{font-size:.8em;padding:.12em .45em;border-radius:5px;background:var(--bg-3);
 .demo{display:flex;align-items:center;gap:.7rem;flex-wrap:wrap;background:var(--code-bg);
   border:1px solid var(--border);border-radius:var(--radius-sm);padding:.8rem 1rem;font-family:var(--font-mono);font-size:.86rem}
 .demo,.demo code{color:var(--code-ink)}
-.demo .arrow{color:var(--acc);font-weight:700;font-family:var(--font-body);font-size:.8rem}
-.demo .out{color:var(--gold)}
+.demo .arrow{color:var(--code-accent);font-weight:700;font-family:var(--font-body);font-size:.8rem}
+.demo .out{color:var(--code-output)}
 
 /* ---------- FOOTER : "MORE TOOLS BY SZA" + CONTACT ---------- */
 .site-footer{border-top:1px solid var(--border);margin-top:3rem;padding:2rem 0}
@@ -235,3 +235,6 @@ kbd{font-size:.8em;padding:.12em .45em;border-radius:5px;background:var(--bg-3);
   .card,.get,details.sec{backdrop-filter:none;box-shadow:none;break-inside:avoid}
   a[href^="http"]::after{content:" (" attr(href) ")";font-size:.85em;word-break:break-all}
 }
+
+/* Code ink stays readable when the page changes its light-theme prose colors. */
+.demo code,.copybox code{color:var(--code-ink)}

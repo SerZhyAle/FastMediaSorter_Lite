@@ -3,7 +3,7 @@
 | | |
 | --- | --- |
 | **Id** | `SITE-STRUCTURE` |
-| **Version** | 0.1, draft (written 2026-10-06 by FastMediaSorter Android, ticket S4096; unchanged on 2026-10-07, re-read that day) |
+| **Version** | 0.3, draft (read 2026-10-20, specification 244; written 2026-10-06 by FastMediaSorter Android, ticket S4096, and read at 0.1 on 2026-10-07). 0.2 (2026-10-14, additive) added section 8, the lifecycle of a page and its addresses; 0.3 (2026-10-18, a record) carries the Support row of the page-type table that the 2026-10-17 amendment added, and gains the Support and release-history boxes of `SITE-CHECKLIST.md` |
 | **Home** | `product-site/SITE-STRUCTURE.md` and the run-list `product-site/SITE-CHECKLIST.md` in the shared contracts catalog |
 | **Role here** | consumer, opted in by the owner on 2026-10-06 (specification 147, D1); tier **guide** (D2); locale sets as published today (D3) |
 
@@ -30,6 +30,15 @@ Russian and Ukrainian in-page for the guides, the reference pages, the edition p
    recorded exceptions.
 5. **Never let a missing translation become a dead end** (rule 11): a program that builds a locale address
    (`src/Support/SitePages.vb`, `TrustPageUrl`) falls back to the primary language and says so.
+6. **Hold section 8 (0.2).** The variants of a page are linked siblings (A, rules 9 and 10); the visitor's language is
+   kept by every internal link (B, rule 6); a program's fallback is the English page (C, rule 11); from the release
+   that first carries a page its address and anchors do not change (D, rule 8); every setup, start or repair screen of
+   a function that has a page links it (E); and nothing is marked "not available yet" (F). Not read here: A and C
+   against the program's resolver, and D against a record of released addresses.
+7. **Carry the Support page and the release history (the 2026-10-17 amendment, 0.3).** `support.html` is the Support
+   page; the release history is rendered from the versioned records of shipped releases (`CHANGELOG.md`, never
+   `[Unreleased]`) by `tools/Build-SitePages.ps1`. A footer link to the Support page from every page, and a declared
+   locale set for the pages that name none, are still owed.
 
 ## Where the evidence is
 

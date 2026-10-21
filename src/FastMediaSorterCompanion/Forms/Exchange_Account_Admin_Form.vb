@@ -42,6 +42,7 @@ Friend NotInheritable Class Exchange_Account_Admin_Form
     Private _chkSignOut As CheckBox
     Private _txtStatement As TextBox
     Private _btnOk As Button
+    Private _answerRow As DialogButtonRow
     Private _password As String = ""
     Private _generated As Boolean
 
@@ -101,6 +102,7 @@ Friend NotInheritable Class Exchange_Account_Admin_Form
         Dim body As New TableLayoutPanel With {.Dock = DockStyle.Fill, .ColumnCount = 1, .AutoSize = True,
             .AutoSizeMode = AutoSizeMode.GrowAndShrink, .Padding = New Padding(14, 12, 14, 6)}
         body.ColumnStyles.Add(New ColumnStyle(SizeType.Percent, 100.0F))
+        body.Controls.Add(ExchangeMark.Heading(Text, 32, AddressOf CompanionAssets.OpenBundledAsset))
 
         If _showStatement Then
             body.Controls.Add(New Label With {.AutoSize = True, .MaximumSize = New Size(ContentWidth, 0), .Margin = New Padding(0, 0, 0, 4),
@@ -128,12 +130,17 @@ Friend NotInheritable Class Exchange_Account_Admin_Form
 
         If _mode = DialogMode.Reset Then
             _chkSignOut = New CheckBox With {.AutoSize = True, .Checked = True, .Margin = New Padding(0, 8, 0, 0), .Text = ExchangeAdminText.SignOutEverywhere()}
-            body.Controls.Add(_chkSignOut)
+            ' A boolean row (BOOLEAN-OPTION 2.0, ticket 243 T-11c-b2a): the check box keeps its field, default and handlers.
+            Dim signOutRow As OptionRowHost = OptionRows.InFlow(_chkSignOut)
+            signOutRow.Margin = New Padding(0, 8, 0, 0)
+            body.Controls.Add(signOutRow)
         End If
 
-        Dim buttons As New FlowLayoutPanel With {.AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink, .FlowDirection = FlowDirection.LeftToRight,
-            .WrapContents = False, .Margin = New Padding(0, 10, 0, 6)}
-        _btnOk = New Button With {.AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink, .Padding = New Padding(12, 4, 12, 4),
+        ' The answers ride the shared bottom row (ticket 243 T-8b, BUTTONS 2.0 sections 3 and 4): Cancel first, the final
+        ' affirmative answer last. Bind keeps their meaning: Enter is the OK button (the reset still asks for a typed
+        ' password in its own window, or shows the generated one once), Escape is Cancel. The reset keeps the caution
+        ' glyph it always had; the row neither tints Cancel nor makes either answer a command.
+        _btnOk = New Button With {.Name = "xaa_Ok", .AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink, .Padding = New Padding(12, 4, 12, 4),
             .Text = If(_mode = DialogMode.Add, ExchangeAdminText.CreateButton(), ExchangeAdminText.ResetButton())}
         If _mode = DialogMode.Add Then
             ButtonGlyphs.Apply(_btnOk, "action.confirm", ButtonGlyphRole.Affirmative)
@@ -141,16 +148,17 @@ Friend NotInheritable Class Exchange_Account_Admin_Form
             ButtonGlyphs.Apply(_btnOk, "action.change-password", ButtonGlyphRole.Caution)
         End If
         AddHandler _btnOk.Click, AddressOf OnOkClicked
-        Dim btnCancel As New Button With {.AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink, .Padding = New Padding(12, 4, 12, 4),
+        Dim btnCancel As New Button With {.Name = "xaa_Cancel", .AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink, .Padding = New Padding(12, 4, 12, 4),
             .Text = Localization.T("Отмена"), .DialogResult = DialogResult.Cancel}
         ButtonGlyphs.Apply(btnCancel, "action.cancel", ButtonGlyphRole.Dismissing)
-        buttons.Controls.Add(_btnOk)
-        buttons.Controls.Add(btnCancel)
-        body.Controls.Add(buttons)
-        Me.AcceptButton = _btnOk
-        Me.CancelButton = btnCancel
+        _answerRow = New DialogButtonRow() With {.Dock = DockStyle.Bottom, .Name = "xaa_Buttons", .Padding = New Padding(14, 4, 14, 10)}
+        DpiLayout.AddAnswer(_answerRow, _btnOk, DialogButtonRole.Affirmative)
+        DpiLayout.AddAnswer(_answerRow, btnCancel, DialogButtonRole.Dismissing)
 
         Me.Controls.Add(body)
+        ' Last in the collection: the docked row takes its edge first and reads after the fields in the Tab order.
+        Me.Controls.Add(_answerRow)
+        _answerRow.Bind(Me)
         Me.AutoSize = True
         Me.AutoSizeMode = AutoSizeMode.GrowAndShrink
 
@@ -159,6 +167,7 @@ Friend NotInheritable Class Exchange_Account_Admin_Form
 
     Protected Overrides Sub OnLoad(e As EventArgs)
         MyBase.OnLoad(e)
+        OptionRows.ArrangeAll(Me)
         DpiLayout.ClampToWorkingArea(Me)
         DpiLayout.CenterOnOwner(Me)
         If _txtLogin IsNot Nothing Then _txtLogin.Focus() Else _rbGenerate.Focus()

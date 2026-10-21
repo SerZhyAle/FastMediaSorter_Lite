@@ -1,4 +1,4 @@
-Imports System.Drawing
+﻿Imports System.Drawing
 Imports System.Runtime.InteropServices
 Imports System.Text
 Imports System.Windows.Forms
@@ -206,14 +206,33 @@ Friend NotInheritable Class TrayContext
         AddHandler miStatus.Click, Sub() TrayStatus()
         menu.Items.Add(miStatus)
 
+        For Each destination In {SettingsDestination.Manager, SettingsDestination.Sftp}
+            Dim route = destination
+            Dim caption = If(route = SettingsDestination.Sftp, Localization.T("Настройки общего доступа SFTP"), Localization.T("Настройки менеджера"))
+            Dim settingsItem As New ToolStripMenuItem(caption)
+            AddHandler settingsItem.Click, Sub()
+                ShowSettingsWindow(route)
+            End Sub
+            AddHandler menu.Opening, Sub() settingsItem.Visible = SettingsRoutes.Available(route, WorkerProcess.IsAvailable(), ExchangeProcess.IsAvailable())
+            menu.Items.Add(settingsItem)
+        Next
+
         ' The exchange server (ticket 142 T-6): one item right after Status - the name, then what it is
         ' doing. Present only while the component is installed: its visibility is decided on Opening, like
         ' the viewer item below, and its text is refreshed there off the UI thread (two cheap reads: the
         ' process list and the service state). Nothing is started by showing it; a click opens the window.
         Dim miExchange As New ToolStripMenuItem(ExchangeText.TrayItem(ExchangeRunKind.Stopped)) With {.Visible = False}
-        AddHandler miExchange.Click, Sub() ShowMainWindow(Nothing)
+        miExchange.Image = GlyphRenderer.Render("exchange-mark", 16, SystemColors.MenuText, AddressOf CompanionAssets.OpenBundledAsset)
+        AddHandler miExchange.Click, Sub() ShowSettingsWindow(SettingsDestination.ExchangeServer, "exchange")
         menu.Items.Add(miExchange)
+        AddHandler menu.Opening,
+            Sub()
+                Dim oldImage = miExchange.Image
+                miExchange.Image = GlyphRenderer.Render("exchange-mark", menu.LogicalToDeviceUnits(16), menu.ForeColor, AddressOf CompanionAssets.OpenBundledAsset)
+                oldImage?.Dispose()
+            End Sub
         AddHandler menu.Opening, Sub() RefreshExchangeTrayItem(miExchange)
+        AddHandler miExchange.Disposed, Sub() miExchange.Image?.Dispose()
 
         BuildScheduledMenuItems(menu)
         BuildClipboardMenuItems(menu)
@@ -259,6 +278,13 @@ Friend NotInheritable Class TrayContext
                 Await SendLogsFlow.RunAsync(owner)
             End Sub
         menu.Items.Add(miSendLog)
+
+        Dim miOpenLog As New ToolStripMenuItem(Localization.T("Открыть журнал событий в редакторе"))
+        AddHandler miOpenLog.Click, Sub() Share_Settings_Form.OpenManagementLog(_mainWindow, False)
+        menu.Items.Add(miOpenLog)
+        Dim miLogFolder As New ToolStripMenuItem(Localization.T("Папка журнала событий.."))
+        AddHandler miLogFolder.Click, Sub() Share_Settings_Form.OpenManagementLog(_mainWindow, True)
+        menu.Items.Add(miLogFolder)
 
         Dim miExit As New ToolStripMenuItem(Localization.T("Выход"))
         AddHandler miExit.Click, Sub() ExitApplication()
@@ -396,7 +422,10 @@ Friend NotInheritable Class TrayContext
             Dim status As WorkerStatus = Await ShareController.GetStatusAsync()
             If _disposed OrElse Not DiskSharing.Supported(status) Then Return
             Dim response As WorkerResponse = Await DiskSharing.SendAsync(New WorkerRequest With {.type = "disk-list"})
-            If Not _disposed AndAlso response.Ok AndAlso response.Disks IsNot Nothing Then DiskDriveLetters.Reconcile(response.Disks)
+            ' An absent "disks" on an ok schema-2 answer is an empty list (zero disks shared), which
+            ' DOES release the aliases; only an answer that is not ok is skipped.
+            Dim disks As List(Of SharedDisk) = DiskSharing.DisksOf(response)
+            If Not _disposed AndAlso disks IsNot Nothing Then DiskDriveLetters.Reconcile(disks)
         Catch ex As Exception
             AppFileLogger.LogException("Disk drive alias refresh", ex)
         Finally
@@ -493,6 +522,18 @@ Friend NotInheritable Class TrayContext
             End If
         Catch
         End Try
+    End Sub
+
+    ''' <summary>Construct a settings owner without showing the main window's worker-start flow.</summary>
+    Private Sub ShowSettingsWindow(destination As SettingsDestination, Optional page As String = "", Optional folder As String = "")
+        If _disposed Then Return
+        If _mainWindow Is Nothing OrElse _mainWindow.IsDisposed Then
+            _mainWindow = New MainWindow(Nothing)
+            _mainWindow.ViewerExePathForPhoneRelay = AddressOf ViewerExePath
+            AddHandler _mainWindow.ServerStateChanged, AddressOf RefreshTrayState
+            AddHandler _mainWindow.WelcomeDeclined, Sub() ShowTrayHint()
+        End If
+        _mainWindow.OpenSettings(destination, page, folder)
     End Sub
 
     <DllImport("user32.dll")>
@@ -905,7 +946,7 @@ Friend NotInheritable Class TrayContext
             ShowMainWindow(Nothing)
             Return
         End If
-        Dim answer As DialogResult = MessageBox.Show(
+        Dim answer As DialogResult = ManagerBox.Show(
             Localization.TF("Другая программа просит открыть папку на телефоне:" & vbCrLf & "{0}" & vbCrLf & vbCrLf &
                             "Телефоны с доступом к этому компьютеру смогут просматривать её файлы. Открыть папку?", folder),
             ProductNames.ShareManager, MessageBoxButtons.OKCancel, MessageBoxIcon.Warning,
@@ -1025,19 +1066,8 @@ Friend NotInheritable Class TrayContext
 
     ''' <summary>Opens the Scheduled file operations page of the settings, on top of the manager window.</summary>
     Private Sub ShowScheduledOperations(folder As String)
-        Try
-            ShowMainWindow(Nothing)
-            If _mainWindow IsNot Nothing AndAlso Not _mainWindow.IsDisposed Then
-                Dim live As MainWindow = _mainWindow
-                ' Posted: a wake handler returns its acknowledgement before a modal page opens.
-                live.BeginInvoke(New Action(Sub()
-                                                If live.IsDisposed Then Return
-                                                live.OpenScheduledOperations(folder)
-                                            End Sub))
-            End If
-        Catch ex As Exception
-            AppFileLogger.LogException("Tray: scheduled operations", ex)
-        End Try
+        ShowSettingsWindow(SettingsDestination.Manager, "scheduled", folder)
+
     End Sub
 
     Private Sub ShowTrayNotice(text As String)

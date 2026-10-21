@@ -466,6 +466,58 @@ Partial Public NotInheritable Class Localization
             "Pronto, em pausa: {0}", "جاهز، متوقف مؤقتاً: {0}", "तैयार, रुका हुआ: {0}",
             "প্রস্তুত, বিরতিতে: {0}", "تیار، رکا ہوا: {0}", "已就绪，已暂停：{0}")
 
+        ' --- spec 242: animated graphics through a temporary video, the Settings rows (rules 2, 30) ----
+        ' The two FFmpeg state texts start with a Latin word, so the Arabic and Urdu ones carry a leading
+        ' right-to-left mark, as the Ollama status texts in Localization.Ocr.vb do.
+        Add("Анимированная графика через видео",
+            "Animated graphics through video", "Анімована графіка через відео", "Animierte Grafik als Video",
+            "Grafica animata tramite video", "Gráficos animados mediante vídeo", "Graphiques animés via la vidéo",
+            "Gráficos animados via vídeo", "الرسوم المتحركة عبر الفيديو", "एनिमेटेड ग्राफ़िक्स वीडियो के रूप में",
+            "অ্যানিমেটেড গ্রাফিক্স ভিডিওর মাধ্যমে", "اینیمیٹڈ گرافکس بذریعہ ویڈیو", "通过视频播放动画图形")
+        Add("Длинная анимированная картинка проигрывается как видео - без масштаба, панорамы, OCR и редактора; короткие анимации показываются как раньше.",
+            "A long animated picture plays as a video - without zoom, pan, OCR and the editor; short animations are shown as before.",
+            "Довга анімована картинка відтворюється як відео - без масштабу, панорами, OCR і редактора; короткі анімації показуються як раніше.",
+            "Ein langes animiertes Bild wird als Video abgespielt - ohne Zoom, Verschieben, OCR und Editor; kurze Animationen werden wie bisher gezeigt.",
+            "Una lunga immagine animata viene riprodotta come video - senza zoom, spostamento, OCR ed editor; le animazioni brevi restano come prima.",
+            "Una imagen animada larga se reproduce como vídeo - sin zoom, desplazamiento, OCR ni editor; las animaciones cortas se muestran como antes.",
+            "Une longue image animée est lue comme une vidéo - sans zoom, déplacement, OCR ni éditeur ; les animations courtes restent affichées comme avant.",
+            "Uma imagem animada longa é reproduzida como vídeo - sem zoom, deslocamento, OCR nem editor; as animações curtas são exibidas como antes.",
+            "تُشغَّل الصورة المتحركة الطويلة كفيديو - دون تكبير أو تحريك أو OCR أو محرر؛ وتُعرض الصور المتحركة القصيرة كما كانت.",
+            "लंबी एनिमेटेड तस्वीर वीडियो की तरह चलती है - ज़ूम, खिसकाने, OCR और संपादक के बिना; छोटे एनिमेशन पहले की तरह दिखते हैं।",
+            "দীর্ঘ অ্যানিমেটেড ছবি ভিডিও হিসেবে চলে - জুম, সরানো, OCR ও সম্পাদক ছাড়া; ছোট অ্যানিমেশন আগের মতোই দেখানো হয়।",
+            "لمبی اینیمیٹڈ تصویر ویڈیو کی طرح چلتی ہے - زوم، کھسکانے، OCR اور ایڈیٹر کے بغیر؛ چھوٹی اینیمیشنز پہلے کی طرح دکھائی جاتی ہیں۔",
+            "较长的动画图片会作为视频播放，不支持缩放、平移、OCR 和编辑器；较短的动画仍按原样显示。")
+        Add("FFmpeg: установлен",
+            "FFmpeg: installed", "FFmpeg: встановлено", "FFmpeg: installiert",
+            "FFmpeg: installato", "FFmpeg: instalado", "FFmpeg : installé",
+            "FFmpeg: instalado", "‏FFmpeg: مثبت", "FFmpeg: इंस्टॉल है",
+            "FFmpeg: ইনস্টল করা আছে", "‏FFmpeg: انسٹال ہے", "FFmpeg：已安装")
+        Add("FFmpeg: не установлен",
+            "FFmpeg: not installed", "FFmpeg: не встановлено", "FFmpeg: nicht installiert",
+            "FFmpeg: non installato", "FFmpeg: no instalado", "FFmpeg : non installé",
+            "FFmpeg: não instalado", "‏FFmpeg: غير مثبت", "FFmpeg: इंस्टॉल नहीं है",
+            "FFmpeg: ইনস্টল করা নেই", "‏FFmpeg: انسٹال نہیں ہے", "FFmpeg：未安装")
+        Add("Загрузить..",
+            "Download..", "Завантажити..", "Herunterladen..",
+            "Scarica..", "Descargar..", "Télécharger..",
+            "Baixar..", "تنزيل..", "डाउनलोड करें..",
+            "ডাউনলোড করুন..", "ڈاؤن لوڈ کریں..", "下载..")
+        Add("Видео готовится..",
+            "Preparing video..", "Відео готується..", "Video wird vorbereitet..",
+            "Preparazione del video..", "Preparando el vídeo..", "Préparation de la vidéo..",
+            "A preparar o vídeo..", "جارٍ إعداد الفيديو..", "वीडियो तैयार हो रहा है..",
+            "ভিডিও প্রস্তুত হচ্ছে..", "ویڈیو تیار ہو رہی ہے..", "正在准备视频..")
+        Add("Видео готовится.. {0} %",
+            "Preparing video.. {0} %", "Відео готується.. {0} %", "Video wird vorbereitet.. {0} %",
+            "Preparazione del video.. {0} %", "Preparando el vídeo.. {0} %", "Préparation de la vidéo.. {0} %",
+            "A preparar o vídeo.. {0} %", "جارٍ إعداد الفيديو.. {0} %", "वीडियो तैयार हो रहा है.. {0} %",
+            "ভিডিও প্রস্তুত হচ্ছে.. {0} %", "ویڈیو تیار ہو رہی ہے.. {0} %", "正在准备视频.. {0} %")
+        Add("Анимация показана без видео: {0}",
+            "Animation shown without video: {0}", "Анімацію показано без відео: {0}", "Animation ohne Video angezeigt: {0}",
+            "Animazione mostrata senza video: {0}", "Animación mostrada sin vídeo: {0}", "Animation affichée sans vidéo : {0}",
+            "Animação exibida sem vídeo: {0}", "عُرضت الرسوم المتحركة بدون فيديو: {0}", "एनिमेशन बिना वीडियो के दिखाया गया: {0}",
+            "ভিডিও ছাড়া অ্যানিমেশন দেখানো হয়েছে: {0}", "اینیمیشن ویڈیو کے بغیر دکھائی گئی: {0}", "动画已在没有视频的情况下显示：{0}")
+
     End Sub
 
 End Class

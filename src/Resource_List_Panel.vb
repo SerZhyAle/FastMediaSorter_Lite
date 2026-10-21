@@ -1077,7 +1077,9 @@ Friend NotInheritable Class Resource_List_Panel
                     If cancel.IsCancellationRequested Then Return
                     answers.Add(endpoint.Host & ":" & endpoint.Port.ToString(CultureInfo.InvariantCulture) & " - " & ResourceProbe.VerdictSentence(verdict))
                     If verdict = ProbeVerdict.SshOk Then reachable = True
-                    If verdict = ProbeVerdict.PortOpen Then openPortOnly = True
+                    ' Something accepted the connection. Whether it is SSH is undetermined for an open port that says something else AND for
+                    ' one that closed before any banner (SHARE-SESSION 1.3 (iii): a server at its connection limit does that) - a warning, not a failure.
+                    If verdict = ProbeVerdict.PortOpen OrElse verdict = ProbeVerdict.ClosedBeforeBanner Then openPortOnly = True
                 Next
                 sentence = String.Join("; ", answers)
                 severity = If(reachable, ResourceStatusSeverity.Success, If(openPortOnly, ResourceStatusSeverity.Warning, ResourceStatusSeverity.Danger))

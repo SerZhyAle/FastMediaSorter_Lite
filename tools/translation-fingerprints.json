@@ -8,56 +8,56 @@
     "as stale, by name. Re-translate the named locales first - batching the fan-out to the",
     "release boundary is allowed - then re-record. Never edit the hashes by hand."
   ],
-  "recorded": "2026-10-16",
-  "siteFingerprint": "8f3e8929d7196509",
+  "recorded": "2026-10-20",
+  "siteFingerprint": "03f01356cb412c4e",
   "trustFingerprint": "9426baf6d09d63d2",
   "locales": {
     "ru": {
-      "site": "8f3e8929d7196509",
+      "site": "03f01356cb412c4e",
       "trust": "9426baf6d09d63d2"
     },
     "uk": {
-      "site": "8f3e8929d7196509",
+      "site": "03f01356cb412c4e",
       "trust": "9426baf6d09d63d2"
     },
     "de": {
-      "site": "8f3e8929d7196509",
+      "site": "03f01356cb412c4e",
       "trust": "9426baf6d09d63d2"
     },
     "it": {
-      "site": "8f3e8929d7196509",
+      "site": "03f01356cb412c4e",
       "trust": "9426baf6d09d63d2"
     },
     "es": {
-      "site": "8f3e8929d7196509",
+      "site": "03f01356cb412c4e",
       "trust": "9426baf6d09d63d2"
     },
     "fr": {
-      "site": "8f3e8929d7196509",
+      "site": "03f01356cb412c4e",
       "trust": "9426baf6d09d63d2"
     },
     "pt": {
-      "site": "8f3e8929d7196509",
+      "site": "03f01356cb412c4e",
       "trust": "9426baf6d09d63d2"
     },
     "ar": {
-      "site": "8f3e8929d7196509",
+      "site": "03f01356cb412c4e",
       "trust": "9426baf6d09d63d2"
     },
     "hi": {
-      "site": "8f3e8929d7196509",
+      "site": "03f01356cb412c4e",
       "trust": "9426baf6d09d63d2"
     },
     "bn": {
-      "site": "8f3e8929d7196509",
+      "site": "03f01356cb412c4e",
       "trust": "9426baf6d09d63d2"
     },
     "ur": {
-      "site": "8f3e8929d7196509",
+      "site": "03f01356cb412c4e",
       "trust": "9426baf6d09d63d2"
     },
     "zh": {
-      "site": "8f3e8929d7196509",
+      "site": "03f01356cb412c4e",
       "trust": "9426baf6d09d63d2"
     }
   }

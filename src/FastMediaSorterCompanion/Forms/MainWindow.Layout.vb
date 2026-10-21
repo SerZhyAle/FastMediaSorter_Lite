@@ -7,15 +7,18 @@ Imports System.Windows.Forms
 
 ''' <summary>
 ''' The Share Manager main window's frame: how it is built, how it is sized, and what it
-''' remembers (SPECIFICATION_SHARE_MANAGER_COMPACT_WINDOW.md §3.1-§3.3).
+''' remembers (SPECIFICATION_SHARE_MANAGER_COMPACT_WINDOW.md §3.1-§3.3, spec 237 §3.4).
 '''
 ''' The shape in one paragraph: a single-column TableLayoutPanel with AutoScroll holds a
-''' header strip (auto height), the folder-list block (an ABSOLUTE height recomputed on
-''' every resize), and the three collapsible sections (auto height). Making the list row
-''' absolute rather than percent is what implements §3.2 G4 - the list is the element that
-''' gives up height when a section opens, down to a three-row floor, after which the window
-''' grows downwards and, failing that, the outer column scrolls. A percent row could not
-''' express the floor, and an AutoSize+AutoScroll panel is a documented WinForms conflict.
+''' header strip, the resources fold (whose body is the toolbar plus the folder list, an
+''' ABSOLUTE-height panel recomputed on every resize - spec 237 rule L-1 sizes it to its
+''' content, capped at eight rows), and the three collapsible sections. The list panel
+''' carries its height directly because the fold around it is AutoSize: the sections then
+''' snap up beneath a short list, and the list is still the element that gives up height
+''' when a section opens, down to a three-row floor (§3.2 G4), after which the window
+''' grows downwards and, failing that, the outer column scrolls. An AutoSize list panel
+''' inside an AutoScroll parent is a documented WinForms conflict, which is exactly why
+''' the height is assigned, never grown into.
 ''' </summary>
 Partial Public NotInheritable Class MainWindow
     Implements IThemeAware
@@ -65,17 +68,23 @@ Partial Public NotInheritable Class MainWindow
         _root.ColumnStyles.Add(New ColumnStyle(SizeType.Absolute, 0.0F))
         _root.RowCount = 3
         _root.RowStyles.Add(New RowStyle(SizeType.AutoSize))              ' header strip
-        _root.RowStyles.Add(New RowStyle(SizeType.Absolute, 240.0F))      ' folder list - recomputed
+        ' The resources fold (spec 237 S-0) carries the list block; its height is the
+        ' body's - RelayoutContent sets the list panel's Height directly (rule L-1), and
+        ' the fold wraps it with its header. An AutoSize row hands the leftover window
+        ' height to the sections row below, which is what makes the sections snap up
+        ' beneath a content-sized list instead of floating above a stretched one.
+        _root.RowStyles.Add(New RowStyle(SizeType.AutoSize))              ' resources fold + list
         _root.RowStyles.Add(New RowStyle(SizeType.AutoSize))              ' the three sections
 
         BuildHeaderStrip()
         BuildListBlock()
+        BuildResourcesFold()
         BuildSections()
         _root.Controls.Add(_pnlHeader, 0, HeaderRow)
-        _root.Controls.Add(_pnlList, 0, ListRow)
+        _root.Controls.Add(_secResources, 0, ListRow)
         _root.Controls.Add(_pnlSections, 0, SectionsRow)
         _root.SetColumnSpan(_pnlHeader, 2)
-        _root.SetColumnSpan(_pnlList, 2)
+        _root.SetColumnSpan(_secResources, 2)
         _root.SetColumnSpan(_pnlSections, 2)
 
         progressBar = New ProgressBar With {.Dock = DockStyle.Bottom, .Height = 6, .Style = ProgressBarStyle.Marquee,
@@ -201,7 +210,10 @@ Partial Public NotInheritable Class MainWindow
     ''' is gone: the buttons above already name the block, and the frame cost a row of
     ''' padding on a window whose whole point is fitting a small screen.</summary>
     Private Sub BuildListBlock()
-        _pnlList = New Panel With {.Dock = DockStyle.Fill, .Margin = New Padding(0)}
+        ' Dock Top inside the resources fold's body row: the fold is AutoSize, so the
+        ' panel's own Height - assigned by RelayoutContent, rule L-1 - is what sizes it,
+        ' never the window.
+        _pnlList = New Panel With {.Dock = DockStyle.Top, .Margin = New Padding(0), .Height = 240}
 
         _pnlListButtons = New FlowLayoutPanel With {.Dock = DockStyle.Top, .AutoSize = True,
             .AutoSizeMode = AutoSizeMode.GrowAndShrink, .WrapContents = False, .Tag = "no-wrap", .Padding = New Padding(0, 0, 0, 6)}
@@ -242,7 +254,7 @@ Partial Public NotInheritable Class MainWindow
             Sub()
                 mnuAddBroadcast.Visible = (btnBroadcasts IsNot Nothing AndAlso btnBroadcasts.Visible)
                 If _initialFolder.Length > 0 Then
-                    mnuAddCurrent.Text = Localization.T("+ Текущая") & ": " & System.IO.Path.GetFileName(_initialFolder)
+                    mnuAddCurrent.Text = Localization.TF("+ Текущая: {0}", System.IO.Path.GetFileName(_initialFolder))
                     mnuAddCurrent.Visible = True
                 Else
                     mnuAddCurrent.Visible = False
@@ -344,6 +356,18 @@ Partial Public NotInheritable Class MainWindow
         _pnlList.Controls.Add(_pnlListButtons)
     End Sub
 
+    ''' <summary>Spec 237 rule S-0: the single-row toolbar and the list travel inside one
+    ''' fold titled "Общие ресурсы", so collapsing it compacts the whole window into a
+    ''' status widget of live summaries. The body is full-bleed (no side indent): the
+    ''' toolbar above the list already names the block, and the list needs the width.</summary>
+    Private Sub BuildResourcesFold()
+        _secResources = New CollapsibleSection("resources", Localization.T("Общие ресурсы")) With {.Dock = DockStyle.Fill}
+        _secResources.Body.Padding = New Padding(0, LogicalToDeviceUnits(4), 0, 0)
+        _secResources.AddBodyRow(_pnlList)
+        AddHandler _secResources.ExpandedChanged, AddressOf OnSectionExpandedChanged
+        UpdateResourcesSummary()
+    End Sub
+
     ''' <summary>The three sections of §3.4, in the fixed order access -> internet ->
     ''' statistics: what works on this Wi-Fi, what works from outside, what has happened.</summary>
     Private Sub BuildSections()
@@ -384,6 +408,7 @@ Partial Public NotInheritable Class MainWindow
             .TextAlign = ContentAlignment.MiddleLeft, .Margin = New Padding(0, 0, 10, 0)}
 
         strip.Controls.Add(lblHint, 0, 0)
+        _statusStrip = strip
         Return strip
     End Function
 
@@ -413,10 +438,13 @@ Partial Public NotInheritable Class MainWindow
     ''' <summary>All collapsed by default (decision E), with §3.4's amber auto-expand as the
     ''' only exception. A key that is not in the CSV - a section added after the value was
     ''' written - simply starts collapsed; that is the whole reason it is one CSV value
-    ''' rather than one registry flag per section.</summary>
+    ''' rather than one registry flag per section. The resources fold inverts the
+    ''' convention (spec 237 S-0): it defaults to EXPANDED - G4, the list is the object the
+    ''' window is about - so "resources" in the CSV records the COLLAPSED state.</summary>
     Private Sub RestoreExpandedSections()
         Dim saved As String = If(_settings.ExpandedSections, "")
         Dim open As New HashSet(Of String)(saved.Split(","c), StringComparer.OrdinalIgnoreCase)
+        If _secResources IsNot Nothing Then _secResources.Expanded = Not open.Contains(_secResources.Key)
         For Each sec As CollapsibleSection In Sections()
             sec.Expanded = open.Contains(sec.Key) AndAlso Not String.Equals(sec.Key, "stats", StringComparison.OrdinalIgnoreCase)
         Next
@@ -425,6 +453,7 @@ Partial Public NotInheritable Class MainWindow
 
     Private Function ExpandedSectionsCsv() As String
         Dim keys As New List(Of String)()
+        If _secResources IsNot Nothing AndAlso Not _secResources.Expanded Then keys.Add(_secResources.Key)
         For Each sec As CollapsibleSection In Sections()
             If sec IsNot Nothing AndAlso sec.Expanded Then keys.Add(sec.Key)
         Next
@@ -437,6 +466,13 @@ Partial Public NotInheritable Class MainWindow
     ''' read as broken.</summary>
     Private Sub OnSectionExpandedChanged(sender As Object, e As EventArgs)
         If Not _sectionsRestored Then Return
+        ' The resources fold is not a disclosure but a window mode (spec 237 S-0): the
+        ' window itself compacts and un-compacts with it.
+        If sender Is _secResources Then
+            ApplyResourcesFoldWindowSizing()
+            RelayoutContent()
+            Return
+        End If
         If sender Is _secStats AndAlso _secStats.Expanded Then
             _secStats.Expanded = False
             OnStatsDetailsClicked(_secStats, EventArgs.Empty)
@@ -452,7 +488,11 @@ Partial Public NotInheritable Class MainWindow
         If Me.WindowState <> FormWindowState.Normal OrElse _wideMode Then Return
         ' Two pixels of slack: growing to EXACTLY the needed height leaves AutoScroll on the
         ' boundary and it shows a scrollbar for content that fits.
-        Dim needed As Integer = HeaderHeight() + SectionsHeight() + MinimumListHeight() + _root.Padding.Vertical + 2
+        ' The list contributes its content size (rule L-1) - or nothing at all while the
+        ' resources fold keeps it folded away (rule S-0).
+        Dim listNeed As Integer = If(_secResources IsNot Nothing AndAlso Not _secResources.Expanded,
+                                     0, Math.Max(MinimumListHeight(), DesiredListHeight()))
+        Dim needed As Integer = HeaderHeight() + SectionsHeight() + listNeed + _root.Padding.Vertical + 2
         Dim deficit As Integer = needed - _root.ClientSize.Height
         If deficit <= 0 Then Return
         Dim wa As Rectangle = DpiLayout.WorkingAreaFor(Me)
@@ -460,6 +500,66 @@ Partial Public NotInheritable Class MainWindow
         Dim grow As Integer = Math.Min(deficit, room)
         If grow > 0 Then Me.Height += grow
     End Sub
+
+    ' --- the resources fold as a window mode (spec 237 S-0) ----------------------
+
+    ''' <summary>
+    ''' Collapsing the resources fold compacts the WINDOW itself: the point of the fold is
+    ''' a tiny status widget, which a fold inside an unchanged tall window cannot be. The
+    ''' pre-collapse height is remembered and given back on expand, so the compaction never
+    ''' costs the user their chosen window size. A maximized window is left alone - a fold
+    ''' must not un-maximize anything - and the fold then acts as a plain disclosure.
+    ''' </summary>
+    Private Sub ApplyResourcesFoldWindowSizing()
+        If _secResources Is Nothing Then Return
+        If _secResources.Expanded Then
+            If Not _resourcesCompacted Then Return
+            _resourcesCompacted = False
+            Dim target As Integer = If(_preCollapseWindowHeight > 0, _preCollapseWindowHeight, ExpandedResourcesHeight())
+            _preCollapseWindowHeight = 0
+            If Me.WindowState = FormWindowState.Normal Then ApplyWindowHeight(target)
+        Else
+            If Me.WindowState <> FormWindowState.Normal Then Return
+            _resourcesCompacted = True
+            If _preCollapseWindowHeight <= 0 Then _preCollapseWindowHeight = Me.Height
+            ApplyWindowHeight(CollapsedResourcesHeight())
+        End If
+    End Sub
+
+    Private Sub ApplyWindowHeight(target As Integer)
+        Dim wa As Rectangle = DpiLayout.WorkingAreaFor(Me)
+        Dim h As Integer = Math.Max(Me.MinimumSize.Height, Math.Min(target, wa.Height))
+        If Me.Height <> h Then Me.Height = h
+    End Sub
+
+    ''' <summary>Title bar and borders, plus the docked hint strip (and the marquee bar on
+    ''' the rare frames it shows) - everything outside <see cref="_root"/> that still
+    ''' belongs to the window's height.</summary>
+    Private Function InnerChromeHeight() As Integer
+        Dim chrome As Integer = Me.Height - Me.ClientSize.Height
+        If _statusStrip IsNot Nothing Then chrome += _statusStrip.Height
+        If progressBar IsNot Nothing AndAlso progressBar.Visible Then chrome += progressBar.Height
+        Return chrome
+    End Function
+
+    ''' <summary>The window height the folded widget needs: header strip, the fold's own
+    ''' header, the sections - beside it in wide mode, beneath it otherwise - and the chrome.</summary>
+    Private Function CollapsedResourcesHeight() As Integer
+        Dim fold As Integer = If(_secResources Is Nothing, 0, _secResources.PreferredSize.Height)
+        Dim sections As Integer = SectionsHeight()
+        Dim body As Integer = If(_wideMode, Math.Max(fold, sections), fold + sections)
+        Return HeaderHeight() + body + _root.Padding.Vertical + InnerChromeHeight() + 2
+    End Function
+
+    ''' <summary>The expand target when no pre-collapse height is known - the fold was
+    ''' restored collapsed and is opened for the first time: the content-sized list, not
+    ''' a guess. The slack covers the fold header and the body's padding.</summary>
+    Private Function ExpandedResourcesHeight() As Integer
+        Dim listArea As Integer = Math.Max(MinimumListHeight(), DesiredListHeight())
+        Dim sections As Integer = SectionsHeight()
+        Dim body As Integer = If(_wideMode, Math.Max(listArea, sections), listArea + sections)
+        Return HeaderHeight() + body + LogicalToDeviceUnits(40) + _root.Padding.Vertical + InnerChromeHeight() + 2
+    End Function
 
     ' --- geometry ---------------------------------------------------------------
 
@@ -488,42 +588,45 @@ Partial Public NotInheritable Class MainWindow
     End Function
 
     ''' <summary>The floor of §3.2 G4: the button row plus three list rows and the column
-    ''' header. Below this a "list" stops being one.</summary>
+    ''' header, plus the empty-list hint when it is showing - it is docked inside the same
+    ''' panel. Below this a "list" stops being one.</summary>
     Private Function MinimumListHeight() As Integer
         Dim buttons As Integer = If(_pnlListButtons Is Nothing, 0, _pnlListButtons.Height)
-        Return buttons + LogicalToDeviceUnits(92)
+        Return buttons + EmptyHintHeight() + LogicalToDeviceUnits(92)
     End Function
 
-    ''' <summary>Spec 237 Rule L-1: dynamic list height sized to (Items.Count + 1) rows, capped at 8 rows.</summary>
+    ''' <summary>Spec 237 Rule L-1: dynamic list height sized to (Items.Count + 1) rows,
+    ''' capped at 8 rows - past the cap the list scrolls internally instead of growing.</summary>
     Private Function DesiredListHeight() As Integer
         Dim count As Integer = If(lvFolders Is Nothing, 0, Math.Max(1, lvFolders.Items.Count + 1))
         count = Math.Min(count, 8)
         Dim buttons As Integer = If(_pnlListButtons Is Nothing, 0, _pnlListButtons.Height)
         Dim rowHeight As Integer = LogicalToDeviceUnits(22)
         Dim headerHeight As Integer = LogicalToDeviceUnits(26)
-        Return buttons + headerHeight + (count * rowHeight) + LogicalToDeviceUnits(10)
+        Return buttons + EmptyHintHeight() + headerHeight + (count * rowHeight) + LogicalToDeviceUnits(10)
+    End Function
+
+    ''' <summary>The "Добавьте первый ресурс.." hint is docked to the bottom of the same
+    ''' panel the list fills, so when it shows it is part of the block's height.</summary>
+    Private Function EmptyHintHeight() As Integer
+        Return If(_emptyResourceHint IsNot Nothing AndAlso _emptyResourceHint.Visible, _emptyResourceHint.Height, 0)
     End Function
 
     ''' <summary>
-    ''' Gives the list the remaining available space down to the sections, but never less than MinimumListHeight.
-    ''' Sections hug the bottom above the status strip, eliminating any dead empty space.
+    ''' Rule L-1 of spec 237 §3.4: the list block's height is its CONTENT - (rows + 1)
+    ''' capped at eight - bounded below by the G4 floor and above by the space the window
+    ''' actually has between the header and the sections. The panel carries the height
+    ''' directly (the fold that wraps it is AutoSize), so a short list leaves the sections
+    ''' snapping up beneath it instead of a stretched empty ListView.
     ''' </summary>
     Private Sub RelayoutContent()
-        If _root Is Nothing OrElse _relayouting Then Return
+        If _root Is Nothing OrElse _relayouting OrElse _pnlList Is Nothing Then Return
         _relayouting = True
         Try
             Dim available As Integer = _root.ClientSize.Height - _root.Padding.Vertical - HeaderHeight()
             If Not _wideMode Then available -= SectionsHeight()
-            Dim height As Integer = Math.Max(MinimumListHeight(), available)
-            ' Two-column mode puts the sections IN this row, beside the list, so the row has
-            ' to be tall enough for whichever of the two is taller - otherwise an expanded
-            ' section would be clipped by a row sized for the list alone.
-            If _wideMode Then height = Math.Max(height, SectionsHeight())
-            Dim style As RowStyle = _root.RowStyles(ListRow)
-            If style.SizeType <> SizeType.Absolute OrElse CInt(style.Height) <> height Then
-                style.SizeType = SizeType.Absolute
-                style.Height = height
-            End If
+            Dim height As Integer = Math.Max(MinimumListHeight(), Math.Min(DesiredListHeight(), available))
+            If _pnlList.Height <> height Then _pnlList.Height = height
             UpdateFolderColumnWidths()
         Catch
         Finally
@@ -561,7 +664,7 @@ Partial Public NotInheritable Class MainWindow
         Try
             If wide Then
                 _root.ColumnStyles(1) = New ColumnStyle(SizeType.Absolute, CSng(LogicalToDeviceUnits(SectionsColumnWidth)))
-                _root.SetColumnSpan(_pnlList, 1)
+                _root.SetColumnSpan(_secResources, 1)
                 _root.SetColumnSpan(_pnlSections, 1)
                 _root.SetCellPosition(_pnlSections, New TableLayoutPanelCellPosition(1, ListRow))
                 _pnlSections.Dock = DockStyle.Top
@@ -569,7 +672,7 @@ Partial Public NotInheritable Class MainWindow
             Else
                 _root.ColumnStyles(1) = New ColumnStyle(SizeType.Absolute, 0.0F)
                 _root.SetCellPosition(_pnlSections, New TableLayoutPanelCellPosition(0, SectionsRow))
-                _root.SetColumnSpan(_pnlList, 2)
+                _root.SetColumnSpan(_secResources, 2)
                 _root.SetColumnSpan(_pnlSections, 2)
                 ' Top, not Fill: the sections sit in the last row, which absorbs whatever
                 ' height the computation above left over, and they must hug the list rather
@@ -637,7 +740,12 @@ Partial Public NotInheritable Class MainWindow
         _settings.WindowX = bounds.X
         _settings.WindowY = bounds.Y
         _settings.WindowWidth = CInt(bounds.Width * 96L \ dpi)
-        _settings.WindowHeight = CInt(bounds.Height * 96L \ dpi)
+        ' While the resources fold keeps the window compacted (spec 237 S-0), the
+        ' remembered size is the pre-compaction one: reopening must give the working
+        ' window back, not a widget that has to be pulled apart again.
+        Dim heightPx As Integer = bounds.Height
+        If _resourcesCompacted AndAlso _preCollapseWindowHeight > 0 Then heightPx = _preCollapseWindowHeight
+        _settings.WindowHeight = CInt(heightPx * 96L \ dpi)
         _settings.WindowMaximized = (Me.WindowState = FormWindowState.Maximized)
         _settings.ExpandedSections = ExpandedSectionsCsv()
     End Sub

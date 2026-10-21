@@ -36,15 +36,18 @@ Friend NotInheritable Class Resource_Edit_Form
     Private ReadOnly passwordBox As TextBox
     Private ReadOnly passwordHint As Label
     Private ReadOnly revealBox As CheckBox
+    Private ReadOnly revealRow As OptionRowHost
     Private ReadOnly folderLabel As Label
     Private ReadOnly folderBox As TextBox
     Private ReadOnly readOnlyBox As CheckBox
+    Private ReadOnly readOnlyRow As OptionRowHost
     Private ReadOnly keyLabel As Label
     Private ReadOnly keyValue As Label
     Private ReadOnly forgetKey As Button
     Private ReadOnly problem As Label
     Private ReadOnly okButton As Button
     Private ReadOnly dismissButton As Button
+    Private ReadOnly answerRow As DialogButtonRow
     Private script_Font As Font
     Private pin As String
 
@@ -116,19 +119,24 @@ Friend NotInheritable Class Resource_Edit_Form
                                        .Text = If(isNew, "", Localization.T("Пусто - оставить сохранённый пароль"))}
 
         ' The same deliberate reveal the password window of a resource has: off at the start (124 UX-203).
-        y += 20
-        revealBox = New CheckBox With {.Name = "res_Reveal", .AutoSize = True, .Location = New Point(FieldX, y), .Text = Localization.T("Показать пароль")}
+        ' Both check boxes are option rows of the Settings anatomy (ticket 243 T-11b, BOOLEAN-OPTION 2.0): the same controls with
+        ' the same names, state and handlers, a 20 px box in a 32 px target at the field column, the caption beside it. A row is
+        ' 40 px tall at 96 dpi and FitContent grows it (and pushes what is below) when a long caption wraps.
+        y += 16
+        revealBox = New CheckBox With {.Name = "res_Reveal", .Text = Localization.T("Показать пароль")}
         AddHandler revealBox.CheckedChanged, Sub() passwordBox.UseSystemPasswordChar = Not revealBox.Checked
+        revealRow = DialogOptionRow.CreateAt(revealBox, Nothing, FieldX, y, 460)
 
-        y += 24
+        y += 40
         folderLabel = AddRow("res_FolderLabel", Localization.T("Папка на сервере:"), y)
         folderBox = New TextBox With {.Name = "res_Folder", .Location = New Point(FieldX, y), .Size = New Size(FieldWidth, 24)}
 
-        y += 30
-        readOnlyBox = New CheckBox With {.Name = "res_ReadOnly", .AutoSize = True, .Location = New Point(FieldX, y),
-                                         .Checked = start.ReadOnlyHint, .Text = Localization.T("Только чтение (ничего не менять на сервере)")}
+        y += 28
+        readOnlyBox = New CheckBox With {.Name = "res_ReadOnly", .Checked = start.ReadOnlyHint,
+                                         .Text = Localization.T("Только чтение (ничего не менять на сервере)")}
+        readOnlyRow = DialogOptionRow.CreateAt(readOnlyBox, Nothing, FieldX, y, 460)
 
-        y += 30
+        y += 42
         keyLabel = AddRow("res_KeyLabel", Localization.T("Ключ сервера:"), y)
         keyValue = New Label With {.Name = "res_KeyValue", .AutoSize = False, .Location = New Point(FieldX, y - 2), .Size = New Size(FieldWidth, 30)}
         y += 34
@@ -139,19 +147,23 @@ Friend NotInheritable Class Resource_Edit_Form
 
         problem = New Label With {.Name = "res_Problem", .AutoSize = False, .Location = New Point(LabelX, y + 26), .Size = New Size(432, 30), .ForeColor = Color.Firebrick}
 
-        okButton = New Button With {.Name = "res_Ok", .Location = New Point(264, y + 60), .Size = New Size(86, 28), .Text = Localization.T("Сохранить")}
+        okButton = New Button With {.Name = "res_Ok", .Text = Localization.T("Сохранить")}
         AddHandler okButton.Click, AddressOf Confirm
-        ButtonGlyphs.Apply(okButton, "action.save", ButtonGlyphRole.Affirmative)
-        dismissButton = New Button With {.Name = "res_Cancel", .Location = New Point(358, y + 60), .Size = New Size(88, 28),
-                                         .Text = Localization.T("Отмена"), .DialogResult = DialogResult.Cancel}
-        ButtonGlyphs.Apply(dismissButton, "action.cancel", ButtonGlyphRole.Dismissing)
+        dismissButton = New Button With {.Name = "res_Cancel", .Text = Localization.T("Отмена"), .DialogResult = DialogResult.Cancel}
 
-        For Each c As Control In New Control() {kind, nameBox, hostBox, portBox, userBox, passwordBox, passwordHint, revealBox, folderBox, readOnlyBox, keyValue, forgetKey, problem, okButton, dismissButton}
+        ' The answers ride the shared bottom row (ticket 243 T-8b, BUTTONS 2.0 sections 3 and 4): Cancel first, Save last,
+        ' widths from the caption and its glyph. Bind keeps their meaning: Enter is Save (the safe default - it keeps the
+        ' entry, it destroys nothing), Escape and the close box are Cancel.
+        answerRow = New DialogButtonRow() With {.Dock = DockStyle.Bottom, .Name = "res_Buttons", .Padding = New Padding(14, 8, 14, 10)}
+        answerRow.Add(okButton, DialogButtonRole.Affirmative, "action.save")
+        answerRow.Add(dismissButton, DialogButtonRole.Dismissing, "action.cancel")
+
+        For Each c As Control In New Control() {kind, nameBox, hostBox, portBox, userBox, passwordBox, passwordHint, revealRow, folderBox, readOnlyRow, keyValue, forgetKey, problem, answerRow}
             Me.Controls.Add(c)
         Next
-        Me.AcceptButton = okButton
-        Me.CancelButton = dismissButton
-        Me.ClientSize = New Size(460, y + 98)
+        answerRow.Bind(Me)
+        ' The authored content ends at y + 56 (the problem line); the bottom row below it is 50 tall at 96 dpi.
+        Me.ClientSize = New Size(460, y + 106)
 
         If start.Kind = ResourceKind.Smb OrElse start.Kind = ResourceKind.Unc Then
             hostBox.Text = start.RootPath
@@ -170,6 +182,7 @@ Friend NotInheritable Class Resource_Edit_Form
     Protected Overrides Sub OnLoad(e As EventArgs)
         MyBase.OnLoad(e)
         DialogLayout.FitContent(Me)
+        DialogLayout.KeepRoomForRow(Me, answerRow)
     End Sub
 
     Private Function AddRow(controlName As String, text As String, y As Integer) As Label

@@ -49,6 +49,10 @@ const (
 	TypePasswordChanged  = "password-changed"
 	TypeAccountDelete    = "account-delete"
 	TypeAccountDeleted   = "account-deleted"
+	TypeAdminAuth        = "admin-auth"
+	TypeAdminAuthOK      = "admin-auth-ok"
+	TypeAdminRequest     = "admin-request"
+	TypeAdminReply       = "admin-reply"
 )
 
 // Head is the first two members of every envelope. It is embedded first in every typed envelope, so
@@ -622,3 +626,68 @@ type AccountDeleted struct {
 
 // TypeName is "account-deleted".
 func (*AccountDeleted) TypeName() string { return TypeAccountDeleted }
+
+// --- ticket 245 remote administration (DEVICE-EXCHANGE 1.4, REMOTE-ADMIN.md) ---
+
+// AdminLimits holds the own-limits object of an account in an admin request (ticket 245, REMOTE-ADMIN.md).
+type AdminLimits struct {
+	DevicesPerAccount    *int   `json:"devicesPerAccount,omitempty"`
+	ResourcesPerAccount  *int   `json:"resourcesPerAccount,omitempty"`
+	BroadcastsPerAccount *int   `json:"broadcastsPerAccount,omitempty"`
+	BroadcastsPerDevice  *int   `json:"broadcastsPerDevice,omitempty"`
+	ClipboardMaxBytes    *int64 `json:"clipboardMaxBytes,omitempty"`
+}
+
+// AdminAuth is the first envelope of an administration stream (ticket 245, REMOTE-ADMIN.md).
+type AdminAuth struct {
+	Head
+	Password string `json:"password"`
+}
+
+// TypeName is "admin-auth".
+func (*AdminAuth) TypeName() string { return TypeAdminAuth }
+
+// AdminAuthOK answers a successful admin-auth (ticket 245, REMOTE-ADMIN.md).
+type AdminAuthOK struct {
+	Head
+	Token          string `json:"token"`
+	ExpiresSeconds int    `json:"expiresSeconds"`
+}
+
+// TypeName is "admin-auth-ok".
+func (*AdminAuthOK) TypeName() string { return TypeAdminAuthOK }
+
+// AdminRequest is one operation over the administration stream (ticket 245, REMOTE-ADMIN.md).
+type AdminRequest struct {
+	Head
+	ID            int64        `json:"id"`
+	Token         string       `json:"token,omitempty"`
+	Op            string       `json:"op"`
+	Login         string       `json:"login,omitempty"`
+	Password      string       `json:"password,omitempty"`
+	Kind          string       `json:"kind,omitempty"`
+	ExpectedLogin string       `json:"expectedLogin,omitempty"`
+	MaxAccounts   *int         `json:"maxAccounts,omitempty"`
+	CodeHash      string       `json:"codeHash,omitempty"`
+	TargetID      string       `json:"targetId,omitempty"`
+	GuestAccount  string       `json:"guestAccount,omitempty"`
+	DeviceID      string       `json:"deviceId,omitempty"`
+	Limits        *AdminLimits `json:"limits,omitempty"`
+}
+
+// TypeName is "admin-request".
+func (*AdminRequest) TypeName() string { return TypeAdminRequest }
+
+// AdminReply is the answer to one admin-request (ticket 245, REMOTE-ADMIN.md).
+type AdminReply struct {
+	Head
+	ID    int64           `json:"id"`
+	OK    bool            `json:"ok"`
+	Data  json.RawMessage `json:"data,omitempty"`
+	Code  string          `json:"code,omitempty"`
+	Error string          `json:"error,omitempty"`
+}
+
+// TypeName is "admin-reply".
+func (*AdminReply) TypeName() string { return TypeAdminReply }
+

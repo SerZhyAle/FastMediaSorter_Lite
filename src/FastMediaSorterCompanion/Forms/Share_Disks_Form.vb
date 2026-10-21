@@ -32,6 +32,7 @@ Public NotInheritable Class Share_Disks_Form
     Private _remove As Button
     Private _auto As Button
     Private _exit As Button
+    Private _answerRow As DialogButtonRow
     Private ReadOnly _layout As New TableLayoutPanel With {.Dock = DockStyle.Fill, .ColumnCount = 1, .RowCount = 5, .Padding = New Padding(12)}
     Public ReadOnly Property MountedFolder As String
         Get
@@ -97,16 +98,13 @@ Public NotInheritable Class Share_Disks_Form
         linksFlow.Controls.Add(lnkFileDo)
         ' APP-BEHAVIOUR rule 1: one no-action exit - the close box, Escape and this button are the
         ' same path. Busy work cannot be cancelled here, so FormClosing below refuses all three alike.
-        _exit = New Button With {.AutoSize = True, .Text = Localization.T("Закрыть"), .Padding = New Padding(6),
-            .DialogResult = DialogResult.Cancel, .Anchor = AnchorStyles.Right}
-        ButtonGlyphs.Apply(_exit, "nav.close", ButtonGlyphRole.Dismissing)
-        CancelButton = _exit
-        Dim footer As New TableLayoutPanel With {.Dock = DockStyle.Fill, .ColumnCount = 2, .RowCount = 1, .AutoSize = True,
-            .Margin = New Padding(0, 6, 0, 0)}
-        footer.ColumnStyles.Add(New ColumnStyle(SizeType.Percent, 100))
-        footer.ColumnStyles.Add(New ColumnStyle(SizeType.AutoSize))
-        footer.Controls.Add(linksFlow, 0, 0)
-        footer.Controls.Add(_exit, 1, 0)
+        ' The one answer rides the shared bottom row (ticket 243 T-8b batch C, BUTTONS 2.0 sections 3 and 4); the two links
+        ' stay in the body above it, and the toolbar / per-disk buttons are commands, not answers. The window is a list
+        ' manager, so Enter is NOT bound (bindAccept:=False): on a list row it kept doing nothing before and must not close.
+        _exit = New Button With {.Text = Localization.T("Закрыть"), .DialogResult = DialogResult.Cancel, .Name = "xsd_Close"}
+        _answerRow = New DialogButtonRow() With {.Dock = DockStyle.Bottom, .Name = "xsd_Buttons", .Padding = New Padding(12, 4, 12, 12)}
+        DpiLayout.AddAnswer(_answerRow, _exit, DialogButtonRole.Dismissing, "nav.close")
+        linksFlow.Margin = New Padding(0, 6, 0, 0)
         layout.Controls.Add(top, 0, 0)
         layout.Controls.Add(_list, 0, 1)
         layout.Controls.Add(_actions, 0, 2)
@@ -116,8 +114,11 @@ Public NotInheritable Class Share_Disks_Form
         noteBox.Controls.Add(_note)
         noteBox.Controls.Add(_managerHint)
         layout.Controls.Add(noteBox, 0, 3)
-        layout.Controls.Add(footer, 0, 4)
+        layout.Controls.Add(linksFlow, 0, 4)
         Controls.Add(layout)
+        ' Last in the collection: the docked row takes its edge first and reads after the body in the Tab order.
+        Controls.Add(_answerRow)
+        _answerRow.Bind(Me, bindAccept:=False)
         DpiLayout.ApplyAutoScale(Me)
         AddHandler Shown, AddressOf OnRefresh
         AddHandler _timer.Tick, AddressOf OnRefresh
@@ -172,12 +173,15 @@ Public NotInheritable Class Share_Disks_Form
         _managerHint.Visible = False
         Dim response As WorkerResponse = Await DiskSharing.SendAsync(New WorkerRequest With {.type = "disk-list"})
         DiskSharing.RequireSuccess(response)
-        If response.Disks Is Nothing Then Throw New IOException("Missing disk list.")
+        ' An absent "disks" on an ok schema-2 answer is an empty list (the worker omits it when
+        ' nothing is shared); only an answer that is not ok at all has no list to show.
+        Dim disks As List(Of SharedDisk) = DiskSharing.DisksOf(response)
+        If disks Is Nothing Then Throw New IOException("Missing disk list.")
         Dim selected As String = If(SelectedDisk()?.ContainerId, "")
         _list.BeginUpdate()
         Try
             _list.Items.Clear()
-            For Each disk As SharedDisk In response.Disks
+            For Each disk As SharedDisk In disks
                 Dim item As New ListViewItem(disk.RootName) With {.Tag = disk}
                 item.SubItems.Add(StateText(disk.State))
                 item.SubItems.Add(HolderText(disk.Holder))
@@ -189,7 +193,7 @@ Public NotInheritable Class Share_Disks_Form
             _list.EndUpdate()
         End Try
         If _list.SelectedItems.Count = 0 AndAlso _list.Items.Count > 0 Then _list.Items(0).Selected = True
-        DiskDriveLetters.Reconcile(response.Disks)
+        DiskDriveLetters.Reconcile(disks)
         UpdateDiskDetails(True)
     End Function
 
@@ -376,16 +380,15 @@ Public NotInheritable Class Share_Disks_Form
             Next
             If drives.Items.Count > 0 Then drives.SelectedIndex = 0
             ' APP-BEHAVIOUR rule 1: Enter takes the recommended answer, Escape / the close box / Cancel leave.
-            Dim ok As New Button With {.AutoSize = True, .Text = Localization.T("ОК"), .Padding = New Padding(6), .DialogResult = DialogResult.OK}
-            Dim cancel As New Button With {.AutoSize = True, .Text = Localization.T("Отмена"), .Padding = New Padding(6), .DialogResult = DialogResult.Cancel}
-            Dim row As New FlowLayoutPanel With {.Dock = DockStyle.Bottom, .AutoSize = True, .FlowDirection = FlowDirection.LeftToRight}
-            ButtonGlyphs.Apply(ok, "action.confirm", ButtonGlyphRole.Affirmative)
-            ButtonGlyphs.Apply(cancel, "action.cancel", ButtonGlyphRole.Dismissing)
-            row.Controls.AddRange(New Control() {ok, cancel})
+            ' The answers ride the shared bottom row (ticket 243 T-8b batch C): Cancel first, OK last; Escape and Enter as before.
+            Dim ok As New Button With {.Text = Localization.T("ОК"), .DialogResult = DialogResult.OK, .Name = "xsd_MountedOk"}
+            Dim cancel As New Button With {.Text = Localization.T("Отмена"), .DialogResult = DialogResult.Cancel, .Name = "xsd_MountedCancel"}
+            Dim row As New DialogButtonRow() With {.Dock = DockStyle.Bottom, .Name = "xsd_MountedButtons", .Padding = New Padding(12, 4, 12, 10)}
+            DpiLayout.AddAnswer(row, ok, DialogButtonRole.Affirmative, "action.confirm")
+            DpiLayout.AddAnswer(row, cancel, DialogButtonRole.Dismissing, "action.cancel")
             picker.Controls.Add(drives)
             picker.Controls.Add(row)
-            picker.AcceptButton = ok
-            picker.CancelButton = cancel
+            row.Bind(picker)
             UiLanguage.ApplyTo(picker)
             DpiLayout.ApplyAutoScale(picker)
             If picker.ShowDialog(Me) <> DialogResult.OK OrElse drives.SelectedItem Is Nothing Then Return
@@ -395,7 +398,7 @@ Public NotInheritable Class Share_Disks_Form
     End Sub
 
     Private Function Confirm(question As String) As Boolean
-        Return MessageBox.Show(Me, question, Text, MessageBoxButtons.OKCancel, MessageBoxIcon.Warning,
+        Return ManagerBox.Show(Me, question, Text, MessageBoxButtons.OKCancel, MessageBoxIcon.Warning,
             MessageBoxDefaultButton.Button2) = DialogResult.OK
     End Function
 
@@ -433,6 +436,7 @@ Friend NotInheritable Class DiskOptionsForm
     Public ReadOnly ReadOnlyAccess As New CheckBox With {.AutoSize = True, .Text = Localization.T("Только чтение")}
     Public ReadOnly OpenNow As New CheckBox With {.AutoSize = True, .Text = Localization.T("Открыть после регистрации"), .Checked = True}
     Public ReadOnly Letter As New ComboBox With {.Width = 330, .DropDownStyle = ComboBoxStyle.DropDownList}
+    Private _answerRow As DialogButtonRow
 
     Public Sub New(register As Boolean, encrypted As Boolean, Optional showLetter As Boolean = True)
         UiLanguage.ApplyTo(Me)
@@ -444,12 +448,17 @@ Friend NotInheritable Class DiskOptionsForm
         AutoSize = True
         AutoSizeMode = AutoSizeMode.GrowAndShrink
         Dim layout As New FlowLayoutPanel With {.Dock = DockStyle.Fill, .FlowDirection = FlowDirection.TopDown,
-            .WrapContents = False, .AutoSize = True, .Padding = New Padding(12)}
+            .WrapContents = False, .AutoSize = True, .Padding = New Padding(12, 12, 12, 4)}
         If register Then
             layout.Controls.Add(New Label With {.AutoSize = True, .Text = Localization.T("Название")})
             layout.Controls.Add(RootName)
-            layout.Controls.Add(ReadOnlyAccess)
-            layout.Controls.Add(OpenNow)
+            ' Two boolean rows (BOOLEAN-OPTION 2.0, ticket 243 T-11c-b2a): the check boxes keep their fields, defaults and handlers.
+            Dim readOnlyRow As OptionRowHost = OptionRows.InFlow(ReadOnlyAccess, Nothing, OptionRowFit.Content)
+            Dim openNowRow As OptionRowHost = OptionRows.InFlow(OpenNow, Nothing, OptionRowFit.Content)
+            readOnlyRow.Margin = New Padding(3, 4, 3, 0)
+            openNowRow.Margin = New Padding(3, 0, 3, 4)
+            layout.Controls.Add(readOnlyRow)
+            layout.Controls.Add(openNowRow)
             AddHandler OpenNow.CheckedChanged, Sub()
                                                   Password.Enabled = OpenNow.Checked
                                                   Letter.Enabled = OpenNow.Checked
@@ -470,18 +479,29 @@ Friend NotInheritable Class DiskOptionsForm
         End If
         layout.Controls.Add(New Label With {.AutoSize = True, .MaximumSize = New Size(390, 0),
             .Text = Localization.T("Если диск уже открыт в FileDO, сохраните изменения и закройте его там перед подключением.")})
-        Dim buttons As New FlowLayoutPanel With {.AutoSize = True}
-        Dim ok As New Button With {.AutoSize = True, .Text = Localization.T("ОК"), .DialogResult = DialogResult.OK}
-        Dim cancel As New Button With {.AutoSize = True, .Text = Localization.T("Отмена"), .DialogResult = DialogResult.Cancel}
-        ButtonGlyphs.Apply(ok, "action.confirm", ButtonGlyphRole.Affirmative)
-        ButtonGlyphs.Apply(cancel, "action.cancel", ButtonGlyphRole.Dismissing)
-        buttons.Controls.AddRange(New Control() {ok, cancel})
-        layout.Controls.Add(buttons)
+        ' The answers ride the shared bottom row (ticket 243 T-8b batch C, BUTTONS 2.0 sections 3 and 4): Cancel first, OK
+        ' last, Escape is Cancel. Sharing or opening a disk hands access to its content, so the safe default is Cancel:
+        ' bindAccept:=False leaves the window without an accept button and Enter in the name or password field does not
+        ' send the form - the row's OK is clicked, or reached with Tab and Enter.
+        Dim ok As New Button With {.Text = Localization.T("ОК"), .DialogResult = DialogResult.OK, .Name = "xdo_Ok"}
+        Dim cancel As New Button With {.Text = Localization.T("Отмена"), .DialogResult = DialogResult.Cancel, .Name = "xdo_Cancel"}
+        _answerRow = New DialogButtonRow() With {.Dock = DockStyle.Bottom, .Name = "xdo_Buttons", .Padding = New Padding(12, 4, 12, 10)}
+        DpiLayout.AddAnswer(_answerRow, ok, DialogButtonRole.Affirmative, "action.confirm")
+        DpiLayout.AddAnswer(_answerRow, cancel, DialogButtonRole.Dismissing, "action.cancel")
         Controls.Add(layout)
-        AcceptButton = ok
-        CancelButton = cancel
+        ' Last in the collection: the docked row takes its edge first and reads after the fields in the Tab order.
+        Controls.Add(_answerRow)
+        _answerRow.Bind(Me, bindAccept:=False)
         DpiLayout.ApplyAutoScale(Me)
     End Sub
+
+    Protected Overrides Sub OnLoad(e As EventArgs)
+        MyBase.OnLoad(e)
+        OptionRows.ArrangeAll(Me)
+        DpiLayout.ClampToWorkingArea(Me)
+        DpiLayout.CenterOnOwner(Me)
+    End Sub
+
     Protected Overrides Sub Dispose(disposing As Boolean)
         If disposing Then Password.Clear()
         MyBase.Dispose(disposing)

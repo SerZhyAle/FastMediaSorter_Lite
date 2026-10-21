@@ -69,6 +69,11 @@ Partial Public Class Main_Form
     ''' showing it, and it is NOT an active animation (a multi-frame GIF spins
     ''' gif_Restart_Timer, so gif_Restart_Image_Ref is non-Nothing only then).</summary>
     Private Function IsCurrentStillImage() As Boolean
+#If Not NETFRAMEWORK Then
+        ' The first frame of a long animation is a plain bitmap but not a still image (spec 241
+        ' rule 13): the editor would decode its own copy and a save would flatten the animation.
+        If IsAnimationPreviewShown Then Return False
+#End If
         Return IsCurrentFileEligibleImage() AndAlso gif_Restart_Image_Ref Is Nothing
     End Function
 

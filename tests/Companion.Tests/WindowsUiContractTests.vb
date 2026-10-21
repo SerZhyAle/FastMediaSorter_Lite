@@ -84,7 +84,7 @@ Public Class WindowsUiContractTests
                  ExchangeProcess.ExeDirectoryOverride = component
                  ExchangeProcess.RunOverride = Function(args, input) New ExchangeProcess.RunResult With {.Started = False}
                  Try
-                     Using window As New Share_Settings_Form()
+                     Using window As New Share_Settings_Form(destination:=SettingsDestination.ExchangeServer)
                          Dim flags = BindingFlags.Instance Or BindingFlags.NonPublic
                          ' A fresh context, not whatever this machine last saved: the tree starts
                          ' from its defaults and the test owns every toggle below.
@@ -98,18 +98,23 @@ Public Class WindowsUiContractTests
                      Dim pages = DirectCast(GetType(Share_Settings_Form).GetField("_pages", flags).GetValue(window), Dictionary(Of String, Panel))
                      Dim context = DirectCast(GetType(Share_Settings_Form).GetField("managerSettingsContext", flags).GetValue(window), SettingsUiContext)
                      ' A page with groups announces itself as an expandable PageTab and starts with its items hidden.
-                     Assert.True(items("startup").Count > 0)
-                     Assert.All(items("startup"), Sub(item) Assert.False(item.Visible))
-                     Assert.True((buttons("startup").AccessibilityObject.State And AccessibleStates.Collapsed) <> 0)
-                     Assert.True(items("exchange").Count = 6, "the exchange page carries its six blocks")
-                     ' The whole row is the toggle (Q210-3): one click selects the page and reveals its items.
+                     Assert.True(items("exchange").Count > 0)
+                     Assert.All(items("exchange"), Sub(item) Assert.False(item.Visible))
+                     Assert.True((buttons("exchange").AccessibilityObject.State And AccessibleStates.Collapsed) <> 0)
+                     Assert.True(items("exchange").Count = 7, "the exchange page carries its seven blocks")
+                     ' Two targets per page row (SETTINGS-NAVIGATION 2.0 section 2 rule 4, ticket 243 T-7b - this pin used to
+                     ' say "the whole row is the toggle", Q210-3, which the contract retired): a click on the row selects the
+                     ' page and leaves its items as they were; the chevron's own accessible action expands them.
                      buttons("exchange").PerformClick()
+                     Assert.All(items("exchange"), Sub(item) Assert.False(item.Visible))
+                     Assert.Equal("exchange", context.LastPageId)
+                     Assert.True(pages("exchange").Visible)
+                     buttons("exchange").AccessibilityObject.GetChild(0).DoDefaultAction()
                      Assert.True(items("exchange")(0).Visible)
                      Assert.True((buttons("exchange").AccessibilityObject.State And AccessibleStates.Expanded) <> 0)
                      Assert.Equal("exchange", context.LastPageId)
-                     Assert.True(pages("exchange").Visible)
-                     ' Another click folds the items and keeps the page selected.
-                     buttons("exchange").PerformClick()
+                     ' The chevron again folds the items and keeps the page selected.
+                     buttons("exchange").AccessibilityObject.GetChild(0).DoDefaultAction()
                      Assert.All(items("exchange"), Sub(item) Assert.False(item.Visible))
                      Assert.Equal("exchange", context.LastPageId)
                      Assert.True((buttons("exchange").AccessibilityObject.State And AccessibleStates.Collapsed) <> 0)
@@ -133,7 +138,7 @@ Public Class WindowsUiContractTests
                              Assert.NotEqual(buttons(pair.Key).Text, grp.Card.Caption)
                          Next
                      Next
-                     buttons("exchange").PerformClick()
+                     buttons("exchange").AccessibilityObject.GetChild(0).DoDefaultAction()
                      ' A subordinate item expands its card, scrolls it into view and focuses
                      ' its first editor - and the sibling cards stay on the page (238 section
                      ' 2.1), collapsible without navigating away.
@@ -187,10 +192,10 @@ Public Class WindowsUiContractTests
         OnUi(Sub()
                  Dim clock = Diagnostics.Stopwatch.StartNew()
                  Dim timings As New List(Of String)()
-                 Using window As New Share_Settings_Form()
+                 Using window As New Share_Settings_Form(destination:=SettingsDestination.Sftp)
                      Dim flags = BindingFlags.Instance Or BindingFlags.NonPublic
                      Dim selectPage = GetType(Share_Settings_Form).GetMethod("SelectSettingsPage", flags)
-                     selectPage.Invoke(window, New Object() {"startup"})
+                     selectPage.Invoke(window, New Object() {"hosting"})
                      window.Show()
                      Application.DoEvents()
                      timings.Add("dialog=" & clock.ElapsedMilliseconds.ToString())
@@ -205,12 +210,12 @@ Public Class WindowsUiContractTests
                          timings.Add("network-first=" & clock.ElapsedMilliseconds.ToString())
                          Assert.Single(pages.Values.Where(Function(page) page.Visible))
                          Assert.True(pages("network").Visible, "Network page is hidden")
-                         Assert.False(pages("startup").Visible)
+                         Assert.False(pages("hosting").Visible)
                          Assert.True(pages("network").DisplayRectangle.Height > pages("network").ClientSize.Height, "Viewport " & pages("network").ClientSize.ToString() & " content " & pages("network").DisplayRectangle.ToString())
                          pages("network").AutoScrollPosition = New Point(0, 120)
                          Dim scroll = pages("network").AutoScrollPosition.Y
                          Assert.True(scroll < 0, "Scroll position is " & scroll.ToString())
-                         selectPage.Invoke(window, New Object() {"help"})
+                         selectPage.Invoke(window, New Object() {"hosting"})
                          Application.DoEvents()
                          Assert.Equal(before, window.Bounds)
                          clock.Restart()
@@ -300,7 +305,7 @@ Public Class WindowsUiContractTests
                  ExchangeProcess.ExeDirectoryOverride = component
                  ExchangeProcess.RunOverride = Function(args, input) New ExchangeProcess.RunResult With {.Started = False}
                  Try
-                     Using window As New Share_Settings_Form()
+                     Using window As New Share_Settings_Form(destination:=SettingsDestination.ExchangeServer)
                          Dim flags = BindingFlags.Instance Or BindingFlags.NonPublic
                          GetType(Share_Settings_Form).GetField("_exLoaded", flags).SetValue(window, True)
                          GetType(Share_Settings_Form).GetField("_hostingLoaded", flags).SetValue(window, True)
@@ -378,7 +383,7 @@ Public Class WindowsUiContractTests
                  Dim previousChecks = Control.CheckForIllegalCrossThreadCalls
                  Try
                      Control.CheckForIllegalCrossThreadCalls = True
-                     Using window As New Share_Settings_Form()
+                     Using window As New Share_Settings_Form(destination:=SettingsDestination.ExchangeServer)
                          Dim flags = BindingFlags.Instance Or BindingFlags.NonPublic
                          GetType(Share_Settings_Form).GetField("_exLoaded", flags).SetValue(window, True)
                          GetType(Share_Settings_Form).GetField("_hostingLoaded", flags).SetValue(window, True)
@@ -418,7 +423,7 @@ Public Class WindowsUiContractTests
     End Sub
 
     <Theory>
-    <InlineData(640)>
+    <InlineData(Share_Settings_Form.MinimumWidthLogical)>
     <InlineData(820)>
     Public Sub Every_page_contains_its_editors_after_resize_and_server_state_changes(width As Integer)
         OnUi(Sub()
@@ -429,7 +434,8 @@ Public Class WindowsUiContractTests
                  ExchangeProcess.ExeDirectoryOverride = component
                  ExchangeProcess.RunOverride = Function(args, input) New ExchangeProcess.RunResult With {.Started = False}
                  Try
-                     Using window As New Share_Settings_Form()
+                     For Each destination In {SettingsDestination.Manager, SettingsDestination.Sftp, SettingsDestination.ExchangeServer}
+                     Using window As New Share_Settings_Form(destination:=destination)
                          Dim flags = BindingFlags.Instance Or BindingFlags.NonPublic
                          GetType(Share_Settings_Form).GetField("_exLoaded", flags).SetValue(window, True)
                          GetType(Share_Settings_Form).GetField("_hostingLoaded", flags).SetValue(window, True)
@@ -446,7 +452,7 @@ Public Class WindowsUiContractTests
                                      .Answered = True, .ConfigPresent = state <> 0, .Accounts = If(state = 0, 0, 2),
                                      .CertPresent = state <> 0, .Fingerprint = If(state = 0, "", "SHA256:abc"),
                                      .Listen = ":22022", .PortRange = "40000-40100", .PublicEndpoint = "203.0.113.7:22022"}}
-                             GetType(Share_Settings_Form).GetMethod("ApplyExchangeState", flags).Invoke(window, New Object() {snapshot})
+                             If destination = SettingsDestination.ExchangeServer Then GetType(Share_Settings_Form).GetMethod("ApplyExchangeState", flags).Invoke(window, New Object() {snapshot})
                              For Each pageId In pages.Keys
                                  selectPage.Invoke(window, New Object() {pageId})
                                  Dim pageGroups = DirectCast(GetType(Share_Settings_Form).GetField("_pageGroups", flags).GetValue(window),
@@ -487,13 +493,16 @@ Public Class WindowsUiContractTests
                                      Select(Function(row) row.PointToScreen(New Point(row.ClientSize.Width, 0)).X).ToArray()
                                  If rowEnds.Length > 1 Then Assert.InRange(rowEnds.Max() - rowEnds.Min(), 0, 1)
                              Next
+                             If destination = SettingsDestination.ExchangeServer Then
                              Dim keep = DirectCast(GetType(Share_Settings_Form).GetField("_chkXKeep", flags).GetValue(window), CheckBox)
                              selectPage.Invoke(window, New Object() {"exchange"})
                              Dim hint = ControlsBelow(window).Single(Function(c) c.Name = keep.Name & "Hint")
                              Assert.Equal(keep.Visible, hint.Visible)
+                             End If
                          Next
                          window.Hide()
                      End Using
+                     Next
                  Finally
                      Environment.SetEnvironmentVariable(ExchangeFeatures.DeveloperSwitchName, previousGate)
                      ExchangeTestSupport.Reset()
@@ -521,16 +530,26 @@ Public Class WindowsUiContractTests
                          Application.DoEvents()
                          Dim buttons = DirectCast(GetType(Share_Settings_Form).GetField("_navButtons", flags).GetValue(window), Dictionary(Of String, Button))
                          Dim items = DirectCast(GetType(Share_Settings_Form).GetField("_navItems", flags).GetValue(window), Dictionary(Of String, List(Of Share_Settings_Form.SettingsNavItemButton)))
+                         ' A caption wraps and its row grows, never clips (SETTINGS-NAVIGATION 2.0 rule 2). The room is measured from
+                         ' the row's REAL padding (the reading-start inset, the chevron zone, the child indent), the page rows'
+                         ' glyph and gap and the renderer's slack, and the height is the rule's own: the larger of the 32 logical
+                         ' px target and the wrapped caption plus its vertical slack. (Ticket 243 T-7b replaced the former proxy of
+                         ' width - 52 and height >= text + 10, which described the 44 px rows of the old rail.)
+                         Dim factor = window.DeviceDpi / 96.0F
+                         Dim glyphRoom = SettingsRailRules.GlyphPx(factor) + SettingsRailRules.GlyphGapPx(factor)
+                         Dim slack = window.LogicalToDeviceUnits(Share_Settings_Form.NavRenderSlackLogical)
                          For Each button In buttons.Values
+                             Dim room = Math.Max(1, button.Width - button.Padding.Horizontal - glyphRoom - slack)
                              Dim needed = TextRenderer.MeasureText(button.Text, button.Font,
-                                 New Size(button.Width - window.LogicalToDeviceUnits(52), Integer.MaxValue), TextFormatFlags.WordBreak).Height
-                             Assert.True(button.Height >= needed + window.LogicalToDeviceUnits(10), code & ": " & button.Text)
+                                 New Size(room, Integer.MaxValue), TextFormatFlags.WordBreak).Height
+                             Assert.True(button.Height >= SettingsRailRules.RowHeightPx(factor, needed), code & ": " & button.Text)
                          Next
                          For Each row In items.Values.SelectMany(Function(list) list)
-                             Dim indent = window.LogicalToDeviceUnits(46)
+                             ' An item with a catalogued glyph draws it in the column an item without one leaves empty.
+                             Dim room = Math.Max(1, row.Width - row.Padding.Horizontal - slack - If(row.Image IsNot Nothing, glyphRoom, 0))
                              Dim needed = TextRenderer.MeasureText(row.Text, row.Font,
-                                 New Size(row.Width - indent - window.LogicalToDeviceUnits(12), Integer.MaxValue), TextFormatFlags.WordBreak).Height
-                             Assert.True(row.Height >= needed + window.LogicalToDeviceUnits(10), code & ": " & row.Text)
+                                 New Size(room, Integer.MaxValue), TextFormatFlags.WordBreak).Height
+                             Assert.True(row.Height >= SettingsRailRules.RowHeightPx(factor, needed), code & ": " & row.Text)
                          Next
                          For Each row In ControlsBelow(window).OfType(Of ManagerSettingRow)().Where(Function(item) item.Visible)
                              Assert.True(row.Hint.Height >= row.Hint.GetPreferredSize(New Size(row.Hint.Width, 0)).Height, code & ": " & row.Caption.Text)
@@ -549,7 +568,7 @@ Public Class WindowsUiContractTests
                  Dim previous = Localization.CurrentCode
                  Try
                      Localization.CurrentCode = "en"
-                     Using window As New Share_Settings_Form()
+                     Using window As New Share_Settings_Form(destination:=SettingsDestination.Sftp)
                          Dim flags = BindingFlags.Instance Or BindingFlags.NonPublic
                          Dim number = ControlsBelow(window).OfType(Of NumericUpDown)().First()
                          Dim value = number.Value
@@ -747,6 +766,90 @@ Public Class WindowsUiContractTests
                      End Using
                  Finally
                      MainWindow.ShowStatsDialogOverride = Nothing
+                     Localization.CurrentCode = previous
+                 End Try
+             End Sub)
+    End Sub
+
+    <Fact>
+    Public Sub Main_window_resources_fold_and_content_sized_list_per_spec_237_zone_d()
+        OnUi(Sub()
+                 Dim previous = Localization.CurrentCode
+                 Try
+                     Localization.CurrentCode = "ru"
+                     Using window As New MainWindow()
+                         window.Show()
+                         ' Size in LOGICAL px times the live scale, so the height assertions
+                         ' below hold on any DPI the test host runs at.
+                         Dim scale As Double = window.DeviceDpi / 96.0R
+                         window.ClientSize = New Size(CInt(760 * scale), CInt(560 * scale))
+                         Application.DoEvents()
+
+                         Dim flags = BindingFlags.Instance Or BindingFlags.NonPublic
+                         Dim type = GetType(MainWindow)
+                         Dim secResources = DirectCast(type.GetField("_secResources", flags).GetValue(window), CollapsibleSection)
+                         Dim pnlList = DirectCast(type.GetField("_pnlList", flags).GetValue(window), Panel)
+                         Dim lvFolders = DirectCast(type.GetField("lvFolders", flags).GetValue(window), ListView)
+                         Dim root = DirectCast(type.GetField("_root", flags).GetValue(window), TableLayoutPanel)
+                         Dim relayout = type.GetMethod("OnResourceRowsChanged", flags)
+                         Dim desiredHeight = type.GetMethod("DesiredListHeight", flags)
+                         Dim minHeight = type.GetMethod("MinimumListHeight", flags)
+                         Dim csvOf = type.GetMethod("ExpandedSectionsCsv", flags)
+
+                         ' S-0: the fold exists, wraps the list block, and defaults to expanded.
+                         Assert.NotNull(secResources)
+                         Assert.Equal("resources", secResources.Key)
+                         Assert.Equal("Общие ресурсы", secResources.Title)
+                         Assert.True(secResources.Expanded, "The resources fold defaults to expanded - the list is the window's object (G4).")
+                         Assert.Same(secResources.Body, pnlList.Parent)
+
+                         ' L-1: the list row is content-sized, never stretched to the window.
+                         For i As Integer = 1 To 3
+                             lvFolders.Items.Add(New ListViewItem("Folder" & i) With {.Tag = "C:\NonExistent\F" & i})
+                         Next
+                         relayout.Invoke(window, New Object() {})
+                         Dim h3 As Integer = pnlList.Height
+                         Dim desired3 As Integer = CInt(desiredHeight.Invoke(window, New Object() {}))
+                         Dim floor3 As Integer = CInt(minHeight.Invoke(window, New Object() {}))
+                         Assert.True(h3 >= floor3, "List height " & h3 & " fell below the G4 floor " & floor3 & ".")
+                         Assert.True(h3 <= desired3 + 1,
+                                     "List height " & h3 & " exceeds its content size " & desired3 & " - rule L-1 is not applied.")
+
+                         ' The eight-row ceiling: 9 and 12 items size the list identically.
+                         For i As Integer = 4 To 9
+                             lvFolders.Items.Add(New ListViewItem("Folder" & i) With {.Tag = "C:\NonExistent\F" & i})
+                         Next
+                         relayout.Invoke(window, New Object() {})
+                         Dim h9 As Integer = pnlList.Height
+                         For i As Integer = 10 To 12
+                             lvFolders.Items.Add(New ListViewItem("Folder" & i) With {.Tag = "C:\NonExistent\F" & i})
+                         Next
+                         relayout.Invoke(window, New Object() {})
+                         Dim h12 As Integer = pnlList.Height
+                         Assert.True(h3 < h9, "More rows must grow the list (" & h3 & " -> " & h9 & ").")
+                         Assert.Equal(h9, h12)
+
+                         ' The root row is AutoSize - the fold sizes itself from the list panel.
+                         Assert.Equal(SizeType.AutoSize, root.RowStyles(1).SizeType)
+
+                         ' S-0: the live summary counts the rows the fold folds away.
+                         Assert.Equal("12 папок", secResources.Summary)
+
+                         ' S-0: collapsing compacts the WINDOW and records the fold state.
+                         Dim fullHeight As Integer = window.Height
+                         secResources.Expanded = False
+                         Assert.False(pnlList.Visible)
+                         Assert.True(window.Height < fullHeight - CInt(30 * scale),
+                                     "Collapsing the fold must compact the window (" & fullHeight & " -> " & window.Height & ").")
+                         Assert.Contains("resources", CStr(csvOf.Invoke(window, New Object() {})))
+
+                         ' Expanding gives the remembered window back and clears the record.
+                         secResources.Expanded = True
+                         Assert.True(pnlList.Visible)
+                         Assert.Equal(fullHeight, window.Height)
+                         Assert.DoesNotContain("resources", CStr(csvOf.Invoke(window, New Object() {})))
+                     End Using
+                 Finally
                      Localization.CurrentCode = previous
                  End Try
              End Sub)

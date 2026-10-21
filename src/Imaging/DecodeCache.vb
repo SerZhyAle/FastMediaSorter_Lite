@@ -32,7 +32,9 @@ Friend Module DecodeCache
     ''' stale payload served by a new algorithm is the single way this feature can show
     ''' wrong pixels.
     ''' </summary>
-    Friend Const Cache_Format_Version As Integer = 1
+    ''' History: 2 = animations above GifTranscodePolicy.Dither_Max_Total_Pixels are no
+    ''' longer dithered (spec 241 rule 4), so their payload changed content.
+    Friend Const Cache_Format_Version As Integer = 2
 
     ''' <summary>
     ''' The image for a decoder-backed file, with the MemoryStream GDI+ reads it from.
@@ -48,6 +50,14 @@ Friend Module DecodeCache
     ''' A-06) - Locked, Denied, Transport, Missing. A decode that fails leaves it as the
     ''' caller set it (Content).</param>
     Friend Function LoadImage(filePath As String, ByRef failure As PathFailureKind) As Tuple(Of Image, MemoryStream)
+        Return LoadImage(filePath, failure, ImageLoadStage.Whole)
+    End Function
+
+    ''' <param name="stage">How much of a multi-frame file the caller wants (spec 241): <c>Whole</c> is
+    ''' today's behaviour; <c>Staged</c> answers a long animation that is not in the cache with its
+    ''' first frame, marked through <see cref="AnimationStaging"/>; <c>FirstFrame</c> does so for every
+    ''' animation and never takes a cached transcode.</param>
+    Friend Function LoadImage(filePath As String, ByRef failure As PathFailureKind, stage As ImageLoadStage) As Tuple(Of Image, MemoryStream)
         Dim payloadDecoder As IImageDecoderPayload = TryCast(ImageDecoderProvider.Current, IImageDecoderPayload)
         Dim budgetMb As Integer = DecodeCacheStore.BudgetMb
 
@@ -64,6 +74,9 @@ Friend Module DecodeCache
 
         If key.Length > 0 Then
             Dim hit As DecodedPayload = DecodeCacheStore.TryLoad(DecodeCacheStore.CacheDir(), key)
+            ' A thumbnail wants the first frame, and reading a transcoded animation out of the cache
+            ' (up to 128 MB) to take its first frame is the cost this stage exists to avoid.
+            If hit IsNot Nothing AndAlso stage = ImageLoadStage.FirstFrame AndAlso hit.IsAnimation Then hit = Nothing
             If hit IsNot Nothing Then
                 Dim materialized As Tuple(Of Image, MemoryStream) = Materialize(hit)
                 If materialized IsNot Nothing Then Return materialized
@@ -90,17 +103,57 @@ Friend Module DecodeCache
 
         Dim payload As DecodedPayload
         Using source As New MemoryStream(sourceBytes)
-            payload = payloadDecoder.DecodeToPayload(source)
+            If stage = ImageLoadStage.Whole Then
+                payload = payloadDecoder.DecodeToPayload(source, filePath)
+            Else
+                payload = payloadDecoder.DecodeFirstFramePayload(source, filePath)
+                ' A small animation keeps today's one step (spec 241 rule 9); the first frame it cost
+                ' was milliseconds. A thumbnail wants the first frame whatever the size.
+                If stage = ImageLoadStage.Staged AndAlso payload IsNot Nothing AndAlso payload.IsPreview AndAlso
+                   Not AnimationStaging.IsStaged(payload) Then
+                    source.Position = 0
+                    payload = payloadDecoder.DecodeToPayload(source, filePath)
+                End If
+            End If
         End Using
         If payload Is Nothing OrElse payload.Bytes Is Nothing OrElse payload.Bytes.Length = 0 Then Return Nothing
+
+        ' The first frame of an animation that is still to be prepared: never stored (the policy
+        ' refuses it too), never logged as a prepared animation.
+        If payload.IsPreview Then
+            Dim preview As Tuple(Of Image, MemoryStream) = Materialize(payload)
+            If preview IsNot Nothing Then AnimationStaging.Mark(preview.Item1, New StagedInfo(payload))
+            Return preview
+        End If
 
         ' Stored before the image is built, so a payload that GDI+ then refuses is still
         ' the one on disk - and the load path above will delete it the next time round
         ' rather than this one silently succeeding at nothing.
-        If key.Length > 0 Then DecodeCacheStore.TryStore(DecodeCacheStore.CacheDir(), key, payload, budgetMb)
+        Dim stored As Boolean = False
+        If key.Length > 0 Then stored = DecodeCacheStore.TryStore(DecodeCacheStore.CacheDir(), key, payload, budgetMb)
+        LogAnimationPrepared(payload, stored, filePath)
 
         Return Materialize(payload)
     End Function
+
+    ''' <summary>
+    ''' One line per prepared animation (spec 241 rule 6), written through AppFileLogger
+    ''' because Release strips Debug.WriteLine: a decode that is slow but finishes would
+    ''' otherwise leave no trace, and only an abandoned one did. Never per frame.
+    ''' </summary>
+    Friend Function AnimationPreparedText(payload As DecodedPayload, cached As Boolean, filePath As String) As String
+        Return "Animation prepared: " & payload.Width.ToString() & "x" & payload.Height.ToString() &
+               " x " & payload.Frames.ToString() & " frames, decode " & Math.Max(0L, payload.DecodeMs - payload.EncodeMs).ToString() &
+               " ms, gif " & payload.EncodeMs.ToString() & " ms, " &
+               (payload.Bytes.LongLength \ (1024L * 1024L)).ToString() & " MB, dither " & If(payload.Dithered, "on", "off") &
+               ", cached " & If(cached, "yes", "no") & ": " & filePath
+    End Function
+
+    Private Sub LogAnimationPrepared(payload As DecodedPayload, cached As Boolean, filePath As String)
+        ' Only a transcode that measured itself: Frames = 0 is a Magick animation or a still.
+        If payload Is Nothing OrElse Not payload.IsAnimation OrElse payload.Frames <= 0 Then Return
+        AppFileLogger.WriteLine(AnimationPreparedText(payload, cached, filePath))
+    End Sub
 
     ''' <summary>
     ''' The key, or "" when the file cannot be measured. A network hiccup here is not a

@@ -39,24 +39,12 @@ Public Module ServiceControl
     ''' sftpserver.MachineDataDir() in the worker; both must name the same path or a
     ''' migration would copy the identity somewhere the service never reads.</summary>
     Public Function MachineDataDir() As String
-        Try
-            Dim base As String = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData)
-            If String.IsNullOrEmpty(base) Then Return ""
-            Return Path.Combine(base, "FastMediaSorterCompanion")
-        Catch
-            Return ""
-        End Try
+        Return WorkerStateDir.MachineDir()
     End Function
 
     ''' <summary>Per-user state directory of the User edition (the worker's default).</summary>
     Public Function UserDataDir() As String
-        Try
-            Dim base As String = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData)
-            If String.IsNullOrEmpty(base) Then Return ""
-            Return Path.Combine(base, "FastMediaSorterCompanion")
-        Catch
-            Return ""
-        End Try
+        Return WorkerStateDir.UserDir()
     End Function
 
     ' --- live SCM state ---------------------------------------------------------
@@ -201,18 +189,16 @@ Public Module ServiceControl
         Return QueryState() <> ServiceState.NotInstalled
     End Function
 
-    ''' <summary>The state directory BOTH hosts persist to on this PC: the machine one
-    ''' once a Server edition created it (the two editions then share one shared-folder
-    ''' list, one settings file and one host key), the per-user one otherwise. Mirrors
-    ''' sftpserver.DataDir() in the worker - if these two ever disagree, the console
-    ''' would report a store the worker does not use.</summary>
+    ''' <summary>The state directory BOTH hosts persist to on this PC: the explicit override
+    ''' when one is set, else the machine one once a Server edition created it AND this
+    ''' account can read it (the two editions then share one shared-folder list, one settings
+    ''' file and one host key), the per-user one otherwise. It is
+    ''' <see cref="WorkerStateDir.Resolve"/> - the worker's own sftpserver.DataDir() order,
+    ''' "usable" and not merely "exists" - and the same value SpawnWorker passes as
+    ''' <c>--datadir</c>; if these ever disagree, the console would report a store the
+    ''' worker does not use.</summary>
     Public Function ActiveDataDir() As String
-        Dim machine As String = MachineDataDir()
-        Try
-            If machine.Length > 0 AndAlso Directory.Exists(machine) Then Return machine
-        Catch
-        End Try
-        Return UserDataDir()
+        Return WorkerStateDir.Resolve()
     End Function
 
     ''' <summary>The registered command line of the service, or "" when it is absent.

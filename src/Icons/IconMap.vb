@@ -27,6 +27,8 @@ Public Module IconMap
     ''' <c>tool.rectangle</c> / <c>tool.oval</c> - or for the Share Manager to adopt
     ''' <c>action.reveal</c> (whose off form's file is also owed). Such a control keeps its
     ''' pre-contract picture under a dated exception.</summary>
+    Public Const ExchangeMarkProposal As String = "PROPOSAL-2026-10-19-exchange-server-mark.md"
+
     Public Const DesktopMeaningsProposal As String = "PROPOSAL-2026-09-24-fms-windows-meanings.md"
 
     Public NotInheritable Class IconMeaning
@@ -43,6 +45,12 @@ Public Module IconMap
         End Sub
 
         Public ReadOnly Property ControlName As String
+        Public ReadOnly Property RenderGlyphId As String
+            Get
+                Return If(Proposal = ExchangeMarkProposal, "exchange-mark", GlyphId)
+            End Get
+        End Property
+
         Public ReadOnly Property GlyphId As String
         Public ReadOnly Property LocalizationKey As String
         Public ReadOnly Property Role As IconRole
@@ -99,7 +107,7 @@ Public Module IconMap
         {"settingsNavFiles", New IconMeaning("settingsNavFiles", "content.folder", "Файлы", IconRole.Content)},
         {"settingsNavResources", New IconMeaning("settingsNavResources", "source.resource", "Ресурс", IconRole.Content)},
         {"btn_Resource", New IconMeaning("btn_Resource", "source.resource", "Ресурс", IconRole.Content)},
-        {"res_DevicesAdd", New IconMeaning("res_DevicesAdd", "source.exchange-server", "Сервер обмена", IconRole.Content)},
+        {"res_DevicesAdd", New IconMeaning("res_DevicesAdd", "", "Сервер обмена", IconRole.Content, ExchangeMarkProposal)},
         {"xc_Connect", New IconMeaning("xc_Connect", "action.connect-device", "Подключить устройство", IconRole.Content)},
         {"settingsNavOcr", New IconMeaning("settingsNavOcr", "action.extract-text", "OCR", IconRole.Content)},
         {"settingsNavTranslation", New IconMeaning("settingsNavTranslation", "action.translate", "Перевод", IconRole.Content)},
@@ -110,10 +118,16 @@ Public Module IconMap
         {"managerSettingsNav_startup", New IconMeaning("managerSettingsNav_startup", "app.settings", "Настройки менеджера..", IconRole.Content, surface:=SM)},
         {"managerSettingsNav_network", New IconMeaning("managerSettingsNav_network", "system.wifi", "Сеть", IconRole.Content, surface:=SM)},
         {"managerSettingsNav_hosting", New IconMeaning("managerSettingsNav_hosting", "system.internet", "Сеть", IconRole.Content, surface:=SM)},
-        {"managerSettingsNav_exchange", New IconMeaning("managerSettingsNav_exchange", "source.exchange-server", "Сервер обмена", IconRole.Content, surface:=SM)},
+        {"managerSettingsNav_exchange", New IconMeaning("managerSettingsNav_exchange", "", "Сервер обмена", IconRole.Content, ExchangeMarkProposal, surface:=SM)},
         {"managerSettingsNav_exchange-account", New IconMeaning("managerSettingsNav_exchange-account", "action.connect-device", "Подключить устройство", IconRole.Content, surface:=SM)},
         {"managerSettingsNav_scheduled", New IconMeaning("managerSettingsNav_scheduled", "action.run", "Файловые операции по расписанию", IconRole.Content, surface:=SM)},
         {"managerSettingsNav_help", New IconMeaning("managerSettingsNav_help", "app.info", "О программе", IconRole.Content, surface:=SM)},
+        {"managerSettingsNavItem_startup_appearance", New IconMeaning("managerSettingsNavItem_startup_appearance", "app.theme", "Тема и язык", IconRole.Content, surface:=SM)},
+        {"managerSettingsNavItem_exchange_invitations", New IconMeaning("managerSettingsNavItem_exchange_invitations", "content.invitation", "Приглашение", IconRole.Content, surface:=SM)},
+        {"managerSettingsNavItem_exchange_server", New IconMeaning("managerSettingsNavItem_exchange_server", "app.settings", "Настройки менеджера..", IconRole.Content, surface:=SM)},
+        {"managerSettingsNavItem_exchange-account_account", New IconMeaning("managerSettingsNavItem_exchange-account_account", "app.settings", "Настройки менеджера..", IconRole.Content, surface:=SM)},
+        {"managerSettingsNavItem_help_documentation", New IconMeaning("managerSettingsNavItem_help_documentation", "app.help", "Документация", IconRole.Content, surface:=SM)},
+        {"managerSettingsNavItem_help_about", New IconMeaning("managerSettingsNavItem_help_about", "app.info", "О программе", IconRole.Content, surface:=SM)},
         {"managerSettingsSearch", New IconMeaning("managerSettingsSearch", "action.search", "Поиск настроек", IconRole.Content, surface:=SM)},
         {"btnClipboardSend", New IconMeaning("btnClipboardSend", "action.send-clipboard", "Отправить буфер на сервер", IconRole.Content, surface:=SM)},
         {"btnClipboardGet", New IconMeaning("btnClipboardGet", "action.receive-clipboard", "Получить буфер с сервера", IconRole.Content, surface:=SM)},
@@ -127,6 +141,8 @@ Public Module IconMap
         {"btnAdd", New IconMeaning("btnAdd", "action.add", "Добавить папку..", IconRole.Content, surface:=SM)},
         {"btnDisks", New IconMeaning("btnDisks", "content.disk-container", "Диски .fdd..", IconRole.Content, surface:=SM)},
         {"btnSettings", New IconMeaning("btnSettings", "app.settings", "Настройки менеджера..", IconRole.Content, surface:=SM)},
+        {"managerWelcomeReplay", New IconMeaning("managerWelcomeReplay", "app.tour", "Приветствие..", IconRole.Content, surface:=SM)},
+        {"exchangeWelcomeReplay", New IconMeaning("exchangeWelcomeReplay", "app.tour", "Приветствие..", IconRole.Content, surface:=SM)},
         {"btnRevealPassword", New IconMeaning("btnRevealPassword", "", "Показать пароль", IconRole.Content, DesktopMeaningsProposal, surface:=SM)},
         {"copy", New IconMeaning("copy", "action.copy", "Копировать в буфер", IconRole.Content, surface:=SM)},
         {"shareStatusOk", New IconMeaning("shareStatusOk", "status.ok", "Раздача с этого ПК работает", IconRole.State, surface:=SM)},
@@ -142,6 +158,11 @@ Public Module IconMap
     ''' language, which is the information the user needs from it.</summary>
     Public ReadOnly TextCaptionToolbarControls As New HashSet(Of String)(StringComparer.Ordinal) From {"btn_Translate"}
 
+    ' The managerSettingsNavItem_* rows are the Share Manager settings rail's items (SETTINGS-NAVIGATION 2.0 section 2
+    ' rule 4, ticket 243 T-7c): an item carries a glyph only where the vocabulary already has its meaning. Every other
+    ' item (Share_Settings_Form.SettingsItemGlyph answers "" for it) is reported as a missing meaning by SettingsRailTests,
+    ' for the catalog's proposal procedure; nothing is drawn or invented for it.
+    '
     ' One glyph, one name (ICON-SET rule 1): source.resource is the resource meaning, so
     ' settingsNavResources and btn_Resource carry the same canonical key; app.settings and
     ' content.disk-container are likewise shared with the Share Manager's btnSettings and
@@ -149,6 +170,11 @@ Public Module IconMap
     ' the button's «Ресурс»), never from a second map here; the canonical keys of the two
     ' glyphs the viewer nav newly carries are registered in the viewer's table too
     ' (Localization.Nav.vb), so the names test sees them.
+    '
+    ' app.tour (ICON-SET 0.35, status proposed) is the replay of the welcome tour: the two
+    ' Share Manager "Приветствие.." buttons replay a setup wizard, which is neither app.help
+    ' (explain this window, F1) nor app.info (details). Their label is the qualified form of
+    ' the meaning; the name key is registered in the Share Manager's own table.
 
     ''' <summary>
     ''' True when a viewer control's picture is rendered from the catalog - and therefore

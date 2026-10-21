@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"math"
 	"strconv"
 	"strings"
 
@@ -41,7 +42,16 @@ type command struct {
 	limBroadcastDevice *int
 	limClipboard       *int64
 	maxAccounts        *int // policy set --max-accounts
+	allowedAddresses   string
+	sessionLifetime    int
+	webDir             *string      // admin set --web-dir: the directory the page is served from; "-" or "none" clears it
+	origins            *string      // admin set --origins: the whole list of origins that may open a stream; "-" or "none" clears it
+	originEdit         *originEdits // admin set --origin / --remove-origin: single entries added to or removed from that list
+	wsMaxMessage       *int         // admin set --ws-max-message: bytes, 0 = the default
 }
+
+// originEdits are the repeatable --origin and --remove-origin options of admin set, in the order given.
+type originEdits struct{ add, remove []string }
 
 // limits is the set of per-account limits the command line names, nil when it names none.
 func (c command) limits() *accounts.AccountLimits {
@@ -62,6 +72,8 @@ const (
 	usageGrant            = "grant add <member> <guest> <targetId> [--kind resource|broadcast] | remove <member> <guest> <targetId> | list <login> [--json]"
 	usagePolicy           = "policy show [--json] | set [--max-accounts N] [--devices N] [--resources N] [--broadcasts N] [--broadcasts-per-device N] [--clipboard-bytes N]"
 	usageTLS              = "tls renew | replace | import --cert <file> --key <file>"
+	usageAdmin            = "admin on [--generate] [--allowed <list>] [--lifetime N] | off | passwd [--generate] | " +
+		"set [--allowed <list>] [--lifetime N] [--web-dir <dir|->] [--origins <list|->] [--origin <origin>].. [--remove-origin <origin>].. [--ws-max-message <bytes>] | status [--json]"
 )
 
 // numberOption reads the value of a numeric option, in either `--name=3` or `--name 3` form.
@@ -92,7 +104,7 @@ func parseArgs(args []string) (command, error) {
 		}
 		c.name = "version"
 		return c, nil
-	case "serve", "stop", "set-listen", "set-endpoint", "set-port-range", "set-keep-awake", "set-log-retention", "set-max-accounts", "inspect", "account", "device", "tls", "connection-string", "invitation", "shared-invitation", "grant", "policy":
+	case "serve", "stop", "set-listen", "set-endpoint", "set-port-range", "set-keep-awake", "set-log-retention", "set-max-accounts", "inspect", "account", "device", "tls", "connection-string", "invitation", "shared-invitation", "grant", "policy", "admin":
 		c.name = args[0]
 	default:
 		return c, fmt.Errorf("unknown command %q", args[0])
@@ -206,7 +218,7 @@ func parseArgs(args []string) (command, error) {
 				c.maxAccounts = &intVal
 			}
 		case "--generate":
-			if (c.name != "account" && c.name != "shared-invitation") || hasVal {
+			if (c.name != "account" && c.name != "shared-invitation" && c.name != "admin") || hasVal {
 				return c, fmt.Errorf("unknown option %q for %s", a, c.name)
 			}
 			c.generate = true
@@ -221,7 +233,7 @@ func parseArgs(args []string) (command, error) {
 			}
 			c.reset = true
 		case "--json":
-			if (c.name != "account" && c.name != "device" && c.name != "invitation" && c.name != "shared-invitation" && c.name != "grant" && c.name != "policy") || hasVal {
+			if (c.name != "account" && c.name != "device" && c.name != "invitation" && c.name != "shared-invitation" && c.name != "grant" && c.name != "policy" && c.name != "admin") || hasVal {
 				return c, fmt.Errorf("unknown option %q for %s", a, c.name)
 			}
 			c.json = true
@@ -253,6 +265,76 @@ func parseArgs(args []string) (command, error) {
 				c.cert = val
 			} else {
 				c.key = val
+			}
+		case "--allowed-addresses", "--allowed":
+			if c.name != "admin" {
+				return c, fmt.Errorf("unknown option %q for %s", name, c.name)
+			}
+			if !hasVal {
+				if i+1 >= len(rest) {
+					return c, fmt.Errorf("%s needs an address list", name)
+				}
+				i++
+				val = rest[i]
+			}
+			c.allowedAddresses = val
+		case "--session-lifetime", "--lifetime":
+			if c.name != "admin" {
+				return c, fmt.Errorf("unknown option %q for %s", name, c.name)
+			}
+			if !hasVal {
+				if i+1 >= len(rest) {
+					return c, fmt.Errorf("%s needs a number of minutes", name)
+				}
+				i++
+				val = rest[i]
+			}
+			mins, err := strconv.Atoi(val)
+			if err != nil || mins <= 0 {
+				return c, fmt.Errorf("%s needs a positive integer", name)
+			}
+			c.sessionLifetime = mins
+		case "--web-dir", "--origins", "--origin", "--remove-origin", "--ws-max-message":
+			if c.name != "admin" {
+				return c, fmt.Errorf("unknown option %q for %s", name, c.name)
+			}
+			if name == "--ws-max-message" {
+				n, err := numberOption(rest, &i, name, val, hasVal)
+				if err != nil {
+					return c, err
+				}
+				if n > math.MaxInt32 {
+					return c, fmt.Errorf("%s is too large", name)
+				}
+				v := int(n)
+				c.wsMaxMessage = &v
+				break
+			}
+			if !hasVal {
+				if i+1 >= len(rest) {
+					return c, fmt.Errorf("%s needs a value", name)
+				}
+				i++
+				val = rest[i]
+			}
+			if val == "" {
+				return c, fmt.Errorf("%s needs a value", name)
+			}
+			text := val
+			switch name {
+			case "--web-dir":
+				c.webDir = &text
+			case "--origins":
+				c.origins = &text
+			default:
+				if c.originEdit == nil {
+					c.originEdit = &originEdits{}
+				}
+				if name == "--origin" {
+					c.originEdit.add = append(c.originEdit.add, val)
+				} else {
+					c.originEdit.remove = append(c.originEdit.remove, val)
+				}
 			}
 		default:
 			// a deviceId is base64url and may begin with a hyphen: on `device` an id-shaped token is an argument
@@ -432,6 +514,34 @@ func parseArgs(args []string) (command, error) {
 		default:
 			return c, fmt.Errorf("unknown policy subcommand %q: %s", c.sub, usagePolicy)
 		}
+	case "admin":
+		if len(pos) == 0 {
+			return c, errors.New("admin needs a subcommand: " + usageAdmin)
+		}
+		c.sub = pos[0]
+		switch c.sub {
+		case "on", "off", "passwd", "set-password", "status", "set":
+			if len(pos) > 1 {
+				return c, fmt.Errorf("unexpected argument %q: %s", pos[1], usageAdmin)
+			}
+		default:
+			return c, fmt.Errorf("unknown admin subcommand %q: %s", c.sub, usageAdmin)
+		}
+		if c.generate && c.sub != "on" && c.sub != "passwd" && c.sub != "set-password" {
+			return c, fmt.Errorf("--generate does not belong to admin %s: %s", c.sub, usageAdmin)
+		}
+		if (c.allowedAddresses != "" || c.sessionLifetime > 0) && c.sub != "on" && c.sub != "set" {
+			return c, fmt.Errorf("--allowed and --lifetime belong to admin on or admin set: %s", usageAdmin)
+		}
+		if (c.webDir != nil || c.origins != nil || c.originEdit != nil || c.wsMaxMessage != nil) && c.sub != "set" {
+			return c, fmt.Errorf("--web-dir, --origins, --origin, --remove-origin and --ws-max-message belong to admin set: %s", usageAdmin)
+		}
+		if c.origins != nil && c.originEdit != nil {
+			return c, fmt.Errorf("--origins replaces the whole list: do not combine it with --origin or --remove-origin: %s", usageAdmin)
+		}
+		if c.json && c.sub != "status" {
+			return c, fmt.Errorf("--json does not belong to admin %s: %s", c.sub, usageAdmin)
+		}
 	default:
 		if len(pos) > 0 {
 			return c, fmt.Errorf("unknown option %q for %s", pos[0], c.name)
@@ -454,6 +564,9 @@ func printUsage(w io.Writer, err error) {
 	printf(w, "  fms-exchange-server %s [--config <file>]\n", usageSharedInvitation)
 	printf(w, "  fms-exchange-server %s [--config <file>]\n", usageGrant)
 	printf(w, "  fms-exchange-server %s [--config <file>]\n", usagePolicy)
+	printf(w, "  fms-exchange-server %s [--config <file>]\n", usageAdmin)
+	printf(w, "      (--web-dir serves a directory at / on the TLS port, - clears it; --origins / --origin list the browser origins that may open a\n")
+	printf(w, "       WebSocket - a listed origin is a consumer's, never an operator's; --ws-max-message is the WebSocket message cap in bytes, 0 = default)\n")
 	printf(w, "  fms-exchange-server set-listen [--config <file>] <host:port>   (the listen address, e.g. :22022)\n")
 	printf(w, "  fms-exchange-server set-endpoint [--config <file>] <host:port|->   (the public address announced in welcome)\n")
 	printf(w, "  fms-exchange-server set-port-range [--config <file>] <lo-hi>   (the third-party port range, e.g. 40000-40100)\n")

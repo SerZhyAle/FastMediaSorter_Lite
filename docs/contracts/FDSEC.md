@@ -3,74 +3,44 @@
 | | |
 | --- | --- |
 | **Ids** | `FDSEC-FORMAT` (the bytes) and `FDSEC-BEHAVIOUR` (what a program handling them must do) |
-| **Version** | catalog `FDSEC-FORMAT` 1.3, `FDSEC-BEHAVIOUR` 1.5, active (re-read 2026-10-07). **This reader implements suite 1 of the format and the reader-half sections of the behaviour** (its 1.1 level of 2026-09-24, ticket 038), and reads 1.3 / 1.5. 1.2 adds suite 3 (directory containers) and 1.3 suite 2 (the quiet suite): this reader opens neither - it refuses a suite-3 file by name as *unsupported* (`FdSecHead.Validate`, run on the catalog's four suite-3 containers) and a suite-2 file fails the length screen as *damaged or incomplete* (`FDSEC-FORMAT` 18.8), which the contract says does nothing wrong. 1.4 (the `p:<value>` token) and 1.5 (a "remembered on this device" credential source) concern a command-line credential and a keystore this product does not have. Owner: FileDO |
+| **Version** | `FDSEC-FORMAT` 1.4 and `FDSEC-BEHAVIOUR` 1.6, both active (since 2026-09-22; both of 2026-10-19; read on 2026-10-20 with the sealed-name amendments, FORMAT section 20 and BEHAVIOUR section 18). Owner: FileDO |
 | **Home** | `secure-container/README.md`, with `FDSEC-FORMAT.md`, `FD-SEC-CONTRACT.md` and `vectors/` in the shared contracts catalog |
-| **Role here** | consumer, reader half - `specification 026` (local specification), in `src/Secure/` on `main`, in **no release yet** (the latest release predates it; first release containing it: to be recorded, with a fresh cross-product vector run, when it ships) |
+| **Role here** | **consumer, reader half, suite 1** (`src/Secure/`; the viewer's side is `src/Main_Form.Secure.vb` and `src/Secure_Password_Form.vb`; specification 026). Plus **one narrow writer**: `src/Secure/FdSecWriter.vb` seals suite-1 containers that are ephemeral, from a finished in-memory plaintext under a per-run random credential, with no notion of an original file; its only caller is `src/Video/AnimationVideoStore.vb` (specification 242, owner decision Q242-1). Modern only: every `src/Secure/` file is whole-file `#If Not NETFRAMEWORK` |
 
-Two ids, deliberately separate: the format is what the bytes are, the behaviour is what a program that
-reads and writes them must do to be safe. This repository implements the **reader half of both** -
-opening a `.fd-sec` container and showing what is inside as ordinary media. Writing containers is a
-later ticket, deliberately, because `FD-SEC-CONTRACT` §6 is where the contract turns from a list a reader
-can mostly ignore into the thing that decides whether a feature destroys data.
+Two ids, deliberately separate: the format is what the bytes are, the behaviour is what a program that reads and
+writes them must do to be safe. A user-facing "pack a file" feature is not part of this repository and stays its own ticket.
 
-## What this repository does
+## What this repository must do to stay conformant
 
-- The whole format lives in [`src/Secure/`](../../src/Secure), with no product dependencies: it never
-  logs, never shows a dialog, never reads a setting and never touches a path outside the container it was
-  handed. The viewer's side is `src/Main_Form.Secure.vb` and nothing else reaches the crypto.
-- Conformance is run against the **catalog's own vectors**, vendored as artifacts into
-  `tests/Lite.Tests/TestData/fdsec-vectors/` beside a `PROVENANCE.txt` that names this contract, its
-  version, the date taken and each file's SHA-256 - which the suite asserts before trusting a byte.
-  Vendoring an artifact so a test can run for anyone who clones this repository is a different act from
-  vendoring a document; the documents stay in the catalog and are only cited.
-- The two deviations 026 recorded - the **streaming reader** (see below) and the absence of the writer -
-  were both closed by 1.1 (§14.4 and the consumer-only scope). The registry, not this page, says what
-  is open today.
-- The vendored `vectors.json` and the two suite-1 containers are byte-identical to the catalog's current
-  ones (checked 2026-10-07, SHA-256 against `PROVENANCE.txt`). Four suite-3 containers were added to the same
-  folder on that date for one negative test - they are never opened, only refused - and the suite-2 files are
-  not vendored (their three lengths are pinned instead).
+- **The bytes (FORMAT sections 2 to 5, 11, 13).** Reproduce them exactly; the catalog's vectors decide, not the
+  prose. Head fields are read only after slot 0 authenticates; an unknown version, suite, flag or slot type is
+  *unsupported*. Suite 3 is refused by name; a suite-2 file falls to the length screen or the wrong-credential
+  class (13.3, 18.8), which the contract says a reader without those suites does without doing anything wrong.
+- **Three outcomes, never merged (BEHAVIOUR 7).** *Wrong credential / not a container / tampering*, *damaged* and
+  *unsupported* stay apart; a wrong key and a flipped byte fail an AEAD tag identically.
+- **Sealed names and sizes (FORMAT 7, 11, 20).** An unsafe sealed true name and an impossible sealed size are refused
+  as *damaged*, never sanitised, with the length arithmetic bounded before it multiplies. The four characters
+  `"`, `<`, `>` and `|` are not in the refusal set: a valid authenticated name holding one is not damaged because a
+  destination cannot create it. This reader restores no name to a file system, so BEHAVIOUR 18 applies only to a
+  restore or export path it does not have.
+- **The only screen before the credential** is the length rule (a multiple of 512, at least the smallest
+  container). A container carries no marker; there is no dispatch by looking.
+- **Hygiene (BEHAVIOUR 6, 8.2, 10).** The published KDF profile only, since it is not stored in the file; no trivial
+  credential presented as protection; neither the credential nor the sealed name in a log, a window title, a
+  temporary file or the console; no decrypted byte on disk, and nothing recovered is launched or handed to
+  another program by path.
+- **Streaming reader (14.4).** It authenticates every byte it returns and cannot verify the sealed digest of bytes
+  it never read, so the viewer never claims a container is intact and offers an explicit "verify this container".
+- **The ephemeral writer.** It owes BEHAVIOUR 5.1 (normalise, build, write, flush, read back in full, rename into
+  place) and the section 6 rules that do not concern an original file (2, 3, 8, 10), and it reproduces the writer
+  vectors byte for byte with injected randomness in the contract's draw order.
+- **Evidence (FORMAT 16, BEHAVIOUR 12).** The catalog's vectors are vendored into `tests/Lite.Tests/TestData/fdsec-vectors/`
+  beside a `PROVENANCE.txt` whose SHA-256 the suite asserts first (an artifact copy, never a document copy). The
+  generated boundary vectors for the four characters (FORMAT 20) are owed by the reference writer and are replayed
+  here when they exist. The interoperability claim is stated only after a fresh run of the vectors with its output cited.
 
-## What this repository must keep doing
+## Where it stands
 
-- Reproduce sections 2-5 of the contract **exactly**. They are not preferences: a one-byte deviation
-  produces files nobody else can open, and the conformance vectors decide, not the prose.
-- Keep the three outcomes apart - *wrong credential / not a container / tampering*, *damaged*,
-  *unsupported*. A wrong key and a flipped byte fail an AEAD tag identically; a surface that reports one
-  as the other is a defect, not a wording choice.
-- Refuse, never sanitise, an unsafe sealed true name, and refuse an impossible sealed size, both as
-  *damaged* (1.1: `FDSEC-FORMAT` §7 and §11 steps 6-7). A size is compared while still unsigned and the
-  length arithmetic is bounded before it multiplies - an `OverflowException` is no outcome class.
-- Apply the only screen that exists before the credential (length a multiple of 512, at least the smallest
-  possible container) and nothing else. A container carries no marker; there is no dispatch by looking.
-- Never describe an empty or trivial credential as protection, and never write the credential or the
-  sealed true name into a log, a history file, a window title, a temporary file or the console.
-- Never launch anything recovered from a container, and never hand its content to another program by path.
-- Derive with the published KDF profile only. It is a property of the format version and is not stored in
-  the file, so a lowered work factor silently produces containers only that build can read.
-- State the interoperability claim only after a fresh run of the vectors with its output cited.
-
-## What 026 owed the catalog, and what was paid
-
-All four, on 2026-09-22:
-
-1. **This pointer**, added with the specification.
-2. **Consumer rows in the registry** for both ids, carrying the conformance run rather than a reading.
-3. **The amendment**, proposed on 2026-09-22 and **accepted into `FDSEC-BEHAVIOUR` 1.1 as §14.4**: the
-   streaming reader of §4.2 hands a seekable decrypting stream to a decoder instead of unpacking a whole
-   file, so it authenticates every byte it returns but cannot verify the sealed digest of bytes it never
-   read, and the viewer therefore never claims a container is intact and offers an explicit "verify this
-   container". The dated deviation it was recorded as is closed; the proposal stays beside the contract in
-   the catalog as `PROPOSAL-2026-09-22-streaming-reader.md`.
-4. **A declaration that the vectors are vendored** into this repository's test data, which is an artifact
-   copy and not a document copy.
-
-## Open, and not this repository's to settle alone
-
-- **Suites 2 and 3.** A suite-2 or suite-3 file written by FileDO does not open in this viewer (the reader says
-  so honestly: *damaged or incomplete* for suite 2, *unsupported* for suite 3). Whether to implement them is a
-  product decision, not a conformance debt - `FDSEC-FORMAT` 1.2 and 1.3 say a reader without them does nothing
-  wrong.
-- **Sealed-name parity** (`PROPOSAL-2026-09-30-sealed-name-parity.md`, awaiting the owner): this reader follows
-  the 1.1 text and so accepts a sealed true name carrying `"`, `<`, `>` or `|`, which FileDO refuses as damaged.
-  No code changes until the catalog rules.
+The registry rows of this product (the release state, the writer's scope and the open items) and its dated
+exceptions say what is proven and what is open; this pointer never repeats them. Specification 244 holds the
+clause-by-clause audit.

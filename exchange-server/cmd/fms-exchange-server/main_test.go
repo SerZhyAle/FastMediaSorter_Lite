@@ -694,7 +694,7 @@ func TestHardKillLeavesNothingButTheStoresTheIdentityTheLockAndTheLog(t *testing
 			return nil
 		}
 		rel, _ := filepath.Rel(dir, p)
-		if !allowed[rel] && !(strings.HasPrefix(filepath.ToSlash(rel), "logs/") && logx.IsDayFile(filepath.Base(rel))) {
+		if !allowed[rel] && !(strings.HasPrefix(filepath.ToSlash(rel), "logs/") && (logx.IsDayFile(filepath.Base(rel)) || logx.IsAuditDayFile(filepath.Base(rel)))) {
 			t.Errorf("the data directory holds an unexpected file after a kill: %s", rel)
 		}
 		if b, _ := os.ReadFile(p); bytes.Contains(b, []byte("kill-test-secret")) || bytes.Contains(b, []byte(pw)) || bytes.Contains(b, []byte(en.DeviceToken)) {
@@ -836,5 +836,81 @@ func TestConnectionStringWithNoCertificateIsAConfigurationFailure(t *testing.T) 
 	code, out, errText := execute(t, []string{"connection-string", "--config", p}, "")
 	if code != exitConfig || out != "" || errText == "" {
 		t.Fatalf("exit %d stdout %q stderr %q", code, out, errText)
+	}
+}
+
+func TestAdminCommands(t *testing.T) {
+	p := cfgPath(t)
+
+	// Initial status: off, no password set
+	code, out, _ := execute(t, []string{"admin", "status", "--config", p}, "")
+	if code != 0 || !strings.Contains(out, "off") || !strings.Contains(out, "not set") {
+		t.Fatalf("initial status: %d %q", code, out)
+	}
+
+	code, out, _ = execute(t, []string{"admin", "status", "--json", "--config", p}, "")
+	if code != 0 {
+		t.Fatalf("status --json: %d", code)
+	}
+	var st struct {
+		On          bool `json:"on"`
+		PasswordSet bool `json:"passwordSet"`
+	}
+	if err := json.Unmarshal([]byte(out), &st); err != nil || st.On || st.PasswordSet {
+		t.Fatalf("unexpected json status: %v %+v", err, st)
+	}
+
+	// admin on --generate
+	code, out, _ = execute(t, []string{"admin", "on", "--generate", "--config", p}, "")
+	if code != 0 || !strings.Contains(out, "administration turned on") {
+		t.Fatalf("admin on --generate: %d %q", code, out)
+	}
+	// Verify config
+	cfg, err := config.Load(p)
+	if err != nil || !cfg.Admin.On || cfg.Admin.PasswordRecord == "" {
+		t.Fatalf("cfg after admin on: err=%v, admin=%+v", err, cfg.Admin)
+	}
+	if !strings.HasPrefix(cfg.Admin.PasswordRecord, "$argon2id$") {
+		t.Fatalf("password must be stored as argon2id record, got %q", cfg.Admin.PasswordRecord)
+	}
+
+	// admin status now on, password set
+	code, out, _ = execute(t, []string{"admin", "status", "--config", p}, "")
+	if code != 0 || !strings.Contains(out, "on") || !strings.Contains(out, "set") {
+		t.Fatalf("status after on: %d %q", code, out)
+	}
+
+	// admin passwd via stdin
+	code, out, _ = execute(t, []string{"admin", "passwd", "--config", p}, "NewSecretPassw0rd!\n")
+	if code != 0 || !strings.Contains(out, "admin password changed") {
+		t.Fatalf("admin passwd: %d %q", code, out)
+	}
+	// password under floor should fail
+	code, _, stderr := execute(t, []string{"admin", "passwd", "--config", p}, "short\n")
+	if code != exitPolicy || !strings.Contains(stderr, "at least 10 characters") {
+		t.Fatalf("short password should fail: %d %q", code, stderr)
+	}
+
+	// admin off
+	code, out, _ = execute(t, []string{"admin", "off", "--config", p}, "")
+	if code != 0 || !strings.Contains(out, "administration turned off") {
+		t.Fatalf("admin off: %d %q", code, out)
+	}
+	cfg, _ = config.Load(p)
+	if cfg.Admin.On {
+		t.Fatalf("admin should be off: %+v", cfg.Admin)
+	}
+
+	// inspect reports adminOn and adminPasswordSet
+	code, out, _ = execute(t, []string{"inspect", "--config", p}, "")
+	if code != 0 {
+		t.Fatalf("inspect: %d", code)
+	}
+	var rep inspectReport
+	if err := json.Unmarshal([]byte(out), &rep); err != nil {
+		t.Fatalf("unmarshal inspect: %v", err)
+	}
+	if rep.AdminOn || !rep.AdminPasswordSet {
+		t.Fatalf("inspect mismatch: AdminOn=%v, AdminPasswordSet=%v", rep.AdminOn, rep.AdminPasswordSet)
 	}
 }

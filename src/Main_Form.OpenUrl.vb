@@ -163,6 +163,8 @@ Partial Public Class Main_Form
         If is_Vlc_Playing Then RememberCurrentVideoPosition()
         ' Anything still in flight for the previous file is stale from here on.
         media_Generation += 1
+        ' The shared player may hold an animation video (spec 242): let go of it before the stream takes the player.
+        StopAnimationVideo()
         ' ...and so is any argument or resume probe still out: the stream is what was asked for.
         open_Coordinator.NoteNavigation()
         ' A container's decrypting stream is what VLC may have been reading: stop first,

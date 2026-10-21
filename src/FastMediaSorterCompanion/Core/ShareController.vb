@@ -22,7 +22,9 @@ Public Module ShareController
     ''' when a bind was refused with an access denial rather than "already in use" - the
     ''' Hyper-V / WSL / Docker excluded-range case. Matched literally and case-sensitively;
     ''' it is a marker precisely because the OS error text around it is localized. Must stay
-    ''' identical to service.ExcludedRangeMarker in the worker repo.</summary>
+    ''' identical to service.ExcludedRangeMarker in the worker repo. Since WORKER-IPC 0.17 it is
+    ''' the FALLBACK only: a status that carries <c>lastStartErrorKind</c> is read from that
+    ''' (<see cref="StartErrorKindOf"/>); the token stays for a worker that does not send it.</summary>
     Public Const ExcludedRangeMarker As String = " [excluded-range]"
 
     ''' <summary>Outcome of a ShareFoldersAsync call.</summary>
@@ -445,14 +447,17 @@ Public Module ShareController
     Public Function PortWarning(status As WorkerStatus, want As Integer) As String
         If status Is Nothing Then Return ""
         If Not status.Running Then
+            ' The structured kind (WORKER-IPC 0.17) when the worker sent it, the free text only
+            ' when it did not - see StartErrorKindOf.
+            Dim kind As String = StartErrorKindOf(status)
             ' Only a FAILED start is ours to explain - a share the user simply turned off
             ' is not a port problem.
-            If String.IsNullOrEmpty(status.LastStartError) Then Return ""
+            If kind.Length = 0 Then Return ""
             ' The worker records EVERY failed start as "port N unavailable: ..", a refused
             ' folder list included. Only a refused bind is a port problem: "choose another
             ' port and change it in the router" is the wrong advice for anything else, and
             ' following it invalidates every code already handed out (ticket 054 H-03).
-            If Not IsBindFailure(status.LastStartError) Then Return WorkerSaidNoText(WithoutPortPrefix(status.LastStartError))
+            If kind <> StartErrorKinds.InUse AndAlso kind <> StartErrorKinds.ExcludedRange Then Return WorkerSaidNoText(WithoutPortPrefix(status.LastStartError))
             ' The number comes from the worker when it has one: a start can fail on a port
             ' this side never recorded (the OS-assigned first one), and "some port is
             ' busy" would be a useless sentence.
@@ -463,7 +468,7 @@ Public Module ShareController
             ' stable ASCII token, because the OS message itself is localized. That case
             ' needs the second line - nothing is listening and the port still cannot be
             ' bound, which is unguessable without naming Hyper-V/WSL/Docker.
-            If status.LastStartError.IndexOf(ExcludedRangeMarker, StringComparison.Ordinal) >= 0 Then
+            If kind = StartErrorKinds.ExcludedRange Then
                 text &= Environment.NewLine & ShareText.PortExcludedRangeHint()
             End If
             Return text
@@ -478,14 +483,36 @@ Public Module ShareController
         Return ShareText.PortMismatchText(want, status.ListenPort)
     End Function
 
-    ''' <summary>A start error that is a refused BIND: Go's socket error names the "bind" call
-    ''' (".. listen tcp :2222: bind: .."), and the excluded-range marker is the worker's own.
-    ''' Both are ASCII tokens outside the localized OS text. A structured error kind is asked of
-    ''' the worker's owner (ticket 054 section 6); until then this is the one reading.</summary>
+    ''' <summary>The kind of the last failed start, one of <see cref="StartErrorKinds"/>: the
+    ''' worker's own <c>lastStartErrorKind</c> whenever it SENT the field (WORKER-IPC 0.17 -
+    ''' empty means no start error, and an unknown or non-string value has already been read as
+    ''' <c>other</c>), and ONLY when it did not - the vendored worker predates the field - the
+    ''' free-text reading of <see cref="StartErrorKindFromText"/>. The two are never mixed: a
+    ''' kind that is present is never second-guessed from the text around it.</summary>
+    Friend Function StartErrorKindOf(status As WorkerStatus) As String
+        If status Is Nothing Then Return StartErrorKinds.None
+        If status.HasLastStartErrorKind Then Return status.LastStartErrorKind
+        Return StartErrorKindFromText(status.LastStartError)
+    End Function
+
+    ''' <summary>The pre-0.17 reading of a start error from its text, for a worker that does not
+    ''' send <c>lastStartErrorKind</c>. Go's socket error names the "bind" call
+    ''' (".. listen tcp :2222: bind: .."), and the excluded-range marker is the worker's own;
+    ''' both are ASCII tokens outside the localized OS text. The marker wins (it is the more
+    ''' specific one), any other bind refusal reads as <c>in-use</c>, anything else as
+    ''' <c>other</c>, and no text at all as no start error.</summary>
+    Friend Function StartErrorKindFromText(lastStartError As String) As String
+        If String.IsNullOrEmpty(lastStartError) Then Return StartErrorKinds.None
+        If lastStartError.IndexOf(ExcludedRangeMarker, StringComparison.Ordinal) >= 0 Then Return StartErrorKinds.ExcludedRange
+        If lastStartError.IndexOf("bind:", StringComparison.Ordinal) >= 0 Then Return StartErrorKinds.InUse
+        Return StartErrorKinds.Other
+    End Function
+
+    ''' <summary>A start error TEXT that is a refused BIND (the free-text reading only - a status
+    ''' that carries the structured kind goes through <see cref="StartErrorKindOf"/>).</summary>
     Friend Function IsBindFailure(lastStartError As String) As Boolean
-        If String.IsNullOrEmpty(lastStartError) Then Return False
-        Return lastStartError.IndexOf("bind:", StringComparison.Ordinal) >= 0 OrElse
-               lastStartError.IndexOf(ExcludedRangeMarker, StringComparison.Ordinal) >= 0
+        Dim kind As String = StartErrorKindFromText(lastStartError)
+        Return kind = StartErrorKinds.InUse OrElse kind = StartErrorKinds.ExcludedRange
     End Function
 
     ''' <summary>The worker's reason without its misleading "port N unavailable: " lead-in.</summary>

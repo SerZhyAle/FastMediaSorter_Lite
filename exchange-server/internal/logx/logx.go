@@ -191,6 +191,13 @@ func (l *Logger) Info(event string, f ...Field)  { l.write("INFO", event, f) }
 func (l *Logger) Warn(event string, f ...Field)  { l.write("WARN", event, f) }
 func (l *Logger) Error(event string, f ...Field) { l.write("ERROR", event, f) }
 
+// State records a committed transition, preserving the event column and typed redaction.
+// Failed attempts use the existing warning/error events, never a success marker.
+func (l *Logger) State(event string, f ...Field) {
+	f = append(f, Field{key: "state", val: "[STATE-CHANGE]"})
+	l.write("INFO", event, f)
+}
+
 func (l *Logger) write(level, event string, fields []Field) {
 	if l == nil {
 		return

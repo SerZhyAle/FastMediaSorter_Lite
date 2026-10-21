@@ -130,16 +130,46 @@ Public Module WorkerProcess
         Return Nothing
     End Function
 
-    ''' <summary>Launches the bundled worker hidden. False when the launch itself failed.</summary>
+    ''' <summary>
+    ''' The command line of a worker this host starts (WORKER-LAUNCH 1.0 section 1): the state
+    ''' directory the host itself resolved (<see cref="WorkerStateDir.Resolve"/> - the same
+    ''' value the Hosting page reports and the viewer reads), passed explicitly as
+    ''' <c>--datadir</c> so the worker's directory is what the host says it is and stays so for the
+    ''' worker's life. It is the directory the worker would pick on its own (the order is the
+    ''' worker's), so nothing moves for an ordinary install; with no resolvable directory no
+    ''' argument is passed and the worker resolves for itself. One argument per item: a path with
+    ''' spaces stays a single value.
+    ''' </summary>
+    Friend Function SpawnArguments(stateDir As String) As List(Of String)
+        Dim args As New List(Of String)()
+        If Not String.IsNullOrEmpty(stateDir) Then
+            args.Add("--datadir")
+            args.Add(stateDir)
+        End If
+        Return args
+    End Function
+
+    Friend Function SpawnStartInfo(exePath As String, stateDir As String) As ProcessStartInfo
+        Dim psi As New ProcessStartInfo(exePath) With {
+            .UseShellExecute = False,
+            .CreateNoWindow = True,
+            .WindowStyle = ProcessWindowStyle.Hidden}
+        For Each arg As String In SpawnArguments(stateDir)
+            psi.ArgumentList.Add(arg)
+        Next
+        Return psi
+    End Function
+
+    ''' <summary>Launches the bundled worker hidden. False when the launch itself failed.
+    ''' Only ever reached when nothing answered the pipe (see <see cref="EnsureRunning"/>), so the
+    ''' <c>--datadir</c> it passes belongs to the one worker that is about to own the pipe.</summary>
     Private Function SpawnWorker() As Boolean
         Try
             ' Using: we never wait on the object itself (readiness is decided by the pipe
             ' poll), and a discarded Process holds its handle until finalization.
-            Using spawned As Process = Process.Start(New ProcessStartInfo(WorkerExePath()) With {
-                .UseShellExecute = False,
-                .CreateNoWindow = True,
-                .WindowStyle = ProcessWindowStyle.Hidden})
+            Using spawned As Process = Process.Start(SpawnStartInfo(WorkerExePath(), WorkerStateDir.Resolve()))
             End Using
+            StateLog.EventOccurred("worker-spawned")
             Return True
         Catch ex As Exception
             AppFileLogger.LogException("Worker: spawn failed", ex)
@@ -211,6 +241,10 @@ Public Module WorkerProcess
     Friend Function Exchange(request As WorkerRequest, timeoutMs As Integer, pipeName As String) As WorkerResponse
         Try
             Dim resp As WorkerResponse = WorkerIpc.Send(request, timeoutMs, pipeName)
+            If String.Equals(pipeName, WorkerIpc.PipeName, StringComparison.Ordinal) Then
+                StateLog.CommandCompleted(request.type, resp.Ok)
+                If resp.Ok Then StateLog.Observe(resp.Status)
+            End If
             last_Refusal = Nothing
             last_Problem = WorkerExchangeProblem.None
             Return resp
@@ -227,6 +261,8 @@ Public Module WorkerProcess
             Return WorkerResponse.WithProblem(problem)
         End Try
     End Function
+
+    Private ReadOnly StateLog As New ShareStateLog(AddressOf AppFileLogger.WriteLine)
 
     ''' <summary>
     ''' Which failures mean "something holds the pipe" rather than "nobody answered". An

@@ -156,6 +156,84 @@ Partial Public NotInheritable Class Localization
         Add("0 отключает дисковый кэш; -1 снимает ограничение. При заполнении удаляются старые результаты.", "0 disables disk cache; -1 removes its limit. Old results are removed when full.", "0 вимикає дисковий кеш; -1 знімає обмеження. Після заповнення видаляються старі результати.", "0 deaktiviert den Festplatten-Cache; -1 hebt die Grenze auf. Bei vollem Cache werden alte Ergebnisse entfernt.", "0 disattiva la cache su disco; -1 rimuove il limite. Quando è piena elimina i risultati più vecchi.", "0 desactiva la caché en disco; -1 elimina el límite. Al llenarse borra resultados antiguos.", "0 désactive le cache disque ; -1 retire la limite. Les anciens résultats sont supprimés quand il est plein.", "0 desativa o cache em disco; -1 remove o limite. Resultados antigos são removidos quando cheio.", "0 يعطل ذاكرة القرص؛ -1 يزيل الحد. تحذف النتائج القديمة عند الامتلاء.", "0 डिस्क कैश बंद करता है; -1 सीमा हटाता है। भरने पर पुराने परिणाम हटते हैं।", "0 ডিস্ক ক্যাশ বন্ধ করে; -1 সীমা সরায়। পূর্ণ হলে পুরোনো ফল মুছে যায়।", "0 ڈسک کیش بند کرتا ہے؛ -1 حد ہٹاتا ہے۔ بھرنے پر پرانے نتائج حذف ہوتے ہیں۔", "0 禁用磁盘缓存；-1 取消大小限制。缓存满时删除旧结果。")
         Add("Каждый запуск открывает отдельное окно. Применяется при следующем запуске.", "Each launch opens a separate window. Takes effect at the next launch.", "Кожен запуск відкриває окреме вікно. Діє з наступного запуску.", "Jeder Start öffnet ein eigenes Fenster. Gilt ab dem nächsten Start.", "Ogni avvio apre una finestra separata. Vale dal prossimo avvio.", "Cada inicio abre otra ventana. Se aplica al siguiente inicio.", "Chaque lancement ouvre une fenêtre distincte. Effectif au prochain lancement.", "Cada inicialização abre uma janela separada. Vale no próximo início.", "كل تشغيل يفتح نافذة مستقلة. يسري عند التشغيل التالي.", "हर लॉन्च अलग विंडो खोलता है। अगले लॉन्च से लागू होगा।", "প্রতি চালুতে আলাদা উইন্ডো খোলে। পরের চালুতে কার্যকর হয়।", "ہر آغاز الگ ونڈو کھولتا ہے۔ اگلے آغاز سے نافذ ہوتا ہے۔", "每次启动打开独立窗口。下次启动时生效。")
         Add("Восстановить дополнительные настройки по умолчанию? Получатели, язык, тема, звук, OCR и история сохранятся.", "Restore additional preferences to defaults? Destinations, language, theme, sound, OCR and history are kept.", "Відновити типові додаткові налаштування? Отримувачі, мова, тема, звук, OCR та історія збережуться.", "Zusätzliche Einstellungen zurücksetzen? Ziele, Sprache, Design, Ton, OCR und Verlauf bleiben erhalten.", "Ripristinare le preferenze aggiuntive? Destinazioni, lingua, tema, audio, OCR e cronologia restano.", "¿Restaurar preferencias adicionales? Destinos, idioma, tema, sonido, OCR e historial se conservan.", "Rétablir les préférences supplémentaires ? Destinations, langue, thème, son, OCR et historique sont conservés.", "Restaurar preferências adicionais? Destinos, idioma, tema, som, OCR e histórico são mantidos.", "استعادة التفضيلات الإضافية؟ تبقى الوجهات واللغة والسمة والصوت وOCR والسجل.", "अतिरिक्त प्राथमिकताएँ डिफ़ॉल्ट करें? गंतव्य, भाषा, थीम, ध्वनि, OCR और इतिहास बने रहेंगे।", "অতিরিক্ত পছন্দ ডিফল্ট করবেন? গন্তব্য, ভাষা, থিম, শব্দ, OCR ও ইতিহাস থাকবে।", "اضافی ترجیحات طے شدہ کریں؟ منزلیں، زبان، تھیم، آواز، OCR اور تاریخ برقرار رہیں گی۔", "恢复附加偏好的默认值？目标文件夹、语言、主题、声音、OCR 和历史记录将保留。")
+        ' About page (ticket 243 T-6, SETTINGS-NAVIGATION 2.0 section 3 rules 3 and 4): the update statement, the offline help, the
+        ' licence and notices from local disk, and the related projects. Nothing here is fetched; the rows are labels and links.
+        Add("Обновления", "Updates", "Оновлення", "Updates", "Aggiornamenti", "Actualizaciones", "Mises à jour", "Atualizações", "التحديثات", "अपडेट", "আপডেট", "اپ ڈیٹس", "更新")
+        Add("Установлена версия {0}. Программа сама не проверяет обновления и ничего не скачивает: новые версии выходят на странице релизов GitHub, в winget и в Microsoft Store.",
+            "Version {0} is installed. The program does not check for updates by itself and downloads nothing: new versions are published on the GitHub releases page, in winget and in the Microsoft Store.",
+            "Встановлено версію {0}. Програма сама не перевіряє оновлення й нічого не завантажує: нові версії виходять на сторінці релізів GitHub, у winget і в Microsoft Store.",
+            "Installiert ist Version {0}. Das Programm prüft nicht selbst auf Updates und lädt nichts herunter: Neue Versionen erscheinen auf der GitHub-Releases-Seite, in winget und im Microsoft Store.",
+            "È installata la versione {0}. Il programma non cerca aggiornamenti da solo e non scarica nulla: le nuove versioni escono nella pagina delle release di GitHub, in winget e nel Microsoft Store.",
+            "Está instalada la versión {0}. El programa no busca actualizaciones por sí solo y no descarga nada: las versiones nuevas se publican en la página de versiones de GitHub, en winget y en Microsoft Store.",
+            "La version {0} est installée. Le programme ne recherche pas de mises à jour de lui-même et ne télécharge rien : les nouvelles versions paraissent sur la page des versions de GitHub, dans winget et dans le Microsoft Store.",
+            "A versão {0} está instalada. O programa não procura atualizações por conta própria e não baixa nada: as novas versões saem na página de versões do GitHub, no winget e na Microsoft Store.",
+            "الإصدار المثبّت هو {0}. لا يتحقق البرنامج من التحديثات بنفسه ولا يُنزّل شيئًا: تصدر الإصدارات الجديدة في صفحة إصدارات GitHub وفي winget وفي Microsoft Store.",
+            "संस्करण {0} स्थापित है। प्रोग्राम अपने आप अपडेट की जाँच नहीं करता और कुछ भी डाउनलोड नहीं करता: नए संस्करण GitHub के रिलीज़ पेज, winget और Microsoft Store में आते हैं।",
+            "সংস্করণ {0} ইনস্টল করা আছে। প্রোগ্রাম নিজে থেকে আপডেট খোঁজে না এবং কিছুই ডাউনলোড করে না: নতুন সংস্করণ GitHub-এর রিলিজ পেজে, winget-এ এবং Microsoft Store-এ প্রকাশিত হয়।",
+            "ورژن {0} نصب ہے۔ پروگرام خود اپ ڈیٹس نہیں جانچتا اور کچھ ڈاؤن لوڈ نہیں کرتا: نئے ورژن GitHub کے ریلیز صفحے، winget اور Microsoft Store میں آتے ہیں۔",
+            "已安装版本 {0}。程序不会自行检查更新，也不会下载任何内容：新版本发布在 GitHub 发布页、winget 和 Microsoft Store。")
+        Add("Связанные проекты", "Related projects", "Пов'язані проєкти", "Verwandte Projekte", "Progetti correlati", "Proyectos relacionados", "Projets associés", "Projetos relacionados", "مشاريع ذات صلة", "संबंधित परियोजनाएँ", "সংশ্লিষ্ট প্রকল্প", "متعلقہ منصوبے", "相关项目")
+        Add("Другие программы автора, которые работают вместе с этой. Страницы открываются только по щелчку.",
+            "Other programs by the author that work together with this one. Pages open only when you click a link.",
+            "Інші програми автора, які працюють разом із цією. Сторінки відкриваються лише після клацання.",
+            "Weitere Programme des Autors, die mit diesem zusammenarbeiten. Seiten öffnen sich nur per Klick.",
+            "Altri programmi dell'autore che funzionano insieme a questo. Le pagine si aprono solo con un clic.",
+            "Otros programas del autor que funcionan junto con este. Las páginas se abren solo al hacer clic.",
+            "D'autres programmes de l'auteur qui fonctionnent avec celui-ci. Les pages ne s'ouvrent qu'au clic.",
+            "Outros programas do autor que funcionam em conjunto com este. As páginas só abrem com um clique.",
+            "برامج أخرى للمؤلف تعمل مع هذا البرنامج. لا تُفتح الصفحات إلا بالنقر.",
+            "लेखक के अन्य प्रोग्राम जो इसके साथ काम करते हैं। पेज केवल क्लिक करने पर खुलते हैं।",
+            "লেখকের অন্য প্রোগ্রাম, যেগুলি এটির সঙ্গে কাজ করে। পেজ শুধু ক্লিক করলেই খোলে।",
+            "مصنف کے دیگر پروگرام جو اس کے ساتھ کام کرتے ہیں۔ صفحات صرف کلک کرنے پر کھلتے ہیں۔",
+            "作者的其他程序，可与本程序配合使用。仅在点击后才会打开页面。")
+        Add("Портал обмена медиа",
+            "Media exchange portal", "Портал обміну медіа",
+            "Portal für Medienaustausch", "Portale per lo scambio di media",
+            "Portal de intercambio de medios", "Portail d'échange de médias",
+            "Portal de troca de mídia", "بوابة تبادل الوسائط",
+            "मीडिया आदान-प्रदान पोर्टल", "মিডিয়া বিনিময় পোর্টাল",
+            "میڈیا تبادلہ پورٹل", "媒体交换门户")
+        Add("Справка по программе", "Program help", "Довідка до програми", "Hilfe zum Programm", "Guida del programma", "Ayuda del programa", "Aide du programme", "Ajuda do programa", "مساعدة البرنامج", "प्रोग्राम सहायता", "প্রোগ্রামের সহায়তা", "پروگرام کی مدد", "程序帮助")
+        Add("Встроенная справка на языке интерфейса. Если её нет на этом компьютере, откроется страница с темами на сайте.",
+            "Built-in help in the interface language. If it is not on this computer, the topics page on the website opens instead.",
+            "Вбудована довідка мовою інтерфейсу. Якщо її немає на цьому комп'ютері, відкриється сторінка з темами на сайті.",
+            "Integrierte Hilfe in der Sprache der Oberfläche. Ist sie auf diesem Computer nicht vorhanden, öffnet sich stattdessen die Themenseite der Website.",
+            "Guida integrata nella lingua dell'interfaccia. Se non è presente su questo computer, si apre la pagina degli argomenti sul sito.",
+            "Ayuda integrada en el idioma de la interfaz. Si no está en este equipo, se abre la página de temas del sitio web.",
+            "Aide intégrée dans la langue de l'interface. Si elle n'est pas sur cet ordinateur, la page des thèmes du site s'ouvre à la place.",
+            "Ajuda integrada no idioma da interface. Se não estiver neste computador, abre-se a página de tópicos do site.",
+            "مساعدة مدمجة بلغة الواجهة. إذا لم تكن موجودة على هذا الكمبيوتر، تُفتح صفحة المواضيع على الموقع بدلًا منها.",
+            "इंटरफ़ेस की भाषा में अंतर्निहित सहायता। यदि वह इस कंप्यूटर पर नहीं है, तो वेबसाइट का विषय पेज खुलेगा।",
+            "ইন্টারফেসের ভাষায় অন্তর্নির্মিত সহায়তা। এটি এই কম্পিউটারে না থাকলে ওয়েবসাইটের বিষয়-পেজ খুলবে।",
+            "انٹرفیس کی زبان میں شامل مدد۔ اگر یہ اس کمپیوٹر پر نہ ہو تو ویب سائٹ کا موضوعات کا صفحہ کھلے گا۔",
+            "界面语言的内置帮助。如果此电脑上没有，将改为打开网站上的主题页面。")
+        Add("Текст лицензии MIT открывается из файла рядом с программой; без него - со страницы на GitHub.",
+            "The MIT license text opens from the file next to the program; without it, from the page on GitHub.",
+            "Текст ліцензії MIT відкривається з файлу поруч із програмою; без нього - зі сторінки на GitHub.",
+            "Der Text der MIT-Lizenz wird aus der Datei neben dem Programm geöffnet; fehlt sie, von der Seite auf GitHub.",
+            "Il testo della licenza MIT si apre dal file accanto al programma; se manca, dalla pagina su GitHub.",
+            "El texto de la licencia MIT se abre desde el archivo junto al programa; si falta, desde la página de GitHub.",
+            "Le texte de la licence MIT s'ouvre depuis le fichier placé à côté du programme ; s'il manque, depuis la page GitHub.",
+            "O texto da licença MIT abre a partir do arquivo ao lado do programa; se faltar, a partir da página no GitHub.",
+            "يُفتح نص ترخيص MIT من الملف الموجود بجوار البرنامج، وإن لم يوجد ففي صفحة GitHub.",
+            "MIT लाइसेंस का पाठ प्रोग्राम के पास की फ़ाइल से खुलता है; वह न हो तो GitHub के पेज से।",
+            "MIT লাইসেন্সের পাঠ প্রোগ্রামের পাশের ফাইল থেকে খোলে; সেটি না থাকলে GitHub-এর পেজ থেকে।",
+            "MIT لائسنس کا متن پروگرام کے ساتھ والی فائل سے کھلتا ہے؛ وہ نہ ہو تو GitHub کے صفحے سے۔",
+            "MIT 许可证文本从程序旁边的文件打开；该文件不存在时，从 GitHub 页面打开。")
+        Add("Сторонние компоненты и лицензии", "Third-party components and licenses", "Сторонні компоненти та ліцензії", "Drittanbieter-Komponenten und Lizenzen", "Componenti di terze parti e licenze", "Componentes de terceros y licencias", "Composants tiers et licences", "Componentes de terceiros e licenças", "المكونات الخارجية والتراخيص", "तृतीय-पक्ष घटक और लाइसेंस", "তৃতীয় পক্ষের উপাদান ও লাইসেন্স", "تھرڈ پارٹی اجزا اور لائسنس", "第三方组件与许可证")
+        Add("Используемые библиотеки и тексты их лицензий. Открывается файл рядом с программой; без него - страница на GitHub.",
+            "The libraries in use and the texts of their licenses. The file next to the program opens; without it, the page on GitHub.",
+            "Використані бібліотеки та тексти їхніх ліцензій. Відкривається файл поруч із програмою; без нього - сторінка на GitHub.",
+            "Die verwendeten Bibliotheken und die Texte ihrer Lizenzen. Es öffnet sich die Datei neben dem Programm; fehlt sie, die Seite auf GitHub.",
+            "Le librerie utilizzate e i testi delle loro licenze. Si apre il file accanto al programma; se manca, la pagina su GitHub.",
+            "Las bibliotecas utilizadas y los textos de sus licencias. Se abre el archivo junto al programa; si falta, la página de GitHub.",
+            "Les bibliothèques utilisées et les textes de leurs licences. Le fichier placé à côté du programme s'ouvre ; s'il manque, la page GitHub.",
+            "As bibliotecas usadas e os textos das suas licenças. Abre-se o arquivo ao lado do programa; se faltar, a página no GitHub.",
+            "المكتبات المستخدمة ونصوص تراخيصها. يُفتح الملف الموجود بجوار البرنامج، وإن لم يوجد فتُفتح صفحة GitHub.",
+            "उपयोग की गई लाइब्रेरी और उनके लाइसेंस का पाठ। प्रोग्राम के पास की फ़ाइल खुलती है; वह न हो तो GitHub का पेज।",
+            "ব্যবহৃত লাইব্রেরি ও সেগুলির লাইসেন্সের পাঠ। প্রোগ্রামের পাশের ফাইল খোলে; সেটি না থাকলে GitHub-এর পেজ।",
+            "استعمال شدہ لائبریریاں اور ان کے لائسنس کا متن۔ پروگرام کے ساتھ والی فائل کھلتی ہے؛ وہ نہ ہو تو GitHub کا صفحہ۔",
+            "所用的库及其许可证文本。打开程序旁边的文件；该文件不存在时，打开 GitHub 页面。")
     End Sub
 
 End Class

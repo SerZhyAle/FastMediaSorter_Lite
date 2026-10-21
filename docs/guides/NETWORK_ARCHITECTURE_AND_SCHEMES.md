@@ -1,4 +1,4 @@
-# Ways to connect your devices - where each is explained
+﻿# Ways to connect your devices - where each is explained
 
 Developer-facing index for **Fast Media Sorter & Sharing for Windows**. It answers three questions for anyone
 who changes, documents or supports the connection features: which ways of connecting exist, what state each
@@ -21,7 +21,7 @@ The portal start page, which puts the ways side by side, is
 Windows-site pages and READMEs link only the start page, the home network page, the Windows servers page and,
 where it fits, the live broadcast, clouds and editions pages; the exchange server page is linked from
 developer-facing files like this one and from program UI that sits behind the exchange component, because
-`SITE-REPRESENTATION` rule 4 keeps the exchange server off the public site except for its reserved door.
+specification 249 (2026-10-20) lets the public site name the exchange server as the third component, always marked as in development and never linked to a download.
 
 The contracts are cited by id. Their local pointers - what this repository holds and owes - are
 [ANYWHERE-ACCESS](../contracts/ANYWHERE-ACCESS.md), [DEVICE-EXCHANGE](../contracts/DEVICE-EXCHANGE.md),
@@ -132,10 +132,14 @@ README, listing, UI string or picture.
 - Generated JPG "slides" with invented lettering, fake footers or third-party marks.
 - "Server edition" and "Media Exchange Server" as one thing. The Server edition is the always-on Windows service
   hosting the same share worker (shipped); the Media Exchange Server is the Go exchange program (development
-  tree). Windows-site text names the exchange server only inside its reserved door (`SITE-REPRESENTATION`
-  rule 4).
+  tree). Windows-site text names the exchange server as the third component, marked as in development, with no
+  link to a download (specification 249; `tools/site-facts.json` `development` block).
 
 ## 6. Pictures
 
 The quick scheme cards in `assets/diagrams/` are Russian-only copies kept in step with the portal's corrected
 copies. They are not used on the public pages; the portal owns the illustrations for readers.
+
+## Sharing settings navigation
+
+The [settings windows guide](SHARING_SETTINGS_WINDOWS.md) owns current SFTP, local-server and remote-client navigation, shared preferences, draft behavior and help links. Earlier builds retain the combined settings window.

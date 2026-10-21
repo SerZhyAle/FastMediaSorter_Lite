@@ -40,6 +40,22 @@
               labelled nav, lang equal to the page language and updated by the in-page switcher, dir=rtl for ar and ur;
       rule 8  full width: no page, header, footer, heading or paragraph carries a fixed width cap and
               `--wide` is 100% (owner decision 2026-10-06, PAGE-CONTENT layout contract);
+      rule 12 the retired button classes: no `btn-gold` (a third colour role) and no `btn-sm` (a second density) in any
+              page's markup, and no `.btn-gold` rule in the stylesheets the site owns (BUTTONS 2.0, PAGE-STYLE 4.4);
+      rule 13 button geometry and motion in assets/fms-site.css, assets/fms-buttons.css and every inline <style>: no pill
+              radius or --radius-pill on a button, no hover transform or hover shadow, no width:100% or stretch;
+      rule 14 the external-destination marker: every target="_blank" link has rel noopener and noreferrer, no typed arrow
+              in its caption and a localized screen-reader name saying it opens in a new tab (`externalLabel` of
+              tools/site-copy.json); assets/fms-buttons.css draws the vector marker, mirrored for right-to-left;
+      rule 15 the theme control and the current locale: `themeLabel` and `externalLabel` exist in all 13 columns of
+              tools/site-copy.json; the theme button shows that label, exposes aria-pressed and its script keeps it in
+              step; the locale switcher marks the current language with aria-current (PAGE-STYLE 4.3, BUTTONS 2.0);
+      rule 16 the collapsible group (`details.sec`, COLLAPSIBLE-GROUP 1.1): assets/fms-buttons.css draws the leading state
+              triangle (a mask in currentColor, down when open, mirrored for right-to-left by [dir="rtl"] and :dir(rtl)), gives
+              the header its own background, 4 px corners and the --btn-min target, and switches the kit's trailing chevron off;
+              no stylesheet the site owns styles a trailing chevron on `details.sec>summary` or pads `details.sec` itself (the
+              summary must span the card); `featuresLabel` exists in all 13 columns of tools/site-copy.json and every generated
+              locale page names its all-features group with it;
 
     The link walker mirrors tools/Test-DocRegistry.ps1 (ticket 058) for the HTML half
     of the corpus: that script walks the Markdown sources, this one walks the pages.
@@ -567,6 +583,7 @@ $widthCorpus.Add('404.html')
 Get-ChildItem -LiteralPath (Join-Path $Root 'docs') -Filter '*.html' -File -ErrorAction SilentlyContinue |
     ForEach-Object { $widthCorpus.Add("docs/$($_.Name)") }
 $widthCorpus.Add('assets/fms-site.css')
+$widthCorpus.Add('assets/fms-buttons.css')
 $pageLevelSelector = '(?i)(^|[\s>+~,])(html|body|main|header|footer|h1|h2|\.container|\.wrap|\.site-header|\.site-footer|\.hero|\.hero-copy|\.lead|\.lead-narrow|\.sec-head|\.section|\.section-desc|\.get|\.gloss|\.tech-links|\.download-section)(?![\w-])'
 foreach ($rel in $widthCorpus) {
     $fullPath = Join-Path $Root $rel
@@ -641,6 +658,243 @@ foreach ($p in $pages) {
     if ($rtl -and $htmlTag -notmatch '\sdir="rtl"') { Problem "$($p.File): a right-to-left page without dir=`"rtl`" (rule 9)" }
 }
 
+# --- rules 12-15: the buttons and the site's controls (BUTTONS 2.0 sections 2-4, PAGE-STYLE 4.3 and 4.4) -----------------
+# One corpus for the four: every HTML page the site serves from its own tree - the root pages (the redirect stubs and the
+# host's 404 included), docs/*.html and the generated lang/<code> renders. assets/help/*.html is a separate help surface and
+# is not read here. The vendored assets/sza-kit.css is byte-identical to the kit and is never read: it still defines the
+# retired classes, which is why the rules look at what the PAGES and the site's own stylesheets use.
+$ctlHtml = [ordered]@{}
+$ctlRels = [System.Collections.Generic.List[string]]::new()
+Get-ChildItem -LiteralPath $Root -Filter '*.html' -File | Sort-Object Name | ForEach-Object { $ctlRels.Add($_.Name) }
+Get-ChildItem -LiteralPath (Join-Path $Root 'docs') -Filter '*.html' -File -ErrorAction SilentlyContinue | Sort-Object Name | ForEach-Object { $ctlRels.Add("docs/$($_.Name)") }
+foreach ($c in ($codes | Where-Object { $_ -ne 'en' })) { foreach ($k in 'index', 'trust') { $ctlRels.Add("$LangDir/$c/$k.html") } }
+foreach ($rel in $ctlRels) {
+    $fp = Join-Path $Root $rel
+    if (Test-Path -LiteralPath $fp) { $ctlHtml[$rel] = Get-Content -LiteralPath $fp -Raw -Encoding UTF8 }
+}
+# The stylesheets the site owns plus every page's inline <style>, comments removed: label -> css text.
+$ctlCss = [ordered]@{}
+foreach ($rel in 'assets/fms-site.css', 'assets/fms-buttons.css') {
+    $fp = Join-Path $Root $rel
+    if (Test-Path -LiteralPath $fp) { $ctlCss[$rel] = [regex]::Replace((Get-Content -LiteralPath $fp -Raw -Encoding UTF8), '(?s)/\*.*?\*/', ' ') }
+}
+foreach ($rel in $ctlHtml.Keys) {
+    $styles = (@([regex]::Matches($ctlHtml[$rel], '(?is)<style\b[^>]*>(.*?)</style>') | ForEach-Object { $_.Groups[1].Value })) -join "`n"
+    if ($styles) { $ctlCss["$rel <style>"] = [regex]::Replace($styles, '(?s)/\*.*?\*/', ' ') }
+}
+function Get-PlainText([string]$html) { [Net.WebUtility]::HtmlDecode(([regex]::Replace(([regex]::Replace($html, '(?is)<svg\b.*?</svg>', ' ')), '<[^>]+>', ' '))).Trim() }
+$typedArrows = '[' + [string][char]0x2192 + [char]0x2197 + [char]0x279A + [char]0x21D7 + [char]0x2198 + [char]0x2B08 + ']'
+
+# --- rule 12: the retired button classes ----------------------------------------------------------------------
+# `btn-gold` was a third colour role and is retired (PAGE-STYLE 4.4, Q-5 of docs/guides/UNIFIED_UI_CONTRACTS.md); `btn-sm`
+# was a second density in the same panel. A page names `btn` plus at most one of `btn-primary` / `btn-ghost`.
+foreach ($rel in $ctlHtml.Keys) {
+    foreach ($m in [regex]::Matches($ctlHtml[$rel], '(?i)\bclass\s*=\s*"[^"]*(?<![\w-])(btn-gold|btn-sm)(?![\w-])[^"]*"')) {
+        Problem "${rel}: class '$($m.Groups[1].Value)' is retired - one accent button per view and one density per panel (BUTTONS 2.0 section 2, PAGE-STYLE 4.4) (rule 12)"
+    }
+}
+foreach ($src in $ctlCss.Keys) {
+    if ($ctlCss[$src] -match '(?<![\w-])\.btn-gold(?![\w-])') { Problem "${src}: a .btn-gold rule - the class is retired (rule 12)" }
+}
+
+# --- rule 13: button geometry and motion in the stylesheets the site owns ---------------------------------------
+# Radius is the contract's 4 (never a pill, never --radius-pill), a button never lifts or glows on hover, and a button is as
+# wide as its caption (BUTTONS 2.0 section 2 rules 1 and 2): no width:100%, no flex growth, no stretch.
+function Test-PillRadius([string]$v) {
+    if ($v -match 'radius-pill') { return $true }
+    foreach ($t in [regex]::Matches($v, '(?<n>\d+(?:\.\d+)?)\s*(?<u>px|rem|em|%)')) {
+        $n = [double]::Parse($t.Groups['n'].Value, [Globalization.CultureInfo]::InvariantCulture)
+        switch ($t.Groups['u'].Value) {
+            'px' { if ($n -gt 12) { return $true } }
+            '%' { if ($n -ge 25) { return $true } }
+            default { if ($n -gt 0.75) { return $true } }
+        }
+    }
+    return $false
+}
+$buttonSelector = '(?<![\w-])\.(btn(-primary|-ghost|-sm|-gold)?|theme-btn)(?![\w-])'
+foreach ($src in $ctlCss.Keys) {
+    foreach ($rule in [regex]::Matches($ctlCss[$src], '([^{}]+)\{([^{}]*)\}')) {
+        $sel = ($rule.Groups[1].Value -replace '\s+', ' ').Trim()
+        $body = $rule.Groups[2].Value
+        if ($sel -match $buttonSelector) {
+            foreach ($d in [regex]::Matches($body, '(?i)(?<![\w-])border-radius\s*:\s*([^;]+)')) {
+                if (Test-PillRadius $d.Groups[1].Value) { Problem "${src}: '$sel' has a pill radius '$($d.Groups[1].Value.Trim())' - the button radius is the contract's 4 (rule 13)" }
+            }
+            if ($body -match '(?i)--radius-pill') { Problem "${src}: '$sel' uses --radius-pill (rule 13)" }
+            foreach ($d in [regex]::Matches($body, '(?i)(?<![\w-])(?:min-)?width\s*:\s*(?:100%|100vw|100vi)|(?<![\w-])flex\s*:\s*[1-9]\b|(?<![\w-])flex-grow\s*:\s*[1-9]|(?<![\w-])(?:align|justify)-self\s*:\s*stretch')) {
+                Problem "${src}: '$sel' stretches ('$($d.Value.Trim())') - a button is as wide as its caption (rule 13)"
+            }
+        }
+        if ($sel -match ':hover') {
+            foreach ($d in [regex]::Matches($body, '(?i)(?<![\w-])transform\s*:\s*([^;]+)')) {
+                $v = ($d.Groups[1].Value -replace '!important', '').Trim()
+                if ($v -notmatch '^(none|translateY\(-50%\))$') { Problem "${src}: '$sel' moves on hover ('$v') - no hover lift (rule 13)" }
+            }
+            if ($body -match '(?i)(?<![\w-])translate\s*:') { Problem "${src}: '$sel' translates on hover (rule 13)" }
+            foreach ($d in [regex]::Matches($body, '(?i)(?<![\w-])box-shadow\s*:\s*([^;]+)')) {
+                $v = ($d.Groups[1].Value -replace '!important', '').Trim()
+                if ($v -ne 'none') { Problem "${src}: '$sel' adds a shadow on hover ('$v') - no hover glow (rule 13)" }
+            }
+        }
+    }
+}
+foreach ($rel in $ctlHtml.Keys) {
+    foreach ($m in [regex]::Matches($ctlHtml[$rel], '(?i)<(?:a|button)\b[^>]*\bclass\s*=\s*"[^"]*(?<![\w-])btn(?![\w-])[^"]*"[^>]*\bstyle\s*=\s*"[^"]*(?<![\w-])width\s*:\s*100%')) {
+        Problem "${rel}: a button stretched by an inline width:100% (rule 13)"
+    }
+}
+
+# --- rule 14: the external-destination marker (BUTTONS 2.0 section 2 rule 3) ------------------------------------
+# Every target="_blank" link: rel carries noopener and noreferrer; its caption has no typed arrow; its accessible name says
+# that it opens in a new tab (a screen-reader span holding `externalLabel` of tools/site-copy.json in the page's language,
+# or in the language of the link when the link is one language of an in-page trio); and assets/fms-buttons.css draws the
+# vector marker for every such link, mirrored for right-to-left.
+$extRx = [regex]::new('<a\b(?<attrs>[^>]*\btarget="_blank"[^>]*)>(?<inner>.*?)</a>', [System.Text.RegularExpressions.RegexOptions]::Singleline -bor [System.Text.RegularExpressions.RegexOptions]::IgnoreCase)
+$extCount = 0
+foreach ($rel in $ctlHtml.Keys) {
+    $pageCode = if ($rel -match "^$LangDir/([^/]+)/") { $Matches[1] } else { 'en' }
+    $isTri = $ctlHtml[$rel] -match '\sdata-l="ru"'   # an English page that also carries ru and uk in-page
+    foreach ($m in $extRx.Matches($ctlHtml[$rel])) {
+        $extCount++
+        $attrs = $m.Groups['attrs'].Value
+        $inner = $m.Groups['inner'].Value
+        $href = [regex]::Match($attrs, 'href="([^"]*)"').Groups[1].Value
+        $relAttr = [regex]::Match($attrs, '\brel="([^"]*)"').Groups[1].Value
+        if ($relAttr -notmatch '(^|\s)noopener(\s|$)' -or $relAttr -notmatch '(^|\s)noreferrer(\s|$)') { Problem "${rel}: the external link $href lacks rel=`"noopener noreferrer`" (rule 14)" }
+        $at = $inner.IndexOf('<span class="sr-only">', [StringComparison]::Ordinal)
+        if ($at -lt 0) { Problem "${rel}: the external link $href has no screen-reader text saying it opens in a new tab (rule 14)"; continue }
+        $spoken = Get-PlainText $inner.Substring($at)
+        $caption = Get-PlainText $inner.Substring(0, $at)
+        if ($caption -match $typedArrows) { Problem "${rel}: the external link $href carries a typed arrow in its caption - the marker is drawn by assets/fms-buttons.css (rule 14)" }
+        $want = if ($pageCode -ne 'en') { @($pageCode) }
+                elseif ($attrs -match '\bdata-l="en"') { @('en') } elseif ($attrs -match '\bdata-l="ru"') { @('ru') } elseif ($attrs -match '\bdata-l="ua"') { @('uk') }
+                elseif ($isTri) { @('en', 'ru', 'uk') } else { @('en') }
+        foreach ($w in $want) {
+            $label = [string]$copy.$w.externalLabel
+            if (-not $label -or -not $spoken.Contains($label)) { Problem "${rel}: the external link $href does not say '$label' ($w) in its screen-reader text (rule 14)" }
+        }
+    }
+}
+$btnCssText = if ($ctlCss.Contains('assets/fms-buttons.css')) { $ctlCss['assets/fms-buttons.css'] } else { '' }
+if ($btnCssText -notmatch '(?s)a\[target="_blank"\]::after\s*\{[^}]*mask[^}]*\}' -or $btnCssText -notmatch '(?s)a\[target="_blank"\]::after\s*\{[^}]*currentColor') {
+    Problem 'assets/fms-buttons.css does not draw the external-destination marker (a[target="_blank"]::after with a mask in currentColor) (rule 14)'
+}
+if ($btnCssText -notmatch '\[dir="rtl"\]\s*a\[target="_blank"\]::after') { Problem 'assets/fms-buttons.css does not mirror the external-destination marker for right-to-left (rule 14)' }
+
+# --- rule 15: the theme control and the current locale -------------------------------------------------------------
+# PAGE-STYLE 4.3 / BUTTONS 2.0 section 2 rules 4 and 5: the theme control names itself in words (a localized label in
+# tools/site-copy.json, in every column) and, being a toggle with a stable label, exposes aria-pressed, which the page's
+# script keeps in step. The locale switcher marks the current language with aria-current.
+$expectedColumns = 'ru', 'en', 'uk', 'de', 'it', 'es', 'fr', 'pt', 'ar', 'hi', 'bn', 'ur', 'zh'
+foreach ($col in $expectedColumns) {
+    if ($col -notin $codes) { Problem "tools/site-copy.json has no '$col' column - all 13 languages are kept (rule 15)"; continue }
+    foreach ($key in 'themeLabel', 'externalLabel') {
+        if (-not [string]$copy.$col.$key) { Problem "tools/site-copy.json: '$col' has no '$key' - the theme and external-link names are a key in every column (rule 15)" }
+    }
+}
+foreach ($rel in $ctlHtml.Keys) {
+    $h = $ctlHtml[$rel]
+    $pageCode = if ($rel -match "^$LangDir/([^/]+)/") { $Matches[1] } else { 'en' }
+    $isTri = $h -match '\sdata-l="ru"'
+    $btn = [regex]::Match($h, '(?is)<button\b(?<attrs>[^>]*\bid="themeBtn"[^>]*)>(?<inner>.*?)</button>')
+    if ($btn.Success) {
+        $a = $btn.Groups['attrs'].Value
+        if ($a -notmatch '\baria-pressed="(true|false)"') { Problem "${rel}: the theme control has no aria-pressed (rule 15)" }
+        if ($a -match '\baria-label=') { Problem "${rel}: the theme control carries an aria-label that replaces its visible name (rule 15)" }
+        $shown = Get-PlainText $btn.Groups['inner'].Value
+        $want = if ($pageCode -ne 'en') { @($pageCode) } elseif ($isTri) { @('en', 'ru', 'uk') } else { @('en') }
+        foreach ($w in $want) {
+            $label = [string]$copy.$w.themeLabel
+            if (-not $label -or -not $shown.Contains($label)) { Problem "${rel}: the theme control does not show '$label' ($w) as its visible name (rule 15)" }
+        }
+        if ($h -notmatch "(?s)getElementById\('themeBtn'\).{0,700}?setAttribute\('aria-pressed'") { Problem "${rel}: the page's script does not keep the theme control's aria-pressed in step (rule 15)" }
+    }
+    if ($pageCode -ne 'en') {
+        foreach ($anchor in [regex]::Matches($h, '<a\b[^>]*\bclass="on"[^>]*>')) {
+            if ($anchor.Value -notmatch '\baria-current=') { Problem "${rel}: the current-locale link $($anchor.Value) has no aria-current (rule 15)" }
+        }
+        if ($h -notmatch ('<a\b(?=[^>]*\bhreflang="' + [regex]::Escape($pageCode) + '")(?=[^>]*\baria-current=)[^>]*>')) { Problem "${rel}: no locale link for '$pageCode' carries aria-current (rule 15)" }
+    }
+    if ($rel -eq 'index.html' -and $h -notmatch '<button\b[^>]*\bdata-setlang="[a-z]+"[^>]*\baria-pressed="true"') { Problem 'index.html: the language switch marks no current language in its markup (aria-pressed="true") (rule 15)' }
+}
+
+# --- rule 16: the collapsible group (COLLAPSIBLE-GROUP 1.1 sections 3 and 4) ----------------------------------------
+# `details.sec` is the site's group. The kit (byte-identical, never edited) gives it a trailing action chevron, side padding on
+# the card and no header colour, so assets/fms-buttons.css answers it: a LEADING filled state triangle (mask, currentColor, open =
+# down, right-to-left mirrored by [dir="rtl"] and by :dir(rtl)), a header background, 4 px corners, the --btn-min target, a visible
+# focus ring, and the kit's chevron switched off. The side inset lives on the body children and not on `details.sec`, because
+# padding on the card narrows the summary and the whole header is the hit area. The caption of a generated locale's all-features
+# group is "<name> - <featuresLabel>" in the page's own language (`featuresLabel` of tools/site-copy.json).
+$groupCss = $btnCssText
+function Get-CssRules([string]$css) {
+    foreach ($r in [regex]::Matches($css, '([^{}]+)\{([^{}]*)\}')) {
+        [pscustomobject]@{ Selectors = @(($r.Groups[1].Value -replace '\s+', ' ').Trim() -split '\s*,\s*' | Where-Object { $_ }); Body = $r.Groups[2].Value }
+    }
+}
+$adapterRules = @(Get-CssRules $groupCss)
+function Find-GroupRule([string]$selectorPattern, [string]$bodyPattern) {
+    foreach ($r in $adapterRules) {
+        foreach ($s in $r.Selectors) { if ($s -match $selectorPattern -and $r.Body -match $bodyPattern) { return $true } }
+    }
+    return $false
+}
+if (-not (Find-GroupRule '^details\.sec>summary::before$' '(?is)mask\s*:[^;]*url\(') -or -not (Find-GroupRule '^details\.sec>summary::before$' '(?i)background-color\s*:\s*currentColor')) {
+    Problem 'assets/fms-buttons.css does not draw the leading state triangle of details.sec>summary (::before with a mask in currentColor) (rule 16)'
+}
+if (-not (Find-GroupRule '^details\.sec\[open\]>summary::before$' '(?i)transform\s*:\s*rotate\(90deg\)')) {
+    Problem 'assets/fms-buttons.css does not turn the group marker down when the group is open (details.sec[open]>summary::before, rotate(90deg)) (rule 16)'
+}
+foreach ($rtl in '\[dir="rtl"\]', ':dir\(rtl\)') {
+    if (-not (Find-GroupRule ('^' + $rtl + ' details\.sec>summary::before$') '(?i)transform\s*:\s*scaleX\(-1\)')) {
+        Problem "assets/fms-buttons.css does not mirror the closed group marker for right-to-left ($($rtl -replace '\\', '') details.sec>summary::before, scaleX(-1)) (rule 16)"
+    }
+    if (-not (Find-GroupRule ('^' + $rtl + ' details\.sec\[open\]>summary::before$') '(?i)transform\s*:\s*rotate\(90deg\)')) {
+        Problem "assets/fms-buttons.css lets the right-to-left mirror override the open group marker ($($rtl -replace '\\', '') details.sec[open]>summary::before must stay rotate(90deg)) (rule 16)"
+    }
+}
+if (-not (Find-GroupRule '^details\.sec>summary$' '(?i)background\s*:\s*var\(--group-head-bg\)')) { Problem 'assets/fms-buttons.css gives the group header no background of its own (details.sec>summary, background: var(--group-head-bg)) (rule 16)' }
+if (-not (Find-GroupRule '^details\.sec>summary$' '(?i)min-height\s*:\s*var\(--btn-min\)')) { Problem 'assets/fms-buttons.css does not size the group header from --btn-min (32 pointer, 48 coarse) (rule 16)' }
+if (-not (Find-GroupRule '^details\.sec>summary$' '(?i)border-radius\s*:\s*var\(--group-radius\)') -or $groupCss -notmatch '--group-radius\s*:\s*4px') { Problem 'assets/fms-buttons.css does not give the group header 4 px corners (--group-radius) (rule 16)' }
+if (-not (Find-GroupRule '^details\.sec>summary:focus-visible$' '(?i)outline\s*:')) { Problem 'assets/fms-buttons.css has no visible keyboard focus for the group header (details.sec>summary:focus-visible) (rule 16)' }
+if (-not (Find-GroupRule '^details\.sec>summary::after$' '(?i)content\s*:\s*none')) { Problem 'assets/fms-buttons.css does not switch the kit''s trailing chevron off (details.sec>summary::after, content: none) (rule 16)' }
+if (-not (Find-GroupRule '^details\.sec$' '(?i)(?<![\w-])padding\s*:\s*0\s*(;|$)')) { Problem 'assets/fms-buttons.css does not clear the kit''s side padding on details.sec - the summary must span the card (rule 16)' }
+
+# No stylesheet the site owns (the page layer, the adapter, the inline <style> of a page) styles a trailing chevron on the group
+# header, and none pads the card itself.
+foreach ($src in $ctlCss.Keys) {
+    foreach ($r in (Get-CssRules $ctlCss[$src])) {
+        foreach ($s in $r.Selectors) {
+            if ($s -match 'details\.sec(\[open\])?\s*>\s*summary\s*::?after') {
+                if (($r.Body -replace '\s', '') -notmatch '^((content:none|display:none);?)+$') {
+                    Problem "${src}: '$s' styles a trailing chevron on the group header - the marker is the leading triangle, and the only rule allowed here switches the kit's chevron off (rule 16)"
+                }
+            }
+            if ($s -match '(^|[\s>+~])details\.sec(\.[\w-]+|\[[^\]]*\]|:[\w-]+)*$') {
+                foreach ($d in [regex]::Matches($r.Body, '(?i)(?<![\w-])(padding(?:-left|-right|-inline(?:-start|-end)?)?)\s*:\s*([^;}]+)')) {
+                    $v = ($d.Groups[2].Value -replace '!important', '').Trim()
+                    if ($v -notmatch '^0(px|rem|em)?(\s+0(px|rem|em)?)*$') { Problem "${src}: '$s' sets $($d.Groups[1].Value): $v on the group card - the summary would no longer span it; inset the body children instead (rule 16)" }
+                }
+            }
+        }
+    }
+}
+
+# The localized caption word, in every column and on every generated locale page.
+foreach ($col in $expectedColumns) {
+    if ($col -in $codes -and -not [string]$copy.$col.featuresLabel) { Problem "tools/site-copy.json: '$col' has no 'featuresLabel' - the all-features group names itself in the page's language (rule 16)" }
+}
+foreach ($c in ($codes | Where-Object { $_ -ne 'en' })) {
+    $rel = "$LangDir/$c/index.html"
+    if (-not $ctlHtml.Contains($rel)) { continue }
+    $label = [string]$copy.$c.featuresLabel
+    $sm = [regex]::Match($ctlHtml[$rel], '(?is)<details\b[^>]*\bid="all-features"[^>]*>\s*<summary\b[^>]*>(?<inner>.*?)</summary>')
+    if (-not $sm.Success) { Problem "${rel}: no all-features group (rule 16)"; continue }
+    $caption = Get-PlainText $sm.Groups['inner'].Value
+    if (-not $label -or -not $caption.EndsWith(" - $label", [StringComparison]::Ordinal)) { Problem "${rel}: the all-features group caption '$caption' does not end with ' - $label' ($c) (rule 16)" }
+    if ($label -ne [string]$copy.en.featuresLabel -and $caption -match ' - Features$') { Problem "${rel}: the all-features group caption still carries the English word (rule 16)" }
+}
+
 # --- verdict ---------------------------------------------------------------------
 # Ticket 183, PAGE-STYLE 4.1b/4.2: every landing keeps the unlocalized brand,
 # the primary RU/EN/UA switch and a separate code row for the other locales.
@@ -675,4 +929,4 @@ if ($problems.Count -gt 0) {
     $problems | ForEach-Object { Write-Host "  - $_" }
     Exit-Verdict 'Test-SiteQuality' 1 "$($problems.Count) defect(s): $($pages.Count) pages, $linkCount links, $imgCount images"
 }
-Exit-Verdict 'Test-SiteQuality' 0 "$($pages.Count) pages, $linkCount links, $imgCount images, $($codes.Count) locales, rules 1-7, the guides' interface words, the full-width rule and the keyboard-and-landmarks rule held"
+Exit-Verdict 'Test-SiteQuality' 0 "$($pages.Count) pages, $linkCount links, $imgCount images, $($codes.Count) locales, rules 1-7, the guides' interface words, the full-width rule, the keyboard-and-landmarks rule and the button rules 12-15 (retired classes, geometry and motion, external marker, theme label and current locale) and the collapsible-group rule 16 (leading marker with right-to-left mirror, no trailing chevron, no card padding, localized caption) held"

@@ -1,15 +1,43 @@
 {
-  "_about": "The machine form of docs/guides/POSITIONING.md, the one positioning source of this repository (SITE-REPRESENTATION rules 1 to 4, ticket 155). Read by tools/Test-SitePositioning.ps1; nothing at run time reads it. 'positioning' holds the family sentence and the pillars in order; 'surfaces' names, per file, the region that lists the pillars ('scopes': regular expressions, the region is the named group 'region' when there is one, else the whole match) and per pillar a regular expression that finds its words in that file's language - the gate fails when a region is not found, when a pillar the surface must name (the first 'names' pillars) is absent, or when one pillar's words come after the next pillar's. 'editions' declares what a visitor can obtain, with the one display name each (owned by docs/guides/PRODUCT_NAMING.md); 'reservations' declares the one non-public variant the pages may name and where. 'facts' types the language count and the platform floor once; the gate reads their real sources and compares every typed claim in the scanned files with them. A change of the order or of a value is a change of POSITIONING.md and of this file first, then of every surface.",
+  "_about": "The machine form of docs/guides/POSITIONING.md, the one positioning source of this repository (SITE-REPRESENTATION rules 1 to 4, tickets 155 and 249). Read by tools/Test-SitePositioning.ps1 and tools/Build-SitePages.ps1; nothing at run time reads it. 'positioning' holds the family sentence and the three components in order, each with the state the owner decided (shipped | in-development); 'profiles' the two install intents and where each is explained; 'availability' the component x channel matrix, every cell with the files that prove it (the gate reads them, so a packaging change that contradicts a cell fails the check until this file and the pages say the new truth); 'development' the words that mark a component still in development and the places where it may be named; 'surfaces' names, per file, the region that lists the components ('scopes': regular expressions, the region is the named group 'region' when there is one, else the whole match) and per component a regular expression that finds its words in that file's language - the gate fails when a region is not found, when a component the surface must name (the first 'names' components) is absent, or when one component's words come after the next one's. 'editions' declares what a visitor can obtain, with the one display name each (owned by docs/guides/PRODUCT_NAMING.md). 'facts' types the language count and the platform floor once; the gate reads their real sources and compares every typed claim in the scanned files with them. A change of the order, of a state or of a value is a change of POSITIONING.md and of this file first, then of every surface.",
   "positioning": {
     "source": "docs/guides/POSITIONING.md",
-    "lead": "View and sort your media; when you need it, the same program is also a folder-share server and a host for FileDO virtual disks - each of those ships optional, off until you ask for it.",
-    "pillars": [
-      { "id": "viewer", "title": "View and sort",          "says": "The viewer and sorter: fast paging through huge folders, one key per file, slideshow, playback." },
-      { "id": "share",  "title": "Share folders",          "says": "The folder-share server (Share Manager and SFTP worker): the folders you pick open on an Android phone or any SFTP client. Optional, off until switched on." },
-      { "id": "disks",  "title": "FileDO virtual disks",   "says": "Hosting FileDO .fdd virtual disks through the same worker. Optional, off until a disk is registered." }
+    "lead": "Three optional parts: a media viewer and sorter, a local SFTP folder-sharing service, and a Media Exchange Server (in development, not released yet) - start with the viewer or with the folder-sharing server, and add the rest only if you want it.",
+    "components": [
+      { "id": "viewer",   "title": "Media viewer and sorter",   "state": "shipped",
+        "says": "The viewer and sorter: fast paging through huge folders, one key per file, slideshow, playback." },
+      { "id": "share",    "title": "Local SFTP folder sharing", "state": "shipped",
+        "says": "The Share Manager and its SFTP worker: the folders you pick open on an Android phone, another copy of the program or any SFTP client. Optional, off until switched on.",
+        "capabilities": [ { "id": "filedo", "title": "FileDO virtual disks", "says": "Hosting FileDO .fdd virtual disks through the same worker. A capability of sharing, off until a disk is registered." } ] },
+      { "id": "exchange", "title": "Media Exchange Server",     "state": "in-development",
+        "says": "A separate server you run yourself: devices enroll into an account on it and reach each other through it. Not folder sharing; neither the viewer nor local sharing needs it." }
     ],
+    "retired": [
+      { "what": "FileDO virtual disks as a top-level pillar", "ground": "specification 249: FileDO hosting is a capability of sharing", "forbiddenIn": ["positioning.lead", "surface family sentences", "POSITIONING.md component headings"] },
+      { "what": "the viewer as 'the core of every package'", "ground": "specification 249: the Server edition installs the viewer as an unticked extra" },
+      { "what": "the Media Exchange Server as a reservation mentioned once, in the future tense, with no link (Q155-2)", "ground": "specification 249: it is the third component, named wherever the components are listed, marked as in development" }
+    ],
+    "bannedPhrases": ["core of every package", "third pillar", "reserved door"],
     "storePolicyExceptions": []
   },
+  "profiles": [
+    {
+      "id": "viewer-first", "entry": "index.html", "leadsWith": "viewer",
+      "obtainedAs": ["User installer", "portable ZIP", "winget SerZhyAle.FastMediaSorter", "Microsoft Store"],
+      "channels": ["full-installer", "zip", "store"],
+      "installs": ["viewer"], "optional": ["share"],
+      "alternative": "server-first",
+      "crossLinks": [ { "file": "index.html", "pattern": "href=\"server\\.html\"", "what": "the landing links the Server edition page" } ]
+    },
+    {
+      "id": "server-first", "entry": "server.html", "leadsWith": "share",
+      "obtainedAs": ["Server installer", "winget SerZhyAle.FastMediaSorter.Server"],
+      "channels": ["server-edition"],
+      "installs": ["share"], "optional": ["viewer", "filedo"],
+      "alternative": "viewer-first",
+      "crossLinks": [ { "file": "server.html", "pattern": "href=\"(?:\\./|https://serzhyale\\.github\\.io/FastMediaSorter_Lite/)\"", "what": "the Server edition page links the landing, where the viewer-first package is" } ]
+    }
+  ],
   "editions": [
     {
       "id": "full", "public": true,
@@ -28,30 +56,96 @@
   "focusedEditions": [
     {
       "id": "server",
-      "reason": "The Server edition is a focused package: the server leads and the viewer rides along as an unticked component (specification 132 section 3.3). Its page repeats the family sentence, which is judged; its own lead and its winget manifest are not a list of what the product does.",
+      "reason": "The Server edition is a focused package: the folder-sharing service leads and the viewer rides along as an unticked component (specification 132 section 3.3). Its page repeats the family sentence, which is judged; its own lead and its winget manifest are not a list of what the product does. It installs the folder-sharing service only - never the Media Exchange Server.",
       "notJudged": ["publishing/winget/server/SerZhyAle.FastMediaSorter.Server.locale.en-US.yaml"]
     }
   ],
-  "reservations": [
-    {
-      "id": "exchange",
-      "name": "Media Exchange Server",
-      "public": false,
-      "decided": "2026-10-06",
-      "decision": "Q155-2: kept as the family-map reservation (door 3), one future-tense sentence marked planned; no download, no date, no capability list.",
-      "ground": "specification 132 section 3.2",
-      "mentionPattern": "Media Exchange",
-      "surfaces": [
-        { "file": "index.html", "scope": "(?s)<article class=\"card scenario-card\" id=\"door-3\">.*?</article>", "marker": "pill gold" },
-        { "files": ["lang/ar/index.html", "lang/bn/index.html", "lang/de/index.html", "lang/es/index.html", "lang/fr/index.html", "lang/hi/index.html", "lang/it/index.html", "lang/pt/index.html", "lang/ru/index.html", "lang/uk/index.html", "lang/ur/index.html", "lang/zh/index.html"],
-          "scope": "(?s)<article class=\"card scenario-card\" id=\"door-3\">.*?</article>", "marker": "pill gold" },
-        { "file": "README.md",    "scope": "(?m)^\\| \\*\\*Media Exchange Server\\*\\*.*$" },
-        { "file": "README_RU.md", "scope": "(?m)^\\| \\*\\*Media Exchange Server\\*\\*.*$" },
-        { "file": "README_UK.md", "scope": "(?m)^\\| \\*\\*Media Exchange Server\\*\\*.*$" }
-      ],
-      "scan": ["*.html", "lang/*/*.html", "docs/*.html", "assets/help/*.html", "README.md", "README_RU.md", "README_UK.md", "publishing/store/listingData.csv", "publishing/store/LOCALES.md", "publishing/winget/*.yaml", "publishing/winget/server/*.yaml"]
+  "availability": {
+    "_about": "The component x channel matrix of docs/guides/POSITIONING.md section 4.1, rendered into server.html (region gen:matrix) by tools/Build-SitePages.ps1 and held to the packaging by tools/Test-SitePositioning.ps1. It describes the packages as DEFINED in this source tree (the installer scripts, the winget manifests, the MSIX manifest and packager, the release workflow); what the Releases page offers today is the latest published release, and What's new says which version brought each part. A cell is [state, evidenceId..]; every evidence pattern must match its file, so a packaging change that contradicts a cell fails the check. 'winget' is not a channel of its own: it downloads the same setup.exe as the Releases page, and its silent install takes the first installer type, 'full' - the same default as the wizard. The Microsoft Store has no unattended hosting: a Store package cannot register a Windows service.",
+    "states": {
+      "core": "always installed, cannot be unticked",
+      "bundled": "in the package, off until you switch it on, no choice at install",
+      "optional-on": "offered at install, ticked in the default type",
+      "optional-off": "offered at install, unticked unless you tick it",
+      "required": "the package is this",
+      "absent": "not in this channel",
+      "in-development": "in no released package of any channel"
+    },
+    "channels": ["full-installer", "zip", "store", "server-edition"],
+    "components": ["viewer", "share", "filedo", "exchange"],
+    "evidence": {
+      "inno-core-fixed":      { "file": "publishing/installer/FastMediaSorter.iss", "pattern": "(?m)^Name: \"core\";[^\\r\\n]*Flags: fixed", "what": "the User installer's core component is fixed (the viewer cannot be unticked)" },
+      "inno-share-full":      { "file": "publishing/installer/FastMediaSorter.iss", "pattern": "(?m)^Name: \"share\";[^\\r\\n]*Types: full", "what": "the share component is offered in the Full type only" },
+      "inno-filedo-unticked": { "file": "publishing/installer/FastMediaSorter.iss", "pattern": "(?m)^Name: \"share\\\\filedo\";(?![^\\r\\n]*Types:)", "what": "the FileDO child component has no Types, so it starts unticked" },
+      "inno-full-first-type": { "file": "publishing/installer/FastMediaSorter.iss", "pattern": "(?s)\\[Types\\]\\s*\\r?\\nName: \"full\";", "what": "the first type is Full: the wizard's default and what a silent install takes" },
+      "inno-user-install":    { "file": "publishing/installer/FastMediaSorter.iss", "pattern": "(?m)^PrivilegesRequired=lowest", "what": "the User installer needs no administrator rights" },
+      "zip-viewer":           { "file": ".github/workflows/release.yml", "pattern": "modern-publish/FastMediaSorter_LITE\\.exe", "what": "the portable ZIP stage carries the mainline viewer" },
+      "zip-companion":        { "file": ".github/workflows/release.yml", "pattern": "Copy-Item \\$companionExe \\$stage", "what": "the portable ZIP stage carries the Share Manager" },
+      "zip-filedo":           { "file": ".github/workflows/release.yml", "pattern": "Stage-FileDoPayload\\.ps1 -Destination \\$stage\\b", "what": "the portable ZIP stage carries the FileDO payload" },
+      "msix-viewer":          { "file": "publishing/msix/AppxManifest.xml", "pattern": "Application Id=\"FastMediaSorterLITE\" Executable=\"FastMediaSorter_LITE\\.exe\"", "what": "the Store package's first application is the mainline viewer" },
+      "msix-share-manager":   { "file": "publishing/msix/AppxManifest.xml", "pattern": "Application Id=\"FastMediaSorterShareManager\"", "what": "the Store package carries the Share Manager as a second application" },
+      "msix-no-filedo":       { "file": "publishing/msix/build-msix.ps1", "pattern": "\\$notInThisPackageTrees = @\\([^)]*'filedo\\\\'", "what": "the MSIX packager leaves the FileDO tree out" },
+      "msix-no-exchange":     { "file": "publishing/msix/build-msix.ps1", "pattern": "\\$notInThisPackageTrees = @\\([^)]*'exchange\\\\'", "what": "the MSIX packager leaves the exchange tree out" },
+      "server-viewer-unticked": { "file": "publishing/installer/FastMediaSorterServer.iss", "pattern": "(?m)^Name: \"viewer\"; Description: \"\\{cm:CompViewer\\}\"\\s*$", "what": "the Server edition's viewer component has no Types, so it starts unticked" },
+      "server-share-required":  { "file": "publishing/installer/FastMediaSorterServer.iss", "pattern": "(?m)^Source: \"\\{#SourceDir\\}\\\\\\{#CompanionExe\\}\"; DestDir: \"\\{app\\}\"; Flags: ignoreversion\\s*$", "what": "the Share Manager is laid down by the Server edition with no component condition" },
+      "server-filedo-ticked":   { "file": "publishing/installer/FastMediaSorterServer.iss", "pattern": "(?m)^Name: \"filedo\";[^\\r\\n]*Types: custom", "what": "the Server edition's FileDO component is in its one type, so it starts ticked" },
+      "server-admin":           { "file": "publishing/installer/FastMediaSorterServer.iss", "pattern": "(?m)^PrivilegesRequired=admin", "what": "the Server edition needs administrator rights" },
+      "exchange-gate-shut":     { "file": ".github/workflows/release.yml", "pattern": "INCLUDE_EXCHANGE: 'false'", "what": "the shipping gate of the exchange module is shut" },
+      "exchange-user-compiled-out":   { "file": ".github/workflows/release.yml", "pattern": "if \\(\\$env:INCLUDE_EXCHANGE -ne 'true'\\) \\{ \\$exchangeArgs = @\\('/DNoExchange'\\) \\}", "what": "the User installer is compiled with /DNoExchange while the gate is shut" },
+      "exchange-zip-guard":           { "file": ".github/workflows/release.yml", "pattern": "The stage carries an exchange\\\\ folder but INCLUDE_EXCHANGE is not 'true'", "what": "the User stage (ZIP and installer) fails if it carries an exchange tree while the gate is shut" },
+      "exchange-server-compiled-out": { "file": ".github/workflows/release.yml", "pattern": "The Server stage carries an exchange\\\\ folder but INCLUDE_EXCHANGE is not 'true'", "what": "the Server edition stage fails if it carries an exchange tree while the gate is shut" }
+    },
+    "cells": {
+      "viewer": {
+        "full-installer": ["core", "inno-core-fixed"],
+        "zip":            ["core", "zip-viewer"],
+        "store":          ["core", "msix-viewer"],
+        "server-edition": ["optional-off", "server-viewer-unticked"]
+      },
+      "share": {
+        "full-installer": ["optional-on", "inno-share-full", "inno-full-first-type"],
+        "zip":            ["bundled", "zip-companion"],
+        "store":          ["bundled", "msix-share-manager"],
+        "server-edition": ["required", "server-share-required"]
+      },
+      "filedo": {
+        "full-installer": ["optional-off", "inno-filedo-unticked"],
+        "zip":            ["bundled", "zip-filedo"],
+        "store":          ["absent", "msix-no-filedo"],
+        "server-edition": ["optional-on", "server-filedo-ticked"]
+      },
+      "exchange": {
+        "full-installer": ["in-development", "exchange-gate-shut", "exchange-user-compiled-out"],
+        "zip":            ["in-development", "exchange-gate-shut", "exchange-zip-guard"],
+        "store":          ["absent", "msix-no-exchange"],
+        "server-edition": ["in-development", "exchange-gate-shut", "exchange-server-compiled-out"]
+      }
+    },
+    "facts": {
+      "elevation": {
+        "full-installer": ["inno-user-install"],
+        "server-edition": ["server-admin"]
+      }
     }
-  ],
+  },
+  "development": {
+    "_about": "A component whose state is 'in-development' may be named (the owner's decision of 2026-10-20 replaced the Q155-2 reservation) but never sold: each mention of it on a scanned file is within 'window' characters of a marker in some language, is not inside a link to a download, installer, release asset, store or winget command, and carries no date. The windows are judged, not a quoted sentence, so a surface may word its own sentence.",
+    "component": "exchange",
+    "mentionPattern": "Media Exchange Server",
+    "markers": ["in development", "в разработке", "у розробці", "in Entwicklung", "in sviluppo", "en desarrollo", "en développement", "em desenvolvimento", "قيد التطوير", "विकासाधीन", "উন্নয়নাধীন", "زیرِ ترقی", "开发中"],
+    "window": 420,
+    "downloadLink": "(?i)(?:releases/download|/releases(?:/|\\b)|winget(?:\\s|%20)install|apps\\.microsoft\\.com|ms-windows-store|\\.exe\\b|-setup\\b|#get\\b|(?:^|/)server\\.html\\b)",
+    "scan": ["*.html", "lang/*/*.html", "docs/*.html", "assets/help/*.html", "README.md", "README_RU.md", "README_UK.md", "publishing/store/listingData.csv", "publishing/store/LOCALES.md", "publishing/winget/*.yaml", "publishing/winget/server/*.yaml", "tools/site-copy.json", "tools/trust-copy.json"],
+    "storeListing": {
+      "file": "publishing/store/listingData.csv",
+      "mustSay": ["not part of the Store version", "в версию из Store не входит"],
+      "mustNotSay": ["(?i)media exchange"],
+      "serviceMention": "(?i)(?:windows service|службу Windows)",
+      "qualifier": "(?i)(?:not part of the Store version|в версию из Store не входит)",
+      "window": 320,
+      "why": "The Store package is the viewer with the Share Manager as a second application in the user's session; it cannot register a Windows service and carries neither the Server edition nor the exchange server, so a listing may name the Server edition only as something the Store version does not include (Store policy 10.1.1: metadata accurately describes the product), and never the exchange server."
+    }
+  },
   "facts": {
     "sources": {
       "localization": "src/Localization/Localization.vb",
@@ -85,7 +179,7 @@
     "category": "photo and video sorter",
     "synonyms": ["image viewer", "photo organizer"],
     "tagline": "Sort photos and videos with one key per file",
-    "githubDescription": "Photo and video sorter and viewer for Windows: one key per file to move or copy, offline video, archives and SFTP folders opened like folders, optional OCR translation. Fast Media Sorter & Sharing - folder sharing to Android is optional and off by default. Free, MIT.",
+    "githubDescription": "Photo and video sorter and viewer for Windows: one key per file to move or copy, offline video, archives and SFTP folders opened like folders, optional OCR translation. Fast Media Sorter & Sharing - local SFTP folder sharing to Android is optional and off by default. Free, MIT.",
     "homepage": "https://serzhyale.github.io/FastMediaSorter_Lite/",
     "topics": ["photo-sorter", "photo-organizer", "image-sorter", "image-viewer", "video-viewer", "media-sorter", "media-player", "slideshow", "windows", "desktop", "sftp", "ocr", "heic", "webp", "libvlc", "vb-net"],
     "wingetTags": ["photo-sorter", "photo-organizer", "image-sorter", "image-viewer", "video-viewer", "media-sorter", "media-player", "slideshow", "sftp", "ocr", "heic", "webp", "photos", "videos", "hotkeys", "sharing"],
@@ -103,7 +197,7 @@
     "socialCard": {
       "lines": [
         "Offline video, archives, SFTP folders, optional OCR",
-        "Folder sharing and FileDO disks: optional, off by default",
+        "Local folder sharing: optional, off by default",
         "Free, open source (MIT), {languages} interface languages"
       ],
       "alt": "Fast Media Sorter & Sharing for Windows: sort photos and videos with one key per file",
@@ -119,100 +213,100 @@
     {
       "file": "index.html", "names": 3, "why": "landing, meta description",
       "scopes": ["name=\"description\" content=\"(?<region>[^\"]*)\""],
-      "anchors": { "viewer": "Sort photo and video folders", "share": "folder sharing to Android", "disks": "FileDO disks" }
+      "anchors": { "viewer": "Sort photo and video folders", "share": "SFTP folder sharing", "exchange": "Media Exchange Server" }
     },
     {
       "file": "index.html", "names": 3, "why": "landing, the family sentence (en)",
       "scopes": ["(?s)<p class=\"lead lead-narrow family\">\\s*<span data-l=\"en\">(?<region>.*?)</span>"],
-      "anchors": { "viewer": "View and sort", "share": "folder-share server", "disks": "FileDO virtual disks" }
+      "anchors": { "viewer": "media viewer and sorter", "share": "folder-sharing service", "exchange": "Media Exchange Server" }
     },
     {
       "file": "index.html", "names": 3, "why": "landing, the family sentence (ru)",
       "scopes": ["(?s)<p class=\"lead lead-narrow family\">.*?<span data-l=\"ru\">(?<region>.*?)</span>"],
-      "anchors": { "viewer": "Просматривайте", "share": "сервер раздачи", "disks": "дисков FileDO" }
+      "anchors": { "viewer": "просмотрщик и сортировщик", "share": "служба раздачи папок", "exchange": "Media Exchange Server" }
     },
     {
       "file": "index.html", "names": 3, "why": "landing, the family sentence (uk)",
       "scopes": ["(?s)<p class=\"lead lead-narrow family\">.*?<span data-l=\"ua\">(?<region>.*?)</span>"],
-      "anchors": { "viewer": "Переглядайте", "share": "сервер роздачі", "disks": "дисків FileDO" }
+      "anchors": { "viewer": "переглядач і сортувальник", "share": "служба роздачі тек", "exchange": "Media Exchange Server" }
     },
     {
       "files": ["index.html", "lang/ar/index.html", "lang/bn/index.html", "lang/de/index.html", "lang/es/index.html", "lang/fr/index.html", "lang/hi/index.html", "lang/it/index.html", "lang/pt/index.html", "lang/ru/index.html", "lang/uk/index.html", "lang/ur/index.html", "lang/zh/index.html"],
-      "names": 2, "why": "landing and its locale pages, the doors: viewer first, share second (door 3 is the reservation)",
+      "names": 3, "why": "landing and its locale pages, the ways in: viewer first, server first, then the exchange server (in development)",
       "scopes": ["(?s)id=\"doors\".*?</section>"],
-      "anchors": { "viewer": "id=\"door-1\"", "share": "id=\"door-2\"" }
+      "anchors": { "viewer": "id=\"door-1\"", "share": "id=\"door-2\"", "exchange": "id=\"door-3\"" }
     },
     { "file": "lang/de/index.html", "names": 3, "why": "locale page, the family sentence", "scopes": ["(?s)<p class=\"lead lead-narrow\">(?<region>.*?)</p>"],
-      "anchors": { "viewer": "ansehen und sortieren", "share": "Ordner-Freigabeserver", "disks": "virtuelle FileDO-Laufwerke" } },
+      "anchors": { "viewer": "Betrachter und Sortierer", "share": "Ordner-Freigabedienst", "exchange": "Media Exchange Server" } },
     { "file": "lang/it/index.html", "names": 3, "why": "locale page, the family sentence", "scopes": ["(?s)<p class=\"lead lead-narrow\">(?<region>.*?)</p>"],
-      "anchors": { "viewer": "Visualizza e ordina", "share": "server di condivisione cartelle", "disks": "dischi virtuali FileDO" } },
+      "anchors": { "viewer": "visualizzatore e organizzatore", "share": "servizio locale di condivisione cartelle", "exchange": "Media Exchange Server" } },
     { "file": "lang/es/index.html", "names": 3, "why": "locale page, the family sentence", "scopes": ["(?s)<p class=\"lead lead-narrow\">(?<region>.*?)</p>"],
-      "anchors": { "viewer": "Mira y ordena", "share": "servidor para compartir carpetas", "disks": "discos virtuales FileDO" } },
+      "anchors": { "viewer": "visor y organizador", "share": "servicio local para compartir carpetas", "exchange": "Media Exchange Server" } },
     { "file": "lang/fr/index.html", "names": 3, "why": "locale page, the family sentence", "scopes": ["(?s)<p class=\"lead lead-narrow\">(?<region>.*?)</p>"],
-      "anchors": { "viewer": "Affichez et triez", "share": "serveur de partage de dossiers", "disks": "disques virtuels FileDO" } },
+      "anchors": { "viewer": "visionneuse et un outil de tri", "share": "service local de partage de dossiers", "exchange": "Media Exchange Server" } },
     { "file": "lang/pt/index.html", "names": 3, "why": "locale page, the family sentence", "scopes": ["(?s)<p class=\"lead lead-narrow\">(?<region>.*?)</p>"],
-      "anchors": { "viewer": "Veja e organize", "share": "servidor de partilha de pastas", "disks": "discos virtuais FileDO" } },
+      "anchors": { "viewer": "visualizador e organizador", "share": "serviço local de partilha de pastas", "exchange": "Media Exchange Server" } },
     { "file": "lang/ru/index.html", "names": 3, "why": "locale page, the family sentence", "scopes": ["(?s)<p class=\"lead lead-narrow\">(?<region>.*?)</p>"],
-      "anchors": { "viewer": "Просматривайте и сортируйте", "share": "сервер раздачи папок", "disks": "виртуальных дисков FileDO" } },
+      "anchors": { "viewer": "просмотрщик и сортировщик", "share": "служба раздачи папок", "exchange": "Media Exchange Server" } },
     { "file": "lang/uk/index.html", "names": 3, "why": "locale page, the family sentence", "scopes": ["(?s)<p class=\"lead lead-narrow\">(?<region>.*?)</p>"],
-      "anchors": { "viewer": "Переглядайте й сортуйте", "share": "сервер роздачі тек", "disks": "віртуальних дисків FileDO" } },
+      "anchors": { "viewer": "переглядач і сортувальник", "share": "служба роздачі тек", "exchange": "Media Exchange Server" } },
     { "file": "lang/ar/index.html", "names": 3, "why": "locale page, the family sentence", "scopes": ["(?s)<p class=\"lead lead-narrow\">(?<region>.*?)</p>"],
-      "anchors": { "viewer": "اعرض وسائطك", "share": "خادمًا لمشاركة المجلدات", "disks": "للأقراص الافتراضية FileDO" } },
+      "anchors": { "viewer": "عارض ومُرتِّب", "share": "خدمة محلية لمشاركة المجلدات", "exchange": "Media Exchange Server" } },
     { "file": "lang/hi/index.html", "names": 3, "why": "locale page, the family sentence", "scopes": ["(?s)<p class=\"lead lead-narrow\">(?<region>.*?)</p>"],
-      "anchors": { "viewer": "देखें और छाँटें", "share": "फ़ोल्डर-साझाकरण सर्वर", "disks": "FileDO वर्चुअल डिस्क" } },
+      "anchors": { "viewer": "व्यूअर और सॉर्टर", "share": "स्थानीय सेवा", "exchange": "Media Exchange Server" } },
     { "file": "lang/bn/index.html", "names": 3, "why": "locale page, the family sentence", "scopes": ["(?s)<p class=\"lead lead-narrow\">(?<region>.*?)</p>"],
-      "anchors": { "viewer": "দেখুন ও সাজান", "share": "ফোল্ডার-শেয়ারিং সার্ভার", "disks": "FileDO ভার্চুয়াল ডিস্কের" } },
+      "anchors": { "viewer": "ভিউয়ার ও সর্টার", "share": "স্থানীয় সেবা", "exchange": "Media Exchange Server" } },
     { "file": "lang/ur/index.html", "names": 3, "why": "locale page, the family sentence", "scopes": ["(?s)<p class=\"lead lead-narrow\">(?<region>.*?)</p>"],
-      "anchors": { "viewer": "دیکھیں اور ترتیب", "share": "فولڈر شیئرنگ سرور", "disks": "FileDO ورچوئل ڈسکس" } },
+      "anchors": { "viewer": "ویور اور سارٹر", "share": "مقامی سروس", "exchange": "Media Exchange Server" } },
     { "file": "lang/zh/index.html", "names": 3, "why": "locale page, the family sentence", "scopes": ["(?s)<p class=\"lead lead-narrow\">(?<region>.*?)</p>"],
-      "anchors": { "viewer": "查看并整理", "share": "文件夹共享服务器", "disks": "FileDO 虚拟磁盘" } },
+      "anchors": { "viewer": "查看与整理工具", "share": "本地服务", "exchange": "Media Exchange Server" } },
     {
       "file": "server.html", "names": 3, "why": "server page, the family sentence (en)",
-      "scopes": ["(?s)<p><span data-l=\"en\">(?<region>View and sort your media.*?)</span>"],
-      "anchors": { "viewer": "View and sort", "share": "folder-share server", "disks": "FileDO virtual disks" }
+      "scopes": ["(?s)<p><span data-l=\"en\">(?<region>Three optional parts.*?if you want it\\.)"],
+      "anchors": { "viewer": "media viewer and sorter", "share": "folder-sharing service", "exchange": "Media Exchange Server" }
     },
     {
       "file": "server.html", "names": 3, "why": "server page, the family sentence (ru)",
-      "scopes": ["(?s)<span data-l=\"ru\">(?<region>Просматривайте и сортируйте медиа.*?)</span>"],
-      "anchors": { "viewer": "Просматривайте", "share": "сервер раздачи", "disks": "дисков FileDO" }
+      "scopes": ["(?s)<span data-l=\"ru\">(?<region>Три необязательные части.*?только если нужно\\.)"],
+      "anchors": { "viewer": "просмотрщик и сортировщик", "share": "служба раздачи папок", "exchange": "Media Exchange Server" }
     },
     {
       "file": "server.html", "names": 3, "why": "server page, the family sentence (uk)",
-      "scopes": ["(?s)<span data-l=\"ua\">(?<region>Переглядайте й сортуйте медіа.*?)</span>"],
-      "anchors": { "viewer": "Переглядайте", "share": "сервер роздачі", "disks": "дисків FileDO" }
+      "scopes": ["(?s)<span data-l=\"ua\">(?<region>Три необов'язкові частини.*?лише якщо потрібно\\.)"],
+      "anchors": { "viewer": "переглядач і сортувальник", "share": "служба роздачі тек", "exchange": "Media Exchange Server" }
     },
     {
       "file": "README.md", "names": 3, "why": "README, the family sentence",
-      "scopes": ["(?m)^\\*\\*One program, a few roles\\.\\*\\*(?<region>.*)$"],
-      "anchors": { "viewer": "View and sort", "share": "folder-share server", "disks": "FileDO virtual disks" }
+      "scopes": ["(?m)^\\*\\*Three optional parts\\.\\*\\*(?<region>.*)$"],
+      "anchors": { "viewer": "media viewer and sorter", "share": "folder-sharing service", "exchange": "Media Exchange Server" }
     },
     {
-      "file": "README.md", "names": 2, "why": "README, the door table: viewer first, share second",
-      "scopes": ["(?s)\\| Door \\|(?<region>.*?)\\r?\\n\\r?\\n"],
-      "anchors": { "viewer": "\\*\\*Viewer\\*\\*", "share": "\\*\\*Share to Android\\*\\*" }
+      "file": "README.md", "names": 3, "why": "README, the parts table: viewer first, sharing second, the exchange server third",
+      "scopes": ["(?s)\\| Part \\|(?<region>.*?)\\r?\\n\\r?\\n"],
+      "anchors": { "viewer": "\\*\\*Media viewer and sorter\\*\\*", "share": "\\*\\*Local SFTP folder sharing\\*\\*", "exchange": "\\*\\*Media Exchange Server\\*\\*" }
     },
     {
       "file": "README_RU.md", "names": 3, "why": "README (ru), the family sentence",
-      "scopes": ["(?m)^\\*\\*Одна программа - несколько ролей\\.\\*\\*(?<region>.*)$"],
-      "anchors": { "viewer": "Просматривайте", "share": "сервер раздачи", "disks": "дисков FileDO" }
+      "scopes": ["(?m)^\\*\\*Три необязательные части\\.\\*\\*(?<region>.*)$"],
+      "anchors": { "viewer": "просмотрщик и сортировщик", "share": "служба раздачи папок", "exchange": "Media Exchange Server" }
     },
     {
-      "file": "README_RU.md", "names": 2, "why": "README (ru), the door table",
-      "scopes": ["(?s)\\| Дверь \\|(?<region>.*?)\\r?\\n\\r?\\n"],
-      "anchors": { "viewer": "\\*\\*Просмотрщик\\*\\*", "share": "\\*\\*Раздача на Android\\*\\*" }
+      "file": "README_RU.md", "names": 3, "why": "README (ru), the parts table",
+      "scopes": ["(?s)\\| Часть \\|(?<region>.*?)\\r?\\n\\r?\\n"],
+      "anchors": { "viewer": "\\*\\*Просмотрщик и сортировщик медиа\\*\\*", "share": "\\*\\*Локальная раздача папок по SFTP\\*\\*", "exchange": "\\*\\*Media Exchange Server\\*\\*" }
     },
     {
       "file": "README_UK.md", "names": 3, "why": "README (uk), the family sentence",
-      "scopes": ["(?m)^\\*\\*Одна програма - кілька ролей\\.\\*\\*(?<region>.*)$"],
-      "anchors": { "viewer": "Переглядайте", "share": "сервер роздачі", "disks": "дисків FileDO" }
+      "scopes": ["(?m)^\\*\\*Три необов'язкові частини\\.\\*\\*(?<region>.*)$"],
+      "anchors": { "viewer": "переглядач і сортувальник", "share": "служба роздачі тек", "exchange": "Media Exchange Server" }
     },
     {
-      "file": "README_UK.md", "names": 2, "why": "README (uk), the door table",
-      "scopes": ["(?s)\\| Двері \\|(?<region>.*?)\\r?\\n\\r?\\n"],
-      "anchors": { "viewer": "\\*\\*Переглядач\\*\\*", "share": "\\*\\*Роздача на Android\\*\\*" }
+      "file": "README_UK.md", "names": 3, "why": "README (uk), the parts table",
+      "scopes": ["(?s)\\| Частина \\|(?<region>.*?)\\r?\\n\\r?\\n"],
+      "anchors": { "viewer": "\\*\\*Переглядач і сортувальник медіа\\*\\*", "share": "\\*\\*Локальна роздача тек по SFTP\\*\\*", "exchange": "\\*\\*Media Exchange Server\\*\\*" }
     },
     {
-      "file": "publishing/store/listingData.csv", "names": 2, "why": "Store listing Description (en-us): too short for the third pillar, names the first two",
+      "file": "publishing/store/listingData.csv", "names": 2, "why": "Store listing Description (en-us): too short for the third component, names the first two",
       "scopes": ["(?ms)^Description,2,Text,,\"(?<region>(?:[^\"]|\"\")*)\""],
       "anchors": { "viewer": "Sort thousands of photos", "share": "share them with your phone|share the folders you pick" }
     },
@@ -224,7 +318,7 @@
     {
       "file": "publishing/winget/SerZhyAle.FastMediaSorter.locale.en-US.yaml", "names": 3, "why": "winget Description (full package)",
       "scopes": ["(?ms)^Description: \\|-\\r?\\n(?<region>.*?)\\r?\\n(?=[A-Za-z]+:)"],
-      "anchors": { "viewer": "View and sort your media", "share": "folder-share server", "disks": "FileDO virtual disks" }
+      "anchors": { "viewer": "media viewer and sorter", "share": "folder-sharing service", "exchange": "Media Exchange Server" }
     }
   ]
 }

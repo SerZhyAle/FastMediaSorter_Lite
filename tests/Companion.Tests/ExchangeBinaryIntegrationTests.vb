@@ -1,4 +1,4 @@
-Option Strict On
+﻿Option Strict On
 
 Imports System.Collections.Generic
 Imports System.IO
@@ -537,7 +537,7 @@ Public Class ExchangeBinaryIntegrationTests
         Dim accountsShown As Integer = -1
         ExchangeTestSupport.OnUi(
             Sub()
-                Using form As New Share_Settings_Form()
+                Using form As New Share_Settings_Form(destination:=SettingsDestination.ExchangeServer)
                     form.StartPosition = System.Windows.Forms.FormStartPosition.Manual
                     form.Location = New System.Drawing.Point(-5000, -5000)
                     form.ShowInTaskbar = False

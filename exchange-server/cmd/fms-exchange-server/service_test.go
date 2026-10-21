@@ -100,6 +100,10 @@ func TestServeServiceFromAConsoleIsRefused(t *testing.T) {
 
 func TestServeRefusesBesideARunningService(t *testing.T) {
 	cfgFile, _, _ := prepare(t)
+	// Preparing accounts now creates their audit log (ticket 246). A refused serve must
+	// preserve those bytes and must not create a TLS identity or additional log files.
+	logsDir := filepath.Join(filepath.Dir(cfgFile), config.LogsDir)
+	before := stateLogSnapshot(t, logsDir)
 	withProbe(t, &fakeProbe{running: true})
 	code, stdout, stderr := execute(t, []string{"serve", "--config", cfgFile}, "")
 	if code != exitService || stdout != "" {
@@ -108,13 +112,39 @@ func TestServeRefusesBesideARunningService(t *testing.T) {
 	if !strings.Contains(stderr, deploy.ServiceName) || !strings.Contains(stderr, "service wins") {
 		t.Fatalf("the refusal must say why: %q", stderr)
 	}
-	// it started nothing: no identity, no log
+	// It started nothing: no identity and no additional log writes.
 	dir := filepath.Dir(cfgFile)
-	for _, rel := range []string{"tls", config.LogsDir} {
+	for _, rel := range []string{"tls"} {
 		if _, err := os.Stat(filepath.Join(dir, rel)); err == nil {
 			t.Errorf("a refused serve created %s", rel)
 		}
 	}
+	after := stateLogSnapshot(t, logsDir)
+	if len(before) != len(after) {
+		t.Fatal("a refused serve created or removed a log file")
+	}
+	for name, data := range before {
+		if after[name] != data {
+			t.Errorf("a refused serve changed log %s", name)
+		}
+	}
+}
+
+func stateLogSnapshot(t *testing.T, dir string) map[string]string {
+	t.Helper()
+	files, err := filepath.Glob(filepath.Join(dir, "*"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	result := make(map[string]string, len(files))
+	for _, path := range files {
+		data, err := os.ReadFile(path)
+		if err != nil {
+			t.Fatal(err)
+		}
+		result[filepath.Base(path)] = string(data)
+	}
+	return result
 }
 
 func TestServeRefusesWhileTheServiceProcessHoldsThePort(t *testing.T) {

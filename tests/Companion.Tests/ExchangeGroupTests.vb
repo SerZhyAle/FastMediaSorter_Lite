@@ -1,4 +1,4 @@
-Option Strict On
+﻿Option Strict On
 
 Imports System.Collections.Generic
 Imports System.Drawing
@@ -199,7 +199,7 @@ Public Class ExchangeGroupTests
                                          Assert.Null(SectionField(form, "_secExchange"))
                                          Dim keys As String() = Sections(form).Select(Function(s) s.Key).ToArray()
                                          ' the CLIENT page is there on every install since ticket 223 T-3; the administration page is not
-                                         Assert.Equal({"startup", "network", "hosting", "scheduled", "exchange-account", "help"}, keys)
+                                         Assert.Equal({"startup", "scheduled", "exchange-account", "help"}, keys)
                                          Assert.Equal(keys, SettingsSections(form).Select(Function(s) s.Key).ToArray())
                                          Assert.DoesNotContain("exchange", keys)
                                      End Using
@@ -207,12 +207,12 @@ Public Class ExchangeGroupTests
     End Sub
 
     <Fact>
-    Public Sub With_the_component_the_group_sits_between_hosting_and_help_in_every_list()
+    Public Sub With_the_component_the_server_window_owns_only_the_exchange_group()
         ExchangeProcess.ExeDirectoryOverride = Component(withExe:=True)
         ExchangeTestSupport.OnUi(Sub()
-                                     Using form As New Share_Settings_Form()
+                                     Using form As New Share_Settings_Form(destination:=SettingsDestination.ExchangeServer)
                                          Dim keys As String() = Sections(form).Select(Function(s) s.Key).ToArray()
-                                         Assert.Equal({"startup", "network", "hosting", "exchange", "scheduled", "exchange-account", "help"}, keys)
+                                         Assert.Equal({"exchange"}, keys)
                                          ' The persisted expansion / anchor list is the same list.
                                          Assert.Equal(keys, SettingsSections(form).Select(Function(s) s.Key).ToArray())
                                          Dim exchange As CollapsibleSection = SectionField(form, "_secExchange")
@@ -279,7 +279,7 @@ Public Class ExchangeGroupTests
         ' Exactly two callers inside it: the Start button and the restart after a port change.
         Assert.Equal(2, Regex.Matches(form, "ExchangeProcess\.Start\(").Count)
         Assert.Contains("ExchangeProcess.Start()", ExchangeTestSupport.MethodBody(form, "Private Async Sub OnXStart()"))
-        Assert.Contains("ExchangeProcess.Start()", ExchangeTestSupport.MethodBody(form, "Private Async Sub OnXApplyPort()"))
+        Assert.Contains("ExchangeProcess.Start()", ExchangeTestSupport.MethodBody(form, "Private Async Function ApplyExchangePortAsync() As Task"))
     End Sub
 
     <Fact>
@@ -319,7 +319,7 @@ Public Class ExchangeGroupTests
                                    "ExchangeProducerText.vb",       ' ticket 148: the producer's words reuse the server group's password-floor sentences
                                    "Share_Settings_Form.ExchangeProducer.vb",   ' ticket 148: the producer rows read this PC's server (port, pin, run state)
                                    "Exchange_Password_Form.vb", "Share_Settings_Form.Exchange.vb", "Share_Settings_Form.vb",
-                                   "Share_Settings_Form.UiContext.vb", "Share_Settings_Form.Navigation.vb", "Share_Settings_Form.Contract.vb", "Share_Settings_Form.Discovery.vb", "TrayContext.vb"}
+                                   "Share_Settings_Form.UiContext.vb", "Share_Settings_Form.Navigation.vb", "Share_Settings_Form.Contract.vb", "Share_Settings_Form.Discovery.vb", "Share_Settings_Form.Destination.vb", "MainWindow.Settings.vb", "TrayContext.vb"}
         ' ticket 168: the administration files are part of the group
         allowed = allowed.Concat({"ExchangeAdmin.vb", "ExchangeAdminModel.vb", "ExchangeAdminText.vb", "ExchangeServerWizard.vb", "Exchange_Account_Admin_Form.vb",
                                   "Exchange_Server_Wizard_Form.vb", "Share_Settings_Form.ExchangeAdmin.vb", "Share_Settings_Form.ExchangeHost.vb",
@@ -329,6 +329,8 @@ Public Class ExchangeGroupTests
         allowed = allowed.Concat({"ExchangeConnectionStringText.vb", "Exchange_Connection_String_Form.vb"}).ToArray()
         ' 2026-10-12 (owner): the local join - this PC enrols itself in the server that runs on it, so it asks the binary and the service for their address and certificate
         allowed = allowed.Concat({"ExchangeLocalJoin.vb"}).ToArray()
+        ' spec 245: remote administration forms and settings card
+        allowed = allowed.Concat({"Share_Settings_Form.ExchangeRemoteAdmin.vb", "Exchange_Admin_Browser_Form.vb"}).ToArray()
         For Each p As String In ExchangeTestSupport.CompanionSources()
             Dim name As String = Path.GetFileName(p)
             If name.StartsWith("Localization.", StringComparison.Ordinal) OrElse allowed.Contains(name) Then Continue For
@@ -542,7 +544,7 @@ Public Class ExchangeGroupTests
             For Each code As String In {"en", "ru", "ar"}
                 Localization.CurrentCode = code
                 ExchangeTestSupport.OnUi(Sub()
-                                             Using form As New Share_Settings_Form()
+                                             Using form As New Share_Settings_Form(destination:=SettingsDestination.ExchangeServer)
                                                  Dim exchange As CollapsibleSection = SectionField(form, "_secExchange")
                                                  exchange.Expanded = True
                                                  form.PerformLayout()

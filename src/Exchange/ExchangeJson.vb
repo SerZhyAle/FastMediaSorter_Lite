@@ -246,5 +246,17 @@ Friend NotInheritable Class ExchangeJson
         End Try
     End Function
 
+    ''' <summary>True when the text is a JSON object or array.</summary>
+    Public Shared Function IsObjectOrArray(json As String) As Boolean
+        If String.IsNullOrWhiteSpace(json) Then Return False
+        Try
+            Using doc As System.Text.Json.JsonDocument = System.Text.Json.JsonDocument.Parse(json)
+                Return doc.RootElement.ValueKind = System.Text.Json.JsonValueKind.Object OrElse doc.RootElement.ValueKind = System.Text.Json.JsonValueKind.Array
+            End Using
+        Catch ex As System.Text.Json.JsonException
+            Return False
+        End Try
+    End Function
+
 End Class
 #End If

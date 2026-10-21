@@ -320,6 +320,9 @@ Friend Module LiveBroadcastReader
 
             Dim schemaVersion As Integer
             If Not schemaProp.TryGetInt32(schemaVersion) Then
+                ' A whole number beyond Int32 is a later schema, not a damaged document (LIVE-BROADCAST 1.1: refuse cleanly with
+                ' the `format-unsupported` text, never "merely invalid"). A fraction, an exponent or a huge negative stays damaged.
+                If IsLargePositiveWholeNumber(schemaProp.GetRawText()) Then Return LiveBroadcastReadResult.Fail(LiveReadStatus.UnsupportedVersion)
                 Return LiveBroadcastReadResult.Fail(LiveReadStatus.InvalidDocument)
             End If
 
@@ -538,6 +541,16 @@ Friend Module LiveBroadcastReader
         End If
 
         Return ep
+    End Function
+
+    ''' <summary>True for the raw text of a JSON number that is only digits (no sign, fraction or exponent). Used for a
+    ''' <c>schemaVersion</c> that did not fit Int32: such a number is above 1, so a later schema.</summary>
+    Private Function IsLargePositiveWholeNumber(raw As String) As Boolean
+        If String.IsNullOrEmpty(raw) Then Return False
+        For Each ch As Char In raw
+            If ch < "0"c OrElse ch > "9"c Then Return False
+        Next
+        Return True
     End Function
 
     Public Function ParseMode(modeStr As String) As LiveBroadcastMode

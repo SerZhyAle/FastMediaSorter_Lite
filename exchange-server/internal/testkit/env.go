@@ -2,6 +2,8 @@ package testkit
 
 import (
 	"crypto/tls"
+	"crypto/x509"
+	"encoding/pem"
 	"io"
 	"net"
 	"os"
@@ -11,6 +13,7 @@ import (
 
 	"fms/exchange-server/internal/accounts"
 	"fms/exchange-server/internal/admin"
+	"fms/exchange-server/internal/config"
 	"fms/exchange-server/internal/directory"
 	"fms/exchange-server/internal/limits"
 	"fms/exchange-server/internal/logx"
@@ -58,6 +61,7 @@ type Options struct {
 	// LogFile also writes every log line to <DataDir>/logs/exchange.log (the real layout of ticket 182
 	// L-1), so a test can scan the directory the way the manifest test of ticket 167 does.
 	LogFile bool
+	Audit   *logx.Audit
 	// Pool replaces the port pool PortRange would build (the vector generator gives it a pool whose
 	// binds are not real sockets, so a granted port is the same on every machine).
 	Pool *ports.Pool
@@ -71,6 +75,9 @@ type Options struct {
 	// test that is sets it, and Sleep replaces time.Sleep in the pacer (with Now, a fully injected clock).
 	PaceInterval time.Duration
 	Sleep        func(time.Duration)
+	Admin        config.Admin
+	WebDir       string
+	TLSIdentity  *tlsid.Identity
 }
 
 // Env is a running server with everything a test may look at.
@@ -118,9 +125,24 @@ func StartServer(t TB, opt Options) *Env {
 	if dir == "" {
 		dir = t.TempDir()
 	}
-	id, err := tlsid.LoadOrCreate(filepath.Join(dir, "tls", "cert.pem"), filepath.Join(dir, "tls", "key.pem"), nil)
-	if err != nil {
-		t.Fatalf("identity: %v", err)
+	var (
+		id  *tlsid.Identity
+		err error
+	)
+	if opt.TLSIdentity != nil {
+		id = opt.TLSIdentity
+		tlsDir := filepath.Join(dir, "tls")
+		_ = os.MkdirAll(tlsDir, 0o700)
+		certPEM := pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: id.Cert.Certificate[0]})
+		keyDER, _ := x509.MarshalPKCS8PrivateKey(id.Cert.PrivateKey)
+		keyPEM := pem.EncodeToMemory(&pem.Block{Type: "PRIVATE KEY", Bytes: keyDER})
+		_ = os.WriteFile(filepath.Join(tlsDir, "cert.pem"), certPEM, 0o600)
+		_ = os.WriteFile(filepath.Join(tlsDir, "key.pem"), keyPEM, 0o600)
+	} else {
+		id, err = tlsid.LoadOrCreate(filepath.Join(dir, "tls", "cert.pem"), filepath.Join(dir, "tls", "key.pem"), nil)
+		if err != nil {
+			t.Fatalf("identity: %v", err)
+		}
 	}
 	log := logx.NewCapture()
 	if opt.LogFile {
@@ -227,7 +249,7 @@ func StartServer(t TB, opt Options) *Env {
 	}
 	env.Engine = rendezvous.NewEngine(rendezvous.EngineConfig{
 		Params: env.Params, Accounts: env.Accounts, Dir: env.Dir, Pool: env.Pool, Verifier: env.Verifier,
-		Limiter: env.Limiter, LoginLimiter: env.LoginLimiter, Log: env.Log.Logger, Now: opt.Now,
+		Limiter: env.Limiter, LoginLimiter: env.LoginLimiter, Log: env.Log.Logger, Now: opt.Now, Audit: opt.Audit,
 		PublicEndpoint: opt.PublicEndpoint, ServerVersion: serverVersion(opt), Features: rendezvous.Features{Cast: opt.Cast, Sealed: opt.Sealed}, Relay: relayHandler,
 		Rand: opt.EngineRand,
 	})
@@ -241,6 +263,8 @@ func StartServer(t TB, opt Options) *Env {
 	env.Server = rendezvous.New(rendezvous.Config{
 		Params: env.Params, TLS: &tls.Config{Certificates: []tls.Certificate{id.Cert}, MinVersion: tls.VersionTLS12},
 		Limiter: env.Limiter, PreAuth: limits.NewPreAuth(slots), Backend: env.Engine, Log: env.Log.Logger, Now: opt.Now,
+		AdminConfig: opt.Admin, PublicEndpoint: opt.PublicEndpoint, LeafFingerprint: env.Fingerprint, AdminPacer: env.Accounts.Pacer(),
+		Verifier: env.Verifier, Ops: env.Ops, WebDir: opt.WebDir,
 	})
 	go func() { _ = env.Server.Serve(ln) }()
 	t.Cleanup(env.Server.Close)

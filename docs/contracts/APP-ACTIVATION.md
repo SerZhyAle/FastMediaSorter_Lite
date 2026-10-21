@@ -3,7 +3,7 @@
 | | |
 | --- | --- |
 | **Id** | `APP-ACTIVATION` |
-| **Version** | 0.11, draft (read 2026-10-02, re-read 2026-10-07: the catalog is still at 0.11). Owner: CyrFlip. The transport this product ships is now **declared and permitted**, not excepted: 0.11 section 7 item A admits `WM_COPYDATA` sent with a bounded wait |
+| **Version** | 0.13, draft (read 2026-10-20, specification 244; the text below was written against 0.11, read 2026-10-02 and 2026-10-07). Owner: CyrFlip. The transport this product ships is **declared and permitted**, not excepted: 0.11 section 7 item A admits `WM_COPYDATA` sent with a bounded wait. 0.12 (section 9) lets a product declare commands beyond scenario launch; 0.13 (the 2026-10-17 consolidation) adds the focus-only second start as an additional profile and asks for a test of a hung receiver and of another user or session |
 | **Home** | `app-activation/README.md` in the shared contracts catalog |
 | **Role here** | consumer - single-instance forwarding in the viewer (`src/Application_Events.vb`, both exes) and the Share Manager (`src/FastMediaSorterCompanion/Program.vb`), and the viewer's wake of the Share Manager (`src/Main_Form.ShareLauncher.vb`) |
 
@@ -35,16 +35,31 @@
   send already carries `SMTO_ABORTIFHUNG`. Whether that is conformant is the owner's reading; it is recorded
   as a deviation until then.
 
-## The Share Manager's own sentinels (additive, 2026-10-13)
+- **0.13 profile declaration.** Both receivers here are **forwarding profiles**: a second start hands its path
+  or sentinel to the running window, so the payload rules above bind them. Neither is a payload-less focus-only
+  profile, and neither creates a second window for a file target. A plain second start restores the window.
+  Not run: a test against a hung receiver and against another user or session (the 0.13 acceptance evidence), so
+  neither is claimed.
+- **0.12 section 9 - the clipboard commands.** The Share Manager reads `/clipboard-send` and `/clipboard-get` on its
+  command line, compared without regard to case, next to its own `--clipboard-send` / `--clipboard-get` and the
+  wake sentinels below (`Program.ClipboardSwitchOf`). Not read: that a command arriving while its module is off
+  is answered in words (section 9 B), and that a cold start becomes the normal instance and performs the command
+  once the tray is up (section 9 C).
+
+## The Share Manager's own sentinels (additive, 2026-10-13; completed 2026-10-20)
 
 The wake payload set of the Share Manager is this product's own declared format and is bound by the same
 transport rules as the folder path (tagged, bounded, strictly decoded, acknowledged on the receiver's own answer).
-Besides `::fms-show-window::` it carries `::fms-plain-start::` (a re-run exe), `::fms-broadcast::<path>` and, since
-spec 215, **`::fms-add-resource::`** - "show the window and open the guided add flow", an intent with no path in it
-(command line form `--add-resource`). It is sent only to a receiver at or above
-`ShareActivationPolicy.MinAddResourceVersion` (26.10.13.0); an older or unidentified one gets
-`::fms-show-window::`, so no installed build sees a payload it does not know. Nothing in it is staged or shared:
-it opens a window, and the consent queue is untouched.
+The set is `::fms-show-window::` (frozen), `::fms-plain-start::` (a re-run exe), `::fms-broadcast::<path>`,
+`::fms-schedule::<folder>` (ticket 222), `::fms-add-resource::` and `::fms-add-resource-camera::` (spec 215, no
+path in them; command line forms `--add-resource` and `--add-resource-camera`), and `::fms-clipboard-send::` /
+`::fms-clipboard-get::` (spec 230; `--clipboard-send` and `--clipboard-get`). Each newer intent is sent only to a
+receiver at or above its own `ShareActivationPolicy.Min*Version` (`MinAddResourceVersion`, `MinScheduleVersion`,
+`MinClipboardVersion`); an older or unidentified one gets `::fms-show-window::`, so no installed build sees a
+payload it does not know. The mirror-image pair runs the other way: the Share Manager hands a phone code to the
+viewer as `::fms-phone-code::` or `::fms-phone-code-file::` (`PhoneCodeRelay`), only to a viewer at or above
+`MinPhoneCodeVersion`, because an older viewer would take it for a file path. None of these stages or shares
+anything: each opens a window or hands a value over, and the consent queue is untouched.
 
 ## Current compatibility policy (2026-10-03)
 

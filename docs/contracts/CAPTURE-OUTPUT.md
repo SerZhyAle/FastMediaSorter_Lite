@@ -3,16 +3,16 @@
 | | |
 | --- | --- |
 | **Id** | `CAPTURE-OUTPUT` - where a produced file lands, what it is called, what it is |
-| **Version** | 0.5, draft (read 2026-10-07; 0.3 was read 2026-10-02). Owner: FastMediaSorter Android |
+| **Version** | 0.6, draft (read 2026-10-20, specification 244; 0.5 was read 2026-10-07). 0.6 adds only that a plain-text capture carries no time carrier - the file name's local time is the authority - and asks nothing of a product that writes none of those kinds. Owner: FastMediaSorter Android |
 | **Home** | `capture-output/README.md` in the shared contracts catalog |
-| **Role here** | not bound - no rule 1 capture kind is written; section 5 excludes edited copies, conversions and exports whose format another contract owns |
+| **Role here** | not bound for a rule 1 kind - none is written; section 5 excludes edited copies, conversions and exports whose format another contract owns; one path is unsettled (the last item below) |
 
 ## What this repository does to stay conformant
 
 - **Writes no capture.** No camera, screenshot, screen or voice recording, video frame, new text file,
   OCR text or translation reaches the disk: recognized text and its translation are drawn on the picture
-  and cached under `%LOCALAPPDATA%`, never saved as a file. Re-read 2026-10-07: no screen-grab or frame-save call
-  exists in `src/`.
+  and cached under `%LOCALAPPDATA%`, never saved as a file. Searched again 2026-10-20: no screen-grab or
+  frame-save call exists in `src/`.
 - **Rule 16 (0.5, the PNG `tIME` chunk) does not bind this product.** It binds a PNG *capture*. The only PNGs
   written for the user are (1) the Share Manager's QR image (`Qr_Zoom_Form.SavePng`), an export whose format
   `FMSCFG` owns (0.4, section 5); (2) the image editor's derived picture (`ImageFileWriter`), a file derived from one
@@ -31,3 +31,8 @@
   per window; no runtime change precedes the owner's answer.
 - **What must not change silently:** a capture kind added here - a frame taken from a video, a
   screenshot - is first a MINOR amendment of rule 1 in the catalog, then code (rule 2).
+- **A file received from another device is not named by this contract.** The Share Manager's clipboard receive
+  path (specification 230: `ClipboardExchange`, `ExchangeClipboard`) writes a received item into a folder, and
+  section 5 has no line for it; rule 2 says a prefix is never invented locally and rule 3 fixes the local
+  `yyMMdd_HHmmss` grammar. How such a file is named is an open decision, not a claim of conformance - and not a
+  new capture kind without the amendment above.

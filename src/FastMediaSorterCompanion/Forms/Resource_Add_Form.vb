@@ -33,6 +33,7 @@ Friend NotInheritable Class Resource_Add_Form
     Private publish As CheckBox
     Private backButton As Button
     Private nextButton As Button
+    Private answerRow As DialogButtonRow
     Private cancelCommand As Button
     Private pairButton As Button
     Private settingsButton As Button
@@ -103,21 +104,37 @@ Friend NotInheritable Class Resource_Add_Form
         problem = TextRow(panels(1), "")
         facts = TextRow(panels(3), "")
         If entry = ResourceAddEntry.Exchange Then
-            publish = New CheckBox With {.AutoSize = True, .MinimumSize = New Size(0, 44), .MaximumSize = New Size(ContentWidth, 0),
-                .Text = ExchangePublishText.PublishLabel(), .Checked = publishInitially}
-            panels(3).Controls.Add(publish)
-            TextRow(panels(3), ExchangePublishText.PublishNote())
+            ' A boolean row (BOOLEAN-OPTION 2.0, ticket 243 T-11c-b2a): the check box keeps its field and default, the note under
+            ' it is the row's explanation, and the row takes the width of the step (it is as tall as caption and note need).
+            publish = New CheckBox With {.AutoSize = True, .Text = ExchangePublishText.PublishLabel(), .Checked = publishInitially}
+            Dim publishNote As Label = TextRow(panels(3), ExchangePublishText.PublishNote())
+            Dim publishRow As OptionRowHost = OptionRows.InFlow(publish, publishNote)
+            publishRow.Dock = DockStyle.None
+            publishRow.Anchor = AnchorStyles.Left Or AnchorStyles.Right Or AnchorStyles.Top
+            publishRow.Width = ContentWidth
+            panels(3).Controls.Add(publishRow)
         End If
         pairButton = Command(Localization.T("Показать QR-код"), "action.share", Sub() actions.Pair(Me))
         settingsButton = Command(Localization.T("Настройки.."), "app.settings", Sub() actions.Settings(Me))
         pairButton.Visible = False : settingsButton.Visible = False
         panels(3).Controls.AddRange({pairButton, settingsButton})
-        Dim footer As New FlowLayoutPanel With {.Dock = DockStyle.Bottom, .AutoSize = True, .Padding = New Padding(16, 8, 16, 12), .WrapContents = False}
-        cancelCommand = Command(Localization.T("Отмена"), "action.cancel", Sub() Close())
-        backButton = Command(Localization.T("Назад"), "nav.back", Sub() ShowStep(CType(CInt(position) - 1, ResourceAddStep)))
-        nextButton = Command(Localization.T("Далее"), "nav.forward", Sub() OnNext())
-        footer.Controls.AddRange({cancelCommand, backButton, nextButton})
-        Controls.Add(body) : Controls.Add(header) : Controls.Add(footer)
+        ' The wizard's navigation rides the shared bottom row (ticket 243 T-8b batch C, BUTTONS 2.0 sections 3 and 4): Cancel,
+        ' Back, then the forward answer last - the reading order the footer already had, now with content-fit widths and
+        ' whole-button wrap. The commands inside the steps (pick a folder, disks, QR, settings) stay where they are. Escape
+        ' is the window's own (ProcessCmdKey); Enter is NOT bound (bindAccept:=False) because it belongs to the fields of
+        ' the hosted editor - it never advanced the wizard and must not add a resource from a text field.
+        cancelCommand = New Button With {.Text = Localization.T("Отмена"), .Name = "xra_Cancel"}
+        AddHandler cancelCommand.Click, Sub() Close()
+        backButton = New Button With {.Text = Localization.T("Назад"), .Name = "xra_Back"}
+        AddHandler backButton.Click, Sub() ShowStep(CType(CInt(position) - 1, ResourceAddStep))
+        nextButton = New Button With {.Text = Localization.T("Далее"), .Name = "xra_Next"}
+        AddHandler nextButton.Click, Sub() OnNext()
+        answerRow = New DialogButtonRow() With {.Dock = DockStyle.Bottom, .Name = "xra_Buttons", .Padding = New Padding(16, 8, 16, 12)}
+        DpiLayout.AddAnswer(answerRow, cancelCommand, DialogButtonRole.Dismissing, "action.cancel")
+        DpiLayout.AddAnswer(answerRow, backButton, DialogButtonRole.Neutral, "nav.back")
+        DpiLayout.AddAnswer(answerRow, nextButton, DialogButtonRole.Affirmative, "nav.forward")
+        Controls.Add(body) : Controls.Add(header) : Controls.Add(answerRow)
+        answerRow.Bind(Me, bindAccept:=False)
         AddHandler ThemeService.Changed, AddressOf OnThemeChanged
         DpiLayout.ApplyAutoScale(Me)
         ThemeService.Attach(Me)
@@ -146,6 +163,8 @@ Friend NotInheritable Class Resource_Add_Form
         Dim hosted = editor.CreateHostedEditor(ContentWidth, DeviceDpi)
         If IsHandleCreated Then hosted.Scale(New SizeF(DeviceDpi / 96.0F, DeviceDpi / 96.0F))
         panels(2).Controls.Add(hosted)
+        ' The editor's boolean rows are laid out once the window that holds them has its scale (ticket 243 T-11c-b).
+        If IsHandleCreated Then OptionRows.ArrangeAll(hosted)
         problem.Text = ""
         ThemeService.Attach(Me)
         RefreshNavigation()
@@ -176,7 +195,8 @@ Friend NotInheritable Class Resource_Add_Form
         cancelCommand.Visible = Not committed
         nextButton.Enabled = committed OrElse ResourceAddModel.CanAdvance(position, picked.Length > 0, busy, committed)
         nextButton.Text = Localization.T(If(committed, "Закрыть", If(position = ResourceAddStep.Finish, "Готово", "Далее")))
-        ButtonGlyphs.Apply(nextButton, If(committed, "nav.close", If(position = ResourceAddStep.Finish, "action.confirm", "nav.forward")))
+        ButtonGlyphs.Apply(nextButton, If(committed, "nav.close", If(position = ResourceAddStep.Finish, "action.confirm", "nav.forward")),
+                           If(committed, ButtonGlyphRole.Neutral, ButtonGlyphRole.Affirmative))
         backButton.Visible = Not committed
         If publish IsNot Nothing Then publish.Enabled = Not busy AndAlso Not committed
     End Sub
@@ -228,6 +248,8 @@ Friend NotInheritable Class Resource_Add_Form
     End Sub
     Protected Overrides Sub OnLoad(e As EventArgs)
         MyBase.OnLoad(e)
+        ' A folder picked before the window was shown has its editor's rows unarranged: they take the window's scale now.
+        OptionRows.ArrangeAll(Me)
         DpiLayout.ClampToWorkingArea(Me)
     End Sub
     Protected Overrides Sub OnFormClosing(e As FormClosingEventArgs)

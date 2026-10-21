@@ -23,6 +23,7 @@ Friend NotInheritable Class Exchange_Link_Form
     Private _configJson As String
     Private _qrPng As Byte()
     Private _lblResult As Label
+    Private _answerRow As DialogButtonRow
     Private _iconHandle As IntPtr
 
     Friend Sub New(name As String, codeText As String, configJson As String, qrPng As Byte())
@@ -33,9 +34,9 @@ Friend NotInheritable Class Exchange_Link_Form
         BuildUi()
     End Sub
 
-    Private Function NewButton(text As String, onClick As Action, Optional glyph As String = "", Optional role As ButtonGlyphRole = ButtonGlyphRole.Neutral) As Button
+    Private Function NewButton(text As String, onClick As Action, Optional glyph As String = "", Optional role As ButtonGlyphRole = ButtonGlyphRole.Neutral, Optional name As String = "") As Button
         Dim b As New Button With {.AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink, .Padding = New Padding(12, 4, 12, 4),
-            .Margin = New Padding(0, 4, 8, 4), .Text = text}
+            .Margin = New Padding(0, 4, 8, 4), .Text = text, .Name = name}
         AddHandler b.Click, Sub() onClick()
         If glyph.Length > 0 Then ButtonGlyphs.Apply(b, glyph, role)
         Return b
@@ -62,29 +63,29 @@ Friend NotInheritable Class Exchange_Link_Form
         Dim body As New TableLayoutPanel With {.Dock = DockStyle.Fill, .ColumnCount = 1, .AutoSize = True,
             .AutoSizeMode = AutoSizeMode.GrowAndShrink, .Padding = New Padding(14, 10, 14, 8)}
         body.ColumnStyles.Add(New ColumnStyle(SizeType.Percent, 100.0F))
+        body.Controls.Add(ExchangeMark.Heading(Text, 32, AddressOf CompanionAssets.OpenBundledAsset))
         body.Controls.Add(New Label With {.AutoSize = True, .MaximumSize = New Size(ContentWidth, 0), .Margin = New Padding(0, 0, 0, 6),
             .Text = ExchangePublishText.LinkWindowNote()})
-
-        Dim buttons As New FlowLayoutPanel With {.AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink, .WrapContents = True,
-            .MaximumSize = New Size(ContentWidth, 0), .Margin = New Padding(0, 2, 0, 2)}
-        If _qrPng IsNot Nothing Then buttons.Controls.Add(NewButton(ExchangePublishText.ShowQrButton(), AddressOf OnShowQr, "action.show-code"))
-        If _codeText.Length > 0 Then buttons.Controls.Add(NewButton(ExchangePublishText.CopyLinkTextButton(), AddressOf OnCopyText, "action.copy"))
-        If _configJson.Length > 0 Then buttons.Controls.Add(NewButton(ExchangePublishText.SaveFileButton(), AddressOf OnSaveFile, "action.export"))
-        body.Controls.Add(buttons)
 
         _lblResult = New Label With {.AutoSize = True, .MaximumSize = New Size(ContentWidth, 0), .ForeColor = ThemeService.Palette.TextMuted,
             .Margin = New Padding(0, 4, 0, 4), .Visible = False}
         body.Controls.Add(_lblResult)
 
-        Dim close As Button = NewButton(Localization.T("Закрыть"), Sub() Me.Close(), "nav.close", ButtonGlyphRole.Dismissing)
+        ' The three ways to hand the link over are commands of the window and Close is its one answer, so they share the
+        ' bottom row (ticket 243 T-8b, BUTTONS 2.0 sections 3 and 4): the commands first, set apart, then Close. Enter
+        ' and Escape both reach Close, as before; a command is never the default.
+        _answerRow = New DialogButtonRow() With {.Dock = DockStyle.Bottom, .Name = "xlink_Buttons", .Padding = New Padding(14, 4, 14, 10)}
+        If _qrPng IsNot Nothing Then DpiLayout.AddAnswer(_answerRow, NewButton(ExchangePublishText.ShowQrButton(), AddressOf OnShowQr, "action.show-code", name:="xlink_Qr"), DialogButtonRole.Command, "action.show-code")
+        If _codeText.Length > 0 Then DpiLayout.AddAnswer(_answerRow, NewButton(ExchangePublishText.CopyLinkTextButton(), AddressOf OnCopyText, "action.copy", name:="xlink_Copy"), DialogButtonRole.Command, "action.copy")
+        If _configJson.Length > 0 Then DpiLayout.AddAnswer(_answerRow, NewButton(ExchangePublishText.SaveFileButton(), AddressOf OnSaveFile, "action.export", name:="xlink_Save"), DialogButtonRole.Command, "action.export")
+        Dim close As Button = NewButton(Localization.T("Закрыть"), Sub() Me.Close(), "nav.close", ButtonGlyphRole.Dismissing, "xlink_Close")
         close.DialogResult = DialogResult.OK
-        Dim closeRow As New FlowLayoutPanel With {.AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink, .Margin = New Padding(0, 6, 0, 2)}
-        closeRow.Controls.Add(close)
-        body.Controls.Add(closeRow)
-        Me.AcceptButton = close
-        Me.CancelButton = close
+        DpiLayout.AddAnswer(_answerRow, close, DialogButtonRole.Dismissing, "nav.close")
 
         Me.Controls.Add(body)
+        ' Last in the collection: the docked row takes its edge first and reads after the content in the Tab order.
+        Me.Controls.Add(_answerRow)
+        _answerRow.Bind(Me)
         Me.AutoSize = True
         Me.AutoSizeMode = AutoSizeMode.GrowAndShrink
 

@@ -250,6 +250,14 @@ Public NotInheritable Class FdSecContainer
             FdSecHead.ChunkAssociatedData(head.HeaderDigest, index, count, isLast, plainLength),
             sealedChunk)
         If plain Is Nothing Then
+            ' A Dispose that landed between the lock above and the open wipes fileKey under
+            ' that open, and the tag then fails for a reason that is not the file's. "The
+            ' reader was closed" is its own thing and must never be dressed up as tamper.
+            ' Dispose sets the flag BEFORE it wipes, so a failure caused by the wipe always
+            ' finds the flag set here; the read is under the same lock Dispose takes.
+            SyncLock sourceGate
+                If disposed Then Throw New ObjectDisposedException(NameOf(FdSecContainer))
+            End SyncLock
             Throw FdSecException.CredentialOrTamper("chunk " & index.ToString() & " does not authenticate")
         End If
         Return plain

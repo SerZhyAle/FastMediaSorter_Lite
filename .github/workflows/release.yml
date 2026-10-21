@@ -214,6 +214,12 @@ jobs:
           New-Item -ItemType Directory -Path $stageCompanion -Force | Out-Null
           Copy-Item "payload/companion/*" $stageCompanion -Recurse -Force
 
+          # FileDO disk hosting, a capability of sharing (specification 249): the bundled
+          # filedo\ tree next to companion\. The `share\filedo` component of the installer
+          # and the portable ZIP both carry it; the helper takes the freshest FileDO
+          # release, so a clean checkout needs no local FileDO build.
+          .\tools\Stage-FileDoPayload.ps1 -Destination $stage
+
           # The exchange server tree - ONLY with the gate open (INCLUDE_EXCHANGE). The helper
           # throws when the exe, its sidecar, either helper or the README is missing.
           if ($env:INCLUDE_EXCHANGE -eq 'true') {
@@ -335,6 +341,10 @@ jobs:
           $stageCompanion = Join-Path $stage "companion"
           New-Item -ItemType Directory -Path $stageCompanion -Force | Out-Null
           Copy-Item "payload/companion/*" $stageCompanion -Recurse -Force
+
+          # FileDO disk hosting, the Server edition's ticked optional component: the
+          # installer's `filedo` component installs this tree (specification 249).
+          .\tools\Stage-FileDoPayload.ps1 -Destination $stage
 
           # The optional, unticked viewer component (ticket 132): the SAME viewer files the
           # User installer's Compact type installs, taken from the stage above. -Require: a

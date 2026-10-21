@@ -47,6 +47,30 @@ Public Class LiveBroadcastReaderTests
         Assert.Null(res.Descriptor)
     End Sub
 
+    ''' <summary>LIVE-BROADCAST 1.1 / audit gap 2: a schemaVersion that is a whole number beyond Int32 is a LATER schema and is refused with the
+    ''' `format-unsupported` text, not called "damaged" (it used to fall into InvalidDocument because TryGetInt32 failed). A fraction or a
+    ''' number below zero is still a damaged document.</summary>
+    <Theory>
+    <InlineData("2147483647", "UnsupportedVersion")>
+    <InlineData("2147483648", "UnsupportedVersion")>
+    <InlineData("99999999999999999999999999", "UnsupportedVersion")>
+    <InlineData("-2147483649", "InvalidDocument")>
+    <InlineData("-99999999999999999999999999", "InvalidDocument")>
+    <InlineData("1.5", "InvalidDocument")>
+    Public Sub A_SchemaVersion_Beyond_Int32_Is_A_Later_Schema_Not_A_Damaged_Document(number As String, expectedName As String)
+        Dim expected As LiveReadStatus = CType([Enum].Parse(GetType(LiveReadStatus), expectedName), LiveReadStatus)
+        Dim json As String = "{""schemaVersion"":" & number & ",""url"":""http://192.168.1.50:8080/live-audio"",""mode"":""AUDIO_ONLY""}"
+        Dim res As LiveBroadcastReadResult = LiveBroadcastReader.ReadText(json)
+
+        Assert.Equal(expected, res.Status)
+        Assert.Null(res.Descriptor)
+        ' the same refusal through the gzip + Base64 form of a QR code
+        Assert.Equal(expected, LiveBroadcastReader.ReadText(CreateFmsBcast1Payload(json)).Status)
+        If expected = LiveReadStatus.UnsupportedVersion Then
+            Assert.Equal(ConnectionDiagnosisLocalization.FormatUnsupportedText(), LiveBroadcastMessages.ForReadStatus(res.Status))
+        End If
+    End Sub
+
     <Fact>
     Public Sub Fixture3_HttpVideoAudio_Mode_Is_Playable()
         Dim json As String = "{""schemaVersion"":1,""url"":""http://192.168.1.50:8080/video"",""mode"":""VIDEO_AUDIO""}"

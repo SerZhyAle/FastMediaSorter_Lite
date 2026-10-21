@@ -6,11 +6,13 @@
 
 ## Current modern settings revision
 
-The modern viewer has twelve pages: General, Destination folders, Images, Video, Audio, Files and system,
-Resources, OCR, Translation, Storage, Android/SFTP and About. The **Resources** page (ticket 118) hosts the
-same [Resource_List_Panel.vb](../../src/Resource_List_Panel.vb) the resource-manager dialog embeds - one
-list, add/edit/remove/test/import/export - and records `ResourcesTouched` plus the removed ids so the main
-viewer reacts after the window closes. The net48 fallback retains its five Designer pages (no resources).
+The modern viewer has eleven pages (the navigation rail, `ModernNavControlNames`): General, Destination
+folders, Images, Video, Audio, Files and system, Server and resources, OCR, Translation, Storage and About.
+The **Server and resources** page (ticket 118; its groups are Resources, Android / SFTP and My devices)
+hosts the same [Resource_List_Panel.vb](../../src/Resource_List_Panel.vb) the resource-manager dialog
+embeds - one list, add/edit/remove/test/import/export - and records `ResourcesTouched` plus the removed ids
+so the main viewer reacts after the window closes. The net48 fallback retains its five Designer pages (no
+resources).
 
 The placement catalog is `AddSettingsGroup` in
 [Table_Form.SettingsGroups.vb](../../src/Table_Form.SettingsGroups.vb), keyed by stable page/group/row ids.
@@ -43,6 +45,26 @@ edits, moves focus out of hidden contents, and exposes expanded/collapsed state 
 Rows form one vertical sequence and hints wrap. The left navigation scrolls and captions wrap. Palette
 changes retain the existing dynamic theme mechanism and high-contrast override.
 
+Group headers follow `COLLAPSIBLE-GROUP` 1.1 section 3 (ticket 243). The whole header (marker, caption and
+empty space) is one toggle; the body is not. At the reading start the header shows a **filled state
+triangle**, drawn as a vector in the header's own ink by `SettingsCollapsibleGroup`: right when collapsed,
+down when open, and left when collapsed under RTL. It is a state marker, not the up/down action chevron
+(`nav.expand` / `nav.collapse` stay on the Expand all / Collapse all commands only). The marker is glyph
+tier 16, scaled with the window's interface scale, with 8 logical pixels between it and the caption; a
+RightToLeft, DPI or theme change only repaints it. **Packing of collapsed headers is off, as a permanent
+design choice for this window:** every group header is its own full-width row, in group order, at every
+width; an expanded group's body sits directly below its own header. A header is 32 logical pixels at
+minimum (pointer baseline) and grows to wrap a long caption or a collapsed summary line.
+
+Boolean option rows follow `BOOLEAN-OPTION` 2.0 sections 2 and 3 (ticket 243, `SettingsCheckBox.PlaceLeading` /
+`ArrangeRow`). The checkbox control is a 32 by 32 logical-pixel hit target around the 20 px drawn box, with an 8 px
+gap from the box to the text cell; under RightToLeft (`RightToLeft` only, never `RightToLeftLayout`) the box stands at
+the right edge and the text cell mirrors to its left. **Only the box and the caption toggle the option**: the
+explanation under it has no click handler and no hand cursor, and a disabled option toggles from nowhere while its
+reason stays in the visible explanation. The explanation is the 12 logical-pixel role (the caption is 9 pt = 12 px
+Semibold), is never ellipsized or clipped, and the row grows to the wrapped height measured at its final width. The
+heading glyph and the optional help button of section 2 rule 2 are not built yet.
+
 Search settings (`Ctrl+F`) opens a temporary discovery dialog. It searches localized captions, hints and
 noneditable option labels; results show page/group breadcrumbs and safe checkbox/number/choice values.
 Editable fields, API keys, paths, resources and history values are excluded. Choosing a result reveals the
@@ -50,8 +72,8 @@ original row and expands only its owning group. Every opening starts with an emp
 not filter the settings viewport or change unrelated groups. Expand all / Collapse all affects the current
 page; collapsed groups summarize up to two safe values and any input validation error.
 
-Rows stack their editor beneath wrapped text in a narrow window. Group/navigation/action targets have
-44 logical-pixel floors; checkboxes have a clickable caption and explanation. Native number/text editors
+Rows stack their editor beneath wrapped text in a narrow window. Group headers keep a 32 logical-pixel
+floor (see above); checkboxes toggle from the box and the caption only (see above). Native number/text editors
 have enlarged targets, choice lists measure their localized options when opened, and the opacity slider
 has an exact numeric editor. Text values for OCR service/model/key commit on blur or closing settings;
 nonempty endpoints must be HTTP(S), while malformed edits remain pending through grouping/language refresh.
@@ -325,8 +347,9 @@ DEL; перечислены точные наборы ассоциаций. Та
 - каждый параметр получил заголовок и пояснение; элементы управления стоят в
   единой правой колонке, а длинные пояснения переносятся на две строки;
 - логические переключатели используют отдельный шаблон: checkbox слева, сразу за
-  ним название, ниже под названием - пояснение; клик по названию или пояснению
-  переключает checkbox так же, как клик по самому квадрату;
+  ним название, ниже под названием - пояснение; клик по названию переключает
+  checkbox так же, как клик по самому квадрату, а клик по пояснению - нет
+  (`BOOLEAN-OPTION` 2.0, раздел 3);
 - переключатель таблицы получателей вынесен в собственную строку над таблицей и
   больше не пересекается с ней; строка `DEL` полностью запрещена для редактирования;
 - SFTP и Android вынесены в отдельную вкладку с запуском менеджера и ссылками на
@@ -405,6 +428,8 @@ Actions are entry points, not preferences: no stored default/range, and opening 
 | `new_image_scale` | images / basic | ModernViewerPreferences.NewImageScaleMode; String; default "fit"; Load/Save key NewImageScaleMode | tokens: fit, actual, perFolder |
 | `exif_rotate` | images / basic | Main_Form.Lifecycle; key ExifAutoRotate; storage default '1' | Original native editor bounds/choices; Lifecycle loader validation |
 | `wheel_zooms` | images / basic | Main_Form.Lifecycle; key WheelZooms; storage default '0' | Original native editor bounds/choices; Lifecycle loader validation |
+| `animated_via_video` | images / basic | ModernViewerPreferences.AnimatedViaVideo; Boolean; default True; Load/Save key AnimatedViaVideo | Bound property type; matching row constructor / Normalize |
+| `animated_via_video_ffmpeg` | images / basic | Action/information; matching row constructor (no preference default) | Matching row constructor |
 | `show_picture_size` | images / basic | Main_Form.Lifecycle; key ShowPictureSizes; storage default '1' | Original native editor bounds/choices; Lifecycle loader validation |
 | `show_file_size` | images / basic | Main_Form.Lifecycle; key ShowFileSizes; storage default '1' | Original native editor bounds/choices; Lifecycle loader validation |
 | `show_file_date` | images / basic | Main_Form.Lifecycle; key ShowFileDates; storage default '1' | Original native editor bounds/choices; Lifecycle loader validation |

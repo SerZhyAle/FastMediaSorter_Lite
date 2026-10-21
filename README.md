@@ -1,18 +1,18 @@
-# Fast Media Sorter & Sharing for Windows
+﻿# Fast Media Sorter & Sharing for Windows
 
 Fast Media Sorter & Sharing for Windows is a Windows Forms application for quickly sorting, viewing, and managing image and video files - because that folder full of 4000 photos is not going to triage itself. **Sharing** means giving your media to someone else: the folders you pick can be opened from the Android app, from another copy of this program, or from any SFTP client (see [Your folders over SFTP](#your-folders-over-sftp), [publishing folders for Android](https://serzhyale.github.io/FastMediaSorter_Lite/publish-folders-android.html)).
 
 The name changed from "Fast Media Sorter for Windows" (earlier still, "FastMediaSorter LITE"). The Microsoft Store, Add/Remove Programs and winget still list the package as "FastMediaSorter LITE" - that name is frozen on purpose, so upgrades keep correlating with installed copies.
 
-**One program, a few roles.** View and sort your media; when you need it, the same program is also a folder-share server and a host for FileDO virtual disks - each of those ships optional, off until you ask for it.
+**Three optional parts.** A media viewer and sorter, a local SFTP folder-sharing service, and a Media Exchange Server (in development, not released yet) - start with the viewer or with the folder-sharing server, and add the rest only if you want it.
 
-| Door | You want to .. | Download | What else is inside |
+| Part | You want to .. | Where it comes from | Notes |
 | --- | --- | --- | --- |
-| **Viewer** | sort and look at photos and videos | the **full package** (one installer); pick the **Compact** type in Setup for a viewer with no server | the folder share server and FileDO, as optional extras |
-| **Share to Android** | give this PC's folders to your phone | the full package with the folder share server ticked - or the **Server edition** for a machine that must serve with nobody signed in ([server page](https://serzhyale.github.io/FastMediaSorter_Lite/server.html)) | the viewer: the core of the full package, an optional unticked component of the Server edition |
-| **Media Exchange Server** | *planned, not available yet* | nothing to download | a connect service for the day a share server has neither a reachable address nor a port forward |
+| **Media viewer and sorter** | sort and look at photos and videos | the **full package** (one installer, per user, no administrator rights), the portable ZIP, winget or the Microsoft Store | the core of the full package; an optional, unticked component of the Server edition. Sorting needs no server |
+| **Local SFTP folder sharing** | give this PC's folders to your phone, another copy of this program or any SFTP client | the full package with sharing ticked (off until you switch it on; the **Compact** type leaves it out) - or the **Server edition** for a machine that must serve with nobody signed in (a Windows service, administrator rights; [server page](https://serzhyale.github.io/FastMediaSorter_Lite/server.html)) | FileDO disk hosting is a capability of sharing: unticked in the full package, ticked in the Server edition. The Microsoft Store version carries the Share Manager but no Windows service and no FileDO disk hosting |
+| <img src="assets/exchange-mark/svg/exchange-mark-small.svg" width="24" height="24" alt="Exchange server"> **Media Exchange Server** | *in development, not released yet* | in no package - nothing to download | a separate server for devices that cannot reach each other directly; neither the viewer nor local sharing needs it |
 
-The full package is the one download that carries everything. The Server edition is a focused package in which the server leads and the media viewer and FileDO ride along as optional components.
+The full package is the one download that carries the viewer and the folder-sharing service together. The Server edition is a focused package in which the folder-sharing service leads and the media viewer rides along as an optional, unticked component. What each package installs by default, which parts are optional, whether hosting runs interactively or unattended and where elevation is needed is the [availability matrix](https://serzhyale.github.io/FastMediaSorter_Lite/server.html#matrix) on the server page.
 
 It supports a wide range of media formats and provides features such as:
 
@@ -44,6 +44,7 @@ It supports a wide range of media formats and provides features such as:
 - **A music file gets a screen, not a black rectangle** - MP3, WAV, M4A, WMA and OGG show their embedded album cover, or a wave-and-particle animation when there is none, with the title, artist, album, codec, bitrate and length along the bottom. Its own Settings section decides what happens when the track ends, whether the transport panel stays up, and a sleep timer of up to three hours. Video and audio can each be left out of paging entirely, so a folder of photographs stays a folder of photographs (64-bit program)
 - Menus right on the media: middle-click a picture, right-click a video (64-bit program)
 - Customizable keyboard shortcuts, because reaching for the mouse is so last decade
+- **In-app context help on every window** - press `F1` or click the `?` button in the top-right corner to open offline, privacy-respecting documentation with screenshots and element explanations in all 13 languages. The viewer's F1 shortcut card links directly to the full guide (64-bit program and Share Manager)
 - **Interface in 13 languages** - English, Russian, Ukrainian, German, Italian, Spanish, French, Portuguese, Arabic, Hindi, Bengali, Urdu and Chinese. The first run follows your Windows display language; the toolbar button switches it any time, and the Share Manager follows the same choice. Arabic and Urdu are laid out right to left. Only English, Russian and Ukrainian are proofread by the author - **the other ten are machine translations and are not proofread**, so corrections through the [issue tracker](https://github.com/SerZhyAle/FastMediaSorter_Lite/issues) are very welcome. The 32-bit fallback build keeps English and Russian only (Windows 7 has no font for the Indic scripts), and the setup wizard stays English.
 - Broad video format support: everything (H.264/MP4, AVI, ZMBV, VP9, MKV, WMV, ..)
   plays in-window through the bundled **LibVLC** engine - no external codecs, no
@@ -115,7 +116,7 @@ Sharing folders from this PC is one of three ways to connect your devices. The s
   Reader's guides: [Home network](https://serzhyale.github.io/FastMediaSorter_mob_v2/docs/media-exchange-portal/home-network.html) and [Windows servers](https://serzhyale.github.io/FastMediaSorter_mob_v2/docs/media-exchange-portal/windows-servers.html).
 - **Live broadcasts on Windows.** Playing a live broadcast on Windows today is done by
   [STREAMS Player](https://serzhyale.github.io/StreamsPlayer/), a separate program. This program does not broadcast.
-**Always-on variant (optional):** by default the folders are reachable only while you are signed in and the Share Manager is running - right for a normal PC. If the machine's job is to stay available (a dedicated server, a VPS, an always-on home server), the same worker can be hosted by a Windows service instead: it starts at boot, serves with nobody logged on, and restarts itself if it fails. There are two ways in. An ordinary installation can switch itself over in the Share Manager (**Manager settings.. -> Hosting -> Switch sharing to a Windows service..**, one administrator prompt that also moves the state and grants the service access to the folders you share), or you can install the separate **[Folder Share Server edition](https://serzhyale.github.io/FastMediaSorter_Lite/server.html)** (`winget install --id SerZhyAle.FastMediaSorter.Server`), which sets the same service up straight away - for a machine provisioned without ever opening the app. In both cases it takes administrator approval once and is never enabled silently: no regular setup, winget install or Store install registers the service on its own, and the Store build cannot register one at all. SFTP, the QR/`.fmscfg` pairing and the Android app are identical - only the host differs, and switching editions preserves the host key so paired phones need no re-pairing. The Server edition is a focused package: the server leads, and the media viewer is inside as an optional component that stays unticked unless you choose it.
+**Always-on variant (optional):** by default the folders are reachable only while you are signed in and the Share Manager is running - right for a normal PC. If the machine's job is to stay available (a dedicated server, a VPS, an always-on home server), the same worker can be hosted by a Windows service instead: it starts at boot, serves with nobody logged on, and restarts itself if it fails. There are two ways in. An ordinary installation can switch itself over in the Share Manager (**SFTP sharing settings -> Hosting -> Switch sharing to a Windows service..**, one administrator prompt that also moves the state and grants the service access to the folders you share), or you can install the separate **[Folder Share Server edition](https://serzhyale.github.io/FastMediaSorter_Lite/server.html)** (`winget install --id SerZhyAle.FastMediaSorter.Server`), which sets the same service up straight away - for a machine provisioned without ever opening the app. In both cases it takes administrator approval once and is never enabled silently: no regular setup, winget install or Store install registers the service on its own, and the Store build cannot register one at all. SFTP, the QR/`.fmscfg` pairing and the Android app are identical - only the host differs, and switching editions preserves the host key so paired phones need no re-pairing. The Server edition is a focused package: the server leads, and the media viewer is inside as an optional component that stays unticked unless you choose it.
 
 ## Broadcasts for StreamsPlayer
 
@@ -317,7 +318,7 @@ downloads the 32-bit codec and OCR pieces it needs on first use.
 
 The interactive installer exposes these as **selectable components** and shows each
 one's size: uncheck what you don't need and those parts download later on demand,
-or the feature is simply left out. The **Compact** type is the viewer without the server -
+or the feature is simply left out. The **Compact** type is the viewer without folder sharing -
 a fraction of the full package. (Silent/winget installs always take the full set.)
 
 Note: machine translation still depends on the provider you configure - the app
@@ -350,3 +351,5 @@ A handy collection of AI-agent presets and tooling by the same author:
 
 ## License
 MIT - see [LICENSE](LICENSE).
+
+**Sharing settings (builds with separate settings windows):** use **SFTP sharing settings** for its port, LAN policy and Hosting page. Local exchange-server administration opens in its own settings window; remote-account sign-in, publishing and schedules stay in **Manager settings** and do not require a local exchange server. Links in the lower left switch between installed components without closing either editor. [Settings guide](docs/guides/SHARING_SETTINGS_WINDOWS.md) · [Offline help](docs/help/en/share-settings.html). Earlier builds keep these pages in Manager settings.

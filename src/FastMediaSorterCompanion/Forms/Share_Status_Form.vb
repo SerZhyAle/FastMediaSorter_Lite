@@ -34,6 +34,7 @@ Public NotInheritable Class Share_Status_Form
     Private lblFirst As Label
     Private btnReset As Button
     Private btnRefresh As Button
+    Private _answerRow As DialogButtonRow
 
     Public Sub New(Optional initial As WorkerStatus = Nothing)
         _status = initial
@@ -72,20 +73,23 @@ Public NotInheritable Class Share_Status_Form
             .Text = Localization.T("Счётчики хранятся только на этом ПК и никуда не отправляются.")}
         tlp.Controls.Add(lblHint, 0, r) : tlp.SetColumnSpan(lblHint, 2) : r += 1
 
-        Dim btnRow As New FlowLayoutPanel With {.AutoSize = True, .Anchor = AnchorStyles.Right, .FlowDirection = FlowDirection.LeftToRight, .WrapContents = False, .Margin = New Padding(0, 16, 0, 0)}
-        btnReset = New Button With {.AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink, .Padding = New Padding(10, 5, 10, 5), .Margin = New Padding(0, 0, 8, 0), .Text = Localization.T("Сбросить счётчики")}
-        btnRefresh = New Button With {.AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink, .Padding = New Padding(10, 5, 10, 5), .Margin = New Padding(0, 0, 8, 0), .Text = Localization.T("Обновить")}
-        Dim btnClose As New Button With {.AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink, .Padding = New Padding(14, 5, 14, 5), .Text = Localization.T("Закрыть"), .DialogResult = DialogResult.Cancel}
-        ButtonGlyphs.Apply(btnReset, "action.reset")
-        ButtonGlyphs.Apply(btnRefresh, "action.refresh")
-        ButtonGlyphs.Apply(btnClose, "nav.close", ButtonGlyphRole.Dismissing)
+        ' Reset and Refresh are commands of the window and Close is its one answer, so they share the bottom row (ticket 243
+        ' T-8b, BUTTONS 2.0 sections 3 and 4): the commands first, set apart, then Close - the same order as before. Escape
+        ' = Close; Enter reaches Close too (the safe default of a row without an affirmative answer), never Reset.
+        btnReset = New Button With {.Name = "xst_Reset", .Text = Localization.T("Сбросить счётчики")}
+        btnRefresh = New Button With {.Name = "xst_Refresh", .Text = Localization.T("Обновить")}
+        Dim btnClose As New Button With {.Name = "xst_Close", .Text = Localization.T("Закрыть"), .DialogResult = DialogResult.Cancel}
         AddHandler btnReset.Click, AddressOf OnReset
         AddHandler btnRefresh.Click, AddressOf OnRefresh
-        btnRow.Controls.AddRange(New Control() {btnReset, btnRefresh, btnClose})
-        tlp.Controls.Add(btnRow, 0, r) : tlp.SetColumnSpan(btnRow, 2)
+        _answerRow = New DialogButtonRow() With {.Dock = DockStyle.Bottom, .Name = "xst_Buttons", .Padding = New Padding(18, 4, 18, 12)}
+        DpiLayout.AddAnswer(_answerRow, btnReset, DialogButtonRole.Command, "action.reset")
+        DpiLayout.AddAnswer(_answerRow, btnRefresh, DialogButtonRole.Command, "action.refresh")
+        DpiLayout.AddAnswer(_answerRow, btnClose, DialogButtonRole.Dismissing, "nav.close")
 
         Me.Controls.Add(tlp)
-        Me.CancelButton = btnClose
+        ' Last in the collection: the docked row takes its edge first.
+        Me.Controls.Add(_answerRow)
+        _answerRow.Bind(Me)
         Me.MinimumSize = New Size(380, 0)
         DpiLayout.ApplyAutoScale(Me)   ' last, once every child exists - see DpiLayout
         AddHandler Me.Shown, AddressOf OnShownFirst
@@ -115,7 +119,7 @@ Public NotInheritable Class Share_Status_Form
         If _busy Then Return
         ' The totals cannot be brought back once the worker drops them (APP-BEHAVIOUR
         ' rule 5, ticket 028 Ф-5).
-        If MessageBox.Show(Me, Localization.T("Обнулить счётчики подключений и файлов? Прежние значения восстановить не получится."),
+        If ManagerBox.Show(Me, Localization.T("Обнулить счётчики подключений и файлов? Прежние значения восстановить не получится."),
                            Me.Text, MessageBoxButtons.OKCancel, MessageBoxIcon.Warning,
                            MessageBoxDefaultButton.Button2) <> DialogResult.OK Then Return
         _busy = True

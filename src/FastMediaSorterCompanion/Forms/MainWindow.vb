@@ -1,4 +1,4 @@
-Option Strict On
+﻿Option Strict On
 
 Imports System.Collections.Generic
 Imports System.Diagnostics
@@ -82,6 +82,11 @@ Partial Public NotInheritable Class MainWindow
     ''' persisted after that - so the restore itself cannot be mistaken for user intent.</summary>
     Private _sectionsRestored As Boolean
     Private _passwordRevealed As Boolean
+    ''' <summary>Spec 237 rule S-0: the window height before the resources fold compacted
+    ''' it, restored when the fold opens again, so the compaction never costs the user
+    ''' their chosen window size. Zero while the window is not compacted.</summary>
+    Private _preCollapseWindowHeight As Integer
+    Private _resourcesCompacted As Boolean
 
     ' --- controls ---------------------------------------------------------------
     Private pnlContent As Panel
@@ -128,9 +133,15 @@ Partial Public NotInheritable Class MainWindow
     Private _pnlList As Panel
     Private _pnlListButtons As FlowLayoutPanel
     Private _pnlSections As TableLayoutPanel
+    ''' <summary>Spec 237 rule S-0: the toolbar and the list travel inside this fold, so
+    ''' the window can fold down to a status widget of live summaries.</summary>
+    Private _secResources As CollapsibleSection
     Private _secAccess As CollapsibleSection
     Private _secInternet As CollapsibleSection
     Private _secStats As CollapsibleSection
+    ''' <summary>The docked-bottom hint row of <see cref="BuildStatusStrip"/>; its height
+    ''' is part of the window's fixed chrome for the S-0 compaction arithmetic.</summary>
+    Private _statusStrip As Control
 
     Private pnlEnable As Panel
     Private btnEnable As Button
@@ -181,6 +192,15 @@ Partial Public NotInheritable Class MainWindow
         ApplyMaximizedState()
         UpdateContentMode()
         RelayoutContent()
+        ' Spec 237 rule S-0: a fold restored collapsed starts the window compacted - the
+        ' widget is the shape the user left it in. The full height is remembered, so the
+        ' first expand gives the working window back rather than a guess.
+        If _secResources IsNot Nothing AndAlso Not _secResources.Expanded AndAlso
+           Me.WindowState = FormWindowState.Normal Then
+            _resourcesCompacted = True
+            _preCollapseWindowHeight = Me.Height
+            ApplyWindowHeight(CollapsedResourcesHeight())
+        End If
     End Sub
 
     ''' <summary>Dragged onto a monitor with different scaling: WinForms rescales the bounds,
@@ -275,6 +295,13 @@ Partial Public NotInheritable Class MainWindow
     End Sub
 
     Private Sub HandleFormClosing(sender As Object, e As FormClosingEventArgs)
+        For Each settings In _settingsWindows.Values.ToArray()
+            settings.Close()
+            If Not settings.IsDisposed Then
+                e.Cancel = True
+                Return
+            End If
+        Next
         Try
             ' Re-read first: Share_Settings_Form owns the autostart / connection-cap values
             ' now and writes them through its OWN ShareSettings instance, so saving this
@@ -437,11 +464,7 @@ Partial Public NotInheritable Class MainWindow
         _wizardOpen = True
         Try
             Using dlg As New PackageWizardForm(preselect)
-                Try
                 dlg.ShowDialog(Me)
-            Finally
-                _settingsWindow = Nothing
-            End Try
             End Using
         Finally
             _wizardOpen = False
@@ -465,50 +488,16 @@ Partial Public NotInheritable Class MainWindow
 
     Private _settingsWindow As Share_Settings_Form
 
-    Private Async Sub OnSettingsClicked(sender As Object, e As EventArgs)
-        If _settingsWindow IsNot Nothing AndAlso Not _settingsWindow.IsDisposed Then
-            _settingsWindow.Activate()
-            Return
-        End If
-        Dim changed As Boolean
-        Dim replayManager As Boolean
-        Dim replayExchange As Boolean
-        Dim addResource As Boolean
-        Using dlg As New Share_Settings_Form(_status)
-            _settingsWindow = dlg
-            If _focusExchangeSettings Then dlg.FocusExchangePage()
-            If _focusHostingSettings Then dlg.FocusHostingPage()
-            If _focusPublishSettings Then dlg.FocusPublishPage()
-            If _focusScheduledSettings Then dlg.FocusScheduledPage(_scheduledPrefill)
-            _focusScheduledSettings = False
-            _scheduledPrefill = ""
-            _focusPublishSettings = False
-            _focusHostingSettings = False
-            _focusExchangeSettings = False
-            dlg.ShowDialog(Me)
-            ' Either an elevated hosting action changed the machine, or a pinned port moved
-            ' the running server - both leave the status snapshot here stale.
-            changed = dlg.Changed OrElse dlg.WorkerStateChanged
-            replayManager = dlg.ReplayManagerRequested
-            replayExchange = dlg.ReplayExchangeRequested
-            addResource = dlg.ResourceAddRequested
-        End Using
-        LoadLocalState()
-        If addResource Then Await OpenResourceAddAsync(Me, ResourceAddEntry.Exchange)
-        If replayManager Then Await ReplayManagerWelcomeAsync()
-        If replayExchange Then Await Server_Welcome_Form.ReplayExchangeAsync(Me)
-        If Not changed Then Return
-        ' The opt-in may just have been withdrawn (ticket 028 Ф-6): back to the enable panel.
-        If Not ServerFeatures.IsEnabled() Then
-            ApplyGate()
-            Return
-        End If
-        SetBusy(True, Localization.T("Минутку.."))
-        Dim st As WorkerStatus = Await ShareController.GetStatusAsync()
-        If IsDisposed Then Return
-        _status = st
-        ApplyStatusToUi()
-        SetBusy(False)
+    Private Sub OnSettingsClicked(sender As Object, e As EventArgs)
+        Dim page = If(_focusExchangeSettings, "exchange", If(_focusHostingSettings, "hosting",
+            If(_focusPublishSettings, "exchange-account", If(_focusScheduledSettings, "scheduled", ""))))
+        Dim folder = _scheduledPrefill
+        _focusExchangeSettings = False
+        _focusHostingSettings = False
+        _focusPublishSettings = False
+        _focusScheduledSettings = False
+        _scheduledPrefill = ""
+        OpenSettings(SettingsRoutes.Destination(page), page, folder)
     End Sub
 
     ' --- hint / busy ------------------------------------------------------------

@@ -109,7 +109,7 @@ Public Class ExchangeWireTests
 
     <Fact>
     Public Sub Every_type_of_the_table_survives_encode_then_decode_and_then_encodes_to_the_same_bytes()
-        Assert.Equal(48, ExchangeEnvelopeTable.Types().Count)   ' 37 + the eight clipboard types of spec 230 + the three grant types of spec 234
+        Assert.Equal(52, ExchangeEnvelopeTable.Types().Count)   ' 37 + the eight clipboard types of spec 230 + the three grant types of spec 234 + the four admin types of spec 245
         For Each typeName As String In ExchangeEnvelopeTable.Types()
             Dim first As Byte() = ExchangeEnvelopeCodec.Encode(Sample(typeName))
             Dim back As ExchangeEnvelope = ExchangeEnvelopeCodec.Decode(first)

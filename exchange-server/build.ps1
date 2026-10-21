@@ -111,6 +111,7 @@ try {
         '-ver-major', $vMajor, '-ver-minor', $vMinor, '-ver-patch', $vPatch, '-ver-build', $vBuild,
         '-product-ver-major', $vMajor, '-product-ver-minor', $vMinor, '-product-ver-patch', $vPatch, '-product-ver-build', $vBuild,
         '-file-version', $Version, '-product-version', $Version,
+        '-icon', (Join-Path (Split-Path $ModuleDir -Parent) 'assets/exchange-mark/ico/exchange-server.ico'),
         '-o', $Syso, (Join-Path $ModuleDir 'versioninfo.json'))
     $neutral = $env:TEMP
     $r = Invoke-Go @{ GOOS = ''; GOARCH = ''; CGO_ENABLED = '0'; GOFLAGS = '' } $neutral $gviArgs

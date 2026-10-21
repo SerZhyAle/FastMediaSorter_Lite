@@ -597,6 +597,7 @@ Friend NotInheritable Class Welcome_Form
         view.NameLabel.MaximumSize = New Size(ContentWidth, 0)
         view.NameLabel.UseMnemonic = False
         view.NameLabel.Margin = New Padding(0)
+        If view.Server = WelcomeServer.ExchangeServer Then ExchangeMark.Apply(view.NameLabel, 24, AddressOf RuntimeBootstrap.OpenBundledAsset)
         headings.Add(view.NameLabel)
 
         view.WhatLabel.AutoSize = True

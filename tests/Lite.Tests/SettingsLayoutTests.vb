@@ -52,7 +52,7 @@ Public Class SettingsLayoutTests
 
     ' The fonts the captions are drawn in, verbatim from the builders.
     Private Const RowTitleFont As String = "Segoe UI Semibold"
-    Private Const RowTitleSize As Single = 8.75F
+    Private Const RowTitleSize As Single = SettingsRowGridRules.CaptionFontPoints
     Private Const SectionHeaderSize As Single = 10.5F
     Private Const SummarySize As Single = 8.0F
 
@@ -81,7 +81,7 @@ Public Class SettingsLayoutTests
             Select Case Kind
                 Case RowKind.SectionHeader : Return SectionHeaderWidth
                 Case RowKind.ProjectLink : Return ProjectLinkWidth
-                Case RowKind.CheckBox : Return ReferenceContentWidth - 28 - 28 - CheckBoxLayout.CaptionGapLogical
+                Case RowKind.CheckBox : Return SettingsCheckBox.PlaceLeading(ReferenceContentWidth, False, 1.0F).TextWidth
                 Case Else : Return SettingsRowGridRules.LabelColumnWidth(ReferenceContentWidth,
                     SettingsRowGridRules.FitValueColumn(ReferenceContentWidth, pageColumn))
             End Select
@@ -402,7 +402,7 @@ Public Class SettingsLayoutTests
 
     Private Shared Function EstimatedEditorWidth(row As SettingRow) As Integer
         Select Case row.Kind
-            Case RowKind.CheckBox : Return 28
+            Case RowKind.CheckBox : Return SettingsCheckBox.ControlSideLogical
             Case RowKind.SectionHeader, RowKind.ProjectLink : Return 0
             Case Else
                 ' A numeric editor is 110 plus its muted unit suffix; a slider is 180 plus

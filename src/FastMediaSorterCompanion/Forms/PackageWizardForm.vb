@@ -63,9 +63,11 @@ Public NotInheritable Class PackageWizardForm
     Private btnSave As Button
     Private btnEmail As Button
     Private btnClose As Button
+    Private _answerRow As DialogButtonRow
     Private lblHint As Label
     ''' <summary>Always-visible: the code and the file are a key (FMSCFG rule 6, ticket 034 phase 1).</summary>
     Private lblSecret As Label
+    Private _passwordRow As OptionRowHost
     Private toolTip As ToolTip
     Private _qrGlyph As Image
     Private _qrImage As Image   ' the current QR bitmap - opened enlarged on demand (no inline preview)
@@ -170,9 +172,21 @@ Public NotInheritable Class PackageWizardForm
         toolTip.SetToolTip(chkNoPassword, Localization.T("Пароль не попадёт в файл/QR - передайте его отдельно. Примет ли телефон код без пароля, зависит от версии приложения."))
         ' FMSCFG rule 6: the payload is a secret. Said once, always visible, next to the
         ' toggles that decide what the secret contains (ticket 034 phase 1).
-        lblSecret = New Label With {.AutoSize = True, .MaximumSize = New Size(520, 0), .ForeColor = Color.Firebrick, .Margin = New Padding(0, 2, 0, 2)}
-        leftCol.Controls.AddRange(New Control() {chkLanOnly, chkNoPassword, lblSecret})
-        CheckBoxLayout.BindHint(chkNoPassword, lblSecret)
+        lblSecret = New Label With {.AutoSize = True, .ForeColor = Color.Firebrick}
+        ' The two toggles are boolean rows (BOOLEAN-OPTION 2.0, ticket 243 T-11c-b2a): each check box keeps its field, handlers
+        ' and persistence, and the rule-6 line is the EXPLANATION of the password toggle, wrapped under its caption. Both rows
+        ' are as wide as the line was (520 px), so the line wraps where it used to and the rows are as tall as they need.
+        Dim lanOnlyRow As OptionRowHost = OptionRows.InFlow(chkLanOnly)
+        _passwordRow = OptionRows.InFlow(chkNoPassword, lblSecret)
+        For Each row As OptionRowHost In New OptionRowHost() {lanOnlyRow, _passwordRow}
+            row.Dock = DockStyle.None
+            row.Anchor = AnchorStyles.Left Or AnchorStyles.Top
+            row.Width = 520
+        Next
+        ' the pointer rests on the caption now: the tips of the two toggles follow it
+        toolTip.SetToolTip(lanOnlyRow.Caption, toolTip.GetToolTip(chkLanOnly))
+        toolTip.SetToolTip(_passwordRow.Caption, toolTip.GetToolTip(chkNoPassword))
+        leftCol.Controls.AddRange(New Control() {lanOnlyRow, _passwordRow})
         ' NB: the LAN address + host-key fingerprint are deliberately NOT shown here. The
         ' package embeds ALL access paths (LAN + IPv6 + internet), so showing only the LAN
         ' address misleads the user into thinking the code is local-only; those details already
@@ -198,24 +212,25 @@ Public NotInheritable Class PackageWizardForm
         btnCopyLogin = New Button With {.AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink, .Margin = New Padding(0, 2, 8, 2), .Padding = New Padding(10, 5, 10, 5), .Text = Localization.T("Скопировать логин/пароль"), .Enabled = False}
         btnSave = New Button With {.AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink, .Margin = New Padding(0, 2, 8, 2), .Padding = New Padding(10, 5, 10, 5), .Text = Localization.T("Сохранить файл .fmscfg.."), .Enabled = False}
         btnEmail = New Button With {.AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink, .Margin = New Padding(0, 2, 8, 2), .Padding = New Padding(10, 5, 10, 5), .Text = Localization.T("Отправить по почте.."), .Enabled = False}
-        btnClose = New Button With {.AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink, .Margin = New Padding(0, 2, 0, 2), .Padding = New Padding(16, 5, 16, 5), .Text = Localization.T("Закрыть"), .DialogResult = DialogResult.Cancel}
+        ' The one answer of this window is Close; it lives in the shared answer row below the band
+        ' (UNIFIED UI CONTRACTS, BUTTONS 2.0) while the export commands stay beside their settings.
+        btnClose = New Button With {.Name = "btnPackageClose", .Text = Localization.T("Закрыть"), .DialogResult = DialogResult.Cancel}
         btnRetryCheck = New Button With {.AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink, .Margin = New Padding(0, 2, 8, 2), .Padding = New Padding(10, 5, 10, 5), .Text = Localization.T("Проверить доступ снова"), .Visible = False}
         ButtonGlyphs.Apply(btnCopyLogin, "action.copy")
         ButtonGlyphs.Apply(btnSave, "action.export")
         ButtonGlyphs.Apply(btnEmail, "action.email")
         ButtonGlyphs.Apply(btnRetryCheck, "action.test-connection")
-        ButtonGlyphs.Apply(btnClose, "nav.close", ButtonGlyphRole.Dismissing)
         AddHandler btnRetryCheck.Click, AddressOf OnRetryCheck
         AddHandler btnCopyLogin.Click, AddressOf OnCopyLogin
         AddHandler btnSave.Click, AddressOf OnSaveConfig
         AddHandler btnEmail.Click, AddressOf OnEmail
-        btnRow.Controls.AddRange(New Control() {btnShowQr, btnRetryCheck, btnCopyLogin, btnSave, btnEmail, btnClose})
+        btnRow.Controls.AddRange(New Control() {btnShowQr, btnRetryCheck, btnCopyLogin, btnSave, btnEmail})
         SetQrAvailable(False)
 
         ' Bottom band: common per-export settings on the LEFT, the action-button row filling the
         ' empty space to their RIGHT (instead of a separate full-width row underneath - that saves
         ' vertical space and gives the grid more room). The status line spans below both columns.
-        Dim bottomBar As New TableLayoutPanel With {.Dock = DockStyle.Bottom, .AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink, .ColumnCount = 2, .RowCount = 2, .Padding = New Padding(16, 6, 16, 12)}
+        Dim bottomBar As New TableLayoutPanel With {.Dock = DockStyle.Bottom, .AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink, .ColumnCount = 2, .RowCount = 2, .Padding = New Padding(16, 6, 16, 2)}
         bottomBar.ColumnStyles.Add(New ColumnStyle(SizeType.AutoSize))          ' left: common settings (sizes to content)
         bottomBar.ColumnStyles.Add(New ColumnStyle(SizeType.Percent, 100.0F))   ' right: action buttons fill the rest
         bottomBar.RowStyles.Add(New RowStyle(SizeType.AutoSize))
@@ -229,7 +244,10 @@ Public NotInheritable Class PackageWizardForm
         Me.Controls.Add(dgv)
         Me.Controls.Add(topBar)
         Me.Controls.Add(bottomBar)
-        Me.CancelButton = btnClose
+        _answerRow = New DialogButtonRow() With {.Dock = DockStyle.Bottom, .Name = "btnPackageButtons", .Padding = New Padding(16, 2, 16, 12)}
+        DpiLayout.AddAnswer(_answerRow, btnClose, DialogButtonRole.Dismissing, "nav.close")
+        Me.Controls.Add(_answerRow)
+        _answerRow.Bind(Me)   ' Escape and Enter both close; nothing in this window is destructive
         DpiLayout.ApplyAutoScale(Me)   ' last, once every child exists - see DpiLayout
 
         _loading = True
@@ -248,6 +266,7 @@ Public NotInheritable Class PackageWizardForm
     ''' high display scaling.</summary>
     Protected Overrides Sub OnLoad(e As EventArgs)
         MyBase.OnLoad(e)
+        OptionRows.ArrangeAll(Me)
         DpiLayout.ClampToWorkingArea(Me)
     End Sub
 
@@ -813,9 +832,11 @@ Public NotInheritable Class PackageWizardForm
     ''' that it is a key does not.</summary>
     Private Sub UpdateSecretLine()
         If lblSecret Is Nothing Then Return
-        lblSecret.Text = If(chkNoPassword.Checked,
+        Dim text As String = If(chkNoPassword.Checked,
             Localization.T("QR-код и файл .fmscfg открывают доступ к папкам (и содержат PIN, если он задан) - храните и передавайте их как ключ."),
             Localization.T("QR-код и файл .fmscfg содержат пароль (и PIN, если он задан) - храните и передавайте их как ключ."))
+        ' the line is the row's explanation: the row re-lays itself out for the new text and keeps the accessible description
+        If _passwordRow IsNot Nothing Then _passwordRow.SetExplanation(text) Else lblSecret.Text = text
     End Sub
 
     Private Sub OnCopyLogin(sender As Object, e As EventArgs)

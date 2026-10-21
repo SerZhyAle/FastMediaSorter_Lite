@@ -71,6 +71,15 @@ Friend NotInheritable Class SettingsRowGridRules
     ''' that sits immediately to its left.</summary>
     Public Const NumericEditorWidth As Integer = 110
     Public Const NumericFontPixels As Integer = 16
+
+    ''' <summary>The row caption: the ordinary control type role of the window (9 pt = 12 logical px at
+    ''' 96 dpi, the form font). BOOLEAN-OPTION 2.0 section 2 rule 5 makes it the larger of the two roles.</summary>
+    Public Const CaptionFontPoints As Single = 9.0F
+
+    ''' <summary>The explanation under a caption: at least 12 logical px at the default scale
+    ''' (BOOLEAN-OPTION 2.0 section 2 rule 5). The window scales it through its pixel font; it is
+    ''' never clipped, ellipsized or shrunk to fit - the row grows instead.</summary>
+    Public Const ExplanationFontPixels As Integer = 12
     Public Const SliderEditorWidth As Integer = 180
     Public Const SliderCompanionWidth As Integer = 64
     Public Const StripGap As Integer = 8

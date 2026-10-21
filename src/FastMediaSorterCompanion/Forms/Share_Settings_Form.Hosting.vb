@@ -195,6 +195,7 @@ Partial Public NotInheritable Class Share_Settings_Form
     ''' the moment the tab is opened.
     ''' </summary>
     Private Sub ApplyHostingState(live As WorkerResponse)
+        If _secHosting Is Nothing Then Return
         Using layout = HoldSettingsPage("hosting")
             _hostingSnapshot = live
             Dim mode As ServerFeatures.ServerHostMode = ServerFeatures.HostMode()
@@ -275,7 +276,7 @@ Partial Public NotInheritable Class Share_Settings_Form
     ''' is the note's own sentence, so the two cannot drift.
     ''' </summary>
     Private Sub OnRemoveRole()
-        If MessageBox.Show(Me, HostingText.RemoveNote() & vbCrLf & vbCrLf & Localization.T("Удалить роль сервера?"),
+        If ManagerBox.Show(Me, HostingText.RemoveNote() & vbCrLf & vbCrLf & Localization.T("Удалить роль сервера?"),
                            HostingText.Title(), MessageBoxButtons.YesNo, MessageBoxIcon.Warning,
                            MessageBoxDefaultButton.Button2) <> DialogResult.Yes Then Return
         RunManage(ServiceControl.ManageAction.Remove)
@@ -296,7 +297,7 @@ Partial Public NotInheritable Class Share_Settings_Form
     ''' </summary>
     Private Sub OnReturnToUser()
         If ServiceControl.CanManage() AndAlso ServiceControl.IsOrdinaryEdition() Then
-            If MessageBox.Show(Me, HostingText.ReturnToUserPrompt(), HostingText.Title(),
+            If ManagerBox.Show(Me, HostingText.ReturnToUserPrompt(), HostingText.Title(),
                                MessageBoxButtons.YesNo, MessageBoxIcon.Question,
                                MessageBoxDefaultButton.Button2) <> DialogResult.Yes Then Return
             RunManage(ServiceControl.ManageAction.MigrateToUser)
@@ -315,7 +316,7 @@ Partial Public NotInheritable Class Share_Settings_Form
     ''' serves nothing - and does not need a second prompt to fix that.
     ''' </summary>
     Private Sub OnSwitchToService()
-        If MessageBox.Show(Me, HostingText.SwitchToServicePrompt(), HostingText.Title(),
+        If ManagerBox.Show(Me, HostingText.SwitchToServicePrompt(), HostingText.Title(),
                            MessageBoxButtons.YesNo, MessageBoxIcon.Question,
                            MessageBoxDefaultButton.Button2) <> DialogResult.Yes Then Return
         RunManage(ServiceControl.ManageAction.MigrateToServer, _grantRoots, _grantReadOnlyRoots)
@@ -351,6 +352,7 @@ Partial Public NotInheritable Class Share_Settings_Form
             If IsDisposed OrElse Disposing Then Return
             If res = ServiceControl.ManageResult.Succeeded Then
                 _changed = True
+                NotifySettingsChanged()
                 ServerFeatures.RefreshHostMode()
             End If
             _lblResult.ForeColor = If(res = ServiceControl.ManageResult.Succeeded, ThemeService.Palette.Success, ThemeService.Palette.Danger)

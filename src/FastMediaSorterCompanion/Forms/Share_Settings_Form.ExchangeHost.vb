@@ -1,4 +1,4 @@
-Option Strict On
+﻿Option Strict On
 
 Imports System.Drawing
 Imports System.Threading.Tasks
@@ -30,12 +30,24 @@ Partial Public NotInheritable Class Share_Settings_Form
         _pnlXConfig.Controls.Add(SettingsEditorRow(XBold(Localization.T("Хранить журналы, дней")), _numXLogDays, New Padding(0, 2, 0, 2)))
         _lblXRetention = AdminNote("")
         _pnlXConfig.Controls.Add(_lblXRetention)
+        _pnlXConfig.Controls.Add(XButton(Localization.T("Открыть журнал сервера в редакторе"),
+            Sub() OpenServerManagementLog(Me, False), "action.edit"))
+        _pnlXConfig.Controls.Add(XButton(Localization.T("Папка журналов сервера.."),
+            Sub() OpenServerManagementLog(Me, True), "content.folder"))
+        _pnlXConfig.Controls.Add(XButton(ExchangeAdminText.AuditLogButton(),
+            Sub()
+                Try
+                    ManagementLogAccess.OpenServerAuditLog(ExchangeProcess.DataDir())
+                Catch ex As Exception
+                    ShowManagementLogError(Me, ex)
+                End Try
+            End Sub, "action.view"))
         _pnlXConfig.Controls.Add(SettingsEditorRow(XBold(Localization.T("Максимум аккаунтов")), _numXMaxAccounts, New Padding(0, 2, 0, 2)))
         _pnlXConfig.Controls.Add(AdminNote(Localization.T("Лимит регистраций на сервере. Добавление аккаунтов оператором не ограничено.")))
         _btnXApplyHost = XButton(Localization.T("Применить настройки сервера"), AddressOf OnXApplyHost, "action.confirm")
         _btnXApplyHost.Visible = False
         _pnlXConfig.Controls.Add(_btnXApplyHost)
-        _pnlXConfig.Controls.Add(AdminNote(Localization.T("Продление сохраняет ключ. При замене ключа каждое устройство должно снова подтвердить сертификат.")))
+        _pnlXConfig.Controls.Add(AdminNote(ExchangeAdminText.CertificateRenewalNote()))
         AddHandler _chkXAwake.CheckedChanged, Sub() UpdateXHostPending()
         AddHandler _numXLogDays.ValueChanged, Sub() UpdateXHostPending()
         AddHandler _numXMaxAccounts.ValueChanged, Sub() UpdateXHostPending()
@@ -70,6 +82,10 @@ Partial Public NotInheritable Class Share_Settings_Form
     End Sub
 
     Private Async Sub OnXApplyHost()
+        Await ApplyExchangeHostAsync()
+    End Sub
+
+    Private Async Function ApplyExchangeHostAsync() As Task
         If _exBusy Then Return
         Dim awake As Boolean = _chkXAwake.Checked
         Dim days As Integer = CInt(_numXLogDays.Value)
@@ -111,7 +127,7 @@ Partial Public NotInheritable Class Share_Settings_Form
         Finally
             If Not (IsDisposed OrElse Disposing) Then SetXBusy(False)
         End Try
-    End Sub
+    End Function
 
     Private Async Sub OnXRenewCertificate()
         If _exBusy Then Return

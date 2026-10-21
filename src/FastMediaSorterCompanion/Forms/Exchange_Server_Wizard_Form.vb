@@ -1,4 +1,4 @@
-﻿Option Strict On
+Option Strict On
 
 Imports System.Drawing
 Imports System.Threading
@@ -113,6 +113,7 @@ Friend NotInheritable Class Exchange_Server_Wizard_Form
         Dim body As New FlowLayoutPanel With {.Dock = DockStyle.Top, .FlowDirection = FlowDirection.TopDown, .WrapContents = False, .AutoSize = True,
             .AutoSizeMode = AutoSizeMode.GrowAndShrink, .Padding = New Padding(14, 10, 14, 6)}
 
+        body.Controls.Add(ExchangeMark.Heading(Text, 32, AddressOf CompanionAssets.OpenBundledAsset))
         body.Controls.Add(Note(ExchangeAdminText.WizardIntro()))
 
         ' what is asked: a login, and the statement the first account comes with
@@ -385,7 +386,7 @@ Friend NotInheritable Class Exchange_Server_Wizard_Form
             Return
         End If
         If _holdsPassword AndAlso Not _copied AndAlso Not _revealed AndAlso Not _kept AndAlso Not e.Cancel AndAlso e.CloseReason = CloseReason.UserClosing Then
-            If MessageBox.Show(Me, ExchangeText.CloseWithoutCopyQuestion(), Me.Text, MessageBoxButtons.YesNo,
+            If ManagerBox.Show(Me, ExchangeText.CloseWithoutCopyQuestion(), Me.Text, MessageBoxButtons.YesNo,
                                MessageBoxIcon.Warning, MessageBoxDefaultButton.Button2) <> DialogResult.Yes Then
                 e.Cancel = True
                 Return

@@ -65,16 +65,54 @@ Public Module DecodeBudget
     ''' header that says nothing sane); a frame count below 1 counts as one frame.
     ''' </summary>
     Public Function IsWithinBudget(width As Long, height As Long, frames As Long) As Boolean
-        If width <= 0 OrElse height <= 0 Then Return False
+        Return Classify(width, height, frames) = BudgetVerdict.Within
+    End Function
+
+    ''' <summary>
+    ''' Why a picture is or is not within the budget (spec 241 rule 8). A non-positive size
+    ''' and a frame over <see cref="Max_Frame_Pixels"/> are <see cref="BudgetVerdict.FrameTooLarge"/>
+    ''' - the file cannot be shown at all. A frame that fits but too many of them make
+    ''' <see cref="BudgetVerdict.AnimationTooLong"/> - the first frame can still be shown.
+    ''' </summary>
+    Public Function Classify(width As Long, height As Long, frames As Long) As BudgetVerdict
+        If width <= 0 OrElse height <= 0 Then Return BudgetVerdict.FrameTooLarge
+        ' A side beyond the frame ceiling cannot be within it, and checking it first keeps
+        ' the product below from overflowing on a crafted header.
+        If width > Max_Frame_Pixels OrElse height > Max_Frame_Pixels Then Return BudgetVerdict.FrameTooLarge
         Dim frame_Pixels As Long = width * height
-        If frame_Pixels > Max_Frame_Pixels Then Return False
+        If frame_Pixels > Max_Frame_Pixels Then Return BudgetVerdict.FrameTooLarge
         Dim frame_Count As Long = Math.Max(1L, frames)
         ' Division instead of frame_Pixels * frame_Count, which could overflow for a header
         ' that claims a huge frame count.
-        Return frame_Count <= Max_Total_Pixels \ frame_Pixels
+        Return If(frame_Count <= Max_Total_Pixels \ frame_Pixels, BudgetVerdict.Within, BudgetVerdict.AnimationTooLong)
     End Function
 
 End Module
+
+''' <summary>The answer of <see cref="DecodeBudget.Classify"/> (spec 241 rule 8).</summary>
+Public Enum BudgetVerdict
+    ''' <summary>Decode it.</summary>
+    Within
+    ''' <summary>One frame fits, the total over all frames does not.</summary>
+    AnimationTooLong
+    ''' <summary>A frame is over the ceiling, or the size is not a size.</summary>
+    FrameTooLarge
+End Enum
+
+''' <summary>
+''' How much of a picture a caller of <c>FileManager</c> wants decoded (spec 241). Declared in the
+''' shared file so the one loader keeps one signature; only the modern build reads it - the
+''' net48 loader decodes everything, as it always did.
+''' </summary>
+Friend Enum ImageLoadStage
+    ''' <summary>The whole picture, every frame of an animation (today's behaviour).</summary>
+    Whole
+    ''' <summary>For the viewer's display and its prefetch: a long animation arrives as its first frame
+    ''' (a preview), everything else whole.</summary>
+    Staged
+    ''' <summary>For thumbnails: the first frame of any animation, never the transcode.</summary>
+    FirstFrame
+End Enum
 
 ''' <summary>Picks the platform decoder once; both builds share every call site.</summary>
 Public Module ImageDecoderProvider

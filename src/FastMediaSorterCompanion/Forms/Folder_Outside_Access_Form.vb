@@ -37,6 +37,8 @@ Friend NotInheritable Class Folder_Outside_Access_Form
     Private _lvGuests As ListView
     Private _btnWithdrawGuest As Button
     Private _lblStatusResult As Label
+    Private _answerRow As DialogButtonRow
+    Private _body As TableLayoutPanel
 
     Friend Sub New(shareName As String, hostPath As String, publisher As ExchangePublisher)
         _shareName = If(shareName, "")
@@ -66,7 +68,8 @@ Friend NotInheritable Class Folder_Outside_Access_Form
         Me.StartPosition = FormStartPosition.CenterParent
 
         Dim body As New TableLayoutPanel With {.Dock = DockStyle.Fill, .ColumnCount = 1, .AutoSize = True,
-            .AutoSizeMode = AutoSizeMode.GrowAndShrink, .Padding = New Padding(14, 10, 14, 8)}
+            .AutoSizeMode = AutoSizeMode.GrowAndShrink, .Padding = New Padding(14, 10, 14, 8), .AutoScroll = True}
+        _body = body
         body.ColumnStyles.Add(New ColumnStyle(SizeType.Percent, 100.0F))
 
         _lblFolderHeader = New Label With {.AutoSize = True, .MaximumSize = New Size(ContentWidth, 0), .Margin = New Padding(0, 0, 0, 12),
@@ -137,15 +140,36 @@ Friend NotInheritable Class Folder_Outside_Access_Form
             .Margin = New Padding(0, 0, 0, 8)}
         body.Controls.Add(_lblStatusResult)
 
-        Dim rowClose As New FlowLayoutPanel With {.Dock = DockStyle.Bottom, .FlowDirection = FlowDirection.RightToLeft, .AutoSize = True,
-            .AutoSizeMode = AutoSizeMode.GrowAndShrink, .Margin = New Padding(0, 8, 0, 0)}
+        ' Close is the window's one answer and rides the shared bottom row (ticket 243 T-8b, BUTTONS 2.0 sections 3 and 4).
+        ' The buttons inside the two groups stay where they are: they are the commands of their own list, not answers.
+        ' Escape = Close. Enter is NOT bound (bindAccept:=False): as before, the window has no default button, so Enter in
+        ' the link-password field cannot close the window and drop what was typed.
         Dim btnClose As Button = NewButton(Localization.T("Закрыть"), Sub() Me.Close())
-        Me.CancelButton = btnClose
-        rowClose.Controls.Add(btnClose)
-        body.Controls.Add(rowClose)
+        btnClose.Name = "xfo_Close"
+        _answerRow = New DialogButtonRow() With {.Dock = DockStyle.Bottom, .Name = "xfo_Buttons", .Padding = New Padding(14, 4, 14, 10)}
+        DpiLayout.AddAnswer(_answerRow, btnClose, DialogButtonRole.Dismissing, "nav.close")
 
         Me.Controls.Add(body)
-        Me.ClientSize = New Size(ContentWidth + 30, body.PreferredSize.Height + 20)
+        ' Last in the collection: the docked row takes its edge first and reads after the content in the Tab order.
+        Me.Controls.Add(_answerRow)
+        _answerRow.Bind(Me, bindAccept:=False)
+        Me.ClientSize = New Size(ContentWidth + 30, body.PreferredSize.Height + 20 + _answerRow.GetPreferredSize(Size.Empty).Height)
+
+        DpiLayout.ApplyAutoScale(Me)   ' last, once every child exists - see DpiLayout
+    End Sub
+
+    Protected Overrides Sub OnLoad(e As EventArgs)
+        MyBase.OnLoad(e)
+        ' The client height was authored from the body's preferred height at 96 dpi. Once scaled, a caption that wraps one
+        ' line more (a longer language, a bigger scale) makes the body taller than the scaled value, and the Fill body would
+        ' then run under the answer row; grow the window by exactly the missing amount (never shrink it). When the monitor
+        ' cannot hold that height (this window is tall at 175 %), ClampToWorkingArea caps it and the body scrolls instead of
+        ' leaving its last lines hidden behind the row.
+        PerformAutoScale()
+        Dim need As Integer = _body.GetPreferredSize(New Size(ClientSize.Width, 0)).Height + _answerRow.GetPreferredSize(New Size(ClientSize.Width, 0)).Height
+        If need > ClientSize.Height Then ClientSize = New Size(ClientSize.Width, need)
+        DpiLayout.ClampToWorkingArea(Me)
+        DpiLayout.CenterOnOwner(Me)
     End Sub
 
     ''' <summary>CR-13: the reason is on screen and every control that CREATES something (a guest invitation, a link, its password)
@@ -234,7 +258,7 @@ Friend NotInheritable Class Folder_Outside_Access_Form
 
     Private Async Sub OnWithdrawLinkClicked()
         If _publisher Is Nothing Then Return
-        If MessageBox.Show(Me, Localization.T("Отозвать ссылку наружу для этой папки? Все активные сессии по ней будут завершены."),
+        If ManagerBox.Show(Me, Localization.T("Отозвать ссылку наружу для этой папки? Все активные сессии по ней будут завершены."),
                            Me.Text, MessageBoxButtons.OKCancel, MessageBoxIcon.Warning) <> DialogResult.OK Then Return
         _lblStatusResult.Text = Localization.T("Отзыв ссылки..")
         Dim res As ExchangeLinkResult = Await _publisher.RemoveLinkAsync(_shareName, CancellationToken.None).ConfigureAwait(True)
@@ -292,7 +316,7 @@ Friend NotInheritable Class Folder_Outside_Access_Form
         If _lvGuests.SelectedItems.Count = 0 Then Return
         Dim codeHash As String = Convert.ToString(_lvGuests.SelectedItems(0).Tag)
         If String.IsNullOrEmpty(codeHash) Then Return
-        If MessageBox.Show(Me, Localization.T("Отозвать это гостевое приглашение?"), Me.Text, MessageBoxButtons.OKCancel, MessageBoxIcon.Warning) <> DialogResult.OK Then Return
+        If ManagerBox.Show(Me, Localization.T("Отозвать это гостевое приглашение?"), Me.Text, MessageBoxButtons.OKCancel, MessageBoxIcon.Warning) <> DialogResult.OK Then Return
         _lblStatusResult.Text = Localization.T("Отзыв приглашения..")
         Try
             Dim rep As ExchangeAdminReply = Await ExchangeAdmin.WithdrawInvitationAsync(codeHash, CancellationToken.None).ConfigureAwait(True)

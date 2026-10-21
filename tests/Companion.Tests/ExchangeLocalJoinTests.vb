@@ -50,6 +50,11 @@ Public Class ExchangeLocalJoinTests
             Return Configured
         End Function
 
+        Public ConfiguredServerValue As String = ""
+        Public Function ConfiguredServer() As String Implements IExchangeLocalJoinPorts.ConfiguredServer
+            Return ConfiguredServerValue
+        End Function
+
         Public Function Declined() As Boolean Implements IExchangeLocalJoinPorts.Declined
             Return DeclinedValue
         End Function
@@ -249,6 +254,67 @@ Public Class ExchangeLocalJoinTests
         store.Save(New ExchangeAccount("127.0.0.1:22022", "alice", "", ExchangeCertificateKind.None, ExchangeIds.NewId(), "HOST"))
         Assert.False(store.LocalJoinDeclined())
     End Sub
+
+    <Fact>
+    Public Async Function JoinLocalAsync_with_one_account_joins_and_enables_publishing() As Task
+        Dim s As New Stub()
+        Dim outcome As ExchangeLocalJoinOutcome = Await ExchangeLocalJoin.JoinLocalAsync(s, explicitLogin:=Nothing, ct:=CancellationToken.None)
+        Assert.Equal(ExchangeLocalJoinOutcome.Joined, outcome)
+        Assert.Contains("publish-on", s.Calls)
+        Assert.Equal("alice", s.LastEnroll.Login)
+    End Function
+
+    <Fact>
+    Public Async Function JoinLocalAsync_with_explicit_login_joins_specified_account() As Task
+        Dim s As New Stub() With {
+            .ListReply = ExchangeAdminReply.Success("[{""login"":""alice""},{""login"":""bob""}]", ExchangeAdminRoute.Pipe)
+        }
+        Dim outcome As ExchangeLocalJoinOutcome = Await ExchangeLocalJoin.JoinLocalAsync(s, explicitLogin:="bob", ct:=CancellationToken.None)
+        Assert.Equal(ExchangeLocalJoinOutcome.Joined, outcome)
+        Assert.Contains("publish-on", s.Calls)
+        Assert.Equal("bob", s.LastEnroll.Login)
+    End Function
+
+    <Fact>
+    Public Async Function JoinLocalAsync_with_multiple_accounts_and_no_explicit_login_returns_NotOneAccount() As Task
+        Dim s As New Stub() With {
+            .ListReply = ExchangeAdminReply.Success("[{""login"":""alice""},{""login"":""bob""}]", ExchangeAdminRoute.Pipe)
+        }
+        Dim outcome As ExchangeLocalJoinOutcome = Await ExchangeLocalJoin.JoinLocalAsync(s, explicitLogin:=Nothing, ct:=CancellationToken.None)
+        Assert.Equal(ExchangeLocalJoinOutcome.NotOneAccount, outcome)
+        Assert.DoesNotContain("enroll", s.Calls)
+    End Function
+
+    <Fact>
+    Public Async Function JoinLocalAsync_with_no_accounts_returns_NoAccounts() As Task
+        Dim s As New Stub() With {
+            .ListReply = ExchangeAdminReply.Success("[]", ExchangeAdminRoute.Pipe)
+        }
+        Dim outcome As ExchangeLocalJoinOutcome = Await ExchangeLocalJoin.JoinLocalAsync(s, explicitLogin:="alice", ct:=CancellationToken.None)
+        Assert.Equal(ExchangeLocalJoinOutcome.NoAccounts, outcome)
+        Assert.DoesNotContain("enroll", s.Calls)
+    End Function
+
+    <Fact>
+    Public Async Function JoinLocalAsync_when_already_joined_enables_publishing_and_returns_AlreadyJoined() As Task
+        Dim s As New Stub() With {
+            .Configured = True,
+            .ConfiguredServerValue = "127.0.0.1:22022"
+        }
+        Dim outcome As ExchangeLocalJoinOutcome = Await ExchangeLocalJoin.JoinLocalAsync(s, explicitLogin:=Nothing, ct:=CancellationToken.None)
+        Assert.Equal(ExchangeLocalJoinOutcome.AlreadyJoined, outcome)
+        Assert.Contains("publish-on", s.Calls)
+        Assert.DoesNotContain("enroll", s.Calls)
+        Assert.True(ExchangeLocalJoin.IsFinal(ExchangeLocalJoinOutcome.AlreadyJoined))
+    End Function
+
+    <Fact>
+    Public Async Function JoinLocalAsync_when_component_absent_returns_NotNeeded() As Task
+        Dim s As New Stub() With {.Component = False}
+        Dim outcome As ExchangeLocalJoinOutcome = Await ExchangeLocalJoin.JoinLocalAsync(s, explicitLogin:=Nothing, ct:=CancellationToken.None)
+        Assert.Equal(ExchangeLocalJoinOutcome.NotNeeded, outcome)
+        Assert.DoesNotContain("enroll", s.Calls)
+    End Function
 
     Private NotInheritable Class MapSettings
         Implements IExchangeSettingsPort

@@ -34,6 +34,9 @@ const (
 	ReasonNotPermitted Reason = "not-permitted"
 	// ReasonSignedOut is a `hello` with a token that died through a password change or reset (item AT).
 	ReasonSignedOut Reason = "signed-out"
+
+	// ReasonAdminDisabled is an `admin-auth` when administration is turned off (DEVICE-EXCHANGE 1.4, ticket 245).
+	ReasonAdminDisabled Reason = "admin-disabled"
 )
 
 // AllReasons is the closed list of 7.10, in the order of the contract.
@@ -41,9 +44,10 @@ var AllReasons = []Reason{
 	ReasonBadCredentials, ReasonDeviceRevoked, ReasonVersionUnsupported, ReasonTLSRequired,
 	ReasonIDCollision, ReasonCapacity, ReasonPortUnavailable, ReasonUnavailable, ReasonRateLimited, ReasonProtectionUnsupported,
 	ReasonInvitationInvalid, ReasonLoginTaken, ReasonPasswordPolicy, ReasonLimitReached, ReasonNotPermitted, ReasonSignedOut,
+	ReasonAdminDisabled,
 }
 
-// Valid reports whether r is one of the sixteen.
+// Valid reports whether r is one of the seventeen.
 func (r Reason) Valid() bool {
 	for _, k := range AllReasons {
 		if r == k {
@@ -66,7 +70,7 @@ const (
 // which is also what answers a peer that spoke the legacy one.
 func Refuse(r Reason) *Refused {
 	if !r.Valid() {
-		panic("wire: Refuse with a reason outside the sixteen of DEVICE-EXCHANGE 7.10: " + string(r))
+		panic("wire: Refuse with a reason outside the seventeen of DEVICE-EXCHANGE 7.10: " + string(r))
 	}
 	return &Refused{Head: Head{SchemaVersion, TypeRefused}, Reason: string(r)}
 }

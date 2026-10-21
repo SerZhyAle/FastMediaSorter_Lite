@@ -93,7 +93,7 @@ Public Class ExchangeAdminGroupUiTests
     Public Sub An_account_selected_shows_its_devices_a_device_selected_offers_revoke_and_a_refresh_keeps_both_selections()
         ExchangeTestSupport.OnUi(
             Sub()
-                Using form As New Share_Settings_Form()
+                Using form As New Share_Settings_Form(destination:=SettingsDestination.ExchangeServer)
                     form.StartPosition = FormStartPosition.Manual
                     form.Location = New Point(-6000, -6000)
                     form.ShowInTaskbar = False
@@ -153,7 +153,7 @@ Public Class ExchangeAdminGroupUiTests
     Public Sub The_wizard_button_is_not_drawn_when_accounts_exist_and_the_group_shows_the_totals()
         ExchangeTestSupport.OnUi(
             Sub()
-                Using form As New Share_Settings_Form()
+                Using form As New Share_Settings_Form(destination:=SettingsDestination.ExchangeServer)
                     form.StartPosition = FormStartPosition.Manual
                     form.Location = New Point(-6000, -6000)
                     form.ShowInTaskbar = False
@@ -185,7 +185,7 @@ Public Class ExchangeAdminGroupUiTests
     Public Sub A_changed_set_of_accounts_rebuilds_the_list_and_keeps_the_selected_login()
         ExchangeTestSupport.OnUi(
             Sub()
-                Using form As New Share_Settings_Form()
+                Using form As New Share_Settings_Form(destination:=SettingsDestination.ExchangeServer)
                     form.StartPosition = FormStartPosition.Manual
                     form.Location = New Point(-6000, -6000)
                     form.ShowInTaskbar = False

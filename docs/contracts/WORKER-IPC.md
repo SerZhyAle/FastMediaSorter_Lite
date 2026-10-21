@@ -3,72 +3,42 @@
 | | |
 | --- | --- |
 | **Id** | `WORKER-IPC` |
-| **Version** | 0.16, draft (read 2026-10-07: items A-D of section 10 read and audited; legacy requests stay schema 1, the six `DISK-SHARE` request types use schema 2). Owner: FMS Companion (the Go worker repository) |
-| **Home** | `sidecar-control/README.md` + `worker-ipc.md` in the shared contracts catalog |
-| **Role here** | consumer - the Share Manager host half, `src/FastMediaSorterCompanion/Core/WorkerIpc.vb` and `WorkerProcess.vb` (and `DiskSharing`/`DiskOperations` for the schema-2 disk requests) |
-
-Moved into the catalog on 2026-09-22 out of Appendix A of this repository's own
-`SPECIFICATION_ANDROID_FOLDER_SHARE.md` - a working document that is not even tracked here, which is how
-a channel spanning two repositories and two languages ended up with no shared home.
+| **Version** | 0.17, draft (the README carries 0.17 and the amendment of 2026-10-17, which binds; the header of `worker-ipc.md` still reads 0.16; read on 2026-10-20 with `EXCHANGE-CONTROL.md`). Owner: FMS Companion (the Go worker repository) |
+| **Home** | `sidecar-control/README.md`, `worker-ipc.md` and `EXCHANGE-CONTROL.md` in the shared contracts catalog |
+| **Role here** | **consumer** - the Share Manager is the host half of the pipe (`src/FastMediaSorterCompanion/Core/WorkerIpc.vb`, `Core/WorkerProcess.vb`; the six `disk-*` requests through `DiskSharing` and `DiskOperations`). The worker is the server half |
 
 ## What this repository must do to stay conformant
 
-- The pipe name and the one-request-per-connection shape are frozen. Never change either without the
-  worker changing in the same breath, and never spawn a second worker: the pipe is a machine-wide
-  singleton on purpose.
-- Bound every call. An unbounded blocking read against a worker that accepts the pipe and then says
-  nothing leaks a handle per poll tick.
-- On a request, **absent means unchanged**: an unset knob is omitted from the JSON, never sent as `0` or
-  `false`. Any additive request field needs a **capability field in the status**, the way `port` has
-  `portSupported` (and `broadcastSupported`, below).
-- An additive response field that is absent means *no data yet* - never an error, and never a zero shown
-  to the user as a measurement.
-- **Read `ok`.** A transport that succeeded says nothing about whether the request did.
-- **A version refusal is shown, never swallowed** (`WorkerVersionRefusedException`, turned into a typed result by
-  the one exchange point `WorkerProcess.Exchange`), and **nothing is spawned after any answer**: a worker that
-  answered is running and owns the pipe. The refusal is upwards only, deliberately (`WorkerIpc.EnsureUnderstood`).
-- **Two carrier values (0.14, item D).** `RequestSchema` stamps `1` on every legacy request and `2` on the six
-  `disk-*` types; a schema-2 answer to a schema-1 request is refused as a newer worker.
+- **Transport (section 2).** One request, one response, one connection; the pipe name is frozen and a machine-wide
+  singleton, so a second worker is never started; every call has a connect timeout and a read deadline.
+- **Envelope (section 3, section 6).** `schemaVersion` rides on every request: `1` the legacy requests and
+  `GetStatus`, `2` the disk requests, `3` the protected `SetSharedFolders` and `InvalidatePinSessions`. A response
+  version above the reader's own is refused cleanly, naming both halves, never partly applied. `ok` is the only
+  verdict. Unknown fields are ignored and names match case-insensitively.
+- **Absent is not zero.** On a request an absent field is unchanged, never `0` or `false`; on a response an absent
+  field is "no data yet", never an error and never a zero shown as a measurement. Every additive request field is
+  answered by a capability field in the status.
+- **Capabilities (section 6 rule 1, the 0.17 amendment).** `broadcastSupported` is absent or false until the
+  worker says true, and the gateway UI shows only then; a capability is never inferred from error text or a
+  version. `exchangeSupported` and `exchangeProtocol` gate every exchange secret sent to the worker.
+- **Start errors (0.17 item 1).** `lastStartErrorKind` is an optional string: empty none, `in-use`,
+  `excluded-range`, `other`; an unknown or non-string value is `other`; when it is absent the existing
+  ` [excluded-range]` token and error text apply.
+- **Resource PIN (0.15).** A protected root travels at schema 3. An absent host PIN state preserves the worker's
+  lock, an empty `accessPin` removes it, and status never returns the PIN. Before a protected exchange
+  publication the host checks `resourcePinSupported` and each root's `pinProtected` against its own
+  configuration; it calls `InvalidatePinSessions` before it unpublishes a protected resource or leaves the
+  account, and a failure is never reported as invalidated.
+- **Disks.** The disk requests are `DISK-SHARE` section 16. A disk state, mode or holder the host does not know, or
+  an absent disk record, is unknown and never authorizes a mount or dropping a holder (item D).
+- **Exchange control (`EXCHANGE-CONTROL`).** `SetExchange` and the `exchange` status block are the worker-owned
+  exchange registration: the worker keeps the secrets, the enrollment and the stable per-share identity, and the
+  GUI never writes the worker's state files. Neither a password nor a connection string is echoed or logged.
+- **Launch.** Starting the worker and choosing its state directory are `WORKER-LAUNCH`, not an extension of this pipe.
+- **Vectors (item A).** The host half is generated by the product's own serializer, never by hand; the response
+  half is the worker's.
 
-## Section 10 (0.11 - 0.14), item by item
+## Where it stands
 
-- **A - the exchange vectors (0.11).** The host half is generated by the product serializer into
-  `tests/Companion.Tests/TestData/worker-ipc/vectors/<case>/request.json`, laid out as the catalog asks, and pinned
-  byte for byte and by SHA-256 (`WorkerIpcConformanceTests`). The five named cases (`status-running`, `status-down`,
-  `status-older-worker`, `unknown-type`, `higher-schema`), one case per section 4 request the host sends and the six
-  disk requests are present. `expect.json` is written only where the contract text alone fixes the conclusion
-  (those five cases); the rest is owed with the recorded response. **No `response.json` exists**: it is the worker's
-  harness to produce, and the response-acceptance test is skipped by name until it does. Regenerate with
-  `FMS_REGENERATE_WORKER_IPC=1`, never by hand. `ExportConfig` has no case - this host never sends it.
-- **B - ` [excluded-range]` (0.12).** `ShareController.ExcludedRangeMarker` is the ASCII token with its leading space,
-  matched literally and case-sensitively; the rest of the localized text is not parsed. Pinned by
-  `WorkerIpcStatusContractTests`.
-- **C - the objects inside the status (0.13).** Every field of `status.reachability` and `status.stats` binds by name;
-  `reachability` absent is *no data yet* and the start flow waits for it before it calls a share served;
-  `externalPortChecked = false` is unconfirmed, never dead, in the phone's note, the sharer's state line and the
-  export. Pinned by the same suite.
-- **D - FileDO as a consumer of the disk requests (0.14).** A disk state, holder, mode or record the host does not
-  know is *unknown*: Open is offered only for `closed`, `failed` and `locked`; an unknown state refuses `OpenAsync`
-  and the encrypted-autostart proof before a byte is sent; the holder column says "Unknown", never "No"; a drive
-  letter is attached only to a disk the worker reports `open`; an absent record is never read as an empty one; a
-  capability is on only when the worker says `true`. Pinned by `DiskUnknownAuthorityTests`.
-
-## Left open, and not ours
-
-- The **response half** of the vectors and the command that records it (the worker owner's); the **launch surface**
-  (`PROPOSAL-2026-09-24-launch-surface.md`, still a proposal - this host does not implement it); the structured
-  `lastStartErrorKind` (option B of the excluded-range proposal).
-- The host also sends five broadcast verbs and `SetExchange`, which are **not** section 4 requests of 0.14; they are
-  filed as proposals in the catalog and are declared outside the contract in `WorkerIpcConformanceTests` so that a new
-  verb needs a decision. Ticket 159 (2026-10-07): the broadcasts page is offered only while the worker states
-  `broadcastSupported` (additive, absent is false - the shape of `portSupported`); it awaits the owner
-  (`PROPOSAL-2026-10-07-broadcast-supported.md`).
-- Legacy (schema 1) responses are bounded in time (the 5-6 s deadline and the pipe-server identity check) but not in
-  bytes; disk responses are bounded at 256 KiB and 1024 records. Nothing in the contract asks more.
-
-## Resource PIN amendment read at 0.16
-
-Schema 3 carries protected `SetSharedFolders` and `InvalidatePinSessions`; a worker status
-reports `resourcePinSupported` and per-root `pinProtected` without returning the original PIN.
-Absent host PIN state preserves worker protection; explicit removal uses an empty `accessPin`.
-The schema-3 host request vectors are generated by `WorkerIpcConformanceTests`.
+The registry row of this product and its dated exceptions say what is proven and what is open; this pointer never
+repeats them. Specification 244 holds the clause-by-clause audit.

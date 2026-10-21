@@ -108,13 +108,8 @@ Partial Public NotInheritable Class Localization
             "प्रसारण का पता या कोड दर्ज करें", "সম্প্রচারের ঠিকানা বা কোড লিখুন",
             "نشریات کا پتہ یا کوڈ درج کریں", "请输入直播地址或代码")
 
-        Add("Требуется обновить приложение для этой трансляции",
-            "An app update is required for this broadcast", "Потрібно оновити застосунок для цієї трансляції",
-            "Für diese Übertragung ist ein App-Update erforderlich", "È necessario aggiornare l'app per questa trasmissione",
-            "Se requiere actualizar la aplicación para esta transmisión", "Une mise à jour de l'application est requise pour cette diffusion",
-            "É necessária uma atualização do aplicativo para esta transmissão", "يلزم تحديث التطبيق لهذا البث",
-            "इस प्रसारण के लिए ऐप अपडेट आवश्यक है", "এই সম্প্রচারের জন্য অ্যাপ আপডেট প্রয়োজন",
-            "اس نشریات کے لیے ایپ اپ ڈیٹ درکار ہے", "此直播需要更新应用程序")
+        ' The refusal of a descriptor of a later schema is not a string of this table: it is the row `format-unsupported` of
+        ' ConnectionDiagnosisLocalization (DEVICE-EXCHANGE 1.3 amendment of 2026-10-17, named by LIVE-BROADCAST 1.1).
 
         Add("Этот режим пока не поддерживается",
             "This mode is not yet supported", "Цей режим поки що не підтримується",

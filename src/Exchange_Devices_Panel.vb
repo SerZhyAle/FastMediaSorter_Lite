@@ -79,6 +79,9 @@ Friend NotInheritable Class Exchange_Devices_Panel
     Private ReadOnly _handOnButton As Button
     Private ReadOnly _autoBox As CheckBox
     Private ReadOnly _autoNote As Label
+    Private ReadOnly _autoRow As OptionRowHost
+    ''' <summary>The panel's rows sit flush with its start edge: the 32 px target starts there and the visible box is inset by its own margin.</summary>
+    Private Const AutoRowEdgeInsetLogical As Integer = 6
     Private ReadOnly _list As ListView
     Private _metrics As Func(Of Integer, Integer) = Function(n) n
     Private _palette As ResourcePanelPalette
@@ -134,7 +137,8 @@ Friend NotInheritable Class Exchange_Devices_Panel
         _updateAddressButton = MakeButton("res_DevicesUpdateAddress", ExchangeEntryText.UpdateAddressButton(), AddressOf OnUpdateAddressClicked)
         _handOnButton = MakeButton("res_DevicesHandOn", ExchangeEntryText.HandOnButton(), AddressOf OnHandOnClicked)
         ' WINDOWS-UI section 11: every command carries the glyph of its verb, mono (panel commands are never answers).
-        ButtonGlyphs.Apply(_addButton, IconMap.GetMeaning("res_DevicesAdd").GlyphId)
+        ExchangeMark.Apply(_titleLabel, 24, AddressOf RuntimeBootstrap.OpenBundledAsset)
+        ButtonGlyphs.Apply(_addButton, IconMap.GetMeaning("res_DevicesAdd").RenderGlyphId)
         ButtonGlyphs.Apply(_attachAllButton, "action.reconnect")
         ButtonGlyphs.Apply(_signOutButton, "nav.exit")
         ButtonGlyphs.Apply(_changePasswordButton, "action.edit")
@@ -142,9 +146,15 @@ Friend NotInheritable Class Exchange_Devices_Panel
         ButtonGlyphs.Apply(_diagnoseButton, "action.test-connection")
         ButtonGlyphs.Apply(_updateAddressButton, "action.refresh")
         ButtonGlyphs.Apply(_handOnButton, "action.copy")
-        _autoBox = New CheckBox With {.Name = "res_DevicesAuto", .AutoSize = False, .Text = ExchangeEntryText.AutoAttachCheckbox(), .Visible = False}
+        _autoBox = New CheckBox With {.Name = "res_DevicesAuto", .Text = ExchangeEntryText.AutoAttachCheckbox(), .Visible = False}
         AddHandler _autoBox.CheckedChanged, AddressOf OnAutoChanged
         _autoNote = New Label With {.Name = "res_DevicesAutoNote", .AutoSize = False, .ForeColor = SystemColors.GrayText, .Text = ExchangeEntryText.AutoAttachNote(), .Visible = False}
+        ' The option is a row of the Settings anatomy (ticket 243 T-11b, BOOLEAN-OPTION 2.0): the same check box and handler, a 20 px
+        ' box in a 32 px target flush with the panel's start edge, the caption beside it and the note under it as its explanation.
+        ' The panel places the row itself and says its scale (ScaleOverride), and colours it from its own palette.
+        _autoRow = DialogOptionRow.Create(_autoBox, _autoNote, New Rectangle(0, 0, 120, 40), AutoRowEdgeInsetLogical)
+        _autoRow.OwnsPalette = True
+        _autoRow.Visible = False
         _list = New ListView With {
             .Name = "res_DevicesList", .View = View.Details, .FullRowSelect = True, .MultiSelect = False, .HideSelection = False,
             .HeaderStyle = ColumnHeaderStyle.None, .OwnerDraw = True, .ShowItemToolTips = True, .AccessibleName = ExchangeResourceText.SectionTitle()}
@@ -156,8 +166,7 @@ Friend NotInheritable Class Exchange_Devices_Panel
         AddHandler _list.SelectedIndexChanged, Sub() UpdateButtons()
         AddHandler _list.Resize, Sub() FitColumn()
         Controls.Add(_list)
-        Controls.Add(_autoNote)
-        Controls.Add(_autoBox)
+        Controls.Add(_autoRow)
         Controls.Add(_signInButton)
         Controls.Add(_diagnoseButton)
         Controls.Add(_changePasswordButton)
@@ -201,8 +210,7 @@ Friend NotInheritable Class Exchange_Devices_Panel
         BackColor = theme.Surface
         _titleLabel.ForeColor = theme.Text
         _note.ForeColor = theme.Muted
-        _autoNote.ForeColor = theme.Muted
-        _autoBox.ForeColor = theme.Text
+        _autoRow.ApplyOwnPalette(theme.Surface, theme.Text, theme.Muted, theme.EditorBack, theme.Accent, theme.OnAccent)
         _list.BackColor = theme.EditorBack
         _list.ForeColor = theme.EditorText
         _list.BorderStyle = If(theme.Dark, BorderStyle.None, BorderStyle.Fixed3D)
@@ -227,8 +235,8 @@ Friend NotInheritable Class Exchange_Devices_Panel
         _diagnoseButton.Text = ConnectionDiagnosisLocalization.DoorButtonText(Localization.CurrentCode)
         _updateAddressButton.Text = ExchangeEntryText.UpdateAddressButton()
         _handOnButton.Text = ExchangeEntryText.HandOnButton()
-        _autoBox.Text = ExchangeEntryText.AutoAttachCheckbox()
-        _autoNote.Text = ExchangeEntryText.AutoAttachNote()
+        _autoRow.SetCaption(ExchangeEntryText.AutoAttachCheckbox())
+        _autoRow.SetExplanation(ExchangeEntryText.AutoAttachNote())
         _list.AccessibleName = ExchangeResourceText.SectionTitle()
         Render()
     End Sub
@@ -404,12 +412,12 @@ Friend NotInheritable Class Exchange_Devices_Panel
             x += bw + gap
         Next
         y = rowTop + Dv(34)
-        If _autoBox.Visible Then
-            _autoBox.SetBounds(0, y, w, Dv(22))
-            y += Dv(22)
-            Dim nh As Integer = TextRenderer.MeasureText(_autoNote.Text, _autoNote.Font, New Size(w, Integer.MaxValue), TextFormatFlags.WordBreak).Height + Dv(4)
-            _autoNote.SetBounds(0, y, w, nh)
-            y += nh
+        If _autoRow.Visible Then
+            ' The row is as tall as its caption and its note need at this scale (never clipped); the list takes what is left.
+            _autoRow.ScaleOverride = Dv(96) / 96.0F
+            _autoRow.SetBounds(0, y, w, Dv(DialogOptionRow.RowHeightLogical))
+            _autoRow.Arrange()
+            y += _autoRow.Height
         End If
         Dim listHeight As Integer = Math.Max(0, ClientSize.Height - y)
         If _autoHeightValue Then
@@ -462,6 +470,11 @@ Friend NotInheritable Class Exchange_Devices_Panel
 
         Select Case data.Kind
             Case ItemKind.ServerHeader
+                Dim markSize As Integer = Dv(16)
+                ExchangeMark.Draw(e.Graphics, If(rtl, textBounds.Right - markSize, textBounds.Left), e.Bounds.Top + (e.Bounds.Height - markSize) \ 2,
+                                  markSize, fore, back, If(p IsNot Nothing, p.EditorBack, SystemColors.Window), AddressOf RuntimeBootstrap.OpenBundledAsset)
+                textBounds.X += If(rtl, 0, Dv(24))
+                textBounds.Width -= Dv(24)
                 Using bold As New Font(_list.Font, FontStyle.Bold)
                     TextRenderer.DrawText(e.Graphics, e.Item.Text, bold, textBounds, fore, flags)
                 End Using
@@ -639,7 +652,7 @@ Friend NotInheritable Class Exchange_Devices_Panel
         _updateAddressButton.Visible = src IsNot Nothing AndAlso src.Moved.Length > 0
         _handOnButton.Visible = src IsNot Nothing AndAlso state = ExchangeAgentState.Online
         _autoBox.Visible = src IsNot Nothing
-        _autoNote.Visible = src IsNot Nothing
+        _autoRow.Visible = src IsNot Nothing
         If src IsNot Nothing Then
             _loadingAuto = True
             Try

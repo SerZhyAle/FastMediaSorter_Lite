@@ -143,7 +143,11 @@ Public Class SettingsUiContextTests
                             group.SetSummaryStyle(summaryFont, System.Drawing.Color.Gray)
                             group.Width = 180
                             group.SetLayoutScale(1.75F)
-                            Assert.Equal(System.Drawing.ContentAlignment.TopLeft, group.Header.TextAlign)
+                            ' The caption stays at the top of the header: MiddleLeft inside the zone above the painted
+                            ' summary, which is reserved as bottom padding (ticket 243: the state marker is centred on the
+                            ' caption's first line, and a TopLeft button adds its own fixed top margin to that line).
+                            Assert.Equal(System.Drawing.ContentAlignment.MiddleLeft, group.Header.TextAlign)
+                            Assert.True(group.Header.Padding.Bottom > group.Header.Padding.Top, "The summary band is not reserved below the caption.")
                             Dim captionHeight = TextRenderer.MeasureText(group.Caption, group.Header.Font,
                                 New System.Drawing.Size(group.Header.Width - group.Header.Padding.Horizontal - 4, Integer.MaxValue), TextFormatFlags.WordBreak).Height
                             Dim summaryHeight = TextRenderer.MeasureText(group.Header.AccessibleDescription, summaryFont,

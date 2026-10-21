@@ -41,6 +41,11 @@ type Session struct {
 	Account   string        // the login the stream belongs to
 	DeviceID  string        // the authenticated device
 	Keepalive time.Duration // the accepted interval, echoed in welcome
+	// DeviceName, Product and ProductVersion are what the server learned at authentication (spec
+	// 247): untrusted display text for the [AUDIT] log, never a proof of anything.
+	DeviceName     string
+	Product        string
+	ProductVersion string
 	// Private is the backend's own data for the session.
 	Private any
 }
@@ -119,6 +124,14 @@ func (st *Stream) Secure() bool { return st.secure }
 
 // Addr is the limiter key of the client address (an IP, an IPv6 /64).
 func (st *Stream) Addr() string { return st.addr }
+
+// Transport reports the actual opening, never a client-supplied header.
+func (st *Stream) Transport() string {
+	if _, ok := st.conn.(*wsConn); ok {
+		return "WebSocket"
+	}
+	return "TLS-stream"
+}
 
 // T0 is when the first envelope of the stream arrived: the zero of the uniform delay.
 func (st *Stream) T0() time.Time { return st.t0 }
@@ -220,6 +233,16 @@ func (st *Stream) OnClose(f func()) {
 func (s *Server) envelopes(raw *trackedConn, conn net.Conn, secure bool, key string, leave func()) {
 	st := newStream(s, raw, conn, secure, key)
 	st.leave = leave
+	s.serveStream(st, true) // the TLS opening has no Origin: it is a native client's, an operator's if it says admin-auth
+}
+
+// serveStream is the state machine of one stream, whatever carries it: the TLS opening above, or the
+// WebSocket one (ws.go), whose Stream reads one message per frame and writes one message per frame and
+// is otherwise the same (WEB-BINDING websocket-binding "Streams": "each is its own TLS stream today").
+// operatorOrigin says an administration stream is allowed here (no Origin, or the server's own); only the
+// WebSocket opening can say false.
+func (s *Server) serveStream(st *Stream, operatorOrigin bool) {
+	conn, secure, leave := st.conn, st.secure, st.leave
 	// A data stream is handed to the backend, which then owns it and closes it when its bridge ends;
 	// every other way out of this function closes the stream here.
 	owned := false
@@ -245,6 +268,14 @@ func (s *Server) envelopes(raw *trackedConn, conn net.Conn, secure bool, key str
 	// every refusal path closes the stream, which gives it back too.
 	var res Result
 	switch e := first.(type) {
+	case *wire.AdminAuth:
+		if !secure {
+			st.Refuse(wire.ReasonTLSRequired)
+			return
+		}
+		owned = true
+		s.serveAdminStream(st, e, leave, operatorOrigin)
+		return
 	case *wire.Enroll:
 		if !secure {
 			st.Refuse(wire.ReasonTLSRequired)

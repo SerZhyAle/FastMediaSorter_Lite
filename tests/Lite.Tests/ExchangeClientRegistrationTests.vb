@@ -55,11 +55,14 @@ Public Class ExchangeClientRegistrationTests
                                              For iteration As Integer = 0 To 2
                                                  input.Text = invitation
                                                  Assert.Equal(inputWidth, input.Width)
-                                                 Dim connect As Control = form.Controls("xc_Connect")
-                                                 Assert.InRange(connect.Top, CInt(320 * factor), CInt(470 * factor))
-                                                 If registrationTop >= 0 Then Assert.Equal(registrationTop, connect.Top)
-                                                 registrationTop = connect.Top
-                                                 Assert.True(form.Controls("xc_Password2").Bottom <= connect.Top)
+                                                 ' The answers ride the shared bottom row since ticket 243 T-8b: the button is a child of the
+                                                 ' row, found through the tree and measured in the window's own coordinates.
+                                                 Dim connect As Control = form.Controls.Find("xc_Connect", True).Single()
+                                                 Dim connectTop As Integer = form.RectangleToClient(connect.RectangleToScreen(connect.ClientRectangle)).Top
+                                                 Assert.InRange(connectTop, CInt(320 * factor), CInt(470 * factor))
+                                                 If registrationTop >= 0 Then Assert.Equal(registrationTop, connectTop)
+                                                 registrationTop = connectTop
+                                                 Assert.True(form.Controls("xc_Password2").Bottom <= connectTop)
                                                  input.Text = "exchange.example:443"
                                                  Assert.Equal(inputWidth, input.Width)
                                              Next

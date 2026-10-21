@@ -98,6 +98,19 @@ Public Module DiskSharing
         End Try
     End Function
 
+    ''' <summary>The disk records of a successful <c>disk-list</c> answer. The worker OMITS an empty
+    ''' <c>disks</c> member (<c>omitempty</c> on its response type), so an ABSENT list on an
+    ''' <c>ok:true</c> schema-2 answer is an empty list - zero shared disks - and never a failure:
+    ''' reading it as one made the Disks window throw "Missing disk list." for a user with no disk
+    ''' shared yet, and left the drive aliases and the main window's snapshot stale. Nothing only
+    ''' for an answer that is not an <c>ok:true</c> schema-2 one (nothing to read there; the caller
+    ''' has refused or skipped it). The 1024-record bound and the schema-2 requirement are
+    ''' enforced where the answer is parsed (<see cref="WorkerIpc.ParseResponse"/>).</summary>
+    Public Function DisksOf(response As WorkerResponse) As List(Of SharedDisk)
+        If response Is Nothing OrElse Not response.Ok OrElse response.SchemaVersion <> 2 Then Return Nothing
+        Return If(response.Disks, New List(Of SharedDisk)())
+    End Function
+
     Public Sub RequireSuccess(response As WorkerResponse)
         If response Is Nothing OrElse Not response.Ok Then
             Throw New DiskOperationRefusedException(SafeError(If(response?.Error, "")))

@@ -21,6 +21,7 @@ Public Class Share_Enable_Form
     Private _status As Label
     Private _btnEnable As Button
     Private _btnCancel As Button
+    Private _answerRow As DialogButtonRow
     Private _iconHandle As IntPtr
     Private _titleFont As Font   ' the heading's bold face - owned here, disposed in the FormClosed handler
 
@@ -56,7 +57,7 @@ Public Class Share_Enable_Form
         Const contentWidth As Integer = 440   ' text wrap width in design units (scaled by the font)
 
         Dim tlp As New TableLayoutPanel With {.Dock = DockStyle.Fill, .AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink,
-            .ColumnCount = 1, .Padding = New Padding(16, 16, 16, 12), .GrowStyle = TableLayoutPanelGrowStyle.AddRows}
+            .ColumnCount = 1, .Padding = New Padding(16, 16, 16, 4), .GrowStyle = TableLayoutPanelGrowStyle.AddRows}
         tlp.ColumnStyles.Add(New ColumnStyle(SizeType.AutoSize))
 
         _titleFont = New Font(Me.Font.FontFamily, Me.Font.Size * 1.15F, FontStyle.Bold)
@@ -73,27 +74,28 @@ Public Class Share_Enable_Form
         _status = New Label With {.AutoSize = True, .Margin = New Padding(0, 0, 0, 4), .MaximumSize = New Size(contentWidth, 0),
             .MinimumSize = New Size(contentWidth, 0), .ForeColor = Color.DimGray, .Text = ""}
 
-        Dim btnFlow As New FlowLayoutPanel With {.AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink, .Anchor = AnchorStyles.Right,
-            .Margin = New Padding(0, 8, 0, 0), .FlowDirection = FlowDirection.LeftToRight, .WrapContents = False}
-        _btnEnable = New Button With {.AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink, .Padding = New Padding(12, 6, 12, 6),
-            .Margin = New Padding(0, 0, 8, 0), .Text = ShareText.ServerEnableButton()}
-        _btnCancel = New Button With {.AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink, .Padding = New Padding(12, 6, 12, 6),
-            .Margin = New Padding(0), .Text = ShareText.ServerEnableCancel(), .DialogResult = DialogResult.Cancel}
+        ' The answers ride the shared bottom row (ticket 243 T-8b batch C, BUTTONS 2.0 sections 3 and 4): Cancel first, the
+        ' enabling action last (it keeps its Caution glyph - the UAC prompt it raises is the real gate and nothing is
+        ' changed before it is accepted). Escape is Cancel, Enter is Enable as it was: the window exists to confirm that
+        ' one step, and a refused or closed UAC prompt leaves everything off.
+        _btnEnable = New Button With {.Text = ShareText.ServerEnableButton(), .Name = "xse_Enable"}
+        _btnCancel = New Button With {.Text = ShareText.ServerEnableCancel(), .DialogResult = DialogResult.Cancel, .Name = "xse_Cancel"}
         ButtonGlyphs.Apply(_btnEnable, "action.install", ButtonGlyphRole.Caution)
         ButtonGlyphs.Apply(_btnCancel, "action.cancel", ButtonGlyphRole.Dismissing)
         AddHandler _btnEnable.Click, AddressOf OnEnableClicked
-        btnFlow.Controls.Add(_btnEnable)
-        btnFlow.Controls.Add(_btnCancel)
+        _answerRow = New DialogButtonRow() With {.Dock = DockStyle.Bottom, .Name = "xse_Buttons", .Padding = New Padding(16, 4, 16, 12)}
+        DpiLayout.AddAnswer(_answerRow, _btnEnable, DialogButtonRole.Affirmative, "action.install")
+        DpiLayout.AddAnswer(_answerRow, _btnCancel, DialogButtonRole.Dismissing, "action.cancel")
 
         tlp.Controls.Add(_title)
         tlp.Controls.Add(_body)
         tlp.Controls.Add(lnkTrust)
         tlp.Controls.Add(_status)
-        tlp.Controls.Add(btnFlow)
 
         Me.Controls.Add(tlp)
-        Me.AcceptButton = _btnEnable
-        Me.CancelButton = _btnCancel
+        ' Last in the collection: the docked row takes its edge first and reads after the text in the Tab order.
+        Me.Controls.Add(_answerRow)
+        _answerRow.Bind(Me)
 
         If Not ServerFeatures.CanEnable() Then
             _btnEnable.Enabled = False

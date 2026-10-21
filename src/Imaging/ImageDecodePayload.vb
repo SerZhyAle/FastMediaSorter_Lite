@@ -47,6 +47,37 @@ Friend NotInheritable Class DecodedPayload
     ''' file".</summary>
     Public Property DecodeMs As Long
 
+    ''' <summary>The source canvas of a multi-frame decode and its frame count, 0 when the
+    ''' decoder did not say (a still, a cache hit). Diagnostics only - the "Animation
+    ''' prepared" log line (spec 241 rule 6) - and never part of what the cache stores.</summary>
+    Public Property Width As Integer
+    Public Property Height As Integer
+    Public Property Frames As Integer
+
+    ''' <summary>Milliseconds spent in the GIF encode alone, 0 when there was none. The rest of
+    ''' <see cref="DecodeMs"/> is the decode (spec 241 rule 6).</summary>
+    Public Property EncodeMs As Long
+
+    ''' <summary>True when the GIF encode dithered (spec 241 rule 3).</summary>
+    Public Property Dithered As Boolean
+
+    ''' <summary>True for the first frame of an animation that is still being prepared (spec
+    ''' 241 rule 10): a plain picture standing in for the animation until the whole GIF
+    ''' lands. Never stored in the decode cache.</summary>
+    Public Property IsPreview As Boolean
+
+    ''' <summary>The animation's length by the delays in its header, in ms; 0 when the header does not
+    ''' say. Set on a first-frame payload so "Replace with video" can plan its frame rate for an
+    ''' animation that is not played (spec 241 rule 18, Q241-5).</summary>
+    Public Property DurationMs As Long
+
+    ''' <summary>True when the animation carries transparency, by its header (spec 241 rule 18).</summary>
+    Public Property HasAlpha As Boolean
+
+    ''' <summary>True when the animation is over the decode budget: the payload is its first frame and
+    ''' there will be no whole-animation stage (spec 241 rule 18).</summary>
+    Public Property IsTooLong As Boolean
+
 End Class
 
 ''' <summary>
@@ -59,8 +90,19 @@ Friend Interface IImageDecoderPayload
     ''' <summary>
     ''' Decodes into the encoded payload, without building a GDI+ image. The input stream
     ''' stays owned by the caller. Returns Nothing when the data cannot be decoded.
+    ''' <paramref name="sourceLabel"/> is the file's path when the caller has one; it only
+    ''' names the file in the log lines the decoder writes (spec 241 rule 7).
     ''' </summary>
-    Function DecodeToPayload(stream As MemoryStream) As DecodedPayload
+    Function DecodeToPayload(stream As MemoryStream, Optional sourceLabel As String = "") As DecodedPayload
+
+    ''' <summary>
+    ''' Stage 1 of a long animation (spec 241 rules 10 and 18): for a multi-frame file read by ImageSharp,
+    ''' only its FIRST frame, as a PNG flagged <see cref="DecodedPayload.IsPreview"/>, with the canvas
+    ''' size, the frame count and the header's duration filled in. An animation over the budget gets
+    ''' the same (<see cref="DecodedPayload.IsTooLong"/>); a frame over the budget gets Nothing.
+    ''' A still, and every Magick route, is answered exactly as <see cref="DecodeToPayload"/> would.
+    ''' </summary>
+    Function DecodeFirstFramePayload(stream As MemoryStream, Optional sourceLabel As String = "") As DecodedPayload
 
 End Interface
 #End If

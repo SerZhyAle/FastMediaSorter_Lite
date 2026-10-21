@@ -23,7 +23,8 @@ Friend Enum LiveReadStatus
     NotBroadcast = 1
     ''' <summary>JSON / Base64 / GZIP / required fields are damaged.</summary>
     InvalidDocument = 2
-    ''' <summary><c>schemaVersion</c> above 1: the user must update the app, never "damaged file".</summary>
+    ''' <summary><c>schemaVersion</c> above 1 (also a sealed-only descriptor this build cannot play): refused cleanly with the
+    ''' `format-unsupported` text of DEVICE-EXCHANGE (LIVE-BROADCAST 1.1), never "damaged file", never a demand to update.</summary>
     UnsupportedVersion = 3
     ''' <summary>A correct descriptor whose mode (or endpoints) this build cannot play.</summary>
     UnsupportedMode = 4
@@ -98,9 +99,43 @@ Friend NotInheritable Class LiveBroadcastReadResult
     End Function
 End Class
 
+''' <summary>One directory record as a list shows it: a descriptor this program can play, or the refusal it shows instead
+''' (LIVE-BROADCAST 1.1: a record this program cannot use is listed with the reason, never dropped without a word).</summary>
+Friend NotInheritable Class LiveDirectoryRow
+    ''' <summary>The playable descriptor; Nothing when the record is refused.</summary>
+    Public ReadOnly Property Descriptor As LiveBroadcastDescriptor
+    Public ReadOnly Property Status As LiveReadStatus
+
+    Public Sub New(status As LiveReadStatus, descriptor As LiveBroadcastDescriptor)
+        Me.Status = status
+        Me.Descriptor = descriptor
+    End Sub
+
+    Public ReadOnly Property IsPlayable As Boolean
+        Get
+            Return Status = LiveReadStatus.Ok AndAlso Descriptor IsNot Nothing
+        End Get
+    End Property
+
+    ''' <summary>The sentence of the refusal in the language shown (see <see cref="LiveBroadcastMessages"/>); empty for a playable record.</summary>
+    Public ReadOnly Property RefusalText As String
+        Get
+            Return If(IsPlayable, "", LiveBroadcastMessages.ForReadStatus(Status))
+        End Get
+    End Property
+End Class
+
 ' DEVICE-EXCHANGE 6.3/7.7: directory, guest and cast records use the same descriptor reader.
 Friend Module LiveBroadcastRecords
+
+    ''' <summary>A directory record, read the way a list shows it. Never throws and never returns Nothing.</summary>
+    Public Function RowOf(raw As String) As LiveDirectoryRow
+        Dim result As LiveBroadcastReadResult = ReadRecord(raw)
+        Return New LiveDirectoryRow(result.Status, result.Descriptor)
+    End Function
+
     Public Function ReadRecord(raw As String) As LiveBroadcastReadResult
+        If String.IsNullOrWhiteSpace(raw) Then Return LiveBroadcastReadResult.Fail(LiveReadStatus.InvalidDocument)
         Try
             Using doc As JsonDocument = JsonDocument.Parse(raw)
                 Dim descriptor As JsonElement = Nothing
@@ -122,6 +157,9 @@ Friend Module LiveBroadcastRecords
                 Return result
             End Using
         Catch ex As JsonException
+            Return LiveBroadcastReadResult.Fail(LiveReadStatus.InvalidDocument)
+        Catch ex As InvalidOperationException
+            ' a record whose root is not an object
             Return LiveBroadcastReadResult.Fail(LiveReadStatus.InvalidDocument)
         End Try
     End Function

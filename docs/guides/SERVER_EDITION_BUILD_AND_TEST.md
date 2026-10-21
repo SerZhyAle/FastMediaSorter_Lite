@@ -1,4 +1,4 @@
-# Server edition - build, publish and verify
+﻿# Server edition - build, publish and verify
 
 Operational companion to `SPECIFICATION_SHARE_SYSTEM_SERVICE.md` (local specification).
 The user-facing documentation is the public page [server.html](../../server.html) - this file

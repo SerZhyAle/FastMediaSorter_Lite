@@ -1,4 +1,4 @@
-﻿Option Strict On
+Option Strict On
 
 Imports System.Collections.Generic
 Imports System.Drawing
@@ -130,6 +130,7 @@ Partial Friend NotInheritable Class Server_Welcome_Form
         _counter = New Label With {.AutoSize = True, .ForeColor = SystemColors.GrayText, .Margin = New Padding(0, 0, 0, 2)}
         _heading = New Label With {.AutoSize = True, .MaximumSize = New Size(ContentWidth - BadgeSize - 16, 0), .Margin = New Padding(0),
             .Font = BoldFont(1.5F)}
+        If _half = WelcomeHalf.Exchange Then ExchangeMark.Apply(_heading, 32, AddressOf CompanionAssets.OpenBundledAsset)
         _badge = New StepBadge(AddressOf CompanionAssets.OpenBundledAsset, BadgeSize) With {.Margin = New Padding(0, 0, 16, 0)}
         _dots = New StepDots() With {.Count = _steps.Count}
 

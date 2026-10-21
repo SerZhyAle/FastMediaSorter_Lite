@@ -1,25 +1,69 @@
 /* ============================================================
-   help.css - the help-page layer over sza-kit.css (CONTEXT-HELP rule 10).
-   Load it AFTER sza-kit.css. It adds only what a help page needs: the numbered pin on the screenshot, the
-   element entry (short to see, complete to open), the order list, the related links, the footer.
-   It makes no request: no font, no image, no @import. Logical (start / end) properties throughout,
-   so a right-to-left page mirrors; the pins alone use physical left / top, because they track pixels of an
-   image, and an image is not mirrored by the page direction.
+   help.css - the help-page layer (CONTEXT-HELP rule 10). SELF-CONTAINED.
+   The generated pages (tools/Build-ContextHelp.ps1) link this file and nothing else: the shared web kit is NOT shipped into
+   the offline help folder (the folder is packaged as it stands in the installer and the MSIX), so every token this file reads
+   is defined here, light and dark by prefers-color-scheme alone - the pages are script-free and carry no data-theme. A page
+   that does load the kit first still agrees with it: the token values below are the kit's.
+   It adds what a help page needs: the page frame, the numbered pin on the screenshot, the order list, the related links, the
+   footer, and the group look of the page's <details> (COLLAPSIBLE-GROUP 1.1: a leading state triangle, a header band that is
+   the whole hit area, a body in flow).
+   It makes no request: no font, no @import, no remote image (the triangle is an inline data: vector under img-src 'self' data:).
+   Logical (start / end) properties throughout, so a right-to-left page mirrors; the pins alone use physical left / top, because
+   they track pixels of an image, and an image is not mirrored by the page direction.
    ============================================================ */
 
-/* Light tokens when the page was opened with no script and no data-theme: follow the system.
-   The kit defines light only under html[data-theme="light"]; this repeats those values for the no-script path. */
+/* ---------- tokens: dark by default, light when the system asks ---------- */
+:root {
+  color-scheme:dark;
+  --bg:#0a0f0a; --bg-2:#0f1610; --bg-3:#131c14;
+  --card:rgba(255,255,255,.035); --card-hover:rgba(255,255,255,.06);
+  --border:rgba(255,255,255,.08); --border-hover:rgba(63,185,80,.35);
+  --text:#f1f5ee; --text-2:#c3ccbc; --muted:#94a08c;
+  --acc:#3fb950; --acc-strong:#56d364; --acc-ink:#04130c;
+  --gold:#e3b341; --gold-strong:#f0c862; --gold-ink:#1c1403;
+  --shadow:0 10px 30px rgba(0,0,0,.45);
+  --font-body:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  --font-heading:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  --wide:100%; --gutter:clamp(16px,2.5vw,40px); --radius:16px; --radius-sm:10px;
+  /* the 32 / 48 target of the profile (BUTTONS 2.0 section 3, UI-SIZING 1.1): a fine pointer gets 32, a coarse one 48 */
+  --btn-min:2rem; --btn-gap:.5rem;
+  /* the group: 4 px corners, 12 px inset, marker tier 16 */
+  --group-radius:4px; --group-inset:.75rem; --group-marker:1rem;
+  --group-head-bg:var(--bg-3); --group-head-hover:var(--card-hover);   /* a plain band for a browser that has no color-mix() */
+}
+@supports (background:color-mix(in srgb, red 10%, blue)) {
+  :root {
+    --group-head-bg:color-mix(in srgb, var(--acc) 14%, var(--bg-2));
+    --group-head-hover:color-mix(in srgb, var(--acc) 22%, var(--bg-2));
+  }
+}
+/* Light tokens when the page was opened with no script and no data-theme: follow the system. These are the kit's light values
+   (accent #267a30 with white ink is 4.77 : 1; the gold is the darker one the site uses, so white ink on a pin stays legible). */
 @media (prefers-color-scheme: light) {
   html:not([data-theme]) {
+    color-scheme:light;
     --bg:#eef3ea; --bg-2:#ffffff; --bg-3:#e4ecdf;
     --card:rgba(255,255,255,.70); --card-hover:rgba(255,255,255,.92);
     --border:rgba(16,40,20,.12); --border-hover:rgba(47,143,58,.40);
     --text:#16210f; --text-2:#384534; --muted:#5f6b54;
-    --acc:#2f8f3a; --acc-strong:#267a30; --acc-ink:#ffffff;
-    --gold:#9a6a13; --gold-strong:#7e560f; --gold-ink:#ffffff;
+    --acc:#267a30; --acc-strong:#206629; --acc-ink:#ffffff;
+    --gold:#7e560f; --gold-strong:#6b4709; --gold-ink:#ffffff;
     --shadow:0 6px 24px rgba(20,40,20,.10);
   }
 }
+@media (pointer: coarse) { :root { --btn-min:3rem; } }
+
+/* ---------- the page frame ---------- */
+*, *::before, *::after { box-sizing:border-box; }
+body { margin:0; background:var(--bg); color:var(--text); font-family:var(--font-body); line-height:1.6; }
+h1, h2, h3 { font-family:var(--font-heading); line-height:1.2; letter-spacing:-.01em; }
+h1 { font-size:clamp(1.6rem, 4vw, 2.2rem); margin-block:0 .8rem; }
+h2 { font-size:1.15rem; margin-block:1.6rem .6rem; }
+p, ul, ol { margin-block:0 .8rem; }
+ul, ol { padding-inline-start:1.4rem; }
+a { color:var(--acc-strong); }
+a:hover { color:var(--acc); }
+img { max-width:100%; height:auto; }
 
 .help { padding-block: 1.2rem 3rem; }
 .help .container { max-width: var(--wide); }
@@ -41,7 +85,7 @@
 .shot .frame { position:relative; }   /* the pins' percentages are of this box: the image and nothing else */
 .shot img { display:block; width:100%; height:auto; }
 .shot figcaption { padding:.6rem 1rem; font-size:.82rem; color:var(--muted); border-top:1px solid var(--border); }
-/* the theme pair: the page's data-theme chooses; dark is the kit default */
+/* the theme pair: the page's data-theme chooses; dark is the default */
 .shot .on-light { display:none; }
 html[data-theme="light"] .shot .on-light { display:block; }
 html[data-theme="light"] .shot .on-dark { display:none; }
@@ -73,24 +117,8 @@ html[data-theme="light"] .shot .on-dark { display:none; }
   vertical-align:.05em; text-decoration:none; }
 .order .ref:hover { background:var(--acc); color:var(--acc-ink); }
 
-/* ---------- the elements: short to see, complete to open ---------- */
+/* ---------- the elements ---------- */
 .elements { display:grid; gap:.6rem; }
-details.el { background:var(--card); border:1px solid var(--border); border-radius:var(--radius-sm);
-  border-inline-start:3px solid var(--gold); padding:0 1.1rem; scroll-margin-top:1rem;
-  transition:border-color .2s, background .2s; }
-details.el:hover, details.el.on { border-color:var(--border-hover); background:var(--card-hover); border-inline-start-color:var(--acc); }
-details.el:target { border-color:var(--gold); border-inline-start-color:var(--gold); }
-details.el > summary { list-style:none; cursor:pointer; display:flex; align-items:center; gap:.8rem; padding:.8rem 0; min-height:44px; }
-details.el > summary::-webkit-details-marker { display:none; }
-details.el > summary::after { content:""; width:18px; height:18px; margin-inline-start:auto; flex:none; background:var(--muted);
-  transition:transform .2s;
-  -webkit-mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M16.59 8.59L12 13.17 7.41 8.59 6 10l6 6 6-6z'/%3E%3C/svg%3E") center/contain no-repeat;
-  mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M16.59 8.59L12 13.17 7.41 8.59 6 10l6 6 6-6z'/%3E%3C/svg%3E") center/contain no-repeat; }
-details.el[open] > summary::after { transform:rotate(180deg); }
-details.el .name { font-family:var(--font-heading); font-weight:700; }
-details.el .one { display:block; color:var(--muted); font-size:.88rem; }
-details.el .full { padding-block:.2rem 1rem; color:var(--text-2); }
-details.el .full > * + * { margin-block-start:.7rem; }
 .facts { display:grid; grid-template-columns:max-content 1fr; gap:.35rem 1rem; font-size:.9rem; }
 .facts dt { color:var(--muted); font-family:var(--font-heading); font-weight:700; font-size:.72rem;
   text-transform:uppercase; letter-spacing:.1em; padding-block-start:.2rem; }
@@ -116,7 +144,6 @@ details.el .full > * + * { margin-block-start:.7rem; }
 
 @media print {
   .pin { display:none; }
-  details.el > summary::after { display:none; }
 }
 
 /* CyrFlip: one full-width column and theme-matched captures without JavaScript. */
@@ -126,8 +153,50 @@ figure { margin-inline: 0; }
 .shot.light { display: none; }
 .shot.dark { display: block; }
 @media (prefers-color-scheme: light) { .shot.light { display: block; } .shot.dark { display: none; } }
-summary, nav a, footer a, li a { min-height: 44px; display: inline-flex; align-items: center; padding-inline: .5rem; }
-details { padding: .5rem; margin-block: .75rem; border: 1px solid var(--border); }
-a:focus-visible, summary:focus-visible { outline: 3px solid var(--acc); outline-offset: 3px; }
+nav a, footer a, li a { min-height: 44px; display: inline-flex; align-items: center; padding-inline: .5rem; }
+a:focus-visible { outline: 3px solid var(--acc); outline-offset: 3px; }
 footer { margin-block-start: 2rem; color: var(--muted); }
 @media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto; transition: none; animation: none; } }
+
+/* ---------- the group: every <details><summary> of a page (COLLAPSIBLE-GROUP 1.1 sections 3 and 4) ----------
+   A header band of its own colour with a LEADING filled state triangle that reports the CURRENT state (right when closed, down
+   when open; in a right-to-left page the closed triangle points left), 4 px corners, and the whole width of the card as the hit
+   area - so the card carries no padding and the inset lives on the body's children. The target is --btn-min (32 pointer, 48
+   coarse). The triangle is a vector mask in currentColor, never a typed arrow, and it is not animated. The body is a normal-flow
+   child under its header at the card's full content width. Script-free: the page's own <details> does all of it. */
+details { margin-block:.5rem; padding:0; background:var(--card); border:1px solid var(--border);
+  border-radius:calc(var(--group-radius) + 1px); scroll-margin-top:1rem; }
+details[open] { border-color:var(--border-hover); }
+details:target { border-color:var(--gold); }
+details > summary { display:flex; align-items:center; gap:var(--btn-gap); width:100%; min-height:var(--btn-min);
+  padding:.375rem var(--group-inset); border:1px solid transparent; border-radius:var(--group-radius);   /* a transparent border turns visible in forced colours and moves nothing */
+  background:var(--group-head-bg); color:var(--text); list-style:none; cursor:pointer;
+  font-family:var(--font-heading); font-weight:700; line-height:1.35; }
+details > summary::-webkit-details-marker { display:none; }
+details > summary:hover { background:var(--group-head-hover); }
+details > summary:active { box-shadow:inset 0 0 0 1px currentColor; }
+details > summary:focus-visible { outline:3px solid var(--acc); outline-offset:-3px; border-radius:var(--group-radius); }   /* inside the band: nothing clips it at the card's edge */
+details > summary::before { content:""; flex:none; align-self:center; width:var(--group-marker); height:var(--group-marker);
+  background-color:currentColor;
+  -webkit-mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M6.5 5v14l11-7z'/%3E%3C/svg%3E") center/contain no-repeat;
+          mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M6.5 5v14l11-7z'/%3E%3C/svg%3E") center/contain no-repeat; }
+details[open] > summary::before { transform:rotate(90deg); }
+/* right-to-left: the closed triangle points left, the open one still points down (two rules: a browser that does not know :dir()
+   drops a whole selector list that names it) */
+[dir="rtl"] details > summary::before { transform:scaleX(-1); }
+:dir(rtl) details > summary::before { transform:scaleX(-1); }
+[dir="rtl"] details[open] > summary::before { transform:rotate(90deg); }
+:dir(rtl) details[open] > summary::before { transform:rotate(90deg); }
+details > :not(summary) { margin-inline:var(--group-inset); margin-block-end:var(--group-inset); }
+details > summary + * { margin-block-start:var(--group-inset); }
+
+/* EXCHANGE-MARK: one unmirrored identity per page; monochrome in forced colours. */
+.exchange-picture { display: inline-grid; vertical-align: middle; }
+.exchange-picture > img { grid-area: 1 / 1; }
+.exchange-inline { padding: 3px; }
+@media (forced-colors: active) {
+  details > summary::before { forced-color-adjust:none; background-color:currentColor; }   /* the system would paint the mask's face with Canvas and hide the triangle */
+  .exchange-picture > img { opacity: 0; }
+  .exchange-picture::after { content: ""; grid-area: 1 / 1; background-color: CanvasText;
+    mask: url("exchange-mark/exchange-mark-mono.svg") center / contain no-repeat; }
+}

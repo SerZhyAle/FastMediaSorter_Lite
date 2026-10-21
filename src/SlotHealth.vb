@@ -43,20 +43,164 @@ Public Enum SlotState
     Invalid
 End Enum
 
+''' <summary>
+''' Why a destination is <see cref="SlotState.Unreachable"/>, in the words the user can act on
+''' (owner request 2026-10-17: the status line names the real cause, not just "no connection").
+''' Read from an error CODE the operating system returned - never from its text, which is in
+''' whatever language Windows speaks (APP-BEHAVIOUR rule 6). <see cref="None"/> is "the system
+''' gave no code we name": the generic sentence stays, and the code goes to the log.
+''' </summary>
+Public Enum SlotCause
+    None
+    ''' <summary>The computer in the path does not answer by name: off, on another network, or a wrong
+    ''' name (ERROR_BAD_NETPATH and its neighbours).</summary>
+    HostNotFound
+    ''' <summary>The computer answered and has no share of that name (ERROR_BAD_NET_NAME).</summary>
+    ShareNotFound
+    ''' <summary>There is no network to the computer (cable, VPN, adapter).</summary>
+    NetworkDown
+    ''' <summary>The session existed and was cut.</summary>
+    ConnectionLost
+    ''' <summary>A drive, card or mapped network drive is not connected.</summary>
+    NotReady
+    ''' <summary>Nothing answered inside the probe's bound - the cause behind that is not known (yet).</summary>
+    NoAnswer
+End Enum
+
 ''' <summary>One cached answer about one destination path. Keyed by PATH, not by slot
 ''' index (D3): two slots can share a root, and the overlay and the settings grid read the
 ''' same table.</summary>
 Public NotInheritable Class SlotVerdict
     Public Property State As SlotState
     Public Property CheckedUtc As DateTime
-    ''' <summary>For the log. Never for the user - the user gets a category (invariant 2).</summary>
+    ''' <summary>For the log. Never shown as it is - the user reads <see cref="Cause"/> or
+    ''' <see cref="ReasonText"/> through the status sentence (invariant 2, as amended 2026-10-17).</summary>
     Public Property Detail As String = ""
 
+    ''' <summary>The nameable reason behind an Unreachable verdict, or None.</summary>
+    Public Property Cause As SlotCause = SlotCause.None
+
+    ''' <summary>A finished, localized sentence from the resource layer for a server folder
+    ''' (<c>ResourceMessages.ForFailure</c>): "the server did not accept the login", "no such folder on the
+    ''' server". Empty for a plain folder. When set it wins over <see cref="Cause"/>.</summary>
+    Public Property ReasonText As String = ""
+
     Public Shared Function ForState(state As SlotState, checkedUtc As DateTime,
-                                    Optional detail As String = "") As SlotVerdict
-        Return New SlotVerdict With {.State = state, .CheckedUtc = checkedUtc, .Detail = detail}
+                                    Optional detail As String = "",
+                                    Optional cause As SlotCause = SlotCause.None) As SlotVerdict
+        Return New SlotVerdict With {.State = state, .CheckedUtc = checkedUtc, .Detail = detail, .Cause = cause}
+    End Function
+
+    ''' <summary>The same verdict carrying a resource-layer sentence; returns itself so a Return line stays one line.</summary>
+    Public Function WithReason(text As String) As SlotVerdict
+        ReasonText = If(text, "")
+        Return Me
     End Function
 End Class
+
+''' <summary>
+''' The pure half of "name the real reason": which cause a Windows error code is, and which place
+''' in the path the sentence should name. No I/O, no clock, no localization - the sentences are
+''' built where the language is known (Main_Form.SlotHealth.vb).
+''' </summary>
+Public Module SlotCauses
+
+    ' The Win32 codes, by name - the same ones a user finds in "net helpmsg <n>".
+    Private Const ErrorNotReady As Integer = 21              ' The device is not ready.
+    Private Const ErrorRemNotList As Integer = 51            ' Windows cannot find the network path.
+    Private Const ErrorBadNetPath As Integer = 53            ' The network path was not found.
+    Private Const ErrorDevNotExist As Integer = 55           ' The specified network resource or device is no longer available.
+    Private Const ErrorUnexpNetErr As Integer = 59           ' An unexpected network error occurred.
+    Private Const ErrorNetNameDeleted As Integer = 64        ' The specified network name is no longer available.
+    Private Const ErrorBadNetName As Integer = 67            ' The network name cannot be found.
+    Private Const ErrorSemTimeout As Integer = 121           ' The semaphore timeout period has expired.
+    Private Const ErrorNoNetOrBadPath As Integer = 1203      ' The network path was either typed incorrectly, does not exist...
+    Private Const ErrorDeviceNotConnected As Integer = 1167  ' The device is not connected.
+    Private Const ErrorNoNetwork As Integer = 1222           ' The network is not present or not started.
+    Private Const ErrorNetworkUnreachable As Integer = 1231  ' The network location cannot be reached.
+    Private Const ErrorHostUnreachable As Integer = 1232     ' The network location cannot be reached (host).
+    Private Const ErrorConnectionAborted As Integer = 1236   ' The network connection was aborted by the local system.
+
+    ''' <summary>An HRESULT built from a Win32 code has this facility in its top half (0x8007xxxx).</summary>
+    Private Const FacilityWin32 As Integer = &H8007
+
+    Public Function OfWin32(code As Integer) As SlotCause
+        Select Case code
+            Case ErrorBadNetPath, ErrorRemNotList, ErrorNoNetOrBadPath
+                Return SlotCause.HostNotFound
+            Case ErrorBadNetName
+                Return SlotCause.ShareNotFound
+            Case ErrorNoNetwork, ErrorNetworkUnreachable, ErrorHostUnreachable
+                Return SlotCause.NetworkDown
+            Case ErrorNetNameDeleted, ErrorUnexpNetErr, ErrorSemTimeout, ErrorConnectionAborted, ErrorDevNotExist
+                Return SlotCause.ConnectionLost
+            Case ErrorNotReady, ErrorDeviceNotConnected
+                Return SlotCause.NotReady
+            Case Else
+                Return SlotCause.None
+        End Select
+    End Function
+
+    ''' <summary>The cause behind a failed listing: the Win32 code carried in an IOException's HRESULT.
+    ''' A missing folder, a denial and a bad path are other states with their own sentences and give None here.</summary>
+    Public Function OfException(ex As Exception) As SlotCause
+        Dim real As Exception = ex
+        For hop As Integer = 0 To 7
+            Dim aggregate As AggregateException = TryCast(real, AggregateException)
+            If aggregate IsNot Nothing AndAlso aggregate.InnerExceptions.Count > 0 Then
+                real = aggregate.InnerExceptions(0)
+                Continue For
+            End If
+            Exit For
+        Next
+        If real Is Nothing Then Return SlotCause.None
+        If TypeOf real Is TimeoutException Then Return SlotCause.NoAnswer
+        If TypeOf real Is System.IO.IOException AndAlso ((real.HResult >> 16) And &HFFFF) = FacilityWin32 Then
+            Return OfWin32(real.HResult And &HFFFF)
+        End If
+        Return SlotCause.None
+    End Function
+
+    ''' <summary>The computer in <c>\\host\share\..</c> (also <c>\\?\UNC\host\share</c>), or "" for any other path.</summary>
+    Public Function HostOf(destination As String) As String
+        Dim parts As String() = UncParts(destination)
+        Return If(parts.Length > 0, parts(0), "")
+    End Function
+
+    ''' <summary><c>\\host\share</c> of a UNC path, or "" for any other path.</summary>
+    Public Function ShareRootOf(destination As String) As String
+        Dim parts As String() = UncParts(destination)
+        If parts.Length < 2 Then Return ""
+        Return "\\" & parts(0) & "\" & parts(1)
+    End Function
+
+    ''' <summary>The place a sentence names for this cause: the share for a missing share, otherwise the computer of a
+    ''' UNC path, the drive of a lettered path, or the path itself.</summary>
+    Public Function PlaceFor(destination As String, cause As SlotCause) As String
+        Dim path As String = If(destination, "").Trim()
+        If cause = SlotCause.ShareNotFound Then
+            Dim share As String = ShareRootOf(path)
+            If share.Length > 0 Then Return share
+        End If
+        Dim host As String = HostOf(path)
+        If host.Length > 0 Then Return host
+        If path.Length >= 2 AndAlso path(1) = ":"c Then Return path.Substring(0, 2)
+        Return path
+    End Function
+
+    Private Function UncParts(destination As String) As String()
+        Dim path As String = If(destination, "").Trim()
+        If path.StartsWith("\\?\UNC\", StringComparison.OrdinalIgnoreCase) Then
+            path = "\\" & path.Substring(8)
+        ElseIf path.StartsWith("\\?\", StringComparison.Ordinal) OrElse path.StartsWith("\\.\", StringComparison.Ordinal) Then
+            Return New String() {}
+        End If
+        If Not path.StartsWith("\\", StringComparison.Ordinal) Then Return New String() {}
+        Dim parts As String() = path.Substring(2).Split(New Char() {"\"c}, StringSplitOptions.RemoveEmptyEntries)
+        Return parts
+    End Function
+
+End Module
 
 Public Module SlotHealthPolicy
 

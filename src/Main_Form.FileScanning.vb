@@ -256,7 +256,15 @@ Partial Public Class Main_Form
                     Dim next_Origin As PictureOrigin = OriginOf(next_File_After_Current_in_worker)
 #End If
                     ' sza250609 - GIF fix
+#If NETFRAMEWORK Then
                     Dim next_Image_Data As Tuple(Of Image, IO.MemoryStream) = LoadImageWithStream(next_File_After_Current_in_worker)
+#Else
+                    ' A long animation is prefetched as its first frame only (spec 241 rule 14): the
+                    ' whole transcode starts when the user actually flips to it, never unasked.
+                    Dim prefetch_Failure As PathFailureKind = PathFailureKind.Content
+                    Dim next_Image_Data As Tuple(Of Image, IO.MemoryStream) =
+                        LoadImageStaged(next_File_After_Current_in_worker, prefetch_Failure, ImageLoadStage.Staged)
+#End If
                     If next_Image_Data IsNot Nothing Then
                         ' Everything the completion needs travels in the result - the
                         ' worker no longer writes current_Second_File_Name (read by the
@@ -270,7 +278,8 @@ Partial Public Class Main_Form
                             .Data = next_Image_Data.Item2
                         }
 #If Not NETFRAMEWORK Then
-                        prefetched.Origin = next_Origin
+                        ' No origin for a first-frame stand-in (spec 241 rule 12): it is never offered back.
+                        If AnimationStaging.InfoOf(next_Image_Data.Item1) Is Nothing Then prefetched.Origin = next_Origin
 #End If
                         e.Result = prefetched
                         Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0100: BgWorker loaded image into memory: " & next_File_After_Current_in_worker.ToString)

@@ -3,9 +3,9 @@
 | | |
 | --- | --- |
 | **Ids** | `DOC-INTERNAL-QUALITY`, `DOC-EXTERNAL-QUALITY` |
-| **Version** | 0.9 / 0.10, draft (read 2026-10-02 and again 2026-10-07; both are the catalog's current versions - `DOC-INTERNAL-QUALITY` stayed 0.9 when the external one went to 0.10, and the log row of 2026-10-06 is a companion note that moved no version). The 0.10 additions only widen what the gates already hold: the search-index threshold is met by holding the index against the sitemap page set (item B); the per-locale hreflang check and the `x-default` check are implemented (item D); the length limits count Unicode code points after entity decoding, exactly, since 2026-10-07 (item C; before it the count was UTF-16 units, the same for every character the thirteen locales use); item A holds by the guides' task sections and item E applies to no page of this site. Owner: FastMediaSorter Android |
+| **Version** | catalog 0.10 / 0.12, draft (read 2026-10-20, specification 244; the text below was written against 0.9 / 0.10, read 2026-10-02 and 2026-10-07). 0.10 of the internal contract (2026-10-17) lets an internal corpus be local and gitignored with its own registry, the tracked registry indexing only documents a forker can open, and both corpora checked independently. 0.11 of the external one (2026-10-14) adds section 9 F to I (the three languages of a page are one set written whole, an English original rebuilt before release, one corpus with several writers and one publisher, schemes with one look and labels in the page's language); 0.12 (2026-10-17) sets the `lang` query with the legacy `l` reader for a single-URL translated document and has `hreflang` list only translated addressable URLs. The external 0.10 additions only widen what the gates already hold: the search-index threshold is met by holding the index against the sitemap page set (item B); the per-locale hreflang check and the `x-default` check are implemented (item D); the length limits count Unicode code points after entity decoding, exactly, since 2026-10-07 (item C; before it the count was UTF-16 units, the same for every character the thirteen locales use); item A holds by the guides' task sections and item E applies to no page of this site. Owner: FastMediaSorter Android |
 | **Home** | `documentation-quality/README.md` in the shared contracts catalog |
-| **Role here** | consumer of both, adopted 2026-09-26 - the internal corpus (`CLAUDE.md`, `docs/guides/`, `docs/contracts/`, the READMEs, `CHANGELOG.md`) and the published site at the repository root (37 pages in `sitemap.xml`) |
+| **Role here** | consumer of both, adopted 2026-09-26 - the internal corpus (`CLAUDE.md`, `docs/guides/`, `docs/contracts/`, the READMEs, `CHANGELOG.md`) and the published site at the repository root (41 pages in `sitemap.xml`, 2026-10-20) |
 
 ## What this repository does to stay conformant
 
@@ -39,6 +39,14 @@
   regenerator of the guide screenshots (viewer + Share Manager driven by posted keys and UI
   Automation, no focus taken; the interface language is borrowed to English and the destination rows
   to sample paths, both restored).
+
+- **0.10 to 0.12, read 2026-10-20.** The tracked `docs/DOCUMENT_REGISTRY.jsonl` indexes only documents a forker can
+  open (internal 0.10): a row for a file not yet tracked waits for its commit. Whether the gitignored specification
+  queue is an "internal engineering corpus" that needs its own local registry is the owner's reading and is not
+  decided here. External 0.11 section 9 F and G bind a corpus that declares en/ru/uk: the release-history entries are
+  English-only inside a Russian and Ukrainian page and need a declared reason (9 F). A single-URL page takes `?lang`
+  with the legacy `?l` reader (0.12): two pages read `?lang` and none reads `?l`; the freshness of the in-page
+  en/ru/ua blocks is gated by block count only.
 
 The gate does not infer Russian diacritics or the language of source comments. Those remain review
 obligations under internal rule 5. HTTPS references are checked syntactically, without network access.

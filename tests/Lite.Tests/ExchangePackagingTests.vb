@@ -189,9 +189,12 @@ Public Class ExchangePackagingTests
     <Fact>
     Public Sub TheMsixStageNeverCarriesTheExchangeTree()
         Dim text As String = ReadText("publishing", "msix", "build-msix.ps1")
-        Assert.Contains("@('exchange\')", text)             ' excluded by name from the bin\Release copy
+        ' Excluded by name from the bin\Release copy: the exchange tree, and (specification 249) the FileDO
+        ' disk-hosting tree, which the Store package does not carry.
+        Assert.Contains("@('exchange\', 'filedo\')", text)
         ' ..and proven on the stage after the copy, gate or no gate.
         Assert.Contains("Join-Path $Stage 'exchange'", text)
+        Assert.Contains("Join-Path $Stage 'filedo'", text)
         Assert.Contains("fms-exchange-server*", text)
     End Sub
 

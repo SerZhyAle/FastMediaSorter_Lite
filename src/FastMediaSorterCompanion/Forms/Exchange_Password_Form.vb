@@ -48,6 +48,7 @@ Friend NotInheritable Class Exchange_Password_Form
     Private _btnOk As Button
     Private _btnCopy As Button
     Private _btnOwn As Button
+    Private _answerRow As DialogButtonRow
     Private _copied As Boolean
     Private _revealed As Boolean
     Private _choseOwn As Boolean
@@ -111,6 +112,7 @@ Friend NotInheritable Class Exchange_Password_Form
         Dim body As New TableLayoutPanel With {.Dock = DockStyle.Fill, .ColumnCount = 1, .AutoSize = True,
             .AutoSizeMode = AutoSizeMode.GrowAndShrink, .Padding = New Padding(14, 12, 14, 6)}
         body.ColumnStyles.Add(New ColumnStyle(SizeType.Percent, 100.0F))
+        body.Controls.Add(ExchangeMark.Heading(Text, 32, AddressOf CompanionAssets.OpenBundledAsset))
 
         If _mode <> DialogMode.Enter Then
             Dim intro As String = If(_mode = DialogMode.Kept, ExchangeAdminText.KeptIntro(),
@@ -134,7 +136,8 @@ Friend NotInheritable Class Exchange_Password_Form
         _chkShow = New CheckBox With {.AutoSize = True, .Margin = New Padding(0, 0, 0, 4),
             .Text = Localization.T("Показать пароль")}
         AddHandler _chkShow.CheckedChanged, AddressOf OnShowChanged
-        body.Controls.Add(_chkShow)
+        ' A boolean row (BOOLEAN-OPTION 2.0, ticket 243 T-11c-b2a): the check box keeps its field, default and handlers.
+        body.Controls.Add(OptionRows.InFlow(_chkShow))
 
         If _mode = DialogMode.Enter Then
             body.Controls.Add(New Label With {.AutoSize = True, .MaximumSize = New Size(ContentWidth, 0),
@@ -151,44 +154,46 @@ Friend NotInheritable Class Exchange_Password_Form
             .ForeColor = ThemeService.Palette.TextMuted, .Margin = New Padding(0, 2, 0, 2), .Visible = False}
         body.Controls.Add(_lblStatus)
 
-        Dim buttons As New FlowLayoutPanel With {.AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink,
-            .FlowDirection = FlowDirection.LeftToRight, .WrapContents = False, .Margin = New Padding(0, 10, 0, 6)}
+        ' The answers ride the shared bottom row (ticket 243 T-8b, BUTTONS 2.0 sections 3 and 4). Entering a password: Cancel
+        ' first, Save last, Enter saves and Escape cancels, as before. Showing one (generated, or kept on this PC): Copy and
+        ' "set my own" are commands of the window and Close is its one answer, so the commands read first, set apart, then
+        ' Close; Escape and now Enter reach Close - Enter used to copy, and a command is never the default. A generated
+        ' password that was neither copied nor revealed is still asked about when Close is pressed (OnFormClosing).
+        _answerRow = New DialogButtonRow() With {.Dock = DockStyle.Bottom, .Name = "xpw_Buttons", .Padding = New Padding(14, 4, 14, 10)}
         If _mode = DialogMode.Enter Then
-            _btnOk = New Button With {.AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink,
+            _btnOk = New Button With {.Name = "xpw_Ok", .AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink,
                 .Padding = New Padding(12, 4, 12, 4), .Text = ExchangeText.SavePasswordButton()}
             ButtonGlyphs.Apply(_btnOk, "action.save", ButtonGlyphRole.Affirmative)
             AddHandler _btnOk.Click, AddressOf OnSaveClicked
-            Dim btnCancel As New Button With {.AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink,
+            Dim btnCancel As New Button With {.Name = "xpw_Cancel", .AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink,
                 .Padding = New Padding(12, 4, 12, 4), .Text = Localization.T("Отмена"), .DialogResult = DialogResult.Cancel}
             ButtonGlyphs.Apply(btnCancel, "action.cancel", ButtonGlyphRole.Dismissing)
-            buttons.Controls.Add(_btnOk)
-            buttons.Controls.Add(btnCancel)
-            Me.AcceptButton = _btnOk
-            Me.CancelButton = btnCancel
+            DpiLayout.AddAnswer(_answerRow, _btnOk, DialogButtonRole.Affirmative)
+            DpiLayout.AddAnswer(_answerRow, btnCancel, DialogButtonRole.Dismissing)
         Else
-            _btnCopy = New Button With {.AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink,
+            _btnCopy = New Button With {.Name = "xpw_Copy", .AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink,
                 .Padding = New Padding(12, 4, 12, 4), .Text = ExchangeText.CopyPasswordButton()}
-            ButtonGlyphs.Apply(_btnCopy, "action.copy", ButtonGlyphRole.Affirmative)
+            ButtonGlyphs.Apply(_btnCopy, "action.copy")
             AddHandler _btnCopy.Click, AddressOf OnCopyClicked
-            Dim btnClose As New Button With {.AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink,
+            Dim btnClose As New Button With {.Name = "xpw_Close", .AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink,
                 .Padding = New Padding(12, 4, 12, 4), .Text = Localization.T("Закрыть"), .DialogResult = DialogResult.OK}
             ButtonGlyphs.Apply(btnClose, "nav.close", ButtonGlyphRole.Dismissing)
-            buttons.Controls.Add(_btnCopy)
+            DpiLayout.AddAnswer(_answerRow, _btnCopy, DialogButtonRole.Command)
             If _mode = DialogMode.Generated Then
                 ' the one way to a password of the person's own choosing, from the same screen as the generated one
-                _btnOwn = New Button With {.AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink,
+                _btnOwn = New Button With {.Name = "xpw_Own", .AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink,
                     .Padding = New Padding(12, 4, 12, 4), .Text = ExchangeAdminText.OwnPasswordButton()}
                 ButtonGlyphs.Apply(_btnOwn, "action.change-password")
                 AddHandler _btnOwn.Click, AddressOf OnOwnClicked
-                buttons.Controls.Add(_btnOwn)
+                DpiLayout.AddAnswer(_answerRow, _btnOwn, DialogButtonRole.Command)
             End If
-            buttons.Controls.Add(btnClose)
-            Me.AcceptButton = _btnCopy
-            Me.CancelButton = btnClose
+            DpiLayout.AddAnswer(_answerRow, btnClose, DialogButtonRole.Dismissing)
         End If
-        body.Controls.Add(buttons)
 
         Me.Controls.Add(body)
+        ' Last in the collection: the docked row takes its edge first and reads after the field in the Tab order.
+        Me.Controls.Add(_answerRow)
+        _answerRow.Bind(Me)
         Me.AutoSize = True
         Me.AutoSizeMode = AutoSizeMode.GrowAndShrink
 
@@ -197,6 +202,7 @@ Friend NotInheritable Class Exchange_Password_Form
 
     Protected Overrides Sub OnLoad(e As EventArgs)
         MyBase.OnLoad(e)
+        OptionRows.ArrangeAll(Me)
         DpiLayout.ClampToWorkingArea(Me)
         DpiLayout.CenterOnOwner(Me)
         _txt.Focus()
@@ -259,7 +265,7 @@ Friend NotInheritable Class Exchange_Password_Form
     Protected Overrides Sub OnFormClosing(e As FormClosingEventArgs)
         If _mode = DialogMode.Generated AndAlso Not e.Cancel AndAlso Not _copied AndAlso Not _revealed AndAlso
            Not _retrievable AndAlso e.CloseReason = CloseReason.UserClosing Then
-            If MessageBox.Show(Me, ExchangeText.CloseWithoutCopyQuestion(), Me.Text, MessageBoxButtons.YesNo,
+            If ManagerBox.Show(Me, ExchangeText.CloseWithoutCopyQuestion(), Me.Text, MessageBoxButtons.YesNo,
                                MessageBoxIcon.Warning, MessageBoxDefaultButton.Button2) <> DialogResult.Yes Then
                 e.Cancel = True
                 Return

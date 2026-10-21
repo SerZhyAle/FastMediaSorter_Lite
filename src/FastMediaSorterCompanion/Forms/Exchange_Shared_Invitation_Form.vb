@@ -20,6 +20,7 @@ Friend NotInheritable Class Exchange_Shared_Invitation_Form
     Private _rbFamily As RadioButton
     Private _rbGuest As RadioButton
     Private _lblGuestReason As Label
+    Private _answerRow As DialogButtonRow
     Private _iconHandle As IntPtr
     Private _password As String = ""
     Private _generated As Boolean
@@ -77,6 +78,7 @@ Friend NotInheritable Class Exchange_Shared_Invitation_Form
             .AutoSizeMode = AutoSizeMode.GrowAndShrink, .Padding = New Padding(14, 12, 14, 6)}
         body.ColumnStyles.Add(New ColumnStyle(SizeType.Percent, 100.0F))
 
+        body.Controls.Add(ExchangeMark.Heading(Text, 32, AddressOf CompanionAssets.OpenBundledAsset))
         body.Controls.Add(New Label With {.AutoSize = True, .MaximumSize = New Size(ContentWidth, 0), .Margin = New Padding(0, 0, 0, 6),
             .Text = Localization.T("Пользователи смогут регистрироваться на сервере, указав этот общий пароль вместо одноразового кода приглашения.")})
 
@@ -105,20 +107,23 @@ Friend NotInheritable Class Exchange_Shared_Invitation_Form
         body.Controls.Add(_rbGenerate)
         body.Controls.Add(_rbType)
 
-        Dim buttons As New FlowLayoutPanel With {.AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink, .FlowDirection = FlowDirection.LeftToRight,
-            .WrapContents = False, .Margin = New Padding(0, 10, 0, 6)}
+        ' The answers ride the shared bottom row (ticket 243 T-8b, BUTTONS 2.0 sections 3 and 4): Cancel first, Set last
+        ' and the default (the password is only stored when the person confirms it later), Escape = Cancel.
         Dim btnOk As Button = NewButton(Localization.T("Установить"), AddressOf OnOkClicked, "action.confirm", ButtonGlyphRole.Affirmative)
+        btnOk.Name = "xshi_Ok"
         ' a guest-kind invitation that already exists cannot be set again while guests are not offered
         btnOk.Enabled = offered OrElse Not isGuest
         Dim btnCancel As Button = NewButton(Localization.T("Отмена"), Sub() Me.DialogResult = DialogResult.Cancel, "nav.close", ButtonGlyphRole.Dismissing)
+        btnCancel.Name = "xshi_Cancel"
         btnCancel.DialogResult = DialogResult.Cancel
-        buttons.Controls.Add(btnOk)
-        buttons.Controls.Add(btnCancel)
-        body.Controls.Add(buttons)
+        _answerRow = New DialogButtonRow() With {.Dock = DockStyle.Bottom, .Name = "xshi_Buttons", .Padding = New Padding(14, 4, 14, 10)}
+        DpiLayout.AddAnswer(_answerRow, btnOk, DialogButtonRole.Affirmative, "action.confirm")
+        DpiLayout.AddAnswer(_answerRow, btnCancel, DialogButtonRole.Dismissing, "nav.close")
 
-        Me.AcceptButton = btnOk
-        Me.CancelButton = btnCancel
         Me.Controls.Add(body)
+        ' Last in the collection: the docked row takes its edge first and reads after the content in the Tab order.
+        Me.Controls.Add(_answerRow)
+        _answerRow.Bind(Me)
         Me.AutoSize = True
         Me.AutoSizeMode = AutoSizeMode.GrowAndShrink
 

@@ -12,6 +12,7 @@ Imports fmsl
 ''' ImageSharp 2 path of FastMediaSorter_x86.exe, net10 exercises the ImageSharp 3
 ''' path of FastMediaSorter_LITE.exe. See CLAUDE.md "Two builds, one source tree".
 ''' </summary>
+<Collection("DecodeCacheBudget")>
 Public Class ImageDecoderSeamTests
 
     ''' <summary>

@@ -1,10 +1,111 @@
 #If Not NETFRAMEWORK Then
 Option Strict On
 
+Imports System.Collections.Generic
 Imports System.IO
+Imports System.Linq
+Imports System.Text.Json
 Imports Xunit
 
 Public Class LiveBroadcastStoreTests
+
+    ' LIVE-BROADCAST 1.1: an entry of the store this program cannot read is never destroyed by a rewrite. The two entries below are
+    ' what a newer program (a later schema, with a member this one has never heard of) and a damaged hand edit look like on disk.
+    Private Const LaterEntry As String = "{""schemaVersion"":2,""url"":""http://192.168.1.60:8080/later"",""mode"":""AUDIO_ONLY"",""sourceId"":""later-1"",""future"":{""x"":[1,2,3]}}"
+    Private Const LaterEntryNoSourceId As String = "{""schemaVersion"":3,""url"":""http://192.168.1.61:8080/later"",""mode"":""AUDIO_ONLY"",""title"":""Later without id""}"
+    Private Const DamagedEntry As String = "{""schemaVersion"":""one"",""url"":""http://192.168.1.62:8080/x""}"
+    Private Const ReadableEntry As String = "{""schemaVersion"":1,""url"":""http://192.168.1.63:8080/live"",""mode"":""AUDIO_ONLY"",""title"":""Readable""}"
+
+    Private Shared Function RawEntries(path As String) As List(Of String)
+        Using doc As JsonDocument = JsonDocument.Parse(File.ReadAllText(path))
+            Return doc.RootElement.EnumerateArray().Select(Function(e) e.GetRawText()).ToList()
+        End Using
+    End Function
+
+    Private Shared Function Audio(url As String, title As String, Optional sourceId As String = Nothing) As LiveBroadcastDescriptor
+        Return New LiveBroadcastDescriptor With {.SchemaVersion = 1, .Url = url, .Mode = "AUDIO_ONLY", .ModeValue = LiveBroadcastMode.AudioOnly, .Title = title, .SourceId = sourceId}
+    End Function
+
+    <Fact>
+    Public Sub An_Unreadable_Entry_Is_Not_Returned_But_Survives_Every_Rewrite_Unchanged()
+        Dim tempStoreFile As String = Path.GetTempFileName()
+        Try
+            File.WriteAllText(tempStoreFile, "[" & ReadableEntry & "," & LaterEntry & "," & DamagedEntry & "]")
+            Dim store As New LiveBroadcastStore(tempStoreFile)
+
+            Dim loaded As List(Of LiveBroadcastDescriptor) = store.LoadAll()
+            Assert.Single(loaded)
+            Assert.Equal("Readable", loaded(0).Title)
+
+            store.Upsert(Audio("http://192.168.1.70:8080/new", "New one"))
+
+            Dim after As List(Of String) = RawEntries(tempStoreFile)
+            Assert.Equal(4, after.Count)
+            Assert.Contains(LaterEntry, after)
+            Assert.Contains(DamagedEntry, after)
+            Assert.Equal(2, store.LoadAll().Count)
+
+            ' saving an empty list is not a reason to lose them either
+            store.SaveAll(New List(Of LiveBroadcastDescriptor)())
+            after = RawEntries(tempStoreFile)
+            Assert.Equal(2, after.Count)
+            Assert.Contains(LaterEntry, after)
+            Assert.Contains(DamagedEntry, after)
+        Finally
+            If File.Exists(tempStoreFile) Then File.Delete(tempStoreFile)
+        End Try
+    End Sub
+
+    <Fact>
+    Public Sub A_Readable_Descriptor_Of_The_Same_Channel_Replaces_The_Unreadable_Entry_By_SourceId_Or_Address()
+        Dim tempStoreFile As String = Path.GetTempFileName()
+        Try
+            File.WriteAllText(tempStoreFile, "[" & LaterEntry & "," & LaterEntryNoSourceId & "," & DamagedEntry & "]")
+            Dim store As New LiveBroadcastStore(tempStoreFile)
+
+            ' same sourceId: the entry this program could not read is the older record of this very channel
+            store.Upsert(Audio("http://192.168.1.60:9090/now", "Now readable", "later-1"))
+            Dim after As List(Of String) = RawEntries(tempStoreFile)
+            Assert.DoesNotContain(LaterEntry, after)
+            Assert.Contains(LaterEntryNoSourceId, after)
+            Assert.Contains(DamagedEntry, after)
+            Assert.Equal(3, after.Count)
+
+            ' a different channel leaves the entry with no sourceId alone ...
+            store.Upsert(Audio("http://192.168.1.99:8080/other", "Other"))
+            Assert.Contains(LaterEntryNoSourceId, RawEntries(tempStoreFile))
+
+            ' ... and the same address, with no sourceId on either side, replaces it
+            store.Upsert(Audio("http://192.168.1.61:8080/later", "Same address"))
+            after = RawEntries(tempStoreFile)
+            Assert.DoesNotContain(LaterEntryNoSourceId, after)
+            Assert.Contains(DamagedEntry, after)
+            Assert.Equal(3, store.LoadAll().Count)
+        Finally
+            If File.Exists(tempStoreFile) Then File.Delete(tempStoreFile)
+        End Try
+    End Sub
+
+    <Fact>
+    Public Sub The_Unreadable_Entries_Kept_Are_Bounded_By_The_Same_Cap()
+        Dim tempStoreFile As String = Path.GetTempFileName()
+        Try
+            Dim entries As New List(Of String)()
+            For i As Integer = 1 To LiveBroadcastStore.MaxEntries + 5
+                entries.Add("{""schemaVersion"":2,""url"":""http://192.168.2." & i.ToString() & ":8080/later"",""mode"":""AUDIO_ONLY"",""sourceId"":""later-n" & i.ToString() & """}")
+            Next
+            File.WriteAllText(tempStoreFile, "[" & String.Join(",", entries) & "]")
+            Dim store As New LiveBroadcastStore(tempStoreFile)
+
+            store.Upsert(Audio("http://192.168.1.71:8080/new", "New one"))
+
+            Dim after As List(Of String) = RawEntries(tempStoreFile)
+            Assert.Equal(LiveBroadcastStore.MaxEntries + 1, after.Count)
+            Assert.Equal(entries(0), after(1))
+        Finally
+            If File.Exists(tempStoreFile) Then File.Delete(tempStoreFile)
+        End Try
+    End Sub
 
     <Fact>
     Public Sub SourceId_Replacement_Updates_Port_And_Preserves_One_Entry()

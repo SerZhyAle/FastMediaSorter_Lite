@@ -229,6 +229,22 @@ Friend NotInheritable Class ClipboardExchange
         _ports = If(ports, New ClipboardExchangePorts())
     End Sub
 
+    ''' <summary>Refresh only the existing authorized clipboard-info metadata. Never open the OS clipboard or fetch bytes.</summary>
+    Public Async Function QueryClipboardSizeAsync(ct As CancellationToken) As Task(Of IReadOnlyList(Of ClipboardSlotStatus))
+        Dim targets As List(Of ClipboardTarget) = _ports.Targets.Invoke()
+        Dim queries As New List(Of Task(Of ClipboardSlotStatus))()
+        For Each target As ClipboardTarget In targets
+            queries.Add(QuerySlotAsync(target, ct))
+        Next
+        Return Await Task.WhenAll(queries).ConfigureAwait(False)
+    End Function
+
+    Private Async Function QuerySlotAsync(target As ClipboardTarget, ct As CancellationToken) As Task(Of ClipboardSlotStatus)
+        Dim result As ExchangeClipboardResult = Await ExchangeClipboardClient.StateAsync(
+            target.Transport, target.Address, target.Pin, target.Credentials, _ports.ProductVersion, ct, _ports.StateIdle).ConfigureAwait(False)
+        Return New ClipboardSlotStatus(target.Label, result)
+    End Function
+
     Public ReadOnly Property IsRunning As Boolean
         Get
             Return Volatile.Read(_running) <> 0

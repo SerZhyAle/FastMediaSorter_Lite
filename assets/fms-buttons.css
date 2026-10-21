@@ -1,0 +1,198 @@
+/* BUTTONS 2.0 and COLLAPSIBLE-GROUP 1.1 adapter - the identified adapter that PAGE-STYLE 3.1 (sections 4.4, 5 and 12) asks a
+   consumer to keep after the byte-identical kit. Load order on every page: sza-kit.css, fms-site.css, THEN this file; a page
+   that loads fms-site.css without this file keeps the kit's pills and glow, and tools/Build-SitePages.ps1 -Check ("Button
+   adapter") fails it. The kit file is never edited; every rule below overrides it from here.
+
+   What it does, by contract id (BUTTONS 2.0 section 3 and 4, COLLAPSIBLE-GROUP 1.1 section 3 and 4, UI-SIZING 1.1 section 2;
+   the normative text stays in the catalog, this file only implements it):
+   - shape: radius 4, border 1 in every state, no permanent shadow or glow, no hover lift;
+   - profile: 32 pointer / 48 touch, chosen once by the browser's primary pointer (`pointer: coarse`) and never switched by
+     a mouse or touch event; padding 12 / 16, glyph-to-caption gap 8, button and wrapped-row gap 8; sizes are rem, so the
+     user's text size grows the control and the user's browser zoom is not applied twice;
+   - flow: a button is as wide as its content (never equal, never stretched, never a percentage), a whole button wraps to the
+     next row before its caption wraps, and the buttons of one row share the tallest one's height;
+   - states: hover, pressed, selected, disabled and keyboard focus each read without colour alone;
+   - group: the page's collapsible group (`details.sec`) gets a leading filled state triangle, a header of its own colour that is
+     the whole hit area, and a body that stays in flow (the section "collapsible group" below).
+   No max-width is set on a page container here (Test-SiteQuality rule 8 reads fms-site.css, and the same rule holds). */
+
+:root{
+  --btn-radius:4px;
+  --btn-min:2rem;          /* pointer and keyboard profile: 32 px at the default text size */
+  --btn-pad:.75rem;        /* 12 px */
+  --btn-gap:.5rem;         /* 8 px: glyph to caption, button to button, wrapped row to row */
+  --btn-glyph:1rem;        /* 16 px glyph tier */
+  --btn-font:.875rem;      /* one type scale for every control of a panel, header controls included */
+}
+@media (pointer:coarse){
+  :root{--btn-min:3rem;--btn-pad:1rem;--btn-glyph:1.25rem}   /* touch profile: 48, 16, 20 */
+}
+
+/* ---------- shape, size and type: every standalone command control ---------- */
+.btn,.theme-btn,.nav-doc,.site-nav .nav-doc,.lang-menu>summary,.copybox .copy,.to-top{
+  box-sizing:border-box;
+  min-height:var(--btn-min);   /* no min-width here: an explicit one switches off the automatic minimum, and a caption could then shrink out of its box */
+  padding:.3125rem var(--btn-pad);
+  border:1px solid var(--border);border-radius:var(--btn-radius);
+  box-shadow:none;
+  font-size:var(--btn-font);line-height:1.35;text-align:center;text-decoration:none;
+  transition:background-color .15s,border-color .15s,color .15s;
+}
+.btn,.theme-btn,.nav-doc,.site-nav .nav-doc,.lang-menu>summary,.copybox .copy{
+  display:inline-flex;align-items:center;justify-content:center;gap:var(--btn-gap);
+}
+/* the width floor of the profile, for the controls whose caption is a glyph or a few letters; text buttons reach it by padding */
+.theme-btn,.copybox .copy{min-width:var(--btn-min)}
+.btn,.btn:hover,.theme-btn,.theme-btn:hover,.nav-doc,.site-nav .nav-doc,.lang-menu>summary{transform:none}
+
+/* content-fit width: a button never stretches in a grid cell or a column, and a caption that cannot fit even alone wraps */
+.btn{width:fit-content;max-width:100%;flex:0 1 auto;justify-self:start;white-space:normal;overflow-wrap:break-word}
+.btn-sm{padding:.3125rem var(--btn-pad);font-size:var(--btn-font);border-radius:var(--btn-radius)}   /* the kit's size class gets no size of its own here: one density per panel, and no page markup uses it (Test-SiteQuality rule 12) */
+
+/* a glyph beside a caption: the flex gap is the only space (the page layer's inline-end margin would add a second one) */
+.btn .glyph,.theme-btn .glyph,.copybox .copy .glyph{margin-inline-end:0;width:var(--btn-glyph);height:var(--btn-glyph);flex:none}
+.to-top .glyph{margin:0;width:var(--btn-glyph);height:var(--btn-glyph)}
+
+/* ---------- ranks ---------- */
+.btn-primary{background:var(--acc);color:var(--acc-ink);border-color:var(--acc)}
+.btn-ghost{border-color:var(--border)}
+/* There is no third colour role: the kit's .btn-gold is retired (PAGE-STYLE 4.4) and no page uses it; Test-SiteQuality rule 12 holds that. */
+
+/* ---------- segmented selector (language) : one bordered control, parts keep content width, no equal-size forcing ---------- */
+.seg{padding:0;gap:0;align-items:stretch;min-height:var(--btn-min);border-radius:var(--btn-radius)}
+.seg button,.seg a{
+  display:inline-flex;align-items:center;justify-content:center;
+  min-height:calc(var(--btn-min) - 2px);min-width:var(--btn-min);padding:0 var(--btn-pad);
+  border:0;border-radius:calc(var(--btn-radius) - 1px);background:transparent;
+  color:var(--muted);   /* the kit draws `.seg button` in --code-ink, a pale ink that vanishes on the light theme's pale face */
+  font-family:var(--font-heading);font-size:var(--btn-font);font-weight:700;letter-spacing:.04em;line-height:1.35;
+  text-decoration:none;cursor:pointer;
+}
+
+/* ---------- hover (colour only; nothing moves) ---------- */
+.btn-primary:hover{background:var(--acc-strong);border-color:var(--acc-strong);color:var(--acc-ink)}
+.btn-ghost:hover{background:var(--card-hover);border-color:var(--border-hover);color:var(--text)}
+.theme-btn:hover,.site-nav .nav-doc:hover,.lang-menu>summary:hover{color:var(--text);border-color:var(--border-hover)}
+.seg button:hover,.seg a:hover{color:var(--text);background:var(--card-hover)}
+.to-top:hover{background:var(--acc-strong);border-color:var(--acc-strong)}
+.copybox .copy:hover{color:var(--code-ink);border-color:var(--code-accent)}
+
+/* ---------- selected (a toggle or the current choice): fill AND an underline, so it reads without colour ---------- */
+.seg button[aria-pressed="true"],.seg button.on,.seg a[aria-current],.seg a.on{
+  background:var(--acc);color:var(--acc-ink);
+  text-decoration:underline;text-decoration-thickness:2px;text-underline-offset:.3em;
+}
+.theme-btn[aria-pressed="true"]{border-color:var(--acc);text-decoration:underline;text-decoration-thickness:2px;text-underline-offset:.3em}
+
+/* ---------- pressed: a one-pixel inner ring in the text colour for the moment of the press (no layout change) ---------- */
+.btn:active,.theme-btn:active,.site-nav .nav-doc:active,.lang-menu>summary:active,.copybox .copy:active,.to-top:active,
+.seg button:active,.seg a:active{box-shadow:inset 0 0 0 1px currentColor}
+
+/* ---------- keyboard focus: the kit's ring, restated so it survives a later rule ---------- */
+.btn:focus-visible,.theme-btn:focus-visible,.nav-doc:focus-visible,.lang-menu>summary:focus-visible,.to-top:focus-visible,
+.seg button:focus-visible,.seg a:focus-visible{outline:2px solid var(--acc);outline-offset:2px;border-radius:var(--btn-radius)}
+.copybox .copy:focus-visible{outline:2px solid var(--code-accent);outline-offset:2px;border-radius:var(--btn-radius)}
+
+/* ---------- disabled: muted ink and face, a dashed border (the shape changes, the size does not) ---------- */
+.btn:disabled,.btn[aria-disabled="true"],.btn.is-disabled,.theme-btn:disabled,.copybox .copy:disabled,.seg button:disabled,
+.btn:disabled:hover,.btn[aria-disabled="true"]:hover,.btn.is-disabled:hover,.theme-btn:disabled:hover,.copybox .copy:disabled:hover,.seg button:disabled:hover{
+  background:transparent;color:var(--muted);border-style:dashed;border-color:var(--border);box-shadow:none;cursor:not-allowed;
+}
+
+/* ---------- external navigation marker (BUTTONS 2.0 section 2 rule 3; the ICON-SET meaning nav.open-external) ----------
+   Every link that opens in a new tab carries the same vector marker after its caption. It is drawn from the glyph as a mask,
+   so it takes the link's own ink (currentColor, and the system colours in high contrast), and it is decoration: the words
+   that name the behaviour are the link's own screen-reader text (`<span class="sr-only"> (opens in a new tab)</span>`, from
+   `externalLabel` in tools/site-copy.json), which Test-SiteQuality rule 14 requires on every target="_blank" link. A typed
+   arrow in a caption is not a marker. The glyph mirrors with the reading direction. */
+a[target="_blank"]::after{
+  content:"";display:inline-block;flex:none;width:.85em;height:.85em;margin-inline-start:.3em;vertical-align:-.1em;
+  background-color:currentColor;
+  -webkit-mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M19,19H5V5h7V3H5c-1.11,0 -2,0.9 -2,2v14c0,1.1 0.89,2 2,2h14c1.1,0 2,-0.9 2,-2v-7h-2v7zM14,3v2h3.59l-9.83,9.83 1.41,1.41L19,6.41V10h2V3h-7z'/%3E%3C/svg%3E") center/contain no-repeat;
+          mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M19,19H5V5h7V3H5c-1.11,0 -2,0.9 -2,2v14c0,1.1 0.89,2 2,2h14c1.1,0 2,-0.9 2,-2v-7h-2v7zM14,3v2h3.59l-9.83,9.83 1.41,1.41L19,6.41V10h2V3h-7z'/%3E%3C/svg%3E") center/contain no-repeat;
+}
+.btn[target="_blank"]::after{width:var(--btn-glyph);height:var(--btn-glyph);margin-inline-start:0}   /* inside a button the flex gap is the space */
+[dir="rtl"] a[target="_blank"]::after{transform:scaleX(-1)}
+.tools-grid a[target="_blank"]{position:relative;padding-inline-end:1.9rem}   /* a card: the marker sits in its corner, clear of the text */
+.tools-grid a[target="_blank"]::after{position:absolute;inset-block-start:.75rem;inset-inline-end:.7rem;margin:0}
+@media (forced-colors:active){a[target="_blank"]::after{forced-color-adjust:none;background-color:currentColor}}
+
+/* ---------- copy button inside the code surface (dark in both themes) ---------- */
+.copybox{padding-right:8.5rem}   /* room for the longest localized "Copied" at the 32/48 target without covering the command */
+.copybox .copy{
+  border-color:color-mix(in srgb,var(--code-ink) 32%,transparent);
+  background:color-mix(in srgb,var(--code-ink) 8%,transparent);
+  top:50%;transform:translateY(-50%);   /* centred in the box for both profiles; a fixed position, not a hover movement */
+}
+.copybox .copy:hover{transform:translateY(-50%)}
+.copybox .copy.done{border-color:var(--code-accent)}
+
+/* ---------- back to top: a square control of the profile's target size, no shadow ---------- */
+.to-top{
+  width:var(--btn-min);height:var(--btn-min);min-width:0;min-height:0;padding:0;
+  border-color:var(--acc);border-radius:var(--btn-radius);
+}
+
+/* ---------- rows of buttons (moved from the root page's inline style so the generated locales get them) ---------- */
+.button-group,.dl-row,.scenario-foot{display:flex;flex-wrap:wrap;align-items:stretch;gap:var(--btn-gap)}
+.button-group{justify-content:flex-start;margin-top:.2rem}
+.scenario-foot{margin-top:auto}
+.dl-meta{color:var(--muted);font-size:.78rem;width:100%}
+.site-nav{flex-wrap:wrap;gap:var(--btn-gap)}   /* the header's controls wrap as whole buttons at every width, not only under 480 px */
+
+/* ---------- collapsible group (COLLAPSIBLE-GROUP 1.1 sections 3 and 4; the kit's `details.sec`) ----------
+   The kit draws a trailing action chevron, pads the card at its sides (so the summary never reached the card's edge) and gives
+   the header no colour of its own. Here the header is its own band: a LEADING filled triangle that reports the CURRENT state
+   (right when closed, down when open, and in a right-to-left page the closed triangle points left), a header background token,
+   4 px corners, the whole width of the card as the hit area (the side inset moves from the card to the body children) and a
+   target of --btn-min (32 pointer, 48 coarse). The triangle is a vector mask in currentColor, tier 16, never a typed arrow.
+   The body is a normal-flow child at the card's full content width; nothing here caps a width. The rotation is not animated,
+   so a reader who asks for reduced motion has nothing to switch off. */
+:root{
+  --group-radius:4px;
+  --group-head-bg:color-mix(in srgb,var(--acc) 14%,var(--bg-2));      /* a band of its own in the light and the dark theme */
+  --group-head-hover:color-mix(in srgb,var(--acc) 22%,var(--bg-2));
+  --group-inset:.75rem;    /* 12 px: the header's side padding and the body's inset */
+  --group-marker:1rem;     /* marker tier 16 */
+}
+details.sec{padding:0;border-radius:calc(var(--group-radius) + 1px)}   /* 1 px border + 4 px header corner: the band meets the card's edge cleanly */
+details.sec>summary{
+  box-sizing:border-box;display:flex;align-items:center;gap:var(--btn-gap);
+  width:100%;min-height:var(--btn-min);padding:.375rem var(--group-inset);
+  border:1px solid transparent;border-radius:var(--group-radius);   /* a transparent border turns into a visible one in forced colours without moving anything */
+  background:var(--group-head-bg);color:var(--text);
+  list-style:none;cursor:pointer;touch-action:manipulation;
+  font-family:var(--font-heading);font-weight:700;font-size:1.05rem;line-height:1.35;
+  transition:background-color .15s;
+}
+details.sec>summary::-webkit-details-marker{display:none}
+details.sec>summary:hover{background:var(--group-head-hover)}
+details.sec>summary:active{box-shadow:inset 0 0 0 1px currentColor}
+details.sec>summary:focus-visible{outline:2px solid var(--acc);outline-offset:-2px;border-radius:var(--group-radius)}   /* inside the band: nothing clips it at the card's edge */
+/* the kit's trailing chevron is switched off (its rule lives in the byte-identical kit, so it is answered from here) */
+details.sec>summary::after,details.sec[open]>summary::after{content:none;display:none}
+/* the leading state triangle: closed = toward reading end; open = down */
+details.sec>summary::before{
+  content:"";flex:none;align-self:center;width:var(--group-marker);height:var(--group-marker);
+  background-color:currentColor;
+  -webkit-mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M6.5 5v14l11-7z'/%3E%3C/svg%3E") center/contain no-repeat;
+          mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M6.5 5v14l11-7z'/%3E%3C/svg%3E") center/contain no-repeat;
+}
+details.sec[open]>summary::before{transform:rotate(90deg)}
+/* right-to-left: the closed triangle points left; the open one still points down. The attribute form and :dir() are separate
+   rules, because a browser that does not know :dir() drops a whole selector list that names it. */
+[dir="rtl"] details.sec>summary::before{transform:scaleX(-1)}
+:dir(rtl) details.sec>summary::before{transform:scaleX(-1)}
+[dir="rtl"] details.sec[open]>summary::before{transform:rotate(90deg)}
+:dir(rtl) details.sec[open]>summary::before{transform:rotate(90deg)}
+/* the body: in flow under its own header, inset at the sides, full width of the card's content */
+details.sec>:not(summary){margin-inline:var(--group-inset)}
+details.sec>summary+*{margin-top:var(--group-inset)}
+
+/* ---------- high contrast: system colours decide, the selected part keeps its underline ---------- */
+@media (forced-colors:active){
+  details.sec>summary::before{forced-color-adjust:none;background-color:currentColor}   /* the system would paint the mask's face with Canvas and hide the triangle */
+  .btn,.theme-btn,.nav-doc,.lang-menu>summary,.copybox .copy,.to-top{border:1px solid ButtonText}
+  .seg button[aria-pressed="true"],.seg button.on,.seg a[aria-current],.seg a.on{background:Highlight;color:HighlightText}
+  .btn:disabled,.btn[aria-disabled="true"],.btn.is-disabled{color:GrayText;border-color:GrayText}
+}

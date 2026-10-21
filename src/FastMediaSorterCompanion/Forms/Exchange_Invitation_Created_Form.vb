@@ -20,6 +20,7 @@ Friend NotInheritable Class Exchange_Invitation_Created_Form
     Private _txtCode As TextBox
     Private _txtConnString As TextBox
     Private _lblResult As Label
+    Private _answerRow As DialogButtonRow
     Private _iconHandle As IntPtr
 
     Friend Sub New(code As String, connString As String, kind As String)
@@ -60,6 +61,7 @@ Friend NotInheritable Class Exchange_Invitation_Created_Form
             .AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink, .Padding = New Padding(14, 10, 14, 8)}
 
         Dim kindText As String = If(String.Equals(_kind, "guest", StringComparison.OrdinalIgnoreCase), Localization.T("Гость"), Localization.T("Своё устройство или семья"))
+        body.Controls.Add(ExchangeMark.Heading(Text, 32, AddressOf CompanionAssets.OpenBundledAsset))
         body.Controls.Add(New Label With {.AutoSize = True, .MaximumSize = New Size(ContentWidth, 0), .Margin = New Padding(0, 0, 0, 4),
             .Font = New Font(Me.Font, FontStyle.Bold), .Text = Localization.TF("Тип приглашения: {0}", kindText)})
 
@@ -97,14 +99,15 @@ Friend NotInheritable Class Exchange_Invitation_Created_Form
             .Margin = New Padding(0, 4, 0, 4), .Visible = False}
         body.Controls.Add(_lblResult)
 
+        ' Close is the window's one answer and rides the shared answer row (ticket 243 T-8b, BUTTONS 2.0 sections 3 and 4);
+        ' Enter and Escape both reach it, as before. The copy buttons above stay beside the field each one copies.
         Dim btnClose As Button = NewButton(Localization.T("Закрыть"), Sub() Me.Close(), "nav.close", ButtonGlyphRole.Dismissing)
+        btnClose.Name = "xinvd_Close"
         btnClose.DialogResult = DialogResult.OK
-        Dim closeRow As New FlowLayoutPanel With {.AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink, .Margin = New Padding(0, 6, 0, 2)}
-        closeRow.Controls.Add(btnClose)
-        body.Controls.Add(closeRow)
-
-        Me.AcceptButton = btnClose
-        Me.CancelButton = btnClose
+        _answerRow = New DialogButtonRow() With {.Name = "xinvd_Buttons", .Margin = New Padding(0, 6, 0, 2), .Size = New Size(ContentWidth, UiSizing.PointerTarget)}
+        DpiLayout.AddAnswer(_answerRow, btnClose, DialogButtonRole.Dismissing, "nav.close")
+        body.Controls.Add(_answerRow)
+        _answerRow.Bind(Me)
         Me.Controls.Add(body)
         Me.AutoScroll = True
         Me.ClientSize = body.PreferredSize

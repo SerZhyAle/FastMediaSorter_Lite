@@ -131,7 +131,8 @@ Friend NotInheritable Class ExchangeEntryText
     Friend Shared Function InputRefusal(reason As String, looks As String) As String
         Select Case reason
             Case ExchangeConnectionStringReason.NewerMajor
-                Return Localization.T("Эту строку сделала более новая версия. Обновите программу.")
+                ' DEVICE-EXCHANGE 1.3 (amendment 2026-10-17): the canonical local row `format-unsupported`, no "update" demand
+                Return ConnectionDiagnosisLocalization.FormatUnsupportedText()
             Case ExchangeConnectionStringReason.NotAString
                 If looks = ExchangeConnectionStringReason.LooksShareCode Then
                     Return Localization.T("Это код общей папки, а не строка подключения к серверу обмена. Код добавляют кнопкой «Добавить..» в ресурсах.")

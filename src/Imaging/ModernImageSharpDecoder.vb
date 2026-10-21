@@ -55,7 +55,7 @@ Friend NotInheritable Class ModernImageSharpDecoder
     ''' The decode itself. Returns the encoded bytes rather than a GDI+ image, so the
     ''' cache can keep exactly what was produced and the timing that justifies keeping it.
     ''' </summary>
-    Public Function DecodeToPayload(stream As MemoryStream) As DecodedPayload Implements IImageDecoderPayload.DecodeToPayload
+    Public Function DecodeToPayload(stream As MemoryStream, Optional sourceLabel As String = "") As DecodedPayload Implements IImageDecoderPayload.DecodeToPayload
         Dim watch As Stopwatch = Stopwatch.StartNew()
         stream.Position = 0
 
@@ -63,8 +63,8 @@ Friend NotInheritable Class ModernImageSharpDecoder
         ' signature; ImageSharp would throw UnknownImageFormatException on all of them, so
         ' route by signature - the MemoryStream has no file name to key on.
         Dim head As Byte() = ReadHead(stream)
-        If ImageDecoderProvider.LooksJxl(head) Then Return PayloadViaMagickJxl(stream, watch)
-        If IsIsoBmff(head) Then Return PayloadViaMagick(stream, watch)
+        If ImageDecoderProvider.LooksJxl(head) Then Return PayloadViaMagickJxl(stream, watch, sourceLabel)
+        If IsIsoBmff(head) Then Return PayloadViaMagick(stream, watch, sourceLabel)
 
         ' Ask the header first (audit 048, A-17): a crafted animated WEBP of a few KB can
         ' demand tens of GB once decoded, and the prefetch would start that unasked.
@@ -72,8 +72,7 @@ Friend NotInheritable Class ModernImageSharpDecoder
         stream.Position = 0
         Dim frames As Integer = If(info.FrameMetadataCollection Is Nothing, 1, info.FrameMetadataCollection.Count)
         If Not DecodeBudget.IsWithinBudget(info.Width, info.Height, frames) Then
-            AppFileLogger.WriteLine("Decode refused, over budget: " & info.Width.ToString() & "x" &
-                                    info.Height.ToString() & " x " & frames.ToString() & " frames")
+            AppFileLogger.WriteLine(RefusalText(info.Width, info.Height, frames, sourceLabel))
             Return Nothing
         End If
 
@@ -93,20 +92,149 @@ Friend NotInheritable Class ModernImageSharpDecoder
     End Function
 
     ''' <summary>
+    ''' Stage 1 of a long animation (spec 241 rules 10 and 18): the first frame only, in the time it
+    ''' takes to read it, never the whole animation. See <see cref="IImageDecoderPayload.DecodeFirstFramePayload"/>.
+    ''' </summary>
+    Public Function DecodeFirstFramePayload(stream As MemoryStream, Optional sourceLabel As String = "") As DecodedPayload Implements IImageDecoderPayload.DecodeFirstFramePayload
+        Dim watch As Stopwatch = Stopwatch.StartNew()
+        stream.Position = 0
+
+        ' The Magick routes have their own budget and are never staged (spec 241 section 3.8).
+        Dim head As Byte() = ReadHead(stream)
+        If ImageDecoderProvider.LooksJxl(head) OrElse IsIsoBmff(head) Then Return DecodeToPayload(stream, sourceLabel)
+
+        Dim info As SixLabors.ImageSharp.ImageInfo = SixLabors.ImageSharp.Image.Identify(stream)
+        stream.Position = 0
+        Dim frames As Integer = If(info.FrameMetadataCollection Is Nothing, 1, info.FrameMetadataCollection.Count)
+        Dim verdict As BudgetVerdict = DecodeBudget.Classify(info.Width, info.Height, frames)
+        If verdict = BudgetVerdict.FrameTooLarge Then
+            AppFileLogger.WriteLine(RefusalText(info.Width, info.Height, frames, sourceLabel))
+            Return Nothing
+        End If
+        If frames <= 1 Then Return DecodeToPayload(stream, sourceLabel)
+        ' Over the budget but one frame fits: the first frame is all the viewer will show (rule 18),
+        ' and the file is named for the log all the same (rule 7).
+        If verdict = BudgetVerdict.AnimationTooLong Then AppFileLogger.WriteLine(RefusalText(info.Width, info.Height, frames, sourceLabel))
+
+        Dim options As New SixLabors.ImageSharp.Formats.DecoderOptions With {.MaxFrames = 1}
+        Using firstFrame As SixLabors.ImageSharp.Image = SixLabors.ImageSharp.Image.Load(options, stream)
+            Using pngStream As New MemoryStream()
+                SixLabors.ImageSharp.ImageExtensions.SaveAsPng(firstFrame, pngStream)
+                Return New DecodedPayload With {
+                    .Bytes = pngStream.ToArray(),
+                    .Kind = DecodedPayloadKind.Png,
+                    .IsAnimation = False,
+                    .IsPreview = True,
+                    .IsTooLong = (verdict = BudgetVerdict.AnimationTooLong),
+                    .DecodeMs = watch.ElapsedMilliseconds,
+                    .Width = info.Width,
+                    .Height = info.Height,
+                    .Frames = frames,
+                    .DurationMs = HeaderDurationMs(info),
+                    .HasAlpha = HeaderHasAlpha(stream, info)
+                }
+            End Using
+        End Using
+    End Function
+
+    ''' <summary>The animation's length by its header: the sum of the frame delays, in ms. Only WEBP
+    ''' carries a delay ImageSharp reports here; 0 for anything else (an unknown beats a guess, as
+    ''' <c>SourceDurationMsAsFfmpegReadsIt</c> has it).</summary>
+    Friend Shared Function HeaderDurationMs(info As SixLabors.ImageSharp.ImageInfo) As Long
+        Try
+            If info Is Nothing OrElse info.FrameMetadataCollection Is Nothing Then Return 0
+            Dim total As Long = 0
+            For Each frameMeta In info.FrameMetadataCollection
+                Dim webpMeta = frameMeta.GetFormatMetadata(SixLabors.ImageSharp.Formats.Webp.WebpFormat.Instance)
+                If webpMeta IsNot Nothing Then total += CLng(webpMeta.FrameDelay)
+            Next
+            Return total
+        Catch ex As Exception
+            Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0039: animation duration from the header skipped: " & ex.Message)
+            Return 0
+        End Try
+    End Function
+
+    ''' <summary>Whether the header says the animation has transparency. A WEBP says it in the alpha
+    ''' flag (0x10) of its VP8X chunk, which ImageSharp's Identify does not surface in the pixel type;
+    ''' any other format is asked through the pixel type.</summary>
+    Friend Shared Function HeaderHasAlpha(stream As Stream, info As SixLabors.ImageSharp.ImageInfo) As Boolean
+        Try
+            Dim riff(20) As Byte
+            stream.Position = 0
+            Dim read As Integer = stream.Read(riff, 0, riff.Length)
+            stream.Position = 0
+            If read = riff.Length AndAlso riff(0) = &H52 AndAlso riff(1) = &H49 AndAlso riff(2) = &H46 AndAlso riff(3) = &H46 AndAlso
+               riff(8) = &H57 AndAlso riff(9) = &H45 AndAlso riff(10) = &H42 AndAlso riff(11) = &H50 AndAlso
+               riff(12) = &H56 AndAlso riff(13) = &H50 AndAlso riff(14) = &H38 AndAlso riff(15) = &H58 Then
+                Return (riff(20) And &H10) <> 0
+            End If
+            If info Is Nothing Then Return False
+            Dim alpha = info.PixelType.AlphaRepresentation
+            Return alpha.HasValue AndAlso alpha.Value <> SixLabors.ImageSharp.PixelFormats.PixelAlphaRepresentation.None
+        Catch ex As Exception
+            Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0039: animation alpha from the header skipped: " & ex.Message)
+            Return False
+        End Try
+    End Function
+
+    ''' <summary>
+    ''' The "refused" log line (spec 241 rule 7): which limit, the header's figures and - when
+    ''' the caller knows it - the file. The lines the prefetch writes for a neighbour were once
+    ''' read as the open file's, because the old text carried no path.
+    ''' </summary>
+    Friend Shared Function RefusalText(width As Long, height As Long, frames As Long, sourceLabel As String) As String
+        Dim reason As String = If(DecodeBudget.Classify(width, height, frames) = BudgetVerdict.AnimationTooLong,
+                                  "animation too long", "frame too large")
+        Return "Decode refused, over budget (" & reason & "): " & width.ToString() & "x" & height.ToString() &
+               " x " & frames.ToString() & " frames" & If(String.IsNullOrEmpty(sourceLabel), "", ": " & sourceLabel)
+    End Function
+
+    ''' <summary>
     ''' Animated WEBP/APNG -> GIF bytes. GDI+ animates GIF natively (RawFormat = Gif), so
     ''' Main_Form.GifPlayback picks the result up as if the file had been a GIF.
     ''' </summary>
     Private Function TranscodeAnimationToGif(sharpImage As SixLabors.ImageSharp.Image, watch As Stopwatch) As DecodedPayload
         CopyWebpFrameDelaysToGif(sharpImage)
 
+        ' Spec 241 rule 3: dither only where it is cheap. Up to the policy's threshold the
+        ' encoder is exactly the default one, so the payload is byte-identical to what was
+        ' produced before the policy existed.
+        Dim dither As Boolean = GifTranscodePolicy.UseDither(sharpImage.Width, sharpImage.Height, sharpImage.Frames.Count)
+        Dim encodeWatch As Stopwatch = Stopwatch.StartNew()
+        Dim gifBytes As Byte() = EncodeAnimationGif(sharpImage, dither)
+        encodeWatch.Stop()
+
+        Return New DecodedPayload With {
+            .Bytes = gifBytes,
+            .Kind = DecodedPayloadKind.Gif,
+            .IsAnimation = True,
+            .DecodeMs = watch.ElapsedMilliseconds,
+            .Width = sharpImage.Width,
+            .Height = sharpImage.Height,
+            .Frames = sharpImage.Frames.Count,
+            .EncodeMs = encodeWatch.ElapsedMilliseconds,
+            .Dithered = dither
+        }
+    End Function
+
+    ''' <summary>
+    ''' The GIF bytes of a loaded animation. With <paramref name="dither"/> the encoder is
+    ''' exactly the default one; without it, an Octree quantizer with dithering switched off
+    ''' (same time as Wu, a smaller file - measured, spec 241 rule 3).
+    ''' </summary>
+    Friend Shared Function EncodeAnimationGif(sharpImage As SixLabors.ImageSharp.Image, dither As Boolean) As Byte()
         Using gifStream As New MemoryStream()
-            SixLabors.ImageSharp.ImageExtensions.SaveAsGif(sharpImage, gifStream)
-            Return New DecodedPayload With {
-                .Bytes = gifStream.ToArray(),
-                .Kind = DecodedPayloadKind.Gif,
-                .IsAnimation = True,
-                .DecodeMs = watch.ElapsedMilliseconds
-            }
+            If dither Then
+                SixLabors.ImageSharp.ImageExtensions.SaveAsGif(sharpImage, gifStream)
+            Else
+                Dim quantizerOptions As New SixLabors.ImageSharp.Processing.Processors.Quantization.QuantizerOptions With {.Dither = Nothing}
+                Dim encoder As New SixLabors.ImageSharp.Formats.Gif.GifEncoder With {
+                    .Quantizer = New SixLabors.ImageSharp.Processing.Processors.Quantization.OctreeQuantizer(quantizerOptions)
+                }
+                SixLabors.ImageSharp.ImageExtensions.SaveAsGif(sharpImage, gifStream, encoder)
+            End If
+            Return gifStream.ToArray()
         End Using
     End Function
 
@@ -188,7 +316,7 @@ Friend NotInheritable Class ModernImageSharpDecoder
     ''' could see it (iPhone HEICs rely on that tag) - which is also why Is_Exif_AutoRotate
     ''' is part of the cache key (§4).
     ''' </summary>
-    Private Shared Function PayloadViaMagick(stream As MemoryStream, watch As Stopwatch) As DecodedPayload
+    Private Shared Function PayloadViaMagick(stream As MemoryStream, watch As Stopwatch, sourceLabel As String) As DecodedPayload
         stream.Position = 0
 
         ' The same budget as the ImageSharp path (audit 048, A-17), from the header. Only the
@@ -198,7 +326,7 @@ Friend NotInheritable Class ModernImageSharpDecoder
         Dim header As New ImageMagick.MagickImageInfo(stream)
         stream.Position = 0
         If Not DecodeBudget.IsWithinBudget(CLng(header.Width), CLng(header.Height), 1) Then
-            AppFileLogger.WriteLine("Decode refused, over budget: " & header.Width.ToString() & "x" & header.Height.ToString())
+            AppFileLogger.WriteLine(RefusalText(CLng(header.Width), CLng(header.Height), 1, sourceLabel))
             Return Nothing
         End If
 
@@ -213,15 +341,14 @@ Friend NotInheritable Class ModernImageSharpDecoder
     ''' a crafted animation of a few KB can claim thousands of frames, and the still path's
     ''' "first frame only" budget would not see that.
     ''' </summary>
-    Private Shared Function PayloadViaMagickJxl(stream As MemoryStream, watch As Stopwatch) As DecodedPayload
+    Private Shared Function PayloadViaMagickJxl(stream As MemoryStream, watch As Stopwatch, sourceLabel As String) As DecodedPayload
         stream.Position = 0
         MagickResourceLimits.EnsureApplied()
         Dim headers As List(Of ImageMagick.IMagickImageInfo) = ImageMagick.MagickImageInfo.ReadCollection(stream).ToList()
         stream.Position = 0
         If headers.Count = 0 Then Return Nothing
         If Not DecodeBudget.IsWithinBudget(CLng(headers(0).Width), CLng(headers(0).Height), headers.Count) Then
-            AppFileLogger.WriteLine("Decode refused, over budget: " & headers(0).Width.ToString() & "x" &
-                                    headers(0).Height.ToString() & " x " & headers.Count.ToString() & " frames")
+            AppFileLogger.WriteLine(RefusalText(CLng(headers(0).Width), CLng(headers(0).Height), headers.Count, sourceLabel))
             Return Nothing
         End If
 

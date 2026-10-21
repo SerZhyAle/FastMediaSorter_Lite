@@ -37,6 +37,7 @@ Partial Public NotInheritable Class Share_Settings_Form
     Private _btnAccSignIn As Button
     Private _btnAccPublish As Button
     Private _btnAccAccept As Button
+    Private _btnAccJoinLocal As Button
     Private _btnAccAdd As Button
     Private _accPairing As FlowLayoutPanel
     Private _accCode As Label
@@ -118,10 +119,12 @@ Partial Public NotInheritable Class Share_Settings_Form
         _accSignInRow = AccFlow()
         _btnAccSignIn = AccButton(Localization.T("Войти.."), AddressOf OnAccountSignIn, "action.confirm")
         _btnAccAccept = AccButton(Localization.T("Принять новый сертификат.."), AddressOf OnAccountAcceptCertificate, "action.confirm")
+        _btnAccJoinLocal = AccButton(ExchangeJoinText.JoinLocalButton(), AddressOf OnAccountJoinLocal, "action.confirm")
         _accSignInRow.Controls.Add(_btnAccSignIn)
         ' ticket 187 T-5: the same dialog, opened to publish - its "publish now" box is ticked
         _btnAccPublish = AccButton(ExchangeJoinText.PublishButton(), AddressOf OnAccountPublish, "action.confirm")
         _accSignInRow.Controls.Add(_btnAccPublish)
+        _accSignInRow.Controls.Add(_btnAccJoinLocal)
         _accSignInRow.Controls.Add(_btnAccAccept)
         sec.AddBodyRow(_accSignInRow)
 
@@ -260,7 +263,9 @@ Partial Public NotInheritable Class Share_Settings_Form
         _btnAccSignIn.Visible = model.ShowSignIn
         _btnAccPublish.Visible = model.ShowSignIn AndAlso Not (status IsNot Nothing AndAlso status.Configured)
         _btnAccAccept.Visible = model.ShowAcceptCertificate
-        _accSignInRow.Visible = model.ShowSignIn OrElse model.ShowAcceptCertificate
+        Dim canLocalJoin As Boolean = model.ShowSignIn AndAlso Not (status IsNot Nothing AndAlso status.Configured) AndAlso ExchangeFeatures.ComponentInstalled()
+        If _btnAccJoinLocal IsNot Nothing Then _btnAccJoinLocal.Visible = canLocalJoin
+        _accSignInRow.Visible = model.ShowSignIn OrElse model.ShowAcceptCertificate OrElse canLocalJoin
         _btnAccAdd.Parent.Visible = model.ShowAddDevice
         _btnAccAdd.Visible = model.ShowAddDevice
         If Not model.ShowAddDevice Then ClearPairingCode()
@@ -363,6 +368,10 @@ Partial Public NotInheritable Class Share_Settings_Form
         ApplyAccountState()
     End Sub
 
+    Private Async Sub OnAccountJoinLocal()
+        Await PerformLocalJoinAsync(_accResult, _btnAccJoinLocal, Nothing)
+    End Sub
+
     ''' <summary>The one explicit act that lets a changed certificate in: the new fingerprint is fetched, shown beside the old one, and accepted only on
     ''' a Yes (the default is No).</summary>
     Private Async Sub OnAccountAcceptCertificate()
@@ -376,7 +385,7 @@ Partial Public NotInheritable Class Share_Settings_Form
                 If(status.Fingerprint.Length > 0, Localization.TF("Прежний отпечаток: {0}", status.Fingerprint) & vbLf, "") &
                 Localization.TF("Новый отпечаток: {0}", info.Fingerprint) & vbLf & vbLf &
                 Localization.T("Сверьте новый отпечаток с тем, что дал оператор сервера. Принимайте его, только если он совпадает.")
-            If MessageBox.Show(Me, text, ExchangeDeviceText.GroupTitle(), MessageBoxButtons.YesNo, MessageBoxIcon.Warning, MessageBoxDefaultButton.Button2) = DialogResult.Yes Then
+            If ManagerBox.Show(Me, text, ExchangeDeviceText.GroupTitle(), MessageBoxButtons.YesNo, MessageBoxIcon.Warning, MessageBoxDefaultButton.Button2) = DialogResult.Yes Then
                 agent.ReplacePinAndRestart(info.Fingerprint, info.PlatformValid)
             End If
             ShowAccountResult("")
@@ -401,7 +410,7 @@ Partial Public NotInheritable Class Share_Settings_Form
             ApplyAccountState()
             Return
         End If
-        If MessageBox.Show(Me, ExchangeDeviceText.UpdateAddressQuestion(status.Server, moved), ExchangeDeviceText.GroupTitle(),
+        If ManagerBox.Show(Me, ExchangeDeviceText.UpdateAddressQuestion(status.Server, moved), ExchangeDeviceText.GroupTitle(),
                            MessageBoxButtons.YesNo, MessageBoxIcon.Question, MessageBoxDefaultButton.Button1) <> DialogResult.Yes Then Return
         agent.ReplaceServerAndRestart(moved)
         ShowAccountResult(ExchangeDeviceText.AddressUpdated())
@@ -486,7 +495,7 @@ Partial Public NotInheritable Class Share_Settings_Form
         ' the confirmation names the consequence; the safe answer (No) is the default
         Dim question As String = If(isMe, Localization.T("Выйти из учётной записи на этом ПК? Это устройство будет отозвано, а токен удалён."),
                                     Localization.TF("Отозвать устройство «{0}»? Оно потеряет доступ к учётной записи, а его ресурсы исчезнут из списка.", name))
-        If MessageBox.Show(Me, question, ExchangeDeviceText.GroupTitle(), MessageBoxButtons.YesNo, MessageBoxIcon.Warning, MessageBoxDefaultButton.Button2) <> DialogResult.Yes Then Return
+        If ManagerBox.Show(Me, question, ExchangeDeviceText.GroupTitle(), MessageBoxButtons.YesNo, MessageBoxIcon.Warning, MessageBoxDefaultButton.Button2) <> DialogResult.Yes Then Return
         _accBusy = True
         Try
             Dim sent As Boolean = Await agent.RevokeAsync(id, Threading.CancellationToken.None)
@@ -535,7 +544,7 @@ Partial Public NotInheritable Class Share_Settings_Form
     Private Async Sub OnAccountDisconnect()
         Dim agent As ExchangeDeviceAgent = ExchangeDeviceHost.Current
         If agent Is Nothing OrElse _accBusy Then Return
-        If MessageBox.Show(Me, ExchangeJoinText.DisconnectQuestion(),
+        If ManagerBox.Show(Me, ExchangeJoinText.DisconnectQuestion(),
                            ExchangeDeviceText.GroupTitle(), MessageBoxButtons.YesNo, MessageBoxIcon.Warning, MessageBoxDefaultButton.Button2) <> DialogResult.Yes Then Return
         _accBusy = True
         Try

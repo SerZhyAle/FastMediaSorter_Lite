@@ -23,12 +23,15 @@ Friend NotInheritable Class LiveBroadcast_Form
     Private ReadOnly lblStatus As Label
     Private ReadOnly btnConnect As Button
     Private ReadOnly btnCancel As Button
+    Private ReadOnly answerRow As DialogButtonRow
 
     Private recentDescriptors As List(Of LiveBroadcastDescriptor)
     Private selectedRecent As LiveBroadcastDescriptor
     Private scriptFont As Font
     Private ReadOnly directoryCancellation As New CancellationTokenSource()
     Private ReadOnly directoryIds As New Dictionary(Of LiveBroadcastDescriptor, String)()
+    ''' <summary>Broadcast ids of refused directory records already written to the log: the list is rebuilt on every revision, the line is not.</summary>
+    Private ReadOnly refusalLogged As New HashSet(Of String)()
     Private directoryStarted As Boolean
     Private accepting As Boolean
     Private ReadOnly autoCast As CheckBox
@@ -57,7 +60,13 @@ Friend NotInheritable Class LiveBroadcast_Form
         Me.MinimizeBox = False
         Me.ShowInTaskbar = False
         Me.StartPosition = FormStartPosition.CenterParent
-        Me.ClientSize = New Size(540, 414)
+        ' With the exchange on, the automatic-accept option takes a row of its own under "this is live" (and the LAN hint steps
+        ' aside, as before), so everything under the options moves down by that row; otherwise the LAN hint is the explanation of
+        ' "this is live". Both rows are 40 px tall at 96 dpi (ticket 243 T-11b, BOOLEAN-OPTION 2.0).
+        Dim exchangeOn As Boolean = ExchangeFeatures.IsEnabled()
+        Dim shift As Integer = If(exchangeOn, 24, 0)
+        ' The authored content ends at 370 (the status line); the bottom row below it is 50 tall (8 + one 32 line + 10) at 96 dpi.
+        Me.ClientSize = New Size(540, 420 + shift)
 
         Dim family As String = Localization.FontFamily()
         If family IsNot Nothing Then
@@ -88,29 +97,31 @@ Friend NotInheritable Class LiveBroadcast_Form
 
         ' Section 4.3: for an address that is not one of ours the user says it is live. Unticked, it is an ordinary URL.
         chkIsLive = New CheckBox With {
-            .AutoSize = True,
-            .Location = New Point(14, 68),
+            .Name = "live_IsLive",
             .Text = Localization.T("Это live-трансляция"),
             .Checked = False
         }
 
         lblLanHint = New Label With {
+            .Name = "live_LanHint",
             .AutoSize = False,
-            .Location = New Point(14, 94),
             .Size = New Size(512, 28),
             .ForeColor = Color.DimGray,
             .Text = Localization.T("ПК и вещающее устройство должны находиться в одной локальной сети (Wi-Fi / Ethernet).")
         }
-        CheckBoxLayout.BindHint(chkIsLive, lblLanHint)
+        ' The row ends left of the Paste button (x 420), so the two hit areas never overlap. The hint is its explanation (it
+        ' wraps under the caption and never toggles); with the exchange on the hint is not shown at all, as it never was.
+        Dim liveRow As OptionRowHost = DialogOptionRow.CreateAt(chkIsLive, If(exchangeOn, Nothing, lblLanHint), 14, 62, 414, If(exchangeOn, 40, 64))
+        If exchangeOn Then lblLanHint.Visible = False
 
         Dim lblRecentTitle As New Label With {
             .AutoSize = True,
-            .Location = New Point(14, 128),
+            .Location = New Point(14, 128 + shift),
             .Text = Localization.T("Недавние трансляции:")
         }
 
         lstRecent = New ListView With {
-            .Location = New Point(14, 148),
+            .Location = New Point(14, 148 + shift),
             .Size = New Size(512, 150),
             .View = View.Details,
             .FullRowSelect = True,
@@ -125,7 +136,7 @@ Friend NotInheritable Class LiveBroadcast_Form
         ' Section 5: a remembered entry promises nothing - the device may have stopped, or moved to another port.
         lblRecentNote = New Label With {
             .AutoSize = False,
-            .Location = New Point(14, 302),
+            .Location = New Point(14, 302 + shift),
             .Size = New Size(512, 30),
             .ForeColor = Color.DimGray,
             .Text = Localization.T("Адреса в списке - последние известные: устройство могло перестать вещать или сменить порт.")
@@ -133,43 +144,43 @@ Friend NotInheritable Class LiveBroadcast_Form
 
         lblStatus = New Label With {
             .AutoSize = False,
-            .Location = New Point(14, 336),
+            .Location = New Point(14, 336 + shift),
             .Size = New Size(512, 34),
             .ForeColor = Color.DarkRed,
             .Text = ""
         }
 
         btnConnect = New Button With {
-            .Location = New Point(310, 374),
-            .Size = New Size(110, 30),
             .Text = Localization.T("Подключиться"),
             .DialogResult = DialogResult.None
         }
         AddHandler btnConnect.Click, AddressOf OnConnectClick
-        ButtonGlyphs.Apply(btnConnect, "action.confirm", ButtonGlyphRole.Affirmative)
 
         btnCancel = New Button With {
-            .Location = New Point(426, 374),
-            .Size = New Size(100, 30),
             .Text = Localization.T("Отмена"),
             .DialogResult = DialogResult.Cancel
         }
-        ButtonGlyphs.Apply(btnCancel, "action.cancel", ButtonGlyphRole.Dismissing)
+
+        ' The answers ride the shared bottom row (ticket 243 T-8b, BUTTONS 2.0 sections 3 and 4): Cancel first, the final
+        ' affirmative answer last, widths from the caption and its glyph. Bind keeps the meaning they had: Escape is
+        ' Cancel, Enter is Connect (it only starts the connection the typed text names). The file / paste / devices
+        ' buttons are helpers of the input and the list, not answers, and stay beside them.
+        answerRow = New DialogButtonRow() With {.Dock = DockStyle.Bottom, .Name = "live_Buttons", .Padding = New Padding(14, 8, 14, 10)}
+        answerRow.Add(btnConnect, DialogButtonRole.Affirmative, "action.confirm")
+        answerRow.Add(btnCancel, DialogButtonRole.Dismissing, "action.cancel")
 
         Me.Controls.AddRange(New Control() {
-            lblPrompt, txtInput, btnBrowseFile, chkIsLive, lblLanHint,
-            lblRecentTitle, lstRecent, lblRecentNote, lblStatus, btnConnect, btnCancel
+            lblPrompt, txtInput, btnBrowseFile, liveRow,
+            lblRecentTitle, lstRecent, lblRecentNote, lblStatus
         })
-
-        Me.AcceptButton = btnConnect
-        Me.CancelButton = btnCancel
 
         LoadRecentList()
 
-        autoCast = New CheckBox With {.Text = Localization.T("Принимать трансляции автоматически"), .Checked = autoAcceptCast,
-                                     .Location = New Point(14, 94), .AutoSize = True, .Visible = ExchangeFeatures.IsEnabled()}
-        If autoCast.Visible Then lblLanHint.Visible = False
-        Me.Controls.Add(autoCast)
+        autoCast = New CheckBox With {.Name = "live_AutoCast", .Text = Localization.T("Принимать трансляции автоматически"), .Checked = autoAcceptCast,
+                                     .Visible = exchangeOn}
+        Dim autoCastRow As OptionRowHost = DialogOptionRow.CreateAt(autoCast, Nothing, 14, 102, 540)
+        autoCastRow.Visible = exchangeOn
+        Me.Controls.Add(autoCastRow)
 
         Dim paste As New Button With {.Text = Localization.T("Вставить"), .Location = New Point(420, 66), .Size = New Size(106, 26)}
         AddHandler paste.Click, Sub()
@@ -183,7 +194,7 @@ Friend NotInheritable Class LiveBroadcast_Form
         Me.Controls.Add(paste)
 
         If ExchangeFeatures.IsEnabled() Then
-            Dim devices As New Button With {.Text = Localization.T("Мои устройства"), .Location = New Point(310, 120), .Size = New Size(216, 26)}
+            Dim devices As New Button With {.Text = Localization.T("Мои устройства"), .Location = New Point(310, 120 + shift), .Size = New Size(216, 26)}
             AddHandler devices.Click, Sub()
                                           lblRecentTitle.Text = Localization.T("Мои устройства")
                                           lblRecentNote.Text = ""
@@ -191,6 +202,10 @@ Friend NotInheritable Class LiveBroadcast_Form
                                       End Sub
             Me.Controls.Add(devices)
         End If
+
+        ' Added after every field, so the answers come last in the tab order.
+        Me.Controls.Add(answerRow)
+        answerRow.Bind(Me)
 
         ' LAST line of the builder: scaling touches only the children that exist by now (124 UX-202).
         DialogLayout.ApplyAutoScale(Me)
@@ -202,6 +217,7 @@ Friend NotInheritable Class LiveBroadcast_Form
         lstRecent.Columns(0).Width = DialogLayout.Device(lstRecent, 240)
         lstRecent.Columns(1).Width = DialogLayout.Device(lstRecent, 260)
         DialogLayout.FitContent(Me)
+        DialogLayout.KeepRoomForRow(Me, answerRow)
     End Sub
 
     Protected Overrides Sub Dispose(disposing As Boolean)
@@ -287,9 +303,18 @@ Friend NotInheritable Class LiveBroadcast_Form
                     lstRecent.Groups.Add(device.DeviceId, device.DeviceName)
                 Next
                 For Each record As ExchangeBroadcastRecord In result.Snapshot.Broadcasts
-                    Dim parsed As LiveBroadcastReadResult = LiveBroadcastRecords.ReadRecord(record.Raw)
-                    If parsed.Status <> LiveReadStatus.Ok Then Continue For
-                    Dim d As LiveBroadcastDescriptor = parsed.Descriptor
+                    Dim row As LiveDirectoryRow = LiveBroadcastRecords.RowOf(record.Raw)
+                    If Not row.IsPlayable Then
+                        ' LIVE-BROADCAST 1.1: a record this program cannot use is listed with the reason, never dropped without a word.
+                        ' It is not remembered in directoryIds, so it can be neither selected for playing nor accepted.
+                        Dim refused As New ListViewItem(If(String.IsNullOrWhiteSpace(record.Title), row.RefusalText, record.Title)) With {
+                            .Tag = row, .ForeColor = Color.DimGray, .Group = lstRecent.Groups(record.DeviceId)}
+                        refused.SubItems.Add(row.RefusalText)
+                        lstRecent.Items.Add(refused)
+                        If refusalLogged.Add(record.BroadcastId) Then LiveBroadcastMessages.LogRefusal(row.Status, "the directory list")
+                        Continue For
+                    End If
+                    Dim d As LiveBroadcastDescriptor = row.Descriptor
                     directoryIds(d) = record.BroadcastId
                     Dim item As New ListViewItem(If(d.Title, record.Title)) With {.Tag = d, .Group = lstRecent.Groups(record.DeviceId)}
                     item.SubItems.Add(HostOf(d.Url))
@@ -378,14 +403,32 @@ Friend NotInheritable Class LiveBroadcast_Form
                 chkIsLive.Checked = True
                 chkIsLive.Enabled = False
                 lblStatus.Text = ""
+            Else
+                ShowRefusedRow(TryCast(lstRecent.SelectedItems(0).Tag, LiveDirectoryRow))
             End If
         End If
+    End Sub
+
+    ''' <summary>A refused directory record says why when it is chosen; it is never played and never fills the address box.</summary>
+    Private Sub ShowRefusedRow(row As LiveDirectoryRow)
+        If row Is Nothing OrElse row.IsPlayable Then Return
+        ' The address box still holds the previous list choice; Connect must not play that one while this row is the highlighted one.
+        If selectedRecent IsNot Nothing Then
+            selectedRecent = Nothing
+            txtInput.Clear()
+        End If
+        lblStatus.Text = row.RefusalText
+        DialogLayout.FitLabel(lblStatus)
     End Sub
 
     Private Sub OnRecentDoubleClick(sender As Object, e As EventArgs)
         If lstRecent.SelectedItems.Count > 0 Then
             Dim d As LiveBroadcastDescriptor = TryCast(lstRecent.SelectedItems(0).Tag, LiveBroadcastDescriptor)
-            If d IsNot Nothing Then Accept(d)
+            If d IsNot Nothing Then
+                Accept(d)
+            Else
+                ShowRefusedRow(TryCast(lstRecent.SelectedItems(0).Tag, LiveDirectoryRow))
+            End If
         End If
     End Sub
 

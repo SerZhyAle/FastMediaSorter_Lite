@@ -3,7 +3,7 @@
 | | |
 | --- | --- |
 | **Ids** | `APP-BEHAVIOUR`, `APP-STYLE`, `APP-SETTINGS`, `WINDOWS-UI` |
-| **Version** | catalog 0.12 / 0.12 / 0.4 / 0.4, draft (settings/profile read 2026-10-08; `WINDOWS-UI` 0.4 section 11 read 2026-10-11). Behaviour and style keep their 2026-10-02 audit (`APP-BEHAVIOUR` is unchanged since 0.12, `APP-STYLE` 0.12 section 10 was read 2026-10-05); the 0.2 / 0.3 amendments of `WINDOWS-UI` and `APP-SETTINGS` were read 2026-10-07, and `WINDOWS-UI` 0.2 sections 5 and 9 and `APP-STYLE` section 5 (the audio overlay) were worked against the viewer on 2026-10-13. Owners: StreamsPlayer (the first two), CyrFlip, and this Windows reference respectively |
+| **Version** | catalog 0.12 / 0.13 / 0.7 / 0.10, draft (current on 2026-10-20). The text below was read at 0.12 / 0.12 / 0.3 / 0.4 (`APP-SETTINGS` 0.3 section 9 on 2026-10-07; `WINDOWS-UI` 0.4 section 11 on 2026-10-11; `WINDOWS-UI` 0.2 sections 5 and 9 and `APP-STYLE` section 5 (the audio overlay) worked against the viewer on 2026-10-13); the later `APP-STYLE` 0.13 (the `status.*` fill roles), `APP-SETTINGS` 0.7 and `WINDOWS-UI` 0.10 are not described here. Owners: StreamsPlayer (the first two), CyrFlip, and this Windows reference respectively |
 | **Home** | `desktop-app-ux/README.md` in the shared contracts catalog |
 | **Role here** | consumer, twice - the viewer (.NET 10 mainline) and the Share Manager each have their own registry row; audit and phases in `specification 028` (local specification) |
 
@@ -67,6 +67,9 @@
   acceptance still unverified. Group/navigation/value targets are enlarged; real spoken output is not inferred
   from accessibility properties. Later findings of audit 122 remain separate open follow-ups.
 - The net48 x86 fallback takes bug fixes only; its gaps are one dated exception in the registry.
+- The five mandatory UI contracts of 2026-10-17 (`UI-SIZING`, `BUTTONS`, `BOOLEAN-OPTION`, `COLLAPSIBLE-GROUP`,
+  `SETTINGS-NAVIGATION`) take precedence over the older text this pointer names; they are carried by the
+  [UNIFIED-UI pointer](UNIFIED-UI.md), and the migration of the existing surfaces is owned by specification 243.
 
 ## Windows reference profile - owner decision 2026-10-05, read again 2026-10-07
 

@@ -84,6 +84,10 @@ Public NotInheritable Class ConnectionDiagnosisMessages
     Public Shared ReadOnly KeyChanged As New ConnectionDiagnosisMessage("key-changed", ConnectionDiagnosisKind.State, Nothing, False)
     Public Shared ReadOnly ServerNoE2e As New ConnectionDiagnosisMessage("server-no-e2e", ConnectionDiagnosisKind.State, ConnectionDiagnosisStep.Operator, False)
     Public Shared ReadOnly SealedFailed As New ConnectionDiagnosisMessage("sealed-failed", ConnectionDiagnosisKind.Local, Nothing, False)
+    ' DEVICE-EXCHANGE 1.3 amendment of 2026-10-17: a higher FMSEXCH prefix or descriptor schema (connection string, .fmsexch file,
+    ' LIVE-BROADCAST descriptor) is refused with this one local row - kind local, step `-`, no "update" demand. The wire reason
+    ' `version-unsupported` keeps its own row above.
+    Public Shared ReadOnly FormatUnsupported As New ConnectionDiagnosisMessage("format-unsupported", ConnectionDiagnosisKind.Local, Nothing, False)
 
     ' Fallback generic refusal (DEVICE-EXCHANGE 7.10)
     Public Shared ReadOnly Refused As New ConnectionDiagnosisMessage("refused", ConnectionDiagnosisKind.Wire, ConnectionDiagnosisStep.Operator, False)
@@ -95,7 +99,7 @@ Public NotInheritable Class ConnectionDiagnosisMessages
         LimitReachedClipboard, NotPermitted, Declined, Timeout, Unsupported,
         UnreachableServer, UnreachableDevice, Unanswered, TlsFailed, CertificateChanged,
         EmptyCredential, ServerOffline, ResourceLocked, ClipboardEmpty,
-        SharePaused, E2eMissing, KeyChanged, ServerNoE2e, SealedFailed, Refused
+        SharePaused, E2eMissing, KeyChanged, ServerNoE2e, SealedFailed, FormatUnsupported, Refused
     }
 
     Public Shared Function OfCode(code As String) As ConnectionDiagnosisMessage

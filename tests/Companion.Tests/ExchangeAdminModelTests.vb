@@ -307,11 +307,12 @@ Public Class ExchangeAdminModelTests
         Try
             For Each code As String In Localization.Codes
                 Localization.CurrentCode = code
-                Dim failures As List(Of String) = {ExchangeAdminCodes.Exists, ExchangeAdminCodes.BadLogin, ExchangeAdminCodes.WeakPassword, ExchangeAdminCodes.NoAccount,
-                                                   ExchangeAdminCodes.NotFound, ExchangeAdminCodes.NotReached, ExchangeAdminCodes.Internal}.Select(Function(c) ExchangeAdminText.Failure(c)).ToList()
+                Dim failures As List(Of String) = {ExchangeAdminCodes.BadRequest, ExchangeAdminCodes.Exists, ExchangeAdminCodes.BadLogin,
+                                                   ExchangeAdminCodes.WeakPassword, ExchangeAdminCodes.NotFound, ExchangeAdminCodes.NotReached,
+                                                   ExchangeAdminCodes.BadKind, ExchangeAdminCodes.BadLimit,
+                                                   ExchangeAdminCodes.NoAccount, ExchangeAdminCodes.Internal}.Select(Function(c) ExchangeAdminText.Failure(c)).ToList()
                 Assert.All(failures, Sub(t) Assert.False(String.IsNullOrWhiteSpace(t), code))
                 Assert.Equal(failures.Count, failures.Distinct().Count())
-                Assert.Equal(ExchangeAdminText.Failure(ExchangeAdminCodes.BadLogin), ExchangeAdminText.Failure(ExchangeAdminCodes.BadRequest))
 
                 Dim steps As List(Of String) = [Enum].GetValues(GetType(ExchangeWizardStep)).Cast(Of ExchangeWizardStep)().Select(Function(s) ExchangeAdminText.WizardStep(s)).ToList()
                 Assert.Equal(steps.Count, steps.Distinct().Count())

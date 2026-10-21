@@ -53,6 +53,54 @@ func TestRegeneratingGivesTheSameBytes(t *testing.T) {
 	}
 }
 
+func TestBothAdministrationOpeningsCoverTheContract(t *testing.T) {
+	var corpus framesFile
+	if err := json.Unmarshal(generated(t)[framesFileName], &corpus); err != nil {
+		t.Fatal(err)
+	}
+	wantOps := strings.Fields("status account.list account.add account.passwd account.kind account.remove account.limits device.list device.revoke device.pairing-code invitation.create invitation.list invitation.withdraw shared_invitation.status shared_invitation.set policy.status policy.set grant.list")
+	for _, name := range []string{"admin-native", "admin-websocket"} {
+		t.Run(name, func(t *testing.T) {
+			ops, reasons := map[string]bool{}, map[string]bool{}
+			found := false
+			for _, tr := range corpus.Transcripts {
+				if tr.Name != name {
+					continue
+				}
+				found = true
+				for _, step := range tr.Steps {
+					var envelope struct{ Type, Op, Reason string }
+					if step.JSON == "" {
+						continue
+					}
+					if err := json.Unmarshal([]byte(step.JSON), &envelope); err != nil {
+						t.Fatal(err)
+					}
+					if envelope.Type == "admin-request" {
+						ops[envelope.Op] = true
+					}
+					if envelope.Type == "refused" {
+						reasons[envelope.Reason] = true
+					}
+				}
+			}
+			if !found {
+				t.Fatal("administration transcript missing")
+			}
+			for _, op := range wantOps {
+				if !ops[op] {
+					t.Errorf("missing carried operation %s", op)
+				}
+			}
+			for _, reason := range []string{"admin-disabled", "bad-credentials", "rate-limited", "capacity"} {
+				if !reasons[reason] {
+					t.Errorf("missing refusal %s", reason)
+				}
+			}
+		})
+	}
+}
+
 func committed(t *testing.T) map[string][]byte {
 	t.Helper()
 	out := map[string][]byte{}
@@ -70,6 +118,14 @@ func TestTheCommittedVectorsAreWhatTheGeneratorProducesAndMatchTheirProvenance(t
 	disk, now := committed(t), generated(t)
 	for _, name := range hashedFiles {
 		if !bytes.Equal(disk[name], now[name]) {
+			lines1 := strings.Split(string(disk[name]), "\n")
+			lines2 := strings.Split(string(now[name]), "\n")
+			for i := 0; i < len(lines1) && i < len(lines2); i++ {
+				if lines1[i] != lines2[i] {
+					t.Errorf("%s diff line %d:\ndisk: %s\nnow:  %s", name, i+1, lines1[i], lines2[i])
+					break
+				}
+			}
 			t.Errorf("%s is not what the generator produces now: regenerate it (go run ./cmd/exchange-vectors -out testdata/vectors)", name)
 		}
 	}

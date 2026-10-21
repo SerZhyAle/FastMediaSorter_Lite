@@ -215,7 +215,8 @@ Public Class DialogLayoutTests
     Public Sub The_edit_resource_window_offers_a_password_reveal_that_starts_off()
         OnSta(Sub()
                   Using form As New Resource_Edit_Form(Nothing)
-                      Dim reveal As CheckBox = form.Controls.OfType(Of CheckBox)().FirstOrDefault(Function(c) c.Name = "res_Reveal")
+                      ' The check box lives in its option row now (ticket 243 T-11b); it is the same control with the same name.
+                      Dim reveal As CheckBox = form.Controls.OfType(Of OptionRowHost)().Select(Function(r) r.Check).FirstOrDefault(Function(c) c.Name = "res_Reveal")
                       Dim password As TextBox = form.Controls.OfType(Of TextBox)().First(Function(c) c.Name = "res_Password")
                       Assert.NotNull(reveal)
                       Assert.False(reveal.Checked)

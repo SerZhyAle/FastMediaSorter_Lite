@@ -1,7 +1,7 @@
 ICONOGRAPHY VENDORED ARTIFACT
 Do not hand-edit SVG files in this folder. Regenerate with tools/Sync-IconGlyphs.ps1.
-Catalog versions: ICON-SET 0.33; ICON-RENDER 0.19; ICON-EXTERNAL 0.12
-Vocabulary SHA-256: 8ff441516a2811761626556e19b06bdefe2e3534de1fa6f014c3eeb58caf3ffc
+Catalog versions: ICON-SET 0.36; ICON-RENDER 0.24; ICON-EXTERNAL 0.12
+Vocabulary SHA-256: 56f60197d922c2adc11236801fe3842825b93a561d99baf7610e149c49a42710
 
 action.confirm.svg  ca97ceac8371975e7f8d21d26ef404858bb137a0b18d80ed0a64d34a20903f69
 action.cancel.svg  0b2ee602dece67950e801b3df344297e311e8bc33c592c7ae8cc9f5d4195c873
@@ -20,7 +20,7 @@ action.install.svg  44bc4edcfbf35c8ebf498c3cf7e46cf6c39c096861473d999c6ba42a0293
 action.reconnect.svg  ea6d2411daf635a570233cc97d03dcfa683c843fe83b3c36d792683053478e4a
 action.verify.svg  d9862c96c4f05e425c3488f5e8654ad5903bd3e4f31bdba1449d8b82dd553f92
 action.show-code.svg  8ddd512a1d9e72ad7f50c81dbdeb2a872da9e3047ffe66bbd75d753bafabf92d
-action.paste.svg  e2e20ee8288d99f7122d8a11f612650d51b9537f99888092dbbf65fef429b1ed
+action.paste.svg  c3e250da06ca76cf85da5e99ef7f5bb3778c2dc0ab5b9a15590c9af29d1b9535
 action.move.svg  c6b5171f2f5e09f8a6f3fff0c8ffc60154160271810becbd6318cff13adcc2f2
 action.run.svg  a83417aedc42d8f21376fd473a25d86b0ceb5025d4f444d6337a765a37b807e7
 action.undo.svg  f4d4cfce543a85d5fdb372e04056f75e0a99c61abe1cf33b32e89b7d2764c3c0
@@ -43,6 +43,7 @@ media.stop.svg  75b593427bb321440620ffd6630702369363d292641deb4f60d0a53e26706db0
 media.cast.svg  bf1a444700300840e43af718ab7d7d5f58b38038fe9cec9e5408b18d07fcbf7f
 media.audio-track.svg  7b1fd8682c186d162ff9b16a44cd096fa5b0465a1160b67fbb6ccb683ee6a78e
 app.help.svg  fb1e2fa9efb662d3bd3dfe513b28f96b8aea2c1bc989e281f2093e8b2631174a
+app.tour.svg  debb68854ed5c7f8772b89682176217926c41563d2d7909109260d21f30be19a
 system.network-off.svg  b9b6cbdd3be40b185710bab0e9c62eaea64c21609dfba292c7504cf8b65ef322
 system.power.svg  6602d10f0bec2a2563f61bd337aff93e36ef9ac67c169ccfe3d6d7b9c95971bc
 action.add.svg  98cece8c14e972a3a5b6b440d667a1caff32da7f75c0bee2a896a1d8da5ac011
@@ -97,6 +98,7 @@ nav.more.svg  c970673950ab4f255870e756060d2861aa36ef2f3570418fc7a203b9cc7cad8f
 nav.scroll-top.svg  a6ab9fbcf6116102e7d3f6344f3c5b7ae1ba475cfb4036c8b79e377088c7f236
 source.recent.svg  a3cf5362034f34e954234969d0dd6d2573175e7b0b0b5c23bd7c66b645600ff3
 source.resource.svg  c871c9b3cf32e6215bb63d01717909039de21c0026d1def06192a7e32faa5457
+app.theme.svg  5ca25b24022fb2de3699c12bc67ab5d91b32eb3d7bfe7347276beca5739034c4
 status.error.svg  c59d2db08ca690854f3dce659b8d952268c41606dc4e8754cf9059f057e13936
 status.locked.svg  d1c30bdfca72fcc71bb0866c396f640bc5c101ec7c8a3e044f20918c235935f7
 status.ok.svg  0a6b564ace7eb684243fa2f85b1581ee7dd22587fb1e378ee25095a741c6ad16

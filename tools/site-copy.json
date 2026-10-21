@@ -1,4 +1,5 @@
 {
+  "_exchangeMark": { "asset": "assets/exchange-mark/svg/exchange-mark-small.svg", "door": 3 },
   "_comment": [
     "Source of truth for the per-language first pages of the site.",
     "tools/Build-SitePages.ps1 renders lang/<code>/index.html from this - edit THIS",
@@ -164,7 +165,7 @@
     ]
   },
   "_whatsNew": {
-    "_comment": "Chrome copy of the generated What's new page, whats-new.html (ticket 207 T-5, Q207-2; closes Q149-1). The entries themselves are not here: tools/Build-SitePages.ps1 renders the latest 'count' released sections of CHANGELOG.md, in English, which is the language the release notes are written and published in. [Unreleased] is never rendered. A top-level entry that names the reserved door (tools/site-facts.json reservations) is left out, so this page never says what POSITIONING.md keeps unsaid.",
+    "_comment": "Chrome copy of the generated What's new page, whats-new.html (ticket 207 T-5, Q207-2; closes Q149-1). The entries themselves are not here: tools/Build-SitePages.ps1 renders the latest 'count' released sections of CHANGELOG.md, in English, which is the language the release notes are written and published in. [Unreleased] is never rendered. A top-level entry that names the component in development (tools/site-facts.json development.mentionPattern) is left out, because this page lists what a release shipped and that component is in no package.",
     "count": 10,
     "short": { "en": "What's new", "ru": "Что нового", "ua": "Що нового" },
     "desc": {
@@ -185,6 +186,114 @@
       "ua": "Нотатки про випуски написано англійською. Усі версії з інсталяторами - на сторінці релізів GitHub."
     },
     "all": { "en": "All releases on GitHub", "ru": "Все релизы на GitHub", "ua": "Усі релізи на GitHub" }
+  },
+  "_matrix": {
+    "_comment": "Labels for the component x package matrix rendered into server.html (region gen:matrix) by tools/Build-SitePages.ps1. The cells themselves are not here: they are the 'availability' block of tools/site-facts.json, each with the packaging files that prove it, and tools/Test-SitePositioning.ps1 holds both. The three languages are the ones the hand-authored pages carry; the keys must be the same in all three.",
+    "en": {
+      "title": "What each package installs",
+      "lead": "Three optional parts, four packages. Ticked means the wizard ticks it for you; off until you switch it on means the files are there but nothing listens until you turn sharing on. The Media Exchange Server is in development and is in no package.",
+      "corner": "Part",
+      "components": {
+        "viewer": "Media viewer and sorter",
+        "share": "Local SFTP folder sharing",
+        "filedo": "FileDO disk hosting (a capability of sharing)",
+        "exchange": "Media Exchange Server"
+      },
+      "channels": {
+        "full-installer": "Installer or winget (full package)",
+        "zip": "Portable ZIP",
+        "store": "Microsoft Store",
+        "server-edition": "Server edition (setup or winget)"
+      },
+      "states": {
+        "core": "Always installed",
+        "bundled": "In the package, off until you switch it on",
+        "optional-on": "Offered at install, ticked",
+        "optional-off": "Offered at install, unticked",
+        "required": "The package itself",
+        "absent": "Not in this package",
+        "in-development": "In development, in no package"
+      },
+      "factsTitle": "Rights, hosting and limits",
+      "factsHead": ["", "Installer, ZIP, winget (full package)", "Microsoft Store", "Server edition"],
+      "facts": [
+        ["Where sharing runs", "The Share Manager, in your session (it can hand sharing to a Windows service later)", "The Share Manager, in your session; no Windows service, because a Store package cannot register one", "A Windows service that starts with Windows, with nobody signed in"],
+        ["To install", "No administrator rights (per user)", "From the Store", "Administrator rights"],
+        ["To switch sharing on", "Choose folders; one administrator approval for the firewall rule", "Choose folders; the package declares the firewall rule of its worker", "Choose folders; the installer already set up the service and the firewall rule"],
+        ["Windows floor", "Windows 10 1607 for sharing; Windows 7/8.1 and 32-bit Windows get the viewer only", "Windows 10 1809", "Windows 10 1607, 64-bit"]
+      ],
+      "notes": "Every optional part is off at run time by default: nothing listens, no firewall rule exists and no service is registered until you ask. Choosing the viewer needs no server, and choosing the server needs no viewer. The table describes the packages as built from the current sources; the Releases page offers the latest published release, and What's new says which version brought each part."
+    },
+    "ru": {
+      "title": "Что ставит каждый пакет",
+      "lead": "Три необязательные части, четыре пакета. «Отмечено» значит, что установщик отмечает часть сам; «выключено, пока не включите» значит, что файлы лежат рядом, но ничего не слушает сеть, пока вы не включите раздачу. Media Exchange Server в разработке и пока ни в одном пакете его нет.",
+      "corner": "Часть",
+      "components": {
+        "viewer": "Просмотрщик и сортировщик медиа",
+        "share": "Локальная раздача папок по SFTP",
+        "filedo": "Хостинг дисков FileDO (возможность раздачи)",
+        "exchange": "Media Exchange Server"
+      },
+      "channels": {
+        "full-installer": "Установщик или winget (полный пакет)",
+        "zip": "Портативный ZIP",
+        "store": "Microsoft Store",
+        "server-edition": "Серверная редакция (установщик или winget)"
+      },
+      "states": {
+        "core": "Ставится всегда",
+        "bundled": "В пакете, выключено, пока вы не включите",
+        "optional-on": "Предлагается при установке, отмечено",
+        "optional-off": "Предлагается при установке, не отмечено",
+        "required": "Это и есть пакет",
+        "absent": "В этом пакете нет",
+        "in-development": "В разработке, ни в одном пакете"
+      },
+      "factsTitle": "Права, где работает раздача и ограничения",
+      "factsHead": ["", "Установщик, ZIP, winget (полный пакет)", "Microsoft Store", "Серверная редакция"],
+      "facts": [
+        ["Где работает раздача", "Менеджер общего доступа, в вашем сеансе (позже может передать раздачу службе Windows)", "Менеджер общего доступа, в вашем сеансе; службы Windows нет, потому что пакет Store не может её зарегистрировать", "Служба Windows, которая стартует вместе с Windows, когда никто не вошёл"],
+        ["Установка", "Права администратора не нужны (на пользователя)", "Из Store", "Нужны права администратора"],
+        ["Включение раздачи", "Выберите папки; одно подтверждение администратора для правила брандмауэра", "Выберите папки; пакет сам объявляет правило брандмауэра для своего воркера", "Выберите папки; службу и правило брандмауэра установщик уже создал"],
+        ["Минимальная Windows", "Windows 10 1607 для раздачи; Windows 7/8.1 и 32-разрядная Windows получают только просмотрщик", "Windows 10 1809", "Windows 10 1607, 64-разрядная"]
+      ],
+      "notes": "По умолчанию любая необязательная часть выключена во время работы: ничего не слушает, правила брандмауэра нет и служба не зарегистрирована, пока вы не попросите. Выбрав просмотрщик, сервер не нужен; выбрав сервер, не нужен просмотрщик. Таблица описывает пакеты, как они собираются из текущих исходников; на странице релизов лежит последний опубликованный релиз, а в «Что нового» указано, в какой версии появилась каждая часть."
+    },
+    "uk": {
+      "title": "Що встановлює кожен пакет",
+      "lead": "Три необов'язкові частини, чотири пакети. «Позначено» означає, що інсталятор позначає частину сам; «вимкнено, доки не ввімкнете» означає, що файли лежать поруч, але нічого не слухає мережу, доки ви не ввімкнете роздачу. Media Exchange Server у розробці й поки що в жодному пакеті його немає.",
+      "corner": "Частина",
+      "components": {
+        "viewer": "Переглядач і сортувальник медіа",
+        "share": "Локальна роздача тек по SFTP",
+        "filedo": "Хостинг дисків FileDO (можливість роздачі)",
+        "exchange": "Media Exchange Server"
+      },
+      "channels": {
+        "full-installer": "Інсталятор або winget (повний пакет)",
+        "zip": "Портативний ZIP",
+        "store": "Microsoft Store",
+        "server-edition": "Серверна редакція (інсталятор або winget)"
+      },
+      "states": {
+        "core": "Встановлюється завжди",
+        "bundled": "У пакеті, вимкнено, доки ви не ввімкнете",
+        "optional-on": "Пропонується під час встановлення, позначено",
+        "optional-off": "Пропонується під час встановлення, не позначено",
+        "required": "Це і є пакет",
+        "absent": "У цьому пакеті немає",
+        "in-development": "У розробці, у жодному пакеті"
+      },
+      "factsTitle": "Права, де працює роздача та обмеження",
+      "factsHead": ["", "Інсталятор, ZIP, winget (повний пакет)", "Microsoft Store", "Серверна редакція"],
+      "facts": [
+        ["Де працює роздача", "Менеджер спільного доступу, у вашому сеансі (пізніше може передати роздачу службі Windows)", "Менеджер спільного доступу, у вашому сеансі; служби Windows немає, бо пакет Store не може її зареєструвати", "Служба Windows, яка стартує разом із Windows, коли ніхто не ввійшов"],
+        ["Встановлення", "Права адміністратора не потрібні (на користувача)", "Зі Store", "Потрібні права адміністратора"],
+        ["Увімкнення роздачі", "Виберіть теки; одне підтвердження адміністратора для правила брандмауера", "Виберіть теки; пакет сам оголошує правило брандмауера для свого воркера", "Виберіть теки; службу й правило брандмауера інсталятор уже створив"],
+        ["Мінімальна Windows", "Windows 10 1607 для роздачі; Windows 7/8.1 та 32-розрядна Windows отримують лише переглядач", "Windows 10 1809", "Windows 10 1607, 64-розрядна"]
+      ],
+      "notes": "За замовчуванням кожна необов'язкова частина вимкнена під час роботи: нічого не слухає, правила брандмауера немає, а службу не зареєстровано, доки ви не попросите. Обравши переглядач, сервер не потрібен; обравши сервер, не потрібен переглядач. Таблиця описує пакети, як вони збираються з поточних вихідних кодів; на сторінці релізів лежить останній опублікований реліз, а в «Що нового» вказано, у якій версії з'явилася кожна частина."
+    }
   },
   "_channels": {
     "store": {
@@ -332,18 +441,21 @@
     "guide": "Full guide (English)",
     "serverLink": "Always-on Folder Share Server",
     "docsLink": "Documentation",
-    "family": "View and sort your media; when you need it, the same program is also a folder-share server and a host for FileDO virtual disks - each of those ships optional, off until you ask for it.",
-    "doorsTitle": "Three doors, one program",
-    "doorsLead": "Pick the way in that matches what you came for. The full package is the same download behind every door; the Server edition is a focused package for the always-on case.",
+    "family": "Three optional parts: a media viewer and sorter, a local SFTP folder-sharing service, and a Media Exchange Server (in development, not released yet) - start with the viewer or with the folder-sharing server, and add the rest only if you want it.",
+    "doorsTitle": "Two ways in, three optional parts",
+    "doorsLead": "Start where you are: with the viewer, or with the folder-sharing server. Each part is optional, and the Media Exchange Server is still in development.",
     "doors": [
-      ["Viewer", "I need a viewer", "Sort and look at photos and videos with one key per file. Download the full package - one installer, the whole family. Choose the Compact type in Setup and you get a complete viewer with no server in it; sharing and FileDO stay optional extras.", "Download the full package"],
-      ["Share to Android", "I want my folders on my phone", "Give this PC's folders to your phone over SFTP: install the full package with the folder share server ticked and pair once by QR code - or install the always-on Server edition on a machine that must serve with nobody signed in. The viewer is inside too, and optional in the Server edition.", "Share to Android"],
-      ["Planned", "I will raise a Media Exchange Server", "Planned, and not available yet: the Media Exchange Server, a connect service for the day a share server has neither a reachable address nor a port forward. There is nothing to download, and nothing is promised beyond that.", ""]
+      ["Viewer first", "I need a viewer and sorter", "Sort and look at photos and videos with one key per file. The full package installs the viewer, with local SFTP folder sharing as an optional part that stays off until you switch it on; choose the Compact type in Setup to leave sharing out. Sorting needs no server.", "Download the full package"],
+      ["Server first", "I want a server for my folders", "Open this PC's folders on an Android phone, another copy of the program or any SFTP client. The Server edition (setup.exe or winget, administrator rights) installs the folder-sharing service as a Windows service that runs with nobody signed in; the viewer is an optional, unticked extra. It does not install the Media Exchange Server (in development).", "Server edition: the folder-sharing service"],
+      ["In development", "Media Exchange Server", "In development and in no package yet, so there is nothing to download. It is a separate server you run yourself, for devices that cannot reach each other directly. It is not folder sharing, and neither the viewer nor local sharing needs it.", ""]
     ],
-    "insideNote": "Inside the full package, all optional and off until you enable them: the folder share server (Share Manager and SFTP worker), FileDO virtual-disk hosting, offline video codecs and OCR models. Choose the Compact type to leave the server out.",
+    "insideNote": "Inside the full package: the viewer and, as optional parts that stay off until you switch them on, local SFTP folder sharing (the Share Manager and its SFTP worker, with FileDO .fdd disk hosting as a capability of sharing), offline video codecs and OCR models. Choose the Compact type to leave sharing out. The Media Exchange Server is still in development and is in no package.",
     "langLabel": "Language",
     "skipLabel": "Skip to main content",
     "navLabel": "Main navigation",
+    "themeLabel": "Dark theme",
+    "externalLabel": "opens in a new tab",
+    "featuresLabel": "Features",
     "machineNote": ""
   },
 
@@ -383,18 +495,21 @@
     "guide": "Полное руководство (на английском)",
     "serverLink": "Серверная редакция: раздача без входа в систему",
     "docsLink": "Документация",
-    "family": "Просматривайте и сортируйте медиа; когда понадобится, эта же программа - ещё и сервер раздачи папок и хост виртуальных дисков FileDO: каждая из этих ролей необязательна и выключена, пока вы её не включите.",
-    "doorsTitle": "Три двери, одна программа",
-    "doorsLead": "Выберите вход под свою задачу. За каждой дверью - один и тот же полный пакет; серверная редакция - отдельный пакет для режима «всегда включено».",
+    "family": "Три необязательные части: просмотрщик и сортировщик медиа, локальная служба раздачи папок по SFTP и Media Exchange Server (в разработке, пока не выпущен) - начните с просмотрщика или с сервера раздачи папок, а остальное добавляйте, только если нужно.",
+    "doorsTitle": "Два входа, три необязательные части",
+    "doorsLead": "Начните оттуда, где вы стоите: с просмотрщика или с сервера раздачи папок. Каждая часть необязательна, а Media Exchange Server пока в разработке.",
     "doors": [
-      ["Просмотрщик", "Мне нужен просмотрщик", "Просматривайте и сортируйте фото и видео одной клавишей на файл. Скачайте полный пакет - один установщик, вся семья целиком. Выберите в установщике тип «Компактная» - получите полноценный просмотрщик без сервера; раздача и FileDO остаются необязательными дополнениями.", "Скачать полный пакет"],
-      ["Раздача на Android", "Хочу папки с ПК на телефоне", "Отдайте папки этого ПК телефону по SFTP: установите полный пакет с отмеченным сервером раздачи папок и один раз привяжите телефон по QR-коду - либо поставьте серверную редакцию на машину, которая должна раздавать, когда никто не вошёл в систему. Просмотрщик тоже внутри, в серверной редакции он необязателен.", "Раздача на Android"],
-      ["В планах", "Я подниму Media Exchange Server", "В планах, пока недоступно: Media Exchange Server (сервер обмена) - сервис соединения на тот день, когда у сервера раздачи нет ни доступного адреса, ни проброса порта. Скачивать пока нечего, и больше ничего здесь не обещано.", ""]
+      ["Сначала просмотрщик", "Мне нужен просмотрщик и сортировщик", "Просматривайте и сортируйте фото и видео одной клавишей на файл. Полный пакет ставит просмотрщик, а раздачу папок по SFTP - как необязательную часть, которая выключена, пока вы её не включите; выберите в установщике тип «Компактная», чтобы раздачи не было вовсе. Для сортировки сервер не нужен.", "Скачать полный пакет"],
+      ["Сначала сервер", "Мне нужен сервер для моих папок", "Откройте папки этого ПК на телефоне с Android, в другой копии программы или в любом SFTP-клиенте. Серверная редакция (setup.exe или winget, нужны права администратора) ставит службу раздачи папок как службу Windows, которая работает, когда никто не вошёл в систему; просмотрщик - необязательное дополнение без галочки. Media Exchange Server (в разработке) она не ставит.", "Серверная редакция: служба раздачи папок"],
+      ["В разработке", "Media Exchange Server", "В разработке и пока ни в одном пакете, поэтому скачивать нечего. Это отдельный сервер, который вы поднимаете сами, для устройств, которые не могут связаться напрямую. Это не раздача папок, и ни просмотрщику, ни локальной раздаче он не нужен.", ""]
     ],
-    "insideNote": "Внутри полного пакета, всё необязательное и выключенное, пока вы не включите: сервер раздачи папок (Менеджер общего доступа и SFTP-воркер), хост виртуальных дисков FileDO, видео-кодеки и модели OCR для работы без интернета. Выберите тип «Компактная», чтобы сервер не ставился.",
+    "insideNote": "Внутри полного пакета: просмотрщик и - как необязательные части, выключенные, пока вы их не включите, - локальная раздача папок по SFTP (Менеджер общего доступа и SFTP-воркер; размещение дисков FileDO .fdd - возможность раздачи), видео-кодеки и модели OCR для работы без интернета. Выберите тип «Компактная», чтобы раздача не ставилась. Media Exchange Server пока в разработке и ни в одном пакете его нет.",
     "langLabel": "Язык",
     "skipLabel": "Перейти к основному содержимому",
     "navLabel": "Основная навигация",
+    "themeLabel": "Тёмная тема",
+    "externalLabel": "откроется в новой вкладке",
+    "featuresLabel": "Возможности",
     "machineNote": ""
   },
 
@@ -434,18 +549,21 @@
     "guide": "Повний посібник (англійською)",
     "serverLink": "Серверна редакція: роздача без входу в систему",
     "docsLink": "Документація",
-    "family": "Переглядайте й сортуйте медіа; коли знадобиться, ця сама програма - ще й сервер роздачі тек і хост віртуальних дисків FileDO: кожна з цих ролей необов'язкова й вимкнена, доки ви її не ввімкнете.",
-    "doorsTitle": "Троє дверей, одна програма",
-    "doorsLead": "Виберіть вхід під свою задачу. За кожними дверима - той самий повний пакет; серверна редакція - окремий пакет для режиму «завжди ввімкнено».",
+    "family": "Три необов'язкові частини: переглядач і сортувальник медіа, локальна служба роздачі тек по SFTP і Media Exchange Server (у розробці, поки не випущений) - почніть із переглядача або із сервера роздачі тек, а решту додавайте, лише якщо потрібно.",
+    "doorsTitle": "Два входи, три необов'язкові частини",
+    "doorsLead": "Почніть звідти, де ви стоїте: з переглядача або із сервера роздачі тек. Кожна частина необов'язкова, а Media Exchange Server поки що у розробці.",
     "doors": [
-      ["Переглядач", "Мені потрібен переглядач", "Переглядайте й сортуйте фото та відео однією клавішею на файл. Завантажте повний пакет - один інсталятор, уся родина разом. Виберіть в інсталяторі тип «Компактна» - отримаєте повноцінний переглядач без сервера; роздача й FileDO лишаються необов'язковими доповненнями.", "Завантажити повний пакет"],
-      ["Роздача на Android", "Хочу теки з ПК на телефоні", "Віддайте теки цього ПК телефону по SFTP: встановіть повний пакет із позначеним сервером роздачі тек і один раз прив'яжіть телефон за QR-кодом - або поставте серверну редакцію на машину, що має роздавати, коли ніхто не ввійшов у систему. Переглядач теж усередині, у серверній редакції він необов'язковий.", "Роздача на Android"],
-      ["У планах", "Я підніму Media Exchange Server", "У планах, поки недоступно: Media Exchange Server (сервер обміну) - сервіс з'єднання на той день, коли у сервера роздачі немає ні доступної адреси, ні прокидання порту. Завантажувати поки нічого, і більше нічого тут не обіцяно.", ""]
+      ["Спершу переглядач", "Мені потрібен переглядач і сортувальник", "Переглядайте й сортуйте фото та відео однією клавішею на файл. Повний пакет ставить переглядач, а роздачу тек по SFTP - як необов'язкову частину, що вимкнена, доки ви її не ввімкнете; виберіть в інсталяторі тип «Компактна», щоб роздачі не було зовсім. Для сортування сервер не потрібен.", "Завантажити повний пакет"],
+      ["Спершу сервер", "Мені потрібен сервер для моїх тек", "Відкрийте теки цього ПК на телефоні з Android, в іншій копії програми або в будь-якому SFTP-клієнті. Серверна редакція (setup.exe або winget, потрібні права адміністратора) ставить службу роздачі тек як службу Windows, що працює, коли ніхто не ввійшов у систему; переглядач - необов'язкове доповнення без позначки. Media Exchange Server (у розробці) вона не ставить.", "Серверна редакція: служба роздачі тек"],
+      ["У розробці", "Media Exchange Server", "У розробці й поки в жодному пакеті, тож завантажувати нічого. Це окремий сервер, який ви піднімаєте самі, для пристроїв, що не можуть зв'язатися напряму. Це не роздача тек, і ні переглядачу, ні локальній роздачі він не потрібен.", ""]
     ],
-    "insideNote": "Усередині повного пакета, усе необов'язкове й вимкнене, доки ви не ввімкнете: сервер роздачі тек (Менеджер спільного доступу та SFTP-воркер), хост віртуальних дисків FileDO, відео-кодеки й моделі OCR для роботи без інтернету. Виберіть тип «Компактна», щоб сервер не ставився.",
+    "insideNote": "Усередині повного пакета: переглядач і - як необов'язкові частини, вимкнені, доки ви їх не ввімкнете, - локальна роздача тек по SFTP (Менеджер спільного доступу та SFTP-воркер; розміщення дисків FileDO .fdd - можливість роздачі), відео-кодеки й моделі OCR для роботи без інтернету. Виберіть тип «Компактна», щоб роздача не ставилася. Media Exchange Server поки що у розробці й у жодному пакеті його немає.",
     "langLabel": "Мова",
     "skipLabel": "Перейти до основного вмісту",
     "navLabel": "Основна навігація",
+    "themeLabel": "Темна тема",
+    "externalLabel": "відкриється в новій вкладці",
+    "featuresLabel": "Можливості",
     "machineNote": ""
   },
 
@@ -485,18 +603,21 @@
     "guide": "Vollständige Anleitung (auf Englisch)",
     "serverLink": "Server-Edition: Freigabe ohne Anmeldung (auf Englisch)",
     "docsLink": "Dokumentation (auf Englisch)",
-    "family": "Medien ansehen und sortieren; wenn Sie es brauchen, ist dasselbe Programm auch ein Ordner-Freigabeserver und ein Host für virtuelle FileDO-Laufwerke - jede dieser Rollen ist optional und bleibt aus, bis Sie sie einschalten.",
-    "doorsTitle": "Drei Türen, ein Programm",
-    "doorsLead": "Wählen Sie den Zugang, der zu Ihrem Anliegen passt. Hinter jeder Tür steckt derselbe vollständige Download; die Server-Edition ist ein eigenes Paket für den Dauerbetrieb.",
+    "family": "Drei optionale Teile: ein Betrachter und Sortierer für Ihre Medien, ein lokaler SFTP-Ordner-Freigabedienst und ein Media Exchange Server (in Entwicklung, noch nicht veröffentlicht) - beginnen Sie mit dem Betrachter oder mit dem Ordner-Freigabeserver und ergänzen Sie den Rest nur, wenn Sie ihn möchten.",
+    "doorsTitle": "Zwei Zugänge, drei optionale Teile",
+    "doorsLead": "Beginnen Sie dort, wo Sie stehen: mit dem Betrachter oder mit dem Ordner-Freigabeserver. Jeder Teil ist optional, und der Media Exchange Server ist noch in Entwicklung.",
     "doors": [
-      ["Betrachter", "Ich brauche einen Betrachter", "Fotos und Videos ansehen und mit einer Taste pro Datei sortieren. Laden Sie das vollständige Paket herunter - ein Installer, die ganze Familie. Wählen Sie im Setup den Typ «Kompakt», erhalten Sie einen kompletten Betrachter ohne Server; Freigabe und FileDO bleiben optionale Extras.", "Vollständiges Paket herunterladen"],
-      ["Für Android freigeben", "Ich will meine Ordner auf dem Handy", "Geben Sie die Ordner dieses PCs per SFTP an Ihr Telefon: Installieren Sie das vollständige Paket mit angehaktem Ordner-Freigabeserver und koppeln Sie einmal per QR-Code - oder installieren Sie die Server-Edition auf einem Rechner, der ohne angemeldeten Benutzer liefern muss. Der Betrachter ist ebenfalls enthalten, in der Server-Edition optional.", "Für Android freigeben (auf Englisch)"],
-      ["Geplant", "Ich betreibe einen Media Exchange Server", "Geplant und noch nicht verfügbar: der Media Exchange Server, ein Vermittlungsdienst für den Tag, an dem ein Freigabeserver weder eine erreichbare Adresse noch eine Portweiterleitung hat. Es gibt nichts herunterzuladen, und darüber hinaus wird nichts versprochen.", ""]
+      ["Zuerst der Betrachter", "Ich brauche einen Betrachter und Sortierer", "Fotos und Videos mit einer Taste pro Datei ansehen und sortieren. Das vollständige Paket installiert den Betrachter, die lokale SFTP-Ordnerfreigabe als optionalen Teil, der aus bleibt, bis Sie ihn einschalten; wählen Sie im Setup den Typ «Kompakt», um die Freigabe wegzulassen. Zum Sortieren ist kein Server nötig.", "Vollständiges Paket herunterladen"],
+      ["Zuerst der Server", "Ich möchte einen Server für meine Ordner", "Öffnen Sie die Ordner dieses PCs auf einem Android-Telefon, in einer anderen Kopie des Programms oder in jedem SFTP-Client. Die Server-Edition (setup.exe oder winget, Administratorrechte nötig) installiert den Ordner-Freigabedienst als Windows-Dienst, der läuft, ohne dass jemand angemeldet ist; der Betrachter ist ein optionales Extra ohne Häkchen. Den Media Exchange Server (in Entwicklung) installiert sie nicht.", "Server-Edition: Freigabe ohne Anmeldung (auf Englisch)"],
+      ["In Entwicklung", "Media Exchange Server", "In Entwicklung und noch in keinem Paket, daher gibt es nichts herunterzuladen. Es ist ein eigener Server, den Sie selbst betreiben, für Geräte, die sich nicht direkt erreichen können. Er ist keine Ordnerfreigabe, und weder der Betrachter noch die lokale Freigabe brauchen ihn.", ""]
     ],
-    "insideNote": "Im vollständigen Paket, alles optional und aus, bis Sie es einschalten: der Ordner-Freigabeserver (Share Manager und SFTP-Worker), das Hosten virtueller FileDO-Laufwerke, Offline-Videocodecs und OCR-Modelle. Wählen Sie den Typ «Kompakt», um den Server wegzulassen.",
+    "insideNote": "Im vollständigen Paket: der Betrachter und - als optionale Teile, die aus bleiben, bis Sie sie einschalten - die lokale SFTP-Ordnerfreigabe (Share Manager und SFTP-Worker; das Hosten von FileDO-.fdd-Laufwerken ist eine Fähigkeit der Freigabe), Offline-Videocodecs und OCR-Modelle. Wählen Sie den Typ «Kompakt», um die Freigabe wegzulassen. Der Media Exchange Server ist noch in Entwicklung und in keinem Paket enthalten.",
     "langLabel": "Sprache",
     "skipLabel": "Zum Hauptinhalt springen",
     "navLabel": "Hauptnavigation",
+    "themeLabel": "Dunkles Design",
+    "externalLabel": "öffnet in neuem Tab",
+    "featuresLabel": "Funktionen",
     "machineNote": "Diese Seite und die deutsche Oberfläche sind maschinell übersetzt und nicht lektoriert. Korrekturen sind willkommen."
   },
 
@@ -536,18 +657,21 @@
     "guide": "Guida completa (in inglese)",
     "serverLink": "Edizione Server: condivisione senza accesso (in inglese)",
     "docsLink": "Documentazione (in inglese)",
-    "family": "Visualizza e ordina i tuoi contenuti multimediali; quando serve, lo stesso programma è anche un server di condivisione cartelle e un host per i dischi virtuali FileDO - ognuno di questi ruoli è facoltativo e resta spento finché non lo attivi.",
-    "doorsTitle": "Tre porte, un solo programma",
-    "doorsLead": "Scegli l'ingresso adatto a ciò che cerchi. Dietro ogni porta c'è lo stesso download completo; l'edizione Server è un pacchetto dedicato all'uso sempre attivo.",
+    "family": "Tre parti facoltative: un visualizzatore e organizzatore dei tuoi contenuti multimediali, un servizio locale di condivisione cartelle via SFTP e un Media Exchange Server (in sviluppo, non ancora rilasciato) - inizia dal visualizzatore o dal server di condivisione cartelle e aggiungi il resto solo se lo vuoi.",
+    "doorsTitle": "Due ingressi, tre parti facoltative",
+    "doorsLead": "Parti da dove sei: dal visualizzatore o dal server di condivisione cartelle. Ogni parte è facoltativa e il Media Exchange Server è ancora in sviluppo.",
     "doors": [
-      ["Visualizzatore", "Mi serve un visualizzatore", "Guarda e ordina foto e video con un tasto per file. Scarica il pacchetto completo - un solo installer, tutta la famiglia. Scegli il tipo «Compatta» nel setup e ottieni un visualizzatore completo senza server; condivisione e FileDO restano extra facoltativi.", "Scarica il pacchetto completo"],
-      ["Condividi su Android", "Voglio le mie cartelle sul telefono", "Dai le cartelle di questo PC al telefono via SFTP: installa il pacchetto completo con il server di condivisione cartelle selezionato e associa una volta con un codice QR - oppure installa l'edizione Server su una macchina che deve servire senza nessuno connesso. Il visualizzatore è incluso anche lì, facoltativo nell'edizione Server.", "Condividi su Android (in inglese)"],
-      ["In programma", "Metterò su un Media Exchange Server", "In programma e non ancora disponibile: il Media Exchange Server, un servizio di collegamento per il giorno in cui un server di condivisione non ha né un indirizzo raggiungibile né un port forward. Non c'è nulla da scaricare e nulla è promesso oltre questo.", ""]
+      ["Prima il visualizzatore", "Mi serve un visualizzatore e organizzatore", "Guarda e ordina foto e video con un tasto per file. Il pacchetto completo installa il visualizzatore e, come parte facoltativa che resta spenta finché non la attivi, la condivisione locale delle cartelle via SFTP; scegli il tipo «Compatto» nell'installazione per lasciarla fuori. Per ordinare non serve alcun server.", "Scarica il pacchetto completo"],
+      ["Prima il server", "Voglio un server per le mie cartelle", "Apri le cartelle di questo PC su un telefono Android, in un'altra copia del programma o in qualsiasi client SFTP. L'edizione Server (setup.exe o winget, servono i diritti di amministratore) installa il servizio di condivisione cartelle come servizio di Windows che funziona senza che nessuno abbia effettuato l'accesso; il visualizzatore è un extra facoltativo, non selezionato. Non installa il Media Exchange Server (in sviluppo).", "Edizione Server: condivisione senza accesso (in inglese)"],
+      ["In sviluppo", "Media Exchange Server", "In sviluppo e ancora in nessun pacchetto, quindi non c'è nulla da scaricare. È un server a parte che gestisci tu, per dispositivi che non possono raggiungersi direttamente. Non è la condivisione di cartelle, e né il visualizzatore né la condivisione locale ne hanno bisogno.", ""]
     ],
-    "insideNote": "Nel pacchetto completo, tutto facoltativo e spento finché non lo attivi: il server di condivisione cartelle (Share Manager e worker SFTP), l'hosting di dischi virtuali FileDO, i codec video offline e i modelli OCR. Scegli il tipo «Compatta» per lasciare fuori il server.",
+    "insideNote": "Nel pacchetto completo: il visualizzatore e - come parti facoltative che restano spente finché non le attivi - la condivisione locale delle cartelle via SFTP (Share Manager e worker SFTP; l'hosting dei dischi FileDO .fdd è una capacità della condivisione), codec video offline e modelli OCR. Scegli il tipo «Compatto» per lasciare fuori la condivisione. Il Media Exchange Server è ancora in sviluppo e non è in nessun pacchetto.",
     "langLabel": "Lingua",
     "skipLabel": "Vai al contenuto principale",
     "navLabel": "Navigazione principale",
+    "themeLabel": "Tema scuro",
+    "externalLabel": "si apre in una nuova scheda",
+    "featuresLabel": "Funzionalità",
     "machineNote": "Questa pagina e l'interfaccia italiana sono tradotte automaticamente e non revisionate. Le correzioni sono benvenute."
   },
 
@@ -587,18 +711,21 @@
     "guide": "Guía completa (en inglés)",
     "serverLink": "Edición Servidor: uso compartido sin iniciar sesión (en inglés)",
     "docsLink": "Documentación (en inglés)",
-    "family": "Mira y ordena tus archivos multimedia; cuando lo necesites, el mismo programa es también un servidor para compartir carpetas y un anfitrión de discos virtuales FileDO: cada uno de esos roles es opcional y permanece apagado hasta que lo actives.",
-    "doorsTitle": "Tres puertas, un solo programa",
-    "doorsLead": "Elige la entrada que encaje con lo que buscas. Detrás de cada puerta está la misma descarga completa; la edición Servidor es un paquete específico para el uso siempre activo.",
+    "family": "Tres partes opcionales: un visor y organizador de tus archivos multimedia, un servicio local para compartir carpetas por SFTP y un Media Exchange Server (en desarrollo, aún sin publicar) - empieza por el visor o por el servidor para compartir carpetas y añade el resto solo si lo quieres.",
+    "doorsTitle": "Dos entradas, tres partes opcionales",
+    "doorsLead": "Empieza por donde estás: por el visor o por el servidor para compartir carpetas. Cada parte es opcional y el Media Exchange Server aún está en desarrollo.",
     "doors": [
-      ["Visor", "Necesito un visor", "Mira y ordena fotos y vídeos con una tecla por archivo. Descarga el paquete completo: un instalador, toda la familia. Elige el tipo «Compacta» en la instalación y obtienes un visor completo sin servidor; compartir y FileDO siguen siendo extras opcionales.", "Descargar el paquete completo"],
-      ["Compartir con Android", "Quiero mis carpetas en el móvil", "Pasa las carpetas de este PC a tu móvil por SFTP: instala el paquete completo con el servidor para compartir carpetas marcado y vincula una vez con un código QR, o instala la edición Servidor en un equipo que deba servir sin ninguna sesión iniciada. El visor también va incluido, opcional en la edición Servidor.", "Compartir con Android (en inglés)"],
-      ["Previsto", "Voy a montar un Media Exchange Server", "Previsto y aún no disponible: el Media Exchange Server, un servicio de conexión para el día en que un servidor para compartir no tenga ni una dirección alcanzable ni una redirección de puerto. No hay nada que descargar y no se promete nada más.", ""]
+      ["Primero el visor", "Necesito un visor y organizador", "Mira y ordena fotos y vídeos con una tecla por archivo. El paquete completo instala el visor y, como parte opcional que sigue apagada hasta que la actives, el uso compartido local de carpetas por SFTP; elige el tipo «Compacto» en la instalación para dejarlo fuera. Para ordenar no hace falta ningún servidor.", "Descargar el paquete completo"],
+      ["Primero el servidor", "Quiero un servidor para mis carpetas", "Abre las carpetas de este PC en un teléfono Android, en otra copia del programa o en cualquier cliente SFTP. La edición Servidor (setup.exe o winget, requiere derechos de administrador) instala el servicio para compartir carpetas como servicio de Windows que funciona sin que nadie haya iniciado sesión; el visor es un extra opcional, sin marcar. No instala el Media Exchange Server (en desarrollo).", "Edición Servidor: uso compartido sin iniciar sesión (en inglés)"],
+      ["En desarrollo", "Media Exchange Server", "En desarrollo y todavía en ningún paquete, así que no hay nada que descargar. Es un servidor aparte que montas tú mismo, para dispositivos que no pueden alcanzarse directamente. No es compartir carpetas, y ni el visor ni el uso compartido local lo necesitan.", ""]
     ],
-    "insideNote": "Dentro del paquete completo, todo opcional y apagado hasta que lo actives: el servidor para compartir carpetas (Share Manager y el worker SFTP), el alojamiento de discos virtuales FileDO, los códecs de vídeo sin conexión y los modelos OCR. Elige el tipo «Compacta» para dejar fuera el servidor.",
+    "insideNote": "Dentro del paquete completo: el visor y, como partes opcionales que siguen apagadas hasta que las actives, el uso compartido local de carpetas por SFTP (Share Manager y el worker SFTP; alojar discos FileDO .fdd es una capacidad del uso compartido), códecs de vídeo sin conexión y modelos OCR. Elige el tipo «Compacto» para dejar fuera el uso compartido. El Media Exchange Server sigue en desarrollo y no está en ningún paquete.",
     "langLabel": "Idioma",
     "skipLabel": "Saltar al contenido principal",
     "navLabel": "Navegación principal",
+    "themeLabel": "Tema oscuro",
+    "externalLabel": "se abre en una pestaña nueva",
+    "featuresLabel": "Funciones",
     "machineNote": "Esta página y la interfaz en español son traducciones automáticas sin revisar. Las correcciones son bienvenidas."
   },
 
@@ -638,18 +765,21 @@
     "guide": "Guide complet (en anglais)",
     "serverLink": "Édition Serveur : partage sans session ouverte (en anglais)",
     "docsLink": "Documentation (en anglais)",
-    "family": "Affichez et triez vos médias ; au besoin, le même programme est aussi un serveur de partage de dossiers et un hôte de disques virtuels FileDO - chacun de ces rôles est facultatif et reste désactivé tant que vous ne l'activez pas.",
-    "doorsTitle": "Trois portes, un seul programme",
-    "doorsLead": "Choisissez l'entrée qui correspond à ce que vous cherchez. Derrière chaque porte se trouve le même téléchargement complet ; l'édition Serveur est un paquet dédié à l'usage permanent.",
+    "family": "Trois parties facultatives : une visionneuse et un outil de tri pour vos médias, un service local de partage de dossiers par SFTP et un Media Exchange Server (en développement, pas encore publié) - commencez par la visionneuse ou par le serveur de partage de dossiers, et n'ajoutez le reste que si vous le voulez.",
+    "doorsTitle": "Deux entrées, trois parties facultatives",
+    "doorsLead": "Commencez là où vous en êtes : par la visionneuse ou par le serveur de partage de dossiers. Chaque partie est facultative, et le Media Exchange Server est encore en développement.",
     "doors": [
-      ["Visionneuse", "J'ai besoin d'une visionneuse", "Parcourez et triez photos et vidéos avec une touche par fichier. Téléchargez le paquet complet - un seul installateur, toute la famille. Choisissez le type « Compact » dans l'installation et vous obtenez une visionneuse complète sans serveur ; le partage et FileDO restent des extras facultatifs.", "Télécharger le paquet complet"],
-      ["Partager vers Android", "Je veux mes dossiers sur mon téléphone", "Donnez les dossiers de ce PC à votre téléphone via SFTP : installez le paquet complet avec le serveur de partage de dossiers coché et associez une fois par code QR - ou installez l'édition Serveur sur une machine qui doit servir sans session ouverte. La visionneuse est incluse aussi, facultative dans l'édition Serveur.", "Partager vers Android (en anglais)"],
-      ["Prévu", "Je monterai un Media Exchange Server", "Prévu et pas encore disponible : le Media Exchange Server, un service de mise en relation pour le jour où un serveur de partage n'a ni adresse joignable ni redirection de port. Il n'y a rien à télécharger, et rien n'est promis au-delà.", ""]
+      ["D'abord la visionneuse", "J'ai besoin d'une visionneuse et d'un outil de tri", "Affichez et triez photos et vidéos avec une touche par fichier. Le paquet complet installe la visionneuse et, en partie facultative qui reste désactivée tant que vous ne l'activez pas, le partage local de dossiers par SFTP ; choisissez le type « Compact » dans l'installation pour l'exclure. Pas besoin de serveur pour trier.", "Télécharger le paquet complet"],
+      ["D'abord le serveur", "Je veux un serveur pour mes dossiers", "Ouvrez les dossiers de ce PC sur un téléphone Android, dans une autre copie du programme ou dans n'importe quel client SFTP. L'édition Serveur (setup.exe ou winget, droits d'administrateur requis) installe le service de partage de dossiers comme service Windows qui tourne sans qu'aucune session soit ouverte ; la visionneuse est un extra facultatif, non coché. Elle n'installe pas le Media Exchange Server (en développement).", "Édition Serveur : partage sans session ouverte (en anglais)"],
+      ["En développement", "Media Exchange Server", "En développement et dans aucun paquet pour l'instant, donc rien à télécharger. C'est un serveur à part que vous exploitez vous-même, pour des appareils qui ne peuvent pas se joindre directement. Ce n'est pas du partage de dossiers, et ni la visionneuse ni le partage local n'en ont besoin.", ""]
     ],
-    "insideNote": "Dans le paquet complet, tout est facultatif et désactivé tant que vous ne l'activez pas : le serveur de partage de dossiers (Share Manager et worker SFTP), l'hébergement de disques virtuels FileDO, les codecs vidéo hors ligne et les modèles OCR. Choisissez le type « Compact » pour laisser le serveur de côté.",
+    "insideNote": "Dans le paquet complet : la visionneuse et, en parties facultatives qui restent désactivées tant que vous ne les activez pas, le partage local de dossiers par SFTP (Share Manager et worker SFTP ; l'hébergement de disques FileDO .fdd est une capacité du partage), les codecs vidéo hors ligne et les modèles OCR. Choisissez le type « Compact » pour exclure le partage. Le Media Exchange Server est encore en développement et ne figure dans aucun paquet.",
     "langLabel": "Langue",
     "skipLabel": "Aller au contenu principal",
     "navLabel": "Navigation principale",
+    "themeLabel": "Thème sombre",
+    "externalLabel": "ouvre un nouvel onglet",
+    "featuresLabel": "Fonctionnalités",
     "machineNote": "Cette page et l'interface française sont des traductions automatiques non relues. Les corrections sont les bienvenues."
   },
 
@@ -689,18 +819,21 @@
     "guide": "Guia completo (em inglês)",
     "serverLink": "Edição Servidor: partilha sem sessão iniciada (em inglês)",
     "docsLink": "Documentação (em inglês)",
-    "family": "Veja e organize os seus ficheiros multimédia; quando precisar, o mesmo programa é também um servidor de partilha de pastas e um anfitrião de discos virtuais FileDO - cada uma dessas funções é opcional e fica desligada até que a ative.",
-    "doorsTitle": "Três portas, um só programa",
-    "doorsLead": "Escolha a entrada que corresponde ao que procura. Atrás de cada porta está a mesma transferência completa; a edição Servidor é um pacote dedicado ao uso permanente.",
+    "family": "Três partes opcionais: um visualizador e organizador dos seus ficheiros multimédia, um serviço local de partilha de pastas por SFTP e um Media Exchange Server (em desenvolvimento, ainda não publicado) - comece pelo visualizador ou pelo servidor de partilha de pastas e acrescente o resto só se quiser.",
+    "doorsTitle": "Duas entradas, três partes opcionais",
+    "doorsLead": "Comece por onde está: pelo visualizador ou pelo servidor de partilha de pastas. Cada parte é opcional e o Media Exchange Server ainda está em desenvolvimento.",
     "doors": [
-      ["Visualizador", "Preciso de um visualizador", "Veja e organize fotografias e vídeos com uma tecla por ficheiro. Transfira o pacote completo - um instalador, a família inteira. Escolha o tipo «Compacta» na instalação e obtém um visualizador completo sem servidor; a partilha e o FileDO continuam a ser extras opcionais.", "Transferir o pacote completo"],
-      ["Partilhar para Android", "Quero as minhas pastas no telemóvel", "Dê as pastas deste PC ao seu telemóvel por SFTP: instale o pacote completo com o servidor de partilha de pastas selecionado e emparelhe uma vez por código QR - ou instale a edição Servidor num computador que tenha de servir sem ninguém com sessão iniciada. O visualizador também vai incluído, opcional na edição Servidor.", "Partilhar para Android (em inglês)"],
-      ["Planeado", "Vou montar um Media Exchange Server", "Planeado e ainda não disponível: o Media Exchange Server, um serviço de ligação para o dia em que um servidor de partilha não tenha nem um endereço acessível nem um encaminhamento de porta. Não há nada para transferir e nada é prometido além disso.", ""]
+      ["Primeiro o visualizador", "Preciso de um visualizador e organizador", "Veja e organize fotografias e vídeos com uma tecla por ficheiro. O pacote completo instala o visualizador e, como parte opcional que fica desligada até que a ative, a partilha local de pastas por SFTP; escolha o tipo «Compacto» na instalação para a deixar de fora. Para organizar não é preciso nenhum servidor.", "Transferir o pacote completo"],
+      ["Primeiro o servidor", "Quero um servidor para as minhas pastas", "Abra as pastas deste PC num telemóvel Android, noutra cópia do programa ou em qualquer cliente SFTP. A edição Servidor (setup.exe ou winget, requer direitos de administrador) instala o serviço de partilha de pastas como serviço do Windows que funciona sem ninguém ter iniciado sessão; o visualizador é um extra opcional, desmarcado. Não instala o Media Exchange Server (em desenvolvimento).", "Edição Servidor: partilha sem sessão iniciada (em inglês)"],
+      ["Em desenvolvimento", "Media Exchange Server", "Em desenvolvimento e ainda em nenhum pacote, por isso não há nada para transferir. É um servidor à parte que você mesmo gere, para dispositivos que não se conseguem alcançar diretamente. Não é partilha de pastas, e nem o visualizador nem a partilha local precisam dele.", ""]
     ],
-    "insideNote": "Dentro do pacote completo, tudo opcional e desligado até que o ative: o servidor de partilha de pastas (Share Manager e worker SFTP), o alojamento de discos virtuais FileDO, os codecs de vídeo offline e os modelos OCR. Escolha o tipo «Compacta» para deixar o servidor de fora.",
+    "insideNote": "Dentro do pacote completo: o visualizador e, como partes opcionais que ficam desligadas até que as ative, a partilha local de pastas por SFTP (Share Manager e worker SFTP; alojar discos FileDO .fdd é uma capacidade da partilha), codecs de vídeo offline e modelos OCR. Escolha o tipo «Compacto» para deixar a partilha de fora. O Media Exchange Server ainda está em desenvolvimento e não está em nenhum pacote.",
     "langLabel": "Idioma",
     "skipLabel": "Saltar para o conteúdo principal",
     "navLabel": "Navegação principal",
+    "themeLabel": "Tema escuro",
+    "externalLabel": "abre num novo separador",
+    "featuresLabel": "Funcionalidades",
     "machineNote": "Esta página e a interface em português são traduções automáticas não revisadas. Correções são bem-vindas."
   },
 
@@ -740,18 +873,21 @@
     "guide": "الدليل الكامل (بالإنجليزية)",
     "serverLink": "إصدارة الخادم: مشاركة دون تسجيل دخول (بالإنجليزية)",
     "docsLink": "الوثائق (بالإنجليزية)",
-    "family": "اعرض وسائطك ورتّبها؛ وعند الحاجة يكون البرنامج نفسه أيضًا خادمًا لمشاركة المجلدات ومضيفًا للأقراص الافتراضية FileDO - وكل دور من هذه الأدوار اختياري ويبقى متوقفًا حتى تُشغّله.",
-    "doorsTitle": "ثلاثة أبواب وبرنامج واحد",
-    "doorsLead": "اختر المدخل المناسب لما جئت من أجله. خلف كل باب التنزيل الكامل نفسه؛ أما إصدارة الخادم فحزمة مخصّصة للتشغيل الدائم.",
+    "family": "ثلاثة أجزاء اختيارية: عارض ومُرتِّب لوسائطك، وخدمة محلية لمشاركة المجلدات عبر SFTP، وخادم Media Exchange Server (قيد التطوير ولم يصدر بعد) - ابدأ بالعارض أو بخادم مشاركة المجلدات، ولا تضف الباقي إلا إن أردته.",
+    "doorsTitle": "مدخلان وثلاثة أجزاء اختيارية",
+    "doorsLead": "ابدأ من حيث أنت: بالعارض أو بخادم مشاركة المجلدات. كل جزء اختياري، وخادم Media Exchange Server لا يزال قيد التطوير.",
     "doors": [
-      ["العارض", "أحتاج إلى عارض", "اعرض الصور ومقاطع الفيديو ورتّبها بمفتاح واحد لكل ملف. نزّل الحزمة الكاملة - مثبّت واحد والعائلة كلها. اختر النوع «مضغوط» في الإعداد لتحصل على عارض كامل بلا خادم؛ وتبقى المشاركة وFileDO إضافتين اختياريتين.", "نزّل الحزمة الكاملة"],
-      ["مشاركة إلى Android", "أريد مجلداتي على هاتفي", "امنح هاتفك مجلدات هذا الحاسوب عبر SFTP: ثبّت الحزمة الكاملة مع تحديد خادم مشاركة المجلدات واقترن مرة واحدة برمز QR - أو ثبّت إصدارة الخادم على جهاز يجب أن يخدم دون تسجيل دخول أحد. العارض موجود أيضًا ضمنها، واختياري في إصدارة الخادم.", "المشاركة إلى Android (بالإنجليزية)"],
-      ["مخطّط له", "سأُشغّل Media Exchange Server", "مخطّط له وغير متاح بعد: Media Exchange Server، خدمة ربط ليوم لا يملك فيه خادم المشاركة عنوانًا يمكن الوصول إليه ولا إعادة توجيه منفذ. لا شيء للتنزيل الآن، ولا وعد بأكثر من ذلك.", ""]
+      ["العارض أولًا", "أحتاج إلى عارض ومُرتِّب", "اعرض الصور ومقاطع الفيديو ورتّبها بمفتاح واحد لكل ملف. تثبّت الحزمة الكاملة العارض، ومعه مشاركة المجلدات المحلية عبر SFTP كجزء اختياري يبقى متوقفًا حتى تُشغّله؛ اختر النوع «مضغوط» في الإعداد لتركها خارجًا. لا حاجة إلى خادم للترتيب.", "نزّل الحزمة الكاملة"],
+      ["الخادم أولًا", "أريد خادمًا لمجلداتي", "افتح مجلدات هذا الحاسوب على هاتف Android أو في نسخة أخرى من البرنامج أو في أي عميل SFTP. تثبّت إصدارة الخادم (setup.exe أو winget، وتتطلب صلاحيات المسؤول) خدمة مشاركة المجلدات كخدمة Windows تعمل دون أن يكون أحد مسجّلًا الدخول؛ والعارض إضافة اختيارية غير محدّدة. ولا تثبّت Media Exchange Server (قيد التطوير).", "إصدارة الخادم: مشاركة دون تسجيل دخول (بالإنجليزية)"],
+      ["قيد التطوير", "Media Exchange Server", "قيد التطوير وليس في أي حزمة بعد، فلا شيء لتنزيله. هو خادم مستقل تشغّله بنفسك للأجهزة التي لا تستطيع الوصول إلى بعضها مباشرة. وهو ليس مشاركة مجلدات، ولا يحتاج إليه العارض ولا المشاركة المحلية.", ""]
     ],
-    "insideNote": "داخل الحزمة الكاملة، وكله اختياري ومتوقف حتى تُشغّله: خادم مشاركة المجلدات (Share Manager وعامل SFTP)، واستضافة الأقراص الافتراضية FileDO، وترميزات الفيديو دون اتصال، ونماذج OCR. اختر النوع «مضغوط» لتستبعد الخادم.",
+    "insideNote": "داخل الحزمة الكاملة: العارض، وكأجزاء اختيارية تبقى متوقفة حتى تُشغّلها: مشاركة المجلدات المحلية عبر SFTP (Share Manager وعامل SFTP؛ واستضافة أقراص FileDO الافتراضية قدرة من قدرات المشاركة)، وترميزات الفيديو دون اتصال، ونماذج OCR. اختر النوع «مضغوط» لترك المشاركة خارجًا. وMedia Exchange Server لا يزال قيد التطوير وليس في أي حزمة.",
     "langLabel": "اللغة",
     "skipLabel": "انتقل إلى المحتوى الرئيسي",
     "navLabel": "التنقل الرئيسي",
+    "themeLabel": "السمة الداكنة",
+    "externalLabel": "يفتح في علامة تبويب جديدة",
+    "featuresLabel": "الميزات",
     "machineNote": "هذه الصفحة والواجهة العربية ترجمة آلية غير مراجعة. التصحيحات مرحّب بها."
   },
 
@@ -791,18 +927,21 @@
     "guide": "पूरी गाइड (अंग्रेज़ी में)",
     "serverLink": "सर्वर संस्करण: बिना साइन इन के साझाकरण (अंग्रेज़ी में)",
     "docsLink": "दस्तावेज़ (अंग्रेज़ी में)",
-    "family": "अपने मीडिया को देखें और छाँटें; ज़रूरत पड़ने पर यही प्रोग्राम फ़ोल्डर-साझाकरण सर्वर और FileDO वर्चुअल डिस्क का होस्ट भी है - इनमें से हर भूमिका वैकल्पिक है और आपके चालू करने तक बंद रहती है।",
-    "doorsTitle": "तीन दरवाज़े, एक प्रोग्राम",
-    "doorsLead": "जिस काम के लिए आए हैं, उसके अनुसार प्रवेश चुनें। हर दरवाज़े के पीछे वही पूरा डाउनलोड है; सर्वर संस्करण हमेशा चालू रहने वाले उपयोग के लिए अलग पैकेज है।",
+    "family": "तीन वैकल्पिक हिस्से: आपके मीडिया के लिए व्यूअर और सॉर्टर, SFTP से फ़ोल्डर साझा करने वाली स्थानीय सेवा, और Media Exchange Server (विकासाधीन, अभी जारी नहीं हुआ) - व्यूअर से या फ़ोल्डर-साझाकरण सर्वर से शुरू करें, और बाक़ी सिर्फ़ तब जोड़ें जब आप चाहें।",
+    "doorsTitle": "दो रास्ते, तीन वैकल्पिक हिस्से",
+    "doorsLead": "जहाँ हैं वहीं से शुरू करें: व्यूअर से या फ़ोल्डर-साझाकरण सर्वर से। हर हिस्सा वैकल्पिक है, और Media Exchange Server अभी विकासाधीन है।",
     "doors": [
-      ["व्यूअर", "मुझे व्यूअर चाहिए", "हर फ़ाइल के लिए एक कुंजी से फ़ोटो और वीडियो देखें और छाँटें। पूरा पैकेज डाउनलोड करें - एक इंस्टॉलर, पूरा परिवार। सेटअप में «कॉम्पैक्ट» प्रकार चुनें तो आपको बिना सर्वर वाला पूरा व्यूअर मिलता है; साझाकरण और FileDO वैकल्पिक अतिरिक्त बने रहते हैं।", "पूरा पैकेज डाउनलोड करें"],
-      ["Android पर साझा करें", "मैं अपने फ़ोल्डर फ़ोन पर चाहता हूँ", "इस पीसी के फ़ोल्डर SFTP से अपने फ़ोन को दें: फ़ोल्डर-साझाकरण सर्वर चुनकर पूरा पैकेज इंस्टॉल करें और QR कोड से एक बार जोड़ें - या ऐसी मशीन पर सर्वर संस्करण इंस्टॉल करें जिसे किसी के साइन इन किए बिना सेवा देनी है। व्यूअर भी साथ में है, सर्वर संस्करण में वैकल्पिक।", "Android पर साझा करें (अंग्रेज़ी में)"],
-      ["योजना में", "मैं एक Media Exchange Server चलाऊँगा", "योजना में है, अभी उपलब्ध नहीं: Media Exchange Server, उस दिन के लिए एक कनेक्ट सेवा जब किसी साझाकरण सर्वर के पास न पहुँचने योग्य पता हो और न पोर्ट फ़ॉरवर्ड। डाउनलोड करने को अभी कुछ नहीं है, और इससे अधिक कुछ वादा नहीं किया गया है।", ""]
+      ["पहले व्यूअर", "मुझे व्यूअर और सॉर्टर चाहिए", "हर फ़ाइल के लिए एक कुंजी से फ़ोटो और वीडियो देखें और छाँटें। पूरा पैकेज व्यूअर इंस्टॉल करता है, और SFTP से स्थानीय फ़ोल्डर-साझाकरण एक वैकल्पिक हिस्से के रूप में, जो आपके चालू करने तक बंद रहता है; इसे छोड़ने के लिए सेटअप में «कॉम्पैक्ट» प्रकार चुनें। छाँटने के लिए किसी सर्वर की ज़रूरत नहीं।", "पूरा पैकेज डाउनलोड करें"],
+      ["पहले सर्वर", "मुझे अपने फ़ोल्डरों के लिए सर्वर चाहिए", "इस पीसी के फ़ोल्डर Android फ़ोन पर, प्रोग्राम की दूसरी प्रति में या किसी भी SFTP क्लाइंट में खोलें। सर्वर संस्करण (setup.exe या winget, प्रशासक अधिकार चाहिए) फ़ोल्डर-साझाकरण सेवा को Windows सेवा के रूप में इंस्टॉल करता है, जो किसी के साइन इन किए बिना चलती है; व्यूअर एक वैकल्पिक, बिना टिक वाला अतिरिक्त हिस्सा है। यह Media Exchange Server (विकासाधीन) इंस्टॉल नहीं करता।", "सर्वर संस्करण: बिना साइन इन के साझाकरण (अंग्रेज़ी में)"],
+      ["विकासाधीन", "Media Exchange Server", "विकासाधीन है और अभी किसी पैकेज में नहीं है, इसलिए डाउनलोड करने को कुछ नहीं। यह एक अलग सर्वर है जिसे आप ख़ुद चलाते हैं, उन उपकरणों के लिए जो सीधे एक-दूसरे तक नहीं पहुँच सकते। यह फ़ोल्डर-साझाकरण नहीं है, और न व्यूअर को, न स्थानीय साझाकरण को इसकी ज़रूरत है।", ""]
     ],
-    "insideNote": "पूरे पैकेज के भीतर सब कुछ वैकल्पिक है और आपके चालू करने तक बंद रहता है: फ़ोल्डर-साझाकरण सर्वर (Share Manager और SFTP वर्कर), FileDO वर्चुअल डिस्क की होस्टिंग, ऑफ़लाइन वीडियो कोडेक और OCR मॉडल। सर्वर को छोड़ने के लिए «कॉम्पैक्ट» प्रकार चुनें।",
+    "insideNote": "पूरे पैकेज के भीतर: व्यूअर, और वैकल्पिक हिस्से जो आपके चालू करने तक बंद रहते हैं - SFTP से स्थानीय फ़ोल्डर-साझाकरण (Share Manager और SFTP वर्कर; FileDO .fdd डिस्क की होस्टिंग साझाकरण की एक क्षमता है), ऑफ़लाइन वीडियो कोडेक और OCR मॉडल। साझाकरण को छोड़ने के लिए «कॉम्पैक्ट» प्रकार चुनें। Media Exchange Server अभी विकासाधीन है और किसी पैकेज में नहीं है।",
     "langLabel": "भाषा",
     "skipLabel": "मुख्य सामग्री पर जाएँ",
     "navLabel": "मुख्य नेविगेशन",
+    "themeLabel": "डार्क थीम",
+    "externalLabel": "नए टैब में खुलता है",
+    "featuresLabel": "सुविधाएँ",
     "machineNote": "यह पृष्ठ और हिन्दी इंटरफ़ेस मशीनी अनुवाद हैं, इनकी वाचन-जाँच नहीं हुई। सुधार का स्वागत है।"
   },
 
@@ -842,18 +981,21 @@
     "guide": "পূর্ণ নির্দেশিকা (ইংরেজিতে)",
     "serverLink": "সার্ভার সংস্করণ: সাইন ইন ছাড়াই শেয়ারিং (ইংরেজিতে)",
     "docsLink": "নথি (ইংরেজিতে)",
-    "family": "আপনার মিডিয়া দেখুন ও সাজান; দরকার হলে একই প্রোগ্রাম ফোল্ডার-শেয়ারিং সার্ভার এবং FileDO ভার্চুয়াল ডিস্কের হোস্টও - এই ভূমিকাগুলোর প্রতিটি ঐচ্ছিক এবং আপনি চালু না করা পর্যন্ত বন্ধ থাকে।",
-    "doorsTitle": "তিনটি দরজা, একটি প্রোগ্রাম",
-    "doorsLead": "যে কাজে এসেছেন তার সঙ্গে মেলে এমন প্রবেশপথ বেছে নিন। প্রতিটি দরজার পেছনে একই পূর্ণ ডাউনলোড; সার্ভার সংস্করণ সবসময় চালু থাকার ব্যবহারের জন্য আলাদা প্যাকেজ।",
+    "family": "তিনটি ঐচ্ছিক অংশ: আপনার মিডিয়ার জন্য ভিউয়ার ও সর্টার, SFTP-তে ফোল্ডার শেয়ার করার স্থানীয় সেবা, এবং Media Exchange Server (উন্নয়নাধীন, এখনও প্রকাশিত হয়নি) - ভিউয়ার দিয়ে বা ফোল্ডার-শেয়ারিং সার্ভার দিয়ে শুরু করুন, আর বাকিটা চাইলে তবেই যোগ করুন।",
+    "doorsTitle": "দুটি প্রবেশপথ, তিনটি ঐচ্ছিক অংশ",
+    "doorsLead": "যেখানে আছেন সেখান থেকেই শুরু করুন: ভিউয়ার দিয়ে বা ফোল্ডার-শেয়ারিং সার্ভার দিয়ে। প্রতিটি অংশ ঐচ্ছিক, আর Media Exchange Server এখনও উন্নয়নাধীন।",
     "doors": [
-      ["ভিউয়ার", "আমার একটি ভিউয়ার দরকার", "প্রতিটি ফাইলের জন্য একটি কী দিয়ে ছবি ও ভিডিও দেখুন ও সাজান। পূর্ণ প্যাকেজ ডাউনলোড করুন - একটি ইনস্টলার, পুরো পরিবার। সেটআপে «কমপ্যাক্ট» ধরন বেছে নিলে সার্ভার ছাড়া একটি সম্পূর্ণ ভিউয়ার পাবেন; শেয়ারিং ও FileDO ঐচ্ছিক অতিরিক্ত হিসেবে থাকে।", "পূর্ণ প্যাকেজ ডাউনলোড করুন"],
-      ["Android-এ শেয়ার করুন", "আমি আমার ফোল্ডার ফোনে চাই", "এই পিসির ফোল্ডার SFTP-র মাধ্যমে আপনার ফোনকে দিন: ফোল্ডার-শেয়ারিং সার্ভার টিক দিয়ে পূর্ণ প্যাকেজ ইনস্টল করুন এবং QR কোডে একবার যুক্ত করুন - অথবা যে মেশিনকে কেউ সাইন ইন না করেও সেবা দিতে হবে, সেখানে সার্ভার সংস্করণ ইনস্টল করুন। ভিউয়ারও ভেতরে আছে, সার্ভার সংস্করণে ঐচ্ছিক।", "Android-এ শেয়ার করুন (ইংরেজিতে)"],
-      ["পরিকল্পিত", "আমি একটি Media Exchange Server চালাব", "পরিকল্পিত, এখনও পাওয়া যায় না: Media Exchange Server, এমন দিনের জন্য একটি সংযোগ সেবা, যখন কোনো শেয়ারিং সার্ভারের না আছে পৌঁছানোর মতো ঠিকানা, না পোর্ট ফরওয়ার্ড। ডাউনলোড করার মতো এখনও কিছু নেই, এর বেশি কিছুর প্রতিশ্রুতিও নেই।", ""]
+      ["আগে ভিউয়ার", "আমার একটি ভিউয়ার ও সর্টার দরকার", "প্রতিটি ফাইলের জন্য একটি কী দিয়ে ছবি ও ভিডিও দেখুন ও সাজান। পূর্ণ প্যাকেজ ভিউয়ার ইনস্টল করে, সঙ্গে SFTP-তে স্থানীয় ফোল্ডার-শেয়ারিং একটি ঐচ্ছিক অংশ হিসেবে, যা আপনি চালু না করা পর্যন্ত বন্ধ থাকে; এটি বাদ দিতে সেটআপে «কমপ্যাক্ট» ধরন বেছে নিন। সাজাতে কোনো সার্ভার লাগে না।", "পূর্ণ প্যাকেজ ডাউনলোড করুন"],
+      ["আগে সার্ভার", "আমার ফোল্ডারগুলোর জন্য একটি সার্ভার চাই", "এই পিসির ফোল্ডার Android ফোনে, প্রোগ্রামের অন্য কপিতে বা যেকোনো SFTP ক্লায়েন্টে খুলুন। সার্ভার সংস্করণ (setup.exe বা winget, প্রশাসকের অধিকার লাগে) ফোল্ডার-শেয়ারিং সেবাকে Windows সার্ভিস হিসেবে ইনস্টল করে, যা কেউ সাইন ইন না করলেও চলে; ভিউয়ার একটি ঐচ্ছিক, টিক-না-দেওয়া অতিরিক্ত অংশ। এটি Media Exchange Server (উন্নয়নাধীন) ইনস্টল করে না।", "সার্ভার সংস্করণ: সাইন ইন ছাড়াই শেয়ারিং (ইংরেজিতে)"],
+      ["উন্নয়নাধীন", "Media Exchange Server", "উন্নয়নাধীন এবং এখনও কোনো প্যাকেজে নেই, তাই ডাউনলোড করার কিছু নেই। এটি একটি আলাদা সার্ভার যা আপনি নিজে চালান, এমন ডিভাইসের জন্য যেগুলো সরাসরি একে অপরের কাছে পৌঁছাতে পারে না। এটি ফোল্ডার শেয়ারিং নয়, আর ভিউয়ার বা স্থানীয় শেয়ারিং কারোরই এটি লাগে না।", ""]
     ],
-    "insideNote": "পূর্ণ প্যাকেজের ভেতরে সবকিছু ঐচ্ছিক এবং আপনি চালু না করা পর্যন্ত বন্ধ: ফোল্ডার-শেয়ারিং সার্ভার (Share Manager ও SFTP ওয়ার্কার), FileDO ভার্চুয়াল ডিস্ক হোস্টিং, অফলাইন ভিডিও কোডেক ও OCR মডেল। সার্ভার বাদ দিতে «কমপ্যাক্ট» ধরন বেছে নিন।",
+    "insideNote": "পূর্ণ প্যাকেজের ভেতরে: ভিউয়ার, এবং ঐচ্ছিক অংশ যা আপনি চালু না করা পর্যন্ত বন্ধ থাকে - SFTP-তে স্থানীয় ফোল্ডার-শেয়ারিং (Share Manager ও SFTP ওয়ার্কার; FileDO .fdd ডিস্ক হোস্ট করা শেয়ারিংয়ের একটি সামর্থ্য), অফলাইন ভিডিও কোডেক ও OCR মডেল। শেয়ারিং বাদ দিতে «কমপ্যাক্ট» ধরন বেছে নিন। Media Exchange Server এখনও উন্নয়নাধীন এবং কোনো প্যাকেজে নেই।",
     "langLabel": "ভাষা",
     "skipLabel": "মূল বিষয়বস্তুতে যান",
     "navLabel": "প্রধান নেভিগেশন",
+    "themeLabel": "ডার্ক থিম",
+    "externalLabel": "নতুন ট্যাবে খোলে",
+    "featuresLabel": "বৈশিষ্ট্য",
     "machineNote": "এই পাতা ও বাংলা ইন্টারফেস যন্ত্র-অনুবাদ, সম্পাদনা করা হয়নি। সংশোধন স্বাগত।"
   },
 
@@ -893,18 +1035,21 @@
     "guide": "مکمل رہنما (انگریزی میں)",
     "serverLink": "سرور ایڈیشن: سائن اِن کے بغیر شیئرنگ (انگریزی میں)",
     "docsLink": "دستاویزات (انگریزی میں)",
-    "family": "اپنے میڈیا کو دیکھیں اور ترتیب دیں؛ ضرورت پڑنے پر یہی پروگرام فولڈر شیئرنگ سرور اور FileDO ورچوئل ڈسکس کا میزبان بھی ہے - ان میں سے ہر کردار اختیاری ہے اور آپ کے چالو کرنے تک بند رہتا ہے۔",
-    "doorsTitle": "تین دروازے، ایک پروگرام",
-    "doorsLead": "جس کام کے لیے آئے ہیں اس کے مطابق داخلہ چنیں۔ ہر دروازے کے پیچھے وہی مکمل ڈاؤن لوڈ ہے؛ سرور ایڈیشن ہمیشہ چالو رہنے والے استعمال کے لیے الگ پیکیج ہے۔",
+    "family": "تین اختیاری حصے: آپ کے میڈیا کے لیے ویور اور سارٹر، SFTP پر فولڈر شیئر کرنے کی مقامی سروس، اور Media Exchange Server (زیرِ ترقی، ابھی جاری نہیں ہوا) - ویور سے یا فولڈر شیئرنگ سرور سے شروع کریں، اور باقی صرف تب شامل کریں جب آپ چاہیں۔",
+    "doorsTitle": "دو راستے، تین اختیاری حصے",
+    "doorsLead": "جہاں ہیں وہیں سے شروع کریں: ویور سے یا فولڈر شیئرنگ سرور سے۔ ہر حصہ اختیاری ہے، اور Media Exchange Server ابھی زیرِ ترقی ہے۔",
     "doors": [
-      ["ویور", "مجھے ایک ویور چاہیے", "ہر فائل کے لیے ایک کلید سے تصاویر اور ویڈیوز دیکھیں اور ترتیب دیں۔ مکمل پیکیج ڈاؤن لوڈ کریں - ایک انسٹالر، پورا خاندان۔ سیٹ اپ میں «کمپیکٹ» قسم چنیں تو آپ کو سرور کے بغیر مکمل ویور ملتا ہے؛ شیئرنگ اور FileDO اختیاری اضافے رہتے ہیں۔", "مکمل پیکیج ڈاؤن لوڈ کریں"],
-      ["Android پر شیئر کریں", "میں اپنے فولڈرز فون پر چاہتا ہوں", "اس پی سی کے فولڈرز SFTP کے ذریعے اپنے فون کو دیں: فولڈر شیئرنگ سرور منتخب کر کے مکمل پیکیج انسٹال کریں اور QR کوڈ سے ایک بار جوڑیں - یا ایسی مشین پر سرور ایڈیشن انسٹال کریں جسے کسی کے سائن اِن کیے بغیر خدمت دینی ہے۔ ویور بھی اندر موجود ہے، سرور ایڈیشن میں اختیاری۔", "Android پر شیئر کریں (انگریزی میں)"],
-      ["منصوبے میں", "میں ایک Media Exchange Server چلاؤں گا", "منصوبے میں ہے، ابھی دستیاب نہیں: Media Exchange Server، اس دن کے لیے ایک کنیکٹ سروس جب کسی شیئرنگ سرور کے پاس نہ قابلِ رسائی پتہ ہو اور نہ پورٹ فارورڈ۔ ڈاؤن لوڈ کرنے کو ابھی کچھ نہیں ہے، اور اس سے زیادہ کا کوئی وعدہ نہیں۔", ""]
+      ["پہلے ویور", "مجھے ویور اور سارٹر چاہیے", "ہر فائل کے لیے ایک کلید سے تصاویر اور ویڈیوز دیکھیں اور ترتیب دیں۔ مکمل پیکیج ویور انسٹال کرتا ہے، اور SFTP پر مقامی فولڈر شیئرنگ ایک اختیاری حصے کے طور پر، جو آپ کے چالو کرنے تک بند رہتا ہے؛ اسے چھوڑنے کے لیے سیٹ اپ میں «کمپیکٹ» قسم چنیں۔ ترتیب دینے کے لیے کسی سرور کی ضرورت نہیں۔", "مکمل پیکیج ڈاؤن لوڈ کریں"],
+      ["پہلے سرور", "مجھے اپنے فولڈرز کے لیے سرور چاہیے", "اس پی سی کے فولڈرز Android فون پر، پروگرام کی دوسری کاپی میں یا کسی بھی SFTP کلائنٹ میں کھولیں۔ سرور ایڈیشن (setup.exe یا winget، ایڈمنسٹریٹر کے حقوق درکار) فولڈر شیئرنگ سروس کو Windows سروس کے طور پر انسٹال کرتا ہے جو کسی کے سائن اِن کیے بغیر چلتی ہے؛ ویور ایک اختیاری، بغیر نشان والا اضافہ ہے۔ یہ Media Exchange Server (زیرِ ترقی) انسٹال نہیں کرتا۔", "سرور ایڈیشن: سائن اِن کے بغیر شیئرنگ (انگریزی میں)"],
+      ["زیرِ ترقی", "Media Exchange Server", "زیرِ ترقی ہے اور ابھی کسی پیکیج میں نہیں، اس لیے ڈاؤن لوڈ کرنے کو کچھ نہیں۔ یہ ایک الگ سرور ہے جسے آپ خود چلاتے ہیں، ایسے آلات کے لیے جو براہِ راست ایک دوسرے تک نہیں پہنچ سکتے۔ یہ فولڈر شیئرنگ نہیں ہے، اور نہ ویور کو، نہ مقامی شیئرنگ کو اس کی ضرورت ہے۔", ""]
     ],
-    "insideNote": "مکمل پیکیج کے اندر سب کچھ اختیاری ہے اور آپ کے چالو کرنے تک بند رہتا ہے: فولڈر شیئرنگ سرور (Share Manager اور SFTP ورکر)، FileDO ورچوئل ڈسکس کی ہوسٹنگ، آف لائن ویڈیو کوڈیکس اور OCR ماڈلز۔ سرور کو چھوڑنے کے لیے «کمپیکٹ» قسم چنیں۔",
+    "insideNote": "مکمل پیکیج کے اندر: ویور، اور اختیاری حصے جو آپ کے چالو کرنے تک بند رہتے ہیں - SFTP پر مقامی فولڈر شیئرنگ (Share Manager اور SFTP ورکر؛ FileDO .fdd ڈسکس کی میزبانی شیئرنگ کی ایک صلاحیت ہے)، آف لائن ویڈیو کوڈیکس اور OCR ماڈلز۔ شیئرنگ کو چھوڑنے کے لیے «کمپیکٹ» قسم چنیں۔ Media Exchange Server ابھی زیرِ ترقی ہے اور کسی پیکیج میں نہیں ہے۔",
     "langLabel": "زبان",
     "skipLabel": "مرکزی مواد پر جائیں",
     "navLabel": "بنیادی نیویگیشن",
+    "themeLabel": "ڈارک تھیم",
+    "externalLabel": "نئے ٹیب میں کھلتا ہے",
+    "featuresLabel": "خصوصیات",
     "machineNote": "یہ صفحہ اور اردو انٹرفیس مشینی ترجمہ ہیں، نظرثانی نہیں ہوئی۔ تصحیحات کا خیرمقدم ہے۔"
   },
 
@@ -944,18 +1089,21 @@
     "guide": "完整指南（英文）",
     "serverLink": "服务器版：无需登录的共享（英文）",
     "docsLink": "文档（英文）",
-    "family": "查看并整理您的媒体；需要时，同一个程序还是文件夹共享服务器，也是 FileDO 虚拟磁盘的宿主——这些角色都是可选的，在您启用之前保持关闭。",
-    "doorsTitle": "三扇门，一个程序",
-    "doorsLead": "请选择与您来意相符的入口。每扇门背后都是同一个完整下载；服务器版是面向常开场景的专用安装包。",
+    "family": "三个可选部分：用于媒体的查看与整理工具、通过 SFTP 共享文件夹的本地服务，以及 Media Exchange Server（开发中，尚未发布）——可以从查看器开始，也可以从文件夹共享服务器开始，其余的只在您需要时再添加。",
+    "doorsTitle": "两种入口，三个可选部分",
+    "doorsLead": "从您所在之处开始：用查看器，或用文件夹共享服务器。每个部分都是可选的，而 Media Exchange Server 仍在开发中。",
     "doors": [
-      ["查看器", "我需要一个查看器", "每个文件只需一个按键，即可查看并整理照片和视频。下载完整安装包——一个安装程序，整个家族。在安装程序中选择「精简」类型，您会得到一个不含服务器的完整查看器；共享和 FileDO 仍是可选附加项。", "下载完整安装包"],
-      ["共享到 Android", "我想把文件夹放到手机上", "通过 SFTP 把这台电脑的文件夹提供给手机：安装完整安装包并勾选文件夹共享服务器，用二维码配对一次——或者在需要无人登录也能提供服务的机器上安装服务器版。查看器同样包含在内，在服务器版中是可选的。", "共享到 Android（英文）"],
-      ["计划中", "我要搭建一台 Media Exchange Server", "计划中，暂未提供：Media Exchange Server，为共享服务器既没有可访问地址、也没有端口转发的那一天准备的连接服务。目前没有可下载的内容，除此之外也没有任何承诺。", ""]
+      ["先用查看器", "我需要查看与整理工具", "每个文件一个按键，查看并整理照片和视频。完整安装包会安装查看器，并把基于 SFTP 的本地文件夹共享作为可选部分一并提供，启用之前保持关闭；在安装程序中选择「精简」类型即可不装共享。整理媒体不需要任何服务器。", "下载完整安装包"],
+      ["先用服务器", "我想为我的文件夹配一台服务器", "在 Android 手机、本程序的另一份副本或任何 SFTP 客户端中打开这台电脑的文件夹。服务器版（setup.exe 或 winget，需要管理员权限）把文件夹共享服务安装为 Windows 服务，无人登录时也能运行；查看器是可选的附加项，默认不勾选。它不会安装 Media Exchange Server（开发中）。", "服务器版：无需登录的共享（英文）"],
+      ["开发中", "Media Exchange Server", "开发中，尚未包含在任何安装包里，因此没有可下载的内容。它是一台需要您自己运行的独立服务器，面向无法直接互相访问的设备。它不是文件夹共享，查看器和本地共享都不需要它。", ""]
     ],
-    "insideNote": "完整安装包内含以下内容，全部可选，启用前保持关闭：文件夹共享服务器（Share Manager 和 SFTP 工作进程）、FileDO 虚拟磁盘托管、离线视频编解码器和 OCR 模型。选择「精简」类型即可不安装服务器。",
+    "insideNote": "完整安装包内含：查看器，以及启用前保持关闭的可选部分——基于 SFTP 的本地文件夹共享（Share Manager 与 SFTP 工作进程；托管 FileDO .fdd 磁盘是共享的一项能力）、离线视频编解码器和 OCR 模型。选择「精简」类型即可不装共享。Media Exchange Server 仍在开发中，不在任何安装包里。",
     "langLabel": "语言",
     "skipLabel": "跳到主要内容",
     "navLabel": "主导航",
+    "themeLabel": "深色主题",
+    "externalLabel": "在新标签页中打开",
+    "featuresLabel": "功能",
     "machineNote": "本页面与中文界面为机器翻译，未经校对。欢迎指正。"
   }
 }

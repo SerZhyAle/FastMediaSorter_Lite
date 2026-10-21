@@ -17,6 +17,12 @@ Public Class Connection_Diagnosis_Dialog
 
     Private Const DialogWidth As Integer = 520
 
+    ''' <summary>The authored client heights (96-dpi pixels): the content, a docked "copied" line and the one-line answer row
+    ''' of 50 below it; the details box adds 70.</summary>
+    Private Const PlainHeight As Integer = 400
+    Private Const DetailsHeight As Integer = 470
+    Private _rowExtra As Integer
+
     Private ReadOnly _result As ConnectionDiagnosisResult
     Private _currentStepIndex As Integer = 0
 
@@ -32,6 +38,7 @@ Public Class Connection_Diagnosis_Dialog
     Private _btnCopy As Button
     Private _btnClose As Button
     Private _lblCopied As Label
+    Private _answerRow As DialogButtonRow
 
     Public Sub New(result As ConnectionDiagnosisResult)
         _result = If(result, New ConnectionDiagnosisResult(ConnectionDiagnosisMessages.UnreachableServer, ConnectionDiagnosisTarget.Server, ConnectionDiagnosisApplies.Network))
@@ -46,12 +53,12 @@ Public Class Connection_Diagnosis_Dialog
         Me.MinimizeBox = False
         Me.ShowInTaskbar = False
         Me.StartPosition = FormStartPosition.CenterParent
-        Me.ClientSize = New Size(DialogWidth, 380)
+        Me.ClientSize = New Size(DialogWidth, PlainHeight)
 
         Dim layout As New TableLayoutPanel With {
             .Dock = DockStyle.Fill,
             .ColumnCount = 1,
-            .Padding = New Padding(18, 16, 18, 14),
+            .Padding = New Padding(18, 16, 18, 4),
             .RowCount = 7,
             .AutoScroll = True
         }
@@ -64,6 +71,7 @@ Public Class Connection_Diagnosis_Dialog
             .Text = ConnectionDiagnosisLocalization.GetUiText("what_happened"),
             .Margin = New Padding(0, 0, 0, 4)
         }
+        ExchangeMark.Apply(_lblWhatHappenedHeader, 32, ButtonGlyphs.AssetOpener)
         layout.Controls.Add(_lblWhatHappenedHeader)
 
         _lblWhatHappenedText = New Label With {
@@ -120,72 +128,74 @@ Public Class Connection_Diagnosis_Dialog
         _pnlDetails.Controls.Add(_txtDetails)
         layout.Controls.Add(_pnlDetails)
 
-        ' 5. Buttons row
-        Dim buttonsFlow As New FlowLayoutPanel With {
-            .Dock = DockStyle.Bottom,
-            .FlowDirection = FlowDirection.LeftToRight,
-            .AutoSize = True,
-            .Margin = New Padding(0, 10, 0, 0)
-        }
-
-        _btnNextStep = New Button With {
-            .AutoSize = True,
-            .AutoSizeMode = AutoSizeMode.GrowAndShrink,
-            .Padding = New Padding(12, 5, 12, 5),
-            .Margin = New Padding(0, 0, 8, 0),
-            .Text = ConnectionDiagnosisLocalization.GetUiText("btn_next_step")
-        }
+        ' 5. Buttons row: the shared bottom row (ticket 243 T-8b, BUTTONS 2.0 sections 3 and 4). Next step, Details and Copy
+        ' are commands of the window (they read first, in this order), Close is its one dismissing answer: Escape is
+        ' Close, and Enter - with no question to answer - is Close too (the safe default). The widths come from the
+        ' caption and its glyph, never from a padding of the hand-built flow. "Next step" hides when there is no next
+        ' step: the row keeps that button's slot at the reading start, so the other buttons do not jump.
+        _btnNextStep = New Button With {.Text = ConnectionDiagnosisLocalization.GetUiText("btn_next_step")}
         AddHandler _btnNextStep.Click, AddressOf OnNextStepClicked
-        buttonsFlow.Controls.Add(_btnNextStep)
 
-        _btnDetails = New Button With {
-            .AutoSize = True,
-            .AutoSizeMode = AutoSizeMode.GrowAndShrink,
-            .Padding = New Padding(12, 5, 12, 5),
-            .Margin = New Padding(0, 0, 8, 0),
-            .Text = ConnectionDiagnosisLocalization.GetUiText("btn_details")
-        }
+        _btnDetails = New Button With {.Text = ConnectionDiagnosisLocalization.GetUiText("btn_details")}
         AddHandler _btnDetails.Click, AddressOf OnDetailsClicked
-        buttonsFlow.Controls.Add(_btnDetails)
 
-        _btnCopy = New Button With {
-            .AutoSize = True,
-            .AutoSizeMode = AutoSizeMode.GrowAndShrink,
-            .Padding = New Padding(12, 5, 12, 5),
-            .Margin = New Padding(0, 0, 8, 0),
-            .Text = ConnectionDiagnosisLocalization.GetUiText("btn_copy")
-        }
+        _btnCopy = New Button With {.Text = ConnectionDiagnosisLocalization.GetUiText("btn_copy")}
         AddHandler _btnCopy.Click, AddressOf OnCopyClicked
-        buttonsFlow.Controls.Add(_btnCopy)
 
-        _btnClose = New Button With {
-            .AutoSize = True,
-            .AutoSizeMode = AutoSizeMode.GrowAndShrink,
-            .Padding = New Padding(12, 5, 12, 5),
-            .Margin = New Padding(0, 0, 8, 0),
-            .Text = ConnectionDiagnosisLocalization.GetUiText("btn_close")
-        }
+        _btnClose = New Button With {.Text = ConnectionDiagnosisLocalization.GetUiText("btn_close")}
         AddHandler _btnClose.Click, Sub() Me.Close()
-        buttonsFlow.Controls.Add(_btnClose)
 
+        _answerRow = New DialogButtonRow() With {.Dock = DockStyle.Bottom, .Name = "diagnosis_Buttons", .Padding = New Padding(18, 6, 18, 12)}
+        _answerRow.Add(_btnNextStep, DialogButtonRole.Command, "nav.forward")
+        _answerRow.Add(_btnDetails, DialogButtonRole.Command, "nav.expand")
+        _answerRow.Add(_btnCopy, DialogButtonRole.Command, "action.copy")
+        _answerRow.Add(_btnClose, DialogButtonRole.Dismissing, "nav.close")
+
+        ' The "copied" line sits just above the row, where the flow used to carry it after the buttons.
         _lblCopied = New Label With {
-            .AutoSize = True,
+            .Dock = DockStyle.Bottom,
+            .AutoSize = False,
+            .Height = 20,
+            .Padding = New Padding(18, 0, 18, 0),
             .ForeColor = Color.ForestGreen,
             .Text = ConnectionDiagnosisLocalization.GetUiText("codes_copied"),
-            .Visible = False,
-            .Margin = New Padding(8, 6, 0, 0)
+            .Visible = False
         }
-        buttonsFlow.Controls.Add(_lblCopied)
 
-        layout.Controls.Add(buttonsFlow)
+        ' Docked bottom edges are taken from the LAST added control inwards and the Fill one takes what remains: the
+        ' content first, then the "copied" line, the row last (at the very bottom, and last in the tab order).
         Me.Controls.Add(layout)
+        Me.Controls.Add(_lblCopied)
+        Me.Controls.Add(_answerRow)
+        _answerRow.Bind(Me)
 
         ' Set initial step index from result
         If _result.FirstFailedStep.HasValue Then
             Dim idx As Integer = _result.WalkedSteps.IndexOf(_result.FirstFailedStep.Value)
             If idx >= 0 Then _currentStepIndex = idx
         End If
+
+        ' LAST line of the builder: scaling touches only the children that exist by now (124 UX-202).
+        DialogLayout.ApplyAutoScale(Me)
     End Sub
+
+    ''' <summary>The window is authored with the room of ONE line of the answer row; a row that wraps (a longer language,
+    ''' a bigger scale) takes its extra height from the window and not from the text above it.</summary>
+    Protected Overrides Sub OnLoad(e As EventArgs)
+        MyBase.OnLoad(e)
+        Dim oneLine As Integer = _answerRow.GetPreferredSize(Size.Empty).Height
+        Dim wrapped As Integer = _answerRow.GetPreferredSize(New Size(ClientSize.Width, 0)).Height
+        If wrapped > oneLine Then
+            _rowExtra = wrapped - oneLine
+            ClientSize = New Size(ClientSize.Width, ClientSize.Height + _rowExtra)
+        End If
+        DialogLayout.ClampToWorkingArea(Me)
+    End Sub
+
+    ''' <summary>The client height in device pixels: 96-dpi authored heights, plus the extra line(s) the row needs.</summary>
+    Private Function ClientHeight(withDetails As Boolean) As Integer
+        Return LogicalToDeviceUnits(If(withDetails, DetailsHeight, PlainHeight)) + _rowExtra
+    End Function
 
     Private Sub UpdateStepDisplay()
         If _result.WalkedSteps.Count = 0 Then
@@ -234,11 +244,7 @@ Public Class Connection_Diagnosis_Dialog
 
     Private Sub OnDetailsClicked(sender As Object, e As EventArgs)
         _pnlDetails.Visible = Not _pnlDetails.Visible
-        If _pnlDetails.Visible Then
-            Me.ClientSize = New Size(DialogWidth, 450)
-        Else
-            Me.ClientSize = New Size(DialogWidth, 380)
-        End If
+        Me.ClientSize = New Size(Me.ClientSize.Width, ClientHeight(_pnlDetails.Visible))
     End Sub
 
     Private Sub OnCopyClicked(sender As Object, e As EventArgs)

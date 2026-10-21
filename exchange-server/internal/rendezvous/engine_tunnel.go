@@ -67,6 +67,13 @@ func (e *Engine) relayListeners(broadcastID string) int {
 	return e.cfg.Relay.Listeners(broadcastID)
 }
 
+// broadcastListeners is what the operator's broadcast list shows as the listeners of a broadcast: the relay's
+// listeners plus the tunnels of the broadcast, the two that share its `maxListeners`. A tunnel still waiting
+// for the producer's attach is counted as the cap counts it. An unknown or ended broadcast is 0.
+func (e *Engine) broadcastListeners(broadcastID string) int {
+	return e.relayListeners(broadcastID) + e.tunnels.Count(tunnel.BroadcastKey(broadcastID))
+}
+
 // Connect is a consumer's `connect` (7.5). sess is nil for an outsider, who may only come by a
 // shareId or a broadcastId (the state machine closes any other).
 func (e *Engine) Connect(st *Stream, sess *Session, m *wire.Connect) {

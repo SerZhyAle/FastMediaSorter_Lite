@@ -3,7 +3,7 @@
 | | |
 | --- | --- |
 | **Id** | `WINDOWS-STORE` |
-| **Version** | 0.1 (draft; read 2026-10-03, re-read 2026-10-07 - the catalog's version has not moved) |
+| **Version** | 0.2 (draft; read at 0.1 on 2026-10-03 and 2026-10-07, read at 0.2 on 2026-10-20, specification 244). 0.2 (2026-10-17, additive) caps the search-term words, describes the whole-file refusal of an import and says how a BOM export is read; the table below is still the 0.1 reading of 2026-10-07 |
 | **Home** | `windows-store/README.md` in the shared contracts catalog |
 | **Owner** | StreamsPlayer |
 | **This product's role** | **producer** of the MSIX package for Store upload and of the listing copy |
@@ -36,6 +36,22 @@ those of 2026-10-07.
 | 14-16 listing content | `docs/guides/STORE_PUBLISHING.md`, `tools/site-facts.json`, `publishing/store/listingData.csv` | rule 14 holds (`Title` is the frozen Store name, identical in both columns); rule 15: seven search terms for `en-us` and seven for `ru` (written, not researched against Store autocomplete; the gate `tools/Test-SitePositioning.ps1` holds both sets against the forbidden words and the competitor list); "What's new" is authored for `en-us` and `ru` only (rule 16) |
 | 17 page says what it does | `AppxManifest.xml` declares `runFullTrust`; the privacy page, the permission list and the listing copy tell one story (`TrustPageContractTests`) | |
 | 18 age rating | filed in Partner Center at the first submission | not readable from this repository: could not verify |
+
+**What 0.2 asks of the listing builder (read 2026-10-20).**
+
+- **Search-term words (0.2 a).** The sum of the words in a language's seven search-term cells is at most 21 (a word is a
+  non-whitespace run); the builder names the language and the count, exits non-zero and writes nothing. The 21 is the
+  portfolio's conservative cap: the contract does not say whether 22 passes. `Build-ListingData.ps1` checks the seven
+  terms, their uniqueness and the forbidden words but sums no words, so the cap is not enforced; the data fits today
+  (counted 2026-10-20 from `tools/site-facts.json`: `en-us` 15 words, `ru` 16).
+- **A refused import (0.2 b)** may come back whole with an empty error report. It is isolated by bisection with
+  complete files based on the last accepted fresh draft export, never by blanking cells, and acceptance is verified by
+  re-exporting the draft and comparing bytes with the uploaded file. No tool or procedure for this is kept in the
+  repository, and it needs Partner Center, so none of it is verified here.
+- **A BOM export (0.2 c).** Partner Center's own exports may carry a BOM and are read as they are, their dialect kept
+  for a no-change round trip, while the writer keeps its no-BOM dialect; a BOM alone is no sign of a refusal. The
+  builder strips a BOM on reading and writes none, so a BOM export would not round-trip in its own dialect - moot
+  until rung 1 below exists.
 
 **Conformance evidence.** The contract has no vectors.
 

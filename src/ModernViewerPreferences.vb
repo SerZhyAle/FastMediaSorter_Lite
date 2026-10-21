@@ -236,6 +236,17 @@ Public NotInheritable Class ModernViewerPreferences
     ''' the owner's call. The ceiling is higher than the OCR cache's because one entry here
     ''' is a whole transcoded animation, not a page of JSON.</summary>
     Public Property DecodeCacheMaxMb As Integer = 512
+    ''' <summary>Spec 242: a long animated picture (animated WEBP above the pixel floor, a huge
+    ''' GIF) plays as a short-lived, encrypted temporary video instead of a picture. On by
+    ''' default, because without it the pictures that need the route are the ones that
+    ''' stall; a change takes effect for the NEXT file shown (rule 4). Zoom, pan, OCR and the
+    ''' editor are not available for a file shown that way - the setting's hint says so.</summary>
+    Public Property AnimatedViaVideo As Boolean = True
+    ''' <summary>Spec 242 rule 22: the one-time FFmpeg download offer has been made and refused.
+    ''' Not a visible row - it is the remembered "No", so the offer is not repeated on every
+    ''' animated file; the Settings button stays the permanent way in. A consent record, so
+    ''' ProfileResetScope keeps it (like UserAlreadyAskedForAssociations).</summary>
+    Public Property AnimatedViaVideoFfmpegAsked As Boolean = False
 
     ''' <summary>How the F3 panel shows the folder: "grid" (thumbnail cards) or "list" (name /
     ''' kind / size / date). Remembered between sessions and toggled with Ctrl+L
@@ -395,6 +406,8 @@ Public NotInheritable Class ModernViewerPreferences
         p.RecentFoldersLimit = ReadInt("RecentFoldersLimit", p.RecentFoldersLimit, 0, 200)
         p.OcrDiskCacheMaxMb = ReadInt("OcrDiskCacheMaxMb", p.OcrDiskCacheMaxMb, 0, 1024)
         p.DecodeCacheMaxMb = ReadInt("DecodeCacheMaxMb", p.DecodeCacheMaxMb, 0, 8192)
+        p.AnimatedViaVideo = ReadBool("AnimatedViaVideo", p.AnimatedViaVideo)
+        p.AnimatedViaVideoFfmpegAsked = ReadBool("AnimatedViaVideoFfmpegAsked", p.AnimatedViaVideoFfmpegAsked)
         p.PanelViewMode = ReadChoice("PanelViewMode", p.PanelViewMode, "grid", "list")
         p.PanelThumbnailSize = SnapPanelThumbnailSize(ReadInt("PanelThumbnailSize", p.PanelThumbnailSize, 0, 256))
         p.PanelThumbCacheMb = ReadInt("PanelThumbCacheMb", p.PanelThumbCacheMb, 0, 4096)
@@ -487,6 +500,8 @@ Public NotInheritable Class ModernViewerPreferences
         WriteString("RecentFoldersLimit", RecentFoldersLimit.ToString(CultureInfo.InvariantCulture))
         WriteString("OcrDiskCacheMaxMb", OcrDiskCacheMaxMb.ToString(CultureInfo.InvariantCulture))
         WriteString("DecodeCacheMaxMb", DecodeCacheMaxMb.ToString(CultureInfo.InvariantCulture))
+        WriteBool("AnimatedViaVideo", AnimatedViaVideo)
+        WriteBool("AnimatedViaVideoFfmpegAsked", AnimatedViaVideoFfmpegAsked)
         WriteString("PanelViewMode", PanelViewMode)
         WriteString("PanelThumbnailSize", PanelThumbnailSize.ToString(CultureInfo.InvariantCulture))
         WriteString("PanelThumbCacheMb", PanelThumbCacheMb.ToString(CultureInfo.InvariantCulture))

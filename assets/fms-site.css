@@ -32,9 +32,8 @@
 [dir="rtl"] .quickstart li{padding-left:0;padding-right:2rem}
 [dir="rtl"] .quickstart li::before{left:auto;right:0}
 [dir="rtl"] .note{border-left:1px solid var(--border);border-right:3px solid var(--gold)}
-[dir="rtl"] details.sec>summary::after{margin-left:0;margin-right:auto}
 @media(min-width:1300px){.grid{grid-template-columns:repeat(4,1fr)}.tools-grid{grid-template-columns:repeat(6,1fr)}}
-@media(max-width:480px){.container{width:100%;max-width:100%;padding:0 12px}.site-header{max-width:calc(100% - 24px);min-width:0;padding:8px 10px;gap:6px}.brand-mark{flex:1 1 0;min-width:0}.brand{min-width:0;font-size:13px;line-height:1.2;white-space:normal}.seg button{padding:5px 8px}.hero .lead,.sec-head p,.scenarios .card p{overflow-wrap:anywhere}}
+@media(max-width:480px){.container{width:100%;max-width:100%;padding:0 12px}.site-header{max-width:calc(100% - 24px);min-width:0;padding:8px 10px;gap:6px}.brand-mark{flex:1 1 0;min-width:0}.brand{min-width:0;font-size:13px;line-height:1.2;white-space:normal}.hero .lead,.sec-head p,.scenarios .card p{overflow-wrap:anywhere}}
 
 /* First screen (owner request 2026-10-06: the recognisable program icon next to the full name): the kit's identity block,
    PAGE-STYLE 4.1b - the application icon and the full name in display type (.identity, .product-icon, .product-name, all
@@ -42,14 +41,14 @@
    long language break instead of widening the page. */
 .hero h1{overflow-wrap:anywhere}
 .language-row{display:flex;flex-wrap:wrap;gap:4px;align-items:center;direction:ltr}
-.language-row a,.seg a{display:inline-flex;align-items:center;justify-content:center;min-width:44px;min-height:44px;text-decoration:none}
-.language-row a.on{color:var(--text);font-weight:700;text-decoration:underline}
-.seg a{font-family:var(--font-heading);font-size:11px;font-weight:700;color:var(--muted);padding:6px 12px}
+.language-row a{display:inline-flex;align-items:center;justify-content:center;min-width:44px;min-height:44px;text-decoration:none}
+.language-row a.on,.language-row a[aria-current],.footer-langs a[aria-current]{color:var(--text);font-weight:700;text-decoration:underline}
+/* The segments of the language control (.seg a / .seg button) are sized and drawn by assets/fms-buttons.css, the BUTTONS 2.0 adapter. */
 
 /* Non-landing pages may use the documentation language picker (PAGE-STYLE 4.2). */
 .lang-menu{position:relative}
-.lang-menu>summary,.site-nav .nav-doc{list-style:none;cursor:pointer;font-family:var(--font-heading);font-size:11px;font-weight:700;
-  letter-spacing:.04em;padding:7px 12px;border:1px solid var(--border);border-radius:20px;color:var(--muted);white-space:nowrap}
+.lang-menu>summary,.site-nav .nav-doc{list-style:none;cursor:pointer;font-family:var(--font-heading);font-weight:700;
+  letter-spacing:.04em;color:var(--muted);white-space:nowrap}   /* shape, size and border: assets/fms-buttons.css */
 .lang-menu>summary::-webkit-details-marker{display:none}
 .lang-menu>summary::after{content:" \25BE"}
 .lang-menu[open]>summary,.lang-menu>summary:hover,.site-nav .nav-doc:hover{color:var(--text);border-color:var(--border-hover)}
@@ -86,25 +85,24 @@
 .skip-link:hover{color:var(--acc-ink)}
 .sr-only{position:absolute;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}
 main:focus{outline:none}
-.site-nav{display:flex;align-items:center;gap:12px;flex:1;min-width:0}
+.site-nav{display:flex;align-items:center;flex:1;min-width:0}   /* the gap between the controls (8) is the BUTTONS adapter's */
 @media print{.skip-link{display:none}}
 
-/* Light theme legibility (SITE-EXPERIENCE rule 17, ticket 152 T-3). The kit's light accent (#2f8f3a) is 3.65 : 1 on the page
-   and 4.11 : 1 under white ink, and its gold (#9a6a13) 4.19 : 1 on the page - both below 4.5 : 1. A local override until the hub
-   answers the kit proposal; the dark theme passes as shipped, so nothing here touches it. */
-html[data-theme="light"]{--acc:#216f2b;--acc-strong:#1a5d24;--gold:#7e560f;--gold-strong:#6b4709}
+/* Light theme legibility (SITE-EXPERIENCE rule 17, ticket 152 T-3). The kit revision of 2026-10-17 (PAGE-STYLE 3.1, vendored
+   2026-10-20) carries the light accent this layer used to override (#267a30 is 4.77 : 1 on the page and 5.37 : 1 under white ink;
+   #206629 is 6.23 : 1), so the accent override is gone. The kit's light gold (#9a6a13) is still 4.19 : 1 on the page, below 4.5 : 1,
+   so the gold override stays until the hub revises it; the dark theme passes as shipped and nothing here touches it. */
+html[data-theme="light"]{--gold:#7e560f;--gold-strong:#6b4709}
 
-/* Touch targets (rule 17, ticket 158 T-4, owner ruling 2026-10-07): 44 px for EVERY pointer, by padding and not by a larger
-   font (PAGE-STYLE section 1: "44px touch targets"). Since the kit revision of 2026-10-07 (PAGE-STYLE 1.4, vendored
-   2026-10-13) the kit carries the `.btn`, `.seg button` and `.theme-btn` half of this for every pointer, and `.to-top` was
-   always 44 px; what stays here is what the kit does not size: the links and the summary of the page's own chrome, and the
-   two controls the kit lifts only under a coarse pointer (`.tools-grid a`, `.copybox .copy`), which this page holds to 44 px
-   for a fine pointer too. */
-.brand,.lang-menu>summary,.site-nav .nav-doc,.lang-pop a,.footer-bottom a,.footer-langs a,.link-row a,.author-card a,.xlinks a{display:inline-flex;align-items:center;justify-content:center;min-height:44px;min-width:44px}
+/* Touch targets (rule 17, ticket 158 T-4, owner ruling 2026-10-07): 44 px for the page's own TEXT links, by padding and not by a
+   larger font. The command controls (`.btn`, `.seg`, `.theme-btn`, `.nav-doc`, `.lang-menu>summary`, `.copybox .copy`, `.to-top`)
+   left this rule on 2026-10-20: BUTTONS 2.0 and UI-SIZING 1.1 size them at 32 for a fine pointer and 48 for a coarse one, in
+   assets/fms-buttons.css. What stays here is what is not a button: the brand, the footer and author links, the link rows and the
+   family grid, which are links and cards and keep their own geometry. */
+.brand,.lang-pop a,.footer-bottom a,.footer-langs a,.link-row a,.author-card a,.xlinks a{display:inline-flex;align-items:center;justify-content:center;min-height:44px;min-width:44px}
 .lang-pop a{display:flex}
 .xlinks a{justify-content:flex-start}
 .tools-grid a{min-height:44px}
-.copybox .copy{min-height:44px;min-width:44px;top:50%;transform:translateY(-50%)}
 
 /* 360 px (SITE-EXPERIENCE rule 17, ticket 152 T-5): a grid or flex child may be narrower than its content, so a long
    command or a row of buttons wraps inside its box instead of widening the page (body hides the overflow, it did not scroll);
@@ -114,11 +112,10 @@ html[data-theme="light"]{--acc:#216f2b;--acc-strong:#1a5d24;--gold:#7e560f;--gol
 .tbl-wrap{max-width:100%;overflow-x:auto}
 main :where(p,li,dd,dt,h1,h2,h3,td,th,code){overflow-wrap:break-word}
 :where(.steps,.keys,.two,.cards)>*{min-width:0}
-/* Code surfaces stay dark in the light theme (kit: --code-bg), so they keep the dark theme's ink - the darkened light
-   accent and muted ink above would read 2.3 : 1 on them. */
-html[data-theme="light"] :where(.copybox,.demo,pre){--acc:#3fb950;--acc-strong:#56d364;--gold:#e3b341;--muted:#94a08c;--text:#f1f5ee;--border-hover:rgba(63,185,80,.35)}
-/* On a narrow screen the header controls wrap to a second row instead of pushing the last one off the page. */
-@media(max-width:480px){.site-nav{flex-wrap:wrap;row-gap:4px}}
+/* Code surfaces stay dark in the light theme (kit: --code-bg). A token override for them used to live here; since the kit revision
+   of 2026-10-17 the kit draws the command, the copy button, the demo arrow and the demo output from its own --code-ink,
+   --code-accent and --code-output, so the override is gone (the page's dark code surface is .copybox; pre.cmd is a card and keeps the prose ink). */
+/* The header controls wrap to a further row instead of pushing the last one off the page (assets/fms-buttons.css, `.site-nav`). */
 
 /* Layout that used to be written as style="" attributes on the pages (specification 154, SITE-EXPERIENCE rule 4): a page
    carries a class, the stylesheet owns the value. The doubled selectors outrank the kit's single-class rule whichever
@@ -146,3 +143,13 @@ ul.flush-list{margin:0}
 /* Reduced motion needs nothing here: since the kit revision of 2026-10-07 (PAGE-STYLE 1.5, vendored 2026-10-13) the kit's own
    rule selects `*,*::before,*::after`, so the transition of the disclosure marker stops with the preference on. This file used
    to carry a copy of that rule until the kit answered it; the copy was dropped with the re-vendoring. */
+
+/* EXCHANGE-MARK: identity stays upright in either reading direction. */
+.exchange-mark { vertical-align: middle; margin-inline-end: .25em; padding: 4px; box-sizing: content-box; }
+.exchange-picture { display: inline-grid; vertical-align: middle; }
+.exchange-picture > img { grid-area: 1 / 1; }
+@media (forced-colors: active) {
+  .exchange-picture > img { opacity: 0; }
+  .exchange-picture::after { content: ""; grid-area: 1 / 1; background-color: CanvasText;
+    mask: url("exchange-mark/svg/exchange-mark-mono.svg") center / calc(100% - 8px) calc(100% - 8px) no-repeat; }
+}

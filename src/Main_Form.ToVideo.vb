@@ -76,7 +76,14 @@ Partial Public Class Main_Form
     ''' convert, and for no video and no still.
     ''' </summary>
     Friend Function IsCurrentAnimation() As Boolean
-        Return IsCurrentFileEligibleImage() AndAlso gif_Restart_Image_Ref IsNot Nothing
+        ' Also an animation over the decode budget (spec 241 rule 18, Q241-5): the viewer shows only its
+        ' first frame and never plays it, and converting it to a video is the way out for exactly
+        ' such a file. The conversion reads the file with FFmpeg, not the picture on screen.
+#If Not NETFRAMEWORK Then
+        Return IsCurrentFileEligibleImage() AndAlso (gif_Restart_Image_Ref IsNot Nothing OrElse TooLongAnimationInfo() IsNot Nothing OrElse IsAnimationVideoPlaying())
+#Else
+        Return IsCurrentFileEligibleImage() AndAlso (gif_Restart_Image_Ref IsNot Nothing OrElse TooLongAnimationInfo() IsNot Nothing)
+#End If
     End Function
 
     Private Async Sub btn_ToVideo_Click(sender As Object, e As EventArgs) Handles btn_ToVideo.Click
@@ -104,15 +111,18 @@ Partial Public Class Main_Form
         Dim sourcePath As String = Current_File_Name
         If String.IsNullOrEmpty(sourcePath) OrElse Not File.Exists(sourcePath) Then Return
 
-        Dim frameCount As Integer = CurrentAnimationFrameCount()
-        Dim durationMs As Integer = gif_Total_Duration_Ms
+        ' The facts of an over-budget animation come from its header (the picture on screen is one frame);
+        ' everything else reads them off the animation being played.
+        Dim tooLong As StagedInfo = TooLongAnimationInfo()
+        Dim frameCount As Integer = If(tooLong IsNot Nothing, tooLong.Frames, CurrentAnimationFrameCount())
+        Dim durationMs As Integer = If(tooLong IsNot Nothing, CInt(Math.Min(tooLong.DurationMs, CLng(Integer.MaxValue))), gif_Total_Duration_Ms)
         ' The verdict is measured against the SOURCE's duration as FFmpeg reads it
         ' (057.S09-1) - never against the in-memory GIF the viewer plays: an animated
         ' WEBP's 34-ms frame delays transcode to whole centiseconds there (30 ms), and
         ' the completeness check used to throw a COMPLETE video away as OutputIncomplete.
         ' The playback total still drives fps and the progress dialog, as it always did.
         Dim expectedDurationMs As Integer = SourceDurationMsAsFfmpegReadsIt(sourcePath)
-        Dim hasAlpha As Boolean = CurrentAnimationHasAlpha()
+        Dim hasAlpha As Boolean = If(tooLong IsNot Nothing, tooLong.HasAlpha, CurrentAnimationHasAlpha())
         Dim fps As Integer = VideoConvertPlan.Fps(frameCount, durationMs)
         Dim targetPath As String = VideoConvertPlan.TargetPathFor(sourcePath, Function(candidate) File.Exists(candidate))
 

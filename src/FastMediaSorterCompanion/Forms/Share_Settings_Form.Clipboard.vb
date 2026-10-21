@@ -2,6 +2,8 @@ Option Strict On
 
 Imports System.Drawing
 Imports System.IO
+Imports System.Threading
+Imports System.Threading.Tasks
 Imports System.Windows.Forms
 
 ''' <summary>
@@ -16,14 +18,47 @@ Partial Public NotInheritable Class Share_Settings_Form
 
     ''' <summary>Every row of the clipboard block, so one call shows or hides the whole block.</summary>
     Private ReadOnly _clipRows As New List(Of Control)()
+    Private _clipTitle As Label
     Private _clipFolder As TextBox
     Private _clipResult As Label
+    Private _clipSize As Label
+    Private _clipSend As Button
+    Private _clipGet As Button
+    Private _clipRefresh As Button
+    Private _clipQueryRunning As Boolean
+    Private _clipMetadata As New ClipboardExchange()
+    Private ReadOnly _clipLifetime As New CancellationTokenSource()
+    Private _clipLifetimeDisposed As Boolean
 
     Private Sub BuildClipboardRows(sec As CollapsibleSection)
-        AddClipboardRow(sec, New Label With {.AutoSize = True, .Margin = New Padding(0, 10, 0, 2), .Font = _accBoldFont,
-                                              .Text = Localization.T("Буфер на сервере")})
+        _clipTitle = New Label With {.AutoSize = True, .Margin = New Padding(0, 10, 0, 2), .Font = _accBoldFont,
+                                      .Text = Localization.T("Буфер на сервере")}
+        AddClipboardRow(sec, _clipTitle)
         ' CLIPBOARD-GUARD item N: the person is told, where the buttons are, that nothing stands between the clipboard and the server.
         AddClipboardRow(sec, AccNote(Localization.T("Отправляется ровно то, что лежит в буфере обмена в этот момент, в том числе скопированный пароль: программа ничего не проверяет, не фильтрует и не скрывает.")))
+
+        Dim actions As FlowLayoutPanel = AccFlow()
+        _clipSend = AccButton(Localization.T("Отправить буфер на сервер"), Sub() RunSettingsClipboard(True), "action.upload")
+        _clipGet = AccButton(Localization.T("Получить буфер с сервера"), Sub() RunSettingsClipboard(False), "action.download")
+        _clipRefresh = AccButton(Localization.T("Обновить"), AddressOf RefreshClipboardSize, "action.refresh")
+        _clipSend.Name = "settingsClipboardSend"
+        _clipGet.Name = "settingsClipboardGet"
+        _clipRefresh.Name = "settingsClipboardRefresh"
+        actions.Controls.AddRange(New Control() {_clipSend, _clipGet, _clipRefresh})
+        AddClipboardRow(sec, actions)
+        _clipSize = AccNote(Localization.T("Размер буфера неизвестен. Нажмите «Обновить»."))
+        AddClipboardRow(sec, _clipSize)
+        AddHandler ClipboardCoordinator.Current.StateChanged, AddressOf OnSettingsClipboardState
+        AddHandler ClipboardCoordinator.Current.Finished, AddressOf OnSettingsClipboardFinished
+        AddHandler Disposed,
+            Sub()
+                If _clipLifetimeDisposed Then Return
+                _clipLifetimeDisposed = True
+                _clipLifetime.Cancel()
+                _clipLifetime.Dispose()
+                RemoveHandler ClipboardCoordinator.Current.StateChanged, AddressOf OnSettingsClipboardState
+                RemoveHandler ClipboardCoordinator.Current.Finished, AddressOf OnSettingsClipboardFinished
+            End Sub
 
         If AutostartManager.IsPackaged() Then
             ' Default 4: a packaged app has no execution alias here, so a desktop shortcut cannot carry the switch. The buttons and the
@@ -67,6 +102,7 @@ Partial Public NotInheritable Class Share_Settings_Form
     Private Sub ApplyClipboardRows()
         If _clipRows.Count = 0 Then Return
         Dim offered As Boolean = ClipboardCoordinator.AnyAccount()
+        ApplySettingsClipboardBusy()
         For Each row As Control In _clipRows
             ' The result line keeps its own visibility (it shows only after a press).
             If row Is _clipResult Then
@@ -75,6 +111,54 @@ Partial Public NotInheritable Class Share_Settings_Form
                 row.Visible = offered
             End If
         Next
+    End Sub
+
+    Private Sub RunSettingsClipboard(isSend As Boolean)
+        Dim operation As Task = ClipboardCoordinator.Current.RunAsync(isSend)
+    End Sub
+
+    Private Sub ApplySettingsClipboardBusy()
+        If _clipSend Is Nothing Then Return
+        Dim ready As Boolean = Not _clipQueryRunning AndAlso Not ClipboardCoordinator.Current.IsRunning
+        _clipSend.Enabled = ready
+        _clipGet.Enabled = ready
+        _clipRefresh.Enabled = ready
+    End Sub
+
+    Private Sub OnSettingsClipboardState(sender As Object, e As EventArgs)
+        If IsDisposed OrElse Disposing Then Return
+        ApplySettingsClipboardBusy()
+        If ClipboardCoordinator.Current.IsRunning Then ShowClipboardResult(ClipboardCoordinator.Current.ProgressText, False)
+    End Sub
+
+    Private Sub OnSettingsClipboardFinished(sender As Object, e As ClipboardFinishedEventArgs)
+        If IsDisposed OrElse Disposing Then Return
+        ShowClipboardResult(e.Text, Not e.Succeeded)
+        ' The slot may have changed; an old measurement must never look current after a transfer.
+        _clipSize.Text = Localization.T("Размер буфера неизвестен. Нажмите «Обновить».")
+    End Sub
+
+    Private Async Sub RefreshClipboardSize()
+        If _clipQueryRunning OrElse ClipboardCoordinator.Current.IsRunning Then Return
+        _clipQueryRunning = True
+        ApplySettingsClipboardBusy()
+        Try
+            _clipSize.Text = Localization.T("Размер буфера неизвестен. Нажмите «Обновить».")
+            Dim slots As IReadOnlyList(Of ClipboardSlotStatus) = Await _clipMetadata.QueryClipboardSizeAsync(_clipLifetime.Token)
+            If IsDisposed OrElse Disposing Then Return
+            Dim lines As New List(Of String)()
+            For Each slot As ClipboardSlotStatus In slots
+                lines.Add(slot.DisplayText())
+            Next
+            _clipSize.Text = If(lines.Count = 0, ClipboardMessages.TextOf(New ClipboardLine(ClipboardLineCode.NoServer)), String.Join(Environment.NewLine, lines))
+        Catch ex As OperationCanceledException
+            ' Closing the window cancels the metadata sessions.
+        Catch ex As Exception
+            If Not IsDisposed AndAlso Not Disposing Then ShowClipboardResult(ClipboardMessages.TextOf(New ClipboardLine(ClipboardLineCode.ClipboardUnreadable)), True)
+        Finally
+            _clipQueryRunning = False
+            If Not IsDisposed AndAlso Not Disposing Then ApplySettingsClipboardBusy()
+        End Try
     End Sub
 
     Private Sub OnClipboardShortcuts()

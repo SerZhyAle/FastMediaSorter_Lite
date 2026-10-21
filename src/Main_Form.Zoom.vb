@@ -39,8 +39,15 @@ Partial Public Class Main_Form
     ''' coordinates). Empty while at Fit - Fit derives it from the panel on demand.</summary>
     Private current_ImageBounds As Rectangle = Rectangle.Empty
 
-    ''' <summary>The image currently on screen, or Nothing when none/video.</summary>
+    ''' <summary>The image currently on screen, or Nothing when none/video. An animation video (spec 242 rule 21)
+    ''' is a video here: it has no zoom, no pan and no OCR, though the first frame it replaces still sits in its box.</summary>
     Private Function ActiveMediaImage() As Image
+        If IsAnimationVideoShown() Then Return Nothing
+        Return PictureOnScreen()
+    End Function
+
+    ''' <summary>The picture in the visible box, whatever is drawn over it. The animation video's preview is read here.</summary>
+    Private Function PictureOnScreen() As Image
         If is_PictureBox1_Visible AndAlso Picture_Box_1.Image IsNot Nothing Then Return Picture_Box_1.Image
         If is_PictureBox2_Visible AndAlso Picture_Box_2.Image IsNot Nothing Then Return Picture_Box_2.Image
         Return Nothing

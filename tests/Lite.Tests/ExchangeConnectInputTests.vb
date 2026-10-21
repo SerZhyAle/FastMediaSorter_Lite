@@ -74,7 +74,7 @@ Public Class ExchangeConnectInputTests
     <Fact>
     Public Sub An_argument_that_begins_like_a_string_is_recognised_for_the_dialog_only()
         Assert.True(ExchangeConnectInput.LooksLikeConnectionString("FMSEXCH1:x=a.b%3A1"))
-        Assert.True(ExchangeConnectInput.LooksLikeConnectionString("  FMSEXCH2:x"))        ' it is the dialog that says "update"
+        Assert.True(ExchangeConnectInput.LooksLikeConnectionString("  FMSEXCH2:x"))        ' it is the dialog that says `format-unsupported`
         Assert.False(ExchangeConnectInput.LooksLikeConnectionString("C:\photos"))
         Assert.False(ExchangeConnectInput.LooksLikeConnectionString("sftp://host/dir"))
     End Sub
@@ -90,10 +90,38 @@ Public Class ExchangeConnectInputTests
         For Each r As String In reasons
             Assert.NotEqual("", ExchangeEntryText.InputRefusal(r, ""))
         Next
-        ' a share code is not "update", and "update" is not "damaged"
+        ' a share code is not "format-unsupported", and "format-unsupported" is not "damaged"
         Assert.NotEqual(ExchangeEntryText.InputRefusal(ExchangeConnectionStringReason.NewerMajor, ""), ExchangeEntryText.InputRefusal(ExchangeConnectionStringReason.TooLong, ""))
         Assert.NotEqual(ExchangeEntryText.InputRefusal(ExchangeConnectionStringReason.NotAString, ExchangeConnectionStringReason.LooksShareCode),
                         ExchangeEntryText.InputRefusal(ExchangeConnectionStringReason.NotAString, ""))
+    End Sub
+
+    ''' <summary>DEVICE-EXCHANGE 1.3 amendment of 2026-10-17: a higher FMSEXCH prefix - typed, pasted or in a .fmsexch file - is refused cleanly with
+    ''' the canonical local row `format-unsupported` in the language shown, and carries no "update" demand. The internal reason id
+    ''' `newer-major` is the vector vocabulary and stays.</summary>
+    <Fact>
+    Public Sub A_higher_prefix_is_refused_with_the_canonical_format_unsupported_row_in_the_language_shown()
+        Dim saved As String = Localization.CurrentCode
+        Try
+            For Each code As String In Localization.Codes
+                Localization.CurrentCode = code
+                Dim typed As ExchangeConnectInput = ExchangeConnectInput.Classify("FMSEXCH2:x=a.b%3A1")
+                Assert.Equal(ExchangeConnectInputKind.Refused, typed.Kind)
+                Assert.Equal(ExchangeConnectionStringReason.NewerMajor, typed.Reason)
+                Assert.Equal(ConnectionDiagnosisLocalization.GetMessageText("format-unsupported", code), ExchangeEntryText.InputRefusal(typed.Reason, typed.Looks))
+            Next
+            Dim file As ExchangeConnectInput = ExchangeConnectInput.ClassifyFile(System.Text.Encoding.UTF8.GetBytes("FMSEXCH9:x=a.b%3A1" & vbCrLf))
+            Assert.Equal(ExchangeConnectInputKind.Refused, file.Kind)
+            Assert.Equal(ExchangeConnectionStringReason.NewerMajor, file.Reason)
+            Localization.CurrentCode = "en"
+            Assert.Equal("This format is newer than this program supports. Nothing was imported. Use a compatible program.", ExchangeEntryText.InputRefusal(file.Reason, file.Looks))
+            Localization.CurrentCode = "ru"
+            Assert.Equal("Этот формат новее, чем поддерживает программа. Ничего не импортировано. Используйте совместимую программу.", ExchangeEntryText.InputRefusal(file.Reason, file.Looks))
+            Localization.CurrentCode = "uk"
+            Assert.Equal("Цей формат новіший, ніж підтримує програма. Нічого не імпортовано. Скористайтеся сумісною програмою.", ExchangeEntryText.InputRefusal(file.Reason, file.Looks))
+        Finally
+            Localization.CurrentCode = saved
+        End Try
     End Sub
 
     <Fact>

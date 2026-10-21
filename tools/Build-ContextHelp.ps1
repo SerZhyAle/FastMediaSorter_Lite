@@ -4,12 +4,17 @@
 #>
 [CmdletBinding()]
 param(
-    [string]$Root = ''
+    [string]$Root = '',
+    [string[]]$Topics = @()
 )
 $ErrorActionPreference = 'Stop'
 if (-not $Root) { $Root = Split-Path $PSScriptRoot -Parent }
 $Root = [IO.Path]::GetFullPath($Root)
+$Topics = @($Topics | ForEach-Object { $_ -split ',' })
+$settingsHelp = Get-Content -LiteralPath (Join-Path $Root 'tools/settings-help-copy.json') -Raw -Encoding UTF8 | ConvertFrom-Json
 
+. (Join-Path $PSScriptRoot 'lib/ExchangeMark.ps1')
+$exchangeTerms = Get-ExchangeMarkTerms $Root
 Add-Type -AssemblyName System.Drawing
 
 $mapFile = Join-Path $Root 'help-map.json'
@@ -18,6 +23,12 @@ $map = Get-Content -LiteralPath $mapFile -Raw -Encoding UTF8 | ConvertFrom-Json
 
 $helpRoot = Join-Path $Root $map.helpRoot
 [IO.Directory]::CreateDirectory($helpRoot) | Out-Null
+
+$markRoot = Join-Path $helpRoot 'exchange-mark'
+[IO.Directory]::CreateDirectory($markRoot) | Out-Null
+foreach ($asset in @('png/full-256.png', 'svg/exchange-mark-small.svg', 'svg/exchange-mark-mono.svg')) {
+    Copy-Item -LiteralPath (Join-Path $Root "assets/exchange-mark/$asset") -Destination (Join-Path $markRoot (Split-Path $asset -Leaf))
+}
 
 $locales = @('en', 'ru', 'uk', 'de', 'it', 'es', 'fr', 'pt', 'ar', 'hi', 'bn', 'ur', 'zh')
 
@@ -90,8 +101,11 @@ foreach ($locale in $locales) {
     # Generate each topic page
     foreach ($entry in $helpPages.GetEnumerator()) {
         $pageKey = $entry.Key
+        if ($Topics.Count -gt 0 -and $pageKey -notin $Topics) { continue }
         $surface = $entry.Value
         $title = [System.Net.WebUtility]::HtmlEncode($surface.name)
+        $settingsContent = $settingsHelp.$pageKey.$locale
+        if ($settingsContent) { $title = [System.Net.WebUtility]::HtmlEncode($settingsContent.title) }
 
         # Build elements details
         $elementsBuilder = [System.Text.StringBuilder]::new()
@@ -106,7 +120,32 @@ foreach ($locale in $locales) {
             $elementsBuilder.AppendLine("      <details id=`"element-2`"><summary>2. OK</summary><p>Apply settings or confirm operation.</p></details>") | Out-Null
         }
         $elementDetails = $elementsBuilder.ToString().TrimEnd()
+        $purposeText = "Fast Media Sorter &amp; Sharing for Windows: $title."
+        $orderText = 'Review the options on screen, adjust values as needed, and confirm.'
+        $relatedSettings = ''
+        if ($settingsContent) {
+            $purposeText = [System.Net.WebUtility]::HtmlEncode($settingsContent.purpose)
+            $orderText = [System.Net.WebUtility]::HtmlEncode($settingsContent.order)
+            $elementDetails = ($settingsContent.sections | ForEach-Object {
+                '<details id="{0}"><summary>{1}</summary><p>{2}</p></details>' -f $_.id,
+                    [System.Net.WebUtility]::HtmlEncode($_.title), [System.Net.WebUtility]::HtmlEncode($_.text)
+            }) -join "`n"
+            $relatedSettings = '<p><a href="share-settings.html">{0}</a> · <a href="sftp-settings.html">{1}</a> · <a href="exchange-server-settings.html">{2}</a></p>' -f 
+                [System.Net.WebUtility]::HtmlEncode($settingsHelp.'share-settings'.$locale.title),
+                [System.Net.WebUtility]::HtmlEncode($settingsHelp.'sftp-settings'.$locale.title),
+                [System.Net.WebUtility]::HtmlEncode($settingsHelp.'exchange-server-settings'.$locale.title)
+            if ($pageKey -eq 'share-settings') {
+                $elementDetails += '<p id="network"><a href="sftp-settings.html#network">SFTP</a></p><p id="hosting"><a href="sftp-settings.html#hosting">SFTP</a></p><p id="exchange"><a href="exchange-server-settings.html#exchange">{0}</a></p>' -f [System.Net.WebUtility]::HtmlEncode($settingsHelp.'exchange-server-settings'.$locale.title)
+            }
+        }
 
+        $markHtml = ''
+        if ($surface.exchangeMark -eq 'full') {
+            $markHtml = '<img class="exchange-head" src="../exchange-mark/full-256.png" width="128" height="128" alt="Media Exchange Server">'
+        } elseif ($surface.exchangeMark -eq 'inline') {
+            $term = [System.Net.WebUtility]::HtmlEncode($exchangeTerms[$locale])
+            $markHtml = "<img class=`"exchange-inline`" src=`"../exchange-mark/exchange-mark-small.svg`" width=`"24`" height=`"24`" alt=`"$term`">"
+        }
         $pageHtml = @"
 <!doctype html>
 <html lang="$locale" dir="$dir">
@@ -120,10 +159,11 @@ foreach ($locale in $locales) {
 </head>
 <body>
 <main>
-  <h1 id="title">$title</h1>
+  $(if ($surface.exchangeMark -eq 'full') { '<span class="exchange-picture">' + $markHtml + '</span>' })
+  <h1 id="title">$(if ($surface.exchangeMark -eq 'inline') { '<span class="exchange-picture">' + $markHtml + '</span> ' })$title</h1>
   <section id="purpose">
     <h2>$purposeHead</h2>
-    <p>Fast Media Sorter &amp; Sharing for Windows: $title.</p>
+    <p>$purposeText</p>
   </section>
   <figure id="capture">
     <img class="shot light" src="$pageKey-light.png" alt="$title">
@@ -131,11 +171,12 @@ foreach ($locale in $locales) {
   </figure>
   <section id="order">
     <h2>$orderHead</h2>
-    <p>Review the options on screen, adjust values as needed, and confirm.</p>
+    <p>$orderText</p>
   </section>
   <section id="elements">
     <h2>$elementsHead</h2>
 $elementDetails
+    $relatedSettings
   </section>
   <nav id="related">
     <h2>$relatedHead</h2>
@@ -155,8 +196,11 @@ $elementDetails
         # Captures
         $lightCap = Join-Path $localeDir "$pageKey-light.png"
         $darkCap = Join-Path $localeDir "$pageKey-dark.png"
-        $lightBmp.Save($lightCap, [System.Drawing.Imaging.ImageFormat]::Png)
-        $darkBmp.Save($darkCap, [System.Drawing.Imaging.ImageFormat]::Png)
+        if ($settingsContent -and (!(Test-Path -LiteralPath $lightCap) -or !(Test-Path -LiteralPath $darkCap))) {
+            throw "Real settings captures are required: $locale/$pageKey"
+        }
+        if (!(Test-Path -LiteralPath $lightCap)) { $lightBmp.Save($lightCap, [System.Drawing.Imaging.ImageFormat]::Png) }
+        if (!(Test-Path -LiteralPath $darkCap)) { $darkBmp.Save($darkCap, [System.Drawing.Imaging.ImageFormat]::Png) }
     }
 
     # Generate index.html

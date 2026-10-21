@@ -1,4 +1,4 @@
-Option Explicit On
+﻿Option Explicit On
 Option Strict On
 Option Infer On
 Option Compare Binary
@@ -21,11 +21,11 @@ Partial Public NotInheritable Class Share_Settings_Form
         Try
             Dim invalid As Boolean
             managerSettingsContext = SettingsUiContext.Read(GetSetting(App_name, Second_App_Name,
-                "Share_SettingsContext", String.Empty), invalid)
+                SettingsRoutes.ContextKey(Destination), GetSetting(App_name, Second_App_Name, "Share_SettingsContext", String.Empty)), invalid)
             ' The retired single-page anchor identifies a useful destination on migration.
             If Not _pages.ContainsKey(managerSettingsContext.LastPageId) Then
                 Dim previous = managerSettingsContext.Page("manager").AnchorId
-                managerSettingsContext.LastPageId = If(_pages.ContainsKey(previous), previous, "startup")
+                managerSettingsContext.LastPageId = If(_pages.ContainsKey(previous), previous, _pages.Keys.First())
             End If
             ' The menu resumes its saved expansion (210 section 7.4); the v1-to-v2
             ' migration happened inside Read.
@@ -45,12 +45,13 @@ Partial Public NotInheritable Class Share_Settings_Form
         Catch ex As Exception
             AppFileLogger.LogException("Share settings: restoring UI context", ex)
         End Try
-        If _selectedPage.Length = 0 Then SelectSettingsPage("startup")
+        If _selectedPage.Length = 0 AndAlso _pages.Count > 0 Then SelectSettingsPage(_pages.Keys.First())
     End Sub
 
     Private Function RestoreSettingsWindowBounds() As Boolean
         Try
-            Dim raw = GetSetting(App_name, Second_App_Name, "Share_SettingsBounds", String.Empty)
+            Dim raw = GetSetting(App_name, Second_App_Name, SettingsRoutes.BoundsKey(Destination),
+                GetSetting(App_name, Second_App_Name, "Share_SettingsBounds", String.Empty))
             If String.IsNullOrEmpty(raw) Then Return False
             Dim values = JsonSerializer.Deserialize(Of Integer())(raw)
             If values Is Nothing OrElse values.Length <> 4 OrElse values(2) < 300 OrElse values(3) < 200 OrElse
@@ -156,6 +157,7 @@ Partial Public NotInheritable Class Share_Settings_Form
     End Sub
 
     Protected Overrides Sub OnFormClosing(e As FormClosingEventArgs)
+        If Not CanCloseDraft(e) Then Return
         MyBase.OnFormClosing(e)
         If e.Cancel OrElse Not settingsWasPresented Then Return
         Try
@@ -167,9 +169,9 @@ Partial Public NotInheritable Class Share_Settings_Form
                     pageCtx.Groups(grp.Id) = grp.Expanded
                 Next
             Next
-            SaveSetting(App_name, Second_App_Name, "Share_SettingsContext", managerSettingsContext.ToJson())
+            SaveSetting(App_name, Second_App_Name, SettingsRoutes.ContextKey(Destination), managerSettingsContext.ToJson())
             Dim savedBounds = If(WindowState = FormWindowState.Normal, Me.Bounds, Me.RestoreBounds)
-            SaveSetting(App_name, Second_App_Name, "Share_SettingsBounds", JsonSerializer.Serialize(
+            SaveSetting(App_name, Second_App_Name, SettingsRoutes.BoundsKey(Destination), JsonSerializer.Serialize(
                 {savedBounds.X, savedBounds.Y, CInt(savedBounds.Width * 96.0R / DeviceDpi), CInt(savedBounds.Height * 96.0R / DeviceDpi)}))
         Catch ex As Exception
             AppFileLogger.LogException("Share settings: saving UI context", ex)

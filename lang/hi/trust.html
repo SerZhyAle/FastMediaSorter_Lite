@@ -54,6 +54,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="../../assets/sza-kit.css">
 <link rel="stylesheet" href="../../assets/fms-site.css">
+<link rel="stylesheet" href="../../assets/fms-buttons.css">
 <script type="application/ld+json">{"@context":"https://schema.org","@type":"WebPage","headline":"Windows इस डाउनलोड पर चेतावनी क्यों देता है","description":"Fast Media Sorter & Sharing पर आने वाली SmartScreen चेतावनी का क्या मतलब है, वह क्यों दिखती है, ठीक किस पर क्लिक करना है, और प्रोग्राम कभी क्या नहीं करता।","url":"https://serzhyale.github.io/FastMediaSorter_Lite/lang/hi/trust.html","inLanguage":"hi","image":"https://serzhyale.github.io/FastMediaSorter_Lite/assets/social-card-1200x630.png","isPartOf":{"@type":"WebSite","name":"Fast Media Sorter & Sharing for Windows","url":"https://serzhyale.github.io/FastMediaSorter_Lite/"},"author":{"@type":"Person","name":"SerZhyAle"}}</script>
 </head>
 <body>
@@ -61,8 +62,8 @@
 <header class="site-header">
   <nav class="site-nav" aria-label="मुख्य नेविगेशन">
   <a class="brand" href="https://serzhyale.github.io/FastMediaSorter_Lite/lang/hi/" aria-label="Fast Media Sorter &amp; Sharing for Windows"><span class="brand-mark"><img src="../../assets/icons/Fast_Media_Sorter.ico" alt="" width="24" height="24"></span>Fast Media Sorter &amp; Sharing for Windows</a>
-  <button class="theme-btn" id="themeBtn" aria-label="Switch theme">◐</button>
-  <a class="btn btn-ghost btn-sm" href="https://serzhyale.github.io/FastMediaSorter_Lite/lang/hi/">मुख्य पृष्ठ पर लौटें</a>
+  <button class="theme-btn" id="themeBtn" type="button" aria-pressed="true"><svg class="glyph" data-glyph="app.theme" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" focusable="false"><path d="M12 22c5.52 0 10-4.48 10-10S17.52 2 12 2 2 6.48 2 12s4.48 10 10 10zm1-17.93c3.94.49 7 3.85 7 7.93s-3.05 7.44-7 7.93V4.07z" fill="currentColor"/></svg><span>डार्क थीम</span></button>
+  <a class="btn btn-ghost" href="https://serzhyale.github.io/FastMediaSorter_Lite/lang/hi/">मुख्य पृष्ठ पर लौटें</a>
   </nav>
 </header>
 
@@ -158,7 +159,7 @@
     <a hreflang="fr" href="https://serzhyale.github.io/FastMediaSorter_Lite/lang/fr/trust.html">Français</a>
     <a hreflang="pt" href="https://serzhyale.github.io/FastMediaSorter_Lite/lang/pt/trust.html">Português</a>
     <a hreflang="ar" href="https://serzhyale.github.io/FastMediaSorter_Lite/lang/ar/trust.html">العربية</a>
-    <a class="on" hreflang="hi" href="https://serzhyale.github.io/FastMediaSorter_Lite/lang/hi/trust.html">हिन्दी</a>
+    <a class="on" aria-current="true" hreflang="hi" href="https://serzhyale.github.io/FastMediaSorter_Lite/lang/hi/trust.html">हिन्दी</a>
     <a hreflang="bn" href="https://serzhyale.github.io/FastMediaSorter_Lite/lang/bn/trust.html">বাংলা</a>
     <a hreflang="ur" href="https://serzhyale.github.io/FastMediaSorter_Lite/lang/ur/trust.html">اردو</a>
     <a hreflang="zh" href="https://serzhyale.github.io/FastMediaSorter_Lite/lang/zh/trust.html">中文</a>
@@ -176,7 +177,7 @@
     doc.setAttribute('data-theme',t);
     try{localStorage.setItem('sza-theme',t);}catch(e){}
     var m=document.querySelector('meta[name="theme-color"]'); if(m) m.setAttribute('content', t==='light'?'#eef3ea':'#0a0f0a');
-    var b=document.getElementById('themeBtn'); if(b) b.setAttribute('aria-label', t==='light'?'Switch to dark theme':'Switch to light theme');
+    var b=document.getElementById('themeBtn'); if(b) b.setAttribute('aria-pressed', t==='light'?'false':'true');
   }
   var tb=document.getElementById('themeBtn');
   if(tb) tb.addEventListener('click',function(){setTheme(doc.getAttribute('data-theme')==='light'?'dark':'light');});

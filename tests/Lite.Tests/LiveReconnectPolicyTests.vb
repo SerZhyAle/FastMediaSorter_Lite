@@ -82,9 +82,8 @@ Public Class LiveReconnectPolicyTests
         Assert.Equal(LiveTerminationKind.UnsupportedMode, policy.TerminationReason)
         AssertMatchesTranslation("Этот режим пока не поддерживается", policy.GetTerminalStatusText())
 
-        policy.NoteFatalTermination(LiveTerminationKind.UnsupportedVersion)
-        Assert.Equal(LiveTerminationKind.UnsupportedVersion, policy.TerminationReason)
-        AssertMatchesTranslation("Требуется обновить приложение для этой трансляции", policy.GetTerminalStatusText())
+        ' no "unsupported version" terminal kind: a descriptor of a later schema is refused when it is read (LiveReadStatus), never in a session
+        Assert.DoesNotContain("UnsupportedVersion", [Enum].GetNames(GetType(LiveTerminationKind)))
 
         policy.NoteFatalTermination(LiveTerminationKind.LoopbackAddress)
         Assert.Equal(LiveTerminationKind.LoopbackAddress, policy.TerminationReason)

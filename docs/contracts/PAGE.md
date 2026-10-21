@@ -3,22 +3,28 @@
 | | |
 | --- | --- |
 | **Ids** | `PAGE-CONTENT`, `PAGE-STYLE`, `SITE-FAMILY-MAP` |
-| **Version** | 1.4 / 1.6 / 1.3, active (read 2026-10-07). Owner: the sza.od.ua hub |
+| **Version** | catalog 1.5 / 3.1 / 1.5, active (read 2026-10-20, specification 244; the vendored kit is the `PAGE-STYLE` 3.1 file since 2026-10-20; the rest of the text below was written against 1.4 / 1.6 / 1.3, read 2026-10-07). `PAGE-STYLE` moved through 2.0 and 3.0 (breaking) and 2.1 and 3.1 (additive) on 2026-10-17, see "What `PAGE-STYLE` 2.0 to 3.1 ask of this site"; the `PAGE-CONTENT` and `SITE-FAMILY-MAP` 1.5 are the consolidation's records and corrections. Owner: the sza.od.ua hub |
 | **Home** | `product-web-pages/` in the shared contracts catalog, with `reference/sza-kit.css` |
 | **Role here** | consumer - the product site served from the repository root; audit in `specification 030` and `specification 181` (local specifications) |
 
 ## What this repository must do to stay conformant
 
-- `assets/sza-kit.css` is the catalog's reference stylesheet byte for byte - the revision of 15661 bytes, SHA-256
-  `27501a10..`, that the catalog published on 2026-10-07 with `PAGE-STYLE` 1.4 and 1.5 (vendored 2026-10-13; it was the
-  1.3 file, 14521 bytes, `aea958f8..`, until then) - and `.gitattributes` marks it `-text`.
-  `tools/Build-SitePages.ps1 -Check` pins its SHA-256 (`Kit identity`). When the catalog moves the file again, vendor it
-  and move the pin. A local override goes in `assets/fms-site.css`, never in the kit.
-- The kit now carries what 1.4 and 1.5 say it will: 44 px for `.btn`, `.seg button` and `.theme-btn` for every pointer,
-  the `nav.expand` marker of `details.sec`, the labelled form of the theme control, and reduced motion that reaches
-  `::before` and `::after`. The page layer's copies of the 44 px and reduced-motion rules were dropped with the
-  re-vendoring (2026-10-13); what stays in `assets/fms-site.css` is the 44 px of what the kit does not size - the page's
-  own links and summary, `.tools-grid a` and `.copybox .copy` for a fine pointer (ticket 158 T-4).
+- `assets/sza-kit.css` is the catalog's reference stylesheet byte for byte, and `.gitattributes` marks it `-text`.
+  The vendored copy is the `PAGE-STYLE` 3.1 revision of 15926 bytes, SHA-256 `e438fef2..` (the catalog file of
+  2026-10-17: the code-surface and light-accent contrast tokens and the copy-button states), vendored 2026-10-20 by
+  ticket 243 T-10a; it replaced the 15661-byte `27501a10..` revision of 2026-10-07 (`PAGE-STYLE` 1.4 and 1.5, vendored
+  2026-10-13). `tools/Build-SitePages.ps1 -Check` pins its SHA-256 (`Kit identity`) and moved with the file: when the
+  catalog moves it again, vendor it and move the pin together. A local override goes in `assets/fms-site.css` or in the
+  button adapter below, never in the kit.
+- The kit still draws the 44 px pills, the primary glow and the hover lift of `.btn`, `.seg button`, `.theme-btn` and
+  `.to-top` (the catalog did not revise it for `BUTTONS`; `PAGE-STYLE` section 5 asks for an identified adapter instead).
+  That adapter is `assets/fms-buttons.css`, linked after `assets/fms-site.css` on every page that loads the page layer -
+  the generator's four templates and the hand-authored root and `docs/` pages - and held by check 15 ("Button adapter")
+  of `Build-SitePages.ps1 -Check`. It also owns the row layout the root page used to carry inline (`.button-group`,
+  `.dl-row`, `.scenario-foot`, `.dl-meta`), so the generated locales get it. What stays in `assets/fms-site.css` is the
+  44 px of the page's own text links, `.tools-grid a` and the footer rows, which are links and cards and not buttons. The
+  light accent and code-surface overrides the page layer carried were dropped with the re-vendoring (the kit has both);
+  the light gold override stays, the kit's `#9a6a13` being 4.19 : 1 on the page.
 - The footer's family grid lists every sibling at the URL `SITE-FAMILY-MAP` gives it, under the `Tool` label the map
   gives it (the Android row reads *Fast Media Sorter & Organizer* since 1.3), and the contact is the one the map names.
   The grid comes from `tools/site-copy.json` (`_family`), never from a page.
@@ -40,6 +46,22 @@ What 1.2 settled for this site:
   collapse every non-Russian locale to English (`ru` or `en` only), so a stored `ua` shows English there.
   Whether 1.2's switcher rule reaches these child pages, or they are a documented exception, is an open
   question for the owner - carried in the registry row, not fixed silently.
+
+## What `PAGE-STYLE` 2.0 to 3.1 ask of this site (read 2026-10-20)
+
+- **Buttons and groups (2.0, 2.1, 3.0).** `BUTTONS` is the authority for every command button: the pill and gold
+  command treatments are retired, the old fixed target defaults are superseded and a button wraps to its content.
+  The catalog's kit is unchanged by this, so an identified adapter in the page layer is owed over the vendored kit
+  (section 12), and a disclosure group draws its state triangle as `COLLAPSIBLE-GROUP` says, never the action
+  chevron. The button adapter is `assets/fms-buttons.css` (2026-10-20); the group-marker adapter, the `btn-gold`
+  and markup pass and the help corpus are still owed. The migration is specification 243's (see the
+  [UNIFIED-UI pointer](UNIFIED-UI.md)) and no rendered conformance is claimed: the repository has no browser harness.
+- **The 2026-10-17 amendment (3.1).** Locale of a single-URL translated page is `?lang=<ISO>` with a legacy `?l=`
+  reader, `lang` winning; separate locale files stay valid. Child and documentation pages carry the contact line and
+  a hub link; the shared pages of `SITE-FAMILY-MAP` section 2a are links, not cards; in-app help pages are served
+  offline; the icon chrome takes no Unicode substitute where a vocabulary glyph exists (the theme control's bare
+  `◐` is the open case). The `StreamsPlayer` cell of the family grid reads `STREAMS Player` since the map's 1.4.
+  Not read: the `lang` query on every single-URL page, and the generator's `_family` cell.
 
 ## Width
 

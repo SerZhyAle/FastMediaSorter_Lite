@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024" role="img">
+<title>Exchange server</title>
+<defs>
+<radialGradient id="hub" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="#FFFFFF"/><stop offset=".55" stop-color="#FFF4CC"/><stop offset="1" stop-color="#FFD98A"/></radialGradient>
+</defs>
+<path d="M506.66,500.88 L336.85,353.26 L405.43,62.41 L594.58,293.76 Z" fill="#FFB020"/>
+<path d="M532.34,511.78 L620.26,304.66 L918.07,280.01 L756.49,531.39 Z" fill="#F4513F"/>
+<path d="M529.91,539.57 L754.06,559.18 L869.53,834.8 L580.53,758.8 Z" fill="#A24BE8"/>
+<path d="M502.73,545.85 L553.34,765.08 L326.9,960.07 L309.86,661.73 Z" fill="#2F82F2"/>
+<path d="M488.36,521.93 L295.49,637.82 L40.07,482.71 L318.55,374.32 Z" fill="#1ABA89"/>
+</svg>

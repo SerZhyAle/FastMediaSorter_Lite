@@ -1,4 +1,4 @@
-﻿; Fast Media Sorter & Sharing: Folder Share Server - Inno Setup script (the SERVER edition)
+; Fast Media Sorter & Sharing: Folder Share Server - Inno Setup script (the SERVER edition)
 ; Built by CI / tools\Build-ServerInstaller.ps1; invoke with:
 ;   ISCC.exe /DVersion=<x.y.z.w> /DSourceDir=<staged-tree> /O<output-dir> FastMediaSorterServer.iss
 ;
@@ -191,12 +191,12 @@ ukrainian.OpenManagerTask=Відкрити Менеджер спільного �
 ; The wizard's first screen and the components page lead with the server role and name the
 ; two secondary roles once, as optional and off until chosen. [name/ver] is Inno's own token.
 [Messages]
-english.WelcomeLabel2=This will install [name/ver] on your computer.%n%nThe server leads: it publishes the folders you choose over SFTP from boot, with nobody signed in, and it shares nothing until you choose folders. The media viewer and sorter and FileDO virtual disks are optional extras on the next pages - both stay off unless you tick them.%n%nIt is recommended that you close all other applications before continuing.
-russian.WelcomeLabel2=Это установит [name/ver] на ваш компьютер.%n%nГлавная роль здесь у сервера: он раздаёт выбранные вами папки по SFTP с загрузки Windows, когда никто не вошёл в систему, и ничего не раздаёт, пока вы не выберете папки. Просмотрщик и сортировщик медиа и виртуальные диски FileDO - необязательные дополнения на следующих страницах: пока вы их не отметите, они не устанавливаются.%n%nРекомендуется закрыть все остальные приложения перед продолжением.
-ukrainian.WelcomeLabel2=Це встановить [name/ver] на ваш комп’ютер.%n%nГоловна роль тут у сервера: він роздає вибрані вами теки по SFTP із завантаження Windows, коли ніхто не ввійшов у систему, і нічого не роздає, доки ви не виберете теки. Переглядач і сортувальник медіа та віртуальні диски FileDO - необов’язкові доповнення на наступних сторінках: доки ви їх не позначите, вони не встановлюються.%n%nРекомендовано закрити всі інші програми перед продовженням.
-english.SelectComponentsLabel2=The Folder Share Server is always installed. The media viewer and sorter and FileDO virtual disk support are optional extras; sharing stays off until you choose folders. Click Next when you are ready to continue.
-russian.SelectComponentsLabel2=Сервер раздачи папок устанавливается всегда. Просмотрщик и сортировщик медиа и поддержка виртуальных дисков FileDO - необязательные дополнения; раздача остаётся выключенной, пока вы не выберете папки. Нажмите "Далее", когда будете готовы продолжить.
-ukrainian.SelectComponentsLabel2=Сервер роздачі тек встановлюється завжди. Переглядач і сортувальник медіа та підтримка віртуальних дисків FileDO - необов’язкові доповнення; роздача лишається вимкненою, доки ви не виберете теки. Натисніть "Далі", коли будете готові продовжити.
+english.WelcomeLabel2=This will install [name/ver] on your computer.%n%nThe server leads: it publishes the folders you choose over SFTP from boot, with nobody signed in, and it shares nothing until you choose folders. The next page offers two optional extras: FileDO virtual disk hosting (ticked - clear it if you do not need it) and the media viewer and sorter (unticked - tick it to add it).%n%nIt is recommended that you close all other applications before continuing.
+russian.WelcomeLabel2=Это установит [name/ver] на ваш компьютер.%n%nГлавная роль здесь у сервера: он раздаёт выбранные вами папки по SFTP с загрузки Windows, когда никто не вошёл в систему, и ничего не раздаёт, пока вы не выберете папки. На следующей странице два необязательных дополнения: хостинг виртуальных дисков FileDO (отмечено - снимите галочку, если он не нужен) и просмотрщик и сортировщик медиа (не отмечено - отметьте, чтобы добавить).%n%nРекомендуется закрыть все остальные приложения перед продолжением.
+ukrainian.WelcomeLabel2=Це встановить [name/ver] на ваш комп’ютер.%n%nГоловна роль тут у сервера: він роздає вибрані вами теки по SFTP із завантаження Windows, коли ніхто не ввійшов у систему, і нічого не роздає, доки ви не виберете теки. На наступній сторінці два необов’язкові доповнення: хостинг віртуальних дисків FileDO (позначено - зніміть позначку, якщо він не потрібен) і переглядач та сортувальник медіа (не позначено - позначте, щоб додати).%n%nРекомендовано закрити всі інші програми перед продовженням.
+english.SelectComponentsLabel2=The Folder Share Server is always installed. FileDO virtual disk hosting (ticked) and the media viewer and sorter (unticked) are optional extras; sharing stays off until you choose folders. Click Next when you are ready to continue.
+russian.SelectComponentsLabel2=Сервер раздачи папок устанавливается всегда. Хостинг виртуальных дисков FileDO (отмечен) и просмотрщик и сортировщик медиа (не отмечен) - необязательные дополнения; раздача остаётся выключенной, пока вы не выберете папки. Нажмите "Далее", когда будете готовы продолжить.
+ukrainian.SelectComponentsLabel2=Сервер роздачі тек встановлюється завжди. Хостинг віртуальних дисків FileDO (позначено) і переглядач та сортувальник медіа (не позначено) - необов’язкові доповнення; роздача лишається вимкненою, доки ви не виберете теки. Натисніть "Далі", коли будете готові продовжити.
 
 [Types]
 Name: "custom"; Description: "{cm:TypeServerCustom}"; Flags: iscustom
@@ -327,7 +327,7 @@ Name: "{autodesktop}\{#AppShortcutName}"; Filename: "{app}\{#CompanionExe}"; Par
 #ifndef NoExchange
 ; Ticket 182 L-9: a Start-menu entry for the offline state collector (never the desktop). It runs
 ; with -Pause so the window stays readable, and it only reads: no service is touched.
-Name: "{group}\{cm:CollectStateIcon}"; Filename: "{sys}\WindowsPowerShell\v1.0\powershell.exe"; Parameters: "-NoProfile -ExecutionPolicy Bypass -File ""{app}\collect-host-state.ps1"" -Pause"; WorkingDir: "{app}"
+Name: "{group}\{cm:CollectStateIcon}"; Filename: "{sys}\WindowsPowerShell\v1.0\powershell.exe"; Parameters: "-NoProfile -ExecutionPolicy Bypass -File ""{app}\collect-host-state.ps1"" -Pause"; WorkingDir: "{app}"; IconFilename: "{app}\exchange\fms-exchange-server.exe"
 #endif
 #ifdef HaveViewer
 ; The secondary role gets an entry ONLY when its component was ticked, and only in the Start

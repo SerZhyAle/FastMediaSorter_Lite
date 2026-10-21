@@ -23,7 +23,9 @@ Friend NotInheritable Class LiveBroadcastStore
     End Sub
 
     ''' <summary>
-    ''' Reads all stored broadcast descriptors from disk, newest first.
+    ''' Reads all stored broadcast descriptors from disk, newest first. An entry this program cannot use (a later schema written by
+    ''' a newer program, a mode it cannot play, a damaged one) is not returned - and is not lost either: <see cref="SaveAll"/> keeps
+    ''' it in the file byte for byte (LIVE-BROADCAST 1.1: a record this program cannot read is refused, never destroyed).
     ''' </summary>
     Public Function LoadAll() As List(Of LiveBroadcastDescriptor)
         Dim list As New List(Of LiveBroadcastDescriptor)()
@@ -89,12 +91,68 @@ Friend NotInheritable Class LiveBroadcastStore
     End Sub
 
     ''' <summary>
-    ''' Atomically writes the entries to disk.
+    ''' The stored entries this program cannot use, as the exact JSON text they have in the file, in file order. They survive every
+    ''' rewrite: a newer program of the same product may have written them and will read them again. Only the entry-by-entry
+    ''' damage is tolerated here; a file that is not a JSON array at all is treated as empty (as <see cref="LoadAll"/> does).
+    ''' </summary>
+    Private Function ReadUnusableEntries() As List(Of String)
+        Dim kept As New List(Of String)()
+        If Not File.Exists(storeFilePath) Then Return kept
+        Try
+            Dim jsonText As String = File.ReadAllText(storeFilePath, Encoding.UTF8)
+            If String.IsNullOrWhiteSpace(jsonText) Then Return kept
+            Using doc As JsonDocument = JsonDocument.Parse(jsonText)
+                If doc.RootElement.ValueKind <> JsonValueKind.Array Then Return kept
+                For Each elem As JsonElement In doc.RootElement.EnumerateArray()
+                    If elem.ValueKind <> JsonValueKind.Object Then Continue For
+                    Dim raw As String = elem.GetRawText()
+                    Dim res As LiveBroadcastReadResult = LiveBroadcastReader.ReadJsonBytes(Encoding.UTF8.GetBytes(raw))
+                    If res.Status = LiveReadStatus.Ok AndAlso res.Descriptor IsNot Nothing Then Continue For
+                    kept.Add(raw)
+                Next
+            End Using
+        Catch ex As Exception
+            AppFileLogger.LogException("Failed to read the unusable entries of the live broadcasts store", ex)
+        End Try
+        Return kept
+    End Function
+
+    ''' <summary>True when a kept unusable entry names the same channel as a descriptor now being saved (same rules as <see cref="Upsert"/>:
+    ''' sourceId when the entry has one, otherwise the normalised address). The readable descriptor then replaces it.</summary>
+    Private Function IsReplacedBy(rawEntry As String, snapshot As List(Of LiveBroadcastDescriptor)) As Boolean
+        Dim sourceId As String = Nothing
+        Dim url As String = Nothing
+        Try
+            Using doc As JsonDocument = JsonDocument.Parse(rawEntry)
+                Dim p As JsonElement = Nothing
+                If doc.RootElement.TryGetProperty("sourceId", p) AndAlso p.ValueKind = JsonValueKind.String Then sourceId = p.GetString()
+                If doc.RootElement.TryGetProperty("url", p) AndAlso p.ValueKind = JsonValueKind.String Then url = p.GetString()
+            End Using
+        Catch ex As JsonException
+            Return False
+        End Try
+        If Not String.IsNullOrEmpty(sourceId) Then
+            Return snapshot.Exists(Function(d) String.Equals(d.SourceId, sourceId, StringComparison.Ordinal))
+        End If
+        If String.IsNullOrWhiteSpace(url) Then Return False
+        Return snapshot.Exists(Function(d) String.IsNullOrEmpty(d.SourceId) AndAlso
+                                          String.Equals(NormalizeUrl(d.Url), NormalizeUrl(url), StringComparison.OrdinalIgnoreCase))
+    End Function
+
+    ''' <summary>
+    ''' Atomically writes the entries to disk. The entries of the file this program cannot use are written back after them, unchanged
+    ''' (at most <see cref="MaxEntries"/> of them), unless one of the saved descriptors is the same channel and replaces it.
     ''' </summary>
     Public Sub SaveAll(entries As IEnumerable(Of LiveBroadcastDescriptor))
         If entries Is Nothing Then Return
         Dim snapshot As New List(Of LiveBroadcastDescriptor)(entries)
         If snapshot.Exists(Function(d) d.Endpoints.Exists(Function(ep) ep.IsSealed)) Then Return
+
+        Dim unusable As List(Of String) = ReadUnusableEntries()
+        unusable.RemoveAll(Function(entry) IsReplacedBy(entry, snapshot))
+        While unusable.Count > MaxEntries
+            unusable.RemoveAt(unusable.Count - 1)
+        End While
 
         Try
             Dim dir As String = Path.GetDirectoryName(storeFilePath)
@@ -108,6 +166,9 @@ Friend NotInheritable Class LiveBroadcastStore
                     writer.WriteStartArray()
                     For Each d As LiveBroadcastDescriptor In snapshot
                         WriteDescriptor(writer, d)
+                    Next
+                    For Each raw As String In unusable
+                        writer.WriteRawValue(raw)
                     Next
                     writer.WriteEndArray()
                 End Using

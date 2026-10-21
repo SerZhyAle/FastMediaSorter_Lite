@@ -12,10 +12,11 @@ Imports System.Threading
 Imports Xunit
 
 Public Class MediaKindClassifierTests
-    ' Independent conformance vectors, MEDIA-CLASSIFICATION 0.10 section 4.
+    ' Independent conformance vectors, MEDIA-CLASSIFICATION section 4: the rule 1 lists of 0.10 verbatim, plus the
+    ' 0.12 amendment A (`.jxl` is IMAGE; classification only, it claims no decoder the build lacks).
     Public Shared Iterator Function CanonicalExtensions() As IEnumerable(Of Object())
         Dim rows As New Dictionary(Of MediaKind, String) From {
-            {MediaKind.Image, ".jpg .jpeg .png .webp .gif .bmp .avif .heic .heif .svg .tiff .ico .wmf .emf"},
+            {MediaKind.Image, ".jpg .jpeg .png .webp .gif .bmp .avif .heic .heif .svg .tiff .ico .wmf .emf .jxl"},
             {MediaKind.Video, ".mp4 .mkv .mov .webm .3gp .flv .wmv .m4v .avi .mpg .mpeg .ts .m2ts .vob .ogv .divx .m2v .mts .3g2 .asf"},
             {MediaKind.Audio, ".mp3 .m4a .flac .aac .ogg .wma .opus .amr .awb .ac3 .ec3 .ac4 .adts .thd .mka .oga .caf .alac .mia .mid .midi .wav .wave"},
             {MediaKind.Book, ".epub .pdf .cbz .cbr .fb2 .mobi"},

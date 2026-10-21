@@ -1,4 +1,4 @@
-﻿#If Not NETFRAMEWORK Then
+#If Not NETFRAMEWORK Then
 Option Strict On
 
 Imports System.IO
@@ -104,6 +104,9 @@ Partial Public Class Main_Form
         ApplyOcrCacheBudget()
         If previous IsNot Nothing AndAlso (previous.VideoEndAction <> modern_Preferences.VideoEndAction OrElse
             previous.AudioEndAction <> modern_Preferences.AudioEndAction) Then RestartCurrentVideoPreservingPosition()
+        If previous IsNot Nothing AndAlso previous.AnimatedViaVideo AndAlso Not modern_Preferences.AnimatedViaVideo Then
+            PurgeAnimationVideoStore()
+        End If
         last_Applied_Preferences = modern_Preferences.Snapshot()
         If Not persistImmediately Then
             MarkSettingsDirty()
@@ -389,6 +392,8 @@ Partial Public Class Main_Form
 
     Private Sub QueueRememberedVideoPosition(filePath As String)
         If modern_Preferences Is Nothing OrElse Not modern_Preferences.RememberVideoPosition Then Return
+        ' The temporary animation video loops for ever: no point of it is worth coming back to (spec 242).
+        If AnimationVideoInputFor(filePath) IsNot Nothing Then Return
         Try
             Dim info As New FileInfo(filePath)
             pending_Video_Seek = modern_Preferences.RememberedVideoPosition(info.FullName, info.LastWriteTimeUtc.Ticks, info.Length)
@@ -428,6 +433,8 @@ Partial Public Class Main_Form
 
     Private Function CanRememberPositionFor(filePath As String) As Boolean
         If modern_Preferences Is Nothing OrElse Not modern_Preferences.RememberVideoPosition Then Return False
+        ' The temporary animation video has no position to keep, and no end to mark (spec 242).
+        If IsAnimationVideoMedia() Then Return False
         ' A stream has no file to key a position by.
         If String.IsNullOrEmpty(filePath) OrElse IsRemoteMediaUrl(filePath) Then Return False
         ' An archive entry's temporary copy is keyed by a random session token: its position

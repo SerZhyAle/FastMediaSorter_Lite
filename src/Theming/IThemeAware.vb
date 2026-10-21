@@ -13,4 +13,17 @@ Public Interface IThemeAware
     Sub ApplyTheme(palette As ThemePalette)
 End Interface
 
+''' <summary>A control that holds a drawn check box and takes the theme's roles for it (the viewer dialogs' option row,
+''' ticket 243 T-11b). The theme walk knows only this seam, so it compiles in the Share Manager, which does not carry the
+''' row itself.</summary>
+Friend Interface IThemedOptionRow
+    ''' <summary>The check box the row holds.</summary>
+    ReadOnly Property Check As System.Windows.Forms.CheckBox
+
+    ''' <summary>True when the row's host paints its own colours and the walk leaves them alone.</summary>
+    ReadOnly Property OwnsPalette As Boolean
+
+    Sub ApplyThemePalette(palette As ThemePalette)
+End Interface
+
 #End If

@@ -1135,7 +1135,11 @@ Partial Public Class Main_Form
 #If Not NETFRAMEWORK Then
                         ' Where this picture came from, from the attributes just read - so that
                         ' leaving it can offer it back (and a rewritten file is never shown stale).
-                        SetActiveBoxOrigin(OriginOf(Current_File_Name, fileInfo))
+                        ' Not for the first frame of a long animation (spec 241 rule 12): it is a
+                        ' stand-in, never the file's pixels, and leaving it must dispose it.
+                        If AnimationStaging.InfoOf(image_Data_Tuple.Item1) Is Nothing Then
+                            SetActiveBoxOrigin(OriginOf(Current_File_Name, fileInfo))
+                        End If
 #End If
                         StartGifLoopPlayback(If(is_PictureBox1_Visible, Picture_Box_1.Image, Picture_Box_2.Image))
                     Else
@@ -1471,6 +1475,8 @@ Partial Public Class Main_Form
         ' The outgoing video's position and the end of an "Open URL" stream (audit 050
         ' D-01, D-05) - before anything below clears the names they need.
         NoteLeavingCurrentMedia()
+        ' An animation video (spec 242) is let go of before the screen moves: the player is shared with the next video.
+        StopAnimationVideo()
         ReleasePdfDocument()
         ReleaseTextDocument()
         ClearEpubPlaceholderData()

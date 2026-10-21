@@ -1,0 +1,931 @@
+{
+  "share-settings": {
+    "en": {
+      "title": "Manager settings",
+      "purpose": "Set manager startup, theme and language here. Your remote exchange account, publishing, clipboard and scheduled file operations belong to the manager and do not require a locally installed exchange server or enabled SFTP sharing.",
+      "order": "Open Manager settings from the manager or tray. Choose a page, expand a group, or use Search settings. Use the component links to open SFTP or local exchange settings beside this window. Closing one window keeps the other windows, schedules and servers running.",
+      "sections": [
+        {
+          "id": "startup",
+          "title": "Manager settings",
+          "text": "Set manager startup, theme and language here. Your remote exchange account, publishing, clipboard and scheduled file operations belong to the manager and do not require a locally installed exchange server or enabled SFTP sharing. Open Manager settings from the manager or tray. Choose a page, expand a group, or use Search settings. Use the component links to open SFTP or local exchange settings beside this window. Closing one window keeps the other windows, schedules and servers running."
+        },
+        {
+          "id": "exchange-account",
+          "title": "Manager settings",
+          "text": "Set manager startup, theme and language here. Your remote exchange account, publishing, clipboard and scheduled file operations belong to the manager and do not require a locally installed exchange server or enabled SFTP sharing. Open Manager settings from the manager or tray. Choose a page, expand a group, or use Search settings. Use the component links to open SFTP or local exchange settings beside this window. Closing one window keeps the other windows, schedules and servers running."
+        },
+        {
+          "id": "scheduled",
+          "title": "Manager settings",
+          "text": "Set manager startup, theme and language here. Your remote exchange account, publishing, clipboard and scheduled file operations belong to the manager and do not require a locally installed exchange server or enabled SFTP sharing. Open Manager settings from the manager or tray. Choose a page, expand a group, or use Search settings. Use the component links to open SFTP or local exchange settings beside this window. Closing one window keeps the other windows, schedules and servers running."
+        },
+        {
+          "id": "help",
+          "title": "Manager settings",
+          "text": "Set manager startup, theme and language here. Your remote exchange account, publishing, clipboard and scheduled file operations belong to the manager and do not require a locally installed exchange server or enabled SFTP sharing. Open Manager settings from the manager or tray. Choose a page, expand a group, or use Search settings. Use the component links to open SFTP or local exchange settings beside this window. Closing one window keeps the other windows, schedules and servers running."
+        },
+        {
+          "id": "navigation",
+          "title": "Manager settings",
+          "text": "The links at the lower left open or activate one window per destination. They follow installed payloads, not whether a server is running. Each window remembers its own page, group folds, scroll and size. Common theme and language editors appear only in Manager settings. F1 and ? open the current page help."
+        }
+      ]
+    },
+    "ru": {
+      "title": "Настройки менеджера",
+      "purpose": "Здесь настраиваются запуск менеджера, тема и язык. Подключение этого ПК к удалённому серверу обмена, публикация ресурсов, буфер и операции по расписанию принадлежат менеджеру и не требуют установки локального сервера обмена или включения SFTP.",
+      "order": "Откройте настройки менеджера из его окна или трея. Выберите страницу, раскройте группу или воспользуйтесь поиском. Ссылки на компоненты открывают настройки SFTP и локального сервера рядом с этим окном. Закрытие одного окна сохраняет остальные окна, расписания и работающие серверы.",
+      "sections": [
+        {
+          "id": "startup",
+          "title": "Настройки менеджера",
+          "text": "Здесь настраиваются запуск менеджера, тема и язык. Подключение этого ПК к удалённому серверу обмена, публикация ресурсов, буфер и операции по расписанию принадлежат менеджеру и не требуют установки локального сервера обмена или включения SFTP. Откройте настройки менеджера из его окна или трея. Выберите страницу, раскройте группу или воспользуйтесь поиском. Ссылки на компоненты открывают настройки SFTP и локального сервера рядом с этим окном. Закрытие одного окна сохраняет остальные окна, расписания и работающие серверы."
+        },
+        {
+          "id": "exchange-account",
+          "title": "Настройки менеджера",
+          "text": "Здесь настраиваются запуск менеджера, тема и язык. Подключение этого ПК к удалённому серверу обмена, публикация ресурсов, буфер и операции по расписанию принадлежат менеджеру и не требуют установки локального сервера обмена или включения SFTP. Откройте настройки менеджера из его окна или трея. Выберите страницу, раскройте группу или воспользуйтесь поиском. Ссылки на компоненты открывают настройки SFTP и локального сервера рядом с этим окном. Закрытие одного окна сохраняет остальные окна, расписания и работающие серверы."
+        },
+        {
+          "id": "scheduled",
+          "title": "Настройки менеджера",
+          "text": "Здесь настраиваются запуск менеджера, тема и язык. Подключение этого ПК к удалённому серверу обмена, публикация ресурсов, буфер и операции по расписанию принадлежат менеджеру и не требуют установки локального сервера обмена или включения SFTP. Откройте настройки менеджера из его окна или трея. Выберите страницу, раскройте группу или воспользуйтесь поиском. Ссылки на компоненты открывают настройки SFTP и локального сервера рядом с этим окном. Закрытие одного окна сохраняет остальные окна, расписания и работающие серверы."
+        },
+        {
+          "id": "help",
+          "title": "Настройки менеджера",
+          "text": "Здесь настраиваются запуск менеджера, тема и язык. Подключение этого ПК к удалённому серверу обмена, публикация ресурсов, буфер и операции по расписанию принадлежат менеджеру и не требуют установки локального сервера обмена или включения SFTP. Откройте настройки менеджера из его окна или трея. Выберите страницу, раскройте группу или воспользуйтесь поиском. Ссылки на компоненты открывают настройки SFTP и локального сервера рядом с этим окном. Закрытие одного окна сохраняет остальные окна, расписания и работающие серверы."
+        },
+        {
+          "id": "navigation",
+          "title": "Настройки менеджера",
+          "text": "Ссылки слева внизу открывают или активируют по одному окну каждого назначения. Доступность зависит от установленных компонентов, а не от запуска сервера. Каждое окно помнит страницу, свёрнутые группы, прокрутку и размер. Тема и язык меняются только в настройках менеджера. F1 и ? открывают справку текущей страницы."
+        }
+      ]
+    },
+    "uk": {
+      "title": "Налаштування менеджера",
+      "purpose": "Тут налаштовуються запуск менеджера, тема й мова. Підключення цього ПК до віддаленого сервера обміну, публікація ресурсів, буфер і операції за розкладом належать менеджеру та не потребують локального сервера обміну чи ввімкнення SFTP.",
+      "order": "Відкрийте налаштування менеджера з його вікна або трея. Виберіть сторінку, розгорніть групу або скористайтеся пошуком. Посилання на компоненти відкривають SFTP та локальний сервер поруч. Закриття одного вікна зберігає інші вікна, розклади й сервери.",
+      "sections": [
+        {
+          "id": "startup",
+          "title": "Налаштування менеджера",
+          "text": "Тут налаштовуються запуск менеджера, тема й мова. Підключення цього ПК до віддаленого сервера обміну, публікація ресурсів, буфер і операції за розкладом належать менеджеру та не потребують локального сервера обміну чи ввімкнення SFTP. Відкрийте налаштування менеджера з його вікна або трея. Виберіть сторінку, розгорніть групу або скористайтеся пошуком. Посилання на компоненти відкривають SFTP та локальний сервер поруч. Закриття одного вікна зберігає інші вікна, розклади й сервери."
+        },
+        {
+          "id": "exchange-account",
+          "title": "Налаштування менеджера",
+          "text": "Тут налаштовуються запуск менеджера, тема й мова. Підключення цього ПК до віддаленого сервера обміну, публікація ресурсів, буфер і операції за розкладом належать менеджеру та не потребують локального сервера обміну чи ввімкнення SFTP. Відкрийте налаштування менеджера з його вікна або трея. Виберіть сторінку, розгорніть групу або скористайтеся пошуком. Посилання на компоненти відкривають SFTP та локальний сервер поруч. Закриття одного вікна зберігає інші вікна, розклади й сервери."
+        },
+        {
+          "id": "scheduled",
+          "title": "Налаштування менеджера",
+          "text": "Тут налаштовуються запуск менеджера, тема й мова. Підключення цього ПК до віддаленого сервера обміну, публікація ресурсів, буфер і операції за розкладом належать менеджеру та не потребують локального сервера обміну чи ввімкнення SFTP. Відкрийте налаштування менеджера з його вікна або трея. Виберіть сторінку, розгорніть групу або скористайтеся пошуком. Посилання на компоненти відкривають SFTP та локальний сервер поруч. Закриття одного вікна зберігає інші вікна, розклади й сервери."
+        },
+        {
+          "id": "help",
+          "title": "Налаштування менеджера",
+          "text": "Тут налаштовуються запуск менеджера, тема й мова. Підключення цього ПК до віддаленого сервера обміну, публікація ресурсів, буфер і операції за розкладом належать менеджеру та не потребують локального сервера обміну чи ввімкнення SFTP. Відкрийте налаштування менеджера з його вікна або трея. Виберіть сторінку, розгорніть групу або скористайтеся пошуком. Посилання на компоненти відкривають SFTP та локальний сервер поруч. Закриття одного вікна зберігає інші вікна, розклади й сервери."
+        },
+        {
+          "id": "navigation",
+          "title": "Налаштування менеджера",
+          "text": "Посилання зліва внизу відкривають або активують по одному вікну кожного призначення. Доступність залежить від установлених компонентів, а не від запуску сервера. Кожне вікно пам’ятає сторінку, групи, прокрутку й розмір. Тема й мова змінюються лише в менеджері. F1 і ? відкривають довідку поточної сторінки."
+        }
+      ]
+    },
+    "de": {
+      "title": "Managereinstellungen",
+      "purpose": "Start, Design, Sprache, entferntes Austauschkonto, Veröffentlichung, Zwischenablage und geplante Dateiaktionen gehören zum Manager. Ein lokaler Server ist dafür nicht erforderlich.",
+      "order": "Öffnen Sie die Einstellungen über das Tray oder die Komponentenlinks. Öffnen und Schließen starten oder stoppen keinen Server. Ein fehlender lokaler Server sperrt die entfernte Anmeldung nicht.",
+      "sections": [
+        {
+          "id": "startup",
+          "title": "Managereinstellungen",
+          "text": "Start, Design, Sprache, entferntes Austauschkonto, Veröffentlichung, Zwischenablage und geplante Dateiaktionen gehören zum Manager. Ein lokaler Server ist dafür nicht erforderlich. Öffnen Sie die Einstellungen über das Tray oder die Komponentenlinks. Öffnen und Schließen starten oder stoppen keinen Server. Ein fehlender lokaler Server sperrt die entfernte Anmeldung nicht."
+        },
+        {
+          "id": "exchange-account",
+          "title": "Managereinstellungen",
+          "text": "Start, Design, Sprache, entferntes Austauschkonto, Veröffentlichung, Zwischenablage und geplante Dateiaktionen gehören zum Manager. Ein lokaler Server ist dafür nicht erforderlich. Öffnen Sie die Einstellungen über das Tray oder die Komponentenlinks. Öffnen und Schließen starten oder stoppen keinen Server. Ein fehlender lokaler Server sperrt die entfernte Anmeldung nicht."
+        },
+        {
+          "id": "scheduled",
+          "title": "Managereinstellungen",
+          "text": "Start, Design, Sprache, entferntes Austauschkonto, Veröffentlichung, Zwischenablage und geplante Dateiaktionen gehören zum Manager. Ein lokaler Server ist dafür nicht erforderlich. Öffnen Sie die Einstellungen über das Tray oder die Komponentenlinks. Öffnen und Schließen starten oder stoppen keinen Server. Ein fehlender lokaler Server sperrt die entfernte Anmeldung nicht."
+        },
+        {
+          "id": "help",
+          "title": "Managereinstellungen",
+          "text": "Start, Design, Sprache, entferntes Austauschkonto, Veröffentlichung, Zwischenablage und geplante Dateiaktionen gehören zum Manager. Ein lokaler Server ist dafür nicht erforderlich. Öffnen Sie die Einstellungen über das Tray oder die Komponentenlinks. Öffnen und Schließen starten oder stoppen keinen Server. Ein fehlender lokaler Server sperrt die entfernte Anmeldung nicht."
+        },
+        {
+          "id": "navigation",
+          "title": "Managereinstellungen",
+          "text": "Die Links aktivieren jeweils ein Fenster pro installiertem Bestandteil. Jedes merkt sich Seite, Gruppen, Bildlauf und Größe. Design und Sprache ändern Sie im Manager; F1 und ? erklären die aktuelle Seite."
+        }
+      ]
+    },
+    "it": {
+      "title": "Impostazioni del gestore",
+      "purpose": "Avvio, tema, lingua, account remoto, pubblicazione, appunti e operazioni pianificate appartengono al gestore e non richiedono un server locale.",
+      "order": "Aprire dal menu dell’area di notifica o dai collegamenti dei componenti. Aprire e chiudere non avvia né arresta alcun server. L’accesso remoto non richiede il server locale.",
+      "sections": [
+        {
+          "id": "startup",
+          "title": "Impostazioni del gestore",
+          "text": "Avvio, tema, lingua, account remoto, pubblicazione, appunti e operazioni pianificate appartengono al gestore e non richiedono un server locale. Aprire dal menu dell’area di notifica o dai collegamenti dei componenti. Aprire e chiudere non avvia né arresta alcun server. L’accesso remoto non richiede il server locale."
+        },
+        {
+          "id": "exchange-account",
+          "title": "Impostazioni del gestore",
+          "text": "Avvio, tema, lingua, account remoto, pubblicazione, appunti e operazioni pianificate appartengono al gestore e non richiedono un server locale. Aprire dal menu dell’area di notifica o dai collegamenti dei componenti. Aprire e chiudere non avvia né arresta alcun server. L’accesso remoto non richiede il server locale."
+        },
+        {
+          "id": "scheduled",
+          "title": "Impostazioni del gestore",
+          "text": "Avvio, tema, lingua, account remoto, pubblicazione, appunti e operazioni pianificate appartengono al gestore e non richiedono un server locale. Aprire dal menu dell’area di notifica o dai collegamenti dei componenti. Aprire e chiudere non avvia né arresta alcun server. L’accesso remoto non richiede il server locale."
+        },
+        {
+          "id": "help",
+          "title": "Impostazioni del gestore",
+          "text": "Avvio, tema, lingua, account remoto, pubblicazione, appunti e operazioni pianificate appartengono al gestore e non richiedono un server locale. Aprire dal menu dell’area di notifica o dai collegamenti dei componenti. Aprire e chiudere non avvia né arresta alcun server. L’accesso remoto non richiede il server locale."
+        },
+        {
+          "id": "navigation",
+          "title": "Impostazioni del gestore",
+          "text": "I collegamenti attivano una finestra per componente installato. Ogni finestra ricorda pagina, gruppi, scorrimento e dimensioni. Tema e lingua sono nel gestore; F1 e ? aprono la guida corrente."
+        }
+      ]
+    },
+    "es": {
+      "title": "Ajustes del gestor",
+      "purpose": "Inicio, tema, idioma, cuenta remota, publicación, portapapeles y operaciones programadas pertenecen al gestor y no requieren un servidor local.",
+      "order": "Abra desde la bandeja o los enlaces de componentes. Abrir y cerrar no inicia ni detiene servidores. El acceso remoto no requiere un servidor local.",
+      "sections": [
+        {
+          "id": "startup",
+          "title": "Ajustes del gestor",
+          "text": "Inicio, tema, idioma, cuenta remota, publicación, portapapeles y operaciones programadas pertenecen al gestor y no requieren un servidor local. Abra desde la bandeja o los enlaces de componentes. Abrir y cerrar no inicia ni detiene servidores. El acceso remoto no requiere un servidor local."
+        },
+        {
+          "id": "exchange-account",
+          "title": "Ajustes del gestor",
+          "text": "Inicio, tema, idioma, cuenta remota, publicación, portapapeles y operaciones programadas pertenecen al gestor y no requieren un servidor local. Abra desde la bandeja o los enlaces de componentes. Abrir y cerrar no inicia ni detiene servidores. El acceso remoto no requiere un servidor local."
+        },
+        {
+          "id": "scheduled",
+          "title": "Ajustes del gestor",
+          "text": "Inicio, tema, idioma, cuenta remota, publicación, portapapeles y operaciones programadas pertenecen al gestor y no requieren un servidor local. Abra desde la bandeja o los enlaces de componentes. Abrir y cerrar no inicia ni detiene servidores. El acceso remoto no requiere un servidor local."
+        },
+        {
+          "id": "help",
+          "title": "Ajustes del gestor",
+          "text": "Inicio, tema, idioma, cuenta remota, publicación, portapapeles y operaciones programadas pertenecen al gestor y no requieren un servidor local. Abra desde la bandeja o los enlaces de componentes. Abrir y cerrar no inicia ni detiene servidores. El acceso remoto no requiere un servidor local."
+        },
+        {
+          "id": "navigation",
+          "title": "Ajustes del gestor",
+          "text": "Los enlaces activan una ventana por componente instalado. Cada una recuerda página, grupos, desplazamiento y tamaño. Tema e idioma están en el gestor; F1 y ? abren la ayuda actual."
+        }
+      ]
+    },
+    "fr": {
+      "title": "Paramètres du gestionnaire",
+      "purpose": "Démarrage, thème, langue, compte distant, publication, presse-papiers et opérations planifiées appartiennent au gestionnaire et ne nécessitent pas de serveur local.",
+      "order": "Ouvrez depuis la zone de notification ou les liens des composants. Ouvrir et fermer ne démarre ni n’arrête un serveur. La connexion distante ne nécessite pas de serveur local.",
+      "sections": [
+        {
+          "id": "startup",
+          "title": "Paramètres du gestionnaire",
+          "text": "Démarrage, thème, langue, compte distant, publication, presse-papiers et opérations planifiées appartiennent au gestionnaire et ne nécessitent pas de serveur local. Ouvrez depuis la zone de notification ou les liens des composants. Ouvrir et fermer ne démarre ni n’arrête un serveur. La connexion distante ne nécessite pas de serveur local."
+        },
+        {
+          "id": "exchange-account",
+          "title": "Paramètres du gestionnaire",
+          "text": "Démarrage, thème, langue, compte distant, publication, presse-papiers et opérations planifiées appartiennent au gestionnaire et ne nécessitent pas de serveur local. Ouvrez depuis la zone de notification ou les liens des composants. Ouvrir et fermer ne démarre ni n’arrête un serveur. La connexion distante ne nécessite pas de serveur local."
+        },
+        {
+          "id": "scheduled",
+          "title": "Paramètres du gestionnaire",
+          "text": "Démarrage, thème, langue, compte distant, publication, presse-papiers et opérations planifiées appartiennent au gestionnaire et ne nécessitent pas de serveur local. Ouvrez depuis la zone de notification ou les liens des composants. Ouvrir et fermer ne démarre ni n’arrête un serveur. La connexion distante ne nécessite pas de serveur local."
+        },
+        {
+          "id": "help",
+          "title": "Paramètres du gestionnaire",
+          "text": "Démarrage, thème, langue, compte distant, publication, presse-papiers et opérations planifiées appartiennent au gestionnaire et ne nécessitent pas de serveur local. Ouvrez depuis la zone de notification ou les liens des composants. Ouvrir et fermer ne démarre ni n’arrête un serveur. La connexion distante ne nécessite pas de serveur local."
+        },
+        {
+          "id": "navigation",
+          "title": "Paramètres du gestionnaire",
+          "text": "Les liens activent une fenêtre par composant installé. Chacune mémorise page, groupes, défilement et taille. Thème et langue sont dans le gestionnaire ; F1 et ? ouvrent l’aide courante."
+        }
+      ]
+    },
+    "pt": {
+      "title": "Definições do gestor",
+      "purpose": "Arranque, tema, idioma, conta remota, publicação, área de transferência e operações agendadas pertencem ao gestor e não exigem servidor local.",
+      "order": "Abra pela área de notificação ou pelas ligações dos componentes. Abrir e fechar não inicia nem para servidores. O acesso remoto não exige servidor local.",
+      "sections": [
+        {
+          "id": "startup",
+          "title": "Definições do gestor",
+          "text": "Arranque, tema, idioma, conta remota, publicação, área de transferência e operações agendadas pertencem ao gestor e não exigem servidor local. Abra pela área de notificação ou pelas ligações dos componentes. Abrir e fechar não inicia nem para servidores. O acesso remoto não exige servidor local."
+        },
+        {
+          "id": "exchange-account",
+          "title": "Definições do gestor",
+          "text": "Arranque, tema, idioma, conta remota, publicação, área de transferência e operações agendadas pertencem ao gestor e não exigem servidor local. Abra pela área de notificação ou pelas ligações dos componentes. Abrir e fechar não inicia nem para servidores. O acesso remoto não exige servidor local."
+        },
+        {
+          "id": "scheduled",
+          "title": "Definições do gestor",
+          "text": "Arranque, tema, idioma, conta remota, publicação, área de transferência e operações agendadas pertencem ao gestor e não exigem servidor local. Abra pela área de notificação ou pelas ligações dos componentes. Abrir e fechar não inicia nem para servidores. O acesso remoto não exige servidor local."
+        },
+        {
+          "id": "help",
+          "title": "Definições do gestor",
+          "text": "Arranque, tema, idioma, conta remota, publicação, área de transferência e operações agendadas pertencem ao gestor e não exigem servidor local. Abra pela área de notificação ou pelas ligações dos componentes. Abrir e fechar não inicia nem para servidores. O acesso remoto não exige servidor local."
+        },
+        {
+          "id": "navigation",
+          "title": "Definições do gestor",
+          "text": "As ligações ativam uma janela por componente instalado. Cada uma guarda página, grupos, deslocamento e tamanho. Tema e idioma estão no gestor; F1 e ? abrem a ajuda atual."
+        }
+      ]
+    },
+    "ar": {
+      "title": "إعدادات المدير",
+      "purpose": "بدء التشغيل والمظهر واللغة والحساب البعيد والنشر والحافظة والعمليات المجدولة تخص المدير ولا تتطلب خادماً محلياً.",
+      "order": "افتح من منطقة الإعلام أو روابط المكونات. فتح النافذة وإغلاقها لا يشغل أو يوقف خادماً. تسجيل الدخول البعيد لا يتطلب خادماً محلياً.",
+      "sections": [
+        {
+          "id": "startup",
+          "title": "إعدادات المدير",
+          "text": "بدء التشغيل والمظهر واللغة والحساب البعيد والنشر والحافظة والعمليات المجدولة تخص المدير ولا تتطلب خادماً محلياً. افتح من منطقة الإعلام أو روابط المكونات. فتح النافذة وإغلاقها لا يشغل أو يوقف خادماً. تسجيل الدخول البعيد لا يتطلب خادماً محلياً."
+        },
+        {
+          "id": "exchange-account",
+          "title": "إعدادات المدير",
+          "text": "بدء التشغيل والمظهر واللغة والحساب البعيد والنشر والحافظة والعمليات المجدولة تخص المدير ولا تتطلب خادماً محلياً. افتح من منطقة الإعلام أو روابط المكونات. فتح النافذة وإغلاقها لا يشغل أو يوقف خادماً. تسجيل الدخول البعيد لا يتطلب خادماً محلياً."
+        },
+        {
+          "id": "scheduled",
+          "title": "إعدادات المدير",
+          "text": "بدء التشغيل والمظهر واللغة والحساب البعيد والنشر والحافظة والعمليات المجدولة تخص المدير ولا تتطلب خادماً محلياً. افتح من منطقة الإعلام أو روابط المكونات. فتح النافذة وإغلاقها لا يشغل أو يوقف خادماً. تسجيل الدخول البعيد لا يتطلب خادماً محلياً."
+        },
+        {
+          "id": "help",
+          "title": "إعدادات المدير",
+          "text": "بدء التشغيل والمظهر واللغة والحساب البعيد والنشر والحافظة والعمليات المجدولة تخص المدير ولا تتطلب خادماً محلياً. افتح من منطقة الإعلام أو روابط المكونات. فتح النافذة وإغلاقها لا يشغل أو يوقف خادماً. تسجيل الدخول البعيد لا يتطلب خادماً محلياً."
+        },
+        {
+          "id": "navigation",
+          "title": "إعدادات المدير",
+          "text": "تفتح الروابط نافذة واحدة لكل مكوّن مثبّت. تتذكر كل نافذة الصفحة والمجموعات والتمرير والحجم. المظهر واللغة في المدير؛ F1 و? يفتحان مساعدة الصفحة الحالية."
+        }
+      ]
+    },
+    "hi": {
+      "title": "प्रबंधक सेटिंग",
+      "purpose": "स्टार्टअप, थीम, भाषा, दूरस्थ खाता, प्रकाशन, क्लिपबोर्ड और निर्धारित फ़ाइल कार्य प्रबंधक में हैं। स्थानीय सर्वर आवश्यक नहीं है।",
+      "order": "ट्रे या घटक लिंक से खोलें। विंडो खोलने और बंद करने से सर्वर शुरू या बंद नहीं होता। दूरस्थ लॉगिन के लिए स्थानीय सर्वर आवश्यक नहीं है।",
+      "sections": [
+        {
+          "id": "startup",
+          "title": "प्रबंधक सेटिंग",
+          "text": "स्टार्टअप, थीम, भाषा, दूरस्थ खाता, प्रकाशन, क्लिपबोर्ड और निर्धारित फ़ाइल कार्य प्रबंधक में हैं। स्थानीय सर्वर आवश्यक नहीं है। ट्रे या घटक लिंक से खोलें। विंडो खोलने और बंद करने से सर्वर शुरू या बंद नहीं होता। दूरस्थ लॉगिन के लिए स्थानीय सर्वर आवश्यक नहीं है।"
+        },
+        {
+          "id": "exchange-account",
+          "title": "प्रबंधक सेटिंग",
+          "text": "स्टार्टअप, थीम, भाषा, दूरस्थ खाता, प्रकाशन, क्लिपबोर्ड और निर्धारित फ़ाइल कार्य प्रबंधक में हैं। स्थानीय सर्वर आवश्यक नहीं है। ट्रे या घटक लिंक से खोलें। विंडो खोलने और बंद करने से सर्वर शुरू या बंद नहीं होता। दूरस्थ लॉगिन के लिए स्थानीय सर्वर आवश्यक नहीं है।"
+        },
+        {
+          "id": "scheduled",
+          "title": "प्रबंधक सेटिंग",
+          "text": "स्टार्टअप, थीम, भाषा, दूरस्थ खाता, प्रकाशन, क्लिपबोर्ड और निर्धारित फ़ाइल कार्य प्रबंधक में हैं। स्थानीय सर्वर आवश्यक नहीं है। ट्रे या घटक लिंक से खोलें। विंडो खोलने और बंद करने से सर्वर शुरू या बंद नहीं होता। दूरस्थ लॉगिन के लिए स्थानीय सर्वर आवश्यक नहीं है।"
+        },
+        {
+          "id": "help",
+          "title": "प्रबंधक सेटिंग",
+          "text": "स्टार्टअप, थीम, भाषा, दूरस्थ खाता, प्रकाशन, क्लिपबोर्ड और निर्धारित फ़ाइल कार्य प्रबंधक में हैं। स्थानीय सर्वर आवश्यक नहीं है। ट्रे या घटक लिंक से खोलें। विंडो खोलने और बंद करने से सर्वर शुरू या बंद नहीं होता। दूरस्थ लॉगिन के लिए स्थानीय सर्वर आवश्यक नहीं है।"
+        },
+        {
+          "id": "navigation",
+          "title": "प्रबंधक सेटिंग",
+          "text": "लिंक हर स्थापित घटक की एक विंडो सक्रिय करते हैं। प्रत्येक पृष्ठ, समूह, स्क्रॉल और आकार याद रखती है। थीम और भाषा प्रबंधक में हैं; F1 और ? वर्तमान सहायता खोलते हैं।"
+        }
+      ]
+    },
+    "bn": {
+      "title": "ম্যানেজার সেটিংস",
+      "purpose": "চালু হওয়া, থিম, ভাষা, দূরবর্তী অ্যাকাউন্ট, প্রকাশনা, ক্লিপবোর্ড ও নির্ধারিত ফাইল কাজ ম্যানেজারে থাকে। স্থানীয় সার্ভার প্রয়োজন নেই।",
+      "order": "ট্রে বা উপাদানের লিংক থেকে খুলুন। উইন্ডো খোলা বা বন্ধ করা সার্ভার চালু বা বন্ধ করে না। দূরবর্তী প্রবেশে স্থানীয় সার্ভার লাগে না।",
+      "sections": [
+        {
+          "id": "startup",
+          "title": "ম্যানেজার সেটিংস",
+          "text": "চালু হওয়া, থিম, ভাষা, দূরবর্তী অ্যাকাউন্ট, প্রকাশনা, ক্লিপবোর্ড ও নির্ধারিত ফাইল কাজ ম্যানেজারে থাকে। স্থানীয় সার্ভার প্রয়োজন নেই। ট্রে বা উপাদানের লিংক থেকে খুলুন। উইন্ডো খোলা বা বন্ধ করা সার্ভার চালু বা বন্ধ করে না। দূরবর্তী প্রবেশে স্থানীয় সার্ভার লাগে না।"
+        },
+        {
+          "id": "exchange-account",
+          "title": "ম্যানেজার সেটিংস",
+          "text": "চালু হওয়া, থিম, ভাষা, দূরবর্তী অ্যাকাউন্ট, প্রকাশনা, ক্লিপবোর্ড ও নির্ধারিত ফাইল কাজ ম্যানেজারে থাকে। স্থানীয় সার্ভার প্রয়োজন নেই। ট্রে বা উপাদানের লিংক থেকে খুলুন। উইন্ডো খোলা বা বন্ধ করা সার্ভার চালু বা বন্ধ করে না। দূরবর্তী প্রবেশে স্থানীয় সার্ভার লাগে না।"
+        },
+        {
+          "id": "scheduled",
+          "title": "ম্যানেজার সেটিংস",
+          "text": "চালু হওয়া, থিম, ভাষা, দূরবর্তী অ্যাকাউন্ট, প্রকাশনা, ক্লিপবোর্ড ও নির্ধারিত ফাইল কাজ ম্যানেজারে থাকে। স্থানীয় সার্ভার প্রয়োজন নেই। ট্রে বা উপাদানের লিংক থেকে খুলুন। উইন্ডো খোলা বা বন্ধ করা সার্ভার চালু বা বন্ধ করে না। দূরবর্তী প্রবেশে স্থানীয় সার্ভার লাগে না।"
+        },
+        {
+          "id": "help",
+          "title": "ম্যানেজার সেটিংস",
+          "text": "চালু হওয়া, থিম, ভাষা, দূরবর্তী অ্যাকাউন্ট, প্রকাশনা, ক্লিপবোর্ড ও নির্ধারিত ফাইল কাজ ম্যানেজারে থাকে। স্থানীয় সার্ভার প্রয়োজন নেই। ট্রে বা উপাদানের লিংক থেকে খুলুন। উইন্ডো খোলা বা বন্ধ করা সার্ভার চালু বা বন্ধ করে না। দূরবর্তী প্রবেশে স্থানীয় সার্ভার লাগে না।"
+        },
+        {
+          "id": "navigation",
+          "title": "ম্যানেজার সেটিংস",
+          "text": "প্রতি ইনস্টল করা উপাদানের একটি উইন্ডো সক্রিয় হয়। প্রতিটি পৃষ্ঠা, দল, স্ক্রল ও আকার মনে রাখে। থিম ও ভাষা ম্যানেজারে; F1 ও ? বর্তমান সহায়তা খোলে।"
+        }
+      ]
+    },
+    "ur": {
+      "title": "مینیجر کی ترتیبات",
+      "purpose": "آغاز، تھیم، زبان، دور دراز اکاؤنٹ، اشاعت، کلپ بورڈ اور طے شدہ فائل کام مینیجر میں ہیں۔ مقامی سرور ضروری نہیں۔",
+      "order": "ٹرے یا جزو کے لنک سے کھولیں۔ ونڈو کھولنا یا بند کرنا سرور کو چلاتا یا روکتا نہیں۔ دور دراز لاگ ان کے لیے مقامی سرور ضروری نہیں۔",
+      "sections": [
+        {
+          "id": "startup",
+          "title": "مینیجر کی ترتیبات",
+          "text": "آغاز، تھیم، زبان، دور دراز اکاؤنٹ، اشاعت، کلپ بورڈ اور طے شدہ فائل کام مینیجر میں ہیں۔ مقامی سرور ضروری نہیں۔ ٹرے یا جزو کے لنک سے کھولیں۔ ونڈو کھولنا یا بند کرنا سرور کو چلاتا یا روکتا نہیں۔ دور دراز لاگ ان کے لیے مقامی سرور ضروری نہیں۔"
+        },
+        {
+          "id": "exchange-account",
+          "title": "مینیجر کی ترتیبات",
+          "text": "آغاز، تھیم، زبان، دور دراز اکاؤنٹ، اشاعت، کلپ بورڈ اور طے شدہ فائل کام مینیجر میں ہیں۔ مقامی سرور ضروری نہیں۔ ٹرے یا جزو کے لنک سے کھولیں۔ ونڈو کھولنا یا بند کرنا سرور کو چلاتا یا روکتا نہیں۔ دور دراز لاگ ان کے لیے مقامی سرور ضروری نہیں۔"
+        },
+        {
+          "id": "scheduled",
+          "title": "مینیجر کی ترتیبات",
+          "text": "آغاز، تھیم، زبان، دور دراز اکاؤنٹ، اشاعت، کلپ بورڈ اور طے شدہ فائل کام مینیجر میں ہیں۔ مقامی سرور ضروری نہیں۔ ٹرے یا جزو کے لنک سے کھولیں۔ ونڈو کھولنا یا بند کرنا سرور کو چلاتا یا روکتا نہیں۔ دور دراز لاگ ان کے لیے مقامی سرور ضروری نہیں۔"
+        },
+        {
+          "id": "help",
+          "title": "مینیجر کی ترتیبات",
+          "text": "آغاز، تھیم، زبان، دور دراز اکاؤنٹ، اشاعت، کلپ بورڈ اور طے شدہ فائل کام مینیجر میں ہیں۔ مقامی سرور ضروری نہیں۔ ٹرے یا جزو کے لنک سے کھولیں۔ ونڈو کھولنا یا بند کرنا سرور کو چلاتا یا روکتا نہیں۔ دور دراز لاگ ان کے لیے مقامی سرور ضروری نہیں۔"
+        },
+        {
+          "id": "navigation",
+          "title": "مینیجر کی ترتیبات",
+          "text": "ہر نصب جزو کی ایک ونڈو فعال ہوتی ہے۔ ہر ونڈو صفحہ، گروپ، سکرول اور سائز یاد رکھتی ہے۔ تھیم اور زبان مینیجر میں ہیں؛ F1 اور ? موجودہ مدد کھولتے ہیں۔"
+        }
+      ]
+    },
+    "zh": {
+      "title": "管理器设置",
+      "purpose": "启动、主题、语言、远程账户、发布、剪贴板和计划文件操作属于管理器，无需安装本地服务器。",
+      "order": "从托盘或组件链接打开。打开或关闭窗口不会启动或停止服务器。远程登录无需本地服务器。",
+      "sections": [
+        {
+          "id": "startup",
+          "title": "管理器设置",
+          "text": "启动、主题、语言、远程账户、发布、剪贴板和计划文件操作属于管理器，无需安装本地服务器。 从托盘或组件链接打开。打开或关闭窗口不会启动或停止服务器。远程登录无需本地服务器。"
+        },
+        {
+          "id": "exchange-account",
+          "title": "管理器设置",
+          "text": "启动、主题、语言、远程账户、发布、剪贴板和计划文件操作属于管理器，无需安装本地服务器。 从托盘或组件链接打开。打开或关闭窗口不会启动或停止服务器。远程登录无需本地服务器。"
+        },
+        {
+          "id": "scheduled",
+          "title": "管理器设置",
+          "text": "启动、主题、语言、远程账户、发布、剪贴板和计划文件操作属于管理器，无需安装本地服务器。 从托盘或组件链接打开。打开或关闭窗口不会启动或停止服务器。远程登录无需本地服务器。"
+        },
+        {
+          "id": "help",
+          "title": "管理器设置",
+          "text": "启动、主题、语言、远程账户、发布、剪贴板和计划文件操作属于管理器，无需安装本地服务器。 从托盘或组件链接打开。打开或关闭窗口不会启动或停止服务器。远程登录无需本地服务器。"
+        },
+        {
+          "id": "navigation",
+          "title": "管理器设置",
+          "text": "链接为每个已安装组件激活一个窗口。各窗口分别记住页面、分组、滚动和大小。主题和语言位于管理器中；F1 和 ? 打开当前页面帮助。"
+        }
+      ]
+    }
+  },
+  "sftp-settings": {
+    "en": {
+      "title": "SFTP sharing settings",
+      "purpose": "Configure the SFTP listener, connection limit, LAN-only policy and interactive or Windows-service hosting here. These settings affect local folder sharing, not the exchange-server listener or your remote account.",
+      "order": "Open SFTP sharing settings from the tray or the link in Manager settings. If sharing is disabled, enable it explicitly through the existing confirmation and administrator prompt. Opening this window never enables or starts sharing. Type a port and choose Apply; switching windows preserves the draft. On close, Yes applies it, No discards it, Cancel keeps editing. A failed apply keeps the draft. Changing a live port requires new connection codes and router forwarding.",
+      "sections": [
+        {
+          "id": "network",
+          "title": "SFTP sharing settings",
+          "text": "Configure the SFTP listener, connection limit, LAN-only policy and interactive or Windows-service hosting here. These settings affect local folder sharing, not the exchange-server listener or your remote account. Open SFTP sharing settings from the tray or the link in Manager settings. If sharing is disabled, enable it explicitly through the existing confirmation and administrator prompt. Opening this window never enables or starts sharing. Type a port and choose Apply; switching windows preserves the draft. On close, Yes applies it, No discards it, Cancel keeps editing. A failed apply keeps the draft. Changing a live port requires new connection codes and router forwarding."
+        },
+        {
+          "id": "hosting",
+          "title": "SFTP sharing settings",
+          "text": "Configure the SFTP listener, connection limit, LAN-only policy and interactive or Windows-service hosting here. These settings affect local folder sharing, not the exchange-server listener or your remote account. Open SFTP sharing settings from the tray or the link in Manager settings. If sharing is disabled, enable it explicitly through the existing confirmation and administrator prompt. Opening this window never enables or starts sharing. Type a port and choose Apply; switching windows preserves the draft. On close, Yes applies it, No discards it, Cancel keeps editing. A failed apply keeps the draft. Changing a live port requires new connection codes and router forwarding."
+        },
+        {
+          "id": "navigation",
+          "title": "Manager settings",
+          "text": "The links at the lower left open or activate one window per destination. They follow installed payloads, not whether a server is running. Each window remembers its own page, group folds, scroll and size. Common theme and language editors appear only in Manager settings. F1 and ? open the current page help."
+        }
+      ]
+    },
+    "ru": {
+      "title": "Настройки общего доступа SFTP",
+      "purpose": "Здесь находятся порт SFTP, ограничение подключений, режим только локальной сети и работа в сеансе пользователя или службой Windows. Они относятся к общему доступу к папкам и не меняют порт сервера обмена или удалённую учётную запись.",
+      "order": "Откройте настройки общего доступа SFTP из трея или по ссылке в настройках менеджера. Выключенные функции включаются только явным подтверждением с запросом прав администратора. Открытие окна ничего не включает и не запускает. Введите порт и нажмите кнопку применения; переход в другое окно сохраняет черновик. При закрытии Да применяет порт, Нет отбрасывает черновик, Отмена продолжает редактирование. При ошибке черновик остаётся. После смены рабочего порта обновите выданные коды и проброс на роутере.",
+      "sections": [
+        {
+          "id": "network",
+          "title": "Настройки общего доступа SFTP",
+          "text": "Здесь находятся порт SFTP, ограничение подключений, режим только локальной сети и работа в сеансе пользователя или службой Windows. Они относятся к общему доступу к папкам и не меняют порт сервера обмена или удалённую учётную запись. Откройте настройки общего доступа SFTP из трея или по ссылке в настройках менеджера. Выключенные функции включаются только явным подтверждением с запросом прав администратора. Открытие окна ничего не включает и не запускает. Введите порт и нажмите кнопку применения; переход в другое окно сохраняет черновик. При закрытии Да применяет порт, Нет отбрасывает черновик, Отмена продолжает редактирование. При ошибке черновик остаётся. После смены рабочего порта обновите выданные коды и проброс на роутере."
+        },
+        {
+          "id": "hosting",
+          "title": "Настройки общего доступа SFTP",
+          "text": "Здесь находятся порт SFTP, ограничение подключений, режим только локальной сети и работа в сеансе пользователя или службой Windows. Они относятся к общему доступу к папкам и не меняют порт сервера обмена или удалённую учётную запись. Откройте настройки общего доступа SFTP из трея или по ссылке в настройках менеджера. Выключенные функции включаются только явным подтверждением с запросом прав администратора. Открытие окна ничего не включает и не запускает. Введите порт и нажмите кнопку применения; переход в другое окно сохраняет черновик. При закрытии Да применяет порт, Нет отбрасывает черновик, Отмена продолжает редактирование. При ошибке черновик остаётся. После смены рабочего порта обновите выданные коды и проброс на роутере."
+        },
+        {
+          "id": "navigation",
+          "title": "Настройки менеджера",
+          "text": "Ссылки слева внизу открывают или активируют по одному окну каждого назначения. Доступность зависит от установленных компонентов, а не от запуска сервера. Каждое окно помнит страницу, свёрнутые группы, прокрутку и размер. Тема и язык меняются только в настройках менеджера. F1 и ? открывают справку текущей страницы."
+        }
+      ]
+    },
+    "uk": {
+      "title": "Налаштування спільного доступу SFTP",
+      "purpose": "Тут знаходяться порт SFTP, обмеження підключень, режим лише локальної мережі та робота в сеансі користувача або службою Windows. Вони стосуються спільного доступу до папок і не змінюють порт сервера обміну чи віддалений обліковий запис.",
+      "order": "Відкрийте налаштування SFTP з трея або налаштувань менеджера. Вимкнені функції вмикаються лише явним підтвердженням із запитом прав адміністратора. Відкриття вікна нічого не вмикає й не запускає. Введіть порт і застосуйте; перехід між вікнами зберігає чернетку. Під час закриття Так застосовує, Ні відкидає, Скасувати продовжує редагування. Помилка зберігає чернетку. Після зміни робочого порту оновіть коди й перенаправлення на роутері.",
+      "sections": [
+        {
+          "id": "network",
+          "title": "Налаштування спільного доступу SFTP",
+          "text": "Тут знаходяться порт SFTP, обмеження підключень, режим лише локальної мережі та робота в сеансі користувача або службою Windows. Вони стосуються спільного доступу до папок і не змінюють порт сервера обміну чи віддалений обліковий запис. Відкрийте налаштування SFTP з трея або налаштувань менеджера. Вимкнені функції вмикаються лише явним підтвердженням із запитом прав адміністратора. Відкриття вікна нічого не вмикає й не запускає. Введіть порт і застосуйте; перехід між вікнами зберігає чернетку. Під час закриття Так застосовує, Ні відкидає, Скасувати продовжує редагування. Помилка зберігає чернетку. Після зміни робочого порту оновіть коди й перенаправлення на роутері."
+        },
+        {
+          "id": "hosting",
+          "title": "Налаштування спільного доступу SFTP",
+          "text": "Тут знаходяться порт SFTP, обмеження підключень, режим лише локальної мережі та робота в сеансі користувача або службою Windows. Вони стосуються спільного доступу до папок і не змінюють порт сервера обміну чи віддалений обліковий запис. Відкрийте налаштування SFTP з трея або налаштувань менеджера. Вимкнені функції вмикаються лише явним підтвердженням із запитом прав адміністратора. Відкриття вікна нічого не вмикає й не запускає. Введіть порт і застосуйте; перехід між вікнами зберігає чернетку. Під час закриття Так застосовує, Ні відкидає, Скасувати продовжує редагування. Помилка зберігає чернетку. Після зміни робочого порту оновіть коди й перенаправлення на роутері."
+        },
+        {
+          "id": "navigation",
+          "title": "Налаштування менеджера",
+          "text": "Посилання зліва внизу відкривають або активують по одному вікну кожного призначення. Доступність залежить від установлених компонентів, а не від запуску сервера. Кожне вікно пам’ятає сторінку, групи, прокрутку й розмір. Тема й мова змінюються лише в менеджері. F1 і ? відкривають довідку поточної сторінки."
+        }
+      ]
+    },
+    "de": {
+      "title": "SFTP-Freigabeeinstellungen",
+      "purpose": "SFTP: Port, Verbindungslimit, LAN-Richtlinie und Betrieb als Windows-Dienst. Austauschserver: Adresse, TLS, Konten, Geräte, Einladungen, Dienst, Protokolle und Fernverwaltung.",
+      "order": "Der SFTP-Port wird erst mit Anwenden übernommen. Ein Fensterwechsel behält den Entwurf. Beim Schließen: Ja anwenden, Nein verwerfen, Abbrechen weiter bearbeiten. Fehler behalten den Entwurf. Nach Portänderungen Codes und Routerregel erneuern.",
+      "sections": [
+        {
+          "id": "network",
+          "title": "SFTP-Freigabeeinstellungen",
+          "text": "SFTP: Port, Verbindungslimit, LAN-Richtlinie und Betrieb als Windows-Dienst. Austauschserver: Adresse, TLS, Konten, Geräte, Einladungen, Dienst, Protokolle und Fernverwaltung. Der SFTP-Port wird erst mit Anwenden übernommen. Ein Fensterwechsel behält den Entwurf. Beim Schließen: Ja anwenden, Nein verwerfen, Abbrechen weiter bearbeiten. Fehler behalten den Entwurf. Nach Portänderungen Codes und Routerregel erneuern."
+        },
+        {
+          "id": "hosting",
+          "title": "SFTP-Freigabeeinstellungen",
+          "text": "SFTP: Port, Verbindungslimit, LAN-Richtlinie und Betrieb als Windows-Dienst. Austauschserver: Adresse, TLS, Konten, Geräte, Einladungen, Dienst, Protokolle und Fernverwaltung. Der SFTP-Port wird erst mit Anwenden übernommen. Ein Fensterwechsel behält den Entwurf. Beim Schließen: Ja anwenden, Nein verwerfen, Abbrechen weiter bearbeiten. Fehler behalten den Entwurf. Nach Portänderungen Codes und Routerregel erneuern."
+        },
+        {
+          "id": "navigation",
+          "title": "Managereinstellungen",
+          "text": "Die Links aktivieren jeweils ein Fenster pro installiertem Bestandteil. Jedes merkt sich Seite, Gruppen, Bildlauf und Größe. Design und Sprache ändern Sie im Manager; F1 und ? erklären die aktuelle Seite."
+        }
+      ]
+    },
+    "it": {
+      "title": "Impostazioni condivisione SFTP",
+      "purpose": "SFTP: porta, limite connessioni, rete locale e servizio Windows. Server di scambio: indirizzo, TLS, account, dispositivi, inviti, servizio, registri e amministrazione remota.",
+      "order": "La porta SFTP cambia solo con Applica. Cambiare finestra conserva la bozza. Alla chiusura: Sì applica, No scarta, Annulla continua. Gli errori conservano la bozza. Dopo il cambio aggiornare codici e inoltro sul router.",
+      "sections": [
+        {
+          "id": "network",
+          "title": "Impostazioni condivisione SFTP",
+          "text": "SFTP: porta, limite connessioni, rete locale e servizio Windows. Server di scambio: indirizzo, TLS, account, dispositivi, inviti, servizio, registri e amministrazione remota. La porta SFTP cambia solo con Applica. Cambiare finestra conserva la bozza. Alla chiusura: Sì applica, No scarta, Annulla continua. Gli errori conservano la bozza. Dopo il cambio aggiornare codici e inoltro sul router."
+        },
+        {
+          "id": "hosting",
+          "title": "Impostazioni condivisione SFTP",
+          "text": "SFTP: porta, limite connessioni, rete locale e servizio Windows. Server di scambio: indirizzo, TLS, account, dispositivi, inviti, servizio, registri e amministrazione remota. La porta SFTP cambia solo con Applica. Cambiare finestra conserva la bozza. Alla chiusura: Sì applica, No scarta, Annulla continua. Gli errori conservano la bozza. Dopo il cambio aggiornare codici e inoltro sul router."
+        },
+        {
+          "id": "navigation",
+          "title": "Impostazioni del gestore",
+          "text": "I collegamenti attivano una finestra per componente installato. Ogni finestra ricorda pagina, gruppi, scorrimento e dimensioni. Tema e lingua sono nel gestore; F1 e ? aprono la guida corrente."
+        }
+      ]
+    },
+    "es": {
+      "title": "Ajustes de uso compartido SFTP",
+      "purpose": "SFTP: puerto, límite de conexiones, red local y servicio Windows. Servidor de intercambio: dirección, TLS, cuentas, dispositivos, invitaciones, servicio, registros y administración remota.",
+      "order": "El puerto SFTP cambia con Aplicar. Cambiar de ventana conserva el borrador. Al cerrar: Sí aplica, No descarta, Cancelar continúa. Los errores conservan el borrador. Actualice códigos y regla del router tras cambiar el puerto.",
+      "sections": [
+        {
+          "id": "network",
+          "title": "Ajustes de uso compartido SFTP",
+          "text": "SFTP: puerto, límite de conexiones, red local y servicio Windows. Servidor de intercambio: dirección, TLS, cuentas, dispositivos, invitaciones, servicio, registros y administración remota. El puerto SFTP cambia con Aplicar. Cambiar de ventana conserva el borrador. Al cerrar: Sí aplica, No descarta, Cancelar continúa. Los errores conservan el borrador. Actualice códigos y regla del router tras cambiar el puerto."
+        },
+        {
+          "id": "hosting",
+          "title": "Ajustes de uso compartido SFTP",
+          "text": "SFTP: puerto, límite de conexiones, red local y servicio Windows. Servidor de intercambio: dirección, TLS, cuentas, dispositivos, invitaciones, servicio, registros y administración remota. El puerto SFTP cambia con Aplicar. Cambiar de ventana conserva el borrador. Al cerrar: Sí aplica, No descarta, Cancelar continúa. Los errores conservan el borrador. Actualice códigos y regla del router tras cambiar el puerto."
+        },
+        {
+          "id": "navigation",
+          "title": "Ajustes del gestor",
+          "text": "Los enlaces activan una ventana por componente instalado. Cada una recuerda página, grupos, desplazamiento y tamaño. Tema e idioma están en el gestor; F1 y ? abren la ayuda actual."
+        }
+      ]
+    },
+    "fr": {
+      "title": "Paramètres de partage SFTP",
+      "purpose": "SFTP : port, limite de connexions, réseau local et service Windows. Serveur d’échange : adresse, TLS, comptes, appareils, invitations, service, journaux et administration distante.",
+      "order": "Le port SFTP change avec Appliquer. Changer de fenêtre conserve le brouillon. À la fermeture : Oui applique, Non abandonne, Annuler continue. Une erreur conserve le brouillon. Actualisez les codes et la règle du routeur après un changement.",
+      "sections": [
+        {
+          "id": "network",
+          "title": "Paramètres de partage SFTP",
+          "text": "SFTP : port, limite de connexions, réseau local et service Windows. Serveur d’échange : adresse, TLS, comptes, appareils, invitations, service, journaux et administration distante. Le port SFTP change avec Appliquer. Changer de fenêtre conserve le brouillon. À la fermeture : Oui applique, Non abandonne, Annuler continue. Une erreur conserve le brouillon. Actualisez les codes et la règle du routeur après un changement."
+        },
+        {
+          "id": "hosting",
+          "title": "Paramètres de partage SFTP",
+          "text": "SFTP : port, limite de connexions, réseau local et service Windows. Serveur d’échange : adresse, TLS, comptes, appareils, invitations, service, journaux et administration distante. Le port SFTP change avec Appliquer. Changer de fenêtre conserve le brouillon. À la fermeture : Oui applique, Non abandonne, Annuler continue. Une erreur conserve le brouillon. Actualisez les codes et la règle du routeur après un changement."
+        },
+        {
+          "id": "navigation",
+          "title": "Paramètres du gestionnaire",
+          "text": "Les liens activent une fenêtre par composant installé. Chacune mémorise page, groupes, défilement et taille. Thème et langue sont dans le gestionnaire ; F1 et ? ouvrent l’aide courante."
+        }
+      ]
+    },
+    "pt": {
+      "title": "Definições de partilha SFTP",
+      "purpose": "SFTP: porta, limite de ligações, rede local e serviço Windows. Servidor de troca: endereço, TLS, contas, dispositivos, convites, serviço, registos e administração remota.",
+      "order": "A porta SFTP muda com Aplicar. Mudar de janela mantém o rascunho. Ao fechar: Sim aplica, Não descarta, Cancelar continua. Os erros mantêm o rascunho. Atualize códigos e regra do router após mudar a porta.",
+      "sections": [
+        {
+          "id": "network",
+          "title": "Definições de partilha SFTP",
+          "text": "SFTP: porta, limite de ligações, rede local e serviço Windows. Servidor de troca: endereço, TLS, contas, dispositivos, convites, serviço, registos e administração remota. A porta SFTP muda com Aplicar. Mudar de janela mantém o rascunho. Ao fechar: Sim aplica, Não descarta, Cancelar continua. Os erros mantêm o rascunho. Atualize códigos e regra do router após mudar a porta."
+        },
+        {
+          "id": "hosting",
+          "title": "Definições de partilha SFTP",
+          "text": "SFTP: porta, limite de ligações, rede local e serviço Windows. Servidor de troca: endereço, TLS, contas, dispositivos, convites, serviço, registos e administração remota. A porta SFTP muda com Aplicar. Mudar de janela mantém o rascunho. Ao fechar: Sim aplica, Não descarta, Cancelar continua. Os erros mantêm o rascunho. Atualize códigos e regra do router após mudar a porta."
+        },
+        {
+          "id": "navigation",
+          "title": "Definições do gestor",
+          "text": "As ligações ativam uma janela por componente instalado. Cada uma guarda página, grupos, deslocamento e tamanho. Tema e idioma estão no gestor; F1 e ? abrem a ajuda atual."
+        }
+      ]
+    },
+    "ar": {
+      "title": "إعدادات مشاركة SFTP",
+      "purpose": "SFTP: المنفذ وحد الاتصالات والشبكة المحلية وخدمة Windows. خادم التبادل: العنوان وTLS والحسابات والأجهزة والدعوات والخدمة والسجلات والإدارة البعيدة.",
+      "order": "يتغير منفذ SFTP بزر التطبيق. الانتقال بين النوافذ يحفظ المسودة. عند الإغلاق: نعم للتطبيق، لا للتجاهل، إلغاء للمتابعة. الخطأ يحفظ المسودة. حدّث الرموز وقاعدة الموجّه بعد تغيير المنفذ.",
+      "sections": [
+        {
+          "id": "network",
+          "title": "إعدادات مشاركة SFTP",
+          "text": "SFTP: المنفذ وحد الاتصالات والشبكة المحلية وخدمة Windows. خادم التبادل: العنوان وTLS والحسابات والأجهزة والدعوات والخدمة والسجلات والإدارة البعيدة. يتغير منفذ SFTP بزر التطبيق. الانتقال بين النوافذ يحفظ المسودة. عند الإغلاق: نعم للتطبيق، لا للتجاهل، إلغاء للمتابعة. الخطأ يحفظ المسودة. حدّث الرموز وقاعدة الموجّه بعد تغيير المنفذ."
+        },
+        {
+          "id": "hosting",
+          "title": "إعدادات مشاركة SFTP",
+          "text": "SFTP: المنفذ وحد الاتصالات والشبكة المحلية وخدمة Windows. خادم التبادل: العنوان وTLS والحسابات والأجهزة والدعوات والخدمة والسجلات والإدارة البعيدة. يتغير منفذ SFTP بزر التطبيق. الانتقال بين النوافذ يحفظ المسودة. عند الإغلاق: نعم للتطبيق، لا للتجاهل، إلغاء للمتابعة. الخطأ يحفظ المسودة. حدّث الرموز وقاعدة الموجّه بعد تغيير المنفذ."
+        },
+        {
+          "id": "navigation",
+          "title": "إعدادات المدير",
+          "text": "تفتح الروابط نافذة واحدة لكل مكوّن مثبّت. تتذكر كل نافذة الصفحة والمجموعات والتمرير والحجم. المظهر واللغة في المدير؛ F1 و? يفتحان مساعدة الصفحة الحالية."
+        }
+      ]
+    },
+    "hi": {
+      "title": "SFTP साझाकरण सेटिंग",
+      "purpose": "SFTP: पोर्ट, कनेक्शन सीमा, स्थानीय नेटवर्क और Windows सेवा। एक्सचेंज सर्वर: पता, TLS, खाते, डिवाइस, आमंत्रण, सेवा, लॉग और दूरस्थ प्रशासन।",
+      "order": "SFTP पोर्ट लागू करें से बदलता है। विंडो बदलने पर ड्राफ्ट रहता है। बंद करते समय हाँ लागू करता है, नहीं छोड़ता है, रद्द करें जारी रखता है। त्रुटि पर ड्राफ्ट रहता है। पोर्ट बदलने के बाद कोड और राउटर नियम अपडेट करें।",
+      "sections": [
+        {
+          "id": "network",
+          "title": "SFTP साझाकरण सेटिंग",
+          "text": "SFTP: पोर्ट, कनेक्शन सीमा, स्थानीय नेटवर्क और Windows सेवा। एक्सचेंज सर्वर: पता, TLS, खाते, डिवाइस, आमंत्रण, सेवा, लॉग और दूरस्थ प्रशासन। SFTP पोर्ट लागू करें से बदलता है। विंडो बदलने पर ड्राफ्ट रहता है। बंद करते समय हाँ लागू करता है, नहीं छोड़ता है, रद्द करें जारी रखता है। त्रुटि पर ड्राफ्ट रहता है। पोर्ट बदलने के बाद कोड और राउटर नियम अपडेट करें।"
+        },
+        {
+          "id": "hosting",
+          "title": "SFTP साझाकरण सेटिंग",
+          "text": "SFTP: पोर्ट, कनेक्शन सीमा, स्थानीय नेटवर्क और Windows सेवा। एक्सचेंज सर्वर: पता, TLS, खाते, डिवाइस, आमंत्रण, सेवा, लॉग और दूरस्थ प्रशासन। SFTP पोर्ट लागू करें से बदलता है। विंडो बदलने पर ड्राफ्ट रहता है। बंद करते समय हाँ लागू करता है, नहीं छोड़ता है, रद्द करें जारी रखता है। त्रुटि पर ड्राफ्ट रहता है। पोर्ट बदलने के बाद कोड और राउटर नियम अपडेट करें।"
+        },
+        {
+          "id": "navigation",
+          "title": "प्रबंधक सेटिंग",
+          "text": "लिंक हर स्थापित घटक की एक विंडो सक्रिय करते हैं। प्रत्येक पृष्ठ, समूह, स्क्रॉल और आकार याद रखती है। थीम और भाषा प्रबंधक में हैं; F1 और ? वर्तमान सहायता खोलते हैं।"
+        }
+      ]
+    },
+    "bn": {
+      "title": "SFTP শেয়ারিং সেটিংস",
+      "purpose": "SFTP: পোর্ট, সংযোগ সীমা, স্থানীয় নেটওয়ার্ক ও Windows পরিষেবা। এক্সচেঞ্জ সার্ভার: ঠিকানা, TLS, অ্যাকাউন্ট, ডিভাইস, আমন্ত্রণ, পরিষেবা, লগ ও দূরবর্তী প্রশাসন।",
+      "order": "প্রয়োগ করুন দিয়ে SFTP পোর্ট বদলায়। উইন্ডো বদলালে খসড়া থাকে। বন্ধে হ্যাঁ প্রয়োগ করে, না ছেড়ে দেয়, বাতিল করুন চালিয়ে যায়। ত্রুটিতে খসড়া থাকে। পোর্ট বদলে কোড ও রাউটার নিয়ম আপডেট করুন।",
+      "sections": [
+        {
+          "id": "network",
+          "title": "SFTP শেয়ারিং সেটিংস",
+          "text": "SFTP: পোর্ট, সংযোগ সীমা, স্থানীয় নেটওয়ার্ক ও Windows পরিষেবা। এক্সচেঞ্জ সার্ভার: ঠিকানা, TLS, অ্যাকাউন্ট, ডিভাইস, আমন্ত্রণ, পরিষেবা, লগ ও দূরবর্তী প্রশাসন। প্রয়োগ করুন দিয়ে SFTP পোর্ট বদলায়। উইন্ডো বদলালে খসড়া থাকে। বন্ধে হ্যাঁ প্রয়োগ করে, না ছেড়ে দেয়, বাতিল করুন চালিয়ে যায়। ত্রুটিতে খসড়া থাকে। পোর্ট বদলে কোড ও রাউটার নিয়ম আপডেট করুন।"
+        },
+        {
+          "id": "hosting",
+          "title": "SFTP শেয়ারিং সেটিংস",
+          "text": "SFTP: পোর্ট, সংযোগ সীমা, স্থানীয় নেটওয়ার্ক ও Windows পরিষেবা। এক্সচেঞ্জ সার্ভার: ঠিকানা, TLS, অ্যাকাউন্ট, ডিভাইস, আমন্ত্রণ, পরিষেবা, লগ ও দূরবর্তী প্রশাসন। প্রয়োগ করুন দিয়ে SFTP পোর্ট বদলায়। উইন্ডো বদলালে খসড়া থাকে। বন্ধে হ্যাঁ প্রয়োগ করে, না ছেড়ে দেয়, বাতিল করুন চালিয়ে যায়। ত্রুটিতে খসড়া থাকে। পোর্ট বদলে কোড ও রাউটার নিয়ম আপডেট করুন।"
+        },
+        {
+          "id": "navigation",
+          "title": "ম্যানেজার সেটিংস",
+          "text": "প্রতি ইনস্টল করা উপাদানের একটি উইন্ডো সক্রিয় হয়। প্রতিটি পৃষ্ঠা, দল, স্ক্রল ও আকার মনে রাখে। থিম ও ভাষা ম্যানেজারে; F1 ও ? বর্তমান সহায়তা খোলে।"
+        }
+      ]
+    },
+    "ur": {
+      "title": "SFTP اشتراک کی ترتیبات",
+      "purpose": "SFTP: پورٹ، کنکشن حد، مقامی نیٹ ورک اور Windows سروس۔ ایکسچینج سرور: پتہ، TLS، اکاؤنٹس، آلات، دعوتیں، سروس، لاگ اور دور دراز انتظام۔",
+      "order": "SFTP پورٹ لاگو کریں سے بدلتا ہے۔ ونڈو بدلنے پر مسودہ رہتا ہے۔ بند کرتے وقت ہاں لاگو کرتا ہے، نہیں چھوڑتا ہے، منسوخ جاری رکھتا ہے۔ خرابی پر مسودہ رہتا ہے۔ پورٹ بدلنے کے بعد کوڈ اور راؤٹر قاعدہ اپ ڈیٹ کریں۔",
+      "sections": [
+        {
+          "id": "network",
+          "title": "SFTP اشتراک کی ترتیبات",
+          "text": "SFTP: پورٹ، کنکشن حد، مقامی نیٹ ورک اور Windows سروس۔ ایکسچینج سرور: پتہ، TLS، اکاؤنٹس، آلات، دعوتیں، سروس، لاگ اور دور دراز انتظام۔ SFTP پورٹ لاگو کریں سے بدلتا ہے۔ ونڈو بدلنے پر مسودہ رہتا ہے۔ بند کرتے وقت ہاں لاگو کرتا ہے، نہیں چھوڑتا ہے، منسوخ جاری رکھتا ہے۔ خرابی پر مسودہ رہتا ہے۔ پورٹ بدلنے کے بعد کوڈ اور راؤٹر قاعدہ اپ ڈیٹ کریں۔"
+        },
+        {
+          "id": "hosting",
+          "title": "SFTP اشتراک کی ترتیبات",
+          "text": "SFTP: پورٹ، کنکشن حد، مقامی نیٹ ورک اور Windows سروس۔ ایکسچینج سرور: پتہ، TLS، اکاؤنٹس، آلات، دعوتیں، سروس، لاگ اور دور دراز انتظام۔ SFTP پورٹ لاگو کریں سے بدلتا ہے۔ ونڈو بدلنے پر مسودہ رہتا ہے۔ بند کرتے وقت ہاں لاگو کرتا ہے، نہیں چھوڑتا ہے، منسوخ جاری رکھتا ہے۔ خرابی پر مسودہ رہتا ہے۔ پورٹ بدلنے کے بعد کوڈ اور راؤٹر قاعدہ اپ ڈیٹ کریں۔"
+        },
+        {
+          "id": "navigation",
+          "title": "مینیجر کی ترتیبات",
+          "text": "ہر نصب جزو کی ایک ونڈو فعال ہوتی ہے۔ ہر ونڈو صفحہ، گروپ، سکرول اور سائز یاد رکھتی ہے۔ تھیم اور زبان مینیجر میں ہیں؛ F1 اور ? موجودہ مدد کھولتے ہیں۔"
+        }
+      ]
+    },
+    "zh": {
+      "title": "SFTP 共享设置",
+      "purpose": "SFTP：端口、连接数限制、仅局域网策略和 Windows 服务。交换服务器：地址、TLS、账户、设备、邀请、服务、日志和远程管理。",
+      "order": "SFTP 端口通过应用按钮更改。切换窗口保留草稿。关闭时：是应用，否放弃，取消继续编辑。出错时保留草稿。更改端口后更新连接代码和路由器转发规则。",
+      "sections": [
+        {
+          "id": "network",
+          "title": "SFTP 共享设置",
+          "text": "SFTP：端口、连接数限制、仅局域网策略和 Windows 服务。交换服务器：地址、TLS、账户、设备、邀请、服务、日志和远程管理。 SFTP 端口通过应用按钮更改。切换窗口保留草稿。关闭时：是应用，否放弃，取消继续编辑。出错时保留草稿。更改端口后更新连接代码和路由器转发规则。"
+        },
+        {
+          "id": "hosting",
+          "title": "SFTP 共享设置",
+          "text": "SFTP：端口、连接数限制、仅局域网策略和 Windows 服务。交换服务器：地址、TLS、账户、设备、邀请、服务、日志和远程管理。 SFTP 端口通过应用按钮更改。切换窗口保留草稿。关闭时：是应用，否放弃，取消继续编辑。出错时保留草稿。更改端口后更新连接代码和路由器转发规则。"
+        },
+        {
+          "id": "navigation",
+          "title": "管理器设置",
+          "text": "链接为每个已安装组件激活一个窗口。各窗口分别记住页面、分组、滚动和大小。主题和语言位于管理器中；F1 和 ? 打开当前页面帮助。"
+        }
+      ]
+    }
+  },
+  "exchange-server-settings": {
+    "en": {
+      "title": "Exchange server settings",
+      "purpose": "Administer the exchange server installed on this PC: listener and public endpoint, TLS certificate, accounts, devices and invitations, service operation, keep-awake, log retention, remote administration and audit. A remote client signs in from Manager settings instead.",
+      "order": "Open the local server entry in the tray, the server wizard handover, or the link from another settings window. Check server identity and state before acting. Apply each edited group explicitly. Start, stop, service maintenance and certificate changes remain separate commands with their existing confirmations. Opening or closing the window starts and stops nothing.",
+      "sections": [
+        {
+          "id": "exchange",
+          "title": "Exchange server settings",
+          "text": "Administer the exchange server installed on this PC: listener and public endpoint, TLS certificate, accounts, devices and invitations, service operation, keep-awake, log retention, remote administration and audit. A remote client signs in from Manager settings instead. Open the local server entry in the tray, the server wizard handover, or the link from another settings window. Check server identity and state before acting. Apply each edited group explicitly. Start, stop, service maintenance and certificate changes remain separate commands with their existing confirmations. Opening or closing the window starts and stops nothing."
+        },
+        {
+          "id": "navigation",
+          "title": "Manager settings",
+          "text": "The links at the lower left open or activate one window per destination. They follow installed payloads, not whether a server is running. Each window remembers its own page, group folds, scroll and size. Common theme and language editors appear only in Manager settings. F1 and ? open the current page help."
+        }
+      ]
+    },
+    "ru": {
+      "title": "Настройки сервера обмена",
+      "purpose": "Здесь управляют сервером обмена, установленным на этом ПК: портом и внешним адресом, сертификатом TLS, учётными записями, устройствами и приглашениями, службой, запретом сна, хранением журналов, удалённым администрированием и аудитом. Вход клиента на удалённый сервер находится в настройках менеджера.",
+      "order": "Откройте сервер из трея, завершения мастера настройки или по ссылке из другого окна. Сначала проверьте сервер и его состояние. Применяйте изменённые группы отдельными кнопками. Запуск, остановка, обслуживание службы и смена сертификата сохраняют свои подтверждения. Открытие и закрытие настроек не запускает и не останавливает сервер.",
+      "sections": [
+        {
+          "id": "exchange",
+          "title": "Настройки сервера обмена",
+          "text": "Здесь управляют сервером обмена, установленным на этом ПК: портом и внешним адресом, сертификатом TLS, учётными записями, устройствами и приглашениями, службой, запретом сна, хранением журналов, удалённым администрированием и аудитом. Вход клиента на удалённый сервер находится в настройках менеджера. Откройте сервер из трея, завершения мастера настройки или по ссылке из другого окна. Сначала проверьте сервер и его состояние. Применяйте изменённые группы отдельными кнопками. Запуск, остановка, обслуживание службы и смена сертификата сохраняют свои подтверждения. Открытие и закрытие настроек не запускает и не останавливает сервер."
+        },
+        {
+          "id": "navigation",
+          "title": "Настройки менеджера",
+          "text": "Ссылки слева внизу открывают или активируют по одному окну каждого назначения. Доступность зависит от установленных компонентов, а не от запуска сервера. Каждое окно помнит страницу, свёрнутые группы, прокрутку и размер. Тема и язык меняются только в настройках менеджера. F1 и ? открывают справку текущей страницы."
+        }
+      ]
+    },
+    "uk": {
+      "title": "Налаштування сервера обміну",
+      "purpose": "Тут керують сервером обміну на цьому ПК: портом і зовнішньою адресою, сертифікатом TLS, обліковими записами, пристроями та запрошеннями, службою, забороною сну, журналами, віддаленим адмініструванням і аудитом. Вхід клієнта на віддалений сервер знаходиться в налаштуваннях менеджера.",
+      "order": "Відкрийте сервер із трея, завершення майстра або іншого вікна налаштувань. Спочатку перевірте сервер і його стан. Застосовуйте змінені групи окремими кнопками. Запуск, зупинка, обслуговування служби та зміна сертифіката зберігають свої підтвердження. Відкриття й закриття налаштувань не запускає й не зупиняє сервер.",
+      "sections": [
+        {
+          "id": "exchange",
+          "title": "Налаштування сервера обміну",
+          "text": "Тут керують сервером обміну на цьому ПК: портом і зовнішньою адресою, сертифікатом TLS, обліковими записами, пристроями та запрошеннями, службою, забороною сну, журналами, віддаленим адмініструванням і аудитом. Вхід клієнта на віддалений сервер знаходиться в налаштуваннях менеджера. Відкрийте сервер із трея, завершення майстра або іншого вікна налаштувань. Спочатку перевірте сервер і його стан. Застосовуйте змінені групи окремими кнопками. Запуск, зупинка, обслуговування служби та зміна сертифіката зберігають свої підтвердження. Відкриття й закриття налаштувань не запускає й не зупиняє сервер."
+        },
+        {
+          "id": "navigation",
+          "title": "Налаштування менеджера",
+          "text": "Посилання зліва внизу відкривають або активують по одному вікну кожного призначення. Доступність залежить від установлених компонентів, а не від запуску сервера. Кожне вікно пам’ятає сторінку, групи, прокрутку й розмір. Тема й мова змінюються лише в менеджері. F1 і ? відкривають довідку поточної сторінки."
+        }
+      ]
+    },
+    "de": {
+      "title": "Einstellungen des Austauschservers",
+      "purpose": "SFTP: Port, Verbindungslimit, LAN-Richtlinie und Betrieb als Windows-Dienst. Austauschserver: Adresse, TLS, Konten, Geräte, Einladungen, Dienst, Protokolle und Fernverwaltung.",
+      "order": "Öffnen Sie die Einstellungen über das Tray oder die Komponentenlinks. Öffnen und Schließen starten oder stoppen keinen Server. Ein fehlender lokaler Server sperrt die entfernte Anmeldung nicht.",
+      "sections": [
+        {
+          "id": "exchange",
+          "title": "Einstellungen des Austauschservers",
+          "text": "SFTP: Port, Verbindungslimit, LAN-Richtlinie und Betrieb als Windows-Dienst. Austauschserver: Adresse, TLS, Konten, Geräte, Einladungen, Dienst, Protokolle und Fernverwaltung. Öffnen Sie die Einstellungen über das Tray oder die Komponentenlinks. Öffnen und Schließen starten oder stoppen keinen Server. Ein fehlender lokaler Server sperrt die entfernte Anmeldung nicht."
+        },
+        {
+          "id": "navigation",
+          "title": "Managereinstellungen",
+          "text": "Die Links aktivieren jeweils ein Fenster pro installiertem Bestandteil. Jedes merkt sich Seite, Gruppen, Bildlauf und Größe. Design und Sprache ändern Sie im Manager; F1 und ? erklären die aktuelle Seite."
+        }
+      ]
+    },
+    "it": {
+      "title": "Impostazioni server di scambio",
+      "purpose": "SFTP: porta, limite connessioni, rete locale e servizio Windows. Server di scambio: indirizzo, TLS, account, dispositivi, inviti, servizio, registri e amministrazione remota.",
+      "order": "Aprire dal menu dell’area di notifica o dai collegamenti dei componenti. Aprire e chiudere non avvia né arresta alcun server. L’accesso remoto non richiede il server locale.",
+      "sections": [
+        {
+          "id": "exchange",
+          "title": "Impostazioni server di scambio",
+          "text": "SFTP: porta, limite connessioni, rete locale e servizio Windows. Server di scambio: indirizzo, TLS, account, dispositivi, inviti, servizio, registri e amministrazione remota. Aprire dal menu dell’area di notifica o dai collegamenti dei componenti. Aprire e chiudere non avvia né arresta alcun server. L’accesso remoto non richiede il server locale."
+        },
+        {
+          "id": "navigation",
+          "title": "Impostazioni del gestore",
+          "text": "I collegamenti attivano una finestra per componente installato. Ogni finestra ricorda pagina, gruppi, scorrimento e dimensioni. Tema e lingua sono nel gestore; F1 e ? aprono la guida corrente."
+        }
+      ]
+    },
+    "es": {
+      "title": "Ajustes del servidor de intercambio",
+      "purpose": "SFTP: puerto, límite de conexiones, red local y servicio Windows. Servidor de intercambio: dirección, TLS, cuentas, dispositivos, invitaciones, servicio, registros y administración remota.",
+      "order": "Abra desde la bandeja o los enlaces de componentes. Abrir y cerrar no inicia ni detiene servidores. El acceso remoto no requiere un servidor local.",
+      "sections": [
+        {
+          "id": "exchange",
+          "title": "Ajustes del servidor de intercambio",
+          "text": "SFTP: puerto, límite de conexiones, red local y servicio Windows. Servidor de intercambio: dirección, TLS, cuentas, dispositivos, invitaciones, servicio, registros y administración remota. Abra desde la bandeja o los enlaces de componentes. Abrir y cerrar no inicia ni detiene servidores. El acceso remoto no requiere un servidor local."
+        },
+        {
+          "id": "navigation",
+          "title": "Ajustes del gestor",
+          "text": "Los enlaces activan una ventana por componente instalado. Cada una recuerda página, grupos, desplazamiento y tamaño. Tema e idioma están en el gestor; F1 y ? abren la ayuda actual."
+        }
+      ]
+    },
+    "fr": {
+      "title": "Paramètres du serveur d’échange",
+      "purpose": "SFTP : port, limite de connexions, réseau local et service Windows. Serveur d’échange : adresse, TLS, comptes, appareils, invitations, service, journaux et administration distante.",
+      "order": "Ouvrez depuis la zone de notification ou les liens des composants. Ouvrir et fermer ne démarre ni n’arrête un serveur. La connexion distante ne nécessite pas de serveur local.",
+      "sections": [
+        {
+          "id": "exchange",
+          "title": "Paramètres du serveur d’échange",
+          "text": "SFTP : port, limite de connexions, réseau local et service Windows. Serveur d’échange : adresse, TLS, comptes, appareils, invitations, service, journaux et administration distante. Ouvrez depuis la zone de notification ou les liens des composants. Ouvrir et fermer ne démarre ni n’arrête un serveur. La connexion distante ne nécessite pas de serveur local."
+        },
+        {
+          "id": "navigation",
+          "title": "Paramètres du gestionnaire",
+          "text": "Les liens activent une fenêtre par composant installé. Chacune mémorise page, groupes, défilement et taille. Thème et langue sont dans le gestionnaire ; F1 et ? ouvrent l’aide courante."
+        }
+      ]
+    },
+    "pt": {
+      "title": "Definições do servidor de troca",
+      "purpose": "SFTP: porta, limite de ligações, rede local e serviço Windows. Servidor de troca: endereço, TLS, contas, dispositivos, convites, serviço, registos e administração remota.",
+      "order": "Abra pela área de notificação ou pelas ligações dos componentes. Abrir e fechar não inicia nem para servidores. O acesso remoto não exige servidor local.",
+      "sections": [
+        {
+          "id": "exchange",
+          "title": "Definições do servidor de troca",
+          "text": "SFTP: porta, limite de ligações, rede local e serviço Windows. Servidor de troca: endereço, TLS, contas, dispositivos, convites, serviço, registos e administração remota. Abra pela área de notificação ou pelas ligações dos componentes. Abrir e fechar não inicia nem para servidores. O acesso remoto não exige servidor local."
+        },
+        {
+          "id": "navigation",
+          "title": "Definições do gestor",
+          "text": "As ligações ativam uma janela por componente instalado. Cada uma guarda página, grupos, deslocamento e tamanho. Tema e idioma estão no gestor; F1 e ? abrem a ajuda atual."
+        }
+      ]
+    },
+    "ar": {
+      "title": "إعدادات خادم التبادل",
+      "purpose": "SFTP: المنفذ وحد الاتصالات والشبكة المحلية وخدمة Windows. خادم التبادل: العنوان وTLS والحسابات والأجهزة والدعوات والخدمة والسجلات والإدارة البعيدة.",
+      "order": "افتح من منطقة الإعلام أو روابط المكونات. فتح النافذة وإغلاقها لا يشغل أو يوقف خادماً. تسجيل الدخول البعيد لا يتطلب خادماً محلياً.",
+      "sections": [
+        {
+          "id": "exchange",
+          "title": "إعدادات خادم التبادل",
+          "text": "SFTP: المنفذ وحد الاتصالات والشبكة المحلية وخدمة Windows. خادم التبادل: العنوان وTLS والحسابات والأجهزة والدعوات والخدمة والسجلات والإدارة البعيدة. افتح من منطقة الإعلام أو روابط المكونات. فتح النافذة وإغلاقها لا يشغل أو يوقف خادماً. تسجيل الدخول البعيد لا يتطلب خادماً محلياً."
+        },
+        {
+          "id": "navigation",
+          "title": "إعدادات المدير",
+          "text": "تفتح الروابط نافذة واحدة لكل مكوّن مثبّت. تتذكر كل نافذة الصفحة والمجموعات والتمرير والحجم. المظهر واللغة في المدير؛ F1 و? يفتحان مساعدة الصفحة الحالية."
+        }
+      ]
+    },
+    "hi": {
+      "title": "एक्सचेंज सर्वर सेटिंग",
+      "purpose": "SFTP: पोर्ट, कनेक्शन सीमा, स्थानीय नेटवर्क और Windows सेवा। एक्सचेंज सर्वर: पता, TLS, खाते, डिवाइस, आमंत्रण, सेवा, लॉग और दूरस्थ प्रशासन।",
+      "order": "ट्रे या घटक लिंक से खोलें। विंडो खोलने और बंद करने से सर्वर शुरू या बंद नहीं होता। दूरस्थ लॉगिन के लिए स्थानीय सर्वर आवश्यक नहीं है।",
+      "sections": [
+        {
+          "id": "exchange",
+          "title": "एक्सचेंज सर्वर सेटिंग",
+          "text": "SFTP: पोर्ट, कनेक्शन सीमा, स्थानीय नेटवर्क और Windows सेवा। एक्सचेंज सर्वर: पता, TLS, खाते, डिवाइस, आमंत्रण, सेवा, लॉग और दूरस्थ प्रशासन। ट्रे या घटक लिंक से खोलें। विंडो खोलने और बंद करने से सर्वर शुरू या बंद नहीं होता। दूरस्थ लॉगिन के लिए स्थानीय सर्वर आवश्यक नहीं है।"
+        },
+        {
+          "id": "navigation",
+          "title": "प्रबंधक सेटिंग",
+          "text": "लिंक हर स्थापित घटक की एक विंडो सक्रिय करते हैं। प्रत्येक पृष्ठ, समूह, स्क्रॉल और आकार याद रखती है। थीम और भाषा प्रबंधक में हैं; F1 और ? वर्तमान सहायता खोलते हैं।"
+        }
+      ]
+    },
+    "bn": {
+      "title": "এক্সচেঞ্জ সার্ভার সেটিংস",
+      "purpose": "SFTP: পোর্ট, সংযোগ সীমা, স্থানীয় নেটওয়ার্ক ও Windows পরিষেবা। এক্সচেঞ্জ সার্ভার: ঠিকানা, TLS, অ্যাকাউন্ট, ডিভাইস, আমন্ত্রণ, পরিষেবা, লগ ও দূরবর্তী প্রশাসন।",
+      "order": "ট্রে বা উপাদানের লিংক থেকে খুলুন। উইন্ডো খোলা বা বন্ধ করা সার্ভার চালু বা বন্ধ করে না। দূরবর্তী প্রবেশে স্থানীয় সার্ভার লাগে না।",
+      "sections": [
+        {
+          "id": "exchange",
+          "title": "এক্সচেঞ্জ সার্ভার সেটিংস",
+          "text": "SFTP: পোর্ট, সংযোগ সীমা, স্থানীয় নেটওয়ার্ক ও Windows পরিষেবা। এক্সচেঞ্জ সার্ভার: ঠিকানা, TLS, অ্যাকাউন্ট, ডিভাইস, আমন্ত্রণ, পরিষেবা, লগ ও দূরবর্তী প্রশাসন। ট্রে বা উপাদানের লিংক থেকে খুলুন। উইন্ডো খোলা বা বন্ধ করা সার্ভার চালু বা বন্ধ করে না। দূরবর্তী প্রবেশে স্থানীয় সার্ভার লাগে না।"
+        },
+        {
+          "id": "navigation",
+          "title": "ম্যানেজার সেটিংস",
+          "text": "প্রতি ইনস্টল করা উপাদানের একটি উইন্ডো সক্রিয় হয়। প্রতিটি পৃষ্ঠা, দল, স্ক্রল ও আকার মনে রাখে। থিম ও ভাষা ম্যানেজারে; F1 ও ? বর্তমান সহায়তা খোলে।"
+        }
+      ]
+    },
+    "ur": {
+      "title": "ایکسچینج سرور کی ترتیبات",
+      "purpose": "SFTP: پورٹ، کنکشن حد، مقامی نیٹ ورک اور Windows سروس۔ ایکسچینج سرور: پتہ، TLS، اکاؤنٹس، آلات، دعوتیں، سروس، لاگ اور دور دراز انتظام۔",
+      "order": "ٹرے یا جزو کے لنک سے کھولیں۔ ونڈو کھولنا یا بند کرنا سرور کو چلاتا یا روکتا نہیں۔ دور دراز لاگ ان کے لیے مقامی سرور ضروری نہیں۔",
+      "sections": [
+        {
+          "id": "exchange",
+          "title": "ایکسچینج سرور کی ترتیبات",
+          "text": "SFTP: پورٹ، کنکشن حد، مقامی نیٹ ورک اور Windows سروس۔ ایکسچینج سرور: پتہ، TLS، اکاؤنٹس، آلات، دعوتیں، سروس، لاگ اور دور دراز انتظام۔ ٹرے یا جزو کے لنک سے کھولیں۔ ونڈو کھولنا یا بند کرنا سرور کو چلاتا یا روکتا نہیں۔ دور دراز لاگ ان کے لیے مقامی سرور ضروری نہیں۔"
+        },
+        {
+          "id": "navigation",
+          "title": "مینیجر کی ترتیبات",
+          "text": "ہر نصب جزو کی ایک ونڈو فعال ہوتی ہے۔ ہر ونڈو صفحہ، گروپ، سکرول اور سائز یاد رکھتی ہے۔ تھیم اور زبان مینیجر میں ہیں؛ F1 اور ? موجودہ مدد کھولتے ہیں۔"
+        }
+      ]
+    },
+    "zh": {
+      "title": "交换服务器设置",
+      "purpose": "SFTP：端口、连接数限制、仅局域网策略和 Windows 服务。交换服务器：地址、TLS、账户、设备、邀请、服务、日志和远程管理。",
+      "order": "从托盘或组件链接打开。打开或关闭窗口不会启动或停止服务器。远程登录无需本地服务器。",
+      "sections": [
+        {
+          "id": "exchange",
+          "title": "交换服务器设置",
+          "text": "SFTP：端口、连接数限制、仅局域网策略和 Windows 服务。交换服务器：地址、TLS、账户、设备、邀请、服务、日志和远程管理。 从托盘或组件链接打开。打开或关闭窗口不会启动或停止服务器。远程登录无需本地服务器。"
+        },
+        {
+          "id": "navigation",
+          "title": "管理器设置",
+          "text": "链接为每个已安装组件激活一个窗口。各窗口分别记住页面、分组、滚动和大小。主题和语言位于管理器中；F1 和 ? 打开当前页面帮助。"
+        }
+      ]
+    }
+  }
+}

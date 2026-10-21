@@ -1,4 +1,4 @@
-Option Strict On
+﻿Option Strict On
 
 Imports System.Drawing
 Imports System.Threading.Tasks
@@ -301,6 +301,9 @@ Partial Public NotInheritable Class MainWindow
         UpdateHostingBlock()
         UpdateSectionSummaries(running)
         RaiseEvent ServerStateChanged(running)
+        For Each settings In _settingsWindows.Values.ToArray()
+            If Not settings.IsDisposed Then settings.RefreshWorkerSnapshot(_status)
+        Next
     End Sub
 
     ''' <summary>
@@ -473,6 +476,21 @@ Partial Public NotInheritable Class MainWindow
         _secStats.SummaryColor = ThemeService.Palette.TextMuted
     End Sub
 
+    ''' <summary>Spec 237 rule S-0: the resources fold's live one-liner - "collapsed is not
+    ''' hidden" applied to the window's own object. The count is every row the list shows,
+    ''' folders and mounted containers alike, because that is what the fold folds away.</summary>
+    Private Sub UpdateResourcesSummary()
+        If _secResources Is Nothing Then Return
+        _secResources.Summary = FolderCountText(If(lvFolders Is Nothing, 0, lvFolders.Items.Count))
+    End Sub
+
+    ''' <summary>One choke point for every list mutation: the fold's summary (S-0) and the
+    ''' content-sized list height (L-1) both depend on the row count.</summary>
+    Private Sub OnResourceRowsChanged()
+        UpdateResourcesSummary()
+        RelayoutContent()
+    End Sub
+
     ''' <summary>Fills the usage-stats block from the current Status.Stats. The whole section
     ''' is hidden when the server is off or the (older) worker sends no stats - the same rule
     ''' the block itself always followed, applied one level up.</summary>
@@ -587,12 +605,8 @@ Partial Public NotInheritable Class MainWindow
 
     Private Sub OnHostingClicked(sender As Object, e As EventArgs)
         If _busy Then Return
-        Using dlg As New Share_Settings_Form(_status)
-            Dim pageId As String = If(ExchangeProducerSummary.Line().Length > 0, "exchange", "hosting")
-            dlg.SelectPage(pageId)
-            dlg.ShowDialog(Me)
-        End Using
-        Dim t As Task = RefreshStatsAsync()
+        Dim pageId As String = If(ExchangeProducerSummary.Line().Length > 0, "exchange-account", "hosting")
+        OpenSettings(SettingsRoutes.Destination(pageId), pageId)
     End Sub
 
     ''' <summary>Fills the "what works right now" + "what to do next" pair. Hidden entirely

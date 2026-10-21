@@ -67,6 +67,7 @@ Friend NotInheritable Class Exchange_Account_Form
     Private _btnSignIn As Button
     Private _btnDiagnose As Button
     Private _btnCancel As Button
+    Private _answerRow As DialogButtonRow
     Private _lastDiagnosisMessage As ConnectionDiagnosisMessage = Nothing
 
     Private _probe As ExchangeCertificateInfo
@@ -125,6 +126,7 @@ Friend NotInheritable Class Exchange_Account_Form
         body.ColumnStyles.Add(New ColumnStyle(SizeType.Percent, 100.0F))
 
         ' the connection string (187): optional, fills the form and stops
+        body.Controls.Add(ExchangeMark.Heading(Text, 32, AddressOf CompanionAssets.OpenBundledAsset))
         body.Controls.Add(Caption(ExchangeJoinText.StringLabel()))
         _txtString = New TextBox With {.Width = ContentWidth, .Margin = New Padding(0, 0, 0, 2), .AccessibleName = ExchangeJoinText.StringLabel()}
         AddHandler _txtString.TextChanged, AddressOf OnStringChanged
@@ -188,7 +190,9 @@ Friend NotInheritable Class Exchange_Account_Form
                                                  _txtSecret.UseSystemPasswordChar = Not _chkShow.Checked
                                                  _txtSecretRepeat.UseSystemPasswordChar = Not _chkShow.Checked
                                              End Sub
-        body.Controls.Add(_chkShow)
+        ' Each option is a boolean row (BOOLEAN-OPTION 2.0, ticket 243 T-11c-b2a): the check box keeps its field, default and
+        ' handlers; the row around it is what the table holds (and what hides and shows).
+        body.Controls.Add(OptionRows.InFlow(_chkShow))
         _lblSecretRepeat = Caption(Localization.T("Пароль ещё раз:"))
         _lblSecretRepeat.Visible = False
         body.Controls.Add(_lblSecretRepeat)
@@ -203,47 +207,59 @@ Friend NotInheritable Class Exchange_Account_Form
         body.Controls.Add(_txtName)
 
         ' publishing is an explicit choice (170 rule 1): in words that say what it does, unticked unless the dialog was opened to publish
-        _chkPublish = New CheckBox With {.AutoSize = True, .Margin = New Padding(0, 10, 0, 0), .Checked = _publishNow, .Text = ExchangeJoinText.PublishCheckbox()}
-        body.Controls.Add(_chkPublish)
-        body.Controls.Add(Note(ExchangePublishText.PublishNote()))
+        ' (what each of the two options does stands under its caption as the row's explanation)
+        _chkPublish = New CheckBox With {.AutoSize = True, .Checked = _publishNow, .Text = ExchangeJoinText.PublishCheckbox()}
+        Dim publishRow As OptionRowHost = OptionRows.InFlow(_chkPublish, Note(ExchangePublishText.PublishNote()))
+        publishRow.Margin = New Padding(0, 10, 0, 0)
+        body.Controls.Add(publishRow)
 
         ' the autostart offer: default off
-        _chkStart = New CheckBox With {.AutoSize = True, .Margin = New Padding(0, 10, 0, 0), .Checked = False,
+        _chkStart = New CheckBox With {.AutoSize = True, .Checked = False,
             .Text = Localization.TF("Запускать {0} при входе в Windows", ProductNames.ShareManager)}
-        body.Controls.Add(_chkStart)
-        body.Controls.Add(Note(Localization.T("Без этого другие устройства не смогут отправить сюда трансляцию, пока менеджер не запущен.")))
+        Dim startRow As OptionRowHost = OptionRows.InFlow(_chkStart, Note(Localization.T("Без этого другие устройства не смогут отправить сюда трансляцию, пока менеджер не запущен.")))
+        startRow.Margin = New Padding(0, 10, 0, 0)
+        body.Controls.Add(startRow)
 
         _lblResult = New Label With {.AutoSize = True, .MaximumSize = New Size(ContentWidth, 0), .ForeColor = CollapsibleSection.AttentionColor,
             .Margin = New Padding(0, 4, 0, 2), .Visible = False}
         body.Controls.Add(_lblResult)
 
-        Dim buttons As New FlowLayoutPanel With {.AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink, .FlowDirection = FlowDirection.LeftToRight,
-            .WrapContents = False, .Margin = New Padding(0, 8, 0, 4)}
+        ' The answers ride the shared bottom row (ticket 243 T-8b, BUTTONS 2.0 sections 3 and 4): the connection-test door (a
+        ' command, shown only after a failed first contact) first and set apart, then Cancel, then Sign in last. Escape is
+        ' Cancel. Enter is NOT bound by the row (bindAccept:=False): the window has no accept button until a certificate has
+        ' been shown and trusted (ShowCertificate / OnTrustClicked set it, OnServerChanged takes it away), so Enter in the
+        ' server or password field cannot send a password to a server nobody has vouched for.
         _btnSignIn = NewButton(Localization.T("Войти"), "action.confirm", ButtonGlyphRole.Affirmative)
+        _btnSignIn.Name = "xacc_SignIn"
         _btnSignIn.Visible = True   ' visible so the user has the clear action button to apply / sign in
         AddHandler _btnSignIn.Click, AddressOf OnSignInClicked
         _btnCancel = NewButton(Localization.T("Отмена"), "action.cancel", ButtonGlyphRole.Dismissing)
+        _btnCancel.Name = "xacc_Cancel"
         _btnCancel.DialogResult = DialogResult.Cancel
-        buttons.Controls.Add(_btnSignIn)
         _btnDiagnose = NewButton(ConnectionDiagnosisLocalization.DoorButtonText(Localization.CurrentCode), "action.test-connection")
+        _btnDiagnose.Name = "xacc_Diagnose"
         _btnDiagnose.Visible = False
         AddHandler _btnDiagnose.Click, AddressOf OnDiagnoseClicked
-        buttons.Controls.Add(_btnDiagnose)
-        buttons.Controls.Add(_btnCancel)
-        body.Controls.Add(buttons)
+        _answerRow = New DialogButtonRow() With {.Dock = DockStyle.Bottom, .Name = "xacc_Buttons", .Padding = New Padding(14, 4, 14, 10)}
+        DpiLayout.AddAnswer(_answerRow, _btnDiagnose, DialogButtonRole.Command, "action.test-connection")
+        DpiLayout.AddAnswer(_answerRow, _btnCancel, DialogButtonRole.Dismissing, "action.cancel")
+        DpiLayout.AddAnswer(_answerRow, _btnSignIn, DialogButtonRole.Affirmative, "action.confirm")
 
         Me.Controls.Add(body)
+        ' Last in the collection: the docked row takes its edge first and reads after the fields in the Tab order.
+        Me.Controls.Add(_answerRow)
+        _answerRow.Bind(Me, bindAccept:=False)
         Me.AutoSize = True
         Me.AutoSizeMode = AutoSizeMode.GrowAndShrink
         ' The default is Cancel: no accept button exists until a certificate has been shown.
         Me.AcceptButton = Nothing
-        Me.CancelButton = _btnCancel
 
         DpiLayout.ApplyAutoScale(Me)   ' last, once every child exists - see DpiLayout
     End Sub
 
     Protected Overrides Sub OnLoad(e As EventArgs)
         MyBase.OnLoad(e)
+        OptionRows.ArrangeAll(Me)
         FitAccountToWorkingArea()
         DpiLayout.CenterOnOwner(Me)
         _txtServer.Focus()
@@ -265,13 +281,15 @@ Friend NotInheritable Class Exchange_Account_Form
             If body Is Nothing Then Continue For
             Dim area As Rectangle = Screen.FromControl(Me).WorkingArea
             Dim content As Size = body.GetPreferredSize(Size.Empty)
-            Dim desired As Size = SizeFromClientSize(content)
-            If AutoScroll OrElse desired.Height > area.Height OrElse desired.Width > area.Width Then
+            ' the answer row sits on the window's bottom edge under the fields: it is part of what the window must hold
+            Dim rowHeight As Integer = _answerRow.GetPreferredSize(New Size(content.Width, 0)).Height
+            Dim desired As Size = SizeFromClientSize(New Size(content.Width, content.Height + rowHeight))
+            If body.AutoScroll OrElse desired.Height > area.Height OrElse desired.Width > area.Width Then
+                ' what scrolls is the body of fields; the row never does, so the answers stay on screen
                 AutoSize = False
-                AutoScroll = True
-                body.Dock = DockStyle.Top
-                AutoScrollMinSize = content
-                Size = New Size(Math.Min(desired.Width, area.Width), Math.Min(desired.Height, area.Height))
+                body.AutoScroll = True
+                Dim bar As Integer = If(desired.Height > area.Height, SystemInformation.VerticalScrollBarWidth, 0)
+                Size = New Size(Math.Min(desired.Width + bar, area.Width), Math.Min(desired.Height, area.Height))
             End If
             Exit For
         Next
@@ -413,7 +431,8 @@ Friend NotInheritable Class Exchange_Account_Form
         _lblSecret.Text = If(byPassword, Localization.T("Пароль:"), Localization.T("Код сопряжения:"))
         _txtSecret.Text = ""
         _txtSecret.UseSystemPasswordChar = byPassword AndAlso Not _chkShow.Checked
-        _chkShow.Visible = byPassword
+        ' the whole row hides: a caption left behind by a hidden box would be the old bug in a new place
+        OptionRows.RowOf(_chkShow).Visible = byPassword
     End Sub
 
     ''' <summary>The register mode: the password is the account's NEW one, typed twice, and the button says what happens. A
@@ -547,7 +566,7 @@ Friend NotInheritable Class Exchange_Account_Form
         Dim held As ExchangeDeviceStatus = _agent.GetStatus()
         If held.Configured AndAlso Not (String.Equals(held.Server, _txtServer.Text.Trim(), StringComparison.OrdinalIgnoreCase) AndAlso
                                         String.Equals(held.Login, _txtLogin.Text.Trim(), StringComparison.OrdinalIgnoreCase)) Then
-            If MessageBox.Show(Me, ExchangeJoinText.ReplaceQuestion(held.Server, held.Login, _txtServer.Text.Trim()), ExchangeDeviceText.GroupTitle(),
+            If ManagerBox.Show(Me, ExchangeJoinText.ReplaceQuestion(held.Server, held.Login, _txtServer.Text.Trim()), ExchangeDeviceText.GroupTitle(),
                                MessageBoxButtons.YesNo, MessageBoxIcon.Warning, MessageBoxDefaultButton.Button2) <> DialogResult.Yes Then Return
             SetBusy(True)
             Try

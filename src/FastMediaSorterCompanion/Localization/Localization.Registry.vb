@@ -19,6 +19,7 @@ Partial Public NotInheritable Class Localization
 #End If
         AddShareStrings()       ' tray menu + the shared ShareText prose
         AddManagerContractStrings()
+        AddSettingsDestinationStrings()
         AddManagerStrings()     ' the Share Manager main window
         AddWizardStrings()      ' the one-shot package wizard + QR zoom
         AddInternetStrings()    ' the internet-access tab
@@ -45,6 +46,7 @@ Partial Public NotInheritable Class Localization
         AddScheduledStrings()   ' ticket 222: scheduled file operations - the page, the editor, the history, the tray items
         AddClipboardStrings()   ' spec 230: the clipboard through the exchange server - buttons, tray items, shortcuts, result lines
         AddOutwardAccessStrings()      ' ticket 239 CR-13: the guest invitation and the link with a password shown as not available
+        AddAboutPageStrings()          ' ticket 243 T-6: the About group of the Share Manager - description, updates, help, project links, related projects
     End Sub
 
     ''' <summary>

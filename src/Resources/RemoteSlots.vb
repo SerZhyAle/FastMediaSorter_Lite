@@ -121,9 +121,9 @@ Friend Module RemoteSlotPolicy
                 End If
                 Return SlotVerdict.ForState(SlotState.Ready, nowUtc)
             Case StatOutcome.Denied
-                Return SlotVerdict.ForState(SlotState.Denied, nowUtc, "folder: " & folder.Failure?.ToString())
+                Return Reasoned(SlotVerdict.ForState(SlotState.Denied, nowUtc, "folder: " & folder.Failure?.ToString()), folder.Failure)
             Case StatOutcome.Failed
-                Return SlotVerdict.ForState(StateFor(folder.Failure), nowUtc, "folder: " & folder.Failure?.ToString())
+                Return Reasoned(SlotVerdict.ForState(StateFor(folder.Failure), nowUtc, "folder: " & folder.Failure?.ToString()), folder.Failure)
         End Select
 
         ' Missing: the parent is the honest witness.
@@ -138,10 +138,18 @@ Friend Module RemoteSlotPolicy
             Case StatOutcome.Missing
                 Return SlotVerdict.ForState(SlotState.Missing, nowUtc)
             Case StatOutcome.Denied
-                Return SlotVerdict.ForState(SlotState.Denied, nowUtc, "parent: " & parent.Failure?.ToString())
+                Return Reasoned(SlotVerdict.ForState(SlotState.Denied, nowUtc, "parent: " & parent.Failure?.ToString()), parent.Failure)
             Case Else
-                Return SlotVerdict.ForState(StateFor(parent.Failure), nowUtc, "parent: " & parent.Failure?.ToString())
+                Return Reasoned(SlotVerdict.ForState(StateFor(parent.Failure), nowUtc, "parent: " & parent.Failure?.ToString()), parent.Failure)
         End Select
+    End Function
+
+    ''' <summary>The verdict with the server's own reason as a finished sentence, so the status line can say
+    ''' "the server did not accept the login" instead of a bare "denied". The sentence comes from
+    ''' <see cref="ResourceMessages"/> - it is chosen by the failure KIND, never read from an exception's text.</summary>
+    Friend Function Reasoned(verdict As SlotVerdict, failure As ResourceFailure) As SlotVerdict
+        If failure Is Nothing Then Return verdict
+        Return verdict.WithReason(ResourceMessages.ForFailure(failure))
     End Function
 
 End Module
@@ -464,7 +472,7 @@ Friend NotInheritable Class RemoteSlotConnections
             provider = ProviderFor(descriptor, ct)
         Catch ex As Exception
             Dim failure As ResourceFailure = ResourceFailure.FromException(ex)
-            Return SlotVerdict.ForState(RemoteSlotPolicy.StateFor(failure), now_Utc, "connect: " & failure.ToString())
+            Return RemoteSlotPolicy.Reasoned(SlotVerdict.ForState(RemoteSlotPolicy.StateFor(failure), now_Utc, "connect: " & failure.ToString()), failure)
         End Try
 
         Dim folder As StatResult = ResourceProviderCalls.Stat(provider, remotePath)

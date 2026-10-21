@@ -1,4 +1,4 @@
-# docs/ - documentation index
+﻿# docs/ - documentation index
 
 Start here. This tree holds all internal documentation; user-facing files (`README*.md`, `CHANGELOG.md`)
 stay at the repo root. Structure and naming follow
@@ -34,7 +34,7 @@ plain text so maintained documentation works in a fresh clone.
 - [guides/PRODUCT_NAMING.md](guides/PRODUCT_NAMING.md) - the one table of the product's names (full, Store,
   short, aliases, Share Manager, Server edition), the frozen technical anchors and the naming gate.
 - [guides/SITE_ADDRESSES.md](guides/SITE_ADDRESSES.md) - the not-found page, where the release notes live, and what a moved or retired page leaves behind.
-- [guides/POSITIONING.md](guides/POSITIONING.md) - the one positioning source: the family sentence, the pillars in order, the public editions, the reserved door and the facts typed once (language count, platform floor); machine form `tools/site-facts.json`, gate `tools/Test-SitePositioning.ps1`.
+- [guides/POSITIONING.md](guides/POSITIONING.md) - the one positioning source: the family sentence, the three optional components in order, the two install intents, the availability matrix, the public editions and the facts typed once (language count, platform floor); machine form `tools/site-facts.json`, gate `tools/Test-SitePositioning.ps1`.
 - [guides/BUILD_AND_RELEASE.md](guides/BUILD_AND_RELEASE.md) - the concrete build-vs-release flow.
 - `specifications/RELEASE_QUEUE.md` (local specification) - the common release order for active
   specification tickets.
@@ -54,3 +54,7 @@ in the matching folder. A contract is never a new doc here: it lives in the shar
 ticket: `NNN_SPECIFICATION_...`; see `specifications/README.md` (local specification). A spec
 that ships moves to `specifications/done/`. Text style: hyphen not em-dash, `..` not `...`, `ё` in
 Russian.
+
+## Sharing settings navigation
+
+The [settings windows guide](guides/SHARING_SETTINGS_WINDOWS.md) owns current SFTP, local-server and remote-client navigation, shared preferences, draft behavior and help links. Earlier builds retain the combined settings window.

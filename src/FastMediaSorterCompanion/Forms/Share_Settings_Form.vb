@@ -82,7 +82,8 @@ Partial Public NotInheritable Class Share_Settings_Form
     Friend ReplayExchangeRequested As Boolean
     Friend ResourceAddRequested As Boolean
 
-    Public Sub New(Optional status As WorkerStatus = Nothing)
+    Public Sub New(Optional status As WorkerStatus = Nothing, Optional destination As SettingsDestination = SettingsDestination.Manager)
+        Me.Destination = destination
         _status = status
         Try
             _settings.Load()
@@ -96,7 +97,7 @@ Partial Public NotInheritable Class Share_Settings_Form
         ' exists - children inherit both (013_SPECIFICATION_THIRTEEN_UI_LANGUAGES.md block A').
         Me.SuspendLayout()
         UiLanguage.ApplyTo(Me)
-        Me.Text = Localization.T("Настройки менеджера")
+        Me.Text = DestinationCaption()
         Me.Icon = ShareIcons.CreateIcon(_iconHandle)
         ' The tooltip is disposed with the window (ticket 054 H-20): a live ToolTip keeps
         ' a native window and references to every control it serves, so a closed settings
@@ -106,6 +107,7 @@ Partial Public NotInheritable Class Share_Settings_Form
                 Try : toolTip.Dispose() : Catch : End Try
                 Try : _lblHost?.Font?.Dispose() : Catch : End Try
                 Try : _lblLive?.Font?.Dispose() : Catch : End Try
+                Try : _aboutHeadingFont?.Dispose() : Catch : End Try
                 DisposeExchangeResources()
                 DisposeProducerResources()
                 DisposeAccountResources()
@@ -114,37 +116,35 @@ Partial Public NotInheritable Class Share_Settings_Form
         ' WINDOWS-UI section 5: pages scroll inside a stable, user-resizable window.
         Me.FormBorderStyle = FormBorderStyle.Sizable
         Me.MaximizeBox = False
-        Me.MinimizeBox = False
-        Me.ShowInTaskbar = False
+        Me.MinimizeBox = True
+        Me.ShowInTaskbar = True
         Me.StartPosition = FormStartPosition.CenterParent
-        Me.MinimumSize = New Size(640, 360)
+        Me.MinimumSize = New Size(MinimumWidthLogical, MinimumHeightLogical)
         Me.ClientSize = New Size(PageWidth, 480)
         toolTip = New ToolTip()
 
-        _secStartup = CreateSettingsSection("startup", Localization.T("Запуск"))
-        _secNetwork = CreateSettingsSection("network", Localization.T("Сеть"))
-        _secHosting = CreateSettingsSection("hosting", Localization.T("Хостинг"))
-        _secHelp = CreateSettingsSection("help", Localization.T("Справка"))
-        BuildStartupSection(_secStartup)
-        SettingsBuildTimings("startup") = settingsBuildWatch.ElapsedMilliseconds
-        BuildNetworkSection(_secNetwork)
-        SettingsBuildTimings("network") = settingsBuildWatch.ElapsedMilliseconds
-        BuildHostingSection(_secHosting)
-        SettingsBuildTimings("hosting") = settingsBuildWatch.ElapsedMilliseconds
-        ' Between Hosting and Help, and ONLY when the exchange server component is installed: without
-        ' it there is no group at all (ticket 142), so the window is exactly what it was.
-        _secExchange = CreateExchangeSection()
-        SettingsBuildTimings("exchange") = settingsBuildWatch.ElapsedMilliseconds
-        ' The client side of the device exchange (ticket 180): the account group, only while the client gate is open. It sits after the
-        ' server-administration group and before Help (AllSettingsSections), and is a partial of its own.
-        _secAccount = CreateAccountSection()
-        SettingsBuildTimings("account") = settingsBuildWatch.ElapsedMilliseconds
-        ' Scheduled file operations (ticket 222): a page of the Share Manager's own, not behind the Share opt-in.
-        _secScheduled = CreateScheduledSection()
-        SettingsBuildTimings("scheduled") = settingsBuildWatch.ElapsedMilliseconds
-        BuildHelpSection(_secHelp)
-        BuildAboutRows(_secHelp)
+        Select Case Destination
+            Case SettingsDestination.Manager
+                _secStartup = CreateSettingsSection("startup", Localization.T("Запуск"))
+                BuildStartupSection(_secStartup)
+                _secAccount = CreateAccountSection()
+                If _secAccount IsNot Nothing Then BuildExchangeProducerRows(_secAccount)
+                _secScheduled = CreateScheduledSection()
+                _secHelp = CreateSettingsSection("help", Localization.T("Справка"))
+                BuildHelpSection(_secHelp)
+                AddShareLogActions(_secHelp)
+                BuildAboutRows(_secHelp)
+            Case SettingsDestination.Sftp
+                _secNetwork = CreateSettingsSection("network", Localization.T("Сеть"))
+                BuildNetworkSection(_secNetwork)
+                _secHosting = CreateSettingsSection("hosting", Localization.T("Хостинг"))
+                BuildHostingSection(_secHosting)
+                AddShareLogActions(_secHosting)
+            Case SettingsDestination.ExchangeServer
+                _secExchange = CreateExchangeSection()
+        End Select
         BuildSettingsPages()
+        BuildDestinationLinks()
         SettingsBuildTimings("pages") = settingsBuildWatch.ElapsedMilliseconds
 
         Me.Controls.Add(_root)
@@ -155,7 +155,7 @@ Partial Public NotInheritable Class Share_Settings_Form
         LoadState()
         SettingsBuildTimings("state") = settingsBuildWatch.ElapsedMilliseconds
         ' Initialize the hosting page without a worker probe; the first visit reads live state.
-        ApplyHostingState(Nothing)
+        If _secHosting IsNot Nothing Then ApplyHostingState(Nothing)
         SettingsBuildTimings("hosting-state") = settingsBuildWatch.ElapsedMilliseconds
         UpdateSummaries()
         RestoreSettingsUiContext()
@@ -181,7 +181,7 @@ Partial Public NotInheritable Class Share_Settings_Form
     Private Sub BuildStartupSection(sec As CollapsibleSection)
         Dim welcome As New Button With {.Name = "managerWelcomeReplay", .Text = Localization.T("Приветствие.."),
             .AutoSize = True, .MinimumSize = New Size(0, 44), .Margin = New Padding(0, 8, 0, 4)}
-        ButtonGlyphs.Apply(welcome, "app.help")
+        ButtonGlyphs.Apply(welcome, IconMap.GetMeaning("managerWelcomeReplay").GlyphId)   ' app.tour: replays a setup wizard, not "explain this window"
         AddHandler welcome.Click, Sub()
             Dim menu As New ContextMenuStrip()
             menu.Items.Add(Localization.T("Повторить настройку папок"), Nothing, Sub()
@@ -264,19 +264,15 @@ Partial Public NotInheritable Class Share_Settings_Form
 
     End Sub
 
-    ''' <summary>The four Help links the main window's status strip used to fold into its
+    ''' <summary>The Help links the main window's status strip used to fold into its
     ''' drop-down (owner decision, 2026-10-03): read-once material, which is what this page
     ''' is for. The router link answers through the group's live summary, the way the
-    ''' status strip's hint line used to.</summary>
+    ''' status strip's hint line used to. The Android app and the media exchange portal moved
+    ''' to the About group's related projects (ticket 243 T-6, Share_Settings_Form.About.vb):
+    ''' one link, one place.</summary>
     Private Sub BuildHelpSection(sec As CollapsibleSection)
-        AddHelpLink(sec, Localization.T("Приложение для Android"),
-                    Sub() NetworkInfo.OpenInBrowser(ShareGuide.AndroidSite()))
         AddHelpLink(sec, Localization.T("Как публиковать папки (сайт)"),
                     Sub() NetworkInfo.OpenInBrowser(ShareLinks.Localized(ShareGuide.SiteGuideUrl)))
-        ' The start page of the shared media exchange portal; it follows the language at the click,
-        ' so a language switched while this window is open is honoured.
-        AddHelpLink(sec, Localization.T("Портал обмена медиа"),
-                    Sub() NetworkInfo.OpenInBrowser(ShareLinks.ExchangePortalUrl("")))
         lnkRouterSearch =AddHelpLink(sec, Localization.T("Инструкция для моей модели роутера"),
                                       AddressOf OnRouterSearchClicked)
         ' The search walks the port-forward instructions for the model it finds; without a
@@ -288,7 +284,9 @@ Partial Public NotInheritable Class Share_Settings_Form
     End Sub
 
     Private Shared Function AddHelpLink(sec As CollapsibleSection, text As String, onClick As Action) As LinkLabel
-        Dim lnk As New LinkLabel With {.AutoSize = True, .Margin = New Padding(0, 2, 0, 2), .Text = text}
+        ' A link row is a pointer-target high hit area (UI-SIZING 1.1): the text is centred in it.
+        Dim lnk As New LinkLabel With {.AutoSize = True, .Margin = New Padding(0, 2, 0, 2), .Text = text,
+            .MinimumSize = New Size(0, UiSizing.PointerTarget), .TextAlign = ContentAlignment.MiddleLeft}
         AddHandler lnk.LinkClicked, Sub(s, e) onClick()
         sec.AddBodyRow(lnk)
         Return lnk
@@ -406,7 +404,7 @@ Partial Public NotInheritable Class Share_Settings_Form
 
         ' Ticket 148: where the share service is told about an exchange server. Built only where the feature
         ' can exist (the shipping gate of 133 section 8), so a window without it is exactly what it was.
-        BuildExchangeProducerRows(sec)
+
 
         ' The way back from the opt-in (ticket 028 Ф-6, APP-BEHAVIOUR rule 4): a standing
         ' consent is revocable in one action, from where the network settings live. Hidden
@@ -425,7 +423,7 @@ Partial Public NotInheritable Class Share_Settings_Form
     ''' prompt. Asked first: it disconnects every phone. On success the dialog closes and the
     ''' main window falls back to its enable panel.</summary>
     Private Async Sub OnWithdrawServerFeatures(sender As Object, e As EventArgs)
-        If MessageBox.Show(Me, ShareText.ServerDisableQuestion(), Me.Text, MessageBoxButtons.YesNo,
+        If ManagerBox.Show(Me, ShareText.ServerDisableQuestion(), Me.Text, MessageBoxButtons.YesNo,
                            MessageBoxIcon.Warning, MessageBoxDefaultButton.Button2) <> DialogResult.Yes Then Return
         Try
             Await ShareController.StopServerAsync()
@@ -445,11 +443,13 @@ Partial Public NotInheritable Class Share_Settings_Form
                                 Me.Text, MessageBoxButtons.OK, MessageBoxIcon.Warning)
             Case ServerFeatures.WithdrawResult.StillEnabledByInstaller
                 _changed = True
+                NotifySettingsChanged()
                 MessageBox.Show(Me, Localization.T("Разрешение в брандмауэре удалено, но функции сервера включены установщиком для всего компьютера. Чтобы выключить их полностью, измените установку: Параметры Windows - Приложения."),
                                 Me.Text, MessageBoxButtons.OK, MessageBoxIcon.Information)
             Case Else
                 _changed = True
-                Me.DialogResult = DialogResult.OK
+                NotifySettingsChanged()
+                Close()
         End Select
     End Sub
 
@@ -472,6 +472,7 @@ Partial Public NotInheritable Class Share_Settings_Form
         Dim prev As Boolean = _loading
         _loading = True
         Try
+            If chkAutostart IsNot Nothing Then
             chkAutostart.Checked = AutostartManager.IsEnabled()
             chkAutostart.Enabled = Not AutostartManager.IsPackaged()
             UpdateAutostartNote()
@@ -479,11 +480,14 @@ Partial Public NotInheritable Class Share_Settings_Form
                 toolTip.SetToolTip(chkAutostart, Localization.T("Автозапуском управляет Windows (пакет из Store)."))
             End If
             chkOpenOnStart.Checked = _settings.OpenWindowOnStartup
+            End If
+            If chkLanOnly IsNot Nothing Then
             chkLanOnly.Checked = _settings.LanOnly
             UpdateLanOnlyNote()
             numMaxConns.Value = ShareSettings.ClampConnections(_settings.MaxConnections)
             LoadPortState()
-            If ServerFeatures.IsSystemServiceHost() Then
+            End If
+            If chkAutostart IsNot Nothing AndAlso ServerFeatures.IsSystemServiceHost() Then
                 ' Autostart still governs whether the CONSOLE appears, but no longer
                 ' whether the folders are reachable - say so where the confusion is.
                 toolTip.SetToolTip(chkAutostart, HostingText.Intro(ServerFeatures.ServerHostMode.SystemService))
@@ -501,7 +505,7 @@ Partial Public NotInheritable Class Share_Settings_Form
     ''' unfolding anything.
     ''' </summary>
     Private Sub UpdateSummaries()
-        If _secStartup Is Nothing Then Return
+        If _secStartup IsNot Nothing Then
         ' A shell veto is its own summary: folded, "Автозапуск выключен" would be the
         ' second place this state hides behind a word that means something else.
         If AutostartManager.State() = AutostartState.BlockedByShell Then
@@ -515,13 +519,18 @@ Partial Public NotInheritable Class Share_Settings_Form
         End If
         ' The port is exactly the kind of fact a folded section must still answer: someone
         ' opens this dialog to check which number their router rule has to name.
+        End If
+        If _secNetwork IsNot Nothing Then
         _secNetwork.Summary = Localization.TF("до {0} подключений, порт {1}",
                                               CInt(numMaxConns.Value), If(_committedPort > 0, _committedPort, CInt(numPort.Value)))
         _secNetwork.SummaryColor = ThemeService.Palette.TextMuted
         ' Verbatim from HostingText - the same sentence the group's own first line shows,
         ' so the folded and unfolded states cannot drift apart.
+        End If
+        If _secHosting IsNot Nothing Then
         _secHosting.Summary = HostingText.HostModeLine(ServerFeatures.HostMode())
         _secHosting.SummaryColor = ThemeService.Palette.TextMuted
+        End If
         UpdateExchangeSummary()
         UpdateAccountSummary()
     End Sub
@@ -620,8 +629,10 @@ Partial Public NotInheritable Class Share_Settings_Form
     ''' that guarantees it; this is what the window shows and what gets re-pushed on the next
     ''' resume, so the two must not drift.</summary>
     Private Sub SavePortChoice()
+        _settings.Load()
         _settings.ListenPort = ShareSettings.ClampPort(CInt(numPort.Value))
         _settings.Save()
+            NotifySettingsChanged()
     End Sub
 
     ''' <summary>Fills the field with a port that is free right now. Advisory - anything can
@@ -649,34 +660,52 @@ Partial Public NotInheritable Class Share_Settings_Form
     ''' rule, stop working - so that is said BEFORE the change, not in a note afterwards.
     ''' </summary>
     Private Async Sub OnApplyPort(sender As Object, e As EventArgs)
-        If Not PortPending() Then Return
+        If Not PortPending() OrElse _applyingPort Then Return
+        _applyingPort = True
+        Try
         Dim newPort As Integer = CInt(numPort.Value)
         If _committedPort > 0 Then
             Dim question As String = Localization.TF(
                 "Сменить порт {0} на {1}?" & vbCrLf & vbCrLf &
                 "Все QR-коды и файлы .fmscfg, уже выданные телефонам, и правило проброса порта на роутере перестанут работать - их придётся создать заново. Работающая раздача перезапустится на новом порту.",
                 _committedPort, newPort)
-            If MessageBox.Show(Me, question, Me.Text, MessageBoxButtons.YesNo, MessageBoxIcon.Warning,
+            If ManagerBox.Show(Me, question, Me.Text, MessageBoxButtons.YesNo, MessageBoxIcon.Warning,
                                MessageBoxDefaultButton.Button2) <> DialogResult.Yes Then Return
         End If
         Try
             SavePortChoice()
-        Catch
+        Catch ex As Exception
+            AppFileLogger.LogException("Share settings: saving port", ex)
+            Return
         End Try
+        If ServerFeatures.IsEnabled() AndAlso LiveServerRunning() Then
+            Dim reply = Await ShareController.PushNetworkPolicyAsync()
+            If reply Is Nothing OrElse Not reply.Ok Then
+                UpdatePortNote()
+                Return
+            End If
+            If ServerFeatures.HostMode() = ServerFeatures.ServerHostMode.SystemService Then
+                Await EnsurePortServedAsync(newPort)
+            Else
+                Await WaitForServedPortAsync(newPort, TimeSpan.FromSeconds(5))
+            End If
+        End If
+        If IsDisposed OrElse Disposing Then Return
+        If _status IsNot Nothing AndAlso _status.Running AndAlso _status.ListenPort <> newPort Then Return
+        If LiveServerRunning() AndAlso ShareController.PortWarning(_status).Length > 0 Then Return
         _committedPort = newPort
         _baselinePort = newPort
         _portPushed = True
         UpdatePortApply()
         UpdatePortNote()
         UpdateSummaries()
-        Try
-            Await ShareController.PushNetworkPolicyAsync()
-        Catch ex As Exception
-            AppFileLogger.LogException("Share settings: push the port", ex)
+        NotifySettingsChanged()
+        Finally
+            _applyingPort = False
+            Dim closeNow = _closeAfterPort AndAlso Not PortPending()
+            _closeAfterPort = False
+            If closeNow AndAlso Not IsDisposed Then Close()
         End Try
-        Await EnsurePortServedAsync(newPort)
-        UpdatePortNote()
-        UpdateSummaries()
     End Sub
 
     ''' <summary>Makes the new port the one being served, without a second step the user has to know
@@ -731,8 +760,10 @@ Partial Public NotInheritable Class Share_Settings_Form
     Private Sub OnMaxConnsChanged(sender As Object, e As EventArgs)
         If _loading Then Return
         Try
+            _settings.Load()
             _settings.MaxConnections = ShareSettings.ClampConnections(CInt(numMaxConns.Value))
             _settings.Save()
+            NotifySettingsChanged()
         Catch
         End Try
         UpdateSummaries()
@@ -741,8 +772,10 @@ Partial Public NotInheritable Class Share_Settings_Form
     Private Async Sub OnMaxConnsCommit(sender As Object, e As EventArgs)
         If _loading Then Return
         Try
+            _settings.Load()
             _settings.MaxConnections = ShareSettings.ClampConnections(CInt(numMaxConns.Value))
             _settings.Save()
+            NotifySettingsChanged()
         Catch
         End Try
         Try
@@ -764,7 +797,7 @@ Partial Public NotInheritable Class Share_Settings_Form
             Dim question As String = Localization.T(
                 "Включить режим «только локальная сеть»?" & vbCrLf & vbCrLf &
                 "Программа перестанет просить роутер открыть порт (UPnP/NAT-PMP) и не будет выдавать адрес из интернета. Адрес из интернета в уже выданных кодах перестанет работать; по локальной сети всё продолжит работать. Работающая раздача перезапустится.")
-            If MessageBox.Show(Me, question, Me.Text, MessageBoxButtons.YesNo, MessageBoxIcon.Warning,
+            If ManagerBox.Show(Me, question, Me.Text, MessageBoxButtons.YesNo, MessageBoxIcon.Warning,
                                MessageBoxDefaultButton.Button2) <> DialogResult.Yes Then
                 Dim prev As Boolean = _loading
                 _loading = True
@@ -774,8 +807,10 @@ Partial Public NotInheritable Class Share_Settings_Form
             End If
         End If
         Try
+            _settings.Load()
             _settings.LanOnly = chkLanOnly.Checked
             _settings.Save()
+            NotifySettingsChanged()
         Catch
         End Try
         _policyPushed = True
@@ -786,6 +821,7 @@ Partial Public NotInheritable Class Share_Settings_Form
         ' The dialog may have closed while the push was out (ticket 054 H-11).
         If IsDisposed OrElse Disposing Then Return
         UpdateLanOnlyNote()
+        NotifySettingsChanged()
     End Sub
 
     ''' <summary>Whether the status this dialog was opened with showed a running server -
@@ -809,8 +845,10 @@ Partial Public NotInheritable Class Share_Settings_Form
         If AutostartManager.IsPackaged() Then Return
         Try
             AutostartManager.SetEnabled(chkAutostart.Checked)
+            _settings.Load()
             _settings.AutostartEnabled = AutostartManager.IsEnabled()
             _settings.Save()
+            NotifySettingsChanged()
         Catch
             Dim prev As Boolean = _loading
             _loading = True
@@ -829,8 +867,10 @@ Partial Public NotInheritable Class Share_Settings_Form
     Private Sub OnOpenOnStartChanged(sender As Object, e As EventArgs)
         If _loading Then Return
         Try
+            _settings.Load()
             _settings.OpenWindowOnStartup = chkOpenOnStart.Checked
             _settings.Save()
+            NotifySettingsChanged()
         Catch
         End Try
     End Sub

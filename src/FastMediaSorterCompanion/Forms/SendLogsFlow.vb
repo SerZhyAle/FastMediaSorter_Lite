@@ -61,12 +61,22 @@ Friend Module SendLogsFlow
     End Property
 
     ''' <summary>
-    ''' The consent step, laid out in a self-sizing table so every language fits (rule 2).
-    ''' Send is the default, Cancel the one no-action exit - Escape and the close box take
-    ''' it too, and the archive is then deleted.
+    ''' The consent step, laid out in a self-sizing table so every language fits (rule 2). The answers ride the shared
+    ''' bottom row (ticket 243 T-8b batch C, BUTTONS 2.0 sections 3 and 4): "Open archive" is a command set apart first,
+    ''' then Cancel, then Send last. Cancel is the one no-action exit - Escape and the close box take it too, and the
+    ''' archive is then deleted - and it is the SAFE DEFAULT: Enter dismisses, so nothing is handed to a mail client until
+    ''' Send is chosen on purpose (the archive holds paths and file names).
     ''' </summary>
     Private Function AskConsent(owner As IWin32Window, package As LogPackage.LogPackageResult) As Boolean
-        Using dialog As New Form With {
+        Using dialog As Form = BuildConsentDialog(owner, package)
+            Dim answer As DialogResult = If(owner Is Nothing, dialog.ShowDialog(), dialog.ShowDialog(owner))
+            Return answer = DialogResult.OK
+        End Using
+    End Function
+
+    ''' <summary>The consent window, built and not shown (a test lays it out; <see cref="AskConsent"/> shows it).</summary>
+    Friend Function BuildConsentDialog(owner As IWin32Window, package As LogPackage.LogPackageResult) As Form
+        Dim dialog As New Form With {
             .Text = Title,
             .FormBorderStyle = FormBorderStyle.FixedDialog,
             .StartPosition = If(owner Is Nothing, FormStartPosition.CenterScreen, FormStartPosition.CenterParent),
@@ -79,59 +89,52 @@ Friend Module SendLogsFlow
             .AutoScaleMode = AutoScaleMode.Dpi,
             .Padding = New Padding(12)
         }
-            UiLanguage.ApplyTo(dialog)
-            Dim layout As New TableLayoutPanel With {.AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink,
-                                                     .ColumnCount = 1, .Dock = DockStyle.Fill}
-            Using boldFont As New Font(dialog.Font, FontStyle.Bold)
-                Dim header As New Label With {
-                    .AutoSize = True, .MaximumSize = New Size(520, 0), .Margin = New Padding(0, 0, 0, 8),
-                    .Font = boldFont,
-                    .Text = Localization.TF("Готов архив {0} ({1}).", Path.GetFileName(package.Path),
-                                            LogPackage.DescribeSize(package.SizeBytes))}
-            Dim contents As New TextBox With {
-                .Width = 520, .Height = 140, .Multiline = True, .ReadOnly = True, .ScrollBars = ScrollBars.Vertical,
-                .Margin = New Padding(0, 0, 0, 8),
-                .Text = String.Join(Environment.NewLine, package.Entries.ToArray())}
-            Dim warning As New Label With {
-                .AutoSize = True, .MaximumSize = New Size(520, 0), .Margin = New Padding(0, 0, 0, 8),
-                .Text = Localization.T("В журнале есть пути и имена файлов, которые вы открывали, и названия ваших каталогов. Откройте архив и посмотрите, что уходит, если это важно.")}
-            Dim oversize As New Label With {
-                .AutoSize = True, .MaximumSize = New Size(520, 0), .Margin = New Padding(0, 0, 0, 8),
-                .ForeColor = CollapsibleSection.AttentionColor, .Visible = package.OverSizeLimit,
-                .Text = Localization.TF("Архив получился больше {0} МБ - такое письмо почта не пропустит. Откройте архив и пришлите только нужное.",
-                                        (LogPackage.MaxPackageBytes \ (1024L * 1024L)).ToString(CultureInfo.InvariantCulture))}
+        UiLanguage.ApplyTo(dialog)
+        Dim layout As New TableLayoutPanel With {.AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink,
+                                                 .ColumnCount = 1, .Dock = DockStyle.Fill}
+        Dim boldFont As New Font(dialog.Font, FontStyle.Bold)
+        AddHandler dialog.Disposed, Sub() boldFont.Dispose()
+        Dim header As New Label With {
+            .AutoSize = True, .MaximumSize = New Size(520, 0), .Margin = New Padding(0, 0, 0, 8),
+            .Font = boldFont,
+            .Text = Localization.TF("Готов архив {0} ({1}).", Path.GetFileName(package.Path),
+                                    LogPackage.DescribeSize(package.SizeBytes))}
+        Dim contents As New TextBox With {
+            .Width = 520, .Height = 140, .Multiline = True, .ReadOnly = True, .ScrollBars = ScrollBars.Vertical,
+            .Margin = New Padding(0, 0, 0, 8),
+            .Text = String.Join(Environment.NewLine, package.Entries.ToArray())}
+        Dim warning As New Label With {
+            .AutoSize = True, .MaximumSize = New Size(520, 0), .Margin = New Padding(0, 0, 0, 8),
+            .Text = Localization.T("В журнале есть пути и имена файлов, которые вы открывали, и названия ваших каталогов. Откройте архив и посмотрите, что уходит, если это важно.")}
+        Dim oversize As New Label With {
+            .AutoSize = True, .MaximumSize = New Size(520, 0), .Margin = New Padding(0, 0, 0, 8),
+            .ForeColor = CollapsibleSection.AttentionColor, .Visible = package.OverSizeLimit,
+            .Text = Localization.TF("Архив получился больше {0} МБ - такое письмо почта не пропустит. Откройте архив и пришлите только нужное.",
+                                    (LogPackage.MaxPackageBytes \ (1024L * 1024L)).ToString(CultureInfo.InvariantCulture))}
 
-            Dim buttons As New FlowLayoutPanel With {.AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink,
-                                                     .FlowDirection = FlowDirection.RightToLeft, .Dock = DockStyle.Fill,
-                                                     .WrapContents = False, .Margin = New Padding(0)}
-            Dim cancel As New Button With {.AutoSize = True, .MinimumSize = New Size(110, 30),
-                                           .Text = Localization.T("Отмена"), .DialogResult = DialogResult.Cancel}
-            Dim send As New Button With {.AutoSize = True, .MinimumSize = New Size(110, 30),
-                                         .Text = Localization.T("Отправить"), .Enabled = Not package.OverSizeLimit,
-                                         .DialogResult = DialogResult.OK}
-            Dim reveal As New Button With {.AutoSize = True, .MinimumSize = New Size(110, 30),
-                                           .Text = Localization.T("Открыть архив")}
-            ButtonGlyphs.Apply(cancel, "action.cancel", ButtonGlyphRole.Dismissing)
-            ButtonGlyphs.Apply(send, "action.email", ButtonGlyphRole.Affirmative)
-            ButtonGlyphs.Apply(reveal, "nav.open-external")
-            AddHandler reveal.Click, Sub() RevealPackage(package.Path)
-            buttons.Controls.Add(cancel)
-            buttons.Controls.Add(send)
-            buttons.Controls.Add(reveal)
+        Dim cancel As New Button With {.Text = Localization.T("Отмена"), .DialogResult = DialogResult.Cancel, .Name = "xsl_Cancel"}
+        Dim send As New Button With {.Text = Localization.T("Отправить"), .Enabled = Not package.OverSizeLimit,
+                                     .DialogResult = DialogResult.OK, .Name = "xsl_Send"}
+        Dim reveal As New Button With {.Text = Localization.T("Открыть архив"), .Name = "xsl_Reveal"}
+        ButtonGlyphs.Apply(reveal, "nav.open-external")
+        AddHandler reveal.Click, Sub() RevealPackage(package.Path)
+        Dim row As New DialogButtonRow() With {.Dock = DockStyle.Bottom, .Name = "xsl_Buttons", .Padding = New Padding(0, 4, 0, 0)}
+        DpiLayout.AddAnswer(row, reveal, DialogButtonRole.Command, "nav.open-external")
+        DpiLayout.AddAnswer(row, cancel, DialogButtonRole.Dismissing, "action.cancel")
+        DpiLayout.AddAnswer(row, send, DialogButtonRole.Affirmative, "action.email")
 
-            layout.Controls.Add(header)
-            layout.Controls.Add(contents)
-            layout.Controls.Add(warning)
-            layout.Controls.Add(oversize)
-            layout.Controls.Add(buttons)
-            dialog.Controls.Add(layout)
-            dialog.AcceptButton = If(package.OverSizeLimit, reveal, send)
-            dialog.CancelButton = cancel
-
-                Dim answer As DialogResult = If(owner Is Nothing, dialog.ShowDialog(), dialog.ShowDialog(owner))
-                Return answer = DialogResult.OK
-            End Using
-        End Using
+        layout.Controls.Add(header)
+        layout.Controls.Add(contents)
+        layout.Controls.Add(warning)
+        layout.Controls.Add(oversize)
+        dialog.Controls.Add(layout)
+        ' Last in the collection: the docked row takes its edge first and reads after the text in the Tab order.
+        dialog.Controls.Add(row)
+        row.Bind(dialog, bindAccept:=False)
+        ' The safe default is the Cancel side: Enter never sends (it used to - the archive holds paths and file names).
+        dialog.AcceptButton = cancel
+        DpiLayout.ApplyAutoScale(dialog)
+        Return dialog
     End Function
 
     ''' <summary>Simple MAPI first (the only path that carries an attachment); without a

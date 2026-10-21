@@ -166,8 +166,12 @@ Friend NotInheritable Class ExchangeAccountsView
     Public Property Devices As IReadOnlyList(Of ExchangeAdminDevice) = Array.Empty(Of ExchangeAdminDevice)()
     Public Property Invitations As IReadOnlyList(Of ExchangeAdminInvitation) = Array.Empty(Of ExchangeAdminInvitation)()
     Public Property SharedInvitation As ExchangeAdminSharedInvitation
+    Public Property Broadcasts As IReadOnlyList(Of ExchangeAdminBroadcast) = Array.Empty(Of ExchangeAdminBroadcast)()
+    Public Property Resources As IReadOnlyList(Of ExchangeAdminResource) = Array.Empty(Of ExchangeAdminResource)()
+    Public Property ClipboardSlot As ExchangeAdminClipboardInfo
+    Public Property Audit As ExchangeAdminAuditView
 
-    ''' <summary>Reads the accounts and, for <paramref name="devicesOf"/>, its devices. Blocks nothing: awaited.</summary>
+    ''' <summary>Reads the accounts and, for <paramref name="devicesOf"/>, its devices, broadcasts, resources, and clipboard. Blocks nothing: awaited.</summary>
     Friend Shared Async Function ReadAsync(devicesOf As String, ct As Threading.CancellationToken) As Task(Of ExchangeAccountsView)
         Dim view As New ExchangeAccountsView()
         Dim accounts As ExchangeAdminReply = Await ExchangeAdmin.ListAccountsAsync(ct).ConfigureAwait(False)
@@ -186,6 +190,18 @@ Friend NotInheritable Class ExchangeAccountsView
                 view.DevicesOf = wanted
                 view.Devices = ExchangeAdminParser.Devices(devices.DataJson)
             End If
+            Dim broReply As ExchangeAdminReply = Await ExchangeAdmin.ListBroadcastsAsync(wanted, ct).ConfigureAwait(False)
+            If broReply.Ok Then
+                view.Broadcasts = ExchangeAdminParser.Broadcasts(broReply.DataJson)
+            End If
+            Dim resReply As ExchangeAdminReply = Await ExchangeAdmin.ListResourcesAsync(wanted, ct).ConfigureAwait(False)
+            If resReply.Ok Then
+                view.Resources = ExchangeAdminParser.Resources(resReply.DataJson)
+            End If
+            Dim clipReply As ExchangeAdminReply = Await ExchangeAdmin.GetClipboardInfoAsync(wanted, ct).ConfigureAwait(False)
+            If clipReply.Ok Then
+                view.ClipboardSlot = ExchangeAdminParser.Clipboard(clipReply.DataJson)
+            End If
         End If
         Dim invReply As ExchangeAdminReply = Await ExchangeAdmin.ListInvitationsAsync(ct).ConfigureAwait(False)
         If invReply.Ok Then
@@ -195,12 +211,16 @@ Friend NotInheritable Class ExchangeAccountsView
         If sharedReply.Ok Then
             view.SharedInvitation = ExchangeAdminParser.SharedInvitation(sharedReply.DataJson)
         End If
+        Dim auditReply As ExchangeAdminReply = Await ExchangeAdmin.ListAdminAuditAsync(ct).ConfigureAwait(False)
+        If auditReply.Ok Then
+            view.Audit = ExchangeAdminParser.Audit(auditReply.DataJson)
+        End If
         Return view
     End Function
 End Class
 
 ''' <summary>
-''' What the "Accounts" part of the group draws in a state (ticket 168 section 3.1-3.2): which rows exist. Pure.
+''' What the "Accounts" part of the group draws in a state (ticket 168 section 3.1-3.2, ticket 246): which rows exist. Pure.
 ''' Buttons are shown or hidden by state, never disabled - the Hosting rule.
 ''' </summary>
 Friend NotInheritable Class ExchangeAccountsModel
@@ -222,8 +242,16 @@ Friend NotInheritable Class ExchangeAccountsModel
     Public Property ShowRevoke As Boolean
     Public Property ShowInvitations As Boolean
     Public Property ShowWithdrawInvitation As Boolean
+    Public Property ShowResources As Boolean
+    Public Property ShowUnpublishResource As Boolean
+    Public Property ShowBroadcasts As Boolean
+    Public Property ShowStopBroadcast As Boolean
+    Public Property ShowClipboard As Boolean
+    Public Property ShowAuditLog As Boolean
+    Public Property ExternalAdminActive As Boolean
+    Public Property ExternalAdminBadgeText As String = ""
 
-    Friend Shared Function Build(view As ExchangeAccountsView, selectedLogin As String, selectedDeviceId As String, Optional selectedInvHash As String = "") As ExchangeAccountsModel
+    Friend Shared Function Build(view As ExchangeAccountsView, selectedLogin As String, selectedDeviceId As String, Optional selectedInvHash As String = "", Optional selectedResId As String = "", Optional selectedBroId As String = "") As ExchangeAccountsModel
         Dim m As New ExchangeAccountsModel()
         If view Is Nothing OrElse Not view.Reached Then
             m.ShowNotReached = view IsNot Nothing
@@ -247,6 +275,19 @@ Friend NotInheritable Class ExchangeAccountsModel
         m.ShowInvitations = True
         Dim invHash As String = If(selectedInvHash, "")
         m.ShowWithdrawInvitation = invHash.Length > 0 AndAlso view.Invitations.Any(Function(i) String.Equals(i.CodeHash, invHash, StringComparison.Ordinal) AndAlso Not i.Used)
+        m.ShowResources = selected
+        m.ShowUnpublishResource = selected AndAlso Not String.IsNullOrEmpty(selectedResId) AndAlso view.Resources.Any(Function(r) String.Equals(r.ResourceId, selectedResId, StringComparison.Ordinal))
+        m.ShowBroadcasts = selected
+        m.ShowStopBroadcast = selected AndAlso Not String.IsNullOrEmpty(selectedBroId) AndAlso view.Broadcasts.Any(Function(b) String.Equals(b.BroadcastId, selectedBroId, StringComparison.Ordinal))
+        m.ShowClipboard = selected
+        m.ShowAuditLog = True
+        If view.Audit IsNot Nothing Then
+            Dim extSess = view.Audit.ActiveSessions.FirstOrDefault(Function(s) s.ClientProduct <> "local")
+            If extSess IsNot Nothing Then
+                m.ExternalAdminActive = True
+                m.ExternalAdminBadgeText = Localization.TF("Внешнее администрирование: {0} ({1})", If(String.IsNullOrEmpty(extSess.ClientProduct), "remote", extSess.ClientProduct), extSess.RemoteAddr)
+            End If
+        End If
         Return m
     End Function
 End Class

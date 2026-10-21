@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"fms/exchange-server/internal/accounts"
+	"fms/exchange-server/internal/directory"
 	"fms/exchange-server/internal/logx"
 	"fms/exchange-server/internal/password"
 )
@@ -60,6 +61,15 @@ const (
 	OpGrantAdd               = "grant.add"
 	OpGrantRemove            = "grant.remove"
 	OpGrantList              = "grant.list"
+
+	// Spec 246: management visibility operations.
+	OpBroadcastList     = "broadcast.list"
+	OpBroadcastEnd      = "broadcast.end"
+	OpResourceList      = "resource.list"
+	OpResourceUnpublish = "resource.unpublish"
+	OpClipboardInfo     = "clipboard.info"
+	OpClipboardErase    = "clipboard.erase"
+	OpAdminAuditList    = "admin.audit.list"
 )
 
 // Request is one request. It holds a password, so it prints as its operation only.
@@ -81,6 +91,12 @@ type Request struct {
 	TargetID     string                  `json:"targetId,omitempty"`
 	GuestAccount string                  `json:"guestAccount,omitempty"`
 	Limits       *accounts.AccountLimits `json:"limits,omitempty"`
+
+	// Spec 246
+	BroadcastID   string `json:"broadcastId,omitempty"`
+	ResourceID    string `json:"resourceId,omitempty"`
+	RemoteAddr    string `json:"-"`
+	ClientProduct string `json:"-"`
 }
 
 // String never prints a member.
@@ -155,7 +171,7 @@ func failFrom(err error) Response {
 		return fail(CodeBadKind, "an account kind is member or guest")
 	case errors.Is(err, accounts.ErrBadLimit), errors.Is(err, ErrBadPolicy):
 		return fail(CodeBadLimit, err.Error())
-	case errors.Is(err, ErrNoTarget), errors.Is(err, accounts.ErrNoGrant):
+	case errors.Is(err, ErrNoTarget), errors.Is(err, accounts.ErrNoGrant), errors.Is(err, directory.ErrNotFound):
 		return fail(CodeNotFound, err.Error())
 	case errors.Is(err, accounts.ErrGrantHeld):
 		return fail(CodeExists, err.Error())
@@ -181,6 +197,7 @@ func (o *Ops) Handle(req Request) Response {
 		if err := o.SaveHostSettings(*req.KeepAwake, *req.LogRetentionDays); err != nil {
 			return fail(CodeInternal, "could not save host settings")
 		}
+		o.Log.State("host-settings-changed", logx.Text("keepAwake", boolText(*req.KeepAwake)), logx.Int("logRetentionDays", *req.LogRetentionDays))
 		return okData(nil)
 	case OpAccountAdd:
 		login, overCap, err := o.AddAccountKind(req.Login, req.Password, req.Kind)
@@ -279,6 +296,41 @@ func (o *Ops) Handle(req Request) Response {
 		return okData(nil)
 	case OpGrantList:
 		return okData(o.ListGrants(req.Login, req.GuestAccount))
+	case OpBroadcastList:
+		return okData(o.ListBroadcasts(req.Login, req.DeviceID))
+	case OpBroadcastEnd:
+		bcID := req.BroadcastID
+		if bcID == "" {
+			bcID = req.TargetID
+		}
+		if err := o.EndBroadcast(req.Login, bcID); err != nil {
+			return failFrom(err)
+		}
+		return okData(nil)
+	case OpResourceList:
+		return okData(o.ListResources(req.Login))
+	case OpResourceUnpublish:
+		resID := req.ResourceID
+		if resID == "" {
+			resID = req.TargetID
+		}
+		if err := o.UnpublishResource(req.Login, resID); err != nil {
+			return failFrom(err)
+		}
+		return okData(nil)
+	case OpClipboardInfo:
+		info, err := o.GetClipboardInfo(req.Login)
+		if err != nil {
+			return failFrom(err)
+		}
+		return okData(info)
+	case OpClipboardErase:
+		if err := o.EraseClipboard(req.Login); err != nil {
+			return failFrom(err)
+		}
+		return okData(nil)
+	case OpAdminAuditList:
+		return okData(o.ListAudit())
 	}
 	return fail(CodeBadRequest, "unknown operation")
 }
@@ -321,7 +373,24 @@ func serveOne(c net.Conn, o *Ops, log *logx.Logger) {
 		resp = fail(CodeBadRequest, "the request is not one JSON object within the bound")
 	} else {
 		log.Info("admin-request", logx.Text("op", req.Op))
-		resp = o.Handle(req)
+		resp = o.HandleAudited(req, logx.AuditEvent{Transport: "NamedPipe", Product: ClientProductLocal})
+		if o.Audit != nil {
+			target := req.Login
+			if target == "" {
+				target = req.TargetID
+			}
+			st := "OK"
+			if !resp.OK {
+				st = "Failed: " + resp.Code
+			}
+			switch req.Op {
+			case OpAccountAdd, OpAccountPasswd, OpAccountKind, OpAccountRemove, OpAccountLimits,
+				OpDeviceRevoke, OpDevicePairingCode, OpInvitationCreate, OpInvitationWithdraw,
+				OpSharedInvitationSet, OpPolicySet, OpGrantAdd, OpGrantRemove,
+				OpBroadcastEnd, OpResourceUnpublish, OpClipboardErase:
+				o.Audit.Record("local", ClientProductLocal, "operator", req.Op, target, st)
+			}
+		}
 	}
 	b, _ := json.Marshal(resp)
 	_, _ = c.Write(append(b, '\n'))

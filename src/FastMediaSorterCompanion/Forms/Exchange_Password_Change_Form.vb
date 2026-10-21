@@ -23,6 +23,7 @@ Friend NotInheritable Class Exchange_Password_Change_Form
     Private _chkShow As CheckBox
     Private _lblStatus As Label
     Private _iconHandle As IntPtr
+    Private _answerRow As DialogButtonRow
     Private _old As String = ""
     Private _new As String = ""
 
@@ -72,6 +73,7 @@ Friend NotInheritable Class Exchange_Password_Change_Form
             .AutoSizeMode = AutoSizeMode.GrowAndShrink, .Padding = New Padding(14, 10, 14, 8)}
         body.ColumnStyles.Add(New ColumnStyle(SizeType.Percent, 100.0F))
 
+        body.Controls.Add(ExchangeMark.Heading(Text, 32, AddressOf CompanionAssets.OpenBundledAsset))
         body.Controls.Add(New Label With {.AutoSize = True, .MaximumSize = New Size(ContentWidth, 0), .Margin = New Padding(0, 0, 0, 2),
             .Text = Localization.T("Старый пароль:")})
         _txtOld = New TextBox With {.Width = ContentWidth, .UseSystemPasswordChar = True, .Margin = New Padding(0, 0, 0, 8)}
@@ -93,7 +95,8 @@ Friend NotInheritable Class Exchange_Password_Change_Form
                                                _txtNew.UseSystemPasswordChar = Not _chkShow.Checked
                                                _txtRepeat.UseSystemPasswordChar = Not _chkShow.Checked
                                            End Sub
-        body.Controls.Add(_chkShow)
+        ' A boolean row (BOOLEAN-OPTION 2.0, ticket 243 T-11c-b2a): the check box keeps its field, default and handlers.
+        body.Controls.Add(OptionRows.InFlow(_chkShow))
 
         body.Controls.Add(New Label With {.AutoSize = True, .MaximumSize = New Size(ContentWidth, 0), .ForeColor = ThemeService.Palette.TextMuted,
             .Margin = New Padding(0, 0, 0, 6), .Text = Localization.T("Пароль: не короче 10 символов, с заглавной латинской буквой, со строчной латинской буквой и с цифрой.")})
@@ -102,17 +105,22 @@ Friend NotInheritable Class Exchange_Password_Change_Form
             .Margin = New Padding(0, 0, 0, 4), .Text = ""}
         body.Controls.Add(_lblStatus)
 
-        Dim btnRow As New FlowLayoutPanel With {.AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink, .Margin = New Padding(0, 4, 0, 2)}
+        ' The answers ride the shared bottom row (ticket 243 T-8b, BUTTONS 2.0 sections 3 and 4): Cancel first, the final
+        ' affirmative answer last, widths from the caption and its glyph. Bind keeps their meaning: Enter is the change
+        ' (the safe default - the old password is still asked and the server has the last word), Escape is Cancel.
         Dim btnOk As Button = NewButton(Localization.T("Сменить пароль.."), AddressOf OnOk, "action.confirm", ButtonGlyphRole.Affirmative)
         Dim btnCancel As Button = NewButton(Localization.T("Отмена"), Sub() Me.DialogResult = DialogResult.Cancel, "nav.close", ButtonGlyphRole.Dismissing)
         btnCancel.DialogResult = DialogResult.Cancel
-        btnRow.Controls.Add(btnOk)
-        btnRow.Controls.Add(btnCancel)
-        body.Controls.Add(btnRow)
+        btnOk.Name = "xpc_Ok"
+        btnCancel.Name = "xpc_Cancel"
+        _answerRow = New DialogButtonRow() With {.Dock = DockStyle.Bottom, .Name = "xpc_Buttons", .Padding = New Padding(14, 4, 14, 10)}
+        DpiLayout.AddAnswer(_answerRow, btnOk, DialogButtonRole.Affirmative, "action.confirm")
+        DpiLayout.AddAnswer(_answerRow, btnCancel, DialogButtonRole.Dismissing, "nav.close")
 
-        Me.AcceptButton = btnOk
-        Me.CancelButton = btnCancel
         Me.Controls.Add(body)
+        ' Last in the collection: the docked row takes its edge first and reads after the fields in the Tab order.
+        Me.Controls.Add(_answerRow)
+        _answerRow.Bind(Me)
         Me.AutoSize = True
         Me.AutoSizeMode = AutoSizeMode.GrowAndShrink
 
@@ -121,6 +129,7 @@ Friend NotInheritable Class Exchange_Password_Change_Form
 
     Protected Overrides Sub OnLoad(e As EventArgs)
         MyBase.OnLoad(e)
+        OptionRows.ArrangeAll(Me)
         DpiLayout.ClampToWorkingArea(Me)
         DpiLayout.CenterOnOwner(Me)
     End Sub

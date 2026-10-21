@@ -40,6 +40,11 @@ Friend NotInheritable Class ExchangeConnectionStringText
         Return Localization.T("Скопировать строку")
     End Function
 
+    ''' <summary>The browser sign-in link https://&lt;x&gt;/#&lt;string&gt; (WEB-BINDING page-served-by-the-server 3), copied beside the string.</summary>
+    Friend Shared Function CopySignInLinkButton() As String
+        Return Localization.T("Скопировать ссылку для входа")
+    End Function
+
     Friend Shared Function SaveButton() As String
         Return Localization.T("Сохранить в файл..")
     End Function

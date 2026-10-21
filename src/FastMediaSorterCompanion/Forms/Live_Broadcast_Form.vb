@@ -85,6 +85,12 @@ Public Class Live_Broadcast_Form
         BuildUi()
     End Sub
 
+    Protected Overrides Sub OnLoad(e As EventArgs)
+        MyBase.OnLoad(e)
+        ' The three boolean rows are laid out once the window has its scale (BOOLEAN-OPTION 2.0, ticket 243 T-11c-b2a).
+        OptionRows.ArrangeAll(Me)
+    End Sub
+
     Private Sub SafeUi(action As Action)
         If IsDisposed OrElse Not IsHandleCreated Then Return
         Try
@@ -231,7 +237,9 @@ Public Class Live_Broadcast_Form
 
         Dim cursorFlow As New FlowLayoutPanel With {.AutoSize = True, .FlowDirection = FlowDirection.LeftToRight}
         _chkCursor = New CheckBox With {.AutoSize = True, .Text = Localization.T("Показывать курсор"), .Checked = True}
-        cursorFlow.Controls.Add(_chkCursor)
+        ' The three options of this window are boolean rows (BOOLEAN-OPTION 2.0, ticket 243 T-11c-b2a): each check box keeps its
+        ' field, default and handlers; the row around it is what the flow or the cell holds (and what hides and shows).
+        cursorFlow.Controls.Add(OptionRows.InFlow(_chkCursor, Nothing, OptionRowFit.Content))
         screenRows.Controls.Add(New Label With {.AutoSize = True}, 0, 1)
         screenRows.Controls.Add(cursorFlow, 1, 1)
         videoRows.Controls.Add(screenRows, 0, 0)
@@ -264,7 +272,7 @@ Public Class Live_Broadcast_Form
         ' (one source kind per broadcast), VIDEO_ONLY drops it.
         Dim noSoundFlow As New FlowLayoutPanel With {.AutoSize = True, .FlowDirection = FlowDirection.LeftToRight}
         _chkNoSound = New CheckBox With {.AutoSize = True, .Text = Localization.T("Только видео, без звука")}
-        noSoundFlow.Controls.Add(_chkNoSound)
+        noSoundFlow.Controls.Add(OptionRows.InFlow(_chkNoSound, Nothing, OptionRowFit.Content))
         videoRows.Controls.Add(noSoundFlow, 0, 2)
 
         pnl.Controls.Add(videoRows, 0, 3)
@@ -285,15 +293,16 @@ Public Class Live_Broadcast_Form
 
         _chkAllowLanViewers = New CheckBox With {
             .AutoSize = True,
-            .Text = Localization.T("Разрешить зрителям в моей сети"),
-            .Visible = False
+            .Text = Localization.T("Разрешить зрителям в моей сети")
         }
         ' Section 3.4: the LAN video listener is off by default; the tick is the video sources' own
         ' row (video without it starts exchange-only, 173 - not built, so a start is refused until
         ' the user ticks it). The camera's picture is exactly the screen's "anyone on the segment".
         AddHandler _rbScreen.CheckedChanged, Sub() UpdateAllowLanVisibility()
         AddHandler _rbCamera.CheckedChanged, Sub() UpdateAllowLanVisibility()
-        pnl.Controls.Add(_chkAllowLanViewers, 0, 5)
+        Dim allowLanRow As OptionRowHost = OptionRows.InFlow(_chkAllowLanViewers, Nothing, OptionRowFit.Content)
+        allowLanRow.Visible = False   ' the video sources show it (UpdateAllowLanVisibility)
+        pnl.Controls.Add(allowLanRow, 0, 5)
 
         Dim warn As New Label With {
             .AutoSize = True,
@@ -380,7 +389,7 @@ Public Class Live_Broadcast_Form
         If _chkAllowLanViewers Is Nothing Then Return
         Dim video As Boolean = (_rbScreen IsNot Nothing AndAlso _rbScreen.Checked) OrElse
                                (_rbCamera IsNot Nothing AndAlso _rbCamera.Checked)
-        _chkAllowLanViewers.Visible = video
+        OptionRows.RowOf(_chkAllowLanViewers).Visible = video
     End Sub
 
     ''' <summary>The device picker's rows: the cameras the frame-source groups expose, metadata

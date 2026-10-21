@@ -1044,7 +1044,14 @@ Partial Public Class Image_Panel_Form
                 End Using
             End If
 #End If
+#If NETFRAMEWORK Then
             Dim imageData = LoadImageWithStream(imagePath)
+#Else
+            ' A thumbnail of an animation is its first frame; the whole transcode of a long one is
+            ' seconds of work for one grid cell (spec 241 rule 14).
+            Dim thumbnailFailure As PathFailureKind = PathFailureKind.Content
+            Dim imageData = LoadImageStaged(imagePath, thumbnailFailure, ImageLoadStage.FirstFrame)
+#End If
             If imageData Is Nothing Then Return Nothing
 
             Using ms As MemoryStream = imageData.Item2

@@ -126,11 +126,37 @@ Partial Public Class Main_Form
             Return True
         End If
 
-        lbl_Status.Text = SlotHealthText(slot_Key, verdict.State, by_Pointer)
-        Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1684: slot " & slot_Key & " refused: " &
-                        verdict.State.ToString() & " (" & verdict.Detail & ")")
+        ShowSlotRefusal(slot_Key, destination, verdict, by_Pointer)
         Return False
     End Function
+
+    ''' <summary>
+    ''' Says on the status line why a slot was refused - the real reason where the probe learned one
+    ''' (<see cref="SlotRefusalText"/>) - and writes the same refusal to the log, which in a Release
+    ''' build used to say nothing at all (the old Debug.WriteLine is compiled out). The key, caption and
+    ''' text are kept so a late answer can restate the line (<see cref="ApplyLateSlotAnswer"/>) - and only
+    ''' if nobody has written over it since.
+    ''' </summary>
+    Private Sub ShowSlotRefusal(slot_Key As String, destination As String, verdict As SlotVerdict, fromPointer As Boolean)
+        Dim text As String = SlotRefusalText(slot_Key, destination, verdict, fromPointer)
+        lbl_Status.Text = text
+        slot_Refusal_Destination = destination.Trim()
+        slot_Refusal_Key = slot_Key
+        slot_Refusal_Pointer = fromPointer
+        slot_Refusal_Text = lbl_Status.Text
+        AppFileLogger.WriteLine("Slot " & slot_Key & " refused: " & verdict.State.ToString() &
+                                If(String.IsNullOrEmpty(verdict.Detail), "", " (" & verdict.Detail & ")") &
+                                " -> " & text)
+        Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1684: slot " & slot_Key & " refused: " &
+                        verdict.State.ToString() & " (" & verdict.Detail & ")")
+    End Sub
+
+    ''' <summary>The destination, key and exact status text of the latest slot refusal. A late answer
+    ''' may rewrite the line only while it still shows that very text for that very destination.</summary>
+    Private slot_Refusal_Destination As String = ""
+    Private slot_Refusal_Key As String = ""
+    Private slot_Refusal_Pointer As Boolean
+    Private slot_Refusal_Text As String = ""
 
     ''' <summary>
     ''' Starts a probe and, when it answers, runs the action again with the fresh verdict in
@@ -187,7 +213,7 @@ Partial Public Class Main_Form
                               ' next press into an instant, cached move of the RIGHT file.
                               Dim answer As SlotVerdict = CachedSlotVerdict(destination)
                               If answer IsNot Nothing AndAlso Not SlotHealthPolicy.IsUsable(answer.State) Then
-                                  lbl_Status.Text = SlotHealthText(SlotKeyCaption(slot), answer.State, by_Pointer)
+                                  ShowSlotRefusal(SlotKeyCaption(slot), destination, answer, by_Pointer)
                               ElseIf by_Pointer Then
                                   lbl_Status.Text = Localization.TF("каталог {0} доступен - нажмите ещё раз", SlotKeyCaption(slot))
                               Else
@@ -263,7 +289,10 @@ Partial Public Class Main_Form
                 If work.IsCompleted AndAlso Not work.IsFaulted AndAlso Not work.IsCanceled Then
                     verdict = work.Result
                 Else
-                    verdict = SlotVerdict.ForState(SlotState.Unreachable, DateTime.UtcNow, "probe timed out")
+                    ' Out of time, or the worker faulted. Only the first is "nothing answered"; a faulted
+                    ' worker has no cause to name and keeps the generic sentence.
+                    verdict = SlotVerdict.ForState(SlotState.Unreachable, DateTime.UtcNow, "probe timed out",
+                                                   If(work.IsCompleted, SlotCause.None, SlotCause.NoAnswer))
                 End If
 
                 Dim posted As Boolean = False
@@ -286,7 +315,71 @@ Partial Public Class Main_Form
                 ' threw: finish never runs, and the path used to stay "in flight" for good, so
                 ' every later press answered "checking.." and started nothing (057.S05-6).
                 If Not posted Then abandon(verdict)
+
+                ' The abandoned worker usually DOES answer a moment later (a name that does not resolve
+                ' answers in a few seconds, past the local bound), and that answer holds the real reason.
+                If posted AndAlso verdict.Cause = SlotCause.NoAnswer AndAlso Not work.IsCompleted Then
+                    AttachLateSlotAnswer(key, verdict, work)
+                End If
             End Sub)
+    End Sub
+
+    ''' <summary>
+    ''' When the probe that ran out of time finally answers, keep what it learned: the log gets the line, and
+    ''' the cached verdict and the status line (when the latter still shows the "did not answer" refusal) are
+    ''' restated with the real cause. The state never changes here - Unreachable stays Unreachable, so no
+    ''' action is released by a late answer.
+    ''' </summary>
+    Private Sub AttachLateSlotAnswer(key As String, timedOut As SlotVerdict, work As Task(Of SlotVerdict))
+        work.ContinueWith(
+            Sub(done As Task(Of SlotVerdict))
+                If done.IsFaulted Then
+                    ' Observe the exception so it is not rethrown on the finalizer thread.
+                    Dim ignored As Exception = done.Exception
+                    Return
+                End If
+                If done.IsCanceled Then Return
+                Dim answer As SlotVerdict = done.Result
+                Try
+                    If Not Me.IsDisposed AndAlso Me.IsHandleCreated Then
+                        Me.BeginInvoke(New Action(Sub() ApplyLateSlotAnswer(key, timedOut, answer)))
+                    End If
+                Catch ex As Exception
+                    AppFileLogger.LogException("Late slot probe answer could not be posted to the UI thread", ex)
+                End Try
+            End Sub, TaskScheduler.Default)
+    End Sub
+
+    ''' <summary>UI thread. See <see cref="AttachLateSlotAnswer"/>.</summary>
+    Private Sub ApplyLateSlotAnswer(key As String, timedOut As SlotVerdict, answer As SlotVerdict)
+        If Me.IsDisposed Then Return
+        AppFileLogger.WriteLine("Slot probe [" & answer.State.ToString() & "] " & key & " - answered after the bound" &
+                                If(String.IsNullOrEmpty(answer.Detail), "", "; " & answer.Detail))
+
+        ' Only a bad answer that names a reason is worth restating: a Ready one is not acted on (the
+        ' standing verdict is fresher than the press it would belong to) and a nameless one adds nothing.
+        If answer.State <> SlotState.Unreachable OrElse (answer.Cause = SlotCause.None AndAlso answer.ReasonText.Length = 0) Then Return
+
+        Dim enriched As SlotVerdict = SlotVerdict.ForState(timedOut.State, timedOut.CheckedUtc, timedOut.Detail & "; late: " & answer.Detail, answer.Cause).WithReason(answer.ReasonText)
+        Dim replaced As Boolean = False
+        SyncLock slot_Verdicts
+            Dim standing As SlotVerdict = Nothing
+            If slot_Verdicts.TryGetValue(key, standing) AndAlso ReferenceEquals(standing, timedOut) Then
+                slot_Verdicts(key) = enriched
+                replaced = True
+            End If
+        End SyncLock
+        If Not replaced Then Return
+
+        If String.Equals(slot_Refusal_Destination, key, StringComparison.OrdinalIgnoreCase) AndAlso
+           String.Equals(lbl_Status.Text, slot_Refusal_Text, StringComparison.Ordinal) Then
+            ShowSlotRefusal(slot_Refusal_Key, key, enriched, slot_Refusal_Pointer)
+        End If
+        Try
+            RaiseEvent SlotHealthChanged(Me, EventArgs.Empty)
+        Catch ex As Exception
+            AppFileLogger.LogException("SlotHealthChanged subscriber", ex)
+        End Try
     End Sub
 
     ''' <summary>
@@ -317,7 +410,8 @@ Partial Public Class Main_Form
         ' first, and the plain-folder probe below then answers exactly as for any other share.
         Dim smb_Failure As ResourceFailure = slots?.EnsureSmbSession(destination)
         If smb_Failure IsNot Nothing AndAlso RemoteSlotPolicy.StateFor(smb_Failure) = SlotState.Denied Then
-            Return SlotVerdict.ForState(SlotState.Denied, now_Utc, "share session: " & smb_Failure.ToString())
+            Return SlotVerdict.ForState(SlotState.Denied, now_Utc, "share session: " & smb_Failure.ToString()).
+                WithReason(ResourceMessages.ForFailure(smb_Failure))
         End If
 
         Dim full As String
@@ -328,7 +422,9 @@ Partial Public Class Main_Form
             Return SlotVerdict.ForState(SlotState.Invalid, now_Utc, ex.Message)
         End Try
 
-        Dim leaf As PathFailureKind = TouchDirectory(full)
+        Dim leaf_Cause As SlotCause = SlotCause.None
+        Dim leaf_Detail As String = ""
+        Dim leaf As PathFailureKind = TouchDirectory(full, leaf_Cause, leaf_Detail)
         If leaf = PathFailureKind.None Then Return SlotVerdict.ForState(SlotState.Ready, now_Utc)
 
         ' May not LIST is not may not WRITE: a write-only drop-box refuses the listing and
@@ -347,7 +443,9 @@ Partial Public Class Main_Form
             End Try
 
             If Not String.IsNullOrEmpty(parent) Then
-                Dim above As PathFailureKind = TouchDirectory(parent)
+                Dim above_Cause As SlotCause = SlotCause.None
+                Dim above_Detail As String = ""
+                Dim above As PathFailureKind = TouchDirectory(parent, above_Cause, above_Detail)
                 If above = PathFailureKind.None Then
                     Return SlotVerdict.ForState(If(allowCreate, SlotState.WillBeCreated, SlotState.Missing),
                                                 now_Utc, "leaf missing, parent reachable")
@@ -355,24 +453,37 @@ Partial Public Class Main_Form
                 ' The parent is the honest witness: if IT is unreachable, the leaf's
                 ' absence says nothing about the leaf - the same reasoning ReadFailure
                 ' applies on the read path (§10.2).
-                If above <> PathFailureKind.Missing Then Return SlotVerdict.ForState(StateFor(above), now_Utc, "parent: " & above.ToString())
+                If above <> PathFailureKind.Missing Then
+                    Return SlotVerdict.ForState(StateFor(above), now_Utc, "parent: " & above.ToString() & " " & above_Detail,
+                                                CauseFor(StateFor(above), above_Cause))
+                End If
             End If
 
             Return SlotVerdict.ForState(SlotState.Missing, now_Utc)
         End If
 
-        Return SlotVerdict.ForState(StateFor(leaf), now_Utc)
+        Return SlotVerdict.ForState(StateFor(leaf), now_Utc, leaf_Detail, CauseFor(StateFor(leaf), leaf_Cause))
+    End Function
+
+    ''' <summary>A cause names only an Unreachable verdict: a missing or denied folder has its own sentence.</summary>
+    Private Shared Function CauseFor(state As SlotState, cause As SlotCause) As SlotCause
+        Return If(state = SlotState.Unreachable, cause, SlotCause.None)
     End Function
 
     ''' <summary>Asks a directory one question and reports what it said. None means it
-    ''' answered.</summary>
-    Private Shared Function TouchDirectory(folder As String) As PathFailureKind
+    ''' answered. <paramref name="cause"/> is the nameable reason read from the error CODE (never its text),
+    ''' and <paramref name="detail"/> the exception type and HRESULT, for the log only.</summary>
+    Private Shared Function TouchDirectory(folder As String, ByRef cause As SlotCause, ByRef detail As String) As PathFailureKind
+        cause = SlotCause.None
+        detail = ""
         Try
             Using walker As IEnumerator(Of String) = Directory.EnumerateFileSystemEntries(folder).GetEnumerator()
                 walker.MoveNext()
             End Using
             Return PathFailureKind.None
         Catch ex As Exception
+            cause = SlotCauses.OfException(ex)
+            detail = ex.GetType().Name & " 0x" & ex.HResult.ToString("X8")
             Return PathFailure.Classify(ex)
         End Try
     End Function
@@ -433,6 +544,64 @@ Partial Public Class Main_Form
                 If fromPointer Then Return Localization.TF("! Каталог {0}: нет связи с папкой. Нажмите ещё раз, чтобы повторить проверку.", slot_Key)
                 Return Localization.TF("! Каталог {0}: нет связи с папкой. Нажмите клавишу ещё раз, чтобы повторить проверку.", slot_Key)
         End Select
+    End Function
+
+    ''' <summary>
+    ''' The status-line sentence for a refused slot, naming the REAL reason where the probe learned one
+    ''' (owner request 2026-10-17). Three sources, in order: a finished sentence from the resource layer
+    ''' (<see cref="SlotVerdict.ReasonText"/> - a server that refused the login, a folder it denied); a cause read
+    ''' from the system's error CODE (<see cref="SlotVerdict.Cause"/>), phrased here in the user's language; and
+    ''' otherwise the generic <see cref="SlotHealthText"/>. No exception text is ever shown (APP-BEHAVIOUR rule 6).
+    ''' The "press again" hint rides on the unreachable case only, as before.
+    ''' </summary>
+    Private Function SlotRefusalText(slot_Key As String, destination As String, verdict As SlotVerdict,
+                                     fromPointer As Boolean) As String
+        If verdict.State <> SlotState.Denied AndAlso verdict.State <> SlotState.Unreachable Then
+            Return SlotHealthText(slot_Key, verdict.State, fromPointer)
+        End If
+
+        Dim sentence As String
+        If verdict.ReasonText.Length > 0 Then
+            ' The resource layer's sentences carry no full stop; the wrapper supplies it, so a hint can follow.
+            sentence = Localization.TF("! Каталог {0}: {1}.", slot_Key, verdict.ReasonText)
+        ElseIf verdict.State = SlotState.Unreachable AndAlso verdict.Cause <> SlotCause.None Then
+            Dim place As String = SlotPlace(destination, verdict.Cause)
+            Select Case verdict.Cause
+                Case SlotCause.HostNotFound
+                    sentence = Localization.TF("! Каталог {0}: компьютер «{1}» не найден в сети - он выключен, не в этой сети или имя указано неверно.", slot_Key, place)
+                Case SlotCause.ShareNotFound
+                    sentence = Localization.TF("! Каталог {0}: общая папка «{1}» не найдена - проверьте имя папки на компьютере.", slot_Key, place)
+                Case SlotCause.NetworkDown
+                    sentence = Localization.TF("! Каталог {0}: сеть до «{1}» недоступна - проверьте подключение к сети.", slot_Key, place)
+                Case SlotCause.ConnectionLost
+                    sentence = Localization.TF("! Каталог {0}: связь с «{1}» оборвалась.", slot_Key, place)
+                Case SlotCause.NotReady
+                    sentence = Localization.TF("! Каталог {0}: устройство «{1}» не готово - диск, карта или сетевой диск не подключены.", slot_Key, place)
+                Case Else
+                    sentence = Localization.TF("! Каталог {0}: «{1}» не ответил за {2} с.", slot_Key, place,
+                                               RemoteSlotPolicy.ProbeTimeoutMs(destination.Trim()) \ 1000)
+            End Select
+        Else
+            Return SlotHealthText(slot_Key, verdict.State, fromPointer)
+        End If
+
+        If verdict.State <> SlotState.Unreachable Then Return sentence
+        Return sentence & " " & If(fromPointer,
+                                   Localization.T("Нажмите ещё раз, чтобы повторить проверку."),
+                                   Localization.T("Нажмите клавишу ещё раз, чтобы повторить проверку."))
+    End Function
+
+    ''' <summary>The place a cause sentence names: for a saved server the resource's own name, otherwise the
+    ''' computer, share or drive of the path (<see cref="SlotCauses.PlaceFor"/>).</summary>
+    Private Function SlotPlace(destination As String, cause As SlotCause) As String
+        If ResourceLocator.IsLocator(destination) Then
+            Dim descriptor As ResourceDescriptor = Nothing
+            Dim remotePath As String = ""
+            EnsureRemoteSlots().Locate(destination, descriptor, remotePath)
+            If descriptor IsNot Nothing AndAlso Not String.IsNullOrEmpty(descriptor.DisplayName) Then Return descriptor.DisplayName
+            Return destination
+        End If
+        Return SlotCauses.PlaceFor(destination, cause)
     End Function
 
     ''' <summary>The same reason in three words, for the overlay tooltip and the grid

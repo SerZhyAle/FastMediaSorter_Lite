@@ -35,9 +35,12 @@ Friend NotInheritable Class Secure_Password_Form
     Private ReadOnly field As TextBox
     Private ReadOnly reveal As CheckBox
     Private ReadOnly remember As CheckBox
+    Private ReadOnly revealRow As OptionRowHost
+    Private ReadOnly rememberRow As OptionRowHost
     Private ReadOnly warning As Label
     Private ReadOnly okButton As Button
     Private ReadOnly dismissButton As Button
+    Private ReadOnly answerRow As DialogButtonRow
 
     ''' <summary>True once the user has been shown the empty-credential statement and
     ''' confirmed anyway - the second press is the answer, the first one is the warning.</summary>
@@ -69,7 +72,9 @@ Friend NotInheritable Class Secure_Password_Form
         Me.MinimizeBox = False
         Me.ShowInTaskbar = False
         Me.StartPosition = FormStartPosition.CenterParent
-        Me.ClientSize = New Size(460, 186)
+        ' The authored content ends at 178 (the two 40 px option rows, then the warning line); the bottom row below it is 50 tall
+        ' (8 + one 32 line + 10) at 96 dpi.
+        Me.ClientSize = New Size(460, 228)
 
         Dim family As String = Localization.FontFamily()
         If family IsNot Nothing Then
@@ -97,8 +102,6 @@ Friend NotInheritable Class Secure_Password_Form
 
         reveal = New CheckBox With {
             .Name = "secure_Reveal",
-            .AutoSize = True,
-            .Location = New Point(14, 86),
             .Text = Localization.T("Показать пароль")
         }
         ' A deliberate reveal, and it starts off: somebody typing a password over a
@@ -107,16 +110,19 @@ Friend NotInheritable Class Secure_Password_Form
 
         remember = New CheckBox With {
             .Name = "secure_Remember",
-            .AutoSize = True,
-            .Location = New Point(14, 110),
             .Checked = True,
             .Text = Localization.T("Помнить, пока программа открыта")
         }
 
+        ' Both are option rows of the Settings anatomy (ticket 243 T-11b, BOOLEAN-OPTION 2.0): the same check boxes with the
+        ' same names, state and handlers, a 20 px box in a 32 px target, the caption beside it.
+        revealRow = DialogOptionRow.CreateAt(reveal, Nothing, 14, 80, 460)
+        rememberRow = DialogOptionRow.CreateAt(remember, Nothing, 14, 120, 460)
+
         warning = New Label With {
             .Name = "secure_Warning",
             .AutoSize = False,
-            .Location = New Point(14, 134),
+            .Location = New Point(14, 162),
             .Size = New Size(432, 16),
             .ForeColor = Color.Firebrick,
             .Text = If(retry, Localization.T("Не открылось: пароль может быть неверным, файл может не быть контейнером, либо его изменили."), "")
@@ -124,33 +130,31 @@ Friend NotInheritable Class Secure_Password_Form
 
         okButton = New Button With {
             .Name = "secure_Ok",
-            .Location = New Point(266, 150),
-            .Size = New Size(86, 28),
             .Text = Localization.T("Открыть"),
             .DialogResult = DialogResult.None
         }
         AddHandler okButton.Click, AddressOf Confirm
-        ButtonGlyphs.Apply(okButton, "action.confirm", ButtonGlyphRole.Affirmative)
 
         dismissButton = New Button With {
             .Name = "secure_Cancel",
-            .Location = New Point(360, 150),
-            .Size = New Size(86, 28),
             .Text = Localization.T("Отмена"),
             .DialogResult = DialogResult.Cancel
         }
-        ButtonGlyphs.Apply(dismissButton, "action.cancel", ButtonGlyphRole.Dismissing)
+
+        ' The answers ride the shared bottom row (ticket 243 T-8b, BUTTONS 2.0 sections 3 and 4): Cancel first, Open
+        ' last, widths from the caption and its glyph. Bind keeps their meaning: Enter is Open (the safe default - it
+        ' reads, it destroys nothing), and Escape, the close box and Cancel are the same path, which changes nothing.
+        answerRow = New DialogButtonRow() With {.Dock = DockStyle.Bottom, .Name = "secure_Buttons", .Padding = New Padding(14, 8, 14, 10)}
+        answerRow.Add(okButton, DialogButtonRole.Affirmative, "action.confirm")
+        answerRow.Add(dismissButton, DialogButtonRole.Dismissing, "action.cancel")
 
         Me.Controls.Add(prompt)
         Me.Controls.Add(field)
-        Me.Controls.Add(reveal)
-        Me.Controls.Add(remember)
+        Me.Controls.Add(revealRow)
+        Me.Controls.Add(rememberRow)
         Me.Controls.Add(warning)
-        Me.Controls.Add(okButton)
-        Me.Controls.Add(dismissButton)
-        Me.AcceptButton = okButton
-        ' Escape, the close box and Cancel are the same path, and it changes nothing.
-        Me.CancelButton = dismissButton
+        Me.Controls.Add(answerRow)
+        answerRow.Bind(Me)
 
         ' LAST line of the builder: scaling touches only the children that exist by now.
         DialogLayout.ApplyAutoScale(Me)
@@ -170,6 +174,7 @@ Friend NotInheritable Class Secure_Password_Form
     Protected Overrides Sub OnLoad(e As EventArgs)
         MyBase.OnLoad(e)
         DialogLayout.FitContent(Me)
+        DialogLayout.KeepRoomForRow(Me, answerRow)
     End Sub
 
     Protected Overrides Sub OnShown(e As EventArgs)

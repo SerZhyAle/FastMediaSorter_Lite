@@ -564,7 +564,8 @@ Partial Public Class Main_Form
                 video_Seek.Enabled = True
             End If
 
-            Dim pos_Ms As Long = vlc_Media_Player.Time
+            ' PlayerTimeMs / PlayerPosition: the player's own, except for an animation video, whose clock LibVLC does not run (spec 242).
+            Dim pos_Ms As Long = PlayerTimeMs()
             Dim len_Ms As Long = vlc_Media_Player.Length
 
             ' Not while the user is holding it - the tick would fight the drag - and not in the moment after the
@@ -572,7 +573,7 @@ Partial Public Class Main_Form
             ' where the user put them.
             Dim holding As Boolean = Not TransportRules.SeekTickMayOverwrite(video_Seek.IsDragging, MonotonicClock.NowMs(), video_Seek_Hold_Until_Ms)
             If Not holding Then
-                video_Seek.Value = vlc_Media_Player.Position
+                video_Seek.Value = PlayerPosition()
             ElseIf Not video_Seek.IsDragging AndAlso len_Ms > 0 Then
                 pos_Ms = CLng(len_Ms * video_Seek.Value)
             End If
@@ -728,11 +729,11 @@ Partial Public Class Main_Form
         If vlc_Media_Player Is Nothing Then Return
         Try
             If TransportRules.CanSeekTo(vlc_Media_Player.IsSeekable, vlc_Media_Player.Length) Then
-                vlc_Media_Player.Position = CSng(video_Seek.Value)
+                SeekPlayerPosition(CSng(video_Seek.Value))
                 video_Seek_Hold_Until_Ms = MonotonicClock.NowMs() + TransportRules.Seek_Hold_Ms
             Else
                 ' A stream or a file of unknown length cannot be sought: put the thumb back where the player is.
-                video_Seek.Value = vlc_Media_Player.Position
+                video_Seek.Value = PlayerPosition()
             End If
         Catch ex As Exception
             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w2503: seek failed: " & ex.Message)

@@ -50,9 +50,17 @@ Partial Public Class Table_Form
     Private modernSettingsSubtitle As Label
     Private modernSettingsFooterText As Label
     Private modernSettingsNavButtons As Button()
+    ' The page rail (SETTINGS-NAVIGATION 2.0 section 2, ticket 243 T-7a): the list the nav rows live in, and the
+    ' single-line width of its longest caption in the current language, measured once per language/scale.
+    Private modernSettingsRail As SettingsRailList
+    Private modernRailLongestCaptionPx As Integer
+    ''' <summary>The rail's width before any caption has been measured - the window's first size only.</summary>
+    Private Const ProvisionalRailLogical As Integer = 218
     Private modernSidebarSectionLabel As Label
     Private modernProductLabel As Label
     Private modernDataLayoutBuilt As Boolean
+    Private recipientsHost As Panel
+    Private fittingRecipientsHost As Boolean
     Private modernTranslationPage As TabPage
     Private modernAudioPage As TabPage
     Private modernAboutPage As TabPage
@@ -335,7 +343,7 @@ Partial Public Class Table_Form
         MinimumSize = New Size(Sp(780), Sp(400))
         ' Start at the content-fit floor so the first page is not built and measured
         ' at a larger size only to be shrunk again before its first frame.
-        ClientSize = New Size(Sp(218 + 560 + 48), Sp(520))
+        ClientSize = New Size(Sp(ProvisionalRailLogical + 560 + 48), Sp(520))
         RestoreModernSettingsWindowSize()
         BackColor = SettingsCanvas
         Font = SettingsFont("Segoe UI", Sf(9.0F), FontStyle.Regular)
@@ -345,9 +353,12 @@ Partial Public Class Table_Form
             .BackColor = SettingsCanvas,
             .Padding = Padding.Empty
         }
+        ' The rail's first width and side are PROVISIONAL: ArrangeModernRail sets the width from the measured
+        ' captions (SettingsRailRules.RailWidth) and the side from the reading direction (SettingsRailList.DockFor)
+        ' as soon as the captions are localized, and again on a language, scale or direction change.
         modernSettingsSidebar = New Panel With {
-            .Dock = DockStyle.Left,
-            .Width = Sp(218),
+            .Dock = SettingsRailList.DockFor(RightToLeft = RightToLeft.Yes),
+            .Width = Sp(ProvisionalRailLogical),
             .BackColor = SettingsSidebar,
             .Padding = New Padding(16, 20, 16, 16)
         }
@@ -417,11 +428,7 @@ Partial Public Class Table_Form
         LinkLabel1.AutoSize = True
         LinkLabel1.ForeColor = SettingsLink
         LinkLabel1.Location = New Point(18, modernSettingsSidebar.ClientSize.Height - LinkLabel1.Height - 16)
-        AddHandler modernSettingsSidebar.Resize,
-            Sub()
-                LinkLabel1.Left = Sp(2)
-                LinkLabel1.Top = Sp(4)
-            End Sub
+        AddHandler modernSettingsSidebar.Resize, Sub() ArrangeModernRailChrome()
         AddHandler modernSettingsHeader.Resize,
             Sub()
                 Dim width As Integer = Math.Max(100, modernSettingsHeader.ClientSize.Width - 48)
@@ -464,6 +471,9 @@ Partial Public Class Table_Form
         AddHandler VisibleChanged, AddressOf ModernSettingsVisibleChanged
         AddHandler Shown, AddressOf ModernSettingsShown
         AddHandler FormClosing, AddressOf SaveModernSettingsWindowSize
+        ' The rail follows the reading direction live (rule 1) and keeps its share of the client width (rule 5).
+        AddHandler RightToLeftChanged, Sub() ArrangeModernRail()
+        AddHandler Resize, Sub() UpdateModernRailWidth()
         AddHandler DpiChanged, Sub()
                                    settingsScale = Math.Max(1.0F, CSng(DeviceDpi) / 96.0F) * fontScale
                                    resourcesPanel?.SetDeviceScale(settingsScale)
@@ -478,9 +488,11 @@ Partial Public Class Table_Form
                                    Next
                                    StyleModernSettingsControls()
                                    LayoutModernSettingsPages()
-                                   ' The nav glyphs are baked bitmaps at Sp(20): a tier change
+                                   ' The nav glyphs are baked bitmaps at the rail's glyph tier: a tier change
                                    ' must re-render them, or the old size survives the DPI
-                                   ' change (128 §5 scenario 3).
+                                   ' change (128 §5 scenario 3). The rows, the width and the glyph are one
+                                   ' arrangement of the rail.
+                                   ArrangeModernRail()
                                    RefreshModernSettingsHeader()
                                    QueueRestoreSettingsContext()
                                End Sub
@@ -514,13 +526,16 @@ Partial Public Class Table_Form
     Private ReadOnly modernNavTips As New ToolTip()
 
     Private Sub BuildModernSettingsNavigation()
-        ' A dense list (ICON-RENDER rule 5: 20 px glyph, a row of 34 - above the 28 px
-        ' mouse floor). The list AutoScrolls, so a shortened window shows a slice of it instead of clipping entries away.
+        ' A dense list at the sizes of SETTINGS-NAVIGATION 2.0 section 2 rule 5 (SettingsRailRules: a 32 px row
+        ' target, a 16 px glyph, an 8 px glyph-to-caption gap). The list AutoScrolls, so a shortened window shows a
+        ' slice of it instead of clipping entries away; a caption wraps and grows its row (ArrangeModernRail).
         Dim top As Integer = 0
         Dim navLabels As String() = {"General", "Destination folders", "Images", "Video", "Audio", "Files and system",
                                      "Server and resources",
                                      "OCR", "Translation", "Storage", "About"}
-        Dim navigation As New Panel With {.Dock = DockStyle.Fill, .AutoScroll = True, .Padding = Padding.Empty}
+        ' The list: accessible role List, one selected row, one tab stop (rule 7).
+        Dim navigation As New SettingsRailList With {.Dock = DockStyle.Fill}
+        modernSettingsRail = navigation
         Dim branding As New Panel With {.Dock = DockStyle.Top, .Height = Sp(66)}
         branding.Controls.Add(modernProductLabel)
         Dim versionFooter As New Panel With {.Dock = DockStyle.Bottom, .Height = Sp(28)}
@@ -535,7 +550,8 @@ Partial Public Class Table_Form
         modernSettingsNavButtons = New Button(navLabels.Length - 1) {}
 
         For index As Integer = 0 To navLabels.Length - 1
-            Dim button As New Button With {
+            ' The tab stop is the rail's (one for the whole list, SettingsRailList), not a row's own.
+            Dim button As New SettingsRailRow With {
                 .Name = ModernNavControlNames(index),
                 .Tag = index,
                 .Text = navLabels(index),
@@ -548,36 +564,125 @@ Partial Public Class Table_Form
                 .ImageAlign = ContentAlignment.MiddleLeft,
                 .TextImageRelation = TextImageRelation.ImageBeforeText,
                 .AutoEllipsis = False,
-                .Height = Sp(34),
-                .Width = Math.Max(1, modernSettingsSidebar.ClientSize.Width - Sp(48)),
-                .Location = New Point(Sp(12), top),
+                .Height = SettingsRailRules.RowTargetPx(settingsScale),
+                .Width = RailRowWidth(modernSettingsSidebar.Width),
+                .Location = New Point(RailLeadingInset(), top),
                 .Anchor = AnchorStyles.Top Or AnchorStyles.Left Or AnchorStyles.Right,
-                .Padding = New Padding(Sp(10), 0, Sp(6), 0),
-                .Cursor = Cursors.Hand,
-                .TabStop = True
+                .Padding = New Padding(Sp(SettingsRailList.RowPaddingStartLogical), 0, Sp(SettingsRailList.RowPaddingEndLogical), 0),
+                .Cursor = Cursors.Hand
             }
             button.FlatAppearance.BorderSize = 0
             AddHandler button.Click, AddressOf ModernSettingsNavClicked
             AddHandler button.Paint, AddressOf PaintModernNavEdge
             AddHandler button.GotFocus, Sub() button.Invalidate()
             AddHandler button.LostFocus, Sub() button.Invalidate()
-            navigation.Controls.Add(button)
+            navigation.AddRow(button)
             modernSettingsNavButtons(index) = button
-            top += Sp(38)
+            top += button.Height + RailRowGap()
         Next
+    End Sub
+
+    ' --- the page rail's geometry (SETTINGS-NAVIGATION 2.0 section 2; ticket 243 T-7a) ----------------
+
+    ''' <summary>The room a row leaves at the rail's reading START (left in left-to-right, right in right-to-left).</summary>
+    Private Function RailLeadingInset() As Integer
+        Return Sp(SettingsRailList.LeadingInsetLogical)
+    End Function
+
+    ''' <summary>The room a row leaves at the rail's reading END, towards the content.</summary>
+    Private Function RailTrailingInset() As Integer
+        Return Sp(SettingsRailList.TrailingInsetLogical)
+    End Function
+
+    Private Function RailRowGap() As Integer
+        Return Sp(SettingsRailList.RowGapLogical)
+    End Function
+
+    ''' <summary>The width of a row in a rail of <paramref name="railWidth"/>: the rail less the side's own padding and the
+    ''' two insets. The same figure the rail width is built from (<see cref="RailChromePx"/>).</summary>
+    Private Function RailRowWidth(railWidth As Integer) As Integer
+        Return Math.Max(1, railWidth - modernSettingsSidebar.Padding.Horizontal - RailLeadingInset() - RailTrailingInset())
+    End Function
+
+    ''' <summary>Every horizontal pixel of the rail that is not caption, glyph or gap: the side's padding, the two
+    ''' insets, the row's own padding and a little room for the text renderer. Input of
+    ''' <see cref="SettingsRailRules.RailWidth"/>.</summary>
+    Private Function RailChromePx() As Integer
+        Return SettingsRailList.ChromePx(modernSettingsSidebar.Padding.Horizontal, settingsScale)
+    End Function
+
+    ''' <summary>Arranges the whole rail for the current language, scale and reading direction: the side it docks on,
+    ''' the width measured from its captions, the rows, and the brand and version at the leading edge. One method, so a
+    ''' language change, a scale change and a direction change cannot leave those parts disagreeing.</summary>
+    Private Sub ArrangeModernRail()
+        If modernSettingsRail Is Nothing OrElse modernSettingsNavButtons Is Nothing OrElse modernSettingsSidebar Is Nothing Then Return
+        SettingsRailList.ApplyDirection(modernSettingsSidebar, RightToLeft = RightToLeft.Yes)
+        MeasureModernRailCaptions()
+        ApplyModernRailWidth()
+        LayoutModernRailRows()
+        ArrangeModernRailChrome()
+    End Sub
+
+    ''' <summary>The window's width changed: the rail keeps its share of it (rule 5). Cheap - the captions are
+    ''' measured already - and it touches the rows only when the width really moves.</summary>
+    Private Sub UpdateModernRailWidth()
+        If modernShellInitializing OrElse modernSettingsRail Is Nothing OrElse modernRailLongestCaptionPx <= 0 Then Return
+        If ApplyModernRailWidth() Then LayoutModernRailRows()
+    End Sub
+
+    ''' <summary>The single-line width of the longest caption of the current language, in the rows' own font.</summary>
+    Private Sub MeasureModernRailCaptions()
+        modernRailLongestCaptionPx = modernSettingsRail.LongestCaptionPx()
+    End Sub
+
+    ''' <summary>Sets the rail's width from <see cref="SettingsRailRules.RailWidth"/>; true when it changed.</summary>
+    Private Function ApplyModernRailWidth() As Boolean
+        Dim width As Integer = SettingsRailRules.RailWidth(modernRailLongestCaptionPx, SettingsRailRules.GlyphPx(settingsScale),
+                                                           SettingsRailRules.GlyphGapPx(settingsScale), RailChromePx(), ClientSize.Width)
+        If modernSettingsSidebar.Width = width Then Return False
+        modernSettingsSidebar.Width = width
+        Return True
+    End Function
+
+    ''' <summary>Places the rows one under another at the rail's current width: a row is the 32 px target, or taller
+    ''' when its caption wraps (never clipped, never an ellipsis), and sits at the reading start's inset.</summary>
+    Private Sub LayoutModernRailRows()
+        Dim rtl As Boolean = RightToLeft = RightToLeft.Yes
+        modernSettingsRail.LayoutRows(RailRowWidth(modernSettingsSidebar.Width), If(rtl, RailTrailingInset(), RailLeadingInset()),
+                                      RailRowGap(), settingsScale)
+    End Sub
+
+    ''' <summary>The brand name and the version link sit at the rail's reading start and wrap inside the rail; under
+    ''' right-to-left they move to the right edge with the rest (a Label or LinkLabel keeps its physical position
+    ''' when the reading direction changes).</summary>
+    Private Sub ArrangeModernRailChrome()
+        If modernSettingsSidebar Is Nothing OrElse modernProductLabel Is Nothing Then Return
+        Dim rtl As Boolean = RightToLeft = RightToLeft.Yes
+        Dim inner As Integer = Math.Max(1, modernSettingsSidebar.ClientSize.Width - modernSettingsSidebar.Padding.Horizontal)
+        Dim edge As Integer = Sp(18)
+        Dim maxWidth As Integer = Math.Max(Sp(96), inner - edge - Sp(2))
+        modernProductLabel.MaximumSize = New Size(maxWidth, 0)
+        Dim labelWidth As Integer = Math.Min(modernProductLabel.PreferredSize.Width, maxWidth)
+        modernProductLabel.Left = If(rtl, Math.Max(0, inner - edge - labelWidth), edge)
+        LinkLabel1.Left = If(rtl, Math.Max(0, inner - Sp(2) - LinkLabel1.PreferredSize.Width), Sp(2))
+        LinkLabel1.Top = Sp(4)
     End Sub
 
     ''' <summary>Draws the vocabulary glyph of a nav button in the page's identity ink
     ''' (128 §3.3), not the caption ink - the picture carries the page's own hue in both
-    ''' themes and keeps it on the selected row. The picture is padded on the right so
-    ''' the gap to the caption is ours and not the button layout's; it is re-rendered
-    ''' whenever the colour changes (selection, theme), because a cached bitmap would
-    ''' keep the colour it was first drawn in.</summary>
+    ''' themes and keeps it on the selected row. The picture is padded on the side that
+    ''' faces the caption (the right in left-to-right, the left in right-to-left, where the
+    ''' button puts the picture at the right edge), so the gap to the caption is ours and
+    ''' not the button layout's; it is re-rendered whenever the colour or the direction
+    ''' changes (selection, theme, language), because a cached bitmap would keep what it
+    ''' was first drawn with. The glyph and the gap are the rail's own sizes
+    ''' (SETTINGS-NAVIGATION 2.0 section 2 rule 5: 16 and 8 logical).</summary>
     Private Sub RenderModernNavGlyph(button As Button)
         Dim meaning As IconMeaning = IconMap.GetMeaning(button.Name)
         If meaning Is Nothing OrElse String.IsNullOrEmpty(meaning.GlyphId) Then Return
-        Dim tier As Integer = Sp(20)
-        Dim gap As Integer = Sp(10)
+        Dim tier As Integer = SettingsRailRules.GlyphPx(settingsScale)
+        Dim gap As Integer = SettingsRailRules.GlyphGapPx(settingsScale)
+        Dim rtl As Boolean = button.RightToLeft = RightToLeft.Yes
         Dim ink As Color = SettingsNavIconPalette.ResolveInk(button.Name, settingsDarkMode,
             {button.BackColor, button.FlatAppearance.MouseOverBackColor, button.FlatAppearance.MouseDownBackColor},
             button.ForeColor, SystemInformation.HighContrast)
@@ -585,7 +690,8 @@ Partial Public Class Table_Form
         ' page switch changes the ink of two rows, so the other nine keep the bitmap they have (WINDOWS-UI
         ' section 5, amended 0.2 - the page switch does only the work the switch needs).
         Dim stamp As String = meaning.GlyphId & ":" & tier.ToString(Globalization.CultureInfo.InvariantCulture) & ":" &
-            gap.ToString(Globalization.CultureInfo.InvariantCulture) & ":" & ink.ToArgb().ToString(Globalization.CultureInfo.InvariantCulture)
+            gap.ToString(Globalization.CultureInfo.InvariantCulture) & ":" & ink.ToArgb().ToString(Globalization.CultureInfo.InvariantCulture) &
+            If(rtl, ":rtl", ":ltr")
         Dim previousStamp As String = Nothing
         If button.Image IsNot Nothing AndAlso modernNavGlyphStamps.TryGetValue(button, previousStamp) AndAlso previousStamp = stamp Then Return
         Dim padded As New Bitmap(tier + gap, tier)
@@ -593,7 +699,7 @@ Partial Public Class Table_Form
             padded.SetResolution(96.0F, 96.0F)
             Using glyph As Bitmap = GlyphRenderer.Render(meaning.GlyphId, tier, ink, AddressOf RuntimeBootstrap.OpenBundledAsset)
                 Using g As Graphics = Graphics.FromImage(padded)
-                    g.DrawImageUnscaled(glyph, 0, 0)
+                    g.DrawImageUnscaled(glyph, If(rtl, gap, 0), 0)
                 End Using
             End Using
         Catch
@@ -805,17 +911,14 @@ Partial Public Class Table_Form
         For index As Integer = 0 To modernSettingsNavButtons.Length - 1
             modernSettingsNavButtons(index).Text = navLabels(index)
             Tab_Control.TabPages(index).Text = navLabels(index)
-            ' The compact row of the build (34 logical px, above the 28 px mouse floor):
-            ' eleven entries take 418 logical px instead of 528, so the whole navigation
-            ' fits an ordinary monitor without scrolling.
-            modernSettingsNavButtons(index).Height = Math.Max(Sp(34), TextRenderer.MeasureText(navLabels(index), modernSettingsNavButtons(index).Font,
-                New Size(Math.Max(1, modernSettingsNavButtons(index).Width - Sp(48)), Integer.MaxValue), TextFormatFlags.WordBreak).Height + Sp(6))
-            modernSettingsNavButtons(index).Top = If(index = 0, 0, modernSettingsNavButtons(index - 1).Bottom + Sp(4))
-            ' The caption can be clipped by a long translation: the tooltip and the
-            ' accessible name always carry the whole word (ICON-RENDER rule 8).
+            ' The caption is never clipped (it wraps and grows its row, ArrangeModernRail); the tooltip and the
+            ' accessible name always carry the whole word (ICON-RENDER rule 8, SETTINGS-NAVIGATION rule 7).
             modernSettingsNavButtons(index).AccessibleName = navLabels(index)
             modernNavTips.SetToolTip(modernSettingsNavButtons(index), navLabels(index))
         Next
+        modernSettingsRail.AccessibleName = Localization.T("Настройки")
+        ' The row height, the rail width and the side it docks on follow the new captions and direction.
+        ArrangeModernRail()
 
         LinkLabel1.Text = ShortSettingsVersion()
         ' The window's title bar already says "Settings"; the sidebar names only the product.
@@ -845,6 +948,8 @@ Partial Public Class Table_Form
         modernSettingsTitle.Text = modernSettingsNavButtons(index).Text
         modernSettingsSubtitle.Text = subtitles(index)
         ArrangeSettingsDiscoveryHeader()
+        ' The rail's accessible Selected state and its tab stop follow the page that is shown.
+        modernSettingsRail.SelectedIndex = index
 
         For buttonIndex As Integer = 0 To modernSettingsNavButtons.Length - 1
             Dim selected As Boolean = buttonIndex = index
@@ -945,6 +1050,12 @@ Partial Public Class Table_Form
                         button.Text = AssociationButtonCaption(Main_Form.IsPackagedApp())
                         ApplySettingsCommandGlyph(button, row.Key)
                     End If
+                Case "animated_via_video_ffmpeg"
+                    Dim button As Button = TryCast(row.Editor, Button)
+                    If button IsNot Nothing Then
+                        button.Text = Localization.T("Загрузить..")
+                        ApplySettingsCommandGlyph(button, row.Key)
+                    End If
                 Case "sftp_manager"
                     Dim button As Button = TryCast(row.Editor, Button)
                     If button IsNot Nothing Then button.Text = Localization.T("Управление SFTP")
@@ -970,12 +1081,6 @@ Partial Public Class Table_Form
                 Case "ocr_model"
                     Dim buttons As List(Of Button) = FindModernControls(Of Button)(row.Host).ToList()
                     If buttons.Count > 0 Then buttons(0).Text = Localization.T("Загрузить")
-                Case "project_trust"
-                    Dim link As LinkLabel = TryCast(row.Title, LinkLabel)
-                    If link IsNot Nothing Then link.Tag = SitePages.TrustPageUrl(Localization.CurrentCode)
-                Case "exchange_portal"
-                    Dim link As LinkLabel = TryCast(row.Title, LinkLabel)
-                    If link IsNot Nothing Then link.Tag = SitePages.ExchangePortalUrl("home-network", Localization.CurrentCode)
                 Case "slideshow_interval"
                     ' PrepareForDisplay's legacy block (which runs before this pass on every
                     ' opening) pins DecimalPlaces = 3; restate the whole-seconds presentation
@@ -985,6 +1090,13 @@ Partial Public Class Table_Form
             For Each link As LinkLabel In FindModernControls(Of LinkLabel)(row.Host)
                 If link IsNot row.Title Then link.Text = Localization.T("Открыть")
             Next
+            ' A link row opens the page of the language the window speaks NOW: every address comes from the one
+            ' ProductLinks table (ModernLinkAddress), so a language switched while the window is open moves them all.
+            Dim titleLink As LinkLabel = TryCast(row.Title, LinkLabel)
+            If titleLink IsNot Nothing Then
+                Dim address As String = ModernLinkAddress(row.Key)
+                If address.Length > 0 Then titleLink.Tag = address
+            End If
             If row.Description IsNot Nothing AndAlso toolTip IsNot Nothing Then toolTip.SetToolTip(row.Description, row.Description.Text)
             SizeModernSettingRow(row)
         Next
@@ -1073,6 +1185,8 @@ Partial Public Class Table_Form
             Case "include_audio_navigation" : Return Localization.T("Учитывать аудио при пролистывании файлов")
             Case "audio_end_action" : Return Localization.T("После окончания аудио")
             Case "audio_controls_visible" : Return Localization.T("Всегда показывать панель аудио")
+            Case "animated_via_video" : Return Localization.T("Анимированная графика через видео")
+            Case "animated_via_video_ffmpeg" : Return "FFmpeg"
             Case "audio_visualiser" : Return Localization.T("Визуализатор без обложки")
             Case "audio_sleep_timer" : Return Localization.T("Таймер сна, мин")
             Case "preferred_audio_language" : Return Localization.T("Предпочтительный язык звука")
@@ -1153,15 +1267,21 @@ Partial Public Class Table_Form
             Case "android_app" : Return Localization.T("Приложение для Android")
             Case "exchange_portal" : Return Localization.T("Доступ из дома и из других сетей")
             Case "about_intro" : Return ProductNames.FullForLabel
+            Case "about_updates" : Return Localization.T("Обновления")
             Case "support_send_logs" : Return Localization.T("Отправить логи автору")
             Case "profile_reset_all" : Return Localization.T("Сброс настроек")
+            Case "about_related" : Return Localization.T("Связанные проекты")
+            Case "related_android" : Return Localization.T("Приложение для Android")
+            Case "related_portal" : Return Localization.T("Портал обмена медиа")
             Case "doc_html_intro" : Return "Doc HTML Translate"
             Case "doc_html_site" : Return Localization.T("Сайт Doc HTML Translate")
+            Case "project_help" : Return Localization.T("Справка по программе")
             Case "project_site" : Return Localization.T("Сайт проекта")
             Case "project_github" : Return "GitHub"
             Case "project_releases" : Return Localization.T("Новые версии")
             Case "project_privacy" : Return Localization.T("Политика конфиденциальности")
             Case "project_license" : Return Localization.T("Лицензия MIT")
+            Case "project_notices" : Return Localization.T("Сторонние компоненты и лицензии")
             Case "project_trust" : Return Localization.T("Почему Windows предупреждает")
             Case "project_email" : Return Localization.T("Связаться с автором")
             Case Else : Return key
@@ -1222,6 +1342,8 @@ Partial Public Class Table_Form
             Case "video_hide_cursor" : Return Localization.T("Скрывает указатель после стольких секунд неподвижности во время слайд-шоу и полноэкранного просмотра. 0 - не скрывать.")
             Case "audio_end_action" : Return Localization.T("Что делать, когда аудиодорожка достигла конца.")
             Case "audio_controls_visible" : Return Localization.T("Оставляет транспортную панель видимой во время аудио.")
+            Case "animated_via_video" : Return Localization.T("Длинная анимированная картинка проигрывается как видео - без масштаба, панорамы, OCR и редактора; короткие анимации показываются как раньше.")
+            Case "animated_via_video_ffmpeg" : Return If(OptionalRuntimeManager.HasFfmpegRuntime(), Localization.T("FFmpeg: установлен"), Localization.T("FFmpeg: не установлен"))
             Case "audio_visualiser" : Return Localization.T("Показывает фирменные волны и частицы, если в аудио нет встроенной обложки.")
             Case "audio_sleep_timer" : Return Localization.T("Через сколько минут остановить воспроизведение. 0 отключает таймер.")
             Case "preferred_audio_language", "preferred_subtitle_language" : Return Localization.T("Если такой дорожки нет, выбор остаётся за плеером.")
@@ -1292,11 +1414,17 @@ Partial Public Class Table_Form
             Case "profile_reset_all" : Return Localization.T("Вернёт настройки просмотрщика к значениям по умолчанию. Язык, тема, пароли и история останутся. Прежние значения сохранятся в файл.")
             Case "doc_html_intro" : Return Localization.T("Преобразует EPUB, PDF и другие документы в локальный HTML с оглавлением и переводом в браузере. Для изображений, сканов и комиксов создаёт переводимый OCR-слой.")
             Case "doc_html_site" : Return Localization.T("Описание возможностей, поддерживаемых форматов, установки и работы с документами и изображениями.")
+            Case "about_updates" : Return Localization.TF("Установлена версия {0}. Программа сама не проверяет обновления и ничего не скачивает: новые версии выходят на странице релизов GitHub, в winget и в Microsoft Store.", ShortSettingsVersion())
+            Case "about_related" : Return Localization.T("Другие программы автора, которые работают вместе с этой. Страницы открываются только по щелчку.")
+            Case "related_android" : Return Localization.T("Страница приложения для Android.")
+            Case "related_portal" : Return Localization.T("Как открыть папки ПК и телефона на других устройствах: домашняя сеть, проброс порта, постоянный сервер.")
+            Case "project_help" : Return Localization.T("Встроенная справка на языке интерфейса. Если её нет на этом компьютере, откроется страница с темами на сайте.")
             Case "project_site" : Return Localization.T("Описание возможностей, инструкции и материалы проекта.")
             Case "project_github" : Return Localization.T("Исходный код, задачи и техническая документация.")
             Case "project_releases" : Return Localization.T("Список опубликованных версий и файлов для установки.")
             Case "project_privacy" : Return Localization.T("Как приложение обрабатывает пользовательские данные.")
-            Case "project_license" : Return "MIT"
+            Case "project_license" : Return Localization.T("Текст лицензии MIT открывается из файла рядом с программой; без него - со страницы на GitHub.")
+            Case "project_notices" : Return Localization.T("Используемые библиотеки и тексты их лицензий. Открывается файл рядом с программой; без него - страница на GitHub.")
             Case "project_trust" : Return Localization.T("Предупреждение SmartScreen, на что нажать и зачем нужны права администратора.")
             Case "project_email" : Return Localization.T("Написать автору проекта по электронной почте.")
             Case Else : Return String.Empty
@@ -1324,15 +1452,19 @@ Partial Public Class Table_Form
         RegisterSettingsPage("recipients",
             Sub()
                 Dim gridHost As New Panel With {.BackColor = SettingsSurface, .Padding = New Padding(Sp(12))}
+                recipientsHost = gridHost
                 ReparentModernSettingsControl(lbl_Grid_Hint, gridHost)
                 lbl_Grid_Hint.Dock = DockStyle.Bottom
-                ' Two lines' worth: the hint names both actions now (move on a double-click, copy on
-                ' Shift + double-click) and at 34 px the wrapped second line was simply cut off.
-                lbl_Grid_Hint.Height = 50
+                ' The hint names both actions (move on a double-click, copy on Shift + double-click), so it
+                ' can wrap. Its height is the height of the wrapped text, set by FitRecipientsHost: a fixed
+                ' number was either too tall (blank space under a one-line hint) or cut the second line.
                 lbl_Grid_Hint.AutoSize = False
-                lbl_Grid_Hint.Padding = New Padding(2, 8, 2, 0)
+                lbl_Grid_Hint.Padding = New Padding(Sp(2), Sp(8), Sp(2), Sp(6))
                 ReparentModernSettingsControl(Data_Grid_View, gridHost)
-                Data_Grid_View.Dock = DockStyle.Fill
+                ' Not docked: the grid takes exactly the height of its 11 rows (FitRecipientsHost sets it and
+                ' the host's height together), so it is never stretched past them. Fill left it as tall as
+                ' the host happened to be and the anchor set later froze that stale height.
+                Data_Grid_View.Anchor = AnchorStyles.Top Or AnchorStyles.Left Or AnchorStyles.Right
                 Data_Grid_View.ScrollBars = ScrollBars.Vertical
                 ' Not reachable by Tab, so it is not what WinForms focuses when the page opens:
                 ' an AutoScroll container scrolls its newly focused child into view, and the grid
@@ -1340,6 +1472,9 @@ Partial Public Class Table_Form
                 ' switch - out of sight. A click still focuses and edits the grid as before.
                 Data_Grid_View.TabStop = False
                 AddRecipientGridActions(gridHost)
+                ' A new width can re-wrap the hint; a new text (language switch) can change its line count.
+                AddHandler gridHost.Resize, Sub() FitRecipientsHost()
+                AddHandler lbl_Grid_Hint.TextChanged, Sub() FitRecipientsHost()
                 destinations.Controls.Add(gridHost)
             End Sub)
 
@@ -1617,7 +1752,7 @@ Partial Public Class Table_Form
                 Continue For
             End If
             Dim compact As Boolean = String.Equals(TryCast(child.Tag, String), "modern:compact", StringComparison.Ordinal)
-            child.Width = If(compact AndAlso useTwoColumns, Math.Max(Sp(300), (width - 8) \ 2), width)
+            child.Width = width
         Next
         ' A new page column does not necessarily change host widths (language switches
         ' in particular). Reflow even when WinForms has no Resize event to deliver.
@@ -1642,28 +1777,28 @@ Partial Public Class Table_Form
     ''' shrinks in a narrow window to keep the editor beside the labels.
     ''' </summary>
     Private Sub AddSettingRow(flow As FlowLayoutPanel, key As String, editor As Control, editorWidth As Integer, Optional compact As Boolean = False)
-        Dim host As New Panel With {.Height = Sp(56), .Margin = New Padding(0, 0, 6, 6), .BackColor = SettingsSurface, .Padding = New Padding(12, 5, 12, 5),
+        Dim host As New Panel With {.Height = Sp(48), .Margin = New Padding(0, 0, Sp(6), Sp(4)), .BackColor = SettingsSurface, .Padding = New Padding(Sp(12), Sp(4), Sp(12), Sp(4)),
                                    .Tag = If(compact, "modern:compact", "modern:full")}
-        Dim title As New Label With {.AutoSize = False, .Location = New Point(Sp(14), Sp(8)), .Height = Sp(20),
-                                     .Font = SettingsFont("Segoe UI Semibold", Sf(8.75F)), .ForeColor = SettingsText}
-        Dim description As New Label With {.AutoSize = False, .Location = New Point(Sp(14), Sp(31)), .Height = Sp(22),
-                                           .Font = SettingsFont("Segoe UI", Sf(8.0F)), .ForeColor = SettingsMutedText,
-                                           .AutoEllipsis = True}
+        ' The explanation is the 12 logical px role (BOOLEAN-OPTION 2.0 section 2 rule 5) and is never
+        ' ellipsized: SizeModernSettingRow measures it with word break at the final width, so a long
+        ' translation grows the row. The caption is the ordinary 9 pt (= 12 px) control role.
+        Dim title As New Label With {.AutoSize = False, .Location = New Point(Sp(14), Sp(5)), .Height = Sp(20),
+                                     .Font = SettingsFont("Segoe UI Semibold", Sf(SettingsRowGridRules.CaptionFontPoints)), .ForeColor = SettingsText}
+        Dim description As New Label With {.AutoSize = False, .Location = New Point(Sp(14), Sp(25)), .Height = Sp(22),
+                                           .Font = SettingsPixelFont("Segoe UI", SettingsRowGridRules.ExplanationFontPixels), .ForeColor = SettingsMutedText}
         Dim row As New ModernSettingRow With {.Key = key, .Host = host, .Title = title, .Description = description, .Editor = editor, .Compact = compact, .PageFlow = flow}
         Dim check As CheckBox = TryCast(editor, CheckBox)
         Dim numeric As NumericUpDown = TryCast(editor, NumericUpDown)
         ReparentModernSettingsControl(editor, host)
 
         If check IsNot Nothing Then
-            ' Boolean rows keep the box immediately before the caption and the hint
-            ' beneath the caption. Label clicks toggle the original control.
+            ' Boolean rows keep the box at the reading start and the explanation beneath the caption.
+            ' Only the caption toggles the original control (BOOLEAN-OPTION 2.0 section 3 rule 1): the
+            ' explanation has no handler and no hand cursor. The row mirrors itself under RightToLeft, a
+            ' property the host only learns once it sits in the window, hence the handler.
             ConfigureModernCheckbox(check, row)
-            title.Cursor = Cursors.Hand
-            description.Cursor = Cursors.Hand
-            title.Tag = check
-            description.Tag = check
-            AddHandler title.Click, AddressOf ToggleModernCheckboxFromText
-            AddHandler description.Click, AddressOf ToggleModernCheckboxFromText
+            SettingsCheckBox.BindCaption(title, check)
+            AddHandler host.RightToLeftChanged, Sub() SizeModernSettingRow(row)
         ElseIf numeric IsNot Nothing Then
             AddModernNumericUnit(row, key)
         ElseIf TypeOf editor Is Button Then
@@ -1682,14 +1817,6 @@ Partial Public Class Table_Form
         flow.Controls.Add(host)
         modernSettingsRows.Add(row)
         SizeModernSettingRow(row)
-    End Sub
-
-    Private Shared Sub ToggleModernCheckboxFromText(sender As Object, e As EventArgs)
-        Dim label As Label = TryCast(sender, Label)
-        Dim check As CheckBox = If(label Is Nothing, Nothing, TryCast(label.Tag, CheckBox))
-        If check Is Nothing OrElse Not check.Enabled Then Return
-        check.Checked = Not check.Checked
-        check.Focus()
     End Sub
 
     ''' <summary>The muted unit suffix of 127 §3.2: immediately left of a numeric editor.
@@ -1854,7 +1981,7 @@ Partial Public Class Table_Form
                 Return "action.share"
             Case "support_send_logs"
                 Return "action.email"
-            Case "ocr_download", "btnOcrPullModel"
+            Case "ocr_download", "btnOcrPullModel", "animated_via_video_ffmpeg"
                 Return "action.download"
             Case "btnOcrInstallOllama"
                 Return "action.install"
@@ -1917,43 +2044,69 @@ Partial Public Class Table_Form
         row.Host.SuspendLayout()
         Try
             Dim host As Panel = DirectCast(row.Host, Panel)
+            Dim check As CheckBox = TryCast(row.Editor, CheckBox)
+            If check IsNot Nothing Then
+                ' A boolean row is one shared anatomy (BOOLEAN-OPTION 2.0): the box and the text cell, mirrored
+                ' under RightToLeft, the text measured with word break at its final width, no ellipsis.
+                SettingsCheckBox.ArrangeRow(host, check, row.Title, row.Description, settingsScale)
+                Return
+            End If
             Dim hostWidth As Integer = host.ClientSize.Width
             Dim valueColumn As Integer = Sp(SettingsRowGridRules.FitValueColumn(
                 ToLogicalPx(hostWidth), ToLogicalPx(PageValueColumnWidth(row.PageFlow))))
-            Dim check As CheckBox = TryCast(row.Editor, CheckBox)
-            Dim twoColumn As Boolean = row.Editor IsNot Nothing AndAlso check Is Nothing
+            Dim twoColumn As Boolean = row.Editor IsNot Nothing
 
             ' The shared label column: everything left of the page's value column.
             Dim labelLeft As Integer = Sp(14)
-            If check IsNot Nothing Then labelLeft += check.Width + Sp(CheckBoxLayout.CaptionGapLogical)
             Dim labelWidth As Integer = If(twoColumn,
                 Math.Max(Sp(40), Sp(SettingsRowGridRules.LabelColumnWidth(ToLogicalPx(hostWidth), ToLogicalPx(valueColumn)))),
                 Math.Max(Sp(40), hostWidth - labelLeft - Sp(14)))
 
             ' Heights come from the fonts, so they follow the interface scale on their own.
-            row.Title.AutoEllipsis = False
-            Dim titleHeight As Integer = Math.Max(Sp(20), TextRenderer.MeasureText(row.Title.Text, row.Title.Font,
-                New Size(Math.Max(1, labelWidth), Integer.MaxValue), TextFormatFlags.WordBreak).Height + Sp(4))
-            row.Description.AutoEllipsis = False
-            Dim descriptionHeight As Integer = Math.Max(Sp(18), TextRenderer.MeasureText(row.Description.Text, row.Description.Font,
-                New Size(Math.Max(1, labelWidth), Integer.MaxValue), TextFormatFlags.WordBreak).Height + Sp(4))
-            Dim titleTop As Integer = Sp(7)
-            If twoColumn Then titleTop = Math.Max(titleTop, Sp(4) + (row.Editor.Height - titleHeight) \ 2)
-            If check IsNot Nothing Then titleTop = Math.Max(titleTop, Sp(4) + (check.Height - titleHeight) \ 2)
-            row.Title.SetBounds(labelLeft, titleTop, labelWidth, titleHeight)
-            row.Description.SetBounds(labelLeft, row.Title.Bottom + Sp(2), labelWidth, descriptionHeight)
-            row.Description.AutoEllipsis = True
+            Dim hasTitle As Boolean = Not String.IsNullOrEmpty(row.Title.Text)
+            Dim titleHeight As Integer = 0
+            If hasTitle Then
+                row.Title.Visible = True
+                row.Title.AutoEllipsis = False
+                titleHeight = Math.Max(Sp(16), TextRenderer.MeasureText(row.Title.Text, row.Title.Font,
+                    New Size(Math.Max(1, labelWidth), Integer.MaxValue), TextFormatFlags.WordBreak).Height + Sp(2))
+                ' A link is a pointer target: its label is never shorter than UI-SIZING's 32 px target, whatever the
+                ' text height (SETTINGS-NAVIGATION 2.0 section 3 rule 4). The description and the row's margins stand
+                ' between two targets, which is more than the 8 px of UiSizing.ButtonGap.
+                If TypeOf row.Title Is LinkLabel Then titleHeight = Math.Max(titleHeight, Sp(UiSizing.PointerTarget))
+            Else
+                row.Title.Visible = False
+            End If
+
+            Dim hasDesc As Boolean = row.Description IsNot Nothing AndAlso Not String.IsNullOrEmpty(row.Description.Text)
+            Dim descriptionHeight As Integer = 0
+            If hasDesc Then
+                row.Description.Visible = True
+                row.Description.AutoEllipsis = False
+                ' Measured by what the label itself needs as well as by GDI: the explanation is never ellipsized,
+                ' so its row has to be tall enough for the way the label really draws it.
+                descriptionHeight = SettingsRowText.WrappedHeight(row.Description, labelWidth, Sp(14), Sp(2))
+            ElseIf row.Description IsNot Nothing Then
+                row.Description.Visible = False
+            End If
+
+            Dim titleTop As Integer = Sp(5)
+            If twoColumn Then titleTop = Math.Max(titleTop, Sp(3) + (row.Editor.Height - titleHeight) \ 2)
+
+            If hasTitle Then
+                row.Title.SetBounds(labelLeft, titleTop, labelWidth, titleHeight)
+            End If
+
+            ' The explanation is never ellipsized: its height above was measured with word break at this width.
+            Dim descTop As Integer = If(hasTitle, row.Title.Bottom + Sp(2), titleTop)
+            If hasDesc Then
+                row.Description.SetBounds(labelLeft, descTop, labelWidth, descriptionHeight)
+            End If
 
             Dim editor As Control = row.Editor
             If editor Is Nothing Then
-                host.Height = row.Description.Bottom + Sp(7)
-                Return
-            End If
-
-            If check IsNot Nothing Then
-                check.Left = Sp(14)
-                check.Top = row.Title.Top + (row.Title.Height - check.Height) \ 2
-                host.Height = Math.Max(row.Description.Bottom + Sp(7), check.Bottom + Sp(8))
+                Dim contentBottom As Integer = If(hasDesc, row.Description.Bottom, If(hasTitle, row.Title.Bottom, Sp(18)))
+                host.Height = Math.Max(Sp(24), contentBottom + Sp(5))
                 Return
             End If
 
@@ -1974,14 +2127,15 @@ Partial Public Class Table_Form
                 editor.Left = hostWidth - Sp(12) - controlWidth
                 ' The editor is centred on the CAPTION line, not on the whole row (§3.1.4):
                 ' a two-line hint never pushes its control off its caption.
-                editor.Top = row.Title.Top + (row.Title.Height - editor.Height) \ 2
+                editor.Top = If(hasTitle, row.Title.Top + (row.Title.Height - editor.Height) \ 2, Sp(4))
                 If row.UnitLabel IsNot Nothing Then
                     row.UnitLabel.Height = editor.Height
                     row.UnitLabel.Left = editor.Left - Sp(4) - row.UnitLabel.Width
                     row.UnitLabel.Top = editor.Top
                     row.UnitLabel.BringToFront()
                 End If
-                host.Height = Math.Max(row.Description.Bottom + Sp(7), editor.Top + editor.Height + Sp(8))
+                Dim contentBottom As Integer = If(hasDesc, row.Description.Bottom, If(hasTitle, row.Title.Bottom, editor.Bottom))
+                host.Height = Math.Max(contentBottom + Sp(5), editor.Top + editor.Height + Sp(5))
             End If
         Finally
             row.Host.ResumeLayout(False)
@@ -2162,83 +2316,123 @@ Partial Public Class Table_Form
         Dim flow As FlowLayoutPanel = PageFlow(modernResourcesPage)
         AddInformationBlock(flow, "sftp_intro")
         If btn_Share_Manager IsNot Nothing Then AddSettingRow(flow, "sftp_manager", btn_Share_Manager, 230, True)
-        AddProjectLinkRow(flow, "sftp_guide", SitePages.ForLanguage("https://serzhyale.github.io/FastMediaSorter_Lite/publish-folders-android.html", Localization.CurrentCode))
-        AddProjectLinkRow(flow, "android_app", SitePages.AndroidAppSiteUrl(Localization.CurrentCode))
+        AddProjectLinkRow(flow, "sftp_guide", ModernLinkAddress("sftp_guide"))
+        AddProjectLinkRow(flow, "android_app", ModernLinkAddress("android_app"))
         ' The portal is the shared "media exchange" section of the product family, on the Android
         ' app's site: the page about reaching folders from home and from other networks.
-        AddProjectLinkRow(flow, "exchange_portal", SitePages.ExchangePortalUrl("home-network", Localization.CurrentCode))
+        AddProjectLinkRow(flow, "exchange_portal", ModernLinkAddress("exchange_portal"))
     End Sub
 
+    ''' <summary>
+    ''' The address a link row of the Resources and About pages opens, in the language the window speaks: the one place a row
+    ''' key meets the shared <see cref="ProductLinks"/> table (SETTINGS-NAVIGATION 2.0 section 3 rule 4), so the pages and
+    ''' the Share Manager agree on where each address goes. Pure string building - nothing is opened or contacted here.
+    ''' </summary>
+    Private Shared Function ModernLinkAddress(key As String) As String
+        Dim language As String = Localization.CurrentCode
+        Select Case key
+            Case "sftp_guide" : Return ProductLinks.Url(ProductLinks.Guide, language)
+            Case "android_app", "related_android" : Return ProductLinks.Url(ProductLinks.AndroidApp, language)
+            Case "exchange_portal" : Return ProductLinks.Url(ProductLinks.PortalHome, language)
+            Case "related_portal" : Return ProductLinks.Url(ProductLinks.Portal, language)
+            Case "doc_html_site" : Return ProductLinks.Url(ProductLinks.DocHtml, language)
+            Case "project_help" : Return ProductLinks.Url(ProductLinks.Help, language, "settings.about")
+            Case "project_site" : Return ProductLinks.Url(ProductLinks.Site, language)
+            Case "project_github" : Return ProductLinks.Url(ProductLinks.Repository, language)
+            Case "project_releases" : Return ProductLinks.Url(ProductLinks.Releases, language)
+            ' The policy lives under docs/ - the root /privacy.html this row used to open is a 404.
+            Case "project_privacy" : Return ProductLinks.Url(ProductLinks.Privacy, language)
+            Case "project_license" : Return ProductLinks.Url(ProductLinks.License, language)
+            Case "project_notices" : Return ProductLinks.Url(ProductLinks.Notices, language)
+            ' Beside the privacy page, because it answers the same question from the other side:
+            ' the warnings Windows raises and what administrator rights are used for (INSTALL-TRUST
+            ' rule 7, ticket 037 Ф-4).
+            Case "project_trust" : Return ProductLinks.Url(ProductLinks.Trust, language)
+            Case "project_email" : Return ProductLinks.Url(ProductLinks.Contact, language)
+            Case Else : Return String.Empty
+        End Select
+    End Function
+
+    ''' <summary>
+    ''' The About page (SETTINGS-NAVIGATION 2.0 section 3 rules 3 and 4; the item ids are <see cref="AboutItems"/>): what the
+    ''' program is and which version runs, where updates come from, the diagnostic export, then the help, the project's
+    ''' pages, the licence and the notices (both from local disk), the privacy and trust pages and the contact, and the
+    ''' related products as one compact group. Rule 3.4: building this page contacts nothing - every row is a label, a
+    ''' button or a link whose address is opened by <see cref="ModernProjectLinkClicked"/> on a click only.
+    ''' </summary>
     Private Sub BuildModernAboutPage()
         Dim flow As FlowLayoutPanel = CreateModernPageFlow(modernAboutPage)
         AddInformationBlock(flow, "about_intro")
+        ' Not a link and not a check: this program never asks the network whether a newer version exists, and the row
+        ' says so, with the running version and the three places an update comes from.
+        AddInformationBlock(flow, "about_updates")
         ' Support first, project links after: this row is looked for in trouble, the
         ' links out of curiosity (SPECIFICATION_SEND_LOGS_TO_AUTHOR.md §2).
         EnsureSendLogsButton()
         AddSettingRow(flow, "support_send_logs", btn_Send_Logs, 230, True)
         EnsureResetAllButton()
         AddSettingRow(flow, "profile_reset_all", btn_Reset_All_Settings, 230, True)
+        AddProjectLinkRow(flow, "project_help", ModernLinkAddress("project_help"))
+        AddProjectLinkRow(flow, "project_site", ModernLinkAddress("project_site"))
+        AddProjectLinkRow(flow, "project_github", ModernLinkAddress("project_github"))
+        AddProjectLinkRow(flow, "project_releases", ModernLinkAddress("project_releases"))
+        AddProjectLinkRow(flow, "project_privacy", ModernLinkAddress("project_privacy"))
+        AddProjectLinkRow(flow, "project_license", ModernLinkAddress("project_license"))
+        AddProjectLinkRow(flow, "project_notices", ModernLinkAddress("project_notices"))
+        AddProjectLinkRow(flow, "project_trust", ModernLinkAddress("project_trust"))
+        AddProjectLinkRow(flow, "project_email", ModernLinkAddress("project_email"))
+        AddInformationBlock(flow, "about_related")
         AddInformationBlock(flow, "doc_html_intro")
-        AddProjectLinkRow(flow, "doc_html_site", SitePages.DocHtmlTranslateSiteUrl(Localization.CurrentCode))
-        AddProjectLinkRow(flow, "project_site", SitePages.ForLanguage("https://serzhyale.github.io/FastMediaSorter_Lite/", Localization.CurrentCode))
-        AddProjectLinkRow(flow, "project_github", "https://github.com/SerZhyAle/FastMediaSorter_Lite")
-        AddProjectLinkRow(flow, "project_releases", "https://github.com/SerZhyAle/FastMediaSorter_Lite/releases")
-        ' The policy lives under docs/ - the root /privacy.html this row used to open is a 404.
-        AddProjectLinkRow(flow, "project_privacy", SitePages.ForLanguage(SitePages.PrivacyPageUrl, Localization.CurrentCode))
-        AddProjectLinkRow(flow, "project_license", "https://github.com/SerZhyAle/FastMediaSorter_Lite/blob/main/LICENSE")
-        ' Beside the privacy page, because it answers the same question from the other side:
-        ' the warnings Windows raises and what administrator rights are used for (INSTALL-TRUST
-        ' rule 7, ticket 037 Ф-4). In the language the settings window is speaking.
-        AddProjectLinkRow(flow, "project_trust", SitePages.TrustPageUrl(Localization.CurrentCode))
-        AddProjectLinkRow(flow, "project_email", "mailto:" & Author_Email & "?subject=" & Uri.EscapeDataString(ProductNames.Full))
+        AddProjectLinkRow(flow, "doc_html_site", ModernLinkAddress("doc_html_site"))
+        AddProjectLinkRow(flow, "related_android", ModernLinkAddress("related_android"))
+        AddProjectLinkRow(flow, "related_portal", ModernLinkAddress("related_portal"))
     End Sub
 
     Private Sub AddInformationBlock(flow As FlowLayoutPanel, key As String)
-        Dim host As New Panel With {.Height = 62, .Margin = New Padding(0, 0, 6, 6), .BackColor = SettingsSurface, .Padding = New Padding(12), .Tag = "modern:full"}
-        Dim title As New Label With {.AutoSize = False, .Location = New Point(12, 6), .Height = 20,
-                                     .Font = SettingsFont("Segoe UI Semibold", 9.5F), .ForeColor = SettingsText}
-        Dim description As New Label With {.AutoSize = False, .Location = New Point(12, 27), .Height = 30,
-                                           .Font = SettingsFont("Segoe UI", 8.0F), .ForeColor = SettingsMutedText, .AutoEllipsis = True}
+        Dim host As New Panel With {.Height = Sp(48), .Margin = New Padding(0, 0, Sp(6), Sp(4)), .BackColor = SettingsSurface, .Padding = New Padding(Sp(12), Sp(4), Sp(12), Sp(4)), .Tag = "modern:full"}
+        Dim title As New Label With {.AutoSize = False, .Location = New Point(Sp(12), Sp(5)), .Height = Sp(20),
+                                     .Font = SettingsFont("Segoe UI Semibold", Sf(9.5F)), .ForeColor = SettingsText}
+        Dim description As New Label With {.AutoSize = False, .Location = New Point(Sp(12), Sp(25)), .Height = Sp(22),
+                                           .Font = SettingsPixelFont("Segoe UI", SettingsRowGridRules.ExplanationFontPixels), .ForeColor = SettingsMutedText}
         host.Controls.Add(title)
         host.Controls.Add(description)
-        AddHandler host.Resize,
-            Sub()
-                title.Width = host.ClientSize.Width - 24
-                description.Width = host.ClientSize.Width - 24
-            End Sub
+        Dim row As New ModernSettingRow With {.Key = key, .Host = host, .Title = title, .Description = description, .PageFlow = flow}
+        AddHandler host.Resize, Sub() SizeModernSettingRow(row)
         flow.Controls.Add(host)
-        modernSettingsRows.Add(New ModernSettingRow With {.Key = key, .Host = host, .Title = title, .Description = description})
+        modernSettingsRows.Add(row)
+        SizeModernSettingRow(row)
     End Sub
 
     Private Sub AddProjectLinkRow(flow As FlowLayoutPanel, key As String, url As String)
-        Dim host As New Panel With {.Height = 50, .Margin = New Padding(0, 0, 6, 6), .BackColor = SettingsSurface, .Padding = New Padding(12), .Tag = "modern:compact"}
-        Dim link As New LinkLabel With {.AutoSize = False, .Location = New Point(12, 6), .Height = 19,
-                                        .Font = SettingsFont("Segoe UI Semibold", 8.75F), .Tag = url,
+        Dim host As New Panel With {.Height = Sp(40), .Margin = New Padding(0, 0, Sp(6), Sp(4)), .BackColor = SettingsSurface, .Padding = New Padding(Sp(12), Sp(4), Sp(12), Sp(4)), .Tag = "modern:compact"}
+        Dim link As New LinkLabel With {.AutoSize = False, .Location = New Point(Sp(12), Sp(5)), .Height = Sp(18),
+                                        .Font = SettingsFont("Segoe UI Semibold", Sf(8.75F)), .Tag = url,
                                         .TextAlign = ContentAlignment.MiddleLeft}
-        Dim description As New Label With {.AutoSize = False, .Location = New Point(12, 26), .Height = 18,
-                                           .Font = SettingsFont("Segoe UI", 8.0F), .ForeColor = SettingsMutedText, .AutoEllipsis = True}
+        Dim description As New Label With {.AutoSize = False, .Location = New Point(Sp(12), Sp(23)), .Height = Sp(16),
+                                           .Font = SettingsPixelFont("Segoe UI", SettingsRowGridRules.ExplanationFontPixels), .ForeColor = SettingsMutedText}
         AddHandler link.LinkClicked, AddressOf ModernProjectLinkClicked
         host.Controls.Add(link)
         host.Controls.Add(description)
-        AddHandler host.Resize,
-            Sub()
-                link.Width = host.ClientSize.Width - 24
-                description.Width = host.ClientSize.Width - 24
-            End Sub
+        Dim row As New ModernSettingRow With {.Key = key, .Host = host, .Title = link, .Description = description, .Compact = True, .PageFlow = flow}
+        AddHandler host.Resize, Sub() SizeModernSettingRow(row)
         flow.Controls.Add(host)
-        modernSettingsRows.Add(New ModernSettingRow With {.Key = key, .Host = host, .Title = link, .Description = description, .Compact = True})
+        modernSettingsRows.Add(row)
+        SizeModernSettingRow(row)
     End Sub
 
     Private Sub ModernProjectLinkClicked(sender As Object, e As LinkLabelLinkClickedEventArgs)
         Dim link As LinkLabel = TryCast(sender, LinkLabel)
         If link Is Nothing Then Return
+        Dim address As String = Convert.ToString(link.Tag)
         Try
-            Process.Start(New ProcessStartInfo(Convert.ToString(link.Tag)) With {.UseShellExecute = True})
+            ' The one place an About or Resources address is opened, and only from a click (section 3 rule 3.4). The
+            ' licence, the notices and the help open from local disk when the files are there.
+            AboutResources.Open(address, Localization.CurrentCode)
         Catch ex As Exception
             ' The action is the address itself, so the user can open it by hand
             ' (APP-BEHAVIOUR rule 6, ticket 028 Ф-3); the exception goes to the log.
             AppFileLogger.LogException("Settings: opening a project link", ex)
-            ViewerBox.Show(Me, Localization.TF("Не удалось открыть ссылку в браузере. Откройте её вручную: {0}", Convert.ToString(link.Tag)),
+            ViewerBox.Show(Me, Localization.TF("Не удалось открыть ссылку в браузере. Откройте её вручную: {0}", AboutResources.ManualAddress(address, Localization.CurrentCode)),
                             Me.Text, MessageBoxButtons.OK, MessageBoxIcon.Warning)
         End Try
     End Sub
@@ -2380,6 +2574,17 @@ Partial Public Class Table_Form
             group.SetSummaryStyle(SettingsFont("Segoe UI", Sf(8.0F)), SettingsMutedText)
     End Sub
 
+    ''' <summary>The face, ink and border of a command or header-tool button; the sidebar's nav buttons keep their own.</summary>
+    Private Sub ApplyModernButtonPalette(button As Button)
+        If modernSettingsNavButtons IsNot Nothing AndAlso Array.IndexOf(modernSettingsNavButtons, button) >= 0 Then Return
+        button.UseVisualStyleBackColor = False
+        button.BackColor = SettingsSurface
+        button.ForeColor = SettingsLink
+        button.FlatAppearance.BorderColor = SettingsBorder
+        button.FlatAppearance.MouseOverBackColor = BlendSettingsColor(SettingsSurface, SettingsAccent, 0.1F)
+        button.FlatAppearance.MouseDownBackColor = BlendSettingsColor(SettingsSurface, SettingsAccent, 0.18F)
+    End Sub
+
     Private Sub ApplyModernPaletteToTree(parent As Control)
         For Each control As Control In parent.Controls
             If TypeOf control Is FlowLayoutPanel Then
@@ -2396,15 +2601,7 @@ Partial Public Class Table_Form
                     control.BackColor = If(modernSettingsSidebar.Contains(control), SettingsSidebar, SettingsSurface)
                 End If
             ElseIf TypeOf control Is Button Then
-                Dim button As Button = DirectCast(control, Button)
-                If modernSettingsNavButtons Is Nothing OrElse Array.IndexOf(modernSettingsNavButtons, button) < 0 Then
-                    button.UseVisualStyleBackColor = False
-                    button.BackColor = SettingsSurface
-                    button.ForeColor = SettingsLink
-                    button.FlatAppearance.BorderColor = SettingsBorder
-                    button.FlatAppearance.MouseOverBackColor = BlendSettingsColor(SettingsSurface, SettingsAccent, 0.1F)
-                    button.FlatAppearance.MouseDownBackColor = BlendSettingsColor(SettingsSurface, SettingsAccent, 0.18F)
-                End If
+                ApplyModernButtonPalette(DirectCast(control, Button))
             ElseIf TypeOf control Is TextBoxBase OrElse TypeOf control Is ComboBox OrElse TypeOf control Is NumericUpDown OrElse
                    TypeOf control Is ListBox OrElse TypeOf control Is ListView OrElse TypeOf control Is TreeView Then
                 control.BackColor = SettingsEditorBack
@@ -2540,18 +2737,54 @@ Partial Public Class Table_Form
         For Each row As DataGridViewRow In Data_Grid_View.Rows
             row.Height = rowHeight
         Next
-        Dim gridHost As Panel = TryCast(Data_Grid_View.Parent, Panel)
-        If gridHost IsNot Nothing Then
-            Dim gridHeight As Integer = Data_Grid_View.ColumnHeadersHeight + Data_Grid_View.Rows.Count * rowHeight + Sp(4)
-            Dim otherHeight As Integer = gridHost.Padding.Vertical
-            For Each child As Control In gridHost.Controls
-                If child Is Data_Grid_View Then Continue For
-                otherHeight += Math.Max(child.Height, If(TypeOf child Is FlowLayoutPanel, Sp(44), 0))
-            Next
-            gridHost.Height = gridHeight + otherHeight + Sp(8)
-        End If
-        Data_Grid_View.Anchor = AnchorStyles.Top Or AnchorStyles.Left Or AnchorStyles.Right
+        FitRecipientsHost()
+    End Sub
 
+    ''' <summary>Sizes the recipients block to exactly its content, top to bottom: the grid with all of its
+    ''' rows, the hint at the height of its wrapped text, the slot health line only while a slot has
+    ''' something to say, then the action buttons. Nothing is reserved, so nothing below the grid is blank.
+    ''' The grid and the host are set together and the group is told, because a group takes its height from
+    ''' the heights of the rows it holds.</summary>
+    Private Sub FitRecipientsHost()
+        Dim host As Panel = recipientsHost
+        If host Is Nothing OrElse fittingRecipientsHost OrElse Data_Grid_View.Parent IsNot host Then Return
+        fittingRecipientsHost = True
+        Try
+            Dim innerWidth As Integer = Math.Max(1, host.ClientSize.Width - host.Padding.Horizontal)
+            Dim gridHeight As Integer = Data_Grid_View.Rows.GetRowsHeight(DataGridViewElementStates.Visible) +
+                If(Data_Grid_View.ColumnHeadersVisible, Data_Grid_View.ColumnHeadersHeight, 0) + Sp(2)
+            Data_Grid_View.SetBounds(host.Padding.Left, host.Padding.Top, innerWidth, gridHeight)
+            ' With every row in view there is nothing to scroll; a grid that was once shorter than its rows
+            ' keeps its scroll offset and would show the first row (the delete row) cut off at the top.
+            If Data_Grid_View.Rows.Count > 0 AndAlso Data_Grid_View.FirstDisplayedScrollingRowIndex > 0 Then
+                Try
+                    Data_Grid_View.FirstDisplayedScrollingRowIndex = 0
+                Catch ex As InvalidOperationException
+                    Debug.WriteLine("Recipients grid scroll reset skipped: " & ex.Message)
+                End Try
+            End If
+
+            lbl_Grid_Hint.Height = lbl_Grid_Hint.GetPreferredSize(New Size(innerWidth, 0)).Height
+            Dim below As Integer = lbl_Grid_Hint.Height
+            If slotHealthDetails IsNot Nothing Then
+                Dim hasDetails As Boolean = slotHealthDetails.Text.Length > 0
+                slotHealthDetails.Visible = hasDetails
+                slotHealthDetails.Height = If(hasDetails, slotHealthDetails.GetPreferredSize(New Size(innerWidth, 0)).Height, 0)
+                below += slotHealthDetails.Height
+            End If
+            For Each actions As FlowLayoutPanel In host.Controls.OfType(Of FlowLayoutPanel)()
+                below += Math.Max(actions.GetPreferredSize(New Size(innerWidth, 0)).Height, Sp(44))
+            Next
+
+            Dim target As Integer = host.Padding.Vertical + gridHeight + below
+            If host.Height <> target Then
+                host.Height = target
+                Dim group As SettingsCollapsibleGroup = TryCast(host.Parent?.Parent, SettingsCollapsibleGroup)
+                If group IsNot Nothing Then group.ArrangeContents()
+            End If
+        Finally
+            fittingRecipientsHost = False
+        End Try
     End Sub
 
     Private Sub StyleModernSettingsControls()
@@ -2652,12 +2885,16 @@ Partial Public Class Table_Form
                 control.ForeColor = SettingsText
                 control.Font = SettingsFont("Segoe UI", Sf(9.0F), FontStyle.Regular)
             ElseIf TypeOf control Is Label Then
-                Dim isTitle As Boolean = modernSettingsRows.Exists(Function(r) r.Title Is control)
-                If isTitle Then
+                Dim owner As ModernSettingRow = modernSettingsRows.Find(Function(r) r.Title Is control OrElse r.Description Is control)
+                If owner IsNot Nothing AndAlso owner.Title Is control Then
                     control.ForeColor = SettingsText
                 Else
                     control.ForeColor = SettingsMutedText
-                    control.Font = SettingsFont("Segoe UI", Sf(8.0F), FontStyle.Regular)
+                    ' A row's explanation keeps the 12 logical px role (BOOLEAN-OPTION 2.0 section 2 rule 5);
+                    ' this walk runs after every page build and would otherwise put it back to 8 pt.
+                    control.Font = If(owner IsNot Nothing,
+                        SettingsPixelFont("Segoe UI", SettingsRowGridRules.ExplanationFontPixels),
+                        SettingsFont("Segoe UI", Sf(8.0F), FontStyle.Regular))
                 End If
             End If
 

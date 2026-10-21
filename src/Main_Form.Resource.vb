@@ -56,7 +56,12 @@ Partial Public Class Main_Form
     Friend Function ResourceBlocksFileOperations(verb As ResourceVerb) As Boolean
         Dim silent As Boolean
         Dim reason As String = ResourceRefusalReason(verb, silent)
-        If reason.Length > 0 Then lbl_Status.Text = reason
+        If reason.Length > 0 Then
+            lbl_Status.Text = reason
+            ' A refusal nobody could see afterwards: the status line is overwritten by the next key. The
+            ' log keeps the verb and the sentence, so "it would not copy" can be answered from current.log.
+            AppFileLogger.WriteLine("File operation refused: " & verb.ToString() & " -> " & reason)
+        End If
         Return reason.Length > 0 OrElse silent
     End Function
 
@@ -284,9 +289,13 @@ Partial Public Class Main_Form
         Try
             Dim depth As Integer = Math.Max(1, RemoteCacheStore.PrefetchDepth(session.Provider.Capabilities))
             Dim token As CancellationToken = cancel.Token
+            Dim loadedBytes As Long = 0
+            Dim progress As IProgress(Of Long) = New ActionProgress(Of Long)(Sub(b) Interlocked.Exchange(loadedBytes, b))
             Dim fetch As Task(Of EnsureLocalOutcome) = Task.Run(
-                Function() session.TryEnsureLocal(filePath, token, protectAround:=depth))
+                Function() session.TryEnsureLocal(filePath, token, progress, protectAround:=depth))
             Dim frame As Integer
+            Dim entry As ResourceEntry = session.EntryAt(filePath)
+            Dim totalBytes As Long = If(entry IsNot Nothing AndAlso entry.Length > 0, entry.Length, 0L)
             While Not fetch.IsCompleted
                 If generation <> media_Generation OrElse session IsNot ActiveResourceSession() OrElse IsDisposed Then
                     cancel.Cancel()
@@ -294,7 +303,8 @@ Partial Public Class Main_Form
                 End If
                 If watch.ElapsedMilliseconds >= loading_Badge_Delay_Ms Then
                     If savedStatus Is Nothing Then savedStatus = ShowLoadingStatus(filePath)
-                    ShowLoadingBadge(filePath, If(session.EntryAt(filePath)?.Length, 0L), watch.Elapsed, frame)
+                    If totalBytes <= 0 Then totalBytes = If(session.EntryAt(filePath)?.Length, 0L)
+                    ShowLoadingBadge(filePath, totalBytes, watch.Elapsed, frame, Interlocked.Read(loadedBytes))
                     frame += 1
                 End If
                 Await Task.WhenAny(fetch, Task.Delay(loading_Badge_Frame_Ms))

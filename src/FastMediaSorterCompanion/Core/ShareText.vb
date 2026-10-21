@@ -272,6 +272,9 @@ Public Module ShareText
                 Return Localization.TF("Сервер ответил по внешнему адресу {0} - но проверка не покидала вашу сеть.", endpoint)
             Case SftpProbe.ProbeResult.PortOpen
                 Return Localization.TF("Порт открыт, но SFTP не ответил: {0}", endpoint)
+            Case SftpProbe.ProbeResult.ClosedBeforeBanner
+                ' SHARE-SESSION 1.3 (iii): hung up before any banner - undetermined, never "not SFTP". The sentence is the viewer's own.
+                Return Localization.T("Сервер закрыл соединение, не успев ответить. Возможно, достигнут предел подключений; повторите через минуту.")
             Case SftpProbe.ProbeResult.Timeout, SftpProbe.ProbeResult.Refused
                 Return Localization.T("С этого ПК не отвечает. Роутер может не пускать на свой адрес изнутри - проверьте с телефона по мобильной сети.")
             Case Else
@@ -290,6 +293,8 @@ Public Module ShareText
                 Return Localization.T("Запрос ушёл с этого ПК на внешний адрес роутера и вернулся внутрь - так проверяется правило проброса, но не то, пускает ли провайдер входящие подключения снаружи. Окончательно подтвердит только телефон: выключите на нём Wi-Fi, оставьте мобильный интернет и откройте QR-код.")
             Case SftpProbe.ProbeResult.PortOpen
                 Return Localization.T("Порт снаружи открыт, но ответила не наша программа. Обычно так бывает, когда правило проброса на роутере ведёт на другое устройство или этот порт занят другой службой. Проверьте правило: внешний порт должен вести на этот ПК и на порт раздачи.")
+            Case SftpProbe.ProbeResult.ClosedBeforeBanner
+                Return ""   ' the headline already says all there is to say: nothing is known about the peer
             Case SftpProbe.ProbeResult.Timeout, SftpProbe.ProbeResult.Refused
                 Return Localization.T("Проверка идёт с этого же ПК, поэтому она не окончательная: многие роутеры не пускают запрос на свой внешний адрес изнутри домашней сети. Надёжный способ - открыть QR-код на телефоне, выключив на нём Wi-Fi и оставив мобильный интернет. Если и так подключиться не удаётся, настройте проброс порта - кнопка «Как настроить доступ через интернет».")
             Case Else

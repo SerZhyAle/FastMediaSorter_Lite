@@ -172,7 +172,7 @@ Partial Public NotInheritable Class MainWindow
     ''' <summary>OK-or-Cancel with Cancel the default (APP-BEHAVIOUR rule 5): every disk verb that
     ''' cuts clients off or deletes a stored key asks first.</summary>
     Private Function ConfirmDiskAction(question As String) As Boolean
-        Return MessageBox.Show(Me, question, Me.Text, MessageBoxButtons.OKCancel, MessageBoxIcon.Warning,
+        Return ManagerBox.Show(Me, question, Me.Text, MessageBoxButtons.OKCancel, MessageBoxIcon.Warning,
                                MessageBoxDefaultButton.Button2) = DialogResult.OK
     End Function
 

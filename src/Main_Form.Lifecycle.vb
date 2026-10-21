@@ -1156,6 +1156,8 @@ Partial Public Class Main_Form
 
         ShowProfileResetOutcome()
 
+        SweepAnimationVideoStoreIfNeeded()
+
         ' Spec 184: the welcome wizard, after the window and its first picture are on screen (never on top of them).
         BeginInvoke(New Action(AddressOf ShowWelcomeIfDue))
 #End If
@@ -1273,6 +1275,11 @@ Partial Public Class Main_Form
         ' routinely runs longer, and closing anyway kills the consumer thread wherever it happens to
         ' be - so ask instead of deciding for the user. (What it cannot corrupt any more is the
         ' destination file: FileManager.MoveFile now stages the copy under a temporary name.)
+        '
+        ' This question stays the SYSTEM box on purpose (ticket 243 T-12a): here "No" is the destructive answer
+        ' (it closes the program and drops the unfinished operations), and the product-owned question window answers
+        ' its cancel answer - No - for Escape and the close box, so one stray Escape would close the program. The
+        ' system box ignores both for a Yes/No set. Moving it needs a per-question Escape answer first.
         Dim flow As New FileOpCloseFlow(Of FileOp)(
             close_Drain_Coordinator,
             Function() file_Op_Queue,
@@ -1283,7 +1290,7 @@ Partial Public Class Main_Form
                 file_Op_Queue = Nothing
                 EnsureFileOpQueue()
             End Sub,
-            Function(outstanding As Integer) ViewerBox.Show(
+            Function(outstanding As Integer) ViewerBox.ShowSystem(
                 Me,
                 Localization.TF("Файловые операции ещё выполняются: {0}." & vbCrLf &
                                 "Подождать ещё? «Нет» закроет программу, и незавершённые операции не выполнятся.",
@@ -1399,6 +1406,7 @@ Partial Public Class Main_Form
         If toolTip IsNot Nothing Then toolTip.Dispose()
 
 #If Not NETFRAMEWORK Then
+        DisposeAnimationVideoStore()
         ReleasePdfDocument()
         ReleaseTextDocument()
         ClearEpubPlaceholderData()

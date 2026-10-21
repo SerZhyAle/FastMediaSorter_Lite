@@ -71,6 +71,10 @@ type Limits struct {
 	RelayListenersPerBcast int `json:"relayListenersPerBroadcast"` // relay listeners and tunnels of one broadcast
 	RelayListenersTotal    int `json:"relayListenersTotal"`        // relay listeners of the whole deployment
 	CastPendingPerAccount  int `json:"castPendingPerAccount"`      // offers waiting for an answer, per account
+	// WebSocketMessageBytes caps one WebSocket message in both directions (WEB-BINDING websocket-binding
+	// "Messages": a host setting, default DefaultWebSocketMessage = the largest relay chunk of item U with its
+	// length word); the server closes 1009 above it. 0 means the default. A page cuts at 256 KiB or less.
+	WebSocketMessageBytes int `json:"webSocketMessageBytes"`
 }
 
 // Keepalive is the presence lifetime (DEVICE-EXCHANGE 7.3).
@@ -96,13 +100,21 @@ type Log struct {
 	RetentionDays int    `json:"retentionDays"`
 }
 
-// Admin configures the local admin channel (ticket 162 section 4).
+// Admin configures the local admin channel (ticket 162 section 4) and remote administration (ticket 245).
 type Admin struct {
 	Comment string `json:"_comment,omitempty"`
 	// ManageSIDs are Windows SIDs besides the data directory's owner, the server's own account, SYSTEM
 	// and Administrators that may use the channel: the Server edition's installer enrols the
 	// management user here (the worker's --manage-sid, for this server).
 	ManageSIDs []string `json:"manageSids"`
+
+	// Remote administration (DEVICE-EXCHANGE 1.4, ticket 245).
+	On                     bool     `json:"on"`
+	PasswordRecord         string   `json:"passwordRecord,omitempty"`
+	AllowedAddresses       []string `json:"allowedAddresses,omitempty"`
+	Origins                []string `json:"origins,omitempty"`
+	SessionLifetimeMinutes int      `json:"sessionLifetimeMinutes,omitempty"`
+	PasswordFloor          int      `json:"passwordFloor,omitempty"`
 }
 
 // Config is the whole file.
@@ -120,11 +132,35 @@ type Config struct {
 	Log            Log       `json:"log"`
 	Admin          Admin     `json:"admin"`
 	KeepAwake      bool      `json:"keepAwake"`
+	WebDir         string    `json:"webDir,omitempty"`
 
 	// ObsoletePasswordHash is set by Load when the file still carries the single server password of
 	// the superseded design (ticket 162 section 3): it is ignored, logged once, and gone from the file
 	// the next time it is saved. Nothing deployed ever held one, so there is no migration.
 	ObsoletePasswordHash bool `json:"-"`
+
+	// dataDir is the directory of the file Load read: the data directory (see Resolve). Validate keeps
+	// webDir out of it. It is never written to the file.
+	dataDir string
+}
+
+// DefaultWebSocketMessage is the default cap of one WebSocket message: the largest relay chunk of item U
+// (MaxChunkLen, 1 MiB) with its 4-byte length word (WEB-BINDING websocket-binding "Messages").
+const DefaultWebSocketMessage = 1048580
+
+// The bounds of Limits.WebSocketMessageBytes: a message must hold the largest frame after sign-in (256 KiB)
+// with its length word, and no more than a server is willing to buffer for one message.
+const (
+	MinWebSocketMessage = 256*1024 + 4
+	MaxWebSocketMessage = 16 << 20
+)
+
+// WebSocketMessage is the message cap in force: the setting, or the default when it is 0.
+func (l Limits) WebSocketMessage() int {
+	if l.WebSocketMessageBytes == 0 {
+		return DefaultWebSocketMessage
+	}
+	return l.WebSocketMessageBytes
 }
 
 // Default returns the working defaults, with the comments a first-run file carries.
@@ -160,6 +196,8 @@ func Default() Config {
 			RelayListenersPerBcast: 500,
 			RelayListenersTotal:    1000,
 			CastPendingPerAccount:  16,
+
+			WebSocketMessageBytes: DefaultWebSocketMessage,
 		},
 		Keepalive: Keepalive{
 			Comment:          "A device proposes an interval; the server clamps it to min..max and takes it offline after windowMultiplier missed intervals.",
@@ -168,9 +206,14 @@ func Default() Config {
 			MaxSeconds:       120,
 			WindowMultiplier: 3,
 		},
-		TLS:   TLS{Comment: "Leave empty to use the generated self-signed identity. Set both files to serve a CA-signed certificate."},
-		Log:   Log{Comment: "UTC day files, swept at start and every 24 hours. maxBytes caps each file; keep the newest retentionDays days.", MaxBytes: 4 << 20, RetentionDays: 31},
-		Admin: Admin{Comment: "SIDs (Windows) that may use the local admin channel besides the owner of this directory, SYSTEM and Administrators.", ManageSIDs: []string{}},
+		TLS: TLS{Comment: "Leave empty to use the generated self-signed identity. Set both files to serve a CA-signed certificate."},
+		Log: Log{Comment: "UTC day files, swept at start and every 24 hours. maxBytes caps each file; keep the newest retentionDays days.", MaxBytes: 4 << 20, RetentionDays: 31},
+		Admin: Admin{
+			Comment:                "SIDs (Windows) that may use the local admin channel besides the owner of this directory, SYSTEM and Administrators.",
+			ManageSIDs:             []string{},
+			SessionLifetimeMinutes: 15,
+			PasswordFloor:          10,
+		},
 	}
 }
 
@@ -253,6 +296,9 @@ func (c Config) Validate() error {
 	if l.ClipboardBytes < 0 {
 		return errors.New("limits.clipboardBytes: must be 0 (clipboard off) or a number of bytes")
 	}
+	if n := l.WebSocketMessageBytes; n != 0 && (n < MinWebSocketMessage || n > MaxWebSocketMessage) {
+		return fmt.Errorf("limits.webSocketMessageBytes: must be 0 (the default, %d) or %d..%d bytes", DefaultWebSocketMessage, MinWebSocketMessage, MaxWebSocketMessage)
+	}
 	rates := []struct {
 		name string
 		r    Rate
@@ -278,7 +324,54 @@ func (c Config) Validate() error {
 			return fmt.Errorf("admin.manageSids: %q is not a SID", s)
 		}
 	}
-	return nil
+	if c.Admin.SessionLifetimeMinutes < 0 {
+		return errors.New("admin.sessionLifetimeMinutes cannot be negative")
+	}
+	if c.Admin.PasswordFloor < 0 {
+		return errors.New("admin.passwordFloor cannot be negative")
+	}
+	for _, a := range c.Admin.AllowedAddresses {
+		if _, err := netip.ParseAddr(a); err != nil {
+			if _, err2 := netip.ParsePrefix(a); err2 != nil {
+				return fmt.Errorf("admin.allowedAddresses: %q is neither an IP address nor a CIDR prefix", a)
+			}
+		}
+	}
+	for _, o := range c.Admin.Origins {
+		if _, ok := parseOrigin(o); !ok {
+			return fmt.Errorf("admin.origins: %q is not an https origin (https://host or https://host:port: no path, no wildcard)", o)
+		}
+	}
+	return c.checkWebDir()
+}
+
+// Allows reports whether clientAddr matches AllowedAddresses.
+// If AllowedAddresses is empty, all addresses are allowed.
+func (a Admin) Allows(clientAddr string) bool {
+	if len(a.AllowedAddresses) == 0 {
+		return true
+	}
+	host := clientAddr
+	if h, _, err := net.SplitHostPort(clientAddr); err == nil {
+		host = h
+	}
+	ip, err := netip.ParseAddr(strings.Trim(host, "[]"))
+	if err != nil {
+		return false
+	}
+	ip = ip.Unmap()
+	for _, item := range a.AllowedAddresses {
+		if targetIP, err := netip.ParseAddr(item); err == nil {
+			if ip == targetIP.Unmap() {
+				return true
+			}
+		} else if prefix, err := netip.ParsePrefix(item); err == nil {
+			if prefix.Contains(ip) {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 // Paths are the files of one deployment.
@@ -339,6 +432,7 @@ func Load(path string) (Config, error) {
 	if json.Unmarshal(data, &old) == nil && old.PasswordHash != nil {
 		c.ObsoletePasswordHash = true
 	}
+	c.dataDir = filepath.Dir(path) // Resolve: the directory of the file is the data directory
 	return c, nil
 }
 

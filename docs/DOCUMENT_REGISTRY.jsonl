@@ -1,4 +1,4 @@
-{"path": ".github/agents/vb-net-profy.agent.md", "topic": "vb-net-profy.agent", "area": "engineering", "triggers": ["Changes to engineering behavior, structure or workflow"], "role": "source"}
+﻿{"path": ".github/agents/vb-net-profy.agent.md", "topic": "vb-net-profy.agent", "area": "engineering", "triggers": ["Changes to engineering behavior, structure or workflow"], "role": "source"}
 {"path": "404.html", "topic": "404", "area": "website", "triggers": ["Changes to website behavior, structure or workflow"], "role": "render", "generator": "tools/Build-SitePages.ps1 -Check"}
 {"path": "AGENTS.md", "topic": "AGENTS", "area": "engineering", "triggers": ["Changes to build commands, source structure, runtime policy or agent workflow"], "role": "source"}
 {"path": "CHANGELOG.md", "topic": "CHANGELOG", "area": "engineering", "triggers": ["User-visible behavior changes and releases"], "role": "source"}
@@ -15,6 +15,8 @@
 {"path": "docs/contracts/CAPTURE-OUTPUT.md", "topic": "CAPTURE-OUTPUT", "area": "contracts", "triggers": ["Adoption, version, conformance gate or exception changes for CAPTURE-OUTPUT"], "role": "source"}
 {"path": "docs/contracts/CLIPBOARD-GUARD.md", "topic": "CLIPBOARD-GUARD", "area": "contracts", "triggers": ["Adoption, version, conformance gate or exception changes for CLIPBOARD-GUARD"], "role": "source"}
 {"path": "docs/contracts/CONTEXT-HELP.md", "topic": "CONTEXT-HELP", "area": "contracts", "triggers": ["Adoption, version, conformance gate or exception changes for CONTEXT-HELP"], "role": "source"}
+{"path": "docs/contracts/UNIFIED-UI.md", "topic": "UI-SIZING, BUTTONS, BOOLEAN-OPTION, COLLAPSIBLE-GROUP, SETTINGS-NAVIGATION", "area": "contracts", "triggers": ["Adoption, version, conformance gate or exception changes for the unified UI contracts"], "role": "source"}
+{"path": "docs/guides/UNIFIED_UI_CONTRACTS.md", "topic": "UNIFIED UI CONTRACTS", "area": "engineering", "triggers": ["Changes to the unified UI contracts profile, inventory, migration plan or evidence protocol"], "role": "source"}
 {"path": "docs/contracts/CONTRACT_BROADCAST_RESOURCE.md", "topic": "CONTRACT_BROADCAST_RESOURCE", "area": "contracts", "triggers": ["Adoption, version, conformance gate or exception changes for CONTRACT_BROADCAST_RESOURCE"], "role": "source"}
 {"path": "docs/contracts/DEVICE-EXCHANGE.md", "topic": "DEVICE-EXCHANGE", "area": "contracts", "triggers": ["Adoption, version, conformance gate or exception changes for DEVICE-EXCHANGE"], "role": "source"}
 {"path": "docs/contracts/DIAGNOSTIC-REPORT.md", "topic": "DIAGNOSTIC-REPORT", "area": "contracts", "triggers": ["Adoption, version, conformance gate or exception changes for DIAGNOSTIC-REPORT"], "role": "source"}
@@ -55,7 +57,7 @@
 {"path": "docs/guides/SERVER_EDITION_BUILD_AND_TEST.md", "topic": "SERVER EDITION BUILD AND TEST", "area": "engineering", "triggers": ["Changes to engineering behavior, structure or workflow"], "role": "source"}
 {"path": "docs/guides/SETTINGS_WINDOW_INVENTORY_DOTNET10.md", "topic": "SETTINGS WINDOW INVENTORY DOTNET10", "area": "engineering", "triggers": ["Changes to engineering behavior, structure or workflow"], "role": "source"}
 {"path": "docs/guides/SITE_ADDRESSES.md", "topic": "SITE_ADDRESSES", "area": "website", "triggers": ["Changes to website behavior, structure or workflow"], "role": "source"}
-{"path": "docs/guides/POSITIONING.md", "topic": "POSITIONING", "area": "website", "triggers": ["Changes to what the product says it is: the family sentence, the pillars and their order, the public editions, the reserved door, the language count or the platform floor"], "role": "source"}
+{"path": "docs/guides/POSITIONING.md", "topic": "POSITIONING", "area": "website", "triggers": ["Changes to what the product says it is: the family sentence, the three components and their order, the two install intents, the availability matrix (a packaging change that moves a default or a channel), the public editions, the language count or the platform floor"], "role": "source"}
 {"path": "docs/guides/STORE_PUBLISHING.md", "topic": "STORE PUBLISHING", "area": "engineering", "triggers": ["Changes to engineering behavior, structure or workflow"], "role": "source"}
 {"path": "docs/guides/TESTING.md", "topic": "TESTING", "area": "engineering", "triggers": ["Changes to engineering behavior, structure or workflow"], "role": "source"}
 {"path": "docs/how-to-archives.html", "topic": "how-to-archives", "area": "website", "triggers": ["Changes to website behavior, structure or workflow"], "role": "source"}
@@ -139,3 +141,7 @@
 {"path":".claude/rules/localization.md","role":"source","topic":"Agent rules: localization","area":"engineering","triggers":["Changes to the localization layer, string tables, RTL or script fonts"]}
 {"path":".claude/agents/implementer.md","area":"engineering","role":"source","topic":"Project sub-agent: implementer","triggers":["Changes to how implementation slices are delegated to sub-agents"]}
 {"path":".claude/agents/auditor.md","area":"engineering","role":"source","topic":"Project sub-agent: read-only auditor","triggers":["Changes to how audits are delegated to sub-agents"]}
+{"path":"docs/contracts/EXCHANGE-MARK.md","topic":"EXCHANGE-MARK","area":"contracts","triggers":["Adoption, version, artwork or conformance changes for EXCHANGE-MARK"],"role":"source"}
+{"path": "docs/guides/SHARING_SETTINGS_WINDOWS.md", "topic": "Sharing settings windows and navigation", "area": "engineering", "triggers": ["Changes to manager, SFTP or exchange settings ownership, routes, drafts, context or help"], "role": "source"}
+{"path": "docs/contracts/WORKER-LAUNCH.md", "topic": "WORKER-LAUNCH", "area": "contracts", "triggers": ["Adoption, version, state-directory resolution, launch flags or conformance changes for WORKER-LAUNCH"], "role": "source"}
+{"path": "docs/contracts/MEDIA-VIEWER.md", "topic": "MEDIA-VIEWER", "area": "contracts", "triggers": ["Adoption, version, sorting, selection, zoom, slideshow or conformance changes for MEDIA-VIEWER"], "role": "source"}

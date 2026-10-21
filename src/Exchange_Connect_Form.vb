@@ -36,6 +36,7 @@ Friend NotInheritable Class Exchange_Connect_Form
     Private ReadOnly passwordLabel As Label
     Private ReadOnly passwordBox As TextBox
     Private ReadOnly revealBox As CheckBox
+    Private ReadOnly revealRow As OptionRowHost
     ''' <summary>226 rule 1: registration by invitation asks for the password TWICE and states the server's policy in words
     ''' before the first refusal. Both live only in the register mode.</summary>
     Private ReadOnly password2Label As Label
@@ -44,6 +45,7 @@ Friend NotInheritable Class Exchange_Connect_Form
     Private ReadOnly statusLabel As Label
     Private ReadOnly connectButton As Button
     Private ReadOnly cancelButton_ As Button
+    Private ReadOnly answerRow As DialogButtonRow
     Private ReadOnly _ports As ExchangeConsumerPorts
     Private ReadOnly _pinOfEntry As String
     Private ReadOnly _cts As New CancellationTokenSource()
@@ -74,7 +76,9 @@ Friend NotInheritable Class Exchange_Connect_Form
         Me.MinimizeBox = False
         Me.ShowInTaskbar = False
         Me.StartPosition = FormStartPosition.CenterParent
-        Me.ClientSize = New Size(520, 330)
+        ' The authored content ends at 298 (the status line, below the 40 px reveal row); the bottom row below it is 50 tall
+        ' (8 + one 32 line + 10) at 96 dpi.
+        Me.ClientSize = New Size(520, 348)
 
         Dim family As String = Localization.FontFamily()
         If family IsNot Nothing Then
@@ -85,7 +89,10 @@ Friend NotInheritable Class Exchange_Connect_Form
 
         intro = New Label With {.Name = "xc_Intro", .AutoSize = False, .Location = New Point(14, 12), .Size = New Size(492, 50),
                                 .Text = ExchangeEntryText.ConnectIntro()}
-        inputLabel = New Label With {.Name = "xc_InputLabel", .AutoSize = False, .Location = New Point(14, 68), .Size = New Size(492, 16),
+        ' EXCHANGE-MARK (spec 248 V3): the mark takes a reading-start column of the intro; FitContent grows the intro and
+        ' moves what is under it when a long language needs the extra lines, in the add, register and sign-in-again modes alike.
+        ExchangeMark.Apply(intro, 32, AddressOf RuntimeBootstrap.OpenBundledAsset)
+        inputLabel =New Label With {.Name = "xc_InputLabel", .AutoSize = False, .Location = New Point(14, 68), .Size = New Size(492, 16),
                                      .Text = ExchangeEntryText.InputLabel()}
         inputBox = New TextBox With {.Name = "xc_Input", .Location = New Point(14, 86), .Size = New Size(492, 24), .AccessibleName = ExchangeEntryText.InputLabel()}
         AddHandler inputBox.TextChanged, Sub() OnInputChanged()
@@ -103,35 +110,45 @@ Friend NotInheritable Class Exchange_Connect_Form
         passwordLabel = New Label With {.Name = "xc_PasswordLabel", .AutoSize = False, .Location = New Point(14, 216), .Size = New Size(110, 16), .Text = Localization.T("Пароль:")}
         passwordBox = New TextBox With {.Name = "xc_Password", .Location = New Point(130, 213), .Size = New Size(376, 24), .UseSystemPasswordChar = True,
                                         .AccessibleName = Localization.T("Пароль:")}
-        revealBox = New CheckBox With {.Name = "xc_Reveal", .AutoSize = True, .Location = New Point(130, 241), .Text = Localization.T("Показать пароль")}
+        revealBox = New CheckBox With {.Name = "xc_Reveal", .Text = Localization.T("Показать пароль")}
         AddHandler revealBox.CheckedChanged, Sub()
                                                   passwordBox.UseSystemPasswordChar = Not revealBox.Checked
                                                   password2Box.UseSystemPasswordChar = Not revealBox.Checked
                                               End Sub
-        password2Label = New Label With {.Name = "xc_Password2Label", .AutoSize = False, .Location = New Point(14, 267), .Size = New Size(110, 16),
+        ' The reveal switch is an option row of the Settings anatomy (ticket 243 T-11b, BOOLEAN-OPTION 2.0): the same check box with
+        ' the same name and handler, a 20 px box in a 32 px target at the field column, the caption beside it.
+        revealRow = DialogOptionRow.CreateAt(revealBox, Nothing, 130, 237, 520)
+        password2Label = New Label With {.Name = "xc_Password2Label", .AutoSize = False, .Location = New Point(14, 283), .Size = New Size(110, 16),
                                          .Text = ExchangeEntryText.PasswordTwiceLabel(), .Visible = False}
-        password2Box = New TextBox With {.Name = "xc_Password2", .Location = New Point(130, 264), .Size = New Size(376, 24), .UseSystemPasswordChar = True,
+        password2Box = New TextBox With {.Name = "xc_Password2", .Location = New Point(130, 280), .Size = New Size(376, 24), .UseSystemPasswordChar = True,
                                          .AccessibleName = ExchangeEntryText.PasswordTwiceLabel(), .Visible = False}
         AddHandler password2Box.TextChanged, Sub() statusLabel.Text = ""
-        policyNote = New Label With {.Name = "xc_Policy", .AutoSize = False, .Location = New Point(14, 291), .Size = New Size(492, 18),
+        policyNote = New Label With {.Name = "xc_Policy", .AutoSize = False, .Location = New Point(14, 307), .Size = New Size(492, 18),
                                      .ForeColor = SystemColors.GrayText, .Text = ExchangeEntryText.PasswordPolicyNote(), .Visible = False}
 
-        statusLabel = New Label With {.Name = "xc_Status", .AutoSize = False, .Location = New Point(14, 268), .Size = New Size(492, 18),
+        statusLabel = New Label With {.Name = "xc_Status", .AutoSize = False, .Location = New Point(14, 280), .Size = New Size(492, 18),
                                       .ForeColor = Color.Firebrick, .Text = ""}
-        connectButton = New Button With {.Name = "xc_Connect", .Location = New Point(296, 292), .Size = New Size(120, 28), .Text = Localization.T("Подключиться")}
+        connectButton = New Button With {.Name = "xc_Connect", .Text = Localization.T("Подключиться")}
         AddHandler connectButton.Click, AddressOf OnConnect
-        ButtonGlyphs.Apply(connectButton, IconMap.GetMeaning("xc_Connect").GlyphId, ButtonGlyphRole.Affirmative)
-        cancelButton_ = New Button With {.Name = "xc_Cancel", .Location = New Point(424, 292), .Size = New Size(82, 28), .Text = Localization.T("Отмена"),
-                                         .DialogResult = DialogResult.Cancel}
-        ButtonGlyphs.Apply(cancelButton_, "action.cancel", ButtonGlyphRole.Dismissing)
+        cancelButton_ = New Button With {.Name = "xc_Cancel", .Text = Localization.T("Отмена"), .DialogResult = DialogResult.Cancel}
+
+        ' The two answers ride the shared bottom row (ticket 243 T-8b, BUTTONS 2.0 sections 3 and 4): Cancel first, the
+        ' final affirmative answer last, widths from the caption and its glyph (the Connect / Register caption of the
+        ' mode is re-measured by the row itself). Bind keeps the meaning they had: Escape is Cancel, Enter is Connect
+        ' (it sends nothing until pressed, and a pasted string only fills the form). Paste and Open file are helpers of
+        ' the input field, not answers, and stay beside it.
+        answerRow = New DialogButtonRow() With {.Dock = DockStyle.Bottom, .Name = "xc_Buttons", .Padding = New Padding(14, 8, 14, 10)}
+        answerRow.Add(connectButton, DialogButtonRole.Affirmative, IconMap.GetMeaning("xc_Connect").GlyphId)
+        answerRow.Add(cancelButton_, DialogButtonRole.Dismissing, "action.cancel")
 
         Me.Controls.AddRange(New Control() {intro, inputLabel, inputBox, pasteButton, openButton, destination, loginLabel, loginBox,
-                                            passwordLabel, passwordBox, revealBox, password2Label, password2Box, policyNote, statusLabel, connectButton, cancelButton_})
-        Me.AcceptButton = connectButton
-        Me.CancelButton = cancelButton_
+                                            passwordLabel, passwordBox, revealRow, password2Label, password2Box, policyNote, statusLabel})
+        ' The authored bounds the modes start from are those of the hand-positioned fields; the docked row owns its own.
         For Each child As Control In Me.Controls
             layoutBaseline(child) = child.Bounds
         Next
+        Me.Controls.Add(answerRow)
+        answerRow.Bind(Me)
 
         If signInAgain IsNot Nothing Then
             inputBox.Text = signInAgain.Server
@@ -220,18 +237,17 @@ Friend NotInheritable Class Exchange_Connect_Form
         policyNote.Visible = register
         intro.Text = If(register, ExchangeEntryText.RegisterIntro(), ExchangeEntryText.ConnectIntro())
         connectButton.Text = If(register, ExchangeEntryText.RegisterButton(), ExchangeEntryText.ConnectButton())
+        ' The status line ends at 349 in the register mode and at 298 otherwise (the reveal row above them is 40 tall);
+        ' the docked answer row below it is 50 tall.
         If register Then
-            statusLabel.SetBounds(LayoutUnit(14), LayoutUnit(313), LayoutUnit(492), LayoutUnit(18))
-            connectButton.SetBounds(LayoutUnit(296), LayoutUnit(337), LayoutUnit(120), LayoutUnit(28))
-            cancelButton_.SetBounds(LayoutUnit(424), LayoutUnit(337), LayoutUnit(82), LayoutUnit(28))
-            ClientSize = New Size(LayoutUnit(520), LayoutUnit(375))
+            statusLabel.SetBounds(LayoutUnit(14), LayoutUnit(331), LayoutUnit(492), LayoutUnit(18))
+            ClientSize = New Size(LayoutUnit(520), LayoutUnit(399))
         Else
-            statusLabel.SetBounds(LayoutUnit(14), LayoutUnit(268), LayoutUnit(492), LayoutUnit(18))
-            connectButton.SetBounds(LayoutUnit(296), LayoutUnit(292), LayoutUnit(120), LayoutUnit(28))
-            cancelButton_.SetBounds(LayoutUnit(424), LayoutUnit(292), LayoutUnit(82), LayoutUnit(28))
-            ClientSize = New Size(LayoutUnit(520), LayoutUnit(330))
+            statusLabel.SetBounds(LayoutUnit(14), LayoutUnit(280), LayoutUnit(492), LayoutUnit(18))
+            ClientSize = New Size(LayoutUnit(520), LayoutUnit(348))
         End If
         DialogLayout.FitContent(Me)
+        If _laidOut Then DialogLayout.KeepRoomForRow(Me, answerRow)
     End Sub
 
     Private _laidOut As Boolean
@@ -245,6 +261,7 @@ Friend NotInheritable Class Exchange_Connect_Form
         MyBase.OnLoad(e)
         _laidOut = True
         DialogLayout.FitContent(Me)
+        DialogLayout.KeepRoomForRow(Me, answerRow)
     End Sub
 
     Private Sub OnPaste(sender As Object, e As EventArgs)

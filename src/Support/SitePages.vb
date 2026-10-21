@@ -122,3 +122,173 @@ Public Module SitePages
     End Function
 
 End Module
+
+''' <summary>
+''' The twelve items every program's About page must show (SETTINGS-NAVIGATION 2.0 section 3 rules 3 and 4),
+''' by id, and where each program keeps its one. The viewer names a settings row, the Share Manager a control
+''' <c>Name</c>; two items may share a place when one block carries both (the viewer's intro block is the
+''' description and the running version). The inventory tests read this table against the two builders, so
+''' an item cannot go missing from one program without a test saying which.
+''' Rule 3.4: opening About contacts nothing remote - a row is a label or a link, and an address is opened
+''' on a click only (<see cref="AboutResources"/>).
+''' </summary>
+Public NotInheritable Class AboutItems
+
+    Private Sub New()
+    End Sub
+
+    Public Const Description As String = "description"
+    Public Const Version As String = "version"
+    Public Const Licence As String = "licence"
+    Public Const Privacy As String = "privacy"
+    Public Const Help As String = "help"
+    Public Const Site As String = "site"
+    Public Const Support As String = "support"
+    Public Const Diagnostics As String = "diagnostics"
+    Public Const Updates As String = "updates"
+    Public Const Repository As String = "repository"
+    Public Const Notices As String = "notices"
+    Public Const Related As String = "related"
+
+    ''' <summary>Every required item, in the order the About page shows them.</summary>
+    Public Shared ReadOnly Required As String() = {Description, Version, Updates, Diagnostics, Help, Site, Repository,
+                                            Licence, Notices, Privacy, Support, Related}
+
+    ''' <summary>The viewer's settings row (<c>modernSettingsRows</c> key) that carries <paramref name="item"/>.</summary>
+    Public Shared Function ViewerRow(item As String) As String
+        Select Case item
+            Case Description, Version : Return "about_intro"
+            Case Updates : Return "about_updates"
+            Case Diagnostics : Return "support_send_logs"
+            Case Help : Return "project_help"
+            Case Site : Return "project_site"
+            Case Repository : Return "project_github"
+            Case Licence : Return "project_license"
+            Case Notices : Return "project_notices"
+            Case Privacy : Return "project_privacy"
+            Case Support : Return "project_email"
+            Case Related : Return "about_related"
+            Case Else : Return ""
+        End Select
+    End Function
+
+    ''' <summary>The Share Manager's control <c>Name</c> on its help page that carries <paramref name="item"/>.</summary>
+    Public Shared Function ManagerControl(item As String) As String
+        Select Case item
+            Case Description : Return "managerDescription"
+            Case Version : Return "managerVersion"
+            Case Updates : Return "managerUpdates"
+            Case Diagnostics : Return "managerSupportBundle"
+            Case Help : Return "managerHelp"
+            Case Site : Return "managerSite"
+            Case Repository : Return "managerRepository"
+            Case Licence : Return "managerLicenseText"
+            Case Notices : Return "managerNotices"
+            Case Privacy : Return "managerPrivacy"
+            Case Support : Return "managerContact"
+            Case Related : Return "managerRelated"
+            Case Else : Return ""
+        End Select
+    End Function
+
+End Class
+
+''' <summary>
+''' The one table of links the About and Resources pages of both programs are built from, so an address that
+''' moves is corrected once (SETTINGS-NAVIGATION 2.0 section 3 rule 4). Pure string building: nothing here
+''' opens, reads or resolves anything - <see cref="AboutResources"/> does that, on a click.
+''' A key is a logical id; the viewer's rows and the Manager's controls pick the ids they show.
+''' </summary>
+Public NotInheritable Class ProductLinks
+
+    Private Sub New()
+    End Sub
+
+    Public Const Help As String = "help"
+    Public Const Site As String = "site"
+    Public Const Repository As String = "repository"
+    Public Const Releases As String = "releases"
+    Public Const Privacy As String = "privacy"
+    Public Const License As String = "license"
+    Public Const Notices As String = "notices"
+    Public Const Trust As String = "trust"
+    Public Const Contact As String = "contact"
+    Public Const Guide As String = "guide"
+    Public Const AndroidApp As String = "android"
+    Public Const Portal As String = "portal"
+    Public Const PortalHome As String = "portal_home"
+    Public Const DocHtml As String = "dochtml"
+
+    ''' <summary>The project and its legal and support pages, in the order the About page lists them.</summary>
+    Public Shared ReadOnly AboutKeys As String() = {Help, Site, Repository, Releases, Privacy, License, Notices, Trust, Contact}
+
+    ''' <summary>The related products: one compact group, the same three in both programs.</summary>
+    Public Shared ReadOnly RelatedKeys As String() = {AndroidApp, DocHtml, Portal}
+
+    ''' <summary>The viewer's "Server and resources" page.</summary>
+    Public Shared ReadOnly ResourceKeys As String() = {Guide, AndroidApp, PortalHome}
+
+    Public Const RepositoryUrl As String = "https://github.com/SerZhyAle/FastMediaSorter_Lite"
+    Public Const ReleasesUrl As String = RepositoryUrl & "/releases"
+    Public Const LicenseOnlineUrl As String = RepositoryUrl & "/blob/main/LICENSE"
+    Public Const NoticesOnlineUrl As String = RepositoryUrl & "/blob/main/THIRD-PARTY-NOTICES.txt"
+
+    ''' <summary>The names of the files that ship beside the program (installer, ZIP and MSIX all copy them).</summary>
+    Public Const LicenseFile As String = "LICENSE"
+    Public Const NoticesFile As String = "THIRD-PARTY-NOTICES.txt"
+
+    ''' <summary>An address that means "this file, from the program's own folder" - the part after the colon is its name.</summary>
+    Public Const LocalScheme As String = "fms-local:"
+
+    ''' <summary>An address that means "the shipped help for this surface id" (help-map.json).</summary>
+    Public Const HelpScheme As String = "fms-help:"
+
+    ''' <summary>The topics page of the site: the online help a program falls back to when its own help is not on disk.</summary>
+    Public Shared Function HelpOnline(languageCode As String) As String
+        Return SitePages.ForLanguage(SitePages.SiteRoot & "topics.html", languageCode)
+    End Function
+
+    ''' <summary>
+    ''' The address a link opens, in <paramref name="languageCode"/>. The licence and the notices answer with
+    ''' <see cref="LocalScheme"/> (the file beside the program), the help with <see cref="HelpScheme"/> and
+    ''' <paramref name="helpSurface"/> - the program's own surface id in help-map.json; every one has an online
+    ''' page for the case the file is not there (<see cref="OnlineFor"/>). The contact is a mailto: with the product
+    ''' as the subject. An unknown key answers "".
+    ''' </summary>
+    Public Shared Function Url(key As String, languageCode As String, Optional helpSurface As String = "index") As String
+        Select Case key
+            Case Help : Return HelpScheme & If(String.IsNullOrWhiteSpace(helpSurface), "index", helpSurface)
+            Case Site : Return SitePages.ForLanguage(SitePages.SiteRoot, languageCode)
+            Case Repository : Return RepositoryUrl
+            Case Releases : Return ReleasesUrl
+            Case Privacy : Return SitePages.ForLanguage(SitePages.PrivacyPageUrl, languageCode)
+            Case License : Return LocalScheme & LicenseFile
+            Case Notices : Return LocalScheme & NoticesFile
+            Case Trust : Return SitePages.TrustPageUrl(languageCode)
+            Case Contact : Return "mailto:" & MailSender.AuthorAddress & "?subject=" & Uri.EscapeDataString(ProductNames.Full)
+            Case Guide : Return SitePages.ForLanguage(SitePages.SiteRoot & "publish-folders-android.html", languageCode)
+            Case AndroidApp : Return SitePages.AndroidAppSiteUrl(languageCode)
+            Case Portal : Return SitePages.ExchangePortalUrl("", languageCode)
+            Case PortalHome : Return SitePages.ExchangePortalUrl("home-network", languageCode)
+            Case DocHtml : Return SitePages.DocHtmlTranslateSiteUrl(languageCode)
+            Case Else : Return ""
+        End Select
+    End Function
+
+    ''' <summary>
+    ''' The page that stands in for a local address when its file is not there; any other address is its own page.
+    ''' </summary>
+    Public Shared Function OnlineFor(address As String, languageCode As String) As String
+        If String.IsNullOrEmpty(address) Then Return ""
+        If address.StartsWith(LocalScheme, StringComparison.Ordinal) Then
+            Select Case address.Substring(LocalScheme.Length)
+                Case LicenseFile : Return LicenseOnlineUrl
+                Case NoticesFile : Return NoticesOnlineUrl
+                Case Else : Return ""
+            End Select
+        End If
+        If address.StartsWith(HelpScheme, StringComparison.Ordinal) Then Return HelpOnline(languageCode)
+        Return address
+    End Function
+
+End Class

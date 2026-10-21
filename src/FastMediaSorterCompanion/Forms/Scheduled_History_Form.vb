@@ -21,6 +21,7 @@ Friend NotInheritable Class Scheduled_History_Form
     Private btnRefresh As Button
     Private btnClear As Button
     Private btnClose As Button
+    Private _answerRow As DialogButtonRow
     Private lblEmpty As Label
     Private _iconHandle As IntPtr
 
@@ -55,25 +56,24 @@ Friend NotInheritable Class Scheduled_History_Form
             .ForeColor = ThemeService.Palette.TextMuted, .Name = "lblSchedHistoryEmpty",
             .Text = Localization.T("Журнал пуст."), .Visible = False}
 
-        Dim footer As New FlowLayoutPanel With {.Dock = DockStyle.Bottom, .AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink,
-            .FlowDirection = FlowDirection.RightToLeft, .Padding = New Padding(12, 8, 12, 8), .WrapContents = False}
-        btnClose = New Button With {.Text = Localization.T("Закрыть"), .AutoSize = True, .DialogResult = DialogResult.Cancel,
-            .Name = "btnSchedHistoryClose", .Margin = New Padding(8, 0, 0, 0), .Padding = New Padding(14, 5, 14, 5)}
-        btnClear = New Button With {.Text = Localization.T("Очистить журнал"), .AutoSize = True, .Name = "btnSchedHistoryClear",
-            .Margin = New Padding(8, 0, 0, 0), .Padding = New Padding(14, 5, 14, 5)}
-        btnRefresh = New Button With {.Text = Localization.T("Обновить"), .AutoSize = True, .Name = "btnSchedHistoryRefresh",
-            .Margin = New Padding(8, 0, 0, 0), .Padding = New Padding(14, 5, 14, 5)}
-        ButtonGlyphs.Apply(btnClose, "action.cancel", ButtonGlyphRole.Dismissing)
+        ' The answers ride the shared bottom row (ticket 243 T-8b batch C, BUTTONS 2.0 sections 3 and 4): Refresh and Clear are
+        ' COMMANDS of the journal (first, set apart from the answer, never the default - Clear still asks, with No as its
+        ' default), Close is the one answer. Escape is Close; Enter is Close too (it dismisses, nothing is cleared).
+        btnClose = New Button With {.Text = Localization.T("Закрыть"), .DialogResult = DialogResult.Cancel, .Name = "btnSchedHistoryClose"}
+        btnClear = New Button With {.Text = Localization.T("Очистить журнал"), .Name = "btnSchedHistoryClear"}
+        btnRefresh = New Button With {.Text = Localization.T("Обновить"), .Name = "btnSchedHistoryRefresh"}
         ButtonGlyphs.Apply(btnClear, "action.clear-all", ButtonGlyphRole.Caution)
-        ButtonGlyphs.Apply(btnRefresh, "action.refresh")
         AddHandler btnClear.Click, AddressOf OnClearClicked
         AddHandler btnRefresh.Click, Sub() LoadRows()
-        footer.Controls.AddRange({btnClose, btnClear, btnRefresh})
-        CancelButton = btnClose
+        _answerRow = New DialogButtonRow() With {.Dock = DockStyle.Bottom, .Name = "btnSchedHistoryButtons", .Padding = New Padding(12, 8, 12, 8)}
+        DpiLayout.AddAnswer(_answerRow, btnRefresh, DialogButtonRole.Command, "action.refresh")
+        DpiLayout.AddAnswer(_answerRow, btnClear, DialogButtonRole.Command, "action.clear-all")
+        DpiLayout.AddAnswer(_answerRow, btnClose, DialogButtonRole.Dismissing, "action.cancel")
 
         Controls.Add(list)
         Controls.Add(lblEmpty)
-        Controls.Add(footer)
+        Controls.Add(_answerRow)
+        _answerRow.Bind(Me)
         ResumeLayout(True)
         DpiLayout.ApplyAutoScale(Me)
     End Sub
@@ -103,7 +103,7 @@ Friend NotInheritable Class Scheduled_History_Form
     End Sub
 
     Private Sub OnClearClicked(sender As Object, e As EventArgs)
-        If MessageBox.Show(Me, Localization.T("Очистить журнал операций по расписанию? Сами операции и их расписание не изменятся."),
+        If ManagerBox.Show(Me, Localization.T("Очистить журнал операций по расписанию? Сами операции и их расписание не изменятся."),
                            Localization.T("Журнал операций по расписанию"), MessageBoxButtons.YesNo, MessageBoxIcon.Question,
                            MessageBoxDefaultButton.Button2) <> DialogResult.Yes Then Return
         engine.Journal.ClearHistory()

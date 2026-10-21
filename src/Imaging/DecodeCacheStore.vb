@@ -96,10 +96,11 @@ Friend Module DecodeCacheStore
     End Sub
 
     ''' <summary>Writes the payload and enforces the budget. Silent on failure - see the
-    ''' class comment.</summary>
-    Friend Sub TryStore(cacheDir As String, key As String, payload As DecodedPayload, budgetMb As Integer)
-        If String.IsNullOrEmpty(cacheDir) OrElse String.IsNullOrEmpty(key) Then Return
-        If Not DecodeCachePolicy.ShouldStore(payload, budgetMb) Then Return
+    ''' class comment. True when the entry is on disk now (spec 241 rule 6 logs it); a False
+    ''' is never an error.</summary>
+    Friend Function TryStore(cacheDir As String, key As String, payload As DecodedPayload, budgetMb As Integer) As Boolean
+        If String.IsNullOrEmpty(cacheDir) OrElse String.IsNullOrEmpty(key) Then Return False
+        If Not DecodeCachePolicy.ShouldStore(payload, budgetMb) Then Return False
 
         Try
             Directory.CreateDirectory(cacheDir)
@@ -118,10 +119,12 @@ Friend Module DecodeCacheStore
 
             ' Right where the directory grew, oldest last-write first.
             DiskCacheTrim.TrimToBudget(cacheDir, budgetMb, DecodeCacheKey.File_Pattern)
+            Return True
         Catch ex As Exception
             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " decode-cache: store failed: " & ex.Message)
+            Return False
         End Try
-    End Sub
+    End Function
 
     ''' <summary>Everything the cache holds, in bytes - what the settings row displays.
     ''' Never throws: a directory that cannot be measured is a disk problem, not a reason

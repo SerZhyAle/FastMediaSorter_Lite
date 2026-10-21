@@ -30,6 +30,11 @@ type inspectReport struct {
 	KeepAwake        bool   `json:"keepAwake"`
 	LogRetentionDays int    `json:"logRetentionDays"`
 	MaxAccounts      int    `json:"maxAccounts"`
+	AdminOn                     bool     `json:"adminOn"`
+	AdminPasswordSet            bool     `json:"adminPasswordSet"`
+	AdminAllowedAddresses       []string `json:"adminAllowedAddresses,omitempty"`
+	AdminSessionLifetimeMinutes int      `json:"adminSessionLifetimeMinutes,omitempty"`
+	WebDir                      string   `json:"webDir,omitempty"`
 }
 
 // runInspect prints the report as JSON, even on failure, and creates nothing - except with --init,
@@ -61,6 +66,9 @@ func runInspect(cmd command, stdout, stderr io.Writer) int {
 	}
 	rep.Listen, rep.PortRange, rep.PublicEndpoint = cfg.Listen, cfg.PortRange, cfg.PublicEndpoint
 	rep.KeepAwake, rep.LogRetentionDays, rep.MaxAccounts = cfg.KeepAwake, cfg.Log.RetentionDays, cfg.Limits.MaxAccounts
+	rep.AdminOn, rep.AdminPasswordSet, rep.WebDir = cfg.Admin.On, cfg.Admin.PasswordRecord != "", cfg.WebDir
+	rep.AdminAllowedAddresses = cfg.Admin.AllowedAddresses
+	rep.AdminSessionLifetimeMinutes = cfg.Admin.SessionLifetimeMinutes
 	if a, d, err := accounts.Peek(paths.Dir); err != nil {
 		fail(exitConfig, err)
 	} else {

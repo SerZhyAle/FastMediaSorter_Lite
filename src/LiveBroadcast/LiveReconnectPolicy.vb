@@ -25,7 +25,8 @@ Friend Enum LiveTerminationKind
     NotFoundOrGone = 4
     NotAudioStream = 5
     UnsupportedMode = 6
-    UnsupportedVersion = 7
+    ' 7 was UnsupportedVersion, a kind nothing ever set: a descriptor of a later schema is refused when it is read
+    ' (LiveReadStatus.UnsupportedVersion) and never reaches a session. The number stays unused.
     LoopbackAddress = 8
     BudgetExhausted = 9
     UnknownError = 10
@@ -183,8 +184,6 @@ Friend NotInheritable Class LiveReconnectPolicy
                 Return Localization.T("Устройство вернуло не аудиопоток")
             Case LiveTerminationKind.UnsupportedMode
                 Return Localization.T("Этот режим пока не поддерживается")
-            Case LiveTerminationKind.UnsupportedVersion
-                Return Localization.T("Требуется обновить приложение для этой трансляции")
             Case LiveTerminationKind.LoopbackAddress
                 Return Localization.T("Устройство передало локальный адрес (loopback), недоступный с ПК")
             Case LiveTerminationKind.HttpStatus

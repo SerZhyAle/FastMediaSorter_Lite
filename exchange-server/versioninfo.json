@@ -22,6 +22,7 @@
     "ProductVersion": "",
     "SpecialBuild": ""
   },
+  "IconPath": "../assets/exchange-mark/ico/exchange-server.ico",
   "VarFileInfo": {
     "Translation": { "LangID": "0409", "CharsetID": "04B0" }
   }
