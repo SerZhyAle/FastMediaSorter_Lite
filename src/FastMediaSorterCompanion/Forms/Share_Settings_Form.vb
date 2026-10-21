@@ -51,6 +51,13 @@ Partial Public NotInheritable Class Share_Settings_Form
     ''' use to tick one checkbox.</summary>
     Private _hostingLoaded As Boolean
 
+    ' One StaleGuard per KIND of load that repaints a page (SETTINGS-NAVIGATION 2.0 section 5 rule 3): a result is painted
+    ' only while its token is the newest of its kind and the window is alive. User-initiated one-shot actions take no token.
+    Private ReadOnly _hostingGuard As New StaleGuard()      ' the live worker probe behind the Hosting page
+    Private ReadOnly _exStateGuard As New StaleGuard()      ' the exchange server snapshot behind the Exchange page
+    Private ReadOnly _exAccGuard As New StaleGuard()        ' the accounts / devices / invitations read of the Exchange page
+    Private ReadOnly _clipSizeGuard As New StaleGuard()     ' the clipboard size measurement of the account page
+
     ''' <summary>Design width of the page, 96-DPI units. Set by the hosting group's prose,
     ''' which wraps at <see cref="HostingContentWidth"/>; the other two are far narrower and
     ''' a settings dialog that changed width per group would be worse than a little air.</summary>
@@ -92,6 +99,22 @@ Partial Public NotInheritable Class Share_Settings_Form
         BuildUi()
     End Sub
 
+    ''' <summary>
+    ''' Everything that would call back into this window after it is gone: every in-flight load is superseded (its result is
+    ''' dropped, not painted), the three timers are stopped and disposed, and the producer / agent / process-event
+    ''' subscriptions are removed. Idempotent - it runs on FormClosed and again on Disposed (SETTINGS-NAVIGATION 2.0 section 5
+    ''' rules 3 and 5).
+    ''' </summary>
+    Private Sub ReleaseLiveResources()
+        _hostingGuard.Invalidate()
+        _exStateGuard.Invalidate()
+        _exAccGuard.Invalidate()
+        _clipSizeGuard.Invalidate()
+        DisposeExchangeResources()
+        DisposeProducerResources()
+        DisposeAccountResources()
+    End Sub
+
     Private Sub BuildUi()
         ' Script font + text direction for the active language, before any control
         ' exists - children inherit both (013_SPECIFICATION_THIRTEEN_UI_LANGUAGES.md block A').
@@ -108,11 +131,13 @@ Partial Public NotInheritable Class Share_Settings_Form
                 Try : _lblHost?.Font?.Dispose() : Catch : End Try
                 Try : _lblLive?.Font?.Dispose() : Catch : End Try
                 Try : _aboutHeadingFont?.Dispose() : Catch : End Try
-                DisposeExchangeResources()
-                DisposeProducerResources()
-                DisposeAccountResources()
+                ReleaseLiveResources()
                 ShareIcons.FreeIcon(Me.Icon, _iconHandle)
             End Sub
+        ' A window disposed without being closed (a Using block after Hide, a host that drops it) never raises FormClosed,
+        ' and its timers would tick on and keep it alive: the same release runs again on Disposed (SETTINGS-NAVIGATION 2.0
+        ' section 5 rule 5: repeated switching leaves no abandoned handlers or subscriptions).
+        AddHandler Me.Disposed, Sub() ReleaseLiveResources()
         ' WINDOWS-UI section 5: pages scroll inside a stable, user-resizable window.
         Me.FormBorderStyle = FormBorderStyle.Sizable
         Me.MaximizeBox = False
@@ -169,6 +194,8 @@ Partial Public NotInheritable Class Share_Settings_Form
 
     Protected Overrides Sub OnLoad(e As EventArgs)
         MyBase.OnLoad(e)
+        ' The window has its scale now: every page's option rows are laid out once, before the first fit of the window.
+        OptionRows.ArrangeAll(Me)
         DpiLayout.ClampToWorkingArea(Me)
         If Not RestoreSettingsWindowBounds() Then
             FitInitialSettingsBounds()
@@ -201,30 +228,40 @@ Partial Public NotInheritable Class Share_Settings_Form
             menu.Show(welcome, New Point(0, welcome.Height))
         End Sub
         sec.AddBodyRow(welcome)
-        chkAutostart = New CheckBox With {.AutoSize = True, .Margin = New Padding(0, 2, 0, 2),
+        chkAutostart = New CheckBox With {.Name = NameOf(chkAutostart), .AutoSize = True, .Margin = New Padding(0, 2, 0, 2),
             .Text = Localization.T("Запускать при входе в Windows")}
         AddHandler chkAutostart.CheckedChanged, AddressOf OnAutostartChanged
-        sec.AddBodyRow(chkAutostart)
+        ' The boolean option row (BOOLEAN-OPTION 2.0): the explanation is the one the page used to hang under the box.
+        Dim autostartRow As OptionRowHost = OptionRows.InFlow(chkAutostart,
+            OptionHint(chkAutostart, Localization.T("Запускает менеджер после входа в Windows. Не меняет режим службы.")))
+        autostartRow.Margin = New Padding(0, 2, 0, 2)
+        sec.AddBodyRow(autostartRow)
 
         ' The one case an unticked checkbox cannot express: the entry IS registered and
         ' Windows refuses to run it (Task Manager's Startup page leaves the Run value in
         ' place and records a veto instead). Without this line that state is pixel-identical
         ' to "autostart was never switched on", which is how a machine sat for weeks with a
         ' running share and no console. Ticking the box repairs it - SetEnabled lifts the veto.
+        ' It starts where the caption starts (the edge inset, the box and the gap; 96-dpi px, scaled with the window), on the
+        ' reading-start side: a table cell mirrors its children under RightToLeft, margin included, so Margin.Left is the
+        ' reading-start side in both directions.
         lblAutostartNote = New Label With {.AutoSize = True, .MaximumSize = New Size(HostingContentWidth, 0),
-            .ForeColor = ThemeService.Palette.TextMuted, .Margin = New Padding(0, 2, 0, 2)}
+            .ForeColor = ThemeService.Palette.TextMuted, .Margin = New Padding(CaptionInsetLogical, 2, 0, 2)}
         sec.AddBodyRow(lblAutostartNote)
-        CheckBoxLayout.BindHint(chkAutostart, lblAutostartNote)
 
         ' Off by default, and it governs EVERY plain start - the logon one, a double-click on
         ' the exe, a script - so unticked really means "no window" (TrayContext). Only an
         ' explicit request still opens it: the viewer's Share buttons, the tray icon, a
         ' folder to share.
-        chkOpenOnStart = New CheckBox With {.AutoSize = True, .Margin = New Padding(0, 2, 0, 2),
+        chkOpenOnStart = New CheckBox With {.Name = NameOf(chkOpenOnStart), .AutoSize = True, .Margin = New Padding(0, 2, 0, 2),
             .Text = Localization.T("Открывать окно менеджера при запуске")}
         AddHandler chkOpenOnStart.CheckedChanged, AddressOf OnOpenOnStartChanged
-        sec.AddBodyRow(chkOpenOnStart)
+        ' The tooltip text is also the explanation under the caption (the same words, once as a hint and once as a tooltip).
         toolTip.SetToolTip(chkOpenOnStart, Localization.T("Без галочки любой запуск программы оставляет только значок рядом с часами - окно открывается двойным щелчком по нему. С галочкой окно открывается сразу."))
+        Dim openOnStartRow As OptionRowHost = OptionRows.InFlow(chkOpenOnStart, OptionHint(chkOpenOnStart, toolTip.GetToolTip(chkOpenOnStart)))
+        openOnStartRow.Margin = New Padding(0, 2, 0, 2)
+        sec.AddBodyRow(openOnStartRow)
+        MirrorToolTip(chkOpenOnStart)
 
         ' The application theme (060_SPECIFICATION_APP_THEME_SYSTEM_LIGHT_DARK.md §4). The same
         ' stored value the viewer's Settings - Viewing offers: a change here repaints every
@@ -385,15 +422,19 @@ Partial Public NotInheritable Class Share_Settings_Form
         ' - every code, not one - and is pushed to the worker THE MOMENT it moves, not at
         ' the next resume. The wizard's per-code checkbox only shapes one export and never
         ' reaches this push.
-        chkLanOnly = New CheckBox With {.AutoSize = True, .Margin = New Padding(0, 8, 0, 2),
+        chkLanOnly = New CheckBox With {.Name = NameOf(chkLanOnly), .AutoSize = True, .Margin = New Padding(0, 8, 0, 2),
             .Text = Localization.T("Только локальная сеть (без доступа из интернета)")}
         AddHandler chkLanOnly.CheckedChanged, AddressOf OnLanOnlyChanged
-        sec.AddBodyRow(chkLanOnly)
+        Dim lanOnlyRow As OptionRowHost = OptionRows.InFlow(chkLanOnly)
+        lanOnlyRow.Margin = New Padding(0, 8, 0, 2)
+        sec.AddBodyRow(lanOnlyRow)
+        ' The live note under the row (what the switch does right now) is not the row's explanation: it changes with the
+        ' worker's answer. It starts where the caption starts.
         lblLanOnlyNote = New Label With {.AutoSize = True, .MaximumSize = New Size(HostingContentWidth, 0),
-            .ForeColor = ThemeService.Palette.TextMuted, .Margin = New Padding(0, 2, 0, 0)}
+            .ForeColor = ThemeService.Palette.TextMuted, .Margin = New Padding(CaptionInsetLogical, 2, 0, 0)}
         sec.AddBodyRow(lblLanOnlyNote)
-        CheckBoxLayout.BindHint(chkLanOnly, lblLanOnlyNote)
         toolTip.SetToolTip(chkLanOnly, Localization.T("Относится ко всей раздаче, а не к одному коду: пока включено, программа не просит роутер открыть порт (UPnP/NAT-PMP) и не даёт адрес из интернета. Адрес из интернета, уже вписанный в выданные коды, перестаёт работать; по локальной сети всё работает как раньше."))
+        MirrorToolTip(chkLanOnly)
 
         ' Calm, factual reachability note (decision F): same-network devices can reach the
         ' share while it runs. It sits here rather than on the main window because it is
@@ -474,7 +515,7 @@ Partial Public NotInheritable Class Share_Settings_Form
         Try
             If chkAutostart IsNot Nothing Then
             chkAutostart.Checked = AutostartManager.IsEnabled()
-            chkAutostart.Enabled = Not AutostartManager.IsPackaged()
+            SetBooleanEnabled(chkAutostart, Not AutostartManager.IsPackaged())
             UpdateAutostartNote()
             If AutostartManager.IsPackaged() Then
                 toolTip.SetToolTip(chkAutostart, Localization.T("Автозапуском управляет Windows (пакет из Store)."))
@@ -492,6 +533,8 @@ Partial Public NotInheritable Class Share_Settings_Form
                 ' whether the folders are reachable - say so where the confusion is.
                 toolTip.SetToolTip(chkAutostart, HostingText.Intro(ServerFeatures.ServerHostMode.SystemService))
             End If
+            ' The caption shows the same tooltip as the box (set last: the two branches above replace it).
+            If chkAutostart IsNot Nothing Then MirrorToolTip(chkAutostart)
         Catch
         Finally
             _loading = prev

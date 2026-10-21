@@ -494,12 +494,23 @@ Partial Public Class Main_Form
     ''' <summary>The sort order in words with its direction - "Имя ↑", "Размер ↓", "Случайно" - in the UI language
     ''' (125 UX-304). The combo keeps its codes ("abc", ">size"): the stored index and the sort itself read them.</summary>
     Private Function SortDisplayText(index As Integer) As String
-        Dim arrow As Char
-        Dim key As String = ChromeMenuRules.SortOrderLabel(index, arrow)
-        If key.Length = 0 Then Return If(index >= 0 AndAlso index < cmbox_Sort.Items.Count, cmbox_Sort.Items(index).ToString(), "")
-        Dim words As String = Localization.T(key)
-        Return If(arrow = ChrW(0), words, words & " " & arrow)
+        Dim caption As String = ChromeMenuRules.SortCaption(index, AddressOf Localization.T)
+        If caption.Length = 0 Then Return If(index >= 0 AndAlso index < cmbox_Sort.Items.Count, cmbox_Sort.Items(index).ToString(), "")
+        Return caption
     End Function
+
+    ''' <summary>Every caption the sort button can show in the current language, built once per language: the button reserves
+    ''' the width of the widest, so choosing another order never moves what stands beside it (BUTTONS 2.0 section 4 rule 3;
+    ''' 243 T-9). A language switch runs <c>ChromeConfigure</c>, which syncs the items again and picks the new list up.</summary>
+    Private Function SortReservedCaptions() As String()
+        If chrome_Sort_Captions Is Nothing OrElse chrome_Sort_Captions_Language <> Localization.CurrentCode Then
+            chrome_Sort_Captions = ChromeMenuRules.SortCaptions(AddressOf Localization.T)
+            chrome_Sort_Captions_Language = Localization.CurrentCode
+        End If
+        Return chrome_Sort_Captions
+    End Function
+    Private chrome_Sort_Captions As String()
+    Private chrome_Sort_Captions_Language As String = ""
 
     Private Sub ChromeApplySort(index As Integer)
         ' This is an explicit command, including choosing the current order again.
@@ -918,6 +929,8 @@ Partial Public Class Main_Form
         If carrier Is lbl_File_Number Then item.ReservedText = Localization.TF("{0} из {1}", 9999, 9999)
         If carrier Is lbl_Zoom Then item.ReservedText = "1600 %"
         If carrier Is lbl_Slideshow_Time Then item.ReservedText = "99.9s"
+        ' The sort button keeps the room of its widest caption, so a change of order moves no neighbour (243 T-9).
+        If carrier Is cmbox_Sort Then item.ReservedTexts = SortReservedCaptions()
         ' A button that comes and goes with the kind of the file keeps its place while it is away, so the ones after
         ' it do not jump when paging reaches a video (125 UX-313b).
         item.KeepsSlotWhenHidden = ChromeMenuRules.KeepsSlotWhenHidden(carrier.Name, DocHtmlTranslate.IsAvailableCached())

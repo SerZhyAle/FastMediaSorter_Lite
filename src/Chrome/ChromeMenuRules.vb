@@ -395,5 +395,29 @@ Friend NotInheritable Class ChromeMenuRules
         End Select
     End Function
 
+    ''' <summary>How many sort orders the button knows (the combo's items, 125 UX-304).</summary>
+    Public Const SortOrderCount As Integer = 9
+
+    ''' <summary>What the sort button says for one order: the words in the UI language, a space and the direction arrow
+    ''' ("Имя ↑", "Случайно" - no arrow). Empty for an index the button does not know.</summary>
+    Public Shared Function SortCaption(index As Integer, translate As Func(Of String, String)) As String
+        Dim arrow As Char
+        Dim key As String = SortOrderLabel(index, arrow)
+        If key.Length = 0 Then Return ""
+        Dim words As String = If(translate Is Nothing, key, translate(key))
+        Return If(arrow = ChrW(0), words, words & " " & arrow)
+    End Function
+
+    ''' <summary>Every caption the sort button can show, in order. The button reserves the width of the widest, so choosing
+    ''' another order moves no neighbour and changes nothing about which buttons fit the row (BUTTONS 2.0 section 3 rule 3,
+    ''' section 4; 243 T-9).</summary>
+    Public Shared Function SortCaptions(translate As Func(Of String, String)) As String()
+        Dim all(SortOrderCount - 1) As String
+        For index As Integer = 0 To SortOrderCount - 1
+            all(index) = SortCaption(index, translate)
+        Next
+        Return all
+    End Function
+
 End Class
 #End If

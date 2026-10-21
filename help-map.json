@@ -244,6 +244,13 @@
       "reason": "The text of the message or confirmation is the complete explanation (CONTEXT-HELP rule 4)."
     },
     {
+      "id": "option-help-popup",
+      "type": "fmsl.OptionHelpPopup",
+      "name": "Option Help Popup",
+      "form": "none",
+      "reason": "The window is itself the help of one option, opened from that option's own ? button (BOOLEAN-OPTION 2.0 section 4); it has no page of its own."
+    },
+    {
       "id": "chrome-host",
       "type": "fmsl.ChromeHost",
       "name": "Chrome Host",
@@ -277,6 +284,20 @@
       "name": "Notification Toast",
       "form": "none",
       "reason": "Noninteractive transient notification toast."
+    },
+    {
+      "id": "share-ask-dialog",
+      "type": "FastMediaSorterCompanion.Ask_Dialog",
+      "name": "Share Manager Message Dialog",
+      "form": "none",
+      "reason": "The viewer's message dialog shown by the Share Manager's ManagerBox (ticket 243 T-12b); the text of the question is the complete explanation (CONTEXT-HELP rule 4)."
+    },
+    {
+      "id": "share-option-help-popup",
+      "type": "FastMediaSorterCompanion.OptionHelpPopup",
+      "name": "Share Manager Option Help Popup",
+      "form": "none",
+      "reason": "The window is itself the help of one option, opened from that option's own ? button (BOOLEAN-OPTION 2.0 section 4); it has no page of its own."
     },
     {
       "id": "share-main",

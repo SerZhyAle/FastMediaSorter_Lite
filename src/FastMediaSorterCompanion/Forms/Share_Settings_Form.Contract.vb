@@ -122,7 +122,7 @@ Partial Public NotInheritable Class Share_Settings_Form
                     nextId = If(appearance, "appearance", "startup")
                     caption = If(appearance, Function() Localization.T("Тема и язык"), Function() Localization.T("Автозапуск и запуск"))
                 Case "network"
-                    Dim policyIndex = Array.IndexOf(rows, DirectCast(chkLanOnly, Control))
+                    Dim policyIndex = Array.IndexOf(rows, PlacedControl(chkLanOnly))
                     Dim policy = Array.IndexOf(rows, row) >= policyIndex
                     nextId = If(policy, "access", "connections")
                     caption = If(policy, Function() Localization.T("Сетевая политика и Wi-Fi"), Function() Localization.T("Локальные подключения"))
@@ -156,7 +156,7 @@ Partial Public NotInheritable Class Share_Settings_Form
                     caption = If(row Is _pxGroup, Function() ExchangePublishText.GroupTitle(), If(isClipboard, Function() Localization.T("Буфер на сервере"), Function() Localization.T("Основные параметры")))
                 Case "scheduled"
                     ' The list and its commands, then what applies to this PC (4.4).
-                    Dim machine = Array.IndexOf(rows, row) >= Array.IndexOf(rows, DirectCast(_schedFeature, Control))
+                    Dim machine = Array.IndexOf(rows, row) >= Array.IndexOf(rows, PlacedControl(_schedFeature))
                     nextId = If(machine, "machine", "operations")
                     caption = If(machine, Function() Localization.T("Для этого компьютера"), Function() Localization.T("Операции"))
                 Case "help"
@@ -264,8 +264,6 @@ Partial Public NotInheritable Class Share_Settings_Form
             Dim control = TryCast(field.GetValue(Me), Control)
             If control IsNot Nothing AndAlso control.Name.Length = 0 Then control.Name = field.Name
         Next
-        SetBooleanHint(chkAutostart, Localization.T("Запускает менеджер после входа в Windows. Не меняет режим службы."))
-        If chkOpenOnStart IsNot Nothing Then SetBooleanHint(chkOpenOnStart, toolTip.GetToolTip(chkOpenOnStart))
         If cmbLanguage IsNot Nothing Then toolTip.SetToolTip(cmbLanguage, Localization.T("Меняет язык всех открытых окон и меню сразу."))
         For Each row In Descendants(Me).OfType(Of ManagerSettingRow)()
             Dim hint = toolTip.GetToolTip(row.Editor)
@@ -273,10 +271,6 @@ Partial Public NotInheritable Class Share_Settings_Form
             If row.Editor Is numXPort Then hint = ExchangeText.PortNote()
             If hint.Length > 0 Then row.SetHint(hint)
         Next
-        If _chkXKeep IsNot Nothing Then SetBooleanHint(_chkXKeep,
-            Localization.T("После закрытия менеджера сервер обмена продолжит работать. Выключите, чтобы останавливать его при выходе."))
-        If _schedFeature IsNot Nothing Then SetBooleanHint(_schedFeature,
-            Localization.T("Выключите, чтобы остановить все расписания. Запуск вручную остаётся доступным."))
         NormalizeSettingsControls(Me)
         _wheelSafety = New SettingsWheelSafety(Me)
         Application.AddMessageFilter(_wheelSafety)
@@ -285,28 +279,59 @@ Partial Public NotInheritable Class Share_Settings_Form
         AddHandler Disposed, Sub() RemoveHandler UiLanguage.Changed, AddressOf RefreshSettingsLanguage
     End Sub
 
-    Private Sub SetBooleanHint(check As CheckBox, text As String)
-        If check Is Nothing OrElse text.Length = 0 OrElse check.Parent Is Nothing Then Return
-        Dim hint = NoteLabel(text)
-        hint.Name = check.Name & "Hint"
-        Dim table = TryCast(check.Parent, TableLayoutPanel)
-        If table Is Nothing Then Return
-        table.SuspendLayout()
-        Dim index = table.GetRow(check) + 1
-        For Each child As Control In table.Controls
-            Dim position = table.GetRow(child)
-            If position >= index Then table.SetRow(child, position + 1)
-        Next
-        table.RowCount += 1
-        table.RowStyles.Insert(index, New RowStyle(SizeType.AutoSize))
-        table.Controls.Add(hint, 0, index)
-        CheckBoxLayout.BindHint(check, hint)
-        AddHandler check.VisibleChanged, Sub() hint.Visible = check.Visible
-        AddHandler check.EnabledChanged, Sub() hint.Enabled = check.Enabled
-        hint.Visible = check.Visible
-        hint.Enabled = check.Enabled
-        check.AccessibleDescription = text
-        table.ResumeLayout(False)
+    ' --- the boolean option rows of the pages (BOOLEAN-OPTION 2.0 sections 2 and 3, ticket 243 T-11c-b2b) -----------------
+    ' Every check box of a page is made by `OptionRows.InFlow(check, OptionHint(check, text))` where it is created and the ROW
+    ' goes where the check box went: the check stays a real child inside it (name, handlers, Checked, Tab order, persistence
+    ' unchanged), the row is what the layout, Visible and Enabled see, and OptionRows.ArrangeAll(Me) lays it out once the
+    ' window has its scale (OnLoad, a page shown, a language switch).
+
+    ''' <summary>Where a caption starts inside a row (96-dpi px): the edge inset, the box and the gap. A note that belongs to a
+    ''' row but stands under it (a state line that changes at run time) takes this as the margin of its reading-start side.</summary>
+    Private Const CaptionInsetLogical As Integer = OptionRows.FlowEdgeInsetLogical + SettingsCheckBox.BoxSideLogical + SettingsCheckBox.CaptionGapLogical
+
+    ''' <summary>The explanation that stands under a check box's caption inside its row: the page note this window used to put
+    ''' in a table row of its own under the check box. Named after the check box (<c>Name &amp; "Hint"</c>), which is how
+    ''' the window contract finds it. Nothing for an empty text (a check box with no explanation).</summary>
+    Private Shared Function OptionHint(check As CheckBox, text As String) As Label
+        If text.Length = 0 Then Return Nothing
+        Return New Label With {.Name = check.Name & "Hint", .Text = text, .ForeColor = ThemeService.Palette.TextMuted}
+    End Function
+
+    ''' <summary>A row that stands in a top-down flow, where no cell hands it a width: it takes the content width the flow's
+    ''' notes use and <see cref="FitSettingsContent"/> keeps it at that width or the page's, whichever is narrower.</summary>
+    Private Shared Function FlowRow(row As OptionRowHost, contentWidth As Integer) As OptionRowHost
+        row.Dock = DockStyle.None
+        row.Anchor = AnchorStyles.Top Or AnchorStyles.Left
+        row.Width = contentWidth
+        row.Tag = contentWidth
+        Return row
+    End Function
+
+    ''' <summary>What a page places for a check box: its row (a row is what stands in the table), else the check box itself.</summary>
+    Private Shared Function PlacedControl(check As CheckBox) As Control
+        Dim row As Control = OptionRows.RowOf(check)
+        If row Is Nothing Then Return check
+        Return row
+    End Function
+
+    ''' <summary>Shows or hides a check box THROUGH ITS ROW: the row is what a table or a flow reserves room for, so hiding only
+    ''' the check box would leave the caption standing.</summary>
+    Private Shared Sub SetBooleanVisible(check As CheckBox, visible As Boolean)
+        PlacedControl(check).Visible = visible
+    End Sub
+
+    ''' <summary>Enables or disables a check box THROUGH ITS ROW, so the caption and the explanation dim with the box.</summary>
+    Private Shared Sub SetBooleanEnabled(check As CheckBox, enabled As Boolean)
+        PlacedControl(check).Enabled = enabled
+    End Sub
+
+    ''' <summary>Gives the caption the tooltip of its check box: the caption is the larger part of the target, and a tooltip
+    ''' that appears over the box only would be missing over the words.</summary>
+    Private Sub MirrorToolTip(check As CheckBox)
+        Dim row = OptionRows.RowOf(check)
+        If row Is Nothing Then Return
+        Dim tip = toolTip.GetToolTip(check)
+        If tip.Length > 0 Then toolTip.SetToolTip(row.Caption, tip)
     End Sub
 
     Private Sub NormalizeSettingsControls(parent As Control)
@@ -329,7 +354,8 @@ Partial Public NotInheritable Class Share_Settings_Form
                 button.Anchor = AnchorStyles.Top Or AnchorStyles.Left
             End If
             Dim check = TryCast(control, CheckBox)
-            If check IsNot Nothing Then
+            ' A check box inside its option row is the row's 32 px hit target; the row owns the height.
+            If check IsNot Nothing AndAlso OptionRows.RowOf(check) Is Nothing Then
                 check.MinimumSize = New Size(0, 44)
             End If
             ' Protocol addresses, ports and fingerprints keep their data direction in RTL.
@@ -341,7 +367,8 @@ Partial Public NotInheritable Class Share_Settings_Form
     Private Shared Function HasSettingRowAncestor(control As Control) As Boolean
         Dim parent = control.Parent
         While parent IsNot Nothing
-            If TypeOf parent Is ManagerSettingRow Then Return True
+            ' An option row sizes its own caption, explanation and box (OptionRowHost.Arrange); the page fit leaves them alone.
+            If TypeOf parent Is ManagerSettingRow OrElse TypeOf parent Is OptionRowHost Then Return True
             parent = parent.Parent
         End While
         Return False
@@ -381,6 +408,12 @@ Partial Public NotInheritable Class Share_Settings_Form
                         End If
                         Dim check = TryCast(control, CheckBox)
                         If check IsNot Nothing Then check.MaximumSize = New Size(available, 0)
+                        ' A row in a top-down flow has no cell to take its width from: the content width the flow's notes use, or
+                        ' the page's when that is narrower (FlowRow). A row in a table cell docks to the cell and is left alone.
+                        Dim optionRow = TryCast(control, OptionRowHost)
+                        If optionRow IsNot Nothing AndAlso TypeOf optionRow.Tag Is Integer Then
+                            optionRow.Width = Math.Max(1, Math.Min(available, LogicalToDeviceUnits(CInt(optionRow.Tag))))
+                        End If
                         Dim flow = TryCast(control, FlowLayoutPanel)
                         If flow IsNot Nothing Then
                             flow.MaximumSize = New Size(available, 0)
@@ -496,6 +529,9 @@ Partial Public NotInheritable Class Share_Settings_Form
             _loading = loading
             ResumeLayout(True)
         End Try
+        ' The captions and explanations of the option rows were translated in place (LiveControlLocalization) or by SetCaption;
+        ' a row is as tall as its text, so every row is laid out again for the new words.
+        OptionRows.ArrangeAll(Me)
     End Sub
 
     Private NotInheritable Class SettingsWheelSafety

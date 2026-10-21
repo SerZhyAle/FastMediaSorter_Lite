@@ -90,6 +90,7 @@
       "server-share-required":  { "file": "publishing/installer/FastMediaSorterServer.iss", "pattern": "(?m)^Source: \"\\{#SourceDir\\}\\\\\\{#CompanionExe\\}\"; DestDir: \"\\{app\\}\"; Flags: ignoreversion\\s*$", "what": "the Share Manager is laid down by the Server edition with no component condition" },
       "server-filedo-ticked":   { "file": "publishing/installer/FastMediaSorterServer.iss", "pattern": "(?m)^Name: \"filedo\";[^\\r\\n]*Types: custom", "what": "the Server edition's FileDO component is in its one type, so it starts ticked" },
       "server-admin":           { "file": "publishing/installer/FastMediaSorterServer.iss", "pattern": "(?m)^PrivilegesRequired=admin", "what": "the Server edition needs administrator rights" },
+      "inno-exchange-child-of-share": { "file": "publishing/installer/FastMediaSorter.iss", "pattern": "(?m)^Name: \"share\\\\exchange\";(?![^\\r\\n]*Types:)", "what": "the User installer's exchange component is a child of share with no Types: it starts unticked and Setup ticks the Share Manager with it (specification 251 T-1)" },
       "exchange-gate-shut":     { "file": ".github/workflows/release.yml", "pattern": "INCLUDE_EXCHANGE: 'false'", "what": "the shipping gate of the exchange module is shut" },
       "exchange-user-compiled-out":   { "file": ".github/workflows/release.yml", "pattern": "if \\(\\$env:INCLUDE_EXCHANGE -ne 'true'\\) \\{ \\$exchangeArgs = @\\('/DNoExchange'\\) \\}", "what": "the User installer is compiled with /DNoExchange while the gate is shut" },
       "exchange-zip-guard":           { "file": ".github/workflows/release.yml", "pattern": "The stage carries an exchange\\\\ folder but INCLUDE_EXCHANGE is not 'true'", "what": "the User stage (ZIP and installer) fails if it carries an exchange tree while the gate is shut" },
@@ -115,7 +116,7 @@
         "server-edition": ["optional-on", "server-filedo-ticked"]
       },
       "exchange": {
-        "full-installer": ["in-development", "exchange-gate-shut", "exchange-user-compiled-out"],
+        "full-installer": ["in-development", "exchange-gate-shut", "exchange-user-compiled-out", "inno-exchange-child-of-share"],
         "zip":            ["in-development", "exchange-gate-shut", "exchange-zip-guard"],
         "store":          ["absent", "msix-no-exchange"],
         "server-edition": ["in-development", "exchange-gate-shut", "exchange-server-compiled-out"]

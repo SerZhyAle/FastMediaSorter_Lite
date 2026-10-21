@@ -383,6 +383,11 @@ Public Class ManagerDialogOptionRowTests
             ' The row inside the container that holds it, and over none of its neighbours.
             Dim host As Control = row.Parent
             Dim client As Rectangle = host.ClientRectangle
+            ' A body that scrolls (a window capped by a small working area) holds its rows in the scroll extent, not the viewport.
+            Dim scrolling As ScrollableControl = TryCast(host, ScrollableControl)
+            If scrolling IsNot Nothing AndAlso scrolling.AutoScroll Then
+                client = New Rectangle(0, 0, Math.Max(client.Width, scrolling.HorizontalScroll.Maximum + 1), Math.Max(client.Height, scrolling.VerticalScroll.Maximum + 1))
+            End If
             If row.Left < -1 OrElse row.Top < -1 OrElse row.Right > client.Width + 1 OrElse row.Bottom > client.Height + 1 Then
                 found.Add(tag & ": the row " & row.Bounds.ToString() & " leaves its container " & client.Size.ToString())
             End If
@@ -805,20 +810,21 @@ Public Class ManagerDialogOptionRowTests
     End Sub
 
     <Fact>
-    Public Sub Every_window_of_the_Manager_outside_the_pages_still_to_convert_makes_one_row_per_check_box()
-        ' The pages of the settings window, the welcome windows and the server wizard are the next slice (T-11c-b2b); everything
-        ' else the Manager compiles must hold the rule, so a new native check box cannot slip into a dialog unnoticed.
-        Dim pending As String() = {"Share_Settings_Form", "Manager_Welcome_Form", "Server_Welcome_Form", "Exchange_Server_Wizard_Form"}
+    Public Sub Every_window_of_the_Manager_outside_the_welcome_windows_makes_one_row_per_check_box()
+        ' The settings pages were converted by T-11c-b2b. The welcome windows and the server wizard wait for the owner's answer
+        ' to Q-6 (ticket 243); everything else the Manager compiles must hold the rule, so a new native check box cannot slip
+        ' into a dialog or a settings page unnoticed.
+        Dim pending As String() = {"Manager_Welcome_Form", "Server_Welcome_Form", "Exchange_Server_Wizard_Form"}
         Dim problems As New List(Of String)()
         Dim checked As Integer = 0
-        For Each file As String In ExchangeTestSupport.CompanionSources()
-            Dim name As String = Path.GetFileNameWithoutExtension(file)
+        For Each sourcePath As String In ExchangeTestSupport.CompanionSources()
+            Dim name As String = Path.GetFileNameWithoutExtension(sourcePath)
             If pending.Any(Function(prefix) name.StartsWith(prefix, StringComparison.Ordinal)) Then Continue For
-            Dim code As String = ExchangeTestSupport.CodeOnly(File.ReadAllText(file))
+            Dim code As String = ExchangeTestSupport.CodeOnly(File.ReadAllText(sourcePath))
             Dim made As Integer = Regex.Matches(code, "\bNew CheckBox\b").Count
             Dim rows As Integer = Regex.Matches(code, "\bOptionRows\.(?:InFlow|At)\(|\bDialogOptionRow\.Create(?:At)?\(").Count
             If made > 0 Then checked += 1
-            If rows < made Then problems.Add(Path.GetFileName(file) & ": " & made.ToString(CultureInfo.InvariantCulture) & " check boxes but " & rows.ToString(CultureInfo.InvariantCulture) & " option rows")
+            If rows < made Then problems.Add(Path.GetFileName(sourcePath) & ": " & made.ToString(CultureInfo.InvariantCulture) & " check boxes but " & rows.ToString(CultureInfo.InvariantCulture) & " option rows")
         Next
         Assert.True(checked >= 12, "the scan found only " & checked.ToString(CultureInfo.InvariantCulture) & " files with check boxes (the pattern is stale)")
         Assert.True(problems.Count = 0, String.Join(vbLf, problems))

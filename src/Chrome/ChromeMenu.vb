@@ -34,6 +34,9 @@ Friend NotInheritable Class ChromeMenu
     End Function
 
     Public Shared Event FocusKeyConsumed As Action
+    ''' <summary>A menu of the chain was hidden: whoever opened the chain looks at <see cref="PopupVisible"/> to learn whether it is
+    ''' still on screen (a menu button reports "expanded" only while it is; 243 T-9).</summary>
+    Friend Shared Event PopupVisibilityChanged As Action
     ''' <summary>The leaf of the open chain: the menu that has the keyboard.</summary>
     Private Shared popup As ChromeMenu
     Private ReadOnly entries As New List(Of ChromeMenuItem)()
@@ -267,14 +270,16 @@ Friend NotInheritable Class ChromeMenu
         childMenu = Nothing
         gone.parentMenu = Nothing
         If gone.childMenu IsNot Nothing Then gone.CloseChild()
+        ' This level is the open leaf again BEFORE the submenu is hidden, so the hide event sees the chain still on screen.
+        popup = Me
         gone.CloseMenu()
         If gone.IsHandleCreated Then gone.BeginInvoke(New Action(Sub() gone.Dispose())) Else gone.Dispose()
-        popup = Me
     End Sub
 
     Public Sub CloseMenu()
         Hide()
         Application.RemoveMessageFilter(Me)
+        RaiseEvent PopupVisibilityChanged()
     End Sub
 
     ''' <summary>Left / Esc inside a submenu: close this level and give the keyboard back to the parent.

@@ -20,7 +20,9 @@
   is a transport failure, never an auth or host-key failure. A keepalive is an optimization only (rule 9, O4).
 - **A close before the banner is undetermined (1.3).** An end of stream before any banner byte is never read as "not
   an SSH server" or as bad credentials, and a banner is positive evidence only. A probe sends no credential, so it
-  cannot count against a lockout. `ProbeVerdict.ClosedBeforeBanner` and its Share Manager twin carry it.
+  cannot count against a lockout. `ProbeVerdict.ClosedBeforeBanner` and its Share Manager twin carry it, and both
+  surfaces draw it with the same severity - a warning, never the neutral text of a refusal and never the green of an
+  SSH answer (the resource list and `Share_Access_Test_Form.HeadlineColor`).
 - **Resource PIN (1.2).** A protected root is opened only with the contract's keyboard-interactive proof, and a
   challenge of another shape is refused; the PIN travels on SSH only, never in an exchange envelope or a
   descriptor.

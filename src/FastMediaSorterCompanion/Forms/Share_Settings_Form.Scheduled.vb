@@ -95,7 +95,10 @@ Partial Public NotInheritable Class Share_Settings_Form
         _schedFeature = New CheckBox With {.AutoSize = True, .Margin = New Padding(0, 6, 0, 2), .Name = "managerSchedFeature",
             .Text = Localization.T("Выполнять операции по расписанию на этом компьютере")}
         AddHandler _schedFeature.CheckedChanged, AddressOf OnScheduledFeatureChanged
-        sec.AddBodyRow(_schedFeature)
+        Dim featureRow As OptionRowHost = OptionRows.InFlow(_schedFeature,
+            OptionHint(_schedFeature, Localization.T("Выключите, чтобы остановить все расписания. Запуск вручную остаётся доступным.")))
+        featureRow.Margin = New Padding(0, 6, 0, 2)
+        sec.AddBodyRow(featureRow)
 
         _schedAutostart = NoteLabel("")
         _schedAutostart.Name = "managerSchedAutostart"
@@ -228,7 +231,7 @@ Partial Public NotInheritable Class Share_Settings_Form
         _schedClearHistory.Text = Localization.T("Очистить журнал")
         _schedExport.Text = Localization.T("Экспорт..")
         _schedImport.Text = Localization.T("Импорт..")
-        _schedFeature.Text = Localization.T("Выполнять операции по расписанию на этом компьютере")
+        OptionRows.RowOf(_schedFeature).SetCaption(Localization.T("Выполнять операции по расписанию на этом компьютере"))
         _schedAutostartLink.Text = Localization.T("Открыть настройку автозапуска")
         _schedList.AccessibleName = ScheduledPageCaption()
         ApplyScheduledState()

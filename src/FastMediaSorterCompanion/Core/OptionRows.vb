@@ -178,6 +178,18 @@ Friend NotInheritable Class OptionRows
         Return Math.Max(SettingsCheckBox.ControlSide(scale), Math.Min(wanted, SettingsCheckBox.Px(ContentWidthCapLogical, scale)))
     End Function
 
+    ''' <summary>A scrolling table reaches the bottom edge of its last row and the padding under it. A table's own scroll extent
+    ''' is short of its rows (it leaves the padding out), so the tail of the last row would stay out of reach. Call it when the
+    ''' table starts to scroll and from its <c>Layout</c> event: it only writes when the wanted extent differs.</summary>
+    Friend Shared Sub KeepScrollExtent(body As TableLayoutPanel)
+        If body Is Nothing OrElse Not body.AutoScroll Then Return
+        Dim wanted As Integer = body.Padding.Vertical + 8
+        For Each h As Integer In body.GetRowHeights()
+            wanted += h
+        Next
+        If body.AutoScrollMinSize.Height <> wanted Then body.AutoScrollMinSize = New Size(0, wanted)
+    End Sub
+
     ' --- hand-positioned windows: the controls under a row that grew move down --------------------------
 
     ''' <summary>The Manager's twin of the viewer's <c>DialogLayout.FitContent</c> for the rows only: every row of a

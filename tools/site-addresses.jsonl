@@ -6,8 +6,6 @@
 {"address":"https://serzhyale.github.io/FastMediaSorter_Lite/","holder":"src/Support/SitePages.vb","kind":"landing"}
 {"address":"https://serzhyale.github.io/FastMediaSorter_Lite/docs/privacy.html","holder":"src/Support/SitePages.vb","kind":"privacy","carried":"built","fragment":"SiteRoot & \"docs/privacy.html\""}
 {"address":"https://serzhyale.github.io/FastMediaSorter_Lite/trust.html","holder":"src/Support/SitePages.vb","kind":"trust","carried":"built","fragment":"SiteRoot & \"trust.html\"","note":"TrustPageUrl(code) builds the locale sibling too: SiteRoot & \"lang/\" & code & \"/trust.html\""}
-{"address":"https://serzhyale.github.io/FastMediaSorter_Lite/","holder":"src/Table_Form.ModernLayout.vb","kind":"landing"}
-{"address":"https://serzhyale.github.io/FastMediaSorter_Lite/publish-folders-android.html","holder":"src/Table_Form.ModernLayout.vb","kind":"guide"}
 {"address":"https://serzhyale.github.io/FastMediaSorter_Lite/","holder":"src/FastMediaSorterCompanion/Core/ShareLinks.vb","kind":"landing"}
 {"address":"https://serzhyale.github.io/FastMediaSorter_Lite/publish-folders-android.html","holder":"src/FastMediaSorterCompanion/Core/ShareLinks.vb","kind":"guide"}
 {"address":"https://serzhyale.github.io/FastMediaSorter_Lite/server.html","holder":"src/FastMediaSorterCompanion/Core/ShareLinks.vb","kind":"edition"}

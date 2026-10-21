@@ -70,8 +70,8 @@ Partial Public NotInheritable Class Share_Settings_Form
         Return b
     End Function
 
-    Private Function PxCheck(text As String, onChanged As EventHandler) As CheckBox
-        Dim c As New CheckBox With {.AutoSize = True, .Margin = New Padding(0, 6, 0, 2), .Text = text}
+    Private Function PxCheck(name As String, text As String, onChanged As EventHandler) As CheckBox
+        Dim c As New CheckBox With {.Name = name, .AutoSize = True, .Margin = New Padding(0, 6, 0, 2), .Text = text}
         AddHandler c.CheckedChanged, onChanged
         Return c
     End Function
@@ -92,12 +92,13 @@ Partial Public NotInheritable Class Share_Settings_Form
             addResource.MinimumSize = New Size(0, 44)
             _pxGroup.Controls.Add(addResource)
         End If
-        _chkPxPublish = PxCheck(ExchangePublishText.PublishLabel(), AddressOf OnPxPublishChanged)
-        _chkPxPublish.MaximumSize = New Size(ProducerContentWidth, 0)
-        _pxGroup.Controls.Add(_chkPxPublish)
-        _lblPxPublishNote = PxNote(ExchangePublishText.PublishNote())
-        CheckBoxLayout.BindHint(_chkPxPublish, _lblPxPublishNote)
-        _pxGroup.Controls.Add(_lblPxPublishNote)
+        _chkPxPublish = PxCheck(NameOf(_chkPxPublish), ExchangePublishText.PublishLabel(), AddressOf OnPxPublishChanged)
+        ' The boolean option row: the note that stood under the box is now the row's explanation. The row stands in a top-down
+        ' flow, so it takes the content width of the notes (FlowRow).
+        Dim publishRow As OptionRowHost = FlowRow(OptionRows.InFlow(_chkPxPublish, OptionHint(_chkPxPublish, ExchangePublishText.PublishNote())), ProducerContentWidth)
+        publishRow.Margin = New Padding(0, 6, 0, 2)
+        _lblPxPublishNote = publishRow.Explanation
+        _pxGroup.Controls.Add(publishRow)
         _lblPxState = PxNote("")
         _lblPxState.ForeColor = SystemColors.ControlText
         _pxGroup.Controls.Add(_lblPxState)
@@ -105,12 +106,11 @@ Partial Public NotInheritable Class Share_Settings_Form
         ' the third-party port: offered only while publication is on, off by default
         _pxThirdBlock = New FlowLayoutPanel With {.AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink, .FlowDirection = FlowDirection.TopDown,
             .WrapContents = False, .Margin = New Padding(0)}
-        _chkPxThird = PxCheck(ExchangePublishText.ThirdPartyLabel(), AddressOf OnPxThirdChanged)
-        _chkPxThird.MaximumSize = New Size(ProducerContentWidth, 0)
-        _pxThirdBlock.Controls.Add(_chkPxThird)
-        _lblPxThirdNote = PxNote(ExchangePublishText.ThirdPartyNote())
-        CheckBoxLayout.BindHint(_chkPxThird, _lblPxThirdNote)
-        _pxThirdBlock.Controls.Add(_lblPxThirdNote)
+        _chkPxThird = PxCheck(NameOf(_chkPxThird), ExchangePublishText.ThirdPartyLabel(), AddressOf OnPxThirdChanged)
+        Dim thirdRow As OptionRowHost = FlowRow(OptionRows.InFlow(_chkPxThird, OptionHint(_chkPxThird, ExchangePublishText.ThirdPartyNote())), ProducerContentWidth)
+        thirdRow.Margin = New Padding(0, 6, 0, 2)
+        _lblPxThirdNote = thirdRow.Explanation
+        _pxThirdBlock.Controls.Add(thirdRow)
         _pxEndpointRow = PxFlow()
         _lblPxEndpoint = New Label With {.AutoSize = True, .Margin = New Padding(0, 6, 8, 0)}
         _btnPxCopy = PxButton(ExchangePublishText.CopyEndpointButton(), AddressOf OnPxCopyEndpoint, "action.copy")

@@ -115,6 +115,44 @@ Public Class BroadcastMessagesTests
         Assert.Equal(expected, BroadcastMessages.EntryReason(st, offeredByBuild))
     End Sub
 
+    ' --- the Expires cell of a broadcast row (spec 252 T-2: the parsed `expired` tombstone is shown) ---------
+
+    <Fact>
+    Public Sub An_expired_tombstone_says_so_whatever_the_stored_end_time_reads()
+        Dim withDate As New WorkerBroadcast With {.ExpiresAt = "2099-01-01 00:00", .Expired = True}
+        Dim noDate As New WorkerBroadcast With {.ExpiresAt = "", .Expired = True}
+        Assert.Equal("Срок истёк", InRussian(Function() BroadcastMessages.ExpiryCell(withDate)))
+        Assert.Equal("Срок истёк", InRussian(Function() BroadcastMessages.ExpiryCell(noDate)))
+    End Sub
+
+    <Fact>
+    Public Sub A_record_without_the_flag_keeps_its_end_time_or_says_until_revoked()
+        Dim live As New WorkerBroadcast With {.ExpiresAt = "2099-01-01 00:00"}
+        Dim open As New WorkerBroadcast With {.ExpiresAt = ""}
+        Assert.Equal("2099-01-01 00:00", InRussian(Function() BroadcastMessages.ExpiryCell(live)))
+        Assert.Equal("До отзыва", InRussian(Function() BroadcastMessages.ExpiryCell(open)))
+        Assert.Equal("", InRussian(Function() BroadcastMessages.ExpiryCell(Nothing)))
+    End Sub
+
+    <Fact>
+    Public Sub The_expired_word_is_a_distinct_translation_in_every_one_of_the_13_languages()
+        Dim expired As New WorkerBroadcast With {.Expired = True}
+        Dim open As New WorkerBroadcast()
+        For Each code As String In Localization.Codes
+            Dim saved As String = Localization.CurrentCode
+            Try
+                Localization.CurrentCode = code
+                Dim word As String = BroadcastMessages.ExpiryCell(expired)
+                Assert.False(String.IsNullOrWhiteSpace(word), code)
+                Assert.NotEqual(BroadcastMessages.ExpiryCell(open), word)
+                ' a missing row falls back to the Russian source: only Russian itself may read that
+                If code <> "ru" Then Assert.NotEqual("Срок истёк", word)
+            Finally
+                Localization.CurrentCode = saved
+            End Try
+        Next
+    End Sub
+
     ' --- the old wording is gone -------------------------------------------------------
 
     <Fact>

@@ -30,6 +30,18 @@ Friend NotInheritable Class StagedInfo
         IsTooLong = payload.IsTooLong
     End Sub
 
+    ''' <summary>The facts of an animation the decoder seam never saw - a huge GIF that GDI+ loaded (spec 242 rule 7),
+    ''' read off the loaded picture.</summary>
+    Friend Sub New(width As Integer, height As Integer, frames As Integer, durationMs As Long, hasAlpha As Boolean,
+                   isTooLong As Boolean)
+        Me.Width = width
+        Me.Height = height
+        Me.Frames = frames
+        Me.DurationMs = durationMs
+        Me.HasAlpha = hasAlpha
+        Me.IsTooLong = isTooLong
+    End Sub
+
 End Class
 
 ''' <summary>

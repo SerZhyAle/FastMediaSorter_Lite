@@ -24,6 +24,9 @@
 - **Start errors (0.17 item 1).** `lastStartErrorKind` is an optional string: empty none, `in-use`,
   `excluded-range`, `other`; an unknown or non-string value is `other`; when it is absent the existing
   ` [excluded-range]` token and error text apply.
+- **Expired broadcast (0.16).** The optional broadcast-record `expired` flag is a persisted tombstone, final after
+  a clock rollback and a worker restart. The broadcasts window shows it in the Expires column in place of the
+  stored end time (`BroadcastMessages.ExpiryCell`, 13 languages); an absent flag keeps the end time or "until revoked".
 - **Resource PIN (0.15).** A protected root travels at schema 3. An absent host PIN state preserves the worker's
   lock, an empty `accessPin` removes it, and status never returns the PIN. Before a protected exchange
   publication the host checks `resourcePinSupported` and each root's `pinProtected` against its own

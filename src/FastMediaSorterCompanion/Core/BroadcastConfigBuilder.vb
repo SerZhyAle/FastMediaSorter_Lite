@@ -85,9 +85,15 @@ Public Module BroadcastConfigBuilder
             hasIpv6 = True
         End If
 
+        ' Same producer choice as ShareConfigBuilder (FMSCFG 2.5 (c)): a path the broadcast gateway's OWN
+        ' connect-back CONFIRMED closed is not exported - a dead entry only costs the importer's race a
+        ' timeout - while a never-checked one stays (unchecked is not working, but it is not dead either).
+        ' The fallback reach built above from an older worker's SFTP status copies no probe flags, so it
+        ' reads as unchecked and keeps the path.
+        Dim confirmedClosed As Boolean = reach IsNot Nothing AndAlso reach.ExternalPortChecked AndAlso Not reach.ExternalPortOpen
         Dim hasExt As Boolean = False
         Dim extPort As Integer = port
-        If includeExternal AndAlso reach IsNot Nothing AndAlso Not reach.IsCgnat AndAlso Not String.IsNullOrEmpty(reach.ExternalHost) Then
+        If includeExternal AndAlso reach IsNot Nothing AndAlso Not reach.IsCgnat AndAlso Not confirmedClosed AndAlso Not String.IsNullOrEmpty(reach.ExternalHost) Then
             extPort = If(reach.ExternalPort > 0, reach.ExternalPort, port)
             AppendAccessPath(paths, "portforward", reach.ExternalHost, extPort)
             hasExt = True

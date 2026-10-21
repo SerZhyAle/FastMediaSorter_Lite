@@ -27,6 +27,19 @@
     -SelfTest proves the parser and the verdict arithmetic on canned lines and exits NOT APPLICABLE - it
     measured nothing, and says so.
 
+    SAMPLE STATISTICS (SETTINGS-NAVIGATION 2.0 section 5 rule 4). After the table the script prints, per
+    destination and per kind (warm = page-repeat, first = page-first, dialog), n, the nearest-rank p95, the
+    maximum, the budget and the verdict PASS / OVER_BUDGET / INSUFFICIENT, with the header that names the build,
+    OS, locale, scale and device as the machine reports them. The rule asks for at least 20 warm and 20
+    independent first-visit samples per destination and the p95 below the budget over ALL of them; one run of
+    this script yields two or three, so the verdict of a single run is INSUFFICIENT by design. -StatsFromLog
+    reads the "UI timing:" lines of one or more current.log files (the evidence of many runs, each a fresh
+    viewer for the first visits) and prints only this statistics table; no viewer is started.
+
+.PARAMETER StatsFromLog
+    One or more log files. Reads their "UI timing:" lines, prints the header and the statistics table and exits
+    with the worst verdict (OVER_BUDGET 1, INSUFFICIENT 2, all PASS 0). Nothing is started and nothing measured.
+
 .PARAMETER Exe
     The viewer to drive. Default: the newest of bin\Release\FastMediaSorter_LITE.exe and
     src\Modern\bin\Release\net10.0-windows\win-x64\FastMediaSorter_LITE.exe. It must be built from this tree
@@ -45,7 +58,8 @@ param(
     [string]$CompareLayoutWith = '',
     [switch]$SkipLayout,
     [switch]$SkipViewer,
-    [switch]$SelfTest
+    [switch]$SelfTest,
+    [string[]]$StatsFromLog = @()
 )
 
 Set-StrictMode -Version Latest
@@ -136,6 +150,118 @@ function Write-TimingTable($Records) {
     Write-Host ''
 }
 
+# --- the sample statistics (SETTINGS-NAVIGATION 2.0 section 5 rule 4; mirrors UiTimingStats in src/UiTimingBudget.vb,
+#     held by UiTimingStatsTests) -----------------------------------------------------------------------------------
+$MinimumSamples = 20            # at least 20 warm and 20 independent first-visit samples per destination
+$RepeatedOverBudgetCount = 3    # this many samples not below the budget fail the destination even if the p95 passes
+$BudgetPercentile = 95
+
+# Nearest-rank percentile of ALL the samples: the value at the 1-based rank ceil(Percent * n / 100) of the sorted
+# list (integer arithmetic: 95 % of 20 is the 19th value). Ties are kept, nothing is dropped. $null for no samples.
+function Get-NearestRankPercentile([double[]]$Values, [int]$Percent) {
+    $n = @($Values).Count
+    if ($n -eq 0) { return $null }
+    $sorted = @($Values | Sort-Object)
+    $rank = [int][math]::Floor(($Percent * $n + 99) / 100)
+    return $sorted[$rank - 1]
+}
+
+# One destination, one kind: n, p95, max, the samples not below the budget, and the verdict.
+function Get-SampleStats([string]$Kind, [double[]]$Values) {
+    $budget = Get-BudgetMs $Kind
+    $n = @($Values).Count
+    $over = @($Values | Where-Object { -not ($_ -lt $budget) })
+    $p95 = Get-NearestRankPercentile $Values $BudgetPercentile
+    $max = if ($n -gt 0) { ($Values | Measure-Object -Maximum).Maximum } else { $null }
+    $repeated = $over.Count -ge $RepeatedOverBudgetCount
+    $verdict = if ($n -lt $MinimumSamples) { 'INSUFFICIENT' }
+               elseif ($repeated -or -not ($p95 -lt $budget)) { 'OVER_BUDGET' }
+               else { 'PASS' }
+    [pscustomobject]@{ Kind = $Kind; N = $n; P95 = $p95; Max = $max; Budget = $budget; Over = $over; Repeated = $repeated; Verdict = $verdict }
+}
+
+function Get-KindLabel([string]$Kind) {
+    switch ($Kind) { 'page-repeat' { 'warm' } 'page-first' { 'first' } default { 'dialog' } }
+}
+
+# Prints the table per destination and kind and returns the rows. A warm sample is never counted as a first visit
+# or the other way round: the kind comes from the log line as the viewer wrote it.
+function Write-TimingStats($Records) {
+    $order = @{ 'page-repeat' = 0; 'page-first' = 1; 'dialog' = 2 }
+    Write-Host ''
+    Write-Host ("Sample statistics: nearest-rank p{0} over all samples, strictly below the budget; at least {1} samples per destination and kind; {2} or more over budget fail even when the p95 passes" -f $BudgetPercentile, $MinimumSamples, $RepeatedOverBudgetCount)
+    Write-Host ('{0,-26} {1,-7} {2,4} {3,9} {4,9} {5,7}  {6}' -f 'destination', 'kind', 'n', 'p95 ms', 'max ms', 'budget', 'verdict')
+    $rows = New-Object System.Collections.Generic.List[object]
+    $groups = New-Object System.Collections.Generic.List[object]
+    foreach ($g in @($Records | Group-Object { "$($_.Name)|$($_.Kind)" })) {
+        $groups.Add([pscustomobject]@{ Name = $g.Group[0].Name; Kind = $g.Group[0].Kind; Values = [double[]]@($g.Group | ForEach-Object { $_.Ms }) })
+    }
+    # A page needs BOTH a warm and a first-visit baseline: one seen under only one kind shows the other as n 0, never as absent.
+    foreach ($pageName in @($Records | Where-Object { $_.Kind -ne 'dialog' } | ForEach-Object { $_.Name } | Select-Object -Unique)) {
+        foreach ($pageKind in 'page-first', 'page-repeat') {
+            if (-not @($groups | Where-Object { $_.Name -eq $pageName -and $_.Kind -eq $pageKind }).Count) {
+                $groups.Add([pscustomobject]@{ Name = $pageName; Kind = $pageKind; Values = [double[]]@() })
+            }
+        }
+    }
+    foreach ($head in @($groups | Sort-Object { $_.Name }, { $order[$_.Kind] })) {
+        $s = Get-SampleStats $head.Kind $head.Values
+        $rows.Add([pscustomobject]@{ Name = $head.Name; Stats = $s })
+        Write-Host ('{0,-26} {1,-7} {2,4} {3,9:0.0} {4,9:0.0} {5,7}  {6}' -f $head.Name, (Get-KindLabel $head.Kind), $s.N, $s.P95, $s.Max, $s.Budget, $s.Verdict)
+        if ($s.Over.Count -gt 0) {
+            $list = ($s.Over | ForEach-Object { '{0:0.0}' -f $_ }) -join ', '
+            $why = if ($s.Repeated) { 'repeated - fails even if the p95 passes' } else { 'isolated - investigate and report' }
+            Write-Host "    not below the budget, in recorded order: $list ms ($why)"
+        }
+    }
+    $count = { param($word) @($rows | Where-Object { $_.Stats.Verdict -eq $word }).Count }
+    Write-Host ("  {0} PASS, {1} OVER_BUDGET, {2} INSUFFICIENT of {3} destination/kind rows" -f (& $count 'PASS'), (& $count 'OVER_BUDGET'), (& $count 'INSUFFICIENT'), $rows.Count)
+    Write-Host ''
+    return $rows.ToArray()
+}
+
+# The worst verdict of the rows as a CHECK-VERDICT code: OVER_BUDGET 1, otherwise INSUFFICIENT 2, otherwise PASS 0.
+function Get-StatsCode($Rows) {
+    if (@($Rows | Where-Object { $_.Stats.Verdict -eq 'OVER_BUDGET' }).Count -gt 0) { return 1 }
+    if (@($Rows | Where-Object { $_.Stats.Verdict -eq 'INSUFFICIENT' }).Count -gt 0) { return 2 }
+    return 0
+}
+
+# What the table was measured on, as the machine reports it - nothing here is assumed; what cannot be read says so.
+function Write-RunHeader([string]$ExePath) {
+    $unknown = 'not readable'
+    $line = { param($label, $value) Write-Host ('  {0,-10} {1}' -f $label, $value) }
+    Write-Host ''
+    Write-Host 'Reference configuration (SETTINGS-NAVIGATION 2.0 section 5 rule 4):'
+    $build = 'not given (the log files were written by whichever build produced them)'
+    if ($ExePath) {
+        if (Test-Path -LiteralPath $ExePath) {
+            $item = Get-Item -LiteralPath $ExePath
+            $build = '{0} | file version {1} | written {2}' -f $item.FullName, $item.VersionInfo.FileVersion, $item.LastWriteTime.ToString('yyyy-MM-dd HH:mm')
+        } else { $build = "$ExePath (not found)" }
+    }
+    & $line 'build' $build
+    $os = try { '{0} | {1}' -f [System.Runtime.InteropServices.RuntimeInformation]::OSDescription, [System.Runtime.InteropServices.RuntimeInformation]::OSArchitecture } catch { $unknown }
+    & $line 'OS' $os
+    & $line 'harness' ('PowerShell ' + $PSVersionTable.PSVersion)
+    $locale = try { 'Windows UI culture {0}, regional format {1}' -f (Get-UICulture).Name, (Get-Culture).Name } catch { $unknown }
+    & $line 'locale' $locale
+    $dpi = $null
+    foreach ($probe in @(@('HKCU:\Control Panel\Desktop\WindowMetrics', 'AppliedDPI'), @('HKCU:\Control Panel\Desktop', 'LogPixels'))) {
+        if ($null -eq $dpi) {
+            try { $value = (Get-ItemProperty -LiteralPath $probe[0] -Name $probe[1] -ErrorAction Stop).($probe[1]); if ($value) { $dpi = [int]$value } } catch { }
+        }
+    }
+    $scale = if ($null -ne $dpi) { '{0} DPI ({1} % of 96)' -f $dpi, [math]::Round($dpi / 96.0 * 100) } else { $unknown }
+    & $line 'scale' $scale
+    $device = try {
+        $cpu = Get-CimInstance -ClassName Win32_Processor -ErrorAction Stop | Select-Object -First 1
+        $mem = Get-CimInstance -ClassName Win32_ComputerSystem -ErrorAction Stop
+        '{0} | {1} logical processors | {2} GB RAM' -f ($cpu.Name.Trim()), $cpu.NumberOfLogicalProcessors, [math]::Round($mem.TotalPhysicalMemory / 1GB)
+    } catch { $unknown }
+    & $line 'device' $device
+}
+
 # --- self-test: the parser and the arithmetic, no desktop, nothing measured -----------------------------------
 
 if ($SelfTest) {
@@ -166,11 +292,62 @@ if ($SelfTest) {
     $noWindow = Get-TimingVerdict @($records | Where-Object { $_.Name -ne 'settings/window' }) $pages 1 1
     if ($noWindow.Code -ne 2) { $problems.Add('a missing window open was not COULD NOT VERIFY') }
     Write-TimingTable $records
+
+    # the sample statistics (rule 4): nearest rank, the 20-sample floor, strictly below, repeated over-budget, kinds apart
+    $slow20 = [double[]](1..18 | ForEach-Object { 20.0 }) + [double[]]@(150.0, 150.0)
+    $cases = @(
+        @{ Why = '20 warm samples of 20 ms'; Kind = 'page-repeat'; Ms = [double[]](1..20 | ForEach-Object { 20.0 }); Verdict = 'PASS'; P95 = 20.0; Max = 20.0 }
+        @{ Why = '19 samples are not enough'; Kind = 'page-repeat'; Ms = [double[]](1..19 | ForEach-Object { 20.0 }); Verdict = 'INSUFFICIENT'; P95 = 20.0; Max = 20.0 }
+        @{ Why = 'the p95 of 1..20 is the 19th value'; Kind = 'page-repeat'; Ms = [double[]](20..1); Verdict = 'PASS'; P95 = 19.0; Max = 20.0 }
+        @{ Why = '19th value exactly 150 ms is not below 150'; Kind = 'page-repeat'; Ms = $slow20; Verdict = 'OVER_BUDGET'; P95 = 150.0; Max = 150.0 }
+        @{ Why = 'one huge outlier stays in the maximum and does not fail a passing p95'; Kind = 'page-repeat'; Ms = ([double[]](1..19 | ForEach-Object { 20.0 }) + [double[]]@(4000.0)); Verdict = 'PASS'; P95 = 20.0; Max = 4000.0 }
+        @{ Why = 'three over-budget samples fail although the p95 passes'; Kind = 'page-repeat'; Ms = ([double[]](1..97 | ForEach-Object { 20.0 }) + [double[]]@(200.0, 300.0, 400.0)); Verdict = 'OVER_BUDGET'; P95 = 20.0; Max = 400.0 }
+        @{ Why = '300 ms is fine for a first visit'; Kind = 'page-first'; Ms = [double[]](1..20 | ForEach-Object { 300.0 }); Verdict = 'PASS'; P95 = 300.0; Max = 300.0 }
+        @{ Why = '300 ms is over for a warm visit'; Kind = 'page-repeat'; Ms = [double[]](1..20 | ForEach-Object { 300.0 }); Verdict = 'OVER_BUDGET'; P95 = 300.0; Max = 300.0 }
+    )
+    foreach ($case in $cases) {
+        $s = Get-SampleStats $case.Kind $case.Ms
+        if ($s.Verdict -ne $case.Verdict -or $s.P95 -ne $case.P95 -or $s.Max -ne $case.Max) {
+            $problems.Add("statistics: $($case.Why): got $($s.Verdict) p95 $($s.P95) max $($s.Max)")
+        }
+    }
+    $mixed = @($records) + @(1..20 | ForEach-Object { [pscustomobject]@{ Kind = 'page-repeat'; Name = 'settings/general'; Ms = 30.0; Budget = 150 } })
+    $rows = @(Write-TimingStats $mixed)
+    $generalWarm = @($rows | Where-Object { $_.Name -eq 'settings/general' -and $_.Stats.Kind -eq 'page-repeat' })
+    if ($generalWarm.Count -ne 1 -or $generalWarm[0].Stats.N -ne 22) { $problems.Add('statistics: the warm samples of one destination were not gathered in one row') }
+    if (@($rows | Where-Object { $_.Name -eq 'settings/recipients' }).Count -ne 2) { $problems.Add('statistics: the first and the warm visit of a destination were not kept in two rows') }
+    $generalFirst = @($rows | Where-Object { $_.Name -eq 'settings/general' -and $_.Stats.Kind -eq 'page-first' })
+    if ($generalFirst.Count -ne 1 -or $generalFirst[0].Stats.N -ne 0 -or $generalFirst[0].Stats.Verdict -ne 'INSUFFICIENT') { $problems.Add('statistics: a page with no first-visit sample was not shown as n 0 INSUFFICIENT') }
+    if ((Get-StatsCode $rows) -ne 2) { $problems.Add('statistics: a table with destinations under 20 samples was not INSUFFICIENT') }
     if ($problems.Count -gt 0) {
         $problems | ForEach-Object { Write-Host "  self-test: $_" }
         Exit-Verdict $check 1 'the parser or the verdict arithmetic is wrong (see above)'
     }
     Exit-NotApplicable $check 'self-test only: the parser and the verdict arithmetic hold on canned lines; no page, window or viewer was measured'
+}
+
+# --- statistics from logs written by earlier runs: nothing is started, nothing is measured ----------------------
+
+if ($StatsFromLog.Count -gt 0) {
+    Write-Subject $check ("sample statistics from $($StatsFromLog.Count) log file(s); nothing is started or measured")
+    $fromLogs = New-Object System.Collections.Generic.List[object]
+    foreach ($path in $StatsFromLog) {
+        if (-not (Test-Path -LiteralPath $path)) { Exit-Verdict $check 2 "log not found: $path" }
+        foreach ($text in (Get-Content -LiteralPath $path -Encoding UTF8)) {
+            $record = ConvertFrom-TimingLine ([string]$text)
+            if ($null -ne $record) { $fromLogs.Add($record) }
+        }
+    }
+    if ($fromLogs.Count -eq 0) { Exit-Verdict $check 2 'the log files hold no "UI timing:" line' }
+    Write-RunHeader ''
+    $statRows = @(Write-TimingStats $fromLogs.ToArray())
+    $statCode = Get-StatsCode $statRows
+    $statDetail = switch ($statCode) {
+        0 { "$($fromLogs.Count) samples, every destination within budget over at least $MinimumSamples samples per kind" }
+        1 { 'a destination is OVER_BUDGET (see the table)' }
+        default { "not enough samples: a destination/kind has fewer than $MinimumSamples (see the table)" }
+    }
+    Exit-Verdict $check $statCode $statDetail
 }
 
 # --- the subject --------------------------------------------------------------------------------------------
@@ -549,6 +726,10 @@ public static System.Collections.Generic.List<string> VisibleWindows(int process
         $records = @(Get-NewTimings)
         if ($records.Count -eq 0) { return @{ Code = 2; Detail = 'the viewer wrote no timing lines' } }
         Write-TimingTable $records
+        Write-RunHeader $exe
+        # One run holds two or three samples per destination, so this is INSUFFICIENT by design: it prints the shape
+        # the evidence run (>= 20 warm and >= 20 independent first-visit samples, -StatsFromLog over many logs) fills.
+        $null = Write-TimingStats $records
         $verdict = Get-TimingVerdict $records $pageIdsByNav 3 3
         return @{ Code = $verdict.Code; Detail = $verdict.Detail }
     }

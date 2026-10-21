@@ -43,5 +43,31 @@
 
   "byteIdenticalPairs": [],
   "vendorAllow": ["packages/*"],
-  "exemptions": []
+  "exemptions": [
+    {
+      "id": "SZA-SEC04",
+      "path": "exchange-server/cmd/exchange-vectors/rig.go",
+      "reason": "vectorKeyPEM is a throw-away EC key generated only to give the vector generator a fixed TLS identity for the example.net certificate beside it; it protects nothing and appears nowhere else in the repository."
+    },
+    {
+      "id": "SZA-SEC04",
+      "path": "exchange-server/internal/rendezvous/static.go",
+      "reason": "Only a doc comment: looksLikePrivateKey refuses to serve a file that starts with a PEM private-key header, so the header text is named in the comment; the file holds no key."
+    },
+    {
+      "id": "SZA-SEC04",
+      "path": "exchange-server/internal/rendezvous/static_test.go",
+      "reason": "Test input for the same refusal: a header line over the made-up body OUTSIDE-SECRET; no real key."
+    },
+    {
+      "id": "SZA-SEC04",
+      "path": "exchange-server/internal/rendezvous/static_internal_test.go",
+      "reason": "Test inputs for the same refusal: header lines with truncated or made-up bodies (MIIE, MIIEvQIBADAN..); no real key."
+    },
+    {
+      "id": "SZA-SEC04",
+      "path": "tests/Integration/CollectHostState.ps1",
+      "reason": "The hand-run proof plants a fake key.pem (body NEEDLEKEY) and a leaky log (NEEDLELEAK) in a temporary folder to check the support-bundle collector drops them; no real key."
+    }
+  ]
 }

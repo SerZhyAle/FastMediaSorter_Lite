@@ -32,7 +32,12 @@
 
 .NOTES
     Exit codes: 0 passed, 1 a compile error or a failing test, 2 could not verify (no dotnet, a
-    missing project, or output that matched nothing this script understands).
+    missing project, a run that executed no test, an unexpected error of this script, or output that
+    matched nothing this script understands).
+
+    The last line is the verdict (CHECK-VERDICT, tools\lib\Verdict.ps1) and, for a test suite, carries the
+    canonical counts per target: `Invoke-Tests: PASS (lite net10.0-windows ok run=7 skipped=0)`. run is the
+    tests executed (passed plus failed), skipped the tests not run; a run with run=0 is never a pass.
 #>
 [CmdletBinding()]
 param(
@@ -46,19 +51,22 @@ param(
 
 $ErrorActionPreference = 'Stop'
 $root = Split-Path $PSScriptRoot -Parent
+. (Join-Path $PSScriptRoot 'lib\Verdict.ps1')
 
-function Stop-Run([int]$code, [string]$text) {
-    Write-Host "Invoke-Tests: $text"
-    exit $code
+# An unexpected terminating error in this script must not surface as a stack trace and exit 1 with no verdict
+# line (CHECK-VERDICT rule 11): nothing was proved, so it is COULD NOT VERIFY.
+trap {
+    Write-Host "  $($_.Exception.Message)"
+    Exit-Verdict 'Invoke-Tests' 2 'the script itself failed'
+}
+
+function Stop-Run([int]$code, [string]$detail) {
+    Exit-Verdict 'Invoke-Tests' $code $detail
 }
 
 if (-not $Build -and -not $Suite) {
-    Stop-Run 2 'COULD NOT VERIFY (pass -Build modern|companion or -Suite lite|companion)'
+    Stop-Run 2 'pass -Build modern|companion or -Suite lite|companion'
 }
-
-$dotnet = (Get-Command dotnet -ErrorAction SilentlyContinue).Source
-if (-not $dotnet -and (Test-Path 'C:\Program Files\dotnet\dotnet.exe')) { $dotnet = 'C:\Program Files\dotnet\dotnet.exe' }
-if (-not $dotnet) { Stop-Run 2 'COULD NOT VERIFY (dotnet not found on PATH)' }
 
 $projects = @{
     'build:modern'    = 'src\Modern\FastMediaSorter.Modern.vbproj'
@@ -69,7 +77,13 @@ $projects = @{
 $kind = if ($Build) { 'build' } else { 'test' }
 $name = if ($Build) { $Build } else { $Suite }
 $proj = Join-Path $root $projects["${kind}:${name}"]
-if (-not (Test-Path -LiteralPath $proj)) { Stop-Run 2 "COULD NOT VERIFY (project missing: $proj)" }
+# BUILD-EVIDENCE rule 1: say what this run judges before it judges it.
+Write-Subject 'Invoke-Tests' "$kind $name ($($projects["${kind}:${name}"])); $(Get-TreeLabel $root)"
+
+$dotnet = (Get-Command dotnet -ErrorAction SilentlyContinue).Source
+if (-not $dotnet -and (Test-Path 'C:\Program Files\dotnet\dotnet.exe')) { $dotnet = 'C:\Program Files\dotnet\dotnet.exe' }
+if (-not $dotnet) { Stop-Run 2 'dotnet not found on PATH' }
+if (-not (Test-Path -LiteralPath $proj)) { Stop-Run 2 "project missing: $proj" }
 
 $logDir = Join-Path ([IO.Path]::GetTempPath()) 'fms-tests'
 New-Item -ItemType Directory -Force $logDir | Out-Null
@@ -137,7 +151,17 @@ function Invoke-One([string]$framework) {
         $failed.Add("$($m.Groups['t'].Value) :: $msg")
     }
 
-    $totals = @($lines | Where-Object { $_ -match '^(Passed|Failed)!\s+-\s+Failed:' } | ForEach-Object { $_.Trim() })
+    # `Skipped!` is the line of a run in which every test skipped: it is a totals line too, and it carries run=0.
+    $totals = @($lines | Where-Object { $_ -match '^(Passed|Failed|Skipped)!\s+-\s+Failed:' } | ForEach-Object { $_.Trim() })
+    # CHECK-VERDICT rule 13: read the runner's own counts. run = executed (passed + failed), skipped = not run.
+    $run = 0; $skipped = 0
+    foreach ($t in $totals) {
+        $c = [regex]::Match($t, 'Failed:\s*(?<f>\d+),\s*Passed:\s*(?<p>\d+),\s*Skipped:\s*(?<s>\d+)')
+        if ($c.Success) {
+            $run += [int]$c.Groups['p'].Value + [int]$c.Groups['f'].Value
+            $skipped += [int]$c.Groups['s'].Value
+        }
+    }
     $locked = @($lines | Where-Object { $_ -match 'being used by another process|Could not copy' } | Select-Object -First 1)
     $buildOk = [bool]($lines | Where-Object { $_ -match 'Build succeeded|0 Error\(s\)' } | Select-Object -First 1)
 
@@ -152,8 +176,8 @@ function Invoke-One([string]$framework) {
     $verdict = 'ok'
     if ($exit -ne 0) {
         $verdict = if ($errors.Count -or $failed.Count -or ($totals | Where-Object { $_ -like 'Failed!*' })) { 'failed' } else { 'unverified' }
-    } elseif ($kind -eq 'test' -and -not $totals.Count) {
-        $verdict = 'unverified'   # exit 0 with no totals: the filter matched no test
+    } elseif ($kind -eq 'test' -and (-not $totals.Count -or $run -eq 0)) {
+        $verdict = 'unverified'   # exit 0 with no totals or no executed test: the filter matched none, or every test skipped
     } elseif ($kind -eq 'build' -and -not $buildOk -and -not $errors.Count) {
         $verdict = 'ok'
     }
@@ -161,15 +185,15 @@ function Invoke-One([string]$framework) {
         Write-Host '  last lines of the log:'
         $lines | Select-Object -Last 8 | ForEach-Object { Write-Host "    $_" }
     }
-    return [pscustomobject]@{ Label = $label; Verdict = $verdict; Errors = $errors.Count; Failed = $failed.Count; Log = $log }
+    return [pscustomobject]@{ Label = $label; Verdict = $verdict; Errors = $errors.Count; Failed = $failed.Count; Log = $log
+                              Counts = $(if ($kind -eq 'test') { " run=$run skipped=$skipped" } else { '' }) }
 }
 
 $results = foreach ($t in $tfms) { Invoke-One $t }
 
 $bad = @($results | Where-Object { $_.Verdict -eq 'failed' })
 $unv = @($results | Where-Object { $_.Verdict -eq 'unverified' })
-$summary = ($results | ForEach-Object { "$($_.Label) $($_.Verdict)" }) -join '; '
-if ($bad.Count) { Write-Host "Invoke-Tests: FAIL ($summary)"; exit 1 }
-if ($unv.Count) { Write-Host "Invoke-Tests: COULD NOT VERIFY ($summary; a filter that matches no test is this too)"; exit 2 }
-Write-Host "Invoke-Tests: PASS ($summary)"
-exit 0
+$summary = ($results | ForEach-Object { "$($_.Label) $($_.Verdict)$($_.Counts)" }) -join '; '
+if ($bad.Count) { Exit-Verdict 'Invoke-Tests' 1 $summary }
+if ($unv.Count) { Exit-Verdict 'Invoke-Tests' 2 "$summary; a filter that matches no test, or a run in which no test executed, is this too" }
+Exit-Verdict 'Invoke-Tests' 0 $summary

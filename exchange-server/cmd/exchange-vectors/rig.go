@@ -180,6 +180,8 @@ Wlub4QP4084Ni1d/+uvLIJ+LbvGG9Q==
 -----END CERTIFICATE-----
 `
 
+// vectorKeyPEM is a throw-away fixture key: it only gives the vector rig a fixed TLS identity for the
+// example.net certificate above, protects nothing and is exempted from SZA-SEC04 in .sza-canon.json.
 const vectorKeyPEM = `-----BEGIN EC PRIVATE KEY-----
 MHcCAQEEIL3mx5omsWvptEsnLJzVKqHTV2+8uNZ7HNN6hbuUPW15oAoGCCqGSM49
 AwEHoUQDQgAEpl35dna4p6cWUfJ2NWb9CNNYBZzienOjCOLDHxa0Szn2c5Tdv4ND

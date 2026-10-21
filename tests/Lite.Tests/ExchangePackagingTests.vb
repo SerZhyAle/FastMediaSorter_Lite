@@ -114,11 +114,27 @@ Public Class ExchangePackagingTests
     <Fact>
     Public Sub TheUserComponentHasNoTypesSoEvenFullLeavesItOff()
         Dim iss As String = ReadText("publishing", "installer", "FastMediaSorter.iss")
-        Dim comp As String = ComponentLine(iss, "exchange")
+        Dim comp As String = ComponentLine(iss, "share\exchange")
         Assert.DoesNotContain("Types:", comp)           ' no Types: unchecked even in `full`, which silent winget installs take
         Assert.Contains("dontinheritcheck", comp)
         Assert.Contains("MinVersion: 10.0.14393", comp)
-        AssertInsideNoExchangeGuard(iss, "Name: ""exchange""")
+        AssertInsideNoExchangeGuard(iss, "Name: ""share\exchange""")
+    End Sub
+
+    <Fact>
+    Public Sub TheUserExchangeComponentIsAChildOfShareSoItNeverInstallsWithoutTheShareManager()
+        ' Specification 251 T-1: the exchange server is started by the Share Manager, so the User installer
+        ' offers it as share\exchange. Inno Setup then ticks `share` with it, also for /COMPONENTS=..share\exchange.
+        ' A flat `exchange` component would put the tree on a machine that has no Share Manager.
+        Dim iss As String = ReadText("publishing", "installer", "FastMediaSorter.iss")
+        Assert.DoesNotMatch("(?m)^Name: ""exchange"";", iss)
+        Dim lines As String() = iss.Split(vbLf(0))
+        Dim share As Integer = Array.FindIndex(lines, Function(l) l.StartsWith("Name: ""share"";", StringComparison.Ordinal))
+        Dim child As Integer = Array.FindIndex(lines, Function(l) l.StartsWith("Name: ""share\exchange"";", StringComparison.Ordinal))
+        Assert.True(share >= 0 AndAlso child > share, "the child component must be declared after its parent")
+        ' Its payload belongs to that component and to no other.
+        Dim src As String = lines.Single(Function(l) l.StartsWith("Source: ""{#SourceDir}\exchange\*""", StringComparison.Ordinal))
+        Assert.Contains("Components: share\exchange", src)
     End Sub
 
     <Fact>

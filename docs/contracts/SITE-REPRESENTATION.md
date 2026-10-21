@@ -31,8 +31,10 @@
    within 420 characters of a development marker in the page's own language, never inside a link to a download, an
    installer, a release, a store or a winget command, never with a date, and its door carries no call to action; the
    Microsoft Store listing does not name it at all. The catalog amendment (rule 4 and its registry row) is not
-   written from this repository; it is carried to the successor specification, and this exception stands until the
-   catalog says the same.
+   written from this repository: `SITE-REPRESENTATION` is sealed and owned by FastMediaSorter Android, so on
+   2026-10-21 (specification 251 T-6) it was filed as the proposal `PROPOSAL-2026-10-21-component-in-development-may-be-named`
+   beside the contract (status: proposed). This exception stands until the owner folds the proposal in and the
+   catalog says the same; then it is removed from this pointer in the same edit.
 4. **Keep the trust pages saying one thing** (rule 12): the install-trust page is held by
    `TrustPageContractTests`. The data claims of the ten function pages were read against `docs/privacy.html` on
    2026-10-06: the UPnP / reachability-check wording, the firewall step and several local files do not agree or

@@ -643,6 +643,7 @@
     <Compile Include="Imaging\AnimationVideoClock.vb" />
     <Compile Include="Imaging\GifBlockWalker.vb" />
     <Compile Include="Imaging\AnimationVideoPrefetchPlan.vb" />
+    <Compile Include="Imaging\AnimationVideoAhead.vb" />
     <!-- The editor's window and the viewer's entry point into it (§2, §5). Same shape:
          whole-file "#If Not NETFRAMEWORK", listed so the two file sets stay identical. -->
     <Compile Include="EditorGeometry.vb" />
@@ -682,6 +683,9 @@
     <Compile Include="Main_Form.AnimationUpgrade.vb">
       <DependentUpon>Main_Form.vb</DependentUpon>
       <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Main_Form.AnimationVideoAhead.vb">
+      <DependentUpon>Main_Form.vb</DependentUpon>
     </Compile>
     <Compile Include="Main_Form.AnimationVideo.vb">
       <DependentUpon>Main_Form.vb</DependentUpon>

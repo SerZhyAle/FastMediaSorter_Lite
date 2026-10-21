@@ -1,0 +1,25 @@
+Catalog conformance vectors of DEVICE-EXCHANGE vendored for the exchange server's tests (specification 252, item T-1).
+
+These files are byte-for-byte copies of corpora the contracts catalog holds under device-exchange/vectors/ and that this
+product has adopted by reference. They are never edited and never generated here: cmd/exchange-vectors writes only
+testdata/vectors/. A hand edit changes a hash below and fails TestTheVendoredCatalogCorporaAreWhatTheProvenanceLists
+(cmd/exchange-vectors/catalog_test.go); to take a newer catalog corpus, copy it again and replace its line.
+.gitattributes in this folder switches line-ending conversion off so a Windows checkout keeps the bytes.
+
+The columns are: SHA-256, the path under testdata/catalog/, the catalog-relative source path. Every file of this folder
+except this one and .gitattributes has exactly one line. The catalog's own PROVENANCE.txt of each fmsw-* folder is copied
+as it is; it names the hashes of the whole generated set (records, protection and connection-string included) of which
+the catalog keeps only the files below.
+
+sha256:
+  45b36244ecb14c196e9c014bb901d9027f0d70e7769455657433db3ff550748f  fmsw-224/connection-string-v1.json  device-exchange/vectors/fmsw-224/connection-string-v1.json
+  f5c6ae0db7dd47454467184c5df3378104e35bfe09609acfd37f703e833541d8  fmsw-224/frames-v2.json  device-exchange/vectors/fmsw-224/frames-v2.json
+  e140fe9aeb8a180da06ef7712d74eb09f41caf4b675999b70c79a10e359090a4  fmsw-224/PROVENANCE.txt  device-exchange/vectors/fmsw-224/PROVENANCE.txt
+  578ed7ba8a04d6158f2be142ff0c4324b859a5af46048681e73dc31825042691  fmsw-229/frames-v2.json  device-exchange/vectors/fmsw-229/frames-v2.json
+  724dda12b45f444c3387b84ac4b11a834480621c1eae5dc3fdfb92e6c72db9d8  fmsw-229/PROVENANCE.txt  device-exchange/vectors/fmsw-229/PROVENANCE.txt
+  7ddf9fb472b825efcc77d54405681cdbf0f2e2b485e0b58bc7782bddfce5d2fd  fmsw-234/frames-v2.json  device-exchange/vectors/fmsw-234/frames-v2.json
+  3d84d79f00fbfd7406b5a92d4246008b47c0c3bda2897c4a7ee56d415bd0a4f9  fmsw-234/PROVENANCE.txt  device-exchange/vectors/fmsw-234/PROVENANCE.txt
+  0c57c52b0a5580be06e4dadf7e7f22c3fbe0c42f086c7f6b5303af07ddd41068  fmsw-245/frames-v2.json  device-exchange/vectors/fmsw-245/frames-v2.json
+  442ae934aab1b32f4201578c9e03e5e9b5e3895493816e5cf39fba93274a8527  fmsw-245/PROVENANCE.txt  device-exchange/vectors/fmsw-245/PROVENANCE.txt
+  afa1a68273670f98c5dd615261759d1853a4cafd9086254e23acbdc7d0aea107  server-frames-v2.json  device-exchange/vectors/server-frames-v2.json
+  2b0edd5dca31e91fc5b828fc5707d518c3b796bdf02f0bd28738e72108113e00  server-records-v1.json  device-exchange/vectors/server-records-v1.json

@@ -45,6 +45,18 @@ Module Utils
         Return value
     End Function
 
+    ''' <summary>
+    ''' The slideshow interval after one press of a slideshow key (MEDIA-VIEWER 1.0): the first
+    ''' press starts at <paramref name="baseMs"/>, every further press while it runs halves the
+    ''' CURRENT interval, and no press ever goes below <paramref name="floorMs"/> (1 s in the
+    ''' viewer). Both slideshow entry points (sequential and random) call this one rule.
+    ''' </summary>
+    Public Function SlideshowIntervalAfterPress(baseMs As Integer, currentMs As Integer, running As Boolean, floorMs As Integer) As Integer
+        If Not running Then Return baseMs
+        Dim halved As Integer = CInt(currentMs / 2)
+        Return If(halved < floorMs, floorMs, halved)
+    End Function
+
     ''' <summary>The number of background colour schemes the settings window offers
     ''' (dynamic, black, white, most frequent and two more).</summary>
     Public Const Color_Scheme_Count As Integer = 6

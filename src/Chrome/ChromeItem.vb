@@ -1,7 +1,20 @@
 #If Not NETFRAMEWORK Then
 Option Strict On
 
+Imports System.Collections.Generic
 Imports System.Drawing
+
+''' <summary>How a CHECKED toggle says so without colour (BUTTONS 2.0 section 3 rule 5; 243 T-9). One mark per item, never two.</summary>
+Friend Enum ChromeCheckedMark
+    ''' <summary>Not a checked toggle (or the corner pin, which keeps its own upright-filled picture).</summary>
+    None
+    ''' <summary>A short bar along the item's bottom edge, in the item's ink.</summary>
+    Bar
+    ''' <summary>The item draws its own box and tick (a toggle with neither glyph nor caption): that is the mark.</summary>
+    OwnTick
+    ''' <summary>High contrast: the system-colour frame round the item (the accent fill is not used there).</summary>
+    Frame
+End Enum
 
 Friend Enum ChromeItemKind
     ''' <summary>A push button.</summary>
@@ -100,6 +113,19 @@ Friend NotInheritable Class ChromeItem
     ''' <summary>A text that sets the width this item reserves (it keeps its place while its own text changes
     ''' length - a counter, a zoom value; 125 UX-313b). Empty = the caption's own width.</summary>
     Public Property ReservedText As String = ""
+
+    ''' <summary>Every other text this item can show (the sort button: one caption per order, 243 T-9). The item
+    ''' reserves the width of the WIDEST of them, measured in its own font, so changing its state moves no neighbour
+    ''' (BUTTONS 2.0 section 3 rule 3 and section 4). Empty = none.</summary>
+    Public Property ReservedTexts As IReadOnlyList(Of String)
+        Get
+            Return reservedTextList
+        End Get
+        Set(value As IReadOnlyList(Of String))
+            reservedTextList = If(value, Array.Empty(Of String)())
+        End Set
+    End Property
+    Private reservedTextList As IReadOnlyList(Of String) = Array.Empty(Of String)()
 
     ''' <summary>A conditional button (it comes and goes with the kind of the file on screen) keeps its place in the
     ''' row while it is away, so the buttons after it stay where the pointer found them (125 UX-313b). The place is

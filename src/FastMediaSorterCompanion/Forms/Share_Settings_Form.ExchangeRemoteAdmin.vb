@@ -38,12 +38,16 @@ Partial Public NotInheritable Class Share_Settings_Form
 
         ' Enable checkbox
         _chkXRemoteAdminOn = New CheckBox With {
+            .Name = NameOf(_chkXRemoteAdminOn),
             .AutoSize = True,
             .Margin = New Padding(0, 6, 0, 4),
             .Text = Localization.T("Включить удалённое администрирование")
         }
         AddHandler _chkXRemoteAdminOn.CheckedChanged, AddressOf OnXRemoteAdminCheckChanged
-        _pnlXRemoteAdmin.Controls.Add(_chkXRemoteAdminOn)
+        ' A row in a top-down flow: no cell hands it a width, so it takes the width of the notes around it.
+        Dim remoteAdminRow As OptionRowHost = FlowRow(OptionRows.InFlow(_chkXRemoteAdminOn), ExchangeAdminWidth)
+        remoteAdminRow.Margin = New Padding(0, 6, 0, 4)
+        _pnlXRemoteAdmin.Controls.Add(remoteAdminRow)
 
         ' Password status and button
         _lblXRemoteAdminPwStatus = AdminNote("")

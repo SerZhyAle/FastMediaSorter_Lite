@@ -1,0 +1,4 @@
+# These files are written by cmd/exchange-vectors and compared with it byte for byte (-check, and the hashes in
+# PROVENANCE.txt). A CRLF rewrite on a Windows checkout (the repository root has `* text=auto`) would break both,
+# so nothing here is normalised. The files themselves are never hand-edited.
+* -text

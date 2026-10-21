@@ -31,11 +31,7 @@ Partial Public Class Main_Form
 #Else
         is_Slide_Show_Random_Mode = False
 #End If
-        Dim slide_show_new_interval = Slideshow_Base_Interval_Ms
-        If Is_slide_show_mode OrElse was_Running Then
-            slide_show_new_interval = CInt(SlideShowTimer.Interval / 2)
-            If slide_show_new_interval < slide_show_limit Then slide_show_new_interval = slide_show_limit
-        End If
+        Dim slide_show_new_interval = SlideshowIntervalAfterPress(Slideshow_Base_Interval_Ms, SlideShowTimer.Interval, Is_slide_show_mode OrElse was_Running, slide_show_limit)
         SlideShowStart()
         SlideShowTimer.Interval = slide_show_new_interval
 
@@ -101,11 +97,7 @@ Partial Public Class Main_Form
     Private Sub SetRandomSlideShow(Optional was_Running As Boolean = False)
         Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w2000: btn_Random_Slideshow")
         is_Slide_Show_Random_Mode = True
-        Dim slide_show_new_interval = Slideshow_Base_Interval_Ms
-        If Is_slide_show_mode OrElse was_Running Then
-            slide_show_new_interval = CInt(SlideShowTimer.Interval / 2)
-            If slide_show_new_interval < slide_show_limit Then slide_show_new_interval = slide_show_limit
-        End If
+        Dim slide_show_new_interval = SlideshowIntervalAfterPress(Slideshow_Base_Interval_Ms, SlideShowTimer.Interval, Is_slide_show_mode OrElse was_Running, slide_show_limit)
         SlideShowStart()
         SlideShowTimer.Interval = slide_show_new_interval
 

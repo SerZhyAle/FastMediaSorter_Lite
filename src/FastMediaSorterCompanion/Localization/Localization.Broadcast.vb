@@ -141,6 +141,14 @@ Partial Public NotInheritable Class Localization
             "रद्द होने तक", "প্রত্যাহার না হওয়া পর্যন্ত",
             "منسوخ ہونے تک", "直至撤销")
 
+        Add("Срок истёк",
+            "Expired", "Термін минув",
+            "Abgelaufen", "Scaduta",
+            "Caducada", "Expirée",
+            "Expirada", "انتهت الصلاحية",
+            "समय समाप्त", "মেয়াদ শেষ",
+            "میعاد ختم", "已过期")
+
         Add("Включая подпапки",
             "Include subfolders", "Включаючи підпапки",
             "Unterordner einbeziehen", "Includi sottocartelle",

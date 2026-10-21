@@ -55,6 +55,8 @@ try {
     Assert-That 'a COULD NOT VERIFY child is exit 2 and not flagged' ($rCnv.Code -eq 2 -and -not $rCnv.NotApplicable)
     Assert-That 'the word over a non-zero exit is read by the code, never believed' ($rLiar.Code -eq 1 -and -not $rLiar.NotApplicable) "(code $($rLiar.Code), flag $($rLiar.NotApplicable))"
     Assert-That 'a child with no verdict line is not flagged' (-not $rSilent.NotApplicable -and $rSilent.Verdict -like '*(no verdict line*')
+    Assert-That 'a child that exits 0 and prints no verdict line is COULD NOT VERIFY, never a pass (section 6, rule 11)' ($rSilent.Code -eq 2) "(code $($rSilent.Code))"
+    Assert-That 'and the aggregate over it is not a pass either' ((Get-AggregateCode @($rPass.Code, $rSilent.Code)) -eq 2)
 
     Assert-That 'every quoted child NOT APPLICABLE: the aggregate is NOT APPLICABLE too' (Test-AllNotApplicable @($rNa, $rNa))
     Assert-That 'one PASS among them: it is not' (-not (Test-AllNotApplicable @($rNa, $rPass)))

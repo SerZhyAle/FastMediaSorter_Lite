@@ -288,6 +288,10 @@ Friend NotInheritable Class Exchange_Account_Form
                 ' what scrolls is the body of fields; the row never does, so the answers stay on screen
                 AutoSize = False
                 body.AutoScroll = True
+                ' A table's own scroll extent is short of its rows (it leaves the padding out), so the tail of the last row - the
+                ' autostart explanation - would stay out of reach: the extent follows the rows on every layout.
+                OptionRows.KeepScrollExtent(body)
+                AddHandler body.Layout, Sub() OptionRows.KeepScrollExtent(body)
                 Dim bar As Integer = If(desired.Height > area.Height, SystemInformation.VerticalScrollBarWidth, 0)
                 Size = New Size(Math.Min(desired.Width + bar, area.Width), Math.Min(desired.Height, area.Height))
             End If

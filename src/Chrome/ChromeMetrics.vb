@@ -84,6 +84,12 @@ Friend NotInheritable Class ChromeMetrics
     Public Const WindowResizeBand As Integer = 15
     Public Const FocusRingWidth As Integer = 2
     Public Const FocusRingInset As Integer = 2
+    ''' <summary>The non-colour mark of a checked toggle (BUTTONS 2.0 section 3 rule 5; 243 T-9): a short bar along the
+    ''' bottom edge, in the item's own ink, drawn INSIDE the item (it never changes a size). Its length is the glyph's
+    ''' side, its thickness the focus ring's, and it stands clear of both focus contours (inset + ring width + 1 px).</summary>
+    Public Const CheckedMarkLength As Integer = 16
+    Public Const CheckedMarkThickness As Integer = 2
+    Public Const CheckedMarkInset As Integer = 5
     ''' <summary>The room a menu button keeps at its end for its ▾ (125 UX-305), and a submenu row for its ▸.</summary>
     Public Const ChevronWidth As Integer = 14
     ''' <summary>The corner mark of an item that has a secondary action (the right click); it was 4 px (125 UX-306).</summary>

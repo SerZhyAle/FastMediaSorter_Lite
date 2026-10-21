@@ -176,10 +176,13 @@ Partial Public NotInheritable Class Share_Settings_Form
         runRow.Controls.Add(_btnXStart)
         runRow.Controls.Add(_btnXStop)
         sec.AddBodyRow(runRow)
-        _chkXKeep = New CheckBox With {.AutoSize = True, .Margin = New Padding(0, 2, 0, 2),
+        _chkXKeep = New CheckBox With {.Name = NameOf(_chkXKeep), .AutoSize = True, .Margin = New Padding(0, 2, 0, 2),
             .Text = ExchangeText.KeepRunningCheckbox(), .Checked = _exSettings.KeepRunningOnExit}
         AddHandler _chkXKeep.CheckedChanged, AddressOf OnXKeepRunningChanged
-        sec.AddBodyRow(_chkXKeep)
+        Dim keepRunningRow As OptionRowHost = OptionRows.InFlow(_chkXKeep,
+            OptionHint(_chkXKeep, Localization.T("После закрытия менеджера сервер обмена продолжит работать. Выключите, чтобы останавливать его при выходе.")))
+        keepRunningRow.Margin = New Padding(0, 2, 0, 2)
+        sec.AddBodyRow(keepRunningRow)
 
         ' the listen port
         Dim lblPort As New Label With {.AutoSize = True, .Margin = New Padding(0, 6, 6, 0), .Text = Localization.T("Порт:")}
@@ -262,12 +265,16 @@ Partial Public NotInheritable Class Share_Settings_Form
         End Try
     End Sub
 
+    ''' <summary>The snapshot off the UI thread, then the repaint. Painted only while it is the newest read: an action's
+    ''' refresh or the console-exit refresh that started after it, or the window closing, drops it (SETTINGS-NAVIGATION 2.0
+    ''' section 5 rule 3) - the later read holds the state after whatever changed it.</summary>
     Private Async Function RefreshExchangeAsync() As Task
         If Not HasExchange Then Return
+        Dim token As Long = _exStateGuard.Begin()
         Dim snap As ExchangeSnapshot = Await Task.Run(Function() ExchangeSnapshot.Read())
-        If IsDisposed OrElse Disposing Then Return
+        If IsDisposed OrElse Disposing OrElse Not _exStateGuard.IsCurrent(token) Then Return
         Await InvokeAsync(Sub()
-                              If IsDisposed OrElse Disposing Then Return
+                              If IsDisposed OrElse Disposing OrElse Not _exStateGuard.IsCurrent(token) Then Return
                               ApplyExchangeState(snap)
                               UpdateSummaries()
                           End Sub)
@@ -340,7 +347,7 @@ Partial Public NotInheritable Class Share_Settings_Form
 
             _btnXStart.Visible = m.ShowStart
             _btnXStop.Visible = m.ShowStop
-            _chkXKeep.Visible = m.ShowKeepRunning
+            SetBooleanVisible(_chkXKeep, m.ShowKeepRunning)
 
             _lblXFw.Text = ExchangeText.FirewallState(snap.Firewall)
             _btnXFwEnable.Visible = m.ShowFirewallEnable
@@ -588,7 +595,7 @@ Partial Public NotInheritable Class Share_Settings_Form
             If b IsNot Nothing Then b.Enabled = Not value
         Next
         If _btnXConnString IsNot Nothing Then _btnXConnString.Enabled = Not value AndAlso ConnectionStringAvailable()
-        If _chkXRemoteAdminOn IsNot Nothing Then _chkXRemoteAdminOn.Enabled = Not value
+        If _chkXRemoteAdminOn IsNot Nothing Then SetBooleanEnabled(_chkXRemoteAdminOn, Not value)
         If _btnXRemoteAdminBrowser IsNot Nothing Then
             _btnXRemoteAdminBrowser.Enabled = Not value AndAlso ExchangeProcess.BrowserAdminUrl(_exReport).Length > 0
         End If

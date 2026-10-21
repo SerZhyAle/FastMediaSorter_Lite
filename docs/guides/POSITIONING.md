@@ -114,6 +114,12 @@ The default of every shipped optional part is *off at run time*: nothing listens
 service is registered until the user asks. Reading the table the other way round: choosing the viewer needs no server,
 and choosing the server needs no viewer.
 
+One dependency exists inside the User installer, for the day the exchange gate opens (specification 251 T-1): the
+Media Exchange Server (in development) is offered there as a child of local sharing (`share\exchange`, unticked),
+because the Share Manager is what starts it. Setup ticks the Share Manager together with it, also for an unattended
+`/COMPONENTS=..share\exchange`. The Server edition keeps a flat `exchange` component: its sharing service is always
+installed.
+
 **What the matrix is evidence of.** It describes the packages as **defined in this source tree**: the installer
 scripts, the winget manifests, the MSIX manifest and packager and the release workflow, which the gate reads. It is
 not a statement about a release already published. On 2026-10-20 the newest release is `v26.9.20.1206`, and the

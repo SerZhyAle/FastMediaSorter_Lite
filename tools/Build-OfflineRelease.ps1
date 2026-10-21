@@ -303,7 +303,7 @@ Copy-Item (Join-Path $stageCompanion "*") $serverCompanion -Recurse -Force
 & (Join-Path $PSScriptRoot "Stage-FileDoPayload.ps1") -Destination $serverStage
 # The optional, unticked viewer component of the Server edition (ticket 132), taken from the
 # User stage above - this script is the free mirror of the release, so it requires it.
-& (Join-Path $PSScriptRoot "Stage-ServerViewerPayload.ps1") -UserStage $stageDir -Destination $serverStage -Server -Require
+& (Join-Path $PSScriptRoot "Stage-ServerViewerPayload.ps1") -UserStage $stageDir -Destination $serverStage -Require
 # The same exchange binary as the User stage (gate open only): the two setups of one build never
 # differ in it.
 if ($IncludeExchange) {

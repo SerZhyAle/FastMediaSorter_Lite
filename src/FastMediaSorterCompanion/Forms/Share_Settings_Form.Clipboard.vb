@@ -134,7 +134,9 @@ Partial Public NotInheritable Class Share_Settings_Form
     Private Sub OnSettingsClipboardFinished(sender As Object, e As ClipboardFinishedEventArgs)
         If IsDisposed OrElse Disposing Then Return
         ShowClipboardResult(e.Text, Not e.Succeeded)
-        ' The slot may have changed; an old measurement must never look current after a transfer.
+        ' The slot may have changed; an old measurement must never look current after a transfer - not even one that is
+        ' still being read: its token goes stale here, so it is dropped when it returns.
+        _clipSizeGuard.Invalidate()
         _clipSize.Text = Localization.T("Размер буфера неизвестен. Нажмите «Обновить».")
     End Sub
 
@@ -142,10 +144,12 @@ Partial Public NotInheritable Class Share_Settings_Form
         If _clipQueryRunning OrElse ClipboardCoordinator.Current.IsRunning Then Return
         _clipQueryRunning = True
         ApplySettingsClipboardBusy()
+        Dim token As Long = _clipSizeGuard.Begin()
         Try
             _clipSize.Text = Localization.T("Размер буфера неизвестен. Нажмите «Обновить».")
             Dim slots As IReadOnlyList(Of ClipboardSlotStatus) = Await _clipMetadata.QueryClipboardSizeAsync(_clipLifetime.Token)
             If IsDisposed OrElse Disposing Then Return
+            If Not _clipSizeGuard.IsCurrent(token) Then Return   ' a transfer finished while the size was being read: it predates it
             Dim lines As New List(Of String)()
             For Each slot As ClipboardSlotStatus In slots
                 lines.Add(slot.DisplayText())

@@ -115,13 +115,10 @@ Public NotInheritable Class Share_Broadcasts_Form
         pnlDesc.Controls.Add(lblNotice)
         pnlMain.Controls.Add(pnlDesc, 0, 1)
         ' The two lines under the row start where its caption starts (the edge inset, the box and the gap; 96-dpi px, scaled
-        ' with the window), on the reading-start side.
+        ' with the window), on the reading-start side. A table cell mirrors its children under RightToLeft, margin included, so
+        ' Margin.Left is the reading-start side in both directions.
         Dim captionInset As Integer = OptionRows.FlowEdgeInsetLogical + SettingsCheckBox.BoxSideLogical + SettingsCheckBox.CaptionGapLogical
-        If Me.RightToLeft = RightToLeft.Yes Then
-            pnlDesc.Margin = New Padding(0, 0, captionInset, 10)
-        Else
-            pnlDesc.Margin = New Padding(captionInset, 0, 0, 10)
-        End If
+        pnlDesc.Margin = New Padding(captionInset, 0, 0, 10)
 
         ' Broadcasts ListView
         lvBroadcasts = New ListView With {
@@ -350,8 +347,7 @@ Public NotInheritable Class Share_Broadcasts_Form
             item.SubItems.Add(typeStr)
             item.SubItems.Add(b.CreatedAt)
 
-            Dim expStr As String = If(String.IsNullOrEmpty(b.ExpiresAt), Localization.T("До отзыва"), b.ExpiresAt)
-            item.SubItems.Add(expStr)
+            item.SubItems.Add(BroadcastMessages.ExpiryCell(b))
             item.SubItems.Add(b.Hits.ToString())
 
             Dim tokPrefix As String = If(b.Token.Length > 6, b.Token.Substring(0, 6) & "..", b.Token)

@@ -18,14 +18,18 @@ Partial Public NotInheritable Class Share_Settings_Form
     Private _baselineXMaxAccounts As Integer = 10
 
     Private Sub BuildXHostSettings()
-        _chkXAwake = New CheckBox With {.AutoSize = True, .MaximumSize = New Size(ExchangeAdminWidth, 0), .Text = Localization.T("Не давать ПК уснуть, пока сервер работает")}
+        _chkXAwake = New CheckBox With {.Name = NameOf(_chkXAwake), .AutoSize = True, .Text = Localization.T("Не давать ПК уснуть, пока сервер работает")}
         _numXLogDays = New NumericUpDown With {.Minimum = 1, .Maximum = 36500, .Value = 31, .Width = 100,
             .AccessibleName = Localization.T("Хранить журналы, дней")}
         _numXMaxAccounts = New NumericUpDown With {.Minimum = 1, .Maximum = 1000, .Value = 10, .Width = 100,
             .AccessibleName = Localization.T("Максимум аккаунтов")}
-        _pnlXConfig.Controls.Add(_chkXAwake)
-        _pnlXConfig.Controls.Add(AdminNote(Localization.T("Экран может выключаться. Настройки питания не меняются. Изменения применяются при следующем запуске сервера.")))
+        ' The boolean option row; its explanation is the note that stood under the box. The row stands in a top-down flow, so it
+        ' takes the content width of the notes (FlowRow). The state line below it is live text and starts at the caption.
+        Dim awakeRow As OptionRowHost = FlowRow(OptionRows.InFlow(_chkXAwake,
+            OptionHint(_chkXAwake, Localization.T("Экран может выключаться. Настройки питания не меняются. Изменения применяются при следующем запуске сервера."))), ExchangeAdminWidth)
+        _pnlXConfig.Controls.Add(awakeRow)
         _lblXAwakeState = AdminNote("")
+        _lblXAwakeState.Margin = New Padding(CaptionInsetLogical, _lblXAwakeState.Margin.Top, 0, _lblXAwakeState.Margin.Bottom)
         _pnlXConfig.Controls.Add(_lblXAwakeState)
         _pnlXConfig.Controls.Add(SettingsEditorRow(XBold(Localization.T("Хранить журналы, дней")), _numXLogDays, New Padding(0, 2, 0, 2)))
         _lblXRetention = AdminNote("")

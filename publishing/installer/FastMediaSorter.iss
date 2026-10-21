@@ -219,10 +219,15 @@ Name: "share\filedo"; Description: "{cm:CompFileDO}"; Flags: dontinheritcheck; M
 #ifndef NoExchange
 ; The Media Exchange Server (specification 133, ticket 141): NO Types on purpose - a component with
 ; no Types starts unticked, even in `full`, which is the type a silent winget install takes. So the
-; exchange tree reaches a machine only when someone ticks the box (or passes /COMPONENTS=..exchange).
-; dontinheritcheck: it is not a child of `share`. MinVersion 10.0.14393: the binary is windows/amd64
-; and the Share Manager that starts it is .NET 10 x64, the same floor as `share`.
-Name: "exchange"; Description: "{cm:CompExchange}"; Flags: dontinheritcheck; MinVersion: 10.0.14393
+; exchange tree reaches a machine only when someone ticks the box (or passes /COMPONENTS=..share\exchange).
+; A CHILD of `share` (specification 251 T-1): the exchange server is started by the Share Manager, so a
+; machine must never get the tree without it. Inno Setup itself keeps that true - ticking the child ticks
+; the parent, and /COMPONENTS=core,share\exchange installs `share` too (checked with a trial setup).
+; dontinheritcheck: ticking `share` does not tick this child (as with share\filedo). MinVersion
+; 10.0.14393: the binary is windows/amd64 and the Share Manager that starts it is .NET 10 x64, the same
+; floor as `share`. The Server edition is a different case: its `exchange` is a flat component beside
+; `server`, which is already fixed there.
+Name: "share\exchange"; Description: "{cm:CompExchange}"; Flags: dontinheritcheck; MinVersion: 10.0.14393
 #endif
 
 [Files]
@@ -278,7 +283,7 @@ Source: "{#SourceDir}\filedo\*"; DestDir: "{app}\filedo"; Flags: recursesubdirs 
 ; Deliberately WITHOUT skipifsourcedoesntexist: the packagers fail when the binary is missing, and
 ; a setup that claims the component must carry it. Nothing here runs by itself - no service, no
 ; rule, no port.
-Source: "{#SourceDir}\exchange\*"; DestDir: "{app}\exchange"; Excludes: "install-exchange-service.ps1"; Flags: recursesubdirs createallsubdirs ignoreversion; Components: exchange
+Source: "{#SourceDir}\exchange\*"; DestDir: "{app}\exchange"; Excludes: "install-exchange-service.ps1"; Flags: recursesubdirs createallsubdirs ignoreversion; Components: share\exchange
 #endif
 ; Helper Setup/Uninstall use to stop the running Companion app and its worker (see
 ; StopCompanionWorker in [Code]). Kept both as a dontcopy temp extract (Setup runs

@@ -338,12 +338,17 @@ Partial Public NotInheritable Class Share_Settings_Form
         _pnlXAccounts.Controls.Add(_lblXAdminSessionBadge)
 
         ' keeping the passwords on this PC (off by default; the switch asks first, both ways)
-        _chkXKeepPasswords = New CheckBox With {.AutoSize = True, .Margin = New Padding(0, 6, 0, 0), .Text = ExchangeAdminText.KeepPasswordsCheckbox(),
-            .Checked = _exSettings.KeepAccountPasswords, .AccessibleName = ExchangeAdminText.KeepPasswordsCheckbox()}
+        _chkXKeepPasswords = New CheckBox With {.Name = NameOf(_chkXKeepPasswords), .AutoSize = True, .Margin = New Padding(0, 6, 0, 0),
+            .Text = ExchangeAdminText.KeepPasswordsCheckbox(), .Checked = _exSettings.KeepAccountPasswords,
+            .AccessibleName = ExchangeAdminText.KeepPasswordsCheckbox()}
         AddHandler _chkXKeepPasswords.CheckedChanged, AddressOf OnXKeepPasswordsChanged
-        _pnlXAccounts.Controls.Add(_chkXKeepPasswords)
-        _lblXKeepNote = AdminNote(ExchangeAdminText.KeepPasswordsNote())
-        _pnlXAccounts.Controls.Add(_lblXKeepNote)
+        ' The boolean option row: the note that stood under the box is its explanation; a row in a top-down flow takes the
+        ' content width of the notes (FlowRow).
+        Dim keepPasswordsRow As OptionRowHost = FlowRow(OptionRows.InFlow(_chkXKeepPasswords,
+            OptionHint(_chkXKeepPasswords, ExchangeAdminText.KeepPasswordsNote())), ExchangeAdminWidth)
+        keepPasswordsRow.Margin = New Padding(0, 6, 0, 0)
+        _lblXKeepNote = keepPasswordsRow.Explanation
+        _pnlXAccounts.Controls.Add(keepPasswordsRow)
         sec.AddBodyRow(_pnlXAccounts)
 
         ' Devices panel (spec 238)
@@ -457,12 +462,16 @@ Partial Public NotInheritable Class Share_Settings_Form
         _pnlXInvitations.Controls.Add(_lblXInvTitle)
         _pnlXInvitations.Controls.Add(AdminNote(Localization.T("Одноразовые приглашения для регистрации новых пользователей на сервере.")))
 
-        _chkXSharedInv = New CheckBox With {.AutoSize = True, .Margin = New Padding(0, 4, 0, 0),
+        _chkXSharedInv = New CheckBox With {.Name = NameOf(_chkXSharedInv), .AutoSize = True, .Margin = New Padding(0, 4, 0, 0),
             .Text = Localization.T("Общий пароль приглашения")}
         AddHandler _chkXSharedInv.CheckedChanged, AddressOf OnXSharedInvCheckChanged
         _btnXSetSharedInv = XButton(Localization.T("Задать общий пароль.."), AddressOf OnXSetSharedInvitation, "action.edit")
         _rowXSharedInv = AdminFlow()
-        _rowXSharedInv.Controls.Add(_chkXSharedInv)
+        ' Beside a command in a wrapping flow: the row is as wide as its caption needs (capped), and the flow wraps the button
+        ' under it when the two do not fit one line.
+        Dim sharedInvRow As OptionRowHost = OptionRows.InFlow(_chkXSharedInv, Nothing, OptionRowFit.Content)
+        sharedInvRow.Margin = New Padding(0, 4, 0, 0)
+        _rowXSharedInv.Controls.Add(sharedInvRow)
         _rowXSharedInv.Controls.Add(_btnXSetSharedInv)
         _pnlXInvitations.Controls.Add(_rowXSharedInv)
         _lblXSharedInvStatus = AdminNote("")
@@ -573,6 +582,9 @@ Partial Public NotInheritable Class Share_Settings_Form
         If m.ShowAccounts Then
             Dim t As Task = RefreshAccountsAsync()
         Else
+            ' no accounts are shown any more (the server stopped, or this PC is not its host): a read still out must not
+            ' put the old list back
+            _exAccGuard.Invalidate()
             _exAccView = Nothing
             ApplyAccountsView()
         End If
@@ -853,7 +865,10 @@ Partial Public NotInheritable Class Share_Settings_Form
     Private Async Function RefreshAccountsAsync() As Task
         If _lvXAccounts Is Nothing OrElse IsDisposed OrElse Disposing Then Return
         If _exAccReading Then
-            ' a read is in flight (possibly for another selection): ask for one more when it ends, so a click is never lost
+            ' a read is in flight (possibly for another selection, or from before the server changed): what it returns is
+            ' superseded, so it is dropped and one more read follows when it ends - a click is never lost, and an old
+            ' account list never replaces the one the person is looking at (SETTINGS-NAVIGATION 2.0 section 5 rule 3)
+            _exAccGuard.Invalidate()
             _exAccRereadRequested = True
             Return
         End If
@@ -861,13 +876,17 @@ Partial Public NotInheritable Class Share_Settings_Form
         Try
             Do
                 _exAccRereadRequested = False
+                Dim token As Long = _exAccGuard.Begin()
                 Dim view As ExchangeAccountsView = Await ExchangeAccountsView.ReadAsync(SelectedXAccountLogin(), CancellationToken.None)
                 If IsDisposed OrElse Disposing Then Return
+                ' Superseded while it was out (a newer request, the server stopped, the window closing): drop it. The loop
+                ' condition below then runs the read that was asked for, if one was.
+                If Not _exAccGuard.IsCurrent(token) Then Continue Do
                 ' The continuation resumes on the window's own thread through the message loop's synchronization context. Should it ever resume on a
                 ' pool thread instead (a host with no such context), the controls are still touched only from their own thread.
                 If InvokeRequired Then
                     If Not IsHandleCreated Then Return
-                    Invoke(New Action(Sub() ApplyReadAccounts(view)))
+                    Invoke(New Action(Sub() If _exAccGuard.IsCurrent(token) AndAlso Not IsDisposed Then ApplyReadAccounts(view)))
                 Else
                     ApplyReadAccounts(view)
                 End If

@@ -166,13 +166,20 @@ Partial Public NotInheritable Class Share_Settings_Form
         End Try
     End Sub
 
-    ''' <summary>The live probe off the UI thread, then the repaint it exists for.</summary>
+    ''' <summary>Test seam (no behaviour change): replaces the live worker probe, which would otherwise connect to the pipe.</summary>
+    Friend Shared HostingProbeOverride As Func(Of WorkerResponse)
+
+    ''' <summary>The live probe off the UI thread, then the repaint it exists for. A probe is painted only while it is the
+    ''' newest one: an action's refresh that started after it, or the window closing, drops it (rule 3 of
+    ''' SETTINGS-NAVIGATION 2.0 section 5).</summary>
     Private Async Function RefreshHostingStateAsync() As Task
-        Dim live As WorkerResponse = Await Task.Run(Function() WorkerProcess.TryGetStatus(1200))
-        ' The dialog may have closed while the probe was out.
-        If IsDisposed OrElse Disposing Then Return
+        Dim token As Long = _hostingGuard.Begin()
+        Dim probe As Func(Of WorkerResponse) = HostingProbeOverride
+        Dim live As WorkerResponse = Await Task.Run(Function() If(probe IsNot Nothing, probe(), WorkerProcess.TryGetStatus(1200)))
+        ' The dialog may have closed while the probe was out, or a newer probe may have started.
+        If IsDisposed OrElse Disposing OrElse Not _hostingGuard.IsCurrent(token) Then Return
         Await InvokeAsync(Sub()
-                              If IsDisposed OrElse Disposing Then Return
+                              If IsDisposed OrElse Disposing OrElse Not _hostingGuard.IsCurrent(token) Then Return
                               ApplyHostingState(live)
                               UpdateSummaries()
                               _pageHost.PerformLayout()

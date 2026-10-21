@@ -84,6 +84,8 @@
     <Compile Include="..\..\src\SettingsCheckBox.vb"><Link>Linked\SettingsCheckBox.vb</Link></Compile>
     <Compile Include="..\..\src\OptionHelpSource.vb"><Link>Linked\OptionHelpSource.vb</Link></Compile>
     <Compile Include="..\..\src\OptionHelpUi.vb"><Link>Linked\OptionHelpUi.vb</Link></Compile>
+    <!-- The options of the Settings window that carry a `?` and their one authored help each (ticket 243 T-11b-help). -->
+    <Compile Include="..\..\src\SettingsOptionHelp.vb"><Link>Linked\SettingsOptionHelp.vb</Link></Compile>
     <Compile Include="..\..\src\SettingsNumericStepper.vb"><Link>Linked\SettingsNumericStepper.vb</Link></Compile>
     <Compile Include="..\..\src\Theming\CheckBoxLayout.vb"><Link>Linked\Theming\CheckBoxLayout.vb</Link></Compile>
     <Compile Include="..\..\src\SettingsNavIconPalette.vb"><Link>Linked\SettingsNavIconPalette.vb</Link></Compile>
@@ -179,6 +181,9 @@
     </Compile>
     <Compile Include="..\..\src\Imaging\AnimationVideoPrefetchPlan.vb">
       <Link>Linked\Imaging\AnimationVideoPrefetchPlan.vb</Link>
+    </Compile>
+    <Compile Include="..\..\src\Imaging\AnimationVideoAhead.vb">
+      <Link>Linked\Imaging\AnimationVideoAhead.vb</Link>
     </Compile>
     <Compile Include="..\..\src\Imaging\DecodeCacheStore.vb">
       <Link>Linked\Imaging\DecodeCacheStore.vb</Link>

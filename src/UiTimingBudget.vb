@@ -100,4 +100,196 @@ Friend NotInheritable Class UiTimingBudget
     End Function
 
 End Class
+
+''' <summary>What the sample statistics say about one destination and one kind of visit.</summary>
+Public Enum UiTimingStatsVerdict
+    ''' <summary>At least <see cref="UiTimingStats.MinimumSamples"/> samples, p95 strictly below the budget, no repeated over-budget delay.</summary>
+    Pass = 0
+    ''' <summary>The p95 is not below the budget, or the same destination was over budget repeatedly (masked by the percentile or not).</summary>
+    OverBudget = 1
+    ''' <summary>Fewer than <see cref="UiTimingStats.MinimumSamples"/> samples: nothing can be concluded either way.</summary>
+    Insufficient = 2
+End Enum
+
+''' <summary>
+''' The figures <see cref="UiTimingStats.Judge"/> computed: the counts, nearest-rank p95 and maximum over ALL recorded
+''' samples (nothing is dropped), the verdict, and the samples that were not below the budget, in recorded order.
+''' </summary>
+Friend NotInheritable Class UiTimingStatsResult
+
+    Friend Sub New(kind As UiTimingKind, budgetMs As Integer, count As Integer, p95Ms As Double, maxMs As Double,
+                   overBudget As IReadOnlyList(Of Double), repeatedOverBudget As Boolean, verdict As UiTimingStatsVerdict)
+        Me.Kind = kind
+        Me.BudgetMs = budgetMs
+        Me.Count = count
+        Me.P95Ms = p95Ms
+        Me.MaxMs = maxMs
+        Me.OverBudgetSamples = overBudget
+        Me.RepeatedOverBudget = repeatedOverBudget
+        Me.Verdict = verdict
+    End Sub
+
+    Friend ReadOnly Property Kind As UiTimingKind
+    Friend ReadOnly Property BudgetMs As Integer
+    Friend ReadOnly Property Count As Integer
+    ''' <summary>Nearest-rank p95 of every sample; NaN when there is none.</summary>
+    Friend ReadOnly Property P95Ms As Double
+    ''' <summary>The slowest sample; NaN when there is none.</summary>
+    Friend ReadOnly Property MaxMs As Double
+    ''' <summary>Every sample that was not strictly below the budget, in the order it was recorded. Never trimmed:
+    ''' when <see cref="RepeatedOverBudget"/> is False these are the isolated outliers to investigate and report.</summary>
+    Friend ReadOnly Property OverBudgetSamples As IReadOnlyList(Of Double)
+    ''' <summary>True when <see cref="UiTimingStats.RepeatedOverBudgetCount"/> or more samples were over budget.</summary>
+    Friend ReadOnly Property RepeatedOverBudget As Boolean
+    Friend ReadOnly Property Verdict As UiTimingStatsVerdict
+
+    ''' <summary>One or two over-budget samples: an outlier that is reported, not a failure of its own.</summary>
+    Friend ReadOnly Property HasIsolatedOutliers As Boolean
+        Get
+            Return OverBudgetSamples.Count > 0 AndAlso Not RepeatedOverBudget
+        End Get
+    End Property
+
+End Class
+
+''' <summary>
+''' A list of samples of ONE kind. Warm visits (<see cref="UiTimingKind.PageRepeat"/>) and first visits
+''' (<see cref="UiTimingKind.PageFirst"/>) are judged against different budgets and must never share a list: a warm
+''' sample counted as cold would hide a regression, a cold one counted as warm would invent one (rule 4: "do not
+''' relabel warm samples cold"). <see cref="Add"/> therefore takes the kind of the sample and refuses a mismatch.
+''' </summary>
+Friend NotInheritable Class UiTimingSamples
+
+    Private ReadOnly _values As New List(Of Double)()
+
+    Friend Sub New(kind As UiTimingKind)
+        Me.Kind = kind
+    End Sub
+
+    Friend ReadOnly Property Kind As UiTimingKind
+
+    Friend ReadOnly Property Count As Integer
+        Get
+            Return _values.Count
+        End Get
+    End Property
+
+    ''' <summary>Records one sample. A sample of another kind is refused with an exception - never dropped, never
+    ''' filed under this kind.</summary>
+    Friend Sub Add(sampleKind As UiTimingKind, elapsedMs As Double)
+        If sampleKind <> Kind Then
+            Throw New ArgumentException("A " & UiTimingBudget.KindName(sampleKind) & " sample cannot be added to the " &
+                                        UiTimingBudget.KindName(Kind) & " list: warm and first-visit samples are never mixed.", NameOf(sampleKind))
+        End If
+        _values.Add(elapsedMs)
+    End Sub
+
+    ''' <summary>The samples in the order they were recorded.</summary>
+    Friend Function Values() As Double()
+        Return _values.ToArray()
+    End Function
+
+    Friend Function Judge() As UiTimingStatsResult
+        Return UiTimingStats.Judge(Kind, _values)
+    End Function
+
+End Class
+
+''' <summary>
+''' The statistics of SETTINGS-NAVIGATION 2.0 section 5 rule 4, pure (no clock, no window, no file): p95 below the
+''' budget over at least <see cref="MinimumSamples"/> samples per destination and kind, nearest-rank, over ALL recorded
+''' samples, with the maximum reported too and no outlier dropped. The hand-run
+''' <c>tests/Integration/SettingsTimingScenes.ps1</c> mirrors this arithmetic on the log lines; the tests hold both.
+''' </summary>
+Friend NotInheritable Class UiTimingStats
+
+    Private Sub New()
+    End Sub
+
+    ''' <summary>Rule 4: "at least 20 warm transitions and 20 independent first-visit samples per baseline destination".
+    ''' Fewer is <see cref="UiTimingStatsVerdict.Insufficient"/>.</summary>
+    Friend Const MinimumSamples As Integer = 20
+
+    ''' <summary>The percentile the budget is stated at (rule 4: "p95").</summary>
+    Friend Const BudgetPercentile As Integer = 95
+
+    ''' <summary>Rule 4: "repeated reproducible over-budget delays fail acceptance even if masked by the aggregate
+    ''' percentile". The rule does not say how many is "repeated"; three samples of one destination not below the
+    ''' budget is this product's reading (one or two are isolated outliers to investigate and report). A catalog
+    ''' amendment that names a number replaces this one.</summary>
+    Friend Const RepeatedOverBudgetCount As Integer = 3
+
+    ''' <summary>The 1-based rank of the nearest-rank percentile: ceil(percent / 100 * count), in integers so that
+    ''' 95 % of 20 is exactly 19 and never 19.000000000000004. 0 for an empty list.</summary>
+    Friend Shared Function NearestRank(count As Integer, percent As Integer) As Integer
+        If count <= 0 Then Return 0
+        If percent < 1 Then percent = 1
+        If percent > 100 Then percent = 100
+        Return CInt((CLng(percent) * count + 99L) \ 100L)
+    End Function
+
+    ''' <summary>The nearest-rank percentile of the samples (any order, ties kept); NaN when there are none.</summary>
+    Friend Shared Function Percentile(samples As IEnumerable(Of Double), percent As Integer) As Double
+        Dim sorted As List(Of Double) = Normalised(samples)
+        If sorted.Count = 0 Then Return Double.NaN
+        sorted.Sort()
+        Return sorted(NearestRank(sorted.Count, percent) - 1)
+    End Function
+
+    ''' <summary>The slowest sample; NaN when there are none.</summary>
+    Friend Shared Function Maximum(samples As IEnumerable(Of Double)) As Double
+        Dim values As List(Of Double) = Normalised(samples)
+        If values.Count = 0 Then Return Double.NaN
+        Dim result As Double = values(0)
+        For Each v As Double In values
+            If v > result Then result = v
+        Next
+        Return result
+    End Function
+
+    ''' <summary>
+    ''' Judges the samples of one destination and one kind against the budget of that kind. Fewer than
+    ''' <see cref="MinimumSamples"/> is Insufficient; otherwise OverBudget when the p95 is not strictly below the budget
+    ''' or when <see cref="RepeatedOverBudgetCount"/> or more samples were over it; otherwise Pass. A sample that is
+    ''' not a number counts as infinitely slow: a broken measurement is never a pass and never dropped.
+    ''' </summary>
+    Friend Shared Function Judge(kind As UiTimingKind, samples As IEnumerable(Of Double)) As UiTimingStatsResult
+        Dim values As List(Of Double) = Normalised(samples)
+        Dim budget As Integer = UiTimingBudget.BudgetMs(kind)
+        Dim over As New List(Of Double)()
+        For Each v As Double In values
+            If Not (v < budget) Then over.Add(v)
+        Next
+        Dim p95 As Double = Percentile(values, BudgetPercentile)
+        Dim repeated As Boolean = over.Count >= RepeatedOverBudgetCount
+        Dim verdict As UiTimingStatsVerdict
+        If values.Count < MinimumSamples Then
+            verdict = UiTimingStatsVerdict.Insufficient
+        ElseIf repeated OrElse Not (p95 < budget) Then
+            verdict = UiTimingStatsVerdict.OverBudget
+        Else
+            verdict = UiTimingStatsVerdict.Pass
+        End If
+        Return New UiTimingStatsResult(kind, budget, values.Count, p95, Maximum(values), over, repeated, verdict)
+    End Function
+
+    ''' <summary>The words the hand-run script and the log use for a verdict.</summary>
+    Friend Shared Function VerdictName(verdict As UiTimingStatsVerdict) As String
+        Select Case verdict
+            Case UiTimingStatsVerdict.Pass : Return "PASS"
+            Case UiTimingStatsVerdict.OverBudget : Return "OVER_BUDGET"
+            Case Else : Return "INSUFFICIENT"
+        End Select
+    End Function
+
+    Private Shared Function Normalised(samples As IEnumerable(Of Double)) As List(Of Double)
+        Dim result As New List(Of Double)()
+        If samples Is Nothing Then Return result
+        For Each v As Double In samples
+            result.Add(If(Double.IsNaN(v), Double.PositiveInfinity, v))
+        Next
+        Return result
+    End Function
+
+End Class
 #End If

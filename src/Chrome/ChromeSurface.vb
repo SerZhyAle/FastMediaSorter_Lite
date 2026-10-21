@@ -102,6 +102,10 @@ Friend NotInheritable Class ChromeSurface
         End Get
     End Property
 
+    ''' <summary>The menu button whose popup is open right now (BUTTONS 2.0 section 2 rule 5: a menu button exposes popup AND expanded;
+    ''' 243 T-9). Set when an action of a menu button leaves a popup on screen, released when the last popup closes.</summary>
+    Private menuOwner As ChromeItem
+
     Private hotItem As ChromeItem
     Private pressedItem As ChromeItem
     Private focusedItem As ChromeItem
@@ -238,7 +242,7 @@ Friend NotInheritable Class ChromeSurface
         Dim chevron As Integer = If(ShowsMenuChevron(item), ChevronStrip(), 0)
         ' A text that reserves a width (a zoom value that is not on screen right now) is measured, not a bare square.
         If Not VerticalLayout AndAlso Not item.ShowCaptionWithGlyph AndAlso
-           (item.Image IsNot Nothing OrElse item.GlyphId.Length > 0 OrElse (item.Caption.Length = 0 AndAlso item.ReservedText.Length = 0)) Then Return square + chevron
+           (item.Image IsNot Nothing OrElse item.GlyphId.Length > 0 OrElse (item.Caption.Length = 0 AndAlso item.ReservedText.Length = 0 AndAlso item.ReservedTexts.Count = 0)) Then Return square + chevron
         Dim font As Font = FontFor(item)
         If font Is Nothing Then Return square
         Dim flags As TextFormatFlags = TextFormatFlags.NoPadding Or TextFormatFlags.SingleLine Or TextFormatFlags.NoPrefix
@@ -246,6 +250,11 @@ Friend NotInheritable Class ChromeSurface
         If item.ReservedText.Length > 0 Then
             text = Math.Max(text, TextRenderer.MeasureText(item.ReservedText, font, New Size(Integer.MaxValue, Integer.MaxValue), flags).Width)
         End If
+        ' Every state's text (the sort order's name): the item keeps the room of the widest, so a change of state moves no neighbour.
+        For Each reserved As String In item.ReservedTexts
+            If String.IsNullOrEmpty(reserved) Then Continue For
+            text = Math.Max(text, TextRenderer.MeasureText(reserved, font, New Size(Integer.MaxValue, Integer.MaxValue), flags).Width)
+        Next
         ' A menu row also carries its key hint and, for a submenu, the chevron, at its end.
         Dim tail As Integer = 0
         If VerticalLayout Then
@@ -420,6 +429,8 @@ Friend NotInheritable Class ChromeSurface
             End If
             itemList.Add(PinItem)
         End If
+        ' The tick that synced a toggle's checked state ends here: tell the readers who already looked at it.
+        ReportAccessibleStateChanges()
         Invalidate()
         RaiseEvent LayoutChanged(Me, EventArgs.Empty)
     End Sub
@@ -644,12 +655,22 @@ Friend NotInheritable Class ChromeSurface
         End If
         If chevronRoom > 0 Then PaintAccessory(g, ChrW(&H25BE), New Rectangle(If(isRightToLeft, bounds.X, bounds.Right - chevronRoom), bounds.Y, chevronRoom, bounds.Height), ink)
 
-        If item.Checked AndAlso chromeTheme.IsHighContrast Then
-            Using pen As New Pen(chromeTheme.Foreground, Math.Max(1, Px(ChromeMetrics.FocusRingWidth)))
-                Dim box As Rectangle = Rectangle.Inflate(r, -Px(ChromeMetrics.FocusRingInset), -Px(ChromeMetrics.FocusRingInset))
-                g.DrawRectangle(pen, box)
-            End Using
-        End If
+        ' A checked toggle says so without colour (BUTTONS 2.0 section 3 rule 5): exactly one mark, chosen by
+        ' CheckedMarkFor - the bar in the item's own ink, the high-contrast frame, or the check box the item already is.
+        Select Case CheckedMarkFor(item, chromeTheme.IsHighContrast)
+            Case ChromeCheckedMark.Frame
+                Using pen As New Pen(chromeTheme.Foreground, Math.Max(1, Px(ChromeMetrics.FocusRingWidth)))
+                    Dim box As Rectangle = Rectangle.Inflate(r, -Px(ChromeMetrics.FocusRingInset), -Px(ChromeMetrics.FocusRingInset))
+                    g.DrawRectangle(pen, box)
+                End Using
+            Case ChromeCheckedMark.Bar
+                Dim bar As Rectangle = CheckedBarBounds(bounds, currentScale, VerticalLayout OrElse item.ShowCaptionWithGlyph, ItemHeight(), isRightToLeft)
+                If Not bar.IsEmpty Then
+                    Using brush As New SolidBrush(ink)
+                        g.FillRectangle(brush, bar)
+                    End Using
+                End If
+        End Select
         If item.SecondaryAction IsNot Nothing Then PaintSecondaryMark(g, bounds, ink, currentScale, isRightToLeft)
         If inKeyboardMode AndAlso item Is focusedItem Then
             Dim inset As Integer = Px(ChromeMetrics.FocusRingInset)
@@ -674,6 +695,41 @@ Friend NotInheritable Class ChromeSurface
             End If
         End If
     End Sub
+
+    ''' <summary>Which non-colour mark a CHECKED toggle wears (BUTTONS 2.0 section 3 rule 5; 243 T-9). Pure. The corner pin keeps its
+    ''' own picture (upright and filled against tilted and outlined) and, under high contrast, the frame it always had; a toggle
+    ''' with neither glyph nor caption IS a check box, its tick is the mark (the high-contrast frame is not stacked on it); high
+    ''' contrast keeps the system-colour frame (no accent fill there); every other toggle gets the bar. One mark per item.</summary>
+    Friend Shared Function CheckedMarkFor(item As ChromeItem, highContrast As Boolean) As ChromeCheckedMark
+        If item Is Nothing OrElse Not item.Checked OrElse item.Kind <> ChromeItemKind.Toggle Then Return ChromeCheckedMark.None
+        ' The corner pin keeps what it had: its own picture, and under high contrast the frame.
+        If item.IsPin Then Return If(highContrast, ChromeCheckedMark.Frame, ChromeCheckedMark.None)
+        ' The same test PaintItemInk uses to draw the box and the tick.
+        If item.GlyphId.Length = 0 AndAlso item.Caption.Length = 0 AndAlso item.CustomGlyph = ChromeCustomGlyph.None Then Return ChromeCheckedMark.OwnTick
+        Return If(highContrast, ChromeCheckedMark.Frame, ChromeCheckedMark.Bar)
+    End Function
+
+    ''' <summary>Where the checked bar sits inside an item: along the bottom edge, clear of the focus contours, a glyph's width long,
+    ''' centred on the item - or, in a menu row / an item that shows its caption beside the glyph, centred under the glyph column
+    ''' (<paramref name="glyphColumn"/> wide, at the start side). A bottom bar, so the mark is the same under right-to-left reading in
+    ''' a toolbar; it never leaves <paramref name="bounds"/>, so a state change moves nothing. Empty when the item is too small.</summary>
+    Friend Shared Function CheckedBarBounds(bounds As Rectangle, scale As Single, startAligned As Boolean, glyphColumn As Integer,
+                                            rightToLeft As Boolean) As Rectangle
+        Dim thickness As Integer = Math.Max(1, UiScale.Px(ChromeMetrics.CheckedMarkThickness, scale))
+        Dim inset As Integer = UiScale.Px(ChromeMetrics.CheckedMarkInset, scale)
+        Dim edge As Integer = UiScale.Px(ChromeMetrics.FocusRingInset, scale)
+        If bounds.Height < 2 * (inset + thickness) OrElse bounds.Width < 2 * edge + 1 Then Return Rectangle.Empty
+        Dim length As Integer = Math.Min(UiScale.Px(ChromeMetrics.CheckedMarkLength, scale), bounds.Width - 2 * edge)
+        Dim x As Integer
+        If startAligned Then
+            Dim column As Integer = Math.Max(length, Math.Min(glyphColumn, bounds.Width))
+            Dim start As Integer = If(rightToLeft, bounds.Right - column, bounds.Left)
+            x = start + (column - length) \ 2
+        Else
+            x = bounds.Left + (bounds.Width - length) \ 2
+        End If
+        Return New Rectangle(x, bounds.Bottom - inset - thickness, length, thickness)
+    End Function
 
     ''' <summary>The corner tick of an item that answers a right click (125 UX-306). Shared with the path box,
     ''' whose element is covered by a control of its own.</summary>
@@ -1016,7 +1072,46 @@ Friend NotInheritable Class ChromeSurface
         Catch ex As Exception
             AppFileLogger.LogException("Chrome item " & item.Id, ex)
         End Try
+        ' A menu button whose action left a popup on screen is expanded until that popup goes.
+        If item.Kind = ChromeItemKind.MenuButton AndAlso Not VerticalLayout AndAlso ChromeMenu.PopupVisible Then NoteMenuOpened(item)
         RaiseEvent ItemInvoked(Me, item)
+    End Sub
+
+    Private Sub NoteMenuOpened(item As ChromeItem)
+        If IsDisposed Then Return
+        If menuOwner Is Nothing Then AddHandler ChromeMenu.PopupVisibilityChanged, AddressOf PopupVisibilityChanged
+        menuOwner = item
+        ReportAccessibleStateChanges()
+    End Sub
+
+    Private Sub PopupVisibilityChanged()
+        If menuOwner Is Nothing OrElse ChromeMenu.PopupVisible Then Return
+        ReleaseMenuOwner()
+    End Sub
+
+    Private Sub ReleaseMenuOwner()
+        If menuOwner Is Nothing Then Return
+        RemoveHandler ChromeMenu.PopupVisibilityChanged, AddressOf PopupVisibilityChanged
+        menuOwner = Nothing
+        If Not IsDisposed Then ReportAccessibleStateChanges()
+    End Sub
+
+    ''' <summary>True while the popup this menu button opened is on screen.</summary>
+    Friend Function IsMenuOpenFor(item As ChromeItem) As Boolean
+        Return menuOwner IsNot Nothing AndAlso ReferenceEquals(menuOwner, item) AndAlso ChromeMenu.PopupVisible
+    End Function
+
+    ''' <summary>Tells screen readers about every item whose checked / expanded / unavailable state changed since they last
+    ''' looked. Only items a client has already asked about are examined, so a surface nobody inspects pays nothing.</summary>
+    Friend Sub ReportAccessibleStateChanges()
+        If accessibleChildren.Count = 0 OrElse Not IsHandleCreated Then Return
+        Dim visible As List(Of ChromeItem) = AccessibleItems()
+        For index As Integer = 0 To visible.Count - 1
+            Dim known As ItemAccessibleObject = Nothing
+            If accessibleChildren.TryGetValue(visible(index), known) AndAlso known.TakeStateChange() Then
+                AccessibilityNotifyClients(AccessibleEvents.StateChange, index)
+            End If
+        Next
     End Sub
 
     Private Sub SetHot(item As ChromeItem)
@@ -1251,10 +1346,24 @@ Friend NotInheritable Class ChromeSurface
         Private ReadOnly surface As ChromeSurface
         Private ReadOnly item As ChromeItem
 
+        ''' <summary>The states a screen reader hears about when they flip; focus and pressing have their own events.</summary>
+        Private Const ReportedStates As AccessibleStates = AccessibleStates.Checked Or AccessibleStates.Expanded Or
+            AccessibleStates.Collapsed Or AccessibleStates.Unavailable
+        Private reported As AccessibleStates
+
         Public Sub New(owner As ChromeSurface, owned As ChromeItem)
             surface = owner
             item = owned
+            reported = State And ReportedStates
         End Sub
+
+        ''' <summary>True once per change of the reported states since the last call.</summary>
+        Friend Function TakeStateChange() As Boolean
+            Dim now As AccessibleStates = State And ReportedStates
+            If now = reported Then Return False
+            reported = now
+            Return True
+        End Function
 
         Public Overrides Property Name As String
             Get
@@ -1291,6 +1400,10 @@ Friend NotInheritable Class ChromeSurface
                 If item.Kind <> ChromeItemKind.Text Then s = s Or AccessibleStates.Focusable
                 If Not item.Enabled Then s = s Or AccessibleStates.Unavailable
                 If item.Checked Then s = s Or AccessibleStates.Checked
+                ' A menu button always has a popup and says whether it is open (BUTTONS 2.0 section 2 rule 5; 243 T-9).
+                If item.Kind = ChromeItemKind.MenuButton AndAlso Not surface.VerticalLayout Then
+                    s = s Or AccessibleStates.HasPopup Or If(surface.IsMenuOpenFor(item), AccessibleStates.Expanded, AccessibleStates.Collapsed)
+                End If
                 If item.IsPressed Then s = s Or AccessibleStates.Pressed
                 If surface.IsFocusedItem(item) Then s = s Or AccessibleStates.Focused
                 If Not item.Visible Then s = s Or AccessibleStates.Invisible
@@ -1334,7 +1447,13 @@ Friend NotInheritable Class ChromeSurface
     End Class
 
     Protected Overrides Sub Dispose(disposing As Boolean)
-        If disposing Then toolTip.Dispose()
+        If disposing Then
+            If menuOwner IsNot Nothing Then
+                RemoveHandler ChromeMenu.PopupVisibilityChanged, AddressOf PopupVisibilityChanged
+                menuOwner = Nothing
+            End If
+            toolTip.Dispose()
+        End If
         MyBase.Dispose(disposing)
     End Sub
 

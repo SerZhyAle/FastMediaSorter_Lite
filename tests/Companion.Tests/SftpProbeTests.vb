@@ -186,6 +186,18 @@ Public Class SftpProbeTests
                          End Sub)
     End Sub
 
+    ''' <summary>Specification 252 T-2: the access-test window gives the hang-up the same severity the viewer's
+    ''' resource list gives it (a warning: undetermined), not the plain text of the inconclusive negative and
+    ''' not the green of a confirmed SSH answer.</summary>
+    <Fact>
+    Public Sub Closed_before_the_banner_is_drawn_as_a_warning_like_an_open_port_that_is_not_ssh()
+        Dim hangUp As Drawing.Color = Share_Access_Test_Form.HeadlineColor(SftpProbe.ProbeResult.ClosedBeforeBanner)
+        Assert.Equal(Share_Access_Test_Form.HeadlineColor(SftpProbe.ProbeResult.PortOpen), hangUp)
+        Assert.NotEqual(Share_Access_Test_Form.HeadlineColor(SftpProbe.ProbeResult.SshOk), hangUp)
+        Assert.NotEqual(Share_Access_Test_Form.HeadlineColor(SftpProbe.ProbeResult.Refused), hangUp)
+        Assert.NotEqual(Share_Access_Test_Form.HeadlineColor(SftpProbe.ProbeResult.Timeout), hangUp)
+    End Sub
+
     <Fact>
     Public Sub Closed_before_the_banner_is_a_distinct_sentence_in_every_one_of_the_13_languages()
         Dim russian As String = "Сервер закрыл соединение, не успев ответить. Возможно, достигнут предел подключений; повторите через минуту."

@@ -76,8 +76,11 @@ Partial Public NotInheritable Class Share_Settings_Form
                         End If
                         Dim check = TryCast(control, CheckBox)
                         If check IsNot Nothing Then
+                            ' In its option row the box carries no text of its own: the caption label does.
+                            Dim optionRow = OptionRows.RowOf(check)
                             entries.Add(New SearchEntry With {.PageId = section.Key, .Group = group, .Editor = check,
-                                .Title = check.Text, .Hint = check.AccessibleDescription, .PageTitle = SettingsPageCaption(section)})
+                                .Title = If(optionRow Is Nothing, check.Text, optionRow.Caption.Text),
+                                .Hint = check.AccessibleDescription, .PageTitle = SettingsPageCaption(section)})
                         End If
                     Next
                 Next

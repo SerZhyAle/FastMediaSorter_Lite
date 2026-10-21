@@ -139,6 +139,124 @@ Public Class ExchangeMarkTests
         If failure IsNot Nothing Then Throw failure
     End Sub
 
+    ''' <summary>Spec 248 V1, V5 and V7: the "My devices" heading and the diagnosis heading wear the named mark, and an
+    ''' account header of the panel draws its 16 px mark at the reading-start edge (left, or right in the right-to-left
+    ''' languages) and nothing at the opposite edge: the picture is never mirrored.</summary>
+    <Fact>
+    Public Sub Viewer_panel_heading_diagnosis_heading_and_account_header_carry_the_mark()
+        Dim failure As Exception = Nothing
+        Dim thread As New Threading.Thread(
+            Sub()
+                Dim previousProbe As Func(Of Boolean) = ExchangeFeatures.ComponentProbeOverride
+                ExchangeFeatures.ComponentProbeOverride = Function() True
+                Try
+                    Dim store As New ExchangeEntryStore(New ExchangeStoresTests.MemorySettings(),
+                        Path.Combine(Path.GetTempPath(), "fms-mark-panel-" & Guid.NewGuid().ToString("N")))
+                    Dim entry As New ExchangeEntry(ExchangeEntryStore.NewEntryId(), "127.0.0.1:22022", "alice", "",
+                        ExchangeCertificateKind.CaSigned, New String("D"c, 21) & "A", "Test viewer", "Test server", False)
+                    Assert.True(store.Upsert(entry))
+                    Using hub As New ExchangeEntryHub(New ExchangeConsumerPorts With {.Entries = store})
+                        Using panel As New Exchange_Devices_Panel(hub, store, Function() New Collections.Generic.List(Of ResourceDescriptor)(),
+                                                                 Function(r) False, Sub(r) Return)
+                            Dim title As Control = panel.Controls.Find("res_DevicesTitle", True).Single()
+                            Assert.Single(title.Controls.Find("exchangeMark", False))
+                            Assert.Equal(ExchangeMark.AccessibleName(), title.Controls.Find("exchangeMark", False)(0).AccessibleName)
+                            panel.EntryAdded(entry)
+                            Dim flags As Reflection.BindingFlags = Reflection.BindingFlags.Instance Or Reflection.BindingFlags.NonPublic
+                            GetType(Exchange_Devices_Panel).GetMethod("Render", flags).Invoke(panel, Nothing)
+                            Dim list As ListView = DirectCast(GetType(Exchange_Devices_Panel).GetField("_list", flags).GetValue(panel), ListView)
+                            Assert.True(list.Items.Count > 0, "The account header row must exist")
+                            For Each rtl In {False, True}
+                                panel.RightToLeft = If(rtl, RightToLeft.Yes, RightToLeft.No)
+                                AssertHeaderMark(panel, list, list.Items(0), rtl)
+                            Next
+                        End Using
+                    End Using
+                    Using diagnosis As New Connection_Diagnosis_Dialog(Nothing)
+                        Dim marks As Control() = diagnosis.Controls.Find("exchangeMark", True)
+                        Assert.NotEmpty(marks)
+                        Assert.All(marks, Sub(mark) Assert.Equal(ExchangeMark.AccessibleName(), mark.AccessibleName))
+                    End Using
+                Catch ex As Exception
+                    failure = ex
+                Finally
+                    ExchangeFeatures.ComponentProbeOverride = previousProbe
+                End Try
+            End Sub)
+        thread.SetApartmentState(Threading.ApartmentState.STA)
+        thread.Start()
+        Assert.True(thread.Join(20000), "The panel must open and close")
+        If failure IsNot Nothing Then Throw failure
+    End Sub
+
+    ''' <summary>Spec 248 S1, S2 and S5: the server program's icon comes from the vendored catalog ICO through the version
+    ''' resource at build time (not patched in afterwards), staging copies the built pair untouched, and the collector shortcut
+    ''' of the Server installer takes its icon from the installed server program.</summary>
+    <Fact>
+    Public Sub Server_program_icon_is_built_in_and_the_server_shortcut_carries_it()
+        Dim root As String = Nothing
+        Dim dir As New DirectoryInfo(AppContext.BaseDirectory)
+        While dir IsNot Nothing AndAlso root Is Nothing
+            If File.Exists(Path.Combine(dir.FullName, "FastMediaSorter.sln")) Then root = dir.FullName
+            dir = dir.Parent
+        End While
+        Assert.NotNull(root)
+
+        Dim ico As String = Path.Combine(root, "assets", "exchange-mark", "ico", "exchange-server.ico")
+        Dim header As Byte() = File.ReadAllBytes(ico).Take(4).ToArray()
+        Assert.Equal(New Byte() {0, 0, 1, 0}, header)
+
+        Dim versionInfo As String = File.ReadAllText(Path.Combine(root, "exchange-server", "versioninfo.json"))
+        Assert.Contains("""IconPath"": ""../assets/exchange-mark/ico/exchange-server.ico""", versionInfo, StringComparison.Ordinal)
+
+        Dim build As String = File.ReadAllText(Path.Combine(root, "exchange-server", "build.ps1"))
+        ' goversioninfo resolves a relative IconPath against the folder it runs in (a temp folder), so the build passes an absolute path
+        ' once, in the one argument list that both the online and the offline-proxy attempts use.
+        Assert.Contains("'-icon', (Join-Path (Split-Path $ModuleDir -Parent) 'assets/exchange-mark/ico/exchange-server.ico')", build, StringComparison.Ordinal)
+        Assert.Equal(1, System.Text.RegularExpressions.Regex.Matches(build, "'-icon'").Count)
+
+        Dim staging As String = File.ReadAllText(Path.Combine(root, "tools", "Stage-ExchangePayload.ps1"))
+        Assert.Contains("Copy-Item -LiteralPath $exe, $sha -Destination $dest -Force", staging, StringComparison.Ordinal)
+
+        Dim serverSetup As String = File.ReadAllText(Path.Combine(root, "publishing", "installer", "FastMediaSorterServer.iss"))
+        Dim collector As String = serverSetup.Split({vbLf}, StringSplitOptions.None).Single(Function(l) l.Contains("{cm:CollectStateIcon}", StringComparison.Ordinal) AndAlso l.StartsWith("Name:", StringComparison.Ordinal))
+        Assert.Contains("IconFilename: ""{app}\exchange\fms-exchange-server.exe""", collector, StringComparison.Ordinal)
+    End Sub
+
+    ''' <summary>Draws the header row the way the list does and counts the coloured pixels in the mark's own box at each edge.
+    ''' The box is clear of the row text (the text starts 24 px after the mark's left edge, or ends 24 px before it).</summary>
+    Private Shared Sub AssertHeaderMark(panel As Exchange_Devices_Panel, list As ListView, item As ListViewItem, rtl As Boolean)
+        Const width As Integer = 320
+        Const height As Integer = 28
+        Using canvas As New Bitmap(width, height)
+            Using g As Graphics = Graphics.FromImage(canvas)
+                Dim args As New DrawListViewItemEventArgs(g, item, New Rectangle(0, 0, width, height), 0, ListViewItemStates.Default)
+                GetType(Exchange_Devices_Panel).GetMethod("OnDrawItem", Reflection.BindingFlags.Instance Or Reflection.BindingFlags.NonPublic).
+                    Invoke(panel, New Object() {list, args})
+            End Using
+            Dim leftBox As Integer = ColouredPixels(canvas, 6, 6 + 16)
+            Dim rightBox As Integer = ColouredPixels(canvas, width - 6 - 16, width - 6)
+            If rtl Then
+                Assert.True(rightBox >= 8, "The mark must stand at the right edge in a right-to-left language")
+                Assert.Equal(0, leftBox)
+            Else
+                Assert.True(leftBox >= 8, "The mark must stand at the left edge in a left-to-right language")
+                Assert.Equal(0, rightBox)
+            End If
+        End Using
+    End Sub
+
+    Private Shared Function ColouredPixels(canvas As Bitmap, fromX As Integer, toX As Integer) As Integer
+        Dim count As Integer = 0
+        For x As Integer = fromX To toX - 1
+            For y As Integer = 0 To canvas.Height - 1
+                Dim p As Color = canvas.GetPixel(x, y)
+                If Math.Max(p.R, Math.Max(p.G, p.B)) - Math.Min(p.R, Math.Min(p.G, p.B)) > 48 Then count += 1
+            Next
+        Next
+        Return count
+    End Function
+
     Private Shared Sub AssertMarkedHeading(heading As Control, nextRow As Control)
         Assert.NotNull(heading)
         Assert.NotNull(nextRow)

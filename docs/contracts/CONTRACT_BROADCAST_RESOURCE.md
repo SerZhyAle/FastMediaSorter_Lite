@@ -10,7 +10,10 @@
 ## What this repository must do to stay conformant
 
 - **The document.** `schemaVersion` 1, `kind` `broadcast`, `protocol` always `http`; the access paths ordered `lan`,
-  `ipv6`, `portforward`, all under one `path`; `.fmscfg` is not touched and keeps its own schema.
+  `ipv6`, `portforward`, all under one `path`; `.fmscfg` is not touched and keeps its own schema. A `portforward`
+  path that the gateway's own connect-back confirmed closed is not written, and a never-checked one stays - the
+  producer choice of `FMSCFG` 2.5 (c) applied to this document (2026-10-21, specification 252 T-2; the contract is
+  silent on it, so it is a recorded reading, not a clause).
 - **Transport.** A `.spres` file is plain UTF-8 JSON without a BOM. A QR carries plain JSON when small and
   `SPRES1:` + base64(gzip(json)) above about 900 bytes, the same switch as `FMSCFG1:`.
 - **The clipboard line is the lossy variant, on purpose.** `SPCH1 http://<best host>:<port>/b/<token>`: one

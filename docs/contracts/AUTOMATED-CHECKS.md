@@ -21,11 +21,14 @@
   skipped, `Run-AllTests` and `Release.ps1` use them (a not-applicable preflight step reads like a skipped one,
   so the tag still refuses it), and a producer prints it with `Exit-NotApplicable`;
   `tests/Integration/VerdictHelper.ps1` is the fixture.
-- **The 0.13 count grammar is not adopted yet (read 2026-10-20).** A test verdict line that reports counts writes
-  `run=N skipped=M` (run is what executed, skipped is what did not pass; non-negative integers), and an aggregator
-  that counts checks, not tests, keeps rule 14's form (the 2026-10-18 clarification). No script under `tools/` prints
-  `run=` or `skipped=`: `Run-AllTests.ps1` prints `N tests skipped (id n)` and `Invoke-Tests.ps1` prints no counts, so
-  a new writer takes the tokens and the old spellings stay readable meanwhile.
+- **The 0.13 count grammar is adopted by one writer (read 2026-10-20, since 2026-10-21 specification 252).** A test
+  verdict line that reports counts writes `run=N skipped=M` (run is what executed, skipped is what did not pass;
+  non-negative integers), and an aggregator that counts checks, not tests, keeps rule 14's form (the 2026-10-18
+  clarification). `Invoke-Tests.ps1` writes the tokens per target (`Invoke-Tests: PASS (companion ok run=14
+  skipped=0)`), and a run with `run=0` is `COULD NOT VERIFY`, never a pass. `Run-AllTests.ps1` still prints
+  `N tests skipped (id n)`: whether an aggregator of suites is bound by the tokens is open with the contract's owner.
+  A child check that exits `0` and prints no verdict line is read as `COULD NOT VERIFY` by `Invoke-ChildCheck`
+  (section 6), and `Invoke-Tests.ps1` ends as `COULD NOT VERIFY` on an unexpected error of its own.
 - **Placement is declared, and held both ways.** `tools/check-placement.jsonl` carries the one
   `per-change runner: none` declaration (0.11 rule 8) and a record per check (classes `agent-closure`,
   `release`, `build`, `hand-run`; 42 records on 2026-10-07); `tools/Test-CheckPlacement.ps1` - run by every `Run-AllTests` - fails a check

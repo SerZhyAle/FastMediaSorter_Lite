@@ -557,6 +557,9 @@ Public Class ExchangeGroupTests
                                                          Assert.True(c.Width <= limit, code & ": the statement box is " & c.Width & " px wide")
                                                          Continue For
                                                      End If
+                                                     ' the caption and the explanation of a boolean option row are sized by the row at its own width
+                                                     ' (SetBounds, wrapped); their unwrapped "preferred" width says nothing - the row itself is checked
+                                                     If TypeOf c Is Label AndAlso TypeOf c.Parent Is OptionRowHost Then Continue For
                                                      Assert.True(c.PreferredSize.Width <= limit, code & ": " & c.GetType().Name & " '" & c.Text & "' wants " & c.PreferredSize.Width & " px")
                                                  Next
                                              End Using

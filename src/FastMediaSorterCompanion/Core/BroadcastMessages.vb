@@ -33,6 +33,17 @@ Public Module BroadcastMessages
         End Select
     End Function
 
+    ''' <summary>The "Expires" cell of one broadcast row. WORKER-IPC 0.16: the worker's <c>expired</c> flag is a
+    ''' persisted tombstone, final after a clock rollback and a worker restart, so a row that carries it says so
+    ''' whatever its stored end time reads; a record without the flag (an older worker) keeps the end time, or
+    ''' "until revoked" when it has none.</summary>
+    Public Function ExpiryCell(b As WorkerBroadcast) As String
+        If b Is Nothing Then Return ""
+        If b.Expired Then Return Localization.T("Срок истёк")
+        If String.IsNullOrEmpty(b.ExpiresAt) Then Return Localization.T("До отзыва")
+        Return b.ExpiresAt
+    End Function
+
     ''' <summary>
     ''' Classifies the worker's answer to one request. "Update" is said only when the worker itself said it
     ''' does not know the verb (<see cref="BroadcastController.IsUnsupportedWorker"/>, the secondary guard); a

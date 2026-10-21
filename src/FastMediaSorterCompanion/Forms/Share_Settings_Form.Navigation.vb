@@ -396,6 +396,9 @@ Partial Public NotInheritable Class Share_Settings_Form
             viewport.ResumeLayout(True)
             _pageHost.ResumeLayout(True)
         End Try
+        ' A page shown for the first time has had no layout at its width: its option rows take their heights now. Before the
+        ' window is presented OnLoad lays out every page's rows once the window has its scale.
+        If settingsWasPresented Then OptionRows.ArrangeAll(viewport)
         RestoreSettingsViewport()
         ApplySettingsNavigationTheme(ThemeService.Palette)
     End Sub

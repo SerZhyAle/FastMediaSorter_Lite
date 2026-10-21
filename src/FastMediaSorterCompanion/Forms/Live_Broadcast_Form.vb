@@ -62,6 +62,7 @@ Public Class Live_Broadcast_Form
     Private _btnSaveFile As Button
     Private _btnShowQr As Button
     Private _btnCast As Button
+    Private _body As TableLayoutPanel
     Private _activeCastReceiverId As String = ""
     Private _activeCastReceiverName As String = ""
     Private _levelPeak As Double
@@ -89,6 +90,33 @@ Public Class Live_Broadcast_Form
         MyBase.OnLoad(e)
         ' The three boolean rows are laid out once the window has its scale (BOOLEAN-OPTION 2.0, ticket 243 T-11c-b2a).
         OptionRows.ArrangeAll(Me)
+        FitToContent()
+    End Sub
+
+    ''' <summary>A row that was hidden or whose neighbours changed gets its height from its own arrangement, which comes after the
+    ''' table has laid it out: arrange the rows again, let the tables settle on the heights they ended with, then fit the window.</summary>
+    Private Sub SettleRows()
+        If _body Is Nothing OrElse IsDisposed OrElse Not IsHandleCreated Then Return
+        OptionRows.ArrangeAll(Me)
+        FitToContent()
+    End Sub
+
+    ''' <summary>The stack of fields is taller than the window's first size once the boolean rows have their real height and the
+    ''' video rows are shown: the window grows by what is missing (it never shrinks) and stays on its monitor. A monitor that
+    ''' cannot hold the whole stack (a high scale on a small screen) gets a scrolling stack, not a squeezed one.</summary>
+    Private Sub FitToContent()
+        If _body Is Nothing OrElse IsDisposed OrElse Not IsHandleCreated Then Return
+        Dim missing As Integer = _body.GetPreferredSize(New Size(_body.Width, 0)).Height - _body.Height
+        If missing <= 0 Then Return
+        If Not _body.AutoScroll Then
+            ClientSize = New Size(ClientSize.Width, ClientSize.Height + missing)
+            DpiLayout.ClampToWorkingArea(Me)
+            If _body.GetPreferredSize(New Size(_body.Width, 0)).Height - _body.Height > 0 Then
+                _body.AutoScroll = True
+                OptionRows.KeepScrollExtent(_body)
+                AddHandler _body.Layout, Sub() OptionRows.KeepScrollExtent(_body)
+            End If
+        End If
     End Sub
 
     Private Sub SafeUi(action As Action)
@@ -119,6 +147,7 @@ Public Class Live_Broadcast_Form
             pnl.RowStyles.Add(New RowStyle(SizeType.AutoSize))
         Next
         pnl.RowStyles(7) = New RowStyle(SizeType.Percent, 100.0F)
+        _body = pnl
 
         ' --- the source ---
         _lblSource = New Label With {.AutoSize = True, .Text = Localization.T("Источник:")}
@@ -383,6 +412,7 @@ Public Class Live_Broadcast_Form
         ' spirit: nothing device-shaped happens until the user's act; the constructor enumerates
         ' nothing).
         If camera AndAlso Not _cameraFilled Then FillCameraPicker()
+        SettleRows()
     End Sub
 
     Private Sub UpdateAllowLanVisibility()
@@ -390,6 +420,7 @@ Public Class Live_Broadcast_Form
         Dim video As Boolean = (_rbScreen IsNot Nothing AndAlso _rbScreen.Checked) OrElse
                                (_rbCamera IsNot Nothing AndAlso _rbCamera.Checked)
         OptionRows.RowOf(_chkAllowLanViewers).Visible = video
+        SettleRows()
     End Sub
 
     ''' <summary>The device picker's rows: the cameras the frame-source groups expose, metadata

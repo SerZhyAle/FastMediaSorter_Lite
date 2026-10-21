@@ -107,9 +107,16 @@ function Invoke-ChildCheck([string]$Script, [string[]]$Arguments = @()) {
     }
     $pattern = '^' + [regex]::Escape($name) + ': (PASS WITH ADVISORIES|PASS|FAIL|COULD NOT VERIFY|' + [regex]::Escape((Get-NotApplicableWord)) + ')'
     $verdict = @($lines | Where-Object { $_ -match $pattern }) | Select-Object -Last 1
-    if (-not $verdict) { $verdict = "${name}: (no verdict line; exit $code)" }
+    $noVerdictLine = -not $verdict
+    if ($noVerdictLine) { $verdict = "${name}: (no verdict line; exit $code)" }
     if ($code -eq 4) { $code = 2 }
     elseif ($code -notin 0, 1, 2, 3) { $code = 1 }
+    # A child that exits 0 and prints no verdict word proved nothing: CHECK-VERDICT section 6 reads a word the
+    # reader does not know as not passed, and rule 11 owes the line on every path. It is COULD NOT VERIFY, never a pass.
+    if ($noVerdictLine -and $code -eq 0) {
+        $code = 2
+        $verdict = "${name}: (no verdict line; exit 0 - read as COULD NOT VERIFY)"
+    }
     # The word is only believed with exit 0: a line saying NOT APPLICABLE over any other code is read by the code.
     $notApplicable = ($code -eq 0) -and ($verdict -match ('^' + [regex]::Escape($name) + ': ' + [regex]::Escape((Get-NotApplicableWord)) + '\b'))
     [pscustomobject]@{ Name = $name; Code = $code; Verdict = $verdict; NotApplicable = $notApplicable }

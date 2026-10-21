@@ -76,7 +76,11 @@ Partial Public Class Main_Form
     ''' </summary>
     Private Sub BeginAnimationUpgradeIfPreview(picture As Image)
         Dim info As StagedInfo = AnimationStaging.InfoOf(picture)
-        If info Is Nothing Then Return
+        If info Is Nothing Then
+            ' Not a stand-in. A GIF is the one other picture the video route may take (spec 242 rule 7, when it is huge).
+            TryStartHugeGifVideo(picture)
+            Return
+        End If
 
         ' Spec 242 (T-6): try the animated graphics through video route first (bypasses 400 Mpx limit for video)
         If TryStartAnimationVideo(picture, info) Then Return

@@ -1042,6 +1042,8 @@ Partial Public Class Table_Form
             If row.Description IsNot Nothing Then row.Description.Text = ModernSettingDescription(row.Key)
             For Each check As CheckBox In FindModernControls(Of CheckBox)(row.Host)
                 ConfigureModernCheckbox(check, row)
+                ' A language switch: the `?` of an option with help gets its text in the new language (a row without one is left alone).
+                SettingsOptionHelp.Relocalize(check, row.Key)
             Next
             Select Case row.Key
                 Case "image_associations", "video_associations"
@@ -1810,6 +1812,13 @@ Partial Public Class Table_Form
         host.Controls.Add(title)
         host.Controls.Add(description)
         If row.UnitLabel IsNot Nothing Then host.Controls.Add(row.UnitLabel)
+        If check IsNot Nothing AndAlso SettingsOptionHelp.HasHelp(key) Then
+            ' The few boolean options whose full text states more than their visible line carry a `?` (ticket 243
+            ' T-11b-help, BOOLEAN-OPTION 2.0 section 4); SettingsOptionHelp names them, every other row is laid out
+            ' exactly as before. The caption is still empty here: RewriteModernSettingRows re-reads it into the help.
+            Dim heading As OptionHeading = SettingsOptionHelp.Attach(host, check, title, description, settingsScale, key)
+            If heading IsNot Nothing Then heading.ApplyPalette(SettingsHelpPalette())
+        End If
         title.BringToFront()
         description.BringToFront()
         AddHandler host.Resize, Sub() SizeModernSettingRow(row)
@@ -2585,6 +2594,13 @@ Partial Public Class Table_Form
         button.FlatAppearance.MouseDownBackColor = BlendSettingsColor(SettingsSurface, SettingsAccent, 0.18F)
     End Sub
 
+    ''' <summary>The colour roles the window hands to the `?` of an option (BOOLEAN-OPTION 2.0 section 4): the card surface,
+    ''' text, muted text, border and accent of the window's own palette; the heading itself swaps in the system colours under
+    ''' High Contrast.</summary>
+    Private Function SettingsHelpPalette() As OptionHelpPalette
+        Return SettingsOptionHelp.PaletteOf(SettingsSurface, SettingsText, SettingsMutedText, SettingsBorder, SettingsAccent)
+    End Function
+
     Private Sub ApplyModernPaletteToTree(parent As Control)
         For Each control As Control In parent.Controls
             If TypeOf control Is FlowLayoutPanel Then
@@ -2600,6 +2616,8 @@ Partial Public Class Table_Form
                     ' literal fill must follow the palette just like the row itself.
                     control.BackColor = If(modernSettingsSidebar.Contains(control), SettingsSidebar, SettingsSurface)
                 End If
+            ElseIf TypeOf control Is OptionHelpButton Then
+                ' The `?` of an option is not a command button: it paints with its heading's own palette (the checkbox branch below).
             ElseIf TypeOf control Is Button Then
                 ApplyModernButtonPalette(DirectCast(control, Button))
             ElseIf TypeOf control Is TextBoxBase OrElse TypeOf control Is ComboBox OrElse TypeOf control Is NumericUpDown OrElse
@@ -2623,6 +2641,8 @@ Partial Public Class Table_Form
                 If SettingsCheckBox.IsAttached(box) Then
                     SettingsCheckBox.ApplyPalette(box, SettingsSurface, SettingsEditorBack, SettingsMutedText,
                                                   SettingsText, SettingsAccent, SettingsCheckTick)
+                    Dim optionHeading As OptionHeading = OptionHeading.Find(box)
+                    If optionHeading IsNot Nothing Then optionHeading.ApplyPalette(SettingsHelpPalette())
                 Else
                     control.BackColor = SettingsSurface
                     control.ForeColor = SettingsText
@@ -2851,7 +2871,9 @@ Partial Public Class Table_Form
     Private Sub StyleModernSettingsControlTree(parent As Control)
         For Each control As Control In parent.Controls
             Dim button As Button = TryCast(control, Button)
-            If button IsNot Nothing Then
+            If TypeOf control Is OptionHelpButton Then
+                ' The `?` of an option keeps its own flat glyph button; the command-button styling below is not for it.
+            ElseIf button IsNot Nothing Then
                 button.FlatStyle = FlatStyle.Flat
                 button.FlatAppearance.BorderColor = SettingsBorder
                 button.FlatAppearance.BorderSize = 1

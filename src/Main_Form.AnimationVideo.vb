@@ -31,6 +31,7 @@ Partial Public Class Main_Form
     Private animation_Video_Serial As Integer = 0
     Private animation_Video_Cts As CancellationTokenSource
     Private animation_Video_Sweep_Done As Boolean
+    Private ReadOnly animation_Video_Store_Gate As New Object()
 
     ''' <summary>
     ''' Media input for LibVLC. Called by CreateVlcMedia before SecureMediaInputFor (spec 242 rule 21).
@@ -106,6 +107,12 @@ Partial Public Class Main_Form
             animation_Video_Clock.Start(MonotonicClock.NowMs(), restoreAt, True, playback_Rate)
             animation_Video_Clock_Play_Serial = vlc_Play_Serial
             animation_Video_Clock_Timer.Start()
+        End If
+
+        ' Rule 24: the neighbour is prepared only once this video has begun to play, and once per play.
+        If animation_Video_Ahead_For_Play <> vlc_Play_Serial Then
+            animation_Video_Ahead_For_Play = vlc_Play_Serial
+            StartAnimationVideoAhead()
         End If
         Return True
     End Function
@@ -215,8 +222,27 @@ Partial Public Class Main_Form
 
         If verdict <> AnimationVideoVerdict.Eligible Then Return False
 
-        ' Eligible! Start the video pipeline
-        StartAnimationVideoJob(picture, info, filePath, media_Generation)
+        ' Rules 20 and 24: the file may be the one prepared ahead while the previous video played.
+        Dim aheadLease As AnimationVideoLease = Nothing
+        Dim promotion As AheadPromotion = animation_Video_Ahead.Promote(
+            filePath, AnimationVideoFileStamp(filePath), New AheadWaiter(media_Generation, picture, info), aheadLease)
+        Select Case promotion
+            Case AheadPromotion.Ready
+                ' Already sealed: no wait, no encoder. The play starts after the display step that called us has finished.
+                BeginAnimationVideoPreviewState(picture, info, filePath, media_Generation, withStatus:=False)
+                AppFileLogger.WriteLine("Animation video taken from ahead: " & filePath)
+                DeliverAnimationVideo(filePath, media_Generation, picture, info, aheadLease)
+                Return True
+            Case AheadPromotion.Waiting
+                ' The encoder of the neighbour is already running for exactly this file: let it finish (rule 24).
+                BeginAnimationVideoPreviewState(picture, info, filePath, media_Generation, withStatus:=True)
+                AppFileLogger.WriteLine("Animation video ahead promoted while preparing: " & filePath)
+                Return True
+        End Select
+
+        ' Not the neighbour: whatever the slot still holds is aimed elsewhere, and a running ahead encoder must be gone
+        ' before this file's own starts (rule 14: one FFmpeg at a time).
+        StartAnimationVideoJob(picture, info, filePath, media_Generation, DiscardAnimationVideoAhead())
         Return True
     End Function
 
@@ -246,6 +272,21 @@ Partial Public Class Main_Form
     End Sub
 
     Private Function CurrentAnimationVideoFacts(info As StagedInfo, filePath As String) As AnimationVideoFacts
+        Dim insideSecure As Boolean = False
+        Try
+            insideSecure = (secure_Container IsNot Nothing AndAlso
+                           String.Equals(filePath, secure_Container_Path, StringComparison.OrdinalIgnoreCase))
+        Catch
+        End Try
+
+        Return BuildAnimationVideoFacts(info, filePath, GetModernPreferences().AnimatedViaVideo,
+                                        OptionalRuntimeManager.HasFfmpegRuntime(), insideSecure)
+    End Function
+
+    ''' <summary>The facts of one file for <see cref="AnimationVideoPolicy.Decide"/>. Reads nothing of the form, so the
+    ''' prefetch can ask it on a pool thread with the values it took on the UI thread.</summary>
+    Private Shared Function BuildAnimationVideoFacts(info As StagedInfo, filePath As String, settingOn As Boolean,
+                                                     ffmpegPresent As Boolean, insideSecure As Boolean) As AnimationVideoFacts
         Dim fileLength As Long = 0
         Dim isReadable As Boolean = False
         Try
@@ -256,16 +297,9 @@ Partial Public Class Main_Form
         Catch
         End Try
 
-        Dim insideSecure As Boolean = False
-        Try
-            insideSecure = (secure_Container IsNot Nothing AndAlso
-                           String.Equals(filePath, secure_Container_Path, StringComparison.OrdinalIgnoreCase))
-        Catch
-        End Try
-
         Return New AnimationVideoFacts With {
-            .SettingOn = GetModernPreferences().AnimatedViaVideo,
-            .FfmpegPresent = OptionalRuntimeManager.HasFfmpegRuntime(),
+            .SettingOn = settingOn,
+            .FfmpegPresent = ffmpegPresent,
             .Kind = AnimationVideoPolicy.KindOfExtension(Path.GetExtension(filePath)),
             .Width = info.Width,
             .Height = info.Height,
@@ -278,19 +312,43 @@ Partial Public Class Main_Form
         }
     End Function
 
-    Private Sub StartAnimationVideoJob(picture As Image, info As StagedInfo, filePath As String, generation As Integer)
-        ' Cancel any ongoing animation video job
+    ''' <summary>The preview state of a file whose video is being made or fetched from ahead (rule 10): the first frame
+    ''' stays, the status line says the video is coming. A job of this file's own replaces any earlier one.</summary>
+    Private Sub BeginAnimationVideoPreviewState(picture As Image, info As StagedInfo, filePath As String,
+                                                generation As Integer, withStatus As Boolean)
         animation_Video_Cts?.Cancel()
         animation_Video_Cts?.Dispose()
-        animation_Video_Cts = New CancellationTokenSource()
-        Dim token As CancellationToken = animation_Video_Cts.Token
+        animation_Video_Cts = Nothing
 
-        ' Show preview state (rule 10)
         animation_Upgrade.ShowPreview(generation, filePath, False)
         animation_Preview_Info = info
-        animation_Saved_Status = lbl_Status.Text
-        animation_Status_Line = Localization.TF("Видео готовится.. {0} %", 0)
-        SayProgress(animation_Status_Line)
+        If withStatus Then
+            animation_Saved_Status = lbl_Status.Text
+            animation_Status_Line = Localization.TF("Видео готовится.. {0} %", 0)
+            SayProgress(animation_Status_Line)
+        End If
+    End Sub
+
+    ''' <summary>Hands a finished container (or Nothing, a failed preparation) to <see cref="OnAnimationVideoPrepared"/>
+    ''' on the UI thread, after whatever the caller is in the middle of. From any thread.</summary>
+    Private Sub DeliverAnimationVideo(filePath As String, generation As Integer, picture As Image, info As StagedInfo,
+                                      lease As AnimationVideoLease)
+        Try
+            If Not IsDisposed AndAlso IsHandleCreated Then
+                BeginInvoke(New Action(Sub() OnAnimationVideoPrepared(filePath, generation, picture, info, lease)))
+                Return
+            End If
+        Catch
+        End Try
+        Try : lease?.Dispose() : Catch : End Try
+    End Sub
+
+    Private Sub StartAnimationVideoJob(picture As Image, info As StagedInfo, filePath As String, generation As Integer,
+                                       aheadGone As Task)
+        ' Show preview state (rule 10); this also cancels any earlier job of this class
+        BeginAnimationVideoPreviewState(picture, info, filePath, generation, withStatus:=True)
+        animation_Video_Cts = New CancellationTokenSource()
+        Dim token As CancellationToken = animation_Video_Cts.Token
 
         Dim durationMs As Integer = CInt(Math.Min(info.DurationMs, CLng(Integer.MaxValue)))
         Dim fps As Integer = VideoConvertPlan.Fps(info.Frames, durationMs)
@@ -310,6 +368,15 @@ Partial Public Class Main_Form
                      Dim encoded As EncodedVideo = Nothing
                      Dim lease As AnimationVideoLease = Nothing
                      Try
+                         ' Rule 14: a neighbour's encoder that was running when we landed elsewhere is killed, and its
+                         ' process is gone before ours starts.
+                         If aheadGone IsNot Nothing Then
+                             Try
+                                 Await aheadGone.ConfigureAwait(False)
+                             Catch
+                             End Try
+                         End If
+                         token.ThrowIfCancellationRequested()
                          encoded = Await AnimationVideoEncoder.RunAsync(ffmpegExe, args, durationMs,
                                                                        AnimationVideoPlan.Video_Max_Bytes,
                                                                        belowNormalPriority:=False,
@@ -388,8 +455,62 @@ Partial Public Class Main_Form
         AppFileLogger.WriteLine("Animation video prepared and playing: " & filePath)
     End Sub
 
+    ''' <summary>
+    ''' Spec 242 rule 7: a GIF takes the video route only when it is huge (at least 16 MB, or canvas x frames at least
+    ''' 50 Mpx), and a GIF under 2 MB is never looked at. GDI+ has already loaded the picture by now, so the facts come off
+    ''' it (no block walk is needed); the point of the route for a GIF is that the video plays smoothly and loops
+    ''' without GDI+ re-timing it. A small GIF stays on GDI+ untouched. True when the route took it.
+    ''' </summary>
+    Private Function TryStartHugeGifVideo(picture As Image) As Boolean
+        Try
+            Dim filePath As String = Current_File_Name
+            If picture Is Nothing OrElse String.IsNullOrEmpty(filePath) Then Return False
+            If AnimationVideoPolicy.KindOfExtension(Path.GetExtension(filePath)) <> AnimationVideoKind.Gif Then Return False
+            If Not GetModernPreferences().AnimatedViaVideo Then Return False
+            If Not picture.RawFormat.Equals(System.Drawing.Imaging.ImageFormat.Gif) Then Return False
+
+            Dim fileInfo As New FileInfo(filePath)
+            If Not fileInfo.Exists OrElse Not AnimationVideoPolicy.GifNeedsBlockWalk(fileInfo.Length) Then Return False
+
+            Dim frameDimension As New System.Drawing.Imaging.FrameDimension(picture.FrameDimensionsList(0))
+            Dim frames As Integer = picture.GetFrameCount(frameDimension)
+            If frames < 2 Then Return False
+
+            Dim durationMs As Long = 0
+            Try
+                Dim item As System.Drawing.Imaging.PropertyItem = picture.GetPropertyItem(&H5100)
+                If item IsNot Nothing AndAlso item.Value IsNot Nothing AndAlso item.Len >= frames * 4 Then
+                    For i As Integer = 0 To frames - 1
+                        Dim delay As Integer = BitConverter.ToInt32(item.Value, i * 4)
+                        If delay <= 0 Then delay = 10
+                        durationMs += CLng(delay) * 10L
+                    Next
+                End If
+            Catch
+                durationMs = 0
+            End Try
+            If durationMs <= 0 Then durationMs = 1000
+
+            ' A GIF may carry a transparent colour GDI+ reports as an indexed format; flattening onto the background colour
+            ' is right for it and costs an opaque GIF nothing.
+            Dim info As New StagedInfo(picture.Width, picture.Height, frames, durationMs, True, False)
+            Return TryStartAnimationVideo(picture, info)
+        Catch ex As Exception
+            AppFileLogger.LogException("Animation video huge-GIF check", ex)
+            Return False
+        End Try
+    End Function
+
     Private Sub FallbackToSpec241(picture As Image, info As StagedInfo, filePath As String, generation As Integer)
         If generation <> media_Generation Then Return
+
+        ' A GIF is not a stand-in for something spec 241 can still prepare: GDI+ already plays it (rule 23).
+        If AnimationStaging.InfoOf(picture) Is Nothing Then
+            animation_Upgrade.Leave()
+            animation_Preview_Info = Nothing
+            RestoreAnimationStatus()
+            Return
+        End If
 
         animation_Upgrade.ShowPreview(generation, filePath, info.IsTooLong)
         animation_Preview_Info = info
@@ -446,6 +567,10 @@ Partial Public Class Main_Form
         Try : input?.Dispose() : Catch : End Try
         Try : stream?.Dispose() : Catch : End Try
         Try : lease?.Dispose() : Catch : End Try
+
+        ' Rule 20: what was prepared for the file we left survives only if it is the file now on screen.
+        animation_Video_Ahead_For_Play = -1
+        ReconcileAnimationVideoAhead()
     End Sub
 
     ''' <summary>
@@ -453,6 +578,7 @@ Partial Public Class Main_Form
     ''' </summary>
     Friend Sub PurgeAnimationVideoStore()
         ReleaseAnimationVideoCurrent()
+        DiscardAnimationVideoAhead()
         Try
             animation_Video_Store?.ReleaseAll()
         Catch
@@ -461,6 +587,8 @@ Partial Public Class Main_Form
 
     Friend Sub DisposeAnimationVideoStore()
         ReleaseAnimationVideoCurrent()
+        DiscardAnimationVideoAhead()
+        DisposeAnimationVideoAheadRoute()
         Try
             animation_Video_Store?.Dispose()
         Catch
@@ -469,11 +597,14 @@ Partial Public Class Main_Form
     End Sub
 
     Private Function EnsureAnimationVideoStore() As AnimationVideoStore
-        If animation_Video_Store Is Nothing Then
-            Dim root As String = Path.Combine(Path.GetTempPath(), AnimationVideoStoreRules.RootFolderName)
-            animation_Video_Store = New AnimationVideoStore(root, Process.GetCurrentProcess().Id, AddressOf AppFileLogger.WriteLine)
-        End If
-        Return animation_Video_Store
+        ' Called from the UI thread and from the pool (the encode job and the one-ahead job).
+        SyncLock animation_Video_Store_Gate
+            If animation_Video_Store Is Nothing Then
+                Dim root As String = Path.Combine(Path.GetTempPath(), AnimationVideoStoreRules.RootFolderName)
+                animation_Video_Store = New AnimationVideoStore(root, Process.GetCurrentProcess().Id, AddressOf AppFileLogger.WriteLine)
+            End If
+            Return animation_Video_Store
+        End SyncLock
     End Function
 
     ''' <summary>

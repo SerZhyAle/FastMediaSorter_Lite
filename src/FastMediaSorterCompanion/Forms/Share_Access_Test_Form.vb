@@ -141,13 +141,15 @@ Public NotInheritable Class Share_Access_Test_Form
     End Sub
 
     ''' <summary>Green only for a confirmed answer from the SFTP server itself; amber for
-    ''' "something is there but it is not us"; plain text for the inconclusive negative -
-    ''' the probe leaves from this same PC, so a red verdict would overstate what it knows.</summary>
-    Private Shared Function HeadlineColor(res As SftpProbe.ProbeResult) As Color
+    ''' "something is there but it is not us" and for a peer that hung up before any banner
+    ''' (SHARE-SESSION 1.3 (iii): undetermined, the same severity the viewer's resource list gives it);
+    ''' plain text for the inconclusive negative - the probe leaves from this same PC, so a red
+    ''' verdict would overstate what it knows.</summary>
+    Friend Shared Function HeadlineColor(res As SftpProbe.ProbeResult) As Color
         Select Case res
             Case SftpProbe.ProbeResult.SshOk
                 Return Color.ForestGreen
-            Case SftpProbe.ProbeResult.PortOpen
+            Case SftpProbe.ProbeResult.PortOpen, SftpProbe.ProbeResult.ClosedBeforeBanner
                 Return ThemeService.Palette.Warning
             Case Else
                 Return SystemColors.ControlText

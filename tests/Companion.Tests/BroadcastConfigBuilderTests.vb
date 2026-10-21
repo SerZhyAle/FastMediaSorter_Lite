@@ -219,6 +219,37 @@ Public Class BroadcastConfigBuilderTests
         End Using
     End Sub
 
+    ''' <summary>Specification 252 T-2, the reading chosen for the broadcast file: the same producer choice as the
+    ''' share file (FMSCFG 2.5 (c)). A portforward path the gateway's own connect-back confirmed closed is not
+    ''' exported; one never checked, or confirmed open, stays.</summary>
+    <Theory>
+    <InlineData(False, False, True)>
+    <InlineData(True, True, True)>
+    <InlineData(True, False, False)>
+    Public Sub A_portforward_path_confirmed_closed_is_not_exported_but_an_unchecked_one_stays(
+            checked As Boolean, open As Boolean, expectedPath As Boolean)
+        Dim reach As New WorkerReachability With {
+            .LanAddress = "192.168.1.100",
+            .ExternalHost = "203.0.113.10",
+            .ExternalPort = 55272,
+            .ExternalPortChecked = checked,
+            .ExternalPortOpen = open
+        }
+        Dim res = BroadcastConfigBuilder.Build(SampleBroadcast(token:="wan_tok"), SampleStatus(reach, bcastPort:=55272), includeExternal:=True)
+        Assert.NotNull(res)
+        Assert.Equal(expectedPath, res.HasExternal)
+        Using doc = JsonDocument.Parse(res.ConfigJson)
+            Dim kinds As New List(Of String)()
+            For Each p In doc.RootElement.GetProperty("accessPaths").EnumerateArray()
+                kinds.Add(p.GetProperty("kind").GetString())
+            Next
+            Assert.Equal(expectedPath, kinds.Contains("portforward"))
+            Assert.Contains("lan", kinds)
+        End Using
+        ' the quick link follows the exported paths: a dead outside address is never the link that is copied
+        If Not expectedPath Then Assert.DoesNotContain("203.0.113.10", res.ClipboardLink)
+    End Sub
+
     <Theory>
     <InlineData("C:\Music\song.mp3", "file", "audio")>
     <InlineData("C:\Music\song.flac", "file", "audio")>
