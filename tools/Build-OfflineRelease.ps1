@@ -11,12 +11,22 @@ param(
 )
 
 $ErrorActionPreference = "Stop"
+. (Join-Path $PSScriptRoot 'lib\Verdict.ps1')
+
+# An unexpected terminating error must still end in a verdict line: the release preflight reads a step
+# that prints none as COULD NOT VERIFY (CHECK-VERDICT), so a build that died would never say so.
+trap {
+    Write-Host "  $($_.Exception.Message)"
+    Exit-Verdict 'Build-OfflineRelease' 1 'the package build failed'
+}
 
 $solutionDir = Split-Path $PSScriptRoot -Parent
 $solutionFile = Join-Path $solutionDir "FastMediaSorter.sln"
 $releaseDir = Join-Path $solutionDir "bin\Release"
 $stageDir = Join-Path $solutionDir ("stage\FastMediaSorter-" + $Version + "-windows-x64")
 $distDir = Join-Path $solutionDir "dist"
+
+Write-Subject 'Build-OfflineRelease' "the portable ZIP, the User setup and the Server setup of $Version; $(Get-TreeLabel $solutionDir)"
 
 function Resolve-MsBuild {
     $fromVsWhere = & "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe" `
@@ -78,14 +88,14 @@ function Get-RelativePath {
 # .iss files, [Code] included, were compiled for the first time on the paid runner.
 $iscc = Resolve-Iscc
 if (-not $iscc) {
-    Write-Error @"
+    Write-Host @"
 Inno Setup 6 (ISCC.exe) was not found - it is required: this pre-flight must compile
 both installers (User and Server edition) exactly as release.yml does.
 Install it, then re-run:
     winget install JRSoftware.InnoSetup
 (or download from https://jrsoftware.org/isdl.php)
 "@
-    exit 1
+    Exit-Verdict 'Build-OfflineRelease' 2 'Inno Setup 6 (ISCC.exe) was not found'
 }
 
 # Drift guard, before anything is built: this script is the free pre-flight tools\Release.ps1 runs
@@ -328,3 +338,4 @@ $serverHash = (Get-FileHash -Algorithm SHA256 $serverPath).Hash
 "$serverHash  $serverName" | Out-File -FilePath ($serverPath + ".sha256") -Encoding ascii
 Write-Host "SERVER: $serverPath"
 Write-Host "SHA256: $serverHash"
+Exit-Verdict 'Build-OfflineRelease' 0 "the ZIP, the User setup and the Server setup of $Version built"
