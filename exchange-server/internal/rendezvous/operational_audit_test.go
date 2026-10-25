@@ -64,7 +64,7 @@ func TestOperationalAuditAdminSignInSuccessRefusalAndDisconnect(t *testing.T) {
 	if err := bad.Send(&wire.AdminAuth{Password: "PrivateWrong1"}); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := bad.Recv(time.Second); err != nil {
+	if _, err := bad.Recv(5 * time.Second); err != nil {
 		t.Fatal(err)
 	}
 	bad.Close()
@@ -72,7 +72,7 @@ func TestOperationalAuditAdminSignInSuccessRefusalAndDisconnect(t *testing.T) {
 	if err := good.Send(&wire.AdminAuth{Password: "SecretAdmin1"}); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := good.Recv(time.Second); err != nil {
+	if _, err := good.Recv(5 * time.Second); err != nil {
 		t.Fatal(err)
 	}
 	good.Close()

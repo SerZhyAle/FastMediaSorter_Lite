@@ -10,7 +10,7 @@ Friend Module LiveEndpointSelector
 
     ''' <summary>
     ''' Selects the best supported endpoint from the descriptor for playback.
-    ''' Audio and MPEG-TS video use the same streaming HTTP input. Sealed endpoints await ticket 234.
+    ''' Audio and MPEG-TS video use the same streaming input after the session opens sealed media.
     ''' </summary>
     Public Function SelectEndpoint(descriptor As LiveBroadcastDescriptor) As LiveBroadcastEndpoint
         Dim available As List(Of LiveBroadcastEndpoint) = Candidates(descriptor)
@@ -26,6 +26,8 @@ Friend Module LiveEndpointSelector
         If descriptor.Endpoints IsNot Nothing Then
             For Each ep As LiveBroadcastEndpoint In descriptor.Endpoints
                 If IsSupportedEndpoint(ep) Then
+                    ep.BroadcastId = descriptor.BroadcastId
+                    ep.RequiresAgentSeal = descriptor.RequiresAgentSeal
                     ep.AuthUser = descriptor.AuthUser
                     ep.Password = descriptor.Password
                     result.Add(ep)
@@ -63,7 +65,8 @@ Friend Module LiveEndpointSelector
     Private Function IsSupportedEndpoint(ep As LiveBroadcastEndpoint) As Boolean
         If ep Is Nothing OrElse String.IsNullOrWhiteSpace(ep.Url) Then Return False
 
-        If ep.IsSealed OrElse (ep.ModeValue = LiveBroadcastMode.Unknown AndAlso LiveBroadcastReader.ParseMode(ep.Mode) = LiveBroadcastMode.Unknown) Then
+        If (ep.IsSealed AndAlso Not ExchangeSealedBroadcastReceiver.IsSupportedSeal(ep.SealVersion)) OrElse
+           (ep.ModeValue = LiveBroadcastMode.Unknown AndAlso LiveBroadcastReader.ParseMode(ep.Mode) = LiveBroadcastMode.Unknown) Then
             Return False
         End If
 

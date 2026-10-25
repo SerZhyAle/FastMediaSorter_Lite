@@ -98,6 +98,7 @@
               <uap:FileType>.heic</uap:FileType>
               <uap:FileType>.heif</uap:FileType>
               <uap:FileType>.avif</uap:FileType>
+              <uap:FileType>.jxl</uap:FileType>
               <uap:FileType>.wmf</uap:FileType>
               <uap:FileType>.emf</uap:FileType>
             </uap:SupportedFileTypes>

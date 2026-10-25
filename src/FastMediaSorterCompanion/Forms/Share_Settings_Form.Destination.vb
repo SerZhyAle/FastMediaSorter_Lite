@@ -63,7 +63,6 @@ Partial Public NotInheritable Class Share_Settings_Form
 
     Private Function DestinationCaption() As String
         Select Case Destination
-            Case SettingsDestination.Sftp : Return Localization.T("Настройки общего доступа SFTP")
             Case SettingsDestination.ExchangeServer : Return Localization.T("Настройки сервера обмена")
             Case Else : Return Localization.T("Настройки менеджера")
         End Select
@@ -73,9 +72,10 @@ Partial Public NotInheritable Class Share_Settings_Form
         If Not _loading AndAlso Not IsDisposed Then RaiseEvent SettingsChanged(Destination)
     End Sub
 
+    ''' <summary>The Network page follows the worker's answer whenever the page exists (253 R-5), whatever window holds it.</summary>
     Friend Sub RefreshWorkerSnapshot(status As WorkerStatus)
         _status = status
-        If Destination <> SettingsDestination.Sftp OrElse IsDisposed Then Return
+        If _secNetwork Is Nothing OrElse IsDisposed Then Return
         If Not PortPending() AndAlso Not _applyingPort Then LoadPortState()
         UpdatePortNote()
         UpdateLanOnlyNote()
@@ -85,18 +85,17 @@ Partial Public NotInheritable Class Share_Settings_Form
     Private Sub BuildDestinationLinks()
         Dim links As New FlowLayoutPanel With {.Dock = DockStyle.Bottom, .AutoSize = True,
             .FlowDirection = FlowDirection.TopDown, .WrapContents = False}
-        For Each target In {SettingsDestination.Manager, SettingsDestination.Sftp, SettingsDestination.ExchangeServer}
+        For Each target In {SettingsDestination.Manager, SettingsDestination.ExchangeServer}
             If target = Destination Then Continue For
             Dim caption As String
             Select Case target
-                Case SettingsDestination.Sftp : caption = Localization.T("Настройки общего доступа SFTP")
                 Case SettingsDestination.ExchangeServer : caption = Localization.T("Настройки сервера обмена")
                 Case Else : caption = Localization.T("Настройки менеджера")
             End Select
             Dim route = target
             Dim link As New LinkLabel With {.Text = caption, .AutoSize = True,
                 .MaximumSize = New Drawing.Size(230, 0), .Margin = New Padding(4, 6, 4, 6)}
-            Dim refresh As Action = Sub() link.Visible = SettingsRoutes.Available(route, WorkerProcess.IsAvailable(), ExchangeProcess.IsAvailable())
+            Dim refresh As Action = Sub() link.Visible = SettingsRoutes.Available(route, ExchangeProcess.IsAvailable())
             refresh()
             AddHandler Activated, Sub() refresh()
             AddHandler link.LinkClicked, Sub() RaiseEvent NavigateRequested(route)
@@ -105,7 +104,8 @@ Partial Public NotInheritable Class Share_Settings_Form
         _root.Controls.Add(links, 0, 1)
         _root.RowCount = 2
         _root.RowStyles.Add(New RowStyle(SizeType.AutoSize))
-        If Destination = SettingsDestination.Sftp AndAlso Not ServerFeatures.IsEnabled() Then
+        ' The opt-in belongs to the SFTP component, so it is offered only where that component's pages are.
+        If _secNetwork IsNot Nothing AndAlso Not ServerFeatures.IsEnabled() Then
             Dim enable As New Button With {.Text = ShareText.ServerEnableTitle(), .AutoSize = True}
             AddHandler enable.Click, Sub()
                 Using dialog As New Share_Enable_Form()

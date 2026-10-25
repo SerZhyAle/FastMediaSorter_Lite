@@ -85,12 +85,16 @@ Friend Class LiveProducerState
     Public Property HandOffWithheld As Boolean
     Public Property SourceName As String = ""
     Public Property Listeners As Integer
+    Public Property MaxListeners As Integer
     Public Property VideoToken As String = ""
     Public Property BroadcastId As String = ""
     Public Property Password As String = ""
     Public Property RelayUrl As String = ""
     Public Property TunnelUrl As String = ""
     Public Property ListenerAddress As String = ""
+    ''' <summary>True when a LAN endpoint of this broadcast is really on air (a LAN address was picked and, for video, the LAN listener
+    ''' is on): the listener is then bound to that address. False when the broadcast is reachable through the exchange alone.</summary>
+    Public Property LanEndpointOn As Boolean
     ''' <summary>True when the RELAY / TUNNEL endpoints of this broadcast are sealed (DEVICE-EXCHANGE items DK, DL): the agent then
     ''' uploads sealed records, never clear bytes. <see cref="DescriptorJson"/> is then the OUTWARD descriptor (keys in its endpoints).</summary>
     Public Property Sealed As Boolean
@@ -99,6 +103,17 @@ Friend Class LiveProducerState
     Public Property RecordDescriptorJson As String = ""
     ''' <summary>The user name of a protected broadcast's credentials ("" when it is open); the password is <see cref="Password"/>.</summary>
     Public Property AuthUser As String = ""
+    ''' <summary>Ticket 263 T-3 (CR-14, DEVICE-EXCHANGE items BF and DV): the credential pairs of this broadcast - the link pair (user
+    ''' `listener`, <see cref="Password"/>) and the own pair for the account's own devices (user `own`, carried in the sealed box). The
+    ''' SAME object feeds the producer's Digest and the `verifiers` the agent sends with every `broadcast-start` and `broadcast-update`
+    ''' (<see cref="LiveCredentialPairs.VerifierRecords"/>, `[]` for a set with no pair). Never Nothing; empty when the link has no password.</summary>
+    Public Property Credentials As LiveCredentialPairs = LiveCredentialPairs.None()
+
+    ''' <summary>The broadcast's start, UTC (DEVICE-EXCHANGE 6.3 <c>startedAt</c>): stable for the life of the
+    ''' broadcast. A restarted broadcast gets a new state and a new <see cref="BroadcastId"/> with it, and the
+    ''' later start is what orders two records of one sourceId (LIVE-BROADCAST item G as DEVICE-EXCHANGE
+    ''' item BP resolves it; <c>updatedAt</c> stays informational).</summary>
+    Public Property StartedAtUtc As Date = Date.UtcNow
 End Class
 
 ''' <summary>Every external fact the controller needs, injected.</summary>
@@ -132,6 +147,8 @@ Friend Class LiveProducerPorts
     Public Property BroadcastStarted As Action(Of LiveProducerState, LiveBroadcastHub, LiveBroadcastHub)
     ''' <summary>Notifies when broadcast stops with its broadcastId.</summary>
     Public Property BroadcastStopped As Action(Of String)
+    ''' <summary>Ticket 263 T-6: the endpoints of the running broadcast changed; publish the current record without restarting capture.</summary>
+    Public Property BroadcastChanged As Action(Of LiveProducerState)
     ''' <summary>The sealed layer of the exchange agent (spec 234, items DK and DL), or Nothing when none is wired: the descriptor is
     ''' then built without `seal`, as before. When set, a RELAY or TUNNEL endpoint is listed only while the layer
     ''' <see cref="ILiveBroadcastSealing.CanSealThroughServer"/>, and each carries `seal`.</summary>
@@ -146,18 +163,28 @@ Friend Class LiveBroadcastController
 
     Private _audioSource As ILiveAudioSource
     Private _videoSource As ILiveVideoSource
+    Private _endingSource As ILiveSourceEnding
+    Private _endingHandler As Action(Of String)
     Private _encoder As ILiveEncoder
     Private _audioHub As LiveBroadcastHub
     Private _videoHub As LiveBroadcastHub
     Private _server As LiveBroadcastServer
     Private _encodingVideo As Boolean
     Private _settings As LiveProducerSettings
+    Private _serverConfig As LiveServerConfig
+    Private _descriptorInput As LiveDescriptorInput
 
     ''' <summary>The window's live level meter: the peak of each chunk, after the producer's gain.</summary>
     Public Event AudioLevel As Action(Of Double)
 
     ''' <summary>Listener count changed (the window's "how many listeners" line, safety rule 2).</summary>
     Public Event ListenersChanged As EventHandler
+
+    ''' <summary>Ticket 263 T-2: the video source ended on its own (the captured window was closed) and the
+    ''' controller has ALREADY stopped the broadcast through its ordinary stop. The argument is the source's
+    ''' reason code; the window shows one sentence. Raised on a thread-pool thread, never on the UI thread.</summary>
+    Public Event SourceEnded As Action(Of String)
+    Public Event EndpointsChanged As EventHandler
 
     Public Sub New(ports As LiveProducerPorts)
         _ports = ports
@@ -193,7 +220,7 @@ Friend Class LiveBroadcastController
                 End If
                 ' LIVE-BROADCAST item J: preserve the inner scheme/path on the documentation host
                 ' when only exchange transports are reachable; never publish loopback as a LAN URL.
-                If Not hasLanAddress Then address = "192.0.2.1"
+                If Not hasLanAddress Then address = LiveProducerAddressPolicy.DocumentationHost
 
                 _settings = _ports.LoadSettings?.Invoke()
                 If _settings Is Nothing Then _settings = New LiveProducerSettings()
@@ -213,9 +240,17 @@ Friend Class LiveBroadcastController
                 Dim relayUrl As String = ""
                 Dim tunnelUrl As String = ""
                 If Not String.IsNullOrEmpty(publicEndpoint) Then
-                    ' The current exchange server has no BF verifiers. A protected stream must never
-                    ' be uploaded to its unauthenticated relay; Digest remains enforced over TUNNEL.
-                    If String.IsNullOrEmpty(request.Password) Then relayUrl = "https://" & publicEndpoint & "/v2/b/" & broadcastId & "/stream"
+                    ' Ticket 263 T-3 (CR-14, item BF): the relay now checks Basic credentials against the `verifiers` the agent uploads
+                    ' with `broadcast-start` / `-update`, so a password no longer keeps the broadcast off the relay by itself. The safety
+                    ' rule that remains: a PROTECTED broadcast is offered the relay only when it is SEALED (a sealing layer is wired,
+                    ' and the exchangeInfo test above already dropped the server when it cannot seal). Then the relay carries
+                    ' ciphertext, and the verifiers are a second factor even if one server build ignored them (a server that does not
+                    ' know `verifiers` drops the member silently). With no sealing layer the relay would carry the CLEAR stream and
+                    ' nothing but the verifiers would stand between it and a listener - so RELAY stays withheld exactly as before and
+                    ' the Digest runs over the TUNNEL alone. A broadcast with no password has no verifiers to depend on.
+                    If String.IsNullOrEmpty(request.Password) OrElse _ports.Sealing IsNot Nothing Then
+                        relayUrl = "https://" & publicEndpoint & "/v2/b/" & broadcastId & "/stream"
+                    End If
                     tunnelUrl = "fmsx://" & publicEndpoint & "/b/" & broadcastId & "/http"
                 End If
 
@@ -252,6 +287,11 @@ Friend Class LiveBroadcastController
                     If String.IsNullOrEmpty(token) Then token = LiveProducerTokens.NewToken()
                 End If
 
+                ' Ticket 263 T-3: the link pair and the own pair (none at all without a link password, item DV). The verifiers are NOT made
+                ' here - 600000 PBKDF2 rounds per pair would hold this call (and the window) for half a second; the agent asks for them
+                ' once, on a pool thread, and the set caches them.
+                Dim credentials As LiveCredentialPairs = LiveCredentialPairs.ForLink(request.Password)
+
                 Dim serverConfig As New LiveServerConfig With {
                     .IcyName = If(request.Title.Length = 0, Environment.MachineName, request.Title),
                     .IcyGenre = "live",
@@ -260,19 +300,14 @@ Friend Class LiveBroadcastController
                     .VideoAllowed = isVideo,
                     .VideoHub = _videoHub,
                     .VideoToken = token,
-                    .Password = request.Password
+                    .Credentials = credentials
                 }
 
                 ' A private loopback listener remains reachable by the tunnel, never by LAN clients.
                 Dim bindAddress As IPAddress = If(Not hasLanAddress OrElse (isVideo AndAlso Not _settings.AllowLanVideoViewers),
                                                  IPAddress.Loopback, IPAddress.Parse(address))
-                _server = New LiveBroadcastServer(bindAddress, _settings.AudioPort, serverConfig)
-                AddHandler _server.ListenersChanged, Sub(sender, e)
-                                                         SyncLock _stateLock
-                                                             _state.Listeners = _server.ListenerCount
-                                                         End SyncLock
-                                                         RaiseEvent ListenersChanged(Me, EventArgs.Empty)
-                                                     End Sub
+                _serverConfig = serverConfig
+                _server = CreateServer(bindAddress)
 
                 Dim started As LiveServerStartResult = _server.Start()
                 If started <> LiveServerStartResult.Ok Then
@@ -302,6 +337,7 @@ Friend Class LiveBroadcastController
                         StopOpened()
                         Return LiveStartResult.Failed(LiveStartRefusal.SourceUnavailable, sourceReason)
                     End If
+                    ListenForSourceEnd(_videoSource)
                 End If
                 If Not String.Equals(request.Mode, "VIDEO_ONLY", StringComparison.OrdinalIgnoreCase) Then
                     _audioSource = _ports.CreateAudioSource?.Invoke(kind)
@@ -345,7 +381,12 @@ Friend Class LiveBroadcastController
                 Dim sourceId As String = LiveSourceIdentity.Resolve(_ports.EnrolledDeviceId?.Invoke(),
                                                                     _ports.ReadStored, _ports.WriteStored,
                                                                     AddressOf LiveSourceIdentity.NewRandomId)
-                Dim url As String = LiveProducerAddressPolicy.BuildUrl(address, _settings.AudioPort,
+                ' Item J names both cases: no usable LAN address, and the video LAN listener off. In either the stream has no LAN
+                ' endpoint, so `inner` (and the stream URL beside it) keeps the scheme, path, port and token on the documentation
+                ' host and a private LAN address never rides inside it. The listener binding above is unchanged (loopback, for the
+                ' tunnel); the separate LAN endpoint is written only when the LAN listener is on.
+                Dim lanEndpointOn As Boolean = hasLanAddress AndAlso ((Not isVideo) OrElse _settings.AllowLanVideoViewers)
+                Dim url As String = LiveProducerAddressPolicy.BuildUrl(If(lanEndpointOn, address, LiveProducerAddressPolicy.DocumentationHost), _settings.AudioPort,
                                                                         If(isVideo, "/" & token & LiveProducerContract.VideoPath, LiveProducerContract.AudioPath))
                 Dim input As New LiveDescriptorInput With {
                     .Url = url,
@@ -358,12 +399,12 @@ Friend Class LiveBroadcastController
                     .SampleRateHz = _settings.SampleRate,
                     .BitrateBps = _settings.AudioBitrateKbps * 1000L,
                     .Channels = options.Channels,
-                    .AllowLanViewers = hasLanAddress AndAlso ((Not isVideo) OrElse _settings.AllowLanVideoViewers),
+                    .AllowLanViewers = lanEndpointOn,
                     .RelayUrl = relayUrl,
                     .TunnelUrl = tunnelUrl,
                     .CertFingerprint = certFingerprint,
                     .InnerUrl = url,
-                    .AuthUser = If(String.IsNullOrEmpty(request.Password), "", "listener"),
+                    .AuthUser = If(String.IsNullOrEmpty(request.Password), "", LiveCredentialPairs.LinkUser),
                     .Sealed = isSealed,
                     .Outward = True,
                     .RelayKey = relayLinkKey,
@@ -394,17 +435,21 @@ Friend Class LiveBroadcastController
                     .BarcodeText = LiveProducerDescriptorWriter.BarcodePayload(json),
                     .SourceName = If(isVideo, _videoSource?.DisplayName, _audioSource?.DisplayName),
                     .Listeners = 0,
+                    .MaxListeners = Math.Max(0, Math.Min(10000, _settings.MaxListeners)),
                     .VideoToken = token,
                     .BroadcastId = broadcastId,
+                    .LanEndpointOn = lanEndpointOn,
                     .Password = request.Password,
                     .RelayUrl = relayUrl,
                     .TunnelUrl = tunnelUrl,
                     .Sealed = isSealed,
                     .RecordDescriptorJson = recordJson,
                     .HandOffWithheld = withheld,
-                    .AuthUser = input.AuthUser
+                    .AuthUser = input.AuthUser,
+                    .Credentials = credentials
                 }
                 _state.ListenerAddress = bindAddress.ToString()
+                _descriptorInput = input
                 _ports.BroadcastStarted?.Invoke(_state, _audioHub, _videoHub)
                 Return New LiveStartResult With {.Ok = True}
             Catch ex As Exception
@@ -412,6 +457,87 @@ Friend Class LiveBroadcastController
                 _state = New LiveProducerState()
                 Return LiveStartResult.Failed(LiveStartRefusal.SourceUnavailable, ex.GetType().Name)
             End Try
+        End SyncLock
+    End Function
+
+    Private Function CreateServer(address As IPAddress) As LiveBroadcastServer
+        Dim server As New LiveBroadcastServer(address, _settings.AudioPort, _serverConfig)
+        AddHandler server.ListenersChanged,
+            Sub(sender, e)
+                SyncLock _stateLock
+                    If Not ReferenceEquals(_server, server) Then Return
+                    _state.Listeners = server.ListenerCount
+                End SyncLock
+                RaiseEvent ListenersChanged(Me, EventArgs.Empty)
+            End Sub
+        Return server
+    End Function
+
+    ''' <summary>Changes the exchange server's admission cap on air. It applies to its relay and tunnel connections;
+    ''' the UI labels that scope explicitly, because LAN viewers do not pass through the exchange server.</summary>
+    Public Sub UpdateMaxListeners(value As Integer)
+        SyncLock _stateLock
+            If Not _state.Running Then Return
+            value = Math.Max(0, Math.Min(10000, value))
+            If _state.MaxListeners = value Then Return
+            _state.MaxListeners = value
+            _settings.MaxListeners = value
+            _ports.BroadcastChanged?.Invoke(_state)
+        End SyncLock
+    End Sub
+
+    ''' <summary>Rebinds only the HTTP listener when the selected LAN address or the video LAN choice changes. The hubs,
+    ''' encoder, source, broadcast id, keys and start time survive. A failed explicit change keeps the previous setting.</summary>
+    Public Function UpdateNetwork(Optional allowLanVideoViewers As Boolean? = Nothing) As LiveStartResult
+        SyncLock _stateLock
+            If Not _state.Running OrElse _descriptorInput Is Nothing Then Return LiveStartResult.Failed(LiveStartRefusal.SourceUnavailable)
+            Dim allowLan As Boolean = If(allowLanVideoViewers, _settings.AllowLanVideoViewers)
+            Dim address As String = If(_ports.PickAddress?.Invoke(), "")
+            Dim hasLan As Boolean = LiveProducerAddressPolicy.IsPublishablePicked(address)
+            Dim lanOn As Boolean = hasLan AndAlso (Not _encodingVideo OrElse allowLan)
+            If Not lanOn AndAlso String.IsNullOrEmpty(_state.RelayUrl) AndAlso String.IsNullOrEmpty(_state.TunnelUrl) Then
+                If allowLanVideoViewers.HasValue Then Return LiveStartResult.Failed(LiveStartRefusal.NoLanAddress)
+                StopOpened()
+                _state = New LiveProducerState()
+                RaiseEvent SourceEnded("network-unavailable")
+                Return LiveStartResult.Failed(LiveStartRefusal.NoLanAddress)
+            End If
+            Dim bindAddress As IPAddress = If(lanOn, IPAddress.Parse(address), IPAddress.Loopback)
+            If Not String.Equals(bindAddress.ToString(), _state.ListenerAddress, StringComparison.Ordinal) Then
+                Dim replacement As LiveBroadcastServer = CreateServer(bindAddress)
+                Dim result As LiveServerStartResult = replacement.Start()
+                If result <> LiveServerStartResult.Ok Then
+                    replacement.Dispose()
+                    ' Do not keep publishing an address which disappeared. An explicit checkbox failure is reversible.
+                    If Not allowLanVideoViewers.HasValue Then
+                        StopOpened()
+                        _state = New LiveProducerState()
+                        RaiseEvent SourceEnded("network-unavailable")
+                    End If
+                    Return LiveStartResult.Failed(LiveStartRefusal.PortTaken)
+                End If
+                Dim previous As LiveBroadcastServer = _server
+                _server = replacement
+                previous?.Dispose()
+                _state.ListenerAddress = bindAddress.ToString()
+                _state.Listeners = replacement.ListenerCount
+            End If
+            _settings.AllowLanVideoViewers = allowLan
+            Dim publishedAddress As String = If(hasLan, address, LiveProducerAddressPolicy.DocumentationHost)
+            If _state.Address = publishedAddress AndAlso _state.LanEndpointOn = lanOn Then Return New LiveStartResult With {.Ok = True}
+            _state.Address = publishedAddress
+            _state.LanEndpointOn = lanOn
+            _descriptorInput.AllowLanViewers = lanOn
+            _descriptorInput.Url = LiveProducerAddressPolicy.BuildUrl(If(lanOn, address, LiveProducerAddressPolicy.DocumentationHost), _state.Port,
+                If(_encodingVideo, "/" & _state.VideoToken & LiveProducerContract.VideoPath, LiveProducerContract.AudioPath))
+            _descriptorInput.InnerUrl = _descriptorInput.Url
+            _state.DescriptorJson = LiveProducerDescriptorWriter.BuildHandOutJson(_descriptorInput)
+            _state.BarcodeText = LiveProducerDescriptorWriter.BarcodePayload(_state.DescriptorJson)
+            _state.RecordDescriptorJson = LiveProducerDescriptorWriter.BuildJson(_descriptorInput.ForRecord())
+            _state.Url = If(lanOn, _descriptorInput.Url, If(_state.RelayUrl.Length > 0, _state.RelayUrl, _state.TunnelUrl))
+            _ports.BroadcastChanged?.Invoke(_state)
+            RaiseEvent EndpointsChanged(Me, EventArgs.Empty)
+            Return New LiveStartResult With {.Ok = True}
         End SyncLock
     End Function
 
@@ -443,6 +569,14 @@ Friend Class LiveBroadcastController
             _audioSource?.[Stop]()
         Catch
         End Try
+        If _endingSource IsNot Nothing Then
+            Try
+                RemoveHandler _endingSource.Ended, _endingHandler
+            Catch
+            End Try
+            _endingSource = Nothing
+            _endingHandler = Nothing
+        End If
         Try
             _videoSource?.[Stop]()
         Catch
@@ -466,6 +600,34 @@ Friend Class LiveBroadcastController
         _videoHub?.Clear()
         _audioHub = Nothing
         _videoHub = Nothing
+    End Sub
+
+    ''' <summary>A source that can end by itself (the window route of the screen source) reports it here.
+    ''' The event comes on the capture runtime's thread and the stop joins that source's pacing thread, so
+    ''' the stop is queued to the pool; a source that is no longer THE running one (an old broadcast's
+    ''' late event) is ignored.</summary>
+    Private Sub ListenForSourceEnd(source As ILiveVideoSource)
+        Dim ending As ILiveSourceEnding = TryCast(source, ILiveSourceEnding)
+        If ending Is Nothing Then Return
+        Dim handler As Action(Of String) = Sub(reason) StopBecauseSourceEnded(source, reason)
+        AddHandler ending.Ended, handler
+        _endingSource = ending
+        _endingHandler = handler
+    End Sub
+
+    Private Sub StopBecauseSourceEnded(source As ILiveVideoSource, reason As String)
+        ThreadPool.QueueUserWorkItem(
+            Sub(state)
+                Dim stopped As Boolean = False
+                SyncLock _stateLock
+                    If _state.Running AndAlso ReferenceEquals(source, _videoSource) Then
+                        StopOpened()
+                        _state = New LiveProducerState()
+                        stopped = True
+                    End If
+                End SyncLock
+                If stopped Then RaiseEvent SourceEnded(reason)
+            End Sub)
     End Sub
 
     Private Sub AudioSink(chunk As LivePcmChunk)

@@ -233,6 +233,7 @@ Friend NotInheritable Class ChromeMenuRules
         Next
         Select Case rest
             Case "OemPeriod" : rest = "."
+            Case "Oemcomma", "Comma" : rest = ","
             Case "OemOpenBrackets" : rest = "["
             Case "OemCloseBrackets" : rest = "]"
             Case "OemPipe" : rest = "\"

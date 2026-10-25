@@ -109,7 +109,8 @@ inventory (five files by slice). Counts below come from the greps recorded there
 - **208** (borderless window controls panel) and **124 / 125** (dialog layer, chrome): the controls are
   custom-painted shapes in `ChromeSurface`; covered by T-9.
 - **250 / 249 / 251** (separate settings windows, three components): they created the three-window
-  Share Manager settings family that raises Q-1.
+  Share Manager settings family that raises Q-1. **253** later merged the SFTP window into Manager
+  settings, leaving two windows (Manager, local exchange server).
 
 ## 6. Migration plan (proposed dates, deadline awaiting owner approval)
 

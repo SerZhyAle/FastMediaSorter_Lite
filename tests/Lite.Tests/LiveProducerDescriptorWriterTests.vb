@@ -191,13 +191,136 @@ Public Class LiveProducerDescriptorWriterTests
         Assert.Equal("listener", LiveBroadcastLinkReader.ReadLink(link).Descriptor.AuthUser)
     End Sub
 
+    Private Shared Function VideoSample() As LiveDescriptorInput
+        Dim input As LiveDescriptorInput = Sample()
+        input.Url = "http://192.168.1.50:8768/a1b2c3d4/live.ts"
+        input.Mode = "VIDEO_AUDIO"
+        input.VideoCodec = "h264"
+        input.TargetLatencyMs = LiveProducerContract.VideoTargetLatencyMs
+        input.AllowLanViewers = True
+        input.RelayUrl = "https://relay.example.com:443/v2/b/bcast-123/stream"
+        input.TunnelUrl = "fmsx://tunnel.example.com:443/b/bcast-123/http"
+        input.InnerUrl = input.Url
+        Return input
+    End Function
+
+    ''' <summary>The "keyframeIntervalMs" member of every endpoint object of <paramref name="json"/>, in order (-1 when absent).</summary>
+    Private Shared Function KeyframeMembers(json As String) As List(Of Long)
+        Dim found As New List(Of Long)()
+        Using doc As Text.Json.JsonDocument = Text.Json.JsonDocument.Parse(json)
+            For Each endpoint As Text.Json.JsonElement In doc.RootElement.GetProperty("endpoints").EnumerateArray()
+                Dim member As Text.Json.JsonElement = Nothing
+                found.Add(If(endpoint.TryGetProperty("keyframeIntervalMs", member), member.GetInt64(), -1L))
+            Next
+        End Using
+        Return found
+    End Function
+
+    <Fact>
+    Public Sub Every_video_endpoint_carries_the_keyframe_interval_the_encoder_is_configured_for()
+        ' LIVE-BROADCAST item L: LAN HTTP, RELAY and TUNNEL of a video mode all write the encoder's own interval; RELAY never above 2000.
+        Dim json As String = LiveProducerDescriptorWriter.BuildJson(VideoSample())
+        Dim members As List(Of Long) = KeyframeMembers(json)
+        Assert.Equal(3, members.Count)
+        Assert.All(members, Sub(value) Assert.Equal(CLng(LiveProducerContract.KeyframeIntervalMs), value))
+        Assert.True(members(1) <= 2000L, "a RELAY endpoint never carries a value above 2000")
+
+        ' the same member rides in a VIDEO_ONLY descriptor, and this product's own reader still accepts the whole document
+        Dim videoOnly As LiveDescriptorInput = VideoSample()
+        videoOnly.Mode = "VIDEO_ONLY"
+        videoOnly.AudioCodec = Nothing
+        Dim onlyJson As String = LiveProducerDescriptorWriter.BuildJson(videoOnly)
+        Assert.All(KeyframeMembers(onlyJson), Sub(value) Assert.Equal(1000L, value))
+        Assert.Equal(LiveReadStatus.Ok, LiveBroadcastReader.ReadText(json).Status)
+        Assert.Equal(LiveReadStatus.Ok, LiveBroadcastReader.ReadText(onlyJson).Status)
+    End Sub
+
+    <Fact>
+    Public Sub The_keyframe_interval_follows_each_endpoint_that_is_written()
+        Dim lanOff As LiveDescriptorInput = VideoSample()
+        lanOff.AllowLanViewers = False
+        Assert.Equal(2, KeyframeMembers(LiveProducerDescriptorWriter.BuildJson(lanOff)).Count)
+
+        Dim directoryRecord As String = LiveProducerDescriptorWriter.BuildJson(VideoSample().ForRecord())
+        Assert.All(KeyframeMembers(directoryRecord), Sub(value) Assert.Equal(1000L, value))
+    End Sub
+
+    <Fact>
+    Public Sub An_audio_only_endpoint_does_not_carry_a_keyframe_interval()
+        Dim input As LiveDescriptorInput = Sample()
+        input.RelayUrl = "https://relay.example.com:443/v2/b/bcast-123/stream"
+        input.TunnelUrl = "fmsx://tunnel.example.com:443/b/bcast-123/http"
+        input.InnerUrl = input.Url
+        Dim json As String = LiveProducerDescriptorWriter.BuildJson(input)
+        Assert.DoesNotContain("keyframeIntervalMs", json, StringComparison.Ordinal)
+        Dim members As List(Of Long) = KeyframeMembers(json)
+        Assert.Equal(3, members.Count)
+        Assert.All(members, Sub(value) Assert.Equal(-1L, value))
+    End Sub
+
+    <Fact>
+    Public Sub The_copied_link_targets_the_importer_and_reads_back_through_the_link_reader()
+        ' LIVE-BROADCAST 4.3: `fmsbcast://import?payload=` + the URL-encoded FMSBCAST1 text, the same description as the other channels.
+        Dim json As String = LiveProducerDescriptorWriter.BuildJson(VideoSample())
+        Dim barcode As String = LiveProducerDescriptorWriter.BarcodePayload(json)
+        Dim link As String = LiveProducerDescriptorWriter.LinkText(barcode)
+
+        Assert.StartsWith("fmsbcast://import?payload=", link, StringComparison.Ordinal)
+        Assert.Equal("fmsbcast://import?payload=" & Uri.EscapeDataString(barcode), link)
+        ' the Base64 text carries '+', '/' and '=': none of them travels raw inside the query
+        Assert.DoesNotContain("+", link.Substring("fmsbcast://import?payload=".Length), StringComparison.Ordinal)
+        Assert.DoesNotContain("FMSBCAST1:", link, StringComparison.Ordinal)
+
+        Dim read As LiveBroadcastReadResult = LiveBroadcastLinkReader.ReadLink(link)
+        Assert.Equal(LiveReadStatus.Ok, read.Status)
+        Assert.Equal(LiveBroadcastReader.ReadText(barcode).Descriptor.Url, read.Descriptor.Url)
+        Assert.Equal(3, read.Descriptor.Endpoints.Count)
+    End Sub
+
+    <Fact>
+    Public Sub The_link_carries_no_password_and_an_empty_barcode_gives_no_link()
+        Dim input As LiveDescriptorInput = Sample()
+        input.AuthUser = "listener"
+        Dim link As String = LiveProducerDescriptorWriter.LinkText(LiveProducerDescriptorWriter.BarcodePayload(LiveProducerDescriptorWriter.BuildJson(input)))
+        Assert.Equal("listener", LiveBroadcastLinkReader.ReadLink(link).Descriptor.AuthUser)
+        Dim carried As String = Encoding.UTF8.GetString(DecodedPayloadBytes(Uri.UnescapeDataString(link.Substring(LiveProducerContract.LinkPrefix.Length))))
+        Assert.Contains("""scheme"":""password-v1""", carried)
+        Assert.DoesNotContain("""password""", carried, StringComparison.Ordinal)
+        Assert.Equal("", LiveProducerDescriptorWriter.LinkText(""))
+        Assert.Equal("", LiveProducerDescriptorWriter.LinkText(Nothing))
+    End Sub
+
+    <Fact>
+    Public Sub The_reader_still_reads_the_earlier_live_link_form_that_is_already_out_in_the_world()
+        ' A link copied by an earlier build is `fmsbcast://live?payload=`. The importer's host is the writer's now, but a reader
+        ' reads every version that wrote data: the same barcode text opens through both hosts and yields the same description.
+        Dim barcode As String = LiveProducerDescriptorWriter.BarcodePayload(LiveProducerDescriptorWriter.BuildJson(VideoSample()))
+        Dim older As String = "fmsbcast://live?payload=" & Uri.EscapeDataString(barcode)
+        Dim current As String = LiveProducerDescriptorWriter.LinkText(barcode)
+
+        Dim fromOlder As LiveBroadcastReadResult = LiveBroadcastLinkReader.ReadLink(older)
+        Dim fromCurrent As LiveBroadcastReadResult = LiveBroadcastLinkReader.ReadLink(current)
+        Assert.Equal(LiveReadStatus.Ok, fromOlder.Status)
+        Assert.Equal(LiveReadStatus.Ok, fromCurrent.Status)
+        Assert.NotEqual(older, current)
+        Assert.Equal(fromCurrent.Descriptor.Url, fromOlder.Descriptor.Url)
+        Assert.Equal(fromCurrent.Descriptor.Endpoints.Count, fromOlder.Descriptor.Endpoints.Count)
+    End Sub
+
     <Fact>
     Public Sub BuildBroadcastRecord_creates_valid_json()
-        Dim record As String = LiveProducerDescriptorWriter.BuildBroadcastRecord("bc-01", "dev-99", "Kitchen", "AUDIO_ONLY", "{""test"":1}")
+        Dim started As New Date(2026, 10, 22, 9, 30, 0, DateTimeKind.Utc)
+        Dim updated As New Date(2026, 10, 22, 9, 31, 15, DateTimeKind.Utc)
+        Dim record As String = LiveProducerDescriptorWriter.BuildBroadcastRecord("bc-01", "dev-99", "Kitchen", "AUDIO_ONLY", "{""test"":1}", started, updated)
         Assert.Contains("""broadcastId"":""bc-01""", record)
         Assert.Contains("""deviceId"":""dev-99""", record)
         Assert.Contains("""title"":""Kitchen""", record)
         Assert.Contains("""mode"":""AUDIO_ONLY""", record)
+        ' DEVICE-EXCHANGE 6.3: the record carries the stable start and the writer's clock
+        ' (startedAt orders two records of one sourceId per LIVE-BROADCAST item G as item
+        ' BP resolves it; updatedAt stays informational).
+        Assert.Contains("""startedAt"":""2026-10-22T09:30:00.000Z""", record)
+        Assert.Contains("""updatedAt"":""2026-10-22T09:31:15.000Z""", record)
         Assert.Contains("""descriptor"":{""test"":1}", record)
     End Sub
 

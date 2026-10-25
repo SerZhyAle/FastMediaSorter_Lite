@@ -32,6 +32,10 @@ Friend NotInheritable Class LiveProducerAddressPolicy
     Private Sub New()
     End Sub
 
+    ''' <summary>LIVE-BROADCAST item J: the documentation host (RFC 5737 TEST-NET-1) that stands in the host of a descriptor's `inner`
+    ''' when the stream has no LAN endpoint to point at - no usable LAN address, or the video LAN listener off.</summary>
+    Public Const DocumentationHost As String = "192.0.2.1"
+
     ''' <summary>True when an address may be PUBLISHED: a real IPv4, never loopback, never unspecified,
     ''' never link-local (APIPA), never a documentation or reserved block. The carrier rule is the
     ''' candidate's NIC type, not the address: a PC on a phone's hotspot has a private LAN address and

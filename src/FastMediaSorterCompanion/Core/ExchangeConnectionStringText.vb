@@ -8,8 +8,9 @@ Friend NotInheritable Class ExchangeConnectionStringText
     Private Sub New()
     End Sub
 
+    ''' <summary>The button names both things the window hands over: the string and its QR code.</summary>
     Friend Shared Function GetButton() As String
-        Return Localization.T("Получить строку подключения..")
+        Return Localization.T("Строка подключения и QR-код..")
     End Function
 
     Friend Shared Function WindowTitle() As String

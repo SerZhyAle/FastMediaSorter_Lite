@@ -1,4 +1,4 @@
-#If Not NETFRAMEWORK Then
+﻿#If Not NETFRAMEWORK Then
 Option Strict On
 
 Imports System.Collections.Generic
@@ -131,6 +131,8 @@ Friend Module ResourceImport
             descriptor.RootPath = root.VirtualPath
             If matched Is Nothing Then descriptor.ReadOnlyHint = Not root.EffectiveWritable
             descriptor.IncludeSubfolders = root.ScanSubdirectories
+            descriptor.ShowHiddenFiles = root.ShowHiddenFiles
+            descriptor.AllFiles = root.AllFiles
             ' Spec 227 rule 7: merge incoming endpoints/channels with existing instead of replacing
             Dim mergedEndpoints As New List(Of ResourceEndpoint)(If(descriptor.Endpoints, Enumerable.Empty(Of ResourceEndpoint)()))
             For Each ep As FmsEndpoint In plan.Endpoints

@@ -254,8 +254,12 @@ Partial Public Class Main_Form
         Return modern_Preferences Is Nothing OrElse modern_Preferences.AdvanceAfterCopy
     End Function
 
+    ''' <summary>MEDIA-VIEWER 1.0 rule 5: whether manual navigation STOPS a running show.
+    ''' Default (and the value when preferences are not loaded yet) is False - the contract
+    ''' default is to continue and restart the timer; True is the declared preference that
+    ''' restores the historical stop.</summary>
     Private Function StopSlideShowForManualNavigation() As Boolean
-        Return modern_Preferences Is Nothing OrElse modern_Preferences.StopSlideshowOnManualNavigation
+        Return modern_Preferences IsNot Nothing AndAlso modern_Preferences.StopSlideshowOnManualNavigation
     End Function
 
     ''' <summary>

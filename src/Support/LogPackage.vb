@@ -597,13 +597,14 @@ Public Module LogPackage
         Dim tail As New Queue(Of Byte())()
         Dim tailBytes As Long = 0L
         Dim tailStarted As Boolean = False
+        Dim redactor As New DiagnosticRedactor()
 
         Using bounded As New BoundedReadStream(source, total)
             Using reader As New StreamReader(bounded, utf8, False, 64 * 1024)
                 Dim line As String = reader.ReadLine()
                 While line IsNot Nothing
                     ' ReadLine drops the terminator; LF goes back, which every log reader accepts.
-                    Dim clean As Byte() = utf8.GetBytes(RedactUserProfile(line, profile) & vbLf)
+                    Dim clean As Byte() = utf8.GetBytes(RedactUserProfile(redactor.RedactLine(line), profile) & vbLf)
                     If Not tailStarted AndAlso head.Length + clean.Length <= HeadKeepBytes Then
                         head.Write(clean, 0, clean.Length)
                     Else
@@ -1076,7 +1077,9 @@ Public Module LogPackage
         "Share_LanOnlyExport", "Share_ListenPort", "Share_MaxConnections", "Share_OpenWindowOnStartup",
         "Share_ServerFeaturesEnabled", "Share_WindowHeight", "Share_WindowMaximized", "Share_WindowWidth",
         "Share_WindowX", "Share_WindowY", "Share_WorkerEverStarted", "AppWindowState",
-        "Exchange_ListenPort", "Exchange_KeepRunningOnExit", "Exchange_EverStarted"
+        "Exchange_ListenPort", "Exchange_KeepRunningOnExit", "Exchange_EverStarted",
+        "FileManagerViewMode", "FileManagerContentMode", "FileManagerShowHiddenFiles", "FileManagerNonMediaOpenAction",
+        "FileManagerShowLocalPlaces", "FileManagerShowResourcePlaces", "FileManagerShowDevicePlaces", "FileManagerRememberSort"
     }
 
     ''' <summary>"|"-joined path lists: the author learns how many, never which.</summary>
@@ -1155,7 +1158,7 @@ Public Module LogPackage
     ''' file system; both slash directions.
     ''' </summary>
     Friend Function RedactUserProfile(text As String) As String
-        Return RedactUserProfile(text, Environment.GetFolderPath(Environment.SpecialFolder.UserProfile))
+        Return RedactUserProfile(DiagnosticRedactor.Clean(text), Environment.GetFolderPath(Environment.SpecialFolder.UserProfile))
     End Function
 
     Friend Function RedactUserProfile(text As String, profilePath As String) As String
@@ -1198,11 +1201,11 @@ Public Module LogPackage
             Dim logPath As String = If(logPathOverride, AppFileLogger.LogFilePath)
             If String.IsNullOrEmpty(logPath) OrElse Not File.Exists(logPath) Then Return found
 
-            Dim snapshot As TailSnapshot
+            Dim snapshot As CompactedLog
             Using stream As Stream = If(openSource, AddressOf OpenLiveLog)(logPath)
-                snapshot = ReadTail(stream, MaxEntryBytes)
+                snapshot = CompactRedacted(stream)
             End Using
-            Using reader As New StreamReader(New MemoryStream(snapshot.Bytes), New UTF8Encoding(False), False)
+            Using reader As New StreamReader(New MemoryStream(snapshot.HeadBytes.Concat(snapshot.TailBytes).ToArray()), New UTF8Encoding(False), False)
                 Dim line As String = reader.ReadLine()
                 While line IsNot Nothing
                     If line.IndexOf("xception", StringComparison.Ordinal) >= 0 OrElse

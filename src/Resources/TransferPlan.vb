@@ -32,6 +32,16 @@ Friend Enum TransferState
     Completed = 6
 End Enum
 
+''' <summary>The work currently in flight; durable outcomes continue to use TransferState.</summary>
+Friend Enum TransferPhase
+    DownloadSource
+    UploadStage
+    ReadBack
+    Publish
+    DeleteSource
+    Completed
+End Enum
+
 Friend Enum TransferResult
     ''' <summary>Everything the plan asked for is done (a copy is published; a move also removed the source).</summary>
     Completed = 0
@@ -73,6 +83,8 @@ Friend Enum TransferReason
     ''' <summary>Undo: the original slot is occupied.</summary>
     SourceSlotOccupied = 17
     NothingToUndo = 18
+    AccessChanged = 19
+    DiskFull = 20
 End Enum
 
 ''' <summary>One side of a transfer: which provider, which path in ITS vocabulary, and the
@@ -90,8 +102,17 @@ Friend NotInheritable Class TransferEndpoint
 
     Friend Function IsSameResourceAs(other As TransferEndpoint) As Boolean
         If other Is Nothing Then Return False
-        Return ReferenceEquals(Provider, other.Provider) OrElse
+        ' Local and SMB paths share the Windows namespace, including different views of one UNC path.
+        If Provider.Kind <> ResourceKind.Sftp AndAlso other.Provider.Kind <> ResourceKind.Sftp Then Return True
+        Dim left As ResourceDescriptor = TryCast(Provider, SftpProvider)?.Descriptor
+        Dim right As ResourceDescriptor = TryCast(other.Provider, SftpProvider)?.Descriptor
+        If left IsNot Nothing AndAlso right IsNot Nothing AndAlso left.PinnedFingerprint.Length > 0 AndAlso
+           String.Equals(left.Host, right.Host, StringComparison.OrdinalIgnoreCase) AndAlso left.Port = right.Port AndAlso
+           String.Equals(left.UserName, right.UserName, StringComparison.Ordinal) AndAlso
+           String.Equals(left.PinnedFingerprint, right.PinnedFingerprint, StringComparison.Ordinal) Then Return True
+        Return Provider.Kind = other.Provider.Kind AndAlso (ReferenceEquals(Provider, other.Provider) OrElse
                (ResourceId.Length > 0 AndAlso String.Equals(ResourceId, other.ResourceId, StringComparison.Ordinal))
+               )
     End Function
 End Class
 
@@ -100,7 +121,8 @@ End Class
 ''' leftovers and can never delete a file it did not create.</summary>
 Friend NotInheritable Class TransferPlan
     Friend Sub New(kind As TransferKind, source As TransferEndpoint, destination As TransferEndpoint,
-                   conflict As ConflictPolicy, scratchDir As String)
+                   conflict As ConflictPolicy, scratchDir As String,
+                   Optional expectedSource As ResourceEntry = Nothing, Optional allowServerSideMove As Boolean = True)
         If source Is Nothing Then Throw New ArgumentNullException(NameOf(source))
         If destination Is Nothing Then Throw New ArgumentNullException(NameOf(destination))
         Me.Kind = kind
@@ -109,6 +131,8 @@ Friend NotInheritable Class TransferPlan
         Me.Conflict = conflict
         Me.ScratchDir = If(scratchDir, "")
         Me.OperationId = Guid.NewGuid().ToString("N")
+        Me.ExpectedSource = expectedSource
+        Me.AllowServerSideMove = allowServerSideMove
     End Sub
 
     Friend ReadOnly Property OperationId As String
@@ -116,8 +140,13 @@ Friend NotInheritable Class TransferPlan
     Friend ReadOnly Property Source As TransferEndpoint
     Friend ReadOnly Property Destination As TransferEndpoint
     Friend ReadOnly Property Conflict As ConflictPolicy
+    Friend ReadOnly Property ExpectedSource As ResourceEntry
+    Friend ReadOnly Property AllowServerSideMove As Boolean
     ''' <summary>A local folder for the bounded read-back copies. Deleted by the executor.</summary>
     Friend ReadOnly Property ScratchDir As String
+    Friend Property ValidateMutation As Action
+    Friend Property StateProgress As IProgress(Of TransferState)
+    Friend Property PhaseProgress As IProgress(Of TransferPhase)
 
     Private Function Owned(suffix As String) As String
         Dim name As String = Destination.Path.Substring(Math.Max(Destination.Path.LastIndexOfAny({"/"c, "\"c}) + 1, 0))
@@ -239,7 +268,16 @@ Friend Module TransferExecutor
     Private NotInheritable Class Run
         Friend ReadOnly Plan As TransferPlan
         Friend ReadOnly Progress As Cumulative
-        Friend State As TransferState = TransferState.Planned
+        Private stateValue As TransferState = TransferState.Planned
+        Friend Property State As TransferState
+            Get
+                Return stateValue
+            End Get
+            Set(value As TransferState)
+                stateValue = value
+                Plan.StateProgress?.Report(value)
+            End Set
+        End Property
         Friend Source As ResourceEntry
         Friend Published As ResourceEntry
         Friend Backup As String = ""
@@ -263,9 +301,12 @@ Friend Module TransferExecutor
             RemoveStage(run)
             Return run.Outcome(TransferResult.Cancelled, TransferReason.Cancelled)
         Catch ex As Exception
-            AppFileLogger.WriteLine("Transfer: failed in state " & run.State.ToString() & " - " & ResourceFailure.FromException(ex).ToString())
+            Dim failure As ResourceFailure = ResourceFailure.FromException(ex)
+            AppFileLogger.WriteLine("Transfer: failed in state " & run.State.ToString() & " - " & failure.ToString())
             RemoveStage(run)
-            Return run.Outcome(TransferResult.Failed, If(run.State < TransferState.StageWritten, TransferReason.StageFailed, TransferReason.PublishFailed))
+            Dim diskFull As Boolean = failure.Kind = ResourceFailureKind.LocalIO AndAlso (failure.StatusCode = &H80070070 OrElse failure.StatusCode = &H80070027).GetValueOrDefault()
+            Return run.Outcome(TransferResult.Failed, If(diskFull, TransferReason.DiskFull,
+                If(run.State < TransferState.StageWritten, TransferReason.StageFailed, TransferReason.PublishFailed)))
         Finally
             CleanScratch(plan)
         End Try
@@ -278,7 +319,7 @@ Friend Module TransferExecutor
         Dim source As TransferEndpoint = plan.Source
         Dim destination As TransferEndpoint = plan.Destination
 
-        If source.IsSameResourceAs(destination) AndAlso String.Equals(source.Path, destination.Path, StringComparison.OrdinalIgnoreCase) Then
+        If source.IsSameResourceAs(destination) AndAlso ManagerPathRules.AreEqual(source.Provider.Kind, source.Path, destination.Path) Then
             Return run.Outcome(TransferResult.Refused, TransferReason.SamePath)
         End If
         If Not destination.Provider.Capabilities.CanWrite Then Return run.Outcome(TransferResult.Refused, TransferReason.NotWritable)
@@ -293,6 +334,9 @@ Friend Module TransferExecutor
             Return run.Outcome(TransferResult.Failed, If(captured.IsDefinitelyMissing, TransferReason.SourceMissing, TransferReason.SourceUnreadable))
         End If
         run.Source = captured.Entry
+        If plan.ExpectedSource IsNot Nothing AndAlso Not run.Source.SameVersionAs(plan.ExpectedSource) Then
+            Return run.Outcome(TransferResult.Refused, TransferReason.SourceChanged)
+        End If
         run.State = TransferState.SourceCaptured
 
         ' 2. The destination: only a definite Missing is "free".
@@ -314,7 +358,9 @@ Friend Module TransferExecutor
         ct.ThrowIfCancellationRequested()
 
         ' 3. A move inside one resource is one validated rename, when the server has one.
-        If plan.Kind = TransferKind.Move AndAlso plan.IsSameResource AndAlso source.Provider.Capabilities.SupportsServerSideRename Then
+        If plan.AllowServerSideMove AndAlso plan.Kind = TransferKind.Move AndAlso plan.IsSameResource AndAlso source.Provider.Capabilities.SupportsServerSideRename Then
+            Dim renameRefused As TransferOutcome = ValidateMutation(run, ct)
+            If renameRefused IsNot Nothing Then Return renameRefused
             Return RenameWithin(run, replacing, ct)
         End If
 
@@ -322,6 +368,7 @@ Friend Module TransferExecutor
         Dim expectedHash As Byte() = Nothing
         Dim scratch As String = ScratchFile(plan, ".src")
         run.Progress.NextPhase()
+        plan.PhaseProgress?.Report(TransferPhase.DownloadSource)
         source.Provider.Download(run.Source.FullPath, scratch, run.Progress, ct)
         Dim arrived As Long = New FileInfo(scratch).Length
         If run.Source.Length >= 0 AndAlso arrived <> run.Source.Length Then
@@ -331,13 +378,17 @@ Friend Module TransferExecutor
         ct.ThrowIfCancellationRequested()
 
         run.Progress.NextPhase()
+        Dim refused As TransferOutcome = ValidateMutation(run, ct)
+        If refused IsNot Nothing Then Return refused
         run.StageCreated = True
+        plan.PhaseProgress?.Report(TransferPhase.UploadStage)
         destination.Provider.Upload(scratch, plan.StagePath, run.Progress, ct)
         run.State = TransferState.StageWritten
         ct.ThrowIfCancellationRequested()
 
         Dim readBack As String = ScratchFile(plan, ".back")
         run.Progress.NextPhase()
+        plan.PhaseProgress?.Report(TransferPhase.ReadBack)
         destination.Provider.Download(plan.StagePath, readBack, run.Progress, ct)
         If New FileInfo(readBack).Length <> arrived OrElse Not CryptographicOperations.FixedTimeEquals(expectedHash, HashFile(readBack)) Then
             RemoveStage(run)
@@ -347,12 +398,19 @@ Friend Module TransferExecutor
         ct.ThrowIfCancellationRequested()
 
         ' 5. Publish: a rename of the stage into place, around an owned backup when replacing.
+        refused = ValidateMutation(run, ct)
+        If refused IsNot Nothing Then
+            RemoveStage(run)
+            Return refused
+        End If
+        plan.PhaseProgress?.Report(TransferPhase.Publish)
         Dim published As TransferOutcome = Publish(run, replacing, arrived)
         If published IsNot Nothing Then Return published
 
         ' 6. A move deletes its source only if that is provably safe.
         If plan.Kind = TransferKind.Copy Then
             run.State = TransferState.Completed
+            plan.PhaseProgress?.Report(TransferPhase.Completed)
             Return run.Outcome(TransferResult.Completed, TransferReason.None)
         End If
         Return DeleteSource(run, ct)
@@ -531,6 +589,9 @@ Friend Module TransferExecutor
         End Select
 
         If ct.IsCancellationRequested Then Return run.Outcome(TransferResult.CopyOnly, TransferReason.Cancelled)
+        Dim refused As TransferOutcome = ValidateMutation(run, ct)
+        If refused IsNot Nothing Then Return refused
+        plan.PhaseProgress?.Report(TransferPhase.DeleteSource)
         Try
             provider.DeleteFile(run.Source.FullPath)
         Catch ex As Exception
@@ -541,7 +602,21 @@ Friend Module TransferExecutor
         If after.Outcome <> StatOutcome.Missing Then Return run.Outcome(TransferResult.CopyOnly, TransferReason.SourceDeleteFailed)
         run.State = TransferState.SourceDeleteConfirmed
         run.State = TransferState.Completed
+        plan.PhaseProgress?.Report(TransferPhase.Completed)
         Return run.Outcome(TransferResult.Completed, TransferReason.None)
+    End Function
+
+    Private Function ValidateMutation(run As Run, ct As CancellationToken) As TransferOutcome
+        Try
+            ct.ThrowIfCancellationRequested()
+            run.Plan.ValidateMutation?.Invoke()
+            ct.ThrowIfCancellationRequested()
+            Return Nothing
+        Catch ex As OperationCanceledException
+            Return run.Outcome(If(run.State >= TransferState.Published, TransferResult.CopyOnly, TransferResult.Cancelled), TransferReason.Cancelled)
+        Catch ex As Exception
+            Return run.Outcome(If(run.State >= TransferState.Published, TransferResult.CopyOnly, TransferResult.Refused), TransferReason.AccessChanged)
+        End Try
     End Function
 
     ' --------------------------------------------------------------------- helpers ----
@@ -659,7 +734,8 @@ Friend Module TransferUndo
             If slot.Outcome <> StatOutcome.Missing Then
                 Return New TransferOutcome(plan, TransferResult.Refused, TransferReason.SourceSlotOccupied, done.LastState)
             End If
-            Dim back As New TransferPlan(TransferKind.Move, plan.Destination, plan.Source, ConflictPolicy.Fail, scratchDir)
+            Dim back As New TransferPlan(TransferKind.Move, plan.Destination, plan.Source, ConflictPolicy.Fail, scratchDir,
+                                         done.PublishedEntry, plan.AllowServerSideMove)
             Dim moved As TransferOutcome = TransferExecutor.Execute(back, Nothing, ct)
             If moved.Succeeded Then RestoreOverwritten(done)
             Return moved

@@ -4,15 +4,18 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <script>
-(function(){try{
-  var t=localStorage.getItem('sza-theme');
+(function(){
+  var t;try{t=localStorage.getItem('sza-theme');}catch(e){}
   if(t!=='dark'&&t!=='light')t=matchMedia('(prefers-color-scheme: light)').matches?'light':'dark';
   document.documentElement.setAttribute('data-theme',t);
-  var l=localStorage.getItem('sza-lang');
+  var l;try{l=localStorage.getItem('sza-lang');}catch(e){}
+  var q=new URLSearchParams(location.search),requested=q.has('lang')?q.get('lang'):q.get('l');
+  if(requested){requested=requested.toLowerCase();if(requested==='uk')requested='ua';if(requested==='en'||requested==='ru'||requested==='ua')l=requested;}
   if(l==='uk')l='ua';
   if(l!=='ru'&&l!=='en'&&l!=='ua'){var n=(navigator.language||'en').toLowerCase();l=n.indexOf('ru')==0?'ru':n.indexOf('uk')==0?'ua':'en';}
   document.documentElement.setAttribute('data-lang',l);
-}catch(e){}})();
+  document.addEventListener('click',function(e){var a=e.target.closest&&e.target.closest('a[href]');if(!a)return;try{var u=new URL(a.href,location.href);if(u.hostname==='serzhyale.github.io'||u.hostname==='sza.od.ua'){u.searchParams.delete('l');u.searchParams.set('lang',document.documentElement.getAttribute('data-lang')==='ua'?'uk':document.documentElement.getAttribute('data-lang'));a.href=u.href;}}catch(ignore){}});
+})();
 </script>
 <title>整理照片和视频 | Fast Media Sorter &amp; Sharing</title>
 <meta name="description" content="飞快地翻阅海量照片和视频文件夹，一个按键就能移动、复制、重命名或删除每个文件。">
@@ -97,8 +100,11 @@
     <p class="lead lead-narrow">飞快地翻阅海量照片和视频文件夹，一个按键就能移动、复制、重命名或删除每个文件。</p>
     <p class="lead lead-narrow">名称中的「Sharing」指把你的媒体交给别人：你的 Android 手机、本程序的另一份副本，或任何 SFTP 客户端。你不开启它，它就保持关闭。 <a href="https://serzhyale.github.io/FastMediaSorter_Lite/publish-folders-android.html" lang="en" dir="ltr">Share folders to Android over SFTP</a></p>
     <div class="button-group">
-      <a class="btn btn-primary" href="#get">安装程序（GitHub）</a>
-      <a class="btn btn-ghost" href="#features">值得一提</a>
+      <!-- PAGE-CONTENT "Copy rules": stable action labels - Install (the get-it block below) and Guides
+           (the topics index). The artifact names (Installer (GitHub), winget, Store) stay in the #get
+           channels, where naming each way to get the product is the rule. -->
+      <a class="btn btn-primary" href="#get">安装</a>
+      <a class="btn btn-ghost" href="https://serzhyale.github.io/FastMediaSorter_Lite/topics.html">指南</a>
     </div>
   </section>
 
@@ -254,6 +260,14 @@
         <h3>把服务器当作文件夹</h3>
         <p>需要登录的 SFTP 服务器或网络共享可像普通文件夹一样打开：翻页时按需取回图片、视频和文档，服务器密钥会被记住，密码则以加密形式仅供您的 Windows 账户使用。</p>
       </article>
+      <article class="card">
+        <h3>JPEG XL 图像</h3>
+        <p>在 64 位查看器中打开静态和动态 JXL 图像，无需额外的 Windows 编解码器。编辑结果可保存为 PNG、JPEG 或 WEBP；不提供 JXL 输出。</p>
+      </article>
+      <article class="card">
+        <h3>直播</h3>
+        <p>通过 Share Manager 分享屏幕、单个窗口、摄像头、麦克风或系统音频。在 64 位查看器中通过链接、代码或 .fmsbcast 文件打开直播。只有点击开始才会开始采集。</p>
+      </article>
       </div>
     </details>
   </section>
@@ -303,7 +317,7 @@
     <a href="https://serzhyale.github.io/CyrFlip/"><b>CyrFlip</b><span>Windows layout fixer</span></a>
     <a href="https://serzhyale.github.io/doc-html-translate/"><b>doc-html-translate</b><span>Windows ebook converter</span></a>
     <a href="https://serzhyale.github.io/FileDO/"><b>FileDO</b><span>Windows storage CLI</span></a>
-    <a href="https://serzhyale.github.io/StreamsPlayer/"><b>StreamsPlayer</b><span>Windows stream player</span></a>
+    <a href="https://serzhyale.github.io/StreamsPlayer/"><b>STREAMS Player</b><span>Windows stream player</span></a>
     <a href="https://serzhyale.github.io/OneClickRunner/"><b>OneClickRunner</b><span>Windows tray launcher</span></a>
     <a href="https://serzhyale.github.io/universal-agent-kit/"><b>Universal Agent Kit</b><span>AI-dev methodology</span></a>
     <a href="https://sza.od.ua/"><b>SZA</b><span>Portfolio hub</span></a>

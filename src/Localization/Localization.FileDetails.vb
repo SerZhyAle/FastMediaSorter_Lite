@@ -10,6 +10,10 @@ Option Strict On
 Partial Public NotInheritable Class Localization
 
     Private Shared Sub AddFileDetailsStrings()
+        Add("Связанные файлы", "Associated files", "Пов’язані файли", "Zugehörige Dateien", "File associati", "Archivos asociados", "Fichiers associés", "Ficheiros associados", "الملفات المرتبطة", "संबद्ध फ़ाइलें", "সম্পর্কিত ফাইল", "متعلقہ فائلیں", "关联文件")
+        Add("Текст песни", "Lyrics", "Текст пісні", "Liedtext", "Testo del brano", "Letra", "Paroles", "Letra", "كلمات الأغنية", "गीत के बोल", "গানের কথা", "گیت کے بول", "歌词")
+        Add("Обложка", "Cover art", "Обкладинка", "Coverbild", "Copertina", "Portada", "Pochette", "Capa", "الغلاف", "आवरण", "প্রচ্ছদ", "سرورق", "封面")
+        Add("Метаданные", "Metadata", "Метадані", "Metadaten", "Metadati", "Metadatos", "Métadonnées", "Metadados", "البيانات الوصفية", "मेटाडेटा", "মেটাডেটা", "میٹا ڈیٹا", "元数据")
 
         ' --- the window ----------------------------------------------------------------
         Add("О файле",

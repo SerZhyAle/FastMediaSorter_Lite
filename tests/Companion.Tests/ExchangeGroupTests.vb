@@ -176,6 +176,43 @@ Public Class ExchangeGroupTests
         Assert.Equal(ExchangeRunKind.ServiceStopped, ExchangeText.TrayKind(True, True, ServiceControl.ServiceState.Stopped))
     End Sub
 
+    <Fact>
+    Public Sub A_service_the_scm_will_not_describe_is_never_shown_as_stopped()
+        ' the tray said "stopped" while the server ran: an unknown or a transitional state fell into the
+        ' stopped branch. Only a read that says Stopped may produce the word.
+        Assert.Equal(ExchangeRunKind.Unreadable, ExchangeText.TrayKind(False, True, ServiceControl.ServiceState.Unknown))
+        Assert.Equal(ExchangeRunKind.Unreadable, ExchangeText.TrayKind(True, True, ServiceControl.ServiceState.Unknown))
+        Assert.Equal(ExchangeRunKind.ServiceStarting, ExchangeText.TrayKind(False, True, ServiceControl.ServiceState.Starting))
+        Assert.Equal(ExchangeRunKind.ServiceStopping, ExchangeText.TrayKind(False, True, ServiceControl.ServiceState.Stopping))
+    End Sub
+
+    <Fact>
+    Public Sub The_tray_says_stopped_only_for_a_stopped_server_and_the_bare_name_for_a_state_it_has_not_read()
+        Dim saved As String = Localization.CurrentCode
+        Try
+            For Each code As String In Localization.Codes
+                Localization.CurrentCode = code
+                Dim stopped As String = ExchangeText.TrayItem(ExchangeRunKind.ServiceStopped)
+                Assert.Equal(stopped, ExchangeText.TrayItem(ExchangeRunKind.Stopped))
+                For Each unread As ExchangeRunKind In {ExchangeRunKind.Unreadable, ExchangeRunKind.NotConfigured, ExchangeRunKind.ServiceStopping}
+                    Dim line As String = ExchangeText.TrayItem(unread)
+                    Assert.Equal(ProductNames.ExchangeServer, line)
+                    Assert.NotEqual(stopped, line)
+                Next
+            Next
+        Finally
+            Localization.CurrentCode = saved
+        End Try
+    End Sub
+
+    <Fact>
+    Public Sub The_window_never_calls_an_unreadable_service_stopped()
+        For Each state As ServiceControl.ServiceState In {ServiceControl.ServiceState.Unknown}
+            Dim m As ExchangeGroupModel = ExchangeGroupModel.Build(New ExchangeSnapshot With {.Report = Report(1), .ServiceExists = True, .ServiceState = state})
+            Assert.Equal(ExchangeRunKind.Unreadable, m.Kind)
+        Next
+    End Sub
+
     ' --- the group exists only with the component ---------------------------------------------------
 
     Private Shared Function Sections(form As Share_Settings_Form) As CollapsibleSection()
@@ -199,7 +236,7 @@ Public Class ExchangeGroupTests
                                          Assert.Null(SectionField(form, "_secExchange"))
                                          Dim keys As String() = Sections(form).Select(Function(s) s.Key).ToArray()
                                          ' the CLIENT page is there on every install since ticket 223 T-3; the administration page is not
-                                         Assert.Equal({"startup", "scheduled", "exchange-account", "help"}, keys)
+                                         Assert.Equal({"startup", "scheduled", "exchange-account", "drive", "help"}, keys)
                                          Assert.Equal(keys, SettingsSections(form).Select(Function(s) s.Key).ToArray())
                                          Assert.DoesNotContain("exchange", keys)
                                      End Using
@@ -420,6 +457,37 @@ Public Class ExchangeGroupTests
         Assert.DoesNotContain("ExchangeProcess.Start", text)
         ' Exit stops what this session started, unless the person asked to keep it.
         Assert.Contains("ExchangeProcess.StopStartedOnExit(exSettings.KeepRunningOnExit)", tray)
+    End Sub
+
+    <Fact>
+    Public Sub The_state_line_is_re_read_when_the_service_moves_on_its_own_and_the_tray_logs_what_it_shows()
+        ' The poll tick used to refresh only while serving, so a service that stopped or restarted by itself left the
+        ' state line on the old words while the tray (read live) said the new ones.
+        Dim admin As String = ExchangeTestSupport.ReadSource("Forms\Share_Settings_Form.ExchangeAdmin.vb")
+        Dim tick As String = ExchangeTestSupport.MethodBody(admin, "Private Sub OnXAccountsTick(")
+        Dim drift As Integer = tick.IndexOf("CheckExchangeStateDriftAsync()", StringComparison.Ordinal)
+        Dim serving As Integer = tick.IndexOf("_exAccReading", StringComparison.Ordinal)
+        Assert.True(drift >= 0 AndAlso serving > drift, "the drift check must run before the serving gate can return")
+        Dim window As String = ExchangeTestSupport.ReadSource("Forms\Share_Settings_Form.Exchange.vb")
+        Dim check As String = ExchangeTestSupport.MethodBody(window, "Private Async Function CheckExchangeStateDriftAsync(")
+        Assert.Contains("ExchangeSnapshot.ReadCheap()", check)
+        Assert.Contains("Task.Run", check)
+        Assert.DoesNotContain("ExchangeProcess.Start", check)
+        Assert.Contains("LogExchangeState(snap, m)", ExchangeTestSupport.MethodBody(window, "Private Sub ApplyExchangeState("))
+        Dim tray As String = ExchangeTestSupport.ReadSource("TrayContext.vb")
+        Dim text As String = ExchangeTestSupport.MethodBody(tray, "Private Async Function RefreshExchangeTrayTextAsync(")
+        Assert.Contains("AppFileLogger.LogStamped", text)
+        Assert.Contains("AppFileLogger.LogException", text)
+    End Sub
+
+    <Fact>
+    Public Sub The_companion_log_names_its_build_in_the_session_header_and_after_a_rotation()
+        Dim version As String = AppFileLogger.VersionText()
+        Assert.False(String.IsNullOrWhiteSpace(version))
+        Dim logger As String = ExchangeTestSupport.CodeOnly(ExchangeTestSupport.ReadSource("Core\AppFileLogger.vb"))
+        Assert.Contains("""; version="" & VersionText()", logger)
+        ' the header is the string that is written again after a rotation, so every file of the log carries the version
+        Assert.Contains("If RotateIfOversized(p) AndAlso _sessionStarted Then File.AppendAllText(p, _sessionHeader)", logger)
     End Sub
 
     ' --- the password dialog, headless ----------------------------------------------------------------------

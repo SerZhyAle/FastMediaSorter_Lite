@@ -405,6 +405,25 @@ Public Class ScheduledExecutorTests
     ' --- archive ---------------------------------------------------------------------------------------
 
     <Fact>
+    Public Sub ScheduledArchive_adapter_returns_only_a_verified_local_artifact_and_rejects_changed_inputs()
+        Using tree As New ScratchTree()
+            tree.Write("source\\a.txt", "source bytes")
+            Dim path As String = tree.Dir("source")
+            Dim info As New FileInfo(System.IO.Path.Combine(path, "a.txt"))
+            Dim entry As New SideEntry With {.Name = info.Name, .RelativePath = info.Name, .Length = info.Length, .LastWriteUtc = info.LastWriteTimeUtc}
+            Using source As New LocalSide(path)
+                Dim result As ArchiveWriteResult = ScheduledArchiveWriter.Write(source, {entry}, System.IO.Path.Combine(tree.Dir("out"), "checked.zip"), CancellationToken.None)
+                Assert.Equal("", ScheduledArchiveWriter.Verify(result.ArchivePath, result.Written, CancellationToken.None))
+                Assert.Equal(32, result.Written(0).Sha256.Length)
+                tree.Write("source\\a.txt", "changed source bytes")
+                Assert.Throws(Of SourceChangedException)(Function() ScheduledArchiveWriter.Write(source, {entry}, System.IO.Path.Combine(tree.Dir("out"), "changed.zip"), CancellationToken.None))
+                Assert.False(File.Exists(System.IO.Path.Combine(tree.Dir("out"), "changed.zip")))
+                Assert.True(tree.Exists("source\\a.txt"))
+            End Using
+        End Using
+    End Sub
+
+    <Fact>
     Public Sub Archive_writes_one_timestamped_zip_with_relative_entries_and_keeps_the_originals()
         Using tree As New ScratchTree()
             tree.Write("photos\a.txt", "A")

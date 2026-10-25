@@ -40,4 +40,6 @@ Friend Enum FileOpKind
     ''' can hold "the gesture the user made once" instead of 200 entries that would push the
     ''' rest of the history out.</summary>
     Batch
+    CreateDirectory
+    RemoveEmptyDirectory
 End Enum

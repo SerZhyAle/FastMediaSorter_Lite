@@ -1,4 +1,4 @@
-{
+﻿{
   "schemaVersion": 1,
   "product": "FastMediaSorter",
   "helpRoot": "docs/help",
@@ -77,6 +77,11 @@
           "anchor": "storage"
         },
         {
+          "id": "settings.filemanager",
+          "name": "File manager",
+          "anchor": "filemanager"
+        },
+        {
           "id": "settings.about",
           "name": "About",
           "anchor": "about"
@@ -104,6 +109,22 @@
       "name": "Thumbnail Panel",
       "form": "page",
       "help": "thumbnail-panel"
+    },
+    {
+      "id": "manager-destination",
+      "type": "fmsl.ManagerDestinationForm",
+      "name": "File manager destination",
+      "form": "inherit",
+      "parent": "thumbnail-panel",
+      "reason": "Subordinate destination picker for the file manager copy and move commands."
+    },
+    {
+      "id": "manager-archive",
+      "type": "fmsl.ManagerArchiveForm",
+      "name": "Create verified ZIP",
+      "form": "inherit",
+      "parent": "thumbnail-panel",
+      "reason": "Subordinate ZIP options dialog; file manager help explains destination, verification and optional original cleanup."
     },
     {
       "id": "file-details",
@@ -325,6 +346,11 @@
           "anchor": "exchange-account"
         },
         {
+          "id": "share-settings.drive",
+          "name": "Google Drive",
+          "anchor": "drive"
+        },
+        {
           "id": "share-settings.scheduled",
           "name": "Scheduled Operations",
           "anchor": "scheduled"
@@ -543,6 +569,15 @@
       "name": "Exchange Link",
       "form": "page",
       "help": "exchange-link"
+    },
+    {
+      "id": "exchange-guest-grant",
+      "exchangeMark": "full",
+      "type": "FastMediaSorterCompanion.Exchange_Guest_Grant_Form",
+      "name": "Guest Broadcast Access",
+      "form": "inherit",
+      "parent": "exchange-account",
+      "reason": "Subordinate account-access dialog with a target and guest login; it uses the account's device trust and access help."
     },
     {
       "id": "exchange-password",

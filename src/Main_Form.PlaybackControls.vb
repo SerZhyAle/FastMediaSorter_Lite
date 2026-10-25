@@ -65,6 +65,7 @@ Partial Public Class Main_Form
     ''' the marks and re-applies both (119 §5.1.3).
     ''' </summary>
     Friend Sub ResetPlaybackExtrasForNewMedia()
+        LeaveFramePlayback()
         playback_Rate = PlaybackRules.Normal_Rate
         ab_Loop.Clear()
         ab_Loop_Timer.Stop()
@@ -96,6 +97,8 @@ Partial Public Class Main_Form
                 Catch
                     Return False
                 End Try
+            Case "frameBack"
+                Return CanUseFramePlayback()
             Case "frameStep"
                 Return Not IsAudioNowPlaying()
             Case Else
@@ -202,6 +205,8 @@ Partial Public Class Main_Form
                 SeekByStep(True, SeekStepSec(Function(p) p.SeekLongSec), actionId)
             Case "frameStep"
                 RunFrameStep()
+            Case "frameBack"
+                RunPreviousFrame()
             Case "abLoop"
                 RunAbLoop()
         End Select
@@ -220,6 +225,7 @@ Partial Public Class Main_Form
     ''' speed the player is not playing at.
     ''' </summary>
     Private Sub ApplyPlaybackRate(rate As Single, announce As Boolean)
+        LeaveFramePlayback(resumePlayback:=frame_Playback_Mode AndAlso frame_Auto_Running)
         playback_Rate = rate
         RefreshPlaybackSpeedButton()
         If Not CanUsePlaybackExtras() Then Return
@@ -316,6 +322,10 @@ Partial Public Class Main_Form
     ''' only PAUSES - the plan guarantees one press is at most one frame without
     ''' knowing libVLC's internals (spike S-2's default).</summary>
     Private Sub RunFrameStep()
+        If frame_Session IsNot Nothing Then
+            RunDecodedNextFrame()
+            Return
+        End If
         Dim plan As PlaybackRules.FrameStepAction
         Try
             plan = PlaybackRules.PlanFrameStep(IsVlcActuallyPlaying(), vlc_Media_Player.CanPause, nextFrameAutoPauses:=False)
@@ -332,7 +342,11 @@ Partial Public Class Main_Form
                     lbl_Status.Text = Localization.T("На паузе. Следующий кадр - ещё раз эту клавишу")
                 Case PlaybackRules.FrameStepAction.StepOne
                     SlideShowStop()
-                    vlc_Media_Player.NextFrame()
+                    If CanUseFramePlayback() Then
+                        RunDecodedNextFrame()
+                    Else
+                        vlc_Media_Player.NextFrame()
+                    End If
                 Case Else
                     Return
             End Select

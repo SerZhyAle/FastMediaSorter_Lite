@@ -40,8 +40,24 @@ End Enum
 Friend NotInheritable Class SelectionModel
 
     Private ReadOnly paths As New List(Of String)()
-    Private ReadOnly position As New Dictionary(Of String, Integer)(StringComparer.OrdinalIgnoreCase)
-    Private ReadOnly chosen As New HashSet(Of String)(StringComparer.OrdinalIgnoreCase)
+    Private ReadOnly identity_Comparer As IEqualityComparer(Of String)
+    Private ReadOnly position As Dictionary(Of String, Integer)
+    Private ReadOnly chosen As HashSet(Of String)
+
+    ''' <summary>The triage panel's model: paths, compared case-insensitively as ever.</summary>
+    Friend Sub New()
+        Me.New(Nothing)
+    End Sub
+
+    ''' <param name="comparer">How two identities are told apart. Nothing = case-insensitive, the triage default. The
+    ''' file manager passes an ordinal comparer (257): its identities are opaque ids and two remote names that differ
+    ''' only by case are two entries. EVERY set the model keeps - the list index, the selection, a rubber band's
+    ''' baseline - uses this one comparer.</param>
+    Friend Sub New(comparer As IEqualityComparer(Of String))
+        identity_Comparer = If(comparer, StringComparer.OrdinalIgnoreCase)
+        position = New Dictionary(Of String, Integer)(identity_Comparer)
+        chosen = New HashSet(Of String)(identity_Comparer)
+    End Sub
 
     ''' <summary>The path a Shift-range starts from. By path, not index, so a re-scan that
     ''' inserts a row above it does not move the range.</summary>
@@ -111,7 +127,7 @@ Friend NotInheritable Class SelectionModel
     ''' </summary>
     Friend Sub RemovePaths(gone As IEnumerable(Of String))
         If gone Is Nothing Then Return
-        Dim drop As New HashSet(Of String)(StringComparer.OrdinalIgnoreCase)
+        Dim drop As New HashSet(Of String)(identity_Comparer)
         For Each p As String In gone
             If p IsNot Nothing AndAlso position.ContainsKey(p) Then drop.Add(p)
         Next
@@ -224,8 +240,17 @@ Friend NotInheritable Class SelectionModel
         chosen.Clear()
     End Sub
 
+    ''' <summary>A different directory (257): nothing is selected, and the anchor and the focus go too, so nothing of
+    ''' the old location leaks into the new one even if an identity happens to repeat.</summary>
+    Friend Sub Reset()
+        chosen.Clear()
+        anchor_Path = Nothing
+        focus_Path = Nothing
+        band_Baseline = Nothing
+    End Sub
+
     Friend Sub InvertSelection()
-        Dim flipped As New HashSet(Of String)(StringComparer.OrdinalIgnoreCase)
+        Dim flipped As New HashSet(Of String)(identity_Comparer)
         For Each p As String In paths
             If Not chosen.Contains(p) Then flipped.Add(p)
         Next
@@ -296,8 +321,8 @@ Friend NotInheritable Class SelectionModel
     ''' selection as it is now is kept underneath the band.</summary>
     Friend Sub BeginBand(additive As Boolean)
         band_Baseline = If(additive,
-                           New HashSet(Of String)(chosen, StringComparer.OrdinalIgnoreCase),
-                           New HashSet(Of String)(StringComparer.OrdinalIgnoreCase))
+                           New HashSet(Of String)(chosen, identity_Comparer),
+                           New HashSet(Of String)(identity_Comparer))
     End Sub
 
     ''' <summary>The band now covers exactly these rows: the live preview, redone from the

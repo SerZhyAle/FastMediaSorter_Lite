@@ -197,6 +197,12 @@ Friend NotInheritable Class ExchangeEnvelope
         Return 0L
     End Function
 
+    ''' <summary>The number, or <paramref name="absent"/> when the member is not there (the test stub's "no cap sent" marker, ticket 263).</summary>
+    Public Function Number(name As String, absent As Long) As Long
+        Dim n As Long? = NumberOrNothing(name)
+        Return If(n.HasValue, n.Value, absent)
+    End Function
+
     ''' <summary>The number, or Nothing when the member is absent.</summary>
     Public Function NumberOrNothing(name As String) As Long?
         Dim v As Object = Nothing
@@ -316,9 +322,10 @@ Friend NotInheritable Class ExchangeEnvelopeTable
         Row("publish", R("resource", True))
         Row("published", T("resourceId", True), N("publicPort", ExchangeOmit.WhenUnset))
         Row("unpublish", T("resourceId", True))
-        Row("broadcast-start", R("broadcast", True), N("maxListeners", ExchangeOmit.WhenUnset))
+        ' `verifiers` (item BF, item DV): left out when never set; `[]` when set and empty (the relay checks nobody).
+        Row("broadcast-start", R("broadcast", True), N("maxListeners", ExchangeOmit.WhenUnset), RL("verifiers", ExchangeOmit.WhenUnset))
         Row("broadcast-started", T("broadcastId", True))
-        Row("broadcast-update", R("broadcast", True), N("maxListeners", ExchangeOmit.WhenUnset))
+        Row("broadcast-update", R("broadcast", True), N("maxListeners", ExchangeOmit.WhenUnset), RL("verifiers", ExchangeOmit.WhenUnset))
         Row("broadcast-end", T("broadcastId", True))
         Row("pairing-request")
         Row("pairing-code", T("code", True), T("expiresAt"))
@@ -488,6 +495,8 @@ Friend NotInheritable Class ExchangeEnvelopeCodec
             Case ExchangeMemberKind.RecordList
                 Dim items As IReadOnlyList(Of String) = env.Records(s.Name)
                 If s.Omit = ExchangeOmit.WhenEmpty AndAlso items.Count = 0 Then Return
+                ' WhenUnset: absent when never set, `[]` when set and empty (item DV: "an empty array included")
+                If s.Omit = ExchangeOmit.WhenUnset AndAlso Not env.Has(s.Name) Then Return
                 w.Name(s.Name)
                 WriteRecordArray(w, items)
             Case ExchangeMemberKind.Upserts

@@ -4,15 +4,18 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <script>
-(function(){try{
-  var t=localStorage.getItem('sza-theme');
+(function(){
+  var t;try{t=localStorage.getItem('sza-theme');}catch(e){}
   if(t!=='dark'&&t!=='light')t=matchMedia('(prefers-color-scheme: light)').matches?'light':'dark';
   document.documentElement.setAttribute('data-theme',t);
-  var l=localStorage.getItem('sza-lang');
+  var l;try{l=localStorage.getItem('sza-lang');}catch(e){}
+  var q=new URLSearchParams(location.search),requested=q.has('lang')?q.get('lang'):q.get('l');
+  if(requested){requested=requested.toLowerCase();if(requested==='uk')requested='ua';if(requested==='en'||requested==='ru'||requested==='ua')l=requested;}
   if(l==='uk')l='ua';
   if(l!=='ru'&&l!=='en'&&l!=='ua'){var n=(navigator.language||'en').toLowerCase();l=n.indexOf('ru')==0?'ru':n.indexOf('uk')==0?'ua':'en';}
   document.documentElement.setAttribute('data-lang',l);
-}catch(e){}})();
+  document.addEventListener('click',function(e){var a=e.target.closest&&e.target.closest('a[href]');if(!a)return;try{var u=new URL(a.href,location.href);if(u.hostname==='serzhyale.github.io'||u.hostname==='sza.od.ua'){u.searchParams.delete('l');u.searchParams.set('lang',document.documentElement.getAttribute('data-lang')==='ua'?'uk':document.documentElement.getAttribute('data-lang'));a.href=u.href;}}catch(ignore){}});
+})();
 </script>
 <title>What's new | Fast Media Sorter &amp; Sharing</title>
 <meta name="description" content="What each recent version of Fast Media Sorter &amp; Sharing for Windows added, changed and fixed: the release notes of the latest ten versions.">

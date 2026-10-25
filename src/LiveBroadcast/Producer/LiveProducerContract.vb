@@ -75,6 +75,10 @@ Friend NotInheritable Class LiveProducerContract
     ''' <summary>Must match the consumer's prefix byte for byte (023 reader; LIVE-BROADCAST 4.1).</summary>
     Public Const BarcodePrefix As String = "FMSBCAST1:"
 
+    ''' <summary>The target of the clickable link (LIVE-BROADCAST 4.3): the importer's own `fmsbcast://import?payload=` target, the
+    ''' URL-encoded barcode text following it. The consumer's reader keeps reading the earlier `fmsbcast://live?payload=` form too.</summary>
+    Public Const LinkPrefix As String = "fmsbcast://import?payload="
+
     ''' <summary>Where the random id of an unenrolled device is kept: the app's registry store
     ''' HKCU\Software\SZA\FastMediaSorter (199 section 5).</summary>
     Public Const SourceIdRegistryValue As String = "LiveBroadcast_SourceId"

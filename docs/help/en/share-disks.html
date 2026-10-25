@@ -5,30 +5,29 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; form-action 'none'">
-  <title>Virtual Disks - Fast Media Sorter</title>
+  <title>.fdd disks - Fast Media Sorter</title>
   <link rel="stylesheet" href="../help.css">
 </head>
 <body>
 <main>
   
-  <h1 id="title">Virtual Disks</h1>
+  <h1 id="title">.fdd disks</h1>
   <section id="purpose">
     <h2>What this is for</h2>
-    <p>Fast Media Sorter &amp; Sharing for Windows: Virtual Disks.</p>
+    <p>Manage shared FileDO disks and inspect their state, autostart setting, holder and container path.</p>
   </section>
   <figure id="capture">
-    <img class="shot light" src="share-disks-light.png" alt="Virtual Disks">
-    <img class="shot dark" src="share-disks-dark.png" alt="Virtual Disks">
+    <img class="shot light" src="share-disks-light.png" alt=".fdd disks">
+    <img class="shot dark" src="share-disks-dark.png" alt=".fdd disks">
   </figure>
   <section id="order">
     <h2>In this order</h2>
-    <p>Review the options on screen, adjust values as needed, and confirm.</p>
+    <p>Select a disk and use Autostart.. to enable or disable automatic reopening with the server. Both the disk table and the main resource list update after changes.</p>
   </section>
   <section id="elements">
     <h2>The elements</h2>
-      <details id="element-1"><summary>1. Cancel</summary><p>Cancel or close the active dialog without applying changes.</p></details>
-      <details id="element-2"><summary>2. OK</summary><p>Apply settings or confirm operation.</p></details>
-    
+<details id="autostart"><summary>Autostart</summary><p>The Autostart column shows Yes or No for every disk without selecting it. A dash (-) means the worker does not support autostart. FileDO rows in the main list also show autostart when enabled. The setting is independent of State: a disk can have autostart enabled while closed or failed. Select it to read the sanitized worker error below the table. Close leaves this window.</p></details>
+    <p><a href="share-settings.html">Manager settings</a> · <a href="sftp-settings.html">SFTP sharing settings</a> · <a href="exchange-server-settings.html">Exchange server settings</a></p>
   </section>
   <nav id="related">
     <h2>Related</h2>

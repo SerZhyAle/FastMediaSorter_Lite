@@ -80,16 +80,23 @@ func ReadHTTPRequest(r *bufio.Reader) (HTTPRequest, error) {
 	}
 }
 
+// BroadcastRealm is the realm of the Basic challenge a protected broadcast's listen URL answers with (item BF).
+const BroadcastRealm = "fms-broadcast"
+
 // HTTPResponse is a body-less response with the given status, closing the connection. retryAfter,
-// when positive, adds the Retry-After header of a 503 (7.6).
+// when positive, adds the Retry-After header of a 503 (7.6). A 401 carries the one challenge of item BF,
+// `WWW-Authenticate: Basic realm="fms-broadcast"`, whatever made it a 401.
 func HTTPResponse(status int, retryAfter int) []byte {
-	text := map[int]string{400: "Bad Request", 403: "Forbidden", 404: "Not Found", 405: "Method Not Allowed", 503: "Service Unavailable",
-		505: "HTTP Version Not Supported"}[status]
+	text := map[int]string{400: "Bad Request", 401: "Unauthorized", 403: "Forbidden", 404: "Not Found", 405: "Method Not Allowed",
+		503: "Service Unavailable", 505: "HTTP Version Not Supported"}[status]
 	if text == "" {
 		text = "Error"
 	}
 	var b strings.Builder
 	b.WriteString("HTTP/1.1 " + strconv.Itoa(status) + " " + text + "\r\n")
+	if status == 401 {
+		b.WriteString("WWW-Authenticate: Basic realm=\"" + BroadcastRealm + "\"\r\n")
+	}
 	if status == 405 {
 		b.WriteString("Allow: GET\r\n")
 	}

@@ -80,7 +80,7 @@ Partial Public NotInheritable Class Share_Settings_Form
                 _loadingXHost = False
             End Try
         End If
-        If _txtXStatement IsNot Nothing Then _txtXStatement.Text = String.Join(vbCrLf & vbCrLf, ExchangeStatement.Paragraphs(snap.Report.LogRetentionDays))
+        If _txtXStatement IsNot Nothing Then _txtXStatement.Text = String.Join(vbCrLf & vbCrLf, ExchangeStatement.Paragraphs(snap.Report.LogRetentionDays, snap.Report.Sealed))
         _lblXRetention.Text = Localization.TF("Журналы хранятся {0} дней. Файлы создаются по дням UTC и очищаются ежедневно.", snap.Report.LogRetentionDays)
         UpdateXHostPending()
     End Sub

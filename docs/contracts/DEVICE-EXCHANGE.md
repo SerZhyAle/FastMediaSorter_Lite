@@ -42,5 +42,12 @@
 
 ## Where it stands
 
+Specification 234 records the 2026-10-23 local implementation and test evidence for section 27:
+sealed broadcast playback, pinned inner tunnel TLS, the guest-broadcast sender and the verbatim
+privacy statement. Section 27 was re-read in catalog edition 1.7; this scoped work does not claim
+the unrelated 1.6/1.7 amendments or a joint-device run. Folder guest access keeps specification
+239's `OutwardAccessFeatures` gate. The portal hand-off is
+[PORTAL_HONEST_TEXT_234.md](../guides/PORTAL_HONEST_TEXT_234.md).
+
 The registry row of this product and its dated exceptions say which sections are proven, open or excepted; this
 pointer never repeats them. Specification 244 holds the clause-by-clause audit and the version table.

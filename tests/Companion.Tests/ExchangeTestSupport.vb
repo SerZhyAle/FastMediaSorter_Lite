@@ -18,6 +18,7 @@ Friend Module ExchangeTestSupport
 
     ''' <summary>Puts every seam back to "real". Called at the start and end of every test that sets one.</summary>
     Friend Sub Reset()
+        WorkerProcess.ExeDirectoryOverride = Nothing
         ExchangeProcess.ExeDirectoryOverride = Nothing
         ExchangeProcess.DataDirOverride = Nothing
         ExchangeFeatures.ComponentProbeOverride = Nothing
@@ -48,6 +49,16 @@ Friend Module ExchangeTestSupport
         If withExe Then File.WriteAllBytes(Path.Combine(dir, ExchangeProcess.ExeName), New Byte() {})
         If withFirewallHelper Then File.WriteAllText(Path.Combine(dir, ExchangeFirewall.HelperScriptName), "# stand-in")
         If withServiceHelper Then File.WriteAllText(Path.Combine(dir, ExchangeService.HelperScriptName), "# stand-in")
+        Return dir
+    End Function
+
+    ''' <summary>A scratch folder that holds an empty stand-in for the SFTP worker exe, and points <see cref="WorkerProcess"/> at
+    ''' it, so <c>WorkerProcess.IsAvailable()</c> is true. Never executed: a fake-driven test starts no process.</summary>
+    Friend Function MakeFakeWorker() As String
+        Dim dir As String = Path.Combine(Path.GetTempPath(), "fms-worker-test-" & Guid.NewGuid().ToString("N"))
+        Directory.CreateDirectory(dir)
+        File.WriteAllBytes(Path.Combine(dir, WorkerProcess.ExeName), New Byte() {})
+        WorkerProcess.ExeDirectoryOverride = dir
         Return dir
     End Function
 

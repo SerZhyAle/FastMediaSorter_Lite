@@ -10,6 +10,7 @@ Imports System.Net.Security
 Imports System.Security.Cryptography
 Imports System.Threading
 Imports System.Threading.Tasks
+Imports System.Text.Json
 
 ' 023_SPECIFICATION_FMS_LIVE_BROADCAST_CONSUMER.md sections 1, 6.2, 6.4.
 '
@@ -40,16 +41,20 @@ Friend Enum LiveOpenOutcome
     TimedOut = 8
     ''' <summary>The caller cancelled (stop, another media, closing). Silent.</summary>
     Cancelled = 9
+    SealedFailed = 10
+    SealedReconnect = 11
 End Enum
 
 Friend NotInheritable Class LiveOpenResult
 
     Public ReadOnly Property Outcome As LiveOpenOutcome
     Public ReadOnly Property HttpStatus As Integer
+    Public ReadOnly Property SealedState As String
 
-    Public Sub New(outcome As LiveOpenOutcome, Optional httpStatus As Integer = 0)
+    Public Sub New(outcome As LiveOpenOutcome, Optional httpStatus As Integer = 0, Optional sealedState As String = "")
         Me.Outcome = outcome
         Me.HttpStatus = httpStatus
+        Me.SealedState = sealedState
     End Sub
 
     Public ReadOnly Property IsConnected As Boolean
@@ -63,7 +68,7 @@ Friend NotInheritable Class LiveOpenResult
         Get
             Select Case Outcome
                 Case LiveOpenOutcome.MaxListeners503, LiveOpenOutcome.AccessDenied, LiveOpenOutcome.NotFoundOrGone,
-                     LiveOpenOutcome.NotAudioStream, LiveOpenOutcome.HttpRefused
+                     LiveOpenOutcome.NotAudioStream, LiveOpenOutcome.HttpRefused, LiveOpenOutcome.SealedFailed
                     Return True
                 Case Else
                     Return False
@@ -85,6 +90,7 @@ Friend NotInheritable Class LiveOpenResult
             Select Case Outcome
                 Case LiveOpenOutcome.MaxListeners503 : Return LiveTerminationKind.MaxListeners503
                 Case LiveOpenOutcome.AccessDenied : Return LiveTerminationKind.AccessDenied
+                Case LiveOpenOutcome.SealedFailed : Return LiveTerminationKind.AccessDenied
                 Case LiveOpenOutcome.NotFoundOrGone : Return LiveTerminationKind.NotFoundOrGone
                 Case LiveOpenOutcome.NotAudioStream : Return LiveTerminationKind.NotAudioStream
                 Case LiveOpenOutcome.HttpRefused : Return LiveTerminationKind.HttpStatus
@@ -119,6 +125,15 @@ Friend NotInheritable Class LiveHttpPlaybackSession
     Private connectionsMade As Integer
     Private contentTypeValue As String = ""
     Private certificateRejected As Boolean
+    Private sealedReceiver As ExchangeSealedBroadcastReceiver
+    Private sealedStream As ExchangeSealedMediaStream
+    Private sealedError As String = ""
+
+    Public ReadOnly Property SealedStatus As ExchangeSealedReceiveStatus
+        Get
+            Return If(sealedStream Is Nothing, ExchangeSealedReceiveStatus.Streaming, sealedStream.Status)
+        End Get
+    End Property
 
     Public Sub New(endpoint As LiveBroadcastEndpoint, Optional options As LivePlaybackOptions = Nothing)
         If endpoint Is Nothing Then Throw New ArgumentNullException(NameOf(endpoint))
@@ -209,6 +224,44 @@ Friend NotInheritable Class LiveHttpPlaybackSession
     Public Async Function OpenAsync(cancellationToken As CancellationToken) As Task(Of LiveOpenResult)
         If Interlocked.Exchange(openedFlag, 1) <> 0 Then Throw New InvalidOperationException("A live session opens one connection.")
         If IsDisposed OrElse cancellationToken.IsCancellationRequested Then Return New LiveOpenResult(LiveOpenOutcome.Cancelled)
+        If endpoint.IsSealed Then
+            If Not ExchangeSealedBroadcastReceiver.IsSupportedSeal(endpoint.SealVersion) Then Return SealFailure()
+            If String.IsNullOrEmpty(endpoint.BroadcastId) Then endpoint.BroadcastId = BroadcastIdOf(endpoint)
+            If endpoint.RequiresAgentSeal OrElse (endpoint.Transport = "RELAY" AndAlso endpoint.SealKey.Length = 0) OrElse
+               (endpoint.Transport = "TUNNEL" AndAlso endpoint.SealPin.Length = 0) Then
+                Dim client As New ExchangeAgentClient()
+                Dim reply As ExchangeAgentReply = Await client.SendAsync(ExchangeAgentPipe.BuildRequest(ExchangeAgentPipe.RequestGetBroadcastSeal,
+                    Sub(o) o("broadcastId") = endpoint.BroadcastId), 4000, cancellationToken).ConfigureAwait(False)
+                If Not reply.IsOk Then Return SealFailure(If(reply.Error.Length > 0, reply.Error, "e2e-missing"))
+                endpoint.SealKey = ""
+                endpoint.SealPin = ""
+                endpoint.Password = Nothing
+                Try
+                    Using doc As JsonDocument = JsonDocument.Parse(reply.DataJson)
+                        Dim value As JsonElement
+                        If doc.RootElement.TryGetProperty("relayKey", value) AndAlso value.ValueKind = JsonValueKind.String Then endpoint.SealKey = value.GetString()
+                        If doc.RootElement.TryGetProperty("tunnelPin", value) AndAlso value.ValueKind = JsonValueKind.String Then endpoint.SealPin = value.GetString()
+                        If doc.RootElement.TryGetProperty("credentials", value) AndAlso value.ValueKind = JsonValueKind.Object Then
+                            endpoint.AuthUser = value.GetProperty("user").GetString()
+                            endpoint.Password = value.GetProperty("password").GetString()
+                        End If
+                    End Using
+                Catch ex As JsonException
+                    Return SealFailure()
+                Catch ex As InvalidOperationException
+                    Return SealFailure()
+                Catch ex As KeyNotFoundException
+                    Return SealFailure()
+                End Try
+            End If
+            If endpoint.Transport = "RELAY" Then
+                If Not ExchangeSealedBroadcastReceiver.TryCreate(endpoint.BroadcastId, endpoint.SealKey, sealedReceiver) Then Return SealFailure()
+            ElseIf endpoint.Transport <> "TUNNEL" OrElse Not ExchangeSealedTunnel.IsPin(endpoint.SealPin) Then
+                Return SealFailure()
+            End If
+        ElseIf endpoint.Transport = "RELAY" OrElse endpoint.Transport = "TUNNEL" Then
+            Return SealFailure("e2e-missing")
+        End If
 
         ' The connection is made HERE, once. SocketsHttpHandler quietly retries a GET up to three times when a
         ' connection dies before the response, and each retry is another TCP connection - on the watch, another
@@ -264,10 +317,11 @@ Friend NotInheritable Class LiveHttpPlaybackSession
                 Catch ex As ObjectDisposedException
                     Return New LiveOpenResult(LiveOpenOutcome.Cancelled)
                 Catch ex As HttpRequestException
+                    If sealedError.Length > 0 Then Return SealFailure(sealedError)
                     If certificateRejected Then Return New LiveOpenResult(LiveOpenOutcome.AccessDenied)
                     Return New LiveOpenResult(If(IsDisposed, LiveOpenOutcome.Cancelled, LiveOpenOutcome.NetworkError))
                 Catch ex As Exception
-                    AppFileLogger.LogException("Live HTTP connection failed", ex)
+                    AppFileLogger.LogMessage("Live HTTP connection failed")
                     Return New LiveOpenResult(If(IsDisposed, LiveOpenOutcome.Cancelled, LiveOpenOutcome.NetworkError))
                 End Try
             End Using
@@ -279,7 +333,11 @@ Friend NotInheritable Class LiveHttpPlaybackSession
         If status = 429 AndAlso endpoint.Password IsNot Nothing Then outcome = LiveOpenOutcome.HttpRefused
         If outcome = LiveOpenOutcome.Connected Then
             contentTypeValue = If(httpResponse.Content.Headers.ContentType?.MediaType, "")
-            If Not IsAudioContentType(contentTypeValue) AndAlso Not IsMpegTs Then outcome = LiveOpenOutcome.NotAudioStream
+            If endpoint.IsSealed AndAlso endpoint.Transport = "RELAY" Then
+                If Not ExchangeSealedBroadcastReceiver.IsSealedContentType(contentTypeValue) Then Return SealFailure()
+            ElseIf Not IsAudioContentType(contentTypeValue) AndAlso Not IsMpegTs Then
+                outcome = LiveOpenOutcome.NotAudioStream
+            End If
         End If
 
         If outcome <> LiveOpenOutcome.Connected Then
@@ -290,6 +348,18 @@ Friend NotInheritable Class LiveHttpPlaybackSession
 
         Try
             Dim body As Stream = Await httpResponse.Content.ReadAsStreamAsync(cancellationToken).ConfigureAwait(False)
+            If sealedReceiver IsNot Nothing Then
+                sealedStream = sealedReceiver.Open(body)
+                Using deadline As CancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken)
+                    deadline.CancelAfter(options.ConnectTimeoutMs)
+                    Await sealedStream.PrepareAsync(deadline.Token).ConfigureAwait(False)
+                End Using
+                If sealedStream.Status = ExchangeSealedReceiveStatus.SealedFailed Then Return SealFailure()
+                If sealedStream.Status = ExchangeSealedReceiveStatus.NeedReconnect Then Return New LiveOpenResult(LiveOpenOutcome.SealedReconnect)
+                If sealedReceiver.MediaType.Length = 0 Then Return SealFailure()
+                contentTypeValue = sealedReceiver.MediaType
+                body = sealedStream
+            End If
             progressStream = New ProgressReadStream(body)
         Catch ex As OperationCanceledException
             Close(LiveStreamEnd.Closed)
@@ -339,6 +409,21 @@ Friend NotInheritable Class LiveHttpPlaybackSession
                 opened.Dispose()
                 Throw New IOException("Broadcast tunnel refused: " & opened.Outcome.ToString())
             End If
+            If endpoint.IsSealed Then
+                Try
+                    Dim tls As ExchangeSealedTunnelClientResult = Await ExchangeSealedTunnel.ClientStreamAsync(opened.Stream, endpoint.SealPin, token).ConfigureAwait(False)
+                    If Not tls.IsOk Then
+                        sealedError = tls.StateCode
+                        tls.Dispose()
+                        If tls.Outcome = ExchangeSealedTunnelOutcome.Cancelled Then Throw New OperationCanceledException(token)
+                        Throw New IOException("Broadcast TLS did not connect.")
+                    End If
+                    Return tls.Stream
+                Catch
+                    opened.Dispose()
+                    Throw
+                End Try
+            End If
             Return opened.Stream
         End If
         Dim socket As New Sockets.Socket(Sockets.SocketType.Stream, Sockets.ProtocolType.Tcp) With {.NoDelay = True}
@@ -349,6 +434,21 @@ Friend NotInheritable Class LiveHttpPlaybackSession
             socket.Dispose()
             Throw
         End Try
+    End Function
+
+    Private Function SealFailure(Optional code As String = "sealed-failed") As LiveOpenResult
+        Close(LiveStreamEnd.Closed)
+        Return New LiveOpenResult(LiveOpenOutcome.SealedFailed, sealedState:=code)
+    End Function
+
+    Private Shared Function BroadcastIdOf(ep As LiveBroadcastEndpoint) As String
+        Dim address As Uri = Nothing
+        If Not Uri.TryCreate(ep.Url, UriKind.Absolute, address) Then Return ""
+        Dim parts As String() = address.AbsolutePath.Trim("/"c).Split("/"c)
+        For i As Integer = 0 To parts.Length - 2
+            If (parts(i) = "b" OrElse parts(i) = "broadcasts") AndAlso ExchangeIds.IsValidId(parts(i + 1)) Then Return parts(i + 1)
+        Next
+        Return ""
     End Function
 
     ''' <summary>The media type the device declared (empty when it declared none, or before the headers came).</summary>
@@ -458,6 +558,7 @@ Friend NotInheritable Class LiveHttpPlaybackSession
             If client IsNot Nothing Then client.Dispose()
         Catch
         End Try
+        sealedReceiver?.Dispose()
     End Sub
 
     Public Sub Dispose() Implements IDisposable.Dispose

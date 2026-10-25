@@ -66,18 +66,26 @@ Partial Public Class Image_Panel_Form
     Private ReadOnly flush_Timer As New System.Windows.Forms.Timer() With {.Interval = 80}
 
     ' --- state -----------------------------------------------------------------------
-    Private ReadOnly model As New SelectionModel()
+    ''' <summary>The triage selection keys rows by path, case-insensitively (Windows); the file manager's keys rows by the
+    ''' opaque place-and-path identity, ordinally (a server path is case-sensitive: a.jpg and A.jpg are two files, 257 N2).
+    ''' <see cref="model"/> is the one in use; Image_Panel_Form.FileManager.vb swaps it with the mode.</summary>
+    Private ReadOnly triage_Model As New SelectionModel()
+    Private ReadOnly manager_Model As New SelectionModel(StringComparer.Ordinal)
+    Private model As SelectionModel = triage_Model
     Private rows As New List(Of PanelFileRow)()
     Private display As New List(Of PanelFileRow)()
-    Private ReadOnly row_By_Path As New Dictionary(Of String, PanelFileRow)(StringComparer.OrdinalIgnoreCase)
+    Private row_By_Identity As New Dictionary(Of String, PanelFileRow)(StringComparer.OrdinalIgnoreCase)
+    ''' <summary>Nothing = the triage comparer (case-insensitive); the file manager sets ordinal.</summary>
+    Private identity_Comparer As IEqualityComparer(Of String)
     Private sort_Column As PanelSortColumn = PanelSortColumn.None
     Private sort_Descending As Boolean
     Private target_File As String = ""
+    Private strip_Action As Action
     Private view_Is_List As Boolean
     Private thumb_Px As Integer = 128
 
     Private memory As ThumbnailMemoryCache
-    Private ReadOnly no_Picture As New HashSet(Of String)(StringComparer.OrdinalIgnoreCase)
+    Private no_Picture As New HashSet(Of String)(StringComparer.OrdinalIgnoreCase)
     Private loader As PanelThumbnailLoader
     Private session As Integer
     Private thumb_Dirty As Boolean
@@ -112,13 +120,19 @@ Partial Public Class Image_Panel_Form
         BuildSurfaces()
         BuildStrip()
         BuildBusyBand()
+        BuildFileManager()
 
-        ' Fill first, edges after: the edge-docked controls are laid out before it.
+        ' Fill first, edges after: the edge-docked controls are laid out before it. The file manager's header sits
+        ' under the busy band, the places list above the strip; its placeholder is a Fill control that comes to the front.
         Controls.Add(grid)
         Controls.Add(details)
+        Controls.Add(lst_Places)
+        Controls.Add(lbl_Placeholder)
         Controls.Add(strip)
+        Controls.Add(manager_Header)
         Controls.Add(busy_Band)
         Controls.Add(toolbar)
+        lbl_Placeholder.BringToFront()
 
         ApplyContentColors()
         AddHandler Me.KeyDown, AddressOf OnFormKeyDown
@@ -161,6 +175,8 @@ Partial Public Class Image_Panel_Form
 
         lbl_Selection = New ToolStripLabel With {.Alignment = ToolStripItemAlignment.Right}
 
+        BuildModeSelector()
+
         toolbar.Items.Add(btn_ViewMode)
         toolbar.Items.Add(New ToolStripSeparator())
         toolbar.Items.Add(New ToolStripLabel(Localization.T("Размер:")))
@@ -168,6 +184,7 @@ Partial Public Class Image_Panel_Form
         toolbar.Items.Add(New ToolStripSeparator())
         toolbar.Items.Add(btn_SelectAll)
         toolbar.Items.Add(lbl_Selection)
+        BuildManagerCommands()
     End Sub
 
     Private Sub BuildSurfaces()
@@ -178,11 +195,11 @@ Partial Public Class Image_Panel_Form
 
         AddHandler grid.ViewChanged, Sub(s, e) RefillLoader()
         AddHandler grid.SelectionGesture, Sub(s, e) AfterSelectionChange()
-        AddHandler grid.ItemActivated, Sub(s, i) OpenInMain(i)
+        AddHandler grid.ItemActivated, Sub(s, i) ActivateItem(i)
         AddHandler grid.HoverChanged, AddressOf OnGridHover
 
         AddHandler details.SelectionGesture, Sub(s, e) AfterSelectionChange()
-        AddHandler details.ItemActivated, Sub(s, i) OpenInMain(i)
+        AddHandler details.ItemActivated, Sub(s, i) ActivateItem(i)
         AddHandler details.SortRequested, AddressOf OnSortRequested
     End Sub
 
@@ -281,6 +298,7 @@ Partial Public Class Image_Panel_Form
             details.BackColor = back
             details.ForeColor = ink
         End If
+        ApplyManagerColors(back, ink)
     End Sub
 
     ' ===================================================================== lifecycle ====
@@ -417,6 +435,10 @@ Partial Public Class Image_Panel_Form
             Return
         End If
 
+        ' Cancels a listing in flight and closes the manager's own connections, so no provider lease is left behind
+        ' (257 N4); a reopened panel is the triage one again.
+        ShutDownManager()
+
         If Not MultiWindowPolicy.IsSecondaryInstance() Then
             ' Negative coordinates are a monitor left of or above the primary one, and a
             ' maximized panel remembers its normal rectangle, not the screen's.
@@ -445,9 +467,9 @@ Partial Public Class Image_Panel_Form
 
     Private Sub BeginSession(prefs As ModernViewerPreferences)
         Interlocked.Increment(session)
-        memory = New ThumbnailMemoryCache(Memory_Budget_Bytes)
+        memory = New ThumbnailMemoryCache(Memory_Budget_Bytes, identity_Comparer)
         no_Picture.Clear()
-        loader = New PanelThumbnailLoader(NewThumbnailService(prefs), thumb_Px, AddressOf OnThumbnailMade)
+        loader = New PanelThumbnailLoader(NewThumbnailService(prefs), thumb_Px, AddressOf OnThumbnailMade, comparer:=identity_Comparer)
     End Sub
 
     ''' <summary>The recipe for a thumbnail, with the one thing it cannot know by itself: an entry of
@@ -483,12 +505,15 @@ Partial Public Class Image_Panel_Form
             memory = Nothing
         End If
         no_Picture.Clear()
-        model.SetItems(Nothing)
+        triage_Model.SetItems(Nothing)
+        manager_Model.SetItems(Nothing)
         rows = New List(Of PanelFileRow)()
         display = New List(Of PanelFileRow)()
-        row_By_Path.Clear()
+        row_By_Identity.Clear()
         last_Report = Nothing
         run_Is_Active = False
+        ' Last: the panel always opens as triage, whatever mode it was closed in (257).
+        LeaveManagerMode()
     End Sub
 
     ' ======================================================================== data ====
@@ -499,9 +524,9 @@ Partial Public Class Image_Panel_Form
         Dim snapshot As PanelListSnapshot = Main_Form.SnapshotFileList()
         rows = snapshot.Rows
         target_File = snapshot.CurrentPath
-        row_By_Path.Clear()
+        row_By_Identity.Clear()
         For Each row As PanelFileRow In rows
-            row_By_Path(row.Path) = row
+            row_By_Identity(row.Identity) = row
         Next
         If Not keepSelection Then model.SelectNone()
         grid.TargetPath = target_File
@@ -546,7 +571,7 @@ Partial Public Class Image_Panel_Form
     ''' selection follows by path.</summary>
     Private Sub RebuildDisplay()
         display = PanelSort.Order(rows, sort_Column, sort_Descending)
-        model.SetItems(display.Select(Function(r) r.Path))
+        model.SetItems(display.Select(Function(r) r.Identity))
         grid.Bind(model, display, memory, no_Picture)
         details.Bind(model, display)
         details.SetSort(sort_Column, sort_Descending)
@@ -569,7 +594,7 @@ Partial Public Class Image_Panel_Form
         rows.RemoveAll(Function(r) gone.Contains(r.Path))
         display.RemoveAll(Function(r) gone.Contains(r.Path))
         For Each p As String In gone
-            row_By_Path.Remove(p)
+            row_By_Identity.Remove(p)
             memory?.Remove(p)
             no_Picture.Remove(p)
         Next
@@ -591,29 +616,29 @@ Partial Public Class Image_Panel_Form
     ' ================================================================== thumbnails ====
 
     ''' <summary>On a loader thread.</summary>
-    Private Sub OnThumbnailMade(path As String, thumbnail As Bitmap)
+    Private Sub OnThumbnailMade(identity As String, thumbnail As Bitmap)
         Dim mine As Integer = Volatile.Read(session)
         Try
             If Me.IsDisposed OrElse Not Me.IsHandleCreated Then
                 thumbnail?.Dispose()
                 Return
             End If
-            BeginInvoke(New Action(Sub() DeliverThumbnail(mine, path, thumbnail)))
+            BeginInvoke(New Action(Sub() DeliverThumbnail(mine, identity, thumbnail)))
         Catch
             ' The form went away between the check and the post: the bitmap is still ours.
             thumbnail?.Dispose()
         End Try
     End Sub
 
-    Private Sub DeliverThumbnail(forSession As Integer, path As String, thumbnail As Bitmap)
+    Private Sub DeliverThumbnail(forSession As Integer, identity As String, thumbnail As Bitmap)
         If forSession <> session OrElse memory Is Nothing OrElse Me.IsDisposed Then
             thumbnail?.Dispose()
             Return
         End If
         If thumbnail Is Nothing Then
-            no_Picture.Add(path)
+            no_Picture.Add(identity)
         Else
-            memory.Put(path, thumbnail)
+            memory.Put(identity, thumbnail)
         End If
         thumb_Dirty = True
         If Not flush_Timer.Enabled Then flush_Timer.Start()
@@ -627,7 +652,7 @@ Partial Public Class Image_Panel_Form
             loader.SetWanted(Nothing)
             Return
         End If
-        loader.SetWanted(grid.VisibleRows().Where(Function(r) Not memory.Contains(r.Path) AndAlso Not no_Picture.Contains(r.Path)).ToList())
+        loader.SetWanted(grid.VisibleRows().Where(Function(r) Not memory.Contains(r.Identity) AndAlso Not no_Picture.Contains(r.Identity)).ToList())
     End Sub
 
     Private Sub OnCardSizeChosen(sender As Object, e As EventArgs)
@@ -643,7 +668,7 @@ Partial Public Class Image_Panel_Form
         If loader IsNot Nothing Then loader.Dispose()
         memory?.Clear()
         no_Picture.Clear()
-        loader = New PanelThumbnailLoader(NewThumbnailService(prefs), thumb_Px, AddressOf OnThumbnailMade)
+        loader = New PanelThumbnailLoader(NewThumbnailService(prefs), thumb_Px, AddressOf OnThumbnailMade, comparer:=identity_Comparer)
         grid.CardSize = chosen
         RefillLoader()
         FocusActiveView()
@@ -653,7 +678,11 @@ Partial Public Class Image_Panel_Form
 
     Private Sub ToggleView()
         view_Is_List = Not view_Is_List
-        Main_Form.GetModernPreferences().PanelViewMode = If(view_Is_List, "list", "grid")
+        If manager_Mode Then
+            Main_Form.GetModernPreferences().FileManagerViewMode = If(view_Is_List, "list", "grid")
+        Else
+            Main_Form.GetModernPreferences().PanelViewMode = If(view_Is_List, "list", "grid")
+        End If
         ApplyViewMode()
         Dim at As Integer = model.FocusIndex
         If view_Is_List Then
@@ -680,6 +709,13 @@ Partial Public Class Image_Panel_Form
 
     Private Sub OnSortRequested(sender As Object, clicked As PanelSortColumn)
         PanelSort.NextClick(clicked, sort_Column, sort_Descending)
+        If manager_Mode AndAlso nav?.Current?.Place IsNot Nothing Then
+            Dim prefs = Main_Form.GetModernPreferences()
+            If prefs.FileManagerRememberSort Then
+                prefs.SetPlaceSort(nav.Current.Place.Id, sort_Column, sort_Descending)
+                prefs.Save()
+            End If
+        End If
         RebuildDisplay()
         details.ShowRow(model.FocusIndex)
     End Sub
@@ -694,10 +730,10 @@ Partial Public Class Image_Panel_Form
 
     Private Sub OnGridHover(sender As Object, index As Integer)
         If tip Is Nothing Then Return
-        Dim path As String = model.PathAt(index)
+        Dim identity As String = model.PathAt(index)
         Dim row As PanelFileRow = Nothing
-        If path Is Nothing OrElse Not row_By_Path.TryGetValue(path, row) Then
-            tip.SetToolTip(grid, HelpText())
+        If identity Is Nothing OrElse Not row_By_Identity.TryGetValue(identity, row) Then
+            tip.SetToolTip(grid, CurrentHelp())
             Return
         End If
         Dim facts As String = (PanelText.FormatSize(row.SizeBytes) & "  " & PanelText.FormatDate(row.Modified, row.HasMetadata)).Trim()
@@ -716,6 +752,7 @@ Partial Public Class Image_Panel_Form
 
     Private Sub AfterSelectionChange()
         UpdateSelectionLabel()
+        UpdateManagerCommands()
         grid.Invalidate()
         details.Invalidate()
     End Sub
@@ -754,14 +791,19 @@ Partial Public Class Image_Panel_Form
         ' F1 opens the same reference the empty grid's tooltip carries (126 UX-609): a
         ' tooltip on empty space is the one place nobody looks first.
         If e.KeyCode = Keys.F1 Then
-            AskDialogs.Tell(Me, Localization.T("Клавиши панели"), HelpText(), AskIcon.None)
+            AskDialogs.Tell(Me, Localization.T("Клавиши панели"), CurrentHelp(), AskIcon.None)
             e.Handled = True
             e.SuppressKeyPress = True
             Return
         End If
 
-        ' The size drop-down owns the keys while it is open.
+        ' The size and mode drop-downs own the keys while they are open.
         If cmb_CardSize IsNot Nothing AndAlso cmb_CardSize.DroppedDown Then Return
+        If cmb_Mode IsNot Nothing AndAlso cmb_Mode.DroppedDown Then Return
+
+        ' The file manager takes its own keys first: an address box keeps the editing keys and digits, and no navigation or
+        ' destructive key falls through to the triage handlers below (257).
+        If manager_Mode AndAlso HandleManagerKey(e) Then Return
 
         Dim handled As Boolean = True
         Dim columns As Integer = If(view_Is_List, 1, grid.Cols())
@@ -803,7 +845,7 @@ Partial Public Class Image_Panel_Form
                     model.ToggleFocused()
                     AfterSelectionChange()
                 Case Keys.Enter
-                    OpenInMain(model.FocusIndex)
+                    ActivateItem(model.FocusIndex)
                 Case Keys.Delete
                     RunBatch(BatchIntent.Delete, 0)
                 Case Else
@@ -875,8 +917,10 @@ Partial Public Class Image_Panel_Form
         If events_Wired Then Return
         events_Wired = True
         AddHandler Main_Form.BatchProgressChanged, AddressOf OnBatchProgress
+        AddHandler Main_Form.ManagerArchiveProgress, AddressOf OnManagerArchiveProgress
         AddHandler Main_Form.BatchItemDone, AddressOf OnBatchItemDone
         AddHandler Main_Form.BatchCompleted, AddressOf OnBatchCompleted
+        AddHandler Main_Form.ManagerLocationChanged, AddressOf OnManagerLocationChanged
     End Sub
 
     Private Sub UnwireMainEvents()
@@ -884,8 +928,10 @@ Partial Public Class Image_Panel_Form
         events_Wired = False
         Try
             RemoveHandler Main_Form.BatchProgressChanged, AddressOf OnBatchProgress
+            RemoveHandler Main_Form.ManagerArchiveProgress, AddressOf OnManagerArchiveProgress
             RemoveHandler Main_Form.BatchItemDone, AddressOf OnBatchItemDone
             RemoveHandler Main_Form.BatchCompleted, AddressOf OnBatchCompleted
+            RemoveHandler Main_Form.ManagerLocationChanged, AddressOf OnManagerLocationChanged
         Catch ex As Exception
             ' The main window is going away with the application.
         End Try
@@ -900,7 +946,7 @@ Partial Public Class Image_Panel_Form
     ''' <summary>The grid follows the run: a file that has left its folder leaves the panel now,
     ''' not when the run ends.</summary>
     Private Sub OnBatchItemDone(sender As Object, e As BatchItemEventArgs)
-        If Me.IsDisposed Then Return
+        If Me.IsDisposed OrElse manager_Mode Then Return
         Dim result As BatchItemResult = e.Result
         If result.State <> BatchItemState.Done OrElse result.Op Is Nothing Then Return
         Select Case result.Op.Kind
@@ -914,13 +960,18 @@ Partial Public Class Image_Panel_Form
         If Me.IsDisposed Then Return
         run_Is_Active = False
         FlushRemoved()
+        If manager_Mode AndAlso manager_Invalidated Then
+            manager_Invalidated = False
+            RefreshManager()
+        End If
 
         Dim report As BatchReport = e.Report
         last_Report = report
         Select Case report.Kind
             Case BatchRunKind.Undo
-                ' Files came back into the main window's list: take it again, selection kept.
-                LoadFromMain(keepSelection:=True)
+                ' Files came back into the main window's list: take it again, selection kept. The file manager reads its
+                ' own folder again instead - it never shows the main window's list.
+                If manager_Mode Then RefreshManager() Else LoadFromMain(keepSelection:=True)
             Case BatchRunKind.Copy
                 ' What was copied is done with - as the panel always cleared it.
                 model.SelectNone()
@@ -960,6 +1011,12 @@ Partial Public Class Image_Panel_Form
     End Sub
 
     Private Sub OnStripClicked(sender As Object, e As EventArgs)
+        If strip_Action IsNot Nothing Then
+            Dim act = strip_Action
+            strip_Action = Nothing
+            act()
+            Return
+        End If
         If last_Report Is Nothing OrElse Main_Form.BatchIsRunning Then Return
         Using dialog As New Batch_Report_Form(last_Report)
             DialogLayer.ShowViewerDialog(dialog, Me)

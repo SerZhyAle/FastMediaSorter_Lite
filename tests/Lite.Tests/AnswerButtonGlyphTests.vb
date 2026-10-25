@@ -534,7 +534,7 @@ Public Class AnswerButtonGlyphTests
         ' A partial SVG reader fails silently (an underline off the grid, a filled rectangle): paint every glyph the
         ' buttons use and require ink - and, for the product-drawn one, the two parts of its outline.
         Dim root As String = RepoRoot()
-        For Each id As String In New String() {"action.confirm", "action.cancel", "nav.close", "action.save", "action.replace", "action.revert", "action.reset", "action.swap", "action.remove"}
+        For Each id As String In New String() {"action.confirm", "action.cancel", "nav.close", "action.save", "action.replace", "action.revert", "action.reset", "action.swap", "action.remove", "action.skip", "action.create-shortcut"}
             Using bitmap As Bitmap = GlyphRenderer.Render(id, 48, Color.Black, ButtonGlyphs.AssetOpener)
                 Assert.True(InkPixels(bitmap) > 60, id & " painted almost nothing")
             End Using

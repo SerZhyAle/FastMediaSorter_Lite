@@ -4,15 +4,18 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <script>
-(function(){try{
-  var t=localStorage.getItem('sza-theme');
+(function(){
+  var t;try{t=localStorage.getItem('sza-theme');}catch(e){}
   if(t!=='dark'&&t!=='light')t=matchMedia('(prefers-color-scheme: light)').matches?'light':'dark';
   document.documentElement.setAttribute('data-theme',t);
-  var l=localStorage.getItem('sza-lang');
+  var l;try{l=localStorage.getItem('sza-lang');}catch(e){}
+  var q=new URLSearchParams(location.search),requested=q.has('lang')?q.get('lang'):q.get('l');
+  if(requested){requested=requested.toLowerCase();if(requested==='uk')requested='ua';if(requested==='en'||requested==='ru'||requested==='ua')l=requested;}
   if(l==='uk')l='ua';
   if(l!=='ru'&&l!=='en'&&l!=='ua'){var n=(navigator.language||'en').toLowerCase();l=n.indexOf('ru')==0?'ru':n.indexOf('uk')==0?'ua':'en';}
   document.documentElement.setAttribute('data-lang',l);
-}catch(e){}})();
+  document.addEventListener('click',function(e){var a=e.target.closest&&e.target.closest('a[href]');if(!a)return;try{var u=new URL(a.href,location.href);if(u.hostname==='serzhyale.github.io'||u.hostname==='sza.od.ua'){u.searchParams.delete('l');u.searchParams.set('lang',document.documentElement.getAttribute('data-lang')==='ua'?'uk':document.documentElement.getAttribute('data-lang'));a.href=u.href;}}catch(ignore){}});
+})();
 </script>
 <title>Сортування фото та відео | Fast Media Sorter &amp; Sharing</title>
 <meta name="description" content="Швидко гортайте великі теки з фото та відео і розкладайте файли по каталогах одним натисканням клавіші.">
@@ -97,8 +100,11 @@
     <p class="lead lead-narrow">Швидко гортайте великі теки з фото та відео і розкладайте файли по каталогах одним натисканням клавіші.</p>
     <p class="lead lead-narrow">«Sharing» у назві - це передача ваших медіафайлів комусь іншому: телефону з Android, іншій копії програми або будь-якому SFTP-клієнту. Доки ви не ввімкнете, вона вимкнена. <a href="https://serzhyale.github.io/FastMediaSorter_Lite/publish-folders-android.html" lang="en" dir="ltr">Share folders to Android over SFTP</a></p>
     <div class="button-group">
-      <a class="btn btn-primary" href="#get">Інсталятор (GitHub)</a>
-      <a class="btn btn-ghost" href="#features">Що варто знати</a>
+      <!-- PAGE-CONTENT "Copy rules": stable action labels - Install (the get-it block below) and Guides
+           (the topics index). The artifact names (Installer (GitHub), winget, Store) stay in the #get
+           channels, where naming each way to get the product is the rule. -->
+      <a class="btn btn-primary" href="#get">Встановити</a>
+      <a class="btn btn-ghost" href="https://serzhyale.github.io/FastMediaSorter_Lite/topics.html">Інструкції</a>
     </div>
   </section>
 
@@ -253,6 +259,14 @@
         <h3>Сервер як тека</h3>
         <p>SFTP-сервер або мережева тека з паролем відкривається як звичайна тека: зображення, відео та документи підвантажуються під час гортання, ключ сервера запам'ятовується, а пароль зберігається в зашифрованому вигляді для вашого облікового запису Windows.</p>
       </article>
+      <article class="card">
+        <h3>Зображення JPEG XL</h3>
+        <p>Відкривайте звичайні й анімовані JXL у 64-бітному переглядачі без додаткового кодека Windows. Результат редагування зберігається в PNG, JPEG або WEBP; збереження в JXL немає.</p>
+      </article>
+      <article class="card">
+        <h3>Прямий ефір</h3>
+        <p>Передавайте екран, одне вікно, камеру, мікрофон або системний звук із Share Manager. Відкривайте прямий ефір у 64-бітному переглядачі за посиланням, кодом або файлом .fmsbcast. Захоплення починається лише після натискання «Почати».</p>
+      </article>
       </div>
     </details>
   </section>
@@ -302,7 +316,7 @@
     <a href="https://serzhyale.github.io/CyrFlip/"><b>CyrFlip</b><span>Виправлення розкладки Windows</span></a>
     <a href="https://serzhyale.github.io/doc-html-translate/"><b>doc-html-translate</b><span>Конвертер книг для Windows</span></a>
     <a href="https://serzhyale.github.io/FileDO/"><b>FileDO</b><span>CLI для перевірки носіїв</span></a>
-    <a href="https://serzhyale.github.io/StreamsPlayer/"><b>StreamsPlayer</b><span>Плеєр стрімів для Windows</span></a>
+    <a href="https://serzhyale.github.io/StreamsPlayer/"><b>STREAMS Player</b><span>Windows stream player</span></a>
     <a href="https://serzhyale.github.io/OneClickRunner/"><b>OneClickRunner</b><span>Лаунчер Windows у треї</span></a>
     <a href="https://serzhyale.github.io/universal-agent-kit/"><b>Universal Agent Kit</b><span>Методологія AI-розробки</span></a>
     <a href="https://sza.od.ua/"><b>SZA</b><span>Портфоліо</span></a>

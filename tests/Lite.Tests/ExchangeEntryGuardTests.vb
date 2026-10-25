@@ -94,6 +94,7 @@ Public Class ExchangeEntryGuardTests
     <Fact>
     Public Sub Only_the_entries_own_files_open_a_session_for_an_entry()
         Dim allowed As New HashSet(Of String)(StringComparer.OrdinalIgnoreCase) From {
+            "ManagerExchangePlaces.vb", "ManagerExchangeAccess.vb", "ManagerProviderOpener.vb",
             "Exchange_Devices_Panel.vb", "Exchange_Connect_Form.vb", "ExchangeViewerEntries.vb", "ExchangeEntrySession.vb", "ExchangeConsumer.vb",
             "ExchangeConnectFlow.vb", "ExchangeEntries.vb", "ExchangeTunnel.vb", "HostingProbesLive.vb", "ExchangeEntryApi.vb", "ExchangeDevices.vb", "ExchangeEntryText.vb"}
         For Each f As String In Directory.GetFiles(Path.Combine(Root(), "src"), "*.vb", SearchOption.AllDirectories)

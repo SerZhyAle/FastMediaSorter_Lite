@@ -294,6 +294,19 @@ nobody listens to, an ended one and a server without a relay say `0`. `bitrateEs
 of a broadcast over its life, not a rate, and a number is not invented. Tests: `TestBroadcastListShowsTheRelayListenersThatAreAttachedNow`,
 `TestBroadcastListCountsTunnelsWithTheRelayListenersAndSurvivesAnEnd`, `TestBroadcastListCountsListenersFromTheHostAndZeroWithoutOne`.
 
+**A protected broadcast is checked at the relay** (DEVICE-EXCHANGE items BF and DV; ticket 263 T-3, server half). `broadcast-start` and
+`broadcast-update` may carry an envelope-level `verifiers` array (`user`, `salt` 16 bytes, `hash` 32 bytes of PBKDF2-HMAC-SHA256 at 600000
+rounds, both base64url without padding); the directory keeps it in memory with the broadcast and nowhere else - never in a listing, a
+`changed` push, an admin view or a log. Absent member: nothing to check on a start, the held list unchanged on an update; `[]` checks nobody;
+a non-empty list replaces the held one wholesale. `Relay.Listen` then requires `Authorization: Basic` and answers `401` with
+`WWW-Authenticate: Basic realm="fms-broadcast"` for none, an unknown user or a wrong password (an unknown user pays the same single PBKDF2 as
+a wrong password, against a random per-process dummy; hashes are compared in constant time). One credentialed check per second per broadcast
+and source address, the token taken before any hashing and never refunded; a request without usable credentials is a free challenge; the
+relay's own pool of two hashes at a time answers `503 Retry-After: 1` when busy. Bounds in `internal/wire/validate.go`: at most 64 entries,
+a user of 1-64 characters without `:` or control characters, no duplicate user. Tests: `internal/wire/verifiers_test.go`,
+`internal/directory/verifiers_test.go`, `internal/rendezvous/relay_auth_test.go`, `relay_check_internal_test.go`, and the `verifier` /
+`authorization` / `salt` additions to `internal/logx/guard_test.go`.
+
 **The session list and the audit ring are anonymous about the product on the remote path.** `admin-auth` holds only the password,
 `admin-request` has no product member, and an operator is no enrolled device that could lend its record's product, so the server cannot
 know which program signed in (a member a client adds is ignored, never recorded). Every remote operator is therefore `remote` in

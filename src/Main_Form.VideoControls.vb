@@ -50,6 +50,7 @@ Partial Public Class Main_Form
     ''' <summary>Counts down to hiding the bar after the mouse stops moving - the same
     ''' behaviour the IE controls had.</summary>
     Private WithEvents video_Controls_Hide_Timer As New Timer() With {.Interval = 2500}
+    Private video_Last_Pointer_Position As Point?
 
     ''' <summary>The clock shows "-remaining / total" instead of "elapsed / total" (121 UX-410); a click toggles it.</summary>
     Private video_Clock_Remaining As Boolean
@@ -237,6 +238,7 @@ Partial Public Class Main_Form
         For Each rate As Single In PlaybackRules.Speed_Ladder
             widest = Math.Max(widest, MeasureBarText(PlaybackRules.FormatRate(rate), font))
         Next
+        widest = Math.Max(widest, MeasureBarText(Localization.T("Покадрово"), font))
         video_Speed_Width = Math.Max(UiScale.Px(ChromeMetrics.TransportButtonWidth, factor),
                                      widest + 2 * UiScale.Px(ChromeMetrics.CaptionPadding, factor))
         Return video_Speed_Width
@@ -352,9 +354,9 @@ Partial Public Class Main_Form
     Private Sub RefreshBarAccessibleNames()
         If video_Controls Is Nothing Then Return
         btn_Video_Mute.AccessibleName = Localization.TF("{0}: {1}", Localization.T("Звук вкл/выкл"),
-                                                         Localization.T(If(is_Video_Muted, "Звук выключен", "Звук включён")))
+                                                         Localization.T(If(is_Video_Muted OrElse frame_Playback_Mode, "Звук выключен", "Звук включён")))
         btn_Video_Speed.AccessibleName = Localization.TF("{0}: {1}", Localization.T("Скорость воспроизведения"),
-                                                          PlaybackRules.FormatRate(playback_Rate))
+                                                          FramePlaybackCaption())
     End Sub
 
     ''' <summary>What a screen reader says for the seek bar's value: the clock's own words.</summary>
@@ -365,7 +367,7 @@ Partial Public Class Main_Form
 
     ''' <summary>What a screen reader says for the volume's value.</summary>
     Private Function VolumeValueText() As String
-        Return TransportRules.VolumePercent(If(is_Video_Muted, 0.0R, video_Volume_Level)).ToString(Globalization.CultureInfo.InvariantCulture) & " %"
+        Return TransportRules.VolumePercent(If(is_Video_Muted OrElse frame_Playback_Mode, 0.0R, video_Volume_Level)).ToString(Globalization.CultureInfo.InvariantCulture) & " %"
     End Function
 
     ''' <summary>Brings the bar up and restarts the countdown to hiding it.</summary>
@@ -431,6 +433,7 @@ Partial Public Class Main_Form
     End Sub
 
     Private Sub VideoControls_MouseMove(sender As Object, e As MouseEventArgs)
+        If Not VideoPointerMoved() Then Return
         ' Restart the countdown, but do not rebuild/reposition on every pixel.
         If video_Controls IsNot Nothing AndAlso video_Controls.Visible Then
             video_Controls_Hide_Timer.Stop()
@@ -438,9 +441,19 @@ Partial Public Class Main_Form
         End If
     End Sub
 
+    ''' <summary>Layout and native video repainting can send WM_MOUSEMOVE under a stationary
+    ''' pointer. Only a change in screen coordinates restarts the transport countdown.</summary>
+    Private Function VideoPointerMoved() As Boolean
+        Dim position As Point = Cursor.Position
+        If video_Last_Pointer_Position.HasValue AndAlso video_Last_Pointer_Position.Value = position Then Return False
+        video_Last_Pointer_Position = position
+        Return True
+    End Function
+
     ''' <summary>Hooked onto the VLC surface: moving the mouse over the picture is what
     ''' summons the bar, exactly as it did in the IE player.</summary>
     Private Sub Vlc_Video_View_MouseMove(sender As Object, e As MouseEventArgs)
+        If Not VideoPointerMoved() Then Return
         OnPlaybackPointerActivity(e.X, e.Y)
         RevealSlideshowChromeTemporarily()
         ShowVideoControls()
@@ -451,7 +464,7 @@ Partial Public Class Main_Form
     ''' warns may not be what the media actually plays.</summary>
     Private Sub RefreshPlaybackSpeedButton()
         If btn_Video_Speed Is Nothing Then Return
-        Dim text As String = PlaybackRules.FormatRate(playback_Rate)
+        Dim text As String = FramePlaybackCaption()
         If Not String.Equals(btn_Video_Speed.Text, text, StringComparison.Ordinal) Then
             btn_Video_Speed.Text = text
             btn_Video_Speed.Invalidate()
@@ -472,7 +485,7 @@ Partial Public Class Main_Form
         For Each step_Rate As Single In PlaybackRules.Speed_Ladder
             Dim rate As Single = step_Rate
             Dim item As New ToolStripMenuItem(PlaybackRules.FormatRate(rate)) With {
-                .Checked = Math.Abs(rate - nearest) < 0.001F}
+                .Checked = Not frame_Playback_Mode AndAlso Math.Abs(rate - nearest) < 0.001F}
             AddHandler item.Click, Sub()
                                        ApplyPlaybackRate(rate, announce:=True)
                                        RefreshVideoControlsState()
@@ -480,6 +493,13 @@ Partial Public Class Main_Form
                                    End Sub
             items.Add(item)
         Next
+
+        Dim frames As New ToolStripMenuItem(Localization.T("Покадрово")) With {
+            .Checked = frame_Playback_Mode,
+            .Enabled = CanUseFramePlayback(),
+            .ToolTipText = Localization.T("Покадрово: 1 кадр в секунду, без звука")}
+        AddHandler frames.Click, Sub() StartFramePlayback()
+        items.Add(frames)
 
         Dim reset As New ToolStripMenuItem(Localization.T("Обычная"))
         AddHandler reset.Click, Sub()
@@ -523,6 +543,7 @@ Partial Public Class Main_Form
 
     Private Function IsVlcActuallyPlaying() As Boolean
         If vlc_Media_Player Is Nothing Then Return False
+        If frame_Playback_Mode Then Return frame_Auto_Running
         Try
             Return vlc_Media_Player.IsPlaying
         Catch
@@ -601,8 +622,9 @@ Partial Public Class Main_Form
     ''' <summary>The mute button's glyph (crossed out while muted and at level zero, 121 UX-408), the volume slider
     ''' and the names that carry the state.</summary>
     Private Sub RefreshMuteState()
-        SetVideoGlyph(btn_Video_Mute, TransportRules.VolumeGlyphId(is_Video_Muted, video_Volume_Level))
-        If Not video_Volume.IsDragging Then video_Volume.Value = If(is_Video_Muted, 0.0, video_Volume_Level)
+        Dim muted As Boolean = is_Video_Muted OrElse frame_Playback_Mode
+        SetVideoGlyph(btn_Video_Mute, TransportRules.VolumeGlyphId(muted, video_Volume_Level))
+        If Not video_Volume.IsDragging Then video_Volume.Value = If(muted, 0.0, video_Volume_Level)
         RefreshBarAccessibleNames()
     End Sub
 
@@ -659,6 +681,16 @@ Partial Public Class Main_Form
     ''' know which way it went, so a double-click can put it back.</summary>
     Friend Function TogglePlayPause() As Boolean
         If vlc_Media_Player Is Nothing Then Return False
+        If frame_Playback_Mode Then
+            Dim wasRunning As Boolean = frame_Auto_Running
+            frame_Auto_Running = Not wasRunning
+            frame_Playback_Timer.Enabled = frame_Auto_Running AndAlso Not frame_Busy
+            Return wasRunning
+        End If
+        If frame_Session IsNot Nothing Then
+            LeaveFramePlayback(resumePlayback:=True)
+            Return False
+        End If
         Try
             If vlc_Media_Player.IsPlaying Then
                 vlc_Media_Player.Pause()
@@ -690,6 +722,12 @@ Partial Public Class Main_Form
     ''' </summary>
     Private Sub RevertClickPlayPause()
         If vlc_Media_Player Is Nothing Then Return
+        If frame_Playback_Mode Then
+            frame_Auto_Running = video_Click_Paused
+            frame_Playback_Timer.Enabled = frame_Auto_Running AndAlso Not frame_Busy
+            RefreshVideoControlsState()
+            Return
+        End If
         Try
             vlc_Media_Player.SetPause(Not video_Click_Paused)
         Catch ex As Exception

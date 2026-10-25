@@ -3,7 +3,7 @@
 | | |
 | --- | --- |
 | **Ids** | `FDSEC-FORMAT` (the bytes) and `FDSEC-BEHAVIOUR` (what a program handling them must do) |
-| **Version** | `FDSEC-FORMAT` 1.4 and `FDSEC-BEHAVIOUR` 1.6, both active (since 2026-09-22; both of 2026-10-19; read on 2026-10-20 with the sealed-name amendments, FORMAT section 20 and BEHAVIOUR section 18). Owner: FileDO |
+| **Version** | `FDSEC-FORMAT` 1.5 and `FDSEC-BEHAVIOUR` 1.7, both active (since 2026-09-22; both of 2026-10-19; FORMAT sections 21 and 22 and BEHAVIOUR section 19 read on 2026-10-22, specification 252). Owner: FileDO |
 | **Home** | `secure-container/README.md`, with `FDSEC-FORMAT.md`, `FD-SEC-CONTRACT.md` and `vectors/` in the shared contracts catalog |
 | **Role here** | **consumer, reader half, suite 1** (`src/Secure/`; the viewer's side is `src/Main_Form.Secure.vb` and `src/Secure_Password_Form.vb`; specification 026). Plus **one narrow writer**: `src/Secure/FdSecWriter.vb` seals suite-1 containers that are ephemeral, from a finished in-memory plaintext under a per-run random credential, with no notion of an original file; its only caller is `src/Video/AnimationVideoStore.vb` (specification 242, owner decision Q242-1). Modern only: every `src/Secure/` file is whole-file `#If Not NETFRAMEWORK` |
 
@@ -34,10 +34,12 @@ writes them must do to be safe. A user-facing "pack a file" feature is not part 
 - **The ephemeral writer.** It owes BEHAVIOUR 5.1 (normalise, build, write, flush, read back in full, rename into
   place) and the section 6 rules that do not concern an original file (2, 3, 8, 10), and it reproduces the writer
   vectors byte for byte with injected randomness in the contract's draw order.
-- **Evidence (FORMAT 16, BEHAVIOUR 12).** The catalog's vectors are vendored into `tests/Lite.Tests/TestData/fdsec-vectors/`
-  beside a `PROVENANCE.txt` whose SHA-256 the suite asserts first (an artifact copy, never a document copy). The
-  generated boundary vectors for the four characters (FORMAT 20) are owed by the reference writer and are replayed
-  here when they exist. The interoperability claim is stated only after a fresh run of the vectors with its output cited.
+- **Evidence (FORMAT 16, 21, 22, BEHAVIOUR 12).** The catalog's vectors are vendored into `tests/Lite.Tests/TestData/fdsec-vectors/`
+  beside a `PROVENANCE.txt` whose SHA-256 the suite asserts first (an artifact copy, never a document copy). The generated
+  boundary-name corpus of FORMAT 21 and 22 exists in the catalog (`vectors/names/`, 110 containers); this product vendors
+  and replays its suite-1 half (`TestData/fdsec-vectors/names`, the `s1-` cases with the four invalid-UTF-8 rows of
+  section 22), which is the half its suite-1 reader can decide. The interoperability claim is stated only after a fresh
+  run of the vectors with its output cited.
 
 ## Where it stands
 

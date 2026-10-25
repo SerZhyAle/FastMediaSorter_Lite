@@ -1347,6 +1347,7 @@ Partial Public Class Main_Form
         ' The close is real: admission is closed for good (the consumer ends once it has finished
         ' what it accepted).
         If file_Op_Queue IsNot Nothing Then file_Op_Queue.CompleteAdmission()
+        undo_Entries.Clear()
         ' A folder still being read has nobody to tell any more (014 U-03c).
         CancelFolderScan()
 #End If

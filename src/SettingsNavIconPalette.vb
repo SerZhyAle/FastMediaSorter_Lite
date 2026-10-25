@@ -51,6 +51,7 @@ Public Module SettingsNavIconPalette
             New NavInk("settingsNavVideo", Color.FromArgb(239, 83, 80), Color.FromArgb(198, 40, 40)),
             New NavInk("settingsNavAudio", Color.FromArgb(171, 71, 188), Color.FromArgb(106, 27, 154)),
             New NavInk("settingsNavFiles", Color.FromArgb(255, 112, 67), Color.FromArgb(216, 67, 21)),
+            New NavInk("settingsNavFileManager", Color.FromArgb(66, 165, 245), Color.FromArgb(21, 101, 192)),
             New NavInk("settingsNavResources", Color.FromArgb(38, 166, 154), Color.FromArgb(0, 105, 92)),
             New NavInk("settingsNavOcr", Color.FromArgb(255, 167, 38), Color.FromArgb(225, 98, 0)),
             New NavInk("settingsNavTranslation", Color.FromArgb(92, 107, 192), Color.FromArgb(48, 63, 159)),
@@ -74,6 +75,7 @@ Public Module SettingsNavIconPalette
             Case "managerSettingsNav_hosting" : controlName = "settingsNavStorage"
             Case "managerSettingsNav_exchange" : controlName = "settingsNavTranslation"
             Case "managerSettingsNav_exchange-account" : controlName = "settingsNavRecipients"
+            Case "managerSettingsNav_drive" : controlName = "settingsNavViewing"
             Case "managerSettingsNav_scheduled" : controlName = "settingsNavFiles"
             Case "managerSettingsNav_help" : controlName = "settingsNavAudio"
         End Select

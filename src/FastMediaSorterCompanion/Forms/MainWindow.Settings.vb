@@ -14,7 +14,11 @@ Partial Public NotInheritable Class MainWindow
 
     Friend Sub OpenSettings(destination As SettingsDestination, Optional page As String = "", Optional folder As String = "")
         If IsDisposed OrElse Disposing Then Return
-        If Not SettingsRoutes.Available(destination, WorkerProcess.IsAvailable(), ExchangeProcess.IsAvailable()) Then
+        ' Availability belongs to the component that owns the page: a deep link to an SFTP page of a Manager window whose
+        ' component is not installed is refused here and never opens an empty group (253 R-4).
+        Dim installed As Boolean = If(page.Length > 0, SettingsRoutes.PageAvailable(page, WorkerProcess.IsAvailable(), ExchangeProcess.IsAvailable()),
+                                      SettingsRoutes.Available(destination, ExchangeProcess.IsAvailable()))
+        If Not installed Then
             MessageBox.Show(Me, Localization.T("Компонент недоступен. Проверьте установку приложения."),
                 ProductNames.ShareManager, MessageBoxButtons.OK, MessageBoxIcon.Information)
             Return

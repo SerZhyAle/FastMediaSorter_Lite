@@ -139,6 +139,7 @@ type Logger struct {
 	stopped   chan struct{}
 	lastSweep time.Time
 	closeOnce sync.Once
+	banner    string
 }
 
 // New writes to w with no rotation.
@@ -198,14 +199,31 @@ func (l *Logger) State(event string, f ...Field) {
 	l.write("INFO", event, f)
 }
 
-func (l *Logger) write(level, event string, fields []Field) {
+// SetBanner makes every file this logger opens start with one line naming the program version, so a
+// file taken without its neighbours still says which build wrote it: a service that runs for days
+// writes its "start" line only into the file of the day it started. The file open now gets the line
+// at once; a later day file or a rotation gets it as its first line.
+func (l *Logger) SetBanner(version string) {
 	if l == nil {
 		return
 	}
-	if l.dailyDir != "" {
-		_ = l.Sweep()
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	l.banner = version
+	l.writeBanner()
+}
+
+// writeBanner puts the version line at the head of the file just opened. The caller holds l.mu.
+func (l *Logger) writeBanner() {
+	if l.banner == "" || l.w == nil {
+		return
 	}
-	at := l.now()
+	line := l.render(l.now(), "INFO", "file-open", []Field{Text("version", l.banner), Int("pid", os.Getpid())})
+	n, _ := io.WriteString(l.w, line)
+	l.size += int64(n)
+}
+
+func (l *Logger) render(at time.Time, level, event string, fields []Field) string {
 	var b strings.Builder
 	b.WriteString(at.UTC().Format("2006-01-02T15:04:05.000Z"))
 	b.WriteByte('\t')
@@ -219,7 +237,18 @@ func (l *Logger) write(level, event string, fields []Field) {
 		b.WriteString(f.val)
 	}
 	b.WriteByte('\n')
-	line := b.String()
+	return b.String()
+}
+
+func (l *Logger) write(level, event string, fields []Field) {
+	if l == nil {
+		return
+	}
+	if l.dailyDir != "" {
+		_ = l.Sweep()
+	}
+	at := l.now()
+	line := l.render(at, level, event, fields)
 
 	l.mu.Lock()
 	defer l.mu.Unlock()
@@ -259,5 +288,7 @@ func (l *Logger) rotate() {
 	l.size = 0
 	if err := l.openFile(); err != nil {
 		fmt.Fprint(io.Discard, err)
+		return
 	}
+	l.writeBanner()
 }

@@ -3,15 +3,18 @@
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <script>
-(function(){try{
-  var t=localStorage.getItem('sza-theme');
+(function(){
+  var t;try{t=localStorage.getItem('sza-theme');}catch(e){}
   if(t!=='dark'&&t!=='light')t=matchMedia('(prefers-color-scheme: light)').matches?'light':'dark';
   document.documentElement.setAttribute('data-theme',t);
-  var l=localStorage.getItem('sza-lang');
+  var l;try{l=localStorage.getItem('sza-lang');}catch(e){}
+  var q=new URLSearchParams(location.search),requested=q.has('lang')?q.get('lang'):q.get('l');
+  if(requested){requested=requested.toLowerCase();if(requested==='uk')requested='ua';if(requested==='en'||requested==='ru'||requested==='ua')l=requested;}
   if(l==='uk')l='ua';
   if(l!=='ru'&&l!=='en'&&l!=='ua'){var n=(navigator.language||'en').toLowerCase();l=n.indexOf('ru')==0?'ru':n.indexOf('uk')==0?'ua':'en';}
   document.documentElement.setAttribute('data-lang',l);
-}catch(e){}})();
+  document.addEventListener('click',function(e){var a=e.target.closest&&e.target.closest('a[href]');if(!a)return;try{var u=new URL(a.href,location.href);if(u.hostname==='serzhyale.github.io'||u.hostname==='sza.od.ua'){u.searchParams.delete('l');u.searchParams.set('lang',document.documentElement.getAttribute('data-lang')==='ua'?'uk':document.documentElement.getAttribute('data-lang'));a.href=u.href;}}catch(ignore){}});
+})();
 </script>
 <title>Keys, zoom and full screen | Fast Media Sorter &amp; Sharing</title>
 <meta name="description" content="The full keyboard and mouse map of Fast Media Sorter &amp; Sharing for Windows: navigation, sorting, zoom, full screen, slideshow and video keys.">
@@ -55,11 +58,12 @@ html[data-lang="ru"] [data-l]:not([data-l="ru"]),html[data-lang="en"] [data-l]:n
 <div class="keyset"><h2><span data-l="en">Move through the folder</span><span data-l="ru">Перемещение по папке</span><span data-l="ua">Пересування по теці</span></h2><table>
 <tr><td><kbd>Space</kbd> <kbd>→</kbd> <kbd>PgDn</kbd></td><td><span data-l="en">Next file</span><span data-l="ru">Следующий файл</span><span data-l="ua">Наступний файл</span></td></tr>
 <tr><td><kbd>P</kbd> <kbd>←</kbd> <kbd>PgUp</kbd> <kbd>Backspace</kbd></td><td><span data-l="en">Previous file</span><span data-l="ru">Предыдущий файл</span><span data-l="ua">Попередній файл</span></td></tr>
+<tr><td><kbd>Space</kbd> / <kbd>←</kbd> / <kbd>→</kbd></td><td><span data-l="en">While a video or an audio track plays: pause or play, and seek 10 seconds - 64-bit viewer only</span><span data-l="ru">Пока играет видео или звуковая дорожка: пауза или продолжение и перемотка на 10 секунд - только в 64-битном просмотрщике</span><span data-l="ua">Поки відтворюється відео або звукова доріжка: пауза або відтворення та перемотка на 10 секунд - лише в 64-бітному переглядачі</span></td></tr>
 <tr><td><kbd>↑</kbd> / <kbd>↓</kbd></td><td><span data-l="en">Back or forward 10 files</span><span data-l="ru">На 10 файлов назад или вперёд</span><span data-l="ua">Назад або вперед на 10 файлів</span></td></tr>
 <tr><td><kbd>Shift</kbd>+<kbd>PgUp</kbd> / <kbd>PgDn</kbd></td><td><span data-l="en">Back or forward 100 files</span><span data-l="ru">На 100 файлов назад или вперёд</span><span data-l="ua">Назад або вперед на 100 файлів</span></td></tr>
 <tr><td><kbd>H</kbd> / <kbd>E</kbd></td><td><span data-l="en">First file / last file</span><span data-l="ru">Первый файл / последний файл</span><span data-l="ua">Перший файл / останній файл</span></td></tr>
 <tr><td><kbd>N</kbd></td><td><span data-l="en">Jump to a file number</span><span data-l="ru">Перейти к файлу по номеру</span><span data-l="ua">Перейти до файлу за номером</span></td></tr>
-<tr><td><kbd>F</kbd> or <kbd>F4</kbd></td><td><span data-l="en">Choose a file from a list</span><span data-l="ru">Выбрать файл из списка</span><span data-l="ua">Вибрати файл зі списку</span></td></tr>
+<tr><td><kbd>F4</kbd></td><td><span data-l="en">Choose a file from a list</span><span data-l="ru">Выбрать файл из списка</span><span data-l="ua">Вибрати файл зі списку</span></td></tr>
 <tr><td><kbd>Y</kbd></td><td><span data-l="en">A random file from the folder</span><span data-l="ru">Случайный файл из папки</span><span data-l="ua">Випадковий файл із теки</span></td></tr>
 </table></div>
 
@@ -82,12 +86,12 @@ html[data-lang="ru"] [data-l]:not([data-l="ru"]),html[data-lang="en"] [data-l]:n
 </table></div>
 
 <div class="keyset"><h2><span data-l="en">Fill the screen</span><span data-l="ru">Во весь экран</span><span data-l="ua">На весь екран</span></h2><table>
-<tr><td><kbd>F7</kbd></td><td><span data-l="en">Full screen - the toolbar stays, floating over the picture</span><span data-l="ru">Полный экран - панель инструментов остаётся поверх картинки</span><span data-l="ua">Повний екран - панель інструментів залишається поверх зображення</span></td></tr>
+<tr><td><kbd>F7</kbd></td><td><span data-l="en">Full screen - the toolbar stays, floating over the picture; <kbd>F</kbd> does the same in the 64-bit viewer</span><span data-l="ru">Полный экран - панель инструментов остаётся поверх картинки; в 64-битном просмотрщике то же делает <kbd>F</kbd></span><span data-l="ua">Повний екран - панель інструментів залишається поверх зображення; у 64-бітному переглядачі те саме робить <kbd>F</kbd></span></td></tr>
 <tr><td><kbd>F11</kbd></td><td><span data-l="en">Nothing but the picture - no toolbar at all</span><span data-l="ru">Только картинка - совсем без панели</span><span data-l="ua">Лише зображення - зовсім без панелі</span></td></tr>
 <tr><td><kbd>Esc</kbd></td><td><span data-l="en">Leave full screen; pressed again, closes the program</span><span data-l="ru">Выйти из полного экрана; повторно - закрыть программу</span><span data-l="ua">Вийти з повного екрана; повторне натискання - закрити програму</span></td></tr>
 <tr><td><kbd>S</kbd></td><td><span data-l="en">Slideshow; pressing it again shortens the interval</span><span data-l="ru">Слайдшоу; повторное нажатие сокращает интервал</span><span data-l="ua">Слайд-шоу; повторне натискання скорочує інтервал</span></td></tr>
 <tr><td><kbd>I</kbd> or <kbd>F5</kbd></td><td><span data-l="en">Slideshow in random order</span><span data-l="ru">Слайдшоу в случайном порядке</span><span data-l="ua">Слайд-шоу у випадковому порядку</span></td></tr>
-<tr><td><kbd>F3</kbd></td><td><span data-l="en">The thumbnail panel of the folder</span><span data-l="ru">Панель эскизов папки</span><span data-l="ua">Панель мініатюр теки</span></td></tr>
+<tr><td><kbd>F3</kbd></td><td><span data-l="en">The thumbnail panel of the folder; <kbd>G</kbd> opens it in the 64-bit viewer</span><span data-l="ru">Панель эскизов папки; в 64-битном просмотрщике её открывает и <kbd>G</kbd></span><span data-l="ua">Панель мініатюр теки; у 64-бітному переглядачі її відкриває й <kbd>G</kbd></span></td></tr>
 </table></div>
 
 <div class="keyset"><h2><span data-l="en">Video</span><span data-l="ru">Видео</span><span data-l="ua">Відео</span></h2><table>
@@ -113,6 +117,6 @@ html[data-lang="ru"] [data-l]:not([data-l="ru"]),html[data-lang="en"] [data-l]:n
 <a href="../glossary.html"><b>GLOSSARY</b><span data-l="en">What the site's terms mean</span><span data-l="ru">Что значат термины сайта</span><span data-l="ua">Що означають терміни сайту</span></a>
 </div></section>
 </main>
-<footer class="site-footer"><div class="container"><div class="footer-bottom"><span><a href="../">Fast Media Sorter &amp; Sharing for Windows</a> · <a href="how-to-viewer.html">Viewer HOW TO</a> · <a href="../publish-folders-android.html">Share HOW TO</a></span><span>© 2026 Serhii Zhyhunenko</span></div></div></footer>
+<footer class="site-footer"><div class="container"><div class="footer-bottom"><span><a href="../">Fast Media Sorter &amp; Sharing for Windows</a> · <a href="how-to-viewer.html">Viewer HOW TO</a> · <a href="../publish-folders-android.html">Share HOW TO</a></span><span>© 2026 Serhii Zhyhunenko</span></div></div><!-- gen:child-contact --><div class="container"><div class="footer-bottom"><a href="https://serzhyale.github.io/FastMediaSorter_Lite/support.html"><span data-l="en">Support</span><span data-l="ru">Поддержка</span><span data-l="ua">Підтримка</span></a><span><a href="https://sza.od.ua">SZA</a> &middot; <a href="mailto:sza@ukr.net">sza@ukr.net</a></span></div></div><!-- /gen:child-contact --></footer>
 <script>(function(){var d=document.documentElement;function lang(v){d.dataset.lang=v;d.lang=v==='ua'?'uk':v;document.querySelectorAll('[data-setlang]').forEach(function(b){b.setAttribute('aria-pressed',String(b.dataset.setlang===v))});try{localStorage.setItem('sza-lang',v)}catch(e){}}document.querySelectorAll('[data-setlang]').forEach(function(b){b.onclick=function(){lang(b.dataset.setlang)}});lang(d.dataset.lang==='ru'?'ru':d.dataset.lang==='ua'?'ua':'en');var themeEl=document.getElementById('themeBtn');function syncTheme(){themeEl.setAttribute('aria-pressed',String(d.dataset.theme!=='light'))}syncTheme();themeEl.onclick=function(){var v=d.dataset.theme==='light'?'dark':'light';d.dataset.theme=v;try{localStorage.setItem('sza-theme',v)}catch(e){}syncTheme()}})();</script>
 </body></html>

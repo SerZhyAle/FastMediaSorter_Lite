@@ -30,13 +30,19 @@ func BroadcastJSON(id, mode, title string) json.RawMessage {
 // StartBroadcast sends `broadcast-start` on the device's control stream and returns the broadcast id
 // the server answered with (or the refusal as an error).
 func (d *Device) StartBroadcast(mode string, maxListeners *int) (string, error) {
+	return d.StartBroadcastWith(mode, maxListeners, nil)
+}
+
+// StartBroadcastWith is StartBroadcast with the broadcast's listener verifiers (item BF, item DV): nil sends no
+// `verifiers` member, a pointer to an empty list sends `"verifiers": []`.
+func (d *Device) StartBroadcastWith(mode string, maxListeners *int, verifiers *[]wire.ListenerVerifier) (string, error) {
 	id := wire.NewID()
 	d.secret(id)
 	ctl := d.Control()
 	if ctl == nil {
 		return "", errors.New("testkit: the device has no control stream")
 	}
-	r, err := ctl.Request(&wire.BroadcastStart{Broadcast: BroadcastJSON(id, mode, "probe"), MaxListeners: maxListeners},
+	r, err := ctl.Request(&wire.BroadcastStart{Broadcast: BroadcastJSON(id, mode, "probe"), MaxListeners: maxListeners, Verifiers: verifiers},
 		5*time.Second, wire.TypeBroadcastStarted, wire.TypeRefused)
 	if err != nil {
 		return "", err
@@ -45,6 +51,16 @@ func (d *Device) StartBroadcast(mode string, maxListeners *int) (string, error) 
 		return "", fmt.Errorf("broadcast-start refused: %s", f.Reason)
 	}
 	return r.(*wire.BroadcastStarted).BroadcastID, nil
+}
+
+// UpdateBroadcast sends `broadcast-update` for a broadcast StartBroadcast made (not answered; a test waits for
+// the effect it looks for). nil verifiers leave the held list unchanged, a pointer to a list replaces it.
+func (d *Device) UpdateBroadcast(id, mode, title string, verifiers *[]wire.ListenerVerifier) error {
+	ctl := d.Control()
+	if ctl == nil {
+		return errors.New("testkit: the device has no control stream")
+	}
+	return ctl.Send(&wire.BroadcastUpdate{Broadcast: BroadcastJSON(id, mode, title), Verifiers: verifiers})
 }
 
 // EndBroadcast sends `broadcast-end` (not answered).

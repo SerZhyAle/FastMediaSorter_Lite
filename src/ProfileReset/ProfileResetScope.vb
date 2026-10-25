@@ -171,7 +171,16 @@ Public NotInheritable Class ProfileResetScope
         "OcrDiskCache",
         "OllamaModel",
         "OcrModelQuality",
-        "OcrPageMode"
+        "OcrPageMode",
+        "FileManagerViewMode",
+        "FileManagerContentMode",
+        "FileManagerShowHiddenFiles",
+        "FileManagerNonMediaOpenAction",
+        "FileManagerShowLocalPlaces",
+        "FileManagerShowResourcePlaces",
+        "FileManagerShowDevicePlaces",
+        "FileManagerRememberSort",
+        "FileManagerPlaceSorts"
     })
 
     ''' <summary>4.2: Explicitly kept names (never reset, never backed up).</summary>

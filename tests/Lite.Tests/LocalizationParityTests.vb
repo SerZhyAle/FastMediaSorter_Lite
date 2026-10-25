@@ -17,6 +17,7 @@ Imports Xunit
 ''' Runs on BOTH legs (net48 + net10): the string tables are shared, only Codes/Names
 ''' are cut by the #If NETFRAMEWORK seam.
 ''' </summary>
+<Collection("LocalizationState")>
 Public Class LocalizationParityTests
 
     ' Number of translations stored per key: everything after Russian in the full set.

@@ -162,6 +162,33 @@ Public Class ExchangeWireTests
         Assert.Contains("""maxListeners"":0", Utf8(ExchangeEnvelopeCodec.Encode(New ExchangeEnvelope("broadcast-update").SetRecord("broadcast", "{""a"":1}").SetNumber("maxListeners", 0))))
     End Sub
 
+    ''' <summary>Ticket 263 T-3, DEVICE-EXCHANGE item DV: `verifiers` is written when it was set (an empty list as `[]`: the relay checks
+    ''' nobody) and left out when it was not (an update then changes nothing, a start has nothing to check), and an envelope without it
+    ''' encodes to the same bytes as before.</summary>
+    <Fact>
+    Public Sub Verifiers_ride_broadcast_start_and_update_when_set_and_are_absent_when_unset()
+        Dim verifier As String = "{""user"":""listener"",""salt"":""c2FsdHNhbHRzYWx0c2FsdA"",""hash"":""aGFzaA""}"
+        For Each typeName As String In New String() {"broadcast-start", "broadcast-update"}
+            Dim head As String = "{""schemaVersion"":2,""type"":""" & typeName & """,""broadcast"":{""a"":1}"
+
+            Dim bare As String = Utf8(ExchangeEnvelopeCodec.Encode(New ExchangeEnvelope(typeName).SetRecord("broadcast", "{""a"":1}")))
+            Assert.Equal(head & "}", bare)                                                     ' byte-identical to an envelope that never had the member
+            Assert.False(ExchangeEnvelopeCodec.Decode(Encoding.UTF8.GetBytes(bare)).Has("verifiers"))
+
+            Dim empty As String = Utf8(ExchangeEnvelopeCodec.Encode(New ExchangeEnvelope(typeName).SetRecord("broadcast", "{""a"":1}").SetRecords("verifiers", Array.Empty(Of String)())))
+            Assert.Equal(head & ",""verifiers"":[]}", empty)
+            Dim emptyBack As ExchangeEnvelope = ExchangeEnvelopeCodec.Decode(Encoding.UTF8.GetBytes(empty))
+            Assert.True(emptyBack.Has("verifiers"))
+            Assert.Empty(emptyBack.Records("verifiers"))
+
+            Dim full As String = Utf8(ExchangeEnvelopeCodec.Encode(New ExchangeEnvelope(typeName).SetRecord("broadcast", "{""a"":1}").SetNumber("maxListeners", 5).SetRecords("verifiers", {verifier, verifier})))
+            Assert.Equal(head & ",""maxListeners"":5,""verifiers"":[" & verifier & "," & verifier & "]}", full)    ' after maxListeners, as the table lists them
+            Dim fullBack As ExchangeEnvelope = ExchangeEnvelopeCodec.Decode(Encoding.UTF8.GetBytes(full))
+            Assert.Equal(2, fullBack.Records("verifiers").Count)
+            Assert.Equal(full, Utf8(ExchangeEnvelopeCodec.Encode(fullBack)))
+        Next
+    End Sub
+
     Private Shared Function IdA() As String
         Return New String("A"c, 22)
     End Function

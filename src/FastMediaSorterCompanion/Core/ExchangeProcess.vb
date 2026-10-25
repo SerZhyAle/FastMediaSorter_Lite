@@ -120,6 +120,8 @@ Friend Module ExchangeProcess
     ''' asked or printed no JSON - never "no account"; callers keep the two apart. The report holds COUNTS
     ''' and the public facts of the certificate and the addresses: no login, hash, token or key (162).</summary>
     Friend NotInheritable Class InspectReport
+        ' The bundled binary seals. A live status, when available, overrides this setup-time fact.
+        Public Property Sealed As Boolean = True
         Public Property Answered As Boolean
         Public Property ExitCode As Integer
         Public Property DataDir As String = ""

@@ -4,12 +4,27 @@ Option Strict On
 Imports System.Collections
 Imports System.Collections.Generic
 Imports System.IO
+Imports System.Linq
 Imports System.Reflection
 Imports System.Threading
 Imports Xunit
 
 <Collection("LocalizationState")>
 Public Class ExchangeDevicesPanelTests
+
+    <Theory>
+    <InlineData("online", False)>
+    <InlineData("offline", False)>
+    <InlineData("online", True)>
+    Public Sub Manager_and_existing_device_rows_keep_the_same_availability_words(presence As String, locked As Boolean)
+        Dim saved As ResourceDescriptor = ManagerExchangeFixture.ExchangeTestDescriptor()
+        Dim resource As New ExchangeResourceRecord("{}", "resource", "device", ExchangeWire.KindSftpShare, "Same label", presence, "", locked, "pin-v1")
+        Dim snapshot As New ExchangeDirectorySnapshot(1, {ManagerExchangeFixture.ExchangeTestDevice(presence:=presence)}, {resource}, Array.Empty(Of ExchangeBroadcastRecord)())
+        Dim existing As ExchangeDeviceRow = ExchangeDevicesModel.Build(snapshot, {saved}, "self").Single().Rows.Single()
+        Dim manager As ManagerExchangeNode = ManagerExchangePlaces.Project(ManagerExchangeFixture.ExchangeTestAccount(),
+            ManagerExchangeFixture.ExchangeTestReady(snapshot), {saved}, Array.Empty(Of ManagerExchangeNode)()).Single(Function(n) n.Place IsNot Nothing)
+        Assert.Equal(ExchangeResourceText.RowState(existing), manager.StateText)
+    End Sub
 
     <Fact>
     Public Sub Signing_in_again_rebinds_the_directory_to_a_live_session()

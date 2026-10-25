@@ -57,6 +57,13 @@ Friend NotInheritable Class LiveFfmpegArgs
         ' source producing 1280x720 must keep the exact argument string of the shape's own numbers.
         If options.EffectiveInputVideoWidth <> options.VideoWidth OrElse options.EffectiveInputVideoHeight <> options.VideoHeight Then
             args.Append(" -vf scale=").Append(options.VideoWidth).Append(":").Append(options.VideoHeight)
+            ' Ticket 263 T-2: a window is any shape (a 4:3 tool, a tall chat); a plain scale to 16:9 would
+            ' stretch it. An input of another aspect is scaled to fit and padded with black bars; a 16:9
+            ' monitor (within one percent) keeps the plain scale and its exact argument string.
+            If Not SameAspect(options) Then
+                args.Append(":force_original_aspect_ratio=decrease,pad=").Append(options.VideoWidth).Append(":").Append(options.VideoHeight)
+                args.Append(":(ow-iw)/2:(oh-ih)/2")
+            End If
         End If
         args.Append(" -c:v libx264 -preset ultrafast -tune zerolatency -bf 0")
         args.Append(" -g ").Append(GopSize(options))
@@ -69,6 +76,14 @@ Friend NotInheritable Class LiveFfmpegArgs
         ' 250 ms), packets flushed as they are produced.
         args.Append(" -f mpegts -muxdelay 0.1 -pat_period 0.1 -flush_packets 1 pipe:1")
         Return args.ToString()
+    End Function
+
+    ''' <summary>True when the capture's shape is the output shape's within one percent (a 1920x1080, 2560x1440 or
+    ''' 1366x768 monitor against 1280x720): the plain scale distorts nothing visible. Cross-multiplied, no division.</summary>
+    Public Shared Function SameAspect(options As LiveEncoderOptions) As Boolean
+        Dim inputProduct As Long = CLng(options.EffectiveInputVideoWidth) * options.VideoHeight
+        Dim outputProduct As Long = CLng(options.EffectiveInputVideoHeight) * options.VideoWidth
+        Return Math.Abs(inputProduct - outputProduct) * 100L <= outputProduct
     End Function
 
     ''' <summary>The GOP size in frames: exactly the 1 s keyframe interval of section 3.2.</summary>

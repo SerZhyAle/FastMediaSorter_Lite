@@ -160,6 +160,21 @@ Friend Module ResourceConnect
 
         If outcome.Succeeded Then
             If descriptor.PinRequired Then ResourcePinMemory.SetPin(descriptor, pin)
+            Dim provider = TryCast(outcome.Session, SftpProvider)
+            If provider IsNot Nothing Then
+                provider.ReconnectClock = clock
+                provider.ReconnectRound = Async Function(token)
+                                              Dim nextRound = Await EndpointResolver.ResolveAsync(candidates, dialer, clock, token,
+                                                  lanes, AddressOf gate.ConsentMsSoFar).ConfigureAwait(False)
+                                              If Not nextRound.Succeeded Then Return ResourceResult(Of SftpProvider).Fail(nextRound.Failure)
+                                              Dim nextProvider = TryCast(nextRound.Session, SftpProvider)
+                                              If nextProvider Is Nothing Then
+                                                  nextRound.Session.Dispose()
+                                                  Return ResourceResult(Of SftpProvider).Fail(New ResourceFailure(ResourceFailureKind.Unsupported))
+                                              End If
+                                              Return ResourceResult(Of SftpProvider).Ok(nextProvider)
+                                          End Function
+            End If
             Return New ConnectOutcome(DirectCast(outcome.Session, IFileSystemProvider), Nothing)
         End If
         Dim failure As ResourceFailure = outcome.Failure

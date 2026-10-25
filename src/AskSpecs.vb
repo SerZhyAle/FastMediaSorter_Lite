@@ -64,7 +64,7 @@ Friend NotInheritable Class AskSpecs
             New List(Of AskButton) From {
                 New AskButton(Localization.T("Заменить"), destructive:=True, role:=ButtonGlyphRole.Caution, glyphId:="action.replace"),
                 New AskButton(Localization.T("Оставить оба"), glyphId:="action.copy"),
-                New AskButton(Localization.T("Пропустить"), role:=ButtonGlyphRole.Dismissing, glyphId:="media.next")},
+                New AskButton(Localization.T("Пропустить"), role:=ButtonGlyphRole.Dismissing, glyphId:="action.skip")},
             defaultIndex:=CollisionSkip, cancelIndex:=CollisionSkip, detail:=detail)
     End Function
 

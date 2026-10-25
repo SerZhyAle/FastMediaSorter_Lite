@@ -76,7 +76,7 @@ Friend NotInheritable Class ExchangeSealedBroadcastPublisher
 
     ''' <summary>Reads the recipients again and sends `broadcast-update` when the box is new or a replacement upload waits for the
     ''' record. True when a record went out. The replacement upload is released only after the send (item N).</summary>
-    Public Async Function PublishAsync() As Task(Of Boolean)
+    Public Async Function PublishAsync(Optional beforePublish As Func(Of Task) = Nothing, Optional force As Boolean = False) As Task(Of Boolean)
         Try
             Await _gate.WaitAsync(_cts.Token).ConfigureAwait(False)
         Catch ex As OperationCanceledException
@@ -86,7 +86,10 @@ Friend NotInheritable Class ExchangeSealedBroadcastPublisher
         End Try
         Try
             If _disposed Then Return False
-            If Not _session.Refresh() Then Return False
+            ' Guest boxes must be sent before a concurrent own-device update can release the new ring.
+            If beforePublish IsNot Nothing Then Await beforePublish.Invoke().ConfigureAwait(False)
+            Dim changed As Boolean = _session.Refresh()
+            If Not changed AndAlso Not force Then Return False
             Dim record As String = _buildRecord.Invoke(_session.BoxJson)
             _remember?.Invoke(record)
             Dim sent As Boolean = Await _sendUpdate.Invoke(record).ConfigureAwait(False)

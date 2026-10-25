@@ -265,11 +265,14 @@ type Unpublish struct {
 // TypeName is "unpublish".
 func (*Unpublish) TypeName() string { return TypeUnpublish }
 
-// BroadcastStart announces a live broadcast (a section 6.3 record) and its listener cap.
+// BroadcastStart announces a live broadcast (a section 6.3 record) and its listener cap. Verifiers (item BF,
+// item DV; verifiers.go) are the credential pairs the relay checks a listener against: absent, no pair to check;
+// empty, the relay checks nobody; otherwise checked.
 type BroadcastStart struct {
 	Head
-	Broadcast    json.RawMessage `json:"broadcast"`
-	MaxListeners *int            `json:"maxListeners,omitempty"`
+	Broadcast    json.RawMessage     `json:"broadcast"`
+	MaxListeners *int                `json:"maxListeners,omitempty"`
+	Verifiers    *[]ListenerVerifier `json:"verifiers,omitempty"`
 }
 
 // TypeName is "broadcast-start".
@@ -284,11 +287,14 @@ type BroadcastStarted struct {
 // TypeName is "broadcast-started".
 func (*BroadcastStarted) TypeName() string { return TypeBroadcastStarted }
 
-// BroadcastUpdate replaces a live broadcast record and, when present, its listener cap (item M).
+// BroadcastUpdate replaces a live broadcast record and, when present, its listener cap (item M) and its
+// listener verifiers (item BF, item DV): absent leaves the held list unchanged, present - an empty list
+// included - replaces it wholesale.
 type BroadcastUpdate struct {
 	Head
-	Broadcast    json.RawMessage `json:"broadcast"`
-	MaxListeners *int            `json:"maxListeners,omitempty"`
+	Broadcast    json.RawMessage     `json:"broadcast"`
+	MaxListeners *int                `json:"maxListeners,omitempty"`
+	Verifiers    *[]ListenerVerifier `json:"verifiers,omitempty"`
 }
 
 // TypeName is "broadcast-update".

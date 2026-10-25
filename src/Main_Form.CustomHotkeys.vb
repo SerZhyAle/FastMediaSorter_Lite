@@ -64,8 +64,19 @@ Partial Public Class Main_Form
             If slot = 0 Then slot = CustomHotkeys.CopySlotOf(actionId)
             If Not CustomHotkeys.IsPlaybackAction(actionId) AndAlso
                (slot = 0 OrElse IsRecipientSlotConfigured(slot)) Then
+#If Not NETFRAMEWORK Then
+                ' MEDIA-VIEWER 1.0 rule 5: a navigation action continues a running show
+                ' and restarts its timer; the stop stays for everything else.
+                If CustomHotkeys.IsNavigationAction(actionId) Then
+                    ManualNavigationStopsShow()
+                Else
+                    SlideShowStop()
+                    is_Slide_Show_Random_Mode = False
+                End If
+#Else
                 SlideShowStop()
                 is_Slide_Show_Random_Mode = False
+#End If
             End If
             ' The one action id both dispatch paths answer through - a rebound key and
             ' its factory key cannot drift (the invariant of the Select Case below).
@@ -163,7 +174,7 @@ Partial Public Class Main_Form
                 ' only says so in the status line and changes no state.
             Case "speedSlower", "speedFaster", "speedReset",
                  "seekBackShort", "seekFwdShort", "seekBackMedium", "seekFwdMedium", "seekBackLong", "seekFwdLong",
-                 "frameStep", "abLoop",
+                 "frameStep", "frameBack", "abLoop",
                  "playPause", "mute", "volumeUp", "volumeDown"
                 RunPlaybackAction(actionId)
         End Select

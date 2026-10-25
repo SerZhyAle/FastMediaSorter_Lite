@@ -148,6 +148,86 @@ Public Class RemoteSlotLiveTests
                                             Function() False, ct).GetAwaiter().GetResult()
     End Function
 
+    <WritableLiveFact>
+    Public Sub Live_Manager_local_directory_bin_restore_and_permanent_delete_use_owned_fixtures()
+        Dim place As New ManagerPlace("manager-local", "fixture", ResourceKind.Local, scratch)
+        Using local As New ManagerEndpointLease(place, ManagerOpenResult.Ok(New LocalProvider(Function() False)))
+            Using request As ManagerCommandRequest = MakeManagerRequest(ManagerCommandKind.CreateDirectory, local.Fork(), {}, leaf:="bin-fixture")
+                ExecuteManagerTestPlan(BuildManagerTestPlan(request))
+            End Using
+            Dim original As String = Path.Combine(scratch, "bin-fixture")
+            Dim renamed As String = Path.Combine(scratch, "renamed-bin-fixture")
+            Using request As ManagerCommandRequest = MakeManagerRequest(ManagerCommandKind.Rename, local.Fork(), {original}, leaf:="renamed-bin-fixture")
+                ExecuteManagerTestPlan(BuildManagerTestPlan(request))
+            End Using
+            File.WriteAllText(Path.Combine(renamed, ".hidden"), "owned bin fixture")
+            Directory.CreateDirectory(Path.Combine(renamed, "empty"))
+            Using request As New ManagerCommandRequest(ManagerCommandKind.Delete, ManagerLocation.AtRoot(place), 1,
+                {ManagerTestRow(local, renamed)}, local.Fork(), confirmDelete:="never", useRecycleBin:=True)
+                Dim decision As New DeleteDecision With {.Outcome = DeleteOutcome.Recycle}
+                Assert.False(decision.IsPermanent)
+                Dim plan As BatchPlan = ManagerCommandPlanner.Build(request, ManagerTreePlan.Capture(request),
+                    Function(lease, path) lease.Directory.StatEntry(path), Function(entry) decision)
+                Assert.Single(plan.Operations)
+                Dim op As BatchOp = plan.Operations(0)
+                Assert.Equal(FileOpKind.RecycleDelete, op.Kind)
+                op.ManagerOperation.Execute(scratch)
+                Assert.False(Directory.Exists(renamed))
+                Using inverse As ManagerUndoData = op.ManagerOperation.UndoData
+                    Assert.NotNull(inverse)
+                    ManagerOperation.ForUndo(inverse).ManagerOperation.Execute(scratch)
+                End Using
+                Assert.Equal("owned bin fixture", File.ReadAllText(Path.Combine(renamed, ".hidden")))
+                Assert.True(Directory.Exists(Path.Combine(renamed, "empty")))
+            End Using
+            Using request As ManagerCommandRequest = MakeManagerRequest(ManagerCommandKind.DeletePermanently, local.Fork(), {renamed})
+                ExecuteManagerTestPlan(BuildManagerTestPlan(request))
+            End Using
+            Assert.False(Directory.Exists(renamed))
+        End Using
+    End Sub
+
+    <WritableLiveFact>
+    Public Sub Live_Manager_commands_create_rename_copy_move_and_remove_a_complete_tree()
+        Dim descriptor As ResourceDescriptor = Me.Descriptor()
+        Dim connected As ConnectOutcome = Dial(descriptor, server.Password, CancellationToken.None)
+        Assert.NotNull(connected.Provider)
+        Dim provider As IFileSystemProvider = connected.Provider
+        Dim localPlace As New ManagerPlace("manager-local", "fixture", ResourceKind.Local, scratch)
+        Using remote As New ManagerEndpointLease(ManagerPlace.ForResource(descriptor),
+            ManagerOpenResult.Ok(DirectCast(provider, IManagerDirectoryProvider), DirectCast(provider, IDisposable))),
+              local As New ManagerEndpointLease(localPlace, ManagerOpenResult.Ok(New LocalProvider(Function() False)))
+            Dim name As String = "manager-" & Guid.NewGuid().ToString("N")
+            Dim folder As String = "/MOV/" & name
+            Using request As ManagerCommandRequest = MakeManagerRequest(ManagerCommandKind.CreateDirectory, remote.Fork(), {}, leaf:=name)
+                ExecuteManagerTestPlan(BuildManagerTestPlan(request))
+            End Using
+            Dim tree As String = Path.Combine(scratch, "tree")
+            Directory.CreateDirectory(Path.Combine(tree, "empty"))
+            File.WriteAllText(Path.Combine(tree, ".hidden"), "hidden payload")
+            File.SetAttributes(Path.Combine(tree, ".hidden"), FileAttributes.Hidden)
+            Using request As ManagerCommandRequest = MakeManagerRequest(ManagerCommandKind.Copy, local.Fork(), {tree}, remote.Fork(), folder)
+                ExecuteManagerTestPlan(BuildManagerTestPlan(request))
+            End Using
+            Assert.True(remote.Directory.StatEntry(folder & "/tree/empty").Entry.IsDirectory)
+            Assert.Equal(14L, remote.Directory.StatEntry(folder & "/tree/.hidden").Entry.Length)
+            Using request As ManagerCommandRequest = MakeManagerRequest(ManagerCommandKind.Rename, remote.Fork(), {folder & "/tree"}, leaf:="renamed")
+                ExecuteManagerTestPlan(BuildManagerTestPlan(request))
+            End Using
+            Assert.Equal(StatOutcome.Missing, remote.Directory.StatEntry(folder & "/tree").Outcome)
+            Using request As ManagerCommandRequest = MakeManagerRequest(ManagerCommandKind.Move, remote.Fork(), {folder & "/renamed"}, local.Fork(), scratch)
+                ExecuteManagerTestPlan(BuildManagerTestPlan(request))
+            End Using
+            Assert.Equal(StatOutcome.Missing, remote.Directory.StatEntry(folder & "/renamed").Outcome)
+            Assert.True(Directory.Exists(Path.Combine(scratch, "renamed", "empty")))
+            Assert.Equal("hidden payload", File.ReadAllText(Path.Combine(scratch, "renamed", ".hidden")))
+            Using request As ManagerCommandRequest = MakeManagerRequest(ManagerCommandKind.DeletePermanently, remote.Fork(), {folder})
+                ExecuteManagerTestPlan(BuildManagerTestPlan(request))
+            End Using
+            Assert.Equal(StatOutcome.Missing, remote.Directory.StatEntry(folder).Outcome)
+        End Using
+    End Sub
+
     Private Function Slots(Optional password As String = Nothing, Optional pin As String = Nothing) As RemoteSlotConnections
         Dim d As ResourceDescriptor = Descriptor(pin)
         Dim pw As String = If(password, server.Password)

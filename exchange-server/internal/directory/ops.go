@@ -470,11 +470,35 @@ func checkListeners(n *int) error {
 // live broadcasts per device and 16 per account (capacity); the broadcastId is unique per deployment (id-collision) except that the
 // same device starting a held id replaces it; maxListeners is 0 (no cap) to 10000.
 func (d *Dir) BroadcastStart(account, deviceID string, raw json.RawMessage, maxListeners *int) (string, error) {
+	return d.BroadcastStartWith(account, deviceID, raw, maxListeners, nil)
+}
+
+// parseVerifiers decodes a `verifiers` member (item BF, item DV). nil is "absent": keep is true. A present list,
+// an empty one included, is the whole list.
+func parseVerifiers(v *[]wire.ListenerVerifier) (list []wire.Verifier, keep bool, err error) {
+	if v == nil {
+		return nil, true, nil
+	}
+	list, err = wire.ParseVerifiers(*v)
+	if err != nil {
+		return nil, false, ErrMalformed
+	}
+	return list, false, nil
+}
+
+// BroadcastStartWith is BroadcastStart with the broadcast's listener verifiers (item BF, item DV). Absent
+// (nil): no pair to check. A list, an empty one included, is held in memory with the broadcast and replaces
+// anything an earlier start of the same id held.
+func (d *Dir) BroadcastStartWith(account, deviceID string, raw json.RawMessage, maxListeners *int, verifiers *[]wire.ListenerVerifier) (string, error) {
 	rec, id, err := parseBroadcast(raw)
 	if err != nil {
 		return "", err
 	}
 	if err := checkListeners(maxListeners); err != nil {
+		return "", err
+	}
+	held, _, err := parseVerifiers(verifiers)
+	if err != nil {
 		return "", err
 	}
 	d.mu.Lock()
@@ -511,7 +535,7 @@ func (d *Dir) BroadcastStart(account, deviceID string, raw json.RawMessage, maxL
 	if !rec.Has("startedAt") {
 		rec.SetTime("startedAt", now)
 	}
-	cand := &broState{id: id, device: deviceID, rec: rec, updated: now}
+	cand := &broState{id: id, device: deviceID, rec: rec, updated: now, verifiers: held}
 	if maxListeners != nil {
 		cand.maxListeners = *maxListeners
 	}
@@ -535,11 +559,22 @@ func (d *Dir) BroadcastStart(account, deviceID string, raw json.RawMessage, maxL
 // BroadcastUpdate replaces a live broadcast's record and, when present, its listener cap (item M). A
 // broadcast that is not this device's is ignored; a record that would not fit a frame is ErrCapacity.
 func (d *Dir) BroadcastUpdate(account, deviceID string, raw json.RawMessage, maxListeners *int) error {
+	return d.BroadcastUpdateWith(account, deviceID, raw, maxListeners, nil)
+}
+
+// BroadcastUpdateWith is BroadcastUpdate with the broadcast's listener verifiers (item BF, item DV). Absent
+// (nil): the held list is unchanged. A list, an empty one included, replaces it wholesale - this is how one pair
+// is revoked alone, and how a link without a password opens the broadcast.
+func (d *Dir) BroadcastUpdateWith(account, deviceID string, raw json.RawMessage, maxListeners *int, verifiers *[]wire.ListenerVerifier) error {
 	rec, id, err := parseBroadcast(raw)
 	if err != nil {
 		return err
 	}
 	if err := checkListeners(maxListeners); err != nil {
+		return err
+	}
+	replacement, keep, err := parseVerifiers(verifiers)
+	if err != nil {
 		return err
 	}
 	d.mu.Lock()
@@ -558,7 +593,10 @@ func (d *Dir) BroadcastUpdate(account, deviceID string, raw json.RawMessage, max
 			rec.SetStr("startedAt", s)
 		}
 	}
-	cand := &broState{id: id, device: deviceID, rec: rec, maxListeners: b.maxListeners, updated: d.now()}
+	cand := &broState{id: id, device: deviceID, rec: rec, maxListeners: b.maxListeners, updated: d.now(), verifiers: b.verifiers}
+	if !keep {
+		cand.verifiers = replacement
+	}
 	if maxListeners != nil {
 		cand.maxListeners = *maxListeners
 	}
@@ -688,6 +726,9 @@ type Target struct {
 	BroadcastID  string
 	Ctrl         Sink
 	MaxListeners int
+	// Verifiers is a broadcast's listener verifiers (item BF), set by ResolveBroadcast only: empty means the
+	// relay checks nobody. The slice is never edited, only replaced, so a reader may keep it.
+	Verifiers []wire.Verifier
 }
 
 // ResolveResource finds the resource inside ONE account, with its producer online.
@@ -745,7 +786,7 @@ func (d *Dir) ResolveBroadcast(broadcastID string) (Target, bool) {
 	if dev == nil || dev.sink == nil {
 		return Target{}, false
 	}
-	return Target{Account: r.account, DeviceID: b.device, BroadcastID: b.id, Ctrl: dev.sink, MaxListeners: b.maxListeners}, true
+	return Target{Account: r.account, DeviceID: b.device, BroadcastID: b.id, Ctrl: dev.sink, MaxListeners: b.maxListeners, Verifiers: b.verifiers}, true
 }
 
 // --- lookups for cast (7.8, ticket 166) ---

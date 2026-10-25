@@ -40,6 +40,11 @@ Friend Class LiveServerConfig
 
     ''' <summary>Optional password protecting the broadcast (spec 199 section 3.4).</summary>
     Public Property Password As String = ""
+
+    ''' <summary>Ticket 263 T-3: the credential pairs of the broadcast (item BF) - any pair of the set opens the endpoint, bound to its
+    ''' user. When set it WINS over <see cref="Password"/>: the same object is the source of the relay's verifiers, so a pair revoked
+    ''' there is refused here at the next request. A set that was protected stays protected when its pairs are revoked.</summary>
+    Public Property Credentials As LiveCredentialPairs
 End Class
 
 Friend Enum LiveServerStartResult
@@ -150,6 +155,21 @@ Friend Class LiveBroadcastServer
         End Try
     End Sub
 
+    ''' <summary>True when a listener must answer the Digest challenge: a protected set of pairs (even one whose pairs were all
+    ''' revoked), or the single legacy <see cref="LiveServerConfig.Password"/>.</summary>
+    Private Function IsProtected() As Boolean
+        Dim pairs As LiveCredentialPairs = _config.Credentials
+        If pairs IsNot Nothing Then Return pairs.IsProtected
+        Return Not String.IsNullOrEmpty(_config.Password)
+    End Function
+
+    ''' <summary>The password of the user a listener named; Nothing when that user holds no pair.</summary>
+    Private Function PasswordFor(user As String) As String
+        Dim pairs As LiveCredentialPairs = _config.Credentials
+        If pairs IsNot Nothing Then Return pairs.PasswordFor(user)
+        Return If(String.Equals(user, LiveCredentialPairs.LinkUser, StringComparison.Ordinal), _config.Password, Nothing)
+    End Function
+
     Private Sub ServeClient(client As TcpClient)
         Dim cursor As LiveHubCursor = Nothing
         Try
@@ -161,9 +181,9 @@ Friend Class LiveBroadcastServer
                 Return
             End If
 
-            If Not String.IsNullOrEmpty(_config.Password) Then
+            If IsProtected() Then
                 Dim source As String = DirectCast(client.Client.RemoteEndPoint, IPEndPoint).Address.ToString()
-                If Not _digest.Verify(request, _config.Password, source) Then
+                If Not _digest.Verify(request, AddressOf PasswordFor, source) Then
                     WriteAll(client, _digest.Challenge())
                     CloseClient(client)
                     Return

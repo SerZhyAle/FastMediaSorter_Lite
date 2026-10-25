@@ -130,7 +130,7 @@ func (e *Engine) handle(cs *ControlStream, sess *Session, env wire.Envelope) boo
 			status = logx.AuditRefusal("rate-limited")
 			return cs.Send(wire.Refuse(wire.ReasonRateLimited)) == nil
 		}
-		id, err := e.cfg.Dir.BroadcastStart(acct, dev, m.Broadcast, m.MaxListeners)
+		id, err := e.cfg.Dir.BroadcastStartWith(acct, dev, m.Broadcast, m.MaxListeners, m.Verifiers)
 		if err != nil {
 			e.cfg.Log.Info("broadcast-refused", logx.Device(dev), logx.Text("why", publishWhy(err)))
 			status = logx.AuditRefusal(publishWhy(err))
@@ -145,7 +145,7 @@ func (e *Engine) handle(cs *ControlStream, sess *Session, env wire.Envelope) boo
 			target, _ = rec.Str("broadcastId")
 		}
 		_, owner, exists := e.cfg.Dir.LiveBroadcast(acct, target)
-		if err := e.cfg.Dir.BroadcastUpdate(acct, dev, m.Broadcast, m.MaxListeners); err != nil {
+		if err := e.cfg.Dir.BroadcastUpdateWith(acct, dev, m.Broadcast, m.MaxListeners, m.Verifiers); err != nil {
 			status = logx.AuditRefusal(publishWhy(err))
 			return e.refuseOrClose(cs, err)
 		}

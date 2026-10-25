@@ -61,6 +61,7 @@ Partial Public Class Table_Form
     Private modernDataLayoutBuilt As Boolean
     Private recipientsHost As Panel
     Private fittingRecipientsHost As Boolean
+    Private modernFileManagerPage As TabPage
     Private modernTranslationPage As TabPage
     Private modernAudioPage As TabPage
     Private modernAboutPage As TabPage
@@ -520,7 +521,7 @@ Partial Public Class Table_Form
     ''' (ICON-SET), never from a second table kept here.</summary>
     Private Shared ReadOnly ModernNavControlNames As String() = {
         "settingsNavGeneral", "settingsNavRecipients", "settingsNavViewing", "settingsNavVideo", "settingsNavAudio", "settingsNavFiles",
-        "settingsNavResources",
+        "settingsNavFileManager", "settingsNavResources",
         "settingsNavOcr", "settingsNavTranslation", "settingsNavStorage", "settingsNavAbout"}
 
     Private ReadOnly modernNavTips As New ToolTip()
@@ -531,7 +532,7 @@ Partial Public Class Table_Form
         ' slice of it instead of clipping entries away; a caption wraps and grows its row (ArrangeModernRail).
         Dim top As Integer = 0
         Dim navLabels As String() = {"General", "Destination folders", "Images", "Video", "Audio", "Files and system",
-                                     "Server and resources",
+                                     "File manager", "Server and resources",
                                      "OCR", "Translation", "Storage", "About"}
         ' The list: accessible role List, one selected row, one tab stop (rule 7).
         Dim navigation As New SettingsRailList With {.Dock = DockStyle.Fill}
@@ -720,12 +721,12 @@ Partial Public Class Table_Form
         modernStoragePage = New TabPage With {.Name = "Tab_Page_Storage", .Text = "Storage"}
         modernAudioPage = New TabPage With {.Name = "Tab_Page_Audio", .Text = "Audio"}
         modernTranslationPage = New TabPage With {.Name = "Tab_Page_Translation", .Text = "Translation"}
+        modernFileManagerPage = New TabPage With {.Name = "Tab_Page_FileManager", .Text = "File manager"}
         modernAboutPage = New TabPage With {.Name = "Tab_Page_About", .Text = "About"}
         modernResourcesPage = New TabPage With {.Name = "Tab_Page_Resources", .Text = "Server and resources"}
         Tab_Control.TabPages.Insert(3, modernAudioPage)
-        ' «Ресурсы» between Files (Tab_Page_4) and OCR (Tab_Page_5): Insert(5) lands right there
-        ' (ticket 118 Q118-5), and the nav array above says the same order.
-        Tab_Control.TabPages.Insert(5, modernResourcesPage)
+        Tab_Control.TabPages.Insert(5, modernFileManagerPage)
+        Tab_Control.TabPages.Insert(6, modernResourcesPage)
         Tab_Control.TabPages.Add(modernTranslationPage)
         Tab_Control.TabPages.Add(modernAboutPage)
         Tab_Control.TabPages.Insert(0, modernGeneralPage)
@@ -789,6 +790,10 @@ Partial Public Class Table_Form
         If pendingOpenAtRecipientsGrid Then
             pendingOpenAtRecipientsGrid = False
             RevealModernRecipientsGrid()
+        End If
+        If pendingOpenAtFileManager Then
+            pendingOpenAtFileManager = False
+            RevealModernSetting("file_manager_view_mode")
         End If
         QueueRestoreSettingsContext()
     End Sub
@@ -903,6 +908,7 @@ Partial Public Class Table_Form
              Localization.T("Видео"),
              Localization.T("Аудио"),
              Localization.T("Файлы"),
+             Localization.T("Файловый менеджер"),
              Localization.T("Сервер и ресурсы"),
              Localization.T("OCR"),
              Localization.TC("settings", "Перевод"),
@@ -938,6 +944,7 @@ Partial Public Class Table_Form
              Localization.T("Дорожки и субтитры") & ". " & Localization.T("Информация и управление") & ".",
              Localization.T("Обложки, управление и поведение аудиодорожек."),
              Localization.T("Операции с файлами") & ". " & Localization.T("Типы файлов") & ".",
+             Localization.T("Вид, фильтры содержимого и открытие файлов."),
              Localization.T("Серверы и сетевые папки") & ". " & Localization.T("SFTP-сервер и приложение Android."),
              Localization.T("Распознавание текста на изображениях и параметры OCR."),
              Localization.T("Сервис и параметры перевода распознанного текста."),
@@ -1285,6 +1292,14 @@ Partial Public Class Table_Form
             Case "project_license" : Return Localization.T("Лицензия MIT")
             Case "project_notices" : Return Localization.T("Сторонние компоненты и лицензии")
             Case "project_trust" : Return Localization.T("Почему Windows предупреждает")
+            Case "file_manager_view_mode" : Return Localization.T("Режим отображения")
+            Case "file_manager_content_mode" : Return Localization.T("Фильтр содержимого")
+            Case "file_manager_show_hidden_files" : Return Localization.T("Скрытые и системные файлы")
+            Case "file_manager_non_media_open_action" : Return Localization.T("Действие для не-медиа файлов")
+            Case "file_manager_show_local_places" : Return Localization.T("Локальные папки")
+            Case "file_manager_show_resource_places" : Return Localization.T("Сетевые ресурсы")
+            Case "file_manager_show_device_places" : Return Localization.T("Подключённые устройства")
+            Case "file_manager_remember_sort" : Return Localization.T("Запоминать сортировку")
             Case "project_email" : Return Localization.T("Связаться с автором")
             Case Else : Return key
         End Select
@@ -1428,6 +1443,14 @@ Partial Public Class Table_Form
             Case "project_license" : Return Localization.T("Текст лицензии MIT открывается из файла рядом с программой; без него - со страницы на GitHub.")
             Case "project_notices" : Return Localization.T("Используемые библиотеки и тексты их лицензий. Открывается файл рядом с программой; без него - страница на GitHub.")
             Case "project_trust" : Return Localization.T("Предупреждение SmartScreen, на что нажать и зачем нужны права администратора.")
+            Case "file_manager_view_mode" : Return Localization.T("Сетка карточек или таблица с подробными сведениями.")
+            Case "file_manager_content_mode" : Return Localization.T("Какие файлы показывать в проводнике по умолчанию: медиафайлы, медиа и документы или все файлы.")
+            Case "file_manager_show_hidden_files" : Return Localization.T("Отображать скрытые и системные файлы и папки.")
+            Case "file_manager_non_media_open_action" : Return Localization.T("Открывать документы и другие файлы в программе по умолчанию или запрашивать выбор программы.")
+            Case "file_manager_show_local_places" : Return Localization.T("Показывать стандартные системные папки и диски в списке расположений.")
+            Case "file_manager_show_resource_places" : Return Localization.T("Показывать настроенные ресурсы и серверы в списке расположений.")
+            Case "file_manager_show_device_places" : Return Localization.T("Показывать устройства и мобильные подключения в списке расположений.")
+            Case "file_manager_remember_sort" : Return Localization.T("Сохранять выбранную колонку и направление сортировки для каждого расположения.")
             Case "project_email" : Return Localization.T("Написать автору проекта по электронной почте.")
             Case Else : Return String.Empty
         End Select
@@ -1678,8 +1701,11 @@ Partial Public Class Table_Form
                                               BuildModernSftpPage()
                                           End Sub)
         RegisterSettingsPage("about", AddressOf BuildModernAboutPage)
+        Dim fileManagerFlow As FlowLayoutPanel = CreateModernPageFlow(modernFileManagerPage)
+        RegisterSettingsPage("file-manager", Sub()
+                                           End Sub)
         If MultiWindowPolicy.IsSecondaryInstance() Then RegisterSettingsRow("secondary_instance_warning", Sub() AddInformationBlock(files, "secondary_instance_warning"))
-        AddExpandedSettingsRows(destinations, viewing, video, audio, files, ocr)
+        AddExpandedSettingsRows(destinations, viewing, video, audio, files, ocr, fileManagerFlow)
 
         For Each oldLabel As Control In New Control() {lbl_Color, lbl_Slideshow_Interval, lbl_Picture_at_Panel_Size,
                                                         lbl_Video_Volume, lblOcrTranslator, lblOcrEndpoint, lblOcrServer,

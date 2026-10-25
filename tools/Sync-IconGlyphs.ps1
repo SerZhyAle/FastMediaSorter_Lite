@@ -58,9 +58,12 @@ $glyphIds = @(
     'system.network-off', 'system.power',
     'action.add', 'action.choose-file', 'action.choose-folder', 'action.convert-to-video', 'action.copy', 'action.crop', 'action.delete', 'action.download', 'action.edit',
     'action.extract-text', 'action.refresh', 'action.rename', 'action.search', 'action.send-to',
-    'action.share', 'action.translate', 'action.replace',
+    'action.share', 'action.translate', 'action.replace', 'action.skip', 'action.create-shortcut',
     # ICON-SET 0.32 section 17: exchange meanings; Drive is a brand, so single-tone controls use words.
     'source.exchange-server', 'feature.server-relay', 'action.connect-device', 'action.send-clipboard', 'action.receive-clipboard', 'content.invitation', 'content.guest',
+    # Specification 203 T-UI-1: the rail glyph of the Share Manager's Google Drive settings page (Drive itself is a brand, so the
+    # single-tone rail uses the catalog's plain cloud, never the logo).
+    'source.cloud',
     # The recipients table's and the chrome panels' pin button: the catalog's push-pin, filled while pinned and
     # its outlined state variant while free (a line-drawn tilted pin read as a second pencil next to action.edit).
     'action.pin', 'action.pin--off',

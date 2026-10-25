@@ -1,0 +1,2233 @@
+{
+  "format": "FDSEC sealed-name boundary vectors - see FDSEC-FORMAT.md sections 20 to 22 (document version 1.5) and FDSEC-BEHAVIOUR.md section 18",
+  "generated": "2026-10-21",
+  "contract": "FDSEC-FORMAT 1.5 sections 20 to 22",
+  "how_to_replay": [
+    "Every container authenticates under the credential in its case. For each case open it with that credential and read it to the end.",
+    "expect \"opens\": the reader must accept the sealed name (suites 1, 2) or the root name and every component (suite 3), return it byte for byte, and return the payload.",
+    "expect \"damaged\": the reader must answer damaged - not wrong-credential-or-tamper, not unsupported - and write nothing. The container is authenticated, so the credential is right; its sealed name breaks a rule of FDSEC-FORMAT section 7.",
+    "The four characters U+0022 U+003C U+003E U+007C are valid in every case that carries them. Whether a destination can create such a name is a restore matter (FDSEC-BEHAVIOUR section 18) and not part of any case here.",
+    "Every \"refused\" case is a rule of section 7 that section 20 leaves unchanged (or, for invalid-utf8, section 22 states). The four-and-* cases show that a valid character beside a refused element does not make the name valid.",
+    "sealed_name_hex (and path_hex) are the authoritative bytes. Where the sealed name is not valid UTF-8 (the invalid-utf8 cases) sealed_name and path show each invalid byte as U+FFFD, because JSON text cannot carry it: compare the hexadecimal field, never the text."
+  ],
+  "kdf_profile": {
+    "m_kib": 65536,
+    "p": 4,
+    "t": 3,
+    "threshold": 64
+  },
+  "suite2_kdf_try_list": [
+    {
+      "MemoryKiB": 262144,
+      "Time": 3,
+      "Lanes": 4
+    }
+  ],
+  "not_covered": [
+    "a sealed name that is not in NFC: FDSEC-FORMAT section 22 item 3 leaves it undecided - suites 2 and 3 of the reference reader refuse it, suite 1 reads it as written - so no case pins it",
+    "the destination's own limits (the four characters, 255 UTF-16 units): FDSEC-BEHAVIOUR section 18, a restore matter"
+  ],
+  "cases": [
+    {
+      "id": "s1-valid-quote",
+      "suite": 1,
+      "expect": "opens",
+      "description": "U+0022 inside a name",
+      "sealed_name": "a\"b.txt",
+      "sealed_name_hex": "6122622e747874",
+      "content": "7365616c65642d6e616d6520626f756e6461727920766563746f72207061796c6f6164",
+      "credential": "a deliberately long passphrase of more than sixty-four UTF-8 bytes, carrying its own entropy",
+      "params": {
+        "ClusterAlignment": 512,
+        "ChunkSize": 1024
+      },
+      "file": "s1-valid-quote.fd-sec",
+      "total_len": 5632,
+      "blake2b256_of_file": "57230324fed728f491050644c817391e85bac067d2d7b95f1178ae7d4101be57"
+    },
+    {
+      "id": "s1-valid-less-than",
+      "suite": 1,
+      "expect": "opens",
+      "description": "U+003C inside a name",
+      "sealed_name": "a<b.txt",
+      "sealed_name_hex": "613c622e747874",
+      "content": "7365616c65642d6e616d6520626f756e6461727920766563746f72207061796c6f6164",
+      "credential": "a deliberately long passphrase of more than sixty-four UTF-8 bytes, carrying its own entropy",
+      "params": {
+        "ClusterAlignment": 512,
+        "ChunkSize": 1024
+      },
+      "file": "s1-valid-less-than.fd-sec",
+      "total_len": 5632,
+      "blake2b256_of_file": "4ec24803296c87928000061a2f5c6e1909382dde1104a7fd0b7f2f555c5719b1"
+    },
+    {
+      "id": "s1-valid-greater-than",
+      "suite": 1,
+      "expect": "opens",
+      "description": "U+003E inside a name",
+      "sealed_name": "a>b.txt",
+      "sealed_name_hex": "613e622e747874",
+      "content": "7365616c65642d6e616d6520626f756e6461727920766563746f72207061796c6f6164",
+      "credential": "a deliberately long passphrase of more than sixty-four UTF-8 bytes, carrying its own entropy",
+      "params": {
+        "ClusterAlignment": 512,
+        "ChunkSize": 1024
+      },
+      "file": "s1-valid-greater-than.fd-sec",
+      "total_len": 5632,
+      "blake2b256_of_file": "a1b4989b2c0ec564f89ba318c0c0e38187f4f5bbbf6711002ac3c3591bd47068"
+    },
+    {
+      "id": "s1-valid-vertical-bar",
+      "suite": 1,
+      "expect": "opens",
+      "description": "U+007C inside a name",
+      "sealed_name": "a|b.txt",
+      "sealed_name_hex": "617c622e747874",
+      "content": "7365616c65642d6e616d6520626f756e6461727920766563746f72207061796c6f6164",
+      "credential": "a deliberately long passphrase of more than sixty-four UTF-8 bytes, carrying its own entropy",
+      "params": {
+        "ClusterAlignment": 512,
+        "ChunkSize": 1024
+      },
+      "file": "s1-valid-vertical-bar.fd-sec",
+      "total_len": 5632,
+      "blake2b256_of_file": "3406432226b5d65b54f290e53293fcb1792bb94c5f3bf14e94b3a77ea119fd48"
+    },
+    {
+      "id": "s1-valid-all-four",
+      "suite": 1,
+      "expect": "opens",
+      "description": "a name made only of the four characters",
+      "sealed_name": "\"<>|",
+      "sealed_name_hex": "223c3e7c",
+      "content": "7365616c65642d6e616d6520626f756e6461727920766563746f72207061796c6f6164",
+      "credential": "a deliberately long passphrase of more than sixty-four UTF-8 bytes, carrying its own entropy",
+      "params": {
+        "ClusterAlignment": 512,
+        "ChunkSize": 1024
+      },
+      "file": "s1-valid-all-four.fd-sec",
+      "total_len": 5632,
+      "blake2b256_of_file": "9a31b147a0d7d2e61c020f74b779f817ac82978f5d6b6dca4d6a8df1a2d38a56"
+    },
+    {
+      "id": "s1-valid-all-four-inner",
+      "suite": 1,
+      "expect": "opens",
+      "description": "the four characters inside one name, with a dot and an extension",
+      "sealed_name": "x\"y<z>w|v.txt",
+      "sealed_name_hex": "7822793c7a3e777c762e747874",
+      "content": "7365616c65642d6e616d6520626f756e6461727920766563746f72207061796c6f6164",
+      "credential": "a deliberately long passphrase of more than sixty-four UTF-8 bytes, carrying its own entropy",
+      "params": {
+        "ClusterAlignment": 512,
+        "ChunkSize": 1024
+      },
+      "file": "s1-valid-all-four-inner.fd-sec",
+      "total_len": 5632,
+      "blake2b256_of_file": "33f1f3e82fdefd729d729393528b8a705eacdf08de225d93a29d8b2b543840e6"
+    },
+    {
+      "id": "s1-valid-edges",
+      "suite": 1,
+      "expect": "opens",
+      "description": "the four characters first and last in the name",
+      "sealed_name": "|first-and-last>",
+      "sealed_name_hex": "7c66697273742d616e642d6c6173743e",
+      "content": "7365616c65642d6e616d6520626f756e6461727920766563746f72207061796c6f6164",
+      "credential": "a deliberately long passphrase of more than sixty-four UTF-8 bytes, carrying its own entropy",
+      "params": {
+        "ClusterAlignment": 512,
+        "ChunkSize": 1024
+      },
+      "file": "s1-valid-edges.fd-sec",
+      "total_len": 5632,
+      "blake2b256_of_file": "25eb46199c2d6f836c9e9af858c2b52f7c6e576371bdc2e8555983a22dba778f"
+    },
+    {
+      "id": "s1-valid-neighbours",
+      "suite": 1,
+      "expect": "opens",
+      "description": "the code points next to the four - ! # ; = { } - and a dot",
+      "sealed_name": "!#;={}.txt",
+      "sealed_name_hex": "21233b3d7b7d2e747874",
+      "content": "7365616c65642d6e616d6520626f756e6461727920766563746f72207061796c6f6164",
+      "credential": "a deliberately long passphrase of more than sixty-four UTF-8 bytes, carrying its own entropy",
+      "params": {
+        "ClusterAlignment": 512,
+        "ChunkSize": 1024
+      },
+      "file": "s1-valid-neighbours.fd-sec",
+      "total_len": 5632,
+      "blake2b256_of_file": "3ef4a2d57bb0971cae1c46fe6eec81f47512417ae70f69136ecf307b5c1b8fbd"
+    },
+    {
+      "id": "s1-valid-dot-and-space",
+      "suite": 1,
+      "expect": "opens",
+      "description": "a dot and a space inside a name",
+      "sealed_name": "a b.c.txt",
+      "sealed_name_hex": "6120622e632e747874",
+      "content": "7365616c65642d6e616d6520626f756e6461727920766563746f72207061796c6f6164",
+      "credential": "a deliberately long passphrase of more than sixty-four UTF-8 bytes, carrying its own entropy",
+      "params": {
+        "ClusterAlignment": 512,
+        "ChunkSize": 1024
+      },
+      "file": "s1-valid-dot-and-space.fd-sec",
+      "total_len": 5632,
+      "blake2b256_of_file": "f66ea0add2c6cb506a2d975097910db60ed55288e9bae30cdca0d1305f0fe1a4"
+    },
+    {
+      "id": "s1-valid-lookalike-con",
+      "suite": 1,
+      "expect": "opens",
+      "description": "starts like the reserved stem CON but is not one",
+      "sealed_name": "CONTRACT.pdf",
+      "sealed_name_hex": "434f4e54524143542e706466",
+      "content": "7365616c65642d6e616d6520626f756e6461727920766563746f72207061796c6f6164",
+      "credential": "a deliberately long passphrase of more than sixty-four UTF-8 bytes, carrying its own entropy",
+      "params": {
+        "ClusterAlignment": 512,
+        "ChunkSize": 1024
+      },
+      "file": "s1-valid-lookalike-con.fd-sec",
+      "total_len": 5632,
+      "blake2b256_of_file": "bf12af065a814b812ecef0bc12f12138714d55ac8cd8866eb09f888520d52a35"
+    },
+    {
+      "id": "s1-valid-lookalike-com10",
+      "suite": 1,
+      "expect": "opens",
+      "description": "COM10 is not a reserved device name",
+      "sealed_name": "com10.log",
+      "sealed_name_hex": "636f6d31302e6c6f67",
+      "content": "7365616c65642d6e616d6520626f756e6461727920766563746f72207061796c6f6164",
+      "credential": "a deliberately long passphrase of more than sixty-four UTF-8 bytes, carrying its own entropy",
+      "params": {
+        "ClusterAlignment": 512,
+        "ChunkSize": 1024
+      },
+      "file": "s1-valid-lookalike-com10.fd-sec",
+      "total_len": 5632,
+      "blake2b256_of_file": "2727253c419aac9b0894fcabf7b233bbd4c58cc55fbbdfb30e5bcd178755e3a2"
+    },
+    {
+      "id": "s1-valid-units-255",
+      "suite": 1,
+      "expect": "opens",
+      "description": "255 UTF-16 units, the longest name a Windows file system holds",
+      "sealed_name": "nnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnn.txt",
+      "sealed_name_hex": "6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e2e747874",
+      "content": "7365616c65642d6e616d6520626f756e6461727920766563746f72207061796c6f6164",
+      "credential": "a deliberately long passphrase of more than sixty-four UTF-8 bytes, carrying its own entropy",
+      "params": {
+        "ClusterAlignment": 512,
+        "ChunkSize": 1024
+      },
+      "file": "s1-valid-units-255.fd-sec",
+      "total_len": 5632,
+      "blake2b256_of_file": "20bc6d5e96992612fac42ba3de06b94dcedd066db7ec39d309fa6a9d5d6c8072"
+    },
+    {
+      "id": "s1-valid-units-256",
+      "suite": 1,
+      "expect": "opens",
+      "description": "256 UTF-16 units: valid in the format, one more than a Windows file name holds",
+      "sealed_name": "nnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnn.txt",
+      "sealed_name_hex": "6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e2e747874",
+      "content": "7365616c65642d6e616d6520626f756e6461727920766563746f72207061796c6f6164",
+      "credential": "a deliberately long passphrase of more than sixty-four UTF-8 bytes, carrying its own entropy",
+      "params": {
+        "ClusterAlignment": 512,
+        "ChunkSize": 1024
+      },
+      "file": "s1-valid-units-256.fd-sec",
+      "total_len": 5632,
+      "blake2b256_of_file": "d7e8bd67c225a709d2e60c35ed85a016bd2db8740a6994800c1b8858da4c5589"
+    },
+    {
+      "id": "s1-valid-longest",
+      "suite": 1,
+      "expect": "opens",
+      "description": "the longest name this suite holds (3000 bytes), made of the four characters",
+      "sealed_name": "\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|",
+      "sealed_name_hex": "223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c",
+      "content": "7365616c65642d6e616d6520626f756e6461727920766563746f72207061796c6f6164",
+      "credential": "a deliberately long passphrase of more than sixty-four UTF-8 bytes, carrying its own entropy",
+      "params": {
+        "ClusterAlignment": 512,
+        "ChunkSize": 1024
+      },
+      "file": "s1-valid-longest.fd-sec",
+      "total_len": 5632,
+      "blake2b256_of_file": "b69c21e168854fab07d26758d8bf4db237805149e5c7333135834c23ce947156"
+    },
+    {
+      "id": "s1-refused-empty",
+      "suite": 1,
+      "expect": "damaged",
+      "refused_element": "name",
+      "description": "an empty name",
+      "sealed_name": "",
+      "sealed_name_hex": "",
+      "content": "7365616c65642d6e616d6520626f756e6461727920766563746f72207061796c6f6164",
+      "credential": "a deliberately long passphrase of more than sixty-four UTF-8 bytes, carrying its own entropy",
+      "params": {
+        "ClusterAlignment": 512,
+        "ChunkSize": 1024
+      },
+      "file": "s1-refused-empty.fd-sec",
+      "total_len": 5632,
+      "blake2b256_of_file": "ba6aff6d8466de1b69df957de4128749f5d789725f44ba56888cf9931cb974f8"
+    },
+    {
+      "id": "s1-refused-dot",
+      "suite": 1,
+      "expect": "damaged",
+      "refused_element": "name",
+      "description": "the current-directory reference",
+      "sealed_name": ".",
+      "sealed_name_hex": "2e",
+      "content": "7365616c65642d6e616d6520626f756e6461727920766563746f72207061796c6f6164",
+      "credential": "a deliberately long passphrase of more than sixty-four UTF-8 bytes, carrying its own entropy",
+      "params": {
+        "ClusterAlignment": 512,
+        "ChunkSize": 1024
+      },
+      "file": "s1-refused-dot.fd-sec",
+      "total_len": 5632,
+      "blake2b256_of_file": "bd8189ff5a2536c20468fa6f28f2f055bc8c28e4987ab408a25f968dc4bc75aa"
+    },
+    {
+      "id": "s1-refused-dot-dot",
+      "suite": 1,
+      "expect": "damaged",
+      "refused_element": "name",
+      "description": "the parent-directory reference",
+      "sealed_name": "..",
+      "sealed_name_hex": "2e2e",
+      "content": "7365616c65642d6e616d6520626f756e6461727920766563746f72207061796c6f6164",
+      "credential": "a deliberately long passphrase of more than sixty-four UTF-8 bytes, carrying its own entropy",
+      "params": {
+        "ClusterAlignment": 512,
+        "ChunkSize": 1024
+      },
+      "file": "s1-refused-dot-dot.fd-sec",
+      "total_len": 5632,
+      "blake2b256_of_file": "a14aa97e2b83c44cbcd9a54164dcaa5b46f6d2673ee4d7f006fea6aedb95a0b5"
+    },
+    {
+      "id": "s1-refused-slash",
+      "suite": 1,
+      "expect": "damaged",
+      "refused_element": "name",
+      "description": "a forward slash",
+      "sealed_name": "a/b",
+      "sealed_name_hex": "612f62",
+      "content": "7365616c65642d6e616d6520626f756e6461727920766563746f72207061796c6f6164",
+      "credential": "a deliberately long passphrase of more than sixty-four UTF-8 bytes, carrying its own entropy",
+      "params": {
+        "ClusterAlignment": 512,
+        "ChunkSize": 1024
+      },
+      "file": "s1-refused-slash.fd-sec",
+      "total_len": 5632,
+      "blake2b256_of_file": "b88ddea2e9c065af309d0a15bed5e3e12b6d0c07e8ee1a358ec62a580a9d2c87"
+    },
+    {
+      "id": "s1-refused-backslash",
+      "suite": 1,
+      "expect": "damaged",
+      "refused_element": "name",
+      "description": "a backslash",
+      "sealed_name": "a\\b",
+      "sealed_name_hex": "615c62",
+      "content": "7365616c65642d6e616d6520626f756e6461727920766563746f72207061796c6f6164",
+      "credential": "a deliberately long passphrase of more than sixty-four UTF-8 bytes, carrying its own entropy",
+      "params": {
+        "ClusterAlignment": 512,
+        "ChunkSize": 1024
+      },
+      "file": "s1-refused-backslash.fd-sec",
+      "total_len": 5632,
+      "blake2b256_of_file": "50bf94c64679572b5be2de6b423c2bf2c05103ad94e2151b58e153427912388d"
+    },
+    {
+      "id": "s1-refused-colon",
+      "suite": 1,
+      "expect": "damaged",
+      "refused_element": "name",
+      "description": "a colon (an alternate data stream on NTFS)",
+      "sealed_name": "a:b",
+      "sealed_name_hex": "613a62",
+      "content": "7365616c65642d6e616d6520626f756e6461727920766563746f72207061796c6f6164",
+      "credential": "a deliberately long passphrase of more than sixty-four UTF-8 bytes, carrying its own entropy",
+      "params": {
+        "ClusterAlignment": 512,
+        "ChunkSize": 1024
+      },
+      "file": "s1-refused-colon.fd-sec",
+      "total_len": 5632,
+      "blake2b256_of_file": "ea5488afc36b6d8e0efec5c3f16eedebf3b7efd8e510511ab21549321a9e1b60"
+    },
+    {
+      "id": "s1-refused-star",
+      "suite": 1,
+      "expect": "damaged",
+      "refused_element": "name",
+      "description": "the wildcard *",
+      "sealed_name": "a*b",
+      "sealed_name_hex": "612a62",
+      "content": "7365616c65642d6e616d6520626f756e6461727920766563746f72207061796c6f6164",
+      "credential": "a deliberately long passphrase of more than sixty-four UTF-8 bytes, carrying its own entropy",
+      "params": {
+        "ClusterAlignment": 512,
+        "ChunkSize": 1024
+      },
+      "file": "s1-refused-star.fd-sec",
+      "total_len": 5632,
+      "blake2b256_of_file": "6f8a57ba0d06abe0652f23fcb3ff2c84517bc35e4ac2db575294a8bd66330d21"
+    },
+    {
+      "id": "s1-refused-question",
+      "suite": 1,
+      "expect": "damaged",
+      "refused_element": "name",
+      "description": "the wildcard ?",
+      "sealed_name": "a?b",
+      "sealed_name_hex": "613f62",
+      "content": "7365616c65642d6e616d6520626f756e6461727920766563746f72207061796c6f6164",
+      "credential": "a deliberately long passphrase of more than sixty-four UTF-8 bytes, carrying its own entropy",
+      "params": {
+        "ClusterAlignment": 512,
+        "ChunkSize": 1024
+      },
+      "file": "s1-refused-question.fd-sec",
+      "total_len": 5632,
+      "blake2b256_of_file": "42aae62896a61cf381e1bde415ac8643ef8d5b0194fe462aca463c6b213c411d"
+    },
+    {
+      "id": "s1-refused-control",
+      "suite": 1,
+      "expect": "damaged",
+      "refused_element": "name",
+      "description": "a control character, U+0001",
+      "sealed_name": "a\u0001b",
+      "sealed_name_hex": "610162",
+      "content": "7365616c65642d6e616d6520626f756e6461727920766563746f72207061796c6f6164",
+      "credential": "a deliberately long passphrase of more than sixty-four UTF-8 bytes, carrying its own entropy",
+      "params": {
+        "ClusterAlignment": 512,
+        "ChunkSize": 1024
+      },
+      "file": "s1-refused-control.fd-sec",
+      "total_len": 5632,
+      "blake2b256_of_file": "97162994aaf031464d8c1517f590a72807543edaa42e576a975319cec0c9457a"
+    },
+    {
+      "id": "s1-refused-delete",
+      "suite": 1,
+      "expect": "damaged",
+      "refused_element": "name",
+      "description": "U+007F",
+      "sealed_name": "ab",
+      "sealed_name_hex": "617f62",
+      "content": "7365616c65642d6e616d6520626f756e6461727920766563746f72207061796c6f6164",
+      "credential": "a deliberately long passphrase of more than sixty-four UTF-8 bytes, carrying its own entropy",
+      "params": {
+        "ClusterAlignment": 512,
+        "ChunkSize": 1024
+      },
+      "file": "s1-refused-delete.fd-sec",
+      "total_len": 5632,
+      "blake2b256_of_file": "3fc9cab01ffe6fbf7adc1d516f0f20b6ece388aa8939bc04018a3b728486bd14"
+    },
+    {
+      "id": "s1-refused-reserved-con",
+      "suite": 1,
+      "expect": "damaged",
+      "refused_element": "name",
+      "description": "the reserved device name CON",
+      "sealed_name": "CON",
+      "sealed_name_hex": "434f4e",
+      "content": "7365616c65642d6e616d6520626f756e6461727920766563746f72207061796c6f6164",
+      "credential": "a deliberately long passphrase of more than sixty-four UTF-8 bytes, carrying its own entropy",
+      "params": {
+        "ClusterAlignment": 512,
+        "ChunkSize": 1024
+      },
+      "file": "s1-refused-reserved-con.fd-sec",
+      "total_len": 5632,
+      "blake2b256_of_file": "0fee313da2152451bcd334b579af4cd02c181dcf09594146cc162200dd533d15"
+    },
+    {
+      "id": "s1-refused-reserved-ext",
+      "suite": 1,
+      "expect": "damaged",
+      "refused_element": "name",
+      "description": "a reserved stem with an extension, nul.txt",
+      "sealed_name": "nul.txt",
+      "sealed_name_hex": "6e756c2e747874",
+      "content": "7365616c65642d6e616d6520626f756e6461727920766563746f72207061796c6f6164",
+      "credential": "a deliberately long passphrase of more than sixty-four UTF-8 bytes, carrying its own entropy",
+      "params": {
+        "ClusterAlignment": 512,
+        "ChunkSize": 1024
+      },
+      "file": "s1-refused-reserved-ext.fd-sec",
+      "total_len": 5632,
+      "blake2b256_of_file": "368ff4128a238343b9fb7fbbabd98c57ca869c6b3d7e873c8182a7022de84cb5"
+    },
+    {
+      "id": "s1-refused-reserved-com9",
+      "suite": 1,
+      "expect": "damaged",
+      "refused_element": "name",
+      "description": "the reserved device name COM9",
+      "sealed_name": "COM9",
+      "sealed_name_hex": "434f4d39",
+      "content": "7365616c65642d6e616d6520626f756e6461727920766563746f72207061796c6f6164",
+      "credential": "a deliberately long passphrase of more than sixty-four UTF-8 bytes, carrying its own entropy",
+      "params": {
+        "ClusterAlignment": 512,
+        "ChunkSize": 1024
+      },
+      "file": "s1-refused-reserved-com9.fd-sec",
+      "total_len": 5632,
+      "blake2b256_of_file": "a5dbb0cab17458cb8e420e29f32302ef30a829f6023bad90832d5898b4ae66dd"
+    },
+    {
+      "id": "s1-refused-trailing-dot",
+      "suite": 1,
+      "expect": "damaged",
+      "refused_element": "name",
+      "description": "a name that ends in a dot",
+      "sealed_name": "trailing.",
+      "sealed_name_hex": "747261696c696e672e",
+      "content": "7365616c65642d6e616d6520626f756e6461727920766563746f72207061796c6f6164",
+      "credential": "a deliberately long passphrase of more than sixty-four UTF-8 bytes, carrying its own entropy",
+      "params": {
+        "ClusterAlignment": 512,
+        "ChunkSize": 1024
+      },
+      "file": "s1-refused-trailing-dot.fd-sec",
+      "total_len": 5632,
+      "blake2b256_of_file": "44bef06c2ccf3cf51cd25a22a8d91d1b34d1823a9699be8142673f7852deeba6"
+    },
+    {
+      "id": "s1-refused-trailing-space",
+      "suite": 1,
+      "expect": "damaged",
+      "refused_element": "name",
+      "description": "a name that ends in a space",
+      "sealed_name": "trailing ",
+      "sealed_name_hex": "747261696c696e6720",
+      "content": "7365616c65642d6e616d6520626f756e6461727920766563746f72207061796c6f6164",
+      "credential": "a deliberately long passphrase of more than sixty-four UTF-8 bytes, carrying its own entropy",
+      "params": {
+        "ClusterAlignment": 512,
+        "ChunkSize": 1024
+      },
+      "file": "s1-refused-trailing-space.fd-sec",
+      "total_len": 5632,
+      "blake2b256_of_file": "6703896051f735116d4ddc7c38119b3ac836df8b118e74a2379eed07de2b8855"
+    },
+    {
+      "id": "s1-refused-four-and-slash",
+      "suite": 1,
+      "expect": "damaged",
+      "refused_element": "name",
+      "description": "a valid character beside a separator is still refused",
+      "sealed_name": "a|b/c",
+      "sealed_name_hex": "617c622f63",
+      "content": "7365616c65642d6e616d6520626f756e6461727920766563746f72207061796c6f6164",
+      "credential": "a deliberately long passphrase of more than sixty-four UTF-8 bytes, carrying its own entropy",
+      "params": {
+        "ClusterAlignment": 512,
+        "ChunkSize": 1024
+      },
+      "file": "s1-refused-four-and-slash.fd-sec",
+      "total_len": 5632,
+      "blake2b256_of_file": "e59af4a482726dc32f14957d0c37403a544dfefe47948cf5a87dab0b553a7d59"
+    },
+    {
+      "id": "s1-refused-four-and-colon",
+      "suite": 1,
+      "expect": "damaged",
+      "refused_element": "name",
+      "description": "a valid character beside a colon is still refused",
+      "sealed_name": "a\"b:c",
+      "sealed_name_hex": "6122623a63",
+      "content": "7365616c65642d6e616d6520626f756e6461727920766563746f72207061796c6f6164",
+      "credential": "a deliberately long passphrase of more than sixty-four UTF-8 bytes, carrying its own entropy",
+      "params": {
+        "ClusterAlignment": 512,
+        "ChunkSize": 1024
+      },
+      "file": "s1-refused-four-and-colon.fd-sec",
+      "total_len": 5632,
+      "blake2b256_of_file": "09654e812b3520651f86421c4e26b955c6d98f7894346f9a727e6a01a2ab754f"
+    },
+    {
+      "id": "s1-refused-invalid-utf8",
+      "suite": 1,
+      "expect": "damaged",
+      "refused_element": "name",
+      "description": "a byte that is not UTF-8 (0xFF between two letters): damaged in every suite, never replaced by U+FFFD (FDSEC-FORMAT 1.5 section 22)",
+      "sealed_name": "a�b",
+      "sealed_name_hex": "61ff62",
+      "content": "7365616c65642d6e616d6520626f756e6461727920766563746f72207061796c6f6164",
+      "credential": "a deliberately long passphrase of more than sixty-four UTF-8 bytes, carrying its own entropy",
+      "params": {
+        "ClusterAlignment": 512,
+        "ChunkSize": 1024
+      },
+      "file": "s1-refused-invalid-utf8.fd-sec",
+      "total_len": 5632,
+      "blake2b256_of_file": "b6c24ad633c7601b2fd69cb05fb4a8b201d555372eeb89d922c7ab05262cb0b3"
+    },
+    {
+      "id": "s2-valid-quote",
+      "suite": 2,
+      "expect": "opens",
+      "description": "U+0022 inside a name",
+      "sealed_name": "a\"b.txt",
+      "sealed_name_hex": "6122622e747874",
+      "content": "7365616c65642d6e616d6520626f756e6461727920766563746f72207061796c6f6164",
+      "credential": "a deliberately long passphrase of more than sixty-four UTF-8 bytes, carrying its own entropy",
+      "file": "s2-valid-quote.bin",
+      "total_len": 23299,
+      "blake2b256_of_file": "e5fbd19e2604e406f740d2d8c1122289763746a9fe9697e8aa1d535b9886c01d"
+    },
+    {
+      "id": "s2-valid-less-than",
+      "suite": 2,
+      "expect": "opens",
+      "description": "U+003C inside a name",
+      "sealed_name": "a<b.txt",
+      "sealed_name_hex": "613c622e747874",
+      "content": "7365616c65642d6e616d6520626f756e6461727920766563746f72207061796c6f6164",
+      "credential": "a deliberately long passphrase of more than sixty-four UTF-8 bytes, carrying its own entropy",
+      "file": "s2-valid-less-than.bin",
+      "total_len": 28522,
+      "blake2b256_of_file": "99cd28dec3f08286eae47cdf823fd1df6b2a6286a5dd3e874e38b148b7180b05"
+    },
+    {
+      "id": "s2-valid-greater-than",
+      "suite": 2,
+      "expect": "opens",
+      "description": "U+003E inside a name",
+      "sealed_name": "a>b.txt",
+      "sealed_name_hex": "613e622e747874",
+      "content": "7365616c65642d6e616d6520626f756e6461727920766563746f72207061796c6f6164",
+      "credential": "a deliberately long passphrase of more than sixty-four UTF-8 bytes, carrying its own entropy",
+      "file": "s2-valid-greater-than.bin",
+      "total_len": 17718,
+      "blake2b256_of_file": "e974c16d8937b5e3d5e3540a549927bedf1aede0632f7c46bcad888cf6651df8"
+    },
+    {
+      "id": "s2-valid-vertical-bar",
+      "suite": 2,
+      "expect": "opens",
+      "description": "U+007C inside a name",
+      "sealed_name": "a|b.txt",
+      "sealed_name_hex": "617c622e747874",
+      "content": "7365616c65642d6e616d6520626f756e6461727920766563746f72207061796c6f6164",
+      "credential": "a deliberately long passphrase of more than sixty-four UTF-8 bytes, carrying its own entropy",
+      "file": "s2-valid-vertical-bar.bin",
+      "total_len": 15633,
+      "blake2b256_of_file": "e0b484a720d10141f008fb637031f7c53dffc267a27f9dd9223f981ba84b47c6"
+    },
+    {
+      "id": "s2-valid-all-four",
+      "suite": 2,
+      "expect": "opens",
+      "description": "a name made only of the four characters",
+      "sealed_name": "\"<>|",
+      "sealed_name_hex": "223c3e7c",
+      "content": "7365616c65642d6e616d6520626f756e6461727920766563746f72207061796c6f6164",
+      "credential": "a deliberately long passphrase of more than sixty-four UTF-8 bytes, carrying its own entropy",
+      "file": "s2-valid-all-four.bin",
+      "total_len": 23872,
+      "blake2b256_of_file": "10b94f802390077669be5121b081ba8c07db31957cb54122151478f22ff86683"
+    },
+    {
+      "id": "s2-valid-all-four-inner",
+      "suite": 2,
+      "expect": "opens",
+      "description": "the four characters inside one name, with a dot and an extension",
+      "sealed_name": "x\"y<z>w|v.txt",
+      "sealed_name_hex": "7822793c7a3e777c762e747874",
+      "content": "7365616c65642d6e616d6520626f756e6461727920766563746f72207061796c6f6164",
+      "credential": "a deliberately long passphrase of more than sixty-four UTF-8 bytes, carrying its own entropy",
+      "file": "s2-valid-all-four-inner.bin",
+      "total_len": 18927,
+      "blake2b256_of_file": "de50f3448ff631b7449b8d50ca9fe07cb9f6c1a2db17253ef2e6461bfafc5849"
+    },
+    {
+      "id": "s2-valid-edges",
+      "suite": 2,
+      "expect": "opens",
+      "description": "the four characters first and last in the name",
+      "sealed_name": "|first-and-last>",
+      "sealed_name_hex": "7c66697273742d616e642d6c6173743e",
+      "content": "7365616c65642d6e616d6520626f756e6461727920766563746f72207061796c6f6164",
+      "credential": "a deliberately long passphrase of more than sixty-four UTF-8 bytes, carrying its own entropy",
+      "file": "s2-valid-edges.bin",
+      "total_len": 22186,
+      "blake2b256_of_file": "0fe4251cef6d9e715aa670f21acd4fd3d19f647891255841b369cca9447b0410"
+    },
+    {
+      "id": "s2-valid-neighbours",
+      "suite": 2,
+      "expect": "opens",
+      "description": "the code points next to the four - ! # ; = { } - and a dot",
+      "sealed_name": "!#;={}.txt",
+      "sealed_name_hex": "21233b3d7b7d2e747874",
+      "content": "7365616c65642d6e616d6520626f756e6461727920766563746f72207061796c6f6164",
+      "credential": "a deliberately long passphrase of more than sixty-four UTF-8 bytes, carrying its own entropy",
+      "file": "s2-valid-neighbours.bin",
+      "total_len": 11523,
+      "blake2b256_of_file": "2289084036a0e24c9bfe346e1cbc8d635c7473aaecdfe7d419e99cc606f51d6f"
+    },
+    {
+      "id": "s2-valid-dot-and-space",
+      "suite": 2,
+      "expect": "opens",
+      "description": "a dot and a space inside a name",
+      "sealed_name": "a b.c.txt",
+      "sealed_name_hex": "6120622e632e747874",
+      "content": "7365616c65642d6e616d6520626f756e6461727920766563746f72207061796c6f6164",
+      "credential": "a deliberately long passphrase of more than sixty-four UTF-8 bytes, carrying its own entropy",
+      "file": "s2-valid-dot-and-space.bin",
+      "total_len": 11328,
+      "blake2b256_of_file": "e66f87d7b1c43bc8ddfb851f8381d5c21c280aef86505253365c1e03a8cd74cb"
+    },
+    {
+      "id": "s2-valid-lookalike-con",
+      "suite": 2,
+      "expect": "opens",
+      "description": "starts like the reserved stem CON but is not one",
+      "sealed_name": "CONTRACT.pdf",
+      "sealed_name_hex": "434f4e54524143542e706466",
+      "content": "7365616c65642d6e616d6520626f756e6461727920766563746f72207061796c6f6164",
+      "credential": "a deliberately long passphrase of more than sixty-four UTF-8 bytes, carrying its own entropy",
+      "file": "s2-valid-lookalike-con.bin",
+      "total_len": 27411,
+      "blake2b256_of_file": "7d7aaa778aa0c76095ed9d80bd5a1071442cf4ff749660a3abb908c80a6e94f5"
+    },
+    {
+      "id": "s2-valid-lookalike-com10",
+      "suite": 2,
+      "expect": "opens",
+      "description": "COM10 is not a reserved device name",
+      "sealed_name": "com10.log",
+      "sealed_name_hex": "636f6d31302e6c6f67",
+      "content": "7365616c65642d6e616d6520626f756e6461727920766563746f72207061796c6f6164",
+      "credential": "a deliberately long passphrase of more than sixty-four UTF-8 bytes, carrying its own entropy",
+      "file": "s2-valid-lookalike-com10.bin",
+      "total_len": 21376,
+      "blake2b256_of_file": "ef58a3280d43413d2c6ff811d2d936bf2de350f0a72c7731125a9d7b5b1004d3"
+    },
+    {
+      "id": "s2-valid-units-255",
+      "suite": 2,
+      "expect": "opens",
+      "description": "255 UTF-16 units, the longest name a Windows file system holds",
+      "sealed_name": "nnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnn.txt",
+      "sealed_name_hex": "6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e2e747874",
+      "content": "7365616c65642d6e616d6520626f756e6461727920766563746f72207061796c6f6164",
+      "credential": "a deliberately long passphrase of more than sixty-four UTF-8 bytes, carrying its own entropy",
+      "file": "s2-valid-units-255.bin",
+      "total_len": 31555,
+      "blake2b256_of_file": "76954a470479413494948c9c87d8076d1441f519da4bfa93f380b22e73d2fd42"
+    },
+    {
+      "id": "s2-valid-units-256",
+      "suite": 2,
+      "expect": "opens",
+      "description": "256 UTF-16 units: valid in the format, one more than a Windows file name holds",
+      "sealed_name": "nnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnn.txt",
+      "sealed_name_hex": "6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e2e747874",
+      "content": "7365616c65642d6e616d6520626f756e6461727920766563746f72207061796c6f6164",
+      "credential": "a deliberately long passphrase of more than sixty-four UTF-8 bytes, carrying its own entropy",
+      "file": "s2-valid-units-256.bin",
+      "total_len": 14859,
+      "blake2b256_of_file": "6ea293bd541d5b21e1220bc2edba4312fbac9531bc2e72007daa019ae13a5b05"
+    },
+    {
+      "id": "s2-valid-longest",
+      "suite": 2,
+      "expect": "opens",
+      "description": "the longest name this suite holds (1023 bytes), made of the four characters",
+      "sealed_name": "\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>",
+      "sealed_name_hex": "223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e",
+      "content": "7365616c65642d6e616d6520626f756e6461727920766563746f72207061796c6f6164",
+      "credential": "a deliberately long passphrase of more than sixty-four UTF-8 bytes, carrying its own entropy",
+      "file": "s2-valid-longest.bin",
+      "total_len": 32712,
+      "blake2b256_of_file": "bfeb3f4d1e6724777f2faf0646871ab72f49ece9382bcb63f4a397c2b9d0148b"
+    },
+    {
+      "id": "s2-refused-empty",
+      "suite": 2,
+      "expect": "damaged",
+      "refused_element": "name",
+      "description": "an empty name",
+      "sealed_name": "",
+      "sealed_name_hex": "",
+      "content": "7365616c65642d6e616d6520626f756e6461727920766563746f72207061796c6f6164",
+      "credential": "a deliberately long passphrase of more than sixty-four UTF-8 bytes, carrying its own entropy",
+      "file": "s2-refused-empty.bin",
+      "total_len": 9343,
+      "blake2b256_of_file": "6042a89a9e15908890bb4f5f2396d72ffc56841c22b4b1ed52fb9a2c8413f29c"
+    },
+    {
+      "id": "s2-refused-dot",
+      "suite": 2,
+      "expect": "damaged",
+      "refused_element": "name",
+      "description": "the current-directory reference",
+      "sealed_name": ".",
+      "sealed_name_hex": "2e",
+      "content": "7365616c65642d6e616d6520626f756e6461727920766563746f72207061796c6f6164",
+      "credential": "a deliberately long passphrase of more than sixty-four UTF-8 bytes, carrying its own entropy",
+      "file": "s2-refused-dot.bin",
+      "total_len": 9343,
+      "blake2b256_of_file": "ca2981b7681ed2585f4bbe8ef47846d6f2b05e9a11cc71541ed702e1582dcae4"
+    },
+    {
+      "id": "s2-refused-dot-dot",
+      "suite": 2,
+      "expect": "damaged",
+      "refused_element": "name",
+      "description": "the parent-directory reference",
+      "sealed_name": "..",
+      "sealed_name_hex": "2e2e",
+      "content": "7365616c65642d6e616d6520626f756e6461727920766563746f72207061796c6f6164",
+      "credential": "a deliberately long passphrase of more than sixty-four UTF-8 bytes, carrying its own entropy",
+      "file": "s2-refused-dot-dot.bin",
+      "total_len": 9343,
+      "blake2b256_of_file": "4087085f146a0814a389bfe8885fa4e7d0e5c9be8f8d8b9b8e28bf2c09bafcfd"
+    },
+    {
+      "id": "s2-refused-slash",
+      "suite": 2,
+      "expect": "damaged",
+      "refused_element": "name",
+      "description": "a forward slash",
+      "sealed_name": "a/b",
+      "sealed_name_hex": "612f62",
+      "content": "7365616c65642d6e616d6520626f756e6461727920766563746f72207061796c6f6164",
+      "credential": "a deliberately long passphrase of more than sixty-four UTF-8 bytes, carrying its own entropy",
+      "file": "s2-refused-slash.bin",
+      "total_len": 9343,
+      "blake2b256_of_file": "d0f1a3dc38f6750b2d9cdd601d2fefd93e549823596385b0e7624b6c031e8455"
+    },
+    {
+      "id": "s2-refused-backslash",
+      "suite": 2,
+      "expect": "damaged",
+      "refused_element": "name",
+      "description": "a backslash",
+      "sealed_name": "a\\b",
+      "sealed_name_hex": "615c62",
+      "content": "7365616c65642d6e616d6520626f756e6461727920766563746f72207061796c6f6164",
+      "credential": "a deliberately long passphrase of more than sixty-four UTF-8 bytes, carrying its own entropy",
+      "file": "s2-refused-backslash.bin",
+      "total_len": 9343,
+      "blake2b256_of_file": "ec8f71cb7081a471f31bd23294a6937c555eee65087f141972e31b73d1e6e5a8"
+    },
+    {
+      "id": "s2-refused-colon",
+      "suite": 2,
+      "expect": "damaged",
+      "refused_element": "name",
+      "description": "a colon (an alternate data stream on NTFS)",
+      "sealed_name": "a:b",
+      "sealed_name_hex": "613a62",
+      "content": "7365616c65642d6e616d6520626f756e6461727920766563746f72207061796c6f6164",
+      "credential": "a deliberately long passphrase of more than sixty-four UTF-8 bytes, carrying its own entropy",
+      "file": "s2-refused-colon.bin",
+      "total_len": 9343,
+      "blake2b256_of_file": "57eb9d4a51cef105cafab7b0c6446e9cefcc461b1e7d20dcb2e28b1528eccd29"
+    },
+    {
+      "id": "s2-refused-star",
+      "suite": 2,
+      "expect": "damaged",
+      "refused_element": "name",
+      "description": "the wildcard *",
+      "sealed_name": "a*b",
+      "sealed_name_hex": "612a62",
+      "content": "7365616c65642d6e616d6520626f756e6461727920766563746f72207061796c6f6164",
+      "credential": "a deliberately long passphrase of more than sixty-four UTF-8 bytes, carrying its own entropy",
+      "file": "s2-refused-star.bin",
+      "total_len": 9343,
+      "blake2b256_of_file": "3d2b0461ba8c7e0addd30942081e2a4f79389ca1a0320132e37668096a8cd62f"
+    },
+    {
+      "id": "s2-refused-question",
+      "suite": 2,
+      "expect": "damaged",
+      "refused_element": "name",
+      "description": "the wildcard ?",
+      "sealed_name": "a?b",
+      "sealed_name_hex": "613f62",
+      "content": "7365616c65642d6e616d6520626f756e6461727920766563746f72207061796c6f6164",
+      "credential": "a deliberately long passphrase of more than sixty-four UTF-8 bytes, carrying its own entropy",
+      "file": "s2-refused-question.bin",
+      "total_len": 9343,
+      "blake2b256_of_file": "f99a70f43e6a87ab21b23b3f3ec87447805b741aaa958b8f2f38acc6762bdef0"
+    },
+    {
+      "id": "s2-refused-control",
+      "suite": 2,
+      "expect": "damaged",
+      "refused_element": "name",
+      "description": "a control character, U+0001",
+      "sealed_name": "a\u0001b",
+      "sealed_name_hex": "610162",
+      "content": "7365616c65642d6e616d6520626f756e6461727920766563746f72207061796c6f6164",
+      "credential": "a deliberately long passphrase of more than sixty-four UTF-8 bytes, carrying its own entropy",
+      "file": "s2-refused-control.bin",
+      "total_len": 9343,
+      "blake2b256_of_file": "c2aba5622e35a42ffc8922034b84406737dc1acd828b9fa998465a96f3dad6c1"
+    },
+    {
+      "id": "s2-refused-delete",
+      "suite": 2,
+      "expect": "damaged",
+      "refused_element": "name",
+      "description": "U+007F",
+      "sealed_name": "ab",
+      "sealed_name_hex": "617f62",
+      "content": "7365616c65642d6e616d6520626f756e6461727920766563746f72207061796c6f6164",
+      "credential": "a deliberately long passphrase of more than sixty-four UTF-8 bytes, carrying its own entropy",
+      "file": "s2-refused-delete.bin",
+      "total_len": 9343,
+      "blake2b256_of_file": "95dc325774ed9c37ee06d1650d8ef3c4fc60dda35b1325eddc23bd2d8b3ef9c9"
+    },
+    {
+      "id": "s2-refused-reserved-con",
+      "suite": 2,
+      "expect": "damaged",
+      "refused_element": "name",
+      "description": "the reserved device name CON",
+      "sealed_name": "CON",
+      "sealed_name_hex": "434f4e",
+      "content": "7365616c65642d6e616d6520626f756e6461727920766563746f72207061796c6f6164",
+      "credential": "a deliberately long passphrase of more than sixty-four UTF-8 bytes, carrying its own entropy",
+      "file": "s2-refused-reserved-con.bin",
+      "total_len": 9343,
+      "blake2b256_of_file": "1d570ec27a8a7d29ff653c90bf8282902fd384660010e8c11d994ee81e1b81c8"
+    },
+    {
+      "id": "s2-refused-reserved-ext",
+      "suite": 2,
+      "expect": "damaged",
+      "refused_element": "name",
+      "description": "a reserved stem with an extension, nul.txt",
+      "sealed_name": "nul.txt",
+      "sealed_name_hex": "6e756c2e747874",
+      "content": "7365616c65642d6e616d6520626f756e6461727920766563746f72207061796c6f6164",
+      "credential": "a deliberately long passphrase of more than sixty-four UTF-8 bytes, carrying its own entropy",
+      "file": "s2-refused-reserved-ext.bin",
+      "total_len": 9343,
+      "blake2b256_of_file": "ec2a5902adcc7444f8d42d591b1f976bf5be04ad30f36c661eebe839fe8676d3"
+    },
+    {
+      "id": "s2-refused-reserved-com9",
+      "suite": 2,
+      "expect": "damaged",
+      "refused_element": "name",
+      "description": "the reserved device name COM9",
+      "sealed_name": "COM9",
+      "sealed_name_hex": "434f4d39",
+      "content": "7365616c65642d6e616d6520626f756e6461727920766563746f72207061796c6f6164",
+      "credential": "a deliberately long passphrase of more than sixty-four UTF-8 bytes, carrying its own entropy",
+      "file": "s2-refused-reserved-com9.bin",
+      "total_len": 9343,
+      "blake2b256_of_file": "1cad0fe37dc10c39c4b23a24f244c9f3612ab694bf278c723da720f93625cae0"
+    },
+    {
+      "id": "s2-refused-trailing-dot",
+      "suite": 2,
+      "expect": "damaged",
+      "refused_element": "name",
+      "description": "a name that ends in a dot",
+      "sealed_name": "trailing.",
+      "sealed_name_hex": "747261696c696e672e",
+      "content": "7365616c65642d6e616d6520626f756e6461727920766563746f72207061796c6f6164",
+      "credential": "a deliberately long passphrase of more than sixty-four UTF-8 bytes, carrying its own entropy",
+      "file": "s2-refused-trailing-dot.bin",
+      "total_len": 9343,
+      "blake2b256_of_file": "9ce2c4819580d0654ae1aa78bb5dfba72f64007f40bfcd82efc061fab3a39ded"
+    },
+    {
+      "id": "s2-refused-trailing-space",
+      "suite": 2,
+      "expect": "damaged",
+      "refused_element": "name",
+      "description": "a name that ends in a space",
+      "sealed_name": "trailing ",
+      "sealed_name_hex": "747261696c696e6720",
+      "content": "7365616c65642d6e616d6520626f756e6461727920766563746f72207061796c6f6164",
+      "credential": "a deliberately long passphrase of more than sixty-four UTF-8 bytes, carrying its own entropy",
+      "file": "s2-refused-trailing-space.bin",
+      "total_len": 9343,
+      "blake2b256_of_file": "a21fa3b22092ee9577717538a490f8b231ded9d7e02fc473f49a22bf6903170a"
+    },
+    {
+      "id": "s2-refused-four-and-slash",
+      "suite": 2,
+      "expect": "damaged",
+      "refused_element": "name",
+      "description": "a valid character beside a separator is still refused",
+      "sealed_name": "a|b/c",
+      "sealed_name_hex": "617c622f63",
+      "content": "7365616c65642d6e616d6520626f756e6461727920766563746f72207061796c6f6164",
+      "credential": "a deliberately long passphrase of more than sixty-four UTF-8 bytes, carrying its own entropy",
+      "file": "s2-refused-four-and-slash.bin",
+      "total_len": 9343,
+      "blake2b256_of_file": "43da676def3cc8e2aa6e945aac978b7647e51fe71bc7c7b212ba20371cb0868e"
+    },
+    {
+      "id": "s2-refused-four-and-colon",
+      "suite": 2,
+      "expect": "damaged",
+      "refused_element": "name",
+      "description": "a valid character beside a colon is still refused",
+      "sealed_name": "a\"b:c",
+      "sealed_name_hex": "6122623a63",
+      "content": "7365616c65642d6e616d6520626f756e6461727920766563746f72207061796c6f6164",
+      "credential": "a deliberately long passphrase of more than sixty-four UTF-8 bytes, carrying its own entropy",
+      "file": "s2-refused-four-and-colon.bin",
+      "total_len": 9343,
+      "blake2b256_of_file": "114afe2c16e8f28bf4d320c647bab5312e990fff4a15325f08f36d9f20cda10d"
+    },
+    {
+      "id": "s2-refused-invalid-utf8",
+      "suite": 2,
+      "expect": "damaged",
+      "refused_element": "name",
+      "description": "a byte that is not UTF-8 (0xFF between two letters): damaged in every suite, never replaced by U+FFFD (FDSEC-FORMAT 1.5 section 22)",
+      "sealed_name": "a�b",
+      "sealed_name_hex": "61ff62",
+      "content": "7365616c65642d6e616d6520626f756e6461727920766563746f72207061796c6f6164",
+      "credential": "a deliberately long passphrase of more than sixty-four UTF-8 bytes, carrying its own entropy",
+      "file": "s2-refused-invalid-utf8.bin",
+      "total_len": 9343,
+      "blake2b256_of_file": "c5ea3b840211741f5229d3f9aa7da5e6f1131e44a1fd2d72054de3f2cc1414ba"
+    },
+    {
+      "id": "s3-valid-root-22",
+      "suite": 3,
+      "expect": "opens",
+      "description": "U+0022 inside the root folder's name",
+      "sealed_name": "r\"t",
+      "sealed_name_hex": "722274",
+      "entries": [
+        {
+          "kind": "file",
+          "path": "f.txt",
+          "path_hex": "662e747874",
+          "content": "6f6e65"
+        }
+      ],
+      "credential": "a deliberately long passphrase of more than sixty-four UTF-8 bytes, carrying its own entropy",
+      "params": {
+        "ClusterAlignment": 512,
+        "ChunkSize": 1024
+      },
+      "file": "s3-valid-root-22.fd-sec",
+      "total_len": 6144,
+      "blake2b256_of_file": "497c1091cef27032893037b95cdb0e1e1c21f4772bee976072acf8aa4a524f09"
+    },
+    {
+      "id": "s3-valid-component-22",
+      "suite": 3,
+      "expect": "opens",
+      "description": "U+0022 inside a folder name and a file name below it",
+      "sealed_name": "root",
+      "sealed_name_hex": "726f6f74",
+      "entries": [
+        {
+          "kind": "directory",
+          "path": "d\"q",
+          "path_hex": "642271"
+        },
+        {
+          "kind": "file",
+          "path": "d\"q/f\".txt",
+          "path_hex": "6422712f66222e747874",
+          "content": "74776f"
+        }
+      ],
+      "credential": "a deliberately long passphrase of more than sixty-four UTF-8 bytes, carrying its own entropy",
+      "params": {
+        "ClusterAlignment": 512,
+        "ChunkSize": 1024
+      },
+      "file": "s3-valid-component-22.fd-sec",
+      "total_len": 6144,
+      "blake2b256_of_file": "a47c6a06d4310f95545967595741e754669dac28fa709bf1d3e8c8e4ab954867"
+    },
+    {
+      "id": "s3-valid-root-3c",
+      "suite": 3,
+      "expect": "opens",
+      "description": "U+003C inside the root folder's name",
+      "sealed_name": "r<t",
+      "sealed_name_hex": "723c74",
+      "entries": [
+        {
+          "kind": "file",
+          "path": "f.txt",
+          "path_hex": "662e747874",
+          "content": "6f6e65"
+        }
+      ],
+      "credential": "a deliberately long passphrase of more than sixty-four UTF-8 bytes, carrying its own entropy",
+      "params": {
+        "ClusterAlignment": 512,
+        "ChunkSize": 1024
+      },
+      "file": "s3-valid-root-3c.fd-sec",
+      "total_len": 6144,
+      "blake2b256_of_file": "e31e4689f2c5691b5386422da29e68f0dfcb671fbc8ca2e5d061ac6db9edf059"
+    },
+    {
+      "id": "s3-valid-component-3c",
+      "suite": 3,
+      "expect": "opens",
+      "description": "U+003C inside a folder name and a file name below it",
+      "sealed_name": "root",
+      "sealed_name_hex": "726f6f74",
+      "entries": [
+        {
+          "kind": "directory",
+          "path": "d<q",
+          "path_hex": "643c71"
+        },
+        {
+          "kind": "file",
+          "path": "d<q/f<.txt",
+          "path_hex": "643c712f663c2e747874",
+          "content": "74776f"
+        }
+      ],
+      "credential": "a deliberately long passphrase of more than sixty-four UTF-8 bytes, carrying its own entropy",
+      "params": {
+        "ClusterAlignment": 512,
+        "ChunkSize": 1024
+      },
+      "file": "s3-valid-component-3c.fd-sec",
+      "total_len": 6144,
+      "blake2b256_of_file": "fcc21d2b36b1a4ee41da75ebff04516d56ba8606ed7dd361f92609777ba4eb37"
+    },
+    {
+      "id": "s3-valid-root-3e",
+      "suite": 3,
+      "expect": "opens",
+      "description": "U+003E inside the root folder's name",
+      "sealed_name": "r>t",
+      "sealed_name_hex": "723e74",
+      "entries": [
+        {
+          "kind": "file",
+          "path": "f.txt",
+          "path_hex": "662e747874",
+          "content": "6f6e65"
+        }
+      ],
+      "credential": "a deliberately long passphrase of more than sixty-four UTF-8 bytes, carrying its own entropy",
+      "params": {
+        "ClusterAlignment": 512,
+        "ChunkSize": 1024
+      },
+      "file": "s3-valid-root-3e.fd-sec",
+      "total_len": 6144,
+      "blake2b256_of_file": "fff7632cb053f278fcb674cb5300fc6586d5201691b12b863608c19e1798b51b"
+    },
+    {
+      "id": "s3-valid-component-3e",
+      "suite": 3,
+      "expect": "opens",
+      "description": "U+003E inside a folder name and a file name below it",
+      "sealed_name": "root",
+      "sealed_name_hex": "726f6f74",
+      "entries": [
+        {
+          "kind": "directory",
+          "path": "d>q",
+          "path_hex": "643e71"
+        },
+        {
+          "kind": "file",
+          "path": "d>q/f>.txt",
+          "path_hex": "643e712f663e2e747874",
+          "content": "74776f"
+        }
+      ],
+      "credential": "a deliberately long passphrase of more than sixty-four UTF-8 bytes, carrying its own entropy",
+      "params": {
+        "ClusterAlignment": 512,
+        "ChunkSize": 1024
+      },
+      "file": "s3-valid-component-3e.fd-sec",
+      "total_len": 6144,
+      "blake2b256_of_file": "b37964bce8468981f26d64cd62e5340a0afb5070ac0393129ea4491d199b7ccd"
+    },
+    {
+      "id": "s3-valid-root-7c",
+      "suite": 3,
+      "expect": "opens",
+      "description": "U+007C inside the root folder's name",
+      "sealed_name": "r|t",
+      "sealed_name_hex": "727c74",
+      "entries": [
+        {
+          "kind": "file",
+          "path": "f.txt",
+          "path_hex": "662e747874",
+          "content": "6f6e65"
+        }
+      ],
+      "credential": "a deliberately long passphrase of more than sixty-four UTF-8 bytes, carrying its own entropy",
+      "params": {
+        "ClusterAlignment": 512,
+        "ChunkSize": 1024
+      },
+      "file": "s3-valid-root-7c.fd-sec",
+      "total_len": 6144,
+      "blake2b256_of_file": "d0b28ebc75518259444a1e7ff71502d47f03915c803a4c83ce5fe459f7f7cee4"
+    },
+    {
+      "id": "s3-valid-component-7c",
+      "suite": 3,
+      "expect": "opens",
+      "description": "U+007C inside a folder name and a file name below it",
+      "sealed_name": "root",
+      "sealed_name_hex": "726f6f74",
+      "entries": [
+        {
+          "kind": "directory",
+          "path": "d|q",
+          "path_hex": "647c71"
+        },
+        {
+          "kind": "file",
+          "path": "d|q/f|.txt",
+          "path_hex": "647c712f667c2e747874",
+          "content": "74776f"
+        }
+      ],
+      "credential": "a deliberately long passphrase of more than sixty-four UTF-8 bytes, carrying its own entropy",
+      "params": {
+        "ClusterAlignment": 512,
+        "ChunkSize": 1024
+      },
+      "file": "s3-valid-component-7c.fd-sec",
+      "total_len": 6144,
+      "blake2b256_of_file": "d55358cdeb672e22d00ca162c6a7f8f4e32cab1989cf35b793bb1ecbc465c40c"
+    },
+    {
+      "id": "s3-valid-all-four",
+      "suite": 3,
+      "expect": "opens",
+      "description": "the four characters together in the root, a folder and a file",
+      "sealed_name": "\"<>|",
+      "sealed_name_hex": "223c3e7c",
+      "entries": [
+        {
+          "kind": "directory",
+          "path": "\"<>|",
+          "path_hex": "223c3e7c"
+        },
+        {
+          "kind": "file",
+          "path": "\"<>|/x|y.txt",
+          "path_hex": "223c3e7c2f787c792e747874",
+          "content": "7468726565"
+        }
+      ],
+      "credential": "a deliberately long passphrase of more than sixty-four UTF-8 bytes, carrying its own entropy",
+      "params": {
+        "ClusterAlignment": 512,
+        "ChunkSize": 1024
+      },
+      "file": "s3-valid-all-four.fd-sec",
+      "total_len": 6144,
+      "blake2b256_of_file": "721afdc7128c09b70a0b3675e5a411a95c2be4cfb3102fda085e00f46e1c97a2"
+    },
+    {
+      "id": "s3-valid-components",
+      "suite": 3,
+      "expect": "opens",
+      "description": "components that look like a refused name but are valid: the neighbours of the four, a dot and a space, a stem that only starts like a device, 255 and 256 units, the four at both edges",
+      "sealed_name": "a b.c",
+      "sealed_name_hex": "6120622e63",
+      "entries": [
+        {
+          "kind": "file",
+          "path": "!#;={}.txt",
+          "path_hex": "21233b3d7b7d2e747874",
+          "content": "61"
+        },
+        {
+          "kind": "file",
+          "path": "CONTRACT.pdf",
+          "path_hex": "434f4e54524143542e706466",
+          "content": "62"
+        },
+        {
+          "kind": "file",
+          "path": "a b.c.txt",
+          "path_hex": "6120622e632e747874",
+          "content": "63"
+        },
+        {
+          "kind": "file",
+          "path": "com10.log",
+          "path_hex": "636f6d31302e6c6f67",
+          "content": "64"
+        },
+        {
+          "kind": "file",
+          "path": "|first-and-last>",
+          "path_hex": "7c66697273742d616e642d6c6173743e",
+          "content": "65"
+        },
+        {
+          "kind": "file",
+          "path": "nnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnn.txt",
+          "path_hex": "6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e2e747874",
+          "content": "66"
+        },
+        {
+          "kind": "file",
+          "path": "nnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnn.txt",
+          "path_hex": "6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e6e2e747874",
+          "content": "67"
+        }
+      ],
+      "credential": "a deliberately long passphrase of more than sixty-four UTF-8 bytes, carrying its own entropy",
+      "params": {
+        "ClusterAlignment": 512,
+        "ChunkSize": 1024
+      },
+      "file": "s3-valid-components.fd-sec",
+      "total_len": 10240,
+      "blake2b256_of_file": "463ee850c89b66ab64be8e6d085062ca73c613dad29cc10dbd94801dd801fcff"
+    },
+    {
+      "id": "s3-valid-longest-root",
+      "suite": 3,
+      "expect": "opens",
+      "description": "the longest root name the format holds (3000 bytes), made of the four characters",
+      "sealed_name": "\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|\"<>|",
+      "sealed_name_hex": "223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c223c3e7c",
+      "entries": [
+        {
+          "kind": "file",
+          "path": "f.txt",
+          "path_hex": "662e747874",
+          "content": "666f7572"
+        }
+      ],
+      "credential": "a deliberately long passphrase of more than sixty-four UTF-8 bytes, carrying its own entropy",
+      "params": {
+        "ClusterAlignment": 512,
+        "ChunkSize": 1024
+      },
+      "file": "s3-valid-longest-root.fd-sec",
+      "total_len": 6144,
+      "blake2b256_of_file": "ed54fda6b54283222542298d5d63bf133414b0ed878191a50729db37647540cd"
+    },
+    {
+      "id": "s3-refused-root-empty",
+      "suite": 3,
+      "expect": "damaged",
+      "refused_element": "root",
+      "description": "the root folder's name: an empty name",
+      "sealed_name": "",
+      "sealed_name_hex": "",
+      "entries": [
+        {
+          "kind": "file",
+          "path": "f.txt",
+          "path_hex": "662e747874",
+          "content": "78"
+        }
+      ],
+      "credential": "a deliberately long passphrase of more than sixty-four UTF-8 bytes, carrying its own entropy",
+      "params": {
+        "ClusterAlignment": 512,
+        "ChunkSize": 1024
+      },
+      "file": "s3-refused-root-empty.fd-sec",
+      "total_len": 6144,
+      "blake2b256_of_file": "ba7ec517460bb0d86125732632181526095ed59c7ad2ec6dc110d8a84c78ef64"
+    },
+    {
+      "id": "s3-refused-root-dot",
+      "suite": 3,
+      "expect": "damaged",
+      "refused_element": "root",
+      "description": "the root folder's name: the current-directory reference",
+      "sealed_name": ".",
+      "sealed_name_hex": "2e",
+      "entries": [
+        {
+          "kind": "file",
+          "path": "f.txt",
+          "path_hex": "662e747874",
+          "content": "78"
+        }
+      ],
+      "credential": "a deliberately long passphrase of more than sixty-four UTF-8 bytes, carrying its own entropy",
+      "params": {
+        "ClusterAlignment": 512,
+        "ChunkSize": 1024
+      },
+      "file": "s3-refused-root-dot.fd-sec",
+      "total_len": 6144,
+      "blake2b256_of_file": "f12a8d9b706e9b8f283d3d1a82963f585ea6e8bc8b038986b3ed9d92e643e946"
+    },
+    {
+      "id": "s3-refused-root-dot-dot",
+      "suite": 3,
+      "expect": "damaged",
+      "refused_element": "root",
+      "description": "the root folder's name: the parent-directory reference",
+      "sealed_name": "..",
+      "sealed_name_hex": "2e2e",
+      "entries": [
+        {
+          "kind": "file",
+          "path": "f.txt",
+          "path_hex": "662e747874",
+          "content": "78"
+        }
+      ],
+      "credential": "a deliberately long passphrase of more than sixty-four UTF-8 bytes, carrying its own entropy",
+      "params": {
+        "ClusterAlignment": 512,
+        "ChunkSize": 1024
+      },
+      "file": "s3-refused-root-dot-dot.fd-sec",
+      "total_len": 6144,
+      "blake2b256_of_file": "fe25bc45ef7792f80496c9b8819bf4dcda861c57f208816a12fd22799d42dc73"
+    },
+    {
+      "id": "s3-refused-root-slash",
+      "suite": 3,
+      "expect": "damaged",
+      "refused_element": "root",
+      "description": "the root folder's name: a forward slash",
+      "sealed_name": "a/b",
+      "sealed_name_hex": "612f62",
+      "entries": [
+        {
+          "kind": "file",
+          "path": "f.txt",
+          "path_hex": "662e747874",
+          "content": "78"
+        }
+      ],
+      "credential": "a deliberately long passphrase of more than sixty-four UTF-8 bytes, carrying its own entropy",
+      "params": {
+        "ClusterAlignment": 512,
+        "ChunkSize": 1024
+      },
+      "file": "s3-refused-root-slash.fd-sec",
+      "total_len": 6144,
+      "blake2b256_of_file": "16f1c7db980062ba7f55bfce411ac26448a72e97c64711a476ab7c7668729e5f"
+    },
+    {
+      "id": "s3-refused-root-backslash",
+      "suite": 3,
+      "expect": "damaged",
+      "refused_element": "root",
+      "description": "the root folder's name: a backslash",
+      "sealed_name": "a\\b",
+      "sealed_name_hex": "615c62",
+      "entries": [
+        {
+          "kind": "file",
+          "path": "f.txt",
+          "path_hex": "662e747874",
+          "content": "78"
+        }
+      ],
+      "credential": "a deliberately long passphrase of more than sixty-four UTF-8 bytes, carrying its own entropy",
+      "params": {
+        "ClusterAlignment": 512,
+        "ChunkSize": 1024
+      },
+      "file": "s3-refused-root-backslash.fd-sec",
+      "total_len": 6144,
+      "blake2b256_of_file": "167e3d8a56a1a02fd0e1dde28f2643d5c34bf4f1d401413fc9e22f63813bb6d9"
+    },
+    {
+      "id": "s3-refused-root-colon",
+      "suite": 3,
+      "expect": "damaged",
+      "refused_element": "root",
+      "description": "the root folder's name: a colon (an alternate data stream on NTFS)",
+      "sealed_name": "a:b",
+      "sealed_name_hex": "613a62",
+      "entries": [
+        {
+          "kind": "file",
+          "path": "f.txt",
+          "path_hex": "662e747874",
+          "content": "78"
+        }
+      ],
+      "credential": "a deliberately long passphrase of more than sixty-four UTF-8 bytes, carrying its own entropy",
+      "params": {
+        "ClusterAlignment": 512,
+        "ChunkSize": 1024
+      },
+      "file": "s3-refused-root-colon.fd-sec",
+      "total_len": 6144,
+      "blake2b256_of_file": "3056789cfa75f460f5a6f9e97488edac86862d9380ec0a8385ee8ca02ef44660"
+    },
+    {
+      "id": "s3-refused-root-star",
+      "suite": 3,
+      "expect": "damaged",
+      "refused_element": "root",
+      "description": "the root folder's name: the wildcard *",
+      "sealed_name": "a*b",
+      "sealed_name_hex": "612a62",
+      "entries": [
+        {
+          "kind": "file",
+          "path": "f.txt",
+          "path_hex": "662e747874",
+          "content": "78"
+        }
+      ],
+      "credential": "a deliberately long passphrase of more than sixty-four UTF-8 bytes, carrying its own entropy",
+      "params": {
+        "ClusterAlignment": 512,
+        "ChunkSize": 1024
+      },
+      "file": "s3-refused-root-star.fd-sec",
+      "total_len": 6144,
+      "blake2b256_of_file": "65dec04f20b548acf0b5570da36e66d901825d4f6cff05f2e9977e2d9b0ddf86"
+    },
+    {
+      "id": "s3-refused-root-question",
+      "suite": 3,
+      "expect": "damaged",
+      "refused_element": "root",
+      "description": "the root folder's name: the wildcard ?",
+      "sealed_name": "a?b",
+      "sealed_name_hex": "613f62",
+      "entries": [
+        {
+          "kind": "file",
+          "path": "f.txt",
+          "path_hex": "662e747874",
+          "content": "78"
+        }
+      ],
+      "credential": "a deliberately long passphrase of more than sixty-four UTF-8 bytes, carrying its own entropy",
+      "params": {
+        "ClusterAlignment": 512,
+        "ChunkSize": 1024
+      },
+      "file": "s3-refused-root-question.fd-sec",
+      "total_len": 6144,
+      "blake2b256_of_file": "83738b75fa41caf5497b13ef05d85944722896a4f60695dfb4a7b199ff1ba3a5"
+    },
+    {
+      "id": "s3-refused-root-control",
+      "suite": 3,
+      "expect": "damaged",
+      "refused_element": "root",
+      "description": "the root folder's name: a control character, U+0001",
+      "sealed_name": "a\u0001b",
+      "sealed_name_hex": "610162",
+      "entries": [
+        {
+          "kind": "file",
+          "path": "f.txt",
+          "path_hex": "662e747874",
+          "content": "78"
+        }
+      ],
+      "credential": "a deliberately long passphrase of more than sixty-four UTF-8 bytes, carrying its own entropy",
+      "params": {
+        "ClusterAlignment": 512,
+        "ChunkSize": 1024
+      },
+      "file": "s3-refused-root-control.fd-sec",
+      "total_len": 6144,
+      "blake2b256_of_file": "c4fc8ae3b5ea95fa63ad470e34768b56a760226eeced13b24f7059d6ef4432e8"
+    },
+    {
+      "id": "s3-refused-root-delete",
+      "suite": 3,
+      "expect": "damaged",
+      "refused_element": "root",
+      "description": "the root folder's name: U+007F",
+      "sealed_name": "ab",
+      "sealed_name_hex": "617f62",
+      "entries": [
+        {
+          "kind": "file",
+          "path": "f.txt",
+          "path_hex": "662e747874",
+          "content": "78"
+        }
+      ],
+      "credential": "a deliberately long passphrase of more than sixty-four UTF-8 bytes, carrying its own entropy",
+      "params": {
+        "ClusterAlignment": 512,
+        "ChunkSize": 1024
+      },
+      "file": "s3-refused-root-delete.fd-sec",
+      "total_len": 6144,
+      "blake2b256_of_file": "3797ba61d11a1211751bf1a8ba7a51e4863c6183a52bb8fc37cead8fea578325"
+    },
+    {
+      "id": "s3-refused-root-reserved-con",
+      "suite": 3,
+      "expect": "damaged",
+      "refused_element": "root",
+      "description": "the root folder's name: the reserved device name CON",
+      "sealed_name": "CON",
+      "sealed_name_hex": "434f4e",
+      "entries": [
+        {
+          "kind": "file",
+          "path": "f.txt",
+          "path_hex": "662e747874",
+          "content": "78"
+        }
+      ],
+      "credential": "a deliberately long passphrase of more than sixty-four UTF-8 bytes, carrying its own entropy",
+      "params": {
+        "ClusterAlignment": 512,
+        "ChunkSize": 1024
+      },
+      "file": "s3-refused-root-reserved-con.fd-sec",
+      "total_len": 6144,
+      "blake2b256_of_file": "6830e95e86a800e989ed48cfe5af5a3072091f81125c02c31265186ecbcb67e9"
+    },
+    {
+      "id": "s3-refused-root-reserved-ext",
+      "suite": 3,
+      "expect": "damaged",
+      "refused_element": "root",
+      "description": "the root folder's name: a reserved stem with an extension, nul.txt",
+      "sealed_name": "nul.txt",
+      "sealed_name_hex": "6e756c2e747874",
+      "entries": [
+        {
+          "kind": "file",
+          "path": "f.txt",
+          "path_hex": "662e747874",
+          "content": "78"
+        }
+      ],
+      "credential": "a deliberately long passphrase of more than sixty-four UTF-8 bytes, carrying its own entropy",
+      "params": {
+        "ClusterAlignment": 512,
+        "ChunkSize": 1024
+      },
+      "file": "s3-refused-root-reserved-ext.fd-sec",
+      "total_len": 6144,
+      "blake2b256_of_file": "a14e3d5f2c6be48f6c035d04267ab9146c0fc58970e4fa83d5b5701b560d2af8"
+    },
+    {
+      "id": "s3-refused-root-reserved-com9",
+      "suite": 3,
+      "expect": "damaged",
+      "refused_element": "root",
+      "description": "the root folder's name: the reserved device name COM9",
+      "sealed_name": "COM9",
+      "sealed_name_hex": "434f4d39",
+      "entries": [
+        {
+          "kind": "file",
+          "path": "f.txt",
+          "path_hex": "662e747874",
+          "content": "78"
+        }
+      ],
+      "credential": "a deliberately long passphrase of more than sixty-four UTF-8 bytes, carrying its own entropy",
+      "params": {
+        "ClusterAlignment": 512,
+        "ChunkSize": 1024
+      },
+      "file": "s3-refused-root-reserved-com9.fd-sec",
+      "total_len": 6144,
+      "blake2b256_of_file": "1156d7aad2711b7c36f731bbf330444a181881272edb9c6a8bd15c68605ff8c8"
+    },
+    {
+      "id": "s3-refused-root-trailing-dot",
+      "suite": 3,
+      "expect": "damaged",
+      "refused_element": "root",
+      "description": "the root folder's name: a name that ends in a dot",
+      "sealed_name": "trailing.",
+      "sealed_name_hex": "747261696c696e672e",
+      "entries": [
+        {
+          "kind": "file",
+          "path": "f.txt",
+          "path_hex": "662e747874",
+          "content": "78"
+        }
+      ],
+      "credential": "a deliberately long passphrase of more than sixty-four UTF-8 bytes, carrying its own entropy",
+      "params": {
+        "ClusterAlignment": 512,
+        "ChunkSize": 1024
+      },
+      "file": "s3-refused-root-trailing-dot.fd-sec",
+      "total_len": 6144,
+      "blake2b256_of_file": "c16152f3bf69500251451e4b0781180c13f2be536cbb5c7c81ffe0041c977cce"
+    },
+    {
+      "id": "s3-refused-root-trailing-space",
+      "suite": 3,
+      "expect": "damaged",
+      "refused_element": "root",
+      "description": "the root folder's name: a name that ends in a space",
+      "sealed_name": "trailing ",
+      "sealed_name_hex": "747261696c696e6720",
+      "entries": [
+        {
+          "kind": "file",
+          "path": "f.txt",
+          "path_hex": "662e747874",
+          "content": "78"
+        }
+      ],
+      "credential": "a deliberately long passphrase of more than sixty-four UTF-8 bytes, carrying its own entropy",
+      "params": {
+        "ClusterAlignment": 512,
+        "ChunkSize": 1024
+      },
+      "file": "s3-refused-root-trailing-space.fd-sec",
+      "total_len": 6144,
+      "blake2b256_of_file": "3829a5a4de2e06c661744e58a01f2b61b306c9689d6af71cce3d52c50de4377f"
+    },
+    {
+      "id": "s3-refused-root-four-and-slash",
+      "suite": 3,
+      "expect": "damaged",
+      "refused_element": "root",
+      "description": "the root folder's name: a valid character beside a separator is still refused",
+      "sealed_name": "a|b/c",
+      "sealed_name_hex": "617c622f63",
+      "entries": [
+        {
+          "kind": "file",
+          "path": "f.txt",
+          "path_hex": "662e747874",
+          "content": "78"
+        }
+      ],
+      "credential": "a deliberately long passphrase of more than sixty-four UTF-8 bytes, carrying its own entropy",
+      "params": {
+        "ClusterAlignment": 512,
+        "ChunkSize": 1024
+      },
+      "file": "s3-refused-root-four-and-slash.fd-sec",
+      "total_len": 6144,
+      "blake2b256_of_file": "50b17c1c7d399140181c53c74d7afb8cdbddefb80395cb13f0d48a7b9541497c"
+    },
+    {
+      "id": "s3-refused-root-four-and-colon",
+      "suite": 3,
+      "expect": "damaged",
+      "refused_element": "root",
+      "description": "the root folder's name: a valid character beside a colon is still refused",
+      "sealed_name": "a\"b:c",
+      "sealed_name_hex": "6122623a63",
+      "entries": [
+        {
+          "kind": "file",
+          "path": "f.txt",
+          "path_hex": "662e747874",
+          "content": "78"
+        }
+      ],
+      "credential": "a deliberately long passphrase of more than sixty-four UTF-8 bytes, carrying its own entropy",
+      "params": {
+        "ClusterAlignment": 512,
+        "ChunkSize": 1024
+      },
+      "file": "s3-refused-root-four-and-colon.fd-sec",
+      "total_len": 6144,
+      "blake2b256_of_file": "9a5de3ccb079aa394b060a7d6743aa7e77cb418d26475452608122ea7b9bc6a0"
+    },
+    {
+      "id": "s3-refused-root-invalid-utf8",
+      "suite": 3,
+      "expect": "damaged",
+      "refused_element": "root",
+      "description": "the root folder's name: a byte that is not UTF-8 (0xFF between two letters): damaged in every suite, never replaced by U+FFFD (FDSEC-FORMAT 1.5 section 22)",
+      "sealed_name": "a�b",
+      "sealed_name_hex": "61ff62",
+      "entries": [
+        {
+          "kind": "file",
+          "path": "f.txt",
+          "path_hex": "662e747874",
+          "content": "78"
+        }
+      ],
+      "credential": "a deliberately long passphrase of more than sixty-four UTF-8 bytes, carrying its own entropy",
+      "params": {
+        "ClusterAlignment": 512,
+        "ChunkSize": 1024
+      },
+      "file": "s3-refused-root-invalid-utf8.fd-sec",
+      "total_len": 6144,
+      "blake2b256_of_file": "6bbe5a9102720e21801984a82b8070fc6fec6936ba36f1be9bc1570effc2be95"
+    },
+    {
+      "id": "s3-refused-component-dot",
+      "suite": 3,
+      "expect": "damaged",
+      "refused_element": "component",
+      "description": "a component of a manifest path: the current-directory reference",
+      "sealed_name": "root",
+      "sealed_name_hex": "726f6f74",
+      "entries": [
+        {
+          "kind": "file",
+          "path": ".",
+          "path_hex": "2e",
+          "content": "78"
+        }
+      ],
+      "credential": "a deliberately long passphrase of more than sixty-four UTF-8 bytes, carrying its own entropy",
+      "params": {
+        "ClusterAlignment": 512,
+        "ChunkSize": 1024
+      },
+      "file": "s3-refused-component-dot.fd-sec",
+      "total_len": 6144,
+      "blake2b256_of_file": "2410465ca4c049e740c073dbc85dfa0f1afbc9816fc14edb0e4c05ec93c39c08"
+    },
+    {
+      "id": "s3-refused-component-dot-dot",
+      "suite": 3,
+      "expect": "damaged",
+      "refused_element": "component",
+      "description": "a component of a manifest path: the parent-directory reference",
+      "sealed_name": "root",
+      "sealed_name_hex": "726f6f74",
+      "entries": [
+        {
+          "kind": "file",
+          "path": "..",
+          "path_hex": "2e2e",
+          "content": "78"
+        }
+      ],
+      "credential": "a deliberately long passphrase of more than sixty-four UTF-8 bytes, carrying its own entropy",
+      "params": {
+        "ClusterAlignment": 512,
+        "ChunkSize": 1024
+      },
+      "file": "s3-refused-component-dot-dot.fd-sec",
+      "total_len": 6144,
+      "blake2b256_of_file": "23ffc220efa893988a368de58045dcd48571b47dfe82f120e3530946c2b405b0"
+    },
+    {
+      "id": "s3-refused-component-backslash",
+      "suite": 3,
+      "expect": "damaged",
+      "refused_element": "component",
+      "description": "a component of a manifest path: a backslash",
+      "sealed_name": "root",
+      "sealed_name_hex": "726f6f74",
+      "entries": [
+        {
+          "kind": "file",
+          "path": "a\\b",
+          "path_hex": "615c62",
+          "content": "78"
+        }
+      ],
+      "credential": "a deliberately long passphrase of more than sixty-four UTF-8 bytes, carrying its own entropy",
+      "params": {
+        "ClusterAlignment": 512,
+        "ChunkSize": 1024
+      },
+      "file": "s3-refused-component-backslash.fd-sec",
+      "total_len": 6144,
+      "blake2b256_of_file": "81dcaa3b82d5ecf3d74632881db6fe561941033e426c741d053638f0da281c6c"
+    },
+    {
+      "id": "s3-refused-component-colon",
+      "suite": 3,
+      "expect": "damaged",
+      "refused_element": "component",
+      "description": "a component of a manifest path: a colon (an alternate data stream on NTFS)",
+      "sealed_name": "root",
+      "sealed_name_hex": "726f6f74",
+      "entries": [
+        {
+          "kind": "file",
+          "path": "a:b",
+          "path_hex": "613a62",
+          "content": "78"
+        }
+      ],
+      "credential": "a deliberately long passphrase of more than sixty-four UTF-8 bytes, carrying its own entropy",
+      "params": {
+        "ClusterAlignment": 512,
+        "ChunkSize": 1024
+      },
+      "file": "s3-refused-component-colon.fd-sec",
+      "total_len": 6144,
+      "blake2b256_of_file": "7ae152f552c6439e5ee83e3006dbff55dd50f2a63e594e8b232a89a8cd8fa905"
+    },
+    {
+      "id": "s3-refused-component-star",
+      "suite": 3,
+      "expect": "damaged",
+      "refused_element": "component",
+      "description": "a component of a manifest path: the wildcard *",
+      "sealed_name": "root",
+      "sealed_name_hex": "726f6f74",
+      "entries": [
+        {
+          "kind": "file",
+          "path": "a*b",
+          "path_hex": "612a62",
+          "content": "78"
+        }
+      ],
+      "credential": "a deliberately long passphrase of more than sixty-four UTF-8 bytes, carrying its own entropy",
+      "params": {
+        "ClusterAlignment": 512,
+        "ChunkSize": 1024
+      },
+      "file": "s3-refused-component-star.fd-sec",
+      "total_len": 6144,
+      "blake2b256_of_file": "0abbae76c2ec92bf51f8c0dc74cd1760afd3495e179e9a1ac1f55c982fce3f04"
+    },
+    {
+      "id": "s3-refused-component-question",
+      "suite": 3,
+      "expect": "damaged",
+      "refused_element": "component",
+      "description": "a component of a manifest path: the wildcard ?",
+      "sealed_name": "root",
+      "sealed_name_hex": "726f6f74",
+      "entries": [
+        {
+          "kind": "file",
+          "path": "a?b",
+          "path_hex": "613f62",
+          "content": "78"
+        }
+      ],
+      "credential": "a deliberately long passphrase of more than sixty-four UTF-8 bytes, carrying its own entropy",
+      "params": {
+        "ClusterAlignment": 512,
+        "ChunkSize": 1024
+      },
+      "file": "s3-refused-component-question.fd-sec",
+      "total_len": 6144,
+      "blake2b256_of_file": "72dc77aa5593a15a24ce1b0d55f8bd5756f54a3a2e5788cb85734a45693e9ccf"
+    },
+    {
+      "id": "s3-refused-component-control",
+      "suite": 3,
+      "expect": "damaged",
+      "refused_element": "component",
+      "description": "a component of a manifest path: a control character, U+0001",
+      "sealed_name": "root",
+      "sealed_name_hex": "726f6f74",
+      "entries": [
+        {
+          "kind": "file",
+          "path": "a\u0001b",
+          "path_hex": "610162",
+          "content": "78"
+        }
+      ],
+      "credential": "a deliberately long passphrase of more than sixty-four UTF-8 bytes, carrying its own entropy",
+      "params": {
+        "ClusterAlignment": 512,
+        "ChunkSize": 1024
+      },
+      "file": "s3-refused-component-control.fd-sec",
+      "total_len": 6144,
+      "blake2b256_of_file": "e1a7cf2449153f53e2cb0d81e36704396a108901b4aa63a947a66a981036551c"
+    },
+    {
+      "id": "s3-refused-component-delete",
+      "suite": 3,
+      "expect": "damaged",
+      "refused_element": "component",
+      "description": "a component of a manifest path: U+007F",
+      "sealed_name": "root",
+      "sealed_name_hex": "726f6f74",
+      "entries": [
+        {
+          "kind": "file",
+          "path": "ab",
+          "path_hex": "617f62",
+          "content": "78"
+        }
+      ],
+      "credential": "a deliberately long passphrase of more than sixty-four UTF-8 bytes, carrying its own entropy",
+      "params": {
+        "ClusterAlignment": 512,
+        "ChunkSize": 1024
+      },
+      "file": "s3-refused-component-delete.fd-sec",
+      "total_len": 6144,
+      "blake2b256_of_file": "09ce0709022e8108fe6bfb965d86a85b1d426673be5ebef5887c579df6dbe4d2"
+    },
+    {
+      "id": "s3-refused-component-reserved-con",
+      "suite": 3,
+      "expect": "damaged",
+      "refused_element": "component",
+      "description": "a component of a manifest path: the reserved device name CON",
+      "sealed_name": "root",
+      "sealed_name_hex": "726f6f74",
+      "entries": [
+        {
+          "kind": "file",
+          "path": "CON",
+          "path_hex": "434f4e",
+          "content": "78"
+        }
+      ],
+      "credential": "a deliberately long passphrase of more than sixty-four UTF-8 bytes, carrying its own entropy",
+      "params": {
+        "ClusterAlignment": 512,
+        "ChunkSize": 1024
+      },
+      "file": "s3-refused-component-reserved-con.fd-sec",
+      "total_len": 6144,
+      "blake2b256_of_file": "5b2cd5a5e6442bccf617181387fcf5e0d18a1116dca91c483251a84db4672577"
+    },
+    {
+      "id": "s3-refused-component-reserved-ext",
+      "suite": 3,
+      "expect": "damaged",
+      "refused_element": "component",
+      "description": "a component of a manifest path: a reserved stem with an extension, nul.txt",
+      "sealed_name": "root",
+      "sealed_name_hex": "726f6f74",
+      "entries": [
+        {
+          "kind": "file",
+          "path": "nul.txt",
+          "path_hex": "6e756c2e747874",
+          "content": "78"
+        }
+      ],
+      "credential": "a deliberately long passphrase of more than sixty-four UTF-8 bytes, carrying its own entropy",
+      "params": {
+        "ClusterAlignment": 512,
+        "ChunkSize": 1024
+      },
+      "file": "s3-refused-component-reserved-ext.fd-sec",
+      "total_len": 6144,
+      "blake2b256_of_file": "76fd88c7f621c18238fc5db4a9c540d7eb7263750bc2016ef8cae41ebca53d00"
+    },
+    {
+      "id": "s3-refused-component-reserved-com9",
+      "suite": 3,
+      "expect": "damaged",
+      "refused_element": "component",
+      "description": "a component of a manifest path: the reserved device name COM9",
+      "sealed_name": "root",
+      "sealed_name_hex": "726f6f74",
+      "entries": [
+        {
+          "kind": "file",
+          "path": "COM9",
+          "path_hex": "434f4d39",
+          "content": "78"
+        }
+      ],
+      "credential": "a deliberately long passphrase of more than sixty-four UTF-8 bytes, carrying its own entropy",
+      "params": {
+        "ClusterAlignment": 512,
+        "ChunkSize": 1024
+      },
+      "file": "s3-refused-component-reserved-com9.fd-sec",
+      "total_len": 6144,
+      "blake2b256_of_file": "9c22755e8af8563391421d34e796a3fa1c6ae3d73f9e542bb8cf068a668321c8"
+    },
+    {
+      "id": "s3-refused-component-trailing-dot",
+      "suite": 3,
+      "expect": "damaged",
+      "refused_element": "component",
+      "description": "a component of a manifest path: a name that ends in a dot",
+      "sealed_name": "root",
+      "sealed_name_hex": "726f6f74",
+      "entries": [
+        {
+          "kind": "file",
+          "path": "trailing.",
+          "path_hex": "747261696c696e672e",
+          "content": "78"
+        }
+      ],
+      "credential": "a deliberately long passphrase of more than sixty-four UTF-8 bytes, carrying its own entropy",
+      "params": {
+        "ClusterAlignment": 512,
+        "ChunkSize": 1024
+      },
+      "file": "s3-refused-component-trailing-dot.fd-sec",
+      "total_len": 6144,
+      "blake2b256_of_file": "2d1d270c2268ff07a87e57e6c6fc1b66393718562c9dc5c6066931316dab0688"
+    },
+    {
+      "id": "s3-refused-component-trailing-space",
+      "suite": 3,
+      "expect": "damaged",
+      "refused_element": "component",
+      "description": "a component of a manifest path: a name that ends in a space",
+      "sealed_name": "root",
+      "sealed_name_hex": "726f6f74",
+      "entries": [
+        {
+          "kind": "file",
+          "path": "trailing ",
+          "path_hex": "747261696c696e6720",
+          "content": "78"
+        }
+      ],
+      "credential": "a deliberately long passphrase of more than sixty-four UTF-8 bytes, carrying its own entropy",
+      "params": {
+        "ClusterAlignment": 512,
+        "ChunkSize": 1024
+      },
+      "file": "s3-refused-component-trailing-space.fd-sec",
+      "total_len": 6144,
+      "blake2b256_of_file": "ce8cbdeb553fe96e88a8fbe008b16377c797ce401a4ccfcda386936d3072ce0b"
+    },
+    {
+      "id": "s3-refused-component-four-and-colon",
+      "suite": 3,
+      "expect": "damaged",
+      "refused_element": "component",
+      "description": "a component of a manifest path: a valid character beside a colon is still refused",
+      "sealed_name": "root",
+      "sealed_name_hex": "726f6f74",
+      "entries": [
+        {
+          "kind": "file",
+          "path": "a\"b:c",
+          "path_hex": "6122623a63",
+          "content": "78"
+        }
+      ],
+      "credential": "a deliberately long passphrase of more than sixty-four UTF-8 bytes, carrying its own entropy",
+      "params": {
+        "ClusterAlignment": 512,
+        "ChunkSize": 1024
+      },
+      "file": "s3-refused-component-four-and-colon.fd-sec",
+      "total_len": 6144,
+      "blake2b256_of_file": "cba2e553f7d4a76ac6f353b89bdaa25df8b4f4f2fb147b72f6d50c00bbf877ec"
+    },
+    {
+      "id": "s3-refused-component-invalid-utf8",
+      "suite": 3,
+      "expect": "damaged",
+      "refused_element": "component",
+      "description": "a component of a manifest path: a byte that is not UTF-8 (0xFF between two letters): damaged in every suite, never replaced by U+FFFD (FDSEC-FORMAT 1.5 section 22)",
+      "sealed_name": "root",
+      "sealed_name_hex": "726f6f74",
+      "entries": [
+        {
+          "kind": "file",
+          "path": "a�b",
+          "path_hex": "61ff62",
+          "content": "78"
+        }
+      ],
+      "credential": "a deliberately long passphrase of more than sixty-four UTF-8 bytes, carrying its own entropy",
+      "params": {
+        "ClusterAlignment": 512,
+        "ChunkSize": 1024
+      },
+      "file": "s3-refused-component-invalid-utf8.fd-sec",
+      "total_len": 6144,
+      "blake2b256_of_file": "d7ce3ef2409de4ac65d3bc8ba919002df7db4d22ad4ff5e74a26ce2f8917eabd"
+    },
+    {
+      "id": "s3-refused-component-empty",
+      "suite": 3,
+      "expect": "damaged",
+      "refused_element": "component",
+      "description": "a manifest path with an empty component (two slashes in a row)",
+      "sealed_name": "root",
+      "sealed_name_hex": "726f6f74",
+      "entries": [
+        {
+          "kind": "directory",
+          "path": "a",
+          "path_hex": "61"
+        },
+        {
+          "kind": "file",
+          "path": "a//b",
+          "path_hex": "612f2f62",
+          "content": "78"
+        }
+      ],
+      "credential": "a deliberately long passphrase of more than sixty-four UTF-8 bytes, carrying its own entropy",
+      "params": {
+        "ClusterAlignment": 512,
+        "ChunkSize": 1024
+      },
+      "file": "s3-refused-component-empty.fd-sec",
+      "total_len": 6144,
+      "blake2b256_of_file": "3954410b6892741944afe0ab9c551e2dcef7c36131642adb1e903f2d08755449"
+    },
+    {
+      "id": "s3-refused-component-rooted",
+      "suite": 3,
+      "expect": "damaged",
+      "refused_element": "component",
+      "description": "a manifest path that starts with a slash",
+      "sealed_name": "root",
+      "sealed_name_hex": "726f6f74",
+      "entries": [
+        {
+          "kind": "file",
+          "path": "/abs",
+          "path_hex": "2f616273",
+          "content": "78"
+        }
+      ],
+      "credential": "a deliberately long passphrase of more than sixty-four UTF-8 bytes, carrying its own entropy",
+      "params": {
+        "ClusterAlignment": 512,
+        "ChunkSize": 1024
+      },
+      "file": "s3-refused-component-rooted.fd-sec",
+      "total_len": 6144,
+      "blake2b256_of_file": "e43ca73e69e9a15d27a3c9d759087fd648dd0792a18ea2edf32ead73cd08196a"
+    }
+  ]
+}

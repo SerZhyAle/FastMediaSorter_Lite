@@ -1,0 +1,21 @@
+# Redaction by value - specification vector (DIAGNOSTIC-REPORT 0.12, section 8 C)
+#
+# Written by hand from the rule, with synthetic values only; it states what the rule requires, it is not
+# the output of any implementation. A conformant redactor, given each INPUT line, produces either
+# EXPECTED-FIELD (the structured value parsed and the secret field replaced) or EXPECTED-DROP (the whole
+# value dropped). A name-based filter that keeps the INPUT line, because its key name looks harmless, fails.
+
+# 1. A JSON blob under a benign-named key, holding an access PIN
+INPUT=folderParams={"folders":[{"label":"Family","accessPin":"4821","slideshowInterval":15}]}
+EXPECTED-FIELD=folderParams={"folders":[{"label":"Family","accessPin":"[REDACTED]","slideshowInterval":15}]}
+EXPECTED-DROP=folderParams=[REDACTED]
+
+# 2. A query string under a benign-named key
+INPUT=lastOpened=https://media.example.test/play?id=17&token=Zk93mQ&lang=en
+EXPECTED-FIELD=lastOpened=https://media.example.test/play?id=17&token=[REDACTED]&lang=en
+EXPECTED-DROP=lastOpened=[REDACTED]
+
+# 3. A connection string under a benign-named key
+INPUT=source=Host=nas.example.test;Port=22;User=guest;Password=Hq7-pL2x;Timeout=15
+EXPECTED-FIELD=source=Host=nas.example.test;Port=22;User=guest;Password=[REDACTED];Timeout=15
+EXPECTED-DROP=source=[REDACTED]

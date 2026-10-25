@@ -45,6 +45,29 @@ Partial Public Class Main_Form
         Return resource_Slot.Current
     End Function
 
+    ''' <summary>
+    ''' Where the viewer is standing, for the F3 panel's file manager mode (257): the registry id of the open resource and the
+    ''' directory it shows, or "" and the plain folder (the folder an archive sits in, for an archive). It reads three fields - it
+    ''' lists nothing, takes no snapshot of the file list and cannot change what the viewer shows.
+    ''' </summary>
+    Friend Sub ManagerStartFolder(ByRef resourceId As String, ByRef directory As String)
+        resourceId = ""
+        directory = ""
+        Dim resource As ResourceSession = ActiveResourceSession()
+        If resource IsNot Nothing AndAlso resource.Resource IsNot Nothing Then
+            resourceId = resource.Resource.Id
+            directory = If(String.IsNullOrEmpty(resource.CurrentDirectory), resource.Resource.RootPath, resource.CurrentDirectory)
+            Return
+        End If
+        directory = If(IsArchiveMode(), archive_Return_Folder, Current_Folder_Path)
+    End Sub
+
+    ''' <summary>The password the file manager may use for a resource without asking anyone: the stored one, else the one typed earlier
+    ''' this run, else Nothing. UI thread only - it reads the run's password table.</summary>
+    Friend Function ManagerCredentialOf(descriptor As ResourceDescriptor) As String
+        Return StoredPassword(descriptor)
+    End Function
+
     ' ------------------------------------------------------------ the refusal point ----
 
     ''' <summary>
@@ -54,8 +77,12 @@ Partial Public Class Main_Form
     ''' changes, so a refused verb never half-happens.
     ''' </summary>
     Friend Function ResourceBlocksFileOperations(verb As ResourceVerb) As Boolean
+        Return ResourceBlocksFileOperations(verb, ViewerOperationContext())
+    End Function
+
+    Friend Function ResourceBlocksFileOperations(verb As ResourceVerb, context As ResourceOperationContext) As Boolean
         Dim silent As Boolean
-        Dim reason As String = ResourceRefusalReason(verb, silent)
+        Dim reason As String = ResourceRefusalReason(verb, context, silent)
         If reason.Length > 0 Then
             lbl_Status.Text = reason
             ' A refusal nobody could see afterwards: the status line is overwritten by the next key. The
@@ -73,19 +100,31 @@ Partial Public Class Main_Form
     ''' nothing to say (a resource is still opening).
     ''' </summary>
     Friend Function ResourceRefusalReason(verb As ResourceVerb, ByRef silent As Boolean) As String
+        Return ResourceRefusalReason(verb, ViewerOperationContext(), silent)
+    End Function
+
+    Friend Function ResourceRefusalReason(verb As ResourceVerb, context As ResourceOperationContext, ByRef silent As Boolean) As String
         silent = False
         ' Also while a solid archive is still being unpacked: the picture on screen belongs to
         ' the previous folder, and the verb was meant for the archive that is opening.
-        If resource_Pending IsNot Nothing Then
+        If context.IsPending Then
             silent = True
             Return ""
         End If
-        If IsArchiveMode() OrElse IsArchiveOpenPending() Then Return Localization.T("В архиве файловые операции недоступны")
+        If context.InsideArchive Then Return Localization.T("В архиве файловые операции недоступны")
         ' A stream from "Open URL" is on screen and the folder's file is only underneath it:
         ' a verb here would act on a file the user cannot see (audit 050 D-05).
-        If IsStreamOnScreen() Then Return Localization.T("Открыт поток по URL - файловые операции недоступны")
-        If ResourceAllows(verb) Then Return ""
+        If context.IsStream Then Return Localization.T("Открыт поток по URL - файловые операции недоступны")
+        If ResourceRefusalPolicy.IsAllowed(context, verb) Then Return ""
         Return Localization.T("Этот ресурс не позволяет эту операцию с файлами")
+    End Function
+
+    Private Function ViewerOperationContext() As ResourceOperationContext
+        Return New ResourceOperationContext With {
+            .SourceCapabilities = ActiveResourceSession()?.Provider.Capabilities,
+            .InsideArchive = IsArchiveMode() OrElse IsArchiveOpenPending(),
+            .IsPending = resource_Pending IsNot Nothing,
+            .IsStream = IsStreamOnScreen()}
     End Function
 
     ''' <summary>The same answer without the status line - for surfaces that draw a verb

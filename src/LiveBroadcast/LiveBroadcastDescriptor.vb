@@ -36,6 +36,8 @@ End Enum
 
 ''' <summary>One candidate address of a broadcast (upstream §3.2 <c>endpoints</c> member).</summary>
 Friend NotInheritable Class LiveBroadcastEndpoint
+    Public Property BroadcastId As String = ""
+    Public Property RequiresAgentSeal As Boolean
     Public Property Url As String = ""
     Public Property Transport As String = ""
     Public Property CertFingerprint As String = ""
@@ -71,6 +73,11 @@ Friend NotInheritable Class LiveBroadcastDescriptor
     Public Property Title As String
     Public Property SourceId As String
     Public Property BroadcastId As String
+    Public Property RequiresAgentSeal As Boolean
+    ''' <summary>The record's <c>startedAt</c> (DEVICE-EXCHANGE 6.3), RFC 3339 text as received, "" when the
+    ''' record has none. Two records of one <c>sourceId</c> order by the later value (LIVE-BROADCAST item G as
+    ''' item BP resolves it); the record's <c>updatedAt</c> is informational and is not kept.</summary>
+    Public Property RecordStartedAt As String = ""
     Public Property AuthScheme As String = ""
     Public Property AuthUser As String = ""
     ' Credentials are session-only; never serialized to the recent-channel store.
@@ -134,6 +141,46 @@ Friend Module LiveBroadcastRecords
         Return New LiveDirectoryRow(result.Status, result.Descriptor)
     End Function
 
+    ''' <summary>The record's <c>startedAt</c> as an instant, Nothing when the descriptor has none or its text is not a date
+    ''' this program can read: an unreadable or absent start never orders anything.</summary>
+    Public Function StartedAtOf(descriptor As LiveBroadcastDescriptor) As DateTimeOffset?
+        If descriptor Is Nothing OrElse String.IsNullOrWhiteSpace(descriptor.RecordStartedAt) Then Return Nothing
+        Dim parsed As DateTimeOffset
+        If DateTimeOffset.TryParse(descriptor.RecordStartedAt, Globalization.CultureInfo.InvariantCulture,
+                                  Globalization.DateTimeStyles.AssumeUniversal, parsed) Then Return parsed.ToUniversalTime()
+        Return Nothing
+    End Function
+
+    ''' <summary>
+    ''' LIVE-BROADCAST item G as DEVICE-EXCHANGE item BP resolves it: of several playable rows that name one non-empty
+    ''' <c>sourceId</c>, a list shows ONE - the one with the later <c>startedAt</c>; <c>updatedAt</c> decides nothing. Rows
+    ''' whose starts are equal or unreadable keep the snapshot's own order, the later record standing (as the recent-channel
+    ''' store keeps the incoming one), so the same snapshot always shows the same row and two records never alternate.
+    ''' A refused row, or one without a <c>sourceId</c>, is never collapsed. Returns the indexes of the rows to leave out.
+    ''' </summary>
+    Public Function SupersededIndexes(rows As IReadOnlyList(Of LiveDirectoryRow)) As HashSet(Of Integer)
+        Dim superseded As New HashSet(Of Integer)()
+        Dim standing As New Dictionary(Of String, Integer)(StringComparer.Ordinal)
+        For i As Integer = 0 To rows.Count - 1
+            Dim row As LiveDirectoryRow = rows(i)
+            If row Is Nothing OrElse Not row.IsPlayable OrElse String.IsNullOrEmpty(row.Descriptor.SourceId) Then Continue For
+            Dim held As Integer
+            If Not standing.TryGetValue(row.Descriptor.SourceId, held) Then
+                standing(row.Descriptor.SourceId) = i
+                Continue For
+            End If
+            Dim heldStart As DateTimeOffset? = StartedAtOf(rows(held).Descriptor)
+            Dim thisStart As DateTimeOffset? = StartedAtOf(row.Descriptor)
+            If heldStart.HasValue AndAlso thisStart.HasValue AndAlso thisStart.Value < heldStart.Value Then
+                superseded.Add(i)
+            Else
+                superseded.Add(held)
+                standing(row.Descriptor.SourceId) = i
+            End If
+        Next
+        Return superseded
+    End Function
+
     Public Function ReadRecord(raw As String) As LiveBroadcastReadResult
         If String.IsNullOrWhiteSpace(raw) Then Return LiveBroadcastReadResult.Fail(LiveReadStatus.InvalidDocument)
         Try
@@ -144,15 +191,11 @@ Friend Module LiveBroadcastRecords
                 If result.Status <> LiveReadStatus.Ok Then Return result
                 Dim id As JsonElement = Nothing
                 If doc.RootElement.TryGetProperty("broadcastId", id) AndAlso id.ValueKind = JsonValueKind.String Then result.Descriptor.BroadcastId = id.GetString()
-                Dim credentials As JsonElement = Nothing
-                If doc.RootElement.TryGetProperty("credentials", credentials) AndAlso credentials.ValueKind = JsonValueKind.Object Then
-                    Dim user As JsonElement = Nothing
-                    Dim password As JsonElement = Nothing
-                    If credentials.TryGetProperty("user", user) AndAlso user.ValueKind = JsonValueKind.String AndAlso
-                       credentials.TryGetProperty("password", password) AndAlso password.ValueKind = JsonValueKind.String Then
-                        result.Descriptor.AuthUser = user.GetString()
-                        result.Descriptor.Password = password.GetString()
-                    End If
+                result.Descriptor.RequiresAgentSeal = True
+                Dim startedAt As JsonElement = Nothing
+                If doc.RootElement.TryGetProperty("startedAt", startedAt) AndAlso startedAt.ValueKind = JsonValueKind.String Then
+                    Dim text As String = startedAt.GetString()
+                    If Not String.IsNullOrEmpty(text) Then result.Descriptor.RecordStartedAt = text
                 End If
                 Return result
             End Using
@@ -161,6 +204,31 @@ Friend Module LiveBroadcastRecords
         Catch ex As InvalidOperationException
             ' a record whose root is not an object
             Return LiveBroadcastReadResult.Fail(LiveReadStatus.InvalidDocument)
+        End Try
+    End Function
+
+    ' Only called after the person selects an account broadcast (or accepts a cast).
+    Public Async Function PrepareAsync(descriptor As LiveBroadcastDescriptor, ct As Threading.CancellationToken) As Threading.Tasks.Task(Of String)
+        If Not descriptor.RequiresAgentSeal Then Return ""
+        Dim client As New ExchangeAgentClient()
+        Dim reply As ExchangeAgentReply = Await client.SendAsync(ExchangeAgentPipe.BuildRequest(ExchangeAgentPipe.RequestGetBroadcastSeal,
+            Sub(o) o("broadcastId") = descriptor.BroadcastId), 4000, ct)
+        If Not reply.IsOk Then Return If(reply.Error.Length > 0, reply.Error, "e2e-missing")
+        Try
+            Using doc As JsonDocument = JsonDocument.Parse(reply.DataJson)
+                Dim credentials As JsonElement
+                If doc.RootElement.TryGetProperty("credentials", credentials) AndAlso credentials.ValueKind = JsonValueKind.Object Then
+                    descriptor.AuthUser = credentials.GetProperty("user").GetString()
+                    descriptor.Password = credentials.GetProperty("password").GetString()
+                End If
+            End Using
+            Return ""
+        Catch ex As JsonException
+            Return "sealed-failed"
+        Catch ex As InvalidOperationException
+            Return "sealed-failed"
+        Catch ex As Collections.Generic.KeyNotFoundException
+            Return "sealed-failed"
         End Try
     End Function
 End Module

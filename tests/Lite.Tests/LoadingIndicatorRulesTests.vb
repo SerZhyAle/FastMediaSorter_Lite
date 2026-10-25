@@ -8,6 +8,7 @@ Imports Xunit
 
 Namespace fmsl
 
+    <Collection("LocalizationState")>
     Public Class LoadingIndicatorRulesTests
 
         <Fact>

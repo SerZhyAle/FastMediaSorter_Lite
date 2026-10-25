@@ -28,10 +28,11 @@ Friend NotInheritable Class ExchangeSnapshot
     Friend Shared Function Read() As ExchangeSnapshot
         Dim s As ExchangeSnapshot = ReadCheap()
         s.Report = ExchangeProcess.Inspect()
-        If s.ServiceExists Then
+        If s.ServiceExists OrElse ExchangeProcess.RunningPid() > 0 Then
             Dim reply As ExchangeAdminReply = ExchangeAdmin.SendAsync(New ExchangeAdminRequest(ExchangeAdminRequest.OpStatus), Threading.CancellationToken.None).GetAwaiter().GetResult()
             If reply.Ok Then
                 Dim status As ExchangeAdminStatus = ExchangeAdminParser.Status(reply.DataJson)
+                s.Report.Sealed = status.Sealed
                 If status.LogRetentionDays > 0 Then
                     s.Report.KeepAwake = status.KeepAwake
                     s.Report.LogRetentionDays = status.LogRetentionDays
@@ -134,7 +135,8 @@ Friend NotInheritable Class ExchangeGroupModel
                 Case ServiceControl.ServiceState.Running : m.Kind = ExchangeRunKind.ServiceRunning
                 Case ServiceControl.ServiceState.Starting : m.Kind = ExchangeRunKind.ServiceStarting
                 Case ServiceControl.ServiceState.Stopping : m.Kind = ExchangeRunKind.ServiceStopping
-                Case Else : m.Kind = ExchangeRunKind.ServiceStopped
+                Case ServiceControl.ServiceState.Stopped : m.Kind = ExchangeRunKind.ServiceStopped
+                Case Else : m.Kind = ExchangeRunKind.Unreadable ' the SCM would not say: never "stopped"
             End Select
         ElseIf s.ConsolePid > 0 Then
             m.Kind = ExchangeRunKind.RunningConsole

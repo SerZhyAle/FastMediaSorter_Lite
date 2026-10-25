@@ -555,6 +555,7 @@ func TestAThrottledListenerSkipsTheFastOnesAreUntouchedAndTheUploadIsNeverSlowed
 		err  error
 	}
 	var lns []*testkit.Listening
+	slowSkipped := make(chan struct{}, 1)
 	run := func(delay time.Duration, stop <-chan struct{}) <-chan result {
 		l := listen(t, env, id)
 		lns = append(lns, l)
@@ -573,6 +574,12 @@ func TestAThrottledListenerSkipsTheFastOnesAreUntouchedAndTheUploadIsNeverSlowed
 					r.err = err
 					out <- r
 					return
+				}
+				if delay > 0 && len(r.seqs) > 0 && seq > r.seqs[len(r.seqs)-1]+1 {
+					select {
+					case slowSkipped <- struct{}{}:
+					default:
+					}
 				}
 				r.seqs = append(r.seqs, seq)
 				if delay > 0 {
@@ -601,7 +608,12 @@ func TestAThrottledListenerSkipsTheFastOnesAreUntouchedAndTheUploadIsNeverSlowed
 		time.Sleep(4 * time.Millisecond)
 	}
 	elapsed := time.Since(start)
-	time.Sleep(300 * time.Millisecond)
+	// The kernel may buffer a contiguous prefix larger than one relay window. Wait for the
+	// observable skip rather than assuming every OS has drained that prefix after 300 ms.
+	select {
+	case <-slowSkipped:
+	case <-time.After(5 * time.Second):
+	}
 	close(stop)
 	for _, l := range lns {
 		l.Close() // unblocks a reader that is waiting for the next chunk

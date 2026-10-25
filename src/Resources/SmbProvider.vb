@@ -13,6 +13,7 @@ Imports System.Threading
 Friend NotInheritable Class SmbProvider
     Implements IFileSystemProvider
     Implements ITypedStatProvider
+    Implements IManagerDirectoryProvider
     Implements IDisposable
 
     Private ReadOnly descriptor_Value As ResourceDescriptor
@@ -85,6 +86,37 @@ Friend NotInheritable Class SmbProvider
     Public Function Stat(path As String) As StatResult Implements ITypedStatProvider.Stat
         CheckNotDisposed()
         Return inner_Provider.Stat(path)
+    End Function
+
+    ' The directory side (257, N1): the lease is what makes the UNC path reachable, the listing itself is the local
+    ' provider's - a share is browsed by path exactly as a disk is.
+
+    Public Function ListChildren(dirPath As String, ct As CancellationToken) As DirectoryListing Implements IManagerDirectoryProvider.ListChildren
+        CheckNotDisposed()
+        Return inner_Provider.ListChildren(dirPath, ct)
+    End Function
+
+    Public Function StatEntry(path As String) As StatResult Implements IManagerDirectoryProvider.StatEntry
+        CheckNotDisposed()
+        Return inner_Provider.StatEntry(path)
+    End Function
+
+    Public Function IsWithinRoot(rootPath As String, path As String) As Boolean Implements IManagerDirectoryProvider.IsWithinRoot
+        Return inner_Provider.IsWithinRoot(rootPath, path)
+    End Function
+
+    Public Function PathsEqual(a As String, b As String) As Boolean Implements IManagerDirectoryProvider.PathsEqual
+        Return inner_Provider.PathsEqual(a, b)
+    End Function
+
+    Public Function ParentOf(path As String) As String Implements IManagerDirectoryProvider.ParentOf
+        Return inner_Provider.ParentOf(path)
+    End Function
+
+    Public Function RemoveEmptyDirectory(rootPath As String, path As String) As DirectoryRemoval Implements IManagerDirectoryProvider.RemoveEmptyDirectory
+        CheckNotDisposed()
+        If Not Capabilities.CanDelete Then Return DirectoryRemoval.Refused
+        Return inner_Provider.RemoveEmptyDirectory(rootPath, path)
     End Function
 
     Public Sub Download(remotePath As String, localPath As String, progress As IProgress(Of Long), ct As CancellationToken) Implements IFileSystemProvider.Download

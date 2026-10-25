@@ -55,6 +55,7 @@ Partial Public Class Image_Panel_Form
 
         Private glyph_Image As Bitmap
         Private glyph_Video As Bitmap
+        Private glyph_Folder As Bitmap
         Private glyph_For As String = ""
 
         ''' <summary>Something changed in what is on screen (scroll, resize, new data): the
@@ -453,8 +454,10 @@ Partial Public Class Image_Panel_Form
         Private Sub DisposeGlyphs()
             glyph_Image?.Dispose()
             glyph_Video?.Dispose()
+            glyph_Folder?.Dispose()
             glyph_Image = Nothing
             glyph_Video = Nothing
+            glyph_Folder = Nothing
             glyph_For = ""
         End Sub
 
@@ -471,6 +474,8 @@ Partial Public Class Image_Panel_Form
             Try
                 glyph_Image = GlyphRenderer.Render(IconMap.GetMeaning("thumbnail_Image_Missing").GlyphId, tier, dim_Color, AddressOf RuntimeBootstrap.OpenBundledAsset)
                 glyph_Video = GlyphRenderer.Render(IconMap.GetMeaning("thumbnail_Video_Missing").GlyphId, tier, dim_Color, AddressOf RuntimeBootstrap.OpenBundledAsset)
+                ' The folder plate of the file manager mode (257): the catalog's own folder glyph.
+                glyph_Folder = GlyphRenderer.Render("content.folder", tier, dim_Color, AddressOf RuntimeBootstrap.OpenBundledAsset)
             Catch
                 ' A missing glyph resource must not take the panel down: the plate still says
                 ' what the file is.
@@ -540,13 +545,14 @@ Partial Public Class Image_Panel_Form
                 End Using
             End If
 
-            Dim image As Bitmap = If(memory Is Nothing, Nothing, memory.TryGet(row.Path))
+            Dim image As Bitmap = If(memory Is Nothing, Nothing, memory.TryGet(row.Identity))
             If image IsNot Nothing Then
                 g.DrawImage(image, picture.X + (card - image.Width) \ 2, picture.Y + (card - image.Height) \ 2, image.Width, image.Height)
                 If row.Kind = MediaKind.Video Then PaintPlayBadge(g, picture)
             Else
-                PaintPlate(g, picture, row, no_Picture IsNot Nothing AndAlso no_Picture.Contains(row.Path))
+                PaintPlate(g, picture, row, no_Picture IsNot Nothing AndAlso no_Picture.Contains(row.Identity))
             End If
+            PaintLinkMark(g, picture, row)
 
             ' Name under the picture.
             Dim caption As New Rectangle(r.X, r.Y + card + 2, card, Dp(Caption_Px) - 2)
@@ -575,6 +581,14 @@ Partial Public Class Image_Panel_Form
                 g.FillRectangle(fill, picture)
             End Using
 
+            If row.IsDirectory Then
+                ' A folder is never decoded: its plate is the folder glyph at once, link or not.
+                If glyph_Folder IsNot Nothing Then
+                    g.DrawImage(glyph_Folder, picture.X + (card - glyph_Folder.Width) \ 2, picture.Y + (card - glyph_Folder.Height) \ 2, glyph_Folder.Width, glyph_Folder.Height)
+                End If
+                Return
+            End If
+
             If row.Kind = MediaKind.Image OrElse row.Kind = MediaKind.Video Then
                 ' While the picture is still coming the plate stays bare - a glyph that then
                 ' gives way to the picture is flicker. Once it is known none will come, the
@@ -590,7 +604,7 @@ Partial Public Class Image_Panel_Form
 
             Dim ext As String = ""
             Try
-                ext = Path.GetExtension(row.Path).TrimStart("."c).ToUpperInvariant()
+                ext = Path.GetExtension(row.Name).TrimStart("."c).ToUpperInvariant()
             Catch
             End Try
             If ext.Length = 0 Then ext = "?"
@@ -600,6 +614,15 @@ Partial Public Class Image_Panel_Form
                         g.DrawString(ext, plate_Font, ink, picture, plate_Format)
                     End Using
                 End Using
+            End Using
+        End Sub
+
+        ''' <summary>A symlink or reparse point is drawn as one (257): a dashed frame round its plate. It is never entered,
+        ''' and the details list says "link" in words.</summary>
+        Private Shared Sub PaintLinkMark(g As Graphics, picture As Rectangle, row As PanelFileRow)
+            If Not row.IsLink Then Return
+            Using pen As New Pen(Color.FromArgb(200, 255, 170, 0), 2) With {.DashStyle = DashStyle.Dash}
+                g.DrawRectangle(pen, picture.X + 1, picture.Y + 1, picture.Width - 3, picture.Height - 3)
             End Using
         End Sub
 

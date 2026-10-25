@@ -57,7 +57,11 @@ Partial Public Class Main_Form
 
         Try
             vlc_Media_Player.Volume = CInt(Math.Round(video_Volume_Level * 100))
+#If NETFRAMEWORK Then
             vlc_Media_Player.Mute = is_Video_Muted
+#Else
+            vlc_Media_Player.Mute = is_Video_Muted OrElse frame_Playback_Mode
+#End If
         Catch
         End Try
     End Sub
@@ -434,6 +438,10 @@ Partial Public Class Main_Form
         End If
 #End If
 
+#If Not NETFRAMEWORK Then
+        Dim sidecars = Await Task.Run(Function() SidecarAssociations.Discover(file_Path))
+        If generation <> media_Generation OrElse Me.IsDisposed Then Return
+#End If
         Try
             StopGifLoopPlayback()
 
@@ -520,6 +528,11 @@ Partial Public Class Main_Form
 #End If
             Dim media As LibVLCSharp.Shared.Media = CreateVlcMedia(file_Path)
 #If Not NETFRAMEWORK Then
+            For Each sidecar In sidecars
+                If sidecar.Kind = SidecarKind.Subtitle Then
+                    media.AddSlave(LibVLCSharp.Shared.MediaSlaveType.Subtitle, 0UI, New Uri(sidecar.Path))
+                End If
+            Next
             ' The temporary animation video (spec 242): an ordinary video to the user, with the differences that it
             ' loops for ever on its own (CreateVlcMedia gave it the option), starts playing whatever the autoplay
             ' setting says, and does not hold the slideshow back.

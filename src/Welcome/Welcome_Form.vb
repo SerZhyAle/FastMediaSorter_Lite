@@ -223,7 +223,7 @@ Friend NotInheritable Class Welcome_Form
 
         ' A glyph before each caption (WINDOWS-UI 0.4 section 11): the answers are hued, navigation is mono.
         ' Next and Done are one button whose caption flips on the last step, so its glyph flips with it.
-        ButtonGlyphs.Apply(skipButton, "media.next", ButtonGlyphRole.Caution)
+        ButtonGlyphs.Apply(skipButton, "action.skip", ButtonGlyphRole.Caution)
         ButtonGlyphs.Apply(backButton, "nav.back")
         Localize(Sub()
                      Dim wanted As String = If(position = finishIndex, "action.confirm", "nav.forward")

@@ -48,7 +48,7 @@ Partial Friend Module RecycleBinIo
     ''' </summary>
     Friend Function SendToBinChecked(path As String, sentAtUtc As DateTime) As Boolean
         SendToBin(path)
-        Return Not File.Exists(path) AndAlso Not IsInBin(path, sentAtUtc)
+        Return Not File.Exists(path) AndAlso Not Directory.Exists(path) AndAlso Not IsInBin(path, sentAtUtc)
     End Function
 
     ''' <summary>
@@ -65,6 +65,13 @@ Partial Friend Module RecycleBinIo
     ''' </summary>
     Friend Sub SendToBin(path As String)
         RunOnSta(Sub()
+                     If Directory.Exists(path) Then
+                         Microsoft.VisualBasic.FileIO.FileSystem.DeleteDirectory(
+                             path, Microsoft.VisualBasic.FileIO.UIOption.OnlyErrorDialogs,
+                             Microsoft.VisualBasic.FileIO.RecycleOption.SendToRecycleBin,
+                             Microsoft.VisualBasic.FileIO.UICancelOption.ThrowException)
+                         Return
+                     End If
                      Microsoft.VisualBasic.FileIO.FileSystem.DeleteFile(
                          path,
                          Microsoft.VisualBasic.FileIO.UIOption.OnlyErrorDialogs,
@@ -100,11 +107,16 @@ Partial Friend Module RecycleBinIo
         If String.IsNullOrEmpty(folder) OrElse Not Directory.Exists(folder) Then Return BinRestoreResult.SourceFolderGone
 
         Dim record As RecycleBinRecord = FindRecord(originalPath, deletedAtUtc)
-        If record Is Nothing OrElse String.IsNullOrEmpty(record.DataPath) OrElse Not File.Exists(record.DataPath) Then
+        If record Is Nothing OrElse String.IsNullOrEmpty(record.DataPath) OrElse
+           (Not File.Exists(record.DataPath) AndAlso Not Directory.Exists(record.DataPath)) Then
             Return BinRestoreResult.NotInBin
         End If
 
-        File.Move(record.DataPath, target)
+        If Directory.Exists(record.DataPath) Then
+            Directory.Move(record.DataPath, target)
+        Else
+            File.Move(record.DataPath, target)
+        End If
 
         ' The data is home; an orphaned $I is Explorer's problem, not the user's file. It is
         ' deleted last and its failure is swallowed on purpose - throwing here would report a
@@ -114,7 +126,7 @@ Partial Friend Module RecycleBinIo
         Catch
         End Try
 
-        Return If(File.Exists(target), BinRestoreResult.Restored, BinRestoreResult.NotInBin)
+        Return If(File.Exists(target) OrElse Directory.Exists(target), BinRestoreResult.Restored, BinRestoreResult.NotInBin)
     End Function
 
     ''' <summary>
@@ -128,7 +140,8 @@ Partial Friend Module RecycleBinIo
     Friend Function IsInBin(originalPath As String, deletedAtUtc As DateTime) As Boolean
         Try
             Dim record As RecycleBinRecord = FindRecord(originalPath, deletedAtUtc)
-            Return record IsNot Nothing AndAlso Not String.IsNullOrEmpty(record.DataPath) AndAlso File.Exists(record.DataPath)
+            Return record IsNot Nothing AndAlso Not String.IsNullOrEmpty(record.DataPath) AndAlso
+                   (File.Exists(record.DataPath) OrElse Directory.Exists(record.DataPath))
         Catch
             Return False
         End Try

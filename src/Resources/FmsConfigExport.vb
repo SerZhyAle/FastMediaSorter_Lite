@@ -109,7 +109,10 @@ Friend Module FmsConfigExport
         ' Adaptive version rule: 2 only when the root carries a v2 field. The viewer emits at most
         ' one - scanSubdirectories:false; the import default (True/absent) stays out of the document.
         Dim scanSubdirectories As Boolean? = descriptor.IncludeSubfolders
-        Dim anyV2 As Boolean = scanSubdirectories.HasValue AndAlso Not scanSubdirectories.Value
+        Dim emitScanSubdirectories As Boolean = scanSubdirectories.HasValue AndAlso Not scanSubdirectories.Value
+        Dim emitShowHiddenFiles As Boolean = descriptor.ShowHiddenFiles.HasValue
+        Dim emitAllFiles As Boolean = descriptor.AllFiles.HasValue
+        Dim anyV2 As Boolean = emitScanSubdirectories OrElse emitShowHiddenFiles OrElse emitAllFiles
 
         Dim created As Date = If(createdAtUtc = Date.MinValue, DateTime.UtcNow, createdAtUtc)
 
@@ -124,7 +127,9 @@ Friend Module FmsConfigExport
         sb.Append(",""hostKeyFingerprintSha256"":").Append(J(descriptor.PinnedFingerprint))
         sb.Append(",""roots"":[{""virtualPath"":").Append(J(rootPath))
         sb.Append(",""readOnly"":").Append(If(descriptor.ReadOnlyHint, "true", "false"))
-        If anyV2 Then sb.Append(",""scanSubdirectories"":false")
+        If emitScanSubdirectories Then sb.Append(",""scanSubdirectories"":false")
+        If emitShowHiddenFiles Then sb.Append(",""showHiddenFiles"":").Append(If(descriptor.ShowHiddenFiles.Value, "true", "false"))
+        If emitAllFiles Then sb.Append(",""allFiles"":").Append(If(descriptor.AllFiles.Value, "true", "false"))
         sb.Append("}]")
         sb.Append(",""createdAt"":").Append(J(created.ToString("yyyy-MM-ddTHH:mm:ss'Z'", CultureInfo.InvariantCulture)))
         sb.Append("}"c)

@@ -20,8 +20,7 @@ Partial Public NotInheritable Class Share_Settings_Form
     Private Sub RestoreSettingsUiContext()
         Try
             Dim invalid As Boolean
-            managerSettingsContext = SettingsUiContext.Read(GetSetting(App_name, Second_App_Name,
-                SettingsRoutes.ContextKey(Destination), GetSetting(App_name, Second_App_Name, "Share_SettingsContext", String.Empty)), invalid)
+            managerSettingsContext = ReadSettingsUiContext(invalid)
             ' The retired single-page anchor identifies a useful destination on migration.
             If Not _pages.ContainsKey(managerSettingsContext.LastPageId) Then
                 Dim previous = managerSettingsContext.Page("manager").AnchorId
@@ -48,10 +47,26 @@ Partial Public NotInheritable Class Share_Settings_Form
         If _selectedPage.Length = 0 AndAlso _pages.Count > 0 Then SelectSettingsPage(_pages.Keys.First())
     End Sub
 
+    ''' <summary>This window's own record, or - while it has none (the first open) - the first record of the retired windows that
+    ''' exists: for the Manager window the record of the SFTP sharing window that was merged into it (253 R-7), then the retired
+    ''' combined record. A seed is only read: the next close writes this window's own record, which then wins, so a later change
+    ''' of a seed is ignored and the seeds are never rewritten or deleted. A record that exists but is malformed gives the safe
+    ''' defaults and the records behind it stay untouched.</summary>
+    Private Function ReadSettingsUiContext(ByRef invalid As Boolean) As SettingsUiContext
+        Dim keys As New List(Of String) From {SettingsRoutes.ContextKey(Destination)}
+        If Destination = SettingsDestination.Manager Then keys.Add(SettingsRoutes.SftpContextKey)
+        keys.Add(SettingsRoutes.LegacyContextKey)
+        For Each key In keys
+            Dim raw = GetSetting(App_name, Second_App_Name, key, String.Empty)
+            If Not String.IsNullOrWhiteSpace(raw) Then Return SettingsUiContext.Read(raw, invalid)
+        Next
+        Return SettingsUiContext.Read(String.Empty, invalid)
+    End Function
+
     Private Function RestoreSettingsWindowBounds() As Boolean
         Try
             Dim raw = GetSetting(App_name, Second_App_Name, SettingsRoutes.BoundsKey(Destination),
-                GetSetting(App_name, Second_App_Name, "Share_SettingsBounds", String.Empty))
+                GetSetting(App_name, Second_App_Name, SettingsRoutes.LegacyBoundsKey, String.Empty))
             If String.IsNullOrEmpty(raw) Then Return False
             Dim values = JsonSerializer.Deserialize(Of Integer())(raw)
             If values Is Nothing OrElse values.Length <> 4 OrElse values(2) < 300 OrElse values(3) < 200 OrElse

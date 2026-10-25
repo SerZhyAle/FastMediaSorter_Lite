@@ -297,15 +297,20 @@ Friend Module ExchangeText
 
     ' --- the tray ----------------------------------------------------------------------------
 
-    ''' <summary>The tray menu's one item (ticket 142 T-6): the name, then what it is doing.</summary>
+    ''' <summary>The tray menu's one item (ticket 142 T-6): the name, then what it is doing. A state that is
+    ''' not known - the placeholder before the first read, a service the SCM would not describe, a service
+    ''' on its way down - is the bare name: the menu never says "stopped" about something it has not read,
+    ''' which is what made it contradict the settings window.</summary>
     Friend Function TrayItem(kind As ExchangeRunKind) As String
         Select Case kind
             Case ExchangeRunKind.RunningConsole
                 Return Localization.TF("{0}: работает", ProductNames.ExchangeServer)
             Case ExchangeRunKind.ServiceRunning, ExchangeRunKind.ServiceStarting
                 Return Localization.TF("{0}: работает как служба", ProductNames.ExchangeServer)
-            Case Else
+            Case ExchangeRunKind.Stopped, ExchangeRunKind.ServiceStopped
                 Return Localization.TF("{0}: остановлен", ProductNames.ExchangeServer)
+            Case Else
+                Return ProductNames.ExchangeServer
         End Select
     End Function
 
@@ -316,7 +321,9 @@ Friend Module ExchangeText
             Select Case state
                 Case ServiceControl.ServiceState.Running : Return ExchangeRunKind.ServiceRunning
                 Case ServiceControl.ServiceState.Starting : Return ExchangeRunKind.ServiceStarting
-                Case Else : Return ExchangeRunKind.ServiceStopped
+                Case ServiceControl.ServiceState.Stopping : Return ExchangeRunKind.ServiceStopping
+                Case ServiceControl.ServiceState.Stopped : Return ExchangeRunKind.ServiceStopped
+                Case Else : Return ExchangeRunKind.Unreadable ' the SCM would not say: never "stopped"
             End Select
         End If
         Return If(consoleRunning, ExchangeRunKind.RunningConsole, ExchangeRunKind.Stopped)

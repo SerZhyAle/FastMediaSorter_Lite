@@ -700,7 +700,7 @@ Friend Module OptionalRuntimeManager
 
 #If Not NETFRAMEWORK Then
             Case OptionalRuntimeKind.Ffmpeg
-                Return Localization.TF("Для создания видео нужен FFmpeg (около {0} МБ). Он будет загружен с сайта проекта и сохранён в папке программы. FFmpeg - свободная программа под лицензией GPL. Загрузить сейчас?", FfmpegDownloadMb.ToString())
+                Return Localization.TF("Для работы с видео нужен FFmpeg (около {0} МБ). Он будет загружен с сайта проекта и сохранён локально. FFmpeg - свободная программа под лицензией GPL. Загрузить сейчас?", FfmpegDownloadMb.ToString())
 #End If
         End Select
 

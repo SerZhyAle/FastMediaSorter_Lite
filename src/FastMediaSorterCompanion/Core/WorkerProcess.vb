@@ -19,11 +19,16 @@ Public Module WorkerProcess
     ''' <summary>Process name for Process.GetProcessesByName (no extension).</summary>
     Public Const ProcessName As String = "fms-share-worker"
 
+    ''' <summary>Tests point the module at a scratch folder that holds a stand-in worker exe, so a window built for the SFTP
+    ''' component can be opened without the real payload. Nothing else sets it.</summary>
+    Friend ExeDirectoryOverride As String
+
     ''' <summary>
     ''' Absolute path of the sibling worker exe, or "" if it cannot be resolved.
     ''' Resolved from Application.ExecutablePath only (Invariant 2).
     ''' </summary>
     Public Function WorkerExePath() As String
+        If Not String.IsNullOrEmpty(ExeDirectoryOverride) Then Return Path.Combine(ExeDirectoryOverride, ExeName)
         Try
             Dim baseDir As String = Path.GetDirectoryName(Application.ExecutablePath)
             If String.IsNullOrEmpty(baseDir) Then Return ""

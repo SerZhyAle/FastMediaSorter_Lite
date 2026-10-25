@@ -147,7 +147,7 @@ Partial Public Class Main_Form
 
     ''' <summary>Full screen - the same two flips F7 and F11 do.</summary>
     Private Sub AddViewItems(target As ToolStripItemCollection)
-        AddMenuItem(target, Localization.T("Во весь экран (F7)"),
+        AddMenuItem(target, If(is_Full_Screen_Mode, Localization.T("Выйти из полноэкранного режима"), Localization.T("Во весь экран (F7)")),
                     AddressOf ToggleFullScreenMode, checked:=is_Full_Screen_Mode, actionId:="fullScreen")
         AddMenuItem(target, Localization.T("Во весь экран без панелей (F11)"),
                     AddressOf ToggleSuperFullScreenMode, checked:=is_Super_Full_Screen_Mode, fallbackHint:="F11")

@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <!--
     Share Manager - Fast Media Sorter & Sharing - the Android Folder Share controller,
@@ -121,6 +121,8 @@
 
       Linked, not copied: a fix to T/TF/TC must not need doing twice.
     -->
+    <Compile Include="..\Archives\ArchiveWriteManifest.vb" Link="Core\Archives\ArchiveWriteManifest.vb" />
+    <Compile Include="..\Archives\VerifiedZipWriter.vb" Link="Core\Archives\VerifiedZipWriter.vb" />
     <Compile Include="..\Help\ContextHelp.vb" Link="Help\ContextHelp.vb" />
     <Compile Include="..\Help\ContextHelpUi.vb" Link="Help\ContextHelpUi.vb" />
     <Compile Include="..\LogSessionDiagnostics.vb" Link="LogSessionDiagnostics.vb" />
@@ -148,6 +150,7 @@
       redaction, both logs in one archive - linked so none of that exists twice.
     -->
     <Compile Include="..\Support\LogPackage.vb" Link="Core\LogPackage.vb" />
+    <Compile Include="..\Support\DiagnosticRedactor.vb" Link="Core\DiagnosticRedactor.vb" />
     <!--
       The "[hosting]" block of that report and the one state line of the log (ticket 182 L-4, L-8):
       the pure builder with injected probes, and the live probes behind it. Whole-file
@@ -252,6 +255,10 @@
     <Compile Include="..\PathFailure.vb" Link="Core\Scheduled\Linked\PathFailure.vb" />
     <Compile Include="..\FreeNameRule.vb" Link="Core\Scheduled\Linked\FreeNameRule.vb" />
     <Compile Include="..\Resources\IFileSystemProvider.vb" Link="Core\Scheduled\Linked\IFileSystemProvider.vb" />
+    <!-- The directory side the three providers implement for the viewer's file manager mode (257). Whole-file "#If Not NETFRAMEWORK";
+         ManagerPathRules lives with the location types. The Share Manager itself never lists a folder through them. -->
+    <Compile Include="..\Resources\IManagerDirectoryProvider.vb" Link="Core\Scheduled\Linked\IManagerDirectoryProvider.vb" />
+    <Compile Include="..\FileManager\ManagerLocation.vb" Link="Core\Scheduled\Linked\FileManager\ManagerLocation.vb" />
     <!-- Ticket 244 (WORKER-LAUNCH 1.0): the ONE state-directory resolution the viewer's WorkerShares also uses. -->
     <Compile Include="..\Resources\WorkerStateDir.vb" Link="Core\WorkerStateDir.vb" />
     <!-- EXPERIMENT (ticket 222 step 4): the provider layer the viewer already has, for registered resources. -->

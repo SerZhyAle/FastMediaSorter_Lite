@@ -34,9 +34,20 @@ Partial Public NotInheritable Class Share_Settings_Form
     Private _pageHost As Panel
     Private _pageViewportHost As Panel
     Private _navigation As FlowLayoutPanel
+    ''' <summary>The heading of the SFTP sharing group of the Manager window's rail (253 R-3): it names the component that owns
+    ''' the Network and Hosting rows under it, so a port or a stop action is never read as the exchange server's. Not a row of the
+    ''' tree: it takes no focus, selects nothing and is not a tab stop. Nothing when the component is not installed.</summary>
+    Private _navSftpHeading As Label
+    ' The big title label of each page: a scoped title is composed with TF, so a live language switch refreshes it by hand.
+    Private ReadOnly _pageTitles As New Dictionary(Of String, Label)()
     ''' <summary>The rail's column of the window grid; its width is <see cref="RailColumnPx"/>, not a number.</summary>
     Private _railColumn As ColumnStyle
     Private _arrangingNav As Boolean
+    ''' <summary>The window has exactly ONE page and that page has items (the exchange server window): its page row would
+    ''' be a lone parent with nothing to choose between, so the row is not shown and its items stand at the top level of the
+    ''' rail, always visible, without a chevron or a child indent. The page row object stays (the page registry, the tab-stop
+    ''' walk and the language refresh address it by id) but is never a visible row, a tab stop or the selection.</summary>
+    Private _flatRail As Boolean
     Private _selectedPage As String = String.Empty
     ''' <summary>The chosen sub-menu per page: the group whose card the last reveal brought
     ''' into view, or empty for the whole page. It owns the rail's highlight and nothing
@@ -69,6 +80,13 @@ Partial Public NotInheritable Class Share_Settings_Form
             BuildContractGroups(sec)
             Dim id = sec.Key
             _selectedItem(id) = String.Empty
+            If id = "network" Then
+                _navSftpHeading = New Label With {.Name = "managerSettingsNavHeading_sftp", .Text = Localization.T("Общий доступ SFTP"),
+                    .AccessibleName = Localization.T("Общий доступ SFTP"), .AccessibleRole = AccessibleRole.StaticText,
+                    .AutoSize = False, .UseMnemonic = False, .TabStop = False, .Margin = New Padding(0, 6, 0, 2),
+                    .TextAlign = ContentAlignment.MiddleLeft}
+                _navigation.Controls.Add(_navSftpHeading)
+            End If
             Dim button As New SettingsNavigationButton With {.Text = SettingsPageCaption(sec), .Name = "managerSettingsNav_" & id,
                 .PageId = id, .AccessibleName = SettingsPageCaption(sec), .AccessibleRole = AccessibleRole.OutlineItem,
                 .FlatStyle = FlatStyle.Flat, .UseVisualStyleBackColor = False, .Width = 240,
@@ -129,8 +147,9 @@ Partial Public NotInheritable Class Share_Settings_Form
                 .Padding = New Padding(4, 0, 12, 0)}
             content.SuspendLayout()
             content.ColumnStyles.Add(New ColumnStyle(SizeType.Percent, 100))
-            Dim title As New Label With {.Text = SettingsPageCaption(sec), .AutoSize = True, .Dock = DockStyle.Fill,
+            Dim title As New Label With {.Text = SettingsPageTitle(sec), .AutoSize = True, .Dock = DockStyle.Fill,
                 .Font = New Font(Font.FontFamily, Font.Size * 1.5F, FontStyle.Bold), .Margin = New Padding(0, 0, 0, 8)}
+            _pageTitles(id) = title
             If id = "exchange" OrElse id = "exchange-account" Then ExchangeMark.Apply(title, 24, AddressOf CompanionAssets.OpenBundledAsset)
             AddHandler title.Disposed, Sub() title.Font.Dispose()
             Dim description As New Label With {.AutoSize = True, .Dock = DockStyle.Fill,
@@ -148,6 +167,15 @@ Partial Public NotInheritable Class Share_Settings_Form
             content.ResumeLayout(False)
             viewport.ResumeLayout(False)
         Next
+        If _navButtons.Count = 1 AndAlso _navItems.Values.First().Count > 0 Then
+            _flatRail = True
+            Dim onlyRow = DirectCast(_navButtons.Values.First(), SettingsNavRowButton)
+            onlyRow.Visible = False
+            onlyRow.HasItems = False
+            For Each item In _navItems.Values.First()
+                item.Visible = True
+            Next
+        End If
         BuildSettingsHeader()
         AddHandler _navigation.SizeChanged, Sub() ArrangeSettingsNavigation()
         ' The rail is limited to a share of the client (rule 5), so a window resize re-measures it.
@@ -170,6 +198,7 @@ Partial Public NotInheritable Class Share_Settings_Form
             Case "hosting" : Return Localization.T("Режим работы и служба общего доступа.")
             Case "exchange" : Return Localization.T("Сервер обмена, порты и учётные записи.")
             Case "exchange-account" : Return Localization.T("Подключение этого ПК к серверу обмена.")
+            Case "drive" : Return DriveChannelText.PageDescription()
             Case "scheduled" : Return Localization.T("Копирование, перенос, удаление и архивация файлов по расписанию или вручную.")
             Case Else : Return Localization.T("Версия, лицензия, документация и помощь.")
         End Select
@@ -261,9 +290,12 @@ Partial Public NotInheritable Class Share_Settings_Form
             Dim gap As Integer = SettingsRailRules.GlyphGapPx(factor)
             Dim slack As Integer = UiSizing.DevicePx(NavRenderSlackLogical, factor)
             Dim anyItems As Boolean = _navItems.Values.Any(Function(list) list.Count > 0)
-            Dim column As Integer = RailColumnPx(_navButtons.Values.Select(Function(b) b.Text),
-                                                 _navItems.Values.SelectMany(Function(list) list).Select(Function(i) i.Text),
-                                                 anyItems, _navButtons.Values.First().Font, factor, ClientSize.Width, scrollBar)
+            Dim itemCaptions As IEnumerable(Of String) = _navItems.Values.SelectMany(Function(list) list).Select(Function(i) i.Text)
+            Dim railFont As Font = _navButtons.Values.First().Font
+            ' A flat rail has no page rows: its items are the top-level captions, with no chevron zone and no child indent.
+            Dim column As Integer = If(_flatRail,
+                RailColumnPx(itemCaptions, Enumerable.Empty(Of String)(), False, railFont, factor, ClientSize.Width, scrollBar),
+                RailColumnPx(_navButtons.Values.Select(Function(b) b.Text), itemCaptions, anyItems, railFont, factor, ClientSize.Width, scrollBar))
             If CInt(_railColumn.Width) <> column Then _railColumn.Width = column
             Dim rowWidth As Integer = Math.Max(1, column - UiSizing.DevicePx(NavEdgeLogical + NavColumnGapLogical, factor) - scrollBar)
             Dim start As Integer = UiSizing.DevicePx(NavPaddingStartLogical, factor)
@@ -279,9 +311,17 @@ Partial Public NotInheritable Class Share_Settings_Form
                 row.Height = SettingsRailRules.RowHeightPx(factor, TextRenderer.MeasureText(row.Text, row.Font,
                     New Size(room, Integer.MaxValue), TextFormatFlags.WordBreak).Height)
             Next
+            ' The group heading wraps and grows like a row (rule 2) and never widens the rail: only the rows' captions size it.
+            If _navSftpHeading IsNot Nothing Then
+                _navSftpHeading.Padding = If(rtl, New Padding(finish, 0, start, 0), New Padding(start, 0, finish, 0))
+                _navSftpHeading.Width = rowWidth
+                Dim headingRoom As Integer = Math.Max(1, rowWidth - _navSftpHeading.Padding.Horizontal - slack)
+                _navSftpHeading.Height = TextRenderer.MeasureText(_navSftpHeading.Text, _navSftpHeading.Font,
+                    New Size(headingRoom, Integer.MaxValue), TextFormatFlags.WordBreak).Height + UiSizing.DevicePx(4, factor)
+            End If
             ' The subordinate indent: one shared token (rule 4), mirrored in RTL (210 section 4.2). The caption starts
             ' where an icon-bearing child's caption would, so a glyph can be added without moving the text.
-            Dim childStart As Integer = UiSizing.DevicePx(NavPaddingStartLogical + NavChildIndentLogical, factor)
+            Dim childStart As Integer = UiSizing.DevicePx(NavPaddingStartLogical + If(_flatRail, 0, NavChildIndentLogical), factor)
             For Each items In _navItems.Values
                 For Each item In items
                     ' An item with a catalogued glyph draws it in the column (glyph + gap) that an item without one leaves empty.
@@ -305,7 +345,7 @@ Partial Public NotInheritable Class Share_Settings_Form
     ''' <summary>Every row of the tree, visible or not, in display order.</summary>
     Private Iterator Function AllNavRows() As IEnumerable(Of Button)
         For Each id As String In _pages.Keys
-            Yield _navButtons(id)
+            If Not _flatRail Then Yield _navButtons(id)
             Dim items As List(Of SettingsNavItemButton) = Nothing
             If _navItems.TryGetValue(id, items) Then
                 For Each item In items
@@ -328,6 +368,8 @@ Partial Public NotInheritable Class Share_Settings_Form
                 Next
             End If
         End If
+        ' A flat rail has no page row to stand in: the first item is the row the tab stop rests on.
+        If _flatRail Then Return AllNavRows().FirstOrDefault()
         Return _navButtons(_selectedPage)
     End Function
 
@@ -343,7 +385,7 @@ Partial Public NotInheritable Class Share_Settings_Form
     Private Sub ResetNavTabStop()
         If _navButtons.Count = 0 Then Return
         Dim selected = SelectedNavRow()
-        SetNavTabStop(If(selected, _navButtons.Values.First()))
+        SetNavTabStop(If(selected, AllNavRows().First()))
     End Sub
 
     ''' <summary>A row took the focus (mouse or keyboard): it becomes the one tab stop.</summary>
@@ -430,6 +472,8 @@ Partial Public NotInheritable Class Share_Settings_Form
     Private Sub SetSettingsNavExpanded(id As String, expanded As Boolean)
         Dim items As List(Of SettingsNavItemButton) = Nothing
         If Not _navItems.TryGetValue(id, items) OrElse items.Count = 0 Then Return
+        ' The items of a flat rail ARE the top level: nothing folds them.
+        If _flatRail Then Return
         ' A focused item that is about to be hidden hands the focus to its page row (the tree never loses its focus).
         Dim refocus As Boolean = Not expanded AndAlso items.Any(Function(item) item.Focused)
         managerSettingsContext.Page(id).NavExpanded = expanded
@@ -463,6 +507,7 @@ Partial Public NotInheritable Class Share_Settings_Form
     End Sub
 
     Private Function NavExpanded(id As String) As Boolean
+        If _flatRail Then Return True
         Dim page As SettingsPageContext = Nothing
         Return managerSettingsContext.Pages.TryGetValue(id, page) AndAlso page.NavExpanded
     End Function
@@ -472,7 +517,7 @@ Partial Public NotInheritable Class Share_Settings_Form
     ''' the walk is correct before the window is shown as well.</summary>
     Private Iterator Function SettingsNavRows() As IEnumerable(Of Control)
         For Each id As String In _pages.Keys
-            Yield _navButtons(id)
+            If Not _flatRail Then Yield _navButtons(id)
             Dim items As List(Of SettingsNavItemButton) = Nothing
             If _navItems.TryGetValue(id, items) AndAlso NavExpanded(id) Then
                 For Each item In items
@@ -507,6 +552,7 @@ Partial Public NotInheritable Class Share_Settings_Form
             Case "hosting" : EnsureHostingLoaded()
             Case "exchange" : EnsureExchangeLoaded()
             Case "exchange-account" : ApplyAccountState()
+            Case "drive" : ApplyDriveState()
         End Select
     End Sub
 
@@ -563,6 +609,7 @@ Partial Public NotInheritable Class Share_Settings_Form
                 If grp.Card IsNot Nothing Then grp.Card.ApplyPalette(palette)
             Next
         Next
+        If _navSftpHeading IsNot Nothing Then _navSftpHeading.ForeColor = palette.TextMuted
         ' The selection may have moved to another row: the one tab stop follows it while the focus is elsewhere.
         If Not _navigation.ContainsFocus Then ResetNavTabStop()
     End Sub

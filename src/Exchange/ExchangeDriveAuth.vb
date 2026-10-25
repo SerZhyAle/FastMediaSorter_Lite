@@ -122,6 +122,23 @@ Friend NotInheritable Class ExchangeDriveAuth
             "&code_verifier=" & Escape(codeVerifier)
     End Function
 
+    ''' <summary>Google's token revocation endpoint (sign-out, acceptance criterion 4).</summary>
+    Public Const RevokeEndpoint As String = "https://oauth2.googleapis.com/revoke"
+
+    ''' <summary>The body of the refresh-token request: the stored refresh token turned into a short-lived access token.
+    ''' Carries no scope either - the refresh keeps the scope the consent granted.</summary>
+    Public Shared Function RefreshRequestBody(refreshToken As String, clientId As String, clientSecret As String) As String
+        Return "refresh_token=" & Escape(refreshToken) &
+            "&client_id=" & Escape(clientId) &
+            "&client_secret=" & Escape(clientSecret) &
+            "&grant_type=refresh_token"
+    End Function
+
+    ''' <summary>The body of the revocation request: the refresh token, whose revocation ends every access token made from it.</summary>
+    Public Shared Function RevokeRequestBody(token As String) As String
+        Return "token=" & Escape(token)
+    End Function
+
     Private Shared Function Escape(value As String) As String
         Return Uri.EscapeDataString(value)
     End Function

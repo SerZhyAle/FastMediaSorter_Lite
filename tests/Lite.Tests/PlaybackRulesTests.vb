@@ -185,17 +185,19 @@ Public Class PlaybackRulesTests
     <Fact>
     Public Sub NextRate_walks_the_whole_ladder_in_both_directions_and_clamps_without_wrapping()
         ' Up from the bottom, one step at a time.
+        Assert.Equal(0.5F, PlaybackRules.NextRate(0.25F, faster:=True))
         Assert.Equal(0.75F, PlaybackRules.NextRate(0.5F, faster:=True))
         Assert.Equal(1.0F, PlaybackRules.NextRate(0.75F, faster:=True))
         Assert.Equal(1.25F, PlaybackRules.NextRate(1.0F, faster:=True))
         Assert.Equal(1.5F, PlaybackRules.NextRate(1.25F, faster:=True))
         Assert.Equal(2.0F, PlaybackRules.NextRate(1.5F, faster:=True))
-        ' The top clamps - a held key must not wrap from 2x to 0.5x (119 §5.0.4).
+        ' The top clamps - a held key must not wrap from 2x to 0.25x (119 §5.0.4).
         Assert.Equal(2.0F, PlaybackRules.NextRate(2.0F, faster:=True))
         ' And back down.
         Assert.Equal(1.5F, PlaybackRules.NextRate(2.0F, faster:=False))
         Assert.Equal(0.5F, PlaybackRules.NextRate(0.75F, faster:=False))
-        Assert.Equal(0.5F, PlaybackRules.NextRate(0.5F, faster:=False))
+        Assert.Equal(0.25F, PlaybackRules.NextRate(0.5F, faster:=False))
+        Assert.Equal(0.25F, PlaybackRules.NextRate(0.25F, faster:=False))
     End Sub
 
     <Fact>
@@ -227,6 +229,7 @@ Public Class PlaybackRulesTests
             Assert.Equal("1×", PlaybackRules.FormatRate(1.0F))
             Assert.Equal("1.25×", PlaybackRules.FormatRate(1.25F))
             Assert.Equal("0.5×", PlaybackRules.FormatRate(0.5F))
+            Assert.Equal("0.25×", PlaybackRules.FormatRate(0.25F))
             Assert.Equal("2×", PlaybackRules.FormatRate(2.0F))
         Finally
             System.Globalization.CultureInfo.CurrentCulture = saved

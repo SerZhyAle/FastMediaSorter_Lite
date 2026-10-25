@@ -3,15 +3,18 @@
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <script>
-(function(){try{
-  var t=localStorage.getItem('sza-theme');
+(function(){
+  var t;try{t=localStorage.getItem('sza-theme');}catch(e){}
   if(t!=='dark'&&t!=='light')t=matchMedia('(prefers-color-scheme: light)').matches?'light':'dark';
   document.documentElement.setAttribute('data-theme',t);
-  var l=localStorage.getItem('sza-lang');
+  var l;try{l=localStorage.getItem('sza-lang');}catch(e){}
+  var q=new URLSearchParams(location.search),requested=q.has('lang')?q.get('lang'):q.get('l');
+  if(requested){requested=requested.toLowerCase();if(requested==='uk')requested='ua';if(requested==='en'||requested==='ru'||requested==='ua')l=requested;}
   if(l==='uk')l='ua';
   if(l!=='ru'&&l!=='en'&&l!=='ua'){var n=(navigator.language||'en').toLowerCase();l=n.indexOf('ru')==0?'ru':n.indexOf('uk')==0?'ua':'en';}
   document.documentElement.setAttribute('data-lang',l);
-}catch(e){}})();
+  document.addEventListener('click',function(e){var a=e.target.closest&&e.target.closest('a[href]');if(!a)return;try{var u=new URL(a.href,location.href);if(u.hostname==='serzhyale.github.io'||u.hostname==='sza.od.ua'){u.searchParams.delete('l');u.searchParams.set('lang',document.documentElement.getAttribute('data-lang')==='ua'?'uk':document.documentElement.getAttribute('data-lang'));a.href=u.href;}}catch(ignore){}});
+})();
 </script>
 <title>Share FileDO .fdd Disks | Fast Media Sorter &amp; Sharing</title>
 <meta name="description" content="How to share FileDO .fdd virtual disks to paired phones over SFTP with Fast Media Sorter &amp; Sharing for Windows, setup, autostart and troubleshooting.">
@@ -142,6 +145,11 @@ html[data-lang="ua"] [data-l]:not([data-l="ua"]){display:none}
 <article class="step">
 <h2><span data-l="en">Autostart and protected encryption keys</span><span data-l="ru">Автозапуск и безопасное хранение ключей</span><span data-l="ua">Автозапуск та безпечне зберігання ключів</span></h2>
 <p>
+<span data-l="en">The <b>Autostart</b> column in <b>.fdd disks..</b> shows <b>Yes</b> or <b>No</b> for every disk; <code>-</code> means the worker does not support this setting. The main resource list also marks FileDO rows with autostart enabled. Use <b>Autostart..</b> to change it; both lists update automatically. Autostart describes the setting, while <b>State</b> shows whether the disk is open, closed or has failed. Select a disk to read any restore error below the table.</span>
+<span data-l="ru">Колонка <b>«Автозапуск»</b> в окне <b>«Диски .fdd..»</b> показывает <b>«Да»</b> или <b>«Нет»</b> для каждого диска; «<code>-</code>» означает, что рабочий процесс не поддерживает эту настройку. В главном списке ресурсов также отмечены строки FileDO с включённым автозапуском. Кнопка <b>«Автозапуск..»</b> меняет настройку; оба списка обновляются автоматически. Автозапуск показывает настройку, а <b>«Состояние»</b> - открыт ли диск, закрыт или произошла ошибка. Выберите диск, чтобы прочитать ошибку восстановления под таблицей.</span>
+<span data-l="ua">Колонка <b>«Автозапуск»</b> у вікні <b>«Диски .fdd..»</b> показує <b>«Так»</b> або <b>«Ні»</b> для кожного диска; «<code>-</code>» означає, що робочий процес не підтримує це налаштування. У головному списку ресурсів також позначено рядки FileDO з увімкненим автозапуском. Кнопка <b>«Автозапуск..»</b> змінює налаштування; обидва списки оновлюються автоматично. Автозапуск показує налаштування, а <b>«Стан»</b> - чи відкрито диск, закрито або сталася помилка. Виберіть диск, щоб прочитати помилку відновлення під таблицею.</span>
+</p>
+<p>
 <span data-l="en">Autostart is an explicit opt-in for each disk. For encrypted disks, entering the password enables automatic reopening after reboots without transmitting credentials to phones. The key is encrypted via Windows DPAPI: machine-protected under Server edition (<code>FastMediaSorterCompanionSFTP</code>) or user-protected under User edition. It is never stored in the container, never written to log files, and is destroyed immediately if autostart is toggled off, sharing is stopped, or the container password changes.</span>
 <span data-l="ru">Автозапуск настраивается отдельно для каждого диска с явного согласия пользователя. Для зашифрованного диска ввод пароля позволяет автоматически открывать его после перезагрузки без передачи секретов на телефон. Ключ защищается Windows DPAPI: машинным хранилищем под службой Server edition (<code>FastMediaSorterCompanionSFTP</code>) или пользовательским хранилищем под User edition. Ключ никогда не пишется в сам контейнер или в логи и немедленно уничтожается при отключении автозапуска, прекращении шаринга или смене пароля.</span>
 <span data-l="ua">Автозапуск налаштовується окремо для кожного диска за явної згоди користувача. Для зашифрованого диска введення пароля дозволяє автоматично відкривати його після перезавантаження без передачі секретів на телефон. Ключ захищається Windows DPAPI: машинним сховищем під службою Server edition (<code>FastMediaSorterCompanionSFTP</code>) або сховищем користувача під User edition. Ключ ніколи не записується в сам контейнер чи в журнали і негайно знищується у разі вимкнення автозапуску, припинення спільного доступу чи зміни пароля.</span>
@@ -215,6 +223,6 @@ html[data-lang="ua"] [data-l]:not([data-l="ua"]){display:none}
 <footer class="site-footer"><div class="container"><div class="footer-bottom">
 <span><a href="../">Fast Media Sorter &amp; Sharing for Windows</a> · <a href="../publish-folders-android.html"><span data-l="en">Detailed Android guide</span><span data-l="ru">Подробная инструкция для Android</span><span data-l="ua">Детальний посібник для Android</span></a></span>
 <span>© 2026 Serhii Zhyhunenko · <a href="mailto:sza@ukr.net">sza@ukr.net</a></span>
-</div></div></footer>
+</div></div><!-- gen:child-contact --><div class="container"><div class="footer-bottom"><a href="https://serzhyale.github.io/FastMediaSorter_Lite/support.html"><span data-l="en">Support</span><span data-l="ru">Поддержка</span><span data-l="ua">Підтримка</span></a><span><a href="https://sza.od.ua">SZA</a> &middot; <a href="mailto:sza@ukr.net">sza@ukr.net</a></span></div></div><!-- /gen:child-contact --></footer>
 <script>(function(){var d=document.documentElement;function lang(v){d.dataset.lang=v;d.lang=v==='ua'?'uk':v;document.querySelectorAll('[data-setlang]').forEach(function(b){b.setAttribute('aria-pressed',String(b.dataset.setlang===v))});try{localStorage.setItem('sza-lang',v)}catch(e){}}document.querySelectorAll('[data-setlang]').forEach(function(b){b.onclick=function(){lang(b.dataset.setlang)}});lang(d.dataset.lang==='ru'?'ru':d.dataset.lang==='ua'?'ua':'en');var themeEl=document.getElementById('themeBtn');function syncTheme(){themeEl.setAttribute('aria-pressed',String(d.dataset.theme!=='light'))}syncTheme();themeEl.onclick=function(){var v=d.dataset.theme==='light'?'dark':'light';d.dataset.theme=v;try{localStorage.setItem('sza-theme',v)}catch(e){}syncTheme()}})();</script>
 </body></html>

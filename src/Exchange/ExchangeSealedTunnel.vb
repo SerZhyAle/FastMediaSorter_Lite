@@ -135,12 +135,12 @@ Friend NotInheritable Class ExchangeSealedTunnel
             request.CertificateExtensions.Add(New X509EnhancedKeyUsageExtension(New OidCollection From {New Oid("1.3.6.1.5.5.7.3.1")}, False))
             Dim now As DateTimeOffset = DateTimeOffset.UtcNow
             Using selfSigned As X509Certificate2 = request.CreateSelfSigned(now.AddHours(-1), now.AddDays(2))
-                ' SChannel cannot serve a key that exists only inside the freshly made certificate object, so the certificate goes
-                ' through an in-memory PKCS#12 image. The ephemeral key set keeps the key out of every key container on disk; the
-                ' image holds the key unprotected for this one call and is zeroed straight after.
+                ' SChannel cannot acquire an EphemeralKeySet server credential. Import with the default temporary key container
+                ' on Windows (without PersistKeySet); disposal releases it. The PKCS#12 image is never written and is wiped here.
                 Dim image As Byte() = selfSigned.Export(X509ContentType.Pfx)
                 Try
-                    Return X509CertificateLoader.LoadPkcs12(image, Nothing, X509KeyStorageFlags.EphemeralKeySet)
+                    Return X509CertificateLoader.LoadPkcs12(image, Nothing,
+                        If(OperatingSystem.IsWindows(), X509KeyStorageFlags.DefaultKeySet, X509KeyStorageFlags.EphemeralKeySet))
                 Finally
                     CryptographicOperations.ZeroMemory(image)
                 End Try

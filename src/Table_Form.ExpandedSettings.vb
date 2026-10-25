@@ -50,7 +50,7 @@ Partial Public Class Table_Form
 
     Private Sub AddExpandedSettingsRows(destinations As FlowLayoutPanel, viewing As FlowLayoutPanel,
                                         video As FlowLayoutPanel, audio As FlowLayoutPanel, files As FlowLayoutPanel,
-                                        ocr As FlowLayoutPanel)
+                                        ocr As FlowLayoutPanel, fileManager As FlowLayoutPanel)
 
 
 
@@ -468,6 +468,58 @@ Partial Public Class Table_Form
         RegisterSettingsRow("live_open_with",
             Sub()
                 AddLiveAssociationRow(files)
+            End Sub)
+
+        RegisterSettingsRow("file_manager_view_mode",
+            Sub()
+                AddPreferenceChoice(fileManager, "file_manager_view_mode",
+                                    Function() {Choice("grid", "Плитки"), Choice("list", "Список")},
+                                    Function() Main_Form.GetModernPreferences().FileManagerViewMode,
+                                    Sub(v) Main_Form.GetModernPreferences().FileManagerViewMode = v)
+            End Sub)
+        RegisterSettingsRow("file_manager_content_mode",
+            Sub()
+                AddPreferenceChoice(fileManager, "file_manager_content_mode",
+                                    Function() {Choice("media", "Медиафайлы"), Choice("documents", "Медиа и документы"), Choice("all", "Все файлы")},
+                                    Function() Main_Form.GetModernPreferences().FileManagerContentMode,
+                                    Sub(v) Main_Form.GetModernPreferences().FileManagerContentMode = v)
+            End Sub)
+        RegisterSettingsRow("file_manager_show_hidden_files",
+            Sub()
+                AddPreferenceCheck(fileManager, "file_manager_show_hidden_files",
+                                   Function() Main_Form.GetModernPreferences().FileManagerShowHiddenFiles,
+                                   Sub(v) Main_Form.GetModernPreferences().FileManagerShowHiddenFiles = v)
+            End Sub)
+        RegisterSettingsRow("file_manager_non_media_open_action",
+            Sub()
+                AddPreferenceChoice(fileManager, "file_manager_non_media_open_action",
+                                    Function() {Choice("default", "Программа по умолчанию"), Choice("openWith", "Диалог «Открыть с помощью»")},
+                                    Function() Main_Form.GetModernPreferences().FileManagerNonMediaOpenAction,
+                                    Sub(v) Main_Form.GetModernPreferences().FileManagerNonMediaOpenAction = v)
+            End Sub)
+        RegisterSettingsRow("file_manager_show_local_places",
+            Sub()
+                AddPreferenceCheck(fileManager, "file_manager_show_local_places",
+                                   Function() Main_Form.GetModernPreferences().FileManagerShowLocalPlaces,
+                                   Sub(v) Main_Form.GetModernPreferences().FileManagerShowLocalPlaces = v)
+            End Sub)
+        RegisterSettingsRow("file_manager_show_resource_places",
+            Sub()
+                AddPreferenceCheck(fileManager, "file_manager_show_resource_places",
+                                   Function() Main_Form.GetModernPreferences().FileManagerShowResourcePlaces,
+                                   Sub(v) Main_Form.GetModernPreferences().FileManagerShowResourcePlaces = v)
+            End Sub)
+        RegisterSettingsRow("file_manager_show_device_places",
+            Sub()
+                AddPreferenceCheck(fileManager, "file_manager_show_device_places",
+                                   Function() Main_Form.GetModernPreferences().FileManagerShowDevicePlaces,
+                                   Sub(v) Main_Form.GetModernPreferences().FileManagerShowDevicePlaces = v)
+            End Sub)
+        RegisterSettingsRow("file_manager_remember_sort",
+            Sub()
+                AddPreferenceCheck(fileManager, "file_manager_remember_sort",
+                                   Function() Main_Form.GetModernPreferences().FileManagerRememberSort,
+                                   Sub(v) Main_Form.GetModernPreferences().FileManagerRememberSort = v)
             End Sub)
 
         RegisterSettingsRow("ocr_cache_limit",

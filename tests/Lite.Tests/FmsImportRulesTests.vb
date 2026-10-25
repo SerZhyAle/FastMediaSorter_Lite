@@ -166,8 +166,8 @@ Public Class FmsImportRulesTests
         Assert.False(r.IsDestination)
         Assert.False(r.EffectiveWritable)
         Assert.True(r.ScanSubdirectories)
-        Assert.False(r.AllFiles)
-        Assert.False(r.ShowHiddenFiles)
+        Assert.Null(r.AllFiles)
+        Assert.Null(r.ShowHiddenFiles)
         Assert.Null(r.SlideshowIntervalSeconds)
         Assert.Null(r.DestinationColor)
         Assert.False(r.HasPin)
@@ -250,8 +250,8 @@ Public Class FmsImportRulesTests
         Assert.False(FmsFieldSupport.Find("roots[].accessPin").StoredInResource)
         Assert.True(FmsFieldSupport.Find("password").StoredInResource)
         ' The presentation fields are exactly the ones Q100-4 / 100 section 15.5.3 still owe a place to live.
-        Assert.Equal({"accessNote", "roots[].allFiles", "roots[].comment", "roots[].destinationColor", "roots[].mediaTypes", "roots[].profile",
-                      "roots[].showHiddenFiles", "roots[].showSubfoldersAsItems", "roots[].slideshowInterval"},
+        Assert.Equal({"accessNote", "roots[].comment", "roots[].destinationColor", "roots[].mediaTypes", "roots[].profile",
+                      "roots[].showSubfoldersAsItems", "roots[].slideshowInterval"},
                      FmsFieldSupport.Rules.Where(Function(r) r.Handling <> FmsFieldHandling.EnvelopeGate AndAlso r.Handling <> FmsFieldHandling.RefusesRootWhenSet AndAlso Not r.StoredInResource).
                          Select(Function(r) r.Path).OrderBy(Function(p) p, StringComparer.Ordinal).ToArray())
     End Sub

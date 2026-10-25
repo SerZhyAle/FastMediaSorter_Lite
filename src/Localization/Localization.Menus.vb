@@ -113,6 +113,12 @@ Partial Public NotInheritable Class Localization
             "Pantalla completa (F7)", "Plein écran (F7)", "Ecrã inteiro (F7)",
             "ملء الشاشة (F7)", "पूर्ण स्क्रीन (F7)", "পূর্ণ স্ক্রিন (F7)", "پوری اسکرین (F7)", "全屏 (F7)")
 
+        Add("Выйти из полноэкранного режима",
+            "Exit full screen", "Вийти з повноекранного режиму", "Vollbild verlassen",
+            "Esci da schermo intero", "Salir de pantalla completa", "Quitter le plein écran",
+            "Sair do ecrã inteiro", "الخروج من ملء الشاشة", "पूर्ण स्क्रीन से बाहर निकलें",
+            "পূর্ণ স্ক্রিন থেকে বের হন", "پوری اسکرین سے باہر نکلیں", "退出全屏")
+
         Add("Во весь экран без панелей (F11)",
             "Full screen, no panels (F11)", "Повний екран без панелей (F11)",
             "Vollbild ohne Leisten (F11)", "Schermo intero senza barre (F11)",

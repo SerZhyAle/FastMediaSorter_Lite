@@ -44,6 +44,19 @@ LibVLCSharp, LibVLCSharp.WinForms - VideoLAN
   The bundled LibVLC build contains no DVD/Blu-ray decryption component:
   libdvdcss and libaacs are not shipped, not loaded and not supported.
 
+FFmpeg (ffmpeg.exe, essentials build) - the FFmpeg developers, build by gyan.dev
+  Version 9.0.1, https://ffmpeg.org/ and https://www.gyan.dev/ffmpeg/builds/
+  License: GNU General Public License, version 3 or later (this build is configured
+  with --enable-gpl --enable-version3 and includes libx264, libx265 and libxvid).
+  Copyright (c) 2000-2026 the FFmpeg developers
+
+  Not bundled in any package. The viewer downloads it only when the user presses
+  the download button in Settings, pinned to one version and checked against a
+  SHA-256 before it is run; the Share Manager's live video broadcast uses that same
+  copy when it is present. It is started as a separate program (a child process),
+  never linked into the application. The build source is available from the same
+  release page (https://github.com/GyanD/codexffmpeg/releases/tag/9.0.1).
+
 ================================================================================
 2. Image decoding
 ================================================================================

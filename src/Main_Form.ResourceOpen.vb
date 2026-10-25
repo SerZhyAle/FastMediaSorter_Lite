@@ -181,15 +181,26 @@ Partial Public Class Main_Form
     ''' only when the new one arrived whole - a link that drops mid-way leaves the old list and says so,
     ''' because a failed read must never empty the folder on screen (007 §2.2).
     ''' </summary>
-    Friend Async Sub RefreshActiveResource()
+    Friend Async Sub RefreshActiveResource(Optional preserveCurrent As Boolean = False)
         Dim session As ResourceSession = ActiveResourceSession()
         If session Is Nothing Then Return
         Dim generation As Integer = resource_Open_Generation
+        Dim logicalPaths As Dictionary(Of String, String) = If(preserveCurrent,
+            session.Entries.ToDictionary(Function(entry) entry.LocalPath, Function(entry) entry.FullPath, StringComparer.OrdinalIgnoreCase), Nothing)
         lbl_Status.Text = Localization.TF("Обновление списка «{0}»..", session.Resource.DisplayName)
         Try
             Await Task.Run(Sub() session.LoadListing(session.CurrentDirectory, session.Cancellation))
             If generation <> resource_Open_Generation OrElse IsDisposed Then Return
-            ReadShowMediaFile(Mode_FolderAndFile)
+            If preserveCurrent Then
+                Dim logicalPath As String = Nothing
+                logicalPaths.TryGetValue(Current_File_Name, logicalPath)
+                If Not LoadFiles() Then Return
+                Dim retained As ResourceEntry = session.Entries.FirstOrDefault(Function(entry) String.Equals(entry.FullPath, logicalPath, StringComparison.Ordinal))
+                If retained IsNot Nothing Then current_File_Index = IndexOfFileInList(retained.LocalPath)
+                ReadShowMediaFile(Mode_SetFile)
+            Else
+                ReadShowMediaFile(Mode_FolderAndFile)
+            End If
             ShowResourceListingLimit(session)
         Catch ex As Exception
             If generation <> resource_Open_Generation OrElse IsDisposed Then Return

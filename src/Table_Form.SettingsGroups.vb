@@ -44,11 +44,13 @@ Partial Public Class Table_Form
         pageIds.Add(Tab_Page_5, "ocr")
         pageIds.Add(modernTranslationPage, "translation")
         pageIds.Add(modernStoragePage, "storage")
+        pageIds.Add(modernFileManagerPage, "file-manager")
         pageIds.Add(modernAboutPage, "about")
         pageIds.Add(modernResourcesPage, "resources")
         settingsContext.MergeSharingIntoResources()
         CreateModernPageFlow(modernGeneralPage)
         CreateModernPageFlow(modernStoragePage)
+        CreateModernPageFlow(modernFileManagerPage)
         For Each page As TabPage In pageIds.Keys
             Dim capturedPage As TabPage = page
             AddHandler PageFlow(page).Scroll,
@@ -90,6 +92,10 @@ Partial Public Class Table_Form
         AddSettingsGroup("files", "archives", "Архивы", False, "archive_entry_limit", "archive_entries_limit")
         AddSettingsGroup("files", "secure", "Защищённые файлы", False, "secure_in_navigation", "secure_remember_minutes", "secure_show_true_name", "secure_open_with")
         AddSettingsGroup("files", "advanced", "Клавиши и ассоциации", True, "custom_hotkeys", "image_associations", "video_associations", "live_open_with")
+        AddSettingsGroup("file-manager", "display", "Основные настройки", True,
+                         "file_manager_view_mode", "file_manager_content_mode", "file_manager_show_hidden_files", "file_manager_non_media_open_action")
+        AddSettingsGroup("file-manager", "places", "Места", True,
+                         "file_manager_show_local_places", "file_manager_show_resource_places", "file_manager_show_device_places", "file_manager_remember_sort")
         AddSettingsGroup("ocr", "basic", "Основные настройки", True, "ocr_enabled", "ocr_auto")
         AddSettingsGroup("ocr", "recognition", "Распознавание текста", True, "ocr_source", "ocr_quality", "ocr_mode", "ocr_download")
         AddSettingsGroup("translation", "basic", "Основные настройки", True, "ocr_provider", "ocr_target")
@@ -388,6 +394,17 @@ Partial Public Class Table_Form
             RevealModernRecipientsGrid()
         Else
             pendingOpenAtRecipientsGrid = True
+        End If
+    End Sub
+
+    Private pendingOpenAtFileManager As Boolean
+
+    Friend Sub RequestOpenAtFileManager()
+        If settingsContextReady Then
+            pendingOpenAtFileManager = False
+            RevealModernSetting("file_manager_view_mode")
+        Else
+            pendingOpenAtFileManager = True
         End If
     End Sub
 

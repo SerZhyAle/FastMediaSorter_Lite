@@ -4,15 +4,18 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <script>
-(function(){try{
-  var t=localStorage.getItem('sza-theme');
+(function(){
+  var t;try{t=localStorage.getItem('sza-theme');}catch(e){}
   if(t!=='dark'&&t!=='light')t=matchMedia('(prefers-color-scheme: light)').matches?'light':'dark';
   document.documentElement.setAttribute('data-theme',t);
-  var l=localStorage.getItem('sza-lang');
+  var l;try{l=localStorage.getItem('sza-lang');}catch(e){}
+  var q=new URLSearchParams(location.search),requested=q.has('lang')?q.get('lang'):q.get('l');
+  if(requested){requested=requested.toLowerCase();if(requested==='uk')requested='ua';if(requested==='en'||requested==='ru'||requested==='ua')l=requested;}
   if(l==='uk')l='ua';
   if(l!=='ru'&&l!=='en'&&l!=='ua'){var n=(navigator.language||'en').toLowerCase();l=n.indexOf('ru')==0?'ru':n.indexOf('uk')==0?'ua':'en';}
   document.documentElement.setAttribute('data-lang',l);
-}catch(e){}})();
+  document.addEventListener('click',function(e){var a=e.target.closest&&e.target.closest('a[href]');if(!a)return;try{var u=new URL(a.href,location.href);if(u.hostname==='serzhyale.github.io'||u.hostname==='sza.od.ua'){u.searchParams.delete('l');u.searchParams.set('lang',document.documentElement.getAttribute('data-lang')==='ua'?'uk':document.documentElement.getAttribute('data-lang'));a.href=u.href;}}catch(ignore){}});
+})();
 </script>
     <title>Privacy Policy | Fast Media Sorter &amp; Sharing</title>
     <meta name="description" content="Privacy policy of Fast Media Sorter &amp; Sharing for Windows: runs on your device, no personal data, no telemetry; network only for features you switch on.">
@@ -58,7 +61,7 @@ main:focus{outline:none}
 <main class="container" id="main" tabindex="-1">
         <div data-l="en">
         <h1>Privacy Policy</h1>
-        <p class="note">Last updated: 16 October 2026</p>
+        <p class="note">Last updated: 23 October 2026</p>
 
         <p><strong>Fast Media Sorter &amp; Sharing for Windows collects no personal data.</strong> There is no advertising,
         and no telemetry or analytics. It runs entirely on your own device, and the developer
@@ -156,12 +159,8 @@ main:focus{outline:none}
             changes. A connection string that another device of the account can show you is that address with
             the fingerprint: it carries no password and no token, and it never enters the logs or the support
             archive. <strong>What the exchange server sees, and what it does not.</strong>
-            With compatible end-to-end encryption, file contents, live-broadcast payloads and clipboard
-            contents are encrypted on the sending device and opened on authorized recipient devices.
-            This does not hide metadata: the operator sees account and device identifiers and names,
-            folder and broadcast names, presence, timestamps, and transfer and chunk sizes. Folder names
-            are not encrypted content. Verify a changed device key before trusting it; the server's
-            certificate fingerprint and a device's encryption key are separate identities.
+            The exchange server connects your devices, so it knows the names of your account, devices, folders and broadcasts, sees which devices are online, and how much is sent and when. It cannot open what goes through it: folders and their files, broadcasts and the clipboard are encrypted on your device and opened only on your other devices or by the people you gave access to. To look inside, whoever runs the server would have to add a device of their own to your account, and it would appear in your list of devices.
+            Via Google Drive, files and the clipboard are kept in your own Google account, like your other files on Google Drive; no exchange server takes part.
             The server stores password and token hashes, device public keys and published-share records
             on disk. Sealed share access, broadcast/access-grant key boxes and clipboard values stay in
             memory; sealed payloads and keys do not belong in its logs.
@@ -302,7 +301,7 @@ main:focus{outline:none}
         </div>
         <div data-l="ru">
         <h1>Политика конфиденциальности</h1>
-        <p class="note">Последнее обновление: 16 октября 2026 г.</p>
+        <p class="note">Последнее обновление: 23 октября 2026 г.</p>
 
         <p><strong>Fast Media Sorter &amp; Sharing for Windows не собирает персональные данные.</strong> В нём нет рекламы,
         телеметрии и аналитики. Программа работает целиком на вашем устройстве, и разработчик
@@ -396,12 +395,9 @@ main:focus{outline:none}
             его сертификата и отказывается подключаться к серверу, чей сертификат изменился. Строка подключения, которую может показать
             другое устройство учётной записи, - это тот же адрес с отпечатком: в ней нет ни пароля, ни токена, и в логи и в архив
             поддержки она не попадает никогда. <strong>Что видит сервер обмена и чего не видит.</strong>
-            При совместимом сквозном шифровании содержимое файлов, live-трансляций и буфера шифруется
-            на отправляющем устройстве и открывается на устройствах разрешённых получателей.
-            Метаданные остаются видимыми: идентификаторы и имена записей и устройств, имена папок и
-            трансляций, присутствие в сети, время и размеры передач и блоков. Имена папок не зашифрованы.
-            До доверия изменённому ключу устройства проверьте его; отпечаток сертификата сервера и ключ
-            шифрования устройства обозначают разные сущности. На диске сервер хранит хеши паролей
+            Сервер обмена соединяет ваши устройства, поэтому знает имена вашего аккаунта, устройств, папок и трансляций, видит, какие устройства в сети, и сколько и когда передаётся. Открыть то, что идёт через него, он не может: папки и их файлы, трансляции и буфер шифруются на вашем устройстве и открываются только на других ваших устройствах или у тех, кому вы дали доступ. Чтобы заглянуть внутрь, тому, кто управляет сервером, пришлось бы добавить в ваш аккаунт своё устройство, и оно появилось бы в списке ваших устройств.
+            Через Google Drive файлы и буфер хранятся в вашем собственном аккаунте Google, как и другие ваши файлы на Google Drive; сервер обмена в этом не участвует.
+            На диске сервер хранит хеши паролей
             и токенов, открытые ключи устройств и записи опубликованных папок. Зашифрованные данные
             доступа, «конверты» ключей трансляций и выдач доступа и значения буфера остаются в памяти;
             зашифрованное содержимое и ключи не записываются в журналы.
@@ -540,7 +536,7 @@ main:focus{outline:none}
         </div>
         <div data-l="ua">
         <h1>Політика конфіденційності</h1>
-        <p class="note">Останнє оновлення: 16 жовтня 2026 р.</p>
+        <p class="note">Останнє оновлення: 23 жовтня 2026 р.</p>
 
         <p><strong>Fast Media Sorter &amp; Sharing for Windows не збирає персональних даних.</strong> У ній немає реклами,
         телеметрії та аналітики. Програма працює цілком на вашому пристрої, і розробник
@@ -634,12 +630,9 @@ main:focus{outline:none}
             і відбиток його сертифіката та відмовляється підключатися до сервера, чий сертифікат змінився. Рядок підключення, який
             може показати інший пристрій облікового запису, - це та сама адреса з відбитком: у ній немає ні пароля, ні токена, і до
             журналів та архіву підтримки вона не потрапляє ніколи. <strong>Що бачить сервер обміну й чого не бачить.</strong>
-            За сумісного наскрізного шифрування вміст файлів, live-трансляцій і буфера шифрується
-            на пристрої відправника та відкривається на пристроях дозволених одержувачів.
-            Метадані залишаються видимими: ідентифікатори й імена записів і пристроїв, назви тек і
-            трансляцій, присутність у мережі, час і розміри передач та блоків. Назви тек не зашифровані.
-            Перш ніж довіряти зміненому ключу пристрою, перевірте його; відбиток сертифіката сервера й
-            ключ шифрування пристрою позначають різні сутності. На диску сервер зберігає хеші паролів
+            Сервер обміну з'єднує ваші пристрої, тому знає імена вашого акаунта, пристроїв, папок і трансляцій, бачить, які пристрої в мережі, і скільки й коли передається. Відкрити те, що йде через нього, він не може: папки та їхні файли, трансляції й буфер шифруються на вашому пристрої та відкриваються лише на інших ваших пристроях або в тих, кому ви дали доступ. Щоб зазирнути всередину, тому, хто керує сервером, довелося б додати до вашого акаунта свій пристрій, і він з'явився б у списку ваших пристроїв.
+            Через Google Drive файли й буфер зберігаються у вашому власному акаунті Google, як і інші ваші файли на Google Drive; сервер обміну в цьому не бере участі.
+            На диску сервер зберігає хеші паролів
             і токенів, відкриті ключі пристроїв та записи опублікованих тек. Зашифровані дані доступу,
             «конверти» ключів трансляцій і наданого доступу та значення буфера залишаються в пам'яті;
             зашифрований вміст і ключі не записуються до журналів.
@@ -782,7 +775,7 @@ main:focus{outline:none}
 <span data-l="ru">Лицензия MIT &middot; &copy; 2026 <a href="https://github.com/SerZhyAle">SerZhyAle</a> &middot; <a href="https://github.com/SerZhyAle/FastMediaSorter_Lite">Исходный код на GitHub</a></span>
 <span data-l="ua">Ліцензія MIT &middot; &copy; 2026 <a href="https://github.com/SerZhyAle">SerZhyAle</a> &middot; <a href="https://github.com/SerZhyAle/FastMediaSorter_Lite">Вихідний код на GitHub</a></span>
 <span><a href="../">Fast Media Sorter &amp; Sharing for Windows</a></span>
-</div></div></footer>
+</div></div><!-- gen:child-contact --><div class="container"><div class="footer-bottom"><a href="https://serzhyale.github.io/FastMediaSorter_Lite/support.html"><span data-l="en">Support</span><span data-l="ru">Поддержка</span><span data-l="ua">Підтримка</span></a><span><a href="https://sza.od.ua">SZA</a> &middot; <a href="mailto:sza@ukr.net">sza@ukr.net</a></span></div></div><!-- /gen:child-contact --></footer>
 <script>(function(){var d=document.documentElement;function lang(v){d.setAttribute('data-lang',v);d.setAttribute('lang',v==='ua'?'uk':v);document.querySelectorAll('[data-setlang]').forEach(function(b){b.setAttribute('aria-pressed',String(b.getAttribute('data-setlang')===v))});try{localStorage.setItem('sza-lang',v)}catch(e){}}document.querySelectorAll('[data-setlang]').forEach(function(b){b.onclick=function(){lang(b.getAttribute('data-setlang'))}});var q=(location.search.match(/[?&]lang=(ru|uk|ua|en)(?:&|$)/)||[])[1];if(q==='uk')q='ua';lang(q||(d.getAttribute('data-lang')==='ru'?'ru':d.getAttribute('data-lang')==='ua'?'ua':'en'));var themeEl=document.getElementById('themeBtn');function syncTheme(){themeEl.setAttribute('aria-pressed',String(d.getAttribute('data-theme')!=='light'))}syncTheme();themeEl.onclick=function(){var v=d.getAttribute('data-theme')==='light'?'dark':'light';d.setAttribute('data-theme',v);try{localStorage.setItem('sza-theme',v)}catch(e){}syncTheme()}})();</script>
 </body>
 </html>

@@ -30,6 +30,19 @@ Public Class Live_Broadcast_Form
     Private _rbCamera As RadioButton
     Private _lblScreen As Label
     Private _cboMonitor As ComboBox
+    ' Ticket 263 T-2: the window route of the screen source. Item 0 is "none, the whole screen"; item i is
+    ' _windowChoices(i - 1). The list is read when the drop-down opens, never while the window is built.
+    Private _lblWindow As Label
+    Private _cboWindow As ComboBox
+    Private _windowChoices As New List(Of LiveWindowChoice)()
+    Private _fillingWindows As Boolean
+    Private _onAirBroadcastId As String = ""
+    ' Ticket 263 T-6: the one sentence about the exchange server's refusal of the start ("" when there is none). It stays in the
+    ' status line while the broadcast runs, so the listener-count refresh does not wipe it.
+    Private _exchangeNote As String = ""
+    Private _startRefusalHandler As Action(Of String, ExchangeRefusal)
+    Private _endpointsHandler As EventHandler
+    Private _updatingLanChoice As Boolean
     Private _chkCursor As CheckBox
     Private _chkNoSound As CheckBox
     Private _monitors As List(Of LiveScreenMonitor)
@@ -50,6 +63,7 @@ Public Class Live_Broadcast_Form
     Private _btnGenPassword As Button
     Private _numPort As NumericUpDown
     Private _numBitrate As NumericUpDown
+    Private _numMaxListeners As NumericUpDown
     Private _gainTrack As TrackBar
     Private _gainValue As Label
     Private _meterPanel As Panel
@@ -74,6 +88,15 @@ Public Class Live_Broadcast_Form
         UiLanguage.ApplyTo(Me)
         _controller = LiveBroadcastHost.Controller()
         AddHandler _controller.ListenersChanged, Sub() SafeUi(AddressOf RefreshOnAir)
+        ' The captured window was closed: the controller has already stopped the broadcast; the window says so.
+        AddHandler _controller.SourceEnded, Sub(reason) SafeUi(Sub() OnSourceEnded(reason))
+        _endpointsHandler = Sub(sender, e) SafeUi(AddressOf RefreshOnAir)
+        AddHandler _controller.EndpointsChanged, _endpointsHandler
+        AddHandler Me.Disposed, Sub() RemoveHandler _controller.EndpointsChanged, _endpointsHandler
+        ' The exchange server did not list the broadcast (ticket 263 T-6): the host passes the agent's refusal here.
+        _startRefusalHandler = Sub(broadcastId, refusal) SafeUi(Sub() OnExchangeStartRefused(broadcastId, refusal))
+        AddHandler LiveBroadcastHost.ExchangeStartRefused, _startRefusalHandler
+        AddHandler Me.Disposed, Sub() RemoveHandler LiveBroadcastHost.ExchangeStartRefused, _startRefusalHandler
         AddHandler _controller.AudioLevel, Sub(peak) SafeUi(
             Sub()
                 If peak > _levelPeak Then
@@ -168,7 +191,7 @@ Public Class Live_Broadcast_Form
         Dim rows As New TableLayoutPanel With {
             .AutoSize = True,
             .ColumnCount = 2,
-            .RowCount = 6,
+            .RowCount = 7,
             .Margin = New Padding(0, 8, 0, 4)
         }
         rows.ColumnStyles.Add(New ColumnStyle(SizeType.Absolute, 170))
@@ -197,6 +220,15 @@ Public Class Live_Broadcast_Form
             .Width = 90
         }
         rows.Controls.Add(_numBitrate, 1, 2)
+        rows.Controls.Add(New Label With {.AutoSize = True, .Text = Localization.T("Зрителей через сервер (0 - без ограничений):")}, 0, 6)
+        _numMaxListeners = New NumericUpDown With {.Minimum = 0, .Maximum = 10000, .Width = 90}
+        AddHandler _numMaxListeners.ValueChanged,
+            Sub()
+                If Not _controller.State.Running Then Return
+                _controller.UpdateMaxListeners(CInt(_numMaxListeners.Value))
+                SaveSettingsFromUi()
+            End Sub
+        rows.Controls.Add(_numMaxListeners, 1, 6)
 
         rows.Controls.Add(New Label With {.AutoSize = True, .Text = Localization.T("Усиление микрофона:")}, 0, 3)
         Dim gainFlow As New FlowLayoutPanel With {.AutoSize = True, .FlowDirection = FlowDirection.LeftToRight}
@@ -251,7 +283,7 @@ Public Class Live_Broadcast_Form
         Dim screenRows As New TableLayoutPanel With {
             .AutoSize = True,
             .ColumnCount = 2,
-            .RowCount = 2,
+            .RowCount = 3,
             .Margin = New Padding(0),
             .Visible = False
         }
@@ -264,13 +296,24 @@ Public Class Live_Broadcast_Form
         screenRows.Controls.Add(_lblScreen, 0, 0)
         screenRows.Controls.Add(_cboMonitor, 1, 0)
 
+        ' The window picker (ticket 263 T-2): one row under the monitor. A window picked here is captured
+        ' INSTEAD of the monitor; "none" keeps the whole monitor. Filled when the list drops down.
+        _lblWindow = New Label With {.AutoSize = True, .Text = Localization.T("Окно:")}
+        _cboWindow = New ComboBox With {.DropDownStyle = ComboBoxStyle.DropDownList, .Width = 260, .DropDownWidth = 520}
+        _cboWindow.Items.Add(Localization.T("Нет, весь экран"))
+        _cboWindow.SelectedIndex = 0
+        AddHandler _cboWindow.DropDown, Sub() RefreshWindowPicker()
+        AddHandler _cboWindow.SelectedIndexChanged, Sub() UpdateScreenTargetEnabled()
+        screenRows.Controls.Add(_lblWindow, 0, 1)
+        screenRows.Controls.Add(_cboWindow, 1, 1)
+
         Dim cursorFlow As New FlowLayoutPanel With {.AutoSize = True, .FlowDirection = FlowDirection.LeftToRight}
         _chkCursor = New CheckBox With {.AutoSize = True, .Text = Localization.T("Показывать курсор"), .Checked = True}
         ' The three options of this window are boolean rows (BOOLEAN-OPTION 2.0, ticket 243 T-11c-b2a): each check box keeps its
         ' field, default and handlers; the row around it is what the flow or the cell holds (and what hides and shows).
         cursorFlow.Controls.Add(OptionRows.InFlow(_chkCursor, Nothing, OptionRowFit.Content))
-        screenRows.Controls.Add(New Label With {.AutoSize = True}, 0, 1)
-        screenRows.Controls.Add(cursorFlow, 1, 1)
+        screenRows.Controls.Add(New Label With {.AutoSize = True}, 0, 2)
+        screenRows.Controls.Add(cursorFlow, 1, 2)
         videoRows.Controls.Add(screenRows, 0, 0)
         _screenRows = screenRows
 
@@ -324,6 +367,7 @@ Public Class Live_Broadcast_Form
             .AutoSize = True,
             .Text = Localization.T("Разрешить зрителям в моей сети")
         }
+        AddHandler _chkAllowLanViewers.CheckedChanged, AddressOf OnLanChoiceChanged
         ' Section 3.4: the LAN video listener is off by default; the tick is the video sources' own
         ' row (video without it starts exchange-only, 173 - not built, so a start is refused until
         ' the user ticks it). The camera's picture is exactly the screen's "anyone on the segment".
@@ -400,6 +444,66 @@ Public Class Live_Broadcast_Form
             _cboMonitor.Items.Add(text)
         Next
         If _cboMonitor.Items.Count > 0 Then _cboMonitor.SelectedIndex = 0
+    End Sub
+
+    ''' <summary>The window the picker has selected, or Nothing for "none, the whole screen".</summary>
+    Private Function SelectedWindow() As LiveWindowChoice
+        If _cboWindow Is Nothing Then Return Nothing
+        Dim at As Integer = _cboWindow.SelectedIndex - 1
+        If at < 0 OrElse at >= _windowChoices.Count Then Return Nothing
+        Return _windowChoices(at)
+    End Function
+
+    ''' <summary>Rebuilds the window picker's rows around a (title, process) identity. The current open windows
+    ''' come from the pure rules of LiveWindowCatalog; the identity stays selected where it is still open, and
+    ''' where it is NOT it stays in the list anyway (as a row that names it) so that a remembered choice is
+    ''' never silently swapped for the whole screen - Start then says the window is not open.</summary>
+    Private Sub FillWindowPicker(keepTitle As String, keepProcess As String, enumerateNow As Boolean)
+        If _cboWindow Is Nothing Then Return
+        _fillingWindows = True
+        Try
+            Dim rows As List(Of LiveWindowChoice) = If(enumerateNow,
+                LiveWindowCatalog.Pick(LiveWindowEnumerator.Enumerate(), Environment.ProcessId),
+                New List(Of LiveWindowChoice)())
+            Dim keep As LiveWindowChoice = Nothing
+            If Not String.IsNullOrEmpty(keepTitle) Then
+                keep = LiveWindowCatalog.Find(rows, keepTitle, keepProcess)
+                If keep Is Nothing Then
+                    keep = New LiveWindowChoice With {.Title = keepTitle, .ProcessName = If(keepProcess, "")}
+                    rows.Insert(0, keep)
+                End If
+            End If
+            _windowChoices = rows
+            _cboWindow.BeginUpdate()
+            Try
+                _cboWindow.Items.Clear()
+                _cboWindow.Items.Add(Localization.T("Нет, весь экран"))
+                For Each row As LiveWindowChoice In rows
+                    _cboWindow.Items.Add(row.Label)
+                Next
+                _cboWindow.SelectedIndex = If(keep Is Nothing, 0, rows.IndexOf(keep) + 1)
+            Finally
+                _cboWindow.EndUpdate()
+            End Try
+        Finally
+            _fillingWindows = False
+        End Try
+        UpdateScreenTargetEnabled()
+    End Sub
+
+    ''' <summary>The drop-down opens: the open windows are read now (a window opened a second ago is in the list).</summary>
+    Private Sub RefreshWindowPicker()
+        If _fillingWindows Then Return
+        Dim selected As LiveWindowChoice = SelectedWindow()
+        FillWindowPicker(If(selected Is Nothing, "", selected.Title), If(selected Is Nothing, "", selected.ProcessName), True)
+    End Sub
+
+    ''' <summary>A window picked means the monitor is not used: its picker is greyed so the choice reads at a
+    ''' glance. While a broadcast runs everything stays disabled (OnStart), whatever this says.</summary>
+    Private Sub UpdateScreenTargetEnabled()
+        If _fillingWindows OrElse _cboMonitor Is Nothing Then Return
+        If _btnStop IsNot Nothing AndAlso _btnStop.Enabled Then Return
+        _cboMonitor.Enabled = SelectedWindow() Is Nothing
     End Sub
 
     Private Sub UpdateVideoRowsVisibility()
@@ -503,6 +607,7 @@ Public Class Live_Broadcast_Form
         End If
         If _txtTitle IsNot Nothing Then _txtTitle.Text = settings.Title
         If _chkAllowLanViewers IsNot Nothing Then _chkAllowLanViewers.Checked = settings.AllowLanVideoViewers
+        If _numMaxListeners IsNot Nothing Then _numMaxListeners.Value = settings.MaxListeners
         If _gainTrack IsNot Nothing Then
             _gainTrack.Value = CInt(Math.Max(_gainTrack.Minimum, Math.Min(_gainTrack.Maximum, CInt(settings.MicrophoneGain * 10))))
             UpdateGainLabel()
@@ -511,6 +616,8 @@ Public Class Live_Broadcast_Form
         If _cboMonitor IsNot Nothing AndAlso _cboMonitor.Items.Count > 0 Then
             _cboMonitor.SelectedIndex = Math.Min(settings.ScreenMonitorIndex, _cboMonitor.Items.Count - 1)
         End If
+        ' The remembered window comes back as a row that names it; the open windows are read at the first drop-down.
+        If _cboWindow IsNot Nothing Then FillWindowPicker(settings.ScreenWindowTitle, settings.ScreenWindowProcess, False)
         If _cboCameraMode IsNot Nothing AndAlso _cboCameraMode.Items.Count > 0 Then
             _cboCameraMode.SelectedIndex = Math.Max(0, Math.Min(settings.CameraModeIndex + 1, _cboCameraMode.Items.Count - 1))
         End If
@@ -522,9 +629,15 @@ Public Class Live_Broadcast_Form
         If _numBitrate IsNot Nothing Then settings.AudioBitrateKbps = CInt(_numBitrate.Value)
         If _txtTitle IsNot Nothing Then settings.Title = _txtTitle.Text.Trim()
         If _chkAllowLanViewers IsNot Nothing Then settings.AllowLanVideoViewers = _chkAllowLanViewers.Checked
+        If _numMaxListeners IsNot Nothing Then settings.MaxListeners = CInt(_numMaxListeners.Value)
         If _gainTrack IsNot Nothing Then settings.MicrophoneGain = CurrentGain()
         If _chkCursor IsNot Nothing Then settings.ScreenCursor = _chkCursor.Checked
         If _cboMonitor IsNot Nothing Then settings.ScreenMonitorIndex = Math.Max(0, _cboMonitor.SelectedIndex)
+        If _cboWindow IsNot Nothing Then
+            Dim picked As LiveWindowChoice = SelectedWindow()
+            settings.ScreenWindowTitle = If(picked Is Nothing, "", picked.Title)
+            settings.ScreenWindowProcess = If(picked Is Nothing, "", picked.ProcessName)
+        End If
         If _cboCamera IsNot Nothing Then settings.CameraDeviceIndex = Math.Max(0, _cboCamera.SelectedIndex)
         ' Combo row 0 is "Авто"; the stored -1 is exactly that.
         If _cboCameraMode IsNot Nothing Then settings.CameraModeIndex = _cboCameraMode.SelectedIndex - 1
@@ -534,6 +647,15 @@ Public Class Live_Broadcast_Form
     ' --- start and stop ------------------------------------------------------------------------
 
     Private Sub OnStart(sender As Object, e As EventArgs)
+        Dim agent = ExchangeDeviceHost.Current
+        If _txtPassword.Text.Length = 0 AndAlso agent IsNot Nothing AndAlso agent.CanSealBroadcast() Then
+            Dim status = agent.GetStatus()
+            If Not ExchangeRelayConsent.Accept(status.PublicEndpoint, status.Fingerprint,
+                Function(key) GetSetting(App_name, Second_App_Name, key, ""),
+                Sub(key, value) SaveSetting(App_name, Second_App_Name, key, value),
+                Function() ManagerBox.Show(Me, ExchangeStatement.Paragraphs()(0), ExchangeAdminText.StatementTitle(),
+                    MessageBoxButtons.YesNo, MessageBoxIcon.Information, MessageBoxDefaultButton.Button2) = DialogResult.Yes) Then Return
+        End If
         SaveSettingsFromUi()
 
         ' The mode follows the source (section 3): the two audio sources are AUDIO_ONLY; the video
@@ -574,13 +696,14 @@ Public Class Live_Broadcast_Form
         _rbScreen.Enabled = False
         _rbCamera.Enabled = False
         _cboMonitor.Enabled = False
+        _cboWindow.Enabled = False
         _chkCursor.Enabled = False
         _chkNoSound.Enabled = False
         _cboCamera.Enabled = False
         _cboCameraMode.Enabled = False
         _numPort.Enabled = False
         _numBitrate.Enabled = False
-        _chkAllowLanViewers.Enabled = False
+        _chkAllowLanViewers.Enabled = True
         If _txtPassword IsNot Nothing Then _txtPassword.Enabled = False
         If _btnGenPassword IsNot Nothing Then _btnGenPassword.Enabled = False
         If _btnCopyLink IsNot Nothing Then _btnCopyLink.Enabled = True
@@ -593,14 +716,87 @@ Public Class Live_Broadcast_Form
         End If
         _activeCastReceiverId = ""
         _activeCastReceiverName = ""
+        _exchangeNote = ""
+        _onAirBroadcastId = _controller.State.BroadcastId
         RefreshOnAir()
         StartChip()
     End Sub
 
+    ''' <summary>The exchange server answered this broadcast's start with a refusal (ticket 263 T-6, DEVICE-EXCHANGE item DT): the window
+    ''' says so in the status line and goes on saying it until the broadcast ends. A refusal that names another broadcast, or arrives
+    ''' with nothing on air, is not this window's business.</summary>
+    Private Sub OnExchangeStartRefused(broadcastId As String, refusal As ExchangeRefusal)
+        If _btnStop Is Nothing OrElse Not _btnStop.Enabled Then Return
+        If Not String.Equals(broadcastId, _onAirBroadcastId, StringComparison.Ordinal) Then Return
+        _exchangeNote = StartRefusalLine(refusal, _controller.State.LanEndpointOn)
+        RefreshOnAir()
+    End Sub
+
+    ''' <summary>The one sentence for a refused start: the server did not list the broadcast, and why in words. The second sentence
+    ''' (still served on the network) is said only when a LAN endpoint is really on air.</summary>
+    Friend Shared Function StartRefusalLine(refusal As ExchangeRefusal, lanEndpointOn As Boolean) As String
+        Dim why As String = StartRefusalReason(refusal)
+        If lanEndpointOn Then
+            Return Localization.TF("Сервер обмена не внёс эту трансляцию в список ({0}). Она по-прежнему доступна в вашей сети.", why)
+        End If
+        Return Localization.TF("Сервер обмена не внёс эту трансляцию в список ({0}).", why)
+    End Function
+
+    ''' <summary>The reason in words: the three that name a cause of their own, and one generic wording for anything else (the raw
+    ''' reason code is never shown).</summary>
+    Friend Shared Function StartRefusalReason(refusal As ExchangeRefusal) As String
+        Select Case refusal
+            Case ExchangeRefusal.Capacity
+                Return Localization.T("достигнут предел сервера")
+            Case ExchangeRefusal.NotPermitted
+                Return Localization.T("эта учётная запись не может вести трансляции")
+            Case ExchangeRefusal.RateLimited
+                Return Localization.T("слишком много запросов подряд, повторите позже")
+            Case Else
+                Return Localization.T("сервер отклонил запрос")
+        End Select
+    End Function
+
     Private Sub OnStop()
+        StopCastIfAny(_controller.State.BroadcastId)
+        _controller.Stop()
+        BroadcastStopped()
+    End Sub
+
+    ''' <summary>The captured window was closed (ticket 263 T-2). The controller has already ended the
+    ''' broadcast through its ordinary stop; what is left is the window's own state and the one sentence.
+    ''' A cast that was playing it is told to stop too, as a manual stop does.</summary>
+    Private Sub OnSourceEnded(reason As String)
+        If _btnStop Is Nothing OrElse Not _btnStop.Enabled Then Return   ' the person had already stopped it
+        StopCastIfAny(_onAirBroadcastId)
+        BroadcastStopped()
+        If reason = "network-unavailable" Then
+            ShowRefusal(LiveStartResult.Failed(LiveStartRefusal.NoLanAddress))
+        Else
+            _lblState.Text = Localization.T("Окно закрыто. Трансляция остановлена.")
+        End If
+    End Sub
+
+    Private Sub OnLanChoiceChanged(sender As Object, e As EventArgs)
+        If _updatingLanChoice OrElse Not _controller.State.Running Then Return
+        Dim result As LiveStartResult = _controller.UpdateNetwork(_chkAllowLanViewers.Checked)
+        If result.Ok Then
+            SaveSettingsFromUi()
+            RefreshOnAir()
+        Else
+            _updatingLanChoice = True
+            Try
+                _chkAllowLanViewers.Checked = Not _chkAllowLanViewers.Checked
+            Finally
+                _updatingLanChoice = False
+            End Try
+            ShowRefusal(result)
+        End If
+    End Sub
+
+    Private Sub StopCastIfAny(broadcastId As String)
         If Not String.IsNullOrEmpty(_activeCastReceiverId) Then
             Dim receiverId As String = _activeCastReceiverId
-            Dim broadcastId As String = _controller.State.BroadcastId
             Dim agent As ExchangeDeviceAgent = ExchangeDeviceHost.Current
             If agent IsNot Nothing AndAlso Not String.IsNullOrEmpty(broadcastId) Then
                 Try
@@ -611,11 +807,11 @@ Public Class Live_Broadcast_Form
             _activeCastReceiverId = ""
             _activeCastReceiverName = ""
         End If
-        _controller.Stop()
-        BroadcastStopped()
     End Sub
 
     Private Sub BroadcastStopped()
+        _onAirBroadcastId = ""
+        _exchangeNote = ""
         _btnStart.Enabled = True
         _btnStop.Enabled = False
         _rbMicrophone.Enabled = True
@@ -623,6 +819,8 @@ Public Class Live_Broadcast_Form
         _rbScreen.Enabled = True
         _rbCamera.Enabled = True
         _cboMonitor.Enabled = True
+        _cboWindow.Enabled = True
+        UpdateScreenTargetEnabled()
         _chkCursor.Enabled = True
         _chkNoSound.Enabled = True
         _cboCamera.Enabled = True
@@ -650,6 +848,13 @@ Public Class Live_Broadcast_Form
     End Sub
 
     Private Sub ShowRefusal(result As LiveStartResult)
+        ' Ticket 263 T-2: the chosen window is not open (or is minimised). One sentence of its own - the
+        ' generic "Windows did not grant access" would send the person looking in the wrong place.
+        If result.Refusal = LiveStartRefusal.SourceUnavailable AndAlso
+           String.Equals(result.SeamReason, LiveWindowCatalog.ReasonUnavailable, StringComparison.Ordinal) Then
+            _lblState.Text = Localization.T("Выбранное окно не найдено или свёрнуто: откройте его и выберите заново.")
+            Return
+        End If
         Select Case result.Refusal
             Case LiveStartRefusal.GateShut
                 _lblState.Text = Localization.T("Эта функция выключена.")
@@ -673,6 +878,8 @@ Public Class Live_Broadcast_Form
         If Not state.Running Then Return
         If Not String.IsNullOrEmpty(_activeCastReceiverName) Then
             _lblState.Text = Localization.TF("Воспроизводится на: {0}", _activeCastReceiverName)
+        ElseIf _exchangeNote.Length > 0 Then
+            _lblState.Text = _exchangeNote
         Else
             _lblState.Text = Localization.TF("Идёт живая трансляция - {0}.", state.SourceName)
         End If
@@ -702,7 +909,7 @@ Public Class Live_Broadcast_Form
         Dim state As LiveProducerState = _controller.State
         If Not HandOffReady(state) Then Return
         ' The link carries the barcode text: the descriptor with its `auth` member, never the password (tell that separately).
-        Dim url As String = "fmsbcast://live?payload=" & Uri.EscapeDataString(state.BarcodeText)
+        Dim url As String = LiveProducerDescriptorWriter.LinkText(state.BarcodeText)
         If SecureClipboard.SetSecret(url) Then
             _lblState.Text = Localization.T("Ссылка скопирована.")
         Else

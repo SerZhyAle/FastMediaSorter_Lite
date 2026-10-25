@@ -109,7 +109,6 @@ Partial Public NotInheritable Class MainWindow
     Private btnSettings As Button
     Private btnGuide As Button
     Private btnTest As Button
-    Private btnStatsDetails As Button
     Private btnRevealPassword As Button
     Private lblState As Label
     Private lblStateDot As Label
@@ -130,6 +129,11 @@ Partial Public NotInheritable Class MainWindow
     ' --- layout containers ------------------------------------------------------
     Private _root As TableLayoutPanel
     Private _pnlHeader As TableLayoutPanel
+    ''' <summary>The header's state block and its button row; <see cref="UpdateHeaderMode"/>
+    ''' moves the second under the first when the two do not fit side by side.</summary>
+    Private _headerState As TableLayoutPanel
+    Private _headerActions As FlowLayoutPanel
+    Private _headerStacked As Boolean
     Private _pnlList As Panel
     Private _pnlListButtons As FlowLayoutPanel
     Private _pnlSections As TableLayoutPanel
@@ -138,7 +142,18 @@ Partial Public NotInheritable Class MainWindow
     Private _secResources As CollapsibleSection
     Private _secAccess As CollapsibleSection
     Private _secInternet As CollapsibleSection
-    Private _secStats As CollapsibleSection
+    ''' <summary>"Статистика" is a command that opens a window, not a group: a link with the
+    ''' live counters beside it. COLLAPSIBLE-GROUP 4.1 forbids a group from opening a window,
+    ''' so it is not a <see cref="CollapsibleSection"/> and carries no state triangle.</summary>
+    Private _rowStats As FlowLayoutPanel
+    Private _lnkStats As LinkLabel
+    Private _lblStatsSummary As Label
+    ''' <summary>The header tools "expand all" / "collapse all" (WINDOWS-UI section 2 item 3):
+    ''' glyph-only, so each has a tooltip and an accessible name.</summary>
+    Private _btnExpandAll As Button
+    Private _btnCollapseAll As Button
+    Private _expandAllGlyph As Image
+    Private _collapseAllGlyph As Image
     ''' <summary>The docked-bottom hint row of <see cref="BuildStatusStrip"/>; its height
     ''' is part of the window's fixed chrome for the S-0 compaction arithmetic.</summary>
     Private _statusStrip As Control
@@ -335,8 +350,12 @@ Partial Public NotInheritable Class MainWindow
         _fontEnableTitle = Nothing
         DisposeImage(_copyGlyph)
         DisposeImage(_eyeGlyph)
+        DisposeImage(_expandAllGlyph)
+        DisposeImage(_collapseAllGlyph)
         _copyGlyph = Nothing
         _eyeGlyph = Nothing
+        _expandAllGlyph = Nothing
+        _collapseAllGlyph = Nothing
         ShareIcons.FreeIcon(Me.Icon, _iconHandle)
     End Sub
 

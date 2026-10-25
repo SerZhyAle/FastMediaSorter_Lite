@@ -20,6 +20,10 @@ Public NotInheritable Class Share_Disks_Form
     Private ReadOnly _timer As New Timer With {.Interval = 10000}
     Private _busy As Boolean
     Private _status As WorkerStatus
+    Private ReadOnly _getStatus As Func(Of Task(Of WorkerStatus))
+    Private ReadOnly _getDisks As Func(Of Task(Of WorkerResponse))
+    Private ReadOnly _reconcileDisks As Action(Of IEnumerable(Of SharedDisk))
+    Friend Event SnapshotChanged(status As WorkerStatus, disks As List(Of SharedDisk))
     Private _mountedFolder As String = ""
     Private _add As Button
     Private _mounted As Button
@@ -33,7 +37,7 @@ Public NotInheritable Class Share_Disks_Form
     Private _auto As Button
     Private _exit As Button
     Private _answerRow As DialogButtonRow
-    Private ReadOnly _layout As New TableLayoutPanel With {.Dock = DockStyle.Fill, .ColumnCount = 1, .RowCount = 5, .Padding = New Padding(12)}
+    Private ReadOnly _layout As New TableLayoutPanel With {.Dock = DockStyle.Fill, .ColumnCount = 1, .RowCount = 6, .Padding = New Padding(12)}
     Public ReadOnly Property MountedFolder As String
         Get
             Return _mountedFolder
@@ -41,6 +45,16 @@ Public NotInheritable Class Share_Disks_Form
     End Property
 
     Public Sub New()
+        Me.New(Function() ShareController.GetStatusAsync(),
+            Function() DiskSharing.SendAsync(New WorkerRequest With {.type = "disk-list"}), AddressOf DiskDriveLetters.Reconcile)
+    End Sub
+
+    ' Keep fake worker snapshots away from the real session's drive aliases in UI tests.
+    Friend Sub New(getStatus As Func(Of Task(Of WorkerStatus)), getDisks As Func(Of Task(Of WorkerResponse)),
+                   reconcileDisks As Action(Of IEnumerable(Of SharedDisk)))
+        _getStatus = getStatus
+        _getDisks = getDisks
+        _reconcileDisks = reconcileDisks
         UiLanguage.ApplyTo(Me)
         Text = Localization.T("Диски .fdd..")
         StartPosition = FormStartPosition.CenterParent
@@ -49,10 +63,11 @@ Public NotInheritable Class Share_Disks_Form
         MinimizeBox = False
         Dim layout As TableLayoutPanel = _layout
         layout.RowStyles.Add(New RowStyle(SizeType.AutoSize))
+        layout.RowStyles.Add(New RowStyle(SizeType.Absolute, 32))
+        layout.RowStyles.Add(New RowStyle(SizeType.AutoSize))
+        layout.RowStyles.Add(New RowStyle(SizeType.AutoSize))
+        layout.RowStyles.Add(New RowStyle(SizeType.AutoSize))
         layout.RowStyles.Add(New RowStyle(SizeType.Percent, 100))
-        layout.RowStyles.Add(New RowStyle(SizeType.AutoSize))
-        layout.RowStyles.Add(New RowStyle(SizeType.AutoSize))
-        layout.RowStyles.Add(New RowStyle(SizeType.AutoSize))
         Dim top As New FlowLayoutPanel With {.AutoSize = True, .Dock = DockStyle.Fill}
         _add = AddButton(top, Localization.T("Подключить .fdd.."), AddressOf OnAdd, "action.mount-disk")
         _mounted = AddButton(top, Localization.T("Смонтированный диск.."), AddressOf OnMounted, "content.disk-container")
@@ -64,8 +79,11 @@ Public NotInheritable Class Share_Disks_Form
         AddHandler _managerHint.LinkClicked, AddressOf OnOpenManager
         _list.Columns.Add(Localization.T("Название"), 170)
         _list.Columns.Add(Localization.T("Состояние"), 100)
+        _list.Columns.Add(Localization.T("Автозапуск"), 100)
         _list.Columns.Add(Localization.T("Владелец"), 110)
         _list.Columns.Add(Localization.T("Файл"), 280)
+        AddHandler _list.SizeChanged, Sub() ScaleColumns()
+        AddHandler _layout.SizeChanged, Sub() FitDiskList()
         AddHandler _list.SelectedIndexChanged, Sub()
                                                   UpdateActions()
                                                   UpdateDiskDetails()
@@ -142,7 +160,6 @@ Public NotInheritable Class Share_Disks_Form
     End Function
 
     Private Sub UpdateActions()
-        Dim disk As SharedDisk = SelectedDisk()
         Dim available As Boolean = DiskSharing.Supported(_status)
         Dim supported As Boolean = Not _busy AndAlso available
         ' APP-BEHAVIOUR rule 11: what cannot work here is hidden, not left as a row of dead buttons.
@@ -150,7 +167,9 @@ Public NotInheritable Class Share_Disks_Form
         _add.Visible = available
         _actions.Visible = available
         _list.Visible = available
-        _layout.RowStyles(1) = If(available, New RowStyle(SizeType.Percent, 100.0F), New RowStyle(SizeType.AutoSize))
+        FitDiskList()
+        ' Showing the list creates its handle and materializes the restored selection.
+        Dim disk As SharedDisk = SelectedDisk()
         _add.Enabled = supported
         _mounted.Enabled = Not _busy
         _refresh.Enabled = Not _busy
@@ -162,7 +181,7 @@ Public NotInheritable Class Share_Disks_Form
     End Sub
 
     Private Async Function RefreshDisksAsync() As Task
-        _status = Await ShareController.GetStatusAsync()
+        _status = Await _getStatus()
         If IsDisposed Then Return
         If Not DiskSharing.Supported(_status) Then
             _list.Items.Clear()
@@ -171,7 +190,8 @@ Public NotInheritable Class Share_Disks_Form
             Return
         End If
         _managerHint.Visible = False
-        Dim response As WorkerResponse = Await DiskSharing.SendAsync(New WorkerRequest With {.type = "disk-list"})
+        Dim response As WorkerResponse = Await _getDisks()
+        If IsDisposed Then Return
         DiskSharing.RequireSuccess(response)
         ' An absent "disks" on an ok schema-2 answer is an empty list (the worker omits it when
         ' nothing is shared); only an answer that is not ok at all has no list to show.
@@ -182,8 +202,9 @@ Public NotInheritable Class Share_Disks_Form
         Try
             _list.Items.Clear()
             For Each disk As SharedDisk In disks
-                Dim item As New ListViewItem(disk.RootName) With {.Tag = disk}
+                Dim item As New ListViewItem(disk.RootName) With {.Tag = disk, .ToolTipText = disk.ContainerPath}
                 item.SubItems.Add(StateText(disk.State))
+                item.SubItems.Add(AutostartText(disk.Autostart, DiskSharing.Supported(_status, "disk-autostart")))
                 item.SubItems.Add(HolderText(disk.Holder))
                 item.SubItems.Add(disk.ContainerPath)
                 _list.Items.Add(item)
@@ -193,8 +214,10 @@ Public NotInheritable Class Share_Disks_Form
             _list.EndUpdate()
         End Try
         If _list.SelectedItems.Count = 0 AndAlso _list.Items.Count > 0 Then _list.Items(0).Selected = True
-        DiskDriveLetters.Reconcile(disks)
+        _reconcileDisks(disks)
+        FitDiskList()
         UpdateDiskDetails(True)
+        RaiseEvent SnapshotChanged(_status, disks)
     End Function
 
     Private Sub UpdateDiskDetails(Optional refreshing As Boolean = False)
@@ -204,9 +227,14 @@ Public NotInheritable Class Share_Disks_Form
             Dim disk As SharedDisk = SelectedDisk()
             _note.Text &= vbCrLf & Localization.TF("Доступ: {0}; открытых файлов: {1}; автозапуск: {2}. {3}",
                 If(disk.ReadOnly, Localization.T("Только чтение"), Localization.T("Чтение и запись")), disk.OpenHandles,
-                If(disk.Autostart, Localization.T("Да"), Localization.T("Нет")), DiskSharing.SafeError(disk.ErrorMessage))
+                AutostartText(disk.Autostart, DiskSharing.Supported(_status, "disk-autostart")), DiskSharing.SafeError(disk.ErrorMessage))
         End If
     End Sub
+
+    Friend Shared Function AutostartText(autostart As Boolean, supported As Boolean) As String
+        If Not supported Then Return "-"
+        Return If(autostart, Localization.T("Да"), Localization.T("Нет"))
+    End Function
 
     ''' <summary>The state column. The six states of DISK-SHARE section 16 are named; a value the host does not
     ''' know (or no value) is "Unknown" - WORKER-IPC 0.14 item D - and is never worded as an error of the disk,
@@ -235,7 +263,7 @@ Public NotInheritable Class Share_Disks_Form
         End Select
     End Function
 
-    Private Async Function RunAsync(operation As Func(Of Task)) As Task
+    Friend Async Function RunAsync(operation As Func(Of Task)) As Task
         If _busy Then Return
         _busy = True
         _note.Text = Localization.T("Минутку..")
@@ -413,14 +441,63 @@ Public NotInheritable Class Share_Disks_Form
 
     Protected Overrides Sub OnDpiChanged(e As DpiChangedEventArgs)
         MyBase.OnDpiChanged(e)
-        ScaleColumns()
+        FitDiskList()
     End Sub
 
     Private Sub ScaleColumns()
-        Dim widths As Integer() = {170, 100, 110, 280}
-        For i As Integer = 0 To widths.Length - 1
-            _list.Columns(i).Width = CInt(widths(i) * DeviceDpi / 96.0)
+        If _list.Columns.Count <> 5 Then Return
+        _list.ShowItemToolTips = True
+        Dim needsScroll As Boolean = _list.Items.Count * Math.Max(1, _list.Font.Height + LogicalToDeviceUnits(6)) >
+            _list.ClientSize.Height - _list.Font.Height - LogicalToDeviceUnits(12)
+        Dim widths As Integer() = DiskColumnWidths(_list.Font, _list.ClientSize.Width, DeviceDpi, needsScroll)
+        For i As Integer = 0 To 4
+            _list.Columns(i).Width = widths(i)
         Next
+    End Sub
+
+    Friend Shared Function DiskColumnWidths(font As Font, availableWidth As Integer, dpi As Integer, hasScrollbar As Boolean) As Integer()
+        Dim padding As Integer = CInt(24 * dpi / 96.0)
+        Dim widths As Integer() = {
+            Math.Max(CInt(110 * dpi / 96.0), TextRenderer.MeasureText(Localization.T("Название"), font).Width + padding),
+            0, 0, 0, 0}
+        Dim headers As String() = {Localization.T("Состояние"), Localization.T("Автозапуск"), Localization.T("Владелец")}
+        Dim values As String()() = {
+            New String() {StateText("open"), StateText("opening"), StateText("closing"), StateText("closed"), StateText("locked"), StateText("failed"), StateText("")},
+            New String() {AutostartText(True, True), AutostartText(False, True), "-"},
+            New String() {HolderText("service"), HolderText("session"), HolderText("none"), HolderText("")}}
+        For i As Integer = 1 To 3
+            widths(i) = TextRenderer.MeasureText(headers(i - 1), font).Width + padding
+            For Each value As String In values(i - 1)
+                widths(i) = Math.Max(widths(i), TextRenderer.MeasureText(value, font).Width + padding)
+            Next
+        Next
+        ' The path gets the remaining width; long paths keep their native ellipsis/tooltip.
+        Dim scrollWidth As Integer = If(hasScrollbar, CInt(17 * dpi / 96.0), 0)
+        widths(4) = Math.Max(TextRenderer.MeasureText(Localization.T("Файл"), font).Width + padding,
+            availableWidth - widths.Take(4).Sum() - scrollWidth - CInt(2 * dpi / 96.0))
+        Return widths
+    End Function
+
+    Private Sub FitDiskList()
+        If _layout.RowStyles.Count < 6 OrElse _answerRow Is Nothing Then Return
+        ' Bound the viewport by the actual row count, with scrolling for longer lists.
+        Dim rowHeight As Integer = Math.Max(_list.Font.Height + LogicalToDeviceUnits(6), LogicalToDeviceUnits(20))
+        If _list.IsHandleCreated AndAlso _list.Items.Count > 0 Then rowHeight = _list.GetItemRect(0).Height
+        Dim headerHeight As Integer = _list.Font.Height + LogicalToDeviceUnits(12)
+        Dim height As Integer
+        If DiskSharing.Supported(_status) Then
+            Dim width As Integer = Math.Max(1, _layout.ClientSize.Width - _layout.Padding.Horizontal)
+            Dim available As Integer = _layout.ClientSize.Height - _layout.Padding.Vertical - _list.Margin.Vertical
+            For Each control As Control In _layout.Controls
+                If control Is _list Then Continue For
+                available -= control.GetPreferredSize(New Size(width - control.Margin.Horizontal, 0)).Height + control.Margin.Vertical
+            Next
+            Dim desired As Integer = headerHeight + Math.Min(8, _list.Items.Count) * rowHeight
+            height = Math.Max(headerHeight + If(_list.Items.Count > 0, rowHeight, 0), Math.Min(desired, available))
+        End If
+        _layout.RowStyles(1).SizeType = SizeType.Absolute
+        _layout.RowStyles(1).Height = height + If(height > 0, _list.Margin.Vertical, 0)
+        ScaleColumns()
     End Sub
 
     Protected Overrides Sub Dispose(disposing As Boolean)

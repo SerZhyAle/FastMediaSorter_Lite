@@ -252,6 +252,41 @@ if (-not (Test-Path -LiteralPath $helpRoot)) {
     }
 }
 
+# Specification 267: these repaired surfaces carry proof from the real-window capture harness.
+# The remaining corpus still has separately recorded placeholder debt; file existence is not authenticity.
+$captureEvidencePath = Join-Path $Root 'docs/help/context-help-capture-evidence.json'
+if (!(Test-Path -LiteralPath $captureEvidencePath)) {
+    Problem 'Missing real-window capture evidence for the live-broadcast and Drive topics'
+} else {
+    $captureEvidence = Get-Content -LiteralPath $captureEvidencePath -Raw | ConvertFrom-Json
+    if ($captureEvidence.schema -ne 1) { Problem 'Unsupported context-help capture evidence schema' }
+    foreach ($locale in @('en', 'ru', 'uk', 'de', 'it', 'es', 'fr', 'pt', 'ar', 'hi', 'bn', 'ur', 'zh')) {
+        foreach ($topic in @('live-broadcast', 'share-live-broadcast', 'share-settings-drive')) {
+            foreach ($theme in @('light', 'dark')) {
+                $relative = "$locale/$topic-$theme.png"
+                $records = @($captureEvidence.screenshots | Where-Object { $_.path -ceq $relative })
+                if ($records.Count -ne 1) { Problem "Missing or duplicate capture evidence: $relative"; continue }
+                $record = $records[0]
+                $path = Join-Path $Root "docs/help/$relative"
+                if (!(Test-Path -LiteralPath $path)) { Problem "Missing real capture: $relative"; continue }
+                $bytes = [IO.File]::ReadAllBytes($path)
+                if ($bytes.Length -lt 24 -or [BitConverter]::ToString($bytes, 0, 8) -ne '89-50-4E-47-0D-0A-1A-0A') {
+                    Problem "Invalid capture PNG: $relative"; continue
+                }
+                # PNG dimensions are big-endian; the historical generated placeholders were 64x48.
+                $width = [uint32]$bytes[16] * 16777216L + [uint32]$bytes[17] * 65536L + [uint32]$bytes[18] * 256L + $bytes[19]
+                $height = [uint32]$bytes[20] * 16777216L + [uint32]$bytes[21] * 65536L + [uint32]$bytes[22] * 256L + $bytes[23]
+                if ($width -lt 256 -or $height -lt 150) { Problem "Placeholder-sized real capture: $relative" }
+                if ((Get-FileHash -LiteralPath $path -Algorithm SHA256).Hash -ine $record.sha256) { Problem "Capture hash drift: $relative" }
+                if ($record.locale -cne $locale -or $record.theme -cne $theme -or $record.topic -cne $topic -or
+                    $record.method -cne 'Shown WinForms window; PrintWindow by process-owned HWND' -or !$record.capturedUtc) {
+                    Problem "Incomplete real-window provenance: $relative"
+                }
+            }
+        }
+    }
+}
+
 if ($problems.Count -gt 0) {
     foreach ($p in $problems) {
         Write-Host "  $p" -ForegroundColor Red
@@ -259,4 +294,5 @@ if ($problems.Count -gt 0) {
     Exit-Verdict 'Test-ContextHelp' 1 "$($problems.Count) issues found"
 }
 
-Exit-Verdict 'Test-ContextHelp' 0 "66 concrete forms, $($helpTopics.Count) topics across 13 locales verified"
+$formCount = @($discoveredTypes | Sort-Object -Unique).Count
+Exit-Verdict 'Test-ContextHelp' 0 "$formCount concrete forms, $($helpTopics.Count) topics across 13 locales verified"

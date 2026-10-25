@@ -39,6 +39,13 @@ Partial Public NotInheritable Class MainWindow
     ''' list below the four columns it needs.</summary>
     Private Const SectionsColumnWidth As Integer = 420
 
+    ''' <summary>The narrowest column the header's state text may be left with beside the
+    ''' button row, logical px - room for "Раздача работает - 12 папок, порт 40123" on one
+    ''' line. Below it the buttons go under the text (UpdateHeaderMode); the second constant
+    ''' is the extra room needed to go back, so the switch has hysteresis.</summary>
+    Private Const HeaderStateMinWidth As Integer = 300
+    Private Const HeaderStackHysteresis As Integer = 24
+
     ' --- UI construction --------------------------------------------------------
 
     Private Sub BuildUi()
@@ -124,10 +131,14 @@ Partial Public NotInheritable Class MainWindow
     ''' belongs to "Поделиться", which is what a session is FOR.
     ''' </summary>
     Private Sub BuildHeaderStrip()
-        _pnlHeader = New TableLayoutPanel With {.Dock = DockStyle.Fill, .ColumnCount = 2,
+        ' Two rows: the second stays empty (zero height) while the state and the buttons
+        ' share row 0, and holds the buttons when UpdateHeaderMode stacks them.
+        _pnlHeader = New TableLayoutPanel With {.Dock = DockStyle.Fill, .ColumnCount = 2, .RowCount = 2,
             .AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink, .Margin = New Padding(0, 0, 48, 6)}
         _pnlHeader.ColumnStyles.Add(New ColumnStyle(SizeType.Percent, 100.0F))
         _pnlHeader.ColumnStyles.Add(New ColumnStyle(SizeType.AutoSize))
+        _pnlHeader.RowStyles.Add(New RowStyle(SizeType.AutoSize))
+        _pnlHeader.RowStyles.Add(New RowStyle(SizeType.AutoSize))
 
         Dim state As New TableLayoutPanel With {.Dock = DockStyle.Fill, .ColumnCount = 2,
             .AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink, .Margin = New Padding(0, 2, 8, 2)}
@@ -199,11 +210,39 @@ Partial Public NotInheritable Class MainWindow
         ButtonGlyphs.Apply(btnShare, "action.share")
         AddHandler btnShare.Click, AddressOf OnShareClicked
 
-        actions.Controls.AddRange(New Control() {btnSettings, btnToggle, btnShare})
+        ' WINDOWS-UI section 2 item 3: the header commands that act on the window's groups.
+        ' Glyph-only, so each carries a tooltip and an accessible name; set apart from the
+        ' three commands above by a wider gap.
+        _btnExpandAll = NewGroupTool("btnExpandAll", Localization.T("Развернуть все"), _expandAllGlyph)
+        _btnExpandAll.Margin = New Padding(16, 0, 4, 0)
+        _btnCollapseAll = NewGroupTool("btnCollapseAll", Localization.T("Свернуть все"), _collapseAllGlyph)
+        _btnCollapseAll.Margin = New Padding(0)
+        AddHandler _btnExpandAll.Click, Sub() SetAllSectionsExpanded(True)
+        AddHandler _btnCollapseAll.Click, Sub() SetAllSectionsExpanded(False)
 
+        actions.Controls.AddRange(New Control() {btnSettings, btnToggle, btnShare, _btnExpandAll, _btnCollapseAll})
+
+        _headerState = state
+        _headerActions = actions
         _pnlHeader.Controls.Add(state, 0, 0)
         _pnlHeader.Controls.Add(actions, 1, 0)
+
+        ' The button row's natural width follows its captions (language, Start/Stop), so a
+        ' caption change re-decides the header shape instead of waiting for a resize.
+        AddHandler btnToggle.TextChanged, Sub() RelayoutContent()
+        AddHandler btnSettings.TextChanged, Sub() RelayoutContent()
+        AddHandler btnShare.TextChanged, Sub() RelayoutContent()
     End Sub
+
+    ''' <summary>A square glyph-only tool of the header row. The picture is drawn by
+    ''' <see cref="BuildGlyphs"/> (theme and DPI), never a Unicode stand-in.</summary>
+    Private Function NewGroupTool(name As String, caption As String, glyph As Image) As Button
+        Dim tool As New Button With {.Name = name, .AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink,
+            .Padding = New Padding(8, 5, 8, 5), .Anchor = AnchorStyles.Left, .Text = "", .Image = glyph,
+            .ImageAlign = ContentAlignment.MiddleCenter, .AccessibleName = caption}
+        toolTip.SetToolTip(tool, caption)
+        Return tool
+    End Function
 
     ''' <summary>The folder list and its four buttons - the one object the window is about,
     ''' and now the only element that grows with the window (§2 rule 6). The GroupBox frame
@@ -377,22 +416,28 @@ Partial Public NotInheritable Class MainWindow
 
         _secAccess = New CollapsibleSection("access", Localization.T("Доступ с телефона"))
         _secInternet = New CollapsibleSection("internet", Localization.T("Доступ из интернета"))
-        ' Statistics stay out of the window until the worker actually sends counters -
-        ' the same rule the old stats block followed, applied one level up (§3.4).
-        _secStats = New CollapsibleSection("stats", Localization.T("Статистика")) With {.Visible = False}
 
         BuildAccessSection(_secAccess)
         BuildInternetSection(_secInternet)
-        BuildStatsSection(_secStats)
 
-        For Each sec As CollapsibleSection In New CollapsibleSection() {_secAccess, _secInternet, _secStats}
+        For Each sec As CollapsibleSection In New CollapsibleSection() {_secAccess, _secInternet}
             sec.Dock = DockStyle.Fill
             AddHandler sec.ExpandedChanged, AddressOf OnSectionExpandedChanged
-            Dim row As Integer = _pnlSections.RowCount
-            _pnlSections.RowCount = row + 1
-            _pnlSections.RowStyles.Add(New RowStyle(SizeType.AutoSize))
-            _pnlSections.Controls.Add(sec, 0, row)
+            AddSectionsRow(sec)
         Next
+
+        ' Statistics stay out of the window until the worker actually sends counters -
+        ' the same rule the old stats block followed, applied one level up (§3.4). It is the
+        ' last row but not a group: a link that opens the counters window.
+        BuildStatsDoor()
+        AddSectionsRow(_rowStats)
+    End Sub
+
+    Private Sub AddSectionsRow(c As Control)
+        Dim row As Integer = _pnlSections.RowCount
+        _pnlSections.RowCount = row + 1
+        _pnlSections.RowStyles.Add(New RowStyle(SizeType.AutoSize))
+        _pnlSections.Controls.Add(c, 0, row)
     End Sub
 
     ''' <summary>Status strip: the one-line hint. The Help links and the language picker
@@ -432,8 +477,27 @@ Partial Public NotInheritable Class MainWindow
     ' --- section state ----------------------------------------------------------
 
     Private Function Sections() As CollapsibleSection()
-        Return New CollapsibleSection() {_secAccess, _secInternet, _secStats}
+        Return New CollapsibleSection() {_secAccess, _secInternet}
     End Function
+
+    ''' <summary>The two header tools. Expanding goes resources first (it hands the window its
+    ''' remembered height back before the sections ask to grow it); collapsing goes the other
+    ''' way, so the resources fold compacts the window last and remembers the height the user had.
+    ''' Each toggle is the ordinary one, so the persisted CSV and the window sizing follow.</summary>
+    Private Sub SetAllSectionsExpanded(expanded As Boolean)
+        If _secResources Is Nothing Then Return
+        If expanded Then
+            _secResources.Expanded = True
+            For Each sec As CollapsibleSection In Sections()
+                sec.Expanded = True
+            Next
+        Else
+            For Each sec As CollapsibleSection In Sections()
+                sec.Expanded = False
+            Next
+            _secResources.Expanded = False
+        End If
+    End Sub
 
     ''' <summary>All collapsed by default (decision E), with §3.4's amber auto-expand as the
     ''' only exception. A key that is not in the CSV - a section added after the value was
@@ -446,7 +510,7 @@ Partial Public NotInheritable Class MainWindow
         Dim open As New HashSet(Of String)(saved.Split(","c), StringComparer.OrdinalIgnoreCase)
         If _secResources IsNot Nothing Then _secResources.Expanded = Not open.Contains(_secResources.Key)
         For Each sec As CollapsibleSection In Sections()
-            sec.Expanded = open.Contains(sec.Key) AndAlso Not String.Equals(sec.Key, "stats", StringComparison.OrdinalIgnoreCase)
+            sec.Expanded = open.Contains(sec.Key)
         Next
         _sectionsRestored = True
     End Sub
@@ -471,11 +535,6 @@ Partial Public NotInheritable Class MainWindow
         If sender Is _secResources Then
             ApplyResourcesFoldWindowSizing()
             RelayoutContent()
-            Return
-        End If
-        If sender Is _secStats AndAlso _secStats.Expanded Then
-            _secStats.Expanded = False
-            OnStatsDetailsClicked(_secStats, EventArgs.Empty)
             Return
         End If
         SetPasswordRevealed(_secAccess IsNot Nothing AndAlso _secAccess.Expanded AndAlso _passwordRevealed)
@@ -623,6 +682,8 @@ Partial Public NotInheritable Class MainWindow
         If _root Is Nothing OrElse _relayouting OrElse _pnlList Is Nothing Then Return
         _relayouting = True
         Try
+            ' First: the header's shape decides the height every figure below subtracts.
+            UpdateHeaderMode()
             Dim available As Integer = _root.ClientSize.Height - _root.Padding.Vertical - HeaderHeight()
             If Not _wideMode Then available -= SectionsHeight()
             Dim height As Integer = Math.Max(MinimumListHeight(), Math.Min(DesiredListHeight(), available))
@@ -632,6 +693,63 @@ Partial Public NotInheritable Class MainWindow
         Finally
             _relayouting = False
         End Try
+    End Sub
+
+    ''' <summary>
+    ''' The header strip is one row while the state text keeps a readable column beside the
+    ''' three buttons, and two rows - state above, whole buttons below - when it would not.
+    ''' The unwrappable button row used to take what it wanted and leave the state column
+    ''' ~130 px, where "Раздача работает - 1 папка, порт 40123" broke every few letters.
+    ''' Measured rather than a width threshold: the buttons' width follows the language,
+    ''' the Start/Stop caption and the display scaling. Stacked, the row also wraps whole
+    ''' buttons at the window's width (WINDOWS-UI section 11 item 3). Hysteresis, so the
+    ''' scroll bar that the taller header may bring cannot flip it back and forth.
+    ''' </summary>
+    Private Sub UpdateHeaderMode()
+        If _pnlHeader Is Nothing OrElse _headerState Is Nothing OrElse _headerActions Is Nothing Then Return
+        Dim available As Integer = _root.ClientSize.Width - _root.Padding.Horizontal - _pnlHeader.Margin.Horizontal
+        If available <= 0 Then Return
+
+        Dim buttonsWidth As Integer = _headerActions.Padding.Horizontal
+        For Each b As Control In _headerActions.Controls
+            buttonsWidth += b.PreferredSize.Width + b.Margin.Horizontal
+        Next
+        Dim needed As Integer = buttonsWidth + _headerState.Margin.Horizontal + LogicalToDeviceUnits(HeaderStateMinWidth)
+        Dim slack As Integer = If(_headerStacked, LogicalToDeviceUnits(HeaderStackHysteresis), 0)
+        Dim stack As Boolean = available < needed + slack
+
+        If stack = _headerStacked Then
+            If stack AndAlso _headerActions.MaximumSize.Width <> available Then
+                _headerActions.MaximumSize = New Size(available, 0)
+                _root.PerformLayout()
+            End If
+            Return
+        End If
+
+        _headerStacked = stack
+        _pnlHeader.SuspendLayout()
+        Try
+            If stack Then
+                _pnlHeader.SetColumnSpan(_headerState, 2)
+                _pnlHeader.SetCellPosition(_headerActions, New TableLayoutPanelCellPosition(0, 1))
+                _pnlHeader.SetColumnSpan(_headerActions, 2)
+                _headerActions.Anchor = AnchorStyles.Left
+                _headerActions.Margin = New Padding(0, LogicalToDeviceUnits(4), 0, 0)
+                _headerActions.WrapContents = True
+                _headerActions.MaximumSize = New Size(available, 0)
+            Else
+                _headerActions.MaximumSize = Size.Empty
+                _headerActions.WrapContents = False
+                _headerActions.Margin = New Padding(0)
+                _headerActions.Anchor = AnchorStyles.Right
+                _pnlHeader.SetColumnSpan(_headerActions, 1)
+                _pnlHeader.SetCellPosition(_headerActions, New TableLayoutPanelCellPosition(1, 0))
+                _pnlHeader.SetColumnSpan(_headerState, 1)
+            End If
+        Finally
+            _pnlHeader.ResumeLayout(True)
+        End Try
+        _root.PerformLayout()
     End Sub
 
     Private Sub UpdateFolderColumnWidths()
@@ -780,9 +898,15 @@ Partial Public NotInheritable Class MainWindow
         ' buttons and the hand-made eye are drawn here.
         Dim oldCopy As Image = _copyGlyph
         Dim oldEye As Image = _eyeGlyph
+        Dim oldExpand As Image = _expandAllGlyph
+        Dim oldCollapse As Image = _collapseAllGlyph
         _copyGlyph = CatalogGlyph("action.copy", 16)
         _eyeGlyph = BuildEyeGlyph(LogicalToDeviceUnits(16))
+        _expandAllGlyph = CatalogGlyph("nav.expand", 16)
+        _collapseAllGlyph = CatalogGlyph("nav.collapse", 16)
         If btnRevealPassword IsNot Nothing Then btnRevealPassword.Image = _eyeGlyph
+        If _btnExpandAll IsNot Nothing Then _btnExpandAll.Image = _expandAllGlyph
+        If _btnCollapseAll IsNot Nothing Then _btnCollapseAll.Image = _collapseAllGlyph
         For Each sr As ServerRow In _serverRows
             sr.Copy.Image = _copyGlyph
         Next
@@ -795,6 +919,8 @@ Partial Public NotInheritable Class MainWindow
         ' Only now that nothing points at them any more.
         DisposeImage(oldCopy)
         DisposeImage(oldEye)
+        DisposeImage(oldExpand)
+        DisposeImage(oldCollapse)
     End Sub
 
     Private Shared Sub DisposeImage(img As Image)

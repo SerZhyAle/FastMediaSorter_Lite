@@ -106,17 +106,21 @@ $ProductCompact = 'Fast Media Sorter & Sharing'
 # same text and -Check compares them whitespace-folded. sza-theme holds exactly dark|light, sza-lang exactly ru|en|ua.
 $ThemeResolver = @'
 <script>
-(function(){try{
-  var t=localStorage.getItem('sza-theme');
+(function(){
+  var t;try{t=localStorage.getItem('sza-theme');}catch(e){}
   if(t!=='dark'&&t!=='light')t=matchMedia('(prefers-color-scheme: light)').matches?'light':'dark';
   document.documentElement.setAttribute('data-theme',t);
-  var l=localStorage.getItem('sza-lang');
+  var l;try{l=localStorage.getItem('sza-lang');}catch(e){}
+  var q=new URLSearchParams(location.search),requested=q.has('lang')?q.get('lang'):q.get('l');
+  if(requested){requested=requested.toLowerCase();if(requested==='uk')requested='ua';if(requested==='en'||requested==='ru'||requested==='ua')l=requested;}
   if(l==='uk')l='ua';
   if(l!=='ru'&&l!=='en'&&l!=='ua'){var n=(navigator.language||'en').toLowerCase();l=n.indexOf('ru')==0?'ru':n.indexOf('uk')==0?'ua':'en';}
   document.documentElement.setAttribute('data-lang',l);
-}catch(e){}})();
+  document.addEventListener('click',function(e){var a=e.target.closest&&e.target.closest('a[href]');if(!a)return;try{var u=new URL(a.href,location.href);if(u.hostname==='serzhyale.github.io'||u.hostname==='sza.od.ua'){u.searchParams.delete('l');u.searchParams.set('lang',document.documentElement.getAttribute('data-lang')==='ua'?'uk':document.documentElement.getAttribute('data-lang'));a.href=u.href;}}catch(ignore){}});
+})();
 </script>
 '@
+$ThemeResolver = $ThemeResolver -replace "`r`n", "`n"
 
 $TrustFile = Join-Path $PSScriptRoot 'trust-copy.json'
 
@@ -462,8 +466,11 @@ $(TwitterImageMeta $e.ogAlt)
     <p class="lead lead-narrow">$(Body $e.tagline)</p>
     <p class="lead lead-narrow">$(Body $e.sharing) <a href="$BaseUrl/publish-folders-android.html" lang="en" dir="ltr">$(Esc $howtoAndroid)</a></p>
     <div class="button-group">
-      <a class="btn btn-primary" href="#get">$(Esc $e.dlSetup)</a>
-      <a class="btn btn-ghost" href="#features">$(Esc $e.knowTitle)</a>
+      <!-- PAGE-CONTENT "Copy rules": stable action labels - Install (the get-it block below) and Guides
+           (the topics index). The artifact names (Installer (GitHub), winget, Store) stay in the #get
+           channels, where naming each way to get the product is the rule. -->
+      <a class="btn btn-primary" href="#get">$(Esc $e.installAction)</a>
+      <a class="btn btn-ghost" href="$BaseUrl/topics.html">$(Esc $e.guidesAction)</a>
     </div>
   </section>
 
@@ -1185,6 +1192,44 @@ $($factRows -join "`n")
 
 $written = @(); $stale = @(); $compared = 0
 
+function Complete-ChildFooter([string]$html, [string]$pageCode = '') {
+    $footer = [regex]::Match($html, '(?s)<footer\b[^>]*>.*?</footer>')
+    if (-not $footer.Success) { return $html }
+    # A single-language page (a trust page, one per language) names the link once, in its own language where the copy has it
+    # and in English otherwise, like the locale index pages; the in-page trilingual pages keep the data-l spans, because only
+    # they carry the script and the rule that hides two of the three.
+    $supportText = if ($pageCode) {
+        $supportKey = switch ($pageCode) { 'ru' { 'ru' } 'uk' { 'ua' } default { 'en' } }
+        Esc $copy._support.short.$supportKey
+    } else {
+        ($InPageLangs | ForEach-Object { '<span data-l="{0}">{1}</span>' -f $_, (Esc $copy._support.short.$_) }) -join ''
+    }
+    $contact = '<!-- gen:child-contact --><div class="container"><div class="footer-bottom"><a href="{0}/support.html">{1}</a><span><a href="https://{2}">SZA</a> &middot; <a href="mailto:{3}">{3}</a></span></div></div><!-- /gen:child-contact -->' -f $BaseUrl, $supportText, $copy._contact.website, $copy._contact.email
+    $current = $footer.Value
+    if ($current -match '<!-- gen:child-contact -->') {
+        $completed = [regex]::Replace($current, '(?s)<!-- gen:child-contact -->.*?<!-- /gen:child-contact -->', [Text.RegularExpressions.MatchEvaluator]{ param($m) $contact })
+    } elseif ($current.Contains('mailto:' + $copy._contact.email) -and $current.Contains('https://' + $copy._contact.website) -and $current.Contains('support.html')) {
+        return $html
+    } else {
+        $completed = $current.Replace('</footer>', $contact + '</footer>')
+    }
+    return $html.Substring(0, $footer.Index) + $completed + $html.Substring($footer.Index + $footer.Length)
+}
+
+# The authored HTML keeps its content; these two shared regions are rendered from the same source as the locale pages.
+$registry = Get-Content -LiteralPath (Join-Path $Root 'docs/DOCUMENT_REGISTRY.jsonl') | Where-Object { $_.Trim() } | ForEach-Object { $_ | ConvertFrom-Json }
+foreach ($record in $registry | Where-Object { $_.role -eq 'source' -and $_.path -match '\.html$' -and $_.path -notmatch '^docs/help/' }) {
+    $sourcePath = Join-Path $Root $record.path
+    if (-not (Test-Path -LiteralPath $sourcePath)) { continue }
+    $sourceText = [IO.File]::ReadAllText($sourcePath)
+    $updated = [regex]::Replace($sourceText, '(?s)<script>\s*\(function\(\)\{(?:(?!</script>).)*?sza-theme(?:(?!</script>).)*?data-lang(?:(?!</script>).)*?</script>', [Text.RegularExpressions.MatchEvaluator]{ param($m) $ThemeResolver }, 1)
+    $updated = Complete-ChildFooter $updated
+    if ($sourceText -ne $updated) {
+        if ($Check) { $stale += $record.path + ' shared locale resolver' }
+        else { [IO.File]::WriteAllText($sourcePath, $updated, (New-Object Text.UTF8Encoding $false)); $written += $record.path + ' shared locale resolver' }
+    }
+}
+
 # 1. Update/check root index.html marked regions (gen:channels, gen:family)
 $indexFile = Join-Path $Root 'index.html'
 if (Test-Path $indexFile) {
@@ -1248,6 +1293,7 @@ foreach ($code in $codes) {
     $path = if ($code -eq 'en') { Join-Path $Root 'trust.html' }
             else { Join-Path (Join-Path (Join-Path $Root $LangDir) $code) 'trust.html' }
     $html = (RenderTrust $code) -replace "`r`n", "`n"
+    $html = Complete-ChildFooter $html $code
 
     if ($Check) {
         $compared++
@@ -1269,6 +1315,7 @@ foreach ($code in $codes) {
     $dir  = Join-Path (Join-Path $Root $LangDir) $code
     $path = Join-Path $dir 'index.html'
     $html = (Render $code) -replace "`r`n", "`n"
+    $html = Complete-ChildFooter $html
 
     if ($Check) {
         $compared++
@@ -1286,6 +1333,7 @@ foreach ($code in $codes) {
 # 4. Render/check the not-found page (404.html, SITE-STRUCTURE rule 15)
 $notFoundPath = Join-Path $Root '404.html'
 $notFoundHtml = (RenderNotFound) -replace "`r`n", "`n"
+$notFoundHtml = Complete-ChildFooter $notFoundHtml
 if ($Check) {
     $compared++
     if (-not (Test-Path $notFoundPath)) { $stale += '404.html (missing)' }
@@ -1298,6 +1346,7 @@ if ($Check) {
 # 5. Render/check the Support and What's new pages (ticket 207 T-5)
 foreach ($page in @(@('support.html', (RenderSupport)), @('whats-new.html', (RenderWhatsNew)))) {
     $name = $page[0]; $html = ($page[1] -join "`n") -replace "`r`n", "`n"
+    $html = Complete-ChildFooter $html
     $dest = Join-Path $Root $name
     if ($Check) {
         $compared++
@@ -1505,7 +1554,7 @@ if ($Check) {
     # Hashed with CRLF folded to LF: the catalog file is LF, and a text=auto checkout with
     # core.autocrlf turns the working copy CRLF without changing a single character of the kit.
     # assets/sza-kit.css is also marked -text in .gitattributes (PAGE-STYLE section 0 step 1), so a new clone is LF.
-    $pinnedKitSha = 'E438FEF279FEA8165BA6DB46289C3AB35AC2FBCFAA5B2EA50BB009716EDDFAC9'
+    $pinnedKitSha = '4ABA1DEE10CB902EE21CA4D86E4FBEED3BF7931C64B69FE15619727FD038C141'
     $kitFile = Join-Path $Root 'assets/sza-kit.css'
     if (-not (Test-Path $kitFile)) {
         $problems += "Kit identity: missing assets/sza-kit.css"
@@ -1714,7 +1763,7 @@ if ($Check) {
         if ($inline.Count -gt 0) { $problems += "Inline style: $rel carries $($inline.Count) style attribute(s) with layout or colour (move them to assets/fms-site.css)" }
         # 14. The pre-paint resolver is the one text and sits before the first stylesheet link.
         $css = [regex]::Match($fc, '(?i)<link\b[^>]*\brel\s*=\s*["'']stylesheet["''][^>]*>')
-        $res = [regex]::Match($fc, '(?s)<script>\s*\(function\(\)\{try\{\s*var t=localStorage\.getItem\(''sza-theme''\).*?</script>')
+        $res = [regex]::Match($fc, '(?s)<script>\s*\(function\(\)\{(?:(?!</script>).)*?sza-theme(?:(?!</script>).)*?data-lang(?:(?!</script>).)*?</script>')
         if (-not $res.Success) {
             $problems += "Theme resolver: $rel has no pre-paint resolver"
         } else {

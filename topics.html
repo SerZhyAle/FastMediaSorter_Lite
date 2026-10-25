@@ -1,17 +1,20 @@
-﻿<!doctype html>
+<!doctype html>
 <html lang="en" data-theme="dark" data-lang="en">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <script>
-(function(){try{
-  var t=localStorage.getItem('sza-theme');
+(function(){
+  var t;try{t=localStorage.getItem('sza-theme');}catch(e){}
   if(t!=='dark'&&t!=='light')t=matchMedia('(prefers-color-scheme: light)').matches?'light':'dark';
   document.documentElement.setAttribute('data-theme',t);
-  var l=localStorage.getItem('sza-lang');
+  var l;try{l=localStorage.getItem('sza-lang');}catch(e){}
+  var q=new URLSearchParams(location.search),requested=q.has('lang')?q.get('lang'):q.get('l');
+  if(requested){requested=requested.toLowerCase();if(requested==='uk')requested='ua';if(requested==='en'||requested==='ru'||requested==='ua')l=requested;}
   if(l==='uk')l='ua';
   if(l!=='ru'&&l!=='en'&&l!=='ua'){var n=(navigator.language||'en').toLowerCase();l=n.indexOf('ru')==0?'ru':n.indexOf('uk')==0?'ua':'en';}
   document.documentElement.setAttribute('data-lang',l);
-}catch(e){}})();
+  document.addEventListener('click',function(e){var a=e.target.closest&&e.target.closest('a[href]');if(!a)return;try{var u=new URL(a.href,location.href);if(u.hostname==='serzhyale.github.io'||u.hostname==='sza.od.ua'){u.searchParams.delete('l');u.searchParams.set('lang',document.documentElement.getAttribute('data-lang')==='ua'?'uk':document.documentElement.getAttribute('data-lang'));a.href=u.href;}}catch(ignore){}});
+})();
 </script>
 <title>Topics: every task on one page | Fast Media Sorter &amp; Sharing</title>
 <meta name="description" content="Every Fast Media Sorter &amp; Sharing for Windows guide and reference page, from a first look at the viewer to SFTP sharing and the always-on server edition.">
@@ -90,10 +93,10 @@ html[data-lang="ru"] [data-l]:not([data-l="ru"]),html[data-lang="en"] [data-l]:n
 </section>
 <section id="sharing-settings-windows">
 <h2><span data-l="en">Where sharing settings live</span><span data-l="ru">Где находятся настройки общего доступа</span><span data-l="ua">Де знаходяться налаштування спільного доступу</span></h2>
-<p><span data-l="en">In builds with separate settings windows, SFTP sharing settings owns the SFTP port, LAN-only policy and Hosting page. General preferences, remote-account access, publishing and schedules remain in Manager settings. The installed local exchange server has its own settings window. Links at the lower left open the other installed component without closing the current window. Opening settings starts no server. Earlier builds keep these pages together.</span><span data-l="ru">В сборках с отдельными окнами порт SFTP, локальная сеть и страница хостинга находятся в настройках общего доступа SFTP. Общие параметры, удалённая учётная запись, публикация и расписания остаются в настройках менеджера. Установленный локальный сервер обмена настраивается отдельно. Ссылки слева внизу открывают другой установленный компонент, сохраняя текущее окно. Открытие настроек не запускает сервер. В прежних сборках страницы объединены.</span><span data-l="ua">У збірках з окремими вікнами порт SFTP, локальна мережа й сторінка хостингу знаходяться в налаштуваннях спільного доступу SFTP. Загальні параметри, віддалений обліковий запис, публікація й розклади залишаються в налаштуваннях менеджера. Установлений локальний сервер обміну налаштовується окремо. Посилання зліва внизу відкривають інший установлений компонент, зберігаючи поточне вікно. Відкриття налаштувань не запускає сервер. У попередніх збірках сторінки об’єднані.</span></p>
+<p><span data-l="en">Settings are in two windows. Manager settings holds the SFTP sharing group - the SFTP port, LAN-only policy and Hosting page, shown while that component is installed - beside general preferences, remote-account access, publishing and schedules. The installed local exchange server has its own settings window. The link at the lower left opens the other window without closing the current one. Opening settings starts no server. Earlier builds showed SFTP sharing in a window of its own.</span><span data-l="ru">Настройки находятся в двух окнах. В настройках менеджера есть группа «Общий доступ SFTP» - порт SFTP, локальная сеть и страница хостинга; она видна, пока установлен этот компонент, - рядом с общими параметрами, удалённой учётной записью, публикацией и расписаниями. Установленный локальный сервер обмена настраивается в отдельном окне. Ссылка слева внизу открывает второе окно, сохраняя текущее. Открытие настроек не запускает сервер. В прежних сборках общий доступ SFTP был в отдельном окне.</span><span data-l="ua">Налаштування розташовані у двох вікнах. У налаштуваннях менеджера є група «Спільний доступ SFTP» - порт SFTP, локальна мережа й сторінка хостингу; вона видима, поки встановлено цей компонент, - поруч із загальними параметрами, віддаленим обліковим записом, публікацією й розкладами. Установлений локальний сервер обміну налаштовується в окремому вікні. Посилання зліва внизу відкриває друге вікно, зберігаючи поточне. Відкриття налаштувань не запускає сервер. У попередніх збірках спільний доступ SFTP був в окремому вікні.</span></p>
 <p><a href="docs/help/en/sftp-settings.html">SFTP</a> · <a href="docs/help/en/share-settings.html" data-l="en">Manager settings help</a><a href="docs/help/ru/share-settings.html" data-l="ru">Справка настроек менеджера</a><a href="docs/help/uk/share-settings.html" data-l="ua">Довідка налаштувань менеджера</a></p>
 </section>
 </main>
-<footer class="site-footer"><div class="container"><div class="footer-bottom"><span><a href="./">Fast Media Sorter &amp; Sharing for Windows</a> · <a href="docs/how-to-viewer.html">Viewer HOW TO</a> · <a href="glossary.html">Glossary</a></span><span>© 2026 Serhii Zhyhunenko</span></div></div></footer>
+<footer class="site-footer"><div class="container"><div class="footer-bottom"><span><a href="./">Fast Media Sorter &amp; Sharing for Windows</a> · <a href="docs/how-to-viewer.html">Viewer HOW TO</a> · <a href="glossary.html">Glossary</a></span><span>© 2026 Serhii Zhyhunenko</span></div></div><!-- gen:child-contact --><div class="container"><div class="footer-bottom"><a href="https://serzhyale.github.io/FastMediaSorter_Lite/support.html"><span data-l="en">Support</span><span data-l="ru">Поддержка</span><span data-l="ua">Підтримка</span></a><span><a href="https://sza.od.ua">SZA</a> &middot; <a href="mailto:sza@ukr.net">sza@ukr.net</a></span></div></div><!-- /gen:child-contact --></footer>
 <script>(function(){var d=document.documentElement;function lang(v){d.dataset.lang=v;d.lang=v==='ua'?'uk':v;document.querySelectorAll('[data-setlang]').forEach(function(b){b.setAttribute('aria-pressed',String(b.dataset.setlang===v))});try{localStorage.setItem('sza-lang',v)}catch(e){}}document.querySelectorAll('[data-setlang]').forEach(function(b){b.onclick=function(){lang(b.dataset.setlang)}});lang(d.dataset.lang==='ru'?'ru':d.dataset.lang==='ua'?'ua':'en');var themeEl=document.getElementById('themeBtn');function syncTheme(){themeEl.setAttribute('aria-pressed',String(d.dataset.theme!=='light'))}syncTheme();themeEl.onclick=function(){var v=d.dataset.theme==='light'?'dark':'light';d.dataset.theme=v;try{localStorage.setItem('sza-theme',v)}catch(e){}syncTheme()}})();</script>
 </body></html>

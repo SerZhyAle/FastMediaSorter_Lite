@@ -145,6 +145,19 @@ Partial Public NotInheritable Class Localization
             "Converter", "تحويل", "बदलें", "রূপান্তর", "تبدیل کریں", "转换")
 
         ' --- the FFmpeg download prompt (§8.3) ----------------------------------------
+        Add("Для работы с видео нужен FFmpeg (около {0} МБ). Он будет загружен с сайта проекта и сохранён локально. FFmpeg - свободная программа под лицензией GPL. Загрузить сейчас?",
+            "Working with video needs FFmpeg (about {0} MB). It will be downloaded from the project's site and saved locally. FFmpeg is free software under the GPL. Download it now?",
+            "Для роботи з відео потрібен FFmpeg (близько {0} МБ). Його буде завантажено із сайту проєкту та збережено локально. FFmpeg - вільна програма під ліцензією GPL. Завантажити зараз?",
+            "Für die Videoverarbeitung wird FFmpeg benötigt (etwa {0} MB). Es wird von der Projektseite heruntergeladen und lokal gespeichert. FFmpeg ist freie Software unter der GPL. Jetzt herunterladen?",
+            "Per elaborare i video serve FFmpeg (circa {0} MB). Verrà scaricato dal sito del progetto e salvato localmente. FFmpeg è software libero con licenza GPL. Scaricarlo ora?",
+            "Para trabajar con vídeo hace falta FFmpeg (unos {0} MB). Se descargará del sitio del proyecto y se guardará localmente. FFmpeg es software libre con licencia GPL. ¿Descargarlo ahora?",
+            "Le traitement vidéo nécessite FFmpeg (environ {0} Mo). Il sera téléchargé depuis le site du projet et enregistré localement. FFmpeg est un logiciel libre sous licence GPL. Le télécharger maintenant ?",
+            "Para trabalhar com vídeo é preciso o FFmpeg (cerca de {0} MB). Será baixado do site do projeto e guardado localmente. O FFmpeg é software livre sob a licença GPL. Baixar agora?",
+            "تتطلب معالجة الفيديو FFmpeg (نحو {0} ميغابايت). سيُنزَّل من موقع المشروع ويُحفظ محليًا. FFmpeg برنامج حر برخصة GPL. هل تريد تنزيله الآن؟",
+            "वीडियो पर काम करने के लिए FFmpeg चाहिए (लगभग {0} MB)। इसे परियोजना की साइट से डाउनलोड करके स्थानीय रूप से सहेजा जाएगा। FFmpeg GPL लाइसेंस वाला मुक्त सॉफ़्टवेयर है। अभी डाउनलोड करें?",
+            "ভিডিও নিয়ে কাজ করতে FFmpeg দরকার (প্রায় {0} MB)। এটি প্রকল্পের সাইট থেকে নামিয়ে স্থানীয়ভাবে সংরক্ষণ করা হবে। FFmpeg হলো GPL লাইসেন্সের মুক্ত সফটওয়্যার। এখনই নামাবেন?",
+            "ویڈیو پر کام کرنے کے لیے FFmpeg درکار ہے (تقریباً {0} MB)۔ اسے منصوبے کی سائٹ سے ڈاؤن لوڈ کر کے مقامی طور پر محفوظ کیا جائے گا۔ FFmpeg GPL لائسنس والا آزاد سافٹ ویئر ہے۔ ابھی ڈاؤن لوڈ کریں؟",
+            "视频处理需要 FFmpeg（约 {0} MB）。它将从项目网站下载并保存在本地。FFmpeg 是 GPL 许可下的自由软件。现在下载吗？")
         Add("Для создания видео нужен FFmpeg (около {0} МБ). Он будет загружен с сайта проекта и сохранён в папке программы. FFmpeg - свободная программа под лицензией GPL. Загрузить сейчас?",
             "Creating a video needs FFmpeg (about {0} MB). It will be downloaded from the project's own site and kept in the application's folder. FFmpeg is free software under the GPL. Download it now?",
             "Для створення відео потрібен FFmpeg (близько {0} МБ). Його буде завантажено із сайту проєкту та збережено в теці програми. FFmpeg - вільна програма під ліцензією GPL. Завантажити зараз?",
@@ -295,11 +308,28 @@ Partial Public NotInheritable Class Localization
             "Fotogramma successivo", "Fotograma siguiente", "Image suivante",
             "Fotograma seguinte", "الإطار التالي", "अगला फ़्रेम",
             "পরের ফ্রেম", "اگلا فریم", "下一帧")
-        Add("Следующий кадр (назад на кадр VLC не умеет)",
-            "Next frame (VLC cannot step back)", "Наступний кадр (назад на кадр VLC не вміє)", "Nächstes Bild (zurück kann VLC nicht)",
-            "Fotogramma successivo (VLC non può tornare indietro)", "Fotograma siguiente (VLC no sabe retroceder)", "Image suivante (VLC ne sait pas revenir en arrière)",
-            "Fotograma seguinte (o VLC não consegue recuar)", "الإطار التالي (لا يمكن لـ VLC التراجع إطارًا)", "अगला फ़्रेम (VLC पीछे नहीं जा सकता)",
-            "পরের ফ্রেম (VLC পিছনে যেতে পারে না)", "اگلا فریم (VLC پیچھے نہیں جا سکتا)", "下一帧（VLC 无法后退一帧）")
+        Add("Предыдущий кадр",
+            "Previous frame", "Попередній кадр", "Vorheriges Bild",
+            "Fotogramma precedente", "Fotograma anterior", "Image précédente",
+            "Fotograma anterior", "الإطار السابق", "पिछला फ़्रेम",
+            "আগের ফ্রেম", "پچھلا فریم", "上一帧")
+        Add("Не удалось прочитать кадры видео",
+            "Could not read the video frames", "Не вдалося прочитати кадри відео", "Die Videobilder konnten nicht gelesen werden",
+            "Impossibile leggere i fotogrammi del video", "No se pudieron leer los fotogramas del vídeo", "Impossible de lire les images de la vidéo",
+            "Não foi possível ler os fotogramas do vídeo", "تعذرت قراءة إطارات الفيديو", "वीडियो के फ़्रेम नहीं पढ़े जा सके",
+            "ভিডিওর ফ্রেম পড়া যায়নি", "ویڈیو کے فریم نہیں پڑھے جا سکے", "无法读取视频帧")
+        Add("Покадрово",
+            "Frame by frame", "Покадрово", "Bild für Bild",
+            "Fotogramma per fotogramma", "Fotograma a fotograma", "Image par image",
+            "Fotograma a fotograma", "إطارًا بإطار", "फ़्रेम दर फ़्रेम",
+            "ফ্রেম ধরে ধরে", "فریم بہ فریم", "逐帧")
+        Add("Покадрово: 1 кадр в секунду, без звука",
+            "Frame by frame: one frame per second, no sound", "Покадрово: 1 кадр на секунду, без звуку",
+            "Bild für Bild: ein Bild pro Sekunde, ohne Ton", "Fotogramma per fotogramma: un fotogramma al secondo, senza audio",
+            "Fotograma a fotograma: un fotograma por segundo, sin sonido", "Image par image : une image par seconde, sans son",
+            "Fotograma a fotograma: um fotograma por segundo, sem som", "إطار بإطار: إطار واحد في الثانية، بدون صوت",
+            "फ़्रेम दर फ़्रेम: एक फ़्रेम प्रति सेकंड, बिना ध्वनि", "ফ্রেম ধরে ধরে: প্রতি সেকেন্ডে একটি ফ্রেম, শব্দ ছাড়া",
+            "فریم بہ فریم: فی سیکنڈ ایک فریم، بغیر آواز", "逐帧：每秒一帧，无声")
         Add("Повтор A-B: отметить A",
             "A-B repeat: mark A", "Повтор A-B: позначити A", "A-B-Wiederholung: A markieren",
             "Ripetizione A-B: segna A", "Repetición A-B: marcar A", "Répétition A-B : marquer A",

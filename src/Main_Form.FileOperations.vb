@@ -30,6 +30,12 @@ Partial Public Class Main_Form
     ''' if the operation fails.</summary>
     Private NotInheritable Class FileOp
 #If Not NETFRAMEWORK Then
+        Implements IDisposable
+        Public Sub Dispose() Implements IDisposable.Dispose
+            Batch?.Dispose()
+        End Sub
+#End If
+#If Not NETFRAMEWORK Then
         Public Property RemoteDelete As ResourceDeleteTarget
 #End If
         Public Property Kind As FileOpKind
@@ -136,6 +142,10 @@ Partial Public Class Main_Form
     ''' <summary>The work itself, on a worker thread. Touches nothing but its argument.</summary>
     Private Shared Sub RunFileOp(op As FileOp)
 #If Not NETFRAMEWORK Then
+        If op.BatchItem?.ManagerOperation IsNot Nothing Then
+            op.BatchItem.ManagerOperation.Execute(ResourceRouting.TransferScratchDir)
+            Return
+        End If
         If op.RemoteDelete IsNot Nothing AndAlso (op.Kind = FileOpKind.Move OrElse op.Kind = FileOpKind.Copy) Then
             Using target As ResourceDeleteTarget = op.RemoteDelete
                 EnsureDestinationFolder(op)
@@ -1137,7 +1147,7 @@ Partial Public Class Main_Form
         ' Undo moves a file back from wherever it went, and inside an archive the list is the
         ' archive's: the file would land in a real folder and its path in the archive's list
         ' (audit 052 G-17). The one refusal point says so; U works again after leaving.
-        If ResourceBlocksFileOperations(ResourceVerb.Move) Then Return
+        If Not (undo_Entries.Peek()?.Batch?.IsManager).GetValueOrDefault() AndAlso ResourceBlocksFileOperations(ResourceVerb.Move) Then Return
 
         ' The history holds COMPLETED operations only, so while anything is still queued the
         ' top of it is an older operation than the one just made: "1" on a slow SMB move

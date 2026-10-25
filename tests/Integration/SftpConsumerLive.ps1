@@ -121,7 +121,7 @@ if ($SmbShare) { $env:FMS_SMB_LIVE_SHARE = $SmbShare }
 $exit = 1
 try {
     $project = Join-Path $repo 'tests\Lite.Tests\Lite.Tests.vbproj'
-    $filter = 'FullyQualifiedName~SftpLiveTests|FullyQualifiedName~RemoteSlotLiveTests'
+    $filter = 'FullyQualifiedName~SftpLiveTests|FullyQualifiedName~RemoteSlotLiveTests|FullyQualifiedName~ManagerArchiveLiveTests|FullyQualifiedName~ManagerExchangeLiveTests.Live_LoopbackWindowsExchange'
     if ($SmbShare) { $filter += '|FullyQualifiedName~SmbLiveTests' }
     & $dotnet test $project -f net10.0-windows --filter $filter --nologo
     $exit = $LASTEXITCODE

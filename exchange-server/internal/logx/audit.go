@@ -66,6 +66,7 @@ type Audit struct {
 	days      int
 	now       func() time.Time
 	lastSweep time.Time
+	product   string
 }
 
 // NewAudit writes to w with no day files (tests, captures).
@@ -119,7 +120,32 @@ func (a *Audit) dayFile(at time.Time) error {
 		a.size = st.Size()
 	}
 	a.file, a.w, a.path = f, f, path
+	a.writeBanner()
 	return nil
+}
+
+// SetProduct makes every audit file start with a "server.file-open" event whose bracket names this
+// server and its version ("fms-exchange-server/26.10.21.1442"): the other lines name the CLIENT's
+// version, so without it a file says nothing about the build that wrote it. The file open now gets
+// the event at once; a later day file or a rotation gets it as its first line.
+func (a *Audit) SetProduct(product string) {
+	if a == nil {
+		return
+	}
+	a.mu.Lock()
+	defer a.mu.Unlock()
+	a.product = product
+	a.writeBanner()
+}
+
+// writeBanner puts the version event at the head of the file just opened. The caller holds a.mu.
+func (a *Audit) writeBanner() {
+	if a.product == "" || a.w == nil {
+		return
+	}
+	n, _ := io.WriteString(a.w, a.render(AuditEvent{Op: "server.file-open", Actor: "system", Device: "server",
+		Product: a.product, Details: "log file opened", Status: AuditStatusOK}))
+	a.size += int64(n)
 }
 
 // Sweep removes only owned audit day files outside the configured UTC date window (once a day).
@@ -169,6 +195,42 @@ func (a *Audit) Record(e AuditEvent) {
 	if a == nil {
 		return
 	}
+	line := a.render(e)
+
+	if a.dir != "" {
+		_ = a.Sweep() // before the lock, like the security log's write; the sweep keeps its own once-a-day guard
+	}
+	a.mu.Lock()
+	defer a.mu.Unlock()
+	if a.dir != "" {
+		if a.file == nil {
+			return
+		}
+		if err := a.dayFile(a.now()); err != nil {
+			return
+		}
+		if a.max > 0 && a.size+int64(len(line)) > a.max && a.size > 0 {
+			_ = a.file.Close()
+			a.file, a.w = nil, nil
+			_ = os.Remove(a.path + ".1")
+			_ = os.Rename(a.path, a.path+".1")
+			a.path = ""
+			if err := a.dayFile(a.now()); err != nil {
+				return
+			}
+		}
+		if a.max > 0 && a.size+int64(len(line)) > a.max {
+			return
+		}
+	} else if a.w == nil {
+		return
+	}
+	n, _ := io.WriteString(a.w, line)
+	a.size += int64(n)
+}
+
+// render is the one [AUDIT] line of an event, newline included.
+func (a *Audit) render(e AuditEvent) string {
 	var b strings.Builder
 	b.WriteString("[AUDIT] ")
 	b.WriteString(a.now().UTC().Format(time.RFC3339))
@@ -202,38 +264,7 @@ func (a *Audit) Record(e AuditEvent) {
 	b.WriteString("\" STATUS=")
 	b.WriteString(auditToken(e.Status, AuditMaxToken))
 	b.WriteByte('\n')
-	line := b.String()
-
-	if a.dir != "" {
-		_ = a.Sweep() // before the lock, like the security log's write; the sweep keeps its own once-a-day guard
-	}
-	a.mu.Lock()
-	defer a.mu.Unlock()
-	if a.dir != "" {
-		if a.file == nil {
-			return
-		}
-		if err := a.dayFile(a.now()); err != nil {
-			return
-		}
-		if a.max > 0 && a.size+int64(len(line)) > a.max && a.size > 0 {
-			_ = a.file.Close()
-			a.file, a.w = nil, nil
-			_ = os.Remove(a.path + ".1")
-			_ = os.Rename(a.path, a.path+".1")
-			a.path = ""
-			if err := a.dayFile(a.now()); err != nil {
-				return
-			}
-		}
-		if a.max > 0 && a.size+int64(len(line)) > a.max {
-			return
-		}
-	} else if a.w == nil {
-		return
-	}
-	n, _ := io.WriteString(a.w, line)
-	a.size += int64(n)
+	return b.String()
 }
 
 // auditToken cleans a value that must be one word: controls and spaces are replaced (an empty or

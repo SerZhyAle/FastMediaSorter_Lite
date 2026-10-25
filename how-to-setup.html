@@ -3,15 +3,18 @@
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <script>
-(function(){try{
-  var t=localStorage.getItem('sza-theme');
+(function(){
+  var t;try{t=localStorage.getItem('sza-theme');}catch(e){}
   if(t!=='dark'&&t!=='light')t=matchMedia('(prefers-color-scheme: light)').matches?'light':'dark';
   document.documentElement.setAttribute('data-theme',t);
-  var l=localStorage.getItem('sza-lang');
+  var l;try{l=localStorage.getItem('sza-lang');}catch(e){}
+  var q=new URLSearchParams(location.search),requested=q.has('lang')?q.get('lang'):q.get('l');
+  if(requested){requested=requested.toLowerCase();if(requested==='uk')requested='ua';if(requested==='en'||requested==='ru'||requested==='ua')l=requested;}
   if(l==='uk')l='ua';
   if(l!=='ru'&&l!=='en'&&l!=='ua'){var n=(navigator.language||'en').toLowerCase();l=n.indexOf('ru')==0?'ru':n.indexOf('uk')==0?'ua':'en';}
   document.documentElement.setAttribute('data-lang',l);
-}catch(e){}})();
+  document.addEventListener('click',function(e){var a=e.target.closest&&e.target.closest('a[href]');if(!a)return;try{var u=new URL(a.href,location.href);if(u.hostname==='serzhyale.github.io'||u.hostname==='sza.od.ua'){u.searchParams.delete('l');u.searchParams.set('lang',document.documentElement.getAttribute('data-lang')==='ua'?'uk':document.documentElement.getAttribute('data-lang'));a.href=u.href;}}catch(ignore){}});
+})();
 </script>
 <title>Setup: viewer, language, rules - moved | Fast Media Sorter &amp; Sharing</title>
 <meta name="description" content="This guide moved to the documentation folder: Set it up once: default viewer, language, and what happens to your files.">
@@ -47,6 +50,6 @@ html[data-lang="ru"] [data-l]:not([data-l="ru"]),html[data-lang="en"] [data-l]:n
 <main class="container" id="main" tabindex="-1"><section class="hero"><span class="kicker">HOW TO</span><h1><span data-l="en">This guide has moved</span><span data-l="ru">Эта инструкция переехала</span><span data-l="ua">Цей посібник переїхав</span></h1><p class="lead"><span data-l="en">It now lives in the documentation folder: <a href="docs/how-to-setup.html">Set it up once: default viewer, language, and what happens to your files</a>.</span><span data-l="ru">Теперь она находится в папке документации: <a href="docs/how-to-setup.html">Настройте один раз: просмотрщик по умолчанию, язык и что происходит с файлами</a>.</span><span data-l="ua">Тепер він міститься в теці документації: <a href="docs/how-to-setup.html">Налаштуйте один раз: переглядач за замовчуванням, мову та те, що відбувається з вашими файлами</a>.</span></p></section>
 <section class="section"><a class="btn btn-primary" href="docs/how-to-setup.html"><span data-l="en">Open the guide</span><span data-l="ru">Открыть инструкцию</span><span data-l="ua">Відкрити посібник</span></a></section>
 </main>
-<footer class="site-footer"><div class="container"><div class="footer-bottom"><span><a href="./">Fast Media Sorter &amp; Sharing for Windows</a> · <a href="docs/how-to-setup.html"><span data-l="en">Set it up once: default viewer, language, and what happens to your files</span><span data-l="ru">Настройте один раз: просмотрщик по умолчанию, язык и что происходит с файлами</span><span data-l="ua">Налаштуйте один раз: переглядач за замовчуванням, мову та те, що відбувається з вашими файлами</span></a></span><span>© 2026 Serhii Zhyhunenko</span></div></div></footer>
+<footer class="site-footer"><div class="container"><div class="footer-bottom"><span><a href="./">Fast Media Sorter &amp; Sharing for Windows</a> · <a href="docs/how-to-setup.html"><span data-l="en">Set it up once: default viewer, language, and what happens to your files</span><span data-l="ru">Настройте один раз: просмотрщик по умолчанию, язык и что происходит с файлами</span><span data-l="ua">Налаштуйте один раз: переглядач за замовчуванням, мову та те, що відбувається з вашими файлами</span></a></span><span>© 2026 Serhii Zhyhunenko</span></div></div><!-- gen:child-contact --><div class="container"><div class="footer-bottom"><a href="https://serzhyale.github.io/FastMediaSorter_Lite/support.html"><span data-l="en">Support</span><span data-l="ru">Поддержка</span><span data-l="ua">Підтримка</span></a><span><a href="https://sza.od.ua">SZA</a> &middot; <a href="mailto:sza@ukr.net">sza@ukr.net</a></span></div></div><!-- /gen:child-contact --></footer>
 <script>(function(){var d=document.documentElement;function lang(v){d.dataset.lang=v;d.lang=v==='ua'?'uk':v;document.querySelectorAll('[data-setlang]').forEach(function(b){b.setAttribute('aria-pressed',String(b.dataset.setlang===v))});try{localStorage.setItem('sza-lang',v)}catch(e){}}document.querySelectorAll('[data-setlang]').forEach(function(b){b.onclick=function(){lang(b.dataset.setlang)}});lang(d.dataset.lang==='ru'?'ru':d.dataset.lang==='ua'?'ua':'en');var themeEl=document.getElementById('themeBtn');function syncTheme(){themeEl.setAttribute('aria-pressed',String(d.dataset.theme!=='light'))}syncTheme();themeEl.onclick=function(){var v=d.dataset.theme==='light'?'dark':'light';d.dataset.theme=v;try{localStorage.setItem('sza-theme',v)}catch(e){}syncTheme()}})();</script>
 </body></html>

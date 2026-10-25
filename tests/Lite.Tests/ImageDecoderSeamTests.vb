@@ -234,6 +234,30 @@ Public Class ImageDecoderSeamTests
                 Assert.Equal(90, decoded.Height)
             End Using
         End Using
+        ' Also exercise the production fallback even on machines where WIC handles WebP.
+        Using source As New MemoryStream(StaticWebp)
+            Using decoded As Bitmap = LegacyWicImageDecoder.DecodeWebpFallback(source)
+                Assert.Equal(120, decoded.Width)
+                Assert.Equal(90, decoded.Height)
+            End Using
+        End Using
+    End Sub
+
+    <Theory>
+    <InlineData("49492B00080000001000000000000000FFFFFFFFFFFFFFFF")>
+    <InlineData("4D4D002B000800000000000000000010FFFFFFFFFFFFFFFF")>
+    <InlineData("49492A000800000000000000")>
+    <InlineData("52494646FFFFFFFF54494646")>
+    <InlineData("00")>
+    Public Sub LegacyFallback_RejectsNonWebpBeforeInvokingTheManagedDecoder(hex As String)
+        Dim bytes(hex.Length \ 2 - 1) As Byte
+        For i As Integer = 0 To bytes.Length - 1
+            bytes(i) = Convert.ToByte(hex.Substring(i * 2, 2), 16)
+        Next
+        Using source As New MemoryStream(bytes)
+            Assert.Throws(Of SixLabors.ImageSharp.UnknownImageFormatException)(
+                Function() LegacyWicImageDecoder.DecodeWebpFallback(source))
+        End Using
     End Sub
 
     ''' <summary>

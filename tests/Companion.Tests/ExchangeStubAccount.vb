@@ -143,6 +143,8 @@ Friend NotInheritable Class ExchangeStubAccount
     Public Property Devices As New List(Of String)
     Public Property Resources As New List(Of String)
     Public Property Broadcasts As New List(Of String)
+    Public Property Grants As New List(Of String)
+    Public ReadOnly GrantFrames As New ConcurrentQueue(Of ExchangeEnvelope)()
 
     Public Sub New(Optional certificate As System.Security.Cryptography.X509Certificates.X509Certificate2 = Nothing)
         Server = New ExchangeStubTlsServer(AddressOf HandleAsync, certificate)
@@ -303,7 +305,7 @@ Friend NotInheritable Class ExchangeStubAccount
                 listed.AddRange(_enrolledRecords.Values)
             End SyncLock
         End If
-        Return New ExchangeEnvelope("directory").SetNumber("revision", Revision).SetRecords("devices", listed).SetRecords("resources", Resources).SetRecords("broadcasts", Broadcasts)
+        Return New ExchangeEnvelope("directory").SetNumber("revision", Revision).SetRecords("devices", listed).SetRecords("resources", Resources).SetRecords("broadcasts", Broadcasts).SetRecords("grants", Grants)
     End Function
 
     ''' <summary>Spec 234: a real server lists every enrolled device, this one included, with the capabilities and the `e2eKey` it sent.
@@ -498,7 +500,10 @@ Friend NotInheritable Class ExchangeStubAccount
     Private ReadOnly _published As New Dictionary(Of String, String)(StringComparer.Ordinal)   ' resourceId -> latest raw JSON
     Private ReadOnly _unpublished As New List(Of String)
     Private ReadOnly _broadcastLog As New List(Of String)             ' every broadcast-start / broadcast-update: "type|raw record JSON", in arrival order
+    Private ReadOnly _verifiersLog As New List(Of String)             ' ticket 263 T-3: the `verifiers` member of each of those, in the same order: "type|[..]" or "type|absent"
+    Private ReadOnly _broadcastCaps As New List(Of Long)()
     Private ReadOnly _publishRefusals As New ConcurrentQueue(Of String)
+    Private ReadOnly _broadcastStartAnswers As New ConcurrentQueue(Of String)    ' ticket 263 T-6: one per broadcast-start; "" = broadcast-started, a reason = refused
     Private ReadOnly _tunnels As New Dictionary(Of String, TaskCompletionSource(Of Attached))(StringComparer.Ordinal)
     Private _tunnelSeq As Integer
 
@@ -508,6 +513,17 @@ Friend NotInheritable Class ExchangeStubAccount
     ''' <summary>The next `publish` is refused with this reason (queued: one per publish).</summary>
     Public Sub RefuseNextPublish(reason As String)
         _publishRefusals.Enqueue(reason)
+    End Sub
+
+    ''' <summary>Ticket 263 T-6 (DEVICE-EXCHANGE 7.4, item DT): the next `broadcast-start` is answered with `refused` and this reason
+    ''' (queued: one per start). With nothing queued a start is not answered at all, which is what every older test relies on.</summary>
+    Public Sub RefuseNextBroadcastStart(reason As String)
+        _broadcastStartAnswers.Enqueue(reason)
+    End Sub
+
+    ''' <summary>Ticket 263 T-6: the next `broadcast-start` is answered with `broadcast-started` (queued: one per start).</summary>
+    Public Sub AcceptNextBroadcastStart()
+        _broadcastStartAnswers.Enqueue("")
     End Sub
 
     ''' <summary>Every record published, raw, in arrival order.</summary>
@@ -522,6 +538,21 @@ Friend NotInheritable Class ExchangeStubAccount
     Public Function BroadcastLog() As List(Of String)
         SyncLock _gate
             Return New List(Of String)(_broadcastLog)
+        End SyncLock
+    End Function
+
+    ''' <summary>Ticket 263 T-3 (items BF and DV): the `verifiers` member of every `broadcast-start` and `broadcast-update`, one line per
+    ''' envelope in the order of <see cref="BroadcastLog"/> - the type, a bar, then the JSON array of the entries as sent (`[]` when the
+    ''' member was an empty array) or the word `absent` when the envelope carried no such member.</summary>
+    Public Function BroadcastVerifiersLog() As List(Of String)
+        SyncLock _gate
+            Return New List(Of String)(_verifiersLog)
+        End SyncLock
+    End Function
+
+    Public Function BroadcastCaps() As List(Of Long)
+        SyncLock _gate
+            Return New List(Of Long)(_broadcastCaps)
         End SyncLock
     End Function
 
@@ -612,6 +643,9 @@ Friend NotInheritable Class ExchangeStubAccount
                 End If
                 Note(c.Index, env.Type)
                 Select Case env.Type
+                    Case "grant"
+                        GrantFrames.Enqueue(env)
+                        Await c.WriteAsync(New ExchangeEnvelope(ExchangeEnvelopeTypes.Granted).SetText("grantId", env.Text("grantId")))
                     Case "publish"
                         Dim raw As String = env.Record("resource")
                         Dim reason As String = Nothing
@@ -637,7 +671,22 @@ Friend NotInheritable Class ExchangeStubAccount
                     Case "broadcast-start", "broadcast-update"
                         SyncLock _gate
                             _broadcastLog.Add(env.Type & "|" & env.Record("broadcast"))
+                            _verifiersLog.Add(env.Type & "|" & If(env.Has("verifiers"), "[" & String.Join(",", env.Records("verifiers")) & "]", "absent"))
+                            _broadcastCaps.Add(env.Number("maxListeners", -1))
                         End SyncLock
+                        Dim startAnswer As String = Nothing
+                        If env.Type = "broadcast-start" AndAlso _broadcastStartAnswers.TryDequeue(startAnswer) Then
+                            If startAnswer.Length > 0 Then
+                                Await c.Refuse(startAnswer)
+                            Else
+                                Dim startedId As String = ""
+                                Using doc As JsonDocument = JsonDocument.Parse(env.Record("broadcast"))
+                                    Dim idEl As JsonElement = Nothing
+                                    If doc.RootElement.TryGetProperty("broadcastId", idEl) Then startedId = idEl.GetString()
+                                End Using
+                                Await c.WriteAsync(New ExchangeEnvelope("broadcast-started").SetText("broadcastId", startedId))
+                            End If
+                        End If
                     Case "unpublish"
                         SyncLock _gate
                             _unpublished.Add(env.Text("resourceId"))

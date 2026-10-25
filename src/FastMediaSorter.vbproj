@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="..\packages\ILMerge.3.0.41\build\ILMerge.props" Condition="Exists('..\packages\ILMerge.3.0.41\build\ILMerge.props')" />
   <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
@@ -175,6 +175,15 @@
     <Import Include="System.Threading.Tasks" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Archives\ArchiveWriteManifest.vb" />
+    <Compile Include="Archives\VerifiedZipWriter.vb" />
+    <Compile Include="Archives\ArchiveExtractionPlan.vb" />
+    <Compile Include="Archives\ArchiveExtractionReader.vb" />
+    <Compile Include="FileManager\ManagerArchiveCommands.vb" />
+    <Compile Include="FileManager\ManagerArchiveForm.vb" />
+    <Compile Include="Main_Form.ManagerArchives.vb" />
+    <Compile Include="Image_Panel_Form.ManagerArchives.vb" />
+    <Compile Include="Localization\Localization.ManagerArchives.vb" />
     <Compile Include="Theming\IThemeAware.vb" />
     <Compile Include="Theming\RecipientPalette.vb" />
     <Compile Include="Application_Events.vb" />
@@ -197,10 +206,34 @@
          "#If Not NETFRAMEWORK": this build keeps its own folder scan. Listed anyway so the
          two file sets stay identical. -->
     <Compile Include="Resources\IFileSystemProvider.vb" />
+    <Compile Include="Resources\IManagerDirectoryProvider.vb" />
     <Compile Include="Resources\LocalProvider.vb" />
     <Compile Include="Resources\RemoteCachePaths.vb" />
     <Compile Include="Resources\RemoteCacheStore.vb" />
     <Compile Include="Resources\ResourceRegistry.vb" />
+    <!-- The F3 panel's file manager mode (257). Whole-file "#If Not NETFRAMEWORK", like the provider layer. -->
+    <Compile Include="FileManager\ManagerLocation.vb" />
+    <Compile Include="FileManager\ManagerEntry.vb" />
+    <Compile Include="FileManager\ManagerContentPolicy.vb" />
+    <Compile Include="FileManager\ManagerOpenPolicy.vb" />
+    <Compile Include="FileManager\ManagerNavigation.vb" />
+    <Compile Include="FileManager\ManagerAddress.vb" />
+    <Compile Include="FileManager\ManagerBrowser.vb" />
+    <Compile Include="FileManager\ManagerDestinationForm.vb" />
+    <Compile Include="Image_Panel_Form.ManagerCommands.vb"><DependentUpon>Image_Panel_Form.vb</DependentUpon></Compile>
+    <Compile Include="FileManager\ManagerCommandRequest.vb" />
+    <Compile Include="FileManager\ManagerCommands.vb" />
+    <Compile Include="FileManager\ManagerCommandPlanner.vb" />
+    <Compile Include="FileManager\ManagerTreePlan.vb" />
+    <Compile Include="Main_Form.ManagerCommands.vb"><DependentUpon>Main_Form.vb</DependentUpon></Compile>
+    <Compile Include="FileManager\ManagerProviderOpener.vb" />
+    <Compile Include="FileManager\ManagerExchangePlaces.vb" />
+    <Compile Include="FileManager\ManagerExchangeAccess.vb" />
+    <Compile Include="FileManager\ManagerTransferPreflight.vb" />
+    <Compile Include="Image_Panel_Form.FileManager.Exchange.vb"><DependentUpon>Image_Panel_Form.vb</DependentUpon></Compile>
+    <Compile Include="Localization\Localization.ManagerExchange.vb" />
+    <Compile Include="FileManager\ManagerActivationResult.vb" />
+    <Compile Include="FileManager\ManagerShellOpen.vb" />
     <Compile Include="Resources\WorkerShares.vb" />
     <Compile Include="Resources\WorkerStateDir.vb" />
     <Compile Include="Resources\ResourcePolicy.vb" />
@@ -303,6 +336,9 @@
     <Compile Include="Image_Panel_Form.Details.vb">
       <DependentUpon>Image_Panel_Form.vb</DependentUpon>
     </Compile>
+    <Compile Include="Image_Panel_Form.FileManager.vb">
+      <DependentUpon>Image_Panel_Form.vb</DependentUpon>
+    </Compile>
     <Compile Include="Batch_Report_Form.vb">
       <SubType>Form</SubType>
     </Compile>
@@ -335,6 +371,8 @@
       <SubType>Form</SubType>
     </Compile>
     <Compile Include="AudioMetadata.vb" />
+    <Compile Include="SidecarAssociations.vb" />
+    <Compile Include="Support\DiagnosticRedactor.vb" />
     <Compile Include="FileDetails.vb" />
     <Compile Include="MediaKind.vb" />
     <Compile Include="SortableContentKinds.vb" />
@@ -590,6 +628,11 @@
       <DependentUpon>Main_Form.vb</DependentUpon>
       <SubType>Form</SubType>
     </Compile>
+    <Compile Include="Main_Form.FramePlayback.vb">
+      <DependentUpon>Main_Form.vb</DependentUpon>
+    </Compile>
+    <Compile Include="Video\VideoFrameDecoder.vb" />
+    <Compile Include="Video\VideoFrameSession.vb" />
     <Compile Include="Main_Form.MediaMenu.vb">
       <SubType>Form</SubType>
     </Compile>
@@ -805,6 +848,8 @@
     <Compile Include="Localization\Localization.Video.vb" />
     <Compile Include="Localization\Localization.SlotHealth.vb" />
     <Compile Include="Localization\Localization.Panel.vb" />
+    <Compile Include="Localization\Localization.ManagerCommands.vb" />
+    <Compile Include="Localization\Localization.FileManagerSettings.vb" />
     <!-- Compiled here too, unlike the rest of the secure-container feature: the strings
          are shared by both builds' registry, and a table missing from one project fails
          its shared constructor with BC30451, which is the right failure. -->

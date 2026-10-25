@@ -1,0 +1,4 @@
+DIAGNOSTIC-REPORT 0.14 section 8 C
+Source: diagnostic-report/reference/redaction-structured-value.txt in the shared contracts catalog.
+Vendored byte for byte on 2026-10-22. This is the catalog's authored specification vector, not generated output.
+SHA256  1b166e64137c4577edd7f83cfc499ddb18da30567723f7d74321038526180f2d  redaction-structured-value.txt

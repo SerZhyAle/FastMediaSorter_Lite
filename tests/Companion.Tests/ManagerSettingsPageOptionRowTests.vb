@@ -38,7 +38,7 @@ Public Class ManagerSettingsPageOptionRowTests
         "chkAutostart", "chkOpenOnStart", "chkLanOnly", "_schedFeature", "_chkXRemoteAdminOn", "_chkPxPublish", "_chkPxThird",
         "_chkXAwake", "_chkXKeepPasswords", "_chkXSharedInv", "_chkXKeep"}
 
-    Private Shared ReadOnly Destinations As SettingsDestination() = {SettingsDestination.Manager, SettingsDestination.Sftp, SettingsDestination.ExchangeServer}
+    Private Shared ReadOnly Destinations As SettingsDestination() = {SettingsDestination.Manager, SettingsDestination.ExchangeServer}
 
     ' --- harness ---------------------------------------------------------------------------------------
 
@@ -67,6 +67,8 @@ Public Class ManagerSettingsPageOptionRowTests
                   Dim previousGate As String = Environment.GetEnvironmentVariable(ExchangeFeatures.DeveloperSwitchName)
                   ExchangeTestSupport.Reset()
                   Dim component As String = ExchangeTestSupport.MakeFakeComponent(True, False, False)
+                  ' The Manager window holds the SFTP sharing pages while the worker payload is installed (253 R-2).
+                  Dim worker As String = ExchangeTestSupport.MakeFakeWorker()
                   Try
                       Localization.CurrentCode = code
                       ButtonGlyphs.AssetOpener = AddressOf CompanionAssets.OpenBundledAsset
@@ -83,6 +85,7 @@ Public Class ManagerSettingsPageOptionRowTests
                       Environment.SetEnvironmentVariable(ExchangeFeatures.DeveloperSwitchName, previousGate)
                       ExchangeTestSupport.Reset()
                       ExchangeTestSupport.DeleteQuietly(component)
+                      ExchangeTestSupport.DeleteQuietly(worker)
                       Localization.CurrentCode = saved
                   End Try
                   Assert.True(raised.Count = 0, "a control raised while painting or handling a message: " & String.Join(vbLf, raised.Select(Function(x) x.ToString())))

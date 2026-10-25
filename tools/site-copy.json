@@ -335,7 +335,7 @@
         "url": "https://serzhyale.github.io/FileDO/"
       },
       {
-        "name": "StreamsPlayer",
+        "name": "STREAMS Player",
         "type": "Windows stream player",
         "url": "https://serzhyale.github.io/StreamsPlayer/"
       },
@@ -426,7 +426,9 @@
       ["Draw on a picture, crop it, save it", "Brush, rectangle and ellipse, a live crop frame with handles, then save over the original or beside it. Your EXIF travels with the picture."],
       ["Turn an animation into a video", "An animated WEBP, APNG or GIF becomes an ordinary MP4 - with a seek bar, a pause and full colour - and replaces the original. The encoder is downloaded only if you ask for it, and those same slow formats now reopen instantly the second time."],
       ["Music gets a screen", "An MP3, WAV, M4A, WMA or OGG shows its album cover - or a wave-and-particle animation when it has none - with the title, artist, album and format along the bottom. Its own settings decide what happens at the end of a track, and a sleep timer stops playback after up to three hours."],
-      ["Open a server like a folder", "An SFTP server or a network share with a login opens as an ordinary folder: pictures, video and documents are fetched as you page, the server's key is pinned, and the password stays encrypted for your Windows account."]
+      ["Open a server like a folder", "An SFTP server or a network share with a login opens as an ordinary folder: pictures, video and documents are fetched as you page, the server's key is pinned, and the password stays encrypted for your Windows account."],
+      ["JPEG XL images","Open still and animated JXL images in the 64-bit viewer without an extra Windows codec. Save edits as PNG, JPEG or WEBP; JXL output is not offered."],
+      ["Live broadcast","Share a screen, one window, camera, microphone or system audio from Share Manager. Open a live broadcast in the 64-bit viewer using its link, code or .fmsbcast file. Capture starts only when you press Start."]
     ],
     "knowTitle": "Worth knowing",
     "know": [
@@ -437,7 +439,7 @@
       "The installer carries its offline payload with it - VLC codecs, OCR models and the Share Manager - and installs all of it with or without administrator rights."
     ],
     "downloadTitle": "Get it",
-    "dlSetup": "Installer (GitHub)", "dlWinget": "winget", "dlStore": "Microsoft Store",
+    "dlSetup": "Installer (GitHub)", "installAction": "Install", "guidesAction": "Guides", "dlWinget": "winget", "dlStore": "Microsoft Store",
     "guide": "Full guide (English)",
     "serverLink": "Always-on Folder Share Server",
     "docsLink": "Documentation",
@@ -480,7 +482,9 @@
       ["Рисование и кадрирование", "Кисть, прямоугольник и эллипс, живая рамка кадрирования с маркерами, затем сохранение поверх оригинала или рядом с ним. EXIF едет вместе с картинкой."],
       ["Анимация превращается в видео", "Анимированный WEBP, APNG или GIF становится обычным MP4 - с перемоткой, паузой и полным цветом - и заменяет оригинал. Кодировщик загружается, только если вы этого попросите, а те же медленные форматы теперь открываются повторно мгновенно."],
       ["У музыки появился экран", "MP3, WAV, M4A, WMA или OGG показывает обложку альбома - или анимацию из волн и частиц, если обложки нет - с названием, исполнителем, альбомом и форматом внизу. Свои настройки решают, что делать в конце дорожки, а таймер сна останавливает воспроизведение не позже чем через три часа."],
-      ["Сервер как папка", "SFTP-сервер или сетевая папка с паролем открывается как обычная папка: картинки, видео и документы подгружаются по мере листания, ключ сервера запоминается, а пароль хранится в зашифрованном виде для вашей учётной записи Windows."]
+      ["Сервер как папка", "SFTP-сервер или сетевая папка с паролем открывается как обычная папка: картинки, видео и документы подгружаются по мере листания, ключ сервера запоминается, а пароль хранится в зашифрованном виде для вашей учётной записи Windows."],
+      ["Изображения JPEG XL","Открывайте обычные и анимированные JXL в 64-битном просмотрщике без дополнительного кодека Windows. Результат редактирования сохраняется в PNG, JPEG или WEBP; сохранения в JXL нет."],
+      ["Прямой эфир","Передавайте экран, одно окно, камеру, микрофон или системный звук из Share Manager. Открывайте прямой эфир в 64-битном просмотрщике по ссылке, коду или файлу .fmsbcast. Захват начинается только по нажатию «Начать»."]
     ],
     "knowTitle": "Что стоит знать",
     "know": [
@@ -491,7 +495,7 @@
       "Установщик несёт всю оффлайн-начинку - кодеки VLC, модели OCR и Менеджер общего доступа - и ставит её как с правами администратора, так и без них."
     ],
     "downloadTitle": "Скачать",
-    "dlSetup": "Установщик (GitHub)", "dlWinget": "winget", "dlStore": "Microsoft Store",
+    "dlSetup": "Установщик (GitHub)", "installAction": "Установить", "guidesAction": "Инструкции", "dlWinget": "winget", "dlStore": "Microsoft Store",
     "guide": "Полное руководство (на английском)",
     "serverLink": "Серверная редакция: раздача без входа в систему",
     "docsLink": "Документация",
@@ -534,7 +538,9 @@
       ["Малювання та кадрування", "Пензель, прямокутник та еліпс, жива рамка кадрування з маркерами, потім збереження поверх оригіналу або поруч із ним. EXIF їде разом із картинкою."],
       ["Анімація стає відео", "Анімований WEBP, APNG чи GIF перетворюється на звичайний MP4 - з перемоткою, паузою та повним кольором - і замінює оригінал. Кодувальник завантажується, лише якщо ви попросите, а ті самі повільні формати тепер відкриваються повторно миттєво."],
       ["У музики з'явився екран", "MP3, WAV, M4A, WMA чи OGG показує обкладинку альбому - або анімацію з хвиль і частинок, якщо обкладинки немає - із назвою, виконавцем, альбомом і форматом унизу. Власні налаштування вирішують, що робити наприкінці доріжки, а таймер сну зупиняє відтворення не пізніше ніж за три години."],
-      ["Сервер як тека", "SFTP-сервер або мережева тека з паролем відкривається як звичайна тека: зображення, відео та документи підвантажуються під час гортання, ключ сервера запам'ятовується, а пароль зберігається в зашифрованому вигляді для вашого облікового запису Windows."]
+      ["Сервер як тека", "SFTP-сервер або мережева тека з паролем відкривається як звичайна тека: зображення, відео та документи підвантажуються під час гортання, ключ сервера запам'ятовується, а пароль зберігається в зашифрованому вигляді для вашого облікового запису Windows."],
+      ["Зображення JPEG XL","Відкривайте звичайні й анімовані JXL у 64-бітному переглядачі без додаткового кодека Windows. Результат редагування зберігається в PNG, JPEG або WEBP; збереження в JXL немає."],
+      ["Прямий ефір","Передавайте екран, одне вікно, камеру, мікрофон або системний звук із Share Manager. Відкривайте прямий ефір у 64-бітному переглядачі за посиланням, кодом або файлом .fmsbcast. Захоплення починається лише після натискання «Почати»."]
     ],
     "knowTitle": "Що варто знати",
     "know": [
@@ -545,7 +551,7 @@
       "Інсталятор несе всю офлайн-начинку - кодеки VLC, моделі OCR і Менеджер спільного доступу - і встановлює її як із правами адміністратора, так і без них."
     ],
     "downloadTitle": "Завантажити",
-    "dlSetup": "Інсталятор (GitHub)", "dlWinget": "winget", "dlStore": "Microsoft Store",
+    "dlSetup": "Інсталятор (GitHub)", "installAction": "Встановити", "guidesAction": "Інструкції", "dlWinget": "winget", "dlStore": "Microsoft Store",
     "guide": "Повний посібник (англійською)",
     "serverLink": "Серверна редакція: роздача без входу в систему",
     "docsLink": "Документація",
@@ -588,7 +594,9 @@
       ["Zeichnen, zuschneiden, speichern", "Pinsel, Rechteck und Ellipse, ein lebendiger Zuschnittrahmen mit Griffen, dann über das Original speichern oder daneben. Ihre EXIF-Daten reisen mit dem Bild."],
       ["Aus einer Animation wird ein Video", "Ein animiertes WEBP, APNG oder GIF wird ein gewöhnliches MP4 - mit Suchleiste, Pause und vollen Farben - und ersetzt das Original. Der Encoder wird nur auf Nachfrage geladen, und dieselben langsamen Formate öffnen sich beim zweiten Mal sofort."],
       ["Musik bekommt einen Bildschirm", "Eine MP3, WAV, M4A, WMA oder OGG zeigt ihr Albumcover - oder eine Wellen- und Partikelanimation, wenn keines vorhanden ist - mit Titel, Interpret, Album und Format am unteren Rand. Eigene Einstellungen bestimmen, was am Ende eines Titels geschieht, und ein Sleeptimer beendet die Wiedergabe nach höchstens drei Stunden."],
-      ["Server wie ein Ordner", "Ein SFTP-Server oder eine Netzwerkfreigabe mit Anmeldung öffnet sich wie ein gewöhnlicher Ordner: Bilder, Videos und Dokumente werden beim Blättern nachgeladen, der Schlüssel des Servers wird gemerkt, und das Kennwort bleibt für Ihr Windows-Konto verschlüsselt."]
+      ["Server wie ein Ordner", "Ein SFTP-Server oder eine Netzwerkfreigabe mit Anmeldung öffnet sich wie ein gewöhnlicher Ordner: Bilder, Videos und Dokumente werden beim Blättern nachgeladen, der Schlüssel des Servers wird gemerkt, und das Kennwort bleibt für Ihr Windows-Konto verschlüsselt."],
+      ["JPEG-XL-Bilder","Statische und animierte JXL-Bilder im 64-Bit-Betrachter ohne zusätzlichen Windows-Codec öffnen. Änderungen als PNG, JPEG oder WEBP speichern; JXL-Ausgabe wird nicht angeboten."],
+      ["Liveübertragung","Bildschirm, einzelnes Fenster, Kamera, Mikrofon oder Systemton aus Share Manager übertragen. Liveübertragungen im 64-Bit-Betrachter über Link, Code oder .fmsbcast-Datei öffnen. Die Aufnahme beginnt erst mit Start."]
     ],
     "knowTitle": "Gut zu wissen",
     "know": [
@@ -599,7 +607,7 @@
       "Der Installer bringt seine Offline-Nutzlast mit - VLC-Codecs, OCR-Modelle und den Share Manager - und installiert alles mit oder ohne Administratorrechte."
     ],
     "downloadTitle": "Herunterladen",
-    "dlSetup": "Installer (GitHub)", "dlWinget": "winget", "dlStore": "Microsoft Store",
+    "dlSetup": "Installer (GitHub)", "installAction": "Installieren", "guidesAction": "Anleitungen", "dlWinget": "winget", "dlStore": "Microsoft Store",
     "guide": "Vollständige Anleitung (auf Englisch)",
     "serverLink": "Server-Edition: Freigabe ohne Anmeldung (auf Englisch)",
     "docsLink": "Dokumentation (auf Englisch)",
@@ -642,7 +650,9 @@
       ["Disegna, ritaglia, salva", "Pennello, rettangolo ed ellisse, una cornice di ritaglio dal vivo con maniglie, poi salva sull'originale o accanto. I tuoi dati EXIF viaggiano con l'immagine."],
       ["Un'animazione diventa un video", "Un WEBP, APNG o GIF animato diventa un normale MP4 - con barra di scorrimento, pausa e colori pieni - e sostituisce l'originale. L'encoder si scarica solo se lo chiedi, e gli stessi formati lenti ora si riaprono all'istante."],
       ["La musica ha il suo schermo", "Un MP3, WAV, M4A, WMA o OGG mostra la copertina dell'album - o un'animazione di onde e particelle quando non ce n'è - con titolo, artista, album e formato in basso. Impostazioni dedicate decidono cosa succede alla fine di un brano, e un timer di spegnimento ferma la riproduzione entro tre ore."],
-      ["Un server come una cartella", "Un server SFTP o una condivisione di rete con accesso si apre come una cartella normale: immagini, video e documenti vengono scaricati mentre sfogli, la chiave del server viene memorizzata e la password resta cifrata per il tuo account Windows."]
+      ["Un server come una cartella", "Un server SFTP o una condivisione di rete con accesso si apre come una cartella normale: immagini, video e documenti vengono scaricati mentre sfogli, la chiave del server viene memorizzata e la password resta cifrata per il tuo account Windows."],
+      ["Immagini JPEG XL","Apri immagini JXL statiche e animate nel visualizzatore a 64 bit senza codec Windows aggiuntivi. Salva le modifiche in PNG, JPEG o WEBP; il salvataggio JXL non è disponibile."],
+      ["Trasmissione in diretta","Condividi schermo, singola finestra, fotocamera, microfono o audio di sistema da Share Manager. Apri una diretta nel visualizzatore a 64 bit tramite link, codice o file .fmsbcast. La cattura inizia solo premendo Avvia."]
     ],
     "knowTitle": "Da sapere",
     "know": [
@@ -653,7 +663,7 @@
       "L'installer porta con sé il suo carico offline - codec VLC, modelli OCR e lo Share Manager - e installa tutto con o senza diritti di amministratore."
     ],
     "downloadTitle": "Scarica",
-    "dlSetup": "Installer (GitHub)", "dlWinget": "winget", "dlStore": "Microsoft Store",
+    "dlSetup": "Installer (GitHub)", "installAction": "Installa", "guidesAction": "Guide", "dlWinget": "winget", "dlStore": "Microsoft Store",
     "guide": "Guida completa (in inglese)",
     "serverLink": "Edizione Server: condivisione senza accesso (in inglese)",
     "docsLink": "Documentazione (in inglese)",
@@ -696,7 +706,9 @@
       ["Dibuje, recorte, guarde", "Pincel, rectángulo y elipse, un marco de recorte en vivo con tiradores, y luego guardar sobre el original o junto a él. Sus datos EXIF viajan con la imagen."],
       ["Una animación se convierte en vídeo", "Un WEBP, APNG o GIF animado pasa a ser un MP4 normal - con barra de avance, pausa y color completo - y sustituye al original. El codificador se descarga solo si lo pides, y esos mismos formatos lentos ahora se reabren al instante."],
       ["La música tiene su propia pantalla", "Un MP3, WAV, M4A, WMA u OGG muestra la portada del álbum - o una animación de ondas y partículas cuando no la hay - con el título, el artista, el álbum y el formato abajo. Sus propios ajustes deciden qué pasa al terminar la pista, y un temporizador de apagado detiene la reproducción como mucho a las tres horas."],
-      ["Un servidor como una carpeta", "Un servidor SFTP o un recurso de red con inicio de sesión se abre como una carpeta normal: las imágenes, los vídeos y los documentos se descargan mientras pasa de uno a otro, se recuerda la clave del servidor y la contraseña queda cifrada para su cuenta de Windows."]
+      ["Un servidor como una carpeta", "Un servidor SFTP o un recurso de red con inicio de sesión se abre como una carpeta normal: las imágenes, los vídeos y los documentos se descargan mientras pasa de uno a otro, se recuerda la clave del servidor y la contraseña queda cifrada para su cuenta de Windows."],
+      ["Imágenes JPEG XL","Abre imágenes JXL estáticas y animadas en el visor de 64 bits sin un códec adicional de Windows. Guarda los cambios en PNG, JPEG o WEBP; no se ofrece salida JXL."],
+      ["Emisión en directo","Comparte pantalla, una ventana, cámara, micrófono o audio del sistema desde Share Manager. Abre una emisión en el visor de 64 bits mediante enlace, código o archivo .fmsbcast. La captura empieza solo al pulsar Iniciar."]
     ],
     "knowTitle": "Conviene saber",
     "know": [
@@ -707,7 +719,7 @@
       "El instalador lleva consigo su carga offline - códecs VLC, modelos OCR y el Share Manager - e instala todo con o sin derechos de administrador."
     ],
     "downloadTitle": "Descargar",
-    "dlSetup": "Instalador (GitHub)", "dlWinget": "winget", "dlStore": "Microsoft Store",
+    "dlSetup": "Instalador (GitHub)", "installAction": "Instalar", "guidesAction": "Guías", "dlWinget": "winget", "dlStore": "Microsoft Store",
     "guide": "Guía completa (en inglés)",
     "serverLink": "Edición Servidor: uso compartido sin iniciar sesión (en inglés)",
     "docsLink": "Documentación (en inglés)",
@@ -750,7 +762,9 @@
       ["Dessinez, recadrez, enregistrez", "Pinceau, rectangle et ellipse, un cadre de recadrage vivant avec poignées, puis enregistrez sur l'original ou à côté. Vos données EXIF voyagent avec l'image."],
       ["Une animation devient une vidéo", "Un WEBP, APNG ou GIF animé devient un MP4 ordinaire - avec barre de lecture, pause et couleurs complètes - et remplace l'original. L'encodeur n'est téléchargé que si vous le demandez, et ces mêmes formats lents se rouvrent désormais instantanément."],
       ["La musique a son propre écran", "Un MP3, WAV, M4A, WMA ou OGG affiche la pochette de l'album - ou une animation d'ondes et de particules à défaut - avec le titre, l'artiste, l'album et le format en bas. Des réglages dédiés décident de ce qui se passe à la fin d'une piste, et une minuterie de veille arrête la lecture au bout de trois heures au plus."],
-      ["Un serveur comme un dossier", "Un serveur SFTP ou un partage réseau avec identifiant s'ouvre comme un dossier ordinaire : images, vidéos et documents sont récupérés au fil du feuilletage, la clé du serveur est mémorisée et le mot de passe reste chiffré pour votre compte Windows."]
+      ["Un serveur comme un dossier", "Un serveur SFTP ou un partage réseau avec identifiant s'ouvre comme un dossier ordinaire : images, vidéos et documents sont récupérés au fil du feuilletage, la clé du serveur est mémorisée et le mot de passe reste chiffré pour votre compte Windows."],
+      ["Images JPEG XL","Ouvrez des images JXL fixes et animées dans la visionneuse 64 bits sans codec Windows supplémentaire. Enregistrez les retouches en PNG, JPEG ou WEBP ; la sortie JXL est indisponible."],
+      ["Diffusion en direct","Partagez écran, fenêtre unique, caméra, microphone ou son système depuis Share Manager. Ouvrez un direct dans la visionneuse 64 bits via un lien, un code ou un fichier .fmsbcast. La capture commence uniquement avec Démarrer."]
     ],
     "knowTitle": "Bon à savoir",
     "know": [
@@ -761,7 +775,7 @@
       "L'installateur embarque sa charge hors ligne - codecs VLC, modèles OCR et le Share Manager - et l'installe avec ou sans droits d'administrateur."
     ],
     "downloadTitle": "Télécharger",
-    "dlSetup": "Installateur (GitHub)", "dlWinget": "winget", "dlStore": "Microsoft Store",
+    "dlSetup": "Installateur (GitHub)", "installAction": "Installer", "guidesAction": "Guides", "dlWinget": "winget", "dlStore": "Microsoft Store",
     "guide": "Guide complet (en anglais)",
     "serverLink": "Édition Serveur : partage sans session ouverte (en anglais)",
     "docsLink": "Documentation (en anglais)",
@@ -804,7 +818,9 @@
       ["Desenhe, recorte, salve", "Pincel, retângulo e elipse, uma moldura de corte ao vivo com alças, e então salve sobre o original ou ao lado dele. Seus dados EXIF viajam com a imagem."],
       ["Uma animação vira um vídeo", "Um WEBP, APNG ou GIF animado passa a ser um MP4 comum - com barra de busca, pausa e cor completa - e substitui o original. O codificador só é baixado se você pedir, e esses mesmos formatos lentos agora reabrem na hora."],
       ["A música ganha uma tela", "Um MP3, WAV, M4A, WMA ou OGG mostra a capa do álbum - ou uma animação de ondas e partículas quando não há capa - com título, artista, álbum e formato embaixo. Ajustes próprios decidem o que acontece no fim da faixa, e um temporizador de sono para a reprodução em até três horas."],
-      ["Um servidor como uma pasta", "Um servidor SFTP ou um compartilhamento de rede com login abre como uma pasta comum: imagens, vídeos e documentos são baixados conforme você navega, a chave do servidor é memorizada e a senha fica criptografada para a sua conta do Windows."]
+      ["Um servidor como uma pasta", "Um servidor SFTP ou um compartilhamento de rede com login abre como uma pasta comum: imagens, vídeos e documentos são baixados conforme você navega, a chave do servidor é memorizada e a senha fica criptografada para a sua conta do Windows."],
+      ["Imagens JPEG XL","Abra imagens JXL estáticas e animadas no visualizador de 64 bits sem codec adicional do Windows. Salve as edições em PNG, JPEG ou WEBP; a saída JXL não está disponível."],
+      ["Transmissão ao vivo","Compartilhe tela, uma janela, câmera, microfone ou áudio do sistema pelo Share Manager. Abra uma transmissão no visualizador de 64 bits por link, código ou arquivo .fmsbcast. A captura começa apenas ao pressionar Iniciar."]
     ],
     "knowTitle": "Vale saber",
     "know": [
@@ -815,7 +831,7 @@
       "O instalador traz consigo a sua carga offline - codecs VLC, modelos de OCR e o Share Manager - e instala tudo com ou sem direitos de administrador."
     ],
     "downloadTitle": "Baixar",
-    "dlSetup": "Instalador (GitHub)", "dlWinget": "winget", "dlStore": "Microsoft Store",
+    "dlSetup": "Instalador (GitHub)", "installAction": "Instalar", "guidesAction": "Guias", "dlWinget": "winget", "dlStore": "Microsoft Store",
     "guide": "Guia completo (em inglês)",
     "serverLink": "Edição Servidor: partilha sem sessão iniciada (em inglês)",
     "docsLink": "Documentação (em inglês)",
@@ -858,7 +874,9 @@
       ["ارسم على الصورة، اقتصّها، احفظها", "فرشاة ومستطيل وقطع ناقص، وإطار اقتصاص حي بمقابض، ثم احفظ فوق الأصل أو بجانبه. وبيانات EXIF تسافر مع الصورة."],
       ["تحويل الصورة المتحركة إلى فيديو", "يتحول ملف WEBP أو APNG أو GIF المتحرك إلى ملف MP4 عادي - بشريط تقدم وإيقاف مؤقت وألوان كاملة - ويحل محل الأصل. لا يُنزَّل المُرمِّز إلا إذا طلبت ذلك، وهذه الصيغ البطيئة نفسها تُفتح الآن فورًا في المرة الثانية."],
       ["للموسيقى شاشة خاصة بها", "يعرض ملف MP3 أو WAV أو M4A أو WMA أو OGG غلاف الألبوم - أو رسمًا متحركًا من الموجات والجسيمات عند غيابه - مع العنوان والفنان والألبوم والصيغة في الأسفل. إعدادات خاصة تقرر ما يحدث عند انتهاء المقطع، ومؤقّت النوم يوقف التشغيل خلال ثلاث ساعات على الأكثر."],
-      ["خادم كأنه مجلد", "يُفتح خادم SFTP أو مجلد شبكة يتطلب تسجيل الدخول كمجلد عادي: تُجلب الصور ومقاطع الفيديو والمستندات أثناء التصفح، ويُحفظ مفتاح الخادم، وتبقى كلمة المرور مشفّرة لحساب Windows الخاص بك."]
+      ["خادم كأنه مجلد", "يُفتح خادم SFTP أو مجلد شبكة يتطلب تسجيل الدخول كمجلد عادي: تُجلب الصور ومقاطع الفيديو والمستندات أثناء التصفح، ويُحفظ مفتاح الخادم، وتبقى كلمة المرور مشفّرة لحساب Windows الخاص بك."],
+      ["صور JPEG XL","افتح صور JXL الثابتة والمتحركة في العارض 64 بت دون برنامج ترميز إضافي في Windows. احفظ التعديلات بصيغة PNG أو JPEG أو WEBP؛ لا يتوفر الحفظ بصيغة JXL."],
+      ["البث المباشر","شارك الشاشة أو نافذة واحدة أو الكاميرا أو الميكروفون أو صوت النظام من Share Manager. افتح بثًا في العارض 64 بت برابط أو رمز أو ملف .fmsbcast. لا يبدأ الالتقاط إلا عند الضغط على بدء."]
     ],
     "knowTitle": "جدير بالمعرفة",
     "know": [
@@ -869,7 +887,7 @@
       "يحمل المثبّت حمولته دون اتصال - مرمّزات VLC ونماذج OCR وShare Manager - ويثبّتها كلها بصلاحيات مسؤول أو بدونها."
     ],
     "downloadTitle": "التنزيل",
-    "dlSetup": "المثبّت (GitHub)", "dlWinget": "winget", "dlStore": "متجر Microsoft",
+    "dlSetup": "المثبّت (GitHub)", "installAction": "تثبيت", "guidesAction": "أدلة", "dlWinget": "winget", "dlStore": "متجر Microsoft",
     "guide": "الدليل الكامل (بالإنجليزية)",
     "serverLink": "إصدارة الخادم: مشاركة دون تسجيل دخول (بالإنجليزية)",
     "docsLink": "الوثائق (بالإنجليزية)",
@@ -912,7 +930,9 @@
       ["चित्र पर बनाएँ, काटें, सहेजें", "ब्रश, आयत और दीर्घवृत्त, हैंडल वाला जीवंत क्रॉप फ़्रेम, फिर मूल पर या उसके पास सहेजें। आपका EXIF डेटा चित्र के साथ चलता है।"],
       ["एनिमेशन से असली वीडियो", "एनिमेटेड WEBP, APNG या GIF एक साधारण MP4 बन जाता है - सीक बार, पॉज़ और पूरे रंग के साथ - और मूल फ़ाइल की जगह ले लेता है। एन्कोडर तभी डाउनलोड होता है जब आप कहें, और वही धीमे प्रारूप अब दूसरी बार तुरंत खुलते हैं।"],
       ["संगीत को अपनी स्क्रीन मिली", "MP3, WAV, M4A, WMA या OGG अपना एल्बम कवर दिखाता है - और कवर न हो तो लहरों और कणों का एनिमेशन - नीचे शीर्षक, कलाकार, एल्बम और प्रारूप के साथ। अपनी सेटिंग्स तय करती हैं कि ट्रैक खत्म होने पर क्या हो, और स्लीप टाइमर अधिकतम तीन घंटे में प्लेबैक रोक देता है।"],
-      ["सर्वर, फ़ोल्डर की तरह", "लॉगिन वाला SFTP सर्वर या नेटवर्क शेयर आम फ़ोल्डर की तरह खुलता है: पन्ने पलटते समय तस्वीरें, वीडियो और दस्तावेज़ लाए जाते हैं, सर्वर की कुंजी याद रखी जाती है, और पासवर्ड आपके Windows खाते के लिए एन्क्रिप्टेड रहता है।"]
+      ["सर्वर, फ़ोल्डर की तरह", "लॉगिन वाला SFTP सर्वर या नेटवर्क शेयर आम फ़ोल्डर की तरह खुलता है: पन्ने पलटते समय तस्वीरें, वीडियो और दस्तावेज़ लाए जाते हैं, सर्वर की कुंजी याद रखी जाती है, और पासवर्ड आपके Windows खाते के लिए एन्क्रिप्टेड रहता है।"],
+      ["JPEG XL चित्र","64-बिट व्यूअर में अतिरिक्त Windows कोडेक के बिना स्थिर और एनिमेटेड JXL चित्र खोलें। बदलाव PNG, JPEG या WEBP में सहेजें; JXL आउटपुट उपलब्ध नहीं है।"],
+      ["लाइव प्रसारण","Share Manager से स्क्रीन, एक विंडो, कैमरा, माइक्रोफ़ोन या सिस्टम ऑडियो साझा करें। 64-बिट व्यूअर में लिंक, कोड या .fmsbcast फ़ाइल से लाइव प्रसारण खोलें। कैप्चर केवल शुरू करें दबाने पर शुरू होता है।"]
     ],
     "knowTitle": "जानने योग्य",
     "know": [
@@ -923,7 +943,7 @@
       "इंस्टॉलर अपनी ऑफ़लाइन सामग्री साथ लाता है - VLC कोडेक, OCR मॉडल और Share Manager - और उसे व्यवस्थापक अधिकारों के साथ या बिना, दोनों तरह स्थापित करता है।"
     ],
     "downloadTitle": "डाउनलोड",
-    "dlSetup": "इंस्टॉलर (GitHub)", "dlWinget": "winget", "dlStore": "Microsoft Store",
+    "dlSetup": "इंस्टॉलर (GitHub)", "installAction": "इंस्टॉल करें", "guidesAction": "गाइड", "dlWinget": "winget", "dlStore": "Microsoft Store",
     "guide": "पूरी गाइड (अंग्रेज़ी में)",
     "serverLink": "सर्वर संस्करण: बिना साइन इन के साझाकरण (अंग्रेज़ी में)",
     "docsLink": "दस्तावेज़ (अंग्रेज़ी में)",
@@ -966,7 +986,9 @@
       ["ছবিতে আঁকুন, ছাঁটুন, সংরক্ষণ করুন", "তুলি, আয়ত ও উপবৃত্ত, হাতলসহ জীবন্ত ক্রপ ফ্রেম, তারপর মূলটির উপরে বা তার পাশে সংরক্ষণ। আপনার EXIF তথ্য ছবির সঙ্গেই যায়।"],
       ["অ্যানিমেশন থেকে সত্যিকারের ভিডিও", "অ্যানিমেটেড WEBP, APNG বা GIF সাধারণ MP4 হয়ে যায় - সিক বার, পজ ও পূর্ণ রঙসহ - এবং মূল ফাইলের জায়গা নেয়। এনকোডার কেবল আপনি চাইলেই নামে, আর সেই ধীর ফরম্যাটগুলোই এখন দ্বিতীয়বার সঙ্গে সঙ্গে খোলে।"],
       ["গানের নিজস্ব পর্দা", "MP3, WAV, M4A, WMA বা OGG তার অ্যালবাম কভার দেখায় - কভার না থাকলে ঢেউ ও কণার অ্যানিমেশন - নিচে শিরোনাম, শিল্পী, অ্যালবাম ও ফরম্যাট সহ। নিজস্ব সেটিংস ঠিক করে ট্র্যাক শেষ হলে কী হবে, আর স্লিপ টাইমার সর্বোচ্চ তিন ঘণ্টার মধ্যে বাজানো থামিয়ে দেয়।"],
-      ["সার্ভার, ফোল্ডারের মতো", "লগইনসহ SFTP সার্ভার বা নেটওয়ার্ক শেয়ার সাধারণ ফোল্ডারের মতো খোলে: পাতা ওল্টানোর সময় ছবি, ভিডিও ও নথি আনা হয়, সার্ভারের কী মনে রাখা হয়, আর পাসওয়ার্ড আপনার Windows অ্যাকাউন্টের জন্য এনক্রিপ্টেড থাকে।"]
+      ["সার্ভার, ফোল্ডারের মতো", "লগইনসহ SFTP সার্ভার বা নেটওয়ার্ক শেয়ার সাধারণ ফোল্ডারের মতো খোলে: পাতা ওল্টানোর সময় ছবি, ভিডিও ও নথি আনা হয়, সার্ভারের কী মনে রাখা হয়, আর পাসওয়ার্ড আপনার Windows অ্যাকাউন্টের জন্য এনক্রিপ্টেড থাকে।"],
+      ["JPEG XL ছবি","অতিরিক্ত Windows কোডেক ছাড়াই ৬৪-বিট ভিউয়ারে স্থির ও অ্যানিমেটেড JXL ছবি খুলুন। সম্পাদনা PNG, JPEG বা WEBP-তে সংরক্ষণ করুন; JXL আউটপুট নেই।"],
+      ["লাইভ সম্প্রচার","Share Manager থেকে স্ক্রিন, একটি উইন্ডো, ক্যামেরা, মাইক্রোফোন বা সিস্টেম অডিও ভাগ করুন। ৬৪-বিট ভিউয়ারে লিংক, কোড বা .fmsbcast ফাইল দিয়ে লাইভ সম্প্রচার খুলুন। শুরু করুন চাপলেই কেবল ক্যাপচার শুরু হয়।"]
     ],
     "knowTitle": "জেনে রাখা ভালো",
     "know": [
@@ -977,7 +999,7 @@
       "ইনস্টলার তার অফলাইন উপকরণ সঙ্গে আনে - VLC কোডেক, OCR মডেল ও Share Manager - এবং প্রশাসক অধিকার থাকুক বা না থাকুক, সবই ইনস্টল করে।"
     ],
     "downloadTitle": "ডাউনলোড",
-    "dlSetup": "ইনস্টলার (GitHub)", "dlWinget": "winget", "dlStore": "Microsoft Store",
+    "dlSetup": "ইনস্টলার (GitHub)", "installAction": "ইনস্টল করুন", "guidesAction": "গাইড", "dlWinget": "winget", "dlStore": "Microsoft Store",
     "guide": "পূর্ণ নির্দেশিকা (ইংরেজিতে)",
     "serverLink": "সার্ভার সংস্করণ: সাইন ইন ছাড়াই শেয়ারিং (ইংরেজিতে)",
     "docsLink": "নথি (ইংরেজিতে)",
@@ -1020,7 +1042,9 @@
       ["تصویر پر بنائیں، تراشیں، محفوظ کریں", "برش، مستطیل اور بیضوی، دستوں والا زندہ کراپ فریم، پھر اصل پر یا اُس کے ساتھ محفوظ کریں۔ آپ کا EXIF ڈیٹا تصویر کے ساتھ سفر کرتا ہے۔"],
       ["اینیمیشن سے اصل ویڈیو", "اینیمیٹڈ WEBP، APNG یا GIF ایک عام MP4 بن جاتا ہے - سیک بار، پاز اور مکمل رنگ کے ساتھ - اور اصل فائل کی جگہ لے لیتا ہے۔ اینکوڈر صرف آپ کے کہنے پر ڈاؤن لوڈ ہوتا ہے، اور وہی سست فارمیٹ اب دوسری بار فوراً کھلتے ہیں۔"],
       ["موسیقی کی اپنی سکرین", "MP3، WAV، M4A، WMA یا OGG اپنا البم کور دکھاتا ہے - اور کور نہ ہو تو لہروں اور ذرات کی حرکت پذیری - نیچے عنوان، فنکار، البم اور فارمیٹ کے ساتھ۔ اپنی ترتیبات طے کرتی ہیں کہ ٹریک ختم ہونے پر کیا ہو، اور سلیپ ٹائمر زیادہ سے زیادہ تین گھنٹے میں چلنا روک دیتا ہے۔"],
-      ["سرور، فولڈر کی طرح", "لاگ اِن والا SFTP سرور یا نیٹ ورک شیئر عام فولڈر کی طرح کھلتا ہے: ورق پلٹتے وقت تصاویر، ویڈیوز اور دستاویزات لائی جاتی ہیں، سرور کی کلید یاد رکھی جاتی ہے، اور پاس ورڈ آپ کے Windows اکاؤنٹ کے لیے خفیہ رہتا ہے۔"]
+      ["سرور، فولڈر کی طرح", "لاگ اِن والا SFTP سرور یا نیٹ ورک شیئر عام فولڈر کی طرح کھلتا ہے: ورق پلٹتے وقت تصاویر، ویڈیوز اور دستاویزات لائی جاتی ہیں، سرور کی کلید یاد رکھی جاتی ہے، اور پاس ورڈ آپ کے Windows اکاؤنٹ کے لیے خفیہ رہتا ہے۔"],
+      ["JPEG XL تصاویر","اضافی Windows کوڈیک کے بغیر 64 بٹ ویوئر میں ساکن اور متحرک JXL تصاویر کھولیں۔ تبدیلیاں PNG، JPEG یا WEBP میں محفوظ کریں؛ JXL آؤٹ پٹ دستیاب نہیں۔"],
+      ["براہ راست نشریات","Share Manager سے اسکرین، ایک ونڈو، کیمرا، مائیکروفون یا سسٹم آڈیو شیئر کریں۔ 64 بٹ ویوئر میں لنک، کوڈ یا .fmsbcast فائل سے نشریات کھولیں۔ کیپچر صرف شروع کریں دبانے پر شروع ہوتا ہے۔"]
     ],
     "knowTitle": "جاننے کے قابل",
     "know": [
@@ -1031,7 +1055,7 @@
       "انسٹالر اپنا آف لائن سامان ساتھ لاتا ہے - VLC کوڈیک، OCR ماڈل اور Share Manager - اور اسے منتظم کے حقوق کے ساتھ یا ان کے بغیر، دونوں صورتوں میں نصب کرتا ہے۔"
     ],
     "downloadTitle": "ڈاؤن لوڈ",
-    "dlSetup": "انسٹالر (GitHub)", "dlWinget": "winget", "dlStore": "Microsoft Store",
+    "dlSetup": "انسٹالر (GitHub)", "installAction": "انسٹال کریں", "guidesAction": "رہنمائی", "dlWinget": "winget", "dlStore": "Microsoft Store",
     "guide": "مکمل رہنما (انگریزی میں)",
     "serverLink": "سرور ایڈیشن: سائن اِن کے بغیر شیئرنگ (انگریزی میں)",
     "docsLink": "دستاویزات (انگریزی میں)",
@@ -1074,7 +1098,9 @@
       ["在图片上绘制、裁剪、保存", "画笔、矩形和椭圆，带控制点的实时裁剪框，然后覆盖原图保存或另存到旁边。EXIF 数据随图片一起走。"],
       ["把动画变成真正的视频", "动画 WEBP、APNG 或 GIF 会变成普通的 MP4 - 有进度条、可暂停、色彩完整 - 并取代原文件。编码器只在你要求时才下载，而这些原本很慢的格式现在第二次打开是瞬间的。"],
       ["音乐也有了自己的画面", "MP3、WAV、M4A、WMA 或 OGG 会显示专辑封面 - 没有封面时则显示波纹与粒子动画 - 底部列出标题、艺术家、专辑和格式。专属设置决定曲目结束时的行为，睡眠定时器最多三小时后停止播放。"],
-      ["把服务器当作文件夹", "需要登录的 SFTP 服务器或网络共享可像普通文件夹一样打开：翻页时按需取回图片、视频和文档，服务器密钥会被记住，密码则以加密形式仅供您的 Windows 账户使用。"]
+      ["把服务器当作文件夹", "需要登录的 SFTP 服务器或网络共享可像普通文件夹一样打开：翻页时按需取回图片、视频和文档，服务器密钥会被记住，密码则以加密形式仅供您的 Windows 账户使用。"],
+      ["JPEG XL 图像","在 64 位查看器中打开静态和动态 JXL 图像，无需额外的 Windows 编解码器。编辑结果可保存为 PNG、JPEG 或 WEBP；不提供 JXL 输出。"],
+      ["直播","通过 Share Manager 分享屏幕、单个窗口、摄像头、麦克风或系统音频。在 64 位查看器中通过链接、代码或 .fmsbcast 文件打开直播。只有点击开始才会开始采集。"]
     ],
     "knowTitle": "值得一提",
     "know": [
@@ -1085,7 +1111,7 @@
       "安装程序自带离线内容 - VLC 编解码器、OCR 模型和 Share Manager - 无论有没有管理员权限都会全部安装。"
     ],
     "downloadTitle": "下载",
-    "dlSetup": "安装程序（GitHub）", "dlWinget": "winget", "dlStore": "Microsoft Store",
+    "dlSetup": "安装程序（GitHub）", "installAction": "安装", "guidesAction": "指南", "dlWinget": "winget", "dlStore": "Microsoft Store",
     "guide": "完整指南（英文）",
     "serverLink": "服务器版：无需登录的共享（英文）",
     "docsLink": "文档（英文）",

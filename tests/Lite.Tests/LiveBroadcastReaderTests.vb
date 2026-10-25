@@ -6,6 +6,7 @@ Imports System.IO.Compression
 Imports System.Text
 Imports Xunit
 
+<Collection("LocalizationState")>
 Public Class LiveBroadcastReaderTests
 
     Private Function CreateFmsBcast1Payload(jsonText As String) As String

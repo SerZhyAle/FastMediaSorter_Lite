@@ -272,6 +272,7 @@ End Class
 
 ''' <summary>The totals a status request may show: counts, never a list and never a secret.</summary>
 Friend NotInheritable Class ExchangeAdminStatus
+    Public Property Sealed As Boolean
     Public Property Accounts As Integer
     Public Property Devices As Integer
     Public Property Online As Integer
@@ -514,6 +515,7 @@ Friend NotInheritable Class ExchangeAdminParser
             Using doc As JsonDocument = JsonDocument.Parse(If(dataJson, ""))
                 If doc.RootElement.ValueKind <> JsonValueKind.Object Then Return s
                 s.Accounts = Num(doc.RootElement, "accounts")
+                s.Sealed = Bool(doc.RootElement, "sealed")
                 s.Devices = Num(doc.RootElement, "devices")
                 s.Online = Num(doc.RootElement, "online")
                 s.Resources = Num(doc.RootElement, "resources")

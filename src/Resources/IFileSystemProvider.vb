@@ -32,6 +32,8 @@ Friend Enum ResourceVerb
     ''' <summary>Writes a new file next to the current one and removes the original
     ''' ("replace with video").</summary>
     WriteBeside = 4
+    CreateFolder = 5
+    WriteDestination = 6
 End Enum
 
 ''' <summary>
@@ -121,6 +123,13 @@ Friend NotInheritable Class ResourceEntry
     ''' (an etag, a change token). Empty when the provider has none - then size and write time
     ''' are the evidence, see <see cref="SameVersionAs"/>.</summary>
     Friend Property VersionTag As String = ""
+    ''' <summary>A symlink or reparse point (257): the file manager shows it as such and never enters or follows it.
+    ''' False for every entry a viewer listing builds.</summary>
+    Friend Property IsLink As Boolean
+    ''' <summary>Hidden by the file system's own convention (the Hidden attribute, or a leading dot on a POSIX server).</summary>
+    Friend Property IsHidden As Boolean
+    ''' <summary>The System attribute of a Windows file system; always False on a remote server.</summary>
+    Friend Property IsSystem As Boolean
 
     ''' <summary>Do two listings of one path describe the same bytes? Used before a downloaded
     ''' file may replace a cached one: a late download of an OLD version must lose.</summary>

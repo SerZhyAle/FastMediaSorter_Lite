@@ -57,6 +57,19 @@ Module Utils
         Return If(halved < floorMs, floorMs, halved)
     End Function
 
+    ''' <summary>
+    ''' The slideshow clock's visible text (MEDIA-VIEWER 1.0 rule 5): the plain interval for
+    ''' most of the phase, and a final 3-2-1 countdown in the last three seconds - but only
+    ''' when the interval exceeds 3 s (at the 1 s floor and up to 3 s the plain text is all
+    ''' there is). <paramref name="held"/> is the video/audio hold of the flip: the countdown
+    ''' steps back to the plain text while the current item owns the stage.
+    ''' </summary>
+    Public Function SlideshowCountdownText(intervalMs As Integer, remainingMs As Integer, held As Boolean) As String
+        Dim plain As String = (intervalMs \ 1000).ToString() & "s"
+        If intervalMs <= 3000 OrElse held OrElse remainingMs <= 0 OrElse remainingMs > 3000 Then Return plain
+        Return CInt(Math.Ceiling(remainingMs / 1000.0)).ToString() & "s"
+    End Function
+
     ''' <summary>The number of background colour schemes the settings window offers
     ''' (dynamic, black, white, most frequent and two more).</summary>
     Public Const Color_Scheme_Count As Integer = 6

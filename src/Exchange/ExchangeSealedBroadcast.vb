@@ -130,8 +130,8 @@ Friend NotInheritable Class ExchangeSealedBroadcastSession
     Private ReadOnly _loadKey As Func(Of ExchangeDeviceKey)
     Private ReadOnly _hasRelay As Boolean
     Private ReadOnly _tunnelPin As String
-    Private ReadOnly _credentialUser As String
-    Private ReadOnly _credentialPassword As String
+    Private _credentialUser As String
+    Private _credentialPassword As String
 
     Private _epoch As UInteger
     Private _boxJson As String
@@ -243,6 +243,21 @@ Friend NotInheritable Class ExchangeSealedBroadcastSession
     ''' True when the record has to be published (a new box, or a replacement waiting): the caller sends `broadcast-update`, then
     ''' calls <see cref="MarkPublished"/>. An empty list is "the directory has not been read yet" (just after a welcome), not
     ''' "everyone was removed", so it changes nothing.</summary>
+    ''' <summary>Credential revocation must rebuild the box even when its recipients are unchanged. Invalidate the old box
+    ''' immediately, including offline, so it cannot be republished with a password the serving boundary already refuses.</summary>
+    Public Sub SetCredentials(user As String, password As String)
+        SyncLock _gate
+            If _disposed Then Return
+            user = If(user, "")
+            password = If(password, "")
+            If _credentialUser = user AndAlso _credentialPassword = password Then Return
+            _credentialUser = user
+            _credentialPassword = password
+            _boxJson = Nothing
+            _boxDirty = True
+        End SyncLock
+    End Sub
+
     Public Function Refresh() As Boolean
         Dim dir As IExchangeSealedDirectory = CurrentDirectory()
         If dir Is Nothing OrElse Not dir.CanSealThroughServer Then Return NeedsPublish()

@@ -19,6 +19,7 @@ Imports Renci.SshNet.Sftp
 Friend NotInheritable Class SftpProvider
     Implements IFileSystemProvider
     Implements ITypedStatProvider
+    Implements IManagerDirectoryProvider
     Implements IDisposable
 
     Private ReadOnly descriptor_Value As ResourceDescriptor
@@ -37,6 +38,10 @@ Friend NotInheritable Class SftpProvider
     Private ReadOnly listing_Max_Depth As Integer
     Private ReadOnly listing_Max_Entries As Integer
     Private ReadOnly resource_Pin As String
+
+    ' The logical resource owns the candidate set and gate. A winning endpoint alone cannot reconstruct them.
+    Friend Property ReconnectRound As Func(Of CancellationToken, Task(Of ResourceResult(Of SftpProvider)))
+    Friend Property ReconnectClock As IResolutionClock
 
     Private Const ConnectTimeoutSeconds As Integer = 5
     Private Const KeepAliveIntervalSeconds As Integer = 30
@@ -121,7 +126,7 @@ Friend NotInheritable Class SftpProvider
         If Not descriptor_Value.PinRequired Then Return
         SyncLock gate
             Try
-                ConnectLocked(retry:=False, ct:=ct)
+                ConnectLocked(retry:=True, ct:=ct)
                 ct.ThrowIfCancellationRequested()
                 client.GetAttributes(descriptor_Value.RootPath)
             Catch ex As OperationCanceledException
@@ -165,6 +170,11 @@ Friend NotInheritable Class SftpProvider
         If descriptor_Value.PinRequired AndAlso pin_Rejected Then
             ResourcePinMemory.Forget(descriptor_Value)
             Throw New ResourceFailureException(New ResourceFailure(ResourceFailureKind.Auth))
+        End If
+
+        If retry AndAlso ReconnectRound IsNot Nothing Then
+            ReconnectAllLocked(ct)
+            Return
         End If
 
         Dim port As Integer = If(descriptor_Value.Port > 0, descriptor_Value.Port, 22)
@@ -240,6 +250,38 @@ Friend NotInheritable Class SftpProvider
         Next
 
         Throw New ResourceFailureException(If(last, New ResourceFailure(ResourceFailureKind.Transport)))
+    End Sub
+
+    ''' <summary>SHARE-SESSION rules 6-10: drop the old slot, race every saved path, then keep the
+    ''' verified connection under the existing provider identity. No browse/cache reference is replaced.</summary>
+    Private Sub ReconnectAllLocked(ct As CancellationToken)
+        DisposeClientLocked()
+        Dim oldLease As IDisposable = OwnedResource
+        OwnedResource = Nothing
+        oldLease?.Dispose()
+        Dim result = ReconnectPolicy.RunAsync(ReconnectRound, If(ReconnectClock, New SystemResolutionClock()), ct).GetAwaiter().GetResult()
+        If Not result.Succeeded Then
+            If descriptor_Value.PinRequired AndAlso result.Failure.Kind = ResourceFailureKind.Auth Then
+                pin_Rejected = True
+                ResourcePinMemory.Forget(descriptor_Value)
+            End If
+            Throw New ResourceFailureException(result.Failure)
+        End If
+        Using winner As SftpProvider = result.Value
+            SyncLock winner.gate
+                ct.ThrowIfCancellationRequested()
+                If winner.client Is Nothing OrElse Not winner.client.IsConnected Then
+                    Throw New ResourceFailureException(New ResourceFailure(ResourceFailureKind.Transport))
+                End If
+                RemoveHandler winner.client.HostKeyReceived, AddressOf winner.OnHostKeyReceived
+                client = winner.client
+                winner.client = Nothing
+                OwnedResource = winner.OwnedResource
+                winner.OwnedResource = Nothing
+                connection_Cancellation = ct
+                AddHandler client.HostKeyReceived, AddressOf OnHostKeyReceived
+            End SyncLock
+        End Using
     End Sub
 
     ''' <summary>
@@ -335,15 +377,29 @@ Friend NotInheritable Class SftpProvider
 
     ''' <summary>Runs a provider verb and turns anything it throws into a classified failure.
     ''' A caller never has to know SSH.NET to tell "the link dropped" from "no such file".</summary>
-    Private Function Guarded(Of T)(work As Func(Of T)) As T
+    Private Function Guarded(Of T)(work As Func(Of T), Optional retryRead As Boolean = False,
+                                   Optional ct As CancellationToken = Nothing) As T
         Try
             Return work()
         Catch ex As ResourceFailureException
+            If retryRead AndAlso ex.Failure.IsRetryable AndAlso ReconnectRound IsNot Nothing Then
+                SyncLock gate
+                    ReconnectAllLocked(ct)
+                End SyncLock
+                Return Guarded(work)
+            End If
             Throw
         Catch ex As ObjectDisposedException
             Throw
         Catch ex As Exception
-            Throw New ResourceFailureException(Classify(ex))
+            Dim failure = Classify(ex)
+            If retryRead AndAlso failure.IsRetryable AndAlso ReconnectRound IsNot Nothing Then
+                SyncLock gate
+                    ReconnectAllLocked(ct)
+                End SyncLock
+                Return Guarded(work)
+            End If
+            Throw New ResourceFailureException(failure)
         End Try
     End Function
 
@@ -403,7 +459,7 @@ Friend NotInheritable Class SftpProvider
                 EnumerateDirectoryInternal(canonicalDir, results, currentDepth:=0, includeSubfolders:=includeSubfolders, ct:=ct, truncated:=truncated)
                 Volatile.Write(listing_Truncated, If(truncated, 1, 0))
                 Return results
-            End Function)
+            End Function, retryRead:=True, ct:=ct)
     End Function
 
     Private Sub EnumerateDirectoryInternal(dirPath As String,
@@ -499,6 +555,14 @@ Friend NotInheritable Class SftpProvider
     End Function
 
     Public Function Stat(path As String) As StatResult Implements ITypedStatProvider.Stat
+        Try
+            Return Guarded(Function() StatOnce(path), retryRead:=True)
+        Catch ex As ResourceFailureException
+            Return StatResult.Failed(ex.Failure)
+        End Try
+    End Function
+
+    Private Function StatOnce(path As String) As StatResult
         If is_Disposed Then Return StatResult.Failed(New ResourceFailure(ResourceFailureKind.LocalIO, Nothing, "Disposed"))
         If String.IsNullOrEmpty(path) Then Return StatResult.Missing()
 
@@ -522,6 +586,7 @@ Friend NotInheritable Class SftpProvider
             End SyncLock
         Catch ex As Exception
             Dim failure As ResourceFailure = Classify(ex)
+            If failure.IsRetryable AndAlso ReconnectRound IsNot Nothing Then Throw New ResourceFailureException(failure)
             If failure.Kind = ResourceFailureKind.SftpStatus AndAlso failure.StatusCode = 2 Then Return StatResult.Missing()
             If failure.Kind = ResourceFailureKind.Auth OrElse
                (failure.Kind = ResourceFailureKind.SftpStatus AndAlso failure.StatusCode = 3) Then Return StatResult.Denied(failure)
@@ -529,7 +594,155 @@ Friend NotInheritable Class SftpProvider
         End Try
     End Function
 
+    ' ---------------------------------------------------------------- the file manager (257, N1) ----
+    ' SFTP directory calls live here and nowhere else: the same client, the same gate, the same reconnect ladder
+    ' and failure classes as every other verb. Nothing below recurses, whatever the viewer's "include subfolders"
+    ' preference says, and nothing sets the viewer's own truncation flag (WasTruncated belongs to ListEntries).
+
+    ''' <summary>The immediate children of a server folder: folders and files, a symbolic link as a link (it is never
+    ''' entered), and an explicit Truncated result when the entry bound was hit - a prefix of the folder is never
+    ''' passed off as the folder.</summary>
+    Public Function ListChildren(dirPath As String, ct As CancellationToken) As DirectoryListing Implements IManagerDirectoryProvider.ListChildren
+        If is_Disposed Then Return DirectoryListing.Failed(New ResourceFailure(ResourceFailureKind.LocalIO, Nothing, "Disposed"))
+        Dim canonical As String = CanonicalizePath(dirPath)
+        If canonical Is Nothing Then Return DirectoryListing.Missing()
+        Try
+            Return Guarded(Of DirectoryListing)(Function() ListChildrenOnce(canonical, ct), retryRead:=True, ct:=ct)
+        Catch ex As ResourceFailureException
+            Return DirectoryListing.FromFailure(ex.Failure)
+        Catch ex As ObjectDisposedException
+            Return DirectoryListing.Failed(New ResourceFailure(ResourceFailureKind.LocalIO, Nothing, "Disposed"))
+        End Try
+    End Function
+
+    Private Function ListChildrenOnce(canonical As String, ct As CancellationToken) As DirectoryListing
+        ct.ThrowIfCancellationRequested()
+        EnsureConnected(ct)
+        Dim results As New List(Of ResourceEntry)()
+        Dim truncated As Boolean
+        SyncLock gate
+            EnsureConnected(ct)
+            client.OperationTimeout = TimeSpan.FromSeconds(ListingTimeoutSeconds)
+            If Not client.GetAttributes(canonical).IsDirectory Then Return DirectoryListing.NotADirectory()
+            Using deadline As CancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(ct)
+                deadline.CancelAfter(TimeSpan.FromSeconds(ListingTimeoutSeconds))
+                Dim files = client.ListDirectoryAsync(canonical, deadline.Token).GetAsyncEnumerator(deadline.Token)
+                Try
+                    While files.MoveNextAsync().AsTask().GetAwaiter().GetResult()
+                        Dim f As ISftpFile = files.Current
+                        If f.Name = "." OrElse f.Name = ".." Then Continue While
+                        ct.ThrowIfCancellationRequested()
+                        If results.Count >= listing_Max_Entries Then
+                            truncated = True
+                            Exit While
+                        End If
+                        results.Add(ToChildEntry(f))
+                    End While
+                Catch ex As OperationCanceledException When Not ct.IsCancellationRequested
+                    Throw New TimeoutException("SFTP listing timed out.")
+                Finally
+                    files.DisposeAsync().AsTask().GetAwaiter().GetResult()
+                End Try
+            End Using
+        End SyncLock
+        Return DirectoryListing.Listed(results, truncated)
+    End Function
+
+    Private Shared Function ToChildEntry(f As ISftpFile) As ResourceEntry
+        Dim isDir As Boolean = f.IsDirectory
+        Return New ResourceEntry With {
+            .FullPath = CanonicalizePath(f.FullName),
+            .Name = f.Name,
+            .Length = If(isDir, 0L, f.Attributes.Size),
+            .LastWriteUtc = f.Attributes.LastWriteTimeUtc,
+            .IsDirectory = isDir,
+            .LocalPath = "",
+            .IsLink = f.IsSymbolicLink,
+            .IsHidden = f.Name.StartsWith(".", StringComparison.Ordinal),
+            .VersionTag = f.Attributes.Size.ToString(CultureInfo.InvariantCulture) & ":" & f.Attributes.LastWriteTimeUtc.Ticks.ToString(CultureInfo.InvariantCulture)
+        }
+    End Function
+
+    ''' <summary>A typed stat of the path ITSELF (lstat): a symbolic link is reported as a link, not as whatever it points to,
+    ''' so the manager can refuse to walk through one.</summary>
+    Public Function StatEntry(path As String) As StatResult Implements IManagerDirectoryProvider.StatEntry
+        Try
+            Return Guarded(Function() StatEntryOnce(path), retryRead:=True)
+        Catch ex As ResourceFailureException
+            Return StatResult.Failed(ex.Failure)
+        Catch ex As ObjectDisposedException
+            Return StatResult.Failed(New ResourceFailure(ResourceFailureKind.LocalIO, Nothing, "Disposed"))
+        End Try
+    End Function
+
+    Private Function StatEntryOnce(path As String) As StatResult
+        If is_Disposed Then Return StatResult.Failed(New ResourceFailure(ResourceFailureKind.LocalIO, Nothing, "Disposed"))
+        Dim canonical As String = CanonicalizePath(path)
+        If canonical Is Nothing Then Return StatResult.Missing()
+        Try
+            SyncLock gate
+                EnsureConnected()
+                Return StatResult.Found(ToChildEntry(client.Get(canonical)))
+            End SyncLock
+        Catch ex As Exception
+            Dim failure As ResourceFailure = Classify(ex)
+            If failure.IsRetryable AndAlso ReconnectRound IsNot Nothing Then Throw New ResourceFailureException(failure)
+            If failure.Kind = ResourceFailureKind.SftpStatus AndAlso failure.StatusCode = 2 Then Return StatResult.Missing()
+            If failure.Kind = ResourceFailureKind.Auth OrElse
+               (failure.Kind = ResourceFailureKind.SftpStatus AndAlso failure.StatusCode = 3) Then Return StatResult.Denied(failure)
+            Return StatResult.Failed(failure)
+        End Try
+    End Function
+
+    Public Function IsWithinRoot(rootPath As String, path As String) As Boolean Implements IManagerDirectoryProvider.IsWithinRoot
+        Return ManagerPathRules.Contains(ResourceKind.Sftp, rootPath, path)
+    End Function
+
+    Public Function PathsEqual(a As String, b As String) As Boolean Implements IManagerDirectoryProvider.PathsEqual
+        Return ManagerPathRules.AreEqual(ResourceKind.Sftp, a, b)
+    End Function
+
+    Public Function ParentOf(path As String) As String Implements IManagerDirectoryProvider.ParentOf
+        Return ManagerPathRules.ParentOf(ResourceKind.Sftp, path)
+    End Function
+
+    Public Function RemoveEmptyDirectory(rootPath As String, path As String) As DirectoryRemoval Implements IManagerDirectoryProvider.RemoveEmptyDirectory
+        If is_Disposed OrElse Not capabilities_Value.CanDelete Then Return DirectoryRemoval.Refused
+        If Not ManagerPathRules.Contains(ResourceKind.Sftp, rootPath, path) OrElse
+           ManagerPathRules.AreEqual(ResourceKind.Sftp, rootPath, path) Then Return DirectoryRemoval.Refused
+        Dim canonical As String = CanonicalizePath(path)
+        If canonical Is Nothing Then Return DirectoryRemoval.Refused
+        Try
+            Return Guarded(Of DirectoryRemoval)(
+                Function()
+                    SyncLock gate
+                        EnsureConnected()
+                        Dim target As ISftpFile = client.Get(canonical)
+                        If Not target.IsDirectory OrElse target.IsSymbolicLink Then Return DirectoryRemoval.Refused
+                        For Each child As ISftpFile In client.ListDirectory(canonical)
+                            If child.Name <> "." AndAlso child.Name <> ".." Then Return DirectoryRemoval.NotEmpty
+                        Next
+                        client.DeleteDirectory(canonical)
+                        Return DirectoryRemoval.Removed
+                    End SyncLock
+                End Function)
+        Catch ex As ResourceFailureException
+            If ex.Failure.Kind = ResourceFailureKind.SftpStatus AndAlso ex.Failure.StatusCode = 2 Then Return DirectoryRemoval.Missing
+            If ex.Failure.Kind = ResourceFailureKind.SftpStatus AndAlso ex.Failure.StatusCode = 3 Then Return DirectoryRemoval.Denied
+            Return DirectoryRemoval.Failed
+        Catch ex As ObjectDisposedException
+            Return DirectoryRemoval.Failed
+        End Try
+    End Function
+
     Public Sub Download(remotePath As String, localPath As String, progress As IProgress(Of Long), ct As CancellationToken) Implements IFileSystemProvider.Download
+        Guarded(Function()
+                    DownloadOnce(remotePath, localPath, progress, ct)
+                    Return 0
+                End Function, retryRead:=True, ct:=ct)
+    End Sub
+
+    Private Sub DownloadOnce(remotePath As String, localPath As String, progress As IProgress(Of Long), ct As CancellationToken)
         CheckNotDisposed()
         Dim canonical As String = CanonicalizePath(remotePath)
         Dim partPath As String = localPath & ".fms-part"

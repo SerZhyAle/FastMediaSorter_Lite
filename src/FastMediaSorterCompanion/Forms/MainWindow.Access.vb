@@ -87,18 +87,28 @@ Partial Public NotInheritable Class MainWindow
     End Sub
 
     ''' <summary>
-    ''' "Статистика": the three local counters, plus the one button to the window that can
-    ''' RESET them. The main window never grew a reset of its own - Share_Status_Form
-    ''' already exists, is reachable from the tray, and duplicating it here is what put a
-    ''' four-row reporting block on a window nobody opens to read reports.
+    ''' "Статистика": a link to the window that shows the counters and can RESET them, with
+    ''' the two live counters beside it. The main window never grew a reset of its own -
+    ''' Share_Status_Form already exists, is reachable from the tray, and duplicating it here
+    ''' is what put a four-row reporting block on a window nobody opens to read reports.
+    ''' It is a link and not a fold: a group that opened a window instead of its own body
+    ''' broke COLLAPSIBLE-GROUP 4.1 and read as a group that did nothing.
     ''' </summary>
-    Private Sub BuildStatsSection(sec As CollapsibleSection)
-        btnStatsDetails = New Button With {.AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink,
-            .Anchor = AnchorStyles.Left, .Padding = New Padding(12, 4, 12, 4), .Margin = New Padding(0, 4, 0, 4),
-            .Text = Localization.T("Подробнее..")}
-        ButtonGlyphs.Apply(btnStatsDetails, "app.info")
-        AddHandler btnStatsDetails.Click, AddressOf OnStatsDetailsClicked
-        sec.AddBodyRow(btnStatsDetails)
+    Private Sub BuildStatsDoor()
+        _lnkStats = New LinkLabel With {.AutoSize = True, .Text = Localization.T("Статистика"),
+            .Margin = New Padding(0, 0, 14, 0)}
+        AddHandler _lnkStats.LinkClicked, Sub() OnStatsDetailsClicked(Me, EventArgs.Empty)
+        toolTip.SetToolTip(_lnkStats, Localization.T("Подробнее.."))
+
+        _lblStatsSummary = New Label With {.AutoSize = True, .Margin = New Padding(0),
+            .ForeColor = ThemeService.Palette.TextMuted}
+
+        ' Starts under the state triangles' column, so it reads as a line below the groups.
+        _rowStats = New FlowLayoutPanel With {.AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink,
+            .Dock = DockStyle.Top, .WrapContents = True, .FlowDirection = FlowDirection.LeftToRight,
+            .Margin = New Padding(0, 2, 0, 2), .Padding = New Padding(6, 6, 6, 6), .Visible = False}
+        _rowStats.Controls.Add(_lnkStats)
+        _rowStats.Controls.Add(_lblStatsSummary)
     End Sub
 
     Friend Shared ShowStatsDialogOverride As Action(Of IWin32Window, WorkerStatus)
@@ -466,14 +476,16 @@ Partial Public NotInheritable Class MainWindow
     End Sub
 
     Private Sub UpdateStatsSummary()
-        If _secStats Is Nothing Then Return
+        If _lblStatsSummary Is Nothing Then Return
         Dim s As WorkerStats = If(_status IsNot Nothing, _status.Stats, Nothing)
         If s Is Nothing Then
-            _secStats.Summary = "-"
+            _lblStatsSummary.Text = "-"
             Return
         End If
-        _secStats.Summary = Localization.TF("{0} подключений, {1} файлов", s.TotalConnections, s.FilesServedTotal)
-        _secStats.SummaryColor = ThemeService.Palette.TextMuted
+        _lblStatsSummary.Text = Localization.TF("{0} подключений, {1} файлов", s.TotalConnections, s.FilesServedTotal)
+        _lblStatsSummary.ForeColor = ThemeService.Palette.TextMuted
+        ' The link's name is the caption alone; a screen reader gets the numbers as its description.
+        _lnkStats.AccessibleDescription = _lblStatsSummary.Text
     End Sub
 
     ''' <summary>Spec 237 rule S-0: the resources fold's live one-liner - "collapsed is not
@@ -498,10 +510,10 @@ Partial Public NotInheritable Class MainWindow
         Dim running As Boolean = _status IsNot Nothing AndAlso _status.Running
         Dim s As WorkerStats = If(_status IsNot Nothing, _status.Stats, Nothing)
         If Not running OrElse s Is Nothing Then
-            If _secStats IsNot Nothing Then _secStats.Visible = False
+            If _rowStats IsNot Nothing Then _rowStats.Visible = False
             Return
         End If
-        If _secStats IsNot Nothing Then _secStats.Visible = True
+        If _rowStats IsNot Nothing Then _rowStats.Visible = True
         If lblStatLast IsNot Nothing Then
             Dim never As String = Localization.T("ещё не было")
             Dim lastAt As String = Share_Status_Form.FormatTime(s.LastConnectionAt)

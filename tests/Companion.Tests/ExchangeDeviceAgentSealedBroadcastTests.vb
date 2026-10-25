@@ -19,7 +19,7 @@ Imports Xunit
 <Collection("Exchange device host")>
 Public Class ExchangeDeviceAgentSealedBroadcastTests
 
-    Private Const BroadcastId As String = "bcast-0123456789abcdef"
+    Private Const BroadcastId As String = "bcast-0123456789abcdeA"
     Private Const Secret As String = "s3cret-pass-0042"
 
     Private Shared Async Function OnlineAgentAsync(rig As ExchangeDeviceAgentTests.Rig, acc As ExchangeStubAccount, sealedServer As Boolean) As Task(Of ExchangeDeviceAgent)
@@ -65,6 +65,7 @@ Public Class ExchangeDeviceAgentSealedBroadcastTests
             .BroadcastId = BroadcastId,
             .Password = password,
             .AuthUser = input.AuthUser,
+            .Credentials = LiveCredentialPairs.ForLink(password, iterations:=2),      ' ticket 263 T-3: none without a password
             .RelayUrl = input.RelayUrl,
             .TunnelUrl = input.TunnelUrl,
             .Sealed = isSealed,
@@ -89,6 +90,48 @@ Public Class ExchangeDeviceAgentSealedBroadcastTests
     End Function
 
     ' ------------------------------------------------------------------------------------------------ the record
+
+    <Theory>
+    <InlineData(False)>
+    <InlineData(True)>
+    Public Async Function Endpoint_and_cap_changes_update_the_record_with_the_same_id_and_current_verifiers(sealedServer As Boolean) As Task
+        Using acc As New ExchangeStubAccount(), rig As New ExchangeDeviceAgentTests.Rig()
+            Using agent As ExchangeDeviceAgent = Await OnlineAgentAsync(rig, acc, sealedServer)
+                Dim link As String = If(sealedServer, agent.NewBroadcastLinkKey(BroadcastId), "")
+                Dim state As LiveProducerState = StateFor(sealedServer, sealedServer, Secret, link, 1)
+                state.MaxListeners = 4
+                Dim hub As LiveBroadcastHub = NewHub()
+                agent.OnBroadcastStarted(state, hub, hub)
+                Try
+                    Assert.True(Await ExchangeStubAccount.WaitUntilAsync(Function() acc.CountOf("broadcast-start") > 0))
+                    Dim sealedSession As ExchangeSealedBroadcastSession = agent.CurrentSealed()
+                    Dim original As String = If(state.RecordDescriptorJson.Length > 0, state.RecordDescriptorJson, state.DescriptorJson)
+                    state.RecordDescriptorJson = original.Replace("127.0.0.1", "192.168.12.34")
+                    state.MaxListeners = 2
+                    Dim before As Integer = acc.CountOf("broadcast-update")
+                    Assert.True(Await agent.OnBroadcastChangedAsync(state))
+                    Assert.True(Await ExchangeStubAccount.WaitUntilAsync(Function() acc.CountOf("broadcast-update") > before))
+                    Dim record As String = RecordsOf(acc).Last()
+                    Assert.Contains("192.168.12.34", record)
+                    Assert.DoesNotContain(Secret, record)
+                    Using doc As JsonDocument = JsonDocument.Parse(record)
+                        Assert.Equal(BroadcastId, doc.RootElement.GetProperty("broadcastId").GetString())
+                        Assert.Equal(state.StartedAtUtc, doc.RootElement.GetProperty("startedAt").GetDateTime(), TimeSpan.FromMilliseconds(1))
+                    End Using
+                    Assert.Equal(1, acc.CountOf("broadcast-start"))
+                    Assert.Same(sealedSession, agent.CurrentSealed())
+                    Assert.Equal(4L, acc.BroadcastCaps().First())
+                    Assert.Equal(2L, acc.BroadcastCaps().Last())
+                    Using verifiers As JsonDocument = JsonDocument.Parse(acc.BroadcastVerifiersLog().Last().Split("|"c)(1))
+                        Assert.Equal(2, verifiers.RootElement.GetArrayLength())
+                    End Using
+                Finally
+                    agent.OnBroadcastStopped(BroadcastId)
+                End Try
+                Assert.False(Await agent.OnBroadcastChangedAsync(state))
+            End Using
+        End Using
+    End Function
 
     <Fact>
     Public Async Function A_sealed_broadcast_goes_out_with_a_box_for_its_recipients_and_never_a_key_or_credentials_in_clear() As Task
@@ -214,6 +257,65 @@ Public Class ExchangeDeviceAgentSealedBroadcastTests
                         agent.OnBroadcastStopped(BroadcastId)
                     End Try
                 End Using
+            End Using
+        End Using
+    End Function
+
+    <Fact>
+    Public Async Function Pipe_opens_a_broadcast_and_guest_access_registers_then_seals_a_separate_group() As Task
+        Using acc As New ExchangeStubAccount(), rig As New ExchangeDeviceAgentTests.Rig(), guestKey = ExchangeDeviceKey.Generate()
+            Using agent As ExchangeDeviceAgent = Await OnlineAgentAsync(rig, acc, True)
+                Dim link = agent.NewBroadcastLinkKey(BroadcastId)
+                Dim hub = NewHub()
+                agent.OnBroadcastStarted(StateFor(True, True, "", link, 1), hub, hub)
+                Try
+                    Assert.True(Await ExchangeStubAccount.WaitUntilAsync(Function() RecordsOf(acc).Count > 0))
+                    acc.Broadcasts.Add(RecordsOf(acc).Last())
+                    Await acc.PushDirectoryAsync()
+                    Assert.True(Await ExchangeStubAccount.WaitUntilAsync(Function() agent.GetFullDirectory().Broadcasts.Count = 1))
+                    Using req = JsonDocument.Parse("{""broadcastId"":""" & BroadcastId & """}")
+                        Dim opened = Await agent.HandleAsync(ExchangeAgentPipe.RequestGetBroadcastSeal, req.RootElement, CancellationToken.None)
+                        Assert.True(opened.Ok, opened.Error)
+                        Using payload = JsonDocument.Parse(opened.DataJson)
+                            Assert.Equal(agent.GetStatus().DeviceId, payload.RootElement.GetProperty("from").GetProperty("deviceId").GetString())
+                        End Using
+                    End Using
+                    Assert.Equal("", Await agent.GrantGuestAsync("visitor", BroadcastId, True, False, CancellationToken.None))
+                    Assert.True(Await ExchangeStubAccount.WaitUntilAsync(Function() acc.GrantFrames.Count = 1))
+                    Dim registration = acc.GrantFrames.ToArray()(0)
+                    Dim box As ExchangeSealedBox = Nothing
+                    Assert.True(ExchangeSealedBox.TryParse(registration.Record("sealed"), box))
+                    Assert.Empty(box.Keys)
+                    Assert.Equal("", registration.Record("access"))
+                    Assert.Equal("", registration.Record("credentials"))
+                    Dim guestId = "q3Vb7YtK0xP2mN9sLfR4wA"
+                    Dim devices = "[{""deviceId"":""" & guestId & """,""deviceName"":""Visitor"",""e2eKey"":{""v"":1,""kem"":""" & guestKey.Kem & """}}]"
+                    acc.Grants.Add("{""grantId"":""" & registration.Text("grantId") & """,""guest"":""visitor"",""broadcastId"":""" & BroadcastId & """,""devices"":" & devices & "}")
+                    Await acc.PushDirectoryAsync()
+                    Assert.True(Await ExchangeStubAccount.WaitUntilAsync(Function() acc.GrantFrames.Count >= 2))
+                    Dim replacement = acc.GrantFrames.ToArray()(1)
+                    Assert.True(ExchangeSealedBox.TryParse(replacement.Record("sealed"), box))
+                    Dim openedGrant = ExchangeSealedBoxes.Open(box, guestId, guestKey, ExchangeSealedContext.Grant(registration.Text("grantId")), Function(id) box.FromKey)
+                    Try
+                        Assert.True(openedGrant.Succeeded)
+                        Using payload = JsonDocument.Parse(openedGrant.Payload)
+                            Dim group = payload.RootElement.GetProperty("relayKey").GetString()
+                            Assert.NotEqual(link, group)
+                            Assert.NotEqual(agent.CurrentSealed().Keys.RelayKeyText(), group)
+                            Assert.DoesNotContain(group, String.Join(vbLf, rig.Log))
+                            Assert.Equal(2, agent.CurrentSealed().Keys.LinkCount)
+                        End Using
+                    Finally
+                        openedGrant.Wipe()
+                    End Try
+                    acc.Grants.Clear()
+                    Await acc.PushDirectoryAsync()
+                    Assert.True(Await ExchangeStubAccount.WaitUntilAsync(Function() agent.CurrentSealed().Keys.LinkCount = 1))
+                    Assert.DoesNotContain(link, String.Join(vbLf, rig.Log))
+                    Assert.DoesNotContain(box.Ciphertext, String.Join(vbLf, rig.Log))
+                Finally
+                    agent.OnBroadcastStopped(BroadcastId)
+                End Try
             End Using
         End Using
     End Function

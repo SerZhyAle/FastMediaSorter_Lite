@@ -69,6 +69,11 @@ Partial Public NotInheritable Class Share_Settings_Form
             Dim at As Integer = If(_secHelp IsNot Nothing, list.IndexOf(_secHelp), -1)
             If at < 0 Then list.Add(_secAccount) Else list.Insert(at, _secAccount)
         End If
+        ' The Google Drive page (Share_Settings_Form.Drive.vb) follows the account page, before Help.
+        If _secDrive IsNot Nothing Then
+            Dim driveAt As Integer = If(_secHelp IsNot Nothing, list.IndexOf(_secHelp), -1)
+            If driveAt < 0 Then list.Add(_secDrive) Else list.Insert(driveAt, _secDrive)
+        End If
         Return list.ToArray()
     End Function
 
@@ -132,6 +137,13 @@ Partial Public NotInheritable Class Share_Settings_Form
         _btnAccAdd = AccButton(Localization.T("Добавить устройство"), AddressOf OnAccountAddDevice, IconMap.GetMeaning("_btnAccAdd").GlyphId)
         Dim addRow As FlowLayoutPanel = AccFlow()
         addRow.Controls.Add(_btnAccAdd)
+        addRow.Controls.Add(AccButton(Localization.T("Гостевой доступ.."), Sub()
+            Dim agent = ExchangeDeviceHost.Current
+            If agent Is Nothing Then Return
+            Using dialog As New Exchange_Guest_Grant_Form(agent)
+                dialog.ShowDialog(Me)
+            End Using
+        End Sub, "action.add"))
         sec.AddBodyRow(addRow)
         _accPairing = AccFlow()
         _accPairing.FlowDirection = FlowDirection.TopDown

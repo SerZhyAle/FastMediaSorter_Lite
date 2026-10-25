@@ -71,11 +71,14 @@ Public Class FmsConfigExportTests
 
     Private Shared Function PinnedResource(Optional name As String = "Home NAS",
                                            Optional includeSubfolders As Boolean? = Nothing,
-                                           Optional endpoints As List(Of ResourceEndpoint) = Nothing) As ResourceDescriptor
+                                           Optional endpoints As List(Of ResourceEndpoint) = Nothing,
+                                           Optional allFiles As Boolean? = Nothing,
+                                           Optional showHiddenFiles As Boolean? = Nothing) As ResourceDescriptor
         Dim d As New ResourceDescriptor With {
             .Id = "res:test", .Kind = ResourceKind.Sftp, .DisplayName = name,
             .Host = "192.168.1.5", .Port = 2022, .UserName = "fms", .RootPath = "/Photos",
-            .ReadOnlyHint = False, .PinnedFingerprint = PinA, .IncludeSubfolders = includeSubfolders}
+            .ReadOnlyHint = False, .PinnedFingerprint = PinA, .IncludeSubfolders = includeSubfolders,
+            .AllFiles = allFiles, .ShowHiddenFiles = showHiddenFiles}
         If endpoints IsNot Nothing Then d.Endpoints = endpoints
         Return d
     End Function
@@ -293,6 +296,35 @@ Public Class FmsConfigExportTests
             Assert.Equal("blob:pw", store.GetBlob(back.SecretHandle))
             Assert.Null(back.LastUsedUtc)
         Next
+    End Sub
+
+    <Fact>
+    Public Sub Export_WithExplicitPresentationSettings_EmitsSchema2AndExactByteFixture()
+        Dim store As New MemoryStore()
+        store.Blobs("cred:1") = "blob:pw"
+        Dim source As ResourceDescriptor = PinnedResource(allFiles:=True, showHiddenFiles:=False, endpoints:=LanPlusForward())
+        source.SecretHandle = "cred:1"
+        Dim result As FmsExportResult = FmsConfigExport.Export(source, True, store, InjectedClock, AddressOf Unprotect)
+        Assert.True(result.Succeeded)
+
+        Dim expected As String = "{""schemaVersion"":2,""resourceName"":""Home NAS"",""protocol"":""sftp""," &
+            """accessPaths"":[{""kind"":""lan"",""host"":""192.168.1.5"",""port"":2022}," &
+            "{""kind"":""portforward"",""host"":""home.example.org"",""port"":55001}]," &
+            """username"":""fms"",""password"":""pw"",""hostKeyFingerprintSha256"":""" & PinA & """," &
+            """roots"":[{""virtualPath"":""/Photos"",""readOnly"":false,""showHiddenFiles"":false,""allFiles"":true}],""createdAt"":""" & CreatedAt & """}"
+        Assert.Equal(expected, result.Json)
+
+        Dim read As FmsConfigReadResult = FmsConfigReader.ReadText(result.Json)
+        Assert.True(read.Succeeded)
+        Dim registry As New MemoryRegistry()
+        Dim preview As ImportPreview = ResourceImport.Preview(read.Plan, registry.Resources(), AddressOf ResourceImport.NewResourceId)
+        Assert.True(preview.CanApply)
+        Dim applied As ImportApplyResult = ResourceImport.Apply(preview, Nothing, False, AddressOf registry.Read, AddressOf registry.Write, store, AddressOf Protect)
+        Assert.Equal(ImportApplyOutcome.Applied, applied.Outcome)
+
+        Dim back As ResourceDescriptor = registry.Resources().Single()
+        Assert.True(back.AllFiles.HasValue AndAlso back.AllFiles.Value)
+        Assert.True(back.ShowHiddenFiles.HasValue AndAlso Not back.ShowHiddenFiles.Value)
     End Sub
 
     <Fact>

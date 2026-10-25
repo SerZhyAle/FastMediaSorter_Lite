@@ -128,7 +128,7 @@ Partial Public Class Image_Panel_Form
             End If
             Dim row As PanelFileRow = rows(e.ItemIndex)
             Dim item As New ListViewItem(row.Name)
-            item.SubItems.Add(PanelText.KindName(row.Kind))
+            item.SubItems.Add(PanelText.KindName(row))
             item.SubItems.Add(PanelText.FormatSize(row.SizeBytes))
             item.SubItems.Add(PanelText.FormatDate(row.Modified, row.HasMetadata))
             e.Item = item
@@ -239,6 +239,14 @@ End Class
 ''' <summary>The words and numbers of the details list. Pure, so a size is spelled the same on
 ''' every machine and a kind has one name in one place.</summary>
 Friend Module PanelText
+
+    ''' <summary>What a row IS in words (257): a link and a folder have no media kind, so they say so; a file takes its kind's name.</summary>
+    Friend Function KindName(row As PanelFileRow) As String
+        If row Is Nothing Then Return ""
+        If row.IsLink Then Return Localization.T("Ссылка")
+        If row.IsDirectory Then Return Localization.T("Папка")
+        Return KindName(row.Kind)
+    End Function
 
     Friend Function KindName(kind As MediaKind) As String
         Select Case kind

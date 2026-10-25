@@ -4,15 +4,18 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <script>
-(function(){try{
-  var t=localStorage.getItem('sza-theme');
+(function(){
+  var t;try{t=localStorage.getItem('sza-theme');}catch(e){}
   if(t!=='dark'&&t!=='light')t=matchMedia('(prefers-color-scheme: light)').matches?'light':'dark';
   document.documentElement.setAttribute('data-theme',t);
-  var l=localStorage.getItem('sza-lang');
+  var l;try{l=localStorage.getItem('sza-lang');}catch(e){}
+  var q=new URLSearchParams(location.search),requested=q.has('lang')?q.get('lang'):q.get('l');
+  if(requested){requested=requested.toLowerCase();if(requested==='uk')requested='ua';if(requested==='en'||requested==='ru'||requested==='ua')l=requested;}
   if(l==='uk')l='ua';
   if(l!=='ru'&&l!=='en'&&l!=='ua'){var n=(navigator.language||'en').toLowerCase();l=n.indexOf('ru')==0?'ru':n.indexOf('uk')==0?'ua':'en';}
   document.documentElement.setAttribute('data-lang',l);
-}catch(e){}})();
+  document.addEventListener('click',function(e){var a=e.target.closest&&e.target.closest('a[href]');if(!a)return;try{var u=new URL(a.href,location.href);if(u.hostname==='serzhyale.github.io'||u.hostname==='sza.od.ua'){u.searchParams.delete('l');u.searchParams.set('lang',document.documentElement.getAttribute('data-lang')==='ua'?'uk':document.documentElement.getAttribute('data-lang'));a.href=u.href;}}catch(ignore){}});
+})();
 </script>
 <title>Ordena fotos y vídeos | Fast Media Sorter &amp; Sharing</title>
 <meta name="description" content="Recorra a toda velocidad carpetas enormes de fotos y vídeos y mueva, copie, renombre o elimine cada archivo con una sola tecla.">
@@ -97,8 +100,11 @@
     <p class="lead lead-narrow">Recorra a toda velocidad carpetas enormes de fotos y vídeos y mueva, copie, renombre o elimine cada archivo con una sola tecla.</p>
     <p class="lead lead-narrow">«Sharing» en el nombre significa entregar sus archivos multimedia a otra persona: su teléfono Android, otra copia del programa o cualquier cliente SFTP. Permanece desactivado hasta que lo active. <a href="https://serzhyale.github.io/FastMediaSorter_Lite/publish-folders-android.html" lang="en" dir="ltr">Share folders to Android over SFTP</a></p>
     <div class="button-group">
-      <a class="btn btn-primary" href="#get">Instalador (GitHub)</a>
-      <a class="btn btn-ghost" href="#features">Conviene saber</a>
+      <!-- PAGE-CONTENT "Copy rules": stable action labels - Install (the get-it block below) and Guides
+           (the topics index). The artifact names (Installer (GitHub), winget, Store) stay in the #get
+           channels, where naming each way to get the product is the rule. -->
+      <a class="btn btn-primary" href="#get">Instalar</a>
+      <a class="btn btn-ghost" href="https://serzhyale.github.io/FastMediaSorter_Lite/topics.html">Guías</a>
     </div>
   </section>
 
@@ -254,6 +260,14 @@
         <h3>Un servidor como una carpeta</h3>
         <p>Un servidor SFTP o un recurso de red con inicio de sesión se abre como una carpeta normal: las imágenes, los vídeos y los documentos se descargan mientras pasa de uno a otro, se recuerda la clave del servidor y la contraseña queda cifrada para su cuenta de Windows.</p>
       </article>
+      <article class="card">
+        <h3>Imágenes JPEG XL</h3>
+        <p>Abre imágenes JXL estáticas y animadas en el visor de 64 bits sin un códec adicional de Windows. Guarda los cambios en PNG, JPEG o WEBP; no se ofrece salida JXL.</p>
+      </article>
+      <article class="card">
+        <h3>Emisión en directo</h3>
+        <p>Comparte pantalla, una ventana, cámara, micrófono o audio del sistema desde Share Manager. Abre una emisión en el visor de 64 bits mediante enlace, código o archivo .fmsbcast. La captura empieza solo al pulsar Iniciar.</p>
+      </article>
       </div>
     </details>
   </section>
@@ -303,7 +317,7 @@
     <a href="https://serzhyale.github.io/CyrFlip/"><b>CyrFlip</b><span>Windows layout fixer</span></a>
     <a href="https://serzhyale.github.io/doc-html-translate/"><b>doc-html-translate</b><span>Windows ebook converter</span></a>
     <a href="https://serzhyale.github.io/FileDO/"><b>FileDO</b><span>Windows storage CLI</span></a>
-    <a href="https://serzhyale.github.io/StreamsPlayer/"><b>StreamsPlayer</b><span>Windows stream player</span></a>
+    <a href="https://serzhyale.github.io/StreamsPlayer/"><b>STREAMS Player</b><span>Windows stream player</span></a>
     <a href="https://serzhyale.github.io/OneClickRunner/"><b>OneClickRunner</b><span>Windows tray launcher</span></a>
     <a href="https://serzhyale.github.io/universal-agent-kit/"><b>Universal Agent Kit</b><span>AI-dev methodology</span></a>
     <a href="https://sza.od.ua/"><b>SZA</b><span>Portfolio hub</span></a>

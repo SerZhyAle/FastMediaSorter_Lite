@@ -37,9 +37,13 @@ Partial Public NotInheritable Class Localization
         AddStreamStrings()          ' 022: the stream catalog producer and validator
         AddResourceStrings()        ' 007: remote resources - the manager, the trust and password prompts, import, honest failures
 #If Not NETFRAMEWORK Then
+        AddManagerCommandStrings()
+        AddManagerExchangeStrings()
+        AddManagerArchiveStrings()
         AddExchangeResourceStrings()    ' 171: "My devices" in Resources, the exchange tunnel and the outsider link (modern only: the net48 project lists no exchange file)
         AddExchangeEntryStrings()       ' 187 T-4: the viewer's own exchange entries - the add dialog, the groups per server, signing out
 #End If
+        AddFileManagerSettingsStrings()
         AddProfileResetStrings()        ' 169: Reset all viewer settings on the About page
         AddLiveBroadcastStrings()   ' 023: live broadcast consumer
         AddBroadcastStrings()       ' 016: streamsplayer broadcast resource

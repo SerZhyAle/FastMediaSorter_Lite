@@ -14,7 +14,7 @@
   <h1 id="title"><span class="exchange-picture"><img class="exchange-inline" src="../exchange-mark/exchange-mark-small.svg" width="24" height="24" alt="交换服务器"></span> 管理器设置</h1>
   <section id="purpose">
     <h2>用途说明</h2>
-    <p>启动、主题、语言、远程账户、发布、剪贴板和计划文件操作属于管理器，无需安装本地服务器。</p>
+    <p>启动、主题、语言、远程账户、发布、剪贴板和计划文件操作属于管理器，无需安装本地服务器。 如果已安装 SFTP 共享组件，其页面会在此窗口中构成一个分组。</p>
   </section>
   <figure id="capture">
     <img class="shot light" src="share-settings-light.png" alt="管理器设置">
@@ -26,11 +26,12 @@
   </section>
   <section id="elements">
     <h2>界面元素</h2>
-<details id="startup"><summary>管理器设置</summary><p>启动、主题、语言、远程账户、发布、剪贴板和计划文件操作属于管理器，无需安装本地服务器。 从托盘或组件链接打开。打开或关闭窗口不会启动或停止服务器。远程登录无需本地服务器。</p></details>
-<details id="exchange-account"><summary>管理器设置</summary><p>启动、主题、语言、远程账户、发布、剪贴板和计划文件操作属于管理器，无需安装本地服务器。 从托盘或组件链接打开。打开或关闭窗口不会启动或停止服务器。远程登录无需本地服务器。</p></details>
-<details id="scheduled"><summary>管理器设置</summary><p>启动、主题、语言、远程账户、发布、剪贴板和计划文件操作属于管理器，无需安装本地服务器。 从托盘或组件链接打开。打开或关闭窗口不会启动或停止服务器。远程登录无需本地服务器。</p></details>
-<details id="help"><summary>管理器设置</summary><p>启动、主题、语言、远程账户、发布、剪贴板和计划文件操作属于管理器，无需安装本地服务器。 从托盘或组件链接打开。打开或关闭窗口不会启动或停止服务器。远程登录无需本地服务器。</p></details>
-<details id="navigation"><summary>管理器设置</summary><p>链接为每个已安装组件激活一个窗口。各窗口分别记住页面、分组、滚动和大小。主题和语言位于管理器中；F1 和 ? 打开当前页面帮助。</p></details><p id="network"><a href="sftp-settings.html#network">SFTP</a></p><p id="hosting"><a href="sftp-settings.html#hosting">SFTP</a></p><p id="exchange"><a href="exchange-server-settings.html#exchange">交换服务器设置</a></p>
+<details id="startup"><summary>管理器设置</summary><p>启动、主题、语言、远程账户、发布、剪贴板和计划文件操作属于管理器，无需安装本地服务器。 如果已安装 SFTP 共享组件，其页面会在此窗口中构成一个分组。 从托盘或组件链接打开。打开或关闭窗口不会启动或停止服务器。远程登录无需本地服务器。</p></details>
+<details id="exchange-account"><summary>管理器设置</summary><p>启动、主题、语言、远程账户、发布、剪贴板和计划文件操作属于管理器，无需安装本地服务器。 如果已安装 SFTP 共享组件，其页面会在此窗口中构成一个分组。 从托盘或组件链接打开。打开或关闭窗口不会启动或停止服务器。远程登录无需本地服务器。</p></details>
+<details id="drive"><summary>Google Drive</summary><p>此页面让这台电脑登录您自己的 Google 账号，使应用可以使用您 Google Drive 上属于它自己的私有隐藏文件夹。点击「登录..」：默认浏览器会打开，您在 Google 处确认访问，Google 通过本地地址将结果返回到这台电脑；之后即可关闭浏览器标签页。唯一请求的权限是访问您 Google Drive 上属于应用自己的隐藏文件夹（范围 drive.appdata）：应用看不到您 Google Drive 上的任何其他文件，也不会获得电子邮件地址或个人资料数据。如果 Google 授予的访问权限与所请求的不同，登录会被拒绝。粗体行显示当前状态。「未登录 Google Drive」：可使用「登录..」；如果访问权限已被撤销或已过期，下方一行会说明，并请您重新登录。「正在等待在浏览器中登录..」：请在浏览器中完成登录，或点击「取消」。「已登录 Google Drive」：这台电脑已与您的 Google Drive 关联，并显示其名称和简短标识符。「Google Drive 当前不可用」：下方一行给出原因：无法连接、已达到每日上传上限、您的 Google Drive 没有可用空间，或 Google 返回错误；无法连接或出现错误时，应用会自动重试。退出登录进行期间会显示「正在退出 Google Drive..」。「在此设备上退出登录」只询问一个问题，默认答案是「否」。选择「是」后，它会在 Google 处撤销访问权限，从您 Google Drive 的隐藏文件夹中删除这台电脑的记录，并删除保存在这台电脑上的登录令牌；按钮下方的一行会说明已删除的记录数，或说明 Google 未确认撤销，此时您可以在 Google 账号设置中手动撤销。在没有 Google 访问密钥的版本中，页面显示「此版本未配置 Google Drive 登录」，「登录..」不可用，管理器的其他功能照常工作。</p><figure><img class="shot light" src="share-settings-drive-light.png" alt="Google Drive"><img class="shot dark" src="share-settings-drive-dark.png" alt="Google Drive"></figure></details>
+<details id="scheduled"><summary>管理器设置</summary><p>启动、主题、语言、远程账户、发布、剪贴板和计划文件操作属于管理器，无需安装本地服务器。 如果已安装 SFTP 共享组件，其页面会在此窗口中构成一个分组。 从托盘或组件链接打开。打开或关闭窗口不会启动或停止服务器。远程登录无需本地服务器。</p></details>
+<details id="help"><summary>管理器设置</summary><p>启动、主题、语言、远程账户、发布、剪贴板和计划文件操作属于管理器，无需安装本地服务器。 如果已安装 SFTP 共享组件，其页面会在此窗口中构成一个分组。 从托盘或组件链接打开。打开或关闭窗口不会启动或停止服务器。远程登录无需本地服务器。</p></details>
+<details id="navigation"><summary>管理器设置</summary><p>链接激活另一个窗口：管理器和本地交换服务器各有一个窗口。各窗口分别记住页面、分组、滚动和大小。主题和语言位于管理器中；F1 和 ? 打开当前页面帮助。</p></details><p id="network"><a href="sftp-settings.html#network">SFTP</a></p><p id="hosting"><a href="sftp-settings.html#hosting">SFTP</a></p><p id="exchange"><a href="exchange-server-settings.html#exchange">交换服务器设置</a></p>
     <p><a href="share-settings.html">管理器设置</a> · <a href="sftp-settings.html">SFTP 共享设置</a> · <a href="exchange-server-settings.html">交换服务器设置</a></p>
   </section>
   <nav id="related">

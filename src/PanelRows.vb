@@ -19,19 +19,45 @@ Imports System.Linq
 ''' scan already carried; a row for a file that arrived later (an undo put it back) has none
 ''' until somebody asks the file system, once.</summary>
 Friend NotInheritable Class PanelFileRow
+    ''' <summary>The file on disk (triage), or in file manager mode the local or materialised path of an entry,
+    ''' "" for a remote entry that has none. It is where the bytes are, NOT what the row is: see <see cref="Identity"/>.</summary>
     Public Property Path As String = ""
     Public Property Kind As MediaKind = MediaKind.Other
     Public Property SizeBytes As Long = -1
     Public Property Modified As DateTime = DateTime.MinValue
 
+    ' --- file manager mode (257). Every member below keeps the default a triage row has, so the panel's own
+    ' rows and everything that reads them behave as they always did. ---
+
+    ''' <summary>The opaque identity of a file manager entry; "" for a triage row, whose identity is its path.</summary>
+    Public Property EntryId As String = ""
+    ''' <summary>The name to show when it is not the last segment of <see cref="Path"/> (a remote entry has no Windows path).</summary>
+    Public Property DisplayName As String = ""
+    Public Property IsDirectory As Boolean
+    Public Property IsLink As Boolean
+    Public Property IsHidden As Boolean
+    Public Property IsSystem As Boolean
+    ''' <summary>False for a row the thumbnail loader must never be handed: a folder, a non-media file, an entry with no disk path.</summary>
+    Public Property AllowThumbnail As Boolean = True
+
+    ''' <summary>What selection, the thumbnail memory and the renderers key this row by. A triage row's path (compared
+    ''' case-insensitively, as ever); a manager entry's opaque id (compared exactly, so two remote names that differ only
+    ''' by case stay two rows).</summary>
+    Public ReadOnly Property Identity As String
+        Get
+            Return If(EntryId.Length > 0, EntryId, Path)
+        End Get
+    End Property
+
     Public ReadOnly Property HasMetadata As Boolean
         Get
-            Return SizeBytes >= 0
+            Return SizeBytes >= 0 OrElse (IsDirectory AndAlso Modified <> DateTime.MinValue)
         End Get
     End Property
 
     Public ReadOnly Property Name As String
         Get
+            If DisplayName.Length > 0 Then Return DisplayName
             Try
                 Return System.IO.Path.GetFileName(Path)
             Catch
@@ -71,6 +97,22 @@ Friend Module PanelSort
     Friend Function Order(rows As IEnumerable(Of PanelFileRow), column As PanelSortColumn,
                           descending As Boolean) As List(Of PanelFileRow)
         Dim source As List(Of PanelFileRow) = If(rows Is Nothing, New List(Of PanelFileRow)(), rows.ToList())
+
+        ' File manager mode (257): folders come before files in either direction, and a folder has no size to sort by,
+        ' so its Size column falls back to its name. A triage list has no folder and takes the single-group path below.
+        If source.Any(Function(r) r.IsDirectory) Then
+            Dim folders As List(Of PanelFileRow) = source.Where(Function(r) r.IsDirectory).ToList()
+            Dim files As List(Of PanelFileRow) = source.Where(Function(r) Not r.IsDirectory).ToList()
+            Dim folder_Column As PanelSortColumn = If(column = PanelSortColumn.Size, PanelSortColumn.Name, column)
+            Dim result As List(Of PanelFileRow) = OrderGroup(folders, folder_Column, descending)
+            result.AddRange(OrderGroup(files, column, descending))
+            Return result
+        End If
+        Return OrderGroup(source, column, descending)
+    End Function
+
+    Private Function OrderGroup(source As List(Of PanelFileRow), column As PanelSortColumn,
+                                descending As Boolean) As List(Of PanelFileRow)
         If column = PanelSortColumn.None Then Return source
 
         Dim ordered As IOrderedEnumerable(Of PanelFileRow)

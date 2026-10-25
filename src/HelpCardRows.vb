@@ -109,7 +109,7 @@ Friend NotInheritable Class HelpCardRows
         For Each id As String In {"playPause", "mute", "volumeUp", "volumeDown",
                                   "speedSlower", "speedFaster", "speedReset",
                                   "seekBackShort", "seekFwdShort", "seekBackMedium", "seekFwdMedium", "seekBackLong", "seekFwdLong",
-                                  "frameStep", "abLoop", "audioTrack", "subtitleTrack"}
+                                  "frameStep", "frameBack", "abLoop", "audioTrack", "subtitleTrack"}
             AddAction(video, map, id)
         Next
         groups.Add(video)
@@ -171,7 +171,7 @@ Friend NotInheritable Class HelpCardRows
                  "seekBackShort", "seekFwdShort", "seekBackMedium", "seekFwdMedium", "seekBackLong", "seekFwdLong",
                  "abLoop", "audioTrack"
                 Return HelpKeyScope.VideoAudio
-            Case "frameStep", "subtitleTrack"
+            Case "frameStep", "frameBack", "subtitleTrack"
                 Return HelpKeyScope.Video
             Case "zoomActual", "rotateCw", "rotateCcw", "ocrTranslate", "ocrAuto"
                 Return HelpKeyScope.Picture
@@ -250,14 +250,32 @@ Friend NotInheritable Class HelpCardRows
         If String.IsNullOrEmpty(combo) Then Return String.Empty
         ' "+" is the keycap of Shift+"=" on most layouts (UX-113 of 123): the card prints what is pressed to
         ' type it, not the enum spelling of the physical key.
-        If String.Equals(combo, "Shift+Oemplus", StringComparison.Ordinal) Then Return "+"
+        If String.Equals(combo, "Shift+Oemplus", StringComparison.Ordinal) OrElse
+           String.Equals(combo, "Shift+Equal", StringComparison.Ordinal) Then Return "+"
         Dim text As New StringBuilder(combo)
+        ' The legacy enum names go first: "OemMinus" and "OemPeriod" contain the 0.4 names "Minus" and "Period".
         text.Replace("Oemplus", "=")
         text.Replace("OemMinus", "-")
         text.Replace("OemOpenBrackets", "[")
         text.Replace("OemCloseBrackets", "]")
         text.Replace("OemPipe", "\")
         text.Replace("OemPeriod", ".")
+        text.Replace("Oemcomma", ",")
+        ' INPUT-CHORD 0.4 spells the trigger by its physical name; old profiles still carry the names above,
+        ' so both vocabularies print as the keycap.
+        text.Replace("NumpadAdd", "Num +")
+        text.Replace("NumpadSubtract", "Num -")
+        text.Replace("NumpadMultiply", "Num *")
+        text.Replace("NumpadDivide", "Num /")
+        text.Replace("NumpadDecimal", "Num .")
+        text.Replace("Numpad", "Num ")
+        text.Replace("BracketLeft", "[")
+        text.Replace("BracketRight", "]")
+        text.Replace("Backslash", "\")
+        text.Replace("Period", ".")
+        text.Replace("Comma", ",")
+        text.Replace("Equal", "=")
+        text.Replace("Minus", "-")
         text.Replace("PageDown", "PgDn")
         text.Replace("PageUp", "PgUp")
         Return text.ToString()

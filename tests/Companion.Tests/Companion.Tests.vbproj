@@ -26,6 +26,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\FastMediaSorterCompanion\FastMediaSorterCompanion.vbproj" />
+    <Compile Include="..\Lite.Tests\VerifiedZipWriterTests.vb" Link="Linked\VerifiedZipWriterTests.vb" />
     <Compile Include="..\Lite.Tests\ExchangeVocabularyTests.vb" Link="Linked\ExchangeVocabularyTests.vb" />
     <Compile Include="..\Lite.Tests\ExchangeMarkTests.vb" Link="Linked\ExchangeMarkTests.vb" />
   </ItemGroup>
@@ -53,6 +54,8 @@
     <Compile Include="..\Lite.Tests\ExchangeClipboardTests.vb" Link="Linked\ExchangeClipboardTests.vb" />
     <!-- Spec 234 T-4: the sealed clipboard - the devices, the directory and the sealed values both test projects speak about. -->
     <Compile Include="..\Lite.Tests\ExchangeSealedClipboardKit.vb" Link="Linked\ExchangeSealedClipboardKit.vb" />
+    <!-- Spec 203 T-UI-1: the in-memory Google Drive and token endpoint the sign-in page's host is tested against (whole-file "#If Not NETFRAMEWORK"). -->
+    <Compile Include="..\Lite.Tests\FakeDriveHandler.vb" Link="Linked\FakeDriveHandler.vb" />
     <None Include="..\Lite.Tests\TestData\exchange-vectors\**" Link="TestData\exchange-vectors\%(RecursiveDir)%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 

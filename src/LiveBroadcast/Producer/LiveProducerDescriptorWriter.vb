@@ -11,8 +11,8 @@ Imports System.Text.Json
 ' HTTP endpoint of this ticket (broadcasts and folder connections are 173's). Three channels carry the SAME
 ' description (producer rule 3): FMSBCAST1: barcode text (Base64 of the GZIP of the JSON), the
 ' broadcast_<n>.fmsbcast file, and the QR image - which renders the same barcode text, so the payload
-' is built once here. The window's link is `fmsbcast://live?payload=` + the barcode text (the contract's
-' target host is `import`: ticket 239 CR-16 keeps that gap on record).
+' is built once here. The window's link is `fmsbcast://import?payload=` + the URL-encoded barcode text
+' (<see cref="LinkText"/>, the contract's target host, 4.3); the earlier `live` host stays readable.
 '
 ' A descriptor handed outside the account that carries a RELAY or TUNNEL endpoint is always protected
 ' (LIVE-BROADCAST item M, ticket 239 CR-15): <see cref="BuildHandOutJson"/> is the ONE function the three
@@ -102,8 +102,9 @@ Friend NotInheritable Class LiveProducerDescriptorWriter
     ''' the window then says why and asks for a password instead of giving an empty hand-off. A protected input is built whole.
     ''' A SEALED input counts as protected (item Q, read with M): its RELAY and TUNNEL endpoints are listed only with the key or the
     ''' pin that opens them (<see cref="BuildJson"/> leaves out one that has none), the descriptor that carries those keys is a
-    ''' secret handed by the person, and the relay is offered only to a broadcast with no password (the server has no listener
-    ''' verifiers, 239 CR-14) - so without this a sealed outward link could never exist.
+    ''' secret handed by the person, and the relay is offered to a broadcast with a password only when it is sealed (ticket 263 T-3:
+    ''' the server checks the uploaded `verifiers`, and the sealed relay carries ciphertext in any case) - so without this a sealed
+    ''' outward link could never exist.
     ''' The directory record of the person's own account is a different document (<see cref="LiveDescriptorInput.ForRecord"/>)
     ''' and is not shortened by this.</summary>
     Public Shared Function BuildHandOutJson(input As LiveDescriptorInput) As String
@@ -143,6 +144,13 @@ Friend NotInheritable Class LiveProducerDescriptorWriter
         End If
         If String.IsNullOrWhiteSpace(topUrl) OrElse String.IsNullOrWhiteSpace(input.Mode) Then Return ""
 
+        ' LIVE-BROADCAST item L: an endpoint of a video mode carries the interval the encoder is really configured for, so the
+        ' consumer's first-picture budget is a number instead of the 2000 it assumes when the member is absent. RELAY never
+        ' above 2000 (the upload keyframes at least every 2 s) and a TUNNEL endpoint carries the interval of the LAN stream it
+        ' reaches: both are the one encoder's, so all three video endpoints write the same constant. Audio-only endpoints do not.
+        Dim isVideoMode As Boolean = String.Equals(input.Mode, "VIDEO_AUDIO", StringComparison.OrdinalIgnoreCase) OrElse
+                                     String.Equals(input.Mode, "VIDEO_ONLY", StringComparison.OrdinalIgnoreCase)
+
         Using ms As New MemoryStream()
             Using w As New Utf8JsonWriter(ms)
                 w.WriteStartObject()
@@ -173,6 +181,7 @@ Friend NotInheritable Class LiveProducerDescriptorWriter
                     If input.SampleRateHz.HasValue Then w.WriteNumber("sampleRate", input.SampleRateHz.Value)
                     If input.BitrateBps.HasValue Then w.WriteNumber("bitrate", input.BitrateBps.Value)
                     If input.Channels.HasValue Then w.WriteNumber("channels", input.Channels.Value)
+                    If isVideoMode Then w.WriteNumber("keyframeIntervalMs", LiveProducerContract.KeyframeIntervalMs)
                     w.WriteBoolean("isLive", True)
                     w.WriteNumber("targetLatencyMs", input.TargetLatencyMs)
                     w.WriteEndObject()
@@ -191,6 +200,7 @@ Friend NotInheritable Class LiveProducerDescriptorWriter
                     If input.SampleRateHz.HasValue Then w.WriteNumber("sampleRate", input.SampleRateHz.Value)
                     If input.BitrateBps.HasValue Then w.WriteNumber("bitrate", input.BitrateBps.Value)
                     If input.Channels.HasValue Then w.WriteNumber("channels", input.Channels.Value)
+                    If isVideoMode Then w.WriteNumber("keyframeIntervalMs", LiveProducerContract.KeyframeIntervalMs)
                     w.WriteBoolean("isLive", True)
                     w.WriteNumber("targetLatencyMs", 2000L)
                     w.WriteEndObject()
@@ -210,6 +220,7 @@ Friend NotInheritable Class LiveProducerDescriptorWriter
                     If input.SampleRateHz.HasValue Then w.WriteNumber("sampleRate", input.SampleRateHz.Value)
                     If input.BitrateBps.HasValue Then w.WriteNumber("bitrate", input.BitrateBps.Value)
                     If input.Channels.HasValue Then w.WriteNumber("channels", input.Channels.Value)
+                    If isVideoMode Then w.WriteNumber("keyframeIntervalMs", LiveProducerContract.KeyframeIntervalMs)
                     w.WriteBoolean("isLive", True)
                     w.WriteNumber("targetLatencyMs", 2000L)
                     w.WriteEndObject()
@@ -234,8 +245,12 @@ Friend NotInheritable Class LiveProducerDescriptorWriter
     End Sub
 
     ''' <summary>Builds the broadcast record JSON for publication on the exchange (broadcast-start, broadcast-update).
-    ''' <paramref name="sealedBoxJson"/> is the record's <c>sealed</c> box (item DK), written verbatim; Nothing or "" writes none.</summary>
-    Public Shared Function BuildBroadcastRecord(broadcastId As String, deviceId As String, title As String, mode As String, descriptorJson As String, Optional sealedBoxJson As String = Nothing) As String
+    ''' <paramref name="sealedBoxJson"/> is the record's <c>sealed</c> box (item DK), written verbatim; Nothing or "" writes none.
+    ''' <c>startedAt</c> is the broadcast's stable start and <c>updatedAt</c> the writer's clock of THIS publication
+    ''' (DEVICE-EXCHANGE 6.3): two records of one <c>sourceId</c> order by the later <c>startedAt</c> (LIVE-BROADCAST
+    ''' item G as item BP resolves it), and <c>updatedAt</c> stays informational.</summary>
+    Public Shared Function BuildBroadcastRecord(broadcastId As String, deviceId As String, title As String, mode As String, descriptorJson As String,
+                                                 startedAtUtc As Date, updatedAtUtc As Date, Optional sealedBoxJson As String = Nothing) As String
         Using ms As New MemoryStream()
             Using w As New Utf8JsonWriter(ms)
                 w.WriteStartObject()
@@ -243,6 +258,8 @@ Friend NotInheritable Class LiveProducerDescriptorWriter
                 If Not String.IsNullOrEmpty(deviceId) Then w.WriteString("deviceId", deviceId)
                 If Not String.IsNullOrWhiteSpace(title) Then w.WriteString("title", title.Trim())
                 w.WriteString("mode", If(mode, ""))
+                w.WriteString("startedAt", startedAtUtc.ToUniversalTime().ToString("yyyy-MM-dd'T'HH:mm:ss.fff'Z'", Globalization.CultureInfo.InvariantCulture))
+                w.WriteString("updatedAt", updatedAtUtc.ToUniversalTime().ToString("yyyy-MM-dd'T'HH:mm:ss.fff'Z'", Globalization.CultureInfo.InvariantCulture))
                 w.WritePropertyName("descriptor")
                 Using doc As JsonDocument = JsonDocument.Parse(If(descriptorJson, "{}"))
                     doc.RootElement.WriteTo(w)
@@ -271,6 +288,14 @@ Friend NotInheritable Class LiveProducerDescriptorWriter
             End Using
             Return LiveProducerContract.BarcodePrefix & Convert.ToBase64String(compressed.ToArray())
         End Using
+    End Function
+
+    ''' <summary>The text the window's copy-link puts on the clipboard (LIVE-BROADCAST 4.3): the importer's
+    ''' `fmsbcast://import?payload=` target followed by the URL-encoded barcode text, so it carries exactly the description of the
+    ''' other channels and, like them, never the password. "" for an empty barcode text (nothing to link).</summary>
+    Public Shared Function LinkText(barcodeText As String) As String
+        If String.IsNullOrEmpty(barcodeText) Then Return ""
+        Return LiveProducerContract.LinkPrefix & Uri.EscapeDataString(barcodeText)
     End Function
 
     ''' <summary>The import file's content of channel 4.2: the JSON, uncompressed.</summary>

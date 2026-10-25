@@ -2,6 +2,10 @@ package rendezvous
 
 import (
 	"bufio"
+	"crypto/rand"
+	"crypto/subtle"
+	"encoding/base64"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -49,12 +53,30 @@ type RelayConfig struct {
 	RateWindow          time.Duration
 	ListenersPerBcast   int
 	ListenersTotal      int
+
+	// CheckConcurrency bounds how many listener credential checks (one PBKDF2 each, item BF) run at once;
+	// the default is 2, the engine's own bound for a password hash. The relay keeps its own pool so a flood of
+	// listen requests cannot starve a login, nor a login flood a listener.
+	CheckConcurrency int
+	// CheckIterations is the PBKDF2 round count a check recomputes. Zero is wire.VerifierIterations - the
+	// only value the contract allows. It is a field only so that a test need not pay 600000 rounds for every
+	// hash it makes; no deployment sets it.
+	CheckIterations int
 }
 
 // Relay is the RelayHandler of ticket 165.
 type Relay struct {
 	cfg RelayConfig
 	eng *Engine
+
+	// the credential check of a protected broadcast's listen URL (item BF): at most one check per second per
+	// broadcast and source, a bounded number at once, and a dummy salt and hash so that a user nobody holds
+	// costs the same PBKDF2 as a wrong password
+	checks     *limits.Limiter
+	pool       *limits.Verifier
+	iterations int
+	dummySalt  []byte
+	dummyHash  []byte
 
 	mu     sync.Mutex
 	bc     map[string]*bcast
@@ -101,7 +123,25 @@ func NewRelay(cfg RelayConfig) *Relay {
 	if cfg.ListenersTotal <= 0 {
 		cfg.ListenersTotal = DefaultRelayTotal
 	}
-	return &Relay{cfg: cfg, bc: map[string]*bcast{}}
+	if cfg.CheckConcurrency <= 0 {
+		cfg.CheckConcurrency = 2
+	}
+	if cfg.CheckIterations <= 0 {
+		cfg.CheckIterations = wire.VerifierIterations
+	}
+	lc := limits.Config{MaxAddrs: 4096}
+	lc.Rates[limits.ListenCheck] = limits.ListenCheckRate()
+	r := &Relay{cfg: cfg, bc: map[string]*bcast{},
+		checks:     limits.NewLimiter(lc, cfg.Now),
+		pool:       limits.NewVerifier(nil, cfg.CheckConcurrency, 2*time.Second),
+		iterations: cfg.CheckIterations,
+		dummySalt:  make([]byte, wire.VerifierSaltLen),
+		dummyHash:  make([]byte, wire.VerifierHashLen),
+	}
+	// random per process: a guess for an unknown user is compared with bytes nobody can predict
+	_, _ = rand.Read(r.dummySalt)
+	_, _ = rand.Read(r.dummyHash)
+	return r
 }
 
 // bind is called by NewEngine: the relay answers `unavailable` and 404 through the engine's one delay
@@ -117,6 +157,10 @@ func (r *Relay) Listeners(broadcastID string) int {
 	}
 	return 0
 }
+
+// Checks is how many listener credential checks (one PBKDF2 each, item BF) have run over the relay's life: a
+// count for the tests that prove a refused or rate-limited request hashes nothing.
+func (r *Relay) Checks() int { return r.pool.Calls() }
 
 // Broadcasts is how many broadcasts hold relay state, and ListenersTotal how many relay listeners
 // there are (counts for a status and for the tests that prove nothing is kept).
@@ -346,6 +390,21 @@ func (r *Relay) Listen(st *Stream, id string) {
 	}
 	r.cfg.Limiter.Refund(addr, limits.UnknownID) // a known id costs nothing
 
+	// A protected broadcast asks for its credentials BEFORE it tells anything else about itself (an upload
+	// attached or not, a full house), so a listener without a pair learns nothing but the challenge.
+	switch r.checkListener(id, addr, st.Authorization(), t.Verifiers) {
+	case checkChallenge:
+		_ = st.WriteRaw(wire.HTTPResponse(401, 0))
+		return
+	case checkDenied:
+		r.cfg.Log.Info("listen-denied", logx.Addr(addr))
+		_ = st.WriteRaw(wire.HTTPResponse(401, 0))
+		return
+	case checkBusy:
+		_ = st.WriteRaw(wire.HTTPResponse(503, 1))
+		return
+	}
+
 	b, ct, adm := r.admit(id, t.MaxListeners)
 	switch adm {
 	case noUpload: // a live broadcast whose upload is not attached (yet): the producer sends broadcast-start before it uploads
@@ -411,6 +470,80 @@ func (r *Relay) Listen(st *Stream, id string) {
 			return
 		}
 	}
+}
+
+// listenCheck is the outcome of the credential check of a listen request (item BF).
+type listenCheck int
+
+const (
+	checkAdmit     listenCheck = iota // no list to check, or a pair matched
+	checkChallenge                    // no usable Basic credentials: the challenge, and nothing was hashed
+	checkDenied                       // credentials were given and refused: the rate limit, or no pair matched
+	checkBusy                         // every check slot is taken: neither admitted nor refused, retry in a second
+)
+
+// maxBasicPassword bounds the password of a Basic credential the relay will hash. The request head is at
+// most 8 KiB anyway; a real pair is a generated password of a few dozen characters.
+const maxBasicPassword = 1024
+
+// basicCredentials reads an `Authorization: Basic <base64 of user:password>` header (RFC 7617). ok is false for
+// anything else - another scheme, bad base64, no colon, an empty user, an over-long password - none of which
+// has anything to hash. The scheme name is case-insensitive.
+func basicCredentials(header string) (user, password string, ok bool) {
+	scheme, rest, found := strings.Cut(strings.TrimSpace(header), " ")
+	if !found || !strings.EqualFold(scheme, "Basic") {
+		return "", "", false
+	}
+	raw, err := base64.StdEncoding.DecodeString(strings.TrimSpace(rest))
+	if err != nil {
+		return "", "", false
+	}
+	user, password, found = strings.Cut(string(raw), ":")
+	if !found || user == "" || len(password) > maxBasicPassword {
+		return "", "", false
+	}
+	return user, password, true
+}
+
+// checkListener judges a listen request against the verifiers its broadcast holds (item BF, item DV). A
+// broadcast with none - never sent, or sent as an empty list - checks nobody, with or without an Authorization
+// header. Otherwise a request with no usable Basic credentials is the challenge and costs nothing, so the
+// usual "ask, get 401, ask again with a pair" costs one check; a request with credentials takes one token of
+// ListenCheck (one per second per broadcast and source) BEFORE any hash is computed, and the token is not
+// refunded, whatever the answer. The hash itself runs inside the relay's own bounded pool.
+func (r *Relay) checkListener(id, addr, authorization string, verifiers []wire.Verifier) listenCheck {
+	if len(verifiers) == 0 {
+		return checkAdmit
+	}
+	user, password, ok := basicCredentials(authorization)
+	if !ok {
+		return checkChallenge
+	}
+	if !r.checks.Allow(id+"\x00"+addr, limits.ListenCheck) {
+		return checkDenied
+	}
+	matched, err := r.pool.Run(func() bool { return r.pairMatches(verifiers, user, password) })
+	switch {
+	case err != nil:
+		return checkBusy
+	case matched:
+		return checkAdmit
+	}
+	return checkDenied
+}
+
+// pairMatches computes ONE PBKDF2 whatever the user: the salt of the entry that names the user, or the relay's
+// dummy salt when none does, so an unknown user and a wrong password cost the same time and say the same
+// thing. The hashes are compared in constant time.
+func (r *Relay) pairMatches(verifiers []wire.Verifier, user, password string) bool {
+	salt, want, found := r.dummySalt, r.dummyHash, 0
+	for i := range verifiers {
+		if subtle.ConstantTimeCompare([]byte(verifiers[i].User), []byte(user)) == 1 && found == 0 {
+			salt, want, found = verifiers[i].Salt, verifiers[i].Hash, 1
+		}
+	}
+	got := wire.DeriveVerifierHash(password, salt, r.iterations)
+	return subtle.ConstantTimeCompare(got, want)&found == 1
 }
 
 // admit counts a listener in, unless the broadcast has no upload, or its `maxListeners` (counting the

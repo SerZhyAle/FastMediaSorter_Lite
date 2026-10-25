@@ -22,6 +22,16 @@ const (
 	maxContentType = 128
 	maxTunnelID    = 64
 	maxRoles       = 8
+
+	// A broadcast's `verifiers` (item BF, item DV). A broadcaster holds one credential pair for its own devices,
+	// one per guest grant and one per outward link, so the list is as long as those three together; 64 is far
+	// above any real broadcast (a frame of 64 entries is about 9 KiB of the 256 KiB an authenticated frame
+	// may carry) and bounds three costs: the memory kept per broadcast, the user lookup of a listen request
+	// (a scan, not a hash) and the number of salts a hostile broadcaster can make the relay remember. A
+	// verifier user is a Basic user-id (no ':'), a generated name in practice. The salt and hash lengths are
+	// exact (verifiers.go), so there is no free-form blob to store.
+	maxVerifiers    = 64
+	maxVerifierUser = 64
 )
 
 // KnownRoles are the device roles of DEVICE-EXCHANGE 6.1 - the four of the first edition and `clipboard`
@@ -144,12 +154,28 @@ func (e *BroadcastStart) validate() error {
 	if len(e.Broadcast) == 0 || e.Broadcast[0] != '{' {
 		return errors.New("broadcast is required")
 	}
-	return nil
+	return checkVerifiers(e.Verifiers)
 }
 
 func (e *BroadcastUpdate) validate() error {
 	if len(e.Broadcast) == 0 || e.Broadcast[0] != '{' {
 		return errors.New("broadcast is required")
+	}
+	return checkVerifiers(e.Verifiers)
+}
+
+// checkVerifiers holds the bounds of a `verifiers` member: at most maxVerifiers entries, each with a
+// user of 1..maxVerifierUser characters and no ':', a 16-byte base64url salt and a 32-byte base64url hash, no
+// user twice. An absent member (nil) and an empty list are both valid; the error never names a value.
+func checkVerifiers(v *[]ListenerVerifier) error {
+	if v == nil {
+		return nil
+	}
+	if len(*v) > maxVerifiers {
+		return errors.New("too many verifiers")
+	}
+	if _, err := ParseVerifiers(*v); err != nil {
+		return errors.New("a verifier is out of bounds")
 	}
 	return nil
 }

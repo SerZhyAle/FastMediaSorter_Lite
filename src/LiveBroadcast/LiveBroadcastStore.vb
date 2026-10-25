@@ -76,6 +76,14 @@ Friend NotInheritable Class LiveBroadcastStore
         End If
 
         If existingIndex >= 0 Then
+            ' LIVE-BROADCAST item G as DEVICE-EXCHANGE item BP resolves it: of two records of one sourceId,
+            ' the one with the LATER startedAt is the channel's address. An incoming record with an EARLIER
+            ' start never displaces a newer stored one (an out-of-order poll, a clock behind); equal or absent
+            ' starts keep the store's own order - the incoming record wins, as before. updatedAt decides
+            ' nothing.
+            Dim existingStarted As DateTimeOffset? = RecordStartedAtOf(list(existingIndex))
+            Dim incomingStarted As DateTimeOffset? = RecordStartedAtOf(descriptor)
+            If existingStarted.HasValue AndAlso incomingStarted.HasValue AndAlso incomingStarted.Value < existingStarted.Value Then Return
             list.RemoveAt(existingIndex)
         End If
 
@@ -204,6 +212,12 @@ Friend NotInheritable Class LiveBroadcastStore
             writer.WriteString("sourceId", d.SourceId)
         End If
 
+        ' The record's startedAt, kept so the item G / BP order survives a restart (a reader tolerates
+        ' its absence - it is this store's member, not a descriptor member a producer writes).
+        If Not String.IsNullOrEmpty(d.RecordStartedAt) Then
+            writer.WriteString("recordStartedAt", d.RecordStartedAt)
+        End If
+
         If d.IsLive.HasValue Then
             writer.WriteBoolean("isLive", d.IsLive.Value)
         End If
@@ -242,6 +256,13 @@ Friend NotInheritable Class LiveBroadcastStore
             Return uri.AbsoluteUri
         End If
         Return url.Trim()
+    End Function
+
+    ''' <summary>The record's <c>startedAt</c> as an instant, Nothing when the entry has none or its text is not
+    ''' a date this program can read (LIVE-BROADCAST item G as DEVICE-EXCHANGE item BP resolves it: an unreadable
+    ''' or absent start never orders anything - the store's own order decides, as it always did).</summary>
+    Private Shared Function RecordStartedAtOf(descriptor As LiveBroadcastDescriptor) As DateTimeOffset?
+        Return LiveBroadcastRecords.StartedAtOf(descriptor)
     End Function
 
 End Class

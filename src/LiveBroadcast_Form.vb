@@ -272,6 +272,14 @@ Friend NotInheritable Class LiveBroadcast_Form
                 Return
             End If
             descriptor = parsed.Descriptor
+            Dim sealError As String = Await LiveBroadcastRecords.PrepareAsync(descriptor, directoryCancellation.Token)
+            If IsDisposed Then Return
+            If sealError.Length > 0 Then
+                accepting = False
+                lblStatus.Text = ConnectionDiagnosisLocalization.GetMessageText(ExchangeAgentPipe.ErrorMessage(sealError).Code)
+                DialogLayout.FitLabel(lblStatus)
+                Return
+            End If
         End If
         ResultDescriptor = descriptor
         store.Upsert(descriptor)
@@ -302,8 +310,17 @@ Friend NotInheritable Class LiveBroadcast_Form
                 For Each device As ExchangeDeviceRecord In result.Snapshot.Devices
                     lstRecent.Groups.Add(device.DeviceId, device.DeviceName)
                 Next
-                For Each record As ExchangeBroadcastRecord In result.Snapshot.Broadcasts
-                    Dim row As LiveDirectoryRow = LiveBroadcastRecords.RowOf(record.Raw)
+                Dim broadcasts As IReadOnlyList(Of ExchangeBroadcastRecord) = result.Snapshot.Broadcasts
+                Dim rows As New List(Of LiveDirectoryRow)(broadcasts.Count)
+                For Each record As ExchangeBroadcastRecord In broadcasts
+                    rows.Add(LiveBroadcastRecords.RowOf(record.Raw))
+                Next
+                ' LIVE-BROADCAST item G as DEVICE-EXCHANGE item BP resolves it: two records of one sourceId are one channel, the later startedAt.
+                Dim superseded As HashSet(Of Integer) = LiveBroadcastRecords.SupersededIndexes(rows)
+                For i As Integer = 0 To broadcasts.Count - 1
+                    If superseded.Contains(i) Then Continue For
+                    Dim record As ExchangeBroadcastRecord = broadcasts(i)
+                    Dim row As LiveDirectoryRow = rows(i)
                     If Not row.IsPlayable Then
                         ' LIVE-BROADCAST 1.1: a record this program cannot use is listed with the reason, never dropped without a word.
                         ' It is not remembered in directoryIds, so it can be neither selected for playing nor accepted.

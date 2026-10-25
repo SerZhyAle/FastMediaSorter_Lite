@@ -1,4 +1,4 @@
-#If Not NETFRAMEWORK Then
+﻿#If Not NETFRAMEWORK Then
 Option Strict On
 
 Imports System.Collections.Generic
@@ -76,8 +76,8 @@ Friend NotInheritable Class FmsRootPlan
     Friend Property MediaTypes As New List(Of String)()
     Friend Property ScanSubdirectories As Boolean = True
     Friend Property ShowSubfoldersAsItems As Boolean
-    Friend Property ShowHiddenFiles As Boolean
-    Friend Property AllFiles As Boolean
+    Friend Property ShowHiddenFiles As Boolean?
+    Friend Property AllFiles As Boolean?
     Friend Property DestinationColor As Integer?
     Friend Property Comment As String = ""
     ''' <summary>Positive values only; Nothing when absent or not positive.</summary>
@@ -509,10 +509,10 @@ Friend Module FmsConfigReader
             If r.ShowSubfoldersAsItems Then r.Notices.Add("showSubfoldersAsItems: kept, not applied")
             failure = ReadBool(element, "showHiddenFiles", here, present, flag)
             If failure IsNot Nothing Then Return failure
-            r.ShowHiddenFiles = present AndAlso flag
+            r.ShowHiddenFiles = If(present, CType(flag, Boolean?), Nothing)
             failure = ReadBool(element, "allFiles", here, present, flag)
             If failure IsNot Nothing Then Return failure
-            r.AllFiles = present AndAlso flag
+            r.AllFiles = If(present, CType(flag, Boolean?), Nothing)
 
             Dim number As Integer
             failure = ReadInt(element, "destinationColor", here, present, number)

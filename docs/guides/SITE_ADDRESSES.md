@@ -59,7 +59,7 @@ sza.od.ua) are not on it: they are not resolvable against this page set. One rec
 | --- | --- |
 | `address` | the full address, on the site's base URL; a `#anchor` is allowed, a query string is not part of it |
 | `holder` | the repository path of the file that holds it, or the name of the outside place (the Store listing) |
-| `kind` | the page group: `landing`, `trust`, `privacy`, `edition`, `guide` |
+| `kind` | the page group: `landing`, `trust`, `privacy`, `edition`, `guide`, `topics`, `glossary`, `support`, `whats-new` |
 | `carried` | `literal` (default: the address is in the holder verbatim), `built` (the holder assembles it - `fragment` is the text it must carry instead) or `external` (the holder is outside the tree, so only the address is resolved) |
 
 The program constants stay constants. A holder that can read the list does not need to; the others are compared
@@ -76,6 +76,10 @@ Manager's `ShareLinks` and `HostingText`).
 | `privacy` | `docs/privacy.html` | none (one page, en/ru/uk switched in-page; the page the Store listing names) | yes |
 | `edition` | `server.html` | none | yes |
 | `guide` | `docs/how-to-*.html`, `publish-folders-android.html` | none (en/ru/uk switched in-page) | yes |
+| `topics` | `topics.html` | none (one page, en/ru/uk switched in-page) | yes |
+| `glossary` | `glossary.html` | none (one page, en/ru/uk switched in-page) | yes |
+| `support` | `support.html` | none (one page, en/ru/uk switched in-page) | yes |
+| `whats-new` | `whats-new.html` | none (one URL; the release history is the English text of the released `CHANGELOG.md` sections, a single-language reference group on purpose, its own words switched in-page) | yes |
 
 `tools/Test-SiteAddresses.ps1` runs offline in `Run-AllTests.ps1` and judges: the list's own shape; that every
 address is on the site and resolves to a file the Pages build serves, is in the sitemap when its group says so and

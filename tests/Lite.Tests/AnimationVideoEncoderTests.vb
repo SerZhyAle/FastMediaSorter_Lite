@@ -101,7 +101,8 @@ Public Class AnimationVideoEncoderTests
             "$psi=New-Object Diagnostics.ProcessStartInfo('ping.exe','-n 120 127.0.0.1')",
             "$psi.UseShellExecute=$false;$psi.CreateNoWindow=$true",
             "$c=[Diagnostics.Process]::Start($psi)",
-            "[IO.File]::WriteAllText(" & Literal(pidFile) & ",($PID.ToString()+','+$c.Id.ToString()))"
+            "[IO.File]::WriteAllText(" & Literal(pidFile & ".pending") & ",($PID.ToString()+','+$c.Id.ToString()))",
+            "[IO.File]::Move(" & Literal(pidFile & ".pending") & "," & Literal(pidFile) & ")"
         }
     End Function
 
@@ -141,6 +142,10 @@ Public Class AnimationVideoEncoderTests
     Private Shared Sub DeleteQuietly(path As String)
         Try
             File.Delete(path)
+        Catch
+        End Try
+        Try
+            File.Delete(path & ".pending")
         Catch
         End Try
     End Sub

@@ -256,16 +256,9 @@ Partial Public NotInheritable Class Share_Settings_Form
         _rowXFp.Controls.Add(fingerprintSetting)
         _btnXCopyFp = XButton(ExchangeText.CopyFingerprintButton(), AddressOf OnXCopyFingerprint, "action.copy")
         _rowXFp.Controls.Add(_btnXCopyFp)
-        ' the connection string (ticket 187 T-2): built by the binary from the configured address and the real certificate
-        _btnXConnString = XButton(ExchangeConnectionStringText.GetButton(), AddressOf OnXGetConnectionString, "action.export")
-        _btnXConnString.Enabled = False
-        _rowXFp.Controls.Add(_btnXConnString)
         _pnlXConfig.Controls.Add(_rowXFp)
         _lblXFpNote = AdminNote("")
         _pnlXConfig.Controls.Add(_lblXFpNote)
-        _lblXConnNote = AdminNote(ExchangeConnectionStringText.NoEndpoint())
-        _lblXConnNote.Visible = False
-        _pnlXConfig.Controls.Add(_lblXConnNote)
         _btnXReplaceCert = XButton(ExchangeAdminText.ReplaceCertificateButton(), AddressOf OnXReplaceCertificate, "action.replace")
         _btnXImportCert = XButton(ExchangeAdminText.ImportCertificateButton(), AddressOf OnXImportCertificate, "action.import")
         _rowXCert = AdminFlow()
@@ -676,6 +669,9 @@ Partial Public NotInheritable Class Share_Settings_Form
         Try
             Dim checker As New OutsideVisibilityChecker()
             Dim outcome As OutsideVisibilityResult = Await checker.CheckAsync(endpoint, CancellationToken.None).ConfigureAwait(True)
+            ' The state the server was in when it was asked is the half of the answer the sentence on screen does not carry.
+            AppFileLogger.LogStamped("Exchange: outside visibility check of port " & outcome.Port.ToString() & " -> " & outcome.Verdict.ToString() &
+                                     "; the window showed kind=" & If(_exModel IsNot Nothing, _exModel.Kind.ToString(), "none"))
             Select Case outcome.Verdict
                 Case OutsideVisibilityVerdict.Reachable
                     _lblXVisibilityResult.ForeColor = ThemeService.Palette.Success
@@ -844,8 +840,11 @@ Partial Public NotInheritable Class Share_Settings_Form
     ''' <summary>The lists refresh on a timer only while the group is unfolded, the window is up and a server RUNS (the
     ''' pipe is cheap; the offline path would spawn a process every few seconds for nothing).</summary>
     Private Sub OnXAccountsTick(sender As Object, e As EventArgs)
-        If _exBusy OrElse _exAccReading OrElse _secExchange Is Nothing OrElse Not _secExchange.Expanded OrElse Not Visible Then Return
+        If _exBusy OrElse _secExchange Is Nothing OrElse Not Visible Then Return
         If _exModel Is Nothing Then Return
+        ' Before the serving gate below: the gate is what hid a service that had stopped, the state line kept saying it ran.
+        Dim drift As Task = CheckExchangeStateDriftAsync()
+        If _exAccReading OrElse Not _secExchange.Expanded Then Return
         Dim serving As Boolean = _exModel.Kind = ExchangeRunKind.RunningConsole OrElse _exModel.Kind = ExchangeRunKind.ServiceRunning OrElse
                                  _exModel.Kind = ExchangeRunKind.ServiceStarting
         If Not serving Then Return

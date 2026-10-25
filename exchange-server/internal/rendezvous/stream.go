@@ -99,6 +99,11 @@ type Stream struct {
 	leave  func()
 	authed bool // welcome or enrolled was sent: the frame limit is MaxFrameAuth both ways
 
+	// authorization is the Authorization header of the HTTP request that opened the stream, "" when there was
+	// none or the stream is not HTTP. It is a listener's Basic credential (item BF): read by Authorization,
+	// never logged, never kept past the request.
+	authorization string
+
 	fr *wire.FrameReader
 	fw *wire.FrameWriter
 
@@ -132,6 +137,10 @@ func (st *Stream) Transport() string {
 	}
 	return "TLS-stream"
 }
+
+// Authorization is the Authorization header of the HTTP request that opened the stream (the relay's listen
+// URL, 7.6), or "". It carries a secret: a caller never logs it, copies it out or keeps it.
+func (st *Stream) Authorization() string { return st.authorization }
 
 // T0 is when the first envelope of the stream arrived: the zero of the uniform delay.
 func (st *Stream) T0() time.Time { return st.t0 }

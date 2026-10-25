@@ -35,6 +35,10 @@ const (
 	BroadcastStart
 	// Cast counts `cast`, per device (ticket 166 rule 6, ticket 167 rule 6).
 	Cast
+	// ListenCheck counts the credential checks of a protected broadcast's listen URL (item BF: at most one per
+	// second), per broadcast and source address - the key is both. A check is a PBKDF2 of 600000 rounds, so the
+	// token is taken BEFORE the hash and never refunded: a right password costs it as a wrong one does.
+	ListenCheck
 	classCount
 )
 
@@ -43,6 +47,10 @@ type Rate struct {
 	PerMinute float64
 	Burst     int
 }
+
+// ListenCheckRate is item BF's "at most one check per second": a bucket of one that refills in a second. It
+// is fixed by the contract, so it is not a configurable limit.
+func ListenCheckRate() Rate { return Rate{PerMinute: 60, Burst: 1} }
 
 // Config is the rate of every class and the size of the address table.
 type Config struct {
@@ -66,6 +74,7 @@ func DefaultConfig() Config {
 	c.Rates[PairingRequest] = Rate{PerMinute: 6, Burst: 6}
 	c.Rates[BroadcastStart] = Rate{PerMinute: 6, Burst: 6}
 	c.Rates[Cast] = Rate{PerMinute: 10, Burst: 10}
+	c.Rates[ListenCheck] = ListenCheckRate()
 	c.MaxAddrs = 4096
 	return c
 }

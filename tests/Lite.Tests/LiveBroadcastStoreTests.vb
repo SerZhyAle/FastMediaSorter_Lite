@@ -221,5 +221,76 @@ Public Class LiveBroadcastStoreTests
         End Try
     End Sub
 
+    ' LIVE-BROADCAST item G as DEVICE-EXCHANGE item BP resolves it: of two records of one sourceId the
+    ' later startedAt is the channel's address; updatedAt decides nothing.
+
+    Private Shared Function Channel(url As String, sourceId As String, startedAt As String) As LiveBroadcastDescriptor
+        Dim d As LiveBroadcastDescriptor = Audio(url, "channel", sourceId)
+        d.RecordStartedAt = startedAt
+        Return d
+    End Function
+
+    <Fact>
+    Public Sub An_Earlier_Record_Of_One_SourceId_Never_Displaces_A_Later_Stored_One()
+        Dim tempStoreFile As String = Path.GetTempFileName()
+        Try
+            Dim store As New LiveBroadcastStore(tempStoreFile)
+            store.Upsert(Channel("http://192.168.1.80:8080/new", "src-1", "2026-10-22T10:00:00.000Z"))
+            ' the out-of-order poll: an older record of the same source arrives last
+            store.Upsert(Channel("http://192.168.1.81:8080/old", "src-1", "2026-10-22T09:00:00.000Z"))
+
+            Dim loaded As List(Of LiveBroadcastDescriptor) = store.LoadAll()
+            Assert.Single(loaded)
+            Assert.Equal("http://192.168.1.80:8080/new", loaded(0).Url)
+            Assert.Equal("2026-10-22T10:00:00.000Z", loaded(0).RecordStartedAt)
+        Finally
+            If File.Exists(tempStoreFile) Then File.Delete(tempStoreFile)
+        End Try
+    End Sub
+
+    <Fact>
+    Public Sub A_Later_Record_Of_One_SourceId_Replaces_The_Stored_One_And_The_Start_Survives_A_Restart()
+        Dim tempStoreFile As String = Path.GetTempFileName()
+        Try
+            Dim store As New LiveBroadcastStore(tempStoreFile)
+            store.Upsert(Channel("http://192.168.1.80:8080/old", "src-1", "2026-10-22T09:00:00.000Z"))
+            store.Upsert(Channel("http://192.168.1.81:8080/new", "src-1", "2026-10-22T10:00:00.000Z"))
+
+            ' a fresh store over the same file: the persisted entry still knows its start, so an
+            ' out-of-order older record keeps losing after a restart too
+            Dim reopened As New LiveBroadcastStore(tempStoreFile)
+            reopened.Upsert(Channel("http://192.168.1.82:8080/older", "src-1", "2026-10-22T08:00:00.000Z"))
+
+            Dim loaded As List(Of LiveBroadcastDescriptor) = reopened.LoadAll()
+            Assert.Single(loaded)
+            Assert.Equal("http://192.168.1.81:8080/new", loaded(0).Url)
+            Assert.Equal("2026-10-22T10:00:00.000Z", loaded(0).RecordStartedAt)
+        Finally
+            If File.Exists(tempStoreFile) Then File.Delete(tempStoreFile)
+        End Try
+    End Sub
+
+    <Fact>
+    Public Sub Without_A_Readable_Start_On_Both_Sides_The_Incoming_Record_Wins_As_Before()
+        Dim tempStoreFile As String = Path.GetTempFileName()
+        Try
+            Dim store As New LiveBroadcastStore(tempStoreFile)
+            store.Upsert(Channel("http://192.168.1.80:8080/first", "src-1", "2026-10-22T10:00:00.000Z"))
+            ' no startedAt on the incoming record (a hand-off import, a record without one): store order decides
+            store.Upsert(Audio("http://192.168.1.81:8080/second", "imported", "src-1"))
+            Dim one As List(Of LiveBroadcastDescriptor) = store.LoadAll()
+            Assert.Single(one)
+            Assert.Equal("http://192.168.1.81:8080/second", one(0).Url)
+
+            ' an unreadable start text is the same as none
+            store.Upsert(Channel("http://192.168.1.82:8080/third", "src-1", "not a date"))
+            Dim two As List(Of LiveBroadcastDescriptor) = store.LoadAll()
+            Assert.Single(two)
+            Assert.Equal("http://192.168.1.82:8080/third", two(0).Url)
+        Finally
+            If File.Exists(tempStoreFile) Then File.Delete(tempStoreFile)
+        End Try
+    End Sub
+
 End Class
 #End If

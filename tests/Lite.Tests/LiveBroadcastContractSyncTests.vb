@@ -77,6 +77,78 @@ Public Class LiveBroadcastContractSyncTests
         End Try
     End Sub
 
+    ' ------------------------------------------------- 1.2 item G as DEVICE-EXCHANGE item BP resolves it: the later startedAt wins
+
+    <Fact>
+    Public Sub A_Directory_Records_startedAt_Is_Read_Into_The_Descriptor_And_UpdatedAt_Decides_Nothing()
+        Dim record As String = Json("{'broadcastId':'bc-77','deviceId':'dev-1','title':'Kitchen','mode':'AUDIO_ONLY'," &
+                                    "'startedAt':'2026-10-22T09:30:00.000Z','updatedAt':'2026-10-22T11:00:00.000Z'," &
+                                    "'descriptor':{'schemaVersion':1,'url':'http://192.168.1.50:8768/live-audio.aac','mode':'AUDIO_ONLY'," &
+                                    "'sourceId':'" & IdA & ":mic'}}")
+        Dim row As LiveDirectoryRow = LiveBroadcastRecords.RowOf(record)
+
+        Assert.True(row.IsPlayable)
+        Assert.Equal("bc-77", row.Descriptor.BroadcastId)
+        Assert.Equal("2026-10-22T09:30:00.000Z", row.Descriptor.RecordStartedAt)
+
+        ' a record without a startedAt (an older producer) reads as before, with no start kept
+        Dim withoutStart As String = Json("{'broadcastId':'bc-78','mode':'AUDIO_ONLY'," &
+                                          "'descriptor':{'schemaVersion':1,'url':'http://192.168.1.50:8769/live-audio.aac','mode':'AUDIO_ONLY'}}")
+        Dim plainRow As LiveDirectoryRow = LiveBroadcastRecords.RowOf(withoutStart)
+        Assert.True(plainRow.IsPlayable)
+        Assert.Equal("", plainRow.Descriptor.RecordStartedAt)
+    End Sub
+
+    Private Shared Function DirectoryRow(broadcastId As String, sourceId As String, startedAt As String, updatedAt As String) As LiveDirectoryRow
+        Dim started As String = If(startedAt Is Nothing, "", "'startedAt':'" & startedAt & "',")
+        Return LiveBroadcastRecords.RowOf(Json("{'broadcastId':'" & broadcastId & "','deviceId':'dev-1','title':'T','mode':'AUDIO_ONLY'," & started &
+                                               "'updatedAt':'" & updatedAt & "'," &
+                                               "'descriptor':{'schemaVersion':1,'url':'http://192.168.1.50:8768/live-audio.aac','mode':'AUDIO_ONLY'," &
+                                               "'sourceId':'" & sourceId & "'}}"))
+    End Function
+
+    <Fact>
+    Public Sub Two_Directory_Records_Of_One_SourceId_Are_One_Row_With_The_Later_startedAt_Whatever_Their_updatedAt()
+        ' The older broadcast was touched last (a writer clock stepped forward): updatedAt must not decide.
+        Dim older As LiveDirectoryRow = DirectoryRow("bc-1", IdA & ":mic", "2026-10-22T09:00:00.000Z", "2026-10-22T12:00:00.000Z")
+        Dim newer As LiveDirectoryRow = DirectoryRow("bc-2", IdA & ":mic", "2026-10-22T10:00:00.000Z", "2026-10-22T10:00:00.000Z")
+
+        Dim forward As HashSet(Of Integer) = LiveBroadcastRecords.SupersededIndexes(New List(Of LiveDirectoryRow) From {older, newer})
+        Assert.Equal({0}, forward.ToArray())
+
+        ' the snapshot order does not alternate the answer
+        Dim backward As HashSet(Of Integer) = LiveBroadcastRecords.SupersededIndexes(New List(Of LiveDirectoryRow) From {newer, older})
+        Assert.Equal({1}, backward.ToArray())
+    End Sub
+
+    <Fact>
+    Public Sub Records_Of_Different_SourceIds_Or_Without_One_Or_Refused_Are_Never_Collapsed()
+        Dim mic As LiveDirectoryRow = DirectoryRow("bc-1", IdA & ":mic", "2026-10-22T09:00:00.000Z", "2026-10-22T09:00:00.000Z")
+        Dim screen As LiveDirectoryRow = DirectoryRow("bc-2", IdA & ":screen", "2026-10-22T10:00:00.000Z", "2026-10-22T10:00:00.000Z")
+        Dim noId1 As LiveDirectoryRow = LiveBroadcastRecords.RowOf(Json("{'broadcastId':'bc-3','mode':'AUDIO_ONLY'," &
+            "'descriptor':{'schemaVersion':1,'url':'http://192.168.1.50:8769/live-audio.aac','mode':'AUDIO_ONLY'}}"))
+        Dim noId2 As LiveDirectoryRow = LiveBroadcastRecords.RowOf(Json("{'broadcastId':'bc-4','mode':'AUDIO_ONLY'," &
+            "'descriptor':{'schemaVersion':1,'url':'http://192.168.1.50:8770/live-audio.aac','mode':'AUDIO_ONLY'}}"))
+        Dim refused1 As LiveDirectoryRow = LiveBroadcastRecords.RowOf(Json("{'broadcastId':'bc-5','descriptor':{'schemaVersion':9}}"))
+        Dim refused2 As LiveDirectoryRow = LiveBroadcastRecords.RowOf(Json("{'broadcastId':'bc-6','descriptor':{'schemaVersion':9}}"))
+
+        Assert.False(refused1.IsPlayable)
+        Assert.Empty(LiveBroadcastRecords.SupersededIndexes(New List(Of LiveDirectoryRow) From {mic, screen, noId1, noId2, refused1, refused2}))
+    End Sub
+
+    <Fact>
+    Public Sub Equal_Or_Unreadable_Starts_Keep_The_Snapshots_Own_Order_And_The_Later_Record_Stands()
+        Dim first As LiveDirectoryRow = DirectoryRow("bc-1", IdA, "2026-10-22T09:00:00.000Z", "2026-10-22T09:00:00.000Z")
+        Dim same As LiveDirectoryRow = DirectoryRow("bc-2", IdA, "2026-10-22T09:00:00.000Z", "2026-10-22T09:00:00.000Z")
+        Dim none As LiveDirectoryRow = DirectoryRow("bc-3", IdA, Nothing, "2026-10-22T09:00:00.000Z")
+        Dim garbage As LiveDirectoryRow = DirectoryRow("bc-4", IdA, "yesterday", "2026-10-22T09:00:00.000Z")
+
+        Assert.Equal({0}, LiveBroadcastRecords.SupersededIndexes(New List(Of LiveDirectoryRow) From {first, same}).ToArray())
+        Assert.Equal({0}, LiveBroadcastRecords.SupersededIndexes(New List(Of LiveDirectoryRow) From {first, none}).ToArray())
+        Assert.Equal({0}, LiveBroadcastRecords.SupersededIndexes(New List(Of LiveDirectoryRow) From {first, garbage}).ToArray())
+        Assert.Equal({0, 1}, LiveBroadcastRecords.SupersededIndexes(New List(Of LiveDirectoryRow) From {first, same, none}).OrderBy(Function(i) i).ToArray())
+    End Sub
+
     ' ------------------------------------------------------------------ 0.16 item H: channels and sample rate are settings
 
     <Fact>

@@ -173,7 +173,11 @@ Public NotInheritable Class ModernViewerPreferences
     Public Property RecipientsOverlayVisibleRows As Integer = 11   ' ten slots + Delete fit without scrolling (audit B-13)
 
     Public Property SlideshowRandomOrder As String = "natural"
-    Public Property StopSlideshowOnManualNavigation As Boolean = True
+    ''' <summary>MEDIA-VIEWER 1.0 rule 5: manual navigation continues a running show and
+    ''' restarts its timer by default, so False is the contract default; True is the
+    ''' declared user preference that turns it back into the historical stop. A profile
+    ''' that already stores a value keeps it.</summary>
+    Public Property StopSlideshowOnManualNavigation As Boolean = False
     Public Property SlideshowUiMode As String = "none"
 
     Public Property VideoAutoplay As Boolean = True
@@ -252,6 +256,15 @@ Public NotInheritable Class ModernViewerPreferences
     ''' kind / size / date). Remembered between sessions and toggled with Ctrl+L
     ''' (005_SPECIFICATION_THUMBNAIL_GRID_TRIAGE_DOTNET10.md PG-5, PG-7).</summary>
     Public Property PanelViewMode As String = "grid"
+    Public Property FileManagerViewMode As String = "grid"
+    Public Property FileManagerContentMode As String = "media"
+    Public Property FileManagerShowHiddenFiles As Boolean = False
+    Public Property FileManagerNonMediaOpenAction As String = "default"
+    Public Property FileManagerShowLocalPlaces As Boolean = True
+    Public Property FileManagerShowResourcePlaces As Boolean = True
+    Public Property FileManagerShowDevicePlaces As Boolean = True
+    Public Property FileManagerRememberSort As Boolean = True
+    Public Property FileManagerPlaceSorts As String = "{}"
 
     ''' <summary>Side of a thumbnail card in the F3 panel, in pixels: 96, 128, 192 or 256
     ''' (PG-3). Zero means "not chosen here yet" - the panel then follows the legacy card size
@@ -329,6 +342,75 @@ Public NotInheritable Class ModernViewerPreferences
     ''' <summary>One folder's last zoom, for NewImageScaleMode = "perFolder" (§4.2).
     ''' A scale, not a rectangle: the spec restores how big the next picture opens, and
     ''' says nothing about where a previous picture had been panned to.</summary>
+    Friend NotInheritable Class PlaceSortEntry
+        Public Property Column As String = "Name"
+        Public Property Descending As Boolean
+    End Class
+
+    Friend Function GetPlaceSort(placeId As String, ByRef column As PanelSortColumn, ByRef descending As Boolean) As Boolean
+        column = PanelSortColumn.Name
+        descending = False
+        If Not FileManagerRememberSort OrElse String.IsNullOrWhiteSpace(placeId) Then Return False
+        Dim map As Dictionary(Of String, PlaceSortEntry) = ReadPlaceSorts()
+        Dim entry As PlaceSortEntry = Nothing
+        If map.TryGetValue(placeId, entry) AndAlso entry IsNot Nothing Then
+            Dim parsedCol As PanelSortColumn
+            If [Enum].TryParse(Of PanelSortColumn)(entry.Column, True, parsedCol) AndAlso parsedCol <> PanelSortColumn.None Then
+                column = parsedCol
+                descending = entry.Descending
+                map.Remove(placeId)
+                map(placeId) = entry
+                FileManagerPlaceSorts = JsonSerializer.Serialize(map)
+                Return True
+            End If
+        End If
+        Return False
+    End Function
+
+    Friend Sub SetPlaceSort(placeId As String, column As PanelSortColumn, descending As Boolean)
+        If Not FileManagerRememberSort OrElse String.IsNullOrWhiteSpace(placeId) OrElse column = PanelSortColumn.None Then Return
+        Dim map As Dictionary(Of String, PlaceSortEntry) = ReadPlaceSorts()
+        map.Remove(placeId)
+        map(placeId) = New PlaceSortEntry With {.Column = column.ToString(), .Descending = descending}
+        While map.Count > 100
+            Dim oldestKey As String = map.Keys.First()
+            map.Remove(oldestKey)
+        End While
+        FileManagerPlaceSorts = JsonSerializer.Serialize(map)
+    End Sub
+
+    Private Function ReadPlaceSorts() As Dictionary(Of String, PlaceSortEntry)
+        Return ParsePlaceSortMap(FileManagerPlaceSorts)
+    End Function
+
+    Private Shared Function ParsePlaceSortMap(value As String) As Dictionary(Of String, PlaceSortEntry)
+        Try
+            Dim map As Dictionary(Of String, PlaceSortEntry) = JsonSerializer.Deserialize(Of Dictionary(Of String, PlaceSortEntry))(NormalizeJson(value))
+            If map IsNot Nothing Then
+                Dim valid As New Dictionary(Of String, PlaceSortEntry)(StringComparer.Ordinal)
+                For Each kvp In map
+                    If Not String.IsNullOrWhiteSpace(kvp.Key) AndAlso kvp.Value IsNot Nothing Then
+                        Dim parsedCol As PanelSortColumn
+                        If [Enum].TryParse(Of PanelSortColumn)(kvp.Value.Column, True, parsedCol) AndAlso parsedCol <> PanelSortColumn.None Then
+                            valid(kvp.Key) = kvp.Value
+                        End If
+                    End If
+                Next
+                While valid.Count > 100
+                    valid.Remove(valid.Keys.First())
+                End While
+                Return valid
+            End If
+        Catch
+        End Try
+        Return New Dictionary(Of String, PlaceSortEntry)(StringComparer.Ordinal)
+    End Function
+
+    Private Shared Function NormalizePlaceSorts(value As String) As String
+        Dim map As Dictionary(Of String, PlaceSortEntry) = ParsePlaceSortMap(value)
+        Return JsonSerializer.Serialize(map)
+    End Function
+
     Public NotInheritable Class FolderZoomEntry
         Public Property Path As String = ""
         Public Property Factor As Double
@@ -409,6 +491,15 @@ Public NotInheritable Class ModernViewerPreferences
         p.AnimatedViaVideo = ReadBool("AnimatedViaVideo", p.AnimatedViaVideo)
         p.AnimatedViaVideoFfmpegAsked = ReadBool("AnimatedViaVideoFfmpegAsked", p.AnimatedViaVideoFfmpegAsked)
         p.PanelViewMode = ReadChoice("PanelViewMode", p.PanelViewMode, "grid", "list")
+        p.FileManagerViewMode = ReadChoice("FileManagerViewMode", p.FileManagerViewMode, "grid", "list")
+        p.FileManagerContentMode = ReadChoice("FileManagerContentMode", p.FileManagerContentMode, "media", "documents", "all")
+        p.FileManagerShowHiddenFiles = ReadBool("FileManagerShowHiddenFiles", p.FileManagerShowHiddenFiles)
+        p.FileManagerNonMediaOpenAction = ReadChoice("FileManagerNonMediaOpenAction", p.FileManagerNonMediaOpenAction, "default", "openWith")
+        p.FileManagerShowLocalPlaces = ReadBool("FileManagerShowLocalPlaces", p.FileManagerShowLocalPlaces)
+        p.FileManagerShowResourcePlaces = ReadBool("FileManagerShowResourcePlaces", p.FileManagerShowResourcePlaces)
+        p.FileManagerShowDevicePlaces = ReadBool("FileManagerShowDevicePlaces", p.FileManagerShowDevicePlaces)
+        p.FileManagerRememberSort = ReadBool("FileManagerRememberSort", p.FileManagerRememberSort)
+        p.FileManagerPlaceSorts = ReadString("FileManagerPlaceSorts", p.FileManagerPlaceSorts)
         p.PanelThumbnailSize = SnapPanelThumbnailSize(ReadInt("PanelThumbnailSize", p.PanelThumbnailSize, 0, 256))
         p.PanelThumbCacheMb = ReadInt("PanelThumbCacheMb", p.PanelThumbCacheMb, 0, 4096)
         p.ArchiveCacheMaxMb = ReadInt("ArchiveCacheMaxMb", p.ArchiveCacheMaxMb, ArchiveCacheMaxMbMin, ArchiveCacheMaxMbMax)
@@ -503,6 +594,15 @@ Public NotInheritable Class ModernViewerPreferences
         WriteBool("AnimatedViaVideo", AnimatedViaVideo)
         WriteBool("AnimatedViaVideoFfmpegAsked", AnimatedViaVideoFfmpegAsked)
         WriteString("PanelViewMode", PanelViewMode)
+        WriteString("FileManagerViewMode", FileManagerViewMode)
+        WriteString("FileManagerContentMode", FileManagerContentMode)
+        WriteBool("FileManagerShowHiddenFiles", FileManagerShowHiddenFiles)
+        WriteString("FileManagerNonMediaOpenAction", FileManagerNonMediaOpenAction)
+        WriteBool("FileManagerShowLocalPlaces", FileManagerShowLocalPlaces)
+        WriteBool("FileManagerShowResourcePlaces", FileManagerShowResourcePlaces)
+        WriteBool("FileManagerShowDevicePlaces", FileManagerShowDevicePlaces)
+        WriteBool("FileManagerRememberSort", FileManagerRememberSort)
+        WriteString("FileManagerPlaceSorts", NormalizePlaceSorts(FileManagerPlaceSorts))
         WriteString("PanelThumbnailSize", PanelThumbnailSize.ToString(CultureInfo.InvariantCulture))
         WriteString("PanelThumbCacheMb", PanelThumbCacheMb.ToString(CultureInfo.InvariantCulture))
         WriteString("ArchiveCacheMaxMb", ArchiveCacheMaxMb.ToString(CultureInfo.InvariantCulture))
@@ -530,6 +630,7 @@ Public NotInheritable Class ModernViewerPreferences
             exported.FolderZoomHistory = "[]"
             exported.VideoPositionHistory = "[]"
             exported.DocumentPageHistory = "[]"
+            exported.FileManagerPlaceSorts = "{}"
         End If
         Return JsonSerializer.Serialize(New SettingsExport With {.SchemaVersion = 1, .Preferences = exported},
                                         New JsonSerializerOptions With {.WriteIndented = True})
@@ -732,6 +833,10 @@ Public NotInheritable Class ModernViewerPreferences
         OcrDiskCacheMaxMb = Clamp(OcrDiskCacheMaxMb, 0, 1024)
         DecodeCacheMaxMb = Clamp(DecodeCacheMaxMb, 0, 8192)
         PanelViewMode = Choice(PanelViewMode, "grid", "grid", "list")
+        FileManagerViewMode = Choice(FileManagerViewMode, "grid", "grid", "list")
+        FileManagerContentMode = Choice(FileManagerContentMode, "media", "media", "documents", "all")
+        FileManagerNonMediaOpenAction = Choice(FileManagerNonMediaOpenAction, "default", "default", "openWith")
+        FileManagerPlaceSorts = NormalizePlaceSorts(FileManagerPlaceSorts)
         PanelThumbnailSize = SnapPanelThumbnailSize(PanelThumbnailSize)
         PanelThumbCacheMb = Clamp(PanelThumbCacheMb, 0, 4096)
         ' The same ranges Load() applies to the registry: an imported profile used to keep

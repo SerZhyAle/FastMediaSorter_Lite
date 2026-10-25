@@ -29,6 +29,7 @@ Friend Enum BatchRunKind
     Copy
     Delete
     Undo
+    Manager
 End Enum
 
 Friend NotInheritable Class BatchItemResult
@@ -67,6 +68,8 @@ Friend NotInheritable Class BatchReport
     ''' <summary>Undo only: deleted for good, nothing to bring back.</summary>
     Public Property NotReturnableCount As Integer
     Public Property BytesDone As Long
+    Public Property NonReversibleCount As Integer
+    Public Property ManifestText As String = ""
 
     Public ReadOnly Property DoneCount As Integer
         Get
@@ -120,10 +123,13 @@ Friend NotInheritable Class BatchReport
             Case BatchRunKind.Copy : lead = Localization.TF("Скопировано файлов: {0}", DoneCount)
             Case BatchRunKind.Delete : lead = Localization.TF("Удалено файлов: {0}", DoneCount)
             Case BatchRunKind.Undo : lead = Localization.TF("Возвращено файлов: {0}", DoneCount)
+            Case BatchRunKind.Manager : lead = Localization.TF("Выполнено операций: {0}", DoneCount)
             Case Else : lead = Localization.TF("Перенесено файлов: {0}", DoneCount)
         End Select
 
         Dim text As New StringBuilder(lead)
+        If ManifestText.Length > 0 Then text.Append("; ").Append(ManifestText)
+        If NonReversibleCount > 0 Then text.Append("; ").Append(Localization.TF("операций без отмены: {0}", NonReversibleCount))
         If SkippedCount > 0 Then text.Append("; ").Append(Localization.TF("пропущено: {0}", SkippedCount))
         If FailedCount > 0 Then text.Append("; ").Append(Localization.TF("ошибок: {0}", FailedCount))
         If NotReturnableCount > 0 Then text.Append("; ").Append(Localization.TF("удалено безвозвратно, вернуть нельзя: {0}", NotReturnableCount))
@@ -165,10 +171,18 @@ Friend NotInheritable Class BatchReport
     Public Shared Function DetailText(result As BatchItemResult) As String
         If result Is Nothing Then Return ""
         Select Case result.State
-            Case BatchItemState.Failed : Return result.Detail
+            Case BatchItemState.Failed
+                If (result.Op?.ManagerOperation?.Outcome?.DestinationCreated).GetValueOrDefault() Then
+                    Return result.Detail & Environment.NewLine & Localization.TF("{0}: {1}", Localization.T("Папка назначения"), result.Op.Destination)
+                End If
+                Return result.Detail
             Case BatchItemState.Skipped : Return SkipText(result.SkipReason)
             Case BatchItemState.NotStarted : Return Localization.T("запуск не состоялся: операция прервана")
             Case Else
+                If result.Op?.ManagerOperation IsNot Nothing Then
+                    If result.Op.Kind = FileOpKind.Delete OrElse result.Op.RecycleFellThrough Then Return Localization.T("Удалено безвозвратно - отмена недоступна")
+                    If result.Op.Destination.Length > 0 Then Return Localization.TF("{0}: {1}", Localization.T("Папка назначения"), result.Op.Destination)
+                End If
                 ' StatusNote holds the new name when the old one was taken.
                 If result.Op IsNot Nothing AndAlso Not String.IsNullOrEmpty(result.Op.StatusNote) Then
                     Return Localization.TF("сохранён как {0}", result.Op.StatusNote)

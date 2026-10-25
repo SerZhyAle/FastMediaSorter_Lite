@@ -55,12 +55,12 @@ Partial Public Class Main_Form
 
             If e.Button = MouseButtons.Left Then
                 Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1151: Shift+LeftClick - jumping +10 files")
-                SlideShowStop()
+                ManualNavigationStopsShow()
                 JumpBy(10, "+10 файлов")
                 Return
             ElseIf e.Button = MouseButtons.Right Then
                 Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1153: Shift+RightClick - jumping -10 files")
-                SlideShowStop()
+                ManualNavigationStopsShow()
                 JumpBy(-10, "-10 файлов")
                 Return
             End If
@@ -72,12 +72,12 @@ Partial Public Class Main_Form
 
             If e.Button = MouseButtons.Left Then
                 Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1151: Ctrl+LeftClick - jumping +100 files")
-                SlideShowStop()
+                ManualNavigationStopsShow()
                 JumpBy(100, "+100 файлов")
                 Return
             ElseIf e.Button = MouseButtons.Right Then
                 Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1153: Ctrl+RightClick - jumping -100 files")
-                SlideShowStop()
+                ManualNavigationStopsShow()
                 JumpBy(-100, "-100 файлов")
                 Return
             End If
@@ -89,12 +89,12 @@ Partial Public Class Main_Form
 
             If e.Button = MouseButtons.Left Then
                 Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1151: Alt+LeftClick - jumping +1000 files")
-                SlideShowStop()
+                ManualNavigationStopsShow()
                 JumpBy(1000, "+1000 файлов")
                 Return
             ElseIf e.Button = MouseButtons.Right Then
                 Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1153: Alt+RightClick - jumping -1000 files")
-                SlideShowStop()
+                ManualNavigationStopsShow()
                 JumpBy(-1000, "-1000 файлов")
                 Return
             End If
@@ -184,7 +184,14 @@ Partial Public Class Main_Form
         End If
 #End If
 
+#If Not NETFRAMEWORK Then
+        ' MEDIA-VIEWER 1.0 rule 5: the wheel's file flip is manual navigation - a running
+        ' show continues and its timer restarts (the wheel-zoom paths below consume their
+        ' events without flipping, and inherit the same continuation).
+        ManualNavigationStopsShow()
+#Else
         SlideShowStop()
+#End If
 
 #If Not NETFRAMEWORK Then
         ' Document scrolling / zooming exception (§2.4)

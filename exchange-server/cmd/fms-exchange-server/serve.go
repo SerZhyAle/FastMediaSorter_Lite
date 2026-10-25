@@ -182,6 +182,8 @@ func serveCore(ctx context.Context, cmd command, console bool, stdout, stderr io
 		return exitConfig
 	}
 	defer audit.Close()
+	logger.SetBanner(version)
+	audit.SetProduct("fms-exchange-server/" + version)
 	logger.State("start", logx.Text("version", version))
 	if cfg.ObsoletePasswordHash {
 		logger.Warn("obsolete", logx.Text("member", "the server-wide credential of the superseded design is ignored; it is removed when the config is next saved"))

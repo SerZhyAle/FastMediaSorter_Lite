@@ -71,6 +71,7 @@ End Class
 ''' be tested without one. Main_Form maps the two at the queue boundary.
 ''' </summary>
 Friend NotInheritable Class BatchOp
+    Public Property ManagerOperation As ManagerOperation
     Public Property Kind As FileOpKind
     Public Property Source As String = ""
     Public Property Destination As String = ""
@@ -154,6 +155,11 @@ End Class
 ''' <summary>The plan. Built by <see cref="Build"/>; never mutated afterwards - the one
 ''' question that changes it (a collision answer) returns a NEW plan.</summary>
 Friend NotInheritable Class BatchPlan
+
+    Friend Shared Function FromExplicitOperations(operations As List(Of BatchOp), skipped As List(Of BatchSkip),
+                                                  collisions As List(Of String), confirm As Boolean) As BatchPlan
+        Return New BatchPlan(BatchIntent.Delete, operations, skipped, collisions, PermanentReason.NotPermanent, confirm, "", "")
+    End Function
 
     Private ReadOnly ops As List(Of BatchOp)
     Private ReadOnly skips As List(Of BatchSkip)

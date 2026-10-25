@@ -134,6 +134,7 @@ Friend NotInheritable Class ExchangeAgentPipe
     Public Const RequestGetState As String = "GetState"
     Public Const RequestGetDirectory As String = "GetDirectory"
     Public Const RequestGetAccess As String = "GetAccess"
+    Public Const RequestGetBroadcastSeal As String = "GetBroadcastSeal"
     ''' <summary>Ticket 201: answer the pending cast offer once, by broadcast id.</summary>
     Public Const RequestCastAnswer As String = "CastAnswer"
     ''' <summary>Reserved agent request. The viewer persists its cast preference in ModernViewerPreferences.</summary>
@@ -170,6 +171,14 @@ Friend NotInheritable Class ExchangeAgentPipe
             Case Else
                 Return Nothing
         End Select
+    End Function
+
+    ' Local pipe tokens are diagnostics, never UI copy. Unknown tokens use the canonical refusal sentence.
+    Public Shared Function ErrorMessage(errorToken As String) As ConnectionDiagnosisMessage
+        If errorToken = ErrorNotConnected OrElse errorToken = ErrorNotConfigured OrElse errorToken = ErrorUnknownResource Then
+            Return ConnectionDiagnosisMessages.Unavailable
+        End If
+        Return ConnectionDiagnosisMessages.OfCode(errorToken)
     End Function
 
     ''' <summary>The longest request line the server reads.</summary>

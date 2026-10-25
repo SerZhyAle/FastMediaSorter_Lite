@@ -250,7 +250,7 @@ Public Class ExchangeAdminModelTests
         Try
             For Each code As String In Localization.Codes
                 Localization.CurrentCode = code
-                Dim texts As List(Of String) = ExchangeStatement.Paragraphs()
+                Dim texts As List(Of String) = ExchangeStatement.Paragraphs(sealed:=False)
                 Assert.Equal(8, texts.Count)
                 Assert.All(texts, Sub(t) Assert.False(String.IsNullOrWhiteSpace(t), code))
                 Assert.Equal(8, texts.Distinct().Count())
@@ -258,7 +258,7 @@ Public Class ExchangeAdminModelTests
                     ' a translation, never the Russian source showing through (the layer returns the key for a missing entry)
                     Dim russian As List(Of String)
                     Localization.CurrentCode = "ru"
-                    russian = ExchangeStatement.Paragraphs()
+                    russian = ExchangeStatement.Paragraphs(sealed:=False)
                     Localization.CurrentCode = code
                     For i As Integer = 0 To texts.Count - 1
                         Assert.NotEqual(russian(i), texts(i))

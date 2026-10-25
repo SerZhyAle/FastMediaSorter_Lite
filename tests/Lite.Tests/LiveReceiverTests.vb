@@ -2,6 +2,7 @@
 Option Strict On
 
 Imports System.IO
+Imports System.Linq
 Imports System.Text
 Imports System.Text.RegularExpressions
 Imports System.Security.Cryptography
@@ -10,6 +11,7 @@ Imports System.Threading.Tasks
 Imports Xunit
 
 Public Class LiveReceiverTests
+    Private Shared ReadOnly SealedId As String = ExchangeWireTestKit.IdOf("B"c)
     <Theory>
     <InlineData("SHA-256")>
     <InlineData("MD5")>
@@ -62,6 +64,11 @@ Public Class LiveReceiverTests
     <Fact>
     Public Async Function Relay_Password_Answers_One_Basic_Challenge_Inside_Pinned_Tls() As Task
         Dim authorization As String = ""
+        Dim group = ExchangeRelayRecords.NewKey()
+        Dim sealedBody As Byte()
+        Using sender As New ExchangeRelaySender(SealedId, "audio/aac", 1UI, ExchangeRelayRecords.NewKey(), New Byte()() {group})
+            sealedBody = sender.BuildHeaderChunk(Array.Empty(Of Byte)())
+        End Using
         Using server As New ExchangeStubTlsServer(
             Async Function(connection)
                 Using reader As New StreamReader(connection.Stream, Encoding.ASCII, False, 1024, leaveOpen:=True)
@@ -75,13 +82,15 @@ Public Class LiveReceiverTests
                 If authorization.Length = 0 Then
                     head = "HTTP/1.1 401 Unauthorized" & vbCrLf & "WWW-Authenticate: Basic realm=""broadcast""" & vbCrLf & "Content-Length: 0"
                 Else
-                    head = "HTTP/1.1 200 OK" & vbCrLf & "Content-Type: audio/aac" & vbCrLf & "Content-Length: 0"
+                    head = "HTTP/1.1 200 OK" & vbCrLf & "Content-Type: application/x-fmsx-sealed" & vbCrLf & "Content-Length: " & sealedBody.Length
                 End If
                 Await connection.Stream.WriteAsync(Encoding.ASCII.GetBytes(head & vbCrLf & "Connection: close" & vbCrLf & vbCrLf), connection.Token)
+                If authorization.Length > 0 Then Await connection.Stream.WriteAsync(sealedBody, connection.Token)
                 Await connection.Stream.FlushAsync(connection.Token)
             End Function)
             Dim endpoint As New LiveBroadcastEndpoint With {.Url = "https://" & server.Address & "/v2/b/abc/stream", .Transport = "RELAY",
-                .CertFingerprint = server.Fingerprint, .AuthUser = "guest", .Password = "secret", .ModeValue = LiveBroadcastMode.AudioOnly}
+                .CertFingerprint = server.Fingerprint, .AuthUser = "guest", .Password = "secret", .ModeValue = LiveBroadcastMode.AudioOnly,
+                .IsSealed = True, .SealVersion = 1, .BroadcastId = SealedId, .SealKey = ExchangeBase64Url.Encode(group)}
             Using session As New LiveHttpPlaybackSession(endpoint, New LivePlaybackOptions With {.ConnectTimeoutMs = 5000}),
                   cts As New CancellationTokenSource(TimeSpan.FromSeconds(10))
                 Assert.True((Await session.OpenAsync(cts.Token)).IsConnected)
@@ -93,23 +102,39 @@ Public Class LiveReceiverTests
     End Function
 
     Private Shared Async Function RespondWithTs(connection As ExchangeStubConnection) As Task
-        Using reader As New StreamReader(connection.Stream, Encoding.ASCII, False, 1024, leaveOpen:=True)
-            While Not String.IsNullOrEmpty(Await reader.ReadLineAsync(connection.Token))
+        Await RespondWithTsStream(connection.Stream, connection.Token)
+    End Function
+
+    Private Shared Async Function RespondWithTsStream(stream As Stream, ct As CancellationToken) As Task
+        Using reader As New StreamReader(stream, Encoding.ASCII, False, 1024, leaveOpen:=True)
+            While Not String.IsNullOrEmpty(Await reader.ReadLineAsync(ct))
             End While
         End Using
         Dim response As Byte() = Encoding.ASCII.GetBytes("HTTP/1.1 200 OK" & vbCrLf & "Content-Type: video/mp2t" & vbCrLf &
             "Content-Length: 1" & vbCrLf & "Connection: close" & vbCrLf & vbCrLf & "G")
-        Await connection.Stream.WriteAsync(response, connection.Token)
-        Await connection.Stream.FlushAsync(connection.Token)
+        Await stream.WriteAsync(response, ct)
+        Await stream.FlushAsync(ct)
     End Function
 
     <Theory>
     <InlineData(True)>
     <InlineData(False)>
     Public Async Function Relay_Requires_The_Descriptor_Certificate_On_The_Playback_Connection(matches As Boolean) As Task
-        Using server As New ExchangeStubTlsServer(AddressOf RespondWithTs)
+        Dim group = ExchangeRelayRecords.NewKey()
+        Using server As New ExchangeStubTlsServer(Async Function(connection)
+            Using reader As New StreamReader(connection.Stream, Encoding.ASCII, False, 1024, leaveOpen:=True)
+                While Not String.IsNullOrEmpty(Await reader.ReadLineAsync(connection.Token))
+                End While
+            End Using
+            Using sender As New ExchangeRelaySender(SealedId, "video/mp2t", 1UI, ExchangeRelayRecords.NewKey(), New Byte()() {group})
+                Dim body = sender.BuildHeaderChunk(Array.Empty(Of Byte)()).Concat(sender.SealMedia(New Byte() {&H47}, 1)).ToArray()
+                Await connection.Stream.WriteAsync(Encoding.ASCII.GetBytes("HTTP/1.1 200 OK" & vbCrLf & "Content-Type: application/x-fmsx-sealed" & vbCrLf & "Content-Length: " & body.Length & vbCrLf & vbCrLf), connection.Token)
+                Await connection.Stream.WriteAsync(body, connection.Token)
+            End Using
+        End Function)
             Dim endpoint As New LiveBroadcastEndpoint With {.Url = "https://" & server.Address & "/v2/b/abc/stream", .Transport = "RELAY",
-                .ModeValue = LiveBroadcastMode.VideoAudio, .CertFingerprint = If(matches, server.Fingerprint, "SHA256:" & New String("A"c, 43))}
+                .ModeValue = LiveBroadcastMode.VideoAudio, .CertFingerprint = If(matches, server.Fingerprint, "SHA256:" & New String("A"c, 43)),
+                .IsSealed = True, .SealVersion = 1, .BroadcastId = SealedId, .SealKey = ExchangeBase64Url.Encode(group)}
             Using session As New LiveHttpPlaybackSession(endpoint, New LivePlaybackOptions With {.ConnectTimeoutMs = 5000}),
                   cts As New CancellationTokenSource(TimeSpan.FromSeconds(10))
                 Dim result As LiveOpenResult = Await session.OpenAsync(cts.Token)
@@ -122,17 +147,20 @@ Public Class LiveReceiverTests
     <Fact>
     Public Async Function Tunnel_Sends_Connect_Then_Http_And_Never_Dials_The_Documentation_Host() As Task
         Dim target As String = ""
-        Using server As New ExchangeStubTlsServer(
+        Using identity As New ExchangeSealedTunnel(), server As New ExchangeStubTlsServer(
             Async Function(connection)
                 Dim opening As ExchangeEnvelope = Await connection.ReadAsync()
                 target = opening.Text("broadcastId")
                 Assert.Equal("connect", opening.Type)
                 Assert.Equal("http", opening.Text("scheme"))
                 Await connection.WriteAsync(New ExchangeEnvelope("connected"))
-                Await RespondWithTs(connection)
+                Using inner = Await identity.ServerStreamAsync(connection.Stream, connection.Token)
+                    Await RespondWithTsStream(inner, connection.Token)
+                End Using
             End Function)
             Dim endpoint As New LiveBroadcastEndpoint With {.Url = "fmsx://" & server.Address & "/b/abc/http", .Transport = "TUNNEL",
-                .Inner = "http://192.0.2.1:8768/live.ts", .ModeValue = LiveBroadcastMode.VideoOnly, .CertFingerprint = server.Fingerprint}
+                .Inner = "http://192.0.2.1:8768/live.ts", .ModeValue = LiveBroadcastMode.VideoOnly, .CertFingerprint = server.Fingerprint,
+                .IsSealed = True, .SealVersion = 1, .SealPin = identity.Pin}
             Using session As New LiveHttpPlaybackSession(endpoint, New LivePlaybackOptions With {.ConnectTimeoutMs = 5000}),
                   cts As New CancellationTokenSource(TimeSpan.FromSeconds(10))
                 Assert.True((Await session.OpenAsync(cts.Token)).IsConnected)
@@ -178,20 +206,23 @@ Public Class LiveReceiverTests
     End Sub
 
     <Fact>
-    Public Sub Sealed_Only_Stream_Requires_An_Update_Instead_Of_Being_Played_As_Clear_Media()
+    Public Sub Known_seal_is_playable_and_unknown_seal_is_refused_without_clear_fallback()
         Dim result As LiveBroadcastReadResult = Read("{'schemaVersion':1,'url':'https://relay.example/v2/b/abc/stream','mode':'VIDEO_AUDIO'," &
             "'endpoints':[{'url':'https://relay.example/v2/b/abc/stream','mode':'VIDEO_AUDIO','transport':'RELAY','seal':{'v':1}}]}")
-        Assert.Equal(LiveReadStatus.UnsupportedVersion, result.Status)
+        Assert.Equal(LiveReadStatus.Ok, result.Status)
+        result.Descriptor.Endpoints(0).SealVersion = 99
+        Assert.Null(LiveEndpointSelector.SelectEndpoint(result.Descriptor))
     End Sub
 
     <Fact>
-    Public Sub Directory_Credentials_Are_Consumed_Only_From_The_Private_Record()
+    Public Sub Clear_directory_credentials_are_never_consumed_and_secrets_require_the_agent()
         Dim raw As String = "{'broadcastId':'abc','deviceId':'phone','credentials':{'user':'guest','password':'secret'}," &
             "'descriptor':{'schemaVersion':1,'url':'http://192.168.1.2/listen','mode':'AUDIO_ONLY','auth':{'scheme':'password-v1','user':'guest'}}}"
         raw = raw.Replace("'"c, """"c)
         Dim result As LiveBroadcastReadResult = LiveBroadcastRecords.ReadRecord(raw)
         Assert.Equal(LiveReadStatus.Ok, result.Status)
-        Assert.Equal("secret", result.Descriptor.Password)
+        Assert.Null(result.Descriptor.Password)
+        Assert.True(result.Descriptor.RequiresAgentSeal)
         Assert.DoesNotContain("secret", ExchangeRecordReader.WithoutSecrets(raw))
         Assert.Null(LiveBroadcastRecords.ReadRecord(ExchangeRecordReader.WithoutSecrets(raw)).Descriptor.Password)
     End Sub

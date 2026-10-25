@@ -201,7 +201,15 @@ Friend NotInheritable Class LiveProducerDigest
         Return Encoding.ASCII.GetBytes(header.ToString())
     End Function
 
+    ''' <summary>The single-pair form: the one password of user `listener` (the link pair), as before ticket 263 T-3.</summary>
     Public Function Verify(request As LiveProducerWire.LiveWireRequest, password As String, source As String) As Boolean
+        Return Verify(request, Function(user As String) If(String.Equals(user, LiveCredentialPairs.LinkUser, StringComparison.Ordinal), password, Nothing), source)
+    End Function
+
+    ''' <summary>Ticket 263 T-3 (item BF): ANY pair of the broadcast's set. <paramref name="passwordFor"/> answers the password of the
+    ''' user the listener names, or Nothing for a user that holds no pair (refused like a wrong password); the pair is user-bound, so
+    ''' the password of one user never opens another. The one-check-per-second limit and the replay cache are shared by all users.</summary>
+    Public Function Verify(request As LiveProducerWire.LiveWireRequest, passwordFor As Func(Of String, String), source As String) As Boolean
         Dim authorization As String = Nothing
         If request Is Nothing OrElse Not request.Headers.TryGetValue("Authorization", authorization) Then Return False
         If Not authorization.StartsWith("Digest ", StringComparison.OrdinalIgnoreCase) Then Return False
@@ -224,7 +232,9 @@ Friend NotInheritable Class LiveProducerDigest
             For Each key As String In {"username", "realm", "nonce", "uri", "response", "qop", "nc", "cnonce"}
                 If Not fields.ContainsKey(key) Then Return False
             Next
-            If fields("username") <> "listener" OrElse fields("realm") <> Realm OrElse Not ValidNonce(fields("nonce"), now) OrElse
+            Dim user As String = fields("username")
+            Dim password As String = If(passwordFor Is Nothing, Nothing, passwordFor.Invoke(user))
+            If String.IsNullOrEmpty(password) OrElse fields("realm") <> Realm OrElse Not ValidNonce(fields("nonce"), now) OrElse
                fields("uri") <> request.RawPath OrElse fields("qop") <> "auth" OrElse fields("cnonce").Length = 0 Then Return False
             Dim algorithm As String = If(fields.ContainsKey("algorithm"), fields("algorithm"), "MD5")
             If algorithm <> "SHA-256" AndAlso algorithm <> "MD5" Then Return False
@@ -238,7 +248,7 @@ Friend NotInheritable Class LiveProducerDigest
             Dim prior As Tuple(Of UInteger, Long) = Nothing
             If _counts.TryGetValue(replayKey, prior) AndAlso count <= prior.Item1 Then Return False
             If _counts.Count >= 8192 AndAlso Not _counts.ContainsKey(replayKey) Then Return False
-            Dim ha1 As String = Hash(algorithm, "listener:" & Realm & ":" & password)
+            Dim ha1 As String = Hash(algorithm, user & ":" & Realm & ":" & password)
             Dim ha2 As String = Hash(algorithm, request.Method & ":" & request.RawPath)
             Dim expected As String = Hash(algorithm, ha1 & ":" & fields("nonce") & ":" & fields("nc") & ":" & fields("cnonce") & ":auth:" & ha2)
             If Not CryptographicOperations.FixedTimeEquals(Encoding.ASCII.GetBytes(expected),

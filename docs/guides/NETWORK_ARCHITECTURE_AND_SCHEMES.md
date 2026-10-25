@@ -106,10 +106,12 @@ a physical test host has not happened.
 - **Consumer, development tree.** The viewer listens live to an audio broadcast of the Android app from a phone or
   a watch on the same network ("Open live broadcast.."; a `FMSBCAST1:` code, a link or a `.fmsbcast` file; one
   connection per listener). Real-device acceptance has not run, so no delay is promised.
-- **Producer and receiver, planned.** Broadcasting from a Windows PC (screen, camera, microphone, system sound) and
-  receiving video, the relay or Cast on Windows are specifications 172-174, after the first check. Windows does
-  not broadcast today, and the Share Manager does not offer "Broadcasts for StreamsPlayer".
-- **Today on Windows.** Live broadcasts play in STREAMS Player, a separate program:
+- **Producer and receiver, implemented.** Share Manager captures a screen, one selected window, camera,
+  microphone or system sound only after Start. The modern viewer opens live audio/video by link, code,
+  `.fmsbcast` file or exchange directory; relay/tunnel access and Cast follow the existing feature gates.
+  Device acceptance remains open under specifications 205/263/268. On 2026-10-25 the owner accepted describing
+  these implemented features before device acceptance (263 Q263-4); this changes claims, not conformance.
+- **Another Windows receiver.** Live broadcasts also play in STREAMS Player, a separate program:
   <https://serzhyale.github.io/StreamsPlayer/>.
 
 ## 5. Do not claim
@@ -121,8 +123,9 @@ README, listing, UI string or picture.
   The contract-level statement is a window of about two seconds.
 - "Zero latency", "no lag", "no delay", "lossless sound": the relay keeps a bounded window, so the delay does
   not build up - that is the whole claim.
-- The exchange server, a relay, Cast or a Windows PC broadcasting presented as available. They are the
-  development tree or planned (sections 3 and 4).
+- The Media Exchange Server binary presented as a released download while its packaging gate is closed.
+  Client/producer functionality may be described as implemented under Q263-4, without claiming a completed
+  cross-device run, compatibility with an untested receiver, or measured latency (sections 3 and 4).
 - "The TV starts playing by itself": a receiver asks before it plays.
 - "Punches through NAT": devices dial out to the server; nothing is punched.
 - "UPnP is not relied on": on Windows the Share Manager does try UPnP and NAT-PMP and then verifies from outside.

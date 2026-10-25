@@ -97,6 +97,15 @@ Public Class WindowsUiContractTests
                      Dim items = DirectCast(GetType(Share_Settings_Form).GetField("_navItems", flags).GetValue(window), Dictionary(Of String, List(Of Share_Settings_Form.SettingsNavItemButton)))
                      Dim pages = DirectCast(GetType(Share_Settings_Form).GetField("_pages", flags).GetValue(window), Dictionary(Of String, Panel))
                      Dim context = DirectCast(GetType(Share_Settings_Form).GetField("managerSettingsContext", flags).GetValue(window), SettingsUiContext)
+                     Dim flatRail = CBool(GetType(Share_Settings_Form).GetField("_flatRail", flags).GetValue(window))
+                     If flatRail Then
+                         ' A destination with one page exposes its blocks directly (the current exchange-server window).
+                         Assert.False(buttons("exchange").Visible)
+                         Assert.Equal(7, items("exchange").Count)
+                         Assert.All(items("exchange"), Sub(item) Assert.True(item.Visible))
+                         items("exchange")(0).PerformClick()
+                         Assert.Equal("exchange", context.LastPageId)
+                     Else
                      ' A page with groups announces itself as an expandable PageTab and starts with its items hidden.
                      Assert.True(items("exchange").Count > 0)
                      Assert.All(items("exchange"), Sub(item) Assert.False(item.Visible))
@@ -119,6 +128,7 @@ Public Class WindowsUiContractTests
                      Assert.Equal("exchange", context.LastPageId)
                      Assert.True((buttons("exchange").AccessibilityObject.State And AccessibleStates.Collapsed) <> 0)
                      ' The page's blocks are collapsible cards (238), each with its own fold
+                     End If
                      ' state; a fresh context leaves only the first one open. Folded by hand
                      ' here, so the reveal below owns every state regardless of what this
                      ' machine had saved when the window was constructed.
@@ -138,7 +148,7 @@ Public Class WindowsUiContractTests
                              Assert.NotEqual(buttons(pair.Key).Text, grp.Card.Caption)
                          Next
                      Next
-                     buttons("exchange").AccessibilityObject.GetChild(0).DoDefaultAction()
+                     If Not flatRail Then buttons("exchange").AccessibilityObject.GetChild(0).DoDefaultAction()
                      ' A subordinate item expands its card, scrolls it into view and focuses
                      ' its first editor - and the sibling cards stay on the page (238 section
                      ' 2.1), collapsible without navigating away.
@@ -174,10 +184,16 @@ Public Class WindowsUiContractTests
                      Assert.True(groups("exchange").Last().Card.Expanded, "remembered fold survives the page click")
                      ' Left/Right fold and unfold the selected page's items.
                      Dim keyDown = GetType(Share_Settings_Form).GetMethod("OnSettingsNavigationKeyDown", flags)
+                     If flatRail Then
+                         keyDown.Invoke(window, New Object() {items("exchange")(0), New KeyEventArgs(Keys.Left)})
+                         keyDown.Invoke(window, New Object() {items("exchange")(0), New KeyEventArgs(Keys.Right)})
+                         Assert.All(items("exchange"), Sub(item) Assert.True(item.Visible))
+                     Else
                      keyDown.Invoke(window, New Object() {buttons("exchange"), New KeyEventArgs(Keys.Left)})
                      Assert.All(items("exchange"), Sub(item) Assert.False(item.Visible))
                      keyDown.Invoke(window, New Object() {buttons("exchange"), New KeyEventArgs(Keys.Right)})
                      Assert.True(items("exchange")(0).Visible)
+                     End If
                      window.Hide()
                  End Using
                  Finally
@@ -189,10 +205,14 @@ Public Class WindowsUiContractTests
 
     <Fact>
     Public Sub Manager_pages_keep_window_geometry_and_restore_each_viewport()
+        ' The SFTP sharing pages are part of the Manager window while the worker payload is installed (253 R-2).
+        ExchangeTestSupport.Reset()
+        Dim worker = ExchangeTestSupport.MakeFakeWorker()
+        Try
         OnUi(Sub()
                  Dim clock = Diagnostics.Stopwatch.StartNew()
                  Dim timings As New List(Of String)()
-                 Using window As New Share_Settings_Form(destination:=SettingsDestination.Sftp)
+                 Using window As New Share_Settings_Form()
                      Dim flags = BindingFlags.Instance Or BindingFlags.NonPublic
                      Dim selectPage = GetType(Share_Settings_Form).GetMethod("SelectSettingsPage", flags)
                      selectPage.Invoke(window, New Object() {"hosting"})
@@ -246,6 +266,10 @@ Public Class WindowsUiContractTests
                      End Try
                  End Using
              End Sub)
+        Finally
+            ExchangeTestSupport.Reset()
+            ExchangeTestSupport.DeleteQuietly(worker)
+        End Try
     End Sub
 
 
@@ -429,12 +453,13 @@ Public Class WindowsUiContractTests
         OnUi(Sub()
                  ExchangeTestSupport.Reset()
                  Dim component = ExchangeTestSupport.MakeFakeComponent(True, False, False)
+                 Dim worker = ExchangeTestSupport.MakeFakeWorker()
                  Dim previousGate = Environment.GetEnvironmentVariable(ExchangeFeatures.DeveloperSwitchName)
                  Environment.SetEnvironmentVariable(ExchangeFeatures.DeveloperSwitchName, "1")
                  ExchangeProcess.ExeDirectoryOverride = component
                  ExchangeProcess.RunOverride = Function(args, input) New ExchangeProcess.RunResult With {.Started = False}
                  Try
-                     For Each destination In {SettingsDestination.Manager, SettingsDestination.Sftp, SettingsDestination.ExchangeServer}
+                     For Each destination In {SettingsDestination.Manager, SettingsDestination.ExchangeServer}
                      Using window As New Share_Settings_Form(destination:=destination)
                          Dim flags = BindingFlags.Instance Or BindingFlags.NonPublic
                          GetType(Share_Settings_Form).GetField("_exLoaded", flags).SetValue(window, True)
@@ -507,6 +532,7 @@ Public Class WindowsUiContractTests
                      Environment.SetEnvironmentVariable(ExchangeFeatures.DeveloperSwitchName, previousGate)
                      ExchangeTestSupport.Reset()
                      ExchangeTestSupport.DeleteQuietly(component)
+                     ExchangeTestSupport.DeleteQuietly(worker)
                  End Try
              End Sub)
     End Sub
@@ -564,11 +590,13 @@ Public Class WindowsUiContractTests
 
     <Fact>
     Public Sub Live_language_refresh_preserves_window_and_editor_values_and_resets_direction()
+        ExchangeTestSupport.Reset()
+        Dim worker = ExchangeTestSupport.MakeFakeWorker()
         OnUi(Sub()
                  Dim previous = Localization.CurrentCode
                  Try
                      Localization.CurrentCode = "en"
-                     Using window As New Share_Settings_Form(destination:=SettingsDestination.Sftp)
+                     Using window As New Share_Settings_Form()
                          Dim flags = BindingFlags.Instance Or BindingFlags.NonPublic
                          Dim number = ControlsBelow(window).OfType(Of NumericUpDown)().First()
                          Dim value = number.Value
@@ -593,6 +621,8 @@ Public Class WindowsUiContractTests
                      End Using
                  Finally
                      Localization.CurrentCode = previous
+                     ExchangeTestSupport.Reset()
+                     ExchangeTestSupport.DeleteQuietly(worker)
                  End Try
              End Sub)
     End Sub
@@ -692,8 +722,10 @@ Public Class WindowsUiContractTests
                  Dim previous = Localization.CurrentCode
                  Try
                      Localization.CurrentCode = "ru"
+                     Dim statsOpened As Integer = 0
                      MainWindow.ShowStatsDialogOverride = Sub(w, st)
                                                               ' Test seam: avoid blocking modal dialog
+                                                              statsOpened += 1
                                                           End Sub
                      Using window As New MainWindow()
                          window.Show()
@@ -705,7 +737,7 @@ Public Class WindowsUiContractTests
                          Dim addMenu = DirectCast(GetType(MainWindow).GetField("_addMenu", flags).GetValue(window), ContextMenuStrip)
                          Dim lvFolders = DirectCast(GetType(MainWindow).GetField("lvFolders", flags).GetValue(window), ListView)
                          Dim diskMenu = DirectCast(GetType(MainWindow).GetField("_diskMenu", flags).GetValue(window), ContextMenuStrip)
-                         Dim secStats = DirectCast(GetType(MainWindow).GetField("_secStats", flags).GetValue(window), CollapsibleSection)
+                         Dim lnkStats = DirectCast(GetType(MainWindow).GetField("_lnkStats", flags).GetValue(window), LinkLabel)
                          Dim clipBtn = pnlButtons.Controls.OfType(Of Button)().FirstOrDefault(Function(b) b.Name = "btnClipboardMenu")
 
                          ' 1. Toolbar single-row layout without wrapping
@@ -759,13 +791,69 @@ Public Class WindowsUiContractTests
                          Assert.Contains(diskMenu.Items.OfType(Of ToolStripMenuItem)(), Function(it) it.Text = "Дать доступ наружу..")
                          Assert.Contains(diskMenu.Items.OfType(Of ToolStripMenuItem)(), Function(it) it.Text = "Убрать")
 
-                         ' 5. Stats fold simplification: expanding immediately collapses and opens details
-                         Assert.NotNull(secStats)
-                         secStats.Expanded = True
-                         Assert.False(secStats.Expanded, "Stats section collapses immediately to act as a direct door")
+                         ' 5. COLLAPSIBLE-GROUP 4.1: a group never opens a window, so "Статистика" is a link
+                         '    (not a CollapsibleSection with a state triangle) and a click opens the details.
+                         Assert.NotNull(lnkStats)
+                         Assert.Equal("Статистика", lnkStats.Text)
+                         Dim groupKeys = GetType(MainWindow).GetMethod("Sections", flags).Invoke(window, Nothing)
+                         Assert.DoesNotContain("stats", DirectCast(groupKeys, CollapsibleSection()).Select(Function(s) s.Key))
+                         GetType(LinkLabel).GetMethod("OnLinkClicked", flags).Invoke(lnkStats,
+                             New Object() {New LinkLabelLinkClickedEventArgs(lnkStats.Links(0))})
+                         Assert.Equal(1, statsOpened)
                      End Using
                  Finally
                      MainWindow.ShowStatsDialogOverride = Nothing
+                     Localization.CurrentCode = previous
+                 End Try
+             End Sub)
+    End Sub
+
+    ''' <summary>WINDOWS-UI section 2 item 3: the header carries "expand all" and "collapse all"
+    ''' for the window's groups; glyph-only, so each has a localized accessible name.</summary>
+    <Fact>
+    Public Sub Main_window_header_tools_expand_and_collapse_all_groups()
+        OnUi(Sub()
+                 Dim previous = Localization.CurrentCode
+                 Try
+                     Localization.CurrentCode = "ru"
+                     Using window As New MainWindow()
+                         window.Show()
+                         window.ClientSize = New Size(760, 560)
+                         Application.DoEvents()
+
+                         Dim flags = BindingFlags.Instance Or BindingFlags.NonPublic
+                         Dim expandAll = DirectCast(GetType(MainWindow).GetField("_btnExpandAll", flags).GetValue(window), Button)
+                         Dim collapseAll = DirectCast(GetType(MainWindow).GetField("_btnCollapseAll", flags).GetValue(window), Button)
+                         Dim resources = DirectCast(GetType(MainWindow).GetField("_secResources", flags).GetValue(window), CollapsibleSection)
+                         Dim groups = DirectCast(GetType(MainWindow).GetMethod("Sections", flags).Invoke(window, Nothing), CollapsibleSection())
+                         Dim click = Sub(b As Button) GetType(Button).GetMethod("OnClick", flags).Invoke(b, New Object() {EventArgs.Empty})
+
+                         Assert.NotNull(expandAll)
+                         Assert.NotNull(collapseAll)
+                         Assert.Equal("Развернуть все", expandAll.AccessibleName)
+                         Assert.Equal("Свернуть все", collapseAll.AccessibleName)
+                         Assert.NotNull(expandAll.Image)
+                         Assert.NotNull(collapseAll.Image)
+                         Assert.Equal(2, groups.Length)
+
+                         click(expandAll)
+                         Application.DoEvents()
+                         Assert.True(resources.Expanded, "resources")
+                         For Each g In groups
+                             Assert.True(g.Expanded, g.Key)
+                         Next
+
+                         click(collapseAll)
+                         Application.DoEvents()
+                         Assert.False(resources.Expanded, "resources")
+                         For Each g In groups
+                             Assert.False(g.Expanded, g.Key)
+                         Next
+
+                         ' Leave the persisted layout as a first run has it: the list open, the groups folded.
+                         resources.Expanded = True
+                     End Using
+                 Finally
                      Localization.CurrentCode = previous
                  End Try
              End Sub)
@@ -848,6 +936,55 @@ Public Class WindowsUiContractTests
                          Assert.True(pnlList.Visible)
                          Assert.Equal(fullHeight, window.Height)
                          Assert.DoesNotContain("resources", CStr(csvOf.Invoke(window, New Object() {})))
+                     End Using
+                 Finally
+                     Localization.CurrentCode = previous
+                 End Try
+             End Sub)
+    End Sub
+
+    <Fact>
+    Public Sub Main_window_header_gives_state_text_a_readable_column_or_stacks_the_buttons()
+        OnUi(Sub()
+                 Dim previous = Localization.CurrentCode
+                 Try
+                     Localization.CurrentCode = "ru"
+                     Using window As New MainWindow()
+                         window.Show()
+                         Dim scale As Double = window.DeviceDpi / 96.0R
+                         Dim flags = BindingFlags.Instance Or BindingFlags.NonPublic
+                         Dim type = GetType(MainWindow)
+                         Dim header = DirectCast(type.GetField("_pnlHeader", flags).GetValue(window), TableLayoutPanel)
+                         Dim state = DirectCast(type.GetField("_headerState", flags).GetValue(window), TableLayoutPanel)
+                         Dim actions = DirectCast(type.GetField("_headerActions", flags).GetValue(window), FlowLayoutPanel)
+                         Dim lblState = DirectCast(type.GetField("lblState", flags).GetValue(window), Label)
+                         lblState.Text = "Раздача работает - 12 папок, порт 40123"
+                         lblState.Visible = True
+
+                         ' The 175 % screenshot that prompted this: ~620 logical px wide. The buttons
+                         ' take ~460 of it, so beside them the text had ~130 px and broke per syllable.
+                         For Each logicalWidth As Integer In New Integer() {560, 620, 760}
+                             window.ClientSize = New Size(CInt(logicalWidth * scale), CInt(560 * scale))
+                             Application.DoEvents()
+                             Dim tag As String = " at " & logicalWidth & " logical px"
+                             Assert.True(state.Width >= CInt(300 * scale),
+                                         "The state block kept " & state.Width & " px" & tag & " - the text breaks into a sliver.")
+                             Assert.True(lblState.Height < CInt(2.5 * lblState.Font.Height),
+                                         "The state line wrapped to " & lblState.Height & " px" & tag & ".")
+                             Assert.True(actions.Left >= 0 AndAlso actions.Right <= header.ClientSize.Width,
+                                         "The button row sticks out of the header" & tag & ".")
+                             ' Either beside the text or wholly under it - never overlapping it.
+                             Assert.True(actions.Left >= state.Right OrElse actions.Top >= state.Bottom,
+                                         "The button row overlaps the state block" & tag & ".")
+                         Next
+
+                         ' Narrow: stacked. Wide: one row again.
+                         window.ClientSize = New Size(CInt(620 * scale), CInt(560 * scale))
+                         Application.DoEvents()
+                         Assert.True(actions.Top >= state.Bottom, "At 620 logical px the buttons belong under the state text.")
+                         window.ClientSize = New Size(CInt(1000 * scale), CInt(560 * scale))
+                         Application.DoEvents()
+                         Assert.True(actions.Left >= state.Right, "At 1000 logical px the buttons share the state row.")
                      End Using
                  Finally
                      Localization.CurrentCode = previous

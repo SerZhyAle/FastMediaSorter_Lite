@@ -91,7 +91,7 @@ Public Class ExchangeDependencySplitTests
                                              Assert.Null(SectionField(form, "_secExchange"))
                                              Assert.NotNull(SectionField(form, "_secAccount"))
                                              Dim keys As String() = Sections(form).Select(Function(s) s.Key).ToArray()
-                                             Assert.Equal({"startup", "scheduled", "exchange-account", "help"}, keys)
+                                             Assert.Equal({"startup", "scheduled", "exchange-account", "drive", "help"}, keys)
                                              Assert.DoesNotContain("exchange", keys)
                                          End Using
                                      End Sub)
@@ -110,7 +110,7 @@ Public Class ExchangeDependencySplitTests
                                              Assert.Null(SectionField(form, "_secExchange"))
                                              Assert.NotNull(SectionField(form, "_secAccount"))
                                              Dim keys As String() = Sections(form).Select(Function(s) s.Key).ToArray()
-                                             Assert.Equal({"startup", "scheduled", "exchange-account", "help"}, keys)
+                                             Assert.Equal({"startup", "scheduled", "exchange-account", "drive", "help"}, keys)
                                          End Using
                                      End Sub)
         End Using
@@ -126,7 +126,7 @@ Public Class ExchangeDependencySplitTests
                                              Assert.Null(SectionField(form, "_secExchange"))
                                              Assert.NotNull(SectionField(form, "_secAccount"))
                                              Dim keys As String() = Sections(form).Select(Function(s) s.Key).ToArray()
-                                             Assert.Equal({"startup", "scheduled", "exchange-account", "help"}, keys)
+                                             Assert.Equal({"startup", "scheduled", "exchange-account", "drive", "help"}, keys)
                                          End Using
                                      End Sub)
         End Using

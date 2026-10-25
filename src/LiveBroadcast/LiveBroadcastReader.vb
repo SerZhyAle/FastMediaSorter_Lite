@@ -412,6 +412,17 @@ Friend Module LiveBroadcastReader
                 End If
             End If
 
+            ' recordStartedAt (optional; the store's own persistence of a directory record's startedAt,
+            ' LIVE-BROADCAST item G as DEVICE-EXCHANGE item BP resolves it). Not a descriptor member a
+            ' producer writes - a reader tolerates its absence everywhere.
+            Dim startedProp As JsonElement = Nothing
+            If root.TryGetProperty("recordStartedAt", startedProp) AndAlso startedProp.ValueKind = JsonValueKind.String Then
+                Dim rs As String = startedProp.GetString()
+                If Not String.IsNullOrEmpty(rs) Then
+                    descriptor.RecordStartedAt = rs
+                End If
+            End If
+
             ' isLive (optional)
             Dim isLiveProp As JsonElement = Nothing
             If root.TryGetProperty("isLive", isLiveProp) AndAlso (isLiveProp.ValueKind = JsonValueKind.True OrElse isLiveProp.ValueKind = JsonValueKind.False) Then

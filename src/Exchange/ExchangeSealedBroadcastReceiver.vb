@@ -381,6 +381,13 @@ Friend NotInheritable Class ExchangeSealedMediaStream
         If offset < 0 OrElse count < 0 OrElse offset + count > buffer.Length Then Throw New ArgumentOutOfRangeException(NameOf(count))
     End Sub
 
+    ' Prime the key ring before choosing the player's demuxer; no media is consumed here.
+    Public Async Function PrepareAsync(ct As CancellationToken) As Task
+        While _status = ExchangeSealedReceiveStatus.Streaming AndAlso _owner.MediaType.Length = 0
+            Advance(Await _reader.ReadNextAsync(_source, ct).ConfigureAwait(False))
+        End While
+    End Function
+
     Private Function TakePending(buffer As Byte(), offset As Integer, count As Integer) As Integer
         If _pending Is Nothing Then Return 0
         Dim n As Integer = Math.Min(count, _pending.Length - _pendingOffset)

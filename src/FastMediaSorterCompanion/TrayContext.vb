@@ -82,6 +82,9 @@ Friend NotInheritable Class TrayContext
         ' The device agent of the exchange (ticket 180). Dormant unless the client gate is open AND an account is configured: with
         ' neither, no agent is even constructed - no connection, no pipe, no registry value, no file.
         ExchangeDeviceHost.StartIfConfigured()
+        ' The Google Drive channel (spec 203 section 5.10). Same dormant rule: with the gate shut, or with no stored sign-in, nothing is
+        ' constructed and nothing is asked of Google; with a stored sign-in the poller starts and tells the page if Google lost it.
+        If ExchangeFeatures.IsEnabled() Then DriveChannelHosts.StartIfSignedIn()
         ' A PC that runs the exchange server joins it by itself: one silent, bounded background effort, only where the server component is
         ' installed, no account is configured and the person has not disconnected on purpose (ExchangeLocalJoin).
         ExchangeLocalJoinHost.Start()
@@ -206,22 +209,17 @@ Friend NotInheritable Class TrayContext
         AddHandler miStatus.Click, Sub() TrayStatus()
         menu.Items.Add(miStatus)
 
-        For Each destination In {SettingsDestination.Manager, SettingsDestination.Sftp}
-            Dim route = destination
-            Dim caption = If(route = SettingsDestination.Sftp, Localization.T("Настройки общего доступа SFTP"), Localization.T("Настройки менеджера"))
-            Dim settingsItem As New ToolStripMenuItem(caption)
-            AddHandler settingsItem.Click, Sub()
-                ShowSettingsWindow(route)
-            End Sub
-            AddHandler menu.Opening, Sub() settingsItem.Visible = SettingsRoutes.Available(route, WorkerProcess.IsAvailable(), ExchangeProcess.IsAvailable())
-            menu.Items.Add(settingsItem)
-        Next
+        ' One entry for the Share Manager's own settings; the SFTP sharing pages are groups of that window (specification 253).
+        Dim settingsItem As New ToolStripMenuItem(Localization.T("Настройки менеджера"))
+        AddHandler settingsItem.Click, Sub() ShowSettingsWindow(SettingsDestination.Manager)
+        menu.Items.Add(settingsItem)
 
         ' The exchange server (ticket 142 T-6): one item right after Status - the name, then what it is
         ' doing. Present only while the component is installed: its visibility is decided on Opening, like
         ' the viewer item below, and its text is refreshed there off the UI thread (two cheap reads: the
         ' process list and the service state). Nothing is started by showing it; a click opens the window.
-        Dim miExchange As New ToolStripMenuItem(ExchangeText.TrayItem(ExchangeRunKind.Stopped)) With {.Visible = False}
+        ' Until the first read lands the item is the bare name: a state is claimed only once it was read.
+        Dim miExchange As New ToolStripMenuItem(ExchangeText.TrayItem(ExchangeRunKind.Unreadable)) With {.Visible = False}
         miExchange.Image = GlyphRenderer.Render("exchange-mark", 16, SystemColors.MenuText, AddressOf CompanionAssets.OpenBundledAsset)
         AddHandler miExchange.Click, Sub() ShowSettingsWindow(SettingsDestination.ExchangeServer, "exchange")
         menu.Items.Add(miExchange)
@@ -328,15 +326,31 @@ Friend NotInheritable Class TrayContext
         End Try
     End Sub
 
+    ''' <summary>The last state line the tray logged, so a change is written once and a menu opened ten times
+    ''' on the same state writes nothing.</summary>
+    Private _exchangeTrayLogged As String = ""
+
     Private Async Function RefreshExchangeTrayTextAsync(item As ToolStripMenuItem) As Task
-        Dim kind As ExchangeRunKind = Await Task.Run(
-            Function()
-                Dim serviceExists As Boolean = ExchangeService.Exists()
-                Dim state As ServiceControl.ServiceState = If(serviceExists, ExchangeService.QueryState(), ServiceControl.ServiceState.NotInstalled)
-                Return ExchangeText.TrayKind(ExchangeProcess.RunningPid() > 0, serviceExists, state)
-            End Function)
-        If _disposed OrElse item.IsDisposed Then Return
-        item.Text = ExchangeText.TrayItem(kind)
+        Try
+            Dim read = Await Task.Run(
+                Function()
+                    Dim serviceExists As Boolean = ExchangeService.Exists()
+                    Dim state As ServiceControl.ServiceState = If(serviceExists, ExchangeService.QueryState(), ServiceControl.ServiceState.NotInstalled)
+                    Dim pid As Integer = ExchangeProcess.RunningPid()
+                    Return (Kind:=ExchangeText.TrayKind(pid > 0, serviceExists, state), ServiceExists:=serviceExists, State:=state, Pid:=pid)
+                End Function)
+            If _disposed OrElse item.IsDisposed Then Return
+            item.Text = ExchangeText.TrayItem(read.Kind)
+            Dim line As String = "kind=" & read.Kind.ToString() & "; service exists=" & read.ServiceExists.ToString() &
+                                 ", state=" & read.State.ToString() & "; console pid=" & read.Pid.ToString(Globalization.CultureInfo.InvariantCulture)
+            If line <> _exchangeTrayLogged Then
+                _exchangeTrayLogged = line
+                AppFileLogger.LogStamped("Tray: exchange server item shows " & line)
+            End If
+        Catch ex As Exception
+            ' Never a silent placeholder: the item keeps the bare name and the log says why.
+            AppFileLogger.LogException("Tray: reading the exchange server state", ex)
+        End Try
     End Function
 
     ''' <summary>
@@ -1130,6 +1144,12 @@ Friend NotInheritable Class TrayContext
                 ExchangeDeviceHost.StopAtExit()
             Catch e As Exception
                 AppFileLogger.LogException("Exchange: stopping the device agent at exit", e)
+            End Try
+            ' The Google Drive poller stops with the program; the sign-in stays for the next start. A host never created is not created here.
+            Try
+                DriveChannelHosts.Release()
+            Catch e As Exception
+                AppFileLogger.LogException("Google Drive: stopping the channel at exit", e)
             End Try
             ' A server THIS session started is stopped with it, unless the person asked to keep it running
             ' (Exchange_KeepRunningOnExit, default off). One that was already running is never touched.

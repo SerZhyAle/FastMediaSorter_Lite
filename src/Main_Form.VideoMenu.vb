@@ -88,6 +88,9 @@ Partial Public Class Main_Form
         AddMenuItem(video_Menu.Items, Localization.T("Следующий кадр"), Sub() RunFrameStep(), actionId:="frameStep",
                     enabled:=frame_Step_Applicable,
                     disabledReason:=Localization.T("Недоступно для аудио и прямых трансляций"))
+        AddMenuItem(video_Menu.Items, Localization.T("Предыдущий кадр"), Sub() RunPreviousFrame(), actionId:="frameBack",
+                    enabled:=PlaybackActionApplicable("frameBack"),
+                    disabledReason:=Localization.T("Недоступно для аудио и прямых трансляций"))
 
         ' --- tracks
         Dim audio_Item As ToolStripMenuItem = CreateTrackSubmenu(audio:=True)

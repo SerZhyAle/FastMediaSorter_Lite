@@ -30,11 +30,23 @@ Public Class DualModeGateGuardTests
     End Function
 
     <Fact>
-    Public Sub The_x86_fallback_project_lists_no_exchange_file()
+    Public Sub The_x86_fallback_project_compiles_no_exchange_code()
         Dim text As String = File.ReadAllText(Path.Combine(RepoRoot(), "src", "FastMediaSorter.vbproj"))
         Dim hits As List(Of String) = Regex.Matches(text, "<(Compile|None|Content|EmbeddedResource)\s+Include=""[^""]*""", RegexOptions.IgnoreCase).
             Cast(Of Match)().Select(Function(m) m.Value).
             Where(Function(v) v.IndexOf("Exchange", StringComparison.OrdinalIgnoreCase) >= 0).ToList()
+        ' 261 follows the shared-source project-list rule. These explicit seams compile to nothing on net48;
+        ' every other exchange include is still refused, including assets and whole-directory wildcards.
+        Dim inertSeams As String() = {"FileManager\ManagerExchangePlaces.vb", "FileManager\ManagerExchangeAccess.vb",
+            "Image_Panel_Form.FileManager.Exchange.vb", "Localization\Localization.ManagerExchange.vb"}
+        For Each path As String In inertSeams
+            Dim include As String = "<Compile Include=""" & path & """"
+            If Not hits.Contains(include) Then Continue For
+            Dim source As String = File.ReadAllText(IO.Path.Combine(RepoRoot(), "src", path)).Trim()
+            Assert.StartsWith("#If Not NETFRAMEWORK Then", source)
+            Assert.EndsWith("#End If", source)
+            hits.Remove(include)
+        Next
         Assert.True(hits.Count = 0,
                     "src\FastMediaSorter.vbproj (net48 x86, outside the exchange program) lists an exchange item: " & String.Join("; ", hits))
         ' A whole-folder include would pick src\Exchange up without naming it.

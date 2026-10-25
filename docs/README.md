@@ -1,4 +1,4 @@
-﻿# docs/ - documentation index
+# docs/ - documentation index
 
 Start here. This tree holds all internal documentation; user-facing files (`README*.md`, `CHANGELOG.md`)
 stay at the repo root. Structure and naming follow
@@ -42,6 +42,7 @@ plain text so maintained documentation works in a fresh clone.
 - [guides/SERVER_EDITION_BUILD_AND_TEST.md](guides/SERVER_EDITION_BUILD_AND_TEST.md) - the always-on
   Folder Share Server: what differs from the User edition, how to build and publish it, and the
   VM matrix it has to pass (it registers a service, so it cannot be verified on the dev box).
+- [guides/FILE_MANAGER.md](guides/FILE_MANAGER.md) - the integrated file manager mode in the modern viewer's Grid panel (F3): independent browsing, places list, content filters, safe opening, shared queue operations, verified ZIP creation and settings.
 - [guides/NETWORK_ARCHITECTURE_AND_SCHEMES.md](guides/NETWORK_ARCHITECTURE_AND_SCHEMES.md) - the ways to connect devices (home
   network, exchange server, live broadcast): state on the Windows side, the owning contracts, what must not be claimed. The
   reader-facing explanation is the shared portal [Media exchange between your devices](https://serzhyale.github.io/FastMediaSorter_mob_v2/docs/media-exchange-portal/), not this repository.

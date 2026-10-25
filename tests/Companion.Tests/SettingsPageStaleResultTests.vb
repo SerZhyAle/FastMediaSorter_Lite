@@ -22,11 +22,14 @@ Public Class SettingsPageStaleResultTests
     Implements IDisposable
 
     Private ReadOnly _dir As String
+    Private ReadOnly _worker As String
 
     Public Sub New()
         ExchangeTestSupport.Reset()
         Share_Settings_Form.HostingProbeOverride = Nothing
         _dir = ExchangeTestSupport.MakeFakeComponent(True, False, False)
+        ' The Hosting page lives in the Manager window while the worker payload is installed (253 R-2).
+        _worker = ExchangeTestSupport.MakeFakeWorker()
         ExchangeProcess.ExeDirectoryOverride = _dir
         ExchangeProcess.RunOverride = AddressOf StandIn
         ' no server runs: the pipe does not exist and every call goes through the binary's offline verbs
@@ -37,6 +40,7 @@ Public Class SettingsPageStaleResultTests
         Share_Settings_Form.HostingProbeOverride = Nothing
         ExchangeTestSupport.Reset()
         ExchangeTestSupport.DeleteQuietly(_dir)
+        ExchangeTestSupport.DeleteQuietly(_worker)
     End Sub
 
     Private Shared Function InspectJson(fingerprint As String) As String
@@ -101,7 +105,7 @@ Public Class SettingsPageStaleResultTests
     Public Sub A_late_hosting_probe_for_an_older_request_does_not_replace_the_newer_state()
         ExchangeTestSupport.OnUi(
             Sub()
-                Using form As New Share_Settings_Form(destination:=SettingsDestination.Sftp)
+                Using form As New Share_Settings_Form()
                     ShowOffScreen(form)
                     Dim older As New WorkerResponse With {.Ok = True}
                     Dim newer As New WorkerResponse With {.Ok = True}
@@ -146,7 +150,7 @@ Public Class SettingsPageStaleResultTests
                         gate.Wait(TimeSpan.FromSeconds(10))
                         Return answer
                     End Function
-                Dim form As New Share_Settings_Form(destination:=SettingsDestination.Sftp)
+                Dim form As New Share_Settings_Form()
                 ShowOffScreen(form)
                 Dim pending As Task = StartRefresh(form, "RefreshHostingStateAsync")
                 Pump(Function() entered.IsSet, "the probe to be out")

@@ -67,6 +67,11 @@ Partial Public Class Main_Form
                 If generation <> media_Generation Then Return
             End If
             Dim tags As AudioMetadata = Await Task.Run(Function() ParseAudioMetadataAsync(filePath, generation)).ConfigureAwait(True)
+            Dim sidecars = Await Task.Run(Function() SidecarAssociations.Discover(filePath)).ConfigureAwait(True)
+            If String.IsNullOrEmpty(tags.CoverPath) Then
+                Dim artwork = sidecars.FirstOrDefault(Function(s) s.Kind = SidecarKind.Artwork)
+                If artwork IsNot Nothing Then tags.CoverPath = artwork.Path
+            End If
             If Me.IsDisposed OrElse generation <> media_Generation OrElse
                Not String.Equals(Current_File_Name, filePath, StringComparison.Ordinal) Then Return
             audio_Current_Metadata = tags

@@ -47,6 +47,7 @@ Friend NotInheritable Class UndoStack(Of T As Class)
         If entry Is Nothing Then Return
         entries.Add(entry)
         While entries.Count > max_Depth
+            TryCast(entries(0), IDisposable)?.Dispose()
             entries.RemoveAt(0)
         End While
     End Sub
@@ -67,6 +68,9 @@ Friend NotInheritable Class UndoStack(Of T As Class)
     End Function
 
     Friend Sub Clear()
+        For Each entry As T In entries
+            TryCast(entry, IDisposable)?.Dispose()
+        Next
         entries.Clear()
     End Sub
 
@@ -96,6 +100,7 @@ End Enum
 
 ''' <summary>One completed operation of a batch, as the undo needs to remember it.</summary>
 Friend NotInheritable Class BatchUndoItem
+    Public Property ManagerUndo As ManagerUndoData
     Public Property Kind As FileOpKind
     Public Property Source As String = ""
     Public Property Destination As String = ""
@@ -112,6 +117,14 @@ End Class
 ''' and U would then walk back one file at a time through something the user did once.
 ''' </summary>
 Friend NotInheritable Class BatchUndoEntry
+    Implements IDisposable
+    Public Property IsManager As Boolean
+
+    Public Sub Dispose() Implements IDisposable.Dispose
+        For Each item As BatchUndoItem In Items
+            item.ManagerUndo?.Dispose()
+        Next
+    End Sub
     ''' <summary>The operations that actually completed, in the order they completed.</summary>
     Public ReadOnly Property Items As New List(Of BatchUndoItem)()
     ''' <summary>The generation of the main window's file list the batch started from (the
@@ -144,6 +157,13 @@ Friend Module BatchUndoPlanner
 
         For i As Integer = entry.Items.Count - 1 To 0 Step -1
             Dim item As BatchUndoItem = entry.Items(i)
+            If item.ManagerUndo IsNot Nothing Then
+                plan.Inverse.Add(ManagerOperation.ForUndo(item.ManagerUndo))
+                Continue For
+            ElseIf entry.IsManager Then
+                plan.NotReturnable.Add(item)
+                Continue For
+            End If
             Select Case UndoPolicy.PlanFor(item.Kind)
                 Case UndoPlan.MoveBack
                     plan.Inverse.Add(New BatchOp With {

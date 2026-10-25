@@ -365,6 +365,7 @@ func (s *Server) httpOpening(raw *trackedConn, conn net.Conn, br *bufio.Reader, 
 		}
 		leave()
 		owned = true
+		st.authorization = req.Headers["authorization"] // the relay's Basic check of a protected broadcast (item BF)
 		s.cfg.Backend.Listen(st, id)
 		return
 	}

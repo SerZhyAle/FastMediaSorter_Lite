@@ -29,13 +29,42 @@ Imports Windows.Graphics.Imaging
 ' changed, because a static screen delivers no WGC frames and the 1 s keyframe cadence (3.2) must
 ' not starve. If the capture dies (item closed), the last frame keeps pacing - a frozen picture
 ' instead of a dead stream.
+'
+' Ticket 263 T-2, the window route (199 section 3.1 "primary monitor or selected window"): the SAME class
+' with a different target. CreateForWindow is the vtable slot before CreateForMonitor, the item comes
+' from an HWND, and everything after the item (pool, session, fold, pacing) is shared. The window is
+' found again at start by what the person picked (title + process name, see LiveWindowCatalog); a window
+' handle is not stable across runs. What the three window events do:
+'   - CLOSED (GraphicsCaptureItem.Closed): the source raises Ended and the controller stops the
+'     broadcast through its ordinary stop; the window shows one sentence. (The monitor route keeps its
+'     older behaviour - a frozen last picture - because a monitor that disappears is not a decision.)
+'   - MINIMISED: Windows stops delivering frames (or delivers a zero content size). OnFrameArrived drops
+'     those, nothing is folded, and the pacing thread keeps pushing the fixed buffer, i.e. the LAST picture
+'     the window had: a frozen picture at the fixed rate instead of a dead stream, and the 1 s keyframe
+'     cadence is kept. Restoring the window brings frames (and the live picture) back by itself. A window
+'     that is ALREADY minimised at start has no size to announce to the encoder, so the start is refused.
+'   - RESIZED: the encoder's input size was fixed at start and never changes. A frame whose content size
+'     differs from the pool's gets the pool recreated at the new size (Direct3D11CaptureFramePool.Recreate)
+'     and is folded into the fixed buffer by LiveVideoCopy.FoldFrameLetterboxed - scaled to fit with black
+'     bars, never stretched, and the stream is never restarted. The surface may still be larger than the
+'     content for one frame after a shrink, so only the content region of it is read.
 
-''' <summary>Windows Graphics Capture of one monitor, one pacing thread, BGRA frames.</summary>
+''' <summary>Windows Graphics Capture of one monitor or one window, one pacing thread, BGRA frames.</summary>
 Friend NotInheritable Class ScreenCaptureSource
     Implements ILiveVideoSource
+    Implements ILiveSourceEnding
 
     Private ReadOnly _monitorIndex As Integer
     Private ReadOnly _includeCursor As Boolean
+    Private ReadOnly _windowMode As Boolean
+    Private ReadOnly _windowTitle As String = ""
+    Private ReadOnly _windowProcess As String = ""
+    Private _poolWidth As Integer
+    Private _poolHeight As Integer
+    Private _endedRaised As Integer
+
+    ''' <summary>The captured window was closed (window route only); the argument is a reason code.</summary>
+    Public Event Ended As Action(Of String) Implements ILiveSourceEnding.Ended
     Private _displayName As String = "screen"
     Private _width As Integer
     Private _height As Integer
@@ -60,6 +89,15 @@ Friend NotInheritable Class ScreenCaptureSource
 
     Public Sub New(monitorIndex As Integer, includeCursor As Boolean)
         _monitorIndex = Math.Max(0, monitorIndex)
+        _includeCursor = includeCursor
+    End Sub
+
+    ''' <summary>The window route: the window the person picked, by title and process name (looked up again
+    ''' at Start; no match refuses the start, it never falls back to a monitor).</summary>
+    Public Sub New(windowTitle As String, windowProcess As String, includeCursor As Boolean)
+        _windowMode = True
+        _windowTitle = If(windowTitle, "")
+        _windowProcess = If(windowProcess, "")
         _includeCursor = includeCursor
     End Sub
 
@@ -97,16 +135,34 @@ Friend NotInheritable Class ScreenCaptureSource
             Return False
         End If
 
-        Dim monitors As List(Of LiveScreenMonitor) = EnumerateMonitors()
-        If monitors.Count = 0 Then
-            reason = "no monitor"
-            Return False
+        ' The target: one window found again by what the person picked, or one monitor by its index.
+        Dim index As Integer = 0
+        Dim targetHandle As IntPtr = IntPtr.Zero
+        Dim windowProcessName As String = ""
+        If _windowMode Then
+            Dim window As LiveWindowChoice = ResolveWindow()
+            If window Is Nothing OrElse window.IsMinimized Then
+                ' Not open any more, or minimised (no size to announce to the encoder): one sentence in the
+                ' window, and NEVER a silent fallback to a monitor - what goes on air is what was chosen.
+                reason = LiveWindowCatalog.ReasonUnavailable
+                Return False
+            End If
+            targetHandle = window.Handle
+            windowProcessName = window.ProcessName
+            _displayName = "window"
+        Else
+            Dim monitors As List(Of LiveScreenMonitor) = EnumerateMonitors()
+            If monitors.Count = 0 Then
+                reason = "no monitor"
+                Return False
+            End If
+            index = Math.Min(_monitorIndex, monitors.Count - 1)
+            Dim monitor As LiveScreenMonitor = monitors(index)
+            targetHandle = monitor.HMonitor
+            _displayName = "screen " & (index + 1).ToString(Globalization.CultureInfo.InvariantCulture) &
+                           " (" & monitor.Width.ToString(Globalization.CultureInfo.InvariantCulture) & "x" &
+                           monitor.Height.ToString(Globalization.CultureInfo.InvariantCulture) & ")"
         End If
-        Dim index As Integer = Math.Min(_monitorIndex, monitors.Count - 1)
-        Dim monitor As LiveScreenMonitor = monitors(index)
-        _displayName = "screen " & (index + 1).ToString(Globalization.CultureInfo.InvariantCulture) &
-                       " (" & monitor.Width.ToString(Globalization.CultureInfo.InvariantCulture) & "x" &
-                       monitor.Height.ToString(Globalization.CultureInfo.InvariantCulture) & ")"
 
         Try
             CreateDevice(reason)
@@ -119,14 +175,20 @@ Friend NotInheritable Class ScreenCaptureSource
         Dim item As GraphicsCaptureItem = Nothing
         Dim itemStep As String = ""
         Try
-            item = CreateItemForMonitor(monitor.HMonitor, itemStep)
+            item = CreateItemFromHandle(targetHandle, _windowMode, itemStep)
         Catch ex As Exception
             itemStep &= " ex=" & ex.GetType().Name
             item = Nothing
         End Try
         If item Is Nothing Then
             ReleaseDevice()
-            reason = "the monitor could not be opened for capture (" & itemStep & ")"
+            reason = If(_windowMode, "the window could not be opened for capture (", "the monitor could not be opened for capture (") & itemStep & ")"
+            Return False
+        End If
+        If _windowMode AndAlso (item.Size.Width < 2 OrElse item.Size.Height < 2) Then
+            ' The item of a window that has no picture yet (minimised between the lookup and now).
+            ReleaseDevice()
+            reason = LiveWindowCatalog.ReasonUnavailable
             Return False
         End If
         _item = item
@@ -135,11 +197,21 @@ Friend NotInheritable Class ScreenCaptureSource
         _height = Math.Max(1, item.Size.Height)
         _fixedBuffer = New Byte(_width * _height * 4 - 1) {}
         _sendBuffer = New Byte(_width * _height * 4 - 1) {}
-        _displayName = "screen " & (index + 1).ToString(Globalization.CultureInfo.InvariantCulture) &
-                       " (" & _width.ToString(Globalization.CultureInfo.InvariantCulture) & "x" &
-                       _height.ToString(Globalization.CultureInfo.InvariantCulture) & ")"
+        If _windowMode Then
+            ' The process name only: the title is the person's own text (a document name, a chat) and
+            ' this name reaches the account's directory record of the broadcast.
+            _displayName = "window " & If(windowProcessName.Length > 0, windowProcessName & " ", "") & "(" &
+                           _width.ToString(Globalization.CultureInfo.InvariantCulture) & "x" &
+                           _height.ToString(Globalization.CultureInfo.InvariantCulture) & ")"
+        Else
+            _displayName = "screen " & (index + 1).ToString(Globalization.CultureInfo.InvariantCulture) &
+                           " (" & _width.ToString(Globalization.CultureInfo.InvariantCulture) & "x" &
+                           _height.ToString(Globalization.CultureInfo.InvariantCulture) & ")"
+        End If
 
         Dim size As New SizeInt32 With {.Width = _width, .Height = _height}
+        _poolWidth = _width
+        _poolHeight = _height
         _pool = Direct3D11CaptureFramePool.CreateFreeThreaded(_device, DirectXPixelFormat.B8G8R8A8UIntNormalized, 2, size)
         _session = _pool.CreateCaptureSession(_item)
         If Not _includeCursor AndAlso
@@ -151,6 +223,7 @@ Friend NotInheritable Class ScreenCaptureSource
 #Enable Warning CA1416
         End If
         AddHandler _pool.FrameArrived, AddressOf OnFrameArrived
+        If _windowMode Then AddHandler _item.Closed, AddressOf OnItemClosed
         _sink = sink
         Try
             _session.StartCapture()
@@ -192,18 +265,42 @@ Friend NotInheritable Class ScreenCaptureSource
             frame.Dispose()
             Return
         End If
-        CopyFrameAsync(frame)
+
+        ' The size of the picture this frame holds (a window can be resized at any moment). A zero size is
+        ' what a minimised window reports: nothing to fold, and the pacing thread keeps sending the last
+        ' picture. A new real size recreates the pool at that size (the documented pattern, done in the
+        ' frame handler); the frame in hand is still folded below, from its content region only.
+        Dim contentWidth As Integer = 0
+        Dim contentHeight As Integer = 0
+        Try
+            Dim content As SizeInt32 = frame.ContentSize
+            contentWidth = content.Width
+            contentHeight = content.Height
+            If (contentWidth <= 0 OrElse contentHeight <= 0) AndAlso _windowMode Then
+                frame.Dispose()
+                Interlocked.Exchange(_copyBusy, 0)
+                Return
+            End If
+            If LiveVideoCopy.NeedsPoolRecreate(_poolWidth, _poolHeight, contentWidth, contentHeight) Then
+                sender.Recreate(_device, DirectXPixelFormat.B8G8R8A8UIntNormalized, 2, content)
+                _poolWidth = contentWidth
+                _poolHeight = contentHeight
+            End If
+        Catch
+            ' A failed Recreate leaves the pool as it was; the frame is folded from what it holds.
+        End Try
+        CopyFrameAsync(frame, contentWidth, contentHeight)
     End Sub
 
     ''' <summary>The GPU->CPU copy runs on the runtime's own async path; the frame is held until it
     ''' completes because the pool reuses its surfaces.</summary>
-    Private Async Sub CopyFrameAsync(frame As Direct3D11CaptureFrame)
+    Private Async Sub CopyFrameAsync(frame As Direct3D11CaptureFrame, contentWidth As Integer, contentHeight As Integer)
         Try
             Using held = frame
                 Dim bitmap As SoftwareBitmap = Await SoftwareBitmap.CreateCopyFromSurfaceAsync(held.Surface)
                 If bitmap Is Nothing Then Return
                 Using b = bitmap
-                    FoldBitmap(b)
+                    FoldBitmap(b, contentWidth, contentHeight)
                 End Using
             End Using
         Catch
@@ -213,11 +310,15 @@ Friend NotInheritable Class ScreenCaptureSource
         End Try
     End Sub
 
-    Private Sub FoldBitmap(bitmap As SoftwareBitmap)
+    Private Sub FoldBitmap(bitmap As SoftwareBitmap, contentWidth As Integer, contentHeight As Integer)
         If _stop Then Return
         Dim width As Integer = bitmap.PixelWidth
         Dim height As Integer = bitmap.PixelHeight
         If width <= 0 OrElse height <= 0 Then Return
+        ' Only the part of the surface that holds the picture (a shrunk window leaves stale pixels past it).
+        Dim cropWidth As Integer = width
+        Dim cropHeight As Integer = height
+        LiveVideoCopy.ContentRegion(width, height, contentWidth, contentHeight, cropWidth, cropHeight)
         Try
             Using buffer = bitmap.LockBuffer(BitmapBufferAccessMode.Read)
                 If buffer Is Nothing Then Return
@@ -242,20 +343,22 @@ Friend NotInheritable Class ScreenCaptureSource
                         byteAccess.GetBuffer(data, capacity)
                         If data = IntPtr.Zero Then Return
 
-                        Dim needed As Integer = width * height * 4
+                        Dim needed As Integer = cropWidth * cropHeight * 4
                         If _scratch Is Nothing OrElse _scratch.Length < needed Then _scratch = New Byte(needed - 1) {}
-                        If plane.Stride = width * 4 AndAlso plane.StartIndex = 0 Then
+                        If plane.Stride = width * 4 AndAlso plane.StartIndex = 0 AndAlso cropWidth = width Then
                             Global.System.Runtime.InteropServices.Marshal.Copy(data, _scratch, 0, needed)
                         Else
-                            For y As Integer = 0 To height - 1
+                            For y As Integer = 0 To cropHeight - 1
                                 Global.System.Runtime.InteropServices.Marshal.Copy(New IntPtr(data.ToInt64() + plane.StartIndex + CLng(y) * plane.Stride),
-                                                             _scratch, y * width * 4, width * 4)
+                                                             _scratch, y * cropWidth * 4, cropWidth * 4)
                             Next
                         End If
 
+                        ' Same size is a plain copy; another size (a window resized, a monitor that changed
+                        ' mode) is scaled to fit with black bars - the encoder's size is fixed at start.
                         SyncLock _bufferLock
                             If _fixedBuffer IsNot Nothing Then
-                                LiveVideoCopy.FoldFrame(_scratch, width, height, _fixedBuffer, _width, _height)
+                                LiveVideoCopy.FoldFrameLetterboxed(_scratch, cropWidth, cropHeight, _fixedBuffer, _width, _height)
                             End If
                         End SyncLock
                     Finally
@@ -355,7 +458,28 @@ Friend NotInheritable Class ScreenCaptureSource
         End Try
     End Sub
 
-    Private Function CreateItemForMonitor(hMonitor As IntPtr, ByRef detail As String) As GraphicsCaptureItem
+    ''' <summary>The window route's lookup: the picker's own rules (LiveWindowCatalog.Pick over the live
+    ''' enumeration) and then the remembered title + process name. Nothing is returned for a window that is
+    ''' not open - the caller refuses the start.</summary>
+    Private Function ResolveWindow() As LiveWindowChoice
+        Dim choices As List(Of LiveWindowChoice) = LiveWindowCatalog.Pick(LiveWindowEnumerator.Enumerate(), Environment.ProcessId)
+        Return LiveWindowCatalog.Find(choices, _windowTitle, _windowProcess)
+    End Function
+
+    ''' <summary>The captured window was closed. On the window route this ends the broadcast (once): the
+    ''' controller subscribes to Ended and stops through its ordinary stop. The pacing thread would otherwise
+    ''' keep sending the last picture of a window that no longer exists.</summary>
+    Private Sub OnItemClosed(sender As GraphicsCaptureItem, args As Object)
+        If _stop OrElse Not _windowMode Then Return
+        If Interlocked.Exchange(_endedRaised, 1) <> 0 Then Return
+        Try
+            RaiseEvent Ended(LiveWindowCatalog.ReasonClosed)
+        Catch
+            ' A subscriber's failure must not reach the capture runtime's thread.
+        End Try
+    End Sub
+
+    Private Function CreateItemFromHandle(handle As IntPtr, forWindow As Boolean, ByRef detail As String) As GraphicsCaptureItem
         ' The class id is handed to RoGetActivationFactory as a raw HSTRING built by hand - the
         ' HString parameter marshaling this runtime refuses is not used at all.
         Dim classId As IntPtr = IntPtr.Zero
@@ -378,14 +502,22 @@ Friend NotInheritable Class ScreenCaptureSource
             Try
                 ' The interop call goes through the vtable by hand: the RCW this runtime builds for
                 ' IInspectable-derived pointers refuses casts to ComImport interfaces, so no wrapper
-                ' is built at all. Slot 4 of the vtable (after QueryInterface/AddRef/Release and
-                ' CreateForWindow) is CreateForMonitor.
+                ' is built at all. The vtable after IUnknown (QueryInterface 0, AddRef 1, Release 2) is
+                ' IGraphicsCaptureItemInterop itself: slot 3 is CreateForWindow(HWND), slot 4 is
+                ' CreateForMonitor(HMONITOR) - the same shape, a handle in and an item out.
                 Dim vtable As IntPtr = Marshal.ReadIntPtr(interopPtr)
-                Dim createForMonitorPtr As IntPtr = Marshal.ReadIntPtr(vtable, 4 * IntPtr.Size)
-                Dim createForMonitor = Marshal.GetDelegateForFunctionPointer(Of CreateForMonitorDelegate)(createForMonitorPtr)
                 Dim iidItem As New Guid(&H79C3F95BUI, &H31F7UI, &H4EC2UI, &HA4, &H64, &H63, &H2E, &HF5, &HD3, &H7, &H60)
                 Dim itemPtr As IntPtr = IntPtr.Zero
-                Dim hrCreate As Integer = createForMonitor(interopPtr, hMonitor, iidItem, itemPtr)
+                Dim hrCreate As Integer
+                If forWindow Then
+                    Dim createForWindowPtr As IntPtr = Marshal.ReadIntPtr(vtable, 3 * IntPtr.Size)
+                    Dim createForWindow = Marshal.GetDelegateForFunctionPointer(Of CreateForWindowDelegate)(createForWindowPtr)
+                    hrCreate = createForWindow(interopPtr, handle, iidItem, itemPtr)
+                Else
+                    Dim createForMonitorPtr As IntPtr = Marshal.ReadIntPtr(vtable, 4 * IntPtr.Size)
+                    Dim createForMonitor = Marshal.GetDelegateForFunctionPointer(Of CreateForMonitorDelegate)(createForMonitorPtr)
+                    hrCreate = createForMonitor(interopPtr, handle, iidItem, itemPtr)
+                End If
                 If hrCreate < 0 Then
                     detail = "create 0x" & hrCreate.ToString("X8", Globalization.CultureInfo.InvariantCulture)
                     Throw New ComponentModel.Win32Exception(hrCreate)
@@ -407,6 +539,12 @@ Friend NotInheritable Class ScreenCaptureSource
         If _pool IsNot Nothing Then
             Try
                 RemoveHandler _pool.FrameArrived, AddressOf OnFrameArrived
+            Catch
+            End Try
+        End If
+        If _item IsNot Nothing AndAlso _windowMode Then
+            Try
+                RemoveHandler _item.Closed, AddressOf OnItemClosed
             Catch
             End Try
         End If
@@ -509,9 +647,12 @@ Friend Interface IMemoryBufferByteAccess
     Sub GetBuffer(ByRef buffer As IntPtr, ByRef capacity As UInteger)
 End Interface
 
-' The raw CreateForMonitor vtable entry, called by hand (see CreateItemForMonitor).
+' The raw CreateForMonitor / CreateForWindow vtable entries, called by hand (see CreateItemFromHandle).
 <UnmanagedFunctionPointer(CallingConvention.StdCall)>
 Friend Delegate Function CreateForMonitorDelegate(thisPtr As IntPtr, monitor As IntPtr, ByRef iid As Guid, ByRef result As IntPtr) As Integer
+
+<UnmanagedFunctionPointer(CallingConvention.StdCall)>
+Friend Delegate Function CreateForWindowDelegate(thisPtr As IntPtr, window As IntPtr, ByRef iid As Guid, ByRef result As IntPtr) As Integer
 
 Friend Delegate Function EnumMonitorsCallback(monitor As IntPtr, hdc As IntPtr, ByRef rect As RECT, lParam As IntPtr) As <MarshalAs(UnmanagedType.Bool)> Boolean
 

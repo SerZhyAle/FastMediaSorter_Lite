@@ -89,9 +89,18 @@ Partial Public NotInheritable Class Share_Settings_Form
             Case "hosting" : Return Localization.T("Хостинг")
             Case "exchange" : Return ExchangeText.Title()
             Case "exchange-account" : Return ExchangeDeviceText.GroupTitle()
+            Case "drive" : Return DriveChannelText.PageTitle()
             Case "scheduled" : Return ScheduledPageCaption()
             Case Else : Return Localization.T("Справка")
         End Select
+    End Function
+
+    ''' <summary>The title of a page and the page name in a search hit. A page of the SFTP sharing component names the component
+    ''' ("SFTP sharing: Network"), so a port, a service or a stop action is never read as the exchange server's (253 R-3); the
+    ''' rail row keeps the short caption because the rail heading above it carries the component.</summary>
+    Private Shared Function SettingsPageTitle(section As CollapsibleSection) As String
+        Dim caption As String = SettingsPageCaption(section)
+        Return If(SettingsRoutes.IsSftpPage(section.Key), Localization.TF("{0}: {1}", Localization.T("Общий доступ SFTP"), caption), caption)
     End Function
 
     ' The About group of the "help" page (BuildAboutRows and its rows) lives in Share_Settings_Form.About.vb.
@@ -154,6 +163,11 @@ Partial Public NotInheritable Class Share_Settings_Form
                     Dim isClipboard = _clipRows.Contains(row)
                     nextId = If(row Is _pxGroup, "publishing", If(isClipboard, "clipboard", "account"))
                     caption = If(row Is _pxGroup, Function() ExchangePublishText.GroupTitle(), If(isClipboard, Function() Localization.T("Буфер на сервере"), Function() Localization.T("Основные параметры")))
+                Case "drive"
+                    ' The sign-in and its commands, then what the app can see and this PC's name in the channel.
+                    Dim onDevice = IsDriveDeviceRow(row)
+                    nextId = If(onDevice, "device", "account")
+                    caption = If(onDevice, Function() DriveChannelText.DeviceGroupTitle(), Function() DriveChannelText.AccountGroupTitle())
                 Case "scheduled"
                     ' The list and its commands, then what applies to this PC (4.4).
                     Dim machine = Array.IndexOf(rows, row) >= Array.IndexOf(rows, PlacedControl(_schedFeature))
@@ -448,14 +462,15 @@ Partial Public NotInheritable Class Share_Settings_Form
     End Sub
 
     Private Sub FitInitialSettingsBounds()
-        ' Each destination sizes itself on its own first page: the SFTP and local-exchange windows have no
-        ' "startup" page, and a window with no saved bounds of its own must still open.
+        ' Each destination sizes itself on its own first page: the local-exchange window has no "startup" page,
+        ' and a window with no saved bounds of its own must still open (250 section 10.1, kept by 253 R-7).
         Dim page = If(_pages.ContainsKey("startup"), _pages("startup"), _pages.Values.First())
         page.PerformLayout()
         Dim height = page.Controls(0).PreferredSize.Height + LogicalToDeviceUnits(52) + _root.Padding.Vertical
         ' The rail as it will actually show: page rows plus the item lists their saved
-        ' expansion state reveals (210 section 7.4).
-        Dim rail = SettingsNavRows().Sum(Function(row) row.Height + row.Margin.Vertical) + _root.Padding.Vertical
+        ' expansion state reveals (210 section 7.4), and the SFTP group heading when the window has one.
+        Dim rail = SettingsNavRows().Sum(Function(row) row.Height + row.Margin.Vertical) + _root.Padding.Vertical +
+            If(_navSftpHeading IsNot Nothing, _navSftpHeading.Height + _navSftpHeading.Margin.Vertical, 0)
         ClientSize = New Size(ClientSize.Width, Math.Max(height, rail))
         DpiLayout.ClampToWorkingArea(Me)
     End Sub
@@ -491,12 +506,15 @@ Partial Public NotInheritable Class Share_Settings_Form
                 ApplyHostingState(_hostingSnapshot)
                 If _exchangeSnapshot IsNot Nothing Then ApplyExchangeState(_exchangeSnapshot)
                 ApplyAccountState()
+                ApplyDriveState()
                 ApplyProducerState()
                 RefreshScheduledLanguage()
                 UpdateSummaries()
                 For Each section In AllSettingsSections()
                     _navButtons(section.Key).Text = SettingsPageCaption(section)
                     _navButtons(section.Key).AccessibleName = _navButtons(section.Key).Text
+                    Dim pageTitle As Label = Nothing
+                    If _pageTitles.TryGetValue(section.Key, pageTitle) Then pageTitle.Text = SettingsPageTitle(section)
                     Dim items As List(Of SettingsNavItemButton) = Nothing
                     If _navItems.TryGetValue(section.Key, items) Then
                         For Each item In items
@@ -507,6 +525,10 @@ Partial Public NotInheritable Class Share_Settings_Form
                         Next
                     End If
                 Next
+                If _navSftpHeading IsNot Nothing Then
+                    _navSftpHeading.Text = Localization.T("Общий доступ SFTP")
+                    _navSftpHeading.AccessibleName = _navSftpHeading.Text
+                End If
                 RefreshAboutTexts()
                 For Each row In Descendants(Me).OfType(Of ManagerSettingRow)()
                     row.Editor.AccessibleName = row.Caption.Text

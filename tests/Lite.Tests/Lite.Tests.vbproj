@@ -65,6 +65,16 @@
 
   <ItemGroup>
     <!-- Link the production source directly (same assembly => Friend members visible). -->
+    <Compile Include="..\..\src\Archives\ArchiveWriteManifest.vb" Link="Linked\Archives\ArchiveWriteManifest.vb" />
+    <Compile Include="..\..\src\Archives\VerifiedZipWriter.vb" Link="Linked\Archives\VerifiedZipWriter.vb" />
+    <Compile Include="..\..\src\Archives\ArchiveExtractionPlan.vb" Link="Linked\Archives\ArchiveExtractionPlan.vb" />
+    <Compile Include="..\..\src\Archives\ArchiveExtractionReader.vb" Link="Linked\Archives\ArchiveExtractionReader.vb" />
+    <Compile Include="..\..\src\FileManager\ManagerArchiveCommands.vb" Link="Linked\FileManager\ManagerArchiveCommands.vb" />
+    <Compile Include="..\..\src\FileManager\ManagerArchiveForm.vb" Link="Linked\FileManager\ManagerArchiveForm.vb" />
+    <Compile Include="..\..\src\FileManager\ManagerDestinationForm.vb" Link="Linked\FileManager\ManagerDestinationForm.vb" />
+    <Compile Include="..\..\src\FileManager\ManagerExchangePlaces.vb" Link="Linked\FileManager\ManagerExchangePlaces.vb" />
+    <Compile Include="..\..\src\FileManager\ManagerExchangeAccess.vb" Link="Linked\FileManager\ManagerExchangeAccess.vb" />
+    <Compile Include="..\..\src\FileManager\ManagerTransferPreflight.vb" Link="Linked\FileManager\ManagerTransferPreflight.vb" />
     <Compile Include="..\..\src\Main_Form.WindowPinning.vb"><Link>Linked\Main_Form.WindowPinning.vb</Link></Compile>
     <Compile Include="..\..\src\SettingsUiContext.vb"><Link>Linked\SettingsUiContext.vb</Link></Compile>
     <Compile Include="..\..\src\Help\ContextHelp.vb"><Link>Linked\ContextHelp.vb</Link></Compile>
@@ -400,6 +410,8 @@
     <Compile Include="..\..\src\PlaybackRules.vb">
       <Link>Linked\PlaybackRules.vb</Link>
     </Compile>
+    <Compile Include="..\..\src\Video\VideoFrameDecoder.vb"><Link>Linked\VideoFrameDecoder.vb</Link></Compile>
+    <Compile Include="..\..\src\Video\VideoFrameSession.vb"><Link>Linked\VideoFrameSession.vb</Link></Compile>
     <!-- Ticket 121 section 7: the transport bar's pure rules (row layout, clock, seek hold, hold-up, buffering). -->
     <Compile Include="..\..\src\TransportRules.vb">
       <Link>Linked\TransportRules.vb</Link>
@@ -515,6 +527,12 @@
     <Compile Include="..\..\src\AudioMetadata.vb">
       <Link>Linked\AudioMetadata.vb</Link>
     </Compile>
+    <Compile Include="..\..\src\SidecarAssociations.vb" Link="Linked\SidecarAssociations.vb" />
+    <Compile Include="..\..\src\Support\DiagnosticRedactor.vb" Link="Linked\DiagnosticRedactor.vb" />
+    <!-- MEDIA-VIEWER 1.0 rule 5: the slideshow keep-awake holder (net10 body, empty on the
+         net48 leg, exactly like the viewer compiles it). -->
+    <Compile Include="..\..\src\Support\DisplayKeepAwake.vb" Link="Linked\DisplayKeepAwake.vb" />
+    <None Include="TestData\diagnostic-vectors\**" CopyToOutputDirectory="PreserveNewest" />
     <!-- The pure model of the "about file" window (the first panel's "i" item): the
          EXIF reader and formatters are shared between both viewers, so their tests run
          on both legs. The window itself (File_Details_Form) and the libvlc track reader
@@ -549,6 +567,9 @@
          cache files just above. -->
     <Compile Include="..\..\src\Resources\IFileSystemProvider.vb">
       <Link>Linked\Resources\IFileSystemProvider.vb</Link>
+    </Compile>
+    <Compile Include="..\..\src\Resources\IManagerDirectoryProvider.vb">
+      <Link>Linked\Resources\IManagerDirectoryProvider.vb</Link>
     </Compile>
     <Compile Include="..\..\src\Resources\LocalProvider.vb">
       <Link>Linked\Resources\LocalProvider.vb</Link>
@@ -843,6 +864,45 @@
     <Compile Include="..\..\src\PanelRows.vb">
       <Link>Linked\PanelRows.vb</Link>
     </Compile>
+    <!-- The F3 panel's file manager mode (257): location rules, row mapping, history state, the address bar's meaning,
+         the generation-guarded browser and the provider opener. All pure or thread-only, whole-file "#If Not NETFRAMEWORK";
+         the net48 leg compiles them to nothing and the net48 viewer project lists them by hand. -->
+    <Compile Include="..\..\src\FileManager\ManagerLocation.vb">
+      <Link>Linked\FileManager\ManagerLocation.vb</Link>
+    </Compile>
+    <Compile Include="..\..\src\FileManager\ManagerEntry.vb">
+      <Link>Linked\FileManager\ManagerEntry.vb</Link>
+    </Compile>
+    <Compile Include="..\..\src\FileManager\ManagerContentPolicy.vb">
+      <Link>Linked\FileManager\ManagerContentPolicy.vb</Link>
+    </Compile>
+    <Compile Include="..\..\src\FileManager\ManagerOpenPolicy.vb">
+      <Link>Linked\FileManager\ManagerOpenPolicy.vb</Link>
+    </Compile>
+    <Compile Include="..\..\src\FileManager\ManagerNavigation.vb">
+      <Link>Linked\FileManager\ManagerNavigation.vb</Link>
+    </Compile>
+    <Compile Include="..\..\src\FileManager\ManagerAddress.vb">
+      <Link>Linked\FileManager\ManagerAddress.vb</Link>
+    </Compile>
+    <Compile Include="..\..\src\FileManager\ManagerBrowser.vb">
+      <Link>Linked\FileManager\ManagerBrowser.vb</Link>
+    </Compile>
+    <Compile Include="..\..\src\FileManager\ManagerCommandRequest.vb"><Link>Linked\FileManager\ManagerCommandRequest.vb</Link></Compile>
+    <Compile Include="..\..\src\FileManager\ManagerBoundaryGuard.vb"><Link>Linked\FileManager\ManagerBoundaryGuard.vb</Link></Compile>
+    <Compile Include="..\..\src\FileManager\ManagerCommands.vb"><Link>Linked\FileManager\ManagerCommands.vb</Link></Compile>
+    <Compile Include="..\..\src\FileManager\ManagerCommandPlanner.vb"><Link>Linked\FileManager\ManagerCommandPlanner.vb</Link></Compile>
+    <Compile Include="..\..\src\FileManager\ManagerTreePlan.vb"><Link>Linked\FileManager\ManagerTreePlan.vb</Link></Compile>
+    <Compile Include="..\..\src\RecycleBinIo.vb"><Link>Linked\RecycleBinIo.vb</Link></Compile>
+    <Compile Include="..\..\src\FileManager\ManagerProviderOpener.vb">
+      <Link>Linked\FileManager\ManagerProviderOpener.vb</Link>
+    </Compile>
+    <Compile Include="..\..\src\FileManager\ManagerActivationResult.vb">
+      <Link>Linked\FileManager\ManagerActivationResult.vb</Link>
+    </Compile>
+    <Compile Include="..\..\src\FileManager\ManagerShellOpen.vb">
+      <Link>Linked\FileManager\ManagerShellOpen.vb</Link>
+    </Compile>
     <!-- The F3 panel's thumbnails (005 PG-3): the cache key and store are pure enough to prove
          against a temporary directory; the shell half degrades to "no thumbnail", so its test
          asserts only what is true on any machine. -->
@@ -1127,7 +1187,7 @@
       <Link>TestData\resources\fmscfg\%(Filename)%(Extension)</Link>
     </None>    <None Include="TestData\fdsec-vectors\**">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-      <Link>TestData\fdsec-vectors\%(Filename)%(Extension)</Link>
+      <Link>TestData\fdsec-vectors\%(RecursiveDir)%(Filename)%(Extension)</Link>
     </None>
     <!-- Real 7z files made by 7-Zip (ArchiveSequentialTests): a solid and a non-solid one, a
          twelve-page solid one for the cache-budget rows, and two encrypted. manifest.txt lists

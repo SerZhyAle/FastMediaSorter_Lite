@@ -159,8 +159,12 @@ type broState struct {
 	id, device   string
 	rec          *wire.Record
 	maxListeners int
-	updated      time.Time
-	raw          json.RawMessage
+	// verifiers are the credential pairs the relay checks a listener against (item BF): in memory only, with
+	// the broadcast, never part of rec or raw (so never in a directory, a changed push or an admin view).
+	// nil or empty: the relay checks nobody. Replaced wholesale, never edited in place, so a Target may share it.
+	verifiers []wire.Verifier
+	updated   time.Time
+	raw       json.RawMessage
 }
 
 type hub struct {

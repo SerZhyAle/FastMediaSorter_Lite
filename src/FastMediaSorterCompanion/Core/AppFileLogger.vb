@@ -16,6 +16,7 @@ Imports System.Windows.Forms
 Public Module AppFileLogger
 
     Private ReadOnly Gate As New Object()
+    Private ReadOnly redactor As New DiagnosticRedactor()
     Private _path As String
     Private _resolved As Boolean
     Private _sessionStarted As Boolean
@@ -32,7 +33,7 @@ Public Module AppFileLogger
                 Using process = Diagnostics.Process.GetCurrentProcess()
                     Dim header = String.Join(Environment.NewLine, warnings)
                     If header <> "" Then header &= Environment.NewLine
-                    _sessionHeader = "Session started: " & DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.ffff", Globalization.CultureInfo.InvariantCulture) & "; PID=" & process.Id.ToString(Globalization.CultureInfo.InvariantCulture) & Environment.NewLine
+                    _sessionHeader = "Session started: " & DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.ffff", Globalization.CultureInfo.InvariantCulture) & "; PID=" & process.Id.ToString(Globalization.CultureInfo.InvariantCulture) & "; version=" & VersionText() & Environment.NewLine
                     header &= _sessionHeader
                     File.AppendAllText(p, header)
                 End Using
@@ -42,6 +43,17 @@ Public Module AppFileLogger
         Catch
         End Try
     End Sub
+
+    ''' <summary>The build that writes this log. It rides in the session header, which is written again
+    ''' after a rotation, so every file of the log says which build wrote it.</summary>
+    Friend Function VersionText() As String
+        Try
+            Dim v As String = Application.ProductVersion
+            Return If(String.IsNullOrEmpty(v), "unknown", v)
+        Catch
+            Return "unknown"
+        End Try
+    End Function
 
     Private Sub OnProcessExit(sender As Object, e As EventArgs)
         Using process = Diagnostics.Process.GetCurrentProcess()
@@ -89,10 +101,16 @@ Public Module AppFileLogger
             If p Is Nothing Then Return
             SyncLock Gate
                 If RotateIfOversized(p) AndAlso _sessionStarted Then File.AppendAllText(p, _sessionHeader)
-                File.AppendAllText(p, message & Environment.NewLine)
+                File.AppendAllText(p, redactor.Redact(message) & Environment.NewLine)
             End SyncLock
         Catch
         End Try
+    End Sub
+
+    ''' <summary>One line with a time stamp: a state a person may be asked about later ("what did the
+    ''' tray say at 19:06"), logged when it changes.</summary>
+    Public Sub LogStamped(message As String)
+        WriteLine(Stamp() & " " & message)
     End Sub
 
     ''' <summary>A caught exception, whole, with a time stamp and what was being done.</summary>

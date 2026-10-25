@@ -134,7 +134,7 @@ Friend NotInheritable Class BatchRunner
             Next
         End If
         For Each op As BatchOp In ops
-            Dim pending As New BatchItemResult With {.Path = op.Source, .State = BatchItemState.NotStarted, .Op = op}
+            Dim pending As New BatchItemResult With {.Path = If(op.ManagerOperation?.ReportPath, op.Source), .State = BatchItemState.NotStarted, .Op = op}
             report.Results.Add(pending)
             results_By_Op(op) = pending
             total_Bytes += Math.Max(0L, op.SizeBytes)

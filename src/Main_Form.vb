@@ -368,6 +368,25 @@ Public Class Main_Form
 
     ' Add this handler in Main_Form
     Private Sub Image_Panel_Form_FormClosed(sender As Object, e As FormClosedEventArgs)
+#If Not NETFRAMEWORK Then
+        If Image_Panel_Form IsNot Nothing AndAlso Image_Panel_Form.ManagerChoice IsNot Nothing Then
+            Dim choice As ManagerActivationResult = Image_Panel_Form.ManagerChoice
+            Image_Panel_Form.ManagerChoice = Nothing
+            If choice.IsRemote Then
+                Dim descriptor As ResourceDescriptor = Nothing
+                If choice.Location IsNot Nothing AndAlso choice.Location.Place IsNot Nothing Then
+                    Dim resId As String = choice.Location.Place.ResourceId
+                    descriptor = ResourceRegistry.Load().FirstOrDefault(Function(r) String.Equals(r.Id, resId, StringComparison.OrdinalIgnoreCase))
+                End If
+                If descriptor IsNot Nothing Then
+                    ConnectAndEnterResource(descriptor, choice.FullPath)
+                End If
+            ElseIf Not String.IsNullOrEmpty(choice.LocalPath) Then
+                ProcessArgument(choice.LocalPath)
+            End If
+            Return
+        End If
+#End If
         If Not String.IsNullOrEmpty(Choosen_Picture_From_Panel) Then
             External_message(Choosen_Picture_From_Panel)
             Choosen_Picture_From_Panel = "" ' Optionally reset after use

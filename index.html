@@ -5,15 +5,18 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <!-- pre-paint: resolve theme + language before CSS so nothing flashes -->
 <script>
-(function(){try{
-  var t=localStorage.getItem('sza-theme');
+(function(){
+  var t;try{t=localStorage.getItem('sza-theme');}catch(e){}
   if(t!=='dark'&&t!=='light')t=matchMedia('(prefers-color-scheme: light)').matches?'light':'dark';
   document.documentElement.setAttribute('data-theme',t);
-  var l=localStorage.getItem('sza-lang');
+  var l;try{l=localStorage.getItem('sza-lang');}catch(e){}
+  var q=new URLSearchParams(location.search),requested=q.has('lang')?q.get('lang'):q.get('l');
+  if(requested){requested=requested.toLowerCase();if(requested==='uk')requested='ua';if(requested==='en'||requested==='ru'||requested==='ua')l=requested;}
   if(l==='uk')l='ua';
   if(l!=='ru'&&l!=='en'&&l!=='ua'){var n=(navigator.language||'en').toLowerCase();l=n.indexOf('ru')==0?'ru':n.indexOf('uk')==0?'ua':'en';}
   document.documentElement.setAttribute('data-lang',l);
-}catch(e){}})();
+  document.addEventListener('click',function(e){var a=e.target.closest&&e.target.closest('a[href]');if(!a)return;try{var u=new URL(a.href,location.href);if(u.hostname==='serzhyale.github.io'||u.hostname==='sza.od.ua'){u.searchParams.delete('l');u.searchParams.set('lang',document.documentElement.getAttribute('data-lang')==='ua'?'uk':document.documentElement.getAttribute('data-lang'));a.href=u.href;}}catch(ignore){}});
+})();
 </script>
 <title>Photo &amp; video sorting | Fast Media Sorter &amp; Sharing</title>
 <meta name="description" content="Sort photo and video folders with one key per file, play video offline. Optional SFTP folder sharing to Android; Media Exchange Server is in development.">
@@ -176,8 +179,8 @@
     </p>
     <p><span data-l="en">In the 64-bit viewer, right-click a video or audio file or its folder and choose Broadcast. Share Manager exports a .spres file, QR code or quick link for import in StreamsPlayer. A folder is one playlist channel with a frozen list; Refresh replaces that list and Revoke stops its link. The HTTP gateway has its own switch, off by default. Each token grants read-only access to one broadcast and normally expires after 24 hours. HTTP is unencrypted: share the document privately and keep internet access off unless you need it.</span><span data-l="ru">В 64-битном просмотрщике нажмите правой кнопкой на видео, аудиофайл или его папку и выберите трансляцию. Менеджер общего доступа выдаёт файл .spres, QR-код или быструю ссылку для импорта в StreamsPlayer. Папка становится одним каналом с зафиксированным списком: обновление заменяет список, отзыв отключает ссылку. HTTP-шлюз имеет отдельный переключатель и по умолчанию выключен. Токен даёт доступ только для чтения одной трансляции, обычно на 24 часа. HTTP не шифруется: передавайте документ лично и включайте интернет-доступ только при необходимости.</span><span data-l="ua">У 64-бітному переглядачі натисніть правою кнопкою на відео, аудіофайл або його теку й виберіть трансляцію. Менеджер спільного доступу видає файл .spres, QR-код або швидке посилання для імпорту в StreamsPlayer. Тека стає одним каналом із зафіксованим списком: оновлення замінює список, відкликання вимикає посилання. HTTP-шлюз має окремий перемикач і типово вимкнений. Токен надає доступ лише для читання однієї трансляції, зазвичай на 24 години. HTTP не шифрується: передавайте документ особисто й вмикайте інтернет-доступ лише за потреби.</span></p>
     <div class="button-group">
-      <a class="btn btn-primary" href="#get"><span data-l="en">Download for Windows</span><span data-l="ru">Скачать для Windows</span><span data-l="ua">Завантажити для Windows</span></a>
-      <a class="btn btn-ghost" href="#features"><span data-l="en">Explore features</span><span data-l="ru">Посмотреть возможности</span><span data-l="ua">Переглянути можливості</span></a>
+      <a class="btn btn-primary" href="#get"><span data-l="en">Install</span><span data-l="ru">Установить</span><span data-l="ua">Встановити</span></a>
+      <a class="btn btn-ghost" href="topics.html"><span data-l="en">Guides</span><span data-l="ru">Инструкции</span><span data-l="ua">Інструкції</span></a>
       <a class="btn btn-ghost" href="#howto"><span data-l="en">Documentation</span><span data-l="ru">Документация</span><span data-l="ua">Документація</span></a>
     </div>
   </section>
@@ -297,6 +300,9 @@
           <span data-l="ua">Миттєвий перехід великими папками. Режими слайд-шоу та випадкового показу, недавні файли й папки, а також панель мініатюр для швидких переходів.</span>
         </p>
       </article>
+
+      <article class="card" id="jpeg-xl"><h3><span data-l="en">JPEG XL images</span><span data-l="ru">Изображения JPEG XL</span><span data-l="ua">Зображення JPEG XL</span></h3><p><span data-l="en">Open still and animated JXL images in the 64-bit viewer without an extra Windows codec. Save edits as PNG, JPEG or WEBP; JXL output is not offered.</span><span data-l="ru">Открывайте обычные и анимированные JXL в 64-битном просмотрщике без дополнительного кодека Windows. Результат редактирования сохраняется в PNG, JPEG или WEBP; сохранения в JXL нет.</span><span data-l="ua">Відкривайте звичайні й анімовані JXL у 64-бітному переглядачі без додаткового кодека Windows. Результат редагування зберігається в PNG, JPEG або WEBP; збереження в JXL немає.</span></p></article>
+      <article class="card" id="live-broadcast"><h3><span data-l="en">Live broadcast</span><span data-l="ru">Прямой эфир</span><span data-l="ua">Прямий ефір</span></h3><p><span data-l="en">Share a screen, one window, camera, microphone or system audio from Share Manager. Open a live broadcast in the 64-bit viewer using its link, code or .fmsbcast file. Capture starts only when you press Start.</span><span data-l="ru">Передавайте экран, одно окно, камеру, микрофон или системный звук из Share Manager. Открывайте прямой эфир в 64-битном просмотрщике по ссылке, коду или файлу .fmsbcast. Захват начинается только по нажатию &#171;Начать&#187;.</span><span data-l="ua">Передавайте екран, одне вікно, камеру, мікрофон або системний звук із Share Manager. Відкривайте прямий ефір у 64-бітному переглядачі за посиланням, кодом або файлом .fmsbcast. Захоплення починається лише після натискання &#171;Почати&#187;.</span></p></article>
 
       <article class="card">
         <h3><span data-l="en">File operations</span><span data-l="ru">Операции с файлами</span><span data-l="ua">Операції з файлами</span></h3>
@@ -631,7 +637,7 @@
     <a href="https://serzhyale.github.io/CyrFlip/"><b>CyrFlip</b><span data-l="en">Windows layout fixer</span><span data-l="ru">Исправление раскладки Windows</span><span data-l="ua">Виправлення розкладки Windows</span></a>
     <a href="https://serzhyale.github.io/doc-html-translate/"><b>doc-html-translate</b><span data-l="en">Windows ebook converter</span><span data-l="ru">Конвертер книг для Windows</span><span data-l="ua">Конвертер книг для Windows</span></a>
     <a href="https://serzhyale.github.io/FileDO/"><b>FileDO</b><span data-l="en">Windows storage CLI</span><span data-l="ru">CLI для проверки накопителей</span><span data-l="ua">CLI для перевірки носіїв</span></a>
-    <a href="https://serzhyale.github.io/StreamsPlayer/"><b>StreamsPlayer</b><span data-l="en">Windows stream player</span><span data-l="ru">Плеер стримов для Windows</span><span data-l="ua">Плеєр стрімів для Windows</span></a>
+    <a href="https://serzhyale.github.io/StreamsPlayer/"><b>STREAMS Player</b><span data-l="en">Windows stream player</span><span data-l="ru">Windows stream player</span><span data-l="ua">Windows stream player</span></a>
     <a href="https://serzhyale.github.io/OneClickRunner/"><b>OneClickRunner</b><span data-l="en">Windows tray launcher</span><span data-l="ru">Лаунчер Windows в трее</span><span data-l="ua">Лаунчер Windows у треї</span></a>
     <a href="https://serzhyale.github.io/universal-agent-kit/"><b>Universal Agent Kit</b><span data-l="en">AI-dev methodology</span><span data-l="ru">Методология AI-разработки</span><span data-l="ua">Методологія AI-розробки</span></a>
     <a href="https://sza.od.ua/"><b>SZA</b><span data-l="en">Portfolio hub</span><span data-l="ru">Портфолио</span><span data-l="ua">Портфоліо</span></a>

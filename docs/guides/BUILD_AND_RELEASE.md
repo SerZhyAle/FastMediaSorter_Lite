@@ -211,7 +211,7 @@ Go-воркер и два повышающих helper-скрипта (~43 МБ �
 .\tools\Release.ps1 -Push
 ```
 
-Пре-флайт - шесть шагов, все бесплатные; каждый идёт в своём процессе и отвечает по контракту
+The preflight has eight local steps in the order implemented by `tools/Release.ps1`. Each child reports through
 `CHECK-VERDICT` (0 - прошло, 1 - дефект, 2 - не удалось проверить), а кто какую проверку запускает,
 записано в [tools/check-placement.jsonl](../../tools/check-placement.jsonl):
 
@@ -221,27 +221,40 @@ Go-воркер и два повышающих helper-скрипта (~43 МБ �
    их увидеть до публикации нет. Отключается `-SkipTests`.
 2. **Страницы сайта** (`tools/Build-SitePages.ps1 -Check`): сгенерированные языковые страницы, страницы
    доверия, `robots.txt` и `sitemap.xml` совпадают со своими источниками.
-3. **Глифы** (`tools/Sync-IconGlyphs.ps1 -Check`): завендоренные иконки совпадают с каталогом.
-4. **Ворота обменного сервера и живой трансляции** (`tools/Test-FeatureGates.ps1`): каждое открытое
+3. **Published site quality** (`tools/Test-SiteQuality.ps1`): generated and authored pages satisfy the
+   documentation quality gates. This is a separate step from checking source/render agreement.
+4. **Glyphs** (`tools/Sync-IconGlyphs.ps1 -Check`): vendored glyphs match the catalog.
+5. **Exchange mark** (`tools/Sync-ExchangeMark.ps1 -Check`): artwork and provenance match the catalog.
+6. **Ворота обменного сервера и живой трансляции** (`tools/Test-FeatureGates.ps1`): каждое открытое
    `INCLUDE_EXCHANGE`, `ExchangeFeatures.Offered` и `LiveBroadcastFeatures.Offered` обязано называть
    в зафиксированном файле доказательств (`docs/specifications/exchange-gate-evidence.md`,
    `docs/specifications/live-broadcast-gate-evidence.md`) ранг и дату открытия (177 раздел 3 пункт 3);
    выключатель без ворота в таблице - дефект. Релиз никогда не открывает ворота сам.
-5. **Контрольная сборка** ([tools/Build-OfflineRelease.ps1](../../tools/Build-OfflineRelease.ps1)):
+7. **Контрольная сборка** ([tools/Build-OfflineRelease.ps1](../../tools/Build-OfflineRelease.ps1)):
    собирает ровно то же, что и CI, - ZIP, обычный `setup.exe` и **серверный** `server-setup.exe`.
    Ассет, который собирает workflow, но не собирает пре-флайт, впервые проверяется уже на
    платном красном job'е. Отключается `-SkipLocalCheck`. Без Inno Setup пре-флайт **падает** до
    сборки (раньше он собирал один ZIP, пропускал оба установщика и всё равно был зелёным).
-   Запускается, только если шаги 1-4 прошли: заведомо заблокированному релизу не нужна ещё и долгая
+   Запускается, только если шаги 1-6 прошли: заведомо заблокированному релизу не нужна ещё и долгая
    сборка, чтобы это сообщить.
-6. **Версия внутри артефактов** (`tools/Test-ArtifactVersion.ps1`): три exe из stage, Share Manager
+8. **Версия внутри артефактов** (`tools/Test-ArtifactVersion.ps1`): три exe из stage, Share Manager
    серверной редакции и оба `setup.exe` несут именно ту версию, которую ставит тег. Читается ресурс
    версии самого файла, а не исходники - устаревший exe согласен с любой проверкой по исходникам.
 
-Итог - одна строка `Release-Preflight: PASS (v26.9.25.1700; 6 of 6 steps passed)`. Тег создаётся
+Итог - одна строка `Release-Preflight: PASS (v26.9.25.1700; 8 of 8 steps passed)`. Тег создаётся
 **только при чистом PASS**. Шаг, пропущенный через `-SkipTests` или `-SkipLocalCheck`, делает вердикт
 `COULD NOT VERIFY` (пропущенный шаг никто не проверил), поэтому эти ключи годятся для быстрого сухого
 прогона, но с `-Push` тег не создадут.
+
+The eight-step PASS proves the automated preflight for the named version. Candidate scope, security
+disposition and real prior-install upgrade acceptance remain required under specifications 264-268.
+A full test PASS alone accepts neither an installer nor a device row. During readiness work without a
+GitHub operation, run the child checks directly: `Release.ps1` itself inspects Git state. Preserve the
+exchange packaging gate (`INCLUDE_EXCHANGE: 'false'`, no `-IncludeExchange`). Move `[Unreleased]` entries
+and regenerate released What's new only in the separately authorized release flow, using its one
+mechanically derived version. After that release exists, inspect its ZIP, two setups and three SHA-256
+sidecars, reconcile the availability matrix, and run `Store-Prepublish-Checks.ps1 -Expect <version>`
+against the published hashes before either winget PR. Store remains a separate optional User-only channel.
 
 ### Чек-лист релиза (что нельзя забыть)
 

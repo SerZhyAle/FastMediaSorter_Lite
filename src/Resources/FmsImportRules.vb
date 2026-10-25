@@ -1,4 +1,4 @@
-#If Not NETFRAMEWORK Then
+﻿#If Not NETFRAMEWORK Then
 Option Strict On
 
 Imports System.Collections.Generic
@@ -73,8 +73,8 @@ Friend Module FmsFieldSupport
         New FmsFieldRule("roots[].mediaTypes", 2, FmsFieldHandling.Mapped, "profile default", False, "Read and validated, unrecognised tokens noticed in the plan; the saved resource does not keep them."),
         New FmsFieldRule("roots[].scanSubdirectories", 2, FmsFieldHandling.Mapped, "true", True, "Becomes the resource's subfolder scan."),
         New FmsFieldRule("roots[].showSubfoldersAsItems", 2, FmsFieldHandling.PreservedNotApplied, "false", False, "Kept in the plan, not applied and not saved, until Q100-4 decides subfolders-as-items."),
-        New FmsFieldRule("roots[].showHiddenFiles", 2, FmsFieldHandling.Mapped, "false", False, "Read and validated; the saved resource does not keep it."),
-        New FmsFieldRule("roots[].allFiles", 2, FmsFieldHandling.Mapped, "false", False, "Read and validated; the saved resource does not keep it."),
+        New FmsFieldRule("roots[].showHiddenFiles", 2, FmsFieldHandling.Mapped, "false", True, "Becomes the resource's file manager hidden files filter."),
+        New FmsFieldRule("roots[].allFiles", 2, FmsFieldHandling.Mapped, "false", True, "Becomes the resource's file manager content filter (all files vs media)."),
         New FmsFieldRule("roots[].destinationColor", 2, FmsFieldHandling.Mapped, "none", False, "Best-effort ARGB integer; read and validated, not kept."),
         New FmsFieldRule("roots[].slideshowInterval", 2, FmsFieldHandling.Mapped, "resource default", False, "Seconds; a non-positive value does not take effect; read and validated, not kept."),
         New FmsFieldRule("roots[].comment", 2, FmsFieldHandling.Mapped, "no comment", False, "Plain display text; read and validated, not kept."),

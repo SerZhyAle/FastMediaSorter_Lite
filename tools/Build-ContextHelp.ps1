@@ -1,6 +1,6 @@
 <#
 .SYNOPSIS
-    Generates offline HTML context help pages and captures for all 13 locales according to CONTEXT-HELP rule 8.
+    Generates offline HTML context help pages from authored copy and existing real captures for all 13 locales.
 #>
 [CmdletBinding()]
 param(
@@ -58,22 +58,8 @@ $relatedHeadings = @{
     'fr' = 'Sujets associés'; 'pt' = 'Tópicos relacionados'; 'ar' = 'موضوعات ذات صلة'; 'hi' = 'संबंधित'; 'bn' = 'সম্পর্কিত'; 'ur' = 'متعلقہ'; 'zh' = '相关主题'
 }
 
-# Standard reusable capture bitmaps (Light & Dark)
-$lightBmp = [System.Drawing.Bitmap]::new(64, 48)
-$g = [System.Drawing.Graphics]::FromImage($lightBmp)
-$g.Clear([System.Drawing.Color]::FromArgb(240, 242, 245))
-$p = [System.Drawing.Pen]::new([System.Drawing.Color]::FromArgb(0, 120, 215), 2)
-$g.DrawRectangle($p, 4, 4, 55, 39)
-$p.Dispose()
-$g.Dispose()
-
-$darkBmp = [System.Drawing.Bitmap]::new(64, 48)
-$g = [System.Drawing.Graphics]::FromImage($darkBmp)
-$g.Clear([System.Drawing.Color]::FromArgb(32, 32, 32))
-$p = [System.Drawing.Pen]::new([System.Drawing.Color]::FromArgb(96, 160, 255), 2)
-$g.DrawRectangle($p, 4, 4, 55, 39)
-$p.Dispose()
-$g.Dispose()
+# Screenshots are inputs captured from real windows, never drawings manufactured by this renderer.
+# Specification 267: existing placeholder debt remains visible in the readiness evidence.
 
 # Collect surfaces with form in ('page', 'both')
 $helpPages = [Collections.Generic.Dictionary[string, object]]::new()
@@ -127,8 +113,12 @@ foreach ($locale in $locales) {
             $purposeText = [System.Net.WebUtility]::HtmlEncode($settingsContent.purpose)
             $orderText = [System.Net.WebUtility]::HtmlEncode($settingsContent.order)
             $elementDetails = ($settingsContent.sections | ForEach-Object {
-                '<details id="{0}"><summary>{1}</summary><p>{2}</p></details>' -f $_.id,
+                $detail = '<details id="{0}"><summary>{1}</summary><p>{2}</p>' -f $_.id,
                     [System.Net.WebUtility]::HtmlEncode($_.title), [System.Net.WebUtility]::HtmlEncode($_.text)
+                if ($pageKey -eq 'share-settings' -and $_.id -eq 'drive') {
+                    $detail += '<figure><img class="shot light" src="share-settings-drive-light.png" alt="Google Drive"><img class="shot dark" src="share-settings-drive-dark.png" alt="Google Drive"></figure>'
+                }
+                $detail + '</details>'
             }) -join "`n"
             $relatedSettings = '<p><a href="share-settings.html">{0}</a> · <a href="sftp-settings.html">{1}</a> · <a href="exchange-server-settings.html">{2}</a></p>' -f 
                 [System.Net.WebUtility]::HtmlEncode($settingsHelp.'share-settings'.$locale.title),
@@ -196,11 +186,9 @@ $elementDetails
         # Captures
         $lightCap = Join-Path $localeDir "$pageKey-light.png"
         $darkCap = Join-Path $localeDir "$pageKey-dark.png"
-        if ($settingsContent -and (!(Test-Path -LiteralPath $lightCap) -or !(Test-Path -LiteralPath $darkCap))) {
-            throw "Real settings captures are required: $locale/$pageKey"
+        if (!(Test-Path -LiteralPath $lightCap) -or !(Test-Path -LiteralPath $darkCap)) {
+            throw "Real captures are required: $locale/$pageKey. Run the applicable opt-in capture harness."
         }
-        if (!(Test-Path -LiteralPath $lightCap)) { $lightBmp.Save($lightCap, [System.Drawing.Imaging.ImageFormat]::Png) }
-        if (!(Test-Path -LiteralPath $darkCap)) { $darkBmp.Save($darkCap, [System.Drawing.Imaging.ImageFormat]::Png) }
     }
 
     # Generate index.html
@@ -238,6 +226,4 @@ $($indexList.ToString().TrimEnd())
     [IO.File]::WriteAllText($indexPath, $indexHtml, [System.Text.Encoding]::UTF8)
 }
 
-$lightBmp.Dispose()
-$darkBmp.Dispose()
 Write-Host "Done. Generated help corpus in $helpRoot"

@@ -337,4 +337,53 @@ Public Class ExchangeLocalChannelTests
         End Using
     End Function
 
+    ''' <summary>Specification 203 section 5.11: what the account's other devices list on Drive joins the directory the viewer reads.</summary>
+    <Fact>
+    Public Async Function The_directory_carries_the_Drive_listing_and_a_Drive_only_folder_answers_no_access() As Task
+        Using acc As New ExchangeStubAccount()
+            acc.Features = {"directory", "pairing", ExchangeSealedNames.FeatureSealed}
+            Using rig As New ExchangeDeviceAgentTests.Rig()
+                rig.Ports.DeviceKeys = New ExchangeMemoryDeviceKeyStore()
+                rig.Ports.SealedTrust = New ExchangeMemorySealedTrustStore()
+                Dim otherId As String = ExchangeWireTestKit.IdOf("D"c)
+                Dim resId As String = ExchangeWireTestKit.IdOf("R"c)
+                Dim device As ExchangeDeviceRecord = Nothing
+                Dim folder As ExchangeResourceRecord = Nothing
+                Assert.True(ExchangeRecordReader.TryReadDevice("{""deviceId"":""" & otherId & """,""deviceName"":""Laptop"",""product"":""FastMediaSorter"",""presence"":""online"",""roles"":[""resourceProducer""]}", device))
+                Assert.True(ExchangeRecordReader.TryReadResource("{""resourceId"":""" & resId & """,""deviceId"":""" & otherId & """,""kind"":""sftp-share"",""name"":""Photos"",""presence"":""online"",""hostKeyFingerprint"":""SHA256:8f6TQvCbXjDMOyu4A9JzKcWlEHmR5pNsGgVaU2wYqhk"",""root"":""/Photos""}", folder))
+                Dim listed As New ExchangeDirectorySnapshot(5, New List(Of ExchangeDeviceRecord) From {device}, New List(Of ExchangeResourceRecord) From {folder}, New List(Of ExchangeBroadcastRecord))
+                rig.Ports.DriveDirectory = Function() listed
+
+                Using agent As ExchangeDeviceAgent = rig.NewAgent()
+                    Dim name As String = PipeName()
+                    Using channel As New ExchangeDeviceLocalChannel(agent, name)
+                        channel.Start()
+                        Dim client As New ExchangeAgentClient(name)
+                        Await agent.EnrollAsync(rig.Request(acc), CancellationToken.None)
+                        Assert.True(Await ExchangeStubAccount.WaitUntilAsync(Function() agent.GetFullDirectory().Revision > 0))
+                        Dim serverRevision As Long = agent.GetFullDirectory().Revision
+
+                        Dim dir As ExchangeAgentDirectoryResult = Await client.GetDirectoryAsync(0, 0, CancellationToken.None)
+                        Assert.True(dir.Reply.IsOk)
+                        Assert.Equal(serverRevision + 5L, dir.Snapshot.Revision)
+                        Assert.Contains(dir.Snapshot.Devices, Function(d) d.DeviceId = otherId)
+                        Dim row As ExchangeResourceRecord = dir.Snapshot.Resources.Single(Function(r) r.ResourceId = resId)
+                        Assert.Equal("Photos", row.Name)
+                        Assert.DoesNotContain("""access""", dir.Reply.DataJson)
+
+                        ' listed, not attachable: a typed answer, never an address
+                        Assert.Equal("no-access", (Await client.GetAccessAsync(resId, CancellationToken.None)).Reply.Error)
+
+                        ' a change on Drive moves the revision, so a viewer holding the old number is answered at once
+                        Dim held As Long = dir.Snapshot.Revision
+                        listed = New ExchangeDirectorySnapshot(6, listed.Devices, listed.Resources, listed.Broadcasts)
+                        Dim answer As Task(Of ExchangeAgentDirectoryResult) = client.GetDirectoryAsync(held, 10000, CancellationToken.None)
+                        Assert.Same(answer, Await Task.WhenAny(answer, Task.Delay(5000)))
+                        Assert.Equal(held + 1L, (Await answer).Snapshot.Revision)
+                    End Using
+                End Using
+            End Using
+        End Using
+    End Function
+
 End Class

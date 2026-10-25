@@ -96,6 +96,14 @@ Public Class DefaultOutsideVisibilityProbe
 
     Private Const CheckHostBase As String = "https://check-host.net"
 
+    ''' <summary>"Could not check" has several different causes (the service refused, was slow, or the network was
+    ''' down) and the person sees one sentence for all of them, so the cause goes to the log: a report can then tell
+    ''' a refused request from a timeout. No host, address or id is written - only what went wrong.</summary>
+    Private Shared Function CouldNotCheck(reason As String) As OutsideVisibilityVerdict
+        AppFileLogger.WriteLine("Outside visibility check: could not check (" & reason & ")")
+        Return OutsideVisibilityVerdict.CouldNotCheck
+    End Function
+
     Public Async Function CheckVisibilityAsync(host As String, port As Integer, ct As CancellationToken) As Task(Of OutsideVisibilityVerdict) Implements IOutsideVisibilityProbe.CheckVisibilityAsync
         Try
             ' 1. Submit TCP check
@@ -103,12 +111,12 @@ Public Class DefaultOutsideVisibilityProbe
             Using request As New HttpRequestMessage(HttpMethod.Get, submitUrl)
                 request.Headers.Add("Accept", "application/json")
                 Using response As HttpResponseMessage = Await HttpClient.SendAsync(request, ct).ConfigureAwait(False)
-                    If Not response.IsSuccessStatusCode Then Return OutsideVisibilityVerdict.CouldNotCheck
+                    If Not response.IsSuccessStatusCode Then Return CouldNotCheck("the service refused the request: HTTP " & CInt(response.StatusCode).ToString())
                     Dim body As String = Await response.Content.ReadAsStringAsync(ct).ConfigureAwait(False)
                     Dim json As JsonNode = JsonNode.Parse(body)
-                    If json Is Nothing Then Return OutsideVisibilityVerdict.CouldNotCheck
+                    If json Is Nothing Then Return CouldNotCheck("the service answered nothing readable")
                     Dim reqId As String = json("request_id")?.GetValue(Of String)()
-                    If String.IsNullOrWhiteSpace(reqId) Then Return OutsideVisibilityVerdict.CouldNotCheck
+                    If String.IsNullOrWhiteSpace(reqId) Then Return CouldNotCheck("the service gave no request number")
 
                     ' 2. Poll result with deadline
                     Dim deadline As DateTime = DateTime.UtcNow.AddSeconds(12)
@@ -132,11 +140,13 @@ Public Class DefaultOutsideVisibilityProbe
                     End While
                 End Using
             End Using
-            Return OutsideVisibilityVerdict.CouldNotCheck
+            Return CouldNotCheck("no verdict from the service within 12 s")
         Catch ex As OperationCanceledException
-            Return OutsideVisibilityVerdict.CouldNotCheck
+            Return CouldNotCheck(If(ct.IsCancellationRequested, "cancelled", "the request timed out"))
+        Catch ex As HttpRequestException
+            Return CouldNotCheck("network: " & ex.HttpRequestError.ToString())
         Catch ex As Exception
-            Return OutsideVisibilityVerdict.CouldNotCheck
+            Return CouldNotCheck("unexpected " & ex.GetType().Name)
         End Try
     End Function
 

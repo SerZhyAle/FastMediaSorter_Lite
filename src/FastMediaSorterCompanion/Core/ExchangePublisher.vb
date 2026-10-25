@@ -499,54 +499,60 @@ Friend NotInheritable Class ExchangePublisher
     Private Async Function ApplyAsync(force As Boolean, ct As CancellationToken) As Task
         Await _applyGate.WaitAsync(ct).ConfigureAwait(False)
         Try
-            Dim session As ExchangeControlSession
-            SyncLock _gate
-                session = _session
-            End SyncLock
-            If session Is Nothing Then Return
-            Dim plan As ExchangePublishPlan = Await ComputePlanAsync(ct).ConfigureAwait(False)
-            If plan Is Nothing Then Return
-            Dim deviceId As String = session.ConnectionOptions.Credentials.DeviceId
-
-            ' the ids created for shares seen for the first time are kept BEFORE they are published
-            If plan.Block = ExchangePublishBlock.None Then
-                Dim state As ExchangeProducerState = plan.State
-                If Not _options.Store.Save(deviceId, state) Then _options.Log.Invoke("Exchange producer: the share ids could not be stored under DPAPI")
-            End If
-
-            ' what is on the server and no longer wanted goes
-            Dim gone As New List(Of KeyValuePair(Of String, Published))
-            SyncLock _gate
-                For Each pair As KeyValuePair(Of String, Published) In _published
-                    If plan.Find(pair.Key) Is Nothing Then gone.Add(pair)
-                Next
-            End SyncLock
-            If gone.Any(Function(p) p.Value.PinProtected) Then Await _options.InvalidatePinSessions.Invoke().ConfigureAwait(False)
-            For Each pair As KeyValuePair(Of String, Published) In gone
-                Await session.SendAsync(ExchangeMessages.Unpublish(pair.Value.ResourceId), ct).ConfigureAwait(False)
-                SyncLock _gate
-                    _published.Remove(pair.Key)
-                End SyncLock
-                _options.Log.Invoke("Exchange producer: unpublished resource " & ExchangeIds.ForLog(pair.Value.ResourceId))
-            Next
-
-            Dim state2 As ExchangeProducerState = plan.State
-            ' read BEFORE the boxes are made: a set that moves meanwhile leaves an older number in the signature, so the next pass seals again
-            Dim recipientRevision As Long = session.Sealed.Revision
-            For Each share As ExchangePlannedShare In plan.Shares
-                Dim signature As String = SignatureOf(share, recipientRevision)
-                Dim current As Published = Nothing
-                SyncLock _gate
-                    _published.TryGetValue(share.Name, current)
-                End SyncLock
-                If Not force AndAlso current IsNot Nothing AndAlso String.Equals(current.Signature, signature, StringComparison.Ordinal) AndAlso
-                   current.State = ExchangePublishState.Published Then Continue For
-                state2 = Await PublishOneAsync(session, share, signature, state2, deviceId, ct).ConfigureAwait(False)
-            Next
-            Rebuild(plan)
+            Await ApplyCoreAsync(force, ct).ConfigureAwait(False)
         Finally
             _applyGate.Release()
         End Try
+    End Function
+
+    ' Caller owns _applyGate across plan load, store mutation and publication. Link commands
+    ' share that transaction boundary so a background pass cannot save their previous state.
+    Private Async Function ApplyCoreAsync(force As Boolean, ct As CancellationToken) As Task
+        Dim session As ExchangeControlSession
+        SyncLock _gate
+            session = _session
+        End SyncLock
+        If session Is Nothing Then Return
+        Dim plan As ExchangePublishPlan = Await ComputePlanAsync(ct).ConfigureAwait(False)
+        If plan Is Nothing Then Return
+        Dim deviceId As String = session.ConnectionOptions.Credentials.DeviceId
+
+        ' the ids created for shares seen for the first time are kept BEFORE they are published
+        If plan.Block = ExchangePublishBlock.None Then
+            Dim state As ExchangeProducerState = plan.State
+            If Not _options.Store.Save(deviceId, state) Then _options.Log.Invoke("Exchange producer: the share ids could not be stored under DPAPI")
+        End If
+
+        ' what is on the server and no longer wanted goes
+        Dim gone As New List(Of KeyValuePair(Of String, Published))
+        SyncLock _gate
+            For Each pair As KeyValuePair(Of String, Published) In _published
+                If plan.Find(pair.Key) Is Nothing Then gone.Add(pair)
+            Next
+        End SyncLock
+        If gone.Any(Function(p) p.Value.PinProtected) Then Await _options.InvalidatePinSessions.Invoke().ConfigureAwait(False)
+        For Each pair As KeyValuePair(Of String, Published) In gone
+            Await session.SendAsync(ExchangeMessages.Unpublish(pair.Value.ResourceId), ct).ConfigureAwait(False)
+            SyncLock _gate
+                _published.Remove(pair.Key)
+            End SyncLock
+            _options.Log.Invoke("Exchange producer: unpublished resource " & ExchangeIds.ForLog(pair.Value.ResourceId))
+        Next
+
+        Dim state2 As ExchangeProducerState = plan.State
+        ' read BEFORE the boxes are made: a set that moves meanwhile leaves an older number in the signature, so the next pass seals again
+        Dim recipientRevision As Long = session.Sealed.Revision
+        For Each share As ExchangePlannedShare In plan.Shares
+            Dim signature As String = SignatureOf(share, recipientRevision)
+            Dim current As Published = Nothing
+            SyncLock _gate
+                _published.TryGetValue(share.Name, current)
+            End SyncLock
+            If Not force AndAlso current IsNot Nothing AndAlso String.Equals(current.Signature, signature, StringComparison.Ordinal) AndAlso
+               current.State = ExchangePublishState.Published Then Continue For
+            state2 = Await PublishOneAsync(session, share, signature, state2, deviceId, ct).ConfigureAwait(False)
+        Next
+        Rebuild(plan)
     End Function
 
     ''' <summary>One `publish` and its answer; keeps the granted third-party port. Returns the state (the carrier may have moved).</summary>
@@ -663,6 +669,15 @@ Friend NotInheritable Class ExchangePublisher
     End Function
 
     Private Async Function ChangeLinkAsync(name As String, rotate As Boolean, remove As Boolean, ct As CancellationToken, Optional password As String = "") As Task(Of ExchangeLinkResult)
+        Await _applyGate.WaitAsync(ct).ConfigureAwait(False)
+        Try
+            Return Await ChangeLinkCoreAsync(name, rotate, remove, ct, password).ConfigureAwait(False)
+        Finally
+            _applyGate.Release()
+        End Try
+    End Function
+
+    Private Async Function ChangeLinkCoreAsync(name As String, rotate As Boolean, remove As Boolean, ct As CancellationToken, password As String) As Task(Of ExchangeLinkResult)
         Dim session As ExchangeControlSession
         SyncLock _gate
             session = _session
@@ -696,7 +711,7 @@ Friend NotInheritable Class ExchangePublisher
             Return New ExchangeLinkResult(ExchangeLinkOutcome.Failed, ExchangeRefusal.Unknown)
         End If
         _options.Log.Invoke("Exchange producer: link " & If(remove, "removed", If(rotate, "rotated", "created")) & " for resource " & ExchangeIds.ForLog(entry.ResourceId))
-        Await ApplyAsync(force:=False, ct).ConfigureAwait(False)
+        Await ApplyCoreAsync(force:=False, ct).ConfigureAwait(False)
         Dim row As ExchangePublishRow = Snapshot.RowFor(name)
         If row IsNot Nothing AndAlso row.State = ExchangePublishState.Refused Then Return New ExchangeLinkResult(ExchangeLinkOutcome.Failed, row.Refusal)
         If row Is Nothing OrElse row.State <> ExchangePublishState.Published Then Return New ExchangeLinkResult(ExchangeLinkOutcome.Failed, ExchangeRefusal.Unknown)

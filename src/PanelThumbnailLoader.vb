@@ -17,14 +17,14 @@ Imports System.Threading
 ' the user stopped on.
 
 ''' <summary>
-''' Bitmaps by path, least-recently-used out first, bounded by memory rather than by count
-''' (a 256 px card is sixteen times the bytes of a 64 px one). UI thread only - the loader
-''' hands its results over before they get here.
+''' Bitmaps by identity (a triage row's path, a file manager entry's opaque id), least-recently-used out first,
+''' bounded by memory rather than by count (a 256 px card is sixteen times the bytes of a 64 px one). UI thread
+''' only - the loader hands its results over before they get here.
 ''' </summary>
 Friend NotInheritable Class ThumbnailMemoryCache
     Implements IDisposable
 
-    Private ReadOnly byPath As New Dictionary(Of String, LinkedListNode(Of Entry))(StringComparer.OrdinalIgnoreCase)
+    Private ReadOnly byPath As Dictionary(Of String, LinkedListNode(Of Entry))
     Private ReadOnly order As New LinkedList(Of Entry)()
     Private ReadOnly maxBytes As Long
     Private used As Long
@@ -35,8 +35,11 @@ Friend NotInheritable Class ThumbnailMemoryCache
         Public Bytes As Long
     End Class
 
-    Friend Sub New(budgetBytes As Long)
+    ''' <param name="comparer">Nothing = case-insensitive, the triage default. The file manager passes an ordinal
+    ''' comparer (257): its keys are opaque ids and .jpg / A.jpg on a case-sensitive server are two pictures.</param>
+    Friend Sub New(budgetBytes As Long, Optional comparer As IEqualityComparer(Of String) = Nothing)
         maxBytes = Math.Max(1L, budgetBytes)
+        byPath = New Dictionary(Of String, LinkedListNode(Of Entry))(If(comparer, StringComparer.OrdinalIgnoreCase))
     End Sub
 
     Friend ReadOnly Property Count As Integer
@@ -126,17 +129,20 @@ Friend NotInheritable Class PanelThumbnailLoader
     Private ReadOnly deliver As Action(Of String, Bitmap)
     Private ReadOnly gate As New Object()
     Private ReadOnly wanted As New List(Of PanelFileRow)()
-    Private ReadOnly inFlight As New HashSet(Of String)(StringComparer.OrdinalIgnoreCase)
+    Private ReadOnly inFlight As HashSet(Of String)
     Private ReadOnly workers As New List(Of Thread)()
     Private disposed As Boolean
 
-    ''' <param name="deliver">Called on a WORKER thread with the path and its thumbnail, or
+    ''' <param name="deliver">Called on a WORKER thread with the row's identity and its thumbnail, or
     ''' Nothing when there is no way to make one. The receiver owns the bitmap.</param>
+    ''' <param name="comparer">How two identities are told apart: Nothing = case-insensitive (triage paths); the file
+    ''' manager passes an ordinal comparer (257).</param>
     Friend Sub New(service As ThumbnailService, px As Integer, deliver As Action(Of String, Bitmap),
-                   Optional workerCount As Integer = 2)
+                   Optional workerCount As Integer = 2, Optional comparer As IEqualityComparer(Of String) = Nothing)
         Me.service = service
         Me.px = px
         Me.deliver = deliver
+        inFlight = New HashSet(Of String)(If(comparer, StringComparer.OrdinalIgnoreCase))
         For i As Integer = 1 To Math.Max(1, workerCount)
             Dim t As New Thread(AddressOf Work) With {
                 .IsBackground = True,
@@ -151,13 +157,19 @@ Friend NotInheritable Class PanelThumbnailLoader
     ''' <summary>
     ''' REPLACES the queue with these rows, in order - the visible ones first. Whatever was
     ''' queued and is no longer wanted is simply never started; a decode already running is
-    ''' allowed to finish and its result is kept for when the user scrolls back.
+    ''' allowed to finish and its result is kept for when the user scrolls back. A row that is
+    ''' not <see cref="PanelFileRow.AllowThumbnail"/> (a folder, a non-media file, a remote entry
+    ''' with no disk path) is never queued, whatever the caller handed over (257).
     ''' </summary>
     Friend Sub SetWanted(rows As IEnumerable(Of PanelFileRow))
         SyncLock gate
             If disposed Then Return
             wanted.Clear()
-            If rows IsNot Nothing Then wanted.AddRange(rows)
+            If rows IsNot Nothing Then
+                For Each row As PanelFileRow In rows
+                    If row IsNot Nothing AndAlso row.AllowThumbnail AndAlso row.Path.Length > 0 Then wanted.Add(row)
+                Next
+            End If
             Monitor.PulseAll(gate)
         End SyncLock
     End Sub
@@ -172,7 +184,7 @@ Friend NotInheritable Class PanelThumbnailLoader
                     Monitor.Wait(gate)
                 End While
                 If disposed Then Return
-                inFlight.Add(row.Path)
+                inFlight.Add(row.Identity)
             End SyncLock
 
             Dim made As Bitmap = Nothing
@@ -186,7 +198,7 @@ Friend NotInheritable Class PanelThumbnailLoader
             Dim handed As Boolean = False
             Try
                 If Not disposed Then
-                    deliver(row.Path, made)
+                    deliver(row.Identity, made)
                     handed = True
                 End If
             Catch ex As Exception
@@ -194,7 +206,7 @@ Friend NotInheritable Class PanelThumbnailLoader
             Finally
                 If Not handed Then made?.Dispose()
                 SyncLock gate
-                    inFlight.Remove(row.Path)
+                    inFlight.Remove(row.Identity)
                     ' It may have been wanted AGAIN while it was being made (the user scrolled
                     ' away and back); the next pass decides.
                     Monitor.PulseAll(gate)
@@ -208,7 +220,7 @@ Friend NotInheritable Class PanelThumbnailLoader
     Private Function Next_Unstarted() As PanelFileRow
         For i As Integer = 0 To wanted.Count - 1
             Dim candidate As PanelFileRow = wanted(i)
-            If inFlight.Contains(candidate.Path) Then Continue For
+            If inFlight.Contains(candidate.Identity) Then Continue For
             wanted.RemoveAt(i)
             Return candidate
         Next

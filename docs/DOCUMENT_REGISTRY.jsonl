@@ -1,4 +1,4 @@
-﻿{"path": ".github/agents/vb-net-profy.agent.md", "topic": "vb-net-profy.agent", "area": "engineering", "triggers": ["Changes to engineering behavior, structure or workflow"], "role": "source"}
+{"path": ".github/agents/vb-net-profy.agent.md", "topic": "vb-net-profy.agent", "area": "engineering", "triggers": ["Changes to engineering behavior, structure or workflow"], "role": "source"}
 {"path": "404.html", "topic": "404", "area": "website", "triggers": ["Changes to website behavior, structure or workflow"], "role": "render", "generator": "tools/Build-SitePages.ps1 -Check"}
 {"path": "AGENTS.md", "topic": "AGENTS", "area": "engineering", "triggers": ["Changes to build commands, source structure, runtime policy or agent workflow"], "role": "source"}
 {"path": "CHANGELOG.md", "topic": "CHANGELOG", "area": "engineering", "triggers": ["User-visible behavior changes and releases"], "role": "source"}
@@ -49,6 +49,7 @@
 {"path": "docs/guides/BUILD_AND_RELEASE.md", "topic": "BUILD AND RELEASE", "area": "engineering", "triggers": ["Changes to engineering behavior, structure or workflow"], "role": "source"}
 {"path": "docs/guides/COMPANION_TEST_PLAN.md", "topic": "COMPANION TEST PLAN", "area": "engineering", "triggers": ["Changes to engineering behavior, structure or workflow"], "role": "source"}
 {"path": "docs/guides/DOCUMENTATION_CONCEPT.md", "topic": "DOCUMENTATION CONCEPT", "area": "engineering", "triggers": ["Changes to engineering behavior, structure or workflow"], "role": "source"}
+{"path": "docs/guides/FILE_MANAGER.md", "topic": "File manager mode", "area": "engineering", "triggers": ["Changes to file manager mode, navigation, filters, safe open, transfer engine or archive commands"], "role": "source"}
 {"path": "docs/guides/NETWORK_ARCHITECTURE_AND_SCHEMES.md", "topic": "WAYS TO CONNECT YOUR DEVICES", "area": "engineering", "triggers": ["Changes to how devices connect (home network, exchange server, live broadcast), the state of any of them, or the portal links that explain them"], "role": "source"}
 {"path": "docs/guides/PRODUCT_NAMING.md", "topic": "PRODUCT NAMING", "area": "engineering", "triggers": ["Changes to engineering behavior, structure or workflow"], "role": "source"}
 {"path": "docs/guides/PROGRESS_DOTNET10_MODERN_BUILD.md", "topic": "PROGRESS DOTNET10 MODERN BUILD", "area": "engineering", "triggers": ["Changes to engineering behavior, structure or workflow"], "role": "source"}
@@ -142,6 +143,8 @@
 {"path":".claude/agents/implementer.md","area":"engineering","role":"source","topic":"Project sub-agent: implementer","triggers":["Changes to how implementation slices are delegated to sub-agents"]}
 {"path":".claude/agents/auditor.md","area":"engineering","role":"source","topic":"Project sub-agent: read-only auditor","triggers":["Changes to how audits are delegated to sub-agents"]}
 {"path":"docs/contracts/EXCHANGE-MARK.md","topic":"EXCHANGE-MARK","area":"contracts","triggers":["Adoption, version, artwork or conformance changes for EXCHANGE-MARK"],"role":"source"}
+{"path":"docs/contracts/TEST-LAB.md","topic":"TEST-LAB","area":"contracts","triggers":["Adoption, version, report or profile changes for TEST-LAB and TEST-LAB-WINDOWS"],"role":"source"}
 {"path": "docs/guides/SHARING_SETTINGS_WINDOWS.md", "topic": "Sharing settings windows and navigation", "area": "engineering", "triggers": ["Changes to manager, SFTP or exchange settings ownership, routes, drafts, context or help"], "role": "source"}
 {"path": "docs/contracts/WORKER-LAUNCH.md", "topic": "WORKER-LAUNCH", "area": "contracts", "triggers": ["Adoption, version, state-directory resolution, launch flags or conformance changes for WORKER-LAUNCH"], "role": "source"}
 {"path": "docs/contracts/MEDIA-VIEWER.md", "topic": "MEDIA-VIEWER", "area": "contracts", "triggers": ["Adoption, version, sorting, selection, zoom, slideshow or conformance changes for MEDIA-VIEWER"], "role": "source"}
+{"path": "docs/guides/PORTAL_HONEST_TEXT_234.md", "topic": "Exchange privacy portal hand-off", "area": "sharing", "triggers": ["Changes to sealed exchange content, operator visibility or the portal privacy disclosure"], "role": "source"}

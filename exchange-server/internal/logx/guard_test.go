@@ -50,12 +50,16 @@ var (
 	// The names of sealed content and of the keys around it (DEVICE-EXCHANGE 27 items DH, DI, DL, DQ, ticket 234)
 	// are forbidden keys as well: whatever such a field would carry is a box, a key or bytes of a record.
 	badKey = regexp.MustCompile(`logx\.(?:Text|Int)\(\s*"(?:token|password|pairingCode|access|shareId|broadcastId|deviceToken|resourceId|deviceId|tunnelId|secret|invitationCode|` +
-		`sealed|sealedAccess|box|keyRing|ring|e2eKey|kem|fromKey|ct|wk|enc|chunk|payload|relayKey|tunnelPin|credentials|verifier|verifiers)"`)
+		`sealed|sealedAccess|box|keyRing|ring|e2eKey|kem|fromKey|ct|wk|enc|chunk|payload|relayKey|tunnelPin|credentials|verifier|verifiers|` +
+		`authorization|salt)"`)
 	// A sealed box, a sealed value, a key, a key ring or the bytes of a chunk or a record handed to Text (27 item
 	// DQ: the server holds them as opaque bytes and never writes one down, not even a prefix). Applied to a source
-	// whose string literals are blanked, so a fixed word such as "sealed" in a message is no finding.
+	// whose string literals are blanked, so a fixed word such as "sealed" in a message is no finding. A broadcast's
+	// listener verifiers and a listener's Authorization header (DEVICE-EXCHANGE item BF, ticket 263) are the same
+	// kind of value: a salt and a hash a guess can be tested against, and a Basic credential that is a password.
 	sealedArg = regexp.MustCompile(`logx\.Text\([^)]*(?:\.Sealed\b|\b[Ss]ealed\w*\b|\.Box\b|\b[Bb]ox\w*\b|[Kk]eyRing|[Rr]elayKey|[Tt]unnelPin|[Ee]2[Ee][Kk]ey|` +
-		`\.KEM\b|\bkem\b|[Ff]romKey|\.Payload\b|\bpayload\b|\.Chunk\b|\bchunk\b|\.Wk\b|\bwk\b|\.Enc\b|\.Ct\b|\bct\b)`)
+		`\.KEM\b|\bkem\b|[Ff]romKey|\.Payload\b|\bpayload\b|\.Chunk\b|\bchunk\b|\.Wk\b|\bwk\b|\.Enc\b|\.Ct\b|\bct\b|` +
+		`\b[Vv]erifiers?\b|\b[Aa]uthorization\b|\.Salt\b|\bsalt\b)`)
 	stringLiteral = regexp.MustCompile("\"(?:[^\"\\\\\\n]|\\\\.)*\"|`[^`]*`")
 )
 
@@ -124,13 +128,17 @@ func TestGuardPatternsCatch(t *testing.T) {
 		`logx.Text("k", hex.EncodeToString(chunk.Payload))`, `logx.Text("k", string(payload))`, `logx.Text("k", env.FromKey)`,
 		`logx.Text("k", kem)`, `logx.Text("k", wk)`, `logx.Text("k", e.Enc)`, `logx.Text("k", ct)`, `logx.Text("k", relayKey)`,
 		`logx.Text("k", tunnelPin)`,
+		// a listener verifier or credential (item BF)
+		`logx.Text("v", verifiers)`, `logx.Text("v", m.Verifiers)`, `logx.Text("v", string(verifier.Hash))`, `logx.Text("s", v.Salt)`,
+		`logx.Text("a", st.Authorization())`, `logx.Text("a", req.Authorization)`, `logx.Text("a", authorization)`,
 	} {
 		if !sealedArg.MatchString(blankStrings(bad)) {
 			t.Errorf("the sealed-content pattern misses %s", bad)
 		}
 	}
 	for _, bad := range []string{`logx.Text("sealed", x)`, `logx.Text("box", x)`, `logx.Int("e2eKey", 1)`, `logx.Text( "keyRing", x)`,
-		`logx.Text("payload", x)`, `logx.Text("fromKey", x)`, `logx.Text("wk", x)`, `logx.Text("tunnelPin", x)`} {
+		`logx.Text("payload", x)`, `logx.Text("fromKey", x)`, `logx.Text("wk", x)`, `logx.Text("tunnelPin", x)`,
+		`logx.Text("verifiers", x)`, `logx.Text("authorization", x)`, `logx.Text("salt", x)`} {
 		if !badKey.MatchString(bad) {
 			t.Errorf("the key pattern misses %s", bad)
 		}

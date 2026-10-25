@@ -166,6 +166,8 @@ Friend Module ResourceRouting
     ''' sentence. The two copies are named where there are two.</summary>
     Friend Function DescribeOutcome(outcome As TransferOutcome) As String
         If outcome Is Nothing Then Return "The transfer produced no outcome."
+        If outcome.Reason = TransferReason.AccessChanged Then Return Localization.T("Доступ к ресурсу изменился - исходный файл оставлен на месте")
+        If outcome.Reason = TransferReason.DiskFull Then Return FailureText.Sentence(FailureText.FailureCause.DiskFull)
         Select Case outcome.Result
             Case TransferResult.CopyOnly
                 Return "The copy is complete, the move is not: a copy of '" &
@@ -359,21 +361,27 @@ Friend NotInheritable Class ResourceDeleteTarget
     Friend Sub Execute()
         session.Cancellation.ThrowIfCancellationRequested()
         If Not Capabilities.CanDelete Then Throw New UnauthorizedAccessException("The resource does not permit deletion.")
+        ExecuteProvider(session.Provider, remotePath)
+        session.Invalidate(cachePath)
+        AppFileLogger.WriteLine("Resource: permanent remote deletion confirmed")
+    End Sub
+
+    ' The manager targets the original provider path, without a viewer/cache session.
+    Friend Shared Sub ExecuteProvider(provider As IFileSystemProvider, path As String)
+        If Not provider.Capabilities.CanDelete Then Throw New UnauthorizedAccessException("The resource does not permit deletion.")
         Dim failure As Exception = Nothing
         Try
-            session.Provider.DeleteFile(remotePath)
+            provider.DeleteFile(path)
         Catch ex As Exception
             ' A lost reply does not justify a second destructive command.
             failure = ex
         End Try
-        Dim result As StatResult = ResourceProviderCalls.Stat(session.Provider, remotePath)
+        Dim result As StatResult = ResourceProviderCalls.Stat(provider, path)
         If result.Outcome <> StatOutcome.Found AndAlso result.Outcome <> StatOutcome.Missing Then Throw New ResourceDeleteException(True, failure)
         If result.Outcome <> StatOutcome.Missing Then
             If failure IsNot Nothing Then Throw failure
             Throw New ResourceDeleteException(False)
         End If
-        session.Invalidate(cachePath)
-        AppFileLogger.WriteLine("Resource: permanent remote deletion confirmed")
     End Sub
 
     Public Sub Dispose() Implements IDisposable.Dispose
@@ -398,6 +406,19 @@ End Class
 ''' </summary>
 Friend Module ResourceRefusalPolicy
 
+    Friend Function IsAllowed(context As ResourceOperationContext, verb As ResourceVerb) As Boolean
+        If context Is Nothing Then Throw New ArgumentNullException(NameOf(context))
+        If context.IsPending OrElse context.InsideArchive OrElse context.IsStream OrElse context.IsSecure OrElse
+           context.IsLink OrElse context.OutsideRoot Then Return False
+        If context.IsRoot AndAlso verb <> ResourceVerb.Copy AndAlso verb <> ResourceVerb.CreateFolder AndAlso
+           verb <> ResourceVerb.WriteDestination Then Return False
+        If Not IsAllowed(context.SourceCapabilities, verb) Then Return False
+        If verb = ResourceVerb.Copy OrElse verb = ResourceVerb.Move Then
+            Return context.DestinationCapabilities Is Nothing OrElse context.DestinationCapabilities.CanWrite
+        End If
+        Return True
+    End Function
+
     Friend Function IsAllowed(capabilities As ProviderCapabilities, verb As ResourceVerb) As Boolean
         If capabilities Is Nothing Then Return True
         Select Case verb
@@ -410,10 +431,27 @@ Friend Module ResourceRefusalPolicy
                 Return capabilities.CanRename
             Case ResourceVerb.WriteBeside
                 Return capabilities.CanWrite AndAlso capabilities.CanDelete
+            Case ResourceVerb.CreateFolder
+                Return capabilities.CanWrite AndAlso capabilities.CanCreateFolder
+            Case ResourceVerb.WriteDestination
+                Return capabilities.CanWrite
             Case Else
                 Return False
         End Select
     End Function
 
 End Module
+
+''' <summary>Facts about the acted-on place, independent of whatever the viewer displays.</summary>
+Friend NotInheritable Class ResourceOperationContext
+    Friend Property SourceCapabilities As ProviderCapabilities
+    Friend Property DestinationCapabilities As ProviderCapabilities
+    Friend Property InsideArchive As Boolean
+    Friend Property IsStream As Boolean
+    Friend Property IsSecure As Boolean
+    Friend Property IsPending As Boolean
+    Friend Property IsRoot As Boolean
+    Friend Property IsLink As Boolean
+    Friend Property OutsideRoot As Boolean
+End Class
 #End If

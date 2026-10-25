@@ -712,6 +712,15 @@ Partial Public NotInheritable Class Localization
         Add("Свернуть",
             "Collapse", "Згорнути", "Zuklappen", "Comprimi", "Contraer", "Réduire",
             "Recolher", "طي", "संक्षिप्त करें", "সংকুচিত করুন", "سمیٹیں", "折叠")
+        ' The header tools of the main window (WINDOWS-UI section 2 item 3): both act on its groups.
+        Add("Развернуть все",
+            "Expand all", "Розгорнути всі", "Alle aufklappen", "Espandi tutto", "Expandir todo",
+            "Tout développer", "Expandir tudo", "توسيع الكل", "सभी खोलें", "সব খুলুন",
+            "سب کھولیں", "全部展开")
+        Add("Свернуть все",
+            "Collapse all", "Згорнути всі", "Alle zuklappen", "Comprimi tutto", "Contraer todo",
+            "Tout réduire", "Recolher tudo", "طي الكل", "सभी समेटें", "সব গুটিয়ে নিন",
+            "سب سمیٹیں", "全部折叠")
 
         Add("Сначала запустите сервер.",
             "Start the server first.", "Спершу запустіть сервер.", "Starten Sie zuerst den Server.",

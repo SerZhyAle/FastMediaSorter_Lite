@@ -113,6 +113,19 @@ Public NotInheritable Class FileDetails
         If file IsNot Nothing Then sections.Add(file)
         sections.AddRange(BuildImageSections(filePath))
         sections.AddRange(BuildDocumentSections(filePath))
+#If Not NETFRAMEWORK Then
+        Dim related As New FileDetailSection("Связанные файлы")
+        For Each sidecar In SidecarAssociations.Discover(filePath)
+            Dim label = "Метаданные"
+            Select Case sidecar.Kind
+                Case SidecarKind.Subtitle : label = "Субтитры"
+                Case SidecarKind.Lyrics : label = "Текст песни"
+                Case SidecarKind.Artwork : label = "Обложка"
+            End Select
+            related.Add(label, Path.GetFileName(sidecar.Path))
+        Next
+        If Not related.IsEmpty Then sections.Add(related)
+#End If
         Return sections
     End Function
 

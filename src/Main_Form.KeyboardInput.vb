@@ -256,8 +256,21 @@ Partial Public Class Main_Form
         End If
 #End If
 
+#If Not NETFRAMEWORK Then
+        ' MEDIA-VIEWER 1.0 rule 5: a manual-navigation key (next/prev/random/jump, a
+        ' rebound one included - the custom map ran above) continues a running show and
+        ' restarts its timer; every other key keeps the historical stop. The custom map
+        ' itself made its own decision above, so here only the factory spellings count.
+        If CustomHotkeys.NavigationActionOfFactoryKey(e.KeyData).Length > 0 Then
+            ManualNavigationStopsShow()
+        Else
+            SlideShowStop()
+            is_Slide_Show_Random_Mode = False
+        End If
+#Else
         SlideShowStop()
         is_Slide_Show_Random_Mode = False
+#End If
 
 #If Not NETFRAMEWORK Then
 
@@ -392,9 +405,28 @@ Partial Public Class Main_Form
                     ReadShowMediaFile(Mode_Prev)
 #End If
                 Case Keys.Space, Keys.Right, Keys.BrowserForward
+#If Not NETFRAMEWORK Then
+                    ' VIEWER-KEYBOARD (INPUT-PARITY 0.4): on media LibVLC is playing, Space is play/pause and
+                    ' the plain arrows seek the medium step (10 s by default) - the file moves stay on
+                    ' PageUp/PageDown and the browser keys below keep their historical meaning.
+                    If PlayingMediaOwnsThePlainNavigationKeys() Then
+                        If e.KeyCode = Keys.Space Then
+                            If Not IsAutoRepeatOf(e.KeyCode) Then RunPlaybackAction("playPause")
+                        Else
+                            RunPlaybackAction("seekFwdMedium")
+                        End If
+                        Exit Select
+                    End If
+#End If
                     Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1310: to next file")
                     ReadShowMediaFile(Mode_Next)
                 Case Keys.P, Keys.Left, Keys.B, Keys.BrowserBack, Keys.Back
+#If Not NETFRAMEWORK Then
+                    If PlayingMediaOwnsThePlainNavigationKeys() AndAlso e.KeyCode = Keys.Left Then
+                        RunPlaybackAction("seekBackMedium")
+                        Exit Select
+                    End If
+#End If
                     Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1320: to prev file")
                     ReadShowMediaFile(Mode_Prev)
                 Case Keys.Y
@@ -413,6 +445,18 @@ Partial Public Class Main_Form
                     Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1645: F11 - Toggle super fullscreen")
                     ToggleSuperFullScreenMode()
 
+#If Not NETFRAMEWORK Then
+                ' VIEWER-KEYBOARD (INPUT-PARITY 0.4): F is the family's fullscreen key; F7 stays as the
+                ' inherited Windows alias. G opens the thumbnail panel beside F3.
+                Case Keys.F
+                    Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1646: F - Toggle fullscreen")
+                    ToggleFullScreenMode()
+
+                Case Keys.G
+                    Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1647: G - image panel")
+                    ShowImagePanelForm()
+#End If
+
                 Case Keys.I, Keys.F5
                     SetRandomSlideShow(was_Slide_Show_Mode)
                 Case Keys.Home, Keys.H, Keys.BrowserHome
@@ -421,9 +465,16 @@ Partial Public Class Main_Form
                 Case Keys.End, Keys.E, Keys.L, Keys.BrowserStop
                     Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1380: to last file")
                     JumpTo(total_File_Count - 1, "последний файл")
-                Case Keys.F, Keys.F4
+                Case Keys.F4
                     Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1385: choose file")
                     Choose_file()
+#If NETFRAMEWORK Then
+                Case Keys.F
+                    ' The frozen leg keeps its historical F (the picker); the modern leg moved F to
+                    ' fullscreen above, per VIEWER-KEYBOARD.
+                    Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1385: choose file")
+                    Choose_file()
+#End If
                 Case Keys.N
 #If Not NETFRAMEWORK Then
                     If IsTextDocumentShown() OrElse IsPdfDocumentShown() OrElse IsContentPlaceholderShown() Then
@@ -754,6 +805,12 @@ Partial Public Class Main_Form
         Table_Form.RequestOpenAtRecipientsGrid()
         ShowSettingsWindow()
     End Sub
+
+    Friend Sub ShowSettingsWindowAtFileManager()
+        EnsureSettingsWindow()
+        Table_Form.RequestOpenAtFileManager()
+        ShowSettingsWindow()
+    End Sub
 #End If
 
     ''' <summary>F7 - the window fills the screen. Friend, and a method rather than two
@@ -881,5 +938,15 @@ Partial Public Class Main_Form
         Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w1249: keyb on P2: " & e.KeyCode.ToString)
         KeybUse(e, GetWas_slideshow())
     End Sub
+
+#If Not NETFRAMEWORK Then
+    ''' <summary>VIEWER-KEYBOARD (INPUT-PARITY 0.4): while LibVLC owns the current file - a video or an audio
+    ''' track, playing or paused - the plain navigation keys belong to the media: Space toggles play/pause and
+    ''' the bare arrows seek the medium step. The gate is the playback extras' own (CanUseVideoBasics), so an
+    ''' image, a document or a placeholder keeps the historical file moves.</summary>
+    Private Function PlayingMediaOwnsThePlainNavigationKeys() As Boolean
+        Return CanUseVideoBasics()
+    End Function
+#End If
 
 End Class

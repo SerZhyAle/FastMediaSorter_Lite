@@ -77,6 +77,22 @@ $notes   = New-Object System.Collections.Generic.List[string]
 
 function Redact([string]$text) {
     if ([string]::IsNullOrEmpty($text)) { return $text }
+    # DIAGNOSTIC-REPORT 7/8/10: preserve PEM state across the complete source, then redact each line before cutting.
+    $builder = New-Object Text.StringBuilder
+    $insideKey = $false
+    $reader = New-Object IO.StringReader($text)
+    try {
+        while ($null -ne ($line = $reader.ReadLine())) {
+            $begins = $line -match '-----BEGIN [A-Z0-9 ]*PRIVATE KEY-----'
+            if ($insideKey -or $begins) {
+                if (-not $insideKey) { [void]$builder.AppendLine('[REDACTED]') }
+                $insideKey = $line -notmatch '-----END [A-Z0-9 ]*PRIVATE KEY-----'
+                continue
+            }
+            [void]$builder.AppendLine((Redact-Line $line))
+        }
+    } finally { $reader.Dispose() }
+    $text = $builder.ToString()
     foreach ($p in @($env:USERPROFILE, $LocalAppDataRoot, $env:APPDATA)) {
         if ($p -and $p.Length -gt 8) {
             $root = $p
@@ -85,6 +101,22 @@ function Redact([string]$text) {
                 $text = [regex]::Replace($text, [regex]::Escape($root), '<USER>', 'IgnoreCase')
             }
         }
+    }
+    return $text
+}
+
+function Redact-Line([string]$text) {
+    if ($text.IndexOfAny([char[]]'=:/') -lt 0) { return $text }
+    $budget = [TimeSpan]::FromMilliseconds(100)
+    try {
+        $text = [regex]::Replace($text, '(?<scheme>\b[a-z][a-z0-9+.-]*://)[^\s<>"'']*@', '${scheme}[REDACTED]@', 'IgnoreCase', $budget)
+        $text = [regex]::Replace($text, '(?<kind>/(?:live|movie|series)/)[^/\s]+/[^/\s]+/', '${kind}[REDACTED]/[REDACTED]/', 'IgnoreCase', $budget)
+        $names = '(?:[a-z0-9_-]{0,80}(?:password|token|secret|accesspin|pairingcode|fingerprint|salt)|pass|pin|auth|api[_-]?key|x-amz-signature|x-amz-credential|wmsauthsign|hdnts|hdnea|policy|key-pair-id|login|user|username|serveraddress|exchangeserver|exchangelogin|oldpin|newpin)'
+        $text = [regex]::Replace($text, '(?<prefix>["'']?' + $names + '["'']?\s*[:=]\s*)(?<q>["''])(?:\\.|(?!\k<q>).)*\k<q>', '${prefix}${q}[REDACTED]${q}', 'IgnoreCase', $budget)
+        $text = [regex]::Replace($text, '(?<prefix>(?<![a-z0-9_-])["'']?' + $names + '["'']?\s*[:=]\s*)(?!["''\[{])[^\s&;,}\]"'']+', '${prefix}[REDACTED]', 'IgnoreCase', $budget)
+        $text = [regex]::Replace($text, '(?<prefix>\b(?:authorization|proxy-authorization)\s*:\s*)[^\r\n]*', '${prefix}[REDACTED]', 'IgnoreCase', $budget)
+    } catch [Text.RegularExpressions.RegexMatchTimeoutException] {
+        return '[Diag] PATH REDACTION TIMEOUT | dropped_line_bytes=' + [Text.Encoding]::UTF8.GetByteCount($text)
     }
     return $text
 }
@@ -324,16 +356,28 @@ function Copy-LogTail([string]$source, [string]$entry) {
         $fs = New-Object System.IO.FileStream($source, [IO.FileMode]::Open, [IO.FileAccess]::Read, ([IO.FileShare]::ReadWrite -bor [IO.FileShare]::Delete))
         try {
             $len = $fs.Length
-            $truncated = $len -gt $MaxLogBytes
-            if ($truncated) { [void]$fs.Seek($len - $MaxLogBytes, [IO.SeekOrigin]::Begin) }
-            $buf = New-Object byte[] ([int][math]::Min($len, $MaxLogBytes))
+            $oversized = $len -gt 64MB
+            $buf = New-Object byte[] ([int]$(if ($oversized) { 0 } else { $len }))
             $read = 0
             while ($read -lt $buf.Length) { $n = $fs.Read($buf, $read, $buf.Length - $read); if ($n -le 0) { break }; $read += $n }
         } finally { $fs.Dispose() }
-        $text = [Text.Encoding]::UTF8.GetString($buf, 0, $read)
-        if ($truncated) { $nl = $text.IndexOf("`n"); if ($nl -ge 0) { $text = $text.Substring($nl + 1) } }
-        $text = Redact $text
-        if ($truncated) { $text = '[.. truncated: original ' + $len + ' bytes, keeping the last ' + $MaxLogBytes + ' ..]' + "`n" + $text }
+        if ($oversized) {
+            $text = '[Diag] LOG OMITTED | reason=oversized_untrusted | source_bytes=' + $len
+        } else {
+            $text = Redact ([Text.Encoding]::UTF8.GetString($buf, 0, $read))
+            $clean = [Text.Encoding]::UTF8.GetBytes($text)
+            if ($clean.Length -gt $MaxLogBytes) {
+                $headCount = 256KB
+                while ($headCount -gt 0 -and ($clean[$headCount] -band 0xC0) -eq 0x80) { $headCount-- }
+                $tailStart = $clean.Length - ($MaxLogBytes - $headCount)
+                while ($tailStart -lt $clean.Length -and ($clean[$tailStart] -band 0xC0) -eq 0x80) { $tailStart++ }
+                $tailCount = $clean.Length - $tailStart
+                $text = [Text.Encoding]::UTF8.GetString($clean, 0, $headCount) + "`n" +
+                    '[Diag] LOG TRUNCATED | dropped_middle_bytes=' + ($tailStart - $headCount) +
+                    ' | kept_head_bytes=' + $headCount + ' | kept_tail_bytes=' + $tailCount + "`n" +
+                    [Text.Encoding]::UTF8.GetString($clean, $tailStart, $tailCount)
+            }
+        }
         $dest = Join-Path $work ('logs\' + $entry)
         New-Item -ItemType Directory -Force -Path (Split-Path -Parent $dest) | Out-Null
         [IO.File]::WriteAllText($dest, $text, (New-Object Text.UTF8Encoding($false)))
@@ -403,7 +447,9 @@ try {
         $OutDir = if ($desk -and (Test-Path -LiteralPath $desk)) { $desk } else { $TempRoot }
     }
     New-Item -ItemType Directory -Force -Path $OutDir | Out-Null
-    $zipPath = Join-Path $OutDir ('fms-host-state-' + $env:COMPUTERNAME + '-' + $stamp + '.zip')
+    $zipPath = Join-Path $OutDir ('fms-host-logs-' + $stamp + '.zip')
+    $environment = "schema_version=1`napp_id=fms-host`napp_version=unknown`nvolume_metrics=none`ngenerated_utc=" + [DateTime]::UtcNow.ToString('o') + "`n"
+    [IO.File]::WriteAllText((Join-Path $work 'environment.txt'), $environment, (New-Object Text.UTF8Encoding($false)))
     Add-Type -AssemblyName System.IO.Compression
     $zs = New-Object IO.FileStream($zipPath, [IO.FileMode]::CreateNew, [IO.FileAccess]::Write)
     try {

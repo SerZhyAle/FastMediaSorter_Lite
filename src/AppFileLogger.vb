@@ -24,6 +24,9 @@ Friend Module AppFileLogger
     Friend Const Max_Log_Bytes As Long = 8L * 1024L * 1024L
 
     Private ReadOnly syncRoot As New Object()
+#If Not NETFRAMEWORK Then
+    Private ReadOnly redactor As New DiagnosticRedactor()
+#End If
 
     Private logWriter As StreamWriter = Nothing
     Private logListener As TextWriterTraceListener = Nothing
@@ -116,7 +119,11 @@ Friend Module AppFileLogger
                 acquiredStream = OpenAppendOnly(logPathValue)
                 acquiredWriter = New StreamWriter(acquiredStream)
                 acquiredWriter.AutoFlush = True
+#If NETFRAMEWORK Then
                 acquiredListener = New TextWriterTraceListener(acquiredWriter)
+#Else
+                acquiredListener = New TextWriterTraceListener(New DiagnosticTextWriter(acquiredWriter, redactor, syncRoot))
+#End If
 
                 If InitializeFaultInjector IsNot Nothing Then InitializeFaultInjector(3)
 
@@ -234,7 +241,11 @@ Friend Module AppFileLogger
             If logWriter Is Nothing Then Return
 
             Try
+#If NETFRAMEWORK Then
                 logWriter.WriteLine(message)
+#Else
+                logWriter.WriteLine(redactor.Redact(message))
+#End If
                 logWriter.Flush()
             Catch
             End Try

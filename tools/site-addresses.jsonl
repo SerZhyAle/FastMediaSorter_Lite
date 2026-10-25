@@ -3,6 +3,10 @@
 {"group":"privacy","locale":null,"sitemap":true,"note":"one page under docs/ that switches en/ru/uk in-page (the address the Store listing names does not change); listed in the sitemap since specification 151"}
 {"group":"edition","locale":null,"sitemap":true,"note":"the Server edition page, English only"}
 {"group":"guide","locale":null,"sitemap":true,"note":"a task guide or reference page at the root; en/ru/uk switched in-page (data-l spans), never a lang/<code>/ sibling"}
+{"group":"topics","locale":null,"sitemap":true,"note":"topics.html: the topic index, one URL, en/ru/uk switched in-page, never a lang/<code>/ sibling"}
+{"group":"glossary","locale":null,"sitemap":true,"note":"glossary.html: the termbase page, one URL, en/ru/uk switched in-page, never a lang/<code>/ sibling"}
+{"group":"support","locale":null,"sitemap":true,"note":"support.html: the page every child footer links to, one URL, en/ru/uk switched in-page, never a lang/<code>/ sibling"}
+{"group":"whats-new","locale":null,"sitemap":true,"note":"whats-new.html: one URL whose release history is the English text of the released CHANGELOG sections - a single-language reference group on purpose; its own words switch en/ru/uk in-page, never a lang/<code>/ sibling"}
 {"address":"https://serzhyale.github.io/FastMediaSorter_Lite/","holder":"src/Support/SitePages.vb","kind":"landing"}
 {"address":"https://serzhyale.github.io/FastMediaSorter_Lite/docs/privacy.html","holder":"src/Support/SitePages.vb","kind":"privacy","carried":"built","fragment":"SiteRoot & \"docs/privacy.html\""}
 {"address":"https://serzhyale.github.io/FastMediaSorter_Lite/trust.html","holder":"src/Support/SitePages.vb","kind":"trust","carried":"built","fragment":"SiteRoot & \"trust.html\"","note":"TrustPageUrl(code) builds the locale sibling too: SiteRoot & \"lang/\" & code & \"/trust.html\""}
@@ -52,3 +56,4 @@
 {"address":"https://serzhyale.github.io/FastMediaSorter_Lite/server.html#matrix","holder":"README.md","kind":"edition"}
 {"address":"https://serzhyale.github.io/FastMediaSorter_Lite/server.html#matrix","holder":"README_RU.md","kind":"edition"}
 {"address":"https://serzhyale.github.io/FastMediaSorter_Lite/server.html#matrix","holder":"README_UK.md","kind":"edition"}
+{"address":"https://serzhyale.github.io/FastMediaSorter_Lite/support.html","holder":"assets/help/port-forward.html","kind":"support","note":"the shared child footer (gen:child-contact of tools/Build-SitePages.ps1) that the generator writes into the in-app help page"}

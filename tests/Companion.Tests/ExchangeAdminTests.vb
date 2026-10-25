@@ -492,7 +492,8 @@ Public Class ExchangeAdminTests
         ExchangeAdmin.PipeNameOverride = "fms-exchange-admin-test-" & Guid.NewGuid().ToString("N").Substring(0, 12)
         Dim seenArgs As String() = Nothing
         ExchangeProcess.RunOverride = Function(args, stdin)
-                                          seenArgs = args
+                                          ' Settings status refreshes may inspect concurrently; this assertion owns the creation verb.
+                                          If args.Length >= 2 AndAlso args(0) = "invitation" AndAlso args(1) = "create" Then seenArgs = CType(args.Clone(), String())
                                           Return Result(0, "{""code"":""AAAAAAAAAAAAAAAAAAAAAA"",""invitation"":{""codeHash"":""h1"",""kind"":""guest"",""createdAt"":""c"",""used"":false}}")
                                       End Function
         Dim reply As ExchangeAdminReply = ExchangeAdmin.CreateInvitationAsync("guest", CancellationToken.None).GetAwaiter().GetResult()

@@ -287,8 +287,13 @@ $setupLog = Join-Path $env:TEMP ("fms-server-setup-{0}.log" -f (Get-Date -Format
 # refusal - with nothing to migrate the post-install step is a plain fresh install - so
 # it is passed unconditionally and the confirmation above is where the decision is
 # really made.
+# The exchange component starts UNTICKED in the installer (no Types: a silent install gets only the
+# server's default payload), so a silent install must name it: /COMPONENTS replaces the default set,
+# which is why the default set (server, filedo) is listed too. Without -SkipExchange the check below
+# expects exchange\fms-exchange-server.exe, so the component has to be requested here.
 $setupArgs = @('/VERYSILENT', '/SUPPRESSMSGBOXES', '/NORESTART', '/SP-',
                '/MIGRATEFROMUSER=yes', "/LOG=$setupLog")
+if (-not $SkipExchange) { $setupArgs += '/COMPONENTS=server,filedo,exchange' }
 
 Write-Host "Installing (this is the one UAC prompt).." -ForegroundColor Cyan
 $proc = Start-Elevated $setupPath $setupArgs

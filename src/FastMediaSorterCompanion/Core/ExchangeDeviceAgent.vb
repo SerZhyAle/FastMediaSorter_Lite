@@ -42,6 +42,9 @@ Friend NotInheritable Class ExchangeAgentPorts
     Public Property DeviceKeys As IExchangeDeviceKeyStore = Nothing
     ''' <summary>The kept first-seen keys of the account's devices (item DG). Nothing: a file beside the token store.</summary>
     Public Property SealedTrust As IExchangeSealedTrustStore = Nothing
+    ''' <summary>What the account's other devices list on Google Drive (203 section 5.11): merged into the directory the viewer reads, and into
+    ''' nothing else. The default asks the process's Drive host without creating it; a test hands in its own.</summary>
+    Public Property DriveDirectory As Func(Of ExchangeDirectorySnapshot) = Function() DriveChannelHosts.ListedDirectory()
 
 End Class
 
@@ -255,7 +258,7 @@ Friend NotInheritable Class ExchangeLocalResult
     End Function
 End Class
 
-Friend NotInheritable Class ExchangeDeviceAgent
+Partial Friend NotInheritable Class ExchangeDeviceAgent
     Implements IExchangeSessionHooks
     Implements IExchangeAgentHandler
     Implements IDisposable
@@ -283,6 +286,10 @@ Friend NotInheritable Class ExchangeDeviceAgent
     Private _liveBroadcastRecordJson As String
     Private _liveBroadcastId As String
     Private _liveBroadcastState As LiveProducerState
+    ' Ticket 263 T-6: the id of the live broadcast whose `broadcast-start` is sent and not yet answered (Nothing when none is
+    ' awaiting). Set right before a start goes out (the publish path and the one after a reconnect), cleared by `broadcast-started`
+    ' for that id, by a `refused` (which is then THAT start's refusal), by the broadcast's end and by a new welcome. Guarded by _gate.
+    Private _startAwaitingId As String
     Private _liveUploadCts As CancellationTokenSource
     ' Sealed relay (spec 234 T-3, items DK and DL): the keys and epochs of the running broadcast, and the keys of one about to start.
     Private _liveSealed As ExchangeSealedBroadcastSession
@@ -302,6 +309,10 @@ Friend NotInheritable Class ExchangeDeviceAgent
     Public Event DirectoryChanged As EventHandler
     ''' <summary>An envelope the agent does not handle itself arrived on the control stream: `open` (170), `cast-offer` (174), ..</summary>
     Public Event ServerMessage As Action(Of ExchangeEnvelope)
+    ''' <summary>Ticket 263 T-6: the server refused the `broadcast-start` of the live broadcast with this id (any thread). The reason is the
+    ''' typed `refused.reason` and nothing else: never the record, the descriptor or a key. A `refused` that arrives while no start is
+    ''' awaiting its answer is not attributed to the broadcast and raises nothing.</summary>
+    Public Event BroadcastStartRefused As Action(Of String, ExchangeRefusal)
 
     Public Sub New(ports As ExchangeAgentPorts)
         If ports Is Nothing Then Throw New ArgumentNullException(NameOf(ports))
@@ -507,6 +518,7 @@ Friend NotInheritable Class ExchangeDeviceAgent
     End Sub
 
     Private Sub OnSessionStateChanged(sender As Object, e As EventArgs)
+        Interlocked.Increment(_guestGeneration)
         Dim s As ExchangeControlSession = TryCast(sender, ExchangeControlSession)
         If s IsNot Nothing Then _ports.Log.Invoke("Exchange agent: " & s.State.ToString() & If(s.LastReason.Length > 0, " (" & s.LastReason & ")", ""))
         RaiseEvent StatusChanged(Me, EventArgs.Empty)
@@ -515,6 +527,7 @@ Friend NotInheritable Class ExchangeDeviceAgent
     Private Sub OnSessionDirectoryChanged(sender As Object, e As EventArgs)
         WakeWaiters()
         RaiseEvent DirectoryChanged(Me, EventArgs.Empty)
+        Dim refresh As Task = RefreshGuestGrantsAsync()
     End Sub
 
     Private Sub OnSessionDeviceRevoked(sender As Object, e As EventArgs)
@@ -878,15 +891,24 @@ Friend NotInheritable Class ExchangeDeviceAgent
 
     Public Async Function OnWelcomeAsync(session As ExchangeControlSession, ct As CancellationToken) As Task Implements IExchangeSessionHooks.OnWelcomeAsync
         Dim activeRecord As String = Nothing
+        Dim activeState As LiveProducerState = Nothing
+        Dim activeId As String = Nothing
         SyncLock _gate
             _castId = Nothing
             _castOffer = Nothing
             activeRecord = _liveBroadcastRecordJson
+            activeState = _liveBroadcastState
+            activeId = _liveBroadcastId
+            ' A start sent on the stream that just ended is answered never; the one below is the awaited one.
+            _startAwaitingId = Nothing
         End SyncLock
         ' Spec 200 rule 6: After a reconnect the agent sends broadcast-start again with the same id
         If Not String.IsNullOrEmpty(activeRecord) Then
             Try
-                Dim startSent As Boolean = Await session.SendAsync(New ExchangeEnvelope(ExchangeEnvelopeTypes.BroadcastStart).SetRecord("broadcast", activeRecord), ct).ConfigureAwait(False)
+                ' Item DV: the verifiers go out again with it - a restarted server holds none, and a start without the member reads as
+                ' "no pair to check". The list is the set as it is NOW (a pair revoked meanwhile stays gone); the hashes are cached.
+                Dim verifiers As IReadOnlyList(Of String) = Await VerifiersOfAsync(activeState).ConfigureAwait(False)
+                Dim startSent As Boolean = Await SendBroadcastStartAsync(session, activeId, activeRecord, verifiers, ct).ConfigureAwait(False)
                 ' Item DL: the record (with its current box) is out, so a replacement waiting for it may follow.
                 If startSent Then CurrentSealed()?.MarkPublished()
             Catch
@@ -899,6 +921,31 @@ Friend NotInheritable Class ExchangeDeviceAgent
     End Function
 
     Public Sub OnMessage(session As ExchangeControlSession, message As ExchangeEnvelope) Implements IExchangeSessionHooks.OnMessage
+        ' Ticket 263 T-6 (DEVICE-EXCHANGE 7.4, item DT): the answer to the live broadcast's `broadcast-start`. `broadcast-started` closes
+        ' the wait; a `refused` that reaches this hook (no request/answer waiter took it) while a start is awaiting is that start's
+        ' refusal. With no start awaiting a `refused` belongs to something else and falls through exactly as before.
+        If message IsNot Nothing AndAlso message.Is(ExchangeEnvelopeTypes.BroadcastStarted) Then
+            Dim startedId As String = message.Text("broadcastId")
+            SyncLock _gate
+                If String.Equals(_startAwaitingId, startedId, StringComparison.Ordinal) Then _startAwaitingId = Nothing
+            End SyncLock
+            Return
+        End If
+        If message IsNot Nothing AndAlso message.Is(ExchangeEnvelopeTypes.Refused) Then
+            Dim refusedId As String
+            SyncLock _gate
+                refusedId = _startAwaitingId
+                _startAwaitingId = Nothing
+            End SyncLock
+            If Not String.IsNullOrEmpty(refusedId) Then
+                Try
+                    RaiseEvent BroadcastStartRefused(refusedId, message.Refusal())
+                Catch ex As Exception When Not TypeOf ex Is OutOfMemoryException
+                    _ports.Log.Invoke("Exchange agent: a listener of the broadcast refusal failed (" & ex.GetType().Name & ")")
+                End Try
+                Return
+            End If
+        End If
         If message IsNot Nothing AndAlso message.Is(ExchangeEnvelopeTypes.CastStop) Then
             SyncLock _gate
                 If message.Text("broadcastId") = _castPlayingId AndAlso _castPlayingId IsNot Nothing Then
@@ -1003,12 +1050,14 @@ Friend NotInheritable Class ExchangeDeviceAgent
             recordJson = publisher.PrepareRecord()
         ElseIf state.Sealed Then
             ' sealed, but no key of this device: nothing goes through the server (the LAN endpoint, if any, is not sealed)
-            recordJson = LiveProducerDescriptorWriter.BuildBroadcastRecord(state.BroadcastId, deviceId, state.SourceName, state.Mode, state.RecordDescriptorJson)
+            recordJson = LiveProducerDescriptorWriter.BuildBroadcastRecord(state.BroadcastId, deviceId, state.SourceName, state.Mode, state.RecordDescriptorJson,
+                                                                           state.StartedAtUtc, Date.UtcNow)
         Else
             ' Ticket 239 CR-15: the hand-out descriptor of a broadcast with no password is shortened to the LAN; the account's own
             ' record keeps every endpoint (state.RecordDescriptorJson is then set), exactly as before.
             recordJson = LiveProducerDescriptorWriter.BuildBroadcastRecord(state.BroadcastId, deviceId, state.SourceName, state.Mode,
-                If(String.IsNullOrEmpty(state.RecordDescriptorJson), state.DescriptorJson, state.RecordDescriptorJson))
+                If(String.IsNullOrEmpty(state.RecordDescriptorJson), state.DescriptorJson, state.RecordDescriptorJson),
+                state.StartedAtUtc, Date.UtcNow)
         End If
         SyncLock _gate
             _liveBroadcastRecordJson = recordJson
@@ -1019,7 +1068,9 @@ Friend NotInheritable Class ExchangeDeviceAgent
             Dim unused As Task = Task.Run(
                 Async Function()
                     Try
-                        Dim sent As Boolean = Await session.SendAsync(New ExchangeEnvelope(ExchangeEnvelopeTypes.BroadcastStart).SetRecord("broadcast", recordJson), CancellationToken.None).ConfigureAwait(False)
+                        ' Item DV: `verifiers` on every start, `[]` when the link has no password. The PBKDF2 runs on this pool thread.
+                        Dim verifiers As IReadOnlyList(Of String) = Await VerifiersOfAsync(state).ConfigureAwait(False)
+                        Dim sent As Boolean = Await SendBroadcastStartAsync(session, state.BroadcastId, recordJson, verifiers, CancellationToken.None).ConfigureAwait(False)
                         If sent Then sealedSession?.MarkPublished()
                     Catch
                     End Try
@@ -1035,6 +1086,25 @@ Friend NotInheritable Class ExchangeDeviceAgent
         End If
     End Sub
 
+    ''' <summary>Ticket 263 T-6: remember changed endpoints even while offline; repeat them on the next welcome.
+    ''' Sealed records keep their session and box, and are serialized with recipient updates by the publisher.</summary>
+    Friend Async Function OnBroadcastChangedAsync(state As LiveProducerState) As Task(Of Boolean)
+        Dim publisher As ExchangeSealedBroadcastPublisher
+        SyncLock _gate
+            If state Is Nothing OrElse Not ReferenceEquals(state, _liveBroadcastState) OrElse _liveBroadcastId <> state.BroadcastId Then Return False
+            publisher = _liveSealedPublisher
+        End SyncLock
+        If publisher IsNot Nothing Then Return Await publisher.PublishAsync(force:=True).ConfigureAwait(False)
+        Dim status As ExchangeDeviceStatus = GetStatus()
+        Dim record As String = LiveProducerDescriptorWriter.BuildBroadcastRecord(state.BroadcastId, status.DeviceId, state.SourceName, state.Mode,
+            If(String.IsNullOrEmpty(state.RecordDescriptorJson), state.DescriptorJson, state.RecordDescriptorJson), state.StartedAtUtc, Date.UtcNow)
+        SyncLock _gate
+            If Not ReferenceEquals(state, _liveBroadcastState) Then Return False
+            _liveBroadcastRecordJson = record
+        End SyncLock
+        Return Await SendBroadcastUpdateAsync(state, record).ConfigureAwait(False)
+    End Function
+
     Friend Sub OnBroadcastStopped(broadcastId As String)
         Dim session As ExchangeControlSession
         Dim uploadCts As CancellationTokenSource
@@ -1043,6 +1113,7 @@ Friend NotInheritable Class ExchangeDeviceAgent
                 _liveBroadcastId = Nothing
                 _liveBroadcastRecordJson = Nothing
                 _liveBroadcastState = Nothing
+                If String.Equals(_startAwaitingId, broadcastId, StringComparison.Ordinal) Then _startAwaitingId = Nothing
                 uploadCts = _liveUploadCts
                 _liveUploadCts = Nothing
             End If
@@ -1067,9 +1138,10 @@ Friend NotInheritable Class ExchangeDeviceAgent
 
     Private Async Function RunUploadLoopAsync(state As LiveProducerState, audioHub As LiveBroadcastHub, videoHub As LiveBroadcastHub, ct As CancellationToken) As Task
         ' Item DL, no clear fallback: the relay carries sealed records or nothing. A broadcast without a sealed session (no sealing
-        ' layer wired, or no key of this device) uploads nothing, and a protected one never reaches the relay (its Digest runs on
-        ' the producer's own server, over the LAN or a TUNNEL).
-        If String.IsNullOrEmpty(state.RelayUrl) OrElse Not String.IsNullOrEmpty(state.Password) OrElse Not state.Sealed Then Return
+        ' layer wired, or no key of this device) uploads nothing. Ticket 263 T-3: a PASSWORD no longer keeps a sealed broadcast off the
+        ' relay - the relay checks the verifiers sent with the start and every update (item BF) and, sealed, carries ciphertext in any
+        ' case. A protected broadcast with no sealing never lists a RELAY (the controller withholds it), so state.RelayUrl is empty.
+        If String.IsNullOrEmpty(state.RelayUrl) OrElse Not state.Sealed Then Return
         Dim isVideo As Boolean = String.Equals(state.Mode, "VIDEO_AUDIO", StringComparison.OrdinalIgnoreCase) OrElse
                                  String.Equals(state.Mode, "VIDEO_ONLY", StringComparison.OrdinalIgnoreCase)
         Dim hub As LiveBroadcastHub = If(isVideo, videoHub, audioHub)
@@ -1092,6 +1164,16 @@ Friend NotInheritable Class ExchangeDeviceAgent
         Return Await ExchangeDataStreams.UploadAsync(opts.Transport, opts.Server, opts.Pin, opts.Credentials, opts.ProductVersion,
                                                      broadcastId, ExchangeRelayRecords.ContentType, ct).ConfigureAwait(False)
     End Function
+
+    ''' <summary>Ticket 263 T-6 (read-only, for the tests): the id of the broadcast whose `broadcast-start` is sent and not yet answered,
+    ''' or Nothing.</summary>
+    Friend ReadOnly Property BroadcastStartAwaitingId As String
+        Get
+            SyncLock _gate
+                Return _startAwaitingId
+            End SyncLock
+        End Get
+    End Property
 
     ' --- sealed broadcast (spec 234 T-3, items DK and DL) ---
 
@@ -1213,20 +1295,26 @@ Friend NotInheritable Class ExchangeDeviceAgent
             End Try
         End If
 
+        ' Item BF: the box hands the account's OWN devices the OWN pair (user `own`), not the pair the person typed for the link; both
+        ' open the producer's Digest and are checked by the relay, and either can be revoked alone. Nothing to carry without a password.
+        Dim ownPassword As String = If(state.Credentials Is Nothing, Nothing, state.Credentials.PasswordFor(LiveCredentialPairs.OwnUser))
+        Dim ownUser As String = If(String.IsNullOrEmpty(ownPassword), "", LiveCredentialPairs.OwnUser)
+        ownPassword = If(ownPassword, "")
         Dim sealedSession As New ExchangeSealedBroadcastSession(
             state.BroadcastId, If(isVideo, "video/mp2t", "audio/aac"), keys,
             Function() GetSealedRecipients(), Function() KeyStore().TryLoad(deviceId),
             hasRelay:=Not String.IsNullOrEmpty(state.RelayUrl), tunnelPin:=If(identity IsNot Nothing, identity.Pin, ""),
-            credentialUser:=state.AuthUser, credentialPassword:=state.Password)
+            credentialUser:=ownUser, credentialPassword:=ownPassword)
         Dim publisher As New ExchangeSealedBroadcastPublisher(
             sealedSession,
-            Function(box) LiveProducerDescriptorWriter.BuildBroadcastRecord(state.BroadcastId, deviceId, state.SourceName, state.Mode, state.RecordDescriptorJson, box),
+            Function(box) LiveProducerDescriptorWriter.BuildBroadcastRecord(state.BroadcastId, deviceId, state.SourceName, state.Mode, state.RecordDescriptorJson,
+                                                                              state.StartedAtUtc, Date.UtcNow, box),
             Sub(record)
                 SyncLock _gate
                     If String.Equals(_liveBroadcastId, state.BroadcastId, StringComparison.Ordinal) Then _liveBroadcastRecordJson = record
                 End SyncLock
             End Sub,
-            Function(record) SendBroadcastUpdateAsync(record),
+            Function(record) SendBroadcastUpdateAsync(state, record),
             ExchangeSealedBroadcastPublisher.DefaultDebounceMs)
         SyncLock _gate
             _liveSealed = sealedSession
@@ -1237,17 +1325,94 @@ Friend NotInheritable Class ExchangeDeviceAgent
         Return publisher
     End Function
 
-    Private Async Function SendBroadcastUpdateAsync(record As String) As Task(Of Boolean)
+    Private Async Function SendBroadcastUpdateAsync(state As LiveProducerState, record As String) As Task(Of Boolean)
         Dim session As ExchangeControlSession
         SyncLock _gate
+            If Not ReferenceEquals(state, _liveBroadcastState) OrElse _liveBroadcastId <> state.BroadcastId Then Return False
             session = _session
         End SyncLock
         If session Is Nothing Then Return False
         Try
-            Return Await session.SendAsync(New ExchangeEnvelope(ExchangeEnvelopeTypes.BroadcastUpdate).SetRecord("broadcast", record), CancellationToken.None).ConfigureAwait(False)
+            ' Item DV: `verifiers` on every update too, the full current list (a non-empty list REPLACES the relay's held one, `[]`
+            ' tells it to check nobody, an absent member would leave a revoked pair in force).
+            Dim verifiers As IReadOnlyList(Of String) = Await VerifiersOfAsync(state).ConfigureAwait(False)
+            SyncLock _gate
+                If Not ReferenceEquals(state, _liveBroadcastState) OrElse Not ReferenceEquals(session, _session) Then Return False
+            End SyncLock
+            Return Await session.SendAsync(New ExchangeEnvelope(ExchangeEnvelopeTypes.BroadcastUpdate).SetRecord("broadcast", record).
+                                           SetNumber("maxListeners", state.MaxListeners).SetRecords("verifiers", verifiers), CancellationToken.None).ConfigureAwait(False)
         Catch
             Return False
         End Try
+    End Function
+
+    ''' <summary>The `verifiers` of a broadcast (items BF and DV): one wire object per credential pair it holds now, `[]` when it has none
+    ''' (the link has no password). The first call pays the PBKDF2 of the pairs on a pool thread - never on the caller's - and the set
+    ''' caches the hashes, so a later start, update or reconnect costs nothing.</summary>
+    Private Shared Async Function VerifiersOfAsync(state As LiveProducerState) As Task(Of IReadOnlyList(Of String))
+        Dim pairs As LiveCredentialPairs = If(state Is Nothing, Nothing, state.Credentials)
+        If pairs Is Nothing OrElse pairs.Count = 0 Then Return Array.Empty(Of String)()
+        Return Await Task.Run(Function() pairs.VerifierRecords()).ConfigureAwait(False)
+    End Function
+
+    ''' <summary>Sends a `broadcast-start` and remembers that its answer is awaited (ticket 263 T-6). When the frame is not sent no answer
+    ''' will come, so the mark is taken back at once and a later unrelated `refused` is never attributed to the broadcast.</summary>
+    Private Async Function SendBroadcastStartAsync(session As ExchangeControlSession, broadcastId As String, record As String,
+                                                   verifiers As IEnumerable(Of String), ct As CancellationToken) As Task(Of Boolean)
+        Dim maxListeners As Integer
+        SyncLock _gate
+            If _liveBroadcastId <> broadcastId OrElse _liveBroadcastState Is Nothing OrElse Not ReferenceEquals(session, _session) Then Return False
+            record = _liveBroadcastRecordJson
+            maxListeners = _liveBroadcastState.MaxListeners
+            _startAwaitingId = broadcastId
+        End SyncLock
+        Dim sent As Boolean = False
+        Try
+            sent = Await session.SendAsync(BroadcastStartEnvelope(record, verifiers, maxListeners), ct).ConfigureAwait(False)
+        Finally
+            If Not sent Then
+                SyncLock _gate
+                    If String.Equals(_startAwaitingId, broadcastId, StringComparison.Ordinal) Then _startAwaitingId = Nothing
+                End SyncLock
+            End If
+        End Try
+        Return sent
+    End Function
+
+    Private Shared Function BroadcastStartEnvelope(record As String, verifiers As IEnumerable(Of String), maxListeners As Integer) As ExchangeEnvelope
+        Return New ExchangeEnvelope(ExchangeEnvelopeTypes.BroadcastStart).SetRecord("broadcast", record).
+            SetNumber("maxListeners", maxListeners).SetRecords("verifiers", verifiers)
+    End Function
+
+    ''' <summary>Item BF, "each revocable alone": drops ONE credential pair of the running broadcast. The pair leaves the producer's
+    ''' Digest at once (the set is shared with the server) and the relay's list with a `broadcast-update` that carries the new full
+    ''' list; a relay that follows item BF drops the verifiers it held and checks the next listen request against the new list.
+    ''' False when no broadcast is running or the user holds no pair - and also for the LAST pair, which a protected broadcast keeps
+    ''' (<see cref="LiveCredentialPairs.Revoke"/>). True means the pair is dropped here; the update is sent best-effort and the next
+    ''' reconnect repeats the list (<see cref="OnWelcomeAsync"/>). There is no window control for it yet: the password is locked on
+    ''' air, and per-grant and per-link pairs wait for the worker's per-grant login (ticket 263 T-4).</summary>
+    Friend Async Function RevokeBroadcastPairAsync(user As String) As Task(Of Boolean)
+        Dim state As LiveProducerState
+        Dim record As String
+        SyncLock _gate
+            state = _liveBroadcastState
+            record = _liveBroadcastRecordJson
+        End SyncLock
+        If state Is Nothing OrElse state.Credentials Is Nothing OrElse String.IsNullOrEmpty(record) Then Return False
+        If Not state.Credentials.Revoke(user) Then Return False
+        If String.Equals(user, LiveCredentialPairs.OwnUser, StringComparison.Ordinal) Then
+            Dim publisher As ExchangeSealedBroadcastPublisher
+            SyncLock _gate
+                publisher = If(ReferenceEquals(state, _liveBroadcastState), _liveSealedPublisher, Nothing)
+            End SyncLock
+            If publisher IsNot Nothing Then
+                publisher.Session.SetCredentials("", "")
+                Await publisher.PublishAsync(force:=True).ConfigureAwait(False)
+                Return True
+            End If
+        End If
+        Await SendBroadcastUpdateAsync(state, record).ConfigureAwait(False)
+        Return True
     End Function
 
     ''' <summary>The sealed state of an ended broadcast (or of keys made for one that never started) is wiped.</summary>
@@ -1491,14 +1656,31 @@ Friend NotInheritable Class ExchangeDeviceAgent
         Return tcs
     End Function
 
-    ''' <summary>The revision of the mirrored directory, or -1 when there is no snapshot (no stream, or not listed yet).</summary>
+    ''' <summary>The revision of the mirrored directory, or -1 when there is no snapshot (no stream, or not listed yet). It includes the
+    ''' Drive listing's revision (<see cref="DriveDirectoryMerge"/>), so a change listed on Drive answers a viewer that holds the old number.</summary>
     Private Function CurrentRevision() As Long
         Dim session As ExchangeControlSession
         SyncLock _gate
             session = _session
         End SyncLock
         If session Is Nothing OrElse Not session.Model.HasSnapshot Then Return -1
-        Return session.Model.Revision
+        Return session.Model.Revision + DriveListing().Revision
+    End Function
+
+    Private Function DriveListing() As ExchangeDirectorySnapshot
+        Dim source As Func(Of ExchangeDirectorySnapshot) = _ports.DriveDirectory
+        Dim listing As ExchangeDirectorySnapshot = If(source Is Nothing, Nothing, source.Invoke())
+        Return If(listing, ExchangeDirectorySnapshot.Empty)
+    End Function
+
+    ''' <summary>What the local channel hands the viewer: the server's directory with the Drive listing merged in (203 section 5.11). The
+    ''' own device is dropped unless <paramref name="includeOwn"/>. Other callers keep reading the server's directory alone: a cast
+    ''' candidate or a "My devices" row that exists only on Drive could not be used through the server.</summary>
+    Private Function ListedDirectory(includeOwn As Boolean) As ExchangeDirectorySnapshot
+        Dim merged As ExchangeDirectorySnapshot = DriveDirectoryMerge.Union(GetFullDirectory(), DriveListing())
+        If includeOwn Then Return merged
+        Dim account As ExchangeAccount = _ports.Accounts.Load()
+        Return merged.WithoutDevice(If(account Is Nothing, "", account.DeviceId))
     End Function
 
     Private Shared Async Function WaitAsync(tcs As TaskCompletionSource(Of Boolean), waitMs As Integer, ct As CancellationToken) As Task
@@ -1535,12 +1717,13 @@ Friend NotInheritable Class ExchangeDeviceAgent
                     revision = CurrentRevision()
                 End If
                 If revision < 0 Then Return ExchangeLocalResult.Failure(ExchangeAgentPipe.ErrorNotConnected)
-                Return ExchangeLocalResult.Success(If(requestType = ExchangeAgentPipe.RequestGetLiveDirectory, GetFullDirectory(), GetDirectory()).ToLocalJson())
+                Return ExchangeLocalResult.Success(ListedDirectory(requestType = ExchangeAgentPipe.RequestGetLiveDirectory).ToLocalJson())
 
             Case ExchangeAgentPipe.RequestGetAccess
                 Dim id As String = ReadString(request, "resourceId")
                 If id.Length = 0 Then Return ExchangeLocalResult.Failure(ExchangeAgentPipe.ErrorBadRequest)
-                Dim snapshot As ExchangeDirectorySnapshot = GetFullDirectory()
+                ' a folder listed on Drive alone has no `access` (item X): it is found here and answered "no access", not "unknown"
+                Dim snapshot As ExchangeDirectorySnapshot = ListedDirectory(True)
                 Dim found As ExchangeResourceRecord = Nothing
                 For Each r As ExchangeResourceRecord In snapshot.Resources
                     If String.Equals(r.ResourceId, id, StringComparison.Ordinal) Then found = r
@@ -1557,6 +1740,23 @@ Friend NotInheritable Class ExchangeDeviceAgent
                 If resolved.State IsNot Nothing Then Return ExchangeLocalResult.Failure(resolved.State.Code)
                 If Not resolved.Opened Then Return ExchangeLocalResult.Failure(ExchangeAgentPipe.ErrorNoAccess)
                 Return ExchangeLocalResult.Success(resolved.AccessJson)
+
+            Case ExchangeAgentPipe.RequestGetBroadcastSeal
+                Dim id As String = ReadString(request, "broadcastId")
+                If Not ExchangeIds.IsValidId(id) Then Return ExchangeLocalResult.Failure(ExchangeAgentPipe.ErrorBadRequest)
+                Dim view As ExchangeSealedRecipients = GetSealedRecipients()
+                If view Is Nothing Then Return ExchangeLocalResult.Failure(ExchangeAgentPipe.ErrorNotConnected)
+                For Each broadcast As ExchangeBroadcastRecord In GetFullDirectory().Broadcasts
+                    If broadcast.BroadcastId <> id Then Continue For
+                    Dim resolved As ExchangeSealedAccessResult
+                    Using ownKey As ExchangeDeviceKey = KeyStore().TryLoad(view.OwnDeviceId)
+                        resolved = ExchangeSealedBroadcastAccess.Resolve(broadcast, view, TrustStore(), ownKey)
+                    End Using
+                    If resolved.State IsNot Nothing Then Return ExchangeLocalResult.Failure(resolved.State.Code)
+                    If Not resolved.Opened Then Return ExchangeLocalResult.Failure(ExchangeAgentPipe.ErrorNoAccess)
+                    Return ExchangeLocalResult.Success(resolved.AccessJson)
+                Next
+                Return ExchangeLocalResult.Failure(ExchangeAgentPipe.ErrorUnknownResource)
 
             Case ExchangeAgentPipe.RequestGetBroadcast
                 Dim id As String = ReadString(request, "broadcastId")

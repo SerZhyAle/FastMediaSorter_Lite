@@ -66,13 +66,14 @@ Partial Public NotInheritable Class Share_Settings_Form
     Private Function SettingsSearchEntries() As List(Of SearchEntry)
         Dim entries As New List(Of SearchEntry)()
         For Each section In AllSettingsSections()
+            Dim pageTitle As String = SettingsPageTitle(section)
             For Each group In _pageGroups(section.Key)
                 For Each row In group.Rows
                     For Each control In (New Control() {row}).Concat(Descendants(row))
                         Dim settingRow = TryCast(control, ManagerSettingRow)
                         If settingRow IsNot Nothing Then
                             entries.Add(New SearchEntry With {.PageId = section.Key, .Group = group, .Editor = settingRow.Editor,
-                                .Title = settingRow.Caption.Text, .Hint = settingRow.Hint.Text, .PageTitle = SettingsPageCaption(section)})
+                                .Title = settingRow.Caption.Text, .Hint = settingRow.Hint.Text, .PageTitle = pageTitle})
                         End If
                         Dim check = TryCast(control, CheckBox)
                         If check IsNot Nothing Then
@@ -80,7 +81,7 @@ Partial Public NotInheritable Class Share_Settings_Form
                             Dim optionRow = OptionRows.RowOf(check)
                             entries.Add(New SearchEntry With {.PageId = section.Key, .Group = group, .Editor = check,
                                 .Title = If(optionRow Is Nothing, check.Text, optionRow.Caption.Text),
-                                .Hint = check.AccessibleDescription, .PageTitle = SettingsPageCaption(section)})
+                                .Hint = check.AccessibleDescription, .PageTitle = pageTitle})
                         End If
                     Next
                 Next
@@ -163,7 +164,9 @@ Partial Public NotInheritable Class Share_Settings_Form
             Dim delta = If((keyData And Keys.Shift) = Keys.Shift, -1, 1)
             Dim index = (Array.IndexOf(ids, _selectedPage) + ids.Length + delta) Mod ids.Length
             SelectSettingsPage(ids(index))
-            _navButtons(ids(index)).Focus()
+            ' A flat rail has no page row to focus: the selected row (or its first item) takes it.
+            Dim target As Control = If(_flatRail, SelectedNavRow(), _navButtons(ids(index)))
+            If target IsNot Nothing Then target.Focus()
             Return True
         End If
         Return MyBase.ProcessCmdKey(message, keyData)

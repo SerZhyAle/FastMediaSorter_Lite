@@ -28,7 +28,7 @@ Public Class CustomHotkeysTests
 
     <Theory>
     <InlineData("Ctrl+Shift+F5")>
-    <InlineData("Num +")>
+    <InlineData("NumpadAdd")>
     <InlineData("Shift+PageDown")>
     <InlineData("Alt+5")>
     <InlineData("Backspace")>
@@ -40,7 +40,7 @@ Public Class CustomHotkeysTests
     <Theory>
     <InlineData("ctrl + shift + f5", "Ctrl+Shift+F5")>
     <InlineData("SHIFT+delete", "Shift+Delete")>
-    <InlineData("num /", "Num /")>
+    <InlineData("num /", "NumpadDivide")>
     Public Sub A_sloppy_spelling_is_still_understood(written As String, expected As String)
         Assert.Equal(expected, CustomHotkeys.Canonical(written))
     End Sub
@@ -139,7 +139,7 @@ Public Class CustomHotkeysTests
     Public Sub A_legacy_modifier_order_and_numpad_binding_survive_the_next_save()
         Dim map = CustomHotkeys.Load("{""undo"":""Ctrl+Alt+Shift+N"",""help"":""Ctrl+Num +""}")
         Assert.Equal("Ctrl+Shift+Alt+N", map("undo"))
-        Assert.Equal("Ctrl+Num +", map("help"))
+        Assert.Equal("Ctrl+NumpadAdd", map("help"))
         Assert.Equal(Keys.Control Or Keys.Shift Or Keys.Alt Or Keys.N, CustomHotkeys.Parse(map("undo")))
         Assert.Equal(Keys.Control Or Keys.Add, CustomHotkeys.Parse(map("help")))
         Dim saved = CustomHotkeys.Load(CustomHotkeys.Save(map))
@@ -243,8 +243,8 @@ Public Class CustomHotkeysTests
     Public Sub Moving_a_recipient_slot_retires_its_NumPad_digit()
         Dim map As Dictionary(Of String, String) = CustomHotkeys.Load("{""recipient5"":""Ctrl+5""}")
         Assert.True(CustomHotkeys.IsRetiredDefault(map, "5"))
-        Assert.True(CustomHotkeys.IsRetiredDefault(map, "Num 5"))
-        Assert.False(CustomHotkeys.IsRetiredDefault(map, "Num 6"))
+        Assert.True(CustomHotkeys.IsRetiredDefault(map, "Numpad5"))
+        Assert.False(CustomHotkeys.IsRetiredDefault(map, "Numpad6"))
     End Sub
 
     <Fact>
@@ -330,7 +330,7 @@ Public Class CustomHotkeysTests
         Dim playback As String() = {
             "speedSlower", "speedFaster", "speedReset",
             "seekBackShort", "seekFwdShort", "seekBackMedium", "seekFwdMedium", "seekBackLong", "seekFwdLong",
-            "frameStep", "abLoop"}
+            "frameStep", "frameBack", "abLoop"}
         For Each id As String In playback
             Assert.True(CustomHotkeys.IsPlaybackAction(id), id)
             Assert.NotNull(CustomHotkeys.Find(id))
@@ -353,6 +353,7 @@ Public Class CustomHotkeysTests
         Assert.Equal("seekBackLong", CustomHotkeys.PlaybackActionOfFactoryKey(Keys.Control Or Keys.Left))
         Assert.Equal("seekFwdLong", CustomHotkeys.PlaybackActionOfFactoryKey(Keys.Control Or Keys.Right))
         Assert.Equal("frameStep", CustomHotkeys.PlaybackActionOfFactoryKey(Keys.OemPeriod))
+        Assert.Equal("frameBack", CustomHotkeys.PlaybackActionOfFactoryKey(Keys.Oemcomma))
         Assert.Equal("abLoop", CustomHotkeys.PlaybackActionOfFactoryKey(Keys.Shift Or Keys.L))
     End Sub
 
@@ -385,7 +386,7 @@ Public Class CustomHotkeysTests
         ' fixed points of Canonical rather than drifting to an alias.
         Dim seen As New HashSet(Of String)(StringComparer.OrdinalIgnoreCase)
         For Each id As String In {"speedSlower", "speedFaster", "speedReset", "seekBackShort", "seekFwdShort",
-                                  "seekBackMedium", "seekFwdMedium", "seekBackLong", "seekFwdLong", "frameStep", "abLoop"}
+                                  "seekBackMedium", "seekFwdMedium", "seekBackLong", "seekFwdLong", "frameStep", "frameBack", "abLoop"}
             Dim combo As String = CustomHotkeys.Canonical(CustomHotkeys.Find(id).DefaultCombo)
             Assert.True(combo.Length > 0, id & " has an unusable default")
             Assert.True(seen.Add(combo), id & " ships with " & combo)

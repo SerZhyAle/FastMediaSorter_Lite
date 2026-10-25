@@ -281,6 +281,9 @@ Friend Class LiveBroadcastHub
     ''' (contract 5.2: start at the live edge, never replay) - an audio listener at the next ADTS
     ''' frame, a video listener at the next keyframe preceded by PAT and PMT.</summary>
     Public Function Attach() As LiveHubCursor
+        ' Item I's SHOULD (request an IDR on attach) is not done on purpose: the encoder child reads raw frames from a pipe with a
+        ' fixed 1 s GOP and FFmpeg takes no on-demand keyframe command, so the join waits for the next IDR (worst case about 1 s,
+        ' inside the budget keyframeIntervalMs + 1000) and a restart of the child to force one would cost the other listeners more.
         SyncLock _lock
             Dim cursor As New LiveHubCursor(Me, _lastSeq)
             _cursors.Add(cursor)

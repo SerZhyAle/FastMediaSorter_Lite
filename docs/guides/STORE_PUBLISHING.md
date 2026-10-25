@@ -249,7 +249,8 @@ Rebuilt as a modern 64-bit app that carries its own runtime: there is nothing ex
 .NET Framework prerequisite. Static and animated WEBP images open everywhere, because the app decodes
 them itself instead of needing the Windows "WebP Image Extensions" codec that some editions of Windows
 lack, and so do HEIC/HEIF and AVIF - the formats iPhones and modern cameras produce - with no paid codec
-required. Video always runs through the built-in VLC engine, so it plays the same on systems where the
+required. Still and animated JPEG XL (JXL) images also open without an extra Windows codec. Edits can be
+saved as PNG, JPEG or WEBP; JXL output is not offered. Video always runs through the built-in VLC engine, so it plays the same on systems where the
 retired Internet Explorer component is no longer present, now with a full control bar (seek, volume,
 audio track and subtitle picking) and "Open URL.." to play straight off a network address. Zoom at the
 mouse cursor with drag-to-pan, and right-click/middle-click menus put every action right on the picture
@@ -303,7 +304,9 @@ On the Microsoft Store this app is published as "FastMediaSorter LITE".
 доустанавливать не нужно, .NET Framework больше не требуется. Статические и анимированные
 WEBP-изображения открываются везде - приложение декодирует их само, без кодека Windows "WebP Image
 Extensions", которого нет в некоторых редакциях Windows, а также HEIC/HEIF и AVIF - форматы,
-которые снимают iPhone и современные камеры - без каких-либо платных кодеков. Видео всегда идёт
+которые снимают iPhone и современные камеры - без каких-либо платных кодеков. Обычные и анимированные
+JPEG XL (JXL) тоже открываются без дополнительного кодека Windows. Результат редактирования сохраняется
+в PNG, JPEG или WEBP; сохранения в JXL нет. Видео всегда идёт
 через встроенный движок VLC, поэтому оно одинаково воспроизводится и на системах, где компонента
 Internet Explorer больше нет, и теперь с полноценной панелью управления (перемотка, громкость,
 выбор аудиодорожки и субтитров) и командой "Открыть по адресу.." для воспроизведения прямо по
@@ -490,6 +493,15 @@ No user data is collected; no telemetry. Open source: https://github.com/SerZhyA
 ```
 
 ### Privacy policy (hosted as docs/privacy.html; key points)
+
+The exchange-enabled build's disclosure is the complete `DEVICE-EXCHANGE` item DE text below. The
+server component's package availability remains governed by the existing shipping gate; this disclosure
+does not add that component to the Store package. The hosted policy carries the same text in EN, RU
+and UK, and [the portal hand-off](PORTAL_HONEST_TEXT_234.md) identifies the other maintained surfaces.
+
+> The exchange server connects your devices, so it knows the names of your account, devices, folders and broadcasts, sees which devices are online, and how much is sent and when. It cannot open what goes through it: folders and their files, broadcasts and the clipboard are encrypted on your device and opened only on your other devices or by the people you gave access to. To look inside, whoever runs the server would have to add a device of their own to your account, and it would appear in your list of devices.
+
+> Via Google Drive, files and the clipboard are kept in your own Google account, like your other files on Google Drive; no exchange server takes part.
 
 > **Microsoft Store has no data-safety form** in the Play sense. Its "answers" are three texts: the
 > privacy-policy URL (docs/privacy.html), the `runFullTrust` justification above and the description.

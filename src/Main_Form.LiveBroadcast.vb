@@ -63,6 +63,13 @@ Partial Public Class Main_Form
                     New AskButton() {New AskButton(Localization.T("Подключиться")), New AskButton(Localization.T("Отмена"))}, 1, 1)
                 accepted = AskDialogs.Choose(Me, question) = 0
             End If
+            If accepted Then
+                Dim sealError As String = Await LiveBroadcastRecords.PrepareAsync(parsed.Descriptor, live_Cast_Cancellation.Token)
+                If sealError.Length > 0 Then
+                    accepted = False
+                    Notify(ConnectionDiagnosisLocalization.GetMessageText(ExchangeAgentPipe.ErrorMessage(sealError).Code), NotifyLevel.Warning)
+                End If
+            End If
             If accepted AndAlso parsed.Descriptor.AuthScheme.Length > 0 AndAlso parsed.Descriptor.Password Is Nothing Then
                 parsed.Descriptor.Password = AskLivePassword()
                 accepted = parsed.Descriptor.Password IsNot Nothing
@@ -313,7 +320,8 @@ Partial Public Class Main_Form
                     ep.Password = Nothing
                 Next
             End If
-            Notify(policy.GetTerminalStatusText(), NotifyLevel.Warning)
+            Dim sealError As String = If(runner.LastOpen?.SealedState, "")
+            Notify(If(sealError.Length > 0, ConnectionDiagnosisLocalization.GetMessageText(ExchangeAgentPipe.ErrorMessage(sealError).Code), policy.GetTerminalStatusText()), NotifyLevel.Warning)
         Else
             lbl_Status.Text = Localization.T("Трансляция остановлена")
         End If

@@ -196,6 +196,9 @@ Public Class ImportedSettingsLimitsTests
             New ChoiceSpec("AudioEndAction", "next", "next", "stay", "repeat"),
             New ChoiceSpec("StartupOpenMode", "home", "home", "lastFolder", "lastFile"),
             New ChoiceSpec("PanelViewMode", "grid", "grid", "list"),
+            New ChoiceSpec("FileManagerViewMode", "grid", "grid", "list"),
+            New ChoiceSpec("FileManagerContentMode", "media", "media", "documents", "all"),
+            New ChoiceSpec("FileManagerNonMediaOpenAction", "default", "default", "openWith"),
             New ChoiceSpec("ChromeSize", "medium", "medium", "small", "large", "adaptive", "touch")
         }
     End Function
@@ -458,7 +461,7 @@ Public Class ImportedSettingsLimitsTests
         Dim choiceNames As New HashSet(Of String)(ChoiceSpecs().Select(Function(spec) spec.Name))
         Dim freeNames As New HashSet(Of String) From {
             "IncludedExtensions", "DocumentExtensions", "OtherExtensions", "PreferredAudioLanguage", "PreferredSubtitleLanguage",
-            "CustomHotkeysJson", "FolderZoomHistory", "VideoPositionHistory", "DocumentPageHistory"}
+            "CustomHotkeysJson", "FolderZoomHistory", "VideoPositionHistory", "DocumentPageHistory", "FileManagerPlaceSorts"}
         Dim actual As New HashSet(Of String)(ModernViewerPreferences.WritableProperties().
                                              Where(Function(prop) prop.PropertyType = GetType(String)).
                                              Select(Function(prop) prop.Name))
@@ -491,6 +494,7 @@ Public Class ImportedSettingsLimitsTests
         Dim listed As New HashSet(Of String) From {
             "AdvanceAfterCopy", "AllowNewWindows", "AnimatedViaVideo", "AnimatedViaVideoFfmpegAsked", "AudioControlsAlwaysVisible", "AudioVisualiser", "AutoAcceptLiveCast",
             "RevealStatusOnFileOperation",
+            "FileManagerShowHiddenFiles", "FileManagerShowLocalPlaces", "FileManagerShowResourcePlaces", "FileManagerShowDevicePlaces", "FileManagerRememberSort",
             "CreateMissingDestination", "DeleteToRecycleBin", "IncludeAudioInNavigation",
             "IncludeDocumentInNavigation", "IncludeSubfolders", "IncludeVideoInNavigation", "ModernChrome", "ChromePinned", "ChromeRow1Pinned", "ChromeRow2Pinned", "ChromeStatusPinned", "RecipientsOverlayPinned", "ChromeWindowControlsPinned",
             "ReduceMotion", "RememberVideoPosition", "ResumeLastPlayback", "SortOtherFiles", "SecureIncludeInNavigation",
@@ -520,7 +524,7 @@ Public Class ImportedSettingsLimitsTests
             .RecipientsOverlayFontSize = 14, .RecipientsOverlayOpacity = 77,
             .RecipientsOverlayVisibleRows = 8, .SlideshowRandomOrder = "shuffleCycle",
             .RecipientsOverlayHasCustomPosition = True, .RecipientsOverlayCustomX = -137, .RecipientsOverlayCustomY = 245,
-            .StopSlideshowOnManualNavigation = False, .SlideshowUiMode = "toolbarAndStatus",
+            .StopSlideshowOnManualNavigation = True, .SlideshowUiMode = "toolbarAndStatus",
             .VideoAutoplay = False, .IncludeVideoInNavigation = False, .RememberVideoPosition = False,
             .VideoControlsHideDelaySec = 9, .ShowVideoControlsWhenPaused = False,
             .SeekShortSec = 5, .SeekMediumSec = 15, .SeekLongSec = 120, .HideCursorAfterSec = 9,
@@ -533,6 +537,10 @@ Public Class ImportedSettingsLimitsTests
             .RecentFoldersLimit = 64, .OcrDiskCacheMaxMb = 333, .DecodeCacheMaxMb = 1000,
             .AnimatedViaVideo = False, .AnimatedViaVideoFfmpegAsked = True,
             .PanelViewMode = "list", .PanelThumbnailSize = 128, .PanelThumbCacheMb = 512,
+            .FileManagerViewMode = "list", .FileManagerContentMode = "all", .FileManagerNonMediaOpenAction = "openWith",
+            .FileManagerShowHiddenFiles = True, .FileManagerShowLocalPlaces = False, .FileManagerShowResourcePlaces = False,
+            .FileManagerShowDevicePlaces = False, .FileManagerRememberSort = False,
+            .FileManagerPlaceSorts = "{""local:C:\\"":{""Column"":""Size"",""Descending"":true}}",
             .ArchiveCacheMaxMb = 4096, .ArchiveMaxEntryMb = 256, .ArchiveMaxEntries = 5000,
             .RemoteCacheMaxMb = 3000, .SecureIncludeInNavigation = False,
             .SecureRememberMinutes = 60, .SecureShowTrueName = False,

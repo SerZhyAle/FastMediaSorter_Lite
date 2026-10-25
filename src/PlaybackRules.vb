@@ -110,7 +110,7 @@ Friend Module PlaybackRules
 
     ''' <summary>The speeds the transport offers (VLC's ladder). An off-ladder value is
     ''' never a state the user can hold - <see cref="NextRate"/> snaps onto the ladder.</summary>
-    Friend ReadOnly Speed_Ladder As Single() = {0.5F, 0.75F, 1.0F, 1.25F, 1.5F, 2.0F}
+    Friend ReadOnly Speed_Ladder As Single() = {0.25F, 0.5F, 0.75F, 1.0F, 1.25F, 1.5F, 2.0F}
 
     ''' <summary>The speed a new file starts at (119 §5.1.2, decision Q119-1: resets).</summary>
     Friend Const Normal_Rate As Single = 1.0F
@@ -119,7 +119,7 @@ Friend Module PlaybackRules
     ''' One step up or down the speed ladder. An off-ladder (or dead) current rate is
     ''' snapped to the NEAREST step first - ties go to the FASTER step - so a rate libVLC
     ''' reported imprecisely cannot leave the key without an answer. Clamps at the ends:
-    ''' a held key must not wrap from 2x back to 0.5x (119 §5.0.4).
+    ''' a held key must not wrap from 2x back to 0.25x (119 §5.0.4).
     ''' </summary>
     Friend Function NextRate(current As Single, faster As Boolean) As Single
         Dim rate As Single = current

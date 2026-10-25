@@ -105,7 +105,7 @@ Public Class LiveProducerSettingsTests
             .AudioPort = 9123, .SampleRate = 48000, .AudioBitrateKbps = 96,
             .MicrophoneChannels = 1, .SystemAudioChannels = 2,
             .Title = "Attic", .AllowLanVideoViewers = True, .OnAirChip = False, .MicrophoneGain = 1.5,
-            .ScreenMonitorIndex = 1, .ScreenCursor = False
+            .ScreenMonitorIndex = 1, .ScreenCursor = False, .MaxListeners = 7
         }
         saved.Save(Sub(key, value) store(key) = value)
 
@@ -118,6 +118,7 @@ Public Class LiveProducerSettingsTests
         Assert.False(loaded.OnAirChip)
         Assert.Equal(1.5, loaded.MicrophoneGain, 5)
         Assert.Equal(1, loaded.ScreenMonitorIndex)
+        Assert.Equal(7, loaded.MaxListeners)
         Assert.False(loaded.ScreenCursor)
     End Sub
 

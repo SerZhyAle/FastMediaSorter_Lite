@@ -4,15 +4,18 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <script>
-(function(){try{
-  var t=localStorage.getItem('sza-theme');
+(function(){
+  var t;try{t=localStorage.getItem('sza-theme');}catch(e){}
   if(t!=='dark'&&t!=='light')t=matchMedia('(prefers-color-scheme: light)').matches?'light':'dark';
   document.documentElement.setAttribute('data-theme',t);
-  var l=localStorage.getItem('sza-lang');
+  var l;try{l=localStorage.getItem('sza-lang');}catch(e){}
+  var q=new URLSearchParams(location.search),requested=q.has('lang')?q.get('lang'):q.get('l');
+  if(requested){requested=requested.toLowerCase();if(requested==='uk')requested='ua';if(requested==='en'||requested==='ru'||requested==='ua')l=requested;}
   if(l==='uk')l='ua';
   if(l!=='ru'&&l!=='en'&&l!=='ua'){var n=(navigator.language||'en').toLowerCase();l=n.indexOf('ru')==0?'ru':n.indexOf('uk')==0?'ua':'en';}
   document.documentElement.setAttribute('data-lang',l);
-}catch(e){}})();
+  document.addEventListener('click',function(e){var a=e.target.closest&&e.target.closest('a[href]');if(!a)return;try{var u=new URL(a.href,location.href);if(u.hostname==='serzhyale.github.io'||u.hostname==='sza.od.ua'){u.searchParams.delete('l');u.searchParams.set('lang',document.documentElement.getAttribute('data-lang')==='ua'?'uk':document.documentElement.getAttribute('data-lang'));a.href=u.href;}}catch(ignore){}});
+})();
 </script>
 <title>फ़ोटो और वीडियो छाँटें | Fast Media Sorter &amp; Sharing</title>
 <meta name="description" content="फ़ोटो और वीडियो के विशाल फ़ोल्डर तेज़ी से देखें और हर फ़ाइल को एक ही कुंजी से ले जाएँ, कॉपी करें, नाम बदलें या हटाएँ।">
@@ -97,8 +100,11 @@
     <p class="lead lead-narrow">फ़ोटो और वीडियो के विशाल फ़ोल्डर तेज़ी से देखें और हर फ़ाइल को एक ही कुंजी से ले जाएँ, कॉपी करें, नाम बदलें या हटाएँ।</p>
     <p class="lead lead-narrow">नाम में «Sharing» का मतलब है अपनी मीडिया किसी और को देना: आपका Android फ़ोन, प्रोग्राम की कोई दूसरी प्रति, या कोई भी SFTP क्लाइंट। जब तक आप चालू न करें, यह बंद रहता है। <a href="https://serzhyale.github.io/FastMediaSorter_Lite/publish-folders-android.html" lang="en" dir="ltr">Share folders to Android over SFTP</a></p>
     <div class="button-group">
-      <a class="btn btn-primary" href="#get">इंस्टॉलर (GitHub)</a>
-      <a class="btn btn-ghost" href="#features">जानने योग्य</a>
+      <!-- PAGE-CONTENT "Copy rules": stable action labels - Install (the get-it block below) and Guides
+           (the topics index). The artifact names (Installer (GitHub), winget, Store) stay in the #get
+           channels, where naming each way to get the product is the rule. -->
+      <a class="btn btn-primary" href="#get">इंस्टॉल करें</a>
+      <a class="btn btn-ghost" href="https://serzhyale.github.io/FastMediaSorter_Lite/topics.html">गाइड</a>
     </div>
   </section>
 
@@ -254,6 +260,14 @@
         <h3>सर्वर, फ़ोल्डर की तरह</h3>
         <p>लॉगिन वाला SFTP सर्वर या नेटवर्क शेयर आम फ़ोल्डर की तरह खुलता है: पन्ने पलटते समय तस्वीरें, वीडियो और दस्तावेज़ लाए जाते हैं, सर्वर की कुंजी याद रखी जाती है, और पासवर्ड आपके Windows खाते के लिए एन्क्रिप्टेड रहता है।</p>
       </article>
+      <article class="card">
+        <h3>JPEG XL चित्र</h3>
+        <p>64-बिट व्यूअर में अतिरिक्त Windows कोडेक के बिना स्थिर और एनिमेटेड JXL चित्र खोलें। बदलाव PNG, JPEG या WEBP में सहेजें; JXL आउटपुट उपलब्ध नहीं है।</p>
+      </article>
+      <article class="card">
+        <h3>लाइव प्रसारण</h3>
+        <p>Share Manager से स्क्रीन, एक विंडो, कैमरा, माइक्रोफ़ोन या सिस्टम ऑडियो साझा करें। 64-बिट व्यूअर में लिंक, कोड या .fmsbcast फ़ाइल से लाइव प्रसारण खोलें। कैप्चर केवल शुरू करें दबाने पर शुरू होता है।</p>
+      </article>
       </div>
     </details>
   </section>
@@ -303,7 +317,7 @@
     <a href="https://serzhyale.github.io/CyrFlip/"><b>CyrFlip</b><span>Windows layout fixer</span></a>
     <a href="https://serzhyale.github.io/doc-html-translate/"><b>doc-html-translate</b><span>Windows ebook converter</span></a>
     <a href="https://serzhyale.github.io/FileDO/"><b>FileDO</b><span>Windows storage CLI</span></a>
-    <a href="https://serzhyale.github.io/StreamsPlayer/"><b>StreamsPlayer</b><span>Windows stream player</span></a>
+    <a href="https://serzhyale.github.io/StreamsPlayer/"><b>STREAMS Player</b><span>Windows stream player</span></a>
     <a href="https://serzhyale.github.io/OneClickRunner/"><b>OneClickRunner</b><span>Windows tray launcher</span></a>
     <a href="https://serzhyale.github.io/universal-agent-kit/"><b>Universal Agent Kit</b><span>AI-dev methodology</span></a>
     <a href="https://sza.od.ua/"><b>SZA</b><span>Portfolio hub</span></a>

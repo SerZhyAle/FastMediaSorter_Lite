@@ -163,6 +163,7 @@ Friend NotInheritable Class LiveBroadcastRunner
     ''' called on the thread that started the run.
     ''' </summary>
     Public Async Function RunAsync(cancellationToken As CancellationToken) As Task(Of LiveRunEnd)
+        Dim epochReconnectPending As Boolean = False
         Do
             If cancellationToken.IsCancellationRequested Then Return Stopped()
 
@@ -178,7 +179,7 @@ Friend NotInheritable Class LiveBroadcastRunner
                     attempt.CancelAfter(CInt(Math.Min(Integer.MaxValue, Math.Max(1L, policyValue.RemainingBudgetMs))))
                     result = Await session.OpenAsync(attempt.Token)
                 End Using
-                If result.IsConnected OrElse result.IsFatal OrElse cancellationToken.IsCancellationRequested Then Exit For
+                If result.IsConnected OrElse result.IsFatal OrElse result.Outcome = LiveOpenOutcome.SealedReconnect OrElse cancellationToken.IsCancellationRequested Then Exit For
                 If index < candidates.Count - 1 Then
                     session.Dispose()
                     Volatile.Write(activeSession, Nothing)
@@ -194,6 +195,18 @@ Friend NotInheritable Class LiveBroadcastRunner
             ' The attempt token also carries the outage budget: a cancel that did not come from the caller is the
             ' budget cutting an attempt that never answered - a timeout, to be judged like any other.
             If result.Outcome = LiveOpenOutcome.Cancelled Then result = New LiveOpenResult(LiveOpenOutcome.TimedOut)
+            If result.Outcome = LiveOpenOutcome.SealedReconnect Then
+                Await CloseAsync(session)
+                If epochReconnectPending Then
+                    Volatile.Write(lastOpenResult, New LiveOpenResult(LiveOpenOutcome.SealedFailed, sealedState:="sealed-failed"))
+                    policyValue.NoteFatalTermination(LiveTerminationKind.AccessDenied, 0)
+                    NoteState(LiveSessionState.Failed)
+                    Return LiveRunEnd.Failed
+                End If
+                epochReconnectPending = True
+                NoteState(LiveSessionState.Reconnecting)
+                Continue Do
+            End If
 
             Dim endCause As EndCause = EndCause.StreamEnded
             If result.IsConnected Then
@@ -208,6 +221,19 @@ Friend NotInheritable Class LiveBroadcastRunner
                 ' Closed BEFORE the player is stopped (its read is blocked inside the stream) and BEFORE the
                 ' next connection exists: one request, never two, even in the instant between them.
                 Await CloseAsync(session)
+                If session.SealedStatus = ExchangeSealedReceiveStatus.SealedFailed OrElse
+                   (session.SealedStatus = ExchangeSealedReceiveStatus.NeedReconnect AndAlso epochReconnectPending AndAlso session.TotalBytesRead = 0) Then
+                    Volatile.Write(lastOpenResult, New LiveOpenResult(LiveOpenOutcome.SealedFailed, sealedState:="sealed-failed"))
+                    policyValue.NoteFatalTermination(LiveTerminationKind.AccessDenied, 0)
+                    NoteState(LiveSessionState.Failed)
+                    Return LiveRunEnd.Failed
+                End If
+                If session.SealedStatus = ExchangeSealedReceiveStatus.NeedReconnect Then
+                    epochReconnectPending = True
+                    NoteState(LiveSessionState.Reconnecting)
+                    Continue Do
+                End If
+                epochReconnectPending = False
                 If endCause = EndCause.Rejoin Then
                     policyValue.NoteRejoin()
                     NoteState(LiveSessionState.Reconnecting)

@@ -289,7 +289,7 @@ Public Class ExchangeSealedBroadcastTests
             Dim ownId As String = dir.OwnDeviceId
             Publisher = New ExchangeSealedBroadcastPublisher(
                 Session,
-                Function(box) LiveProducerDescriptorWriter.BuildBroadcastRecord(BroadcastId, ownId, "title", "AUDIO_ONLY", descriptor, box),
+                Function(box) LiveProducerDescriptorWriter.BuildBroadcastRecord(BroadcastId, ownId, "title", "AUDIO_ONLY", descriptor, Date.UtcNow, Date.UtcNow, box),
                 Sub(record) Remembered = record,
                 Function(record) SendAsync(record),
                 debounceMs)
@@ -960,6 +960,43 @@ Public Class ExchangeSealedBroadcastTests
     End Sub
 
     <Fact>
+    Public Async Function Credential_revocation_rebuilds_the_box_for_unchanged_recipients() As Task
+        Using own As New TestDevice(OwnId), phone As New TestDevice("dev-phone")
+            Dim dir As New FakeDirectory(own)
+            dir.Add(phone)
+            Using rig As New PublishRig(dir, "audio/aac", True, "", "revoked-password", 0)
+                rig.Publisher.PrepareRecord()
+                rig.Session.MarkPublished()
+                Dim key As String = rig.Session.Keys.RelayKeyText()
+                rig.Session.SetCredentials("", "")
+                Assert.Null(rig.Session.BoxJson)
+                Assert.True(Await rig.Publisher.PublishAsync())
+                Using payload As JsonDocument = PayloadOf(OpenBox(rig.LastRecord(), phone, dir))
+                    Assert.False(HasMember(payload.RootElement, "credentials"))
+                    Assert.Equal(key, payload.RootElement.GetProperty("relayKey").GetString())
+                End Using
+                Assert.False(Await rig.Publisher.PublishAsync())
+            End Using
+        End Using
+    End Function
+
+    <Fact>
+    Public Async Function Endpoint_only_updates_publish_even_when_the_box_has_not_changed() As Task
+        Using own As New TestDevice(OwnId)
+            Dim dir As New FakeDirectory(own)
+            Using rig As New PublishRig(dir, "audio/aac", True, "", "", 0)
+                rig.Publisher.PrepareRecord()
+                rig.Session.MarkPublished()
+                Dim box As String = rig.Session.BoxJson
+                Assert.False(Await rig.Publisher.PublishAsync())
+                Assert.True(Await rig.Publisher.PublishAsync(force:=True))
+                Assert.Equal(box, rig.Session.BoxJson)
+                Assert.False(Await rig.Publisher.PublishAsync())
+            End Using
+        End Using
+    End Function
+
+    <Fact>
     Public Async Function A_recipient_that_joins_updates_the_record_without_a_new_epoch_or_key() As Task
         Using own As New TestDevice(OwnId), phone As New TestDevice("dev-phone"), tablet As New TestDevice("dev-tablet")
             Dim dir As New FakeDirectory(own)
@@ -1029,6 +1066,36 @@ Public Class ExchangeSealedBroadcastTests
                 Await rig.Publisher.BeforeCastAsync("dev-tablet")
                 Await rig.Publisher.BeforeCastAsync("")
                 Assert.Single(rig.Records)
+            End Using
+        End Using
+    End Function
+
+    <Fact>
+    Public Async Function A_concurrent_own_device_update_cannot_release_the_ring_before_guest_boxes_are_sent() As Task
+        Using own As New TestDevice(OwnId)
+            Dim dir As New FakeDirectory(own)
+            Using rig As New PublishRig(dir, "audio/aac", True, "", "", 0)
+                rig.Publisher.PrepareRecord()
+                rig.Session.MarkPublished()
+                Dim entered As New TaskCompletionSource(Of Boolean)(TaskCreationOptions.RunContinuationsAsynchronously)
+                Dim release As New TaskCompletionSource(Of Boolean)(TaskCreationOptions.RunContinuationsAsynchronously)
+                Dim guests = rig.Publisher.PublishAsync(Async Function()
+                    rig.Session.RequestReplacement()
+                    entered.TrySetResult(True)
+                    Await release.Task
+                End Function)
+                Await entered.Task
+                Dim ownUpdate = rig.Publisher.PublishAsync()
+                Try
+                    Assert.True(rig.Session.ReplacementPending)
+                    Assert.Empty(rig.Records)
+                    Assert.False(ownUpdate.IsCompleted)
+                Finally
+                    release.TrySetResult(True)
+                End Try
+                Await Task.WhenAll(guests, ownUpdate)
+                Assert.Single(rig.Records)
+                Assert.False(rig.Session.ReplacementPending)
             End Using
         End Using
     End Function
@@ -1183,6 +1250,56 @@ Public Class ExchangeSealedBroadcastTests
             Next
             Assert.DoesNotContain(sealing.LastKey, controller.State.RecordDescriptorJson)
             Assert.DoesNotContain(sealing.LastPin, controller.State.RecordDescriptorJson)
+        Finally
+            controller.Stop()
+        End Try
+    End Sub
+
+    ''' <summary>Ticket 263 T-3 (CR-14): a protected broadcast lists its RELAY only once the box is wired, because the relay then carries
+    ''' ciphertext and `verifiers` are a second factor; the set holds the link pair and the own pair, whose password only the box carries.</summary>
+    <Fact>
+    Public Sub A_protected_sealed_start_lists_the_RELAY_and_holds_the_link_pair_and_the_own_pair()
+        Dim rig As New ControllerRig()
+        Dim sealing As New FakeSealing()
+        Dim controller As New LiveBroadcastController(rig.Ports(sealing))
+        Try
+            Dim result As LiveStartResult = controller.Start(New LiveStartRequest With {.Kind = LiveProducerSourceKind.Camera, .Mode = "VIDEO_ONLY", .Password = "separate-secret"})
+            Assert.True(result.Ok, result.SeamReason)
+            Assert.True(controller.State.Sealed)
+            Dim outward As Dictionary(Of String, EndpointSeal) = SealsOf(controller.State.DescriptorJson)
+            Assert.True(outward.ContainsKey("RELAY"), "sealed and protected: the RELAY is listed")
+            Assert.True(outward.ContainsKey("TUNNEL"))
+            Assert.StartsWith("https://relay.example:443/v2/b/", controller.State.RelayUrl, StringComparison.Ordinal)
+            Assert.Equal("listener", controller.State.AuthUser)
+
+            Dim pairs As LiveCredentialPairs = controller.State.Credentials
+            Assert.True(pairs.IsProtected)
+            Assert.Equal(New String() {"listener", "own"}, pairs.Users().ToArray())
+            Assert.Equal("separate-secret", pairs.PasswordFor("listener"))
+            Dim own As String = pairs.PasswordFor("own")
+            Assert.True(own.Length >= 24)
+            Assert.NotEqual("separate-secret", own)
+            ' neither password is in anything the person hands out or the directory holds
+            For Each text As String In New String() {controller.State.DescriptorJson, controller.State.RecordDescriptorJson, controller.State.BarcodeText}
+                Assert.DoesNotContain("separate-secret", text)
+                Assert.DoesNotContain(own, text)
+            Next
+        Finally
+            controller.Stop()
+        End Try
+    End Sub
+
+    <Fact>
+    Public Sub Without_a_password_a_sealed_start_holds_no_pair_so_the_verifiers_are_empty()
+        Dim rig As New ControllerRig()
+        Dim controller As New LiveBroadcastController(rig.Ports(New FakeSealing()))
+        Try
+            Dim result As LiveStartResult = controller.Start(New LiveStartRequest With {.Kind = LiveProducerSourceKind.Camera, .Mode = "VIDEO_ONLY"})
+            Assert.True(result.Ok, result.SeamReason)
+            Assert.False(controller.State.Credentials.IsProtected)
+            Assert.Equal(0, controller.State.Credentials.Count)
+            Assert.Empty(controller.State.Credentials.VerifierRecords())
+            Assert.Equal("", controller.State.AuthUser)
         Finally
             controller.Stop()
         End Try

@@ -95,7 +95,10 @@ Friend NotInheritable Class ResourceFailure
         End If
         If TypeOf ex Is UnauthorizedAccessException Then Return New ResourceFailure(ResourceFailureKind.LocalIO, Nothing, "access denied")
         If TypeOf ex Is NotSupportedException OrElse TypeOf ex Is NotImplementedException Then Return New ResourceFailure(ResourceFailureKind.Unsupported)
-        If TypeOf ex Is IOException Then Return New ResourceFailure(ResourceFailureKind.LocalIO, Nothing, ex.GetType().Name)
+        If TypeOf ex Is IOException Then
+            If ex.HResult = &H80070070 OrElse ex.HResult = &H80070027 Then Return New ResourceFailure(ResourceFailureKind.LocalIO, ex.HResult, "disk full")
+            Return New ResourceFailure(ResourceFailureKind.LocalIO, Nothing, ex.GetType().Name)
+        End If
         Return New ResourceFailure(ResourceFailureKind.LocalIO, Nothing, ex.GetType().Name)
     End Function
 

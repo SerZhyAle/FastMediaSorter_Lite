@@ -598,6 +598,18 @@ function Invoke-Exchange([string]$exeArgs) {
     return [pscustomobject]@{ ExitCode = $proc.ExitCode; StdOut = $out; StdErr = $err }
 }
 
+# The build of the exchange server this run is about to register or has registered, asked of the
+# server itself (only called on a copy that already passed the sha256 and directory checks), so the
+# helper's log says which version it handled. Never fails the run: "unknown" when it cannot be read.
+function Get-ExchangeVersionText {
+    try {
+        $run = Invoke-Exchange 'version'
+        $text = "$($run.StdOut)".Trim()
+        if ($run.ExitCode -eq 0 -and $text) { return $text }
+    } catch { }
+    return 'unknown'
+}
+
 function Quote-Path([string]$path) {
     # A trailing backslash right before the closing quote is an escape to the Windows argument parser.
     return '"' + $path.TrimEnd('\') + '"'
@@ -712,7 +724,7 @@ function Sync-ServiceBinaries {
         [void](Assert-TrustedDirectory $binDir 'the service binary directory')
         $script:ServiceExePath = $staged
         $script:InspectExePath = $staged
-        Write-Log "exchange server already staged at '$staged'"
+        Write-Log "exchange server already staged at '$staged' (version $(Get-ExchangeVersionText), sha256 $actual)"
         return
     }
 
@@ -737,6 +749,7 @@ function Sync-ServiceBinaries {
 
     $script:ServiceExePath = $staged
     $script:InspectExePath = $staged
+    Write-Log "staged exchange server version $(Get-ExchangeVersionText) (sha256 $actual)"
 }
 
 # Drops the staged copy when the service goes away. The state directory beside it is deliberately

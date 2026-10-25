@@ -6,6 +6,7 @@ import (
 	"encoding/base64"
 	"encoding/hex"
 	"encoding/json"
+	"io"
 	"net"
 	"net/http"
 	"os"
@@ -317,11 +318,15 @@ func TestARestartLosesEverythingThatLivesInMemoryOnly(t *testing.T) {
 		t.Fatal("the scenario did not set up what the restart must lose")
 	}
 	env.Stop()
-	if _, err := tun.Write([]byte("x")); err == nil {
-		_ = tun.SetReadDeadline(time.Now().Add(2 * time.Second))
-		if _, err := tun.Read(make([]byte, 1)); err == nil {
-			t.Fatal("a tunnel does not survive a restart")
-		}
+	// TCP may still deliver bytes buffered before Stop (notably the forwarded SSH banner on Linux).
+	// Drain that bounded prefix and prove the stream actually closes, rather than mistaking one buffered byte for a live tunnel.
+	_ = tun.SetReadDeadline(time.Now().Add(2 * time.Second))
+	_, drainErr := io.CopyN(io.Discard, tun, 64<<10)
+	if drainErr == nil {
+		t.Fatal("a stopped tunnel delivered more than the bounded pre-stop prefix")
+	}
+	if timeout, ok := drainErr.(net.Error); ok && timeout.Timeout() {
+		t.Fatal("a tunnel did not close after restart")
 	}
 
 	o2 := looseOpts("alice")

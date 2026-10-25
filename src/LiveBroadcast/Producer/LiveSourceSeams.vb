@@ -66,6 +66,15 @@ Friend Interface ILiveVideoSource
     Sub [Stop]()
 End Interface
 
+''' <summary>Optional second face of a video source that can END on its own while the broadcast runs - the
+''' captured window was closed. The controller subscribes when it finds the interface on the started source
+''' and ends the broadcast through its ordinary stop (ticket 263 T-2); a source that never ends by itself
+''' (the camera, a monitor) does not implement it. The argument is a short reason code, never a sentence:
+''' the window turns it into the one line the person reads. Raised on the source's own thread.</summary>
+Friend Interface ILiveSourceEnding
+    Event Ended As Action(Of String)
+End Interface
+
 ''' <summary>What an encoder is asked to produce (section 3's numbers).</summary>
 Friend Class LiveEncoderOptions
     ''' <summary>The SHAPE's numbers, what the descriptor and the icy headers state.</summary>

@@ -2,417 +2,482 @@
   "share-settings": {
     "en": {
       "title": "Manager settings",
-      "purpose": "Set manager startup, theme and language here. Your remote exchange account, publishing, clipboard and scheduled file operations belong to the manager and do not require a locally installed exchange server or enabled SFTP sharing.",
-      "order": "Open Manager settings from the manager or tray. Choose a page, expand a group, or use Search settings. Use the component links to open SFTP or local exchange settings beside this window. Closing one window keeps the other windows, schedules and servers running.",
+      "purpose": "Set manager startup, theme and language here. Your remote exchange account, publishing, clipboard and scheduled file operations belong to the manager and do not require a locally installed exchange server or enabled SFTP sharing. When the SFTP sharing component is installed, its pages form a group in this window.",
+      "order": "Open Manager settings from the manager or tray. Choose a page, expand a group, or use Search settings. Use the link to open the local exchange server settings beside this window. Closing one window keeps the other window, schedules and servers running.",
       "sections": [
         {
           "id": "startup",
           "title": "Manager settings",
-          "text": "Set manager startup, theme and language here. Your remote exchange account, publishing, clipboard and scheduled file operations belong to the manager and do not require a locally installed exchange server or enabled SFTP sharing. Open Manager settings from the manager or tray. Choose a page, expand a group, or use Search settings. Use the component links to open SFTP or local exchange settings beside this window. Closing one window keeps the other windows, schedules and servers running."
+          "text": "Set manager startup, theme and language here. Your remote exchange account, publishing, clipboard and scheduled file operations belong to the manager and do not require a locally installed exchange server or enabled SFTP sharing. When the SFTP sharing component is installed, its pages form a group in this window. Open Manager settings from the manager or tray. Choose a page, expand a group, or use Search settings. Use the link to open the local exchange server settings beside this window. Closing one window keeps the other window, schedules and servers running."
         },
         {
           "id": "exchange-account",
           "title": "Manager settings",
-          "text": "Set manager startup, theme and language here. Your remote exchange account, publishing, clipboard and scheduled file operations belong to the manager and do not require a locally installed exchange server or enabled SFTP sharing. Open Manager settings from the manager or tray. Choose a page, expand a group, or use Search settings. Use the component links to open SFTP or local exchange settings beside this window. Closing one window keeps the other windows, schedules and servers running."
+          "text": "Set manager startup, theme and language here. Your remote exchange account, publishing, clipboard and scheduled file operations belong to the manager and do not require a locally installed exchange server or enabled SFTP sharing. When the SFTP sharing component is installed, its pages form a group in this window. Open Manager settings from the manager or tray. Choose a page, expand a group, or use Search settings. Use the link to open the local exchange server settings beside this window. Closing one window keeps the other window, schedules and servers running."
+        },
+        {
+          "id": "drive",
+          "title": "Google Drive",
+          "text": "Signs this PC in to your own Google account so that the application can use its private hidden folder on your Google Drive. Press «Sign in..»: your default browser opens, you approve the access at Google, and Google returns the answer to this PC on a local address; then you can close the browser tab. The only permission requested is access to the application's own hidden folder on your Google Drive (scope drive.appdata): the application cannot see any other file on your Google Drive and receives no e-mail address and no profile data. If Google grants a different access than requested, the sign-in is rejected. The bold line shows the state. «Not signed in to Google Drive»: «Sign in..» is available; if access was revoked or has expired, the line below says so and asks you to sign in again. «Waiting for sign-in in the browser..»: finish the sign-in in the browser or press «Cancel». «Signed in to Google Drive»: this PC is connected to your Google Drive, and its name and short identifier are shown. «Google Drive is unavailable right now»: the line below gives the reason - no connection, the daily upload limit reached, no free space on your Google Drive, or an error from Google; with no connection or an error the application retries on its own. «Signing out of Google Drive..» is shown while a sign-out runs. «Sign out on this device» asks one question, and the default answer is No. After Yes it revokes the access at Google, deletes this PC's records from the hidden folder on your Google Drive and deletes the sign-in token stored on this PC; a line under the buttons gives the number of records deleted, or says that Google did not confirm the revocation, which you can then do in your Google Account settings. In a build without a Google access key the page shows «Google Drive sign-in is not set up in this build», «Sign in..» is disabled and the rest of the Manager works as usual."
         },
         {
           "id": "scheduled",
           "title": "Manager settings",
-          "text": "Set manager startup, theme and language here. Your remote exchange account, publishing, clipboard and scheduled file operations belong to the manager and do not require a locally installed exchange server or enabled SFTP sharing. Open Manager settings from the manager or tray. Choose a page, expand a group, or use Search settings. Use the component links to open SFTP or local exchange settings beside this window. Closing one window keeps the other windows, schedules and servers running."
+          "text": "Set manager startup, theme and language here. Your remote exchange account, publishing, clipboard and scheduled file operations belong to the manager and do not require a locally installed exchange server or enabled SFTP sharing. When the SFTP sharing component is installed, its pages form a group in this window. Open Manager settings from the manager or tray. Choose a page, expand a group, or use Search settings. Use the link to open the local exchange server settings beside this window. Closing one window keeps the other window, schedules and servers running."
         },
         {
           "id": "help",
           "title": "Manager settings",
-          "text": "Set manager startup, theme and language here. Your remote exchange account, publishing, clipboard and scheduled file operations belong to the manager and do not require a locally installed exchange server or enabled SFTP sharing. Open Manager settings from the manager or tray. Choose a page, expand a group, or use Search settings. Use the component links to open SFTP or local exchange settings beside this window. Closing one window keeps the other windows, schedules and servers running."
+          "text": "Set manager startup, theme and language here. Your remote exchange account, publishing, clipboard and scheduled file operations belong to the manager and do not require a locally installed exchange server or enabled SFTP sharing. When the SFTP sharing component is installed, its pages form a group in this window. Open Manager settings from the manager or tray. Choose a page, expand a group, or use Search settings. Use the link to open the local exchange server settings beside this window. Closing one window keeps the other window, schedules and servers running."
         },
         {
           "id": "navigation",
           "title": "Manager settings",
-          "text": "The links at the lower left open or activate one window per destination. They follow installed payloads, not whether a server is running. Each window remembers its own page, group folds, scroll and size. Common theme and language editors appear only in Manager settings. F1 and ? open the current page help."
+          "text": "The link at the lower left opens or activates the other window: Manager settings and the local exchange server settings have one window each. They follow installed payloads, not whether a server is running. Each window remembers its own page, group folds, scroll and size. Common theme and language editors appear only in Manager settings. F1 and ? open the current page help."
         }
       ]
     },
     "ru": {
       "title": "Настройки менеджера",
-      "purpose": "Здесь настраиваются запуск менеджера, тема и язык. Подключение этого ПК к удалённому серверу обмена, публикация ресурсов, буфер и операции по расписанию принадлежат менеджеру и не требуют установки локального сервера обмена или включения SFTP.",
-      "order": "Откройте настройки менеджера из его окна или трея. Выберите страницу, раскройте группу или воспользуйтесь поиском. Ссылки на компоненты открывают настройки SFTP и локального сервера рядом с этим окном. Закрытие одного окна сохраняет остальные окна, расписания и работающие серверы.",
+      "purpose": "Здесь настраиваются запуск менеджера, тема и язык. Подключение этого ПК к удалённому серверу обмена, публикация ресурсов, буфер и операции по расписанию принадлежат менеджеру и не требуют установки локального сервера обмена или включения SFTP. Если установлен компонент общего доступа SFTP, его страницы входят в это окно отдельной группой.",
+      "order": "Откройте настройки менеджера из его окна или трея. Выберите страницу, раскройте группу или воспользуйтесь поиском. Ссылка открывает настройки локального сервера обмена рядом с этим окном. Закрытие одного окна сохраняет другое окно, расписания и работающие серверы.",
       "sections": [
         {
           "id": "startup",
           "title": "Настройки менеджера",
-          "text": "Здесь настраиваются запуск менеджера, тема и язык. Подключение этого ПК к удалённому серверу обмена, публикация ресурсов, буфер и операции по расписанию принадлежат менеджеру и не требуют установки локального сервера обмена или включения SFTP. Откройте настройки менеджера из его окна или трея. Выберите страницу, раскройте группу или воспользуйтесь поиском. Ссылки на компоненты открывают настройки SFTP и локального сервера рядом с этим окном. Закрытие одного окна сохраняет остальные окна, расписания и работающие серверы."
+          "text": "Здесь настраиваются запуск менеджера, тема и язык. Подключение этого ПК к удалённому серверу обмена, публикация ресурсов, буфер и операции по расписанию принадлежат менеджеру и не требуют установки локального сервера обмена или включения SFTP. Если установлен компонент общего доступа SFTP, его страницы входят в это окно отдельной группой. Откройте настройки менеджера из его окна или трея. Выберите страницу, раскройте группу или воспользуйтесь поиском. Ссылка открывает настройки локального сервера обмена рядом с этим окном. Закрытие одного окна сохраняет другое окно, расписания и работающие серверы."
         },
         {
           "id": "exchange-account",
           "title": "Настройки менеджера",
-          "text": "Здесь настраиваются запуск менеджера, тема и язык. Подключение этого ПК к удалённому серверу обмена, публикация ресурсов, буфер и операции по расписанию принадлежат менеджеру и не требуют установки локального сервера обмена или включения SFTP. Откройте настройки менеджера из его окна или трея. Выберите страницу, раскройте группу или воспользуйтесь поиском. Ссылки на компоненты открывают настройки SFTP и локального сервера рядом с этим окном. Закрытие одного окна сохраняет остальные окна, расписания и работающие серверы."
+          "text": "Здесь настраиваются запуск менеджера, тема и язык. Подключение этого ПК к удалённому серверу обмена, публикация ресурсов, буфер и операции по расписанию принадлежат менеджеру и не требуют установки локального сервера обмена или включения SFTP. Если установлен компонент общего доступа SFTP, его страницы входят в это окно отдельной группой. Откройте настройки менеджера из его окна или трея. Выберите страницу, раскройте группу или воспользуйтесь поиском. Ссылка открывает настройки локального сервера обмена рядом с этим окном. Закрытие одного окна сохраняет другое окно, расписания и работающие серверы."
+        },
+        {
+          "id": "drive",
+          "title": "Google Drive",
+          "text": "Здесь этот ПК входит в ваш собственный аккаунт Google, чтобы приложение могло пользоваться своей скрытой папкой на вашем Google Drive. Нажмите «Войти..»: откроется браузер по умолчанию, вы подтверждаете доступ в Google, и Google возвращает ответ на этот ПК по локальному адресу; после этого вкладку браузера можно закрыть. Запрашивается единственное разрешение - доступ к собственной скрытой папке приложения на вашем Google Drive (область drive.appdata): приложение не видит других файлов на вашем Google Drive и не получает ни адрес электронной почты, ни данные профиля. Если Google предоставляет не тот доступ, который запрошен, вход отклоняется. Жирная строка показывает состояние. «Вход в Google Drive не выполнен»: доступна кнопка «Войти..»; если доступ отозван или истёк, строка ниже сообщает об этом и предлагает войти снова. «Ожидание входа в браузере..»: завершите вход в браузере или нажмите «Отмена». «Вход в Google Drive выполнен»: этот ПК связан с вашим Google Drive, показаны его имя и краткий идентификатор. «Google Drive сейчас недоступен»: строка ниже называет причину - нет связи, достигнут суточный лимит загрузки, на вашем Google Drive нет свободного места или Google вернул ошибку; при отсутствии связи и при ошибке приложение повторяет попытку само. «Выход из Google Drive..» показывается, пока идёт выход. «Выйти на этом устройстве» задаёт один вопрос, ответ по умолчанию - «Нет». После «Да» доступ отзывается в Google, записи этого ПК удаляются из скрытой папки на вашем Google Drive, а токен входа, сохранённый на этом ПК, удаляется; строка под кнопками сообщает, сколько записей удалено, или что Google не подтвердил отзыв доступа - его тогда можно отозвать в настройках аккаунта Google. В сборке без ключа доступа Google страница показывает «Вход в Google Drive не настроен в этой сборке», кнопка «Войти..» недоступна, остальные функции менеджера работают как обычно."
         },
         {
           "id": "scheduled",
           "title": "Настройки менеджера",
-          "text": "Здесь настраиваются запуск менеджера, тема и язык. Подключение этого ПК к удалённому серверу обмена, публикация ресурсов, буфер и операции по расписанию принадлежат менеджеру и не требуют установки локального сервера обмена или включения SFTP. Откройте настройки менеджера из его окна или трея. Выберите страницу, раскройте группу или воспользуйтесь поиском. Ссылки на компоненты открывают настройки SFTP и локального сервера рядом с этим окном. Закрытие одного окна сохраняет остальные окна, расписания и работающие серверы."
+          "text": "Здесь настраиваются запуск менеджера, тема и язык. Подключение этого ПК к удалённому серверу обмена, публикация ресурсов, буфер и операции по расписанию принадлежат менеджеру и не требуют установки локального сервера обмена или включения SFTP. Если установлен компонент общего доступа SFTP, его страницы входят в это окно отдельной группой. Откройте настройки менеджера из его окна или трея. Выберите страницу, раскройте группу или воспользуйтесь поиском. Ссылка открывает настройки локального сервера обмена рядом с этим окном. Закрытие одного окна сохраняет другое окно, расписания и работающие серверы."
         },
         {
           "id": "help",
           "title": "Настройки менеджера",
-          "text": "Здесь настраиваются запуск менеджера, тема и язык. Подключение этого ПК к удалённому серверу обмена, публикация ресурсов, буфер и операции по расписанию принадлежат менеджеру и не требуют установки локального сервера обмена или включения SFTP. Откройте настройки менеджера из его окна или трея. Выберите страницу, раскройте группу или воспользуйтесь поиском. Ссылки на компоненты открывают настройки SFTP и локального сервера рядом с этим окном. Закрытие одного окна сохраняет остальные окна, расписания и работающие серверы."
+          "text": "Здесь настраиваются запуск менеджера, тема и язык. Подключение этого ПК к удалённому серверу обмена, публикация ресурсов, буфер и операции по расписанию принадлежат менеджеру и не требуют установки локального сервера обмена или включения SFTP. Если установлен компонент общего доступа SFTP, его страницы входят в это окно отдельной группой. Откройте настройки менеджера из его окна или трея. Выберите страницу, раскройте группу или воспользуйтесь поиском. Ссылка открывает настройки локального сервера обмена рядом с этим окном. Закрытие одного окна сохраняет другое окно, расписания и работающие серверы."
         },
         {
           "id": "navigation",
           "title": "Настройки менеджера",
-          "text": "Ссылки слева внизу открывают или активируют по одному окну каждого назначения. Доступность зависит от установленных компонентов, а не от запуска сервера. Каждое окно помнит страницу, свёрнутые группы, прокрутку и размер. Тема и язык меняются только в настройках менеджера. F1 и ? открывают справку текущей страницы."
+          "text": "Ссылка слева внизу открывает или активирует второе окно: у настроек менеджера и у локального сервера обмена по одному окну. Доступность зависит от установленных компонентов, а не от запуска сервера. Каждое окно помнит страницу, свёрнутые группы, прокрутку и размер. Тема и язык меняются только в настройках менеджера. F1 и ? открывают справку текущей страницы."
         }
       ]
     },
     "uk": {
       "title": "Налаштування менеджера",
-      "purpose": "Тут налаштовуються запуск менеджера, тема й мова. Підключення цього ПК до віддаленого сервера обміну, публікація ресурсів, буфер і операції за розкладом належать менеджеру та не потребують локального сервера обміну чи ввімкнення SFTP.",
-      "order": "Відкрийте налаштування менеджера з його вікна або трея. Виберіть сторінку, розгорніть групу або скористайтеся пошуком. Посилання на компоненти відкривають SFTP та локальний сервер поруч. Закриття одного вікна зберігає інші вікна, розклади й сервери.",
+      "purpose": "Тут налаштовуються запуск менеджера, тема й мова. Підключення цього ПК до віддаленого сервера обміну, публікація ресурсів, буфер і операції за розкладом належать менеджеру та не потребують локального сервера обміну чи ввімкнення SFTP. Якщо встановлено компонент спільного доступу SFTP, його сторінки входять до цього вікна окремою групою.",
+      "order": "Відкрийте налаштування менеджера з його вікна або трея. Виберіть сторінку, розгорніть групу або скористайтеся пошуком. Посилання відкриває налаштування локального сервера обміну поруч. Закриття одного вікна зберігає інше вікно, розклади й сервери.",
       "sections": [
         {
           "id": "startup",
           "title": "Налаштування менеджера",
-          "text": "Тут налаштовуються запуск менеджера, тема й мова. Підключення цього ПК до віддаленого сервера обміну, публікація ресурсів, буфер і операції за розкладом належать менеджеру та не потребують локального сервера обміну чи ввімкнення SFTP. Відкрийте налаштування менеджера з його вікна або трея. Виберіть сторінку, розгорніть групу або скористайтеся пошуком. Посилання на компоненти відкривають SFTP та локальний сервер поруч. Закриття одного вікна зберігає інші вікна, розклади й сервери."
+          "text": "Тут налаштовуються запуск менеджера, тема й мова. Підключення цього ПК до віддаленого сервера обміну, публікація ресурсів, буфер і операції за розкладом належать менеджеру та не потребують локального сервера обміну чи ввімкнення SFTP. Якщо встановлено компонент спільного доступу SFTP, його сторінки входять до цього вікна окремою групою. Відкрийте налаштування менеджера з його вікна або трея. Виберіть сторінку, розгорніть групу або скористайтеся пошуком. Посилання відкриває налаштування локального сервера обміну поруч. Закриття одного вікна зберігає інше вікно, розклади й сервери."
         },
         {
           "id": "exchange-account",
           "title": "Налаштування менеджера",
-          "text": "Тут налаштовуються запуск менеджера, тема й мова. Підключення цього ПК до віддаленого сервера обміну, публікація ресурсів, буфер і операції за розкладом належать менеджеру та не потребують локального сервера обміну чи ввімкнення SFTP. Відкрийте налаштування менеджера з його вікна або трея. Виберіть сторінку, розгорніть групу або скористайтеся пошуком. Посилання на компоненти відкривають SFTP та локальний сервер поруч. Закриття одного вікна зберігає інші вікна, розклади й сервери."
+          "text": "Тут налаштовуються запуск менеджера, тема й мова. Підключення цього ПК до віддаленого сервера обміну, публікація ресурсів, буфер і операції за розкладом належать менеджеру та не потребують локального сервера обміну чи ввімкнення SFTP. Якщо встановлено компонент спільного доступу SFTP, його сторінки входять до цього вікна окремою групою. Відкрийте налаштування менеджера з його вікна або трея. Виберіть сторінку, розгорніть групу або скористайтеся пошуком. Посилання відкриває налаштування локального сервера обміну поруч. Закриття одного вікна зберігає інше вікно, розклади й сервери."
+        },
+        {
+          "id": "drive",
+          "title": "Google Drive",
+          "text": "Тут цей ПК входить у ваш власний обліковий запис Google, щоб застосунок міг користуватися своєю прихованою папкою на вашому Google Drive. Натисніть «Увійти..»: відкриється браузер за замовчуванням, ви підтверджуєте доступ у Google, і Google повертає відповідь на цей ПК за локальною адресою; після цього вкладку браузера можна закрити. Запитується єдиний дозвіл - доступ до власної прихованої папки застосунку на вашому Google Drive (область drive.appdata): застосунок не бачить жодних інших файлів на вашому Google Drive і не отримує ні адреси електронної пошти, ні даних профілю. Якщо Google надає не той доступ, що запитувався, вхід відхиляється. Напівжирний рядок показує стан. «Вхід у Google Drive не виконано»: доступна кнопка «Увійти..»; якщо доступ відкликано або він закінчився, рядок нижче повідомляє про це й пропонує увійти знову. «Очікування входу в браузері..»: завершіть вхід у браузері або натисніть «Скасувати». «Вхід у Google Drive виконано»: цей ПК пов'язано з вашим Google Drive, показано його ім'я та короткий ідентифікатор. «Google Drive зараз недоступний»: рядок нижче називає причину - немає зв'язку, досягнуто добового ліміту завантаження, на вашому Google Drive немає вільного місця або Google повернув помилку; за відсутності зв'язку та за помилки застосунок повторює спробу сам. «Вихід із Google Drive..» показується, поки триває вихід. «Вийти на цьому пристрої» ставить одне запитання, відповідь за замовчуванням - «Ні». Після «Так» доступ відкликається в Google, записи цього ПК видаляються з прихованої папки на вашому Google Drive, а токен входу, збережений на цьому ПК, видаляється; рядок під кнопками повідомляє, скільки записів видалено, або що Google не підтвердив відкликання доступу - його тоді можна відкликати в налаштуваннях облікового запису Google. У збірці без ключа доступу Google сторінка показує «Вхід у Google Drive не налаштовано в цій збірці», кнопка «Увійти..» недоступна, решта функцій менеджера працює як зазвичай."
         },
         {
           "id": "scheduled",
           "title": "Налаштування менеджера",
-          "text": "Тут налаштовуються запуск менеджера, тема й мова. Підключення цього ПК до віддаленого сервера обміну, публікація ресурсів, буфер і операції за розкладом належать менеджеру та не потребують локального сервера обміну чи ввімкнення SFTP. Відкрийте налаштування менеджера з його вікна або трея. Виберіть сторінку, розгорніть групу або скористайтеся пошуком. Посилання на компоненти відкривають SFTP та локальний сервер поруч. Закриття одного вікна зберігає інші вікна, розклади й сервери."
+          "text": "Тут налаштовуються запуск менеджера, тема й мова. Підключення цього ПК до віддаленого сервера обміну, публікація ресурсів, буфер і операції за розкладом належать менеджеру та не потребують локального сервера обміну чи ввімкнення SFTP. Якщо встановлено компонент спільного доступу SFTP, його сторінки входять до цього вікна окремою групою. Відкрийте налаштування менеджера з його вікна або трея. Виберіть сторінку, розгорніть групу або скористайтеся пошуком. Посилання відкриває налаштування локального сервера обміну поруч. Закриття одного вікна зберігає інше вікно, розклади й сервери."
         },
         {
           "id": "help",
           "title": "Налаштування менеджера",
-          "text": "Тут налаштовуються запуск менеджера, тема й мова. Підключення цього ПК до віддаленого сервера обміну, публікація ресурсів, буфер і операції за розкладом належать менеджеру та не потребують локального сервера обміну чи ввімкнення SFTP. Відкрийте налаштування менеджера з його вікна або трея. Виберіть сторінку, розгорніть групу або скористайтеся пошуком. Посилання на компоненти відкривають SFTP та локальний сервер поруч. Закриття одного вікна зберігає інші вікна, розклади й сервери."
+          "text": "Тут налаштовуються запуск менеджера, тема й мова. Підключення цього ПК до віддаленого сервера обміну, публікація ресурсів, буфер і операції за розкладом належать менеджеру та не потребують локального сервера обміну чи ввімкнення SFTP. Якщо встановлено компонент спільного доступу SFTP, його сторінки входять до цього вікна окремою групою. Відкрийте налаштування менеджера з його вікна або трея. Виберіть сторінку, розгорніть групу або скористайтеся пошуком. Посилання відкриває налаштування локального сервера обміну поруч. Закриття одного вікна зберігає інше вікно, розклади й сервери."
         },
         {
           "id": "navigation",
           "title": "Налаштування менеджера",
-          "text": "Посилання зліва внизу відкривають або активують по одному вікну кожного призначення. Доступність залежить від установлених компонентів, а не від запуску сервера. Кожне вікно пам’ятає сторінку, групи, прокрутку й розмір. Тема й мова змінюються лише в менеджері. F1 і ? відкривають довідку поточної сторінки."
+          "text": "Посилання зліва внизу відкриває або активує друге вікно: у налаштувань менеджера й локального сервера обміну по одному вікну. Доступність залежить від установлених компонентів, а не від запуску сервера. Кожне вікно пам’ятає сторінку, групи, прокрутку й розмір. Тема й мова змінюються лише в менеджері. F1 і ? відкривають довідку поточної сторінки."
         }
       ]
     },
     "de": {
       "title": "Managereinstellungen",
-      "purpose": "Start, Design, Sprache, entferntes Austauschkonto, Veröffentlichung, Zwischenablage und geplante Dateiaktionen gehören zum Manager. Ein lokaler Server ist dafür nicht erforderlich.",
+      "purpose": "Start, Design, Sprache, entferntes Austauschkonto, Veröffentlichung, Zwischenablage und geplante Dateiaktionen gehören zum Manager. Ein lokaler Server ist dafür nicht erforderlich. Ist die SFTP-Freigabe installiert, bilden ihre Seiten eine Gruppe in diesem Fenster.",
       "order": "Öffnen Sie die Einstellungen über das Tray oder die Komponentenlinks. Öffnen und Schließen starten oder stoppen keinen Server. Ein fehlender lokaler Server sperrt die entfernte Anmeldung nicht.",
       "sections": [
         {
           "id": "startup",
           "title": "Managereinstellungen",
-          "text": "Start, Design, Sprache, entferntes Austauschkonto, Veröffentlichung, Zwischenablage und geplante Dateiaktionen gehören zum Manager. Ein lokaler Server ist dafür nicht erforderlich. Öffnen Sie die Einstellungen über das Tray oder die Komponentenlinks. Öffnen und Schließen starten oder stoppen keinen Server. Ein fehlender lokaler Server sperrt die entfernte Anmeldung nicht."
+          "text": "Start, Design, Sprache, entferntes Austauschkonto, Veröffentlichung, Zwischenablage und geplante Dateiaktionen gehören zum Manager. Ein lokaler Server ist dafür nicht erforderlich. Ist die SFTP-Freigabe installiert, bilden ihre Seiten eine Gruppe in diesem Fenster. Öffnen Sie die Einstellungen über das Tray oder die Komponentenlinks. Öffnen und Schließen starten oder stoppen keinen Server. Ein fehlender lokaler Server sperrt die entfernte Anmeldung nicht."
         },
         {
           "id": "exchange-account",
           "title": "Managereinstellungen",
-          "text": "Start, Design, Sprache, entferntes Austauschkonto, Veröffentlichung, Zwischenablage und geplante Dateiaktionen gehören zum Manager. Ein lokaler Server ist dafür nicht erforderlich. Öffnen Sie die Einstellungen über das Tray oder die Komponentenlinks. Öffnen und Schließen starten oder stoppen keinen Server. Ein fehlender lokaler Server sperrt die entfernte Anmeldung nicht."
+          "text": "Start, Design, Sprache, entferntes Austauschkonto, Veröffentlichung, Zwischenablage und geplante Dateiaktionen gehören zum Manager. Ein lokaler Server ist dafür nicht erforderlich. Ist die SFTP-Freigabe installiert, bilden ihre Seiten eine Gruppe in diesem Fenster. Öffnen Sie die Einstellungen über das Tray oder die Komponentenlinks. Öffnen und Schließen starten oder stoppen keinen Server. Ein fehlender lokaler Server sperrt die entfernte Anmeldung nicht."
+        },
+        {
+          "id": "drive",
+          "title": "Google Drive",
+          "text": "Meldet diesen PC bei Ihrem eigenen Google-Konto an, damit die Anwendung ihren privaten versteckten Ordner in Ihrem Google Drive nutzen kann. Klicken Sie auf «Anmelden..»: Der Standardbrowser öffnet sich, Sie bestätigen den Zugriff bei Google, und Google sendet die Antwort über eine lokale Adresse an diesen PC zurück; danach können Sie den Browser-Tab schließen. Angefordert wird nur eine einzige Berechtigung: der Zugriff auf den eigenen versteckten Ordner der Anwendung in Ihrem Google Drive (Bereich drive.appdata). Die Anwendung kann keine anderen Dateien in Ihrem Google Drive sehen und erhält weder eine E-Mail-Adresse noch Profildaten. Erteilt Google einen anderen Zugriff als angefordert, wird die Anmeldung abgelehnt. Die fette Zeile zeigt den Zustand. «Nicht bei Google Drive angemeldet»: «Anmelden..» steht zur Verfügung; ist der Zugriff widerrufen oder abgelaufen, sagt das die Zeile darunter und fordert zur erneuten Anmeldung auf. «Warte auf die Anmeldung im Browser..»: Schließen Sie die Anmeldung im Browser ab oder klicken Sie auf «Abbrechen». «Bei Google Drive angemeldet»: Dieser PC ist mit Ihrem Google Drive verbunden; sein Name und seine Kurzkennung werden angezeigt. «Google Drive ist derzeit nicht verfügbar»: Die Zeile darunter nennt den Grund - keine Verbindung, das tägliche Upload-Limit erreicht, kein freier Speicherplatz auf Ihrem Google Drive oder ein Fehler von Google; bei fehlender Verbindung und bei einem Fehler versucht die Anwendung es selbst erneut. «Abmeldung von Google Drive..» erscheint, solange die Abmeldung läuft. «Auf diesem Gerät abmelden» stellt eine einzige Frage, die Standardantwort ist «Nein». Nach «Ja» wird der Zugriff bei Google widerrufen, werden die Einträge dieses PCs aus dem versteckten Ordner in Ihrem Google Drive gelöscht und wird das auf diesem PC gespeicherte Anmeldetoken gelöscht; eine Zeile unter den Schaltflächen nennt die Zahl der gelöschten Einträge oder meldet, dass Google den Widerruf nicht bestätigt hat - ihn können Sie dann in den Einstellungen Ihres Google-Kontos vornehmen. In einem Build ohne Google-Zugriffsschlüssel zeigt die Seite «Die Anmeldung bei Google Drive ist in diesem Build nicht eingerichtet», «Anmelden..» ist deaktiviert, und die übrigen Funktionen des Managers arbeiten wie gewohnt."
         },
         {
           "id": "scheduled",
           "title": "Managereinstellungen",
-          "text": "Start, Design, Sprache, entferntes Austauschkonto, Veröffentlichung, Zwischenablage und geplante Dateiaktionen gehören zum Manager. Ein lokaler Server ist dafür nicht erforderlich. Öffnen Sie die Einstellungen über das Tray oder die Komponentenlinks. Öffnen und Schließen starten oder stoppen keinen Server. Ein fehlender lokaler Server sperrt die entfernte Anmeldung nicht."
+          "text": "Start, Design, Sprache, entferntes Austauschkonto, Veröffentlichung, Zwischenablage und geplante Dateiaktionen gehören zum Manager. Ein lokaler Server ist dafür nicht erforderlich. Ist die SFTP-Freigabe installiert, bilden ihre Seiten eine Gruppe in diesem Fenster. Öffnen Sie die Einstellungen über das Tray oder die Komponentenlinks. Öffnen und Schließen starten oder stoppen keinen Server. Ein fehlender lokaler Server sperrt die entfernte Anmeldung nicht."
         },
         {
           "id": "help",
           "title": "Managereinstellungen",
-          "text": "Start, Design, Sprache, entferntes Austauschkonto, Veröffentlichung, Zwischenablage und geplante Dateiaktionen gehören zum Manager. Ein lokaler Server ist dafür nicht erforderlich. Öffnen Sie die Einstellungen über das Tray oder die Komponentenlinks. Öffnen und Schließen starten oder stoppen keinen Server. Ein fehlender lokaler Server sperrt die entfernte Anmeldung nicht."
+          "text": "Start, Design, Sprache, entferntes Austauschkonto, Veröffentlichung, Zwischenablage und geplante Dateiaktionen gehören zum Manager. Ein lokaler Server ist dafür nicht erforderlich. Ist die SFTP-Freigabe installiert, bilden ihre Seiten eine Gruppe in diesem Fenster. Öffnen Sie die Einstellungen über das Tray oder die Komponentenlinks. Öffnen und Schließen starten oder stoppen keinen Server. Ein fehlender lokaler Server sperrt die entfernte Anmeldung nicht."
         },
         {
           "id": "navigation",
           "title": "Managereinstellungen",
-          "text": "Die Links aktivieren jeweils ein Fenster pro installiertem Bestandteil. Jedes merkt sich Seite, Gruppen, Bildlauf und Größe. Design und Sprache ändern Sie im Manager; F1 und ? erklären die aktuelle Seite."
+          "text": "Der Link aktiviert das jeweils andere Fenster: Manager und lokaler Austauschserver haben je eines. Jedes merkt sich Seite, Gruppen, Bildlauf und Größe. Design und Sprache ändern Sie im Manager; F1 und ? erklären die aktuelle Seite."
         }
       ]
     },
     "it": {
       "title": "Impostazioni del gestore",
-      "purpose": "Avvio, tema, lingua, account remoto, pubblicazione, appunti e operazioni pianificate appartengono al gestore e non richiedono un server locale.",
+      "purpose": "Avvio, tema, lingua, account remoto, pubblicazione, appunti e operazioni pianificate appartengono al gestore e non richiedono un server locale. Se il componente di condivisione SFTP è installato, le sue pagine formano un gruppo in questa finestra.",
       "order": "Aprire dal menu dell’area di notifica o dai collegamenti dei componenti. Aprire e chiudere non avvia né arresta alcun server. L’accesso remoto non richiede il server locale.",
       "sections": [
         {
           "id": "startup",
           "title": "Impostazioni del gestore",
-          "text": "Avvio, tema, lingua, account remoto, pubblicazione, appunti e operazioni pianificate appartengono al gestore e non richiedono un server locale. Aprire dal menu dell’area di notifica o dai collegamenti dei componenti. Aprire e chiudere non avvia né arresta alcun server. L’accesso remoto non richiede il server locale."
+          "text": "Avvio, tema, lingua, account remoto, pubblicazione, appunti e operazioni pianificate appartengono al gestore e non richiedono un server locale. Se il componente di condivisione SFTP è installato, le sue pagine formano un gruppo in questa finestra. Aprire dal menu dell’area di notifica o dai collegamenti dei componenti. Aprire e chiudere non avvia né arresta alcun server. L’accesso remoto non richiede il server locale."
         },
         {
           "id": "exchange-account",
           "title": "Impostazioni del gestore",
-          "text": "Avvio, tema, lingua, account remoto, pubblicazione, appunti e operazioni pianificate appartengono al gestore e non richiedono un server locale. Aprire dal menu dell’area di notifica o dai collegamenti dei componenti. Aprire e chiudere non avvia né arresta alcun server. L’accesso remoto non richiede il server locale."
+          "text": "Avvio, tema, lingua, account remoto, pubblicazione, appunti e operazioni pianificate appartengono al gestore e non richiedono un server locale. Se il componente di condivisione SFTP è installato, le sue pagine formano un gruppo in questa finestra. Aprire dal menu dell’area di notifica o dai collegamenti dei componenti. Aprire e chiudere non avvia né arresta alcun server. L’accesso remoto non richiede il server locale."
+        },
+        {
+          "id": "drive",
+          "title": "Google Drive",
+          "text": "Qui questo PC accede al tuo account Google, così che l'applicazione possa usare la propria cartella nascosta privata sul tuo Google Drive. Premi «Accedi..»: si apre il browser predefinito, confermi l'accesso presso Google e Google restituisce la risposta a questo PC tramite un indirizzo locale; poi puoi chiudere la scheda del browser. L'unica autorizzazione richiesta è l'accesso alla cartella nascosta dell'applicazione sul tuo Google Drive (ambito drive.appdata): l'applicazione non può vedere nessun altro file sul tuo Google Drive e non riceve né indirizzo e-mail né dati del profilo. Se Google concede un accesso diverso da quello richiesto, l'accesso viene rifiutato. La riga in grassetto mostra lo stato. «Accesso a Google Drive non effettuato»: «Accedi..» è disponibile; se l'autorizzazione è stata revocata o è scaduta, lo dice la riga sotto, che invita ad accedere di nuovo. «In attesa dell'accesso nel browser..»: completa l'accesso nel browser oppure premi «Annulla». «Accesso a Google Drive effettuato»: questo PC è collegato al tuo Google Drive e ne vengono mostrati il nome e l'identificatore breve. «Google Drive al momento non è disponibile»: la riga sotto indica il motivo - nessuna connessione, limite giornaliero di caricamento raggiunto, nessuno spazio libero sul tuo Google Drive o un errore di Google; senza connessione o in caso di errore l'applicazione riprova da sola. «Uscita da Google Drive..» compare finché l'uscita è in corso. «Esci da questo dispositivo» pone una sola domanda, con risposta predefinita «No». Dopo «Sì» revoca l'accesso presso Google, elimina i record di questo PC dalla cartella nascosta sul tuo Google Drive ed elimina il token di accesso memorizzato su questo PC; una riga sotto i pulsanti indica quanti record sono stati eliminati oppure che Google non ha confermato la revoca, che puoi allora eseguire nelle impostazioni dell'account Google. In una versione senza chiave di accesso Google la pagina mostra «L'accesso a Google Drive non è configurato in questa versione», «Accedi..» è disattivato e le altre funzioni del Manager funzionano come al solito."
         },
         {
           "id": "scheduled",
           "title": "Impostazioni del gestore",
-          "text": "Avvio, tema, lingua, account remoto, pubblicazione, appunti e operazioni pianificate appartengono al gestore e non richiedono un server locale. Aprire dal menu dell’area di notifica o dai collegamenti dei componenti. Aprire e chiudere non avvia né arresta alcun server. L’accesso remoto non richiede il server locale."
+          "text": "Avvio, tema, lingua, account remoto, pubblicazione, appunti e operazioni pianificate appartengono al gestore e non richiedono un server locale. Se il componente di condivisione SFTP è installato, le sue pagine formano un gruppo in questa finestra. Aprire dal menu dell’area di notifica o dai collegamenti dei componenti. Aprire e chiudere non avvia né arresta alcun server. L’accesso remoto non richiede il server locale."
         },
         {
           "id": "help",
           "title": "Impostazioni del gestore",
-          "text": "Avvio, tema, lingua, account remoto, pubblicazione, appunti e operazioni pianificate appartengono al gestore e non richiedono un server locale. Aprire dal menu dell’area di notifica o dai collegamenti dei componenti. Aprire e chiudere non avvia né arresta alcun server. L’accesso remoto non richiede il server locale."
+          "text": "Avvio, tema, lingua, account remoto, pubblicazione, appunti e operazioni pianificate appartengono al gestore e non richiedono un server locale. Se il componente di condivisione SFTP è installato, le sue pagine formano un gruppo in questa finestra. Aprire dal menu dell’area di notifica o dai collegamenti dei componenti. Aprire e chiudere non avvia né arresta alcun server. L’accesso remoto non richiede il server locale."
         },
         {
           "id": "navigation",
           "title": "Impostazioni del gestore",
-          "text": "I collegamenti attivano una finestra per componente installato. Ogni finestra ricorda pagina, gruppi, scorrimento e dimensioni. Tema e lingua sono nel gestore; F1 e ? aprono la guida corrente."
+          "text": "Il collegamento attiva l’altra finestra: gestore e server di scambio locale hanno una finestra ciascuno. Ogni finestra ricorda pagina, gruppi, scorrimento e dimensioni. Tema e lingua sono nel gestore; F1 e ? aprono la guida corrente."
         }
       ]
     },
     "es": {
       "title": "Ajustes del gestor",
-      "purpose": "Inicio, tema, idioma, cuenta remota, publicación, portapapeles y operaciones programadas pertenecen al gestor y no requieren un servidor local.",
+      "purpose": "Inicio, tema, idioma, cuenta remota, publicación, portapapeles y operaciones programadas pertenecen al gestor y no requieren un servidor local. Si el componente de uso compartido SFTP está instalado, sus páginas forman un grupo en esta ventana.",
       "order": "Abra desde la bandeja o los enlaces de componentes. Abrir y cerrar no inicia ni detiene servidores. El acceso remoto no requiere un servidor local.",
       "sections": [
         {
           "id": "startup",
           "title": "Ajustes del gestor",
-          "text": "Inicio, tema, idioma, cuenta remota, publicación, portapapeles y operaciones programadas pertenecen al gestor y no requieren un servidor local. Abra desde la bandeja o los enlaces de componentes. Abrir y cerrar no inicia ni detiene servidores. El acceso remoto no requiere un servidor local."
+          "text": "Inicio, tema, idioma, cuenta remota, publicación, portapapeles y operaciones programadas pertenecen al gestor y no requieren un servidor local. Si el componente de uso compartido SFTP está instalado, sus páginas forman un grupo en esta ventana. Abra desde la bandeja o los enlaces de componentes. Abrir y cerrar no inicia ni detiene servidores. El acceso remoto no requiere un servidor local."
         },
         {
           "id": "exchange-account",
           "title": "Ajustes del gestor",
-          "text": "Inicio, tema, idioma, cuenta remota, publicación, portapapeles y operaciones programadas pertenecen al gestor y no requieren un servidor local. Abra desde la bandeja o los enlaces de componentes. Abrir y cerrar no inicia ni detiene servidores. El acceso remoto no requiere un servidor local."
+          "text": "Inicio, tema, idioma, cuenta remota, publicación, portapapeles y operaciones programadas pertenecen al gestor y no requieren un servidor local. Si el componente de uso compartido SFTP está instalado, sus páginas forman un grupo en esta ventana. Abra desde la bandeja o los enlaces de componentes. Abrir y cerrar no inicia ni detiene servidores. El acceso remoto no requiere un servidor local."
+        },
+        {
+          "id": "drive",
+          "title": "Google Drive",
+          "text": "Aquí este PC inicia sesión en tu propia cuenta de Google para que la aplicación pueda usar su carpeta oculta privada en tu Google Drive. Pulsa «Iniciar sesión..»: se abre el navegador predeterminado, confirmas el acceso en Google y Google devuelve la respuesta a este PC mediante una dirección local; después puedes cerrar la pestaña del navegador. El único permiso que se solicita es el acceso a la carpeta oculta propia de la aplicación en tu Google Drive (ámbito drive.appdata): la aplicación no puede ver ningún otro archivo de tu Google Drive y no recibe ni la dirección de correo ni datos del perfil. Si Google concede un acceso distinto del solicitado, el inicio de sesión se rechaza. La línea en negrita muestra el estado. «No se ha iniciado sesión en Google Drive»: «Iniciar sesión..» está disponible; si el acceso se revocó o caducó, la línea de abajo lo indica y pide iniciar sesión de nuevo. «Esperando el inicio de sesión en el navegador..»: completa el inicio de sesión en el navegador o pulsa «Cancelar». «Sesión iniciada en Google Drive»: este PC está conectado con tu Google Drive y se muestran su nombre y su identificador corto. «Google Drive no está disponible en este momento»: la línea de abajo indica el motivo - sin conexión, límite diario de subida alcanzado, sin espacio libre en tu Google Drive o un error de Google; sin conexión o ante un error, la aplicación reintenta por sí sola. «Cerrando sesión en Google Drive..» aparece mientras se cierra la sesión. «Salir en este dispositivo» hace una sola pregunta y la respuesta predeterminada es «No». Tras «Sí» revoca el acceso en Google, elimina los registros de este PC de la carpeta oculta de tu Google Drive y elimina el token de acceso guardado en este PC; una línea bajo los botones indica cuántos registros se eliminaron o que Google no confirmó la revocación, que entonces puedes hacer en la configuración de tu cuenta de Google. En una versión sin clave de acceso de Google la página muestra «El inicio de sesión en Google Drive no está configurado en esta versión», «Iniciar sesión..» está desactivado y el resto de las funciones del administrador funciona como de costumbre."
         },
         {
           "id": "scheduled",
           "title": "Ajustes del gestor",
-          "text": "Inicio, tema, idioma, cuenta remota, publicación, portapapeles y operaciones programadas pertenecen al gestor y no requieren un servidor local. Abra desde la bandeja o los enlaces de componentes. Abrir y cerrar no inicia ni detiene servidores. El acceso remoto no requiere un servidor local."
+          "text": "Inicio, tema, idioma, cuenta remota, publicación, portapapeles y operaciones programadas pertenecen al gestor y no requieren un servidor local. Si el componente de uso compartido SFTP está instalado, sus páginas forman un grupo en esta ventana. Abra desde la bandeja o los enlaces de componentes. Abrir y cerrar no inicia ni detiene servidores. El acceso remoto no requiere un servidor local."
         },
         {
           "id": "help",
           "title": "Ajustes del gestor",
-          "text": "Inicio, tema, idioma, cuenta remota, publicación, portapapeles y operaciones programadas pertenecen al gestor y no requieren un servidor local. Abra desde la bandeja o los enlaces de componentes. Abrir y cerrar no inicia ni detiene servidores. El acceso remoto no requiere un servidor local."
+          "text": "Inicio, tema, idioma, cuenta remota, publicación, portapapeles y operaciones programadas pertenecen al gestor y no requieren un servidor local. Si el componente de uso compartido SFTP está instalado, sus páginas forman un grupo en esta ventana. Abra desde la bandeja o los enlaces de componentes. Abrir y cerrar no inicia ni detiene servidores. El acceso remoto no requiere un servidor local."
         },
         {
           "id": "navigation",
           "title": "Ajustes del gestor",
-          "text": "Los enlaces activan una ventana por componente instalado. Cada una recuerda página, grupos, desplazamiento y tamaño. Tema e idioma están en el gestor; F1 y ? abren la ayuda actual."
+          "text": "El enlace activa la otra ventana: el gestor y el servidor de intercambio local tienen una cada uno. Cada una recuerda página, grupos, desplazamiento y tamaño. Tema e idioma están en el gestor; F1 y ? abren la ayuda actual."
         }
       ]
     },
     "fr": {
       "title": "Paramètres du gestionnaire",
-      "purpose": "Démarrage, thème, langue, compte distant, publication, presse-papiers et opérations planifiées appartiennent au gestionnaire et ne nécessitent pas de serveur local.",
+      "purpose": "Démarrage, thème, langue, compte distant, publication, presse-papiers et opérations planifiées appartiennent au gestionnaire et ne nécessitent pas de serveur local. Si le composant de partage SFTP est installé, ses pages forment un groupe dans cette fenêtre.",
       "order": "Ouvrez depuis la zone de notification ou les liens des composants. Ouvrir et fermer ne démarre ni n’arrête un serveur. La connexion distante ne nécessite pas de serveur local.",
       "sections": [
         {
           "id": "startup",
           "title": "Paramètres du gestionnaire",
-          "text": "Démarrage, thème, langue, compte distant, publication, presse-papiers et opérations planifiées appartiennent au gestionnaire et ne nécessitent pas de serveur local. Ouvrez depuis la zone de notification ou les liens des composants. Ouvrir et fermer ne démarre ni n’arrête un serveur. La connexion distante ne nécessite pas de serveur local."
+          "text": "Démarrage, thème, langue, compte distant, publication, presse-papiers et opérations planifiées appartiennent au gestionnaire et ne nécessitent pas de serveur local. Si le composant de partage SFTP est installé, ses pages forment un groupe dans cette fenêtre. Ouvrez depuis la zone de notification ou les liens des composants. Ouvrir et fermer ne démarre ni n’arrête un serveur. La connexion distante ne nécessite pas de serveur local."
         },
         {
           "id": "exchange-account",
           "title": "Paramètres du gestionnaire",
-          "text": "Démarrage, thème, langue, compte distant, publication, presse-papiers et opérations planifiées appartiennent au gestionnaire et ne nécessitent pas de serveur local. Ouvrez depuis la zone de notification ou les liens des composants. Ouvrir et fermer ne démarre ni n’arrête un serveur. La connexion distante ne nécessite pas de serveur local."
+          "text": "Démarrage, thème, langue, compte distant, publication, presse-papiers et opérations planifiées appartiennent au gestionnaire et ne nécessitent pas de serveur local. Si le composant de partage SFTP est installé, ses pages forment un groupe dans cette fenêtre. Ouvrez depuis la zone de notification ou les liens des composants. Ouvrir et fermer ne démarre ni n’arrête un serveur. La connexion distante ne nécessite pas de serveur local."
+        },
+        {
+          "id": "drive",
+          "title": "Google Drive",
+          "text": "Cette page connecte ce PC à votre propre compte Google afin que l'application puisse utiliser son dossier masqué privé sur votre Google Drive. Cliquez sur « Se connecter.. » : le navigateur par défaut s'ouvre, vous confirmez l'accès chez Google et Google renvoie la réponse à ce PC par une adresse locale ; vous pouvez ensuite fermer l'onglet du navigateur. La seule autorisation demandée est l'accès au dossier masqué propre à l'application sur votre Google Drive (portée drive.appdata) : l'application ne peut voir aucun autre fichier de votre Google Drive et ne reçoit ni adresse e-mail ni données de profil. Si Google accorde un accès différent de celui demandé, la connexion est refusée. La ligne en gras indique l'état. « Non connecté à Google Drive » : « Se connecter.. » est disponible ; si l'accès a été révoqué ou a expiré, la ligne du dessous le dit et invite à se reconnecter. « En attente de la connexion dans le navigateur.. » : terminez la connexion dans le navigateur ou cliquez sur « Annuler ». « Connecté à Google Drive » : ce PC est relié à votre Google Drive, et son nom ainsi que son identifiant court sont affichés. « Google Drive est indisponible pour le moment » : la ligne du dessous donne la raison - pas de connexion, limite quotidienne d'envoi atteinte, plus d'espace libre sur votre Google Drive ou erreur de Google ; sans connexion ou en cas d'erreur, l'application réessaie d'elle-même. « Déconnexion de Google Drive.. » s'affiche pendant la déconnexion. « Se déconnecter sur cet appareil » pose une seule question, dont la réponse par défaut est « Non ». Après « Oui », l'accès est révoqué chez Google, les enregistrements de ce PC sont supprimés du dossier masqué de votre Google Drive et le jeton de connexion conservé sur ce PC est supprimé ; une ligne sous les boutons indique le nombre d'enregistrements supprimés ou précise que Google n'a pas confirmé la révocation, que vous pouvez alors faire dans les paramètres de votre compte Google. Dans une version sans clé d'accès Google, la page affiche « La connexion à Google Drive n'est pas configurée dans cette version », « Se connecter.. » est désactivé et les autres fonctions du gestionnaire fonctionnent comme d'habitude."
         },
         {
           "id": "scheduled",
           "title": "Paramètres du gestionnaire",
-          "text": "Démarrage, thème, langue, compte distant, publication, presse-papiers et opérations planifiées appartiennent au gestionnaire et ne nécessitent pas de serveur local. Ouvrez depuis la zone de notification ou les liens des composants. Ouvrir et fermer ne démarre ni n’arrête un serveur. La connexion distante ne nécessite pas de serveur local."
+          "text": "Démarrage, thème, langue, compte distant, publication, presse-papiers et opérations planifiées appartiennent au gestionnaire et ne nécessitent pas de serveur local. Si le composant de partage SFTP est installé, ses pages forment un groupe dans cette fenêtre. Ouvrez depuis la zone de notification ou les liens des composants. Ouvrir et fermer ne démarre ni n’arrête un serveur. La connexion distante ne nécessite pas de serveur local."
         },
         {
           "id": "help",
           "title": "Paramètres du gestionnaire",
-          "text": "Démarrage, thème, langue, compte distant, publication, presse-papiers et opérations planifiées appartiennent au gestionnaire et ne nécessitent pas de serveur local. Ouvrez depuis la zone de notification ou les liens des composants. Ouvrir et fermer ne démarre ni n’arrête un serveur. La connexion distante ne nécessite pas de serveur local."
+          "text": "Démarrage, thème, langue, compte distant, publication, presse-papiers et opérations planifiées appartiennent au gestionnaire et ne nécessitent pas de serveur local. Si le composant de partage SFTP est installé, ses pages forment un groupe dans cette fenêtre. Ouvrez depuis la zone de notification ou les liens des composants. Ouvrir et fermer ne démarre ni n’arrête un serveur. La connexion distante ne nécessite pas de serveur local."
         },
         {
           "id": "navigation",
           "title": "Paramètres du gestionnaire",
-          "text": "Les liens activent une fenêtre par composant installé. Chacune mémorise page, groupes, défilement et taille. Thème et langue sont dans le gestionnaire ; F1 et ? ouvrent l’aide courante."
+          "text": "Le lien active l’autre fenêtre : le gestionnaire et le serveur d’échange local en ont une chacun. Chacune mémorise page, groupes, défilement et taille. Thème et langue sont dans le gestionnaire ; F1 et ? ouvrent l’aide courante."
         }
       ]
     },
     "pt": {
       "title": "Definições do gestor",
-      "purpose": "Arranque, tema, idioma, conta remota, publicação, área de transferência e operações agendadas pertencem ao gestor e não exigem servidor local.",
+      "purpose": "Arranque, tema, idioma, conta remota, publicação, área de transferência e operações agendadas pertencem ao gestor e não exigem servidor local. Se o componente de partilha SFTP estiver instalado, as suas páginas formam um grupo nesta janela.",
       "order": "Abra pela área de notificação ou pelas ligações dos componentes. Abrir e fechar não inicia nem para servidores. O acesso remoto não exige servidor local.",
       "sections": [
         {
           "id": "startup",
           "title": "Definições do gestor",
-          "text": "Arranque, tema, idioma, conta remota, publicação, área de transferência e operações agendadas pertencem ao gestor e não exigem servidor local. Abra pela área de notificação ou pelas ligações dos componentes. Abrir e fechar não inicia nem para servidores. O acesso remoto não exige servidor local."
+          "text": "Arranque, tema, idioma, conta remota, publicação, área de transferência e operações agendadas pertencem ao gestor e não exigem servidor local. Se o componente de partilha SFTP estiver instalado, as suas páginas formam um grupo nesta janela. Abra pela área de notificação ou pelas ligações dos componentes. Abrir e fechar não inicia nem para servidores. O acesso remoto não exige servidor local."
         },
         {
           "id": "exchange-account",
           "title": "Definições do gestor",
-          "text": "Arranque, tema, idioma, conta remota, publicação, área de transferência e operações agendadas pertencem ao gestor e não exigem servidor local. Abra pela área de notificação ou pelas ligações dos componentes. Abrir e fechar não inicia nem para servidores. O acesso remoto não exige servidor local."
+          "text": "Arranque, tema, idioma, conta remota, publicação, área de transferência e operações agendadas pertencem ao gestor e não exigem servidor local. Se o componente de partilha SFTP estiver instalado, as suas páginas formam um grupo nesta janela. Abra pela área de notificação ou pelas ligações dos componentes. Abrir e fechar não inicia nem para servidores. O acesso remoto não exige servidor local."
+        },
+        {
+          "id": "drive",
+          "title": "Google Drive",
+          "text": "Aqui este PC inicia sessão na sua própria conta Google para que a aplicação possa usar a sua pasta oculta privada no seu Google Drive. Clique em «Iniciar sessão..»: o navegador predefinido abre-se, confirma o acesso na Google e a Google devolve a resposta a este PC através de um endereço local; depois pode fechar o separador do navegador. A única permissão pedida é o acesso à pasta oculta própria da aplicação no seu Google Drive (âmbito drive.appdata): a aplicação não consegue ver nenhum outro ficheiro do seu Google Drive e não recebe nem o endereço de e-mail nem dados do perfil. Se a Google conceder um acesso diferente do pedido, o início de sessão é recusado. A linha a negrito mostra o estado. «Sessão não iniciada no Google Drive»: «Iniciar sessão..» está disponível; se o acesso foi revogado ou expirou, a linha abaixo di-lo e pede para iniciar sessão novamente. «A aguardar o início de sessão no navegador..»: conclua o início de sessão no navegador ou clique em «Cancelar». «Sessão iniciada no Google Drive»: este PC está ligado ao seu Google Drive e são mostrados o seu nome e o identificador curto. «O Google Drive está indisponível neste momento»: a linha abaixo indica o motivo - sem ligação, limite diário de carregamento atingido, sem espaço livre no seu Google Drive ou um erro da Google; sem ligação ou perante um erro, a aplicação tenta novamente por si. «A terminar a sessão no Google Drive..» aparece enquanto a sessão está a ser terminada. «Sair neste dispositivo» faz uma única pergunta e a resposta predefinida é «Não». Depois de «Sim», revoga o acesso na Google, elimina os registos deste PC da pasta oculta do seu Google Drive e elimina o token de início de sessão guardado neste PC; uma linha sob os botões indica quantos registos foram eliminados ou que a Google não confirmou a revogação, que pode então fazer nas definições da sua conta Google. Numa versão sem chave de acesso da Google, a página mostra «O início de sessão no Google Drive não está configurado nesta versão», «Iniciar sessão..» fica desativado e as restantes funções do gestor funcionam como habitualmente."
         },
         {
           "id": "scheduled",
           "title": "Definições do gestor",
-          "text": "Arranque, tema, idioma, conta remota, publicação, área de transferência e operações agendadas pertencem ao gestor e não exigem servidor local. Abra pela área de notificação ou pelas ligações dos componentes. Abrir e fechar não inicia nem para servidores. O acesso remoto não exige servidor local."
+          "text": "Arranque, tema, idioma, conta remota, publicação, área de transferência e operações agendadas pertencem ao gestor e não exigem servidor local. Se o componente de partilha SFTP estiver instalado, as suas páginas formam um grupo nesta janela. Abra pela área de notificação ou pelas ligações dos componentes. Abrir e fechar não inicia nem para servidores. O acesso remoto não exige servidor local."
         },
         {
           "id": "help",
           "title": "Definições do gestor",
-          "text": "Arranque, tema, idioma, conta remota, publicação, área de transferência e operações agendadas pertencem ao gestor e não exigem servidor local. Abra pela área de notificação ou pelas ligações dos componentes. Abrir e fechar não inicia nem para servidores. O acesso remoto não exige servidor local."
+          "text": "Arranque, tema, idioma, conta remota, publicação, área de transferência e operações agendadas pertencem ao gestor e não exigem servidor local. Se o componente de partilha SFTP estiver instalado, as suas páginas formam um grupo nesta janela. Abra pela área de notificação ou pelas ligações dos componentes. Abrir e fechar não inicia nem para servidores. O acesso remoto não exige servidor local."
         },
         {
           "id": "navigation",
           "title": "Definições do gestor",
-          "text": "As ligações ativam uma janela por componente instalado. Cada uma guarda página, grupos, deslocamento e tamanho. Tema e idioma estão no gestor; F1 e ? abrem a ajuda atual."
+          "text": "A ligação ativa a outra janela: o gestor e o servidor de troca local têm uma cada. Cada uma guarda página, grupos, deslocamento e tamanho. Tema e idioma estão no gestor; F1 e ? abrem a ajuda atual."
         }
       ]
     },
     "ar": {
       "title": "إعدادات المدير",
-      "purpose": "بدء التشغيل والمظهر واللغة والحساب البعيد والنشر والحافظة والعمليات المجدولة تخص المدير ولا تتطلب خادماً محلياً.",
+      "purpose": "بدء التشغيل والمظهر واللغة والحساب البعيد والنشر والحافظة والعمليات المجدولة تخص المدير ولا تتطلب خادماً محلياً. إذا كان مكوّن مشاركة SFTP مثبتاً فإن صفحاته تشكّل مجموعة في هذه النافذة.",
       "order": "افتح من منطقة الإعلام أو روابط المكونات. فتح النافذة وإغلاقها لا يشغل أو يوقف خادماً. تسجيل الدخول البعيد لا يتطلب خادماً محلياً.",
       "sections": [
         {
           "id": "startup",
           "title": "إعدادات المدير",
-          "text": "بدء التشغيل والمظهر واللغة والحساب البعيد والنشر والحافظة والعمليات المجدولة تخص المدير ولا تتطلب خادماً محلياً. افتح من منطقة الإعلام أو روابط المكونات. فتح النافذة وإغلاقها لا يشغل أو يوقف خادماً. تسجيل الدخول البعيد لا يتطلب خادماً محلياً."
+          "text": "بدء التشغيل والمظهر واللغة والحساب البعيد والنشر والحافظة والعمليات المجدولة تخص المدير ولا تتطلب خادماً محلياً. إذا كان مكوّن مشاركة SFTP مثبتاً فإن صفحاته تشكّل مجموعة في هذه النافذة. افتح من منطقة الإعلام أو روابط المكونات. فتح النافذة وإغلاقها لا يشغل أو يوقف خادماً. تسجيل الدخول البعيد لا يتطلب خادماً محلياً."
         },
         {
           "id": "exchange-account",
           "title": "إعدادات المدير",
-          "text": "بدء التشغيل والمظهر واللغة والحساب البعيد والنشر والحافظة والعمليات المجدولة تخص المدير ولا تتطلب خادماً محلياً. افتح من منطقة الإعلام أو روابط المكونات. فتح النافذة وإغلاقها لا يشغل أو يوقف خادماً. تسجيل الدخول البعيد لا يتطلب خادماً محلياً."
+          "text": "بدء التشغيل والمظهر واللغة والحساب البعيد والنشر والحافظة والعمليات المجدولة تخص المدير ولا تتطلب خادماً محلياً. إذا كان مكوّن مشاركة SFTP مثبتاً فإن صفحاته تشكّل مجموعة في هذه النافذة. افتح من منطقة الإعلام أو روابط المكونات. فتح النافذة وإغلاقها لا يشغل أو يوقف خادماً. تسجيل الدخول البعيد لا يتطلب خادماً محلياً."
+        },
+        {
+          "id": "drive",
+          "title": "Google Drive",
+          "text": "تتيح هذه الصفحة تسجيل دخول هذا الكمبيوتر إلى حساب Google الخاص بك ليتمكن التطبيق من استخدام مجلده المخفي الخاص على Google Drive الخاص بك. اضغط «تسجيل الدخول..»: يُفتح المتصفح الافتراضي، وتوافق على الوصول لدى Google، فتعيد Google الرد إلى هذا الكمبيوتر عبر عنوان محلي؛ ثم يمكنك إغلاق علامة تبويب المتصفح. الإذن الوحيد المطلوب هو الوصول إلى المجلد المخفي الخاص بالتطبيق على Google Drive الخاص بك (النطاق drive.appdata): لا يستطيع التطبيق رؤية أي ملف آخر على Google Drive الخاص بك، ولا يتلقى عنوان بريد إلكتروني ولا بيانات الملف الشخصي. إذا منحت Google وصولًا مختلفًا عن المطلوب يُرفض تسجيل الدخول. يعرض السطر الغامق الحالة. «لم يتم تسجيل الدخول إلى Google Drive»: يتوفر «تسجيل الدخول..»؛ وإذا أُلغي الوصول أو انتهت صلاحيته يذكر السطر الذي تحته ذلك ويطلب تسجيل الدخول مرة أخرى. «في انتظار تسجيل الدخول في المتصفح..»: أكمل تسجيل الدخول في المتصفح أو اضغط «إلغاء». «تم تسجيل الدخول إلى Google Drive»: هذا الكمبيوتر مرتبط بحساب Google Drive الخاص بك، ويظهر اسمه ومعرّفه المختصر. «Google Drive غير متاح حاليًا»: يذكر السطر الذي تحته السبب - لا اتصال، أو بلوغ حد الرفع اليومي، أو عدم وجود مساحة خالية على Google Drive الخاص بك، أو خطأ من Google؛ وعند انقطاع الاتصال أو وقوع خطأ يعيد التطبيق المحاولة تلقائيًا. يظهر «جارٍ تسجيل الخروج من Google Drive..» أثناء تنفيذ تسجيل الخروج. يطرح «الخروج على هذا الجهاز» سؤالًا واحدًا، والإجابة الافتراضية هي «لا». بعد «نعم» يُلغي الوصول لدى Google، ويحذف سجلات هذا الكمبيوتر من المجلد المخفي على Google Drive الخاص بك، ويحذف رمز تسجيل الدخول المخزَّن على هذا الكمبيوتر؛ ويذكر سطر تحت الأزرار عدد السجلات المحذوفة، أو أن Google لم تؤكد إلغاء الوصول، وعندها يمكنك إلغاؤه في إعدادات حساب Google. في إصدار بلا مفتاح وصول إلى Google تعرض الصفحة «تسجيل الدخول إلى Google Drive غير مُعدّ في هذا الإصدار»، ويكون «تسجيل الدخول..» معطّلًا، وتعمل باقي وظائف المدير كالمعتاد."
         },
         {
           "id": "scheduled",
           "title": "إعدادات المدير",
-          "text": "بدء التشغيل والمظهر واللغة والحساب البعيد والنشر والحافظة والعمليات المجدولة تخص المدير ولا تتطلب خادماً محلياً. افتح من منطقة الإعلام أو روابط المكونات. فتح النافذة وإغلاقها لا يشغل أو يوقف خادماً. تسجيل الدخول البعيد لا يتطلب خادماً محلياً."
+          "text": "بدء التشغيل والمظهر واللغة والحساب البعيد والنشر والحافظة والعمليات المجدولة تخص المدير ولا تتطلب خادماً محلياً. إذا كان مكوّن مشاركة SFTP مثبتاً فإن صفحاته تشكّل مجموعة في هذه النافذة. افتح من منطقة الإعلام أو روابط المكونات. فتح النافذة وإغلاقها لا يشغل أو يوقف خادماً. تسجيل الدخول البعيد لا يتطلب خادماً محلياً."
         },
         {
           "id": "help",
           "title": "إعدادات المدير",
-          "text": "بدء التشغيل والمظهر واللغة والحساب البعيد والنشر والحافظة والعمليات المجدولة تخص المدير ولا تتطلب خادماً محلياً. افتح من منطقة الإعلام أو روابط المكونات. فتح النافذة وإغلاقها لا يشغل أو يوقف خادماً. تسجيل الدخول البعيد لا يتطلب خادماً محلياً."
+          "text": "بدء التشغيل والمظهر واللغة والحساب البعيد والنشر والحافظة والعمليات المجدولة تخص المدير ولا تتطلب خادماً محلياً. إذا كان مكوّن مشاركة SFTP مثبتاً فإن صفحاته تشكّل مجموعة في هذه النافذة. افتح من منطقة الإعلام أو روابط المكونات. فتح النافذة وإغلاقها لا يشغل أو يوقف خادماً. تسجيل الدخول البعيد لا يتطلب خادماً محلياً."
         },
         {
           "id": "navigation",
           "title": "إعدادات المدير",
-          "text": "تفتح الروابط نافذة واحدة لكل مكوّن مثبّت. تتذكر كل نافذة الصفحة والمجموعات والتمرير والحجم. المظهر واللغة في المدير؛ F1 و? يفتحان مساعدة الصفحة الحالية."
+          "text": "يفتح الرابط النافذة الأخرى: للمدير وللخادم المحلي للتبادل نافذة واحدة لكل منهما. تتذكر كل نافذة الصفحة والمجموعات والتمرير والحجم. المظهر واللغة في المدير؛ F1 و? يفتحان مساعدة الصفحة الحالية."
         }
       ]
     },
     "hi": {
       "title": "प्रबंधक सेटिंग",
-      "purpose": "स्टार्टअप, थीम, भाषा, दूरस्थ खाता, प्रकाशन, क्लिपबोर्ड और निर्धारित फ़ाइल कार्य प्रबंधक में हैं। स्थानीय सर्वर आवश्यक नहीं है।",
+      "purpose": "स्टार्टअप, थीम, भाषा, दूरस्थ खाता, प्रकाशन, क्लिपबोर्ड और निर्धारित फ़ाइल कार्य प्रबंधक में हैं। स्थानीय सर्वर आवश्यक नहीं है। यदि SFTP साझाकरण घटक स्थापित है तो उसके पृष्ठ इस विंडो में एक समूह बनाते हैं।",
       "order": "ट्रे या घटक लिंक से खोलें। विंडो खोलने और बंद करने से सर्वर शुरू या बंद नहीं होता। दूरस्थ लॉगिन के लिए स्थानीय सर्वर आवश्यक नहीं है।",
       "sections": [
         {
           "id": "startup",
           "title": "प्रबंधक सेटिंग",
-          "text": "स्टार्टअप, थीम, भाषा, दूरस्थ खाता, प्रकाशन, क्लिपबोर्ड और निर्धारित फ़ाइल कार्य प्रबंधक में हैं। स्थानीय सर्वर आवश्यक नहीं है। ट्रे या घटक लिंक से खोलें। विंडो खोलने और बंद करने से सर्वर शुरू या बंद नहीं होता। दूरस्थ लॉगिन के लिए स्थानीय सर्वर आवश्यक नहीं है।"
+          "text": "स्टार्टअप, थीम, भाषा, दूरस्थ खाता, प्रकाशन, क्लिपबोर्ड और निर्धारित फ़ाइल कार्य प्रबंधक में हैं। स्थानीय सर्वर आवश्यक नहीं है। यदि SFTP साझाकरण घटक स्थापित है तो उसके पृष्ठ इस विंडो में एक समूह बनाते हैं। ट्रे या घटक लिंक से खोलें। विंडो खोलने और बंद करने से सर्वर शुरू या बंद नहीं होता। दूरस्थ लॉगिन के लिए स्थानीय सर्वर आवश्यक नहीं है।"
         },
         {
           "id": "exchange-account",
           "title": "प्रबंधक सेटिंग",
-          "text": "स्टार्टअप, थीम, भाषा, दूरस्थ खाता, प्रकाशन, क्लिपबोर्ड और निर्धारित फ़ाइल कार्य प्रबंधक में हैं। स्थानीय सर्वर आवश्यक नहीं है। ट्रे या घटक लिंक से खोलें। विंडो खोलने और बंद करने से सर्वर शुरू या बंद नहीं होता। दूरस्थ लॉगिन के लिए स्थानीय सर्वर आवश्यक नहीं है।"
+          "text": "स्टार्टअप, थीम, भाषा, दूरस्थ खाता, प्रकाशन, क्लिपबोर्ड और निर्धारित फ़ाइल कार्य प्रबंधक में हैं। स्थानीय सर्वर आवश्यक नहीं है। यदि SFTP साझाकरण घटक स्थापित है तो उसके पृष्ठ इस विंडो में एक समूह बनाते हैं। ट्रे या घटक लिंक से खोलें। विंडो खोलने और बंद करने से सर्वर शुरू या बंद नहीं होता। दूरस्थ लॉगिन के लिए स्थानीय सर्वर आवश्यक नहीं है।"
+        },
+        {
+          "id": "drive",
+          "title": "Google Drive",
+          "text": "यह पेज इस पीसी को आपके अपने Google खाते में साइन इन करता है, ताकि ऐप आपके Google Drive पर अपने निजी छिपे हुए फ़ोल्डर का उपयोग कर सके। «साइन इन..» दबाएँ: डिफ़ॉल्ट ब्राउज़र खुलता है, आप Google पर एक्सेस की अनुमति देते हैं, और Google उत्तर को स्थानीय पते के ज़रिए इस पीसी पर लौटा देता है; इसके बाद ब्राउज़र टैब बंद किया जा सकता है। माँगी जाने वाली एकमात्र अनुमति आपके Google Drive पर ऐप के अपने छिपे हुए फ़ोल्डर तक पहुँच है (स्कोप drive.appdata): ऐप आपके Google Drive की कोई अन्य फ़ाइल नहीं देख सकता और उसे न ईमेल पता मिलता है, न प्रोफ़ाइल का डेटा। यदि Google माँगे गए एक्सेस से अलग एक्सेस देता है, तो साइन-इन अस्वीकार कर दिया जाता है। गहरे अक्षरों वाली पंक्ति स्थिति दिखाती है। «Google Drive में साइन इन नहीं है»: «साइन इन..» उपलब्ध है; यदि एक्सेस रद्द हो गया या समाप्त हो गया है, तो नीचे की पंक्ति यह बताती है और फिर से साइन इन करने को कहती है। «ब्राउज़र में साइन-इन की प्रतीक्षा है..»: ब्राउज़र में साइन-इन पूरा करें या «रद्द करें» दबाएँ। «Google Drive में साइन इन हो गया है»: यह पीसी आपके Google Drive से जुड़ा है, और इसका नाम तथा संक्षिप्त पहचानकर्ता दिखाया जाता है। «Google Drive अभी उपलब्ध नहीं है»: नीचे की पंक्ति कारण बताती है - कनेक्शन नहीं है, दैनिक अपलोड सीमा पूरी हो गई है, आपके Google Drive में खाली जगह नहीं है, या Google से त्रुटि मिली है; कनेक्शन न होने पर और त्रुटि होने पर ऐप अपने आप दोबारा प्रयास करता है। साइन-आउट चलते समय «Google Drive से साइन-आउट हो रहा है..» दिखता है। «इस डिवाइस पर साइन-आउट करें» एक ही प्रश्न पूछता है, और डिफ़ॉल्ट उत्तर «नहीं» है। «हाँ» के बाद वह Google पर एक्सेस रद्द करता है, आपके Google Drive के छिपे हुए फ़ोल्डर से इस पीसी की प्रविष्टियाँ हटाता है और इस पीसी पर सहेजा गया साइन-इन टोकन हटा देता है; बटनों के नीचे की पंक्ति बताती है कि कितनी प्रविष्टियाँ हटाई गईं, या यह कि Google ने एक्सेस रद्द होने की पुष्टि नहीं की - तब आप उसे अपने Google खाते की सेटिंग में रद्द कर सकते हैं। Google की एक्सेस कुंजी के बिना बने संस्करण में पेज «इस संस्करण में Google Drive साइन-इन सेट नहीं है» दिखाता है, «साइन इन..» निष्क्रिय रहता है और मैनेजर के बाकी फ़ंक्शन सामान्य रूप से काम करते हैं।"
         },
         {
           "id": "scheduled",
           "title": "प्रबंधक सेटिंग",
-          "text": "स्टार्टअप, थीम, भाषा, दूरस्थ खाता, प्रकाशन, क्लिपबोर्ड और निर्धारित फ़ाइल कार्य प्रबंधक में हैं। स्थानीय सर्वर आवश्यक नहीं है। ट्रे या घटक लिंक से खोलें। विंडो खोलने और बंद करने से सर्वर शुरू या बंद नहीं होता। दूरस्थ लॉगिन के लिए स्थानीय सर्वर आवश्यक नहीं है।"
+          "text": "स्टार्टअप, थीम, भाषा, दूरस्थ खाता, प्रकाशन, क्लिपबोर्ड और निर्धारित फ़ाइल कार्य प्रबंधक में हैं। स्थानीय सर्वर आवश्यक नहीं है। यदि SFTP साझाकरण घटक स्थापित है तो उसके पृष्ठ इस विंडो में एक समूह बनाते हैं। ट्रे या घटक लिंक से खोलें। विंडो खोलने और बंद करने से सर्वर शुरू या बंद नहीं होता। दूरस्थ लॉगिन के लिए स्थानीय सर्वर आवश्यक नहीं है।"
         },
         {
           "id": "help",
           "title": "प्रबंधक सेटिंग",
-          "text": "स्टार्टअप, थीम, भाषा, दूरस्थ खाता, प्रकाशन, क्लिपबोर्ड और निर्धारित फ़ाइल कार्य प्रबंधक में हैं। स्थानीय सर्वर आवश्यक नहीं है। ट्रे या घटक लिंक से खोलें। विंडो खोलने और बंद करने से सर्वर शुरू या बंद नहीं होता। दूरस्थ लॉगिन के लिए स्थानीय सर्वर आवश्यक नहीं है।"
+          "text": "स्टार्टअप, थीम, भाषा, दूरस्थ खाता, प्रकाशन, क्लिपबोर्ड और निर्धारित फ़ाइल कार्य प्रबंधक में हैं। स्थानीय सर्वर आवश्यक नहीं है। यदि SFTP साझाकरण घटक स्थापित है तो उसके पृष्ठ इस विंडो में एक समूह बनाते हैं। ट्रे या घटक लिंक से खोलें। विंडो खोलने और बंद करने से सर्वर शुरू या बंद नहीं होता। दूरस्थ लॉगिन के लिए स्थानीय सर्वर आवश्यक नहीं है।"
         },
         {
           "id": "navigation",
           "title": "प्रबंधक सेटिंग",
-          "text": "लिंक हर स्थापित घटक की एक विंडो सक्रिय करते हैं। प्रत्येक पृष्ठ, समूह, स्क्रॉल और आकार याद रखती है। थीम और भाषा प्रबंधक में हैं; F1 और ? वर्तमान सहायता खोलते हैं।"
+          "text": "लिंक दूसरी विंडो सक्रिय करता है: प्रबंधक और स्थानीय एक्सचेंज सर्वर की एक-एक विंडो है। प्रत्येक पृष्ठ, समूह, स्क्रॉल और आकार याद रखती है। थीम और भाषा प्रबंधक में हैं; F1 और ? वर्तमान सहायता खोलते हैं।"
         }
       ]
     },
     "bn": {
       "title": "ম্যানেজার সেটিংস",
-      "purpose": "চালু হওয়া, থিম, ভাষা, দূরবর্তী অ্যাকাউন্ট, প্রকাশনা, ক্লিপবোর্ড ও নির্ধারিত ফাইল কাজ ম্যানেজারে থাকে। স্থানীয় সার্ভার প্রয়োজন নেই।",
+      "purpose": "চালু হওয়া, থিম, ভাষা, দূরবর্তী অ্যাকাউন্ট, প্রকাশনা, ক্লিপবোর্ড ও নির্ধারিত ফাইল কাজ ম্যানেজারে থাকে। স্থানীয় সার্ভার প্রয়োজন নেই। SFTP শেয়ারিং উপাদান ইনস্টল থাকলে তার পৃষ্ঠাগুলো এই উইন্ডোতে একটি দল গঠন করে।",
       "order": "ট্রে বা উপাদানের লিংক থেকে খুলুন। উইন্ডো খোলা বা বন্ধ করা সার্ভার চালু বা বন্ধ করে না। দূরবর্তী প্রবেশে স্থানীয় সার্ভার লাগে না।",
       "sections": [
         {
           "id": "startup",
           "title": "ম্যানেজার সেটিংস",
-          "text": "চালু হওয়া, থিম, ভাষা, দূরবর্তী অ্যাকাউন্ট, প্রকাশনা, ক্লিপবোর্ড ও নির্ধারিত ফাইল কাজ ম্যানেজারে থাকে। স্থানীয় সার্ভার প্রয়োজন নেই। ট্রে বা উপাদানের লিংক থেকে খুলুন। উইন্ডো খোলা বা বন্ধ করা সার্ভার চালু বা বন্ধ করে না। দূরবর্তী প্রবেশে স্থানীয় সার্ভার লাগে না।"
+          "text": "চালু হওয়া, থিম, ভাষা, দূরবর্তী অ্যাকাউন্ট, প্রকাশনা, ক্লিপবোর্ড ও নির্ধারিত ফাইল কাজ ম্যানেজারে থাকে। স্থানীয় সার্ভার প্রয়োজন নেই। SFTP শেয়ারিং উপাদান ইনস্টল থাকলে তার পৃষ্ঠাগুলো এই উইন্ডোতে একটি দল গঠন করে। ট্রে বা উপাদানের লিংক থেকে খুলুন। উইন্ডো খোলা বা বন্ধ করা সার্ভার চালু বা বন্ধ করে না। দূরবর্তী প্রবেশে স্থানীয় সার্ভার লাগে না।"
         },
         {
           "id": "exchange-account",
           "title": "ম্যানেজার সেটিংস",
-          "text": "চালু হওয়া, থিম, ভাষা, দূরবর্তী অ্যাকাউন্ট, প্রকাশনা, ক্লিপবোর্ড ও নির্ধারিত ফাইল কাজ ম্যানেজারে থাকে। স্থানীয় সার্ভার প্রয়োজন নেই। ট্রে বা উপাদানের লিংক থেকে খুলুন। উইন্ডো খোলা বা বন্ধ করা সার্ভার চালু বা বন্ধ করে না। দূরবর্তী প্রবেশে স্থানীয় সার্ভার লাগে না।"
+          "text": "চালু হওয়া, থিম, ভাষা, দূরবর্তী অ্যাকাউন্ট, প্রকাশনা, ক্লিপবোর্ড ও নির্ধারিত ফাইল কাজ ম্যানেজারে থাকে। স্থানীয় সার্ভার প্রয়োজন নেই। SFTP শেয়ারিং উপাদান ইনস্টল থাকলে তার পৃষ্ঠাগুলো এই উইন্ডোতে একটি দল গঠন করে। ট্রে বা উপাদানের লিংক থেকে খুলুন। উইন্ডো খোলা বা বন্ধ করা সার্ভার চালু বা বন্ধ করে না। দূরবর্তী প্রবেশে স্থানীয় সার্ভার লাগে না।"
+        },
+        {
+          "id": "drive",
+          "title": "Google Drive",
+          "text": "এই পেজ এই পিসিকে আপনার নিজের Google অ্যাকাউন্টে সাইন ইন করায়, যাতে অ্যাপটি আপনার Google Drive-এ তার নিজস্ব লুকানো ফোল্ডার ব্যবহার করতে পারে। «সাইন ইন..» চাপুন: ডিফল্ট ব্রাউজার খোলে, আপনি Google-এ অ্যাক্সেসের অনুমতি দেন, এবং Google একটি লোকাল ঠিকানার মাধ্যমে উত্তরটি এই পিসিতে ফেরত পাঠায়; এরপর ব্রাউজারের ট্যাবটি বন্ধ করা যায়। যে একমাত্র অনুমতি চাওয়া হয় তা হলো আপনার Google Drive-এ অ্যাপের নিজের লুকানো ফোল্ডারে অ্যাক্সেস (স্কোপ drive.appdata): অ্যাপটি আপনার Google Drive-এর অন্য কোনো ফাইল দেখতে পায় না এবং ইমেল ঠিকানা বা প্রোফাইলের তথ্য কিছুই পায় না। Google অনুরোধ করা অ্যাক্সেসের চেয়ে ভিন্ন অ্যাক্সেস দিলে সাইন-ইন প্রত্যাখ্যান করা হয়। গাঢ় অক্ষরের লাইনটি অবস্থা দেখায়। «Google Drive-এ সাইন ইন করা নেই»: «সাইন ইন..» উপলব্ধ থাকে; অ্যাক্সেস প্রত্যাহার করা হলে বা মেয়াদ শেষ হলে নিচের লাইনটি তা জানায় এবং আবার সাইন ইন করতে বলে। «ব্রাউজারে সাইন-ইনের জন্য অপেক্ষা চলছে..»: ব্রাউজারে সাইন-ইন সম্পূর্ণ করুন বা «বাতিল» চাপুন। «Google Drive-এ সাইন ইন করা হয়েছে»: এই পিসি আপনার Google Drive-এর সঙ্গে যুক্ত, এবং এর নাম ও সংক্ষিপ্ত শনাক্তকারী দেখানো হয়। «Google Drive এখন অনুপলব্ধ»: নিচের লাইনটি কারণ জানায় - সংযোগ নেই, দৈনিক আপলোড সীমা পূর্ণ হয়েছে, আপনার Google Drive-এ ফাঁকা জায়গা নেই, বা Google থেকে ত্রুটি এসেছে; সংযোগ না থাকলে বা ত্রুটি হলে অ্যাপ নিজেই আবার চেষ্টা করে। সাইন-আউট চলার সময় «Google Drive থেকে সাইন-আউট হচ্ছে..» দেখানো হয়। «এই ডিভাইসে সাইন-আউট করুন» একটিই প্রশ্ন করে, এবং ডিফল্ট উত্তর «না»। «হ্যাঁ» বললে এটি Google-এ অ্যাক্সেস প্রত্যাহার করে, আপনার Google Drive-এর লুকানো ফোল্ডার থেকে এই পিসির রেকর্ড মোছে এবং এই পিসিতে সংরক্ষিত সাইন-ইন টোকেন মুছে ফেলে; বোতামগুলোর নিচের লাইনটি কতগুলো রেকর্ড মোছা হয়েছে তা জানায়, অথবা জানায় যে Google অ্যাক্সেস প্রত্যাহারের নিশ্চিতকরণ দেয়নি - তখন আপনি তা Google অ্যাকাউন্টের সেটিংসে প্রত্যাহার করতে পারেন। Google অ্যাক্সেস কী ছাড়া তৈরি সংস্করণে পেজটি «এই সংস্করণে Google Drive সাইন-ইন সেট করা নেই» দেখায়, «সাইন ইন..» নিষ্ক্রিয় থাকে এবং ম্যানেজারের বাকি ফিচারগুলো যথারীতি কাজ করে।"
         },
         {
           "id": "scheduled",
           "title": "ম্যানেজার সেটিংস",
-          "text": "চালু হওয়া, থিম, ভাষা, দূরবর্তী অ্যাকাউন্ট, প্রকাশনা, ক্লিপবোর্ড ও নির্ধারিত ফাইল কাজ ম্যানেজারে থাকে। স্থানীয় সার্ভার প্রয়োজন নেই। ট্রে বা উপাদানের লিংক থেকে খুলুন। উইন্ডো খোলা বা বন্ধ করা সার্ভার চালু বা বন্ধ করে না। দূরবর্তী প্রবেশে স্থানীয় সার্ভার লাগে না।"
+          "text": "চালু হওয়া, থিম, ভাষা, দূরবর্তী অ্যাকাউন্ট, প্রকাশনা, ক্লিপবোর্ড ও নির্ধারিত ফাইল কাজ ম্যানেজারে থাকে। স্থানীয় সার্ভার প্রয়োজন নেই। SFTP শেয়ারিং উপাদান ইনস্টল থাকলে তার পৃষ্ঠাগুলো এই উইন্ডোতে একটি দল গঠন করে। ট্রে বা উপাদানের লিংক থেকে খুলুন। উইন্ডো খোলা বা বন্ধ করা সার্ভার চালু বা বন্ধ করে না। দূরবর্তী প্রবেশে স্থানীয় সার্ভার লাগে না।"
         },
         {
           "id": "help",
           "title": "ম্যানেজার সেটিংস",
-          "text": "চালু হওয়া, থিম, ভাষা, দূরবর্তী অ্যাকাউন্ট, প্রকাশনা, ক্লিপবোর্ড ও নির্ধারিত ফাইল কাজ ম্যানেজারে থাকে। স্থানীয় সার্ভার প্রয়োজন নেই। ট্রে বা উপাদানের লিংক থেকে খুলুন। উইন্ডো খোলা বা বন্ধ করা সার্ভার চালু বা বন্ধ করে না। দূরবর্তী প্রবেশে স্থানীয় সার্ভার লাগে না।"
+          "text": "চালু হওয়া, থিম, ভাষা, দূরবর্তী অ্যাকাউন্ট, প্রকাশনা, ক্লিপবোর্ড ও নির্ধারিত ফাইল কাজ ম্যানেজারে থাকে। স্থানীয় সার্ভার প্রয়োজন নেই। SFTP শেয়ারিং উপাদান ইনস্টল থাকলে তার পৃষ্ঠাগুলো এই উইন্ডোতে একটি দল গঠন করে। ট্রে বা উপাদানের লিংক থেকে খুলুন। উইন্ডো খোলা বা বন্ধ করা সার্ভার চালু বা বন্ধ করে না। দূরবর্তী প্রবেশে স্থানীয় সার্ভার লাগে না।"
         },
         {
           "id": "navigation",
           "title": "ম্যানেজার সেটিংস",
-          "text": "প্রতি ইনস্টল করা উপাদানের একটি উইন্ডো সক্রিয় হয়। প্রতিটি পৃষ্ঠা, দল, স্ক্রল ও আকার মনে রাখে। থিম ও ভাষা ম্যানেজারে; F1 ও ? বর্তমান সহায়তা খোলে।"
+          "text": "লিংকটি অন্য উইন্ডো সক্রিয় করে: ম্যানেজার ও স্থানীয় এক্সচেঞ্জ সার্ভারের একটি করে উইন্ডো আছে। প্রতিটি পৃষ্ঠা, দল, স্ক্রল ও আকার মনে রাখে। থিম ও ভাষা ম্যানেজারে; F1 ও ? বর্তমান সহায়তা খোলে।"
         }
       ]
     },
     "ur": {
       "title": "مینیجر کی ترتیبات",
-      "purpose": "آغاز، تھیم، زبان، دور دراز اکاؤنٹ، اشاعت، کلپ بورڈ اور طے شدہ فائل کام مینیجر میں ہیں۔ مقامی سرور ضروری نہیں۔",
+      "purpose": "آغاز، تھیم، زبان، دور دراز اکاؤنٹ، اشاعت، کلپ بورڈ اور طے شدہ فائل کام مینیجر میں ہیں۔ مقامی سرور ضروری نہیں۔ اگر SFTP اشتراک جزو نصب ہو تو اس کے صفحات اس ونڈو میں ایک گروپ بناتے ہیں۔",
       "order": "ٹرے یا جزو کے لنک سے کھولیں۔ ونڈو کھولنا یا بند کرنا سرور کو چلاتا یا روکتا نہیں۔ دور دراز لاگ ان کے لیے مقامی سرور ضروری نہیں۔",
       "sections": [
         {
           "id": "startup",
           "title": "مینیجر کی ترتیبات",
-          "text": "آغاز، تھیم، زبان، دور دراز اکاؤنٹ، اشاعت، کلپ بورڈ اور طے شدہ فائل کام مینیجر میں ہیں۔ مقامی سرور ضروری نہیں۔ ٹرے یا جزو کے لنک سے کھولیں۔ ونڈو کھولنا یا بند کرنا سرور کو چلاتا یا روکتا نہیں۔ دور دراز لاگ ان کے لیے مقامی سرور ضروری نہیں۔"
+          "text": "آغاز، تھیم، زبان، دور دراز اکاؤنٹ، اشاعت، کلپ بورڈ اور طے شدہ فائل کام مینیجر میں ہیں۔ مقامی سرور ضروری نہیں۔ اگر SFTP اشتراک جزو نصب ہو تو اس کے صفحات اس ونڈو میں ایک گروپ بناتے ہیں۔ ٹرے یا جزو کے لنک سے کھولیں۔ ونڈو کھولنا یا بند کرنا سرور کو چلاتا یا روکتا نہیں۔ دور دراز لاگ ان کے لیے مقامی سرور ضروری نہیں۔"
         },
         {
           "id": "exchange-account",
           "title": "مینیجر کی ترتیبات",
-          "text": "آغاز، تھیم، زبان، دور دراز اکاؤنٹ، اشاعت، کلپ بورڈ اور طے شدہ فائل کام مینیجر میں ہیں۔ مقامی سرور ضروری نہیں۔ ٹرے یا جزو کے لنک سے کھولیں۔ ونڈو کھولنا یا بند کرنا سرور کو چلاتا یا روکتا نہیں۔ دور دراز لاگ ان کے لیے مقامی سرور ضروری نہیں۔"
+          "text": "آغاز، تھیم، زبان، دور دراز اکاؤنٹ، اشاعت، کلپ بورڈ اور طے شدہ فائل کام مینیجر میں ہیں۔ مقامی سرور ضروری نہیں۔ اگر SFTP اشتراک جزو نصب ہو تو اس کے صفحات اس ونڈو میں ایک گروپ بناتے ہیں۔ ٹرے یا جزو کے لنک سے کھولیں۔ ونڈو کھولنا یا بند کرنا سرور کو چلاتا یا روکتا نہیں۔ دور دراز لاگ ان کے لیے مقامی سرور ضروری نہیں۔"
+        },
+        {
+          "id": "drive",
+          "title": "Google Drive",
+          "text": "یہ صفحہ اس پی سی کو آپ کے اپنے Google اکاؤنٹ میں سائن اِن کرتا ہے تاکہ ایپ آپ کے Google Drive پر اپنا نجی چھپا ہوا فولڈر استعمال کر سکے۔ «سائن اِن..» دبائیں: ڈیفالٹ براؤزر کھلتا ہے، آپ Google پر رسائی کی اجازت دیتے ہیں، اور Google جواب کو ایک مقامی پتے کے ذریعے اس پی سی پر واپس بھیج دیتا ہے؛ اس کے بعد براؤزر کا ٹیب بند کیا جا سکتا ہے۔ جو واحد اجازت مانگی جاتی ہے وہ آپ کے Google Drive پر ایپ کے اپنے چھپے ہوئے فولڈر تک رسائی ہے (اسکوپ drive.appdata): ایپ آپ کے Google Drive کی کوئی دوسری فائل نہیں دیکھ سکتی اور اسے نہ ای میل پتہ ملتا ہے، نہ پروفائل کا ڈیٹا۔ اگر Google مطلوبہ رسائی سے مختلف رسائی دے تو سائن اِن مسترد کر دیا جاتا ہے۔ گہرے حروف والی سطر حالت دکھاتی ہے۔ «Google Drive میں سائن اِن نہیں ہے»: «سائن اِن..» دستیاب ہے؛ اگر رسائی منسوخ ہو گئی یا ختم ہو گئی ہو تو نیچے کی سطر یہ بتاتی ہے اور دوبارہ سائن اِن کرنے کو کہتی ہے۔ «براؤزر میں سائن اِن کا انتظار ہے..»: براؤزر میں سائن اِن مکمل کریں یا «منسوخ» دبائیں۔ «Google Drive میں سائن اِن ہو چکا ہے»: یہ پی سی آپ کے Google Drive سے جڑا ہوا ہے، اور اس کا نام اور مختصر شناخت کنندہ دکھایا جاتا ہے۔ «Google Drive اس وقت دستیاب نہیں ہے»: نیچے کی سطر وجہ بتاتی ہے - رابطہ نہیں ہے، اپ لوڈ کی یومیہ حد پوری ہو گئی ہے، آپ کے Google Drive میں خالی جگہ نہیں ہے، یا Google سے خرابی آئی ہے؛ رابطہ نہ ہونے پر اور خرابی کی صورت میں ایپ خود دوبارہ کوشش کرتی ہے۔ سائن اوٹ کے دوران «Google Drive سے سائن اوٹ ہو رہا ہے..» دکھایا جاتا ہے۔ «اس آلے پر سائن اوٹ کریں» ایک ہی سوال پوچھتا ہے، اور طے شدہ جواب «نہیں» ہے۔ «ہاں» کے بعد یہ Google پر رسائی منسوخ کرتا ہے، آپ کے Google Drive کے چھپے ہوئے فولڈر سے اس پی سی کے ریکارڈ حذف کرتا ہے اور اس پی سی پر محفوظ سائن اِن ٹوکن حذف کر دیتا ہے؛ بٹنوں کے نیچے کی سطر بتاتی ہے کہ کتنے ریکارڈ حذف ہوئے، یا یہ کہ Google نے رسائی کی منسوخی کی تصدیق نہیں کی - تب آپ اسے اپنے Google اکاؤنٹ کی ترتیبات میں منسوخ کر سکتے ہیں۔ Google کی رسائی کی کلید کے بغیر بنے ورژن میں صفحہ «اس ورژن میں Google Drive سائن اِن ترتیب نہیں دیا گیا» دکھاتا ہے، «سائن اِن..» غیر فعال رہتا ہے اور مینیجر کی باقی خصوصیات معمول کے مطابق کام کرتی ہیں۔"
         },
         {
           "id": "scheduled",
           "title": "مینیجر کی ترتیبات",
-          "text": "آغاز، تھیم، زبان، دور دراز اکاؤنٹ، اشاعت، کلپ بورڈ اور طے شدہ فائل کام مینیجر میں ہیں۔ مقامی سرور ضروری نہیں۔ ٹرے یا جزو کے لنک سے کھولیں۔ ونڈو کھولنا یا بند کرنا سرور کو چلاتا یا روکتا نہیں۔ دور دراز لاگ ان کے لیے مقامی سرور ضروری نہیں۔"
+          "text": "آغاز، تھیم، زبان، دور دراز اکاؤنٹ، اشاعت، کلپ بورڈ اور طے شدہ فائل کام مینیجر میں ہیں۔ مقامی سرور ضروری نہیں۔ اگر SFTP اشتراک جزو نصب ہو تو اس کے صفحات اس ونڈو میں ایک گروپ بناتے ہیں۔ ٹرے یا جزو کے لنک سے کھولیں۔ ونڈو کھولنا یا بند کرنا سرور کو چلاتا یا روکتا نہیں۔ دور دراز لاگ ان کے لیے مقامی سرور ضروری نہیں۔"
         },
         {
           "id": "help",
           "title": "مینیجر کی ترتیبات",
-          "text": "آغاز، تھیم، زبان، دور دراز اکاؤنٹ، اشاعت، کلپ بورڈ اور طے شدہ فائل کام مینیجر میں ہیں۔ مقامی سرور ضروری نہیں۔ ٹرے یا جزو کے لنک سے کھولیں۔ ونڈو کھولنا یا بند کرنا سرور کو چلاتا یا روکتا نہیں۔ دور دراز لاگ ان کے لیے مقامی سرور ضروری نہیں۔"
+          "text": "آغاز، تھیم، زبان، دور دراز اکاؤنٹ، اشاعت، کلپ بورڈ اور طے شدہ فائل کام مینیجر میں ہیں۔ مقامی سرور ضروری نہیں۔ اگر SFTP اشتراک جزو نصب ہو تو اس کے صفحات اس ونڈو میں ایک گروپ بناتے ہیں۔ ٹرے یا جزو کے لنک سے کھولیں۔ ونڈو کھولنا یا بند کرنا سرور کو چلاتا یا روکتا نہیں۔ دور دراز لاگ ان کے لیے مقامی سرور ضروری نہیں۔"
         },
         {
           "id": "navigation",
           "title": "مینیجر کی ترتیبات",
-          "text": "ہر نصب جزو کی ایک ونڈو فعال ہوتی ہے۔ ہر ونڈو صفحہ، گروپ، سکرول اور سائز یاد رکھتی ہے۔ تھیم اور زبان مینیجر میں ہیں؛ F1 اور ? موجودہ مدد کھولتے ہیں۔"
+          "text": "لنک دوسری ونڈو فعال کرتا ہے: مینیجر اور مقامی ایکسچینج سرور کی ایک ایک ونڈو ہے۔ ہر ونڈو صفحہ، گروپ، سکرول اور سائز یاد رکھتی ہے۔ تھیم اور زبان مینیجر میں ہیں؛ F1 اور ? موجودہ مدد کھولتے ہیں۔"
         }
       ]
     },
     "zh": {
       "title": "管理器设置",
-      "purpose": "启动、主题、语言、远程账户、发布、剪贴板和计划文件操作属于管理器，无需安装本地服务器。",
+      "purpose": "启动、主题、语言、远程账户、发布、剪贴板和计划文件操作属于管理器，无需安装本地服务器。 如果已安装 SFTP 共享组件，其页面会在此窗口中构成一个分组。",
       "order": "从托盘或组件链接打开。打开或关闭窗口不会启动或停止服务器。远程登录无需本地服务器。",
       "sections": [
         {
           "id": "startup",
           "title": "管理器设置",
-          "text": "启动、主题、语言、远程账户、发布、剪贴板和计划文件操作属于管理器，无需安装本地服务器。 从托盘或组件链接打开。打开或关闭窗口不会启动或停止服务器。远程登录无需本地服务器。"
+          "text": "启动、主题、语言、远程账户、发布、剪贴板和计划文件操作属于管理器，无需安装本地服务器。 如果已安装 SFTP 共享组件，其页面会在此窗口中构成一个分组。 从托盘或组件链接打开。打开或关闭窗口不会启动或停止服务器。远程登录无需本地服务器。"
         },
         {
           "id": "exchange-account",
           "title": "管理器设置",
-          "text": "启动、主题、语言、远程账户、发布、剪贴板和计划文件操作属于管理器，无需安装本地服务器。 从托盘或组件链接打开。打开或关闭窗口不会启动或停止服务器。远程登录无需本地服务器。"
+          "text": "启动、主题、语言、远程账户、发布、剪贴板和计划文件操作属于管理器，无需安装本地服务器。 如果已安装 SFTP 共享组件，其页面会在此窗口中构成一个分组。 从托盘或组件链接打开。打开或关闭窗口不会启动或停止服务器。远程登录无需本地服务器。"
+        },
+        {
+          "id": "drive",
+          "title": "Google Drive",
+          "text": "此页面让这台电脑登录您自己的 Google 账号，使应用可以使用您 Google Drive 上属于它自己的私有隐藏文件夹。点击「登录..」：默认浏览器会打开，您在 Google 处确认访问，Google 通过本地地址将结果返回到这台电脑；之后即可关闭浏览器标签页。唯一请求的权限是访问您 Google Drive 上属于应用自己的隐藏文件夹（范围 drive.appdata）：应用看不到您 Google Drive 上的任何其他文件，也不会获得电子邮件地址或个人资料数据。如果 Google 授予的访问权限与所请求的不同，登录会被拒绝。粗体行显示当前状态。「未登录 Google Drive」：可使用「登录..」；如果访问权限已被撤销或已过期，下方一行会说明，并请您重新登录。「正在等待在浏览器中登录..」：请在浏览器中完成登录，或点击「取消」。「已登录 Google Drive」：这台电脑已与您的 Google Drive 关联，并显示其名称和简短标识符。「Google Drive 当前不可用」：下方一行给出原因：无法连接、已达到每日上传上限、您的 Google Drive 没有可用空间，或 Google 返回错误；无法连接或出现错误时，应用会自动重试。退出登录进行期间会显示「正在退出 Google Drive..」。「在此设备上退出登录」只询问一个问题，默认答案是「否」。选择「是」后，它会在 Google 处撤销访问权限，从您 Google Drive 的隐藏文件夹中删除这台电脑的记录，并删除保存在这台电脑上的登录令牌；按钮下方的一行会说明已删除的记录数，或说明 Google 未确认撤销，此时您可以在 Google 账号设置中手动撤销。在没有 Google 访问密钥的版本中，页面显示「此版本未配置 Google Drive 登录」，「登录..」不可用，管理器的其他功能照常工作。"
         },
         {
           "id": "scheduled",
           "title": "管理器设置",
-          "text": "启动、主题、语言、远程账户、发布、剪贴板和计划文件操作属于管理器，无需安装本地服务器。 从托盘或组件链接打开。打开或关闭窗口不会启动或停止服务器。远程登录无需本地服务器。"
+          "text": "启动、主题、语言、远程账户、发布、剪贴板和计划文件操作属于管理器，无需安装本地服务器。 如果已安装 SFTP 共享组件，其页面会在此窗口中构成一个分组。 从托盘或组件链接打开。打开或关闭窗口不会启动或停止服务器。远程登录无需本地服务器。"
         },
         {
           "id": "help",
           "title": "管理器设置",
-          "text": "启动、主题、语言、远程账户、发布、剪贴板和计划文件操作属于管理器，无需安装本地服务器。 从托盘或组件链接打开。打开或关闭窗口不会启动或停止服务器。远程登录无需本地服务器。"
+          "text": "启动、主题、语言、远程账户、发布、剪贴板和计划文件操作属于管理器，无需安装本地服务器。 如果已安装 SFTP 共享组件，其页面会在此窗口中构成一个分组。 从托盘或组件链接打开。打开或关闭窗口不会启动或停止服务器。远程登录无需本地服务器。"
         },
         {
           "id": "navigation",
           "title": "管理器设置",
-          "text": "链接为每个已安装组件激活一个窗口。各窗口分别记住页面、分组、滚动和大小。主题和语言位于管理器中；F1 和 ? 打开当前页面帮助。"
+          "text": "链接激活另一个窗口：管理器和本地交换服务器各有一个窗口。各窗口分别记住页面、分组、滚动和大小。主题和语言位于管理器中；F1 和 ? 打开当前页面帮助。"
         }
       ]
     }
@@ -421,66 +486,66 @@
     "en": {
       "title": "SFTP sharing settings",
       "purpose": "Configure the SFTP listener, connection limit, LAN-only policy and interactive or Windows-service hosting here. These settings affect local folder sharing, not the exchange-server listener or your remote account.",
-      "order": "Open SFTP sharing settings from the tray or the link in Manager settings. If sharing is disabled, enable it explicitly through the existing confirmation and administrator prompt. Opening this window never enables or starts sharing. Type a port and choose Apply; switching windows preserves the draft. On close, Yes applies it, No discards it, Cancel keeps editing. A failed apply keeps the draft. Changing a live port requires new connection codes and router forwarding.",
+      "order": "Open Manager settings from the manager or tray and choose the SFTP sharing group (Network, Hosting). If sharing is disabled, enable it explicitly through the existing confirmation and administrator prompt. Opening the window never enables or starts sharing. Type a port and choose Apply; switching windows preserves the draft. While a port draft is pending, closing asks: Yes applies it, No discards it, Cancel keeps editing. A failed apply keeps the draft. Changing a live port requires new connection codes and router forwarding.",
       "sections": [
         {
           "id": "network",
           "title": "SFTP sharing settings",
-          "text": "Configure the SFTP listener, connection limit, LAN-only policy and interactive or Windows-service hosting here. These settings affect local folder sharing, not the exchange-server listener or your remote account. Open SFTP sharing settings from the tray or the link in Manager settings. If sharing is disabled, enable it explicitly through the existing confirmation and administrator prompt. Opening this window never enables or starts sharing. Type a port and choose Apply; switching windows preserves the draft. On close, Yes applies it, No discards it, Cancel keeps editing. A failed apply keeps the draft. Changing a live port requires new connection codes and router forwarding."
+          "text": "Configure the SFTP listener, connection limit, LAN-only policy and interactive or Windows-service hosting here. These settings affect local folder sharing, not the exchange-server listener or your remote account. Open Manager settings from the manager or tray and choose the SFTP sharing group (Network, Hosting). If sharing is disabled, enable it explicitly through the existing confirmation and administrator prompt. Opening the window never enables or starts sharing. Type a port and choose Apply; switching windows preserves the draft. While a port draft is pending, closing asks: Yes applies it, No discards it, Cancel keeps editing. A failed apply keeps the draft. Changing a live port requires new connection codes and router forwarding."
         },
         {
           "id": "hosting",
           "title": "SFTP sharing settings",
-          "text": "Configure the SFTP listener, connection limit, LAN-only policy and interactive or Windows-service hosting here. These settings affect local folder sharing, not the exchange-server listener or your remote account. Open SFTP sharing settings from the tray or the link in Manager settings. If sharing is disabled, enable it explicitly through the existing confirmation and administrator prompt. Opening this window never enables or starts sharing. Type a port and choose Apply; switching windows preserves the draft. On close, Yes applies it, No discards it, Cancel keeps editing. A failed apply keeps the draft. Changing a live port requires new connection codes and router forwarding."
+          "text": "Configure the SFTP listener, connection limit, LAN-only policy and interactive or Windows-service hosting here. These settings affect local folder sharing, not the exchange-server listener or your remote account. Open Manager settings from the manager or tray and choose the SFTP sharing group (Network, Hosting). If sharing is disabled, enable it explicitly through the existing confirmation and administrator prompt. Opening the window never enables or starts sharing. Type a port and choose Apply; switching windows preserves the draft. While a port draft is pending, closing asks: Yes applies it, No discards it, Cancel keeps editing. A failed apply keeps the draft. Changing a live port requires new connection codes and router forwarding."
         },
         {
           "id": "navigation",
           "title": "Manager settings",
-          "text": "The links at the lower left open or activate one window per destination. They follow installed payloads, not whether a server is running. Each window remembers its own page, group folds, scroll and size. Common theme and language editors appear only in Manager settings. F1 and ? open the current page help."
+          "text": "The link at the lower left opens or activates the other window: Manager settings and the local exchange server settings have one window each. They follow installed payloads, not whether a server is running. Each window remembers its own page, group folds, scroll and size. Common theme and language editors appear only in Manager settings. F1 and ? open the current page help."
         }
       ]
     },
     "ru": {
       "title": "Настройки общего доступа SFTP",
       "purpose": "Здесь находятся порт SFTP, ограничение подключений, режим только локальной сети и работа в сеансе пользователя или службой Windows. Они относятся к общему доступу к папкам и не меняют порт сервера обмена или удалённую учётную запись.",
-      "order": "Откройте настройки общего доступа SFTP из трея или по ссылке в настройках менеджера. Выключенные функции включаются только явным подтверждением с запросом прав администратора. Открытие окна ничего не включает и не запускает. Введите порт и нажмите кнопку применения; переход в другое окно сохраняет черновик. При закрытии Да применяет порт, Нет отбрасывает черновик, Отмена продолжает редактирование. При ошибке черновик остаётся. После смены рабочего порта обновите выданные коды и проброс на роутере.",
+      "order": "Откройте настройки менеджера из его окна или трея и выберите группу «Общий доступ SFTP» (страницы «Сеть» и «Хостинг»). Выключенные функции включаются только явным подтверждением с запросом прав администратора. Открытие окна ничего не включает и не запускает. Введите порт и нажмите кнопку применения; переход в другое окно сохраняет черновик. Пока черновик порта не применён, при закрытии спрашивается: Да применяет порт, Нет отбрасывает черновик, Отмена продолжает редактирование. При ошибке черновик остаётся. После смены рабочего порта обновите выданные коды и проброс на роутере.",
       "sections": [
         {
           "id": "network",
           "title": "Настройки общего доступа SFTP",
-          "text": "Здесь находятся порт SFTP, ограничение подключений, режим только локальной сети и работа в сеансе пользователя или службой Windows. Они относятся к общему доступу к папкам и не меняют порт сервера обмена или удалённую учётную запись. Откройте настройки общего доступа SFTP из трея или по ссылке в настройках менеджера. Выключенные функции включаются только явным подтверждением с запросом прав администратора. Открытие окна ничего не включает и не запускает. Введите порт и нажмите кнопку применения; переход в другое окно сохраняет черновик. При закрытии Да применяет порт, Нет отбрасывает черновик, Отмена продолжает редактирование. При ошибке черновик остаётся. После смены рабочего порта обновите выданные коды и проброс на роутере."
+          "text": "Здесь находятся порт SFTP, ограничение подключений, режим только локальной сети и работа в сеансе пользователя или службой Windows. Они относятся к общему доступу к папкам и не меняют порт сервера обмена или удалённую учётную запись. Откройте настройки менеджера из его окна или трея и выберите группу «Общий доступ SFTP» (страницы «Сеть» и «Хостинг»). Выключенные функции включаются только явным подтверждением с запросом прав администратора. Открытие окна ничего не включает и не запускает. Введите порт и нажмите кнопку применения; переход в другое окно сохраняет черновик. Пока черновик порта не применён, при закрытии спрашивается: Да применяет порт, Нет отбрасывает черновик, Отмена продолжает редактирование. При ошибке черновик остаётся. После смены рабочего порта обновите выданные коды и проброс на роутере."
         },
         {
           "id": "hosting",
           "title": "Настройки общего доступа SFTP",
-          "text": "Здесь находятся порт SFTP, ограничение подключений, режим только локальной сети и работа в сеансе пользователя или службой Windows. Они относятся к общему доступу к папкам и не меняют порт сервера обмена или удалённую учётную запись. Откройте настройки общего доступа SFTP из трея или по ссылке в настройках менеджера. Выключенные функции включаются только явным подтверждением с запросом прав администратора. Открытие окна ничего не включает и не запускает. Введите порт и нажмите кнопку применения; переход в другое окно сохраняет черновик. При закрытии Да применяет порт, Нет отбрасывает черновик, Отмена продолжает редактирование. При ошибке черновик остаётся. После смены рабочего порта обновите выданные коды и проброс на роутере."
+          "text": "Здесь находятся порт SFTP, ограничение подключений, режим только локальной сети и работа в сеансе пользователя или службой Windows. Они относятся к общему доступу к папкам и не меняют порт сервера обмена или удалённую учётную запись. Откройте настройки менеджера из его окна или трея и выберите группу «Общий доступ SFTP» (страницы «Сеть» и «Хостинг»). Выключенные функции включаются только явным подтверждением с запросом прав администратора. Открытие окна ничего не включает и не запускает. Введите порт и нажмите кнопку применения; переход в другое окно сохраняет черновик. Пока черновик порта не применён, при закрытии спрашивается: Да применяет порт, Нет отбрасывает черновик, Отмена продолжает редактирование. При ошибке черновик остаётся. После смены рабочего порта обновите выданные коды и проброс на роутере."
         },
         {
           "id": "navigation",
           "title": "Настройки менеджера",
-          "text": "Ссылки слева внизу открывают или активируют по одному окну каждого назначения. Доступность зависит от установленных компонентов, а не от запуска сервера. Каждое окно помнит страницу, свёрнутые группы, прокрутку и размер. Тема и язык меняются только в настройках менеджера. F1 и ? открывают справку текущей страницы."
+          "text": "Ссылка слева внизу открывает или активирует второе окно: у настроек менеджера и у локального сервера обмена по одному окну. Доступность зависит от установленных компонентов, а не от запуска сервера. Каждое окно помнит страницу, свёрнутые группы, прокрутку и размер. Тема и язык меняются только в настройках менеджера. F1 и ? открывают справку текущей страницы."
         }
       ]
     },
     "uk": {
       "title": "Налаштування спільного доступу SFTP",
       "purpose": "Тут знаходяться порт SFTP, обмеження підключень, режим лише локальної мережі та робота в сеансі користувача або службою Windows. Вони стосуються спільного доступу до папок і не змінюють порт сервера обміну чи віддалений обліковий запис.",
-      "order": "Відкрийте налаштування SFTP з трея або налаштувань менеджера. Вимкнені функції вмикаються лише явним підтвердженням із запитом прав адміністратора. Відкриття вікна нічого не вмикає й не запускає. Введіть порт і застосуйте; перехід між вікнами зберігає чернетку. Під час закриття Так застосовує, Ні відкидає, Скасувати продовжує редагування. Помилка зберігає чернетку. Після зміни робочого порту оновіть коди й перенаправлення на роутері.",
+      "order": "Відкрийте налаштування менеджера з його вікна або трея й виберіть групу «Спільний доступ SFTP» (сторінки «Мережа» та «Хостинг»). Вимкнені функції вмикаються лише явним підтвердженням із запитом прав адміністратора. Відкриття вікна нічого не вмикає й не запускає. Введіть порт і застосуйте; перехід між вікнами зберігає чернетку. Поки чернетку порту не застосовано, під час закриття питається: Так застосовує, Ні відкидає, Скасувати продовжує редагування. Помилка зберігає чернетку. Після зміни робочого порту оновіть коди й перенаправлення на роутері.",
       "sections": [
         {
           "id": "network",
           "title": "Налаштування спільного доступу SFTP",
-          "text": "Тут знаходяться порт SFTP, обмеження підключень, режим лише локальної мережі та робота в сеансі користувача або службою Windows. Вони стосуються спільного доступу до папок і не змінюють порт сервера обміну чи віддалений обліковий запис. Відкрийте налаштування SFTP з трея або налаштувань менеджера. Вимкнені функції вмикаються лише явним підтвердженням із запитом прав адміністратора. Відкриття вікна нічого не вмикає й не запускає. Введіть порт і застосуйте; перехід між вікнами зберігає чернетку. Під час закриття Так застосовує, Ні відкидає, Скасувати продовжує редагування. Помилка зберігає чернетку. Після зміни робочого порту оновіть коди й перенаправлення на роутері."
+          "text": "Тут знаходяться порт SFTP, обмеження підключень, режим лише локальної мережі та робота в сеансі користувача або службою Windows. Вони стосуються спільного доступу до папок і не змінюють порт сервера обміну чи віддалений обліковий запис. Відкрийте налаштування менеджера з його вікна або трея й виберіть групу «Спільний доступ SFTP» (сторінки «Мережа» та «Хостинг»). Вимкнені функції вмикаються лише явним підтвердженням із запитом прав адміністратора. Відкриття вікна нічого не вмикає й не запускає. Введіть порт і застосуйте; перехід між вікнами зберігає чернетку. Поки чернетку порту не застосовано, під час закриття питається: Так застосовує, Ні відкидає, Скасувати продовжує редагування. Помилка зберігає чернетку. Після зміни робочого порту оновіть коди й перенаправлення на роутері."
         },
         {
           "id": "hosting",
           "title": "Налаштування спільного доступу SFTP",
-          "text": "Тут знаходяться порт SFTP, обмеження підключень, режим лише локальної мережі та робота в сеансі користувача або службою Windows. Вони стосуються спільного доступу до папок і не змінюють порт сервера обміну чи віддалений обліковий запис. Відкрийте налаштування SFTP з трея або налаштувань менеджера. Вимкнені функції вмикаються лише явним підтвердженням із запитом прав адміністратора. Відкриття вікна нічого не вмикає й не запускає. Введіть порт і застосуйте; перехід між вікнами зберігає чернетку. Під час закриття Так застосовує, Ні відкидає, Скасувати продовжує редагування. Помилка зберігає чернетку. Після зміни робочого порту оновіть коди й перенаправлення на роутері."
+          "text": "Тут знаходяться порт SFTP, обмеження підключень, режим лише локальної мережі та робота в сеансі користувача або службою Windows. Вони стосуються спільного доступу до папок і не змінюють порт сервера обміну чи віддалений обліковий запис. Відкрийте налаштування менеджера з його вікна або трея й виберіть групу «Спільний доступ SFTP» (сторінки «Мережа» та «Хостинг»). Вимкнені функції вмикаються лише явним підтвердженням із запитом прав адміністратора. Відкриття вікна нічого не вмикає й не запускає. Введіть порт і застосуйте; перехід між вікнами зберігає чернетку. Поки чернетку порту не застосовано, під час закриття питається: Так застосовує, Ні відкидає, Скасувати продовжує редагування. Помилка зберігає чернетку. Після зміни робочого порту оновіть коди й перенаправлення на роутері."
         },
         {
           "id": "navigation",
           "title": "Налаштування менеджера",
-          "text": "Посилання зліва внизу відкривають або активують по одному вікну кожного призначення. Доступність залежить від установлених компонентів, а не від запуску сервера. Кожне вікно пам’ятає сторінку, групи, прокрутку й розмір. Тема й мова змінюються лише в менеджері. F1 і ? відкривають довідку поточної сторінки."
+          "text": "Посилання зліва внизу відкриває або активує друге вікно: у налаштувань менеджера й локального сервера обміну по одному вікну. Доступність залежить від установлених компонентів, а не від запуску сервера. Кожне вікно пам’ятає сторінку, групи, прокрутку й розмір. Тема й мова змінюються лише в менеджері. F1 і ? відкривають довідку поточної сторінки."
         }
       ]
     },
@@ -502,7 +567,7 @@
         {
           "id": "navigation",
           "title": "Managereinstellungen",
-          "text": "Die Links aktivieren jeweils ein Fenster pro installiertem Bestandteil. Jedes merkt sich Seite, Gruppen, Bildlauf und Größe. Design und Sprache ändern Sie im Manager; F1 und ? erklären die aktuelle Seite."
+          "text": "Der Link aktiviert das jeweils andere Fenster: Manager und lokaler Austauschserver haben je eines. Jedes merkt sich Seite, Gruppen, Bildlauf und Größe. Design und Sprache ändern Sie im Manager; F1 und ? erklären die aktuelle Seite."
         }
       ]
     },
@@ -524,7 +589,7 @@
         {
           "id": "navigation",
           "title": "Impostazioni del gestore",
-          "text": "I collegamenti attivano una finestra per componente installato. Ogni finestra ricorda pagina, gruppi, scorrimento e dimensioni. Tema e lingua sono nel gestore; F1 e ? aprono la guida corrente."
+          "text": "Il collegamento attiva l’altra finestra: gestore e server di scambio locale hanno una finestra ciascuno. Ogni finestra ricorda pagina, gruppi, scorrimento e dimensioni. Tema e lingua sono nel gestore; F1 e ? aprono la guida corrente."
         }
       ]
     },
@@ -546,7 +611,7 @@
         {
           "id": "navigation",
           "title": "Ajustes del gestor",
-          "text": "Los enlaces activan una ventana por componente instalado. Cada una recuerda página, grupos, desplazamiento y tamaño. Tema e idioma están en el gestor; F1 y ? abren la ayuda actual."
+          "text": "El enlace activa la otra ventana: el gestor y el servidor de intercambio local tienen una cada uno. Cada una recuerda página, grupos, desplazamiento y tamaño. Tema e idioma están en el gestor; F1 y ? abren la ayuda actual."
         }
       ]
     },
@@ -568,7 +633,7 @@
         {
           "id": "navigation",
           "title": "Paramètres du gestionnaire",
-          "text": "Les liens activent une fenêtre par composant installé. Chacune mémorise page, groupes, défilement et taille. Thème et langue sont dans le gestionnaire ; F1 et ? ouvrent l’aide courante."
+          "text": "Le lien active l’autre fenêtre : le gestionnaire et le serveur d’échange local en ont une chacun. Chacune mémorise page, groupes, défilement et taille. Thème et langue sont dans le gestionnaire ; F1 et ? ouvrent l’aide courante."
         }
       ]
     },
@@ -590,7 +655,7 @@
         {
           "id": "navigation",
           "title": "Definições do gestor",
-          "text": "As ligações ativam uma janela por componente instalado. Cada uma guarda página, grupos, deslocamento e tamanho. Tema e idioma estão no gestor; F1 e ? abrem a ajuda atual."
+          "text": "A ligação ativa a outra janela: o gestor e o servidor de troca local têm uma cada. Cada uma guarda página, grupos, deslocamento e tamanho. Tema e idioma estão no gestor; F1 e ? abrem a ajuda atual."
         }
       ]
     },
@@ -612,7 +677,7 @@
         {
           "id": "navigation",
           "title": "إعدادات المدير",
-          "text": "تفتح الروابط نافذة واحدة لكل مكوّن مثبّت. تتذكر كل نافذة الصفحة والمجموعات والتمرير والحجم. المظهر واللغة في المدير؛ F1 و? يفتحان مساعدة الصفحة الحالية."
+          "text": "يفتح الرابط النافذة الأخرى: للمدير وللخادم المحلي للتبادل نافذة واحدة لكل منهما. تتذكر كل نافذة الصفحة والمجموعات والتمرير والحجم. المظهر واللغة في المدير؛ F1 و? يفتحان مساعدة الصفحة الحالية."
         }
       ]
     },
@@ -634,7 +699,7 @@
         {
           "id": "navigation",
           "title": "प्रबंधक सेटिंग",
-          "text": "लिंक हर स्थापित घटक की एक विंडो सक्रिय करते हैं। प्रत्येक पृष्ठ, समूह, स्क्रॉल और आकार याद रखती है। थीम और भाषा प्रबंधक में हैं; F1 और ? वर्तमान सहायता खोलते हैं।"
+          "text": "लिंक दूसरी विंडो सक्रिय करता है: प्रबंधक और स्थानीय एक्सचेंज सर्वर की एक-एक विंडो है। प्रत्येक पृष्ठ, समूह, स्क्रॉल और आकार याद रखती है। थीम और भाषा प्रबंधक में हैं; F1 और ? वर्तमान सहायता खोलते हैं।"
         }
       ]
     },
@@ -656,7 +721,7 @@
         {
           "id": "navigation",
           "title": "ম্যানেজার সেটিংস",
-          "text": "প্রতি ইনস্টল করা উপাদানের একটি উইন্ডো সক্রিয় হয়। প্রতিটি পৃষ্ঠা, দল, স্ক্রল ও আকার মনে রাখে। থিম ও ভাষা ম্যানেজারে; F1 ও ? বর্তমান সহায়তা খোলে।"
+          "text": "লিংকটি অন্য উইন্ডো সক্রিয় করে: ম্যানেজার ও স্থানীয় এক্সচেঞ্জ সার্ভারের একটি করে উইন্ডো আছে। প্রতিটি পৃষ্ঠা, দল, স্ক্রল ও আকার মনে রাখে। থিম ও ভাষা ম্যানেজারে; F1 ও ? বর্তমান সহায়তা খোলে।"
         }
       ]
     },
@@ -678,7 +743,7 @@
         {
           "id": "navigation",
           "title": "مینیجر کی ترتیبات",
-          "text": "ہر نصب جزو کی ایک ونڈو فعال ہوتی ہے۔ ہر ونڈو صفحہ، گروپ، سکرول اور سائز یاد رکھتی ہے۔ تھیم اور زبان مینیجر میں ہیں؛ F1 اور ? موجودہ مدد کھولتے ہیں۔"
+          "text": "لنک دوسری ونڈو فعال کرتا ہے: مینیجر اور مقامی ایکسچینج سرور کی ایک ایک ونڈو ہے۔ ہر ونڈو صفحہ، گروپ، سکرول اور سائز یاد رکھتی ہے۔ تھیم اور زبان مینیجر میں ہیں؛ F1 اور ? موجودہ مدد کھولتے ہیں۔"
         }
       ]
     },
@@ -700,7 +765,7 @@
         {
           "id": "navigation",
           "title": "管理器设置",
-          "text": "链接为每个已安装组件激活一个窗口。各窗口分别记住页面、分组、滚动和大小。主题和语言位于管理器中；F1 和 ? 打开当前页面帮助。"
+          "text": "链接激活另一个窗口：管理器和本地交换服务器各有一个窗口。各窗口分别记住页面、分组、滚动和大小。主题和语言位于管理器中；F1 和 ? 打开当前页面帮助。"
         }
       ]
     }
@@ -719,7 +784,7 @@
         {
           "id": "navigation",
           "title": "Manager settings",
-          "text": "The links at the lower left open or activate one window per destination. They follow installed payloads, not whether a server is running. Each window remembers its own page, group folds, scroll and size. Common theme and language editors appear only in Manager settings. F1 and ? open the current page help."
+          "text": "The link at the lower left opens or activates the other window: Manager settings and the local exchange server settings have one window each. They follow installed payloads, not whether a server is running. Each window remembers its own page, group folds, scroll and size. Common theme and language editors appear only in Manager settings. F1 and ? open the current page help."
         }
       ]
     },
@@ -736,7 +801,7 @@
         {
           "id": "navigation",
           "title": "Настройки менеджера",
-          "text": "Ссылки слева внизу открывают или активируют по одному окну каждого назначения. Доступность зависит от установленных компонентов, а не от запуска сервера. Каждое окно помнит страницу, свёрнутые группы, прокрутку и размер. Тема и язык меняются только в настройках менеджера. F1 и ? открывают справку текущей страницы."
+          "text": "Ссылка слева внизу открывает или активирует второе окно: у настроек менеджера и у локального сервера обмена по одному окну. Доступность зависит от установленных компонентов, а не от запуска сервера. Каждое окно помнит страницу, свёрнутые группы, прокрутку и размер. Тема и язык меняются только в настройках менеджера. F1 и ? открывают справку текущей страницы."
         }
       ]
     },
@@ -753,7 +818,7 @@
         {
           "id": "navigation",
           "title": "Налаштування менеджера",
-          "text": "Посилання зліва внизу відкривають або активують по одному вікну кожного призначення. Доступність залежить від установлених компонентів, а не від запуску сервера. Кожне вікно пам’ятає сторінку, групи, прокрутку й розмір. Тема й мова змінюються лише в менеджері. F1 і ? відкривають довідку поточної сторінки."
+          "text": "Посилання зліва внизу відкриває або активує друге вікно: у налаштувань менеджера й локального сервера обміну по одному вікну. Доступність залежить від установлених компонентів, а не від запуску сервера. Кожне вікно пам’ятає сторінку, групи, прокрутку й розмір. Тема й мова змінюються лише в менеджері. F1 і ? відкривають довідку поточної сторінки."
         }
       ]
     },
@@ -770,7 +835,7 @@
         {
           "id": "navigation",
           "title": "Managereinstellungen",
-          "text": "Die Links aktivieren jeweils ein Fenster pro installiertem Bestandteil. Jedes merkt sich Seite, Gruppen, Bildlauf und Größe. Design und Sprache ändern Sie im Manager; F1 und ? erklären die aktuelle Seite."
+          "text": "Der Link aktiviert das jeweils andere Fenster: Manager und lokaler Austauschserver haben je eines. Jedes merkt sich Seite, Gruppen, Bildlauf und Größe. Design und Sprache ändern Sie im Manager; F1 und ? erklären die aktuelle Seite."
         }
       ]
     },
@@ -787,7 +852,7 @@
         {
           "id": "navigation",
           "title": "Impostazioni del gestore",
-          "text": "I collegamenti attivano una finestra per componente installato. Ogni finestra ricorda pagina, gruppi, scorrimento e dimensioni. Tema e lingua sono nel gestore; F1 e ? aprono la guida corrente."
+          "text": "Il collegamento attiva l’altra finestra: gestore e server di scambio locale hanno una finestra ciascuno. Ogni finestra ricorda pagina, gruppi, scorrimento e dimensioni. Tema e lingua sono nel gestore; F1 e ? aprono la guida corrente."
         }
       ]
     },
@@ -804,7 +869,7 @@
         {
           "id": "navigation",
           "title": "Ajustes del gestor",
-          "text": "Los enlaces activan una ventana por componente instalado. Cada una recuerda página, grupos, desplazamiento y tamaño. Tema e idioma están en el gestor; F1 y ? abren la ayuda actual."
+          "text": "El enlace activa la otra ventana: el gestor y el servidor de intercambio local tienen una cada uno. Cada una recuerda página, grupos, desplazamiento y tamaño. Tema e idioma están en el gestor; F1 y ? abren la ayuda actual."
         }
       ]
     },
@@ -821,7 +886,7 @@
         {
           "id": "navigation",
           "title": "Paramètres du gestionnaire",
-          "text": "Les liens activent une fenêtre par composant installé. Chacune mémorise page, groupes, défilement et taille. Thème et langue sont dans le gestionnaire ; F1 et ? ouvrent l’aide courante."
+          "text": "Le lien active l’autre fenêtre : le gestionnaire et le serveur d’échange local en ont une chacun. Chacune mémorise page, groupes, défilement et taille. Thème et langue sont dans le gestionnaire ; F1 et ? ouvrent l’aide courante."
         }
       ]
     },
@@ -838,7 +903,7 @@
         {
           "id": "navigation",
           "title": "Definições do gestor",
-          "text": "As ligações ativam uma janela por componente instalado. Cada uma guarda página, grupos, deslocamento e tamanho. Tema e idioma estão no gestor; F1 e ? abrem a ajuda atual."
+          "text": "A ligação ativa a outra janela: o gestor e o servidor de troca local têm uma cada. Cada uma guarda página, grupos, deslocamento e tamanho. Tema e idioma estão no gestor; F1 e ? abrem a ajuda atual."
         }
       ]
     },
@@ -855,7 +920,7 @@
         {
           "id": "navigation",
           "title": "إعدادات المدير",
-          "text": "تفتح الروابط نافذة واحدة لكل مكوّن مثبّت. تتذكر كل نافذة الصفحة والمجموعات والتمرير والحجم. المظهر واللغة في المدير؛ F1 و? يفتحان مساعدة الصفحة الحالية."
+          "text": "يفتح الرابط النافذة الأخرى: للمدير وللخادم المحلي للتبادل نافذة واحدة لكل منهما. تتذكر كل نافذة الصفحة والمجموعات والتمرير والحجم. المظهر واللغة في المدير؛ F1 و? يفتحان مساعدة الصفحة الحالية."
         }
       ]
     },
@@ -872,7 +937,7 @@
         {
           "id": "navigation",
           "title": "प्रबंधक सेटिंग",
-          "text": "लिंक हर स्थापित घटक की एक विंडो सक्रिय करते हैं। प्रत्येक पृष्ठ, समूह, स्क्रॉल और आकार याद रखती है। थीम और भाषा प्रबंधक में हैं; F1 और ? वर्तमान सहायता खोलते हैं।"
+          "text": "लिंक दूसरी विंडो सक्रिय करता है: प्रबंधक और स्थानीय एक्सचेंज सर्वर की एक-एक विंडो है। प्रत्येक पृष्ठ, समूह, स्क्रॉल और आकार याद रखती है। थीम और भाषा प्रबंधक में हैं; F1 और ? वर्तमान सहायता खोलते हैं।"
         }
       ]
     },
@@ -889,7 +954,7 @@
         {
           "id": "navigation",
           "title": "ম্যানেজার সেটিংস",
-          "text": "প্রতি ইনস্টল করা উপাদানের একটি উইন্ডো সক্রিয় হয়। প্রতিটি পৃষ্ঠা, দল, স্ক্রল ও আকার মনে রাখে। থিম ও ভাষা ম্যানেজারে; F1 ও ? বর্তমান সহায়তা খোলে।"
+          "text": "লিংকটি অন্য উইন্ডো সক্রিয় করে: ম্যানেজার ও স্থানীয় এক্সচেঞ্জ সার্ভারের একটি করে উইন্ডো আছে। প্রতিটি পৃষ্ঠা, দল, স্ক্রল ও আকার মনে রাখে। থিম ও ভাষা ম্যানেজারে; F1 ও ? বর্তমান সহায়তা খোলে।"
         }
       ]
     },
@@ -906,7 +971,7 @@
         {
           "id": "navigation",
           "title": "مینیجر کی ترتیبات",
-          "text": "ہر نصب جزو کی ایک ونڈو فعال ہوتی ہے۔ ہر ونڈو صفحہ، گروپ، سکرول اور سائز یاد رکھتی ہے۔ تھیم اور زبان مینیجر میں ہیں؛ F1 اور ? موجودہ مدد کھولتے ہیں۔"
+          "text": "لنک دوسری ونڈو فعال کرتا ہے: مینیجر اور مقامی ایکسچینج سرور کی ایک ایک ونڈو ہے۔ ہر ونڈو صفحہ، گروپ، سکرول اور سائز یاد رکھتی ہے۔ تھیم اور زبان مینیجر میں ہیں؛ F1 اور ? موجودہ مدد کھولتے ہیں۔"
         }
       ]
     },
@@ -923,7 +988,704 @@
         {
           "id": "navigation",
           "title": "管理器设置",
-          "text": "链接为每个已安装组件激活一个窗口。各窗口分别记住页面、分组、滚动和大小。主题和语言位于管理器中；F1 和 ? 打开当前页面帮助。"
+          "text": "链接激活另一个窗口：管理器和本地交换服务器各有一个窗口。各窗口分别记住页面、分组、滚动和大小。主题和语言位于管理器中；F1 和 ? 打开当前页面帮助。"
+        }
+      ]
+    }
+  },
+  "share-disks": {
+    "en": {
+      "title": ".fdd disks",
+      "purpose": "Manage shared FileDO disks and inspect their state, autostart setting, holder and container path.",
+      "order": "Select a disk and use Autostart.. to enable or disable automatic reopening with the server. Both the disk table and the main resource list update after changes.",
+      "sections": [
+        {
+          "id": "autostart",
+          "title": "Autostart",
+          "text": "The Autostart column shows Yes or No for every disk without selecting it. A dash (-) means the worker does not support autostart. FileDO rows in the main list also show autostart when enabled. The setting is independent of State: a disk can have autostart enabled while closed or failed. Select it to read the sanitized worker error below the table. Close leaves this window."
+        }
+      ]
+    },
+    "ru": {
+      "title": "Диски .fdd",
+      "purpose": "Управляйте общими дисками FileDO и проверяйте их состояние, автозапуск, владельца и путь к контейнеру.",
+      "order": "Выберите диск и нажмите «Автозапуск..», чтобы включить или отключить открытие вместе с сервером. Таблица дисков и главный список ресурсов обновляются после изменений.",
+      "sections": [
+        {
+          "id": "autostart",
+          "title": "Автозапуск",
+          "text": "Колонка «Автозапуск» показывает «Да» или «Нет» для каждого диска без выбора строки. Прочерк (-) означает, что рабочий процесс не поддерживает автозапуск. В главном списке строки FileDO также показывают включённый автозапуск. Настройка не зависит от состояния: диск с автозапуском может быть закрыт или завершиться с ошибкой. Выберите диск, чтобы прочитать очищенное сообщение об ошибке под таблицей. «Закрыть» закрывает это окно."
+        }
+      ]
+    },
+    "uk": {
+      "title": "Диски .fdd",
+      "purpose": "Керуйте спільними дисками FileDO та перевіряйте їхній стан, автозапуск, власника й шлях до контейнера.",
+      "order": "Виберіть диск і натисніть «Автозапуск..», щоб увімкнути або вимкнути відкриття разом із сервером. Таблиця дисків і головний список ресурсів оновлюються після змін.",
+      "sections": [
+        {
+          "id": "autostart",
+          "title": "Автозапуск",
+          "text": "Колонка «Автозапуск» показує «Так» або «Ні» для кожного диска без вибору рядка. Риска (-) означає, що робочий процес не підтримує автозапуск. У головному списку рядки FileDO також показують увімкнений автозапуск. Налаштування не залежить від стану: диск з автозапуском може бути закритий або мати помилку. Виберіть диск, щоб прочитати очищене повідомлення про помилку під таблицею. «Закрити» закриває це вікно."
+        }
+      ]
+    },
+    "de": {
+      "title": ".fdd-Laufwerke",
+      "purpose": "Freigegebene FileDO-Laufwerke verwalten und Zustand, Autostart, Halter und Containerpfad prüfen.",
+      "order": "Ein Laufwerk auswählen und mit Autostart.. das automatische Öffnen mit dem Server ein- oder ausschalten. Laufwerktabelle und Ressourcenliste werden nach Änderungen aktualisiert.",
+      "sections": [
+        {
+          "id": "autostart",
+          "title": "Autostart",
+          "text": "Die Spalte Autostart zeigt für jedes Laufwerk Ja oder Nein, ohne es auszuwählen. Ein Strich (-) bedeutet, dass der Hintergrundprozess Autostart nicht unterstützt. FileDO-Zeilen in der Hauptliste zeigen aktivierten Autostart ebenfalls an. Die Einstellung ist vom Zustand unabhängig: Das Laufwerk kann geschlossen oder fehlerhaft sein. Zur Anzeige der bereinigten Fehlermeldung unter der Tabelle das Laufwerk auswählen. Schließen schließt dieses Fenster."
+        }
+      ]
+    },
+    "it": {
+      "title": "Dischi .fdd",
+      "purpose": "Gestisci i dischi FileDO condivisi e controlla stato, avvio automatico, gestore e percorso del contenitore.",
+      "order": "Seleziona un disco e usa Avvio automatico.. per attivare o disattivare la riapertura con il server. La tabella e l’elenco principale delle risorse si aggiornano dopo le modifiche.",
+      "sections": [
+        {
+          "id": "autostart",
+          "title": "Avvio automatico",
+          "text": "La colonna Avvio automatico mostra Sì o No per ogni disco senza selezionarlo. Un trattino (-) indica che il processo non supporta questa impostazione. Anche le righe FileDO nell’elenco principale indicano l’avvio automatico attivo. L’impostazione è indipendente dallo stato: un disco può essere chiuso o in errore. Selezionalo per leggere l’errore ripulito sotto la tabella. Chiudi chiude questa finestra."
+        }
+      ]
+    },
+    "es": {
+      "title": "Discos .fdd",
+      "purpose": "Administra discos FileDO compartidos y consulta su estado, inicio automático, responsable y ruta del contenedor.",
+      "order": "Selecciona un disco y usa Inicio automático.. para activar o desactivar la reapertura con el servidor. La tabla y la lista principal de recursos se actualizan tras los cambios.",
+      "sections": [
+        {
+          "id": "autostart",
+          "title": "Inicio automático",
+          "text": "La columna Inicio automático muestra Sí o No para cada disco sin seleccionarlo. Un guion (-) indica que el proceso no admite esta opción. Las filas FileDO de la lista principal también indican el inicio automático activo. La opción es independiente del estado: el disco puede estar cerrado o con error. Selecciónalo para leer el error depurado debajo de la tabla. Cerrar cierra esta ventana."
+        }
+      ]
+    },
+    "fr": {
+      "title": "Disques .fdd",
+      "purpose": "Gérez les disques FileDO partagés et consultez leur état, démarrage automatique, détenteur et chemin du conteneur.",
+      "order": "Sélectionnez un disque et utilisez Démarrage automatique.. pour activer ou désactiver sa réouverture avec le serveur. La table et la liste principale des ressources sont actualisées après les modifications.",
+      "sections": [
+        {
+          "id": "autostart",
+          "title": "Démarrage automatique",
+          "text": "La colonne Démarrage automatique affiche Oui ou Non pour chaque disque sans le sélectionner. Un tiret (-) signifie que le processus ne prend pas en charge cette option. Les lignes FileDO de la liste principale indiquent aussi le démarrage automatique actif. Ce réglage est indépendant de l’état : le disque peut être fermé ou en erreur. Sélectionnez-le pour lire l’erreur nettoyée sous la table. Fermer ferme cette fenêtre."
+        }
+      ]
+    },
+    "pt": {
+      "title": "Discos .fdd",
+      "purpose": "Gira os discos FileDO partilhados e consulte o estado, arranque automático, detentor e caminho do contentor.",
+      "order": "Selecione um disco e use Arranque automático.. para ativar ou desativar a reabertura com o servidor. A tabela e a lista principal de recursos são atualizadas após as alterações.",
+      "sections": [
+        {
+          "id": "autostart",
+          "title": "Arranque automático",
+          "text": "A coluna Arranque automático mostra Sim ou Não para cada disco sem o selecionar. Um traço (-) significa que o processo não suporta esta opção. As linhas FileDO da lista principal também indicam o arranque automático ativo. A opção é independente do estado: o disco pode estar fechado ou com erro. Selecione-o para ler o erro limpo abaixo da tabela. Fechar fecha esta janela."
+        }
+      ]
+    },
+    "ar": {
+      "title": "أقراص .fdd",
+      "purpose": "إدارة أقراص FileDO المشتركة وفحص الحالة والبدء التلقائي والجهة المتحكمة ومسار الحاوية.",
+      "order": "اختر قرصًا واستخدم بدء تلقائي.. لتفعيل إعادة الفتح مع الخادم أو تعطيلها. يُحدّث جدول الأقراص وقائمة الموارد الرئيسية بعد التغييرات.",
+      "sections": [
+        {
+          "id": "autostart",
+          "title": "بدء تلقائي",
+          "text": "يعرض عمود البدء التلقائي نعم أو لا لكل قرص دون تحديده. تعني الشرطة (-) أن العملية لا تدعم الخيار. تعرض صفوف FileDO في القائمة الرئيسية أيضًا البدء التلقائي المفعّل. الإعداد مستقل عن الحالة: قد يكون القرص مغلقًا أو به خطأ رغم تفعيله. اختر القرص لقراءة رسالة الخطأ المنقّحة أسفل الجدول. يغلق زر الإغلاق هذه النافذة."
+        }
+      ]
+    },
+    "hi": {
+      "title": ".fdd डिस्क",
+      "purpose": "साझा FileDO डिस्क प्रबंधित करें और स्थिति, स्वतः प्रारंभ, धारक और कंटेनर पथ देखें।",
+      "order": "डिस्क चुनें और सर्वर के साथ दोबारा खोलना चालू या बंद करने के लिए स्वतः प्रारंभ.. दबाएँ। बदलाव के बाद डिस्क तालिका और मुख्य संसाधन सूची अपडेट होती हैं।",
+      "sections": [
+        {
+          "id": "autostart",
+          "title": "स्वतः प्रारंभ",
+          "text": "स्वतः प्रारंभ स्तंभ हर डिस्क के लिए बिना चयन किए हाँ या नहीं दिखाता है। डैश (-) का अर्थ है कि कार्यकर्ता इस विकल्प का समर्थन नहीं करता। मुख्य सूची की FileDO पंक्तियाँ भी चालू स्वतः प्रारंभ दिखाती हैं। यह सेटिंग स्थिति से स्वतंत्र है: चालू होने पर भी डिस्क बंद या त्रुटि में हो सकती है। तालिका के नीचे साफ की गई त्रुटि पढ़ने के लिए डिस्क चुनें। बंद करें से यह विंडो बंद होती है।"
+        }
+      ]
+    },
+    "bn": {
+      "title": ".fdd ডিস্ক",
+      "purpose": "শেয়ার করা FileDO ডিস্ক পরিচালনা করুন এবং অবস্থা, স্বয়ংক্রিয় চালু, ধারক ও কন্টেইনারের পথ দেখুন।",
+      "order": "ডিস্ক বেছে স্বয়ংক্রিয় চালু.. দিয়ে সার্ভারের সাথে আবার খোলা চালু বা বন্ধ করুন। পরিবর্তনের পরে ডিস্কের টেবিল ও মূল রিসোর্স তালিকা হালনাগাদ হয়।",
+      "sections": [
+        {
+          "id": "autostart",
+          "title": "স্বয়ংক্রিয় চালু",
+          "text": "স্বয়ংক্রিয় চালু কলাম প্রতিটি ডিস্ক না বেছেই হ্যাঁ বা না দেখায়। ড্যাশ (-) মানে কর্মী এই বিকল্প সমর্থন করে না। মূল তালিকার FileDO সারিতেও সক্রিয় স্বয়ংক্রিয় চালু দেখা যায়। সেটিংটি অবস্থা থেকে স্বতন্ত্র: সক্রিয় থাকলেও ডিস্ক বন্ধ বা ত্রুটিতে থাকতে পারে। টেবিলের নিচে পরিষ্কার করা ত্রুটির বার্তা পড়তে ডিস্ক বেছে নিন। বন্ধ করুন এই উইন্ডো বন্ধ করে।"
+        }
+      ]
+    },
+    "ur": {
+      "title": ".fdd ڈسک",
+      "purpose": "مشترک FileDO ڈسک سنبھالیں اور حالت، خودکار آغاز، حامل اور کنٹینر کا راستہ دیکھیں۔",
+      "order": "ڈسک منتخب کریں اور سرور کے ساتھ دوبارہ کھولنا فعال یا غیر فعال کرنے کے لیے خودکار آغاز.. استعمال کریں۔ تبدیلی کے بعد ڈسک جدول اور مرکزی وسائل کی فہرست تازہ ہوتی ہیں۔",
+      "sections": [
+        {
+          "id": "autostart",
+          "title": "خودکار آغاز",
+          "text": "خودکار آغاز کا کالم ہر ڈسک منتخب کیے بغیر ہاں یا نہیں دکھاتا ہے۔ ڈیش (-) کا مطلب ہے کہ کارکن اس اختیار کی حمایت نہیں کرتا۔ مرکزی فہرست کی FileDO قطاریں بھی فعال خودکار آغاز دکھاتی ہیں۔ یہ ترتیب حالت سے الگ ہے: فعال ہونے پر بھی ڈسک بند یا خرابی میں ہو سکتی ہے۔ جدول کے نیچے صاف کیا گیا خرابی کا پیغام پڑھنے کے لیے ڈسک منتخب کریں۔ بند کریں یہ ونڈو بند کرتا ہے۔"
+        }
+      ]
+    },
+    "zh": {
+      "title": ".fdd 磁盘",
+      "purpose": "管理共享的 FileDO 磁盘，查看状态、自动启动、持有者和容器路径。",
+      "order": "选择磁盘，使用「自动启动..」启用或禁用随服务器重新打开。更改后，磁盘表和主资源列表会自动更新。",
+      "sections": [
+        {
+          "id": "autostart",
+          "title": "自动启动",
+          "text": "「自动启动」列为每个磁盘显示「是」或「否」，无需选择行。短横线 (-) 表示工作进程不支持此选项。主列表中的 FileDO 行也会标明已启用的自动启动。此设置与状态独立：启用后磁盘仍可能关闭或出错。选择磁盘可在表下查看经过清理的错误消息。「关闭」关闭此窗口。"
+        }
+      ]
+    }
+  },
+  "thumbnail-panel": {
+    "ru": {
+      "title": "Файловый менеджер",
+      "purpose": "Файловый менеджер: двойной клик или Enter по папке - войти в неё; просмотр, выбор и закрытие панели не меняют то, что показывает главное окно",
+      "order": "Создать ZIP: архив включает все выбранные папки и файлы; удаление оригиналов выключено по умолчанию и разрешается только после проверки и публикации архива Распаковать здесь: выберите один архив; папки и обычные файлы сохраняются, исходный архив остаётся, извлечённые программы не запускаются; Esc отменяет операцию",
+      "sections": [
+        {
+          "id": "zip",
+          "title": "Создать ZIP",
+          "text": "Создать ZIP: архив включает все выбранные папки и файлы; удаление оригиналов выключено по умолчанию и разрешается только после проверки и публикации архива"
+        },
+        {
+          "id": "extract",
+          "title": "Распаковать здесь",
+          "text": "Распаковать здесь: выберите один архив; папки и обычные файлы сохраняются, исходный архив остаётся, извлечённые программы не запускаются; Esc отменяет операцию"
+        }
+      ]
+    },
+    "en": {
+      "title": "File manager",
+      "purpose": "File manager: double-click or Enter on a folder opens it; browsing, selecting and closing the panel do not change what the main window shows",
+      "order": "Create ZIP: the archive includes all selected folders and files; deleting originals is off by default and requires verified archive publication Extract here: select one archive; folders and ordinary files are preserved, the archive is kept, extracted programs never run; Esc cancels the operation",
+      "sections": [
+        {
+          "id": "zip",
+          "title": "Create ZIP",
+          "text": "Create ZIP: the archive includes all selected folders and files; deleting originals is off by default and requires verified archive publication"
+        },
+        {
+          "id": "extract",
+          "title": "Extract here",
+          "text": "Extract here: select one archive; folders and ordinary files are preserved, the archive is kept, extracted programs never run; Esc cancels the operation"
+        }
+      ]
+    },
+    "uk": {
+      "title": "Файловий менеджер",
+      "purpose": "Файловий менеджер: подвійний клік або Enter на теці - увійти в неї; перегляд, вибір і закриття панелі не змінюють те, що показує головне вікно",
+      "order": "Створити ZIP: архів містить усі вибрані папки й файли; видалення оригіналів типово вимкнено й дозволено лише після перевірки та публікації архіву Розпакувати тут: виберіть один архів; папки та звичайні файли зберігаються, архів залишається, видобуті програми не запускаються; Esc скасовує операцію",
+      "sections": [
+        {
+          "id": "zip",
+          "title": "Створити ZIP",
+          "text": "Створити ZIP: архів містить усі вибрані папки й файли; видалення оригіналів типово вимкнено й дозволено лише після перевірки та публікації архіву"
+        },
+        {
+          "id": "extract",
+          "title": "Розпакувати тут",
+          "text": "Розпакувати тут: виберіть один архів; папки та звичайні файли зберігаються, архів залишається, видобуті програми не запускаються; Esc скасовує операцію"
+        }
+      ]
+    },
+    "de": {
+      "title": "Dateimanager",
+      "purpose": "Dateimanager: Doppelklick oder Enter auf einem Ordner öffnet ihn; Durchsuchen, Auswählen und Schließen des Panels ändern nichts an der Anzeige im Hauptfenster",
+      "order": "ZIP erstellen: Das Archiv enthält alle gewählten Ordner und Dateien; Originale werden standardmäßig behalten und erst nach geprüfter Archivveröffentlichung gelöscht Hier entpacken: Ein Archiv wählen; Ordner und normale Dateien bleiben erhalten, das Archiv bleibt bestehen, Programme werden nie gestartet; Esc bricht ab",
+      "sections": [
+        {
+          "id": "zip",
+          "title": "ZIP erstellen",
+          "text": "ZIP erstellen: Das Archiv enthält alle gewählten Ordner und Dateien; Originale werden standardmäßig behalten und erst nach geprüfter Archivveröffentlichung gelöscht"
+        },
+        {
+          "id": "extract",
+          "title": "Hier entpacken",
+          "text": "Hier entpacken: Ein Archiv wählen; Ordner und normale Dateien bleiben erhalten, das Archiv bleibt bestehen, Programme werden nie gestartet; Esc bricht ab"
+        }
+      ]
+    },
+    "it": {
+      "title": "Gestione file",
+      "purpose": "Gestione file: doppio clic o Invio su una cartella per aprirla; navigare, selezionare e chiudere il pannello non cambia ciò che mostra la finestra principale",
+      "order": "Crea ZIP: l'archivio include tutte le cartelle e i file selezionati; l'eliminazione degli originali è disattivata e richiede la pubblicazione verificata dell'archivio Estrai qui: seleziona un archivio; conserva cartelle e file ordinari, mantiene l'archivio e non avvia programmi estratti; Esc annulla l'operazione",
+      "sections": [
+        {
+          "id": "zip",
+          "title": "Crea ZIP",
+          "text": "Crea ZIP: l'archivio include tutte le cartelle e i file selezionati; l'eliminazione degli originali è disattivata e richiede la pubblicazione verificata dell'archivio"
+        },
+        {
+          "id": "extract",
+          "title": "Estrai qui",
+          "text": "Estrai qui: seleziona un archivio; conserva cartelle e file ordinari, mantiene l'archivio e non avvia programmi estratti; Esc annulla l'operazione"
+        }
+      ]
+    },
+    "es": {
+      "title": "Administrador de archivos",
+      "purpose": "Administrador de archivos: doble clic o Intro en una carpeta para abrirla; explorar, seleccionar y cerrar el panel no cambia lo que muestra la ventana principal",
+      "order": "Crear ZIP: incluye todas las carpetas y archivos seleccionados; eliminar originales está desactivado y requiere publicar el archivo verificado Extraer aquí: selecciona un archivo; conserva carpetas, archivos normales y el original, sin ejecutar programas extraídos; Esc cancela la operación",
+      "sections": [
+        {
+          "id": "zip",
+          "title": "Crear ZIP",
+          "text": "Crear ZIP: incluye todas las carpetas y archivos seleccionados; eliminar originales está desactivado y requiere publicar el archivo verificado"
+        },
+        {
+          "id": "extract",
+          "title": "Extraer aquí",
+          "text": "Extraer aquí: selecciona un archivo; conserva carpetas, archivos normales y el original, sin ejecutar programas extraídos; Esc cancela la operación"
+        }
+      ]
+    },
+    "fr": {
+      "title": "Gestionnaire de fichiers",
+      "purpose": "Gestionnaire de fichiers : double-clic ou Entrée sur un dossier pour l'ouvrir ; parcourir, sélectionner et fermer le panneau ne change pas ce que montre la fenêtre principale",
+      "order": "Créer un ZIP : inclut tous les dossiers et fichiers sélectionnés ; la suppression des originaux est désactivée et exige la publication vérifiée de l'archive Extraire ici : sélectionnez une archive ; les dossiers, fichiers ordinaires et l'archive sont conservés, aucun programme extrait n'est lancé ; Échap annule",
+      "sections": [
+        {
+          "id": "zip",
+          "title": "Créer un ZIP",
+          "text": "Créer un ZIP : inclut tous les dossiers et fichiers sélectionnés ; la suppression des originaux est désactivée et exige la publication vérifiée de l'archive"
+        },
+        {
+          "id": "extract",
+          "title": "Extraire ici",
+          "text": "Extraire ici : sélectionnez une archive ; les dossiers, fichiers ordinaires et l'archive sont conservés, aucun programme extrait n'est lancé ; Échap annule"
+        }
+      ]
+    },
+    "pt": {
+      "title": "Gerenciador de arquivos",
+      "purpose": "Gerenciador de arquivos: clique duplo ou Enter em uma pasta para abri-la; navegar, selecionar e fechar o painel não altera o que a janela principal mostra",
+      "order": "Criar ZIP: inclui todas as pastas e arquivos selecionados; excluir originais fica desativado e exige a publicação verificada do arquivo Extrair aqui: selecione um arquivo; pastas, arquivos comuns e o original são preservados, programas extraídos não são executados; Esc cancela a operação",
+      "sections": [
+        {
+          "id": "zip",
+          "title": "Criar ZIP",
+          "text": "Criar ZIP: inclui todas as pastas e arquivos selecionados; excluir originais fica desativado e exige a publicação verificada do arquivo"
+        },
+        {
+          "id": "extract",
+          "title": "Extrair aqui",
+          "text": "Extrair aqui: selecione um arquivo; pastas, arquivos comuns e o original são preservados, programas extraídos não são executados; Esc cancela a operação"
+        }
+      ]
+    },
+    "ar": {
+      "title": "مدير الملفات",
+      "purpose": "مدير الملفات: انقر نقرًا مزدوجًا أو اضغط Enter على مجلد لفتحه؛ التصفح والتحديد وإغلاق اللوحة لا تغيّر ما تعرضه النافذة الرئيسية",
+      "order": "إنشاء ZIP: يتضمن جميع المجلدات والملفات المحددة؛ حذف الملفات الأصلية معطل افتراضياً ويتطلب نشر الأرشيف بعد التحقق منه استخراج هنا: حدد أرشيفاً واحداً؛ تُحفظ المجلدات والملفات العادية والأرشيف، ولا تُشغّل البرامج المستخرجة؛ Esc يلغي العملية",
+      "sections": [
+        {
+          "id": "zip",
+          "title": "إنشاء ZIP",
+          "text": "إنشاء ZIP: يتضمن جميع المجلدات والملفات المحددة؛ حذف الملفات الأصلية معطل افتراضياً ويتطلب نشر الأرشيف بعد التحقق منه"
+        },
+        {
+          "id": "extract",
+          "title": "استخراج هنا",
+          "text": "استخراج هنا: حدد أرشيفاً واحداً؛ تُحفظ المجلدات والملفات العادية والأرشيف، ولا تُشغّل البرامج المستخرجة؛ Esc يلغي العملية"
+        }
+      ]
+    },
+    "hi": {
+      "title": "फ़ाइल प्रबंधक",
+      "purpose": "फ़ाइल प्रबंधक: किसी फ़ोल्डर पर डबल-क्लिक या Enter से उसे खोलें; ब्राउज़ करने, चुनने और पैनल बंद करने से मुख्य विंडो में दिखने वाली चीज़ नहीं बदलती",
+      "order": "ZIP बनाएँ: सभी चुने फ़ोल्डर और फ़ाइलें शामिल हैं; मूल हटाना डिफ़ॉल्ट रूप से बंद है और सत्यापित संग्रह प्रकाशित होने पर ही संभव है यहाँ निकालें: एक संग्रह चुनें; फ़ोल्डर और सामान्य फ़ाइलें सुरक्षित रहती हैं, संग्रह रखा जाता है, निकाले प्रोग्राम नहीं चलते; Esc से रद्द करें",
+      "sections": [
+        {
+          "id": "zip",
+          "title": "ZIP बनाएँ",
+          "text": "ZIP बनाएँ: सभी चुने फ़ोल्डर और फ़ाइलें शामिल हैं; मूल हटाना डिफ़ॉल्ट रूप से बंद है और सत्यापित संग्रह प्रकाशित होने पर ही संभव है"
+        },
+        {
+          "id": "extract",
+          "title": "यहाँ निकालें",
+          "text": "यहाँ निकालें: एक संग्रह चुनें; फ़ोल्डर और सामान्य फ़ाइलें सुरक्षित रहती हैं, संग्रह रखा जाता है, निकाले प्रोग्राम नहीं चलते; Esc से रद्द करें"
+        }
+      ]
+    },
+    "bn": {
+      "title": "ফাইল ম্যানেজার",
+      "purpose": "ফাইল ম্যানেজার: কোনো ফোল্ডারে ডাবল-ক্লিক বা Enter চাপলে সেটি খোলে; ব্রাউজ, নির্বাচন ও প্যানেল বন্ধ করলে প্রধান উইন্ডোর প্রদর্শন বদলায় না",
+      "order": "ZIP তৈরি করুন: নির্বাচিত সব ফোল্ডার ও ফাইল অন্তর্ভুক্ত; মূল ফাইল মোছা ডিফল্টভাবে বন্ধ এবং যাচাইকৃত আর্কাইভ প্রকাশের পরে সম্ভব এখানে নিষ্কাশন করুন: একটি আর্কাইভ বাছুন; ফোল্ডার, সাধারণ ফাইল ও মূল আর্কাইভ রাখা হয়, নিষ্কাশিত প্রোগ্রাম চলে না; Esc বাতিল করে",
+      "sections": [
+        {
+          "id": "zip",
+          "title": "ZIP তৈরি করুন",
+          "text": "ZIP তৈরি করুন: নির্বাচিত সব ফোল্ডার ও ফাইল অন্তর্ভুক্ত; মূল ফাইল মোছা ডিফল্টভাবে বন্ধ এবং যাচাইকৃত আর্কাইভ প্রকাশের পরে সম্ভব"
+        },
+        {
+          "id": "extract",
+          "title": "এখানে নিষ্কাশন করুন",
+          "text": "এখানে নিষ্কাশন করুন: একটি আর্কাইভ বাছুন; ফোল্ডার, সাধারণ ফাইল ও মূল আর্কাইভ রাখা হয়, নিষ্কাশিত প্রোগ্রাম চলে না; Esc বাতিল করে"
+        }
+      ]
+    },
+    "ur": {
+      "title": "فائل مینیجر",
+      "purpose": "فائل مینیجر: کسی فولڈر پر ڈبل کلک یا Enter سے اسے کھولیں؛ براؤز کرنے، منتخب کرنے اور پینل بند کرنے سے مرکزی ونڈو میں نظر آنے والی چیز نہیں بدلتی",
+      "order": "ZIP بنائیں: تمام منتخب فولڈر اور فائلیں شامل ہیں؛ اصل حذف کرنا پہلے سے بند ہے اور تصدیق شدہ آرکائیو کی اشاعت کے بعد ہی ممکن ہے یہاں نکالیں: ایک آرکائیو منتخب کریں؛ فولڈر، عام فائلیں اور اصل آرکائیو محفوظ رہتے ہیں، نکالے گئے پروگرام نہیں چلتے؛ Esc منسوخ کرتا ہے",
+      "sections": [
+        {
+          "id": "zip",
+          "title": "ZIP بنائیں",
+          "text": "ZIP بنائیں: تمام منتخب فولڈر اور فائلیں شامل ہیں؛ اصل حذف کرنا پہلے سے بند ہے اور تصدیق شدہ آرکائیو کی اشاعت کے بعد ہی ممکن ہے"
+        },
+        {
+          "id": "extract",
+          "title": "یہاں نکالیں",
+          "text": "یہاں نکالیں: ایک آرکائیو منتخب کریں؛ فولڈر، عام فائلیں اور اصل آرکائیو محفوظ رہتے ہیں، نکالے گئے پروگرام نہیں چلتے؛ Esc منسوخ کرتا ہے"
+        }
+      ]
+    },
+    "zh": {
+      "title": "文件管理器",
+      "purpose": "文件管理器：双击文件夹或按 Enter 进入；浏览、选择和关闭面板都不会改变主窗口显示的内容",
+      "order": "创建 ZIP：包含所选文件夹及所有文件；默认保留原文件，仅在验证并发布压缩包后才允许删除 解压到此处：选择一个压缩包；保留文件夹结构、普通文件和原压缩包，不运行解压出的程序；Esc 取消操作",
+      "sections": [
+        {
+          "id": "zip",
+          "title": "创建 ZIP",
+          "text": "创建 ZIP：包含所选文件夹及所有文件；默认保留原文件，仅在验证并发布压缩包后才允许删除"
+        },
+        {
+          "id": "extract",
+          "title": "解压到此处",
+          "text": "解压到此处：选择一个压缩包；保留文件夹结构、普通文件和原压缩包，不运行解压出的程序；Esc 取消操作"
+        }
+      ]
+    }
+  },
+"live-broadcast": {
+    "fr": {
+      "title": "Diffusion en direct",
+      "purpose": "Collez un code FMSBCAST1:, un lien ou une URL de flux, ou choisissez un fichier .fmsbcast. Marquez une URL ordinaire comme directe uniquement pour une source en direct ; sinon elle s'ouvre à la demande. Cliquez sur Connecter et saisissez le mot de passe du spectateur si demandé. Une adresse récente peut devenir invalide après arrêt ou changement de port. L'acceptation automatique de Cast est un choix explicite distinct.",
+      "order": "Collez un code FMSBCAST1:, un lien ou une URL de flux, ou choisissez un fichier .fmsbcast. Marquez une URL ordinaire comme directe uniquement pour une source en direct ; sinon elle s'ouvre à la demande. Cliquez sur Connecter et saisissez le mot de passe du spectateur si demandé. Une adresse récente peut devenir invalide après arrêt ou changement de port. L'acceptation automatique de Cast est un choix explicite distinct.",
+      "sections": [
+        {
+          "title": "FMSBCAST1: / .fmsbcast",
+          "text": "Collez un code FMSBCAST1:, un lien ou une URL de flux, ou choisissez un fichier .fmsbcast. Marquez une URL ordinaire comme directe uniquement pour une source en direct ; sinon elle s'ouvre à la demande. Cliquez sur Connecter et saisissez le mot de passe du spectateur si demandé. Une adresse récente peut devenir invalide après arrêt ou changement de port. L'acceptation automatique de Cast est un choix explicite distinct.",
+          "id": "input"
+        }
+      ]
+    },
+    "it": {
+      "title": "Trasmissione in diretta",
+      "purpose": "Incolla un codice FMSBCAST1:, un link o URL del flusso, oppure scegli un file .fmsbcast. Contrassegna un URL normale come diretta solo per una sorgente live; altrimenti si apre come contenuto su richiesta. Premi Connetti e inserisci la password dello spettatore se richiesta. Un indirizzo recente può scadere quando il produttore si ferma o cambia porta. L'accettazione automatica Cast è una scelta esplicita separata.",
+      "order": "Incolla un codice FMSBCAST1:, un link o URL del flusso, oppure scegli un file .fmsbcast. Contrassegna un URL normale come diretta solo per una sorgente live; altrimenti si apre come contenuto su richiesta. Premi Connetti e inserisci la password dello spettatore se richiesta. Un indirizzo recente può scadere quando il produttore si ferma o cambia porta. L'accettazione automatica Cast è una scelta esplicita separata.",
+      "sections": [
+        {
+          "title": "FMSBCAST1: / .fmsbcast",
+          "text": "Incolla un codice FMSBCAST1:, un link o URL del flusso, oppure scegli un file .fmsbcast. Contrassegna un URL normale come diretta solo per una sorgente live; altrimenti si apre come contenuto su richiesta. Premi Connetti e inserisci la password dello spettatore se richiesta. Un indirizzo recente può scadere quando il produttore si ferma o cambia porta. L'accettazione automatica Cast è una scelta esplicita separata.",
+          "id": "input"
+        }
+      ]
+    },
+    "hi": {
+      "title": "लाइव प्रसारण",
+      "purpose": "FMSBCAST1: कोड, लिंक या स्ट्रीम URL पेस्ट करें या .fmsbcast फ़ाइल चुनें। साधारण URL को लाइव तभी चिह्नित करें जब स्रोत लाइव हो; अन्यथा वह ऑन-डिमांड मीडिया की तरह खुलेगा। कनेक्ट करें दबाएँ और माँगे जाने पर दर्शक पासवर्ड दें। प्रसारक रुकने या पोर्ट बदलने पर हाल का पता काम नहीं कर सकता। स्वचालित Cast स्वीकृति अलग स्पष्ट विकल्प है।",
+      "order": "FMSBCAST1: कोड, लिंक या स्ट्रीम URL पेस्ट करें या .fmsbcast फ़ाइल चुनें। साधारण URL को लाइव तभी चिह्नित करें जब स्रोत लाइव हो; अन्यथा वह ऑन-डिमांड मीडिया की तरह खुलेगा। कनेक्ट करें दबाएँ और माँगे जाने पर दर्शक पासवर्ड दें। प्रसारक रुकने या पोर्ट बदलने पर हाल का पता काम नहीं कर सकता। स्वचालित Cast स्वीकृति अलग स्पष्ट विकल्प है।",
+      "sections": [
+        {
+          "title": "FMSBCAST1: / .fmsbcast",
+          "text": "FMSBCAST1: कोड, लिंक या स्ट्रीम URL पेस्ट करें या .fmsbcast फ़ाइल चुनें। साधारण URL को लाइव तभी चिह्नित करें जब स्रोत लाइव हो; अन्यथा वह ऑन-डिमांड मीडिया की तरह खुलेगा। कनेक्ट करें दबाएँ और माँगे जाने पर दर्शक पासवर्ड दें। प्रसारक रुकने या पोर्ट बदलने पर हाल का पता काम नहीं कर सकता। स्वचालित Cast स्वीकृति अलग स्पष्ट विकल्प है।",
+          "id": "input"
+        }
+      ]
+    },
+    "pt": {
+      "title": "Transmissão ao vivo",
+      "purpose": "Cole um código FMSBCAST1:, link ou URL do fluxo, ou escolha um arquivo .fmsbcast. Marque uma URL comum como ao vivo apenas para uma fonte ao vivo; caso contrário ela abre sob demanda. Pressione Conectar e informe a senha do espectador se solicitada. Um endereço recente pode falhar após a parada do produtor ou mudança de porta. A aceitação automática de Cast é uma escolha explícita separada.",
+      "order": "Cole um código FMSBCAST1:, link ou URL do fluxo, ou escolha um arquivo .fmsbcast. Marque uma URL comum como ao vivo apenas para uma fonte ao vivo; caso contrário ela abre sob demanda. Pressione Conectar e informe a senha do espectador se solicitada. Um endereço recente pode falhar após a parada do produtor ou mudança de porta. A aceitação automática de Cast é uma escolha explícita separada.",
+      "sections": [
+        {
+          "title": "FMSBCAST1: / .fmsbcast",
+          "text": "Cole um código FMSBCAST1:, link ou URL do fluxo, ou escolha um arquivo .fmsbcast. Marque uma URL comum como ao vivo apenas para uma fonte ao vivo; caso contrário ela abre sob demanda. Pressione Conectar e informe a senha do espectador se solicitada. Um endereço recente pode falhar após a parada do produtor ou mudança de porta. A aceitação automática de Cast é uma escolha explícita separada.",
+          "id": "input"
+        }
+      ]
+    },
+    "ar": {
+      "title": "البث المباشر",
+      "purpose": "الصق رمز FMSBCAST1: أو رابطًا أو عنوان تدفق، أو اختر ملف .fmsbcast. حدد العنوان العادي كبث مباشر فقط إذا كان مصدرًا حيًا؛ وإلا يفتح كوسائط عند الطلب. اضغط اتصال وأدخل كلمة مرور المشاهد إذا طُلبت. قد يتوقف عنوان حديث عن العمل بعد توقف المرسل أو تغيير المنفذ. قبول Cast تلقائيًا خيار صريح منفصل.",
+      "order": "الصق رمز FMSBCAST1: أو رابطًا أو عنوان تدفق، أو اختر ملف .fmsbcast. حدد العنوان العادي كبث مباشر فقط إذا كان مصدرًا حيًا؛ وإلا يفتح كوسائط عند الطلب. اضغط اتصال وأدخل كلمة مرور المشاهد إذا طُلبت. قد يتوقف عنوان حديث عن العمل بعد توقف المرسل أو تغيير المنفذ. قبول Cast تلقائيًا خيار صريح منفصل.",
+      "sections": [
+        {
+          "title": "FMSBCAST1: / .fmsbcast",
+          "text": "الصق رمز FMSBCAST1: أو رابطًا أو عنوان تدفق، أو اختر ملف .fmsbcast. حدد العنوان العادي كبث مباشر فقط إذا كان مصدرًا حيًا؛ وإلا يفتح كوسائط عند الطلب. اضغط اتصال وأدخل كلمة مرور المشاهد إذا طُلبت. قد يتوقف عنوان حديث عن العمل بعد توقف المرسل أو تغيير المنفذ. قبول Cast تلقائيًا خيار صريح منفصل.",
+          "id": "input"
+        }
+      ]
+    },
+    "ur": {
+      "title": "براہ راست نشریات",
+      "purpose": "FMSBCAST1: کوڈ، لنک یا اسٹریم URL پیسٹ کریں یا .fmsbcast فائل منتخب کریں۔ عام URL کو صرف براہ راست ماخذ کے لیے لائیو نشان زد کریں؛ ورنہ وہ آن ڈیمانڈ میڈیا کے طور پر کھلے گا۔ جڑیں دبائیں اور مانگنے پر ناظر کا پاس ورڈ دیں۔ نشریات رکنے یا پورٹ بدلنے سے حالیہ پتہ ناکام ہو سکتا ہے۔ خودکار Cast قبول کرنا الگ واضح انتخاب ہے۔",
+      "order": "FMSBCAST1: کوڈ، لنک یا اسٹریم URL پیسٹ کریں یا .fmsbcast فائل منتخب کریں۔ عام URL کو صرف براہ راست ماخذ کے لیے لائیو نشان زد کریں؛ ورنہ وہ آن ڈیمانڈ میڈیا کے طور پر کھلے گا۔ جڑیں دبائیں اور مانگنے پر ناظر کا پاس ورڈ دیں۔ نشریات رکنے یا پورٹ بدلنے سے حالیہ پتہ ناکام ہو سکتا ہے۔ خودکار Cast قبول کرنا الگ واضح انتخاب ہے۔",
+      "sections": [
+        {
+          "title": "FMSBCAST1: / .fmsbcast",
+          "text": "FMSBCAST1: کوڈ، لنک یا اسٹریم URL پیسٹ کریں یا .fmsbcast فائل منتخب کریں۔ عام URL کو صرف براہ راست ماخذ کے لیے لائیو نشان زد کریں؛ ورنہ وہ آن ڈیمانڈ میڈیا کے طور پر کھلے گا۔ جڑیں دبائیں اور مانگنے پر ناظر کا پاس ورڈ دیں۔ نشریات رکنے یا پورٹ بدلنے سے حالیہ پتہ ناکام ہو سکتا ہے۔ خودکار Cast قبول کرنا الگ واضح انتخاب ہے۔",
+          "id": "input"
+        }
+      ]
+    },
+    "en": {
+      "title": "Live broadcast",
+      "purpose": "Paste a FMSBCAST1: code, link or stream URL, or choose a .fmsbcast file. Mark an ordinary URL as live only when it is a live source; otherwise it opens as on-demand media. Press Connect and enter the listener password if requested. A recent address can stop working when its producer stops or changes port. Automatic Cast acceptance is a separate explicit choice.",
+      "order": "Paste a FMSBCAST1: code, link or stream URL, or choose a .fmsbcast file. Mark an ordinary URL as live only when it is a live source; otherwise it opens as on-demand media. Press Connect and enter the listener password if requested. A recent address can stop working when its producer stops or changes port. Automatic Cast acceptance is a separate explicit choice.",
+      "sections": [
+        {
+          "title": "FMSBCAST1: / .fmsbcast",
+          "text": "Paste a FMSBCAST1: code, link or stream URL, or choose a .fmsbcast file. Mark an ordinary URL as live only when it is a live source; otherwise it opens as on-demand media. Press Connect and enter the listener password if requested. A recent address can stop working when its producer stops or changes port. Automatic Cast acceptance is a separate explicit choice.",
+          "id": "input"
+        }
+      ]
+    },
+    "es": {
+      "title": "Emisión en directo",
+      "purpose": "Pega un código FMSBCAST1:, enlace o URL del flujo, o elige un archivo .fmsbcast. Marca una URL normal como directo solo si es una fuente en vivo; de lo contrario se abre bajo demanda. Pulsa Conectar e introduce la contraseña del espectador si se solicita. Una dirección reciente puede fallar cuando el emisor se detiene o cambia de puerto. La aceptación automática de Cast es una elección explícita independiente.",
+      "order": "Pega un código FMSBCAST1:, enlace o URL del flujo, o elige un archivo .fmsbcast. Marca una URL normal como directo solo si es una fuente en vivo; de lo contrario se abre bajo demanda. Pulsa Conectar e introduce la contraseña del espectador si se solicita. Una dirección reciente puede fallar cuando el emisor se detiene o cambia de puerto. La aceptación automática de Cast es una elección explícita independiente.",
+      "sections": [
+        {
+          "title": "FMSBCAST1: / .fmsbcast",
+          "text": "Pega un código FMSBCAST1:, enlace o URL del flujo, o elige un archivo .fmsbcast. Marca una URL normal como directo solo si es una fuente en vivo; de lo contrario se abre bajo demanda. Pulsa Conectar e introduce la contraseña del espectador si se solicita. Una dirección reciente puede fallar cuando el emisor se detiene o cambia de puerto. La aceptación automática de Cast es una elección explícita independiente.",
+          "id": "input"
+        }
+      ]
+    },
+    "bn": {
+      "title": "লাইভ সম্প্রচার",
+      "purpose": "FMSBCAST1: কোড, লিংক বা স্ট্রিম URL পেস্ট করুন অথবা .fmsbcast ফাইল বেছে নিন। সাধারণ URL কেবল লাইভ উৎস হলে লাইভ হিসেবে চিহ্নিত করুন; অন্যথায় এটি চাহিদামতো মিডিয়া হিসেবে খুলবে। সংযোগ চাপুন এবং চাইলে দর্শকের পাসওয়ার্ড দিন। সম্প্রচারক থামলে বা পোর্ট বদলালে সাম্প্রতিক ঠিকানা অকার্যকর হতে পারে। স্বয়ংক্রিয় Cast গ্রহণ একটি আলাদা স্পষ্ট পছন্দ।",
+      "order": "FMSBCAST1: কোড, লিংক বা স্ট্রিম URL পেস্ট করুন অথবা .fmsbcast ফাইল বেছে নিন। সাধারণ URL কেবল লাইভ উৎস হলে লাইভ হিসেবে চিহ্নিত করুন; অন্যথায় এটি চাহিদামতো মিডিয়া হিসেবে খুলবে। সংযোগ চাপুন এবং চাইলে দর্শকের পাসওয়ার্ড দিন। সম্প্রচারক থামলে বা পোর্ট বদলালে সাম্প্রতিক ঠিকানা অকার্যকর হতে পারে। স্বয়ংক্রিয় Cast গ্রহণ একটি আলাদা স্পষ্ট পছন্দ।",
+      "sections": [
+        {
+          "title": "FMSBCAST1: / .fmsbcast",
+          "text": "FMSBCAST1: কোড, লিংক বা স্ট্রিম URL পেস্ট করুন অথবা .fmsbcast ফাইল বেছে নিন। সাধারণ URL কেবল লাইভ উৎস হলে লাইভ হিসেবে চিহ্নিত করুন; অন্যথায় এটি চাহিদামতো মিডিয়া হিসেবে খুলবে। সংযোগ চাপুন এবং চাইলে দর্শকের পাসওয়ার্ড দিন। সম্প্রচারক থামলে বা পোর্ট বদলালে সাম্প্রতিক ঠিকানা অকার্যকর হতে পারে। স্বয়ংক্রিয় Cast গ্রহণ একটি আলাদা স্পষ্ট পছন্দ।",
+          "id": "input"
+        }
+      ]
+    },
+    "de": {
+      "title": "Liveübertragung",
+      "purpose": "FMSBCAST1:-Code, Link oder Stream-URL einfügen oder eine .fmsbcast-Datei wählen. Eine gewöhnliche URL nur bei einer Livequelle als live markieren; sonst wird sie als abrufbare Mediendatei geöffnet. Verbinden drücken und bei Bedarf das Zuschauerpasswort eingeben. Gespeicherte Adressen können nach Sendestopp oder Portwechsel ungültig sein. Automatische Cast-Annahme ist eine gesonderte ausdrückliche Wahl.",
+      "order": "FMSBCAST1:-Code, Link oder Stream-URL einfügen oder eine .fmsbcast-Datei wählen. Eine gewöhnliche URL nur bei einer Livequelle als live markieren; sonst wird sie als abrufbare Mediendatei geöffnet. Verbinden drücken und bei Bedarf das Zuschauerpasswort eingeben. Gespeicherte Adressen können nach Sendestopp oder Portwechsel ungültig sein. Automatische Cast-Annahme ist eine gesonderte ausdrückliche Wahl.",
+      "sections": [
+        {
+          "title": "FMSBCAST1: / .fmsbcast",
+          "text": "FMSBCAST1:-Code, Link oder Stream-URL einfügen oder eine .fmsbcast-Datei wählen. Eine gewöhnliche URL nur bei einer Livequelle als live markieren; sonst wird sie als abrufbare Mediendatei geöffnet. Verbinden drücken und bei Bedarf das Zuschauerpasswort eingeben. Gespeicherte Adressen können nach Sendestopp oder Portwechsel ungültig sein. Automatische Cast-Annahme ist eine gesonderte ausdrückliche Wahl.",
+          "id": "input"
+        }
+      ]
+    },
+    "zh": {
+      "title": "直播",
+      "purpose": "粘贴 FMSBCAST1: 代码、链接或流地址，或选择 .fmsbcast 文件。仅当普通 URL 确实来自直播源时才将其标记为直播；否则它将作为点播媒体打开。点击连接，并在提示时输入观众密码。发送端停止或更改端口后，最近地址可能失效。自动接受 Cast 是单独的明确选择。",
+      "order": "粘贴 FMSBCAST1: 代码、链接或流地址，或选择 .fmsbcast 文件。仅当普通 URL 确实来自直播源时才将其标记为直播；否则它将作为点播媒体打开。点击连接，并在提示时输入观众密码。发送端停止或更改端口后，最近地址可能失效。自动接受 Cast 是单独的明确选择。",
+      "sections": [
+        {
+          "title": "FMSBCAST1: / .fmsbcast",
+          "text": "粘贴 FMSBCAST1: 代码、链接或流地址，或选择 .fmsbcast 文件。仅当普通 URL 确实来自直播源时才将其标记为直播；否则它将作为点播媒体打开。点击连接，并在提示时输入观众密码。发送端停止或更改端口后，最近地址可能失效。自动接受 Cast 是单独的明确选择。",
+          "id": "input"
+        }
+      ]
+    },
+    "uk": {
+      "title": "Прямий ефір",
+      "purpose": "Вставте код FMSBCAST1:, посилання або URL потоку чи виберіть файл .fmsbcast. Позначайте звичайний URL як прямий ефір лише для живого джерела; інакше він відкриється як звичайне медіа. Натисніть «Підключитися» та введіть пароль глядача, якщо його запитано. Нещодавня адреса може перестати працювати після зупинки мовника або зміни порту. Автоматичне приймання Cast вмикається окремо та явно.",
+      "order": "Вставте код FMSBCAST1:, посилання або URL потоку чи виберіть файл .fmsbcast. Позначайте звичайний URL як прямий ефір лише для живого джерела; інакше він відкриється як звичайне медіа. Натисніть «Підключитися» та введіть пароль глядача, якщо його запитано. Нещодавня адреса може перестати працювати після зупинки мовника або зміни порту. Автоматичне приймання Cast вмикається окремо та явно.",
+      "sections": [
+        {
+          "title": "FMSBCAST1: / .fmsbcast",
+          "text": "Вставте код FMSBCAST1:, посилання або URL потоку чи виберіть файл .fmsbcast. Позначайте звичайний URL як прямий ефір лише для живого джерела; інакше він відкриється як звичайне медіа. Натисніть «Підключитися» та введіть пароль глядача, якщо його запитано. Нещодавня адреса може перестати працювати після зупинки мовника або зміни порту. Автоматичне приймання Cast вмикається окремо та явно.",
+          "id": "input"
+        }
+      ]
+    },
+    "ru": {
+      "title": "Прямой эфир",
+      "purpose": "Вставьте код FMSBCAST1:, ссылку или URL потока либо выберите файл .fmsbcast. Отметьте обычный URL как прямой эфир только для живого источника; иначе он откроется как обычное медиа. Нажмите «Подключиться» и введите пароль зрителя, если он запрошен. Недавний адрес может перестать работать после остановки вещателя или смены порта. Автоматический приём Cast включается отдельно и явно.",
+      "order": "Вставьте код FMSBCAST1:, ссылку или URL потока либо выберите файл .fmsbcast. Отметьте обычный URL как прямой эфир только для живого источника; иначе он откроется как обычное медиа. Нажмите «Подключиться» и введите пароль зрителя, если он запрошен. Недавний адрес может перестать работать после остановки вещателя или смены порта. Автоматический приём Cast включается отдельно и явно.",
+      "sections": [
+        {
+          "title": "FMSBCAST1: / .fmsbcast",
+          "text": "Вставьте код FMSBCAST1:, ссылку или URL потока либо выберите файл .fmsbcast. Отметьте обычный URL как прямой эфир только для живого источника; иначе он откроется как обычное медиа. Нажмите «Подключиться» и введите пароль зрителя, если он запрошен. Недавний адрес может перестать работать после остановки вещателя или смены порта. Автоматический приём Cast включается отдельно и явно.",
+          "id": "input"
+        }
+      ]
+    }
+  },
+  "share-live-broadcast": {
+    "fr": {
+      "title": "Diffusion en direct",
+      "purpose": "Partagez écran, fenêtre unique, caméra, microphone ou son système depuis Share Manager. Ouvrez un direct dans la visionneuse 64 bits via un lien, un code ou un fichier .fmsbcast. La capture commence uniquement avec Démarrer.",
+      "order": "Choisissez la source, puis écran ou fenêtre unique, ou caméra et mode. Avant Démarrer, vérifiez titre, mot de passe, audio et accès LAN. Les spectateurs reçoivent l'image et le son choisis, y compris les données privées visibles. Copiez le lien ou enregistrez .fmsbcast une fois en direct. Arrêter termine la session ; fermer la fenêtre capturée termine aussi sa diffusion.",
+      "sections": [
+        {
+          "title": "Diffusion en direct",
+          "text": "Choisissez la source, puis écran ou fenêtre unique, ou caméra et mode. Avant Démarrer, vérifiez titre, mot de passe, audio et accès LAN. Les spectateurs reçoivent l'image et le son choisis, y compris les données privées visibles. Copiez le lien ou enregistrez .fmsbcast une fois en direct. Arrêter termine la session ; fermer la fenêtre capturée termine aussi sa diffusion.",
+          "id": "source"
+        }
+      ]
+    },
+    "it": {
+      "title": "Trasmissione in diretta",
+      "purpose": "Condividi schermo, singola finestra, fotocamera, microfono o audio di sistema da Share Manager. Apri una diretta nel visualizzatore a 64 bit tramite link, codice o file .fmsbcast. La cattura inizia solo premendo Avvia.",
+      "order": "Scegli la sorgente, poi monitor o singola finestra, oppure fotocamera e modalità. Prima di Avvia controlla titolo, password spettatore, audio e accesso LAN. Gli spettatori ricevono immagine e suono scelti, inclusi contenuti privati visibili. Copia un link o salva un file .fmsbcast quando sei in onda. Arresta termina la sessione; chiudere la finestra catturata termina anche la sua diretta.",
+      "sections": [
+        {
+          "title": "Trasmissione in diretta",
+          "text": "Scegli la sorgente, poi monitor o singola finestra, oppure fotocamera e modalità. Prima di Avvia controlla titolo, password spettatore, audio e accesso LAN. Gli spettatori ricevono immagine e suono scelti, inclusi contenuti privati visibili. Copia un link o salva un file .fmsbcast quando sei in onda. Arresta termina la sessione; chiudere la finestra catturata termina anche la sua diretta.",
+          "id": "source"
+        }
+      ]
+    },
+    "hi": {
+      "title": "लाइव प्रसारण",
+      "purpose": "Share Manager से स्क्रीन, एक विंडो, कैमरा, माइक्रोफ़ोन या सिस्टम ऑडियो साझा करें। 64-बिट व्यूअर में लिंक, कोड या .fmsbcast फ़ाइल से लाइव प्रसारण खोलें। कैप्चर केवल शुरू करें दबाने पर शुरू होता है।",
+      "order": "स्रोत चुनें, फिर स्क्रीन कैप्चर के लिए मॉनिटर या एक विंडो, या कैमरा और मोड चुनें। शुरू करने से पहले शीर्षक, दर्शक पासवर्ड, ऑडियो और LAN पहुँच जाँचें। दर्शकों को चुना हुआ चित्र और ध्वनि मिलती है, जिसमें दिखाई देने वाली निजी सामग्री भी शामिल है। प्रसारण शुरू होने पर लिंक कॉपी करें या .fmsbcast सहेजें। रोकें सत्र समाप्त करता है; कैप्चर की गई विंडो बंद करने से भी प्रसारण रुकता है।",
+      "sections": [
+        {
+          "title": "लाइव प्रसारण",
+          "text": "स्रोत चुनें, फिर स्क्रीन कैप्चर के लिए मॉनिटर या एक विंडो, या कैमरा और मोड चुनें। शुरू करने से पहले शीर्षक, दर्शक पासवर्ड, ऑडियो और LAN पहुँच जाँचें। दर्शकों को चुना हुआ चित्र और ध्वनि मिलती है, जिसमें दिखाई देने वाली निजी सामग्री भी शामिल है। प्रसारण शुरू होने पर लिंक कॉपी करें या .fmsbcast सहेजें। रोकें सत्र समाप्त करता है; कैप्चर की गई विंडो बंद करने से भी प्रसारण रुकता है।",
+          "id": "source"
+        }
+      ]
+    },
+    "pt": {
+      "title": "Transmissão ao vivo",
+      "purpose": "Compartilhe tela, uma janela, câmera, microfone ou áudio do sistema pelo Share Manager. Abra uma transmissão no visualizador de 64 bits por link, código ou arquivo .fmsbcast. A captura começa apenas ao pressionar Iniciar.",
+      "order": "Escolha a fonte e depois monitor ou janela individual, ou câmera e modo. Antes de Iniciar, confira título, senha, áudio e acesso LAN. Os espectadores recebem a imagem e o som escolhidos, inclusive conteúdo privado visível. Copie o link ou salve .fmsbcast quando estiver ao vivo. Parar encerra a sessão; fechar a janela capturada também encerra sua transmissão.",
+      "sections": [
+        {
+          "title": "Transmissão ao vivo",
+          "text": "Escolha a fonte e depois monitor ou janela individual, ou câmera e modo. Antes de Iniciar, confira título, senha, áudio e acesso LAN. Os espectadores recebem a imagem e o som escolhidos, inclusive conteúdo privado visível. Copie o link ou salve .fmsbcast quando estiver ao vivo. Parar encerra a sessão; fechar a janela capturada também encerra sua transmissão.",
+          "id": "source"
+        }
+      ]
+    },
+    "ar": {
+      "title": "البث المباشر",
+      "purpose": "شارك الشاشة أو نافذة واحدة أو الكاميرا أو الميكروفون أو صوت النظام من Share Manager. افتح بثًا في العارض 64 بت برابط أو رمز أو ملف .fmsbcast. لا يبدأ الالتقاط إلا عند الضغط على بدء.",
+      "order": "اختر المصدر ثم الشاشة أو نافذة واحدة، أو الكاميرا ووضعها. راجع العنوان وكلمة مرور المشاهد والصوت ووصول الشبكة المحلية قبل بدء البث. يتلقى المشاهدون الصورة والصوت المحددين، بما فيهما المحتوى الخاص الظاهر. انسخ الرابط أو احفظ .fmsbcast بعد بدء البث. ينهي إيقاف الجلسة؛ وإغلاق النافذة الملتقطة ينهي بثها أيضًا.",
+      "sections": [
+        {
+          "title": "البث المباشر",
+          "text": "اختر المصدر ثم الشاشة أو نافذة واحدة، أو الكاميرا ووضعها. راجع العنوان وكلمة مرور المشاهد والصوت ووصول الشبكة المحلية قبل بدء البث. يتلقى المشاهدون الصورة والصوت المحددين، بما فيهما المحتوى الخاص الظاهر. انسخ الرابط أو احفظ .fmsbcast بعد بدء البث. ينهي إيقاف الجلسة؛ وإغلاق النافذة الملتقطة ينهي بثها أيضًا.",
+          "id": "source"
+        }
+      ]
+    },
+    "ur": {
+      "title": "براہ راست نشریات",
+      "purpose": "Share Manager سے اسکرین، ایک ونڈو، کیمرا، مائیکروفون یا سسٹم آڈیو شیئر کریں۔ 64 بٹ ویوئر میں لنک، کوڈ یا .fmsbcast فائل سے نشریات کھولیں۔ کیپچر صرف شروع کریں دبانے پر شروع ہوتا ہے۔",
+      "order": "ماخذ منتخب کریں، پھر مانیٹر یا ایک ونڈو، یا کیمرا اور موڈ چنیں۔ شروع کرنے سے پہلے عنوان، ناظر پاس ورڈ، آڈیو اور LAN رسائی جانچیں۔ ناظرین کو منتخب تصویر اور آواز ملتی ہے، بشمول نظر آنے والا ذاتی مواد۔ نشریات شروع ہونے پر لنک کاپی کریں یا .fmsbcast محفوظ کریں۔ روکیں سیشن ختم کرتا ہے؛ کیپچر کی گئی ونڈو بند کرنے سے بھی نشریات ختم ہوتی ہیں۔",
+      "sections": [
+        {
+          "title": "براہ راست نشریات",
+          "text": "ماخذ منتخب کریں، پھر مانیٹر یا ایک ونڈو، یا کیمرا اور موڈ چنیں۔ شروع کرنے سے پہلے عنوان، ناظر پاس ورڈ، آڈیو اور LAN رسائی جانچیں۔ ناظرین کو منتخب تصویر اور آواز ملتی ہے، بشمول نظر آنے والا ذاتی مواد۔ نشریات شروع ہونے پر لنک کاپی کریں یا .fmsbcast محفوظ کریں۔ روکیں سیشن ختم کرتا ہے؛ کیپچر کی گئی ونڈو بند کرنے سے بھی نشریات ختم ہوتی ہیں۔",
+          "id": "source"
+        }
+      ]
+    },
+    "en": {
+      "title": "Live broadcast",
+      "purpose": "Share a screen, one window, camera, microphone or system audio from Share Manager. Open a live broadcast in the 64-bit viewer using its link, code or .fmsbcast file. Capture starts only when you press Start.",
+      "order": "Choose the source, then the monitor or individual window for screen capture, or the camera and mode. Check the title, listener password, audio and LAN-viewer setting before pressing Start. The selected picture and sound are shared with listeners, including private content visible in that source. Copy a link or save a .fmsbcast file only when on air. Stop ends the session; closing a captured window also ends its broadcast.",
+      "sections": [
+        {
+          "title": "Live broadcast",
+          "text": "Choose the source, then the monitor or individual window for screen capture, or the camera and mode. Check the title, listener password, audio and LAN-viewer setting before pressing Start. The selected picture and sound are shared with listeners, including private content visible in that source. Copy a link or save a .fmsbcast file only when on air. Stop ends the session; closing a captured window also ends its broadcast.",
+          "id": "source"
+        }
+      ]
+    },
+    "es": {
+      "title": "Emisión en directo",
+      "purpose": "Comparte pantalla, una ventana, cámara, micrófono o audio del sistema desde Share Manager. Abre una emisión en el visor de 64 bits mediante enlace, código o archivo .fmsbcast. La captura empieza solo al pulsar Iniciar.",
+      "order": "Elige la fuente, después monitor o ventana individual, o cámara y modo. Antes de Iniciar revisa título, contraseña, audio y acceso LAN. Los espectadores reciben la imagen y sonido elegidos, incluido contenido privado visible. Copia el enlace o guarda .fmsbcast una vez en directo. Detener finaliza la sesión; cerrar la ventana capturada también termina su emisión.",
+      "sections": [
+        {
+          "title": "Emisión en directo",
+          "text": "Elige la fuente, después monitor o ventana individual, o cámara y modo. Antes de Iniciar revisa título, contraseña, audio y acceso LAN. Los espectadores reciben la imagen y sonido elegidos, incluido contenido privado visible. Copia el enlace o guarda .fmsbcast una vez en directo. Detener finaliza la sesión; cerrar la ventana capturada también termina su emisión.",
+          "id": "source"
+        }
+      ]
+    },
+    "bn": {
+      "title": "লাইভ সম্প্রচার",
+      "purpose": "Share Manager থেকে স্ক্রিন, একটি উইন্ডো, ক্যামেরা, মাইক্রোফোন বা সিস্টেম অডিও ভাগ করুন। ৬৪-বিট ভিউয়ারে লিংক, কোড বা .fmsbcast ফাইল দিয়ে লাইভ সম্প্রচার খুলুন। শুরু করুন চাপলেই কেবল ক্যাপচার শুরু হয়।",
+      "order": "উৎস বেছে তারপর মনিটর বা একটি উইন্ডো, অথবা ক্যামেরা ও মোড নির্বাচন করুন। শুরু করার আগে শিরোনাম, দর্শকের পাসওয়ার্ড, অডিও ও LAN প্রবেশ যাচাই করুন। দর্শকেরা নির্বাচিত ছবি ও শব্দ পান, দৃশ্যমান ব্যক্তিগত তথ্যসহ। সম্প্রচার চলার সময় লিংক কপি করুন বা .fmsbcast সংরক্ষণ করুন। থামান সেশন শেষ করে; ক্যাপচার করা উইন্ডো বন্ধ হলেও সম্প্রচার শেষ হয়।",
+      "sections": [
+        {
+          "title": "লাইভ সম্প্রচার",
+          "text": "উৎস বেছে তারপর মনিটর বা একটি উইন্ডো, অথবা ক্যামেরা ও মোড নির্বাচন করুন। শুরু করার আগে শিরোনাম, দর্শকের পাসওয়ার্ড, অডিও ও LAN প্রবেশ যাচাই করুন। দর্শকেরা নির্বাচিত ছবি ও শব্দ পান, দৃশ্যমান ব্যক্তিগত তথ্যসহ। সম্প্রচার চলার সময় লিংক কপি করুন বা .fmsbcast সংরক্ষণ করুন। থামান সেশন শেষ করে; ক্যাপচার করা উইন্ডো বন্ধ হলেও সম্প্রচার শেষ হয়।",
+          "id": "source"
+        }
+      ]
+    },
+    "de": {
+      "title": "Liveübertragung",
+      "purpose": "Bildschirm, einzelnes Fenster, Kamera, Mikrofon oder Systemton aus Share Manager übertragen. Liveübertragungen im 64-Bit-Betrachter über Link, Code oder .fmsbcast-Datei öffnen. Die Aufnahme beginnt erst mit Start.",
+      "order": "Quelle wählen, dann Monitor oder einzelnes Fenster beziehungsweise Kamera und Modus. Vor Start Titel, Zuschauerpasswort, Ton und LAN-Zugang prüfen. Zuschauer erhalten das gewählte Bild und den Ton, einschließlich sichtbarer privater Inhalte. Link kopieren oder .fmsbcast speichern, sobald die Sendung läuft. Stopp beendet die Sitzung; das Schließen eines aufgenommenen Fensters beendet auch dessen Sendung.",
+      "sections": [
+        {
+          "title": "Liveübertragung",
+          "text": "Quelle wählen, dann Monitor oder einzelnes Fenster beziehungsweise Kamera und Modus. Vor Start Titel, Zuschauerpasswort, Ton und LAN-Zugang prüfen. Zuschauer erhalten das gewählte Bild und den Ton, einschließlich sichtbarer privater Inhalte. Link kopieren oder .fmsbcast speichern, sobald die Sendung läuft. Stopp beendet die Sitzung; das Schließen eines aufgenommenen Fensters beendet auch dessen Sendung.",
+          "id": "source"
+        }
+      ]
+    },
+    "zh": {
+      "title": "直播",
+      "purpose": "通过 Share Manager 分享屏幕、单个窗口、摄像头、麦克风或系统音频。在 64 位查看器中通过链接、代码或 .fmsbcast 文件打开直播。只有点击开始才会开始采集。",
+      "order": "选择来源，然后选择屏幕采集使用的显示器或单个窗口，或选择摄像头及模式。开始前检查标题、观众密码、音频和局域网访问设置。观众会收到所选画面和声音，包括其中可见的私人内容。开播后再复制链接或保存 .fmsbcast 文件。停止会结束会话；关闭被采集窗口也会结束该窗口的直播。",
+      "sections": [
+        {
+          "title": "直播",
+          "text": "选择来源，然后选择屏幕采集使用的显示器或单个窗口，或选择摄像头及模式。开始前检查标题、观众密码、音频和局域网访问设置。观众会收到所选画面和声音，包括其中可见的私人内容。开播后再复制链接或保存 .fmsbcast 文件。停止会结束会话；关闭被采集窗口也会结束该窗口的直播。",
+          "id": "source"
+        }
+      ]
+    },
+    "uk": {
+      "title": "Прямий ефір",
+      "purpose": "Передавайте екран, одне вікно, камеру, мікрофон або системний звук із Share Manager. Відкривайте прямий ефір у 64-бітному переглядачі за посиланням, кодом або файлом .fmsbcast. Захоплення починається лише після натискання «Почати».",
+      "order": "Виберіть джерело, потім монітор або окреме вікно для захоплення екрана чи камеру та її режим. До натискання «Почати» перевірте назву, пароль глядача, звук і доступ глядачів із локальної мережі. Глядачі отримують вибрані зображення та звук, зокрема видимі особисті дані. Копіюйте посилання чи зберігайте .fmsbcast після початку ефіру. «Зупинити» завершує сеанс; закриття захоплюваного вікна теж завершує його ефір.",
+      "sections": [
+        {
+          "title": "Прямий ефір",
+          "text": "Виберіть джерело, потім монітор або окреме вікно для захоплення екрана чи камеру та її режим. До натискання «Почати» перевірте назву, пароль глядача, звук і доступ глядачів із локальної мережі. Глядачі отримують вибрані зображення та звук, зокрема видимі особисті дані. Копіюйте посилання чи зберігайте .fmsbcast після початку ефіру. «Зупинити» завершує сеанс; закриття захоплюваного вікна теж завершує його ефір.",
+          "id": "source"
+        }
+      ]
+    },
+    "ru": {
+      "title": "Прямой эфир",
+      "purpose": "Передавайте экран, одно окно, камеру, микрофон или системный звук из Share Manager. Открывайте прямой эфир в 64-битном просмотрщике по ссылке, коду или файлу .fmsbcast. Захват начинается только по нажатию «Начать».",
+      "order": "Выберите источник, затем монитор или отдельное окно для захвата экрана либо камеру и её режим. До нажатия «Начать» проверьте название, пароль зрителя, звук и доступ зрителей из локальной сети. Зрителям передаётся выбранное изображение и звук, включая видимые в источнике личные данные. Копируйте ссылку или сохраняйте файл .fmsbcast после начала эфира. «Остановить» завершает сеанс; закрытие захватываемого окна тоже завершает его эфир.",
+      "sections": [
+        {
+          "title": "Прямой эфир",
+          "text": "Выберите источник, затем монитор или отдельное окно для захвата экрана либо камеру и её режим. До нажатия «Начать» проверьте название, пароль зрителя, звук и доступ зрителей из локальной сети. Зрителям передаётся выбранное изображение и звук, включая видимые в источнике личные данные. Копируйте ссылку или сохраняйте файл .fmsbcast после начала эфира. «Остановить» завершает сеанс; закрытие захватываемого окна тоже завершает его эфир.",
+          "id": "source"
         }
       ]
     }

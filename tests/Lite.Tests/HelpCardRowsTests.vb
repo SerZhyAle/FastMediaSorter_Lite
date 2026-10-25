@@ -105,6 +105,7 @@ Public Class HelpCardRowsTests
     <InlineData("speedFaster", "]")>
     <InlineData("speedReset", "\")>
     <InlineData("frameStep", ".")>
+    <InlineData("frameBack", ",")>
     <InlineData("playPause", "K")>
     <InlineData("volumeUp", "Ctrl+Up")>
     Public Sub Punctuation_keys_are_spelled_as_printed_on_the_keycap(actionId As String, expected As String)
@@ -188,6 +189,7 @@ Public Class HelpCardRowsTests
     <InlineData("seekFwdLong", "VideoAudio")>
     <InlineData("audioTrack", "VideoAudio")>
     <InlineData("frameStep", "Video")>
+    <InlineData("frameBack", "Video")>
     <InlineData("subtitleTrack", "Video")>
     <InlineData("rotateCw", "Picture")>
     <InlineData("ocrTranslate", "Picture")>

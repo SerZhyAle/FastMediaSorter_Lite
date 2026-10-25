@@ -68,6 +68,11 @@
       "id": "SZA-SEC04",
       "path": "tests/Integration/CollectHostState.ps1",
       "reason": "The hand-run proof plants a fake key.pem (body NEEDLEKEY) and a leaky log (NEEDLELEAK) in a temporary folder to check the support-bundle collector drops them; no real key."
+    },
+    {
+      "id": "SZA-SEC04",
+      "path": "tests/Lite.Tests/DiagnosticRedactorTests.vb",
+      "reason": "Test inputs for the log redactor: PEM header lines over the made-up body NEEDLE, fed through DiagnosticRedactor to prove a private-key block never reaches a log or a bundle; no real key."
     }
   ]
 }

@@ -40,6 +40,11 @@ Public Module LiveBroadcastHost
                                      If kind = LiveProducerSourceKind.Camera Then
                                          Return New CameraCaptureSource(sourceSettings.CameraDeviceIndex, sourceSettings.CameraModeIndex)
                                      End If
+                                     ' Ticket 263 T-2: a remembered window is the target INSTEAD of the monitor; it is
+                                     ' looked up again at Start and an absent one refuses the start (never the monitor).
+                                     If sourceSettings.HasScreenWindow Then
+                                         Return New ScreenCaptureSource(sourceSettings.ScreenWindowTitle, sourceSettings.ScreenWindowProcess, sourceSettings.ScreenCursor)
+                                     End If
                                      Return New ScreenCaptureSource(sourceSettings.ScreenMonitorIndex, sourceSettings.ScreenCursor)
                                  End Function,
             .ClockMs = AddressOf MonotonicClock.NowMs,
@@ -53,12 +58,23 @@ Public Module LiveBroadcastHost
                                         Return Tuple.Create(status.PublicEndpoint, status.Fingerprint)
                                     End Function,
             .BroadcastStarted = Sub(state, audioHub, videoHub)
+                                    WatchNetwork()
                                     Dim agent As ExchangeDeviceAgent = ExchangeDeviceHost.Current
                                     If agent IsNot Nothing Then
+                                        ListenTo(agent)
                                         agent.OnBroadcastStarted(state, audioHub, videoHub)
                                     End If
                                 End Sub,
+            .BroadcastChanged = Sub(state)
+                                    Dim agent As ExchangeDeviceAgent = ExchangeDeviceHost.Current
+                                    If agent IsNot Nothing Then
+                                        Dim pending As System.Threading.Tasks.Task = agent.OnBroadcastChangedAsync(state)
+                                    End If
+                                End Sub,
             .BroadcastStopped = Sub(broadcastId)
+                                    If System.Threading.Interlocked.Exchange(_watchingNetwork, 0) <> 0 Then
+                                        RemoveHandler NetworkChange.NetworkAddressChanged, AddressOf OnNetworkAddressChanged
+                                    End If
                                     Dim agent As ExchangeDeviceAgent = ExchangeDeviceHost.Current
                                     If agent IsNot Nothing Then
                                         agent.OnBroadcastStopped(broadcastId)
@@ -67,6 +83,28 @@ Public Module LiveBroadcastHost
             .Sealing = New AgentSealing()
         }
     End Function
+
+    ''' <summary>Ticket 263 T-6: the exchange server refused the `broadcast-start` of the live broadcast with this id (any thread). The
+    ''' window shows one sentence for it. Only the id and the typed reason cross: never the record, the descriptor or a key.</summary>
+    Friend Event ExchangeStartRefused As Action(Of String, ExchangeRefusal)
+
+    Private ReadOnly SubscribeGate As New Object()
+    Private _listeningTo As ExchangeDeviceAgent
+
+    ''' <summary>Passes the agent's start refusals on to <see cref="ExchangeStartRefused"/>. Once per agent: the process has one agent, and
+    ''' a second broadcast must not add a second forwarder.</summary>
+    Friend Sub ListenTo(agent As ExchangeDeviceAgent)
+        If agent Is Nothing Then Return
+        SyncLock SubscribeGate
+            If ReferenceEquals(_listeningTo, agent) Then Return
+            _listeningTo = agent
+        End SyncLock
+        AddHandler agent.BroadcastStartRefused, AddressOf ForwardStartRefused
+    End Sub
+
+    Private Sub ForwardStartRefused(broadcastId As String, refusal As ExchangeRefusal)
+        RaiseEvent ExchangeStartRefused(broadcastId, refusal)
+    End Sub
 
     ''' <summary>The producer's sealing port, answered by the current exchange agent (spec 234, DEVICE-EXCHANGE items DK and DL):
     ''' the keys and the sealed directory live in the agent, the controller only asks.</summary>
@@ -94,6 +132,20 @@ Public Module LiveBroadcastHost
     ''' <summary>The one controller instance of the Share Manager - one live broadcast per device at a
     ''' time (section 2) means one object, owned by the tray context and shown by the window.</summary>
     Private _controller As LiveBroadcastController
+    Private _watchingNetwork As Integer
+
+    Private Sub WatchNetwork()
+        If System.Threading.Interlocked.Exchange(_watchingNetwork, 1) <> 0 Then Return
+        AddHandler NetworkChange.NetworkAddressChanged, AddressOf OnNetworkAddressChanged
+    End Sub
+
+    Private Sub OnNetworkAddressChanged(sender As Object, e As EventArgs)
+        Dim pending As System.Threading.Tasks.Task = System.Threading.Tasks.Task.Run(
+            Sub()
+                Dim current As LiveBroadcastController = _controller
+                If current IsNot Nothing AndAlso current.State.Running Then current.UpdateNetwork()
+            End Sub)
+    End Sub
 
     Friend Function Controller() As LiveBroadcastController
         If _controller Is Nothing Then _controller = New LiveBroadcastController(BuildPorts())

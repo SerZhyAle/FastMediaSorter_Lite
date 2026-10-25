@@ -28,7 +28,7 @@ not a local edit and not a local copy kept "in sync".
 | [`LIVE-BROADCAST.md`](LIVE-BROADCAST.md) | `LIVE-BROADCAST` | consumer (specification 023), **PC producer** (199) and receiver (201) - 1.0 read 2026-10-16, registry `partial 1.0`; the gate is open, the section 6 handshake has not been run by this product, the protected-broadcast completion on the relay is open (239 CR-14, CR-15) |
 | [`STREAM-BANK.md`](STREAM-BANK.md) | `STREAM-BANK` | producer, implemented (specification 022, `src/Streams/`, 2.2); on main, in no release |
 | [`INSTALL-TRUST.md`](INSTALL-TRUST.md) | `INSTALL-TRUST` | producer - adopted 2026-09-22; the page is a render target in 13 locales (1.2: no "Unblock" instruction, held by a test) |
-| [`FDSEC.md`](FDSEC.md) | `FDSEC-FORMAT`, `FDSEC-BEHAVIOUR` | consumer, reader half (specification 026): suite 1 of the format (reads 1.3) and the reader sections of the behaviour (1.5); suites 2 and 3 not opened; on main, in no release |
+| [`FDSEC.md`](FDSEC.md) | `FDSEC-FORMAT`, `FDSEC-BEHAVIOUR` | consumer, reader half plus the ephemeral writer of specification 242: suite 1 of the format (reads 1.5) and the behaviour (reads 1.7, 2026-10-22, specification 252); suites 2 and 3 not opened, which the contract accepts of a suite-1 port; on main, in no release |
 | [`ICON.md`](ICON.md) | `ICON-SET`, `ICON-RENDER`, `ICON-EXTERNAL` | consumer - viewer, Share Manager and site (specification 027); vendored at 0.36 (106 glyph files, none product-drawn), `ICON-RENDER` 0.24, `ICON-EXTERNAL` 0.12, re-read 2026-10-20 (specification 244), partial under dated registry exceptions |
 | [`APP-UX.md`](APP-UX.md) | `APP-BEHAVIOUR`, `APP-STYLE`, `APP-SETTINGS`, `WINDOWS-UI` | consumer, twice - viewer and Share Manager (specification 028); catalog 0.12 / 0.13 / 0.7 / 0.10, partial under dated registry exceptions; the five UI contracts of 2026-10-17 are in the `UNIFIED-UI` row |
 | [`WAVE-PARTICLES.md`](WAVE-PARTICLES.md) | `WAVE-PARTICLES` | consumer - the audio backdrop and the site hero, at 0.15 (specification 029; 0.15 asks nothing of the viewer) |
@@ -53,6 +53,7 @@ not a local edit and not a local copy kept "in sync".
 | [`CONTEXT-HELP.md`](CONTEXT-HELP.md) | `CONTEXT-HELP` | consumer, partial - in-app F1, top-right `?` button on help-bearing windows, shipped `help-map.json`, resolver, offline HTML help pages and static/locale/link gates (specification 240, 0.1) |
 | [`UNIFIED-UI.md`](UNIFIED-UI.md) | `UI-SIZING`, `BUTTONS`, `BOOLEAN-OPTION`, `COLLAPSIBLE-GROUP`, `SETTINGS-NAVIGATION` | consumer, migration open, no conformance claimed - viewer, Share Manager and site at 1.1 / 2.0 / 2.0 / 1.1 / 2.0 (specification 243, read 2026-10-20); plan and inventory in the unified-UI guide |
 | [`NO-ROLE.md`](NO-ROLE.md) | `LAN-DISCOVERY`, `UPDATE-MANIFEST` | none - declared so the next run does not re-investigate (re-read at 0.10 and 0.11) |
+| [`TEST-LAB.md`](TEST-LAB.md) | `TEST-LAB`, `TEST-LAB-WINDOWS` | reporter (ticket 255, 0.1, filed 2026-10-23) and **owner of the Windows profile**; six other Windows reports pending |
 
 Partial alignment: **2026-10-16** (specification 235, release 46): `DEVICE-EXCHANGE` 1.1, `LIVE-BROADCAST` 1.0,
 `ANYWHERE-ACCESS` 1.0, `CLIPBOARD-GUARD` 0.11, `ICON-SET` 0.33 and `ICON-RENDER` 0.19 were read in full against the

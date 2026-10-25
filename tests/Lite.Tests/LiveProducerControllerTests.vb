@@ -81,6 +81,73 @@ Public Class LiveProducerControllerTests
     End Function
 
     <Fact>
+    Public Sub Lan_choice_updates_the_same_broadcast_without_restarting_capture()
+        Dim address As String = LiveTestMachine.LanAddress()
+        If address.Length = 0 Then Throw Xunit.Sdk.SkipException.ForSkip("No LAN address is available for the listener rebind")
+        Dim harness As New FakeHarness With {.Address = address, .AllowVideo = True}
+        Dim ports As LiveProducerPorts = harness.Ports()
+        ports.ExchangeEndpointInfo = Function() Tuple.Create("relay.example:443", "sha256:" & New String("a"c, 64))
+        Dim updates As New List(Of String)()
+        ports.BroadcastChanged = Sub(s) updates.Add(s.RecordDescriptorJson)
+        Dim controller As New LiveBroadcastController(ports)
+        Try
+            Assert.True(controller.Start(New LiveStartRequest With {.Kind = LiveProducerSourceKind.Screen, .Mode = "VIDEO_ONLY", .Password = "secret"}).Ok)
+            Dim id As String = controller.State.BroadcastId
+            Dim started As Date = controller.State.StartedAtUtc
+            Dim token As String = controller.State.VideoToken
+            Assert.True(controller.UpdateNetwork(False).Ok)
+            Assert.False(controller.State.LanEndpointOn)
+            Assert.Equal("127.0.0.1", controller.State.ListenerAddress)
+            Assert.DoesNotContain(address, controller.State.DescriptorJson)
+            Assert.Contains("192.0.2.1", controller.State.DescriptorJson)
+            Assert.True(controller.UpdateNetwork(True).Ok)
+            Assert.True(controller.State.LanEndpointOn)
+            Assert.Equal(address, controller.State.ListenerAddress)
+            Assert.Equal(id, controller.State.BroadcastId)
+            Assert.Equal(started, controller.State.StartedAtUtc)
+            Assert.Equal(token, controller.State.VideoToken)
+            Assert.False(harness.Encoder.Stopped)
+            Assert.False(harness.VideoSource.Stopped)
+            Assert.Equal(2, updates.Count)
+            Assert.True(controller.UpdateNetwork().Ok)
+            Assert.Equal(2, updates.Count)
+        Finally
+            controller.Stop()
+        End Try
+    End Sub
+
+    <Fact>
+    Public Sub Losing_the_lan_address_moves_an_exchange_broadcast_to_the_private_listener()
+        Dim address As String = LiveTestMachine.LanAddress()
+        If address.Length = 0 Then Throw Xunit.Sdk.SkipException.ForSkip("No LAN address is available for the listener rebind")
+        Dim harness As New FakeHarness With {.Address = address}
+        Dim ports As LiveProducerPorts = harness.Ports()
+        ports.ExchangeEndpointInfo = Function() Tuple.Create("relay.example:443", "sha256:" & New String("a"c, 64))
+        Dim changed As Integer
+        ports.BroadcastChanged = Sub(s) changed += 1
+        Dim controller As New LiveBroadcastController(ports)
+        Try
+            Assert.True(controller.Start(MicrophoneRequest("Network test")).Ok)
+            Dim id As String = controller.State.BroadcastId
+            harness.Address = ""
+            Assert.True(controller.UpdateNetwork().Ok)
+            Assert.False(controller.State.LanEndpointOn)
+            Assert.Equal("127.0.0.1", controller.State.ListenerAddress)
+            Assert.Equal(id, controller.State.BroadcastId)
+            Assert.Equal(1, changed)
+            Assert.DoesNotContain(address, controller.State.RecordDescriptorJson)
+            Assert.Contains("192.0.2.1", controller.State.RecordDescriptorJson)
+            harness.Address = address
+            Assert.True(controller.UpdateNetwork().Ok)
+            Assert.True(controller.State.LanEndpointOn)
+            Assert.Equal(2, changed)
+            Assert.False(harness.Encoder.Stopped)
+        Finally
+            controller.Stop()
+        End Try
+    End Sub
+
+    <Fact>
     Public Sub A_shut_gate_refuses_the_start_and_touches_nothing()
         Dim harness As New FakeHarness() With {.GateOn = False}
         Dim controller As New LiveBroadcastController(harness.Ports())
@@ -512,6 +579,58 @@ Public Class LiveProducerControllerTests
             Assert.DoesNotContain(descriptor.Descriptor.Endpoints, Function(endpoint) endpoint.Transport = "HTTP")
             Assert.Contains("http://192.0.2.1:", controller.State.RecordDescriptorJson)
             Assert.DoesNotContain("127.0.0.1", controller.State.RecordDescriptorJson)
+        Finally
+            controller.Stop()
+        End Try
+    End Sub
+
+    <Fact>
+    Public Sub Video_with_a_lan_address_but_the_lan_listener_off_uses_the_documentation_host_in_inner()
+        ' LIVE-BROADCAST item J names both cases: no usable LAN address (above) and the video LAN listener off. Here the machine HAS a
+        ' publishable address, but the tick is off: the server binds loopback for the tunnel, no HTTP endpoint is written, and `inner`
+        ' keeps the scheme / port / token / path on 192.0.2.1 so the private address never rides inside the record.
+        Dim harness As New FakeHarness With {.Address = "192.168.1.50", .AllowVideo = False}
+        Dim ports As LiveProducerPorts = harness.Ports()
+        ports.ExchangeEndpointInfo = Function() Tuple.Create("relay.example:443", "sha256:" & New String("a"c, 64))
+        Dim controller As New LiveBroadcastController(ports)
+        Try
+            Dim result As LiveStartResult = controller.Start(New LiveStartRequest With {.Kind = LiveProducerSourceKind.Screen, .Mode = "VIDEO_ONLY"})
+            Assert.True(result.Ok, result.SeamReason)
+            Assert.Equal("127.0.0.1", controller.State.ListenerAddress)
+            Dim record As LiveBroadcastReadResult = LiveBroadcastReader.ReadText(controller.State.RecordDescriptorJson)
+            Assert.Equal(LiveReadStatus.Ok, record.Status)
+            Assert.DoesNotContain(record.Descriptor.Endpoints, Function(endpoint) endpoint.Transport = "HTTP")
+            Dim tunnel As LiveBroadcastEndpoint = record.Descriptor.Endpoints.Find(Function(endpoint) endpoint.Transport = "TUNNEL")
+            Assert.NotNull(tunnel)
+            Assert.Equal("http://192.0.2.1:" & harness.Port.ToString(Globalization.CultureInfo.InvariantCulture) & "/aabbccdd" & LiveProducerContract.VideoPath, tunnel.Inner)
+            Assert.DoesNotContain("192.168.1.50", controller.State.RecordDescriptorJson)
+            Assert.DoesNotContain("192.168.1.50", controller.State.DescriptorJson)
+            ' the state still names the machine's own address for the window; only the document leaves it out
+            Assert.Equal("192.168.1.50", controller.State.Address)
+        Finally
+            controller.Stop()
+        End Try
+    End Sub
+
+    <Fact>
+    Public Sub Video_with_the_lan_listener_on_keeps_the_lan_address_in_inner_and_in_the_http_endpoint()
+        Dim machine As String = LiveTestMachine.LanAddress()
+        If machine.Length = 0 Then Return ' NOT RUN: this machine has no LAN address to bind
+        Dim harness As New FakeHarness With {.Address = machine, .AllowVideo = True}
+        Dim ports As LiveProducerPorts = harness.Ports()
+        ports.ExchangeEndpointInfo = Function() Tuple.Create("relay.example:443", "sha256:" & New String("a"c, 64))
+        Dim controller As New LiveBroadcastController(ports)
+        Try
+            Dim result As LiveStartResult = controller.Start(New LiveStartRequest With {.Kind = LiveProducerSourceKind.Screen, .Mode = "VIDEO_ONLY"})
+            Assert.True(result.Ok, result.SeamReason)
+            Assert.Equal(machine, controller.State.ListenerAddress)
+            Dim record As LiveBroadcastReadResult = LiveBroadcastReader.ReadText(controller.State.RecordDescriptorJson)
+            Assert.Equal(LiveReadStatus.Ok, record.Status)
+            Assert.Contains(record.Descriptor.Endpoints, Function(endpoint) endpoint.Transport = "HTTP")
+            Dim tunnel As LiveBroadcastEndpoint = record.Descriptor.Endpoints.Find(Function(endpoint) endpoint.Transport = "TUNNEL")
+            Assert.NotNull(tunnel)
+            Assert.StartsWith("http://" & machine & ":", tunnel.Inner, StringComparison.Ordinal)
+            Assert.DoesNotContain("192.0.2.1", controller.State.RecordDescriptorJson)
         Finally
             controller.Stop()
         End Try

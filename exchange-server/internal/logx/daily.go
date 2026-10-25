@@ -62,7 +62,11 @@ func (l *Logger) dayFile(at time.Time) error {
 	}
 	l.file, l.w = nil, nil
 	l.path, l.size = path, 0
-	return l.openFile()
+	if err := l.openFile(); err != nil {
+		return err
+	}
+	l.writeBanner()
+	return nil
 }
 
 // Sweep removes only owned day files outside the configured UTC date window.

@@ -50,6 +50,10 @@ Friend NotInheritable Class ResourceDescriptor
     ''' <summary>Nothing = follow the viewer's own "include subfolders" setting; a value is the
     ''' root's own wish from an imported document (<c>scanSubdirectories</c>).</summary>
     Public Property IncludeSubfolders As Boolean?
+    <JsonIgnore(Condition:=JsonIgnoreCondition.WhenWritingNull)>
+    Public Property AllFiles As Boolean?
+    <JsonIgnore(Condition:=JsonIgnoreCondition.WhenWritingNull)>
+    Public Property ShowHiddenFiles As Boolean?
     ''' <summary>When this resource was last opened, for the manager's list and its ordering.</summary>
     Public Property LastUsedUtc As DateTime?
 
@@ -139,6 +143,8 @@ Friend Module ResourceOrigin
         built.PinSecretHandle = source.PinSecretHandle
         built.PinChanged = source.PinChanged
         built.ProtectionUnsupported = source.ProtectionUnsupported
+        built.AllFiles = source.AllFiles
+        built.ShowHiddenFiles = source.ShowHiddenFiles
     End Sub
 
     ''' <summary>True when an edit moved the resource: the same test <see cref="CarryOver"/> callers use to let go of it.</summary>

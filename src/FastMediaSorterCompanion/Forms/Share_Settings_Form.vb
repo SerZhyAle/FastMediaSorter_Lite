@@ -113,6 +113,7 @@ Partial Public NotInheritable Class Share_Settings_Form
         DisposeExchangeResources()
         DisposeProducerResources()
         DisposeAccountResources()
+        DisposeDriveResources()
     End Sub
 
     Private Sub BuildUi()
@@ -152,19 +153,22 @@ Partial Public NotInheritable Class Share_Settings_Form
             Case SettingsDestination.Manager
                 _secStartup = CreateSettingsSection("startup", Localization.T("Запуск"))
                 BuildStartupSection(_secStartup)
+                ' The SFTP sharing pages (253 R-2, R-4): built once, here, and only while that component is installed.
+                If WorkerProcess.IsAvailable() Then
+                    _secNetwork = CreateSettingsSection("network", Localization.T("Сеть"))
+                    BuildNetworkSection(_secNetwork)
+                    _secHosting = CreateSettingsSection("hosting", Localization.T("Хостинг"))
+                    BuildHostingSection(_secHosting)
+                    AddShareLogActions(_secHosting)
+                End If
                 _secAccount = CreateAccountSection()
                 If _secAccount IsNot Nothing Then BuildExchangeProducerRows(_secAccount)
+                _secDrive = CreateDriveSection()
                 _secScheduled = CreateScheduledSection()
                 _secHelp = CreateSettingsSection("help", Localization.T("Справка"))
                 BuildHelpSection(_secHelp)
                 AddShareLogActions(_secHelp)
                 BuildAboutRows(_secHelp)
-            Case SettingsDestination.Sftp
-                _secNetwork = CreateSettingsSection("network", Localization.T("Сеть"))
-                BuildNetworkSection(_secNetwork)
-                _secHosting = CreateSettingsSection("hosting", Localization.T("Хостинг"))
-                BuildHostingSection(_secHosting)
-                AddShareLogActions(_secHosting)
             Case SettingsDestination.ExchangeServer
                 _secExchange = CreateExchangeSection()
         End Select

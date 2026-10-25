@@ -40,6 +40,10 @@ Partial Public NotInheritable Class Share_Settings_Form
     Private _secExchange As CollapsibleSection
     Private _exLoaded As Boolean
     Private _exBusy As Boolean
+    ''' <summary>A cheap state read is in flight (see <see cref="CheckExchangeStateDriftAsync"/>).</summary>
+    Private _exDriftReading As Boolean
+    ''' <summary>The last state line the window logged: a change is written once.</summary>
+    Private _exLoggedState As String = ""
     Private _exLoadingPort As Boolean
     Private _exBaselinePort As Integer
     Private _exModel As ExchangeGroupModel
@@ -72,6 +76,7 @@ Partial Public NotInheritable Class Share_Settings_Form
     Private _btnXRemove As Button
     Private _txtXFp As TextBox
     Private _rowXFp As FlowLayoutPanel
+    Private _rowXConnString As FlowLayoutPanel
     Private _rowXFw As FlowLayoutPanel
     Private _rowXSvc As FlowLayoutPanel
     Private _lnkXTrust As LinkLabel
@@ -146,6 +151,24 @@ Partial Public NotInheritable Class Share_Settings_Form
             .Margin = New Padding(0, 0, 0, 8), .Text = Localization.T("Как устроен сервер обмена (портал)")}
         AddHandler lnkXPortal.LinkClicked, Sub() NetworkInfo.OpenInBrowser(ShareLinks.ExchangePortalUrl("exchange-server"))
         sec.AddBodyRow(lnkXPortal)
+
+        ' The connection string and its QR code (ticket 187 T-2) is what the operator hands to every client, so it leads the group:
+        ' larger and bold, and the first button of the page. The binary builds it from the configured address and the real certificate;
+        ' the row follows the fingerprint (no certificate, nothing to name) and the hint under it says why the button is off.
+        _btnXConnString = XButton(ExchangeConnectionStringText.GetButton(), AddressOf OnXGetConnectionString, "action.export")
+        _btnXConnString.Enabled = False
+        _btnXConnString.MinimumSize = New Size(0, 44)
+        Dim connStringFont As New Font(Me.Font, FontStyle.Bold)
+        _xBoldFonts.Add(connStringFont)
+        _btnXConnString.Font = connStringFont
+        _rowXConnString = XFlow()
+        _rowXConnString.Controls.Add(_btnXConnString)
+        _rowXConnString.Visible = False
+        sec.AddBodyRow(_rowXConnString)
+        _lblXConnNote = NoteLabel(ExchangeConnectionStringText.NoEndpoint())
+        _lblXConnNote.Visible = False
+        sec.AddBodyRow(_lblXConnNote)
+
         If ExchangeFirstRunModel.GateOpen() Then
             Dim addResource = XButton(Localization.T("Добавить ресурс для публикации.."), Sub()
                 ResourceAddRequested = True
@@ -280,6 +303,42 @@ Partial Public NotInheritable Class Share_Settings_Form
                           End Sub)
     End Function
 
+    ''' <summary>The state line is read when the window opens and after what the window itself does, so a
+    ''' service that stops or restarts on its own used to leave it saying the old thing while the tray, which
+    ''' reads the service live, said the new one. The poll tick calls this: one cheap read (the SCM and the
+    ''' registration, no process), and a full refresh only when the service's existence or state differs from
+    ''' what is on screen. Runs whether the group is folded or not - a folded summary must be true too.</summary>
+    Private Async Function CheckExchangeStateDriftAsync() As Task
+        If _exDriftReading OrElse _exchangeSnapshot Is Nothing Then Return
+        _exDriftReading = True
+        Try
+            Dim current As ExchangeSnapshot = Await Task.Run(Function() ExchangeSnapshot.ReadCheap())
+            If IsDisposed OrElse Disposing OrElse _exBusy Then Return
+            Dim shown As ExchangeSnapshot = _exchangeSnapshot
+            If shown Is Nothing OrElse (current.ServiceExists = shown.ServiceExists AndAlso current.ServiceState = shown.ServiceState) Then Return
+            AppFileLogger.LogStamped("Exchange window: the service changed outside the window (exists " & shown.ServiceExists.ToString() & " -> " & current.ServiceExists.ToString() &
+                                     ", state " & shown.ServiceState.ToString() & " -> " & current.ServiceState.ToString() & "); refreshing")
+            Await RefreshExchangeAsync()
+        Catch ex As Exception
+            AppFileLogger.LogException("Exchange: checking whether the service state moved", ex)
+        Finally
+            _exDriftReading = False
+        End Try
+    End Function
+
+    ''' <summary>Writes what the state line now shows - the kind and the reads behind it - once per change,
+    ''' so the log can answer "what did the window say at that minute". The probe-free build pass is not a
+    ''' statement and is skipped.</summary>
+    Private Sub LogExchangeState(snap As ExchangeSnapshot, m As ExchangeGroupModel)
+        If snap.Report Is Nothing Then Return
+        Dim line As String = "kind=" & m.Kind.ToString() & "; service exists=" & snap.ServiceExists.ToString() & ", state=" & snap.ServiceState.ToString() &
+                             "; console pid=" & snap.ConsolePid.ToString(Globalization.CultureInfo.InvariantCulture) &
+                             "; inspect answered=" & snap.Report.Answered.ToString()
+        If line = _exLoggedState Then Return
+        _exLoggedState = line
+        AppFileLogger.LogStamped("Exchange window: state line shows " & line)
+    End Sub
+
     Friend Sub FocusPublishPage()
         SelectSettingsPage("exchange-account")
     End Sub
@@ -314,6 +373,7 @@ Partial Public NotInheritable Class Share_Settings_Form
             _exReport = snap.Report
             Dim m As ExchangeGroupModel = ExchangeGroupModel.Build(snap)
             _exModel = m
+            LogExchangeState(snap, m)
 
             _lblXState.Text = ExchangeText.StateLine(m)
             _lblXState.ForeColor = If(m.Kind = ExchangeRunKind.RunningConsole OrElse m.Kind = ExchangeRunKind.ServiceRunning,
@@ -342,8 +402,9 @@ Partial Public NotInheritable Class Share_Settings_Form
             _rowXFp.Visible = m.ShowFingerprint
             _txtXFp.Text = m.Fingerprint
             _lblXFpNote.Text = If(m.ShowFingerprint, ExchangeText.FingerprintNote(), ExchangeText.FingerprintMissing())
+            _rowXConnString.Visible = m.ShowConfigRows AndAlso m.ShowFingerprint
             _btnXConnString.Enabled = Not _exBusy AndAlso ConnectionStringAvailable()
-            _lblXConnNote.Visible = m.ShowFingerprint AndAlso m.PublicEndpoint.Length = 0
+            _lblXConnNote.Visible = m.ShowConfigRows AndAlso m.ShowFingerprint AndAlso m.PublicEndpoint.Length = 0
 
             _btnXStart.Visible = m.ShowStart
             _btnXStop.Visible = m.ShowStop

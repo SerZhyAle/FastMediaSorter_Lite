@@ -17,7 +17,12 @@ Imports Xunit
 ''' silently be useless: the log is held OPEN FOR WRITING by AppFileLogger while it is
 ''' being packed, and a log that has grown for months must not produce a mail nobody
 ''' can send.
+'''
+''' The redactor gives every line a 50 ms match budget and replaces a line that overruns it with a timeout marker.
+''' These tests count bytes over tens of thousands of lines, so they run alone: beside the other classes a loaded
+''' machine can overrun the budget once and move the count by one marker.
 ''' </summary>
+<Collection("RedactionTiming")>
 Public Class LogPackageTests
 
     <Fact>
@@ -677,6 +682,10 @@ Public Class LogPackageTests
         End Try
     End Sub
 
+End Class
+
+<CollectionDefinition("RedactionTiming", DisableParallelization:=True)>
+Public NotInheritable Class RedactionTimingCollection
 End Class
 
 ''' <summary>

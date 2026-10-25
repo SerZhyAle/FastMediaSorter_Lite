@@ -105,7 +105,7 @@ in a second place.
 | **Media Exchange Server** (unchanged, Latin, not translated; never shortened - see the row in section 1) | "relay server", "FMS server" in a visible string |
 | **Publish my shares**, **Attach**, **Cast** / **Play on another device** | "upload my folders" (nothing is uploaded) |
 | **Google Drive**, named, whenever it is meant | "the cloud" |
-| **Connection string**, **Add from an exchange server**, **Get connection string**, **Sign out on this device** (226, 233) | calling a connection string a secret - it is an address with the certificate pin, carrying no password, token or pairing code |
+| **Connection string**, **Add from an exchange server**, **Connection string and QR code** (the operator's button, formerly "Get connection string"), **Sign out on this device** (226, 233) | calling a connection string a secret - it is an address with the certificate pin, carrying no password, token or pairing code |
 
 The dictionary owner is `DEVICE-EXCHANGE` 1.1 section 2 items CV and CW and section 3 item CX (S4219; it was section 25 items CV-CZ at 0.27, before the renumbering). This section
 cites its entries; it does not define another translation table. The imported conformance fixture is

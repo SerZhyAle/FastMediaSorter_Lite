@@ -86,6 +86,10 @@ Public NotInheritable Class CustomHotkeys
         ' moved off is retired like any other. Zoom also answers to the MAIN row ("=" and "+", "-"): a laptop has
         ' no numeric block, and "/" and "*" are Shift+7 / Shift+8 there, which are already "copy to slot 7 / 8",
         ' so only the two zoom steps get a second home. "+" is Shift+"=" on most layouts, hence both spellings.
+        ' VIEWER-KEYBOARD as INPUT-CHORD / INPUT-PARITY 0.4 incorporate it (specification 252 T-3, the
+        ' defaults half): F is the family's fullscreen key and F4 the picker; the viewer's historical F7
+        ' alias remains, as the table allows ("the inherited F7 alias may remain on Windows"). G opens the
+        ' thumbnail panel beside the viewer's F3.
         Dim actions As New List(Of HotkeyAction) From {
             New HotkeyAction("nextFile", "Следующий файл", "Right", "Space", "PageDown", "BrowserForward"),
             New HotkeyAction("prevFile", "Предыдущий файл", "Left", "P", "B", "Backspace", "PageUp", "BrowserBack"),
@@ -98,7 +102,7 @@ Public NotInheritable Class CustomHotkeys
             New HotkeyAction("forward10", "Вперёд на 10 файлов", "Down"),
             New HotkeyAction("back100", "Назад на 100 файлов", "Shift+PageUp"),
             New HotkeyAction("forward100", "Вперёд на 100 файлов", "Shift+PageDown"),
-            New HotkeyAction("chooseFile", "Выбрать файл", "F4", "F"),
+            New HotkeyAction("chooseFile", "Выбрать файл", "F4"),
             New HotkeyAction("jumpToNumber", "Перейти к номеру файла", "N"),
             New HotkeyAction("openContent", "Открыть документ в программе или защищённый файл", "Enter"),
             New HotkeyAction("renameFile", "Переименовать файл", "F6"),
@@ -109,9 +113,9 @@ Public NotInheritable Class CustomHotkeys
             New HotkeyAction("rotateCcw", "Повернуть против часовой стрелки", "Shift+R"),
             New HotkeyAction("ocrTranslate", "Распознать и перевести", "T"),
             New HotkeyAction("ocrAuto", "Автоматическое распознавание", "Shift+T"),
-            New HotkeyAction("fullScreen", "Полноэкранный режим", "F7"),
+            New HotkeyAction("fullScreen", "Полноэкранный режим", "F7", "F"),
             New HotkeyAction("settings", "Настройки", "F2"),
-            New HotkeyAction("imagePanel", "Панель изображений", "F3"),
+            New HotkeyAction("imagePanel", "Панель изображений", "F3", "G"),
             New HotkeyAction("help", "Справка", "F1"),
             New HotkeyAction("zoomIn", "Увеличить масштаб", "Num +", "Oemplus", "Shift+Oemplus"),
             New HotkeyAction("zoomOut", "Уменьшить масштаб", "Num -", "OemMinus"),
@@ -127,6 +131,7 @@ Public NotInheritable Class CustomHotkeys
             New HotkeyAction("seekBackLong", "Назад на длинный шаг", "Ctrl+Left"),
             New HotkeyAction("seekFwdLong", "Вперёд на длинный шаг", "Ctrl+Right"),
             New HotkeyAction("frameStep", "Следующий кадр", "OemPeriod"),
+            New HotkeyAction("frameBack", "Предыдущий кадр", "Oemcomma"),
             New HotkeyAction("abLoop", "Повтор A-B", "Shift+L"),
             New HotkeyAction("playPause", "Пауза / продолжить", "K", "MediaPlayPause"),
             New HotkeyAction("mute", "Звук вкл/выкл", "M"),
@@ -279,7 +284,6 @@ Public NotInheritable Class CustomHotkeys
         ' The legacy Add spelling contains a literal plus; preserve it before trimming
         ' tolerated trailing separators. A second trigger still fails KeyFromName.
         If Not String.Equals(rest, "Num +", StringComparison.OrdinalIgnoreCase) Then rest = rest.TrimEnd("+"c, " "c)
-        If rest.StartsWith("NumPad", StringComparison.OrdinalIgnoreCase) Then Return String.Empty
         Dim code As Keys = KeyFromName(rest)
         If Not IsAssignableKey(code) Then Return String.Empty
         Dim trigger As String = If(code = Keys.Escape, "Esc", KeyName(code))
@@ -323,12 +327,12 @@ Public NotInheritable Class CustomHotkeys
     Private Shared Function KeyName(code As Keys) As String
         Select Case code
             Case Keys.D0 To Keys.D9 : Return ChrW(AscW("0"c) + (code - Keys.D0))
-            Case Keys.NumPad0 To Keys.NumPad9 : Return "Num " & ChrW(AscW("0"c) + (code - Keys.NumPad0))
-            Case Keys.Add : Return "Num +"
-            Case Keys.Subtract : Return "Num -"
-            Case Keys.Multiply : Return "Num *"
-            Case Keys.Divide : Return "Num /"
-            Case Keys.Decimal : Return "Num ."
+            Case Keys.NumPad0 To Keys.NumPad9 : Return "Numpad" & ChrW(AscW("0"c) + (code - Keys.NumPad0))
+            Case Keys.Add : Return "NumpadAdd"
+            Case Keys.Subtract : Return "NumpadSubtract"
+            Case Keys.Multiply : Return "NumpadMultiply"
+            Case Keys.Divide : Return "NumpadDivide"
+            Case Keys.Decimal : Return "NumpadDecimal"
             Case Keys.Next : Return "PageDown"
             Case Keys.Prior : Return "PageUp"
             Case Keys.Back : Return "Backspace"
@@ -339,9 +343,18 @@ Public NotInheritable Class CustomHotkeys
                 ' OemCloseBrackets = 221) and Keys.ToString() answers with whichever alias
                 ' was declared first - so the spelling is pinned here, like "Num +" above,
                 ' or a round-trip through Canonical would rename the key.
-            Case Keys.OemOpenBrackets : Return "OemOpenBrackets"
-            Case Keys.OemPipe : Return "OemPipe"
-            Case Keys.OemCloseBrackets : Return "OemCloseBrackets"
+            Case Keys.OemOpenBrackets : Return "BracketLeft"
+            Case Keys.OemPipe : Return "Backslash"
+            Case Keys.OemCloseBrackets : Return "BracketRight"
+            Case Keys.OemPeriod : Return "Period"
+            Case Keys.Oemcomma : Return "Comma"
+            Case Keys.Oemplus : Return "Equal"
+            Case Keys.OemMinus : Return "Minus"
+            Case Keys.MediaNextTrack : Return "MediaTrackNext"
+            Case Keys.MediaPreviousTrack : Return "MediaTrackPrevious"
+            Case Keys.VolumeUp : Return "AudioVolumeUp"
+            Case Keys.VolumeDown : Return "AudioVolumeDown"
+            Case Keys.VolumeMute : Return "AudioVolumeMute"
         End Select
 
         Dim name As String = code.ToString()
@@ -359,6 +372,23 @@ Public NotInheritable Class CustomHotkeys
         End If
 
         Select Case trimmed.ToLowerInvariant()
+            Case "numpadadd" : Return Keys.Add
+            Case "numpadsubtract" : Return Keys.Subtract
+            Case "numpadmultiply" : Return Keys.Multiply
+            Case "numpaddivide" : Return Keys.Divide
+            Case "numpaddecimal" : Return Keys.Decimal
+            Case "bracketleft" : Return Keys.OemOpenBrackets
+            Case "bracketright" : Return Keys.OemCloseBrackets
+            Case "period" : Return Keys.OemPeriod
+            Case "comma" : Return Keys.Oemcomma
+            Case "equal" : Return Keys.Oemplus
+            Case "minus" : Return Keys.OemMinus
+            Case "backslash" : Return Keys.OemPipe
+            Case "mediatracknext" : Return Keys.MediaNextTrack
+            Case "mediatrackprevious" : Return Keys.MediaPreviousTrack
+            Case "audiovolumeup" : Return Keys.VolumeUp
+            Case "audiovolumedown" : Return Keys.VolumeDown
+            Case "audiovolumemute" : Return Keys.VolumeMute
             Case "num +" : Return Keys.Add
             Case "num -" : Return Keys.Subtract
             Case "num *" : Return Keys.Multiply
@@ -450,6 +480,14 @@ Public NotInheritable Class CustomHotkeys
         Return JsonSerializer.Serialize(Load(JsonSerializer.Serialize(ordered)))
     End Function
 
+    ''' <summary>The stored map and the factory table are in the INPUT-CHORD 0.4 vocabulary; a caller may still
+    ''' hold a legacy spelling ("Oemplus", "Num +"), which names the same physical key. A text that names no
+    ''' key is returned as it came, so it still matches nothing.</summary>
+    Private Shared Function InCurrentVocabulary(combo As String) As String
+        Dim current As String = Canonical(combo)
+        Return If(current.Length > 0, current, combo)
+    End Function
+
     ''' <summary>What the action answers to right now.</summary>
     Public Shared Function EffectiveCombo(map As Dictionary(Of String, String), action As HotkeyAction) As String
         If action Is Nothing Then Return String.Empty
@@ -465,6 +503,7 @@ Public NotInheritable Class CustomHotkeys
     ''' viewer's own key handling.</summary>
     Public Shared Function OwnerOfOverride(map As Dictionary(Of String, String), combo As String) As String
         If map Is Nothing OrElse String.IsNullOrEmpty(combo) Then Return String.Empty
+        combo = InCurrentVocabulary(combo)
         For Each pair As KeyValuePair(Of String, String) In map
             If pair.Value = NoShortcut Then Continue For
             If String.Equals(pair.Value, combo, StringComparison.OrdinalIgnoreCase) Then Return pair.Key
@@ -476,6 +515,7 @@ Public NotInheritable Class CustomHotkeys
     ''' "". This is the conflict question the dialog asks.</summary>
     Public Shared Function OwnerOfCombo(map As Dictionary(Of String, String), combo As String) As String
         If String.IsNullOrEmpty(combo) Then Return String.Empty
+        combo = InCurrentVocabulary(combo)
         For Each action As HotkeyAction In Catalog
             Dim effective As String = EffectiveCombo(map, action)
             If effective.Length = 0 Then Continue For
@@ -491,6 +531,7 @@ Public NotInheritable Class CustomHotkeys
     ''' </summary>
     Public Shared Function IsRetiredDefault(map As Dictionary(Of String, String), combo As String) As Boolean
         If map Is Nothing OrElse map.Count = 0 OrElse String.IsNullOrEmpty(combo) Then Return False
+        combo = InCurrentVocabulary(combo)
         If OwnerOfCombo(map, combo).Length > 0 Then Return False
 
         For Each action As HotkeyAction In Catalog
@@ -525,7 +566,7 @@ Public NotInheritable Class CustomHotkeys
     Private Shared ReadOnly PlaybackActionIds As String() = {
         "speedSlower", "speedFaster", "speedReset",
         "seekBackShort", "seekFwdShort", "seekBackMedium", "seekFwdMedium", "seekBackLong", "seekFwdLong",
-        "frameStep", "abLoop",
+        "frameStep", "frameBack", "abLoop",
         "playPause", "mute", "volumeUp", "volumeDown"}
 
     ''' <summary>True for the eleven playback actions of ticket 119 and the four video basics of 123.</summary>
@@ -535,6 +576,45 @@ Public NotInheritable Class CustomHotkeys
             If String.Equals(id, actionId, StringComparison.Ordinal) Then Return True
         Next
         Return False
+    End Function
+
+    ''' <summary>The manual-navigation actions of MEDIA-VIEWER 1.0 rule 5, in catalogue
+    ''' order: the four file moves, the four relative jumps, the two absolute ones and the
+    ''' jump-to-number dialog. Everything else (sort surfaces, the picker, playback, zoom)
+    ''' is not navigation: those keys keep the historical slideshow stop.</summary>
+    Private Shared ReadOnly NavigationActionIds As String() = {
+        "nextFile", "prevFile", "randomFile",
+        "back10", "forward10", "back100", "forward100",
+        "firstFile", "lastFile", "jumpToNumber"}
+
+    ''' <summary>True for the ten manual-navigation actions of MEDIA-VIEWER 1.0 rule 5.</summary>
+    Public Shared Function IsNavigationAction(actionId As String) As Boolean
+        If String.IsNullOrEmpty(actionId) Then Return False
+        For Each id As String In NavigationActionIds
+            If String.Equals(id, actionId, StringComparison.Ordinal) Then Return True
+        Next
+        Return False
+    End Function
+
+    ''' <summary>
+    ''' The navigation action whose FACTORY key is this combination, or "" (MEDIA-VIEWER
+    ''' 1.0 rule 5): KeybUse asks this before its historical slideshow stop, so a navigation
+    ''' key continues a running show while every other key still stops it. Built exactly
+    ''' like <see cref="PlaybackActionOfFactoryKey"/>: the custom map has already answered
+    ''' by the time this is consulted, so only the factory spellings count, every spelling
+    ''' (Right and Space and PageDown alike), not just the shown default.
+    ''' </summary>
+    Public Shared Function NavigationActionOfFactoryKey(keyData As Keys) As String
+        Dim combo As String = Format(keyData)
+        If combo.Length = 0 Then Return String.Empty
+        For Each id As String In NavigationActionIds
+            Dim action As HotkeyAction = Find(id)
+            If action Is Nothing Then Continue For
+            For Each factory As String In FactoryCombos(action)
+                If String.Equals(factory, combo, StringComparison.OrdinalIgnoreCase) Then Return id
+            Next
+        Next
+        Return String.Empty
     End Function
 
     ''' <summary>

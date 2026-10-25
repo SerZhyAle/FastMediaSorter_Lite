@@ -34,6 +34,8 @@ Friend Class LiveProducerSettings
     ''' a fixed path and no credential, and for a screen that shows the picture to anyone on the
     ''' segment. Video starts exchange-only (173) unless the user ticks "Allow viewers on my network".</summary>
     Public Property AllowLanVideoViewers As Boolean = False
+    ''' <summary>DEVICE-EXCHANGE item M: server-brokered relay/tunnel connections, zero for no cap. LAN viewing is independent.</summary>
+    Public Property MaxListeners As Integer
 
     ''' <summary>Safety rule 2: a small topmost "on air" chip while anything is captured, a setting,
     ''' default on for the screen.</summary>
@@ -43,6 +45,22 @@ Friend Class LiveProducerSettings
     ''' the monitor count at start time (a remembered index outlived by a unplugged screen falls back
     ''' to the first one).</summary>
     Public Property ScreenMonitorIndex As Integer = 0
+
+    ''' <summary>Ticket 263 T-2: the window the screen source captures INSTEAD of the monitor - its title, as
+    ''' remembered when the person picked it. A window handle is not stable across runs, so the title and
+    ''' the process name are what is stored; the broadcast start looks the window up again (a window that is
+    ''' not open refuses the start, it never falls back to the monitor). Empty = the whole monitor.</summary>
+    Public Property ScreenWindowTitle As String = ""
+
+    ''' <summary>The process name (without ".exe") of the remembered window; see <see cref="ScreenWindowTitle"/>.</summary>
+    Public Property ScreenWindowProcess As String = ""
+
+    ''' <summary>True when a window, not the monitor, is the screen source's target.</summary>
+    Public ReadOnly Property HasScreenWindow As Boolean
+        Get
+            Return Not String.IsNullOrEmpty(ScreenWindowTitle)
+        End Get
+    End Property
 
     ''' <summary>Section 4: the cursor toggle of the screen source, on by default.</summary>
     Public Property ScreenCursor As Boolean = True
@@ -67,10 +85,13 @@ Friend Class LiveProducerSettings
     Public Const KeySystemAudioChannels As String = "Live_SystemAudioChannels"
     Public Const KeyTitle As String = "Live_Title"
     Public Const KeyAllowLanVideoViewers As String = "Live_AllowLanVideoViewers"
+    Public Const KeyMaxListeners As String = "Live_MaxListeners"
     Public Const KeyOnAirChip As String = "Live_OnAirChip"
     Public Const KeyMicrophoneGain As String = "Live_MicrophoneGain"
     Public Const KeyScreenMonitorIndex As String = "Live_ScreenMonitorIndex"
     Public Const KeyScreenCursor As String = "Live_ScreenCursor"
+    Public Const KeyScreenWindowTitle As String = "Live_ScreenWindowTitle"
+    Public Const KeyScreenWindowProcess As String = "Live_ScreenWindowProcess"
     Public Const KeyCameraDeviceIndex As String = "Live_CameraDeviceIndex"
     Public Const KeyCameraModeIndex As String = "Live_CameraModeIndex"
 
@@ -105,10 +126,13 @@ Friend Class LiveProducerSettings
         s.SystemAudioChannels = SanitizeChannels(ReadInt(read, KeySystemAudioChannels, LiveProducerContract.StereoChannels))
         s.Title = If(read(KeyTitle), "")
         s.AllowLanVideoViewers = ReadBool(read, KeyAllowLanVideoViewers, False)
+        s.MaxListeners = Math.Max(0, Math.Min(10000, ReadInt(read, KeyMaxListeners, 0)))
         s.OnAirChip = ReadBool(read, KeyOnAirChip, True)
         s.MicrophoneGain = ClampGain(ReadDouble(read, KeyMicrophoneGain, 1.0))
         s.ScreenMonitorIndex = Math.Max(0, ReadInt(read, KeyScreenMonitorIndex, 0))
         s.ScreenCursor = ReadBool(read, KeyScreenCursor, True)
+        s.ScreenWindowTitle = If(read(KeyScreenWindowTitle), "")
+        s.ScreenWindowProcess = If(read(KeyScreenWindowProcess), "")
         s.CameraDeviceIndex = Math.Max(0, ReadInt(read, KeyCameraDeviceIndex, 0))
         s.CameraModeIndex = Math.Max(-1, ReadInt(read, KeyCameraModeIndex, -1))
         Return s
@@ -125,10 +149,13 @@ Friend Class LiveProducerSettings
         write(KeySystemAudioChannels, SystemAudioChannels.ToString(Globalization.CultureInfo.InvariantCulture))
         write(KeyTitle, If(Title, ""))
         write(KeyAllowLanVideoViewers, If(AllowLanVideoViewers, "1", "0"))
+        write(KeyMaxListeners, Math.Max(0, Math.Min(10000, MaxListeners)).ToString(Globalization.CultureInfo.InvariantCulture))
         write(KeyOnAirChip, If(OnAirChip, "1", "0"))
         write(KeyMicrophoneGain, ClampGain(MicrophoneGain).ToString("0.##", Globalization.CultureInfo.InvariantCulture))
         write(KeyScreenMonitorIndex, Math.Max(0, ScreenMonitorIndex).ToString(Globalization.CultureInfo.InvariantCulture))
         write(KeyScreenCursor, If(ScreenCursor, "1", "0"))
+        write(KeyScreenWindowTitle, If(ScreenWindowTitle, ""))
+        write(KeyScreenWindowProcess, If(ScreenWindowProcess, ""))
         write(KeyCameraDeviceIndex, Math.Max(0, CameraDeviceIndex).ToString(Globalization.CultureInfo.InvariantCulture))
         write(KeyCameraModeIndex, Math.Max(-1, CameraModeIndex).ToString(Globalization.CultureInfo.InvariantCulture))
     End Sub

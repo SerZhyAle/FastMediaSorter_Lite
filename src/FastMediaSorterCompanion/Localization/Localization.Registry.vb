@@ -38,6 +38,7 @@ Partial Public NotInheritable Class Localization
         AddManagerWelcomeStrings()     ' spec 212: share the first folder, startup trigger and replay
         AddExchangePublishStrings()    ' ticket 170: the producer rows - publishing the shares, the third-party port, outsider links (replaces 148's)
         AddExchangeDeviceStrings()     ' ticket 180: the device agent - the "Exchange account" group and its sign-in dialog
+        AddExchangeHonestStrings()
         AddExchangeAdminStrings()      ' ticket 168: the exchange server administration - accounts, devices, address, ports, certificate, statement, wizard
         AddExchangeStringStrings()     ' ticket 187 T-2: the operator's "Get connection string" action
         AddExchangeJoinStrings()       ' ticket 187 T-5: the quick join by connection string and the clean leave
@@ -47,6 +48,7 @@ Partial Public NotInheritable Class Localization
         AddClipboardStrings()   ' spec 230: the clipboard through the exchange server - buttons, tray items, shortcuts, result lines
         AddOutwardAccessStrings()      ' ticket 239 CR-13: the guest invitation and the link with a password shown as not available
         AddAboutPageStrings()          ' ticket 243 T-6: the About group of the Share Manager - description, updates, help, project links, related projects
+        AddDriveStrings()              ' spec 203 section 5.10 (T-UI-1): the Google Drive sign-in page of Manager settings
     End Sub
 
     ''' <summary>

@@ -326,8 +326,8 @@ Friend NotInheritable Class ExchangeStatement
     End Function
 
     ''' <summary>The whole statement as paragraphs, in the order it is shown.</summary>
-    Friend Shared Function Paragraphs(Optional retentionDays As Integer = 31) As List(Of String)
-        Dim points As List(Of String) = Ids.Select(Function(id) Text(id)).ToList()
+    Friend Shared Function Paragraphs(Optional retentionDays As Integer = 31, Optional sealed As Boolean = True) As List(Of String)
+        Dim points As List(Of String) = If(sealed, New List(Of String) From {Localization.T("Сервер обмена соединяет ваши устройства, поэтому знает имена вашего аккаунта, устройств, папок и трансляций, видит, какие устройства в сети, и сколько и когда передаётся. Открыть то, что идёт через него, он не может: папки и их файлы, трансляции и буфер шифруются на вашем устройстве и открываются только на других ваших устройствах или у тех, кому вы дали доступ. Чтобы заглянуть внутрь, тому, кто управляет сервером, пришлось бы добавить в ваш аккаунт своё устройство, и оно появилось бы в списке ваших устройств.")}, Ids.Select(Function(id) Text(id)).ToList())
         points.Add(Localization.TF("Журналы хранятся {0} дней. Файлы создаются по дням UTC и очищаются ежедневно.", retentionDays))
         Return points
     End Function

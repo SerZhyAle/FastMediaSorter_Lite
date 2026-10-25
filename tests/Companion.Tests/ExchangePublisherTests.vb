@@ -99,6 +99,8 @@ Public Class ExchangePublisherTests
         Public Invalidations As Integer
         Public PinLocked As Boolean
         Public WorkerDialFails As Boolean
+        Public AfterPublish As Action
+        Public PinProbe As Action
 
         Public Sub New(Optional maxTunnels As Integer = 16, Optional idle As TimeSpan = Nothing)
             Settings = New ExchangePublishSettings(SettingsPort)
@@ -115,8 +117,14 @@ Public Class ExchangePublisherTests
                                  Return Task.FromResult(Status)
                              End Function,
                 .LanOnly = Function() False, .LanFallback = Function() "10.0.0.2",
-                .HasPin = Function(hostPath) PinLocked,
-                .Log = Sub(line) Rig.Log.Enqueue(line),
+                .HasPin = Function(hostPath)
+                              PinProbe?.Invoke()
+                              Return PinLocked
+                          End Function,
+                .Log = Sub(line)
+                           Rig.Log.Enqueue(line)
+                           If line.StartsWith("Exchange producer: published resource ", StringComparison.Ordinal) Then AfterPublish?.Invoke()
+                       End Sub,
                 .DebounceMs = 40, .PollMs = 60, .StatusTimeoutMs = 2000, .PublishTimeoutMs = 4000,
                 .MaxTunnelsPerResource = maxTunnels, .WorkerDialTimeoutMs = 1500,
                 .DialWorker = Function(port, ct)
@@ -159,6 +167,16 @@ Public Class ExchangePublisherTests
 
     Friend Shared Function Latest(acc As ExchangeStubAccount, name As String) As String
         Return acc.PublishLog().LastOrDefault(Function(r) NameOf_(r) = name)
+    End Function
+
+    ' Server receipt precedes the reply and ApplyAsync's final Rebuild/Changed. Await the
+    ' immutable UI snapshot itself before asserting its contents (specification 265).
+    Private Shared Async Function WaitForSnapshotAsync(kit As Kit, predicate As Func(Of ExchangePublishSnapshot, Boolean)) As Task
+        Dim ready As Boolean = Await ExchangeStubAccount.WaitUntilAsync(Function() predicate(kit.Publisher.Snapshot))
+        Dim snapshot As ExchangePublishSnapshot = kit.Publisher.Snapshot
+        Assert.True(ready, "Publisher snapshot did not settle: block=" & snapshot.Block.ToString() &
+                    "; rows=" & String.Join(", ", snapshot.Rows.Select(Function(r) r.Name & ":" & r.State.ToString())) &
+                    "; log=" & String.Join(" | ", kit.Rig.Log.ToArray()))
     End Function
 
     ''' <summary>The `access` JSON inside the `sealedAccess` box of a published record, opened as the producer itself (it is a recipient of
@@ -259,8 +277,91 @@ Public Class ExchangePublisherTests
                     Assert.Equal({"192.168.1.50", "203.0.113.9"}, info.Code.Hosts.ToArray())
                     Assert.Equal(WorkerPassword, info.Code.Password)
                     Assert.Equal(Fp, info.Code.Fingerprint)
+                    Await WaitForSnapshotAsync(kit, Function(s) s.Rows.Count = 2 AndAlso
+                                                   s.Rows.All(Function(r) r.State = ExchangePublishState.Published))
                     Assert.Equal(ExchangePublishBlock.None, kit.Publisher.Snapshot.Block)
                     Assert.All(kit.Publisher.Snapshot.Rows, Sub(r) Assert.Equal(ExchangePublishState.Published, r.State))
+                End Using
+            End Using
+        End Using
+    End Function
+
+    <Fact>
+    Public Async Function Server_receipt_can_precede_the_snapshot_but_the_snapshot_wait_observes_completion() As Task
+        Dim received As New TaskCompletionSource(Of Boolean)(TaskCreationOptions.RunContinuationsAsynchronously)
+        Dim release As New TaskCompletionSource(Of Boolean)(TaskCreationOptions.RunContinuationsAsynchronously)
+        Using account As New ExchangeStubAccount()
+            Using kit As New Kit()
+                Dim count As Integer
+                kit.AfterPublish = Sub()
+                                       If Interlocked.Increment(count) <> 2 Then Return
+                                       received.TrySetResult(True)
+                                       release.Task.WaitAsync(TimeSpan.FromSeconds(5)).GetAwaiter().GetResult()
+                                   End Sub
+                kit.Settings.SetPublishShares(True)
+                Try
+                    Using agent As ExchangeDeviceAgent = Await EnrollOnlineAsync(kit, account)
+                        Await received.Task.WaitAsync(TimeSpan.FromSeconds(5))
+                        Assert.Equal(2, account.PublishedNow().Count)
+                        Assert.Empty(kit.Publisher.Snapshot.Rows)
+                        Dim settled As Task = WaitForSnapshotAsync(kit, Function(s) s.Rows.Count = 2 AndAlso
+                                                                            s.Rows.All(Function(r) r.State = ExchangePublishState.Published))
+                        Assert.False(settled.IsCompleted)
+                        release.TrySetResult(True)
+                        Await settled
+                    End Using
+                Finally
+                    release.TrySetResult(True)
+                End Try
+            End Using
+        End Using
+    End Function
+
+    <Fact>
+    Public Async Function Removing_a_link_waits_for_an_inflight_create_and_never_loses_the_revocation() As Task
+        Dim planned As New TaskCompletionSource(Of Boolean)(TaskCreationOptions.RunContinuationsAsynchronously)
+        Dim release As New TaskCompletionSource(Of Boolean)(TaskCreationOptions.RunContinuationsAsynchronously)
+        Using account As New ExchangeStubAccount()
+            Using kit As New Kit()
+                kit.Settings.SetPublishShares(True)
+                Using agent As ExchangeDeviceAgent = Await EnrollOnlineAsync(kit, account)
+                    Await WaitForSnapshotAsync(kit, Function(s) s.Rows.Count = 2 AndAlso
+                                                               s.Rows.All(Function(r) r.State = ExchangePublishState.Published))
+                    Dim holdThisPlan As New AsyncLocal(Of Boolean)
+                    Dim armed As Integer = 1
+                    kit.PinProbe = Sub()
+                                       If Not holdThisPlan.Value OrElse Interlocked.Exchange(armed, 0) = 0 Then Return
+                                       planned.TrySetResult(True)
+                                       release.Task.WaitAsync(TimeSpan.FromSeconds(5)).GetAwaiter().GetResult()
+                                   End Sub
+                    Dim creating As Task(Of ExchangeLinkResult) = Task.Run(
+                        Async Function()
+                            holdThisPlan.Value = True
+                            Return Await kit.Publisher.CreateLinkAsync("Photos", CancellationToken.None)
+                        End Function)
+                    Try
+                        Await planned.Task.WaitAsync(TimeSpan.FromSeconds(5))
+                        ' Capture the returned task after invoking Remove synchronously. With the old
+                        ' code it returned Done from the stale no-link store while Create was paused.
+                        Dim dispatched As New TaskCompletionSource(Of Task(Of ExchangeLinkResult))(TaskCreationOptions.RunContinuationsAsynchronously)
+                        Dim dispatch As Task = Task.Run(Sub()
+                                                           Try
+                                                               dispatched.TrySetResult(kit.Publisher.RemoveLinkAsync("Photos", CancellationToken.None))
+                                                           Catch ex As Exception
+                                                               dispatched.TrySetException(ex)
+                                                           End Try
+                                                       End Sub)
+                        Dim removing As Task(Of ExchangeLinkResult) = Await dispatched.Task.WaitAsync(TimeSpan.FromSeconds(5))
+                        Assert.False(removing.IsCompleted, "Remove must wait for the in-flight link mutation, not accept its previous state.")
+                        release.TrySetResult(True)
+                        Assert.Equal(ExchangeLinkOutcome.Done, (Await creating).Outcome)
+                        Assert.Equal(ExchangeLinkOutcome.Done, (Await removing).Outcome)
+                        Assert.Equal("", IdOf(Latest(account, "Photos"), "shareId"))
+                        Assert.Equal("", kit.Store.Load(agent.GetStatus().DeviceId).Get("Photos").ShareId)
+                    Finally
+                        release.TrySetResult(True)
+                        kit.PinProbe = Nothing
+                    End Try
                 End Using
             End Using
         End Using
@@ -280,6 +381,8 @@ Public Class ExchangePublisherTests
                         Dim pinField As JsonElement
                         Assert.False(record.RootElement.TryGetProperty("accessPin", pinField))
                     End Using
+                    Await WaitForSnapshotAsync(kit, Function(s) s.RowFor("Photos") IsNot Nothing AndAlso
+                                                   s.RowFor("Photos").State = ExchangePublishState.Published)
                     Assert.True(kit.Publisher.Snapshot.Rows.Single(Function(r) r.Name = "Photos").PinProtected)
                     Dim code As String = Nothing
                     Assert.False(kit.Publisher.TryGetLinkCode("Photos", code))

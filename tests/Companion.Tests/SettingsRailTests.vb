@@ -590,10 +590,11 @@ Public Class SettingsRailTests
                  Environment.SetEnvironmentVariable(ExchangeFeatures.DeveloperSwitchName, "1")
                  ExchangeTestSupport.Reset()
                  Dim component = ExchangeTestSupport.MakeFakeComponent(True, False, False)
+                 Dim worker = ExchangeTestSupport.MakeFakeWorker()
                  ExchangeProcess.ExeDirectoryOverride = component
                  ExchangeProcess.RunOverride = Function(args, input) New ExchangeProcess.RunResult With {.Started = False}
                  Try
-                     For Each destination In {SettingsDestination.Manager, SettingsDestination.Sftp, SettingsDestination.ExchangeServer}
+                     For Each destination In {SettingsDestination.Manager, SettingsDestination.ExchangeServer}
                          Using window As New Share_Settings_Form(destination:=destination)
                              Dim factor = window.DeviceDpi / 96.0F
                              Dim glyph = SettingsRailRules.GlyphPx(factor)
@@ -630,6 +631,7 @@ Public Class SettingsRailTests
                      ExchangeProcess.RunOverride = Nothing
                      ExchangeTestSupport.Reset()
                      ExchangeTestSupport.DeleteQuietly(component)
+                     ExchangeTestSupport.DeleteQuietly(worker)
                  End Try
              End Sub, 90)
         output.WriteLine("Items with a catalogued glyph: " & String.Join(", ", drawn))
@@ -639,7 +641,7 @@ Public Class SettingsRailTests
             drawn.OrderBy(Function(id) id, StringComparer.Ordinal).ToArray())
         ' Reported to the catalog's proposal procedure (ICON-SET): none of these has a meaning in the vocabulary today.
         Assert.Equal(New String() {
-            "exchange-account/clipboard", "exchange-account/publishing", "exchange/accounts", "exchange/configuration",
+            "drive/account", "drive/device", "exchange-account/clipboard", "exchange-account/publishing", "exchange/accounts", "exchange/configuration",
             "exchange/devices", "exchange/remote-admin", "exchange/service", "hosting/service", "hosting/status",
             "network/access", "network/connections", "scheduled/machine", "scheduled/operations", "startup/startup"},
             missing.OrderBy(Function(id) id, StringComparer.Ordinal).ToArray())
@@ -667,6 +669,7 @@ Public Class SettingsRailTests
                  Dim previous = Localization.CurrentCode
                  ExchangeTestSupport.Reset()
                  Dim component = ExchangeTestSupport.MakeFakeComponent(True, False, False)
+                 Dim worker = ExchangeTestSupport.MakeFakeWorker()
                  ExchangeProcess.ExeDirectoryOverride = component
                  ExchangeProcess.RunOverride = Function(args, input) New ExchangeProcess.RunResult With {.Started = False}
                  Try
@@ -677,7 +680,7 @@ Public Class SettingsRailTests
                      End Using
                      For Each code In Localization.Codes
                          Localization.CurrentCode = code
-                         For Each destination In {SettingsDestination.Manager, SettingsDestination.Sftp, SettingsDestination.ExchangeServer}
+                         For Each destination In {SettingsDestination.Manager, SettingsDestination.ExchangeServer}
                              Using window As New Share_Settings_Form(destination:=destination)
                                  Dim entry As New Captions With {.Code = code, .Destination = destination}
                                  Dim windowFactor = window.DeviceDpi / 96.0F
@@ -697,10 +700,11 @@ Public Class SettingsRailTests
                      Localization.CurrentCode = previous
                      ExchangeTestSupport.Reset()
                      ExchangeTestSupport.DeleteQuietly(component)
+                     ExchangeTestSupport.DeleteQuietly(worker)
                  End Try
              End Sub, 150)
 
-        Assert.Equal(Localization.Codes.Length * 3, captured.Count)
+        Assert.Equal(Localization.Codes.Length * 2, captured.Count)
         Dim worstOverall As Double = Double.MaxValue
         Dim worstLabel As String = ""
         output.WriteLine(String.Format(CultureInfo.InvariantCulture, "Minimum window {0} x {1} logical px; frame {2:0.0} logical px.",

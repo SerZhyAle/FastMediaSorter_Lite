@@ -144,6 +144,7 @@ Partial Public Class Main_Form
     ''' <summary>Where the player is, in milliseconds: the animation clock while an animation video plays,
     ''' LibVLC's own <c>Time</c> for every other media. The transport bar, the seek keys and the A-B loop read it here.</summary>
     Friend Function PlayerTimeMs() As Long
+        If frame_Session IsNot Nothing AndAlso frame_Session.Current IsNot Nothing Then Return frame_Session.Current.TimeMs
         If animation_Video_Clock.IsActive Then
             Return animation_Video_Clock.PositionMs(MonotonicClock.NowMs(), IsVlcActuallyPlaying(), playback_Rate, SafePlayerLength())
         End If
@@ -152,6 +153,7 @@ Partial Public Class Main_Form
 
     ''' <summary>The same as a fraction of the length (what the seek bar's thumb shows).</summary>
     Friend Function PlayerPosition() As Single
+        If frame_Session IsNot Nothing AndAlso frame_Session.Current IsNot Nothing AndAlso SafePlayerLength() > 0 Then Return CSng(frame_Session.Current.TimeMs / CDbl(SafePlayerLength()))
         If animation_Video_Clock.IsActive Then
             Return animation_Video_Clock.Fraction(MonotonicClock.NowMs(), IsVlcActuallyPlaying(), playback_Rate, SafePlayerLength())
         End If
@@ -160,7 +162,13 @@ Partial Public Class Main_Form
 
     ''' <summary>Seeks the player to a time, and the animation clock with it.</summary>
     Friend Sub SeekPlayerTime(ms As Long)
+        Dim frameMode As Boolean = frame_Playback_Mode
+        If frame_Session IsNot Nothing Then LeaveFramePlayback()
         vlc_Media_Player.Time = ms
+        If frameMode Then
+            frame_Requested_Time = ms
+            StartFramePlayback()
+        End If
         If animation_Video_Clock.IsActive Then
             animation_Video_Clock.SeekTo(ms, MonotonicClock.NowMs(), IsVlcActuallyPlaying(), playback_Rate, SafePlayerLength())
         End If
@@ -168,6 +176,10 @@ Partial Public Class Main_Form
 
     ''' <summary>Seeks the player to a fraction of the length, and the animation clock with it.</summary>
     Friend Sub SeekPlayerPosition(fraction As Single)
+        If frame_Session IsNot Nothing Then
+            SeekPlayerTime(CLng(fraction * SafePlayerLength()))
+            Return
+        End If
         vlc_Media_Player.Position = fraction
         If animation_Video_Clock.IsActive Then
             Dim length As Long = SafePlayerLength()

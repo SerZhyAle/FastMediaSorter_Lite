@@ -30,7 +30,7 @@ Friend NotInheritable Class LegacyWicImageDecoder
         Catch ex As Exception
             Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0038: WEBP via WIC failed, fallback to ImageSharp: " & ex.Message)
             AppFileLogger.LogException("WEBP via WIC failed; trying ImageSharp fallback", ex)
-            Return LoadBitmapViaImageSharp(stream)
+            Return DecodeWebpFallback(stream)
         End Try
     End Function
 
@@ -88,11 +88,21 @@ Friend NotInheritable Class LegacyWicImageDecoder
         Return bitmap
     End Function
 
-    Private Function LoadBitmapViaImageSharp(stream As MemoryStream) As Bitmap
+    ''' <summary>The legacy managed fallback is WebP only. Never auto-detect a different
+    ''' codec after WIC refuses input: a TIFF renamed .webp must not reach ImageSharp 2's
+    ''' unbounded BigTIFF reader (GHSA-wmxv-xphr-5c9g, specification 266).</summary>
+    Friend Shared Function DecodeWebpFallback(stream As MemoryStream) As Bitmap
+        stream.Position = 0
+        Dim header(11) As Byte
+        If stream.Read(header, 0, header.Length) <> header.Length OrElse
+           Not ImageDecoderProvider.LooksDecoderBacked(header) Then
+            Throw New SixLabors.ImageSharp.UnknownImageFormatException("The legacy managed fallback requires a WebP header.")
+        End If
         stream.Position = 0
 
         Using imageSharpBitmap As SixLabors.ImageSharp.Image(Of SixLabors.ImageSharp.PixelFormats.Bgra32) =
-            SixLabors.ImageSharp.Image.Load(Of SixLabors.ImageSharp.PixelFormats.Bgra32)(stream)
+            SixLabors.ImageSharp.Image.Load(Of SixLabors.ImageSharp.PixelFormats.Bgra32)(
+                stream, New SixLabors.ImageSharp.Formats.Webp.WebpDecoder())
 
             Using pngStream As New MemoryStream()
                 SixLabors.ImageSharp.ImageExtensions.SaveAsPng(imageSharpBitmap, pngStream)

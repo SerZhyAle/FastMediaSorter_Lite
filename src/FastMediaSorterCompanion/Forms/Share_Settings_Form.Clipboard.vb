@@ -67,7 +67,7 @@ Partial Public NotInheritable Class Share_Settings_Form
         Else
             AddClipboardRow(sec, AccNote(Localization.T("Два ярлыка на рабочем столе: отправить и получить буфер обмена одним щелчком, без окна.")))
             Dim shortcutsRow As FlowLayoutPanel = AccFlow()
-            shortcutsRow.Controls.Add(AccButton(Localization.T("Создать ярлыки на рабочем столе.."), AddressOf OnClipboardShortcuts, "action.add"))
+            shortcutsRow.Controls.Add(AccButton(Localization.T("Создать ярлыки на рабочем столе.."), AddressOf OnClipboardShortcuts, "action.create-shortcut"))
             AddClipboardRow(sec, shortcutsRow)
         End If
 

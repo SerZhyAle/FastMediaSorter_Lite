@@ -217,6 +217,7 @@ Public Class SettingsLayoutTests
         ("settingsNavVideo", "Tab_Page_3"),
         ("settingsNavAudio", "Tab_Page_Audio"),
         ("settingsNavFiles", "Tab_Page_4"),
+        ("settingsNavFileManager", "Tab_Page_FileManager"),
         ("settingsNavResources", "Tab_Page_Resources"),
         ("settingsNavOcr", "Tab_Page_5"),
         ("settingsNavTranslation", "Tab_Page_Translation"),

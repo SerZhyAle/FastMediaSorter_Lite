@@ -62,7 +62,12 @@ Public NotInheritable Class FdSecMetadata
             Throw FdSecException.Damaged("metadata name overflows the block")
         End If
 
-        Dim name As String = Encoding.UTF8.GetString(block, 2, nameLength)
+        Dim name As String
+        Try
+            name = New UTF8Encoding(False, True).GetString(block, 2, nameLength)
+        Catch ex As DecoderFallbackException
+            Throw FdSecException.Damaged("sealed true name is not UTF-8")
+        End Try
         ' Refused, never sanitised - and the message never carries the name, which is the
         ' thing the format exists to hide.
         If Not IsAcceptableName(name) Then Throw FdSecException.Damaged("sealed true name is refused")

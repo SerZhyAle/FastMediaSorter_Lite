@@ -9,8 +9,11 @@
 #>
 $ErrorActionPreference = 'Stop'
 $repo      = Split-Path (Split-Path $PSScriptRoot -Parent) -Parent
+. (Join-Path $repo 'tools\lib\Verdict.ps1')
+trap { Write-Host $_.Exception.Message; Exit-Verdict 'CollectHostState' 2 'the check itself failed' }
+Write-Subject 'CollectHostState' 'the offline support collector against synthetic logs and credentials'
 $collector = Join-Path $repo 'publishing\installer\collect-host-state.ps1'
-if (-not (Test-Path $collector)) { Write-Host "collect-host-state test: COULD NOT VERIFY (no $collector)"; exit 2 }
+if (-not (Test-Path $collector)) { Exit-Verdict 'CollectHostState' 2 'collector not found' }
 
 $root = Join-Path ([IO.Path]::GetTempPath()) ('fms-chs-test-' + [guid]::NewGuid().ToString('N').Substring(0, 8))
 $pd   = Join-Path $root 'ProgramData'
@@ -40,6 +43,9 @@ Plant (Join-Path $app 'current.log')                                 "viewer lin
 Plant (Join-Path $tmp 'install-share-service.log')                   "helper in temp`n"
 # a log that quotes a secret by mistake: the last scan must drop it
 Plant (Join-Path $pd 'FastMediaSorterCompanion\leaky.log')          "oops -----BEGIN PRIVATE KEY----- NEEDLELEAK`n"
+Plant (Join-Path $pd 'FastMediaSorterCompanion\hash.log') '{"passwordHash":"NEEDLEHASH"}'
+Plant (Join-Path $pd 'FastMediaSorterCompanion\identity.log') 'deviceToken=NEEDLETOKEN pairingCode=NEEDLEPAIR serverAddress=NEEDLEHOST certFingerprint=NEEDLEPIN'
+Plant (Join-Path $pd 'FastMediaSorterCompanion\large.log') (("safe line`n" * 300000) + "token=NEEDLETAIL`n")
 # a log that cannot be read: another handle holds it with no sharing at all
 $lockedPath = Join-Path $pd 'FastMediaSorterCompanion\locked.log'
 Plant $lockedPath "locked`n"
@@ -59,7 +65,7 @@ try {
     Check ($code -eq 0) 'the collector exits 0'
     Check ($outText -match 'collect-host-state: DONE') 'it prints the DONE line'
 
-    $zip = Get-ChildItem -LiteralPath $out -Filter 'fms-host-state-*.zip' | Select-Object -First 1
+    $zip = Get-ChildItem -LiteralPath $out -Filter 'fms-host-logs-*.zip' | Select-Object -First 1
     Check ($null -ne $zip) 'a ZIP is written to OutDir'
     if ($zip) {
         Add-Type -AssemblyName System.IO.Compression.FileSystem
@@ -79,11 +85,14 @@ try {
                 Check ($names -contains $n) ('the ZIP holds ' + $n)
             }
             $all = ($names | ForEach-Object { ReadEntry $_ }) -join "`n"
-            foreach ($needle in @('NEEDLEPASSWORDHASH', 'NEEDLEKEY', 'NEEDLELEAK', 'passwordHash', 'PRIVATE KEY')) {
+            foreach ($needle in @('NEEDLEPASSWORDHASH', 'NEEDLEKEY', 'NEEDLELEAK', 'NEEDLEHASH', 'NEEDLETOKEN', 'NEEDLEPAIR', 'NEEDLEHOST', 'NEEDLEPIN', 'NEEDLETAIL', 'passwordHash', 'PRIVATE KEY')) {
                 Check (-not $all.Contains($needle)) ('no trace of ' + $needle + ' anywhere in the ZIP')
             }
             Check (@($names | Where-Object { $_ -like '*exchange.json*' -or $_ -like '*key.pem*' -or $_ -like '*tls/*' }).Count -eq 0) 'exchange.json and tls\ are never collected'
-            Check (-not ($names -contains 'logs/share-machine/leaky.log')) 'the leaky log was dropped by the last scan'
+            Check ((ReadEntry 'logs/share-machine/leaky.log') -match '\[REDACTED\]') 'the private key is redacted before compaction'
+            Check (-not ($names -contains 'logs/share-machine/hash.log')) 'a remaining password hash is dropped by the last scan'
+            Check ((ReadEntry 'environment.txt') -match '^schema_version=1') 'environment.txt starts with schema_version'
+            Check ((ReadEntry 'logs/share-machine/large.log') -match '\[Diag\] LOG TRUNCATED \| dropped_middle_bytes=\d+ \| kept_head_bytes=\d+ \| kept_tail_bytes=\d+') 'oversized redacted logs use the contract marker'
             $ex = ReadEntry 'logs/exchange-machine/exchange.log'
             Check ($ex -and $ex.Contains('<USER>') -and -not $ex.Contains($env:USERPROFILE)) 'the user-profile path is replaced by <USER>'
             $state = ReadEntry 'state.txt'
@@ -95,8 +104,11 @@ try {
     }
 } finally {
     $lock.Dispose()
-    Remove-Item -LiteralPath $root -Recurse -Force -ErrorAction SilentlyContinue
+    $resolved = [IO.Path]::GetFullPath($root)
+    $expectedParent = [IO.Path]::GetFullPath([IO.Path]::GetTempPath()).TrimEnd('\', '/')
+    if ([IO.Path]::GetDirectoryName($resolved).TrimEnd('\', '/') -ine $expectedParent -or [IO.Path]::GetFileName($resolved) -notmatch '^fms-chs-test-[0-9a-f]{8}$') { throw 'Refusing cleanup outside the fixture root' }
+    Remove-Item -LiteralPath $resolved -Recurse -Force -ErrorAction SilentlyContinue
 }
 
-if ($failures.Count -eq 0) { Write-Host 'collect-host-state test: PASS'; exit 0 }
-Write-Host ('collect-host-state test: FAIL (' + $failures.Count + ' check(s))'); exit 1
+if ($failures.Count -eq 0) { Exit-Verdict 'CollectHostState' 0 'all synthetic archive checks passed' }
+Exit-Verdict 'CollectHostState' 1 ($failures.Count.ToString() + ' checks failed')

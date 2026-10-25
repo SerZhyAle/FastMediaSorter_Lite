@@ -23,6 +23,31 @@ Public Class ExchangeResourceAccessTests
     End Function
 
     <Fact>
+    Public Sub Manager_refuses_a_changed_root_without_replacing_saved_access()
+        Dim access As String = Nothing
+        Assert.True(ExchangeResourceAccess.TryBuild(Code(), "/new-root", access))
+        Dim descriptor As ResourceDescriptor = ManagerExchangeFixture.ExchangeTestDescriptor()
+        descriptor.ExchangeResourceId = Rid
+        descriptor.ExchangeDeviceId = Did
+        descriptor.PinnedFingerprint = Fp
+        Dim device As ExchangeDeviceRecord = ManagerExchangeFixture.ExchangeTestDevice(Did)
+        Dim resource As New ExchangeResourceRecord("{}", Rid, Did, ExchangeWire.KindSftpShare, "Same label", "online", access, hostKeyFingerprint:=Fp)
+        Dim snapshot As New ExchangeDirectorySnapshot(1, {device}, {resource}, Array.Empty(Of ExchangeBroadcastRecord)())
+        Dim refusal As ManagerExchangeException = Assert.Throws(Of ManagerExchangeException)(Sub() ManagerExchangeAccess.ValidateRecord(ManagerPlace.ForResource(descriptor), descriptor, snapshot))
+        Assert.Equal(ManagerExchangeAvailability.Removed, refusal.State)
+        Assert.Equal("/root", descriptor.RootPath)
+        Assert.Equal(Fp, descriptor.PinnedFingerprint)
+    End Sub
+
+    <Fact>
+    Public Sub Manager_refuses_the_same_resource_label_under_a_different_device()
+        Dim descriptor As ResourceDescriptor = ManagerExchangeFixture.ExchangeTestDescriptor()
+        Dim snapshot = ManagerExchangeFixture.ExchangeTestDirectoryOf(ManagerExchangeFixture.ExchangeTestRoot(deviceId:="device2"))
+        Assert.Equal(ManagerExchangeAvailability.Removed,
+            Assert.Throws(Of ManagerExchangeException)(Sub() ManagerExchangeAccess.ValidateRecord(ManagerPlace.ForResource(descriptor), descriptor, snapshot)).State)
+    End Sub
+
+    <Fact>
     Public Sub Access_round_trips_the_code_and_the_root()
         Dim json As String = Nothing
         Assert.True(ExchangeResourceAccess.TryBuild(Code(withExchange:=True), "/Camera roll", json))

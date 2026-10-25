@@ -30,6 +30,10 @@ Partial Public Class Main_Form
     ''' <summary>One run's bookkeeping, kept out of BatchRunner because it is about the
     ''' window (the list, the picture on screen), not about the sequence.</summary>
     Private NotInheritable Class BatchRunState
+        Public ManagerRequest As ManagerCommandRequest
+        Public ManagerUndo As BatchUndoEntry
+        Public ManagerTree As ManagerTreePlan
+        Public ManagerRefreshResource As Boolean
         Public SourceSession As ResourceSession
         Public IsUndo As Boolean
         Public Intent As BatchIntent
@@ -62,7 +66,7 @@ Partial Public Class Main_Form
     ''' <summary>A batch is running (not merely being planned) - what shutdown has to wait for.</summary>
     Friend ReadOnly Property BatchIsRunning As Boolean
         Get
-            Return batch_Runner IsNot Nothing AndAlso batch_Runner.IsRunning
+            Return manager_Archive_Preparing IsNot Nothing OrElse (batch_Runner IsNot Nothing AndAlso batch_Runner.IsRunning)
         End Get
     End Property
 
@@ -79,6 +83,8 @@ Partial Public Class Main_Form
 
     ''' <summary>Stops a run from starting anything further; the operation in flight finishes.</summary>
     Friend Sub CancelBatch()
+        manager_Archive_Preparing?.Cancel()
+        batch_Run?.ManagerRequest?.Cancel()
         If batch_Runner IsNot Nothing Then batch_Runner.Cancel()
     End Sub
 
@@ -463,6 +469,10 @@ Partial Public Class Main_Form
     ''' </summary>
     Private Sub StartBatchUndo(entry As BatchUndoEntry)
         If entry Is Nothing Then Return
+        If entry.IsManager Then
+            StartManagerUndo(entry)
+            Return
+        End If
         Dim undo_Plan As BatchUndoPlan = BatchUndoPlanner.Build(entry,
             Function(old_Path As String) ResolveDestinationCollision(old_Path))
 
@@ -503,7 +513,7 @@ Partial Public Class Main_Form
         ' An undo of a copy deletes it only while the original still exists (046 C-04); the
         ' worker asks, and needs the original's path to do so.
         If item.Kind = FileOpKind.DeleteUndo Then op.UndoOrigin = New FileOp With {.Source = item.OriginalSource}
-        If (item.Kind = FileOpKind.Delete OrElse item.Kind = FileOpKind.Move OrElse item.Kind = FileOpKind.Copy) AndAlso batch_Run?.SourceSession IsNot Nothing Then
+        If item.ManagerOperation Is Nothing AndAlso (item.Kind = FileOpKind.Delete OrElse item.Kind = FileOpKind.Move OrElse item.Kind = FileOpKind.Copy) AndAlso batch_Run?.SourceSession IsNot Nothing Then
             op.RemoteDelete = ResourceRouting.CaptureDelete(item.Source, batch_Run.SourceSession)
         End If
         Dim admitted As Boolean = EnsureFileOpQueue().Enqueue(op)
@@ -517,6 +527,14 @@ Partial Public Class Main_Form
     ''' </summary>
     Private Sub BatchOpFinished(op As FileOp, failure As Exception)
         Dim item As BatchOp = op.BatchItem
+        If item.ManagerOperation?.PrepareCompleted IsNot Nothing Then
+            item.ManagerOperation.PrepareCompleted.Invoke(failure)
+            Return
+        End If
+        If item.ManagerOperation IsNot Nothing Then
+            EnsureBatchRunner().OpCompleted(item, failure)
+            Return
+        End If
         item.CreatedDestinationFolder = op.CreatedDestinationFolder
         item.DeletedAtUtc = op.DeletedAtUtc
 
@@ -571,6 +589,10 @@ Partial Public Class Main_Form
     Private Sub BatchRunner_Progress(sender As Object, e As BatchProgressEventArgs)
         If Me.IsDisposed Then Return
         lbl_Status.Text = Localization.TF("Файл {0} из {1}: {2}", e.Index, e.Total, e.Name)
+        If batch_Run?.ManagerRequest IsNot Nothing AndAlso
+           (batch_Run.ManagerRequest.Kind = ManagerCommandKind.Delete OrElse batch_Run.ManagerRequest.Kind = ManagerCommandKind.DeletePermanently) Then
+            lbl_Status.Text = Localization.TF("{0}: {1}", Localization.T("Удалить"), e.Name)
+        End If
         RaiseEvent BatchProgressChanged(Me, e)
     End Sub
 
@@ -579,9 +601,17 @@ Partial Public Class Main_Form
     ''' grid and the main window's counter follow the run instead of jumping when it ends.
     ''' </summary>
     Private Sub BatchRunner_ItemFinished(sender As Object, e As BatchItemEventArgs)
-        If Me.IsDisposed Then Return
+        If Me.IsDisposed Then
+            e.Result.Op?.ManagerOperation?.UndoData?.Dispose()
+            Return
+        End If
         Dim run As BatchRunState = batch_Run
         Dim item As BatchOp = e.Result.Op
+        If item?.ManagerOperation IsNot Nothing Then
+            ManagerItemFinished(run, e.Result)
+            RaiseEvent BatchItemDone(Me, e)
+            Return
+        End If
         If run IsNot Nothing AndAlso item IsNot Nothing AndAlso e.Result.State = BatchItemState.Done Then
             Dim on_Shown_List As Boolean = FileOpRules.ListStampMatches(run.ListGeneration, file_List_Generation)
             Select Case item.Kind
@@ -642,7 +672,14 @@ Partial Public Class Main_Form
     Private Sub BatchRunner_Finished(sender As Object, e As BatchFinishedEventArgs)
         Dim run As BatchRunState = batch_Run
         batch_Run = Nothing
-        If Me.IsDisposed OrElse run Is Nothing Then Return
+        If run IsNot Nothing AndAlso (run.ManagerRequest IsNot Nothing OrElse run.ManagerUndo IsNot Nothing) Then
+            FinishManagerRun(run, e.Report)
+        End If
+        If Me.IsDisposed Then
+            run?.Entry?.Dispose()
+            Return
+        End If
+        If run Is Nothing Then Return
 
         ' ONE history entry for the whole gesture. An undo run records nothing - an undo is
         ' never itself undoable - and an entry with nothing in it would offer a U that does
@@ -654,7 +691,9 @@ Partial Public Class Main_Form
 
         ' The picture on screen was let go of, or the file under it left: show what the
         ' list says now. Once, at the end - not once per file.
-        If run.MediaReleased OrElse run.Redisplay Then
+        If run.ManagerRefreshResource Then
+            RefreshActiveResource(preserveCurrent:=True)
+        ElseIf run.MediaReleased OrElse run.Redisplay Then
             Try
                 ReadShowMediaFile(If(run.IsUndo, Mode_AfterUndo, Mode_SetFile))
             Catch ex As Exception

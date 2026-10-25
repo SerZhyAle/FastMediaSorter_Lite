@@ -96,6 +96,15 @@ Public Module FailureText
 #If NETFRAMEWORK Then
         Return If(ex Is Nothing, "", ex.Message)
 #Else
+        Dim exchangeFailure As ManagerExchangeException = TryCast(Unwrap(ex), ManagerExchangeException)
+        If exchangeFailure IsNot Nothing Then Return New ManagerExchangeNode("", "", "", ManagerExchangeNodeKind.Root,
+            exchangeFailure.State, "", "", "", Nothing).StateText
+        Dim archiveFailure As ArchiveSafetyException = TryCast(Unwrap(ex), ArchiveSafetyException)
+        If archiveFailure IsNot Nothing Then Return ManagerArchiveMessages.Describe(archiveFailure.Reason)
+        Dim managerFailure As ManagerCommandException = TryCast(Unwrap(ex), ManagerCommandException)
+        If managerFailure IsNot Nothing Then Return Localization.TF("{0}: {1}", managerFailure.Path, ManagerCommandPlanner.ReasonText(managerFailure.Reason))
+        Dim transferFailure As TransferOutcomeException = TryCast(Unwrap(ex), TransferOutcomeException)
+        If transferFailure IsNot Nothing Then Return ResourceRouting.DescribeOutcome(transferFailure.Outcome)
         Dim remoteDelete As ResourceDeleteException = TryCast(Unwrap(ex), ResourceDeleteException)
         If remoteDelete IsNot Nothing Then
             Return If(remoteDelete.Unverified, Localization.T("Результат удаления на сервере неизвестен - проверьте исходную папку"),
