@@ -1,7 +1,7 @@
 # yaml-language-server: $schema=https://aka.ms/winget-manifest.defaultLocale.1.12.0.schema.json
 
 PackageIdentifier: SerZhyAle.FastMediaSorter.Server
-PackageVersion: "26.9.20.1206"
+PackageVersion: "26.10.25.1830"
 PackageLocale: en-US
 Publisher: SerZhyAle
 PublisherUrl: https://github.com/SerZhyAle
@@ -66,7 +66,7 @@ Tags:
 - sftp
 - share
 - windows-service
-ReleaseNotesUrl: https://github.com/SerZhyAle/FastMediaSorter_Lite/releases/tag/v26.9.20.1206
+ReleaseNotesUrl: https://github.com/SerZhyAle/FastMediaSorter_Lite/releases/tag/v26.10.25.1830
 # INSTALL-TRUST 1.1 rule 7 (item H): the builds are unsigned, so winget tells the user
 # where the SmartScreen page lives. Ships with the next manifest version bump.
 InstallationNotes: "This package is unsigned - Windows may show a SmartScreen warning on first run. What to expect and click: https://serzhyale.github.io/FastMediaSorter_Lite/trust.html"
