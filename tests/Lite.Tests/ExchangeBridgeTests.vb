@@ -131,10 +131,10 @@ Public Class ExchangeBridgeTests
     Public Async Function Traffic_keeps_a_bridge_alive_past_the_idle_timeout() As Task
         Using rig As Rig = Await Rig.CreateAsync()
             Dim bridge As Task(Of ExchangeBridgeResult) = ExchangeBridge.RunAsync(rig.BridgeLeft, rig.BridgeRight,
-                New ExchangeBridgeOptions With {.IdleTimeout = TimeSpan.FromMilliseconds(500)}, CancellationToken.None)
+                New ExchangeBridgeOptions With {.IdleTimeout = TimeSpan.FromMilliseconds(1500)}, CancellationToken.None) ' a timer stall of 1 s on a loaded test machine must not idle the bridge out
             Dim one As Byte() = {42}
-            For i As Integer = 1 To 6
-                Await Task.Delay(200)
+            For i As Integer = 1 To 5 ' 5 x 500 ms of traffic is 2.5 s, past the 1.5 s idle timeout
+                Await Task.Delay(500)
                 Await rig.PeerLeft.WriteAsync(one, 0, 1)
                 Await rig.PeerLeft.FlushAsync()
                 Assert.Equal(one, Await ReadAllAsync(rig.PeerRight, 1))
