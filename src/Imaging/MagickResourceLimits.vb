@@ -14,9 +14,16 @@ Option Strict On
 ''' ordinary files as well; nobody asked for a %TEMP% full of pixel caches either.
 '''
 ''' Idempotent and cheap: callers run it right before any Magick decode that matters, and
-''' only the first call sets anything.
+''' only the first call sets anything. The Share Manager links this file (its QR intake reads
+''' through <see cref="MagickReadGate"/>), so it names nothing of the viewer: the area ceiling
+''' is its own constant, held equal to the viewer's decode budget by a test, and a failure is
+''' reported through <see cref="Trace"/>, which the viewer's log listens to.
 ''' </summary>
 Friend Module MagickResourceLimits
+
+    ''' <summary>The largest single image ImageMagick keeps in its pixel cache, in pixels - the
+    ''' viewer's <c>DecodeBudget.Max_Frame_Pixels</c> (a test holds them equal).</summary>
+    Friend Const Max_Area_Pixels As Long = 400L * 1000L * 1000L
 
     Private applied As Boolean
     Private ReadOnly apply_Gate As New Object()
@@ -31,11 +38,11 @@ Friend Module MagickResourceLimits
                 ' pixel cache - past Area it would go to disk, and with Disk = 0 above that
                 ' request fails instead. The decoder also refuses such a header before it
                 ' calls Magick at all (DecodeBudget); this is the second line behind it.
-                ImageMagick.ResourceLimits.Area = CULng(DecodeBudget.Max_Frame_Pixels)
+                ImageMagick.ResourceLimits.Area = CULng(Max_Area_Pixels)
             Catch ex As Exception
                 ' The native library failed to load: then Magick decodes nothing at all, and
                 ' the decode path reports that on its own.
-                AppFileLogger.WriteLine("Magick resource limits not applied: " & ex.GetType().Name)
+                Trace.WriteLine("Magick resource limits not applied: " & ex.GetType().Name)
             End Try
             applied = True
         End SyncLock

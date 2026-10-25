@@ -117,17 +117,29 @@
       <Link>Linked\Icons\ButtonGlyphs.vb</Link>
     </Compile>
     <!-- Utils.GetImageDimensions probes WEBP through the IImageDecoder seam, so the
-         seam has to come along. The modern decoder file compiles to nothing here
-         (its whole body is "#If Not NETFRAMEWORK"), and the legacy one is the WIC +
-         ImageSharp 2 path the net48 viewer really uses. -->
+         seam has to come along. The modern decoder and its readers compile to nothing on
+         the net48 leg (whole body "#If Not NETFRAMEWORK"), and the legacy one is the WIC +
+         libwebp path the net48 viewer really uses (specification 270). -->
     <Compile Include="..\..\src\Imaging\ImageDecoder.vb">
       <Link>Linked\Imaging\ImageDecoder.vb</Link>
     </Compile>
     <Compile Include="..\..\src\Imaging\LegacyWicImageDecoder.vb">
       <Link>Linked\Imaging\LegacyWicImageDecoder.vb</Link>
     </Compile>
-    <Compile Include="..\..\src\Imaging\ModernImageSharpDecoder.vb">
-      <Link>Linked\Imaging\ModernImageSharpDecoder.vb</Link>
+    <Compile Include="..\..\src\Imaging\LegacyLibWebp.vb">
+      <Link>Linked\Imaging\LegacyLibWebp.vb</Link>
+    </Compile>
+    <Compile Include="..\..\src\Imaging\ModernMagickDecoder.vb">
+      <Link>Linked\Imaging\ModernMagickDecoder.vb</Link>
+    </Compile>
+    <Compile Include="..\..\src\Imaging\ImageSignature.vb">
+      <Link>Linked\Imaging\ImageSignature.vb</Link>
+    </Compile>
+    <Compile Include="..\..\src\Imaging\AnimationHeader.vb">
+      <Link>Linked\Imaging\AnimationHeader.vb</Link>
+    </Compile>
+    <Compile Include="..\..\src\Imaging\MagickReadGate.vb">
+      <Link>Linked\Imaging\MagickReadGate.vb</Link>
     </Compile>
     <!-- The writing half of the seam (SPECIFICATION_IMAGE_EDITOR_DOTNET10.md §9). This is
          the dangerous half of the editor - it writes over the user's originals - and it is
@@ -137,8 +149,8 @@
     <Compile Include="..\..\src\Imaging\ImageEncoder.vb">
       <Link>Linked\Imaging\ImageEncoder.vb</Link>
     </Compile>
-    <Compile Include="..\..\src\Imaging\ModernImageSharpEncoder.vb">
-      <Link>Linked\Imaging\ModernImageSharpEncoder.vb</Link>
+    <Compile Include="..\..\src\Imaging\ModernMagickEncoder.vb">
+      <Link>Linked\Imaging\ModernMagickEncoder.vb</Link>
     </Compile>
     <Compile Include="..\..\src\Imaging\ImageFileWriter.vb">
       <Link>Linked\Imaging\ImageFileWriter.vb</Link>
@@ -1260,16 +1272,23 @@
     <Compile Include="..\..\src\ProfileReset\*.vb" Link="Linked\ProfileReset\%(Filename)%(Extension)" />
   </ItemGroup>
 
-  <!-- Each leg gets the SAME ImageSharp its viewer ships with, so the tests exercise
-       the real decoder pair: net48 = WIC + ImageSharp 2 fallback, net10 = ImageSharp 3
-       (the one that decodes animated WEBP with no OS codec). -->
+  <!-- Context-help tests consume the shipped corpus as an explicit fixture, independent
+       of the test output folder's depth (including SDK artifact isolation). -->
+  <ItemGroup Condition="'$(TargetFramework)' == 'net10.0-windows'">
+    <None Include="..\..\docs\help\**\*" Link="help\%(RecursiveDir)%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <!-- Each leg gets the SAME image decoder its viewer ships with, so the tests exercise
+       the real decoder pair (specification 270): net48 = WIC + the committed libwebp
+       decoder, laid out as the viewer's x86\ and x64\ folders (the test host is 64-bit,
+       LegacyLibWebp loads by process bitness), net10 = Magick.NET. -->
   <ItemGroup Condition="'$(TargetFramework)' == 'net48'">
-    <PackageReference Include="SixLabors.ImageSharp" Version="2.1.13" />
+    <None Include="..\..\payload\libwebp\x86\libwebpdecoder.dll" Link="x86\libwebpdecoder.dll" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="..\..\payload\libwebp\x64\libwebpdecoder.dll" Link="x64\libwebpdecoder.dll" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="..\..\payload\libwebp\PROVENANCE.txt" Link="libwebp\PROVENANCE.txt" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFramework)' != 'net48'">
-    <PackageReference Include="SixLabors.ImageSharp" Version="3.1.12" />
-    <!-- ModernImageSharpDecoder uses Magick.NET for AVIF/HEIC/HEIF fallback. -->
-    <PackageReference Include="Magick.NET-Q8-x64" Version="14.15.0" />
+    <PackageReference Include="Magick.NET-Q8-x64" Version="15.0.0" />
     <!-- ArchiveSession reads through the very library the mainline ships with, so the
          archive tests exercise the shipping path rather than a stand-in. Modern leg
          only: the archive files compile to nothing on net48. -->

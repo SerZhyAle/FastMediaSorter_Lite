@@ -6,10 +6,6 @@ Imports System.Drawing.Imaging
 Imports System.IO
 Imports System.Linq
 Imports System.Text
-Imports SixLabors.ImageSharp.Metadata.Profiles.Exif
-Imports SixLabors.ImageSharp.Metadata.Profiles.Icc
-Imports SixLabors.ImageSharp.Metadata.Profiles.Iptc
-Imports SixLabors.ImageSharp.Metadata.Profiles.Xmp
 Imports Xunit
 
 ''' <summary>
@@ -80,34 +76,35 @@ Public Class EditorAuditTests
                                 "</rdf:RDF></x:xmpmeta><?xpacket end=""w""?>"
 
         Dim donor As Byte()
-        Using image As New SixLabors.ImageSharp.Image(Of SixLabors.ImageSharp.PixelFormats.Rgba32)(24, 24)
-            image.Metadata.IccProfile = New IccProfile(iccBytes)
-            image.Metadata.XmpProfile = New XmpProfile(Encoding.UTF8.GetBytes(xmpText))
-            Dim iptc As New IptcProfile()
-            iptc.SetValue(IptcTag.Caption, "a caption that must survive")
-            iptc.SetValue(IptcTag.Keywords, "sorted")
-            image.Metadata.IptcProfile = iptc
-            Using stream As New MemoryStream()
-                SixLabors.ImageSharp.ImageExtensions.SaveAsJpeg(image, stream)
-                donor = stream.ToArray()
-            End Using
+        Using image As New ImageMagick.MagickImage(ImageMagick.MagickColors.Gray, 24UI, 24UI)
+            ' Attached as plain profiles: nothing is converted, the donor carries these bytes.
+            image.SetProfile(New ImageMagick.ImageProfile("icc", iccBytes))
+            image.SetProfile(New ImageMagick.XmpProfile(Encoding.UTF8.GetBytes(xmpText)))
+            Dim iptc As New ImageMagick.IptcProfile()
+            iptc.SetValue(ImageMagick.IptcTag.Caption, "a caption that must survive")
+            iptc.SetValue(ImageMagick.IptcTag.Keyword, "sorted")
+            image.SetProfile(iptc)
+            donor = image.ToByteArray(ImageMagick.MagickFormat.Jpeg)
         End Using
 
         Using bitmap As New Bitmap(24, 24, PixelFormat.Format32bppArgb)
             Dim target As String = Path.Combine(workDir, "kept.jpg")
             ImageFileWriter.Save(bitmap, target, donor, ExifOrientationPolicy.PixelsAreRaw)
 
-            Using stream As New MemoryStream(File.ReadAllBytes(target), writable:=False)
-                Dim info = SixLabors.ImageSharp.Image.Identify(stream)
-                Assert.NotNull(info.Metadata.IccProfile)
-                Assert.Equal(New IccProfile(iccBytes).Header.ProfileConnectionSpace, info.Metadata.IccProfile.Header.ProfileConnectionSpace)
-                Assert.Equal(New IccProfile(iccBytes).Entries.Length, info.Metadata.IccProfile.Entries.Length)
+            Using saved As New ImageMagick.MagickImage()
+                saved.Ping(File.ReadAllBytes(target))
+                ' The colour profile byte for byte: carried, never converted or rebuilt (270 R3).
+                Dim icc As ImageMagick.IImageProfile = saved.GetProfile("icc")
+                Assert.NotNull(icc)
+                Assert.Equal(iccBytes, icc.ToByteArray())
 
-                Assert.NotNull(info.Metadata.XmpProfile)
-                Assert.Contains("xmp:Rating=""4""", Encoding.UTF8.GetString(info.Metadata.XmpProfile.ToByteArray()))
+                Dim xmp As ImageMagick.IXmpProfile = saved.GetXmpProfile()
+                Assert.NotNull(xmp)
+                Assert.Contains("xmp:Rating=""4""", Encoding.UTF8.GetString(xmp.ToByteArray()))
 
-                Assert.NotNull(info.Metadata.IptcProfile)
-                Dim captions = info.Metadata.IptcProfile.GetValues(IptcTag.Caption)
+                Dim iptcRead As ImageMagick.IIptcProfile = saved.GetIptcProfile()
+                Assert.NotNull(iptcRead)
+                Dim captions = iptcRead.GetAllValues(ImageMagick.IptcTag.Caption).ToList()
                 Assert.Single(captions)
                 Assert.Equal("a caption that must survive", captions(0).Value)
             End Using
@@ -116,8 +113,8 @@ Public Class EditorAuditTests
 
     ' --------------------------------------------------------------- G-12 ----
 
-    ''' <summary>An AVIF donor (the HEIF family ImageSharp cannot read) keeps its capture
-    ''' date through a "Save as" to JPEG - read through Magick.NET, as the decoder does.</summary>
+    ''' <summary>An AVIF donor (the HEIF family) keeps its capture date through a "Save as" to
+    ''' JPEG - read through Magick.NET, as the decoder does.</summary>
     <Fact>
     Public Sub A_heif_family_donor_keeps_its_capture_date()
         Dim donor As Byte()
@@ -131,18 +128,19 @@ Public Class EditorAuditTests
         End Using
         Assert.True(donor.Length > 12 AndAlso Encoding.ASCII.GetString(donor, 4, 4) = "ftyp", "The fixture is not ISO-BMFF.")
 
-        Dim read = ModernImageSharpEncoder.ReadDonorMetadata(donor)
+        Dim read = ModernMagickEncoder.ReadDonorMetadata(donor)
         Assert.NotNull(read.Exif)
 
         Using bitmap As New Bitmap(16, 16, PixelFormat.Format32bppArgb)
             Dim target As String = Path.Combine(workDir, "from-heif.jpg")
             ImageFileWriter.Save(bitmap, target, donor, ExifOrientationPolicy.PixelsAreUpright)
 
-            Using stream As New MemoryStream(File.ReadAllBytes(target), writable:=False)
-                Dim profile As ExifProfile = SixLabors.ImageSharp.Image.Identify(stream).Metadata.ExifProfile
+            Using saved As New ImageMagick.MagickImage()
+                saved.Ping(File.ReadAllBytes(target))
+                Dim profile As ImageMagick.IExifProfile = saved.GetExifProfile()
                 Assert.NotNull(profile)
-                Dim taken As IExifValue(Of String) = Nothing
-                Assert.True(profile.TryGetValue(ExifTag.DateTimeOriginal, taken), "DateTimeOriginal was lost.")
+                Dim taken As ImageMagick.IExifValue(Of String) = profile.GetValue(ImageMagick.ExifTag.DateTimeOriginal)
+                Assert.True(taken IsNot Nothing, "DateTimeOriginal was lost.")
                 Assert.Equal("2021:05:06 07:08:09", taken.Value)
             End Using
         End Using
@@ -151,12 +149,12 @@ Public Class EditorAuditTests
     <Fact>
     Public Sub The_tiff_structure_is_found_behind_any_exif_prefix()
         Dim tiff As Byte() = {&H49, &H49, &H2A, 0, 8, 0, 0, 0, 0, 0}
-        Assert.Equal(tiff, ModernImageSharpEncoder.TiffHeaderOnwards(tiff))
+        Assert.Equal(tiff, ModernMagickEncoder.TiffHeaderOnwards(tiff))
 
         Dim prefixed As Byte() = Encoding.ASCII.GetBytes("Exif" & ChrW(0) & ChrW(0)).Concat(tiff).ToArray()
-        Assert.Equal(tiff, ModernImageSharpEncoder.TiffHeaderOnwards(prefixed))
+        Assert.Equal(tiff, ModernMagickEncoder.TiffHeaderOnwards(prefixed))
 
-        Assert.Null(ModernImageSharpEncoder.TiffHeaderOnwards(Encoding.ASCII.GetBytes("no tiff here at all")))
+        Assert.Null(ModernMagickEncoder.TiffHeaderOnwards(Encoding.ASCII.GetBytes("no tiff here at all")))
     End Sub
 
 End Class

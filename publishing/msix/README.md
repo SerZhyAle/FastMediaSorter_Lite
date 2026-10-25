@@ -83,13 +83,16 @@ What the script packages (order matters - see [BUILD_AND_RELEASE.md](../../docs/
 1. MSBuild Release, whose `bin\Release` tree supplies the **support payload** (LibVLC, `tessdata`,
    flags). Everything that exists only for the x86 fallback is filtered out of the stage, since this
    package carries no x86 viewer: `FastMediaSorter_x86.exe` and its `.exe.config`, the net48 managed
-   assemblies MSBuild copies loose beside it (LibVLCSharp, ImageSharp 2, Tesseract, QRCoder, the
+   assemblies MSBuild copies loose beside it (LibVLCSharp, Tesseract, QRCoder, the
    `System.*` shims) and the 32-bit native trees (`x86\`, `libvlc\win-x86\`, `runtimes\win-x86\`) -
    the last ones regardless of `-SkipOcrPayload`.
 2. `dotnet publish src\Modern\FastMediaSorter.Modern.vbproj -c Release -r win-x64` - this is the
    **only** step that produces the mainline `FastMediaSorter_LITE.exe` the manifest points at.
    MSBuild alone never yields it, so a `-NoBuild` run still publishes the viewer.
-3. `dotnet publish` of the Companion, plus the committed Go SFTP worker into `companion\`.
+3. `dotnet publish` of the Companion, plus the committed Go SFTP worker into `companion\`. The stage
+   is then judged by `tools/Test-ImageBackendArtifacts.ps1` (specification 270): no ImageSharp in
+   any staged program or bundle, `Magick.Native-Q8-x64.dll` beside the viewer and inside the
+   Companion's single-file bundle, notices naming Magick.NET. A finding stops the build.
 4. `Prepare-OcrOfflinePayload.ps1` (the OCR models, pinned and hash-checked against
    `tools/tessdata.sha256`), logos, manifest, `makeappx`.
 5. **Read-back, before the package is signed or offered** (WINDOWS-STORE rung 3, `BUILD-EVIDENCE` rule 2):

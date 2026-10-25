@@ -61,24 +61,22 @@ FFmpeg (ffmpeg.exe, essentials build) - the FFmpeg developers, build by gyan.dev
 2. Image decoding
 ================================================================================
 
-SixLabors.ImageSharp
-  Version 3.1.12 (64-bit build), https://github.com/SixLabors/ImageSharp
-  License: Six Labors Split License, Version 1.0 (June 2022)
-  Copyright (c) Six Labors
-  Full text: https://github.com/SixLabors/ImageSharp/blob/main/LICENSE
-
-SixLabors.ImageSharp
-  Version 2.1.13 (32-bit build), https://github.com/SixLabors/ImageSharp
-  License: Apache License 2.0
-  Copyright (c) Six Labors
-
 Magick.NET-Q8-x64 (Magick.NET and the bundled Magick.Native library)
-  Version 14.15.0, https://github.com/dlemstra/Magick.NET
+  Version 15.0.0 (64-bit viewer and Share Manager), https://github.com/dlemstra/Magick.NET
+  The 64-bit viewer ships Magick.Native-Q8-x64.dll beside its exe; the Share Manager
+  carries its own copy inside its single-file program.
   License: Apache License 2.0
   Copyright (c) Dirk Lemstra
   Magick.Native embeds ImageMagick, licensed under the ImageMagick License
   (an Apache-2.0-compatible license): https://imagemagick.org/script/license.php
   Copyright (c) 1999 ImageMagick Studio LLC
+
+libwebp (decoder library libwebpdecoder.dll)
+  Version 1.6.0 (32-bit viewer), https://github.com/webmproject/libwebp
+  License: BSD-3-Clause, with the WebM Additional IP Rights Grant (Patents)
+  Copyright (c) 2010, Google Inc. All rights reserved.
+  The license text is the BSD 3-Clause License reproduced in section 6; the
+  patent grant is reproduced there too.
 
 ================================================================================
 3. Text recognition (OCR)
@@ -406,11 +404,29 @@ The full text is available at https://www.gnu.org/licenses/old-licenses/lgpl-2.1
 and is distributed with the LibVLC sources referenced in section 1.
 
 --------------------------------------------------------------------------------
-Six Labors Split License, Version 1.0
+WebM Additional IP Rights Grant (Patents) - libwebp, section 2
 --------------------------------------------------------------------------------
 
-The full text is available at
-https://github.com/SixLabors/ImageSharp/blob/main/LICENSE
+"These implementations" means the copyrightable works that implement the WebM
+codecs distributed by Google as part of the WebM Project.
+
+Google hereby grants to you a perpetual, worldwide, non-exclusive, no-charge,
+royalty-free, irrevocable (except as stated in this section) patent license to
+make, have made, use, offer to sell, sell, import, transfer, and otherwise
+run, modify and propagate the contents of these implementations of WebM, where
+such license applies only to those patent claims, both currently owned by
+Google and acquired in the future, licensable by Google that are necessarily
+infringed by these implementations of WebM. This grant does not include claims
+that would be infringed only as a consequence of further modification of these
+implementations. If you or your agent or exclusive licensee institute or order
+or agree to the institution of patent litigation or any other patent
+enforcement activity against any entity (including a cross-claim or
+counterclaim in a lawsuit) alleging that any of these implementations of WebM
+or any code incorporated within any of these implementations of WebM
+constitute direct or contributory patent infringement, or inducement of
+patent infringement, then any patent rights granted to you under this License
+for these implementations of WebM shall terminate as of the date such
+litigation is filed.
 
 FileDO (optional virtual disk component)
 https://github.com/SerZhyAle/FileDO

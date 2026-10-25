@@ -211,7 +211,7 @@ Go-воркер и два повышающих helper-скрипта (~43 МБ �
 .\tools\Release.ps1 -Push
 ```
 
-The preflight has eight local steps in the order implemented by `tools/Release.ps1`. Each child reports through
+The preflight has nine local steps in the order implemented by `tools/Release.ps1`. Each child reports through
 `CHECK-VERDICT` (0 - прошло, 1 - дефект, 2 - не удалось проверить), а кто какую проверку запускает,
 записано в [tools/check-placement.jsonl](../../tools/check-placement.jsonl):
 
@@ -240,13 +240,18 @@ The preflight has eight local steps in the order implemented by `tools/Release.p
 8. **Версия внутри артефактов** (`tools/Test-ArtifactVersion.ps1`): три exe из stage, Share Manager
    серверной редакции и оба `setup.exe` несут именно ту версию, которую ставит тег. Читается ресурс
    версии самого файла, а не исходники - устаревший exe согласен с любой проверкой по исходникам.
+9. **Image backend in the artifacts** (`tools/Test-ImageBackendArtifacts.ps1`, specification 270): no
+   ImageSharp in any staged program, single-file bundle or the x86 exe's embedded payload, no rollback
+   `*.previous-*.exe` copy in a stage, `Magick.Native` beside the mainline and inside the Share Manager,
+   `x86\libwebpdecoder.dll` beside the x86 exe, and notices that name what ships. Read from the
+   built bytes, for the User stage, the Server stage and the Server setup's optional viewer.
 
-Итог - одна строка `Release-Preflight: PASS (v26.9.25.1700; 8 of 8 steps passed)`. Тег создаётся
+Итог - одна строка `Release-Preflight: PASS (v26.9.25.1700; 9 of 9 steps passed)`. Тег создаётся
 **только при чистом PASS**. Шаг, пропущенный через `-SkipTests` или `-SkipLocalCheck`, делает вердикт
 `COULD NOT VERIFY` (пропущенный шаг никто не проверил), поэтому эти ключи годятся для быстрого сухого
 прогона, но с `-Push` тег не создадут.
 
-The eight-step PASS proves the automated preflight for the named version. Candidate scope, security
+The nine-step PASS proves the automated preflight for the named version. Candidate scope, security
 disposition and real prior-install upgrade acceptance remain required under specifications 264-268.
 A full test PASS alone accepts neither an installer nor a device row. During readiness work without a
 GitHub operation, run the child checks directly: `Release.ps1` itself inspects Git state. Preserve the

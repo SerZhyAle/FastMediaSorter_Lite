@@ -9,8 +9,8 @@ Imports fmsl
 ''' Pins the IImageDecoder seam (src/Imaging/) - the one place where the two shipped
 ''' viewers deliberately decode differently. This class runs under BOTH target
 ''' frameworks of this project, which is the whole point: net48 exercises the WIC +
-''' ImageSharp 2 path of FastMediaSorter_x86.exe, net10 exercises the ImageSharp 3
-''' path of FastMediaSorter_LITE.exe. See CLAUDE.md "Two builds, one source tree".
+''' libwebp path of FastMediaSorter_x86.exe, net10 exercises the Magick.NET path of
+''' FastMediaSorter_LITE.exe (specification 270). See CLAUDE.md "Two builds, one source tree".
 ''' </summary>
 <Collection("DecodeCacheBudget")>
 Public Class ImageDecoderSeamTests
@@ -89,7 +89,7 @@ Public Class ImageDecoderSeamTests
 #If NETFRAMEWORK Then
         Assert.Equal("LegacyWicImageDecoder", decoderName)
 #Else
-        Assert.Equal("ModernImageSharpDecoder", decoderName)
+        Assert.Equal("ModernMagickDecoder", decoderName)
 #End If
     End Sub
 
@@ -114,7 +114,7 @@ Public Class ImageDecoderSeamTests
                 Assert.Equal(120, img.Width)
                 Assert.Equal(90, img.Height)
                 ' Animation is handed to GDI+ as a GIF transcode, so the existing GIF
-                ' playback path animates it unchanged (see ModernImageSharpDecoder).
+                ' playback path animates it unchanged (see ModernMagickDecoder).
                 Assert.Equal(System.Drawing.Imaging.ImageFormat.Gif, img.RawFormat)
             End Using
         End Using
@@ -211,15 +211,16 @@ Public Class ImageDecoderSeamTests
 
 #If NETFRAMEWORK Then
     ''' <summary>
-    ''' The x86 viewer's WEBP fallback library, exercised head-on.
+    ''' The x86 viewer's WEBP fallback library (libwebp, specification 270 R9), exercised head-on.
     '''
-    ''' WHY IT CALLS ImageSharp DIRECTLY INSTEAD OF GOING THROUGH THE SEAM: the seam
-    ''' only reaches ImageSharp when WIC THROWS (LegacyWicImageDecoder.DecodeToImage).
-    ''' On a dev box with the WebP Image Extensions installed WIC succeeds, so a
-    ''' seam-level test would pass no matter how broken the bundled ImageSharp is and
-    ''' would prove nothing about the version we actually ship. On the Windows 7/8.1
-    ''' machines the x86 exe exists for, WIC has NO WebP codec at all and this library
-    ''' is the ONLY thing that decodes WEBP - it deserves a test of its own.
+    ''' WHY IT CALLS THE FALLBACK DIRECTLY INSTEAD OF GOING THROUGH THE SEAM: the seam only
+    ''' reaches libwebp when WIC THROWS (LegacyWicImageDecoder.DecodeToImage). On a dev box with
+    ''' the WebP Image Extensions installed WIC succeeds, so a seam-level test would pass no
+    ''' matter how broken the bundled decoder is and would prove nothing about the build we
+    ''' actually ship. On the Windows 7/8.1 machines the x86 exe exists for, WIC has NO WebP
+    ''' codec at all and this library is the ONLY thing that decodes WEBP - it deserves tests of
+    ''' its own. The test host is 64-bit, so it loads the x64 build of the same source; the x86
+    ''' DLL's own load on an old Windows is a hand check (specification 270, R2).
     '''
     ''' Note the placement: this block must stay OUTSIDE the "#If Not NETFRAMEWORK"
     ''' region above. Nested inside it the condition is unsatisfiable, and VB compiles
@@ -227,20 +228,37 @@ Public Class ImageDecoderSeamTests
     ''' CLAUDE.md warns about.
     ''' </summary>
     <Fact>
-    Public Sub BundledImageSharp_DecodesWebp_TheOnlyWebpPathOnLegacyWindows()
-        Using source As New MemoryStream(StaticWebp)
-            Using decoded = SixLabors.ImageSharp.Image.Load(Of SixLabors.ImageSharp.PixelFormats.Bgra32)(source)
-                Assert.Equal(120, decoded.Width)
-                Assert.Equal(90, decoded.Height)
-            End Using
-        End Using
-        ' Also exercise the production fallback even on machines where WIC handles WebP.
+    Public Sub LibWebp_DecodesStaticWebp_TheOnlyWebpPathOnLegacyWindows()
         Using source As New MemoryStream(StaticWebp)
             Using decoded As Bitmap = LegacyWicImageDecoder.DecodeWebpFallback(source)
                 Assert.Equal(120, decoded.Width)
                 Assert.Equal(90, decoded.Height)
+                Assert.Equal(System.Drawing.Imaging.PixelFormat.Format32bppArgb, decoded.PixelFormat)
+                ' A lossy WEBP without alpha decodes opaque - a zeroed buffer would be transparent.
+                Assert.Equal(255, decoded.GetPixel(60, 45).A)
             End Using
         End Using
+    End Sub
+
+    ''' <summary>The library the tests load is the one tools/Build-LibWebpDecoder.ps1 built and
+    ''' recorded: the version it reports and the SHA-256 of both shipped builds.</summary>
+    <Fact>
+    Public Sub LibWebp_IsThePinnedBuild()
+        Assert.Equal("1.6.0", LegacyLibWebp.DecoderVersion())
+
+        Dim baseDir As String = AppDomain.CurrentDomain.BaseDirectory
+        Dim recorded As New Dictionary(Of String, String)(StringComparer.Ordinal)
+        For Each line As String In File.ReadAllLines(Path.Combine(baseDir, "libwebp", "PROVENANCE.txt"))
+            Dim parts As String() = line.Split(New Char() {" "c}, StringSplitOptions.RemoveEmptyEntries)
+            If parts.Length = 2 AndAlso parts(0).Length = 64 Then recorded(parts(1)) = parts(0)
+        Next
+        For Each arch As String In {"x86", "x64"}
+            Dim actual As String
+            Using sha As Security.Cryptography.SHA256 = Security.Cryptography.SHA256.Create()
+                actual = BitConverter.ToString(sha.ComputeHash(File.ReadAllBytes(Path.Combine(baseDir, arch, LegacyLibWebp.Library_File_Name)))).Replace("-", "")
+            End Using
+            Assert.Equal(recorded(arch & "/" & LegacyLibWebp.Library_File_Name), actual)
+        Next
     End Sub
 
     <Theory>
@@ -249,35 +267,47 @@ Public Class ImageDecoderSeamTests
     <InlineData("49492A000800000000000000")>
     <InlineData("52494646FFFFFFFF54494646")>
     <InlineData("00")>
-    Public Sub LegacyFallback_RejectsNonWebpBeforeInvokingTheManagedDecoder(hex As String)
+    Public Sub LegacyFallback_RejectsNonWebpBeforeInvokingTheNativeDecoder(hex As String)
         Dim bytes(hex.Length \ 2 - 1) As Byte
         For i As Integer = 0 To bytes.Length - 1
             bytes(i) = Convert.ToByte(hex.Substring(i * 2, 2), 16)
         Next
         Using source As New MemoryStream(bytes)
-            Assert.Throws(Of SixLabors.ImageSharp.UnknownImageFormatException)(
+            Dim refused As InvalidDataException = Assert.Throws(Of InvalidDataException)(
                 Function() LegacyWicImageDecoder.DecodeWebpFallback(source))
+            Assert.Contains("requires a WebP header", refused.Message)
+        End Using
+    End Sub
+
+    ''' <summary>A WEBP header over a cut-off bitstream reaches libwebp and is refused as data,
+    ''' never as a crash of the process.</summary>
+    <Theory>
+    <InlineData(12)>
+    <InlineData(30)>
+    <InlineData(60)>
+    Public Sub LibWebp_RefusesATruncatedWebp(keep As Integer)
+        Dim truncated(keep - 1) As Byte
+        Array.Copy(StaticWebp, truncated, keep)
+        Using source As New MemoryStream(truncated)
+            Assert.Throws(Of InvalidDataException)(Function() LegacyWicImageDecoder.DecodeWebpFallback(source))
         End Using
     End Sub
 
     ''' <summary>
-    ''' Pins a REAL, PRE-EXISTING GAP rather than a wish: ImageSharp 2.x cannot decode
-    ''' animated WEBP at all ("Animated webp are not yet supported" - the feature only
-    ''' arrived in 3.x, which is exactly why the modern viewer runs ImageSharp 3 and has
-    ''' ModernDecoder_DecodesAnimatedWebp_WithoutAnOsCodec passing).
+    ''' Pins a REAL, PRE-EXISTING GAP rather than a wish: the x86 fallback has never decoded an
+    ''' animated WEBP (ImageSharp 2.x could not; the libwebp decoder library that replaced it
+    ''' has no demuxer, and specification 270 R9 keeps the gap instead of adding a feature).
     '''
     ''' Consequence, stated plainly: on Windows 7/8.1 - where WIC has no WebP codec at
     ''' all - the x86 viewer CANNOT open an animated WEBP, and never could. On Windows
     ''' 10/11 it still opens, because WIC handles it before the fallback is reached.
-    ''' This is not a regression from the 2.1.8 -> 2.1.13 security bump: 2.1.x never had
-    ''' the feature. Asserting the throw keeps the limitation visible; if the x86 leg
-    ''' ever moves to a library that supports animation, this test fails and says so.
+    ''' Asserting the refusal keeps the limitation visible; if the x86 leg ever gains
+    ''' animation, this test fails and says so.
     ''' </summary>
     <Fact>
-    Public Sub BundledImageSharp_CannotDecodeAnimatedWebp_KnownLegacyGap()
+    Public Sub LibWebp_CannotDecodeAnimatedWebp_KnownLegacyGap()
         Using source As New MemoryStream(AnimatedWebp)
-            Assert.Throws(Of NotSupportedException)(
-                Function() SixLabors.ImageSharp.Image.Load(Of SixLabors.ImageSharp.PixelFormats.Bgra32)(source))
+            Assert.Throws(Of NotSupportedException)(Function() LegacyWicImageDecoder.DecodeWebpFallback(source))
         End Using
     End Sub
 #End If

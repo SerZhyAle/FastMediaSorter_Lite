@@ -67,9 +67,11 @@
     <PackageReference Include="QRCoder" Version="1.4.3" />
     <PackageReference Include="ZXing.Net" Version="0.16.11" />
     <PackageReference Include="ZXing.Net.Bindings.Windows.Compatibility" Version="0.16.16" />
-    <!-- Spec 227: the linked QrCodeDecoder falls back to ImageSharp for what GDI+ cannot read
-         (a WEBP phone screenshot), the viewer's own managed decoder and version. -->
-    <PackageReference Include="SixLabors.ImageSharp" Version="3.1.12" />
+    <!-- Spec 227: the linked QrCodeDecoder falls back to Magick.NET for what GDI+ cannot read
+         (a WEBP phone screenshot), through the viewer's own read gate and version
+         (specification 270). The Manager carries its own native copy, so a Manager-only
+         Server installation does not depend on the viewer's payload. -->
+    <PackageReference Include="Magick.NET-Q8-x64" Version="15.0.0" />
   </ItemGroup>
 
   <ItemGroup>
@@ -284,6 +286,10 @@
     <Compile Include="..\Resources\ResourceTransfer.vb" Link="Core\Scheduled\Linked\Resources\ResourceTransfer.vb" />
     <Compile Include="..\Security\DpapiSecrets.vb" Link="Core\Scheduled\Linked\Resources\DpapiSecrets.vb" />
     <Compile Include="..\Resources\QrCodeDecoder.vb" Link="Core\QrCodeDecoder.vb" />
+    <Compile Include="..\Imaging\ImageSignature.vb" Link="Core\Imaging\ImageSignature.vb" />
+    <Compile Include="..\Imaging\AnimationHeader.vb" Link="Core\Imaging\AnimationHeader.vb" />
+    <Compile Include="..\Imaging\MagickReadGate.vb" Link="Core\Imaging\MagickReadGate.vb" />
+    <Compile Include="..\Imaging\MagickResourceLimits.vb" Link="Core\Imaging\MagickResourceLimits.vb" />
     <Compile Include="..\Resources\PhoneConnectionIntake.vb" Link="Core\PhoneConnectionIntake.vb" />
     <Compile Include="..\Resources\FmsImportRules.vb" Link="Core\FmsImportRules.vb" />
     <Compile Include="..\Resources\ResourceImport.vb" Link="Core\ResourceImport.vb" />

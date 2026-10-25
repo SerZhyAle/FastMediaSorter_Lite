@@ -311,13 +311,13 @@ Public Class PhoneConnectionIntakeTests
     <Fact>
     Public Sub Webp_QR_image_decodes_through_the_intake()
         ' GDI+ has no WEBP codec: the phone's screenshot arrives as one, and the intake reads it
-        ' through the managed fallback (the viewer's ImageSharp).
+        ' through the decoder fallback (the viewer's Magick.NET, specification 270).
         Dim code As String = "FMSSFTP2:h=192.168.7.43&p=2022&u=webp&pw=p&fp=SHA256%3A8f6TQvCbXjDMOyu4A9JzKcWlEHmR5pNsGgVaU2wYqhk"
         Dim path As String = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "fms227-webp-" & Guid.NewGuid().ToString("N") & ".webp")
         Try
             Using bmp As Bitmap = QrCodeRenderer.RenderBitmap(code, 4)
-                Using sharp As SixLabors.ImageSharp.Image = SixLabors.ImageSharp.Image.Load(BitmapToPngBytes(bmp))
-                    SixLabors.ImageSharp.ImageExtensions.SaveAsWebP(sharp, path)
+                Using magick As New ImageMagick.MagickImage(BitmapToPngBytes(bmp))
+                    magick.Write(path, ImageMagick.MagickFormat.WebP)
                 End Using
             End Using
 

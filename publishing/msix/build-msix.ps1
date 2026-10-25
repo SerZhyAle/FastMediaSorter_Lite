@@ -148,7 +148,7 @@ Write-Host 'Staging release payload (excluding *.pdb / *.xml)...'
 # Inno installer DO ship the x86 exe, so they keep these - only this package drops them.
 $net48OnlyFiles = @(
     'FastMediaSorter_x86.exe', 'FastMediaSorter_x86.exe.config',
-    'LibVLCSharp.dll', 'LibVLCSharp.WinForms.dll', 'SixLabors.ImageSharp.dll',
+    'LibVLCSharp.dll', 'LibVLCSharp.WinForms.dll',
     'Tesseract.dll', 'QRCoder.dll', 'System.Buffers.dll', 'System.Memory.dll',
     'System.Numerics.Vectors.dll', 'System.Runtime.CompilerServices.Unsafe.dll'
 )
@@ -160,8 +160,10 @@ $x86OnlyTrees = @('x86\', 'libvlc\win-x86\', 'runtimes\win-x86\')
 # bin\Release, the Store listing says the Store version does not carry it, and the availability
 # matrix of tools/site-facts.json says 'absent' for the Store.
 $notInThisPackageTrees = @('exchange\', 'filedo\')
+# <name>.previous-<stamp>.exe is build.ps1's local rollback copy of an exe it replaced - an old
+# program, never part of a package (the same filter as Build-Installer.ps1).
 Get-ChildItem $ReleaseDir -Recurse -File |
-    Where-Object { $_.Extension -notin '.pdb', '.xml', '.log' } |
+    Where-Object { $_.Extension -notin '.pdb', '.xml', '.log' -and $_.Name -notlike '*.previous-*.exe' } |
     ForEach-Object {
         $rel  = Get-RelativePath $ReleaseDir $_.FullName
         if ($net48OnlyFiles -contains $rel) { return }
@@ -226,6 +228,10 @@ if (Test-Path -LiteralPath (Join-Path $Stage 'exchange')) {
 if (Test-Path -LiteralPath (Join-Path $Stage 'filedo')) {
     throw "The MSIX stage carries a filedo\ folder - FileDO disk hosting is not part of the Store package."
 }
+# Specification 270: no ImageSharp in the staged programs or bundles, Magick.Native beside the
+# mainline and inside the Share Manager's bundle, notices that name what ships.
+& (Join-Path $RepoRoot 'tools\Test-ImageBackendArtifacts.ps1') -Path $Stage
+if ($LASTEXITCODE -ne 0) { throw "The MSIX stage does not hold the image backend of specification 270 (exit $LASTEXITCODE)." }
 $strayExchange = @(Get-ChildItem -LiteralPath $Stage -Recurse -File -Filter 'fms-exchange-server*' -ErrorAction SilentlyContinue)
 if ($strayExchange.Count -gt 0) {
     throw "The MSIX stage carries the exchange server binary ($($strayExchange[0].FullName)) - it is not part of the Store package."

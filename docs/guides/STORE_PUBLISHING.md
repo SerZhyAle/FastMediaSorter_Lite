@@ -88,7 +88,7 @@ cd publishing\msix
 ```
 Then trust the printed cert and `Add-AppxPackage` the `.msix`. Test: open a folder of media, navigate,
 slideshow, play an MP4 **and** an AVI/MKV (both go through LibVLC now - there is no IE path left), open
-a **static and an animated `.webp`** (ImageSharp decodes them in-process; no Windows codec involved),
+a **static and an animated `.webp`** (Magick.NET decodes them in-process; no Windows codec involved),
 run OCR translate (`T`), and set the app as a default image handler from *Settings ▸ Apps ▸ Default apps*.
 
 Pitfalls hit in practice:

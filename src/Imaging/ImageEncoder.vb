@@ -80,7 +80,7 @@ End Enum
 ''' <summary>Picks the platform encoder once, by the shape of <see cref="ImageDecoderProvider"/>.</summary>
 Friend Module ImageEncoderProvider
 
-    Private ReadOnly platform_Encoder As IImageEncoder = New ModernImageSharpEncoder()
+    Private ReadOnly platform_Encoder As IImageEncoder = New ModernMagickEncoder()
 
     Friend ReadOnly Property Current As IImageEncoder
         Get

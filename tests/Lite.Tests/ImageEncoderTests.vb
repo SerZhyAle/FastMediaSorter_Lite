@@ -5,7 +5,7 @@ Imports System.Drawing
 Imports System.Drawing.Imaging
 Imports System.IO
 Imports System.Linq
-Imports SixLabors.ImageSharp.Metadata.Profiles.Exif
+Imports ImageMagick
 Imports Xunit
 
 ''' <summary>
@@ -40,7 +40,7 @@ Public Class ImageEncoderTests
     ' ------------------------------------------------------- the writable set ----
 
     ''' <summary>
-    ''' §9.1's table is a decision, not a capability list: ImageSharp would happily write a
+    ''' §9.1's table is a decision, not a capability list: ImageMagick would happily write a
     ''' GIF, and we refuse because a 256-entry palette would quietly wreck the colours of an
     ''' edited photo. A table that drifts from the code is how that decision gets lost.
     ''' </summary>
@@ -81,7 +81,7 @@ Public Class ImageEncoderTests
 
     ''' <summary>
     ''' The phase's acceptance in its strictest form: PNG is lossless on both legs of the
-    ''' GDI+ &lt;-&gt; ImageSharp bridge, so a save with no edits has to come back bit for bit
+    ''' GDI+ &lt;-&gt; ImageMagick bridge, so a save with no edits has to come back bit for bit
     ''' in the pixels. If the bridge ever quantises, this is where it shows.
     ''' </summary>
     <Fact>
@@ -121,6 +121,24 @@ Public Class ImageEncoderTests
             Using stream As New MemoryStream(File.ReadAllBytes(target))
                 Dim size = ImageDecoderProvider.Current.TryGetPixelSize(stream)
                 Assert.Equal(New Size(20, 12), size)
+            End Using
+        End Using
+    End Sub
+
+    ''' <summary>
+    ''' Specification 270 R5: the JPEG a save writes is what the replaced encoder wrote -
+    ''' quality 92 and 4:2:0 chroma. ImageMagick's own default switches to 4:4:4 from quality
+    ''' 90 up, which made the same save 45 % larger without anyone deciding it.
+    ''' </summary>
+    <Fact>
+    Public Sub A_jpeg_save_is_quality_92_with_four_two_zero_chroma()
+        Using bitmap As Bitmap = MakeGradient(64, 48)
+            Dim target = Path.Combine(workDir, "chroma.jpg")
+            ImageFileWriter.Save(bitmap, target, Nothing, ExifOrientationPolicy.PixelsAreUpright)
+
+            Using written As New MagickImage(target)
+                Assert.Equal(92UI, written.Quality)
+                Assert.Equal(ModernMagickEncoder.Jpeg_Sampling_Factor, written.GetAttribute("jpeg:sampling-factor"))
             End Using
         End Using
     End Sub
@@ -358,61 +376,58 @@ Public Class ImageEncoderTests
     ''' </summary>
     Private Function MakeJpegWithExif(orientation As UShort, withThumbnail As Boolean,
                                       Optional width As Integer = 32, Optional height As Integer = 32) As Byte()
-        Using image As New SixLabors.ImageSharp.Image(Of SixLabors.ImageSharp.PixelFormats.Rgba32)(width, height)
+        Using image As New MagickImage(MagickColors.Black, CUInt(width), CUInt(height))
             Dim profile As New ExifProfile()
             profile.SetValue(ExifTag.Make, "FastMediaSorter test camera")
             profile.SetValue(ExifTag.DateTimeOriginal, "2019:04:07 12:34:56")
             profile.SetValue(ExifTag.Orientation, orientation)
-            profile.SetValue(ExifTag.PixelXDimension, CType(width, SixLabors.ImageSharp.Number))
-            profile.SetValue(ExifTag.PixelYDimension, CType(height, SixLabors.ImageSharp.Number))
+            profile.SetValue(ExifTag.PixelXDimension, New Number(CUInt(width)))
+            profile.SetValue(ExifTag.PixelYDimension, New Number(CUInt(height)))
             If withThumbnail Then
                 ' The pointer pair IS the thumbnail as far as a reader is concerned; the
                 ' encoder removes exactly these two, so this is the honest thing to plant.
                 profile.SetValue(ExifTag.JPEGInterchangeFormat, CUInt(1024))
                 profile.SetValue(ExifTag.JPEGInterchangeFormatLength, CUInt(256))
             End If
-            image.Metadata.ExifProfile = profile
-
-            Using stream As New MemoryStream()
-                SixLabors.ImageSharp.ImageExtensions.SaveAsJpeg(image, stream)
-                Return stream.ToArray()
-            End Using
+            image.SetProfile(profile)
+            ' ImageMagick writes the image's own orientation into the EXIF tag on save.
+            image.Orientation = CType(CInt(orientation), ImageMagick.Orientation)
+            Return image.ToByteArray(MagickFormat.Jpeg)
         End Using
     End Function
 
-    Private Shared Function ReadProfile(filePath As String) As ExifProfile
+    Private Shared Function ReadProfile(filePath As String) As IExifProfile
         Return ReadProfileFromBytes(File.ReadAllBytes(filePath))
     End Function
 
-    Private Shared Function ReadProfileFromBytes(bytes As Byte()) As ExifProfile
-        Using stream As New MemoryStream(bytes, writable:=False)
-            Dim info = SixLabors.ImageSharp.Image.Identify(stream)
-            Return If(info?.Metadata?.ExifProfile, Nothing)
+    ''' <summary>The file's EXIF from its header (a ping decodes no pixels), Nothing when it has none.</summary>
+    Private Shared Function ReadProfileFromBytes(bytes As Byte()) As IExifProfile
+        Using image As New MagickImage()
+            image.Ping(bytes)
+            Return image.GetExifProfile()
         End Using
     End Function
 
-    Private Shared Function TryOrientation(profile As ExifProfile) As UShort?
-        Dim value As IExifValue(Of UShort) = Nothing
-        If profile Is Nothing OrElse Not profile.TryGetValue(ExifTag.Orientation, value) Then Return Nothing
+    Private Shared Function TryOrientation(profile As IExifProfile) As UShort?
+        Dim value As IExifValue(Of UShort) = If(profile Is Nothing, Nothing, profile.GetValue(ExifTag.Orientation))
+        If value Is Nothing Then Return Nothing
         Return value.Value
     End Function
 
-    Private Shared Function HasThumbnailPointer(profile As ExifProfile) As Boolean
+    Private Shared Function HasThumbnailPointer(profile As IExifProfile) As Boolean
         If profile Is Nothing Then Return False
-        Dim pointer As IExifValue(Of UInteger) = Nothing
-        Return profile.TryGetValue(ExifTag.JPEGInterchangeFormat, pointer)
+        Return profile.GetValue(ExifTag.JPEGInterchangeFormat) IsNot Nothing
     End Function
 
-    Private Shared Function ReadString(profile As ExifProfile, tag As ExifTag(Of String)) As String
-        Dim value As IExifValue(Of String) = Nothing
-        If profile Is Nothing OrElse Not profile.TryGetValue(tag, value) Then Return Nothing
-        Return value.Value
+    Private Shared Function ReadString(profile As IExifProfile, tag As ExifTag(Of String)) As String
+        Dim value As IExifValue(Of String) = If(profile Is Nothing, Nothing, profile.GetValue(tag))
+        Return If(value Is Nothing, Nothing, value.Value)
     End Function
 
-    Private Shared Function ReadNumber(profile As ExifProfile, tag As ExifTag(Of SixLabors.ImageSharp.Number)) As SixLabors.ImageSharp.Number
-        Dim value As IExifValue(Of SixLabors.ImageSharp.Number) = Nothing
-        Assert.True(profile IsNot Nothing AndAlso profile.TryGetValue(tag, value), "Dimension tag missing.")
-        Return value.Value
+    Private Shared Function ReadNumber(profile As IExifProfile, tag As ExifTag(Of Number)) As UInteger
+        Dim value As IExifValue(Of Number) = If(profile Is Nothing, Nothing, profile.GetValue(tag))
+        Assert.True(value IsNot Nothing, "Dimension tag missing.")
+        Return CUInt(value.Value)
     End Function
 
 End Class

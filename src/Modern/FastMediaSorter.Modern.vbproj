@@ -155,15 +155,13 @@
   </ItemGroup>
 
   <ItemGroup>
-    <!-- Modern image stack (epic §6.1): ImageSharp 3.x is the primary decoder
-         (animated WEBP/APNG without OS codecs). Magick.NET is the O-3 fallback
-         behind the same IImageDecoder seam: it decodes what ImageSharp cannot -
-         AVIF/HEIC/HEIF (phone photos) - with no OS codec involved (no Store
-         "HEVC Video Extensions" needed). Its native dll publishes loose next to
-         the exe, same as libvlc. -->
+    <!-- Modern image stack (epic §6.1, specification 270): Magick.NET (Apache-2.0, no
+         licence key) is the one decoder and encoder behind the IImageDecoder and
+         IImageEncoder seams - static and animated WEBP/APNG, GIF, AVIF/HEIC/HEIF and JXL
+         with no OS codec involved (no Store "HEVC Video Extensions" needed). Its native
+         dll publishes loose next to the exe, same as libvlc. -->
     <PackageReference Include="Docnet.Core" Version="2.6.0" />
-    <PackageReference Include="SixLabors.ImageSharp" Version="3.1.12" />
-    <PackageReference Include="Magick.NET-Q8-x64" Version="14.15.0" />
+    <PackageReference Include="Magick.NET-Q8-x64" Version="15.0.0" />
 
     <!-- Single video engine (epic §6.2) - same versions the net48 build vendors. -->
     <PackageReference Include="LibVLCSharp" Version="3.9.3" />

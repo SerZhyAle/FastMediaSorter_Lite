@@ -481,6 +481,25 @@ Deploy-CompanionExe $SingleFileDir
 Deploy-Exchange $OutputDir
 Deploy-Exchange $SingleFileDir
 
+# Specification 270: no ImageSharp in what is about to be deployed, and every native the image
+# backend needs is in place - judged on the artifacts, since a clean package list says nothing
+# about a file an earlier build left behind. MSBuild never removes a file it no longer produces,
+# so the net48 project's retired WEBP library is taken out of bin\Release by name first. A
+# -SkipModern / -SkipCompanion run leaves the previous exe in place on purpose, which this check
+# would judge as if it were new, so it runs only when this run built all three programs.
+foreach ($retired in 'SixLabors.ImageSharp.dll', 'SixLabors.ImageSharp.xml') {
+    $stale = Join-Path $OutputDir $retired
+    if (Test-Path -LiteralPath $stale) { Remove-Item -LiteralPath $stale -Force; Write-Host "Removed the retired $retired from bin\Release" }
+}
+if (-not $SkipModern -and -not $SkipCompanion) {
+    & (Join-Path $SolutionDir "tools\Test-ImageBackendArtifacts.ps1") -Path $OutputDir -AllowRollbackCopies
+    if ($LASTEXITCODE -ne 0) {
+        Write-Host "bin\Release does not hold the image backend specification 270 requires - nothing was deployed." -ForegroundColor Red
+        exit $LASTEXITCODE
+    }
+} else {
+    Write-Host "Image backend artifact check not run: a -Skip* build leaves an earlier exe in bin\Release." -ForegroundColor Yellow
+}
 foreach ($Destination in $Destinations) {
     if (-not (Test-Path $Destination)) {
         New-Item -ItemType Directory -Path $Destination -Force | Out-Null

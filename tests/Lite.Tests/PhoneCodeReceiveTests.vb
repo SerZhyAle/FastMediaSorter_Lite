@@ -314,20 +314,20 @@ Public Class PhoneCodeReceiveTests
 
     <Fact>
     Public Sub A_small_image_that_declares_a_huge_canvas_is_refused_from_its_header()
-        ' WEBP: GDI+ cannot read it, so the managed fallback is the path under test.
+        ' WEBP: GDI+ cannot read it, so the Magick.NET fallback is the path under test.
         Dim width As Integer = 4100
         Dim height As Integer = 4000
         Assert.True(CLng(width) * height > QrCodeDecoder.MaxPixelCount)
         Dim bytes As Byte()
-        Using canvas As New SixLabors.ImageSharp.Image(Of SixLabors.ImageSharp.PixelFormats.Rgba32)(width, height)
+        Using canvas As New ImageMagick.MagickImage(ImageMagick.MagickColors.Transparent, CUInt(width), CUInt(height))
             Using ms As New MemoryStream()
-                SixLabors.ImageSharp.ImageExtensions.SaveAsWebp(canvas, ms)
+                canvas.Write(ms, ImageMagick.MagickFormat.WebP)
                 bytes = ms.ToArray()
             End Using
         End Using
         Assert.True(bytes.Length < QrCodeDecoder.MaxFileBytes, "the fixture must stay under the file bound")
 
-        Assert.True(QrCodeDecoder.ImageSharpExceedsPixelBound(bytes))
+        Assert.True(QrCodeDecoder.ExceedsPixelBound(bytes))
         Dim result As QrDecodeResult = QrCodeDecoder.DecodeBytes(bytes)
         Assert.False(result.Succeeded)
         Assert.Equal(QrDecodeOutcome.TooLarge, result.Outcome)
@@ -335,8 +335,8 @@ Public Class PhoneCodeReceiveTests
 
     <Fact>
     Public Sub An_ordinary_or_unreadable_header_is_not_over_the_bound()
-        Assert.False(QrCodeDecoder.ImageSharpExceedsPixelBound(New Byte() {1, 2, 3, 4, 5}))
-        Assert.False(QrCodeDecoder.ImageSharpExceedsPixelBound(Array.Empty(Of Byte)()))
+        Assert.False(QrCodeDecoder.ExceedsPixelBound(New Byte() {1, 2, 3, 4, 5}))
+        Assert.False(QrCodeDecoder.ExceedsPixelBound(Array.Empty(Of Byte)()))
     End Sub
 
 End Class

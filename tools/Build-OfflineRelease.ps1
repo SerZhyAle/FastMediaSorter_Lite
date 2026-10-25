@@ -153,8 +153,11 @@ New-Item -ItemType Directory -Path $distDir -Force | Out-Null
 # {app} and the user's own log starts with our sessions - which the new "send the logs
 # to the author" button would then mail back to us. The MSIX packager already filtered
 # it; the ZIP, the installer and release.yml did not.
+# The same goes for <name>.previous-<stamp>.exe, the rollback copy build.ps1 keeps of each exe it
+# replaces: Build-Installer.ps1 already left it out, this copy shipped every one into the ZIP and
+# both setups - old programs, and with them the ImageSharp specification 270 removed.
 Get-ChildItem $releaseDir -Recurse -File |
-    Where-Object { $_.Extension -notin ".pdb", ".xml", ".log" } |
+    Where-Object { $_.Extension -notin ".pdb", ".xml", ".log" -and $_.Name -notlike '*.previous-*.exe' } |
     ForEach-Object {
         $relative = Get-RelativePath -BasePath $releaseDir -TargetPath $_.FullName
         # The exchange server (specification 133) is never taken from this wildcard copy: a

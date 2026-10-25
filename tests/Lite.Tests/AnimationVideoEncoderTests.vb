@@ -95,7 +95,8 @@ Public Class AnimationVideoEncoderTests
     End Function
 
     ''' <summary>The script lines that publish the stand-in's own process id and that of a child it starts. The child
-    ''' inherits the stdout pipe, so a kill that spared it would also hold the capture open.</summary>
+    ''' inherits the stdout pipe, so a kill that spared it would also hold the capture open. Publish by rename:
+    ''' a deadline during WriteAllText must leave an absent record, never a visible empty/partial pid list.</summary>
     Private Shared Function PublishPids(pidFile As String) As String()
         Return {
             "$psi=New-Object Diagnostics.ProcessStartInfo('ping.exe','-n 120 127.0.0.1')",

@@ -16,6 +16,10 @@ payload/companion/*
 payload/filedo/*
 !payload/filedo/filedo.sha256
 !payload/filedo/release.json
+# libwebp's decoder for the x86 fallback (specification 270 R9): built from the pinned tag by
+# tools/Build-LibWebpDecoder.ps1 and committed with its PROVENANCE.txt, since release CI has
+# no C toolchain step for it.
+!payload/libwebp/
 
 # Committed test fixtures - the deterministic 7z archives of ArchiveSequentialTests
 # (tests/Lite.Tests/TestData/archives/README.txt). Nothing in the test process can

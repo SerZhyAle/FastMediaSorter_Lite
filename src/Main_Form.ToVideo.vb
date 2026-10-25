@@ -387,16 +387,13 @@ Partial Public Class Main_Form
                     ' minimum-delay rule are the duration the encoder will be held to.
                     Return VideoConvertPlan.GifDurationMsAsFfmpegReadsIt(PlayedGifFrameDelaysCs())
                 Case ".webp"
-                    ' The source's true millisecond delays, from the header - no decode.
-                    Dim info As SixLabors.ImageSharp.ImageInfo = SixLabors.ImageSharp.Image.Identify(sourcePath)
-                    If info Is Nothing OrElse info.FrameMetadataCollection Is Nothing OrElse
-                       info.FrameMetadataCollection.Count = 0 Then Return 0
-                    Dim total_Ms As Long = 0
-                    For Each frame_Meta In info.FrameMetadataCollection
-                        Dim webp_Meta = frame_Meta.GetFormatMetadata(SixLabors.ImageSharp.Formats.Webp.WebpFormat.Instance)
-                        If webp_Meta IsNot Nothing Then total_Ms += CLng(webp_Meta.FrameDelay)
-                    Next
-                    Return CInt(Math.Min(total_Ms, CLng(Integer.MaxValue)))
+                    ' The source's true millisecond delays, from the ANMF chunk headers - no decode.
+                    Dim info As AnimationHeaderInfo
+                    Using source As New FileStream(sourcePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite Or FileShare.Delete)
+                        info = AnimationHeader.ReadWebp(source)
+                    End Using
+                    If info Is Nothing Then Return 0
+                    Return CInt(Math.Min(info.DurationMs, CLng(Integer.MaxValue)))
                 Case Else
                     ' An APNG's num/den delays are not exposed without a full decode:
                     ' unknown beats wrong.

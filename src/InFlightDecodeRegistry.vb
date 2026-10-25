@@ -24,7 +24,7 @@ End Enum
 ''' S01-6).
 '''
 ''' A decode that outruns its deadline cannot be cancelled - nothing cancels a blocking read
-''' on a dead SMB session, nor ImageSharp half-way through a 300 MP HEIC - so it is abandoned
+''' on a dead SMB session, nor ImageMagick half-way through a 300 MP HEIC - so it is abandoned
 ''' and its result released whenever it lands. The file stays in the list (Transport /
 ''' SlowDecode), so each return to it used to start ANOTHER full decode beside the first:
 ''' three visits, three ~1.2 GB decodes; on a dead share one more pool thread parked in a

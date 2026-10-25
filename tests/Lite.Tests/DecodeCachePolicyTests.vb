@@ -22,7 +22,7 @@ Public Class DecodeCachePolicyTests
         }
     End Function
 
-    ''' <summary>The case the whole feature exists for: seconds of ImageSharp decode plus a
+    ''' <summary>The case the whole feature exists for: seconds of Magick.NET decode plus a
     ''' full GIF encode, paid again on every single view.</summary>
     <Fact>
     Public Sub An_animation_is_stored_however_fast_it_was()

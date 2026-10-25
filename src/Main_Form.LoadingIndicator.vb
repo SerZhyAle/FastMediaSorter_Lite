@@ -13,7 +13,7 @@ Imports System.Windows.Forms
 ' 1. "Set lbl_Status before the decode." The decode (LoadImageWithStream) is called
 '    straight from the display pipeline ON THE UI THREAD, so while it runs there is
 '    no thread left to paint anything - which is the whole bug: a big WEBP goes
-'    through the fully-managed ImageSharp path (seconds, not the milliseconds GDI+
+'    through the platform decoder (seconds, not the milliseconds GDI+
 '    takes on a JPEG), the window stops repainting, the PREVIOUS file stays on
 '    screen, and the app reads as hung.
 ' 2. "Show the badge unconditionally, up front." Nothing can know in advance which

@@ -6,9 +6,9 @@ Imports System.IO
 ''' <summary>
 ''' Seam between the shared media pipeline and the platform image decoder
 ''' (SPECIFICATION_DOTNET10_MODERN_BUILD.md §6.1). The net48 build decodes via
-''' WIC with an ImageSharp 2 fallback; the .NET 10 build decodes with
-''' ImageSharp 3 (no OS codec involved). Shared code (FileManager, Utils)
-''' only ever sees this interface.
+''' WIC with a libwebp fallback for static WEBP; the .NET 10 build decodes with
+''' Magick.NET (no OS codec involved; specification 270). Shared code (FileManager,
+''' Utils) only ever sees this interface.
 ''' </summary>
 Public Interface IImageDecoder
 
@@ -30,7 +30,7 @@ Public Interface IImageDecoder
 
     ''' <summary>
     ''' True when the decoded Image owns all its pixel data in memory and does not hold onto
-    ''' the input MemoryStream (e.g. ModernImageSharpDecoder). When True, callers may safely
+    ''' the input MemoryStream (e.g. ModernMagickDecoder). When True, callers may safely
     ''' dispose the source MemoryStream after decoding.
     ''' </summary>
     ReadOnly Property ImageOwnsData As Boolean
@@ -150,22 +150,10 @@ Public Module ImageDecoderProvider
     End Function
 
 #If Not NETFRAMEWORK Then
-    ''' <summary>
-    ''' True when the bytes start a JPEG XL file (ISO/IEC 18181, spec 236 section 2.3): either a
-    ''' bare codestream (FF 0A) or the container's 12-byte signature box
-    ''' (size 12, "JXL ", 0D 0A 87 0A). The container's own "ftyp" box comes AFTER that box, so
-    ''' this never overlaps the ISO-BMFF test above. A bare codestream is only two bytes of
-    ''' evidence, which is enough here: the caller has either a decoder-backed extension or a
-    ''' GDI+ refusal already, and FF 0A is neither a JPEG (FF D8) nor any other format this app
-    ''' opens. Pure; tolerates a short or missing head.
-    ''' </summary>
+    ''' <summary>True when the bytes start a JPEG XL file - see <see cref="ImageSignature.LooksJxl"/>,
+    ''' which holds the test so the Share Manager's linked QR reader shares it.</summary>
     Public Function LooksJxl(head As Byte()) As Boolean
-        If head Is Nothing OrElse head.Length < 2 Then Return False
-        If head(0) = &HFF AndAlso head(1) = &HA Then Return True
-        If head.Length < 12 Then Return False
-        Return head(0) = 0 AndAlso head(1) = 0 AndAlso head(2) = 0 AndAlso head(3) = &HC AndAlso
-               head(4) = &H4A AndAlso head(5) = &H58 AndAlso head(6) = &H4C AndAlso head(7) = &H20 AndAlso
-               head(8) = &HD AndAlso head(9) = &HA AndAlso head(10) = &H87 AndAlso head(11) = &HA
+        Return ImageSignature.LooksJxl(head)
     End Function
 #End If
 
@@ -179,7 +167,7 @@ Public Module ImageDecoderProvider
 #If NETFRAMEWORK Then
         Return New LegacyWicImageDecoder()
 #Else
-        Return New ModernImageSharpDecoder()
+        Return New ModernMagickDecoder()
 #End If
     End Function
 

@@ -72,7 +72,7 @@ The viewer is **one app** shipped as **two exes in one folder**. Design: `SPECIF
 | Built by | `dotnet publish` | `msbuild` |
 | Runs on | Windows 10 1607+ / 11 / Server 2016+ | Windows 7/8.1 and 32-bit Windows |
 | Video | **LibVLC only** | IE WebBrowser (H.264) + LibVLC fallback |
-| Images | ImageSharp 3 | WIC + ImageSharp 2 fallback |
+| Images | Magick.NET 15 (Q8, no licence key) | WIC + libwebp 1.6 decoder for WEBP |
 | Managed deps | NuGet `PackageReference`; publish lays them down | `packages.config`; every managed dep embedded as a `FmsPayloadmanaged/*.dll` resource, resolved by `RuntimeBootstrap` `AssemblyResolve` (ILMerge is imported but never runs) |
 
 **Rules - do not "fix" these away:**

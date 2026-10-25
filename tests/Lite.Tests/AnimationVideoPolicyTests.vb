@@ -3,9 +3,6 @@ Option Strict On
 
 Imports System.IO
 Imports System.Text
-Imports SixLabors.ImageSharp
-Imports SixLabors.ImageSharp.Formats.Gif
-Imports SixLabors.ImageSharp.PixelFormats
 Imports Xunit
 
 ''' <summary>
@@ -775,13 +772,13 @@ Public Class AnimationVideoPolicyTests
         Assert.False(GifBlockWalker.Walk(closed).IsGif)
     End Sub
 
-    ''' <summary>A GIF made by a real encoder (ImageSharp), not by this file: the walk counts what the
+    ''' <summary>A GIF made by a real encoder (ImageMagick), not by this file: the walk counts what the
     ''' encoder wrote.</summary>
     <Fact>
     Public Sub A_gif_written_by_a_real_encoder_is_counted()
-        Using animation As Image(Of Rgba32) = AnimatedWebpFastOpenTests.NoiseAnimation()
+        Using animation As ImageMagick.MagickImageCollection = AnimatedWebpFastOpenTests.NoiseAnimation()
             Using output As New MemoryStream()
-                animation.Save(output, New GifEncoder())
+                animation.Write(output, ImageMagick.MagickFormat.Gif)
                 Dim result As GifWalkResult = WalkBoth(output.ToArray())
                 Assert.True(result.IsGif)
                 Assert.Equal(64, result.Width)

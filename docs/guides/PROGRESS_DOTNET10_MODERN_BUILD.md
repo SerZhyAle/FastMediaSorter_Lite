@@ -15,6 +15,14 @@
 
 ---
 
+> **2026-10-25, спецификация 270 - ImageSharp удалён из обеих сборок.** Всё, что ниже
+> сказано про ImageSharp 3 (modern) и ImageSharp 2.1.x (x86, фолбэк WEBP), включая
+> решение O-4 о Split License, - история. Сейчас: modern и Share Manager - Magick.NET-Q8-x64
+> 15.0.0 (`ModernMagickDecoder`/`ModernMagickEncoder` за тем же швом), x86 - WIC, затем
+> libwebp 1.6.0 (`LegacyLibWebp`, `payload/libwebp/`). Предел x86 (анимированный WEBP на
+> Windows 7/8.1 не открывается) сохранён намеренно. Подробности и доказательства - в
+> спецификации 270.
+
 ## ТЕКУЩЕЕ СОСТОЯНИЕ (обновлять при каждом коммите!)
 
 - Ветка: `feature/dotnet10-modern` (создана от main @ dcc066e + доки-коммит)

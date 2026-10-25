@@ -1,0 +1,15 @@
+libwebp 1.6.0 decoder library (libwebpdecoder.dll) for the x86 fallback viewer - specification 270 R9.
+Built by tools/Build-LibWebpDecoder.ps1; do not replace these files by hand.
+
+Source:     https://github.com/webmproject/libwebp/archive/refs/tags/v1.6.0.tar.gz
+Tag commit: 4fa21912338357f89e4fd51cf2368325b59e9bd9
+Build:      nmake /f Makefile.vc CFG=release-dynamic RTLIBCFG=static ARCH=<arch> (static C runtime)
+Imports:    KERNEL32.dll only, every function on the Windows 7 SP1 allow-list in the script
+License:    BSD-3-Clause (COPYING) with the WebM additional IP rights grant (PATENTS)
+
+SHA-256:
+93A852C2B3EFAFEE3723EFD4636DE855B46F9FE1EFDDD607E1F42F60FC8F2136  source/libwebp-1.6.0.tar.gz
+EC95AC9D861C403B7BC03849BC0985685248D0B92941030903A7346813A041D0  x86/libwebpdecoder.dll
+5D99723B5E4E59E6FE4431BFB00FF42356AA6A0F39C7EEC3B2E082C400CF6ECF  x64/libwebpdecoder.dll
+5AEC868F669E384A22372A4E8A1A6CD7D44C64CD451F960CA69CC170D1E13ACF  COPYING
+CC3273E0694EA5896145E0677699B53471B03EA43021DDC50E7923FBB9F5023C  PATENTS

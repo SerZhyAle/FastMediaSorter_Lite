@@ -142,7 +142,15 @@ function Sync-LanguageSet {
 if ($KeepX86) {
     Write-Host "Keeping the 32-bit native trees (-KeepX86): FastMediaSorter_x86.exe runs offline."
 } else {
-    Remove-IfExists (Join-Path $stageRoot "x86")
+    # x86\ is trimmed file by file, not as a tree: libwebpdecoder.dll (specification 270, 270 KB) is the
+    # x86 viewer's only WEBP decoder where WIC has no WebP codec - Windows 7/8.1 - and nothing
+    # downloads it on demand, so it stays. Everything else there is Tesseract, which does.
+    $x86Dir = Join-Path $stageRoot "x86"
+    if (Test-Path -LiteralPath $x86Dir) {
+        Get-ChildItem -LiteralPath $x86Dir -Force |
+            Where-Object { $_.Name -ne "libwebpdecoder.dll" } |
+            ForEach-Object { Remove-IfExists $_.FullName }
+    }
     Remove-IfExists (Join-Path $stageRoot "libvlc\win-x86")
     Remove-IfExists (Join-Path $stageRoot "runtimes\win-x86")
 }

@@ -20,14 +20,18 @@
       3. tools\Test-SiteQuality.ps1        - the published site holds DOC-EXTERNAL-QUALITY rules 1-7
                                              over the whole page set (ticket 059);
       4. tools\Sync-IconGlyphs.ps1 -Check  - the vendored glyphs still match the catalog;
-      5. tools\Test-FeatureGates.ps1      - an open exchange or live-broadcast gate names, in a committed
+      5. tools\Sync-ExchangeMark.ps1 -Check - the exchange mark's artwork and provenance match the catalog;
+      6. tools\Test-FeatureGates.ps1      - an open exchange or live-broadcast gate names, in a committed
                                              evidence file, the rung and the date it was opened at (177
                                              section 3 item 3); a release never opens a gate by itself;
-      6. tools\Build-OfflineRelease.ps1    - builds locally, for free, what release.yml builds: the
+      7. tools\Build-OfflineRelease.ps1    - builds locally, for free, what release.yml builds: the
                                              ZIP and both installers;
-      7. tools\Test-ArtifactVersion.ps1    - every staged exe and both setup.exe files carry the
-                                             version being tagged (BUILD-EVIDENCE rule 2).
-    Steps 1-5 all run whatever the one before returned. The build runs only when they all passed:
+      8. tools\Test-ArtifactVersion.ps1    - every staged exe and both setup.exe files carry the
+                                             version being tagged (BUILD-EVIDENCE rule 2);
+      9. tools\Test-ImageBackendArtifacts.ps1 - no ImageSharp in any staged program, bundle or
+                                             embedded payload, and the image backend's natives are
+                                             present (specification 270).
+    Steps 1-6 all run whatever the one before returned. The build runs only when they all passed:
     a release that is already blocked does not need the slowest step to say so.
 
     The preflight ends in one line, `Release-Preflight: <WORD> (v<version>; ..)`. Only a bare PASS
@@ -167,10 +171,12 @@ if ($SkipLocalCheck) {
     Write-Warning "Local package build skipped (-SkipLocalCheck). The preflight cannot pass without it."
     Add-Step 'Build-OfflineRelease' $null 'skipped' 'skipped by -SkipLocalCheck'
     Add-Step 'Test-ArtifactVersion' $null 'skipped' 'skipped with the build'
+    Add-Step 'Test-ImageBackendArtifacts' $null 'skipped' 'skipped with the build'
 } elseif ($blocked.Count -gt 0) {
     Say "`nThe package build is not run: $(($blocked | ForEach-Object Name) -join ', ') did not pass." "Yellow"
     Add-Step 'Build-OfflineRelease' $null 'not run' 'not run - an earlier step did not pass'
     Add-Step 'Test-ArtifactVersion' $null 'not run' 'not run - nothing was built'
+    Add-Step 'Test-ImageBackendArtifacts' $null 'not run' 'not run - nothing was built'
 } else {
     Say "`nBuilds everything release.yml builds: the ZIP, the User installer and the Server installer." "Gray"
     Invoke-Step "Local package build (as on CI) - so a failing GitHub job is not paid for" 'Build-OfflineRelease.ps1' @('-Version', $Version)
@@ -186,8 +192,12 @@ if ($SkipLocalCheck) {
             (Join-Path $dist "FastMediaSorter-$Version-windows-x64-server-setup.exe")
         )
         Invoke-Step "The built package carries $Version" 'Test-ArtifactVersion.ps1' @('-Expect', $Version, '-Path', ($artifacts -join ','))
+        # Specification 270: no ImageSharp in any staged program, bundle or embedded payload; natives present.
+        $imageStages = @($stage, "$stage-server", (Join-Path "$stage-server" 'viewer')) | Where-Object { Test-Path -LiteralPath $_ }
+        Invoke-Step "The staged packages carry the image backend of specification 270" 'Test-ImageBackendArtifacts.ps1' @('-Path', ($imageStages -join ','))
     } else {
         Add-Step 'Test-ArtifactVersion' $null 'not run' 'not run - the build failed'
+        Add-Step 'Test-ImageBackendArtifacts' $null 'not run' 'not run - the build failed'
     }
 }
 

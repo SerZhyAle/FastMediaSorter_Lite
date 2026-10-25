@@ -341,7 +341,7 @@ Public Class NavigationAndLoadingAuditTests
         Dim watch As Stopwatch = Stopwatch.StartNew()
         Dim payload As DecodedPayload
         Using stream As New MemoryStream(crafted)
-            payload = New ModernImageSharpDecoder().DecodeToPayload(stream)
+            payload = New ModernMagickDecoder().DecodeToPayload(stream)
         End Using
         watch.Stop()
 
@@ -352,7 +352,7 @@ Public Class NavigationAndLoadingAuditTests
     <Fact>
     Public Sub A17_the_real_fixture_is_still_within_budget()
         Using stream As New MemoryStream(WebpFixture("AnimatedWebp"))
-            Dim payload As DecodedPayload = New ModernImageSharpDecoder().DecodeToPayload(stream)
+            Dim payload As DecodedPayload = New ModernMagickDecoder().DecodeToPayload(stream)
             Assert.NotNull(payload)
             Assert.True(payload.IsAnimation)
         End Using

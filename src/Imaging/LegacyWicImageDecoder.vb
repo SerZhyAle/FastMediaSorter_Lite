@@ -9,7 +9,7 @@ Imports System.Windows.Media
 Imports System.Windows.Media.Imaging
 
 ''' <summary>
-''' net48 decoder: WIC (WPF BitmapDecoder) first, ImageSharp 2.x as fallback for
+''' net48 decoder: WIC (WPF BitmapDecoder) first, libwebp as fallback for
 ''' WEBP variants WIC can't handle. Code moved verbatim from FileManager/Utils
 ''' behind the IImageDecoder seam (SPECIFICATION_DOTNET10_MODERN_BUILD.md Ф0).
 ''' This whole file compiles only in the .NET Framework build - the modern build
@@ -28,8 +28,8 @@ Friend NotInheritable Class LegacyWicImageDecoder
         Try
             Return LoadBitmapViaWic(stream)
         Catch ex As Exception
-            Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0038: WEBP via WIC failed, fallback to ImageSharp: " & ex.Message)
-            AppFileLogger.LogException("WEBP via WIC failed; trying ImageSharp fallback", ex)
+            Debug.WriteLine(Now().ToString("HH:mm:ss.ffff") & " w0038: WEBP via WIC failed, fallback to libwebp: " & ex.Message)
+            AppFileLogger.LogException("WEBP via WIC failed; trying libwebp fallback", ex)
             Return DecodeWebpFallback(stream)
         End Try
     End Function
@@ -79,7 +79,7 @@ Friend NotInheritable Class LegacyWicImageDecoder
             End Try
         Catch
             ' The caller never receives this bitmap when filling it fails - it falls back to
-            ' ImageSharp - so it is released here instead of waiting for the finalizer
+            ' libwebp - so it is released here instead of waiting for the finalizer
             ' (audit 057.S02-1). The exception itself travels on unchanged.
             bitmap.Dispose()
             Throw
@@ -88,31 +88,21 @@ Friend NotInheritable Class LegacyWicImageDecoder
         Return bitmap
     End Function
 
-    ''' <summary>The legacy managed fallback is WebP only. Never auto-detect a different
-    ''' codec after WIC refuses input: a TIFF renamed .webp must not reach ImageSharp 2's
-    ''' unbounded BigTIFF reader (GHSA-wmxv-xphr-5c9g, specification 266).</summary>
+    ''' <summary>The legacy fallback is WebP only. Never auto-detect a different codec after
+    ''' WIC refuses input: a TIFF renamed .webp must not reach a second decoder (specification
+    ''' 266; the header check outlived the managed library it was written for). The bytes go
+    ''' to libwebp (<see cref="LegacyLibWebp"/>, specification 270 R9): a still WEBP decodes,
+    ''' an animated one is refused with <see cref="NotSupportedException"/> - the known gap of
+    ''' this leg - and anything else with <see cref="InvalidDataException"/>.</summary>
     Friend Shared Function DecodeWebpFallback(stream As MemoryStream) As Bitmap
         stream.Position = 0
         Dim header(11) As Byte
         If stream.Read(header, 0, header.Length) <> header.Length OrElse
            Not ImageDecoderProvider.LooksDecoderBacked(header) Then
-            Throw New SixLabors.ImageSharp.UnknownImageFormatException("The legacy managed fallback requires a WebP header.")
+            Throw New InvalidDataException("The legacy WEBP fallback requires a WebP header.")
         End If
         stream.Position = 0
-
-        Using imageSharpBitmap As SixLabors.ImageSharp.Image(Of SixLabors.ImageSharp.PixelFormats.Bgra32) =
-            SixLabors.ImageSharp.Image.Load(Of SixLabors.ImageSharp.PixelFormats.Bgra32)(
-                stream, New SixLabors.ImageSharp.Formats.Webp.WebpDecoder())
-
-            Using pngStream As New MemoryStream()
-                SixLabors.ImageSharp.ImageExtensions.SaveAsPng(imageSharpBitmap, pngStream)
-                pngStream.Position = 0
-
-                Using pngImage As Image = Image.FromStream(pngStream)
-                    Return New Bitmap(pngImage)
-                End Using
-            End Using
-        End Using
+        Return LegacyLibWebp.DecodeStill(stream.ToArray())
     End Function
 
 End Class

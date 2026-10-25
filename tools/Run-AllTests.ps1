@@ -5,6 +5,9 @@
 
     1. Viewer (net48 + net10)       -> tests/Lite.Tests        (dotnet test / xUnit)
     2. Share Manager (net10)        -> tests/Companion.Tests   (dotnet test / xUnit)
+    2b. Malformed images (net10)    -> tests/Integration/MagickMalformedProbes.ps1 (specification 270: crafted BigTIFF/ICC/
+                                       over-budget files through the mainline's Magick.NET entry points, each in
+                                       its own bounded child process; reads the Debug build the viewer suite made)
     3. SFTP worker (Go)             -> the fms_companion repository (go test ./...)
     3b. Exchange server (Go)        -> exchange-server\ of this repository: its unit suite (and the
                                        manual-proof tool's module) with a 64-bit Go, plus a
@@ -169,6 +172,11 @@ function Invoke-ScriptSuite([string]$id, [string]$name, [string]$script, [string
 # shipped runtimes (net48 = FastMediaSorter_x86.exe, net10 = the x64 mainline).
 Invoke-DotnetTest 'viewer'        'Viewer (net48 + net10)' (Join-Path $root 'tests\Lite.Tests\Lite.Tests.vbproj')
 Invoke-DotnetTest 'share-manager' 'Share Manager (net10)'  (Join-Path $root 'tests\Companion.Tests\Companion.Tests.vbproj')
+
+# --- 2b: malformed images through the real decoder (specification 270 section 5) ---------
+# Loads the Lite.Tests build the viewer suite just made; each crafted file runs in its own child process,
+# so a hang or a native fault is a FAIL of this suite, never the end of the run.
+Invoke-ScriptSuite 'malformed-images' 'Malformed images (Magick.NET, bounded children)' (Join-Path $root 'tests\Integration\MagickMalformedProbes.ps1')
 
 # CHECK-VERDICT rule 13 for the Go suites: plain `go test` prints a pass over a skipped test, so both suites run
 # with -v and every `--- SKIP:` line (a test or a subtest) is counted. -v adds two kinds of line nobody reads

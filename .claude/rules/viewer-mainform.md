@@ -67,7 +67,7 @@ paths:
 **[FileManager.vb](../../src/FileManager.vb)** - File I/O module
 - `LoadImageWithStream()` keeps its `MemoryStream` open (prevents file-lock issues; disposed explicitly with the image); formats GDI+ can't open go through the `IImageDecoder` seam.
 - **EXIF auto-orientation**: when `Is_Exif_AutoRotate` is on, `LoadImage` runs `ApplyExifOrientation()` on non-GIF images - reads the `Orientation` tag (0x0112), `RotateFlip`s the pixels upright, strips the tag. No-op when the tag is absent; failures are swallowed (a bad tag must never stop the load).
-- **WEBP** is handled by the `IImageDecoder` seam (net48: WIC then ImageSharp 2; modern: ImageSharp 3, animated variants animate). Don't re-add a decoder call here.
+- **WEBP** is handled by the `IImageDecoder` seam (net48: WIC then the libwebp decoder library, still images only; modern: Magick.NET, animated variants animate). Don't re-add a decoder call here.
 
 **[Common_Module.vb](../../src/Common_Module.vb)** - global state & P/Invoke. `Is_Copying_not_Moving` is **net48 only now** - see "Move vs copy"; never read it on modern. The viewer options (`Is_Exif_AutoRotate`, `Is_HighQuality_Scaling`, `Is_Show_Info_Overlay`, `Slideshow_Base_Interval_Ms`, ..) load/save in `Main_Form.Lifecycle.vb`.
 

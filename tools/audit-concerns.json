@@ -133,7 +133,7 @@
         "src/DiskCacheTrim.vb",
         "src/Imaging/ImageDecoder.vb",
         "src/Imaging/LegacyWicImageDecoder.vb",
-        "src/Imaging/ModernImageSharpDecoder.vb",
+        "src/Imaging/ModernMagickDecoder.vb",
         "src/Imaging/MagickResourceLimits.vb",
         "src/Imaging/DecodeCache*.vb",
         "src/Imaging/ImageDecodePayload.vb"
@@ -334,7 +334,7 @@
       "area045": "",
       "patterns": [
         "src/Imaging/ImageEncoder.vb",
-        "src/Imaging/ModernImageSharpEncoder.vb",
+        "src/Imaging/ModernMagickEncoder.vb",
         "src/Imaging/ImageFileWriter.vb"
       ]
     },

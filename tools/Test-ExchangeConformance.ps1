@@ -73,7 +73,8 @@ $script:detail = ''
 & {
 Push-Location $module
 try {
-    $env:GOARCH = 'amd64'; $env:CGO_ENABLED = '0'; $env:GOFLAGS = ''
+    # Ordinary checks must not invoke Git indirectly through Go's automatic VCS stamping.
+    $env:GOARCH = 'amd64'; $env:CGO_ENABLED = '0'; $env:GOFLAGS = '-buildvcs=false'
 
     # --- 1: the vectors ---
     Write-Host '--- exchange-vectors -check' -ForegroundColor DarkCyan

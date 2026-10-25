@@ -22,7 +22,7 @@ Imports System.IO
 ''' Whole-file modern-only, like everything else the cache is made of.
 ''' </summary>
 Friend Enum DecodedPayloadKind
-    ''' <summary>A still frame, re-encoded to PNG (ImageSharp or Magick.NET).</summary>
+    ''' <summary>A still frame, re-encoded to PNG (Magick.NET).</summary>
     Png
     ''' <summary>A multi-frame animation transcoded to GIF, frame delays carried across.</summary>
     Gif
@@ -96,7 +96,7 @@ Friend Interface IImageDecoderPayload
     Function DecodeToPayload(stream As MemoryStream, Optional sourceLabel As String = "") As DecodedPayload
 
     ''' <summary>
-    ''' Stage 1 of a long animation (spec 241 rules 10 and 18): for a multi-frame file read by ImageSharp,
+    ''' Stage 1 of a long animation (spec 241 rules 10 and 18): for a multi-frame WEBP, APNG, GIF or TIFF,
     ''' only its FIRST frame, as a PNG flagged <see cref="DecodedPayload.IsPreview"/>, with the canvas
     ''' size, the frame count and the header's duration filled in. An animation over the budget gets
     ''' the same (<see cref="DecodedPayload.IsTooLong"/>); a frame over the budget gets Nothing.

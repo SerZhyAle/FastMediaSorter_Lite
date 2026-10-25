@@ -116,15 +116,16 @@ Friend NotInheritable Class QrCodeDecoder
                 End Using
             End Using
         Catch ex As Exception
-            ' GDI+ has no WEBP codec of its own (a phone screenshot is often WEBP): the viewer's
-            ' managed decoder (ImageSharp, the one the media pipeline uses) re-encodes to PNG in
+            ' GDI+ has no WEBP codec of its own (a phone screenshot is often WEBP): the media
+            ' pipeline's decoder (Magick.NET, through the same read gate) re-encodes to PNG in
             ' memory and the decode is tried again - the image never touches the disk (rule 6).
-            ' The header is read first: a small file can declare a gigantic canvas, and ImageSharp
-            ' would allocate all of it before the pixel bound of DecodeBitmap ever saw a bitmap.
-            If ImageSharpExceedsPixelBound(bytes) Then
+            ' The header is read first: a small file can declare a gigantic canvas, and the
+            ' decoder would allocate all of it before the pixel bound of DecodeBitmap ever saw a
+            ' bitmap. A container the read gate does not know is not decoded at all.
+            If ExceedsPixelBound(bytes) Then
                 Return New QrDecodeResult(QrDecodeOutcome.TooLarge, "", Localization.T("Изображение слишком велико для поиска QR-кода"))
             End If
-            Dim bmp As Bitmap = DecodeViaImageSharp(bytes)
+            Dim bmp As Bitmap = DecodeViaMagick(bytes)
             If bmp IsNot Nothing Then
                 Try
                     Return DecodeBitmap(bmp)
@@ -138,26 +139,47 @@ Friend NotInheritable Class QrCodeDecoder
 
     ''' <summary>True when the declared canvas of the image (read from its header only, nothing allocated)
     ''' is over <see cref="MaxPixelCount"/>. An unreadable header answers False: the decode then fails by itself.</summary>
-    Friend Shared Function ImageSharpExceedsPixelBound(bytes As Byte()) As Boolean
+    Friend Shared Function ExceedsPixelBound(bytes As Byte()) As Boolean
         Try
-            Using ms As New MemoryStream(bytes)
-                Dim info = SixLabors.ImageSharp.Image.Identify(ms)
-                Return info IsNot Nothing AndAlso CLng(info.Width) * CLng(info.Height) > MaxPixelCount
+            Using ms As New MemoryStream(bytes, writable:=False)
+                Dim container As ImageContainer = MagickReadGate.Sniff(ms)
+                If Not IsFallbackContainer(container) Then Return False
+                Dim headers As List(Of ImageMagick.IMagickImageInfo) = MagickReadGate.PingAll(ms, container)
+                Return headers.Count > 0 AndAlso CLng(headers(0).Width) * CLng(headers(0).Height) > MaxPixelCount
             End Using
         Catch ex As Exception
             Return False
         End Try
     End Function
 
-    ''' <summary>Any-format image bytes to a Bitmap through ImageSharp and a memory PNG, or Nothing.
-    ''' Only the fallback for what GDI+ cannot read; never a second decoder for what it can.</summary>
-    Private Shared Function DecodeViaImageSharp(bytes As Byte()) As Bitmap
+    ''' <summary>
+    ''' The containers the fallback reads: the nine the managed decoder it replaced recognised
+    ''' (specification 270 R1). AVIF/HEIF and JPEG XL were never read here and are not now -
+    ''' a change of format reach is a decision, not a side effect of a backend swap.
+    ''' </summary>
+    Private Shared Function IsFallbackContainer(container As ImageContainer) As Boolean
+        Select Case container
+            Case ImageContainer.Unknown, ImageContainer.Avif, ImageContainer.Heif, ImageContainer.Jxl
+                Return False
+            Case Else
+                Return True
+        End Select
+    End Function
+
+    ''' <summary>Any-format image bytes to a Bitmap through Magick.NET and a memory PNG, or Nothing.
+    ''' Only the fallback for what GDI+ cannot read; never a second decoder for what it can. The
+    ''' first frame of an animation is all a QR search needs.</summary>
+    Private Shared Function DecodeViaMagick(bytes As Byte()) As Bitmap
         Try
-            Using image As SixLabors.ImageSharp.Image = SixLabors.ImageSharp.Image.Load(bytes)
-                Using png As New MemoryStream()
-                    SixLabors.ImageSharp.ImageExtensions.SaveAsPng(image, png)
-                    png.Position = 0
-                    Return New Bitmap(png)
+            Using ms As New MemoryStream(bytes, writable:=False)
+                Dim container As ImageContainer = MagickReadGate.Sniff(ms)
+                If Not IsFallbackContainer(container) Then Return Nothing
+                Using image As ImageMagick.MagickImage = MagickReadGate.ReadFirstFrame(ms, container)
+                    Using png As New MemoryStream(MagickReadGate.ToPngBytes(image))
+                        Using decoded As New Bitmap(png)
+                            Return New Bitmap(decoded)
+                        End Using
+                    End Using
                 End Using
             End Using
         Catch ex As Exception

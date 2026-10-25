@@ -4,8 +4,7 @@ Option Strict On
 Imports System.Drawing
 Imports System.Drawing.Imaging
 Imports System.IO
-Imports SixLabors.ImageSharp.Formats.Webp
-Imports SixLabors.ImageSharp.PixelFormats
+Imports ImageMagick
 Imports Xunit
 
 ''' <summary>
@@ -23,36 +22,31 @@ Public Class AnimationStageLoadTests
     ''' <summary>Solid-colour frames, so the encode and the later GIF transcode cost milliseconds
     ''' while the animation is still over the stage-1 threshold.</summary>
     Private Shared Function LongAnimationWebp(Optional withAlpha As Boolean = False) As Byte()
-        Dim image As SixLabors.ImageSharp.Image(Of Rgba32) = Nothing
-        Try
+        Dim channels As Integer = If(withAlpha, 4, 3)
+        Using frames As New MagickImageCollection()
             For f As Integer = 0 To LongFrames - 1
-                Dim pixels(LongSide * LongSide * 4 - 1) As Byte
+                Dim pixels(LongSide * LongSide * channels - 1) As Byte
                 Dim red As Byte = CByte((f * 3) And 255)
                 Dim green As Byte = CByte(255 - ((f * 3) And 255))
-                For at As Integer = 0 To pixels.Length - 4 Step 4
+                For at As Integer = 0 To pixels.Length - channels Step channels
                     pixels(at) = red
                     pixels(at + 1) = green
                     pixels(at + 2) = 90
-                    pixels(at + 3) = If(withAlpha AndAlso at < 4 * LongSide, CByte(0), CByte(255))
+                    If withAlpha Then pixels(at + 3) = If(at < 4 * LongSide, CByte(0), CByte(255))
                 Next
-                Using one As SixLabors.ImageSharp.Image(Of Rgba32) = SixLabors.ImageSharp.Image.LoadPixelData(Of Rgba32)(pixels, LongSide, LongSide)
-                    If image Is Nothing Then
-                        image = one.Clone()
-                    Else
-                        image.Frames.AddFrame(one.Frames.RootFrame)
-                    End If
-                End Using
-            Next
-            For Each frame As SixLabors.ImageSharp.ImageFrame(Of Rgba32) In image.Frames
-                frame.Metadata.GetFormatMetadata(WebpFormat.Instance).FrameDelay = 80UI
+                Dim frame As New MagickImage()
+                frame.ReadPixels(pixels, New PixelReadSettings(CUInt(LongSide), CUInt(LongSide), StorageType.Char,
+                                                              If(withAlpha, PixelMapping.RGBA, PixelMapping.RGB)))
+                frame.AnimationDelay = 8UI
+                frame.AnimationTicksPerSecond = 100
+                frame.Settings.SetDefine(MagickFormat.WebP, "lossless", True)
+                frames.Add(frame)
             Next
             Using output As New MemoryStream()
-                image.Save(output, New WebpEncoder With {.FileFormat = WebpFileFormatType.Lossless})
+                frames.Write(output, MagickFormat.WebP)
                 Return output.ToArray()
             End Using
-        Finally
-            image?.Dispose()
-        End Try
+        End Using
     End Function
 
     Private Shared Function WriteTemp(bytes As Byte(), ext As String) As String
@@ -164,11 +158,9 @@ Public Class AnimationStageLoadTests
     Public Sub A_still_webp_is_loaded_the_same_at_every_stage(stageNumber As Integer)
         Dim stage As ImageLoadStage = CType(stageNumber, ImageLoadStage)
         Dim bytes As Byte()
-        Using one As SixLabors.ImageSharp.Image(Of Rgba32) = SixLabors.ImageSharp.Image.LoadPixelData(Of Rgba32)(New Byte(30 * 20 * 4 - 1) {}, 30, 20)
-            Using output As New MemoryStream()
-                one.Save(output, New WebpEncoder With {.FileFormat = WebpFileFormatType.Lossless})
-                bytes = output.ToArray()
-            End Using
+        Using one As New MagickImage(MagickColors.Transparent, 30UI, 20UI)
+            one.Settings.SetDefine(MagickFormat.WebP, "lossless", True)
+            bytes = one.ToByteArray(MagickFormat.WebP)
         End Using
 
         WithLoaded(bytes, stage,

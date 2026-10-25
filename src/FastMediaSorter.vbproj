@@ -144,9 +144,6 @@
     <Reference Include="System.Runtime.CompilerServices.Unsafe">
       <HintPath>..\packages\System.Runtime.CompilerServices.Unsafe.6.1.2\lib\net462\System.Runtime.CompilerServices.Unsafe.dll</HintPath>
     </Reference>
-    <Reference Include="SixLabors.ImageSharp">
-      <HintPath>..\packages\SixLabors.ImageSharp.2.1.13\lib\net472\SixLabors.ImageSharp.dll</HintPath>
-    </Reference>
     <Reference Include="WindowsBase" />
     <Reference Include="Tesseract">
       <HintPath>..\packages\Tesseract.5.2.0\lib\net48\Tesseract.dll</HintPath>
@@ -657,20 +654,27 @@
     </Compile>
     <Compile Include="Imaging\ImageDecoder.vb" />
     <Compile Include="Imaging\LegacyWicImageDecoder.vb" />
-    <Compile Include="Imaging\ModernImageSharpDecoder.vb" />
+    <!-- Specification 270: libwebp for the static WEBP WIC cannot read (this build's only
+         code here); the other five are whole-file "#If Not NETFRAMEWORK" (the mainline's
+         Magick.NET decoder and its readers) and are listed so the file sets stay identical. -->
+    <Compile Include="Imaging\LegacyLibWebp.vb" />
+    <Compile Include="Imaging\ModernMagickDecoder.vb" />
+    <Compile Include="Imaging\ImageSignature.vb" />
+    <Compile Include="Imaging\AnimationHeader.vb" />
+    <Compile Include="Imaging\MagickReadGate.vb" />
     <!-- The writing half of the seam (SPECIFICATION_IMAGE_EDITOR_DOTNET10.md §9.1).
          All three are whole-file "#If Not NETFRAMEWORK" and so compile to nothing here,
          exactly like ZoomMath.vb and LogPackage.vb - they are listed anyway so the two
          projects' file sets stay identical and a future divergence is a seam, never a
          missing <Compile Include>. -->
     <Compile Include="Imaging\ImageEncoder.vb" />
-    <Compile Include="Imaging\ModernImageSharpEncoder.vb" />
+    <Compile Include="Imaging\ModernMagickEncoder.vb" />
     <Compile Include="Imaging\ImageFileWriter.vb" />
     <Compile Include="Imaging\MagickResourceLimits.vb" />
     <!-- The decode cache
          (SPECIFICATION_DECODE_CACHE_AND_ANIMATION_TO_VIDEO_DOTNET10.md §3-§7). All five are
          whole-file "#If Not NETFRAMEWORK" and compile to nothing here: this build keeps
-         decoding WEBP through WIC/ImageSharp 2 on every open, exactly as it does today
+         decoding WEBP through WIC/libwebp on every open, exactly as it does today
          (§2.2). Listed anyway so the two projects' file sets stay identical and a
          divergence is always a seam, never a missing <Compile Include>. -->
     <Compile Include="Imaging\ImageDecodePayload.vb" />
@@ -1067,6 +1071,12 @@
       <Link>flags\%(Filename)%(Extension)</Link>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
+    <!-- Specification 270 R9: the static-WEBP decoder this 32-bit exe loads by full path
+         from x86\ (LegacyLibWebp.vb); built and pinned by tools/Build-LibWebpDecoder.ps1. -->
+    <Content Include="..\payload\libwebp\x86\libwebpdecoder.dll">
+      <Link>x86\libwebpdecoder.dll</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="..\packages\LibVLCSharp.3.9.3\lib\net471\LibVLCSharp.dll">
@@ -1080,9 +1090,6 @@
     </EmbeddedResource>
     <EmbeddedResource Include="..\packages\QRCoder.1.4.3\lib\net40\QRCoder.dll">
       <LogicalName>FmsPayloadmanaged/QRCoder.dll</LogicalName>
-    </EmbeddedResource>
-    <EmbeddedResource Include="..\packages\SixLabors.ImageSharp.2.1.13\lib\net472\SixLabors.ImageSharp.dll">
-      <LogicalName>FmsPayloadmanaged/SixLabors.ImageSharp.dll</LogicalName>
     </EmbeddedResource>
     <EmbeddedResource Include="..\packages\System.Buffers.4.6.1\lib\net462\System.Buffers.dll">
       <LogicalName>FmsPayloadmanaged/System.Buffers.dll</LogicalName>

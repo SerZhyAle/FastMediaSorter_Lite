@@ -12,12 +12,13 @@ Imports Xunit
 ''' .fmscfg vector was added (the vector pins a localized `accessNote`, which made it fire every
 ''' run instead of occasionally).
 '''
-''' Classes inside one collection never run concurrently with each other, which is exactly the
-''' guarantee needed here. Save-and-restore stays in each test as well: the collection stops the
+''' The collection also excludes other collections: UI language, theme and process-probe state are
+''' process-global, and bounded STA lifecycle checks must not compete with parallel host/crypto fixtures.
+''' Save-and-restore stays in each test as well: the collection stops the
 ''' races, the restore stops a test leaving the process in a language the next class did not ask
 ''' for.
 ''' </summary>
-<CollectionDefinition(UiLanguageCollection.Name)>
+<CollectionDefinition(UiLanguageCollection.Name, DisableParallelization:=True)>
 Public Class UiLanguageCollection
     Public Const Name As String = "ui-language"
 End Class

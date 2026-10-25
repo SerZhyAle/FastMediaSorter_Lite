@@ -25,8 +25,8 @@ Friend Module DecodeCache
 
     ''' <summary>
     ''' Rides in every key, and exists for one job: BUMP IT IN ANY CHANGE THAT ALTERS THE
-    ''' CONTENT OF A PAYLOAD - the GIF frame-delay mapping, the PNG re-encode, an ImageSharp
-    ''' major upgrade that decodes differently. Never for a change that only reads faster.
+    ''' CONTENT OF A PAYLOAD - the GIF frame-delay mapping, the PNG re-encode, a decoder
+    ''' change or upgrade that decodes differently. Never for a change that only reads faster.
     '''
     ''' The same discipline as OcrPipeline.OcrPipelineVersion, and for the same reason: a
     ''' stale payload served by a new algorithm is the single way this feature can show
@@ -34,7 +34,9 @@ Friend Module DecodeCache
     ''' </summary>
     ''' History: 2 = animations above GifTranscodePolicy.Dither_Max_Total_Pixels are no
     ''' longer dithered (spec 241 rule 4), so their payload changed content.
-    Friend Const Cache_Format_Version As Integer = 2
+    ''' 3 = the decoder moved from ImageSharp to Magick.NET (specification 270 R8): the PNG and
+    ''' GIF bytes of every payload come from another encoder.
+    Friend Const Cache_Format_Version As Integer = 3
 
     ''' <summary>
     ''' The image for a decoder-backed file, with the MemoryStream GDI+ reads it from.

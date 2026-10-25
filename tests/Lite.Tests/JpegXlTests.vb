@@ -213,7 +213,7 @@ Public Class JpegXlTests
     <Fact>
     Public Sub A_quarter_turn_orientation_swaps_the_label_and_the_decode_together()
         Assume_AutoRotate_Is_On()
-        Dim rotated As Byte() = StillJxl(16UI, 8UI, ImageMagick.OrientationType.RightTop)
+        Dim rotated As Byte() = StillJxl(16UI, 8UI, ImageMagick.Orientation.RightTop)
 
         Using ms As New MemoryStream(rotated)
             Assert.Equal(New Size(8, 16), ImageDecoderProvider.Current.TryGetPixelSize(ms))
@@ -299,7 +299,7 @@ Public Class JpegXlTests
     ''' <summary>
     ''' The editor opens a .jxl and saves it as a PNG/JPEG/WEBP (Q236-1: no JPEG XL writer in
     ''' phase 1). The capture date must travel with the pixels, as it does for HEIC (audit 052
-    ''' G-12): ImageSharp reads no JPEG XL, so the donor goes through Magick.NET by signature.
+    ''' G-12): the donor is read through Magick.NET like every other format (specification 270).
     ''' </summary>
     <Fact>
     Public Sub A_jxl_donor_keeps_its_capture_date_through_a_save_as()
@@ -315,11 +315,10 @@ Public Class JpegXlTests
         End Using
         Assert.True(ImageDecoderProvider.LooksJxl(donor), "The fixture is not JPEG XL.")
 
-        Dim read = ModernImageSharpEncoder.ReadDonorMetadata(donor)
+        Dim read = ModernMagickEncoder.ReadDonorMetadata(donor)
         Assert.NotNull(read.Exif)
-        Dim taken As SixLabors.ImageSharp.Metadata.Profiles.Exif.IExifValue(Of String) = Nothing
-        Assert.True(read.Exif.TryGetValue(SixLabors.ImageSharp.Metadata.Profiles.Exif.ExifTag.DateTimeOriginal, taken),
-                    "DateTimeOriginal was lost.")
+        Dim taken As ImageMagick.IExifValue(Of String) = read.Exif.GetValue(ImageMagick.ExifTag.DateTimeOriginal)
+        Assert.True(taken IsNot Nothing, "DateTimeOriginal was lost.")
         Assert.Equal("2022:07:08 09:10:11", taken.Value)
     End Sub
 
@@ -330,7 +329,7 @@ Public Class JpegXlTests
     End Sub
 
     Private Shared Function StillJxl(width As UInteger, height As UInteger,
-                                     Optional orientation As ImageMagick.OrientationType = ImageMagick.OrientationType.TopLeft) As Byte()
+                                     Optional orientation As ImageMagick.Orientation = ImageMagick.Orientation.TopLeft) As Byte()
         Using image As New ImageMagick.MagickImage(ImageMagick.MagickColors.Red, width, height)
             image.Orientation = orientation
             Using ms As New MemoryStream()

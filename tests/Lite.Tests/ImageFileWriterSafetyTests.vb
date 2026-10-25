@@ -284,9 +284,10 @@ Public Class ImageFileWriterSafetyTests
     <Fact>
     Public Sub A_two_frame_apng_is_refused()
         Dim apng As String = Path.Combine(workDir, "moving.png")
-        Using image As New SixLabors.ImageSharp.Image(Of SixLabors.ImageSharp.PixelFormats.Rgba32)(8, 8)
-            image.Frames.AddFrame(image.Frames.RootFrame)
-            SixLabors.ImageSharp.ImageExtensions.SaveAsPng(image, apng)
+        Using frames As New ImageMagick.MagickImageCollection()
+            frames.Add(New ImageMagick.MagickImage(ImageMagick.MagickColors.Red, 8UI, 8UI))
+            frames.Add(New ImageMagick.MagickImage(ImageMagick.MagickColors.Blue, 8UI, 8UI))
+            frames.Write(apng, ImageMagick.MagickFormat.APng)
         End Using
         Using stream As New FileStream(apng, FileMode.Open, FileAccess.Read)
             Assert.True(ImageFileWriter.PngIsAnimated(stream), "The fixture is not an APNG - the test would prove nothing.")
